@@ -54,9 +54,7 @@ static bool test_delayed_write_update(struct torture_context *tctx, struct smbcl
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -148,9 +146,7 @@ static bool test_delayed_write_update1(struct torture_context *tctx, struct smbc
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update1\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -339,9 +335,7 @@ static bool test_delayed_write_update1a(struct torture_context *tctx, struct smb
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update1a\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -521,9 +515,7 @@ static bool test_delayed_write_update1b(struct torture_context *tctx, struct smb
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update1b\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -696,9 +688,7 @@ static bool test_delayed_write_update1c(struct torture_context *tctx, struct smb
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update1c\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -878,9 +868,7 @@ static bool test_delayed_write_update2(struct torture_context *tctx, struct smbc
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update2\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -1237,9 +1225,7 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 
 	torture_comment(tctx, "\nRunning test_finfo_after_write\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum1 == -1) {
@@ -1511,9 +1497,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update3\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -1665,9 +1649,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update3a\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -1878,9 +1860,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update3b\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -2044,9 +2024,7 @@ static bool test_delayed_write_update3c(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update3c\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -2254,9 +2232,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update4\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -2413,9 +2389,7 @@ static bool test_delayed_write_update5(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update5\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -2575,9 +2549,7 @@ static bool test_delayed_write_update5b(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update5b\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -2743,9 +2715,7 @@ static bool test_delayed_write_update6(struct torture_context *tctx,
 
 	torture_comment(tctx, "\nRunning test_delayed_write_update6\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 again:
 	torture_comment(tctx, "Open the file handle\n");
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -3001,9 +2971,7 @@ static bool test_delayed_write_update7(struct torture_context *tctx, struct smbc
 	ZERO_STRUCT(finfo3);
 	ZERO_STRUCT(open_parms);
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	/* Create the file. */
 	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);

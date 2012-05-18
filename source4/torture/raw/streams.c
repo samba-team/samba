@@ -198,9 +198,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 	bool ret = true;
 	const char *basedir_data;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	basedir_data = talloc_asprintf(tctx, "%s::$DATA", BASEDIR);
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
@@ -279,9 +277,7 @@ static bool test_stream_io(struct torture_context *tctx,
 	const char *three[] = { "::$DATA", ":Stream One:$DATA",
 				":Second Stream:$DATA" };
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(tctx, "%s:%s:$DaTa", fname, "Second Stream");
@@ -416,9 +412,7 @@ static bool test_stream_sharemodes(struct torture_context *tctx,
 	int fnum1 = -1;
 	int fnum2 = -1;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(tctx, "%s:%s:$DaTa", fname, "Second Stream");
@@ -511,9 +505,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 	ssize_t retsize;
 	union smb_fileinfo finfo;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 
@@ -687,9 +679,7 @@ static bool test_stream_names(struct torture_context *tctx,
 		":?Stream*:$DATA"
 	};
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "\x05Stream\n One");
 	sname1b = talloc_asprintf(tctx, "%s:", sname1);
@@ -996,9 +986,7 @@ static bool test_stream_names2(struct torture_context *tctx,
 	int fnum1 = -1;
 	uint8_t i;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	printf("(%s) testing stream names\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -1091,9 +1079,7 @@ static bool test_stream_rename(struct torture_context *tctx,
 	bool check_fnum;
 	const char *call_name;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(tctx, "%s:%s:$DaTa", fname, "Second Stream");
@@ -1172,9 +1158,7 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	union smb_setfileinfo sinfo;
 	union smb_rename rio;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname1, "Stream One");
 	sname2 = talloc_asprintf(tctx, "%s:%s", fname1, "Stream Two");
@@ -1371,9 +1355,7 @@ static bool test_stream_rename3(struct torture_context *tctx,
 	bool check_fnum;
 	const char *call_name;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "MStream Two:$DATA");
 	sname2 = talloc_asprintf(tctx, "%s:%s:$DaTa", fname, "Second Stream");
@@ -1489,9 +1471,7 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	bool ret = false;
 	int fnum = -1;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fname_stream = talloc_asprintf(tctx, "%s:%s", fname, stream);
 
@@ -1643,9 +1623,7 @@ static bool test_stream_large_streaminfo(struct torture_context *tctx,
 	int i;
 	union smb_fileinfo finfo;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	lstream_name = talloc_array(tctx, char, LONG_STREAM_SIZE);
 
@@ -1692,9 +1670,7 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 	time_t basetime = (time(NULL) - 86400) & ~1;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "(%s) testing attribute setting on stream\n", __location__);
 
@@ -1815,9 +1791,7 @@ static bool test_stream_summary_tab(struct torture_context *tctx,
 	union smb_rename rio;
 	ssize_t retsize;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	fname_stream = talloc_asprintf(tctx, "%s%s", fname, stream);
 	fname_tmp_stream = talloc_asprintf(tctx, "%s%s", fname,

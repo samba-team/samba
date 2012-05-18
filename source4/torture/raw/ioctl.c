@@ -179,9 +179,7 @@ bool torture_raw_ioctl(struct torture_context *torture,
 {
 	bool ret = true;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	ret &= test_ioctl(cli, torture);
 	ret &= test_fsctl(cli, torture);

@@ -646,9 +646,7 @@ static bool torture_locktest6(struct torture_context *tctx,
 	int fnum;
 	NTSTATUS status;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	for (i=0;i<1;i++) {
 		torture_comment(tctx, "Testing %s\n", fname[i]);

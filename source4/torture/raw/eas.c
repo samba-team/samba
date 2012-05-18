@@ -446,9 +446,7 @@ bool torture_raw_eas(struct torture_context *torture, struct smbcli_state *cli)
 {
 	bool ret = true;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	ret &= test_eas(cli, torture);
 	ret &= test_nttrans_create(cli, torture);
@@ -470,9 +468,7 @@ bool torture_max_eas(struct torture_context *torture)
 		return false;
 	}
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	ret &= test_max_eas(cli, torture);
 

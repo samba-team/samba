@@ -44,9 +44,7 @@ static bool test_mkdir(struct smbcli_state *cli, struct torture_context *tctx)
 	NTSTATUS status;
 	bool ret = true;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	/* 
 	   basic mkdir

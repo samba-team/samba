@@ -354,9 +354,7 @@ bool torture_raw_chkpath(struct torture_context *torture,
 	bool ret = true;
 	int fnum;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR "\\nt"))) {
 		printf("Failed to create " BASEDIR " - %s\n", smbcli_errstr(cli->tree));

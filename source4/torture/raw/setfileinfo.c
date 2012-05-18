@@ -52,9 +52,7 @@ torture_raw_sfileinfo_base(struct torture_context *torture, struct smbcli_state 
 	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 #define RECREATE_FILE(fname) do { \
 	if (fnum != -1) smbcli_close(cli->tree, fnum); \
@@ -491,9 +489,7 @@ torture_raw_sfileinfo_rename(struct torture_context *torture,
 	asprintf(&path_dname, BASEDIR "\\dname_test_%d", n);
 	asprintf(&path_dname_new, BASEDIR "\\dname_test_new_%d", n);
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	RECREATE_BOTH;
 
@@ -1003,9 +999,7 @@ torture_raw_sfileinfo_archive(struct torture_context *tctx,
 	union smb_fileinfo finfo;
 	uint16_t fnum=0;
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	/* cleanup */
 	smbcli_unlink(cli->tree, fname);

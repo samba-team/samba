@@ -73,9 +73,7 @@ static bool test_session(struct torture_context *tctx,
 
 	torture_comment(tctx, "TESTING SESSION HANDLING\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "create a second security context on the same transport\n");
 
@@ -285,9 +283,7 @@ static bool test_tree(struct torture_context *tctx, struct smbcli_state *cli)
 
 	torture_comment(tctx, "TESTING TREE HANDLING\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
@@ -394,9 +390,7 @@ static bool test_tree_ulogoff(struct torture_context *tctx, struct smbcli_state 
 
 	torture_comment(tctx, "TESTING TREE with ulogoff\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);
@@ -545,9 +539,7 @@ static bool test_pid_exit_only_sees_open(struct torture_context *tctx,
 
 	torture_comment(tctx, "TESTING PID HANDLING exit() only cares about open() PID\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	pid1 = cli->session->pid;
 	pid2 = pid1 + 1;
@@ -657,9 +649,7 @@ static bool test_pid_2sess(struct torture_context *tctx,
 
 	torture_comment(tctx, "TESTING PID HANDLING WITH 2 SESSIONS\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	lpcfg_smbcli_session_options(tctx->lp_ctx, &options);
 
@@ -766,9 +756,7 @@ static bool test_pid_2tcon(struct torture_context *tctx,
 
 	torture_comment(tctx, "TESTING PID HANDLING WITH 2 TCONS\n");
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	share = torture_setting_string(tctx, "share", NULL);
 	host  = torture_setting_string(tctx, "host", NULL);

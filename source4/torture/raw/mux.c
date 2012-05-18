@@ -347,9 +347,7 @@ bool torture_raw_mux(struct torture_context *torture, struct smbcli_state *cli)
 {
 	bool ret = true;
 		
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	ret &= test_mux_open(cli, torture);
 	ret &= test_mux_write(cli, torture);

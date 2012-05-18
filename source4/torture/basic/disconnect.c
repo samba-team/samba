@@ -151,9 +151,7 @@ bool torture_disconnect(struct torture_context *torture)
 		return false;
 	}
 
-	if (!torture_setup_dir(cli, BASEDIR)) {
-		return false;
-	}
+	torture_assert(torture, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	for (i=0;i<torture_numops;i++) {
 		ret &= test_disconnect_lock(cli, mem_ctx);
