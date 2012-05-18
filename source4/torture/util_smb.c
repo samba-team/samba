@@ -815,18 +815,17 @@ static bool wrap_simple_2smb_test(struct torture_context *torture_ctx,
 {
 	bool (*fn) (struct torture_context *, struct smbcli_state *,
 				struct smbcli_state *);
-	bool ret;
+	bool ret = true;
 
-	struct smbcli_state *cli1, *cli2;
+	struct smbcli_state *cli1 = NULL, *cli2 = NULL;
 
-	if (!torture_open_connection(&cli1, torture_ctx, 0) || 
-		!torture_open_connection(&cli2, torture_ctx, 1))
-		return false;
+	torture_assert_goto(torture_ctx, torture_open_connection(&cli1, torture_ctx, 0), ret, fail, "Failed to open connection");
+	torture_assert_goto(torture_ctx, torture_open_connection(&cli2, torture_ctx, 1), ret, fail, "Failed to open connection");
 
 	fn = test->fn;
 
 	ret = fn(torture_ctx, cli1, cli2);
-
+fail:
 	talloc_free(cli1);
 	talloc_free(cli2);
 
@@ -866,17 +865,16 @@ static bool wrap_simple_1smb_test(struct torture_context *torture_ctx,
 									struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, struct smbcli_state *);
-	bool ret;
+	bool ret = true;
 
-	struct smbcli_state *cli1;
+	struct smbcli_state *cli1 = NULL;
 
-	if (!torture_open_connection(&cli1, torture_ctx, 0))
-		return false;
+	torture_assert_goto(torture_ctx, torture_open_connection(&cli1, torture_ctx, 0), ret, fail, "Failed to open connection");
 
 	fn = test->fn;
 
 	ret = fn(torture_ctx, cli1);
-
+fail:
 	talloc_free(cli1);
 
 	return ret;
