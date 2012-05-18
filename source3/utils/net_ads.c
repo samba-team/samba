@@ -2207,7 +2207,7 @@ static int net_ads_search(struct net_context *c, int argc, const char **argv)
 	ldap_exp = argv[0];
 	attrs = (argv + 1);
 
-	rc = ads_do_search_all(ads, ads->config.bind_path,
+	rc = ads_do_search_retry(ads, ads->config.bind_path,
 			       LDAP_SCOPE_SUBTREE,
 			       ldap_exp, attrs, &res);
 	if (!ADS_ERR_OK(rc)) {
