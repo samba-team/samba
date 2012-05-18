@@ -475,6 +475,7 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
   See <a href="http://www.ietf.org/rfc/rfc2252.txt">RFC 2252</a>, Section 4.3.2 
 */
 #define LDB_SYNTAX_UTC_TIME             "1.3.6.1.4.1.1466.115.121.1.53"
+#define LDB_SYNTAX_GENERALIZED_TIME     "1.3.6.1.4.1.1466.115.121.1.24"
 
 #define LDB_SYNTAX_OBJECTCLASS          "LDB_SYNTAX_OBJECTCLASS"
 

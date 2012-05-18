@@ -1092,16 +1092,24 @@ int ldb_val_to_time(const struct ldb_val *v, time_t *t)
 {
 	struct tm tm;
 
-	if (v == NULL || !v->data || v->length < 17) {
+	if (v == NULL || !v->data || (v->length != 17 && v->length != 13)) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
 	memset(&tm, 0, sizeof(tm));
 
-	if (sscanf((char *)v->data, "%04u%02u%02u%02u%02u%02u.0Z",
-		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
-		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
-		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	if (v->length == 13) {
+		if (sscanf((char *)v->data, "%02u%02u%02u%02u%02u%02uZ",
+			&tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+			&tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	} else {
+		if (sscanf((char *)v->data, "%04u%02u%02u%02u%02u%02u.0Z",
+			&tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+			&tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
 	}
 	tm.tm_year -= 1900;
 	tm.tm_mon -= 1;
