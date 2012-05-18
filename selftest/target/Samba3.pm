@@ -901,7 +901,6 @@ sub provision($$$$$$)
 
 #	min receivefile size = 4000
 
-	server max protocol = SMB3
 	read only = no
 	server signing = auto
 
