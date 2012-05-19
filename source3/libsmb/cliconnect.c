@@ -1865,7 +1865,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	char *account = NULL;
 	NTSTATUS status;
 
-	server_blob = cli_state_server_gss_blob(cli);
+	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
 	if (server_blob) {
 		blob = data_blob(server_blob->data, server_blob->length);
 	}

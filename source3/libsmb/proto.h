@@ -181,7 +181,6 @@ uint16_t cli_state_get_uid(struct cli_state *cli);
 uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs);
-const DATA_BLOB *cli_state_server_gss_blob(struct cli_state *cli);
 uint16_t cli_state_security_mode(struct cli_state *cli);
 int cli_state_server_time_zone(struct cli_state *cli);
 time_t cli_state_server_time(struct cli_state *cli);
