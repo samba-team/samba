@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /*****************************************************************************
  Convert a character pointer in a cli_call_api() response to a form we can use.
@@ -101,7 +102,7 @@ int cli_print_queue(struct cli_state *cli,
 					fix_char_ptr(SVAL(p,4), converter,
 						     rdata, rdrcnt));
 				job.t = make_unix_date3(
-					p + 12, cli_state_server_time_zone(cli));
+					p + 12, smb1cli_conn_server_time_zone(cli->conn));
 				job.size = IVAL(p,16);
 				fstrcpy(job.name,fix_char_ptr(SVAL(p,24),
 							      converter,

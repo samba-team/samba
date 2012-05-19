@@ -640,13 +640,13 @@ NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
 	}
 
 	if (change_time) {
-		*change_time = date_fn(state->data+0, cli_state_server_time_zone(state->cli));
+		*change_time = date_fn(state->data+0, smb1cli_conn_server_time_zone(state->cli->conn));
 	}
 	if (access_time) {
-		*access_time = date_fn(state->data+4, cli_state_server_time_zone(state->cli));
+		*access_time = date_fn(state->data+4, smb1cli_conn_server_time_zone(state->cli->conn));
 	}
 	if (write_time) {
-		*write_time = date_fn(state->data+8, cli_state_server_time_zone(state->cli));
+		*write_time = date_fn(state->data+8, smb1cli_conn_server_time_zone(state->cli->conn));
 	}
 	if (size) {
 		*size = IVAL(state->data, 12);

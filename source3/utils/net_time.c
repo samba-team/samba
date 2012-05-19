@@ -20,6 +20,7 @@
 #include "utils/net.h"
 #include "libsmb/nmblib.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /*
   return the time on a server. This does not require any authentication
@@ -48,7 +49,7 @@ static time_t cli_servertime(const char *host,
 	}
 
 	ret = cli_state_server_time(cli);
-	if (zone) *zone = cli_state_server_time_zone(cli);
+	if (zone) *zone = smb1cli_conn_server_time_zone(cli->conn);
 
 done:
 	if (cli) {

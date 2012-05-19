@@ -3258,7 +3258,7 @@ struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->zone_offset = cli_state_server_time_zone(cli);
+	state->zone_offset = smb1cli_conn_server_time_zone(cli->conn);
 	SSVAL(state->vwv+0,0,fnum);
 
 	subreq = cli_smb_send(state, ev, cli, SMBgetattrE, additional_flags,
@@ -3407,7 +3407,7 @@ struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	state->zone_offset = cli_state_server_time_zone(cli);
+	state->zone_offset = smb1cli_conn_server_time_zone(cli->conn);
 
 	bytes = talloc_array(state, uint8_t, 1);
 	if (tevent_req_nomem(bytes, req)) {
@@ -3554,11 +3554,11 @@ struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
 
 	SSVAL(state->vwv+0, 0, fnum);
 	push_dos_date2((uint8_t *)&state->vwv[1], 0, change_time,
-		       cli_state_server_time_zone(cli));
+		       smb1cli_conn_server_time_zone(cli->conn));
 	push_dos_date2((uint8_t *)&state->vwv[3], 0, access_time,
-		       cli_state_server_time_zone(cli));
+		       smb1cli_conn_server_time_zone(cli->conn));
 	push_dos_date2((uint8_t *)&state->vwv[5], 0, write_time,
-		       cli_state_server_time_zone(cli));
+		       smb1cli_conn_server_time_zone(cli->conn));
 
 	subreq = cli_smb_send(state, ev, cli, SMBsetattrE, additional_flags,
 			      7, state->vwv, 0, NULL);
@@ -3665,7 +3665,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	}
 
 	SSVAL(state->vwv+0, 0, attr);
-	push_dos_date3((uint8_t *)&state->vwv[1], 0, mtime, cli_state_server_time_zone(cli));
+	push_dos_date3((uint8_t *)&state->vwv[1], 0, mtime, smb1cli_conn_server_time_zone(cli->conn));
 
 	bytes = talloc_array(state, uint8_t, 1);
 	if (tevent_req_nomem(bytes, req)) {

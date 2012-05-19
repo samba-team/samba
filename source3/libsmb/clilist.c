@@ -77,11 +77,11 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			finfo->ctime_ts = convert_time_t_to_timespec(
-				make_unix_date2(p+4, cli_state_server_time_zone(cli)));
+				make_unix_date2(p+4, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->atime_ts = convert_time_t_to_timespec(
-				make_unix_date2(p+8, cli_state_server_time_zone(cli)));
+				make_unix_date2(p+8, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->mtime_ts = convert_time_t_to_timespec(
-				make_unix_date2(p+12, cli_state_server_time_zone(cli)));
+				make_unix_date2(p+12, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
@@ -126,11 +126,11 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			finfo->ctime_ts = convert_time_t_to_timespec(
-				make_unix_date2(p+4, cli_state_server_time_zone(cli)));
+				make_unix_date2(p+4, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->atime_ts = convert_time_t_to_timespec(
-				make_unix_date2(p+8, cli_state_server_time_zone(cli)));
+				make_unix_date2(p+8, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->mtime_ts = convert_time_t_to_timespec(
-				make_unix_date2(p+12, cli_state_server_time_zone(cli)));
+				make_unix_date2(p+12, smb1cli_conn_server_time_zone(cli->conn)));
 			finfo->size = IVAL(p,16);
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 30);
@@ -248,7 +248,7 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	finfo->mode = CVAL(p,21);
 
 	/* this date is converted to GMT by make_unix_date */
-	finfo->ctime_ts.tv_sec = make_unix_date(p+22, cli_state_server_time_zone(cli));
+	finfo->ctime_ts.tv_sec = make_unix_date(p+22, smb1cli_conn_server_time_zone(cli->conn));
 	finfo->ctime_ts.tv_nsec = 0;
 	finfo->mtime_ts.tv_sec = finfo->atime_ts.tv_sec = finfo->ctime_ts.tv_sec;
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
