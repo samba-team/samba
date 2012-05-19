@@ -355,7 +355,8 @@ static struct share_mode_lock *get_share_mode_lock_internal(
 	}
 
 	if (d == NULL) {
-		DEBUG(1, ("Could not get share mode lock\n"));
+		DEBUG(5, ("get_share_mode_lock_internal: "
+			"Could not get share mode lock\n"));
 		TALLOC_FREE(rec);
 		return NULL;
 	}
