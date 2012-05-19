@@ -370,11 +370,6 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
 	return cli->smb1.vc_num;
 }
 
-uint32_t cli_state_server_session_key(struct cli_state *cli)
-{
-	return smb1cli_conn_server_session_key(cli->conn);
-}
-
 /****************************************************************************
  Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/

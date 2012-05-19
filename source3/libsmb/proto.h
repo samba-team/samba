@@ -173,7 +173,6 @@ void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
 const char *cli_state_remote_realm(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
-uint32_t cli_state_server_session_key(struct cli_state *cli);
 uint16 cli_setpid(struct cli_state *cli, uint16 pid);
 uint16_t cli_getpid(struct cli_state *cli);
 bool cli_state_has_tcon(struct cli_state *cli);
