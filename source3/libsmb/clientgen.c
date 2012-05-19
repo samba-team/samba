@@ -287,12 +287,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
         return NULL;
 }
 
-bool cli_state_encryption_on(struct cli_state *cli)
-{
-	return smb1cli_conn_encryption_on(cli->conn);
-}
-
-
 /****************************************************************************
  Close all pipes open on this session.
 ****************************************************************************/

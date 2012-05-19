@@ -47,7 +47,7 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 			return min_space;
 		}
 
-		if (cli_state_encryption_on(cli)) {
+		if (smb1cli_conn_encryption_on(cli->conn)) {
 			return min_space;
 		}
 
@@ -100,7 +100,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 		return min_space;
 	}
 
-	if (cli_state_encryption_on(cli)) {
+	if (smb1cli_conn_encryption_on(cli->conn)) {
 		return min_space;
 	}
 

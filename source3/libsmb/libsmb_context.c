@@ -27,7 +27,7 @@
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
 #include "secrets.h"
-
+#include "../libcli/smb/smbXcli_base.h"
 
 /*
  * Is the logging working / configfile read ? 
@@ -468,7 +468,7 @@ smbc_option_get(SMBCCTX *context,
 
                 for (s = context->internal->servers; s; s = s->next) {
                         num_servers++;
-                        if (!cli_state_encryption_on(s->cli)) {
+                        if (!smb1cli_conn_encryption_on(s->cli->conn)) {
                                 return (void *)false;
                         }
                 }
