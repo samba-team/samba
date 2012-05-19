@@ -32,6 +32,7 @@
 #include "passdb.h"
 #include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_NONE = 0,
@@ -707,7 +708,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				default_transport,
 				oid,
 				pipe_default_auth_level,
-				cli_state_remote_name(cli),
+				smbXcli_conn_remote_name(cli->conn),
 				get_cmdline_auth_info_domain(auth_info),
 				get_cmdline_auth_info_username(auth_info),
 				get_cmdline_auth_info_password(auth_info),
@@ -721,7 +722,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				default_transport,
 				pipe_default_auth_type,
 				pipe_default_auth_level,
-				cli_state_remote_name(cli),
+				smbXcli_conn_remote_name(cli->conn),
 				get_cmdline_auth_info_domain(auth_info),
 				get_cmdline_auth_info_username(auth_info),
 				get_cmdline_auth_info_password(auth_info),

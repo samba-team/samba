@@ -35,6 +35,7 @@
 #include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/credentials.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -2608,7 +2609,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
-	result->desthost = talloc_strdup(result, cli_state_remote_name(cli));
+	result->desthost = talloc_strdup(result, smbXcli_conn_remote_name(cli->conn));
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
 
@@ -2661,7 +2662,7 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 {
 	switch (transport) {
 	case NCACN_IP_TCP:
-		return rpc_pipe_open_tcp(NULL, cli_state_remote_name(cli),
+		return rpc_pipe_open_tcp(NULL, smbXcli_conn_remote_name(cli->conn),
 					 interface, presult);
 	case NCACN_NP:
 		return rpc_pipe_open_np(cli, interface, presult);

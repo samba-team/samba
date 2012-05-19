@@ -28,6 +28,7 @@
 #include "passdb.h"
 #include "libsmb/libsmb.h"
 #include "auth/gensec/gensec.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -57,7 +58,7 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 	}
 
 	status = rpccli_netlogon_setup_creds(netlogon_pipe,
-					cli_state_remote_name(cli), /* server name */
+					smbXcli_conn_remote_name(cli->conn), /* server name */
 					domain,	       /* domain */
 					lp_netbios_name(), /* client name */
 					machine_account, /* machine account name */
@@ -69,14 +70,14 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 		DEBUG(3, ("get_schannel_session_key_common: "
 			  "rpccli_netlogon_setup_creds failed with result %s "
 			  "to server %s, domain %s, machine account %s.\n",
-			  nt_errstr(status), cli_state_remote_name(cli), domain,
+			  nt_errstr(status), smbXcli_conn_remote_name(cli->conn), domain,
 			  machine_account ));
 		return status;
 	}
 
 	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
-			cli_state_remote_name(cli)));
+			smbXcli_conn_remote_name(cli->conn)));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
@@ -103,7 +104,7 @@ static NTSTATUS get_schannel_session_key_auth_ntlmssp(struct cli_state *cli,
 		cli, &ndr_table_netlogon, NCACN_NP,
 		GENSEC_OID_NTLMSSP,
 		DCERPC_AUTH_LEVEL_PRIVACY,
-		cli_state_remote_name(cli),
+		smbXcli_conn_remote_name(cli->conn),
 		domain, username, password, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -145,7 +146,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_rpc_pipe_open_ntlmssp_auth_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
-			cli_state_remote_name(cli), domain ));
+			smbXcli_conn_remote_name(cli->conn), domain ));
 		return status;
 	}
 
@@ -184,7 +185,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("cli_rpc_pipe_open_schannel: failed to get schannel session "
 			"key from server %s for domain %s.\n",
-			cli_state_remote_name(cli), domain ));
+			smbXcli_conn_remote_name(cli->conn), domain ));
 		return status;
 	}
 

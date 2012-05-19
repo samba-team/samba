@@ -28,6 +28,7 @@
 #include "utils/net.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* The following messages were for error checking that is not properly
    reported at the moment.  Which should be reinstated? */
@@ -702,7 +703,7 @@ static int rap_printq_info(struct net_context *c, int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
                 return -1;
 
-	d_printf(PRINTQ_ENUM_DISPLAY, cli_state_remote_name(cli)); /* list header */
+	d_printf(PRINTQ_ENUM_DISPLAY, smbXcli_conn_remote_name(cli->conn)); /* list header */
 	ret = cli_NetPrintQGetInfo(cli, argv[0], enum_queue, enum_jobs);
 	cli_shutdown(cli);
 	return ret;
@@ -763,7 +764,7 @@ int net_rap_printq(struct net_context *c, int argc, const char **argv)
 		if (!NT_STATUS_IS_OK(net_make_ipc_connection(c, 0, &cli)))
 			return -1;
 
-		d_printf(PRINTQ_ENUM_DISPLAY, cli_state_remote_name(cli)); /* list header */
+		d_printf(PRINTQ_ENUM_DISPLAY, smbXcli_conn_remote_name(cli->conn)); /* list header */
 		ret = cli_NetPrintQEnum(cli, enum_queue, enum_jobs);
 		cli_shutdown(cli);
 		return ret;

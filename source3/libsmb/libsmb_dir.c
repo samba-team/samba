@@ -30,6 +30,7 @@
 #include "rpc_client/cli_pipe.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "libsmb/nmblib.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /*
  * Routine to open a directory
@@ -554,7 +555,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			}
 
 			workgroup = talloc_strdup(frame, wg_ptr);
-			server = talloc_strdup(frame, cli_state_remote_name(cli));
+			server = talloc_strdup(frame, smbXcli_conn_remote_name(cli->conn));
 
                         cli_shutdown(cli);
 
@@ -2003,7 +2004,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath2);*/
 
-	if (strcmp(cli_state_remote_name(targetcli1), cli_state_remote_name(targetcli2)) ||
+	if (strcmp(smbXcli_conn_remote_name(targetcli1->conn), smbXcli_conn_remote_name(targetcli2->conn)) ||
             strcmp(targetcli1->share, targetcli2->share))
 	{
 		/* can't rename across file systems */

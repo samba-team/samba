@@ -171,7 +171,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 bool cli_state_encryption_on(struct cli_state *cli);
 void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-const char *cli_state_remote_name(struct cli_state *cli);
 const char *cli_state_remote_realm(struct cli_state *cli);
 uint16_t cli_state_get_vc_num(struct cli_state *cli);
 uint32_t cli_state_server_session_key(struct cli_state *cli);

@@ -690,7 +690,7 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	}
 
 	status = gensec_set_target_hostname(auth_generic_state->gensec_security, 
-					    cli_state_remote_name(cli));
+					    smbXcli_conn_remote_name(cli->conn));
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

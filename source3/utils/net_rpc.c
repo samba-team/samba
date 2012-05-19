@@ -207,7 +207,7 @@ int run_rpc_command(struct net_context *c,
 					NCACN_IP_TCP : NCACN_NP,
 					DCERPC_AUTH_TYPE_NTLMSSP,
 					DCERPC_AUTH_LEVEL_PRIVACY,
-					cli_state_remote_name(cli),
+					smbXcli_conn_remote_name(cli->conn),
 					lp_workgroup(), c->opt_user_name,
 					c->opt_password, &pipe_hnd);
 			} else {
@@ -353,7 +353,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("rpc_oldjoin_internals: netlogon pipe open to machine %s failed. "
 			"error was %s\n",
-			cli_state_remote_name(cli),
+			smbXcli_conn_remote_name(cli->conn),
 			nt_errstr(result) ));
 		return result;
 	}
@@ -3983,7 +3983,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 	        /* open share source */
 		nt_status = connect_to_service(c, &cp_clistate.cli_share_src,
 					       smbXcli_conn_remote_sockaddr(cli->conn),
-					       cli_state_remote_name(cli),
+					       smbXcli_conn_remote_name(cli->conn),
 					       info502.name, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))
 			goto done;

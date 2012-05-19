@@ -369,9 +369,9 @@ NTSTATUS net_copy_file(struct net_context *c,
 
 		d_printf(_("copying [\\\\%s\\%s%s] => [\\\\%s\\%s%s] "
 			   "%s ACLs and %s DOS Attributes %s\n"),
-			cli_state_remote_name(cli_share_src),
+			smbXcli_conn_remote_name(cli_share_src->conn),
 			cli_share_src->share, src_name,
-			cli_state_remote_name(cli_share_dst),
+			smbXcli_conn_remote_name(cli_share_dst->conn),
 			cli_share_dst->share, dst_name,
 			copy_acls ?  _("with") : _("without"),
 			copy_attrs ? _("with") : _("without"),
@@ -389,7 +389,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr,
 				  _("Error reading file [\\\\%s\\%s%s]: %s\n"),
-				  cli_state_remote_name(cli_share_src),
+				  smbXcli_conn_remote_name(cli_share_src->conn),
 				  cli_share_src->share,
 				  src_name, nt_errstr(nt_status));
 			goto out;
@@ -404,7 +404,7 @@ NTSTATUS net_copy_file(struct net_context *c,
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr,
 				  _("Error writing file: [\\\\%s\\%s%s]: %s\n"),
-				  cli_state_remote_name(cli_share_dst),
+				  smbXcli_conn_remote_name(cli_share_dst->conn),
 				  cli_share_dst->share,
 				  dst_name, nt_errstr(nt_status));
 			goto out;
@@ -1916,7 +1916,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	/* open print$-share on the src server */
 	nt_status = connect_to_service(c, &cli_share_src,
 				       smbXcli_conn_remote_sockaddr(cli->conn),
-				       cli_state_remote_name(cli),
+				       smbXcli_conn_remote_name(cli->conn),
 				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		goto done;
@@ -1927,7 +1927,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	/* open print$-share on the dst server */
 	nt_status = connect_to_service(c, &cli_share_dst,
 				       smbXcli_conn_remote_sockaddr(cli_dst->conn),
-				       cli_state_remote_name(cli_dst),
+				       smbXcli_conn_remote_name(cli_dst->conn),
 				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;

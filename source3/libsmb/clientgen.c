@@ -360,11 +360,6 @@ void cli_shutdown(struct cli_state *cli)
 	_cli_shutdown(cli);
 }
 
-const char *cli_state_remote_name(struct cli_state *cli)
-{
-	return smbXcli_conn_remote_name(cli->conn);
-}
-
 const char *cli_state_remote_realm(struct cli_state *cli)
 {
 	return cli->remote_realm;

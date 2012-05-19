@@ -37,6 +37,7 @@
 #include "trans2.h"
 #include "libsmb/nmblib.h"
 #include "include/ntioctl.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -4495,7 +4496,7 @@ static int cmd_show_connect( void )
 		return 1;
 	}
 
-	d_printf("//%s/%s\n", cli_state_remote_name(targetcli), targetcli->share);
+	d_printf("//%s/%s\n", smbXcli_conn_remote_name(targetcli->conn), targetcli->share);
 	return 0;
 }
 

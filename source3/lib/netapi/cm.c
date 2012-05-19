@@ -24,6 +24,7 @@
 #include "lib/netapi/netapi_private.h"
 #include "libsmb/libsmb.h"
 #include "rpc_client/cli_pipe.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /********************************************************************
 ********************************************************************/
@@ -48,7 +49,7 @@ static struct client_ipc_connection *ipc_cm_find(
 	struct client_ipc_connection *p;
 
 	for (p = priv_ctx->ipc_connections; p; p = p->next) {
-		const char *remote_name = cli_state_remote_name(p->cli);
+		const char *remote_name = smbXcli_conn_remote_name(p->cli->conn);
 
 		if (strequal(remote_name, server_name)) {
 			return p;
@@ -172,7 +173,7 @@ static NTSTATUS pipe_cm_find(struct client_ipc_connection *ipc,
 			return NT_STATUS_PIPE_EMPTY;
 		}
 
-		ipc_remote_name = cli_state_remote_name(ipc->cli);
+		ipc_remote_name = smbXcli_conn_remote_name(ipc->cli->conn);
 
 		if (strequal(ipc_remote_name, p->pipe->desthost)
 		    && ndr_syntax_id_equal(&p->pipe->abstract_syntax,

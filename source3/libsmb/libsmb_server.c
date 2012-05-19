@@ -32,6 +32,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "libcli/security/security.h"
 #include "libsmb/nmblib.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* 
  * Check a server for being alive and well.
@@ -293,7 +294,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                 if (!cli_state_has_tcon(srv->cli)) {
                         /* Ensure we have accurate auth info */
 			SMBC_call_auth_fn(ctx, context,
-					  cli_state_remote_name(srv->cli),
+					  smbXcli_conn_remote_name(srv->cli->conn),
 					  srv->cli->share,
                                           pp_workgroup,
                                           pp_username,
@@ -371,7 +372,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                          */
                         if (srv) {
 				const char *remote_name =
-					cli_state_remote_name(srv->cli);
+					smbXcli_conn_remote_name(srv->cli->conn);
 
 				srv->dev = (dev_t)(str_checksum(remote_name) ^
                                                    str_checksum(srv->cli->share));
@@ -697,7 +698,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 	if (!srv) {
 		return NULL;
 	}
-	server = cli_state_remote_name(srv->cli);
+	server = smbXcli_conn_remote_name(srv->cli->conn);
 	share = srv->cli->share;
 
         /*

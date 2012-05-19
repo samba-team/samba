@@ -80,6 +80,7 @@
 #include "../librpc/gen_ndr/rap.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "libsmb/clirap.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #define WORDSIZE 2
 #define DWORDSIZE 4
@@ -1535,7 +1536,7 @@ bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_n
 		} else {
 			DEBUG(4, ("cli_get_pdc_name: machine %s failed the "
 				  "NetServerEnum call. Error was : %s.\n",
-				  cli_state_remote_name(cli),
+				  smbXcli_conn_remote_name(cli->conn),
 				  win_errstr(W_ERROR(cli->rap_error))));
 		}
 	}
@@ -1756,7 +1757,7 @@ bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 * PURPOSE:  Remotes a NetServerEnum2 API call to the current server
 *           requesting server_info_0 level information of machines
 *           matching the given server type. If the returned server
-*           list contains the machine name contained in cli_state_remote_name()
+*           list contains the machine name contained in smbXcli_conn_remote_name(->conn)
 *           then we conclude the server type checks out. This routine
 *           is useful to retrieve list of server's of a certain
 *           type when all you have is a null session connection and
@@ -1791,7 +1792,7 @@ bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32 sty
 		+RAP_MACHNAME_LEN];             /* workgroup     */
 	bool found_server = false;
 	int res = -1;
-	const char *remote_name = cli_state_remote_name(cli);
+	const char *remote_name = smbXcli_conn_remote_name(cli->conn);
 
 	/* send a SMBtrans command with api NetServerEnum */
 	p = make_header(param, RAP_NetServerEnum2,

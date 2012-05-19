@@ -1920,7 +1920,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 
 	if (user && *user && cli->got_kerberos_mechanism && cli->use_kerberos) {
 		ADS_STATUS rc;
-		const char *remote_name = cli_state_remote_name(cli);
+		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
 
 		if (pass && *pass) {
 			int ret;
@@ -2335,7 +2335,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	 * Add the sharename
 	 */
 	tmp = talloc_asprintf_strupper_m(talloc_tos(), "\\\\%s\\%s",
-					 cli_state_remote_name(cli), share);
+					 smbXcli_conn_remote_name(cli->conn), share);
 	if (tmp == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
