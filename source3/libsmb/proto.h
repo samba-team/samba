@@ -171,7 +171,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 bool cli_state_encryption_on(struct cli_state *cli);
 void cli_nt_pipes_close(struct cli_state *cli);
 void cli_shutdown(struct cli_state *cli);
-void cli_sockopt(struct cli_state *cli, const char *options);
 const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli);
 const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli);
 const char *cli_state_remote_name(struct cli_state *cli);

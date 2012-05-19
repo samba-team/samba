@@ -360,15 +360,6 @@ void cli_shutdown(struct cli_state *cli)
 	_cli_shutdown(cli);
 }
 
-/****************************************************************************
- Set socket options on a open connection.
-****************************************************************************/
-
-void cli_sockopt(struct cli_state *cli, const char *options)
-{
-	smbXcli_conn_set_sockopt(cli->conn, options);
-}
-
 const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli)
 {
 	return smbXcli_conn_local_sockaddr(cli->conn);

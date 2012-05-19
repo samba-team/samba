@@ -40,6 +40,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "util_tdb.h"
 #include "../libcli/smb/read_smb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 extern char *optarg;
 extern int optind;
@@ -712,7 +713,7 @@ static bool run_torture(int dummy)
 
 	cli = current_cli;
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	ret = rw_torture(cli);
 
@@ -936,8 +937,8 @@ static bool run_readwritetest(int dummy)
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("starting readwritetest\n");
 
@@ -967,7 +968,7 @@ static bool run_readwritemulti(int dummy)
 
 	cli = current_cli;
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	printf("run_readwritemulti: fname %s\n", randomfname);
 	test = rw_torture3(cli, randomfname);
@@ -992,7 +993,7 @@ static bool run_readwritelarge_internal(void)
 	if (!torture_open_connection(&cli1, 0)) {
 		return False;
 	}
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 	memset(buf,'\0',sizeof(buf));
 
 	printf("starting readwritelarge_internal\n");
@@ -1122,7 +1123,7 @@ static bool run_netbench(int client)
 
 	nbio_id = client;
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	nb_setup(cli);
 
@@ -1245,8 +1246,8 @@ static bool run_locktest1(int dummy)
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("starting locktest1\n");
 
@@ -1378,7 +1379,7 @@ static bool run_tcon_test(int dummy)
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	printf("starting tcontest\n");
 
@@ -1490,7 +1491,7 @@ static bool run_tcon2_test(int dummy)
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
 	}
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	printf("starting tcon2 test\n");
 
@@ -1647,7 +1648,7 @@ static bool run_locktest2(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	printf("starting locktest2\n");
 
@@ -1809,8 +1810,8 @@ static bool run_locktest3(int dummy)
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("starting locktest3\n");
 
@@ -1971,8 +1972,8 @@ static bool run_locktest4(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("starting locktest4\n");
 
@@ -2160,8 +2161,8 @@ static bool run_locktest5(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("starting locktest5\n");
 
@@ -2289,7 +2290,7 @@ static bool run_locktest6(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	printf("starting locktest6\n");
 
@@ -2331,7 +2332,7 @@ static bool run_locktest7(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	printf("starting locktest7\n");
 
@@ -2508,7 +2509,7 @@ static bool run_locktest8(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	printf("starting locktest8\n");
 
@@ -2703,7 +2704,7 @@ static bool run_locktest9(int dummy)
 		return false;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE,
 			  &fnum);
@@ -2782,8 +2783,8 @@ static bool run_fdpasstest(int dummy)
 	if (!torture_open_connection(&cli1, 0) || !torture_open_connection(&cli2, 1)) {
 		return False;
 	}
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("starting fdpasstest\n");
 
@@ -2839,7 +2840,7 @@ static bool run_fdsesstest(int dummy)
 
 	if (!torture_open_connection(&cli, 0))
 		return False;
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	if (!torture_cli_session_setup2(cli, &new_vuid))
 		return False;
@@ -2924,7 +2925,7 @@ static bool run_unlinktest(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	printf("starting unlink test\n");
 
@@ -2981,7 +2982,7 @@ static bool run_maxfidtest(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	for (i=0; i<0x11000; i++) {
 		slprintf(fname,sizeof(fname)-1,"\\maxfid.%d.%d", i,(int)getpid());
@@ -3504,7 +3505,7 @@ static bool run_oplock1(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	cli1->use_oplocks = True;
 
@@ -3575,8 +3576,8 @@ static bool run_oplock2(int dummy)
 
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
 	                  &fnum1);
@@ -3717,8 +3718,8 @@ static bool run_oplock4(int dummy)
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_unlink(cli1, fname_ln, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_sockopt(cli1, sockops);
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	/* Create the file. */
 	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
@@ -3915,7 +3916,7 @@ static bool run_deletetest(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	/* Test 1 - this should delete the file on close. */
 
@@ -4233,7 +4234,7 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	status = cli_ntcreate(cli1, fname, 0,
 	                     FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
@@ -4408,7 +4409,7 @@ static bool run_deletetest_ln(int dummy)
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 	cli_unlink(cli, fname_ln, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	/* Create the file. */
 	status = cli_openx(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
@@ -4518,7 +4519,7 @@ static bool run_properties(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	d_printf("Capabilities 0x%08x\n", cli_state_capabilities(cli));
 
@@ -4822,7 +4823,7 @@ static bool run_pipe_number(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 	while(1) {
 		status = cli_ntcreate(cli1, pipe_name, 0, FILE_READ_DATA,
 				      FILE_ATTRIBUTE_NORMAL,
@@ -4865,7 +4866,7 @@ static bool run_opentest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5021,7 +5022,7 @@ static bool run_opentest(int dummy)
 	cli_setatr(cli2, fname, 0, 0);
 	cli_unlink(cli2, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	cli_sockopt(cli2, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
 
 	printf("TEST #1 testing 2 non-io opens (no delete)\n");
 	status = cli_ntcreate(cli1, fname, 0, FILE_READ_ATTRIBUTES,
@@ -5351,7 +5352,7 @@ static bool run_simple_posix_open_test(int dummy)
 		return false;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	status = torture_setup_unix_extensions(cli1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5729,7 +5730,7 @@ static bool run_openattrtest(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	for (k = 0, i = 0; i < sizeof(open_attrs_table)/sizeof(uint32); i++) {
 		cli_setatr(cli1, fname, 0, 0);
@@ -5854,7 +5855,7 @@ static bool run_dirtest(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	srandom(0);
 	for (i=0;i<torture_numops;i++) {
@@ -6212,7 +6213,7 @@ static bool run_dirtest1(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	cli_list(cli, "\\LISTDIR\\*", 0, del_fn, cli);
 	cli_list(cli, "\\LISTDIR\\*", FILE_ATTRIBUTE_DIRECTORY, del_fn, cli);
@@ -6518,7 +6519,7 @@ static bool run_chain1(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	reqs[0] = cli_openx_create(talloc_tos(), evt, cli1, "\\test",
 				  O_CREAT|O_RDWR, 0, &smbreqs[0]);
@@ -6580,7 +6581,7 @@ static bool run_chain2(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	reqs[0] = cli_session_setup_guest_create(talloc_tos(), evt, cli1,
 						 &smbreqs[0]);
@@ -7024,7 +7025,7 @@ static bool run_mangle1(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	status = cli_ntcreate(cli, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
 			      FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
@@ -7100,7 +7101,7 @@ static bool run_windows_write(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli1, sockops);
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
 	start_time = timeval_current();
 
@@ -7148,7 +7149,7 @@ static bool run_cli_echo(int dummy)
 	if (!torture_open_connection(&cli, 0)) {
 		return false;
 	}
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	status = cli_echo(cli, 5, data_blob_const("hello", 5));
 
@@ -7172,7 +7173,7 @@ static bool run_uid_regression_test(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	/* Ok - now save then logoff our current user. */
 	old_vuid = cli_state_get_uid(cli);
@@ -7324,7 +7325,7 @@ static bool run_shortname_test(int dummy)
 		return False;
 	}
 
-	cli_sockopt(cli, sockops);
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
 	cli_list(cli, "\\shortname\\*", 0, shortname_del_fn, cli);
 	cli_list(cli, "\\shortname\\*", FILE_ATTRIBUTE_DIRECTORY, shortname_del_fn, cli);
