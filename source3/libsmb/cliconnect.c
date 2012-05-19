@@ -1185,7 +1185,7 @@ static struct tevent_req *cli_sesssetup_blob_send(TALLOC_CTX *mem_ctx,
 	state->blob = blob;
 	state->cli = cli;
 
-	if (cli_state_protocol(cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		usable_space = UINT16_MAX;
 	} else {
 		usable_space = cli_state_available_size(cli,
@@ -1217,7 +1217,7 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 
 	thistime = MIN(state->blob.length, state->max_blob_size);
 
-	if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 
 		state->smb2_blob.data = state->blob.data;
 		state->smb2_blob.length = thistime;
@@ -1298,7 +1298,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	uint8_t *inbuf;
 	ssize_t ret;
 
-	if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		status = smb2cli_session_setup_recv(subreq, state,
 						    &state->recv_iov,
 						    &state->ret_blob);
@@ -1316,7 +1316,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 
 	state->status = status;
 
-	if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		goto next;
 	}
 
@@ -1481,7 +1481,7 @@ static struct tevent_req *cli_session_setup_kerberos_send(
 		  state->negTokenTarg.length);
 #endif
 
-	if (cli_state_protocol(cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->cli->smb2.session = smbXcli_session_create(cli,
 								  cli->conn);
 		if (tevent_req_nomem(state->cli->smb2.session, req)) {
@@ -1517,7 +1517,7 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 
 	cli_set_session_key(state->cli, state->session_key_krb5);
 
-	if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		struct smbXcli_session *session = state->cli->smb2.session;
 		status = smb2cli_session_set_session_key(session,
 						state->session_key_krb5,
@@ -1659,7 +1659,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	state->blob_out = spnego_gen_negTokenInit(state, OIDs_ntlm, &blob_out, NULL);
 	data_blob_free(&blob_out);
 
-	if (cli_state_protocol(cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->cli->smb2.session = smbXcli_session_create(cli,
 								  cli->conn);
 		if (tevent_req_nomem(state->cli->smb2.session, req)) {
@@ -1708,7 +1708,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 		cli_set_session_key(
 			state->cli, state->ntlmssp_state->session_key);
 
-		if (cli_state_protocol(state->cli) >= PROTOCOL_SMB2_02) {
+		if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 			struct smbXcli_session *session = state->cli->smb2.session;
 
 			if (ntlmssp_is_anonymous(state->ntlmssp_state)) {
@@ -2041,7 +2041,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 		workgroup = user2;
 	}
 
-	if (cli_state_protocol(cli) < PROTOCOL_LANMAN1) {
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_LANMAN1) {
 		return NT_STATUS_OK;
 	}
 
@@ -2051,7 +2051,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	/* if its an older server then we have to use the older request format */
 
-	if (cli_state_protocol(cli) < PROTOCOL_NT1) {
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_NT1) {
 		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client lanman auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
@@ -2069,7 +2069,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 						 workgroup);
 	}
 
-	if (cli_state_protocol(cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		const char *remote_realm = cli_state_remote_realm(cli);
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
 							     workgroup,
@@ -2447,7 +2447,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		}
 	}
 
-	if ((cli_state_protocol(cli) >= PROTOCOL_NT1) && (num_bytes == 3)) {
+	if ((smbXcli_conn_protocol(cli->conn) >= PROTOCOL_NT1) && (num_bytes == 3)) {
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
@@ -2459,7 +2459,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 
 	cli->dfsroot = false;
 
-	if ((wct > 2) && (cli_state_protocol(cli) >= PROTOCOL_LANMAN2)) {
+	if ((wct > 2) && (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_LANMAN2)) {
 		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
 	}
 
@@ -2519,7 +2519,7 @@ NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (cli_state_protocol(cli) >= PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		return smb2cli_tcon(cli, share);
 	}
 

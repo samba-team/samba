@@ -22,6 +22,7 @@
 #include "trans2.h"
 #include "libsmb/libsmb.h"
 #include "libsmb/nmblib.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 static fstring password;
 static fstring username;
@@ -144,7 +145,7 @@ static bool reg_match_one(struct cli_state *cli, const char *pattern, const char
 
 	if (strcmp(file,"..") == 0) file = ".";
 
-	return ms_fnmatch(pattern, file, cli_state_protocol(cli), False) == 0;
+	return ms_fnmatch(pattern, file, smbXcli_conn_protocol(cli->conn), False) == 0;
 }
 
 static char *reg_test(struct cli_state *cli, const char *pattern, const char *long_name, const char *short_name)

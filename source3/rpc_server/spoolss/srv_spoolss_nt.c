@@ -55,6 +55,7 @@
 #include "printing/printer_list.h"
 #include "../lib/tsocket/tsocket.h"
 #include "rpc_client/cli_winreg_spoolss.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
@@ -2499,7 +2500,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 		return false;
 	}
 
-	if ( cli_state_protocol(the_cli) != PROTOCOL_NT1 ) {
+	if ( smbXcli_conn_protocol(the_cli->conn) != PROTOCOL_NT1 ) {
 		DEBUG(0,("spoolss_connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
 		cli_shutdown(the_cli);
 		return false;

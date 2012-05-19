@@ -428,7 +428,7 @@ static int do_cd(const char *new_dir)
 	/* Use a trans2_qpathinfo to test directories for modern servers.
 	   Except Win9x doesn't support the qpathinfo_basic() call..... */
 
-	if (cli_state_protocol(targetcli) > PROTOCOL_LANMAN2 && !targetcli->win95) {
+	if (smbXcli_conn_protocol(targetcli->conn) > PROTOCOL_LANMAN2 && !targetcli->win95) {
 
 		status = cli_qpathinfo_basic(targetcli, targetpath, &sbuf,
 					     &attributes);

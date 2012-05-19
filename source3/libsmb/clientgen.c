@@ -435,11 +435,6 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 	return ret;
 }
 
-enum protocol_types cli_state_protocol(struct cli_state *cli)
-{
-	return smbXcli_conn_protocol(cli->conn);
-}
-
 uint32_t cli_state_capabilities(struct cli_state *cli)
 {
 	return smb1cli_conn_capabilities(cli->conn);

@@ -146,7 +146,7 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (cli_state_protocol(cli) < PROTOCOL_SMB2_02) {
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		state->is_smb1 = true;
 	}
 
