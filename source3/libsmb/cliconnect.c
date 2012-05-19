@@ -138,7 +138,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 			return tevent_req_post(req, ev);
 		}
 
-		if (!SMBencrypt(pass, cli_state_server_challenge(cli),
+		if (!SMBencrypt(pass, smb1cli_conn_server_challenge(cli->conn),
 				(uint8_t *)lm_response.data)) {
 			DEBUG(1, ("Password is > 14 chars in length, and is "
 				  "therefore incompatible with Lanman "
@@ -834,7 +834,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 			DATA_BLOB names_blob;
 
 			server_chal =
-				data_blob_const(cli_state_server_challenge(cli),
+				data_blob_const(smb1cli_conn_server_challenge(cli->conn),
 						8);
 
 			/*
@@ -873,7 +873,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 				return tevent_req_post(req, ev);
 			}
 
-			SMBNTencrypt(pass, cli_state_server_challenge(cli),
+			SMBNTencrypt(pass, smb1cli_conn_server_challenge(cli->conn),
 				     nt_response.data);
 #endif
 			/* non encrypted password supplied. Ignore ntpass. */
@@ -885,7 +885,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 				}
 
 				if (!SMBencrypt(pass,
-						cli_state_server_challenge(cli),
+						smb1cli_conn_server_challenge(cli->conn),
 						lm_response.data)) {
 					/*
 					 * Oops, the LM response is
@@ -2282,7 +2282,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		 * Non-encrypted passwords - convert to DOS codepage before
 		 * encryption.
 		 */
-		SMBencrypt(pass, cli_state_server_challenge(cli), p24);
+		SMBencrypt(pass, smb1cli_conn_server_challenge(cli->conn), p24);
 		passlen = 24;
 		pass = (const char *)p24;
 	} else {
