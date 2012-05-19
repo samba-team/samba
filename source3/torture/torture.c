@@ -4521,7 +4521,7 @@ static bool run_properties(int dummy)
 
 	smbXcli_conn_set_sockopt(cli->conn, sockops);
 
-	d_printf("Capabilities 0x%08x\n", cli_state_capabilities(cli));
+	d_printf("Capabilities 0x%08x\n", smb1cli_conn_capabilities(cli->conn));
 
 	if (!torture_close_connection(cli)) {
 		correct = False;

@@ -26,7 +26,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
-
+#include "../libcli/smb/smbXcli_base.h"
 
 /* 
  * Generate an inode number from file name for those things that need it
@@ -465,7 +465,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         }
 
         /* See if DFS is supported */
-	if ((cli_state_capabilities(cli) & CAP_DFS) &&  cli->dfsroot) {
+	if ((smb1cli_conn_capabilities(cli->conn) & CAP_DFS) &&  cli->dfsroot) {
                 flags |= SMBC_VFS_FEATURE_DFS;
         }
 

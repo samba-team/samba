@@ -346,7 +346,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli, const char *use
 static uint32_t cli_session_setup_capabilities(struct cli_state *cli,
 					       uint32_t sesssetup_capabilities)
 {
-	uint32_t client_capabilities = cli_state_capabilities(cli);
+	uint32_t client_capabilities = smb1cli_conn_capabilities(cli->conn);
 
 	/*
 	 * We only send capabilities based on the mask for:
@@ -2108,7 +2108,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	/* if the server supports extended security then use SPNEGO */
 
-	if (cli_state_capabilities(cli) & CAP_EXTENDED_SECURITY) {
+	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
 		const char *remote_realm = cli_state_remote_realm(cli);
 		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
 							     workgroup,

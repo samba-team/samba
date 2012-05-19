@@ -80,7 +80,7 @@ struct tevent_req *cli_trans_send(
 		additional_flags |= FLAG_CASELESS_PATHNAMES;
 	}
 
-	if ((cli_state_capabilities(cli) & CAP_DFS) && cli->dfsroot) {
+	if ((smb1cli_conn_capabilities(cli->conn) & CAP_DFS) && cli->dfsroot) {
 		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
 
@@ -174,7 +174,7 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		additional_flags |= FLAG_CASELESS_PATHNAMES;
 	}
 
-	if ((cli_state_capabilities(cli) & CAP_DFS) && cli->dfsroot) {
+	if ((smb1cli_conn_capabilities(cli->conn) & CAP_DFS) && cli->dfsroot) {
 		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
 

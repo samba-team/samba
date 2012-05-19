@@ -171,7 +171,7 @@ copy an IP address from one buffer to another
  Return True if a server has CIFS UNIX capabilities.
 ********************************************************************/
 
-#define SERVER_HAS_UNIX_CIFS(c) (cli_state_capabilities(c) & CAP_UNIX)
+#define SERVER_HAS_UNIX_CIFS(c) (smb1cli_conn_capabilities(c->conn) & CAP_UNIX)
 
 /****************************************************************************
  Make a filename into unix format.

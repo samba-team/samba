@@ -950,7 +950,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 		goto fail;
 	}
 
-	info_level = (cli_state_capabilities(cli) & CAP_NT_SMBS)
+	info_level = (smb1cli_conn_capabilities(cli->conn) & CAP_NT_SMBS)
 		? SMB_FIND_FILE_BOTH_DIRECTORY_INFO : SMB_FIND_INFO_STANDARD;
 
 	req = cli_list_send(frame, ev, cli, mask, attribute, info_level);

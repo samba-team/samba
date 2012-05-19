@@ -208,7 +208,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	   here before trying to connect to the original share.
 	   cli_check_msdfs_proxy() will fail if it is a normal share. */
 
-	if ((cli_state_capabilities(c) & CAP_DFS) &&
+	if ((smb1cli_conn_capabilities(c->conn) & CAP_DFS) &&
 			cli_check_msdfs_proxy(ctx, c, sharename,
 				&newserver, &newshare,
 				force_encrypt,
@@ -596,10 +596,10 @@ static bool cli_dfs_check_error(struct cli_state *cli, NTSTATUS expected,
 {
 	/* only deal with DS when we negotiated NT_STATUS codes and UNICODE */
 
-	if (!(cli_state_capabilities(cli) & CAP_UNICODE)) {
+	if (!(smb1cli_conn_capabilities(cli->conn) & CAP_UNICODE)) {
 		return false;
 	}
-	if (!(cli_state_capabilities(cli) & CAP_STATUS32)) {
+	if (!(smb1cli_conn_capabilities(cli->conn) & CAP_STATUS32)) {
 		return false;
 	}
 	if (NT_STATUS_EQUAL(status, expected)) {

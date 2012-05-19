@@ -182,7 +182,6 @@ uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid);
 uint16_t cli_state_get_uid(struct cli_state *cli);
 uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
-uint32_t cli_state_capabilities(struct cli_state *cli);
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs);
 uint16_t cli_state_max_requests(struct cli_state *cli);
 const uint8_t *cli_state_server_challenge(struct cli_state *cli);

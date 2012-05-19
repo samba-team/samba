@@ -435,11 +435,6 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 	return ret;
 }
 
-uint32_t cli_state_capabilities(struct cli_state *cli)
-{
-	return smb1cli_conn_capabilities(cli->conn);
-}
-
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 {
 	uint32_t ret = smb1cli_conn_max_xmit(cli->conn);

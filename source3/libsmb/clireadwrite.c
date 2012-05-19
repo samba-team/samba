@@ -52,7 +52,7 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 		}
 
 		return useable_space;
-	} else if (cli_state_capabilities(cli) & CAP_LARGE_READX) {
+	} else if (smb1cli_conn_capabilities(cli->conn) & CAP_LARGE_READX) {
 		/*
 		 * Note: CAP_LARGE_READX also works with signing
 		 */
@@ -86,7 +86,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 
 	if (cli->server_posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) {
 		useable_space = 0xFFFFFF - data_offset;
-	} else if (cli_state_capabilities(cli) & CAP_LARGE_WRITEX) {
+	} else if (smb1cli_conn_capabilities(cli->conn) & CAP_LARGE_WRITEX) {
 		useable_space = 0x1FFFF - data_offset;
 	} else {
 		return min_space;
@@ -155,7 +155,7 @@ struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv + 8, 0, 0);
 	SSVAL(state->vwv + 9, 0, 0);
 
-	if (cli_state_capabilities(cli) & CAP_LARGE_FILES) {
+	if (smb1cli_conn_capabilities(cli->conn) & CAP_LARGE_FILES) {
 		SIVAL(state->vwv + 10, 0,
 		      (((uint64_t)offset)>>32) & 0xffffffff);
 		wct = 12;
@@ -840,7 +840,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_write_andx_state *state;
-	bool bigoffset = ((cli_state_capabilities(cli) & CAP_LARGE_FILES) != 0);
+	bool bigoffset = ((smb1cli_conn_capabilities(cli->conn) & CAP_LARGE_FILES) != 0);
 	uint8_t wct = bigoffset ? 14 : 12;
 	size_t max_write = cli_write_max_bufsize(cli, mode, wct);
 	uint16_t *vwv;

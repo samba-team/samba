@@ -26,7 +26,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
-
+#include "../libcli/smb/smbXcli_base.h"
 
 /*
  * Routine to open() a file ...
@@ -551,7 +551,7 @@ SMBC_getatr(SMBCCTX * context,
         }
 
 	/* if this is NT then don't bother with the getatr */
-	if (cli_state_capabilities(targetcli) & CAP_NT_SMBS) {
+	if (smb1cli_conn_capabilities(targetcli->conn) & CAP_NT_SMBS) {
                 errno = EPERM;
 		TALLOC_FREE(frame);
                 return False;

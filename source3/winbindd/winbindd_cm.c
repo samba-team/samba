@@ -835,7 +835,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	}
 
 	if (smbXcli_conn_protocol((*cli)->conn) >= PROTOCOL_NT1 &&
-	    cli_state_capabilities(*cli) & CAP_EXTENDED_SECURITY) {
+	    smb1cli_conn_capabilities((*cli)->conn) & CAP_EXTENDED_SECURITY) {
 		try_spnego = true;
 	} else if (smbXcli_conn_protocol((*cli)->conn) >= PROTOCOL_SMB2_02) {
 		try_spnego = true;
