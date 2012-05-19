@@ -43,6 +43,7 @@
 #include "libsmb/clirap.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "passdb.h"
+#include "libcli/smb/smbXcli_base.h"
 
 static int net_mode_share;
 static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);
@@ -3981,7 +3982,7 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 
 	        /* open share source */
 		nt_status = connect_to_service(c, &cp_clistate.cli_share_src,
-					       cli_state_remote_sockaddr(cli),
+					       smbXcli_conn_remote_sockaddr(cli->conn),
 					       cli_state_remote_name(cli),
 					       info502.name, "A:");
 		if (!NT_STATUS_IS_OK(nt_status))

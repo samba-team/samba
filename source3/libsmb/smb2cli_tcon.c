@@ -52,7 +52,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	print_sockaddr(srv_ip, sizeof(srv_ip), cli_state_remote_sockaddr(cli));
+	print_sockaddr(srv_ip, sizeof(srv_ip), smbXcli_conn_remote_sockaddr(cli->conn));
 
 	tcon_share = talloc_asprintf(state, "\\\\%s\\%s",
 				     srv_ip, share);

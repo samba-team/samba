@@ -77,6 +77,7 @@
 #include "passdb.h"
 #include "messages.h"
 #include "auth/gensec/gensec.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1424,7 +1425,7 @@ static void store_current_dc_in_gencache(const char *domain_name,
 	}
 
 	print_sockaddr(addr, sizeof(addr),
-		       cli_state_remote_sockaddr(cli));
+		       smbXcli_conn_remote_sockaddr(cli->conn));
 
 	key = current_dc_key(talloc_tos(), domain_name);
 	if (key == NULL) {
@@ -2721,7 +2722,7 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 		}
 
 		print_sockaddr(sockaddr, sizeof(sockaddr),
-			       cli_state_local_sockaddr(domain->conn.cli));
+			       smbXcli_conn_local_sockaddr(domain->conn.cli->conn));
 
 		if (strequal(sockaddr, addr)) {
 			cli_state_disconnect(domain->conn.cli);

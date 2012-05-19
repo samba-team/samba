@@ -360,16 +360,6 @@ void cli_shutdown(struct cli_state *cli)
 	_cli_shutdown(cli);
 }
 
-const struct sockaddr_storage *cli_state_local_sockaddr(struct cli_state *cli)
-{
-	return smbXcli_conn_local_sockaddr(cli->conn);
-}
-
-const struct sockaddr_storage *cli_state_remote_sockaddr(struct cli_state *cli)
-{
-	return smbXcli_conn_remote_sockaddr(cli->conn);
-}
-
 const char *cli_state_remote_name(struct cli_state *cli)
 {
 	return smbXcli_conn_remote_name(cli->conn);

@@ -31,6 +31,7 @@
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* Macro for checking RPC error codes to make things more readable */
 
@@ -513,7 +514,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* double-check, connection from scratch */
 	status = net_rpc_join_ok(c, domain, cli_state_remote_name(cli),
-				 cli_state_remote_sockaddr(cli));
+				 smbXcli_conn_remote_sockaddr(cli->conn));
 	retval = NT_STATUS_IS_OK(status) ? 0 : -1;
 
 done:

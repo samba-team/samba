@@ -38,6 +38,7 @@
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /****************************************************************
 ****************************************************************/
@@ -1977,7 +1978,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 	create_local_private_krb5_conf_for_domain(
 		r->out.dns_domain_name, r->out.netbios_domain_name,
-		NULL, cli_state_remote_sockaddr(cli),
+		NULL, smbXcli_conn_remote_sockaddr(cli->conn),
 		cli_state_remote_name(cli));
 
 	if (r->out.domain_is_ad && r->in.account_ou &&

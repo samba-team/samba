@@ -28,6 +28,7 @@
 #include "../libcli/security/security.h"
 #include "../libcli/registry/util_reg.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {
@@ -1914,7 +1915,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 
 	/* open print$-share on the src server */
 	nt_status = connect_to_service(c, &cli_share_src,
-				       cli_state_remote_sockaddr(cli),
+				       smbXcli_conn_remote_sockaddr(cli->conn),
 				       cli_state_remote_name(cli),
 				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
@@ -1925,7 +1926,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 
 	/* open print$-share on the dst server */
 	nt_status = connect_to_service(c, &cli_share_dst,
-				       cli_state_remote_sockaddr(cli_dst),
+				       smbXcli_conn_remote_sockaddr(cli_dst->conn),
 				       cli_state_remote_name(cli_dst),
 				       "print$", "A:");
 	if (!NT_STATUS_IS_OK(nt_status))
