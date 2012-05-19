@@ -34,8 +34,6 @@ NTSTATUS cli_smb_req_send(struct tevent_req *req);
 size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs);
 NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs);
 bool cli_has_async_calls(struct cli_state *cli);
-void cli_smb_req_unset_pending(struct tevent_req *req);
-bool cli_smb_req_set_pending(struct tevent_req *req);
 uint16_t cli_smb_req_mid(struct tevent_req *req);
 void cli_smb_req_set_mid(struct tevent_req *req, uint16_t mid);
 uint32_t cli_smb_req_seqnum(struct tevent_req *req);

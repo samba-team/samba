@@ -21,6 +21,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 struct cli_smb_oplock_break_waiter_state {
 	uint16_t fnum;
@@ -52,7 +53,7 @@ struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
 	}
 	cli_smb_req_set_mid(subreq, 0xffff);
 
-	if (!cli_smb_req_set_pending(subreq)) {
+	if (!smbXcli_req_set_pending(subreq)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return tevent_req_post(req, ev);
 	}

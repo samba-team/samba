@@ -23,16 +23,6 @@
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-void cli_smb_req_unset_pending(struct tevent_req *req)
-{
-	smbXcli_req_unset_pending(req);
-}
-
-bool cli_smb_req_set_pending(struct tevent_req *req)
-{
-	return smbXcli_req_set_pending(req);
-}
-
 /*
  * Fetch a smb request's mid. Only valid after the request has been sent by
  * cli_smb_req_send().

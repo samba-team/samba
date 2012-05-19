@@ -582,7 +582,7 @@ static void cli_echo_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!cli_smb_req_set_pending(subreq)) {
+	if (!smbXcli_req_set_pending(subreq)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
