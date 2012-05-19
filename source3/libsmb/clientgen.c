@@ -437,11 +437,6 @@ uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 	return ret;
 }
 
-uint16_t cli_state_security_mode(struct cli_state *cli)
-{
-	return smb1cli_conn_server_security_mode(cli->conn);
-}
-
 int cli_state_server_time_zone(struct cli_state *cli)
 {
 	return smb1cli_conn_server_time_zone(cli->conn);

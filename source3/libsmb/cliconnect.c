@@ -108,7 +108,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 	uint16_t *vwv;
 	uint8_t *bytes;
 	char *tmp;
-	uint16_t sec_mode = cli_state_security_mode(cli);
+	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_lanman2_state);
@@ -2017,7 +2017,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 {
 	char *p;
 	char *user2;
-	uint16_t sec_mode = cli_state_security_mode(cli);
+	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 
 	if (user) {
 		user2 = talloc_strdup(talloc_tos(), user);
@@ -2243,7 +2243,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	uint16_t *vwv;
 	char *tmp = NULL;
 	uint8_t *bytes;
-	uint16_t sec_mode = cli_state_security_mode(cli);
+	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 
 	*psmbreq = NULL;
 

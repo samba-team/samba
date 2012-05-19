@@ -918,7 +918,7 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	cm_get_ipc_userpass(&ipc_username, &ipc_domain, &ipc_password);
 
-	sec_mode = cli_state_security_mode(*cli);
+	sec_mode = smb1cli_conn_server_security_mode((*cli)->conn);
 
 	try_ipc_auth = false;
 	if (try_spnego) {
