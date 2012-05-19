@@ -616,12 +616,24 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	/* On close if we're changing the real file time we
-	 * must update it in the open file db too. */
-	(void)set_write_time(fsp->file_id, fsp->close_write_time);
+	/*
+	 * get_existing_share_mode_lock() isn't really the right
+	 * call here, as we're being called after
+	 * close_remove_share_mode() inside close_normal_file()
+	 * so it's quite normal to not have an existing share
+	 * mode here. However, get_share_mode_lock() doesn't
+	 * work because that will create a new share mode if
+	 * one doesn't exist - so stick with this call (just
+	 * ignore any error we get if the share mode doesn't
+	 * exist.
+	 */
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck) {
+		/* On close if we're changing the real file time we
+		 * must update it in the open file db too. */
+		(void)set_write_time(fsp->file_id, fsp->close_write_time);
+
 		/* Close write times overwrite sticky write times
 		   so we must replace any sticky write time here. */
 		if (!null_timespec(lck->data->changed_write_time)) {
