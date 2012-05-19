@@ -513,7 +513,7 @@ struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 		state->chunk_size &= ~(page_size - 1);
 	}
 
-	state->max_reqs = cli_state_max_requests(cli);
+	state->max_reqs = smbXcli_conn_max_requests(cli->conn);
 
 	state->num_reqs = MAX(window_size/state->chunk_size, 1);
 	state->num_reqs = MIN(state->num_reqs, state->max_reqs);
@@ -1215,7 +1215,7 @@ struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		state->chunk_size &= ~(page_size - 1);
 	}
 
-	state->max_reqs = cli_state_max_requests(cli);
+	state->max_reqs = smbXcli_conn_max_requests(cli->conn);
 
 	if (window_size == 0) {
 		window_size = state->max_reqs * state->chunk_size;

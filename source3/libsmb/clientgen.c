@@ -443,11 +443,6 @@ uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs)
 	return ret;
 }
 
-uint16_t cli_state_max_requests(struct cli_state *cli)
-{
-	return smbXcli_conn_max_requests(cli->conn);
-}
-
 const uint8_t *cli_state_server_challenge(struct cli_state *cli)
 {
 	return smb1cli_conn_server_challenge(cli->conn);
