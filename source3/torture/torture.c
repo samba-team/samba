@@ -3053,7 +3053,8 @@ static bool run_negprot_nowait(int dummy)
 	for (i=0;i<50000;i++) {
 		struct tevent_req *req;
 
-		req = cli_negprot_send(ev, ev, cli, PROTOCOL_NT1);
+		req = smbXcli_negprot_send(ev, ev, cli->conn, cli->timeout,
+					   PROTOCOL_CORE, PROTOCOL_NT1);
 		if (req == NULL) {
 			TALLOC_FREE(ev);
 			return false;
@@ -6307,7 +6308,8 @@ static bool run_error_map_extract(int dummy) {
 	}
 	disable_spnego = false;
 
-	status = cli_negprot(c_nt, PROTOCOL_NT1);
+	status = smbXcli_negprot(c_nt->conn, c_nt->timeout, PROTOCOL_CORE,
+				 PROTOCOL_NT1);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the NT-error negprot (%s)\n", host,
@@ -6334,7 +6336,8 @@ static bool run_error_map_extract(int dummy) {
 	disable_spnego = false;
 	force_dos_errors = false;
 
-	status = cli_negprot(c_dos, PROTOCOL_NT1);
+	status = smbXcli_negprot(c_dos->conn, c_dos->timeout, PROTOCOL_CORE,
+				 PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the DOS-error negprot (%s)\n", host,
 		       nt_errstr(status));

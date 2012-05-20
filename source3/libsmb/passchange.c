@@ -24,6 +24,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "libsmb/nmblib.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /*************************************************************
  Change a password on a remote machine using IPC calls.
@@ -66,7 +67,8 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		return result;
 	}
 
-	result = cli_negprot(cli, PROTOCOL_NT1);
+	result = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
+				 PROTOCOL_NT1);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		if (asprintf(err_str, "machine %s rejected the negotiate "

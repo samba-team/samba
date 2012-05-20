@@ -72,12 +72,6 @@ struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
                                  struct cli_state *cli);
 NTSTATUS cli_tdis_recv(struct tevent_req *req);
 NTSTATUS cli_tdis(struct cli_state *cli);
-NTSTATUS cli_negprot(struct cli_state *cli, enum protocol_types max_protocol);
-struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
-				    struct cli_state *cli,
-				    enum protocol_types max_protocol);
-NTSTATUS cli_negprot_recv(struct tevent_req *req);
 NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,
 			int signing_state, int flags, struct cli_state **pcli);

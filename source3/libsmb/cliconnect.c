@@ -2606,27 +2606,6 @@ fail:
 	return status;
 }
 
-struct tevent_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
-				    struct cli_state *cli,
-				    enum protocol_types max_protocol)
-{
-	return smbXcli_negprot_send(mem_ctx, ev,
-				    cli->conn, cli->timeout,
-				    PROTOCOL_CORE, max_protocol);
-}
-
-NTSTATUS cli_negprot_recv(struct tevent_req *req)
-{
-	return smbXcli_negprot_recv(req);
-}
-
-NTSTATUS cli_negprot(struct cli_state *cli, enum protocol_types max_protocol)
-{
-	return smbXcli_negprot(cli->conn, cli->timeout,
-			       PROTOCOL_CORE, max_protocol);
-}
-
 static NTSTATUS cli_connect_sock(const char *host, int name_type,
 				 const struct sockaddr_storage *pss,
 				 const char *myname, uint16_t port,
@@ -2768,7 +2747,8 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 		return nt_status;
 	}
 
-	nt_status = cli_negprot(cli, PROTOCOL_NT1);
+	nt_status = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
+				    PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("failed negprot: %s\n", nt_errstr(nt_status)));
 		cli_shutdown(cli);

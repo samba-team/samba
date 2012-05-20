@@ -43,7 +43,7 @@
 #include "libsmb/clirap.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "passdb.h"
-#include "libcli/smb/smbXcli_base.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 static int net_mode_share;
 static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);
@@ -7105,7 +7105,8 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
-	status = cli_negprot(cli, PROTOCOL_NT1);
+	status = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
+				 PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_NT1)

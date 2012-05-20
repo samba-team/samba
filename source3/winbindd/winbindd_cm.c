@@ -827,7 +827,8 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	cli_set_timeout(*cli, 10000); /* 10 seconds */
 
-	result = cli_negprot(*cli, PROTOCOL_SMB2_02);
+	result = smbXcli_negprot((*cli)->conn, (*cli)->timeout, PROTOCOL_CORE,
+				 PROTOCOL_SMB2_02);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("cli_negprot failed: %s\n", nt_errstr(result)));

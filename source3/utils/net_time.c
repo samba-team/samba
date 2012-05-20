@@ -41,7 +41,8 @@ static time_t cli_servertime(const char *host,
 		goto done;
 	}
 
-	status = cli_negprot(cli, PROTOCOL_NT1);
+	status = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
+				 PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, _("Protocol negotiation failed: %s\n"),
 			nt_errstr(status));

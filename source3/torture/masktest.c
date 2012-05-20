@@ -188,7 +188,8 @@ static struct cli_state *connect_one(char *share)
 		return NULL;
 	}
 
-	status = cli_negprot(c, max_protocol);
+	status = smbXcli_negprot(c->conn, c->timeout, PROTOCOL_CORE,
+				 max_protocol);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("protocol negotiation failed: %s\n",
 			  nt_errstr(status)));

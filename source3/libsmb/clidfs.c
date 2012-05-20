@@ -147,7 +147,8 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	}
 	DEBUG(4,(" session request ok\n"));
 
-	status = cli_negprot(c, max_protocol);
+	status = smbXcli_negprot(c->conn, c->timeout, PROTOCOL_CORE,
+				 max_protocol);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("protocol negotiation failed: %s\n",

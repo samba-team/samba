@@ -32,6 +32,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "smbprofile.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 struct sync_record {
 	struct sync_record *next, *prev;
@@ -88,7 +89,8 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	status = cli_negprot(cli, PROTOCOL_NT1);
+	status = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
+				 PROTOCOL_NT1);
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		return;
