@@ -105,3 +105,55 @@ bool ev_set_close_on_exec(int fd)
 #endif
 	return false;
 }
+
+
+static struct timeval tevent_before_wait_ts;
+static struct timeval tevent_after_wait_ts;
+
+/*
+ * measure the time difference between multiple arrivals
+ * to the point where we wait for new events to come in
+ *
+ * allows to measure how long it takes to work on a 
+ * event
+ */
+void tevent_before_wait(struct tevent_context *ev) {
+
+	struct timeval diff;
+	struct timeval now = tevent_timeval_current();
+
+	if (!tevent_timeval_is_zero(&tevent_after_wait_ts)) {
+		diff = tevent_timeval_until(&tevent_after_wait_ts, &now);
+		if (diff.tv_sec > 3) {
+			tevent_debug(ev, TEVENT_DEBUG_ERROR,  __location__ 
+				     " Handling event took %d seconds!",
+				     (int) diff.tv_sec);
+		}
+	}
+
+	tevent_before_wait_ts = tevent_timeval_current();
+
+}
+
+/*
+ * measure how long the select()/epoll() call took
+ *
+ * allows to measure how long we are waiting for new events
+ */
+void tevent_after_wait(struct tevent_context *ev) {
+
+	struct timeval diff;
+	struct timeval now = tevent_timeval_current();
+
+	if (!tevent_timeval_is_zero(&tevent_before_wait_ts)) {
+		diff = tevent_timeval_until(&tevent_before_wait_ts, &now);
+		if (diff.tv_sec > 3) {
+			tevent_debug(ev, TEVENT_DEBUG_FATAL,  __location__
+				     " No event for %d seconds!",
+				     (int) diff.tv_sec);
+		}
+	}
+
+	tevent_after_wait_ts = tevent_timeval_current();
+
+}

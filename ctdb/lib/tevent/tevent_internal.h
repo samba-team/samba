@@ -313,3 +313,5 @@ bool tevent_poll_init(void);
 #ifdef HAVE_EPOLL
 bool tevent_epoll_init(void);
 #endif
+void tevent_before_wait(struct tevent_context *ev);
+void tevent_after_wait(struct tevent_context *ev);
