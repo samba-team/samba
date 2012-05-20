@@ -1691,7 +1691,7 @@ void close_conns_after_fork(void)
 		 * requests in invalidate_cm_connection()
 		 */
 		if (cli_state_is_connected(domain->conn.cli)) {
-			cli_state_disconnect(domain->conn.cli);
+			smbXcli_conn_disconnect(domain->conn.cli->conn, NT_STATUS_OK);
 		}
 
 		invalidate_cm_connection(&domain->conn);
@@ -2725,7 +2725,7 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 			       smbXcli_conn_local_sockaddr(domain->conn.cli->conn));
 
 		if (strequal(sockaddr, addr)) {
-			cli_state_disconnect(domain->conn.cli);
+			smbXcli_conn_disconnect(domain->conn.cli->conn, NT_STATUS_OK);
 		}
 	}
 	TALLOC_FREE(freeit);

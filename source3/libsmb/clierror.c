@@ -190,12 +190,3 @@ bool cli_state_is_connected(struct cli_state *cli)
 
 	return smbXcli_conn_is_connected(cli->conn);
 }
-
-void cli_state_disconnect(struct cli_state *cli)
-{
-	/*
-	 * passing NT_STATUS_OK means the caller will not
-	 * be notified, which matches the old behavior
-	 */
-	smbXcli_conn_disconnect(cli->conn, NT_STATUS_OK);
-}

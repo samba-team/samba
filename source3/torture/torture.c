@@ -2580,7 +2580,7 @@ static void alarm_handler(int dummy)
 
 static void alarm_handler_parent(int dummy)
 {
-	cli_state_disconnect(alarm_cli);
+	smbXcli_conn_disconnect(alarm_cli->conn, NT_STATUS_OK);
 }
 
 static void do_local_lock(int read_fd, int write_fd)

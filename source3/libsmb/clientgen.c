@@ -323,7 +323,7 @@ static void _cli_shutdown(struct cli_state *cli)
         
 	data_blob_free(&cli->user_session_key);
 
-	cli_state_disconnect(cli);
+	smbXcli_conn_disconnect(cli->conn, NT_STATUS_OK);
 
 	TALLOC_FREE(cli);
 }
