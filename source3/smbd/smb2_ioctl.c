@@ -417,6 +417,11 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 		in_security_mode = SVAL(in_input.data, 0x14);
 		in_max_dialect = SVAL(in_input.data, 0x16);
 
+		status = GUID_from_ndr_blob(&in_guid_blob, &in_guid);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+
 		max_dialect = conn->smb2.client.dialects[conn->smb2.client.num_dialects-1];
 		if (in_max_dialect != max_dialect) {
 			state->disconnect = true;
@@ -491,6 +496,11 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 
 		if (in_max_output < 0x18) {
 			tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
+			return tevent_req_post(req, ev);
+		}
+
+		status = GUID_from_ndr_blob(&in_guid_blob, &in_guid);
+		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
 
