@@ -57,7 +57,7 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 		errno = ERANGE;
 		return -1;
 	}
-	memcpy(value, blob.data, size);
+	memcpy(value, blob.data, xattr_size);
 	return xattr_size;
 }
 
