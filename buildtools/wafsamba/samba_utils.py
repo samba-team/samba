@@ -215,6 +215,8 @@ def TO_LIST(str, delimiter=None):
         return []
     if isinstance(str, list):
         return str
+    if len(str) == 0:
+        return []
     lst = str.split(delimiter)
     # the string may have had quotes in it, now we
     # check if we did have quotes, and use the slower shlex
