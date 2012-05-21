@@ -345,6 +345,7 @@ ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
  */
 struct pulldb_data {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db;
 	struct ctdb_marshall_buffer *pulldata;
 	uint32_t len;
 	bool failed;
@@ -354,6 +355,8 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 {
 	struct pulldb_data *params = (struct pulldb_data *)p;
 	struct ctdb_rec_data *rec;
+	struct ctdb_context *ctdb = params->ctdb;
+	struct ctdb_db_context *ctdb_db = params->ctdb_db;
 
 	/* add the record to the blob */
 	rec = ctdb_marshall_record(params->pulldata, 0, key, NULL, data);
@@ -369,6 +372,11 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	params->pulldata->count++;
 	memcpy(params->len+(uint8_t *)params->pulldata, rec, rec->length);
 	params->len += rec->length;
+
+	if (ctdb->tunable.db_record_size_warn != 0 && rec->length > ctdb->tunable.db_record_size_warn) {
+		DEBUG(DEBUG_ERR,("Data record in %s is big. Record size is %d bytes\n", ctdb_db->db_name, (int)rec->length));
+	}
+
 	talloc_free(rec);
 
 	return 0;
@@ -403,6 +411,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	reply->db_id = pull->db_id;
 
 	params.ctdb = ctdb;
+	params.ctdb_db = ctdb_db;
 	params.pulldata = reply;
 	params.len = offsetof(struct ctdb_marshall_buffer, data);
 	params.failed = false;
@@ -429,6 +438,14 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 
 	outdata->dptr = (uint8_t *)params.pulldata;
 	outdata->dsize = params.len;
+
+	if (ctdb->tunable.db_record_count_warn != 0 && params.pulldata->count > ctdb->tunable.db_record_count_warn) {
+		DEBUG(DEBUG_ERR,("Database %s is big. Contains %d records\n", ctdb_db->db_name, params.pulldata->count));
+	}
+	if (ctdb->tunable.db_size_warn != 0 && outdata->dsize > ctdb->tunable.db_size_warn) {
+		DEBUG(DEBUG_ERR,("Database %s is big. Contains %d bytes\n", ctdb_db->db_name, (int)outdata->dsize));
+	}
+
 
 	return 0;
 }

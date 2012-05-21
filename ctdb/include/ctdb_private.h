@@ -131,6 +131,9 @@ struct ctdb_tunable {
 	uint32_t sticky_duration;
 	uint32_t sticky_pindown;
 	uint32_t no_ip_takeover;
+	uint32_t db_record_count_warn;
+	uint32_t db_record_size_warn;
+	uint32_t db_size_warn;
 };
 
 /*

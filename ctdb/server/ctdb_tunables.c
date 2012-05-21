@@ -79,7 +79,10 @@ static const struct {
 	{ "HopcountMakeSticky",   50,  offsetof(struct ctdb_tunable, hopcount_make_sticky) },
 	{ "StickyDuration",      600,  offsetof(struct ctdb_tunable, sticky_duration) },
 	{ "StickyPindown",       200,  offsetof(struct ctdb_tunable, sticky_pindown) },
-	{ "NoIPTakeover",         0,  offsetof(struct ctdb_tunable, no_ip_takeover), false }
+	{ "NoIPTakeover",         0,  offsetof(struct ctdb_tunable, no_ip_takeover), false },
+	{ "DBRecordCountWarn",    100000,  offsetof(struct ctdb_tunable, db_record_count_warn), false },
+	{ "DBRecordSizeWarn",   10000000,  offsetof(struct ctdb_tunable, db_record_size_warn), false },
+	{ "DBSizeWarn",        100000000,  offsetof(struct ctdb_tunable, db_size_warn), false }
 };
 
 /*
