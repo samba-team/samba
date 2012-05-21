@@ -436,7 +436,7 @@ const char *dns_errstr(DNS_ERROR err);
 
 /* from dnsgss.c */
 
-#ifdef HAVE_KRB5
+#ifdef HAVE_GSSAPI
 
 void display_status( const char *msg, OM_uint32 maj_stat, OM_uint32 min_stat ); 
 DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
@@ -450,6 +450,6 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 			  const char *algorithmname,
 			  time_t time_signed, uint16 fudge);
 
-#endif	/* HAVE_KRB5 */
+#endif	/* HAVE_GSSAPI */
 
 #endif	/* _DNS_H */

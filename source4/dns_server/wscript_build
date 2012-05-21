@@ -7,6 +7,7 @@ bld.SAMBA_MODULE('service_dns',
         deps='samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET ldbsamba LIBCLI_DNS',
         local_include=False,
         internal_module=False,
+        enabled=bld.AD_DC_BUILD_IS_ENABLED()
         )
 
 # a bind9 dlz module giving access to the Samba DNS SAM
@@ -17,7 +18,8 @@ bld.SAMBA_LIBRARY('dlz_bind9',
                   link_name='modules/bind9/dlz_bind9.so',
                   realname='dlz_bind9.so',
                   install_path='${MODULESDIR}/bind9',
-                  deps='samba-hostconfig samdb-common gensec popt')
+                  deps='samba-hostconfig samdb-common gensec popt',
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
 bld.SAMBA_LIBRARY('dlz_bind9_9',
                   source='dlz_bind9.c',
@@ -26,4 +28,5 @@ bld.SAMBA_LIBRARY('dlz_bind9_9',
                   link_name='modules/bind9/dlz_bind9_9.so',
                   realname='dlz_bind9_9.so',
                   install_path='${MODULESDIR}/bind9',
-                  deps='samba-hostconfig samdb-common gensec popt')
+                  deps='samba-hostconfig samdb-common gensec popt',
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())

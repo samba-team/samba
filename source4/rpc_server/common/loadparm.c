@@ -1,6 +1,7 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   Parameter loading functions
+   DCERPC server info param function
+   Moved into rpc_server/common to break dependencies to rpc_server from param
    Copyright (C) Karl Auer 1993-1998
 
    Largely re-written by Andrew Tridgell, September 1994
@@ -28,28 +29,17 @@
 
 #include "includes.h"
 #include "lib/param/param.h"
-#include "libcli/raw/libcliraw.h"
+#include "rpc_server/common/common.h"
 
-void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
-			 struct smbcli_options *options)
+_PUBLIC_ struct dcerpc_server_info *lpcfg_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	options->max_xmit = lpcfg_max_xmit(lp_ctx);
-	options->max_mux = lpcfg_maxmux(lp_ctx);
-	options->use_spnego = lpcfg_nt_status_support(lp_ctx) && lpcfg_use_spnego(lp_ctx);
-	options->signing = lpcfg_client_signing(lp_ctx);
-	options->request_timeout = SMB_REQUEST_TIMEOUT;
-	options->ntstatus_support = lpcfg_nt_status_support(lp_ctx);
-	options->max_protocol = lpcfg_cli_maxprotocol(lp_ctx);
-	options->unicode = lpcfg_unicode(lp_ctx);
-	options->use_oplocks = true;
-	options->use_level2_oplocks = true;
-}
+	struct dcerpc_server_info *ret = talloc_zero(mem_ctx, struct dcerpc_server_info);
 
-void lpcfg_smbcli_session_options(struct loadparm_context *lp_ctx,
-				 struct smbcli_session_options *options)
-{
-	options->lanman_auth = lpcfg_client_lanman_auth(lp_ctx);
-	options->ntlmv2_auth = lpcfg_client_ntlmv2_auth(lp_ctx);
-	options->plaintext_auth = lpcfg_client_plaintext_auth(lp_ctx);
+	ret->domain_name = talloc_reference(mem_ctx, lpcfg_workgroup(lp_ctx));
+	ret->version_major = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
+	ret->version_minor = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
+	ret->version_build = lpcfg_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
+
+	return ret;
 }
 

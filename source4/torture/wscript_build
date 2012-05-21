@@ -37,7 +37,8 @@ heimdal_specific['ndr'] = ('','')
 heimdal_specific['rpc'] = ('','')
 if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
 	heimdal_specific['ndr'] = (' ndr/backupkey.c','')
-	heimdal_specific['rpc'] = (' rpc/backupkey.c',' RPC_NDR_BACKUPKEY')
+	heimdal_specific['rpc'] = (' rpc/backupkey.c rpc/spoolss_notify.c rpc/spoolss_win.c',
+				    ' RPC_NDR_BACKUPKEY SMB_SERVER dcerpc_server ntvfs')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c ndr/nbt.c ndr/ntlmssp.c ndr/string.c'+heimdal_specific['ndr'][0],
@@ -47,11 +48,11 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 
 
 bld.SAMBA_MODULE('torture_rpc',
-	source='rpc/join.c rpc/lsa.c rpc/forest_trust.c rpc/lsa_lookup.c rpc/session_key.c rpc/echo.c rpc/dfs.c rpc/drsuapi.c rpc/drsuapi_cracknames.c rpc/dsgetinfo.c rpc/spoolss.c rpc/spoolss_notify.c rpc/spoolss_win.c rpc/spoolss_access.c rpc/unixinfo.c rpc/samr.c rpc/samr_accessmask.c rpc/samr_priv.c rpc/wkssvc.c rpc/srvsvc.c rpc/svcctl.c rpc/atsvc.c rpc/eventlog.c rpc/epmapper.c rpc/winreg.c rpc/initshutdown.c rpc/oxidresolve.c rpc/remact.c rpc/mgmt.c rpc/scanner.c rpc/autoidl.c rpc/countcalls.c rpc/testjoin.c rpc/schannel.c rpc/netlogon.c rpc/remote_pac.c rpc/samlogon.c rpc/samsync.c rpc/multi_bind.c rpc/dssetup.c rpc/alter_context.c rpc/bench.c rpc/samba3rpc.c rpc/rpc.c rpc/async_bind.c rpc/handles.c rpc/frsapi.c rpc/object_uuid.c rpc/ntsvcs.c rpc/browser.c rpc/bind.c '+heimdal_specific['rpc'][0],
+	source='rpc/join.c rpc/lsa.c rpc/forest_trust.c rpc/lsa_lookup.c rpc/session_key.c rpc/echo.c rpc/dfs.c rpc/drsuapi.c rpc/drsuapi_cracknames.c rpc/dsgetinfo.c rpc/spoolss.c rpc/spoolss_access.c rpc/unixinfo.c rpc/samr.c rpc/samr_accessmask.c rpc/samr_priv.c rpc/wkssvc.c rpc/srvsvc.c rpc/svcctl.c rpc/atsvc.c rpc/eventlog.c rpc/epmapper.c rpc/winreg.c rpc/initshutdown.c rpc/oxidresolve.c rpc/remact.c rpc/mgmt.c rpc/scanner.c rpc/autoidl.c rpc/countcalls.c rpc/testjoin.c rpc/schannel.c rpc/netlogon.c rpc/remote_pac.c rpc/samlogon.c rpc/samsync.c rpc/multi_bind.c rpc/dssetup.c rpc/alter_context.c rpc/bench.c rpc/samba3rpc.c rpc/rpc.c rpc/async_bind.c rpc/handles.c rpc/frsapi.c rpc/object_uuid.c rpc/ntsvcs.c rpc/browser.c rpc/bind.c '+heimdal_specific['rpc'][0],
 	autoproto='rpc/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_rpc_init',
-	deps='ndr-table RPC_NDR_UNIXINFO dcerpc-samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL RPC_NDR_NETLOGON dcerpc-atsvc RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER samba-net LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP dcerpc_server service process_model ntvfs RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_DFS SMB_SERVER'+heimdal_specific['rpc'][1],
+	deps='ndr-table RPC_NDR_UNIXINFO dcerpc-samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL RPC_NDR_NETLOGON dcerpc-atsvc RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER samba-net LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP service process_model RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_DFS'+heimdal_specific['rpc'][1],
 	internal_module=True
 	)
 

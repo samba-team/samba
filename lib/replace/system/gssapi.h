@@ -27,7 +27,7 @@
 
 */
 
-#ifdef HAVE_LIBGSSAPI
+#ifdef HAVE_GSSAPI
 
 #ifdef HAVE_GSSAPI_GSSAPI_EXT_H
 #include <gssapi/gssapi_ext.h>

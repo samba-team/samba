@@ -869,7 +869,7 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
                     source=LIBADS_PRINTER_SRC,
-                    deps='samba-util',
+                    deps='samba-util krb5samba',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBAFS',
@@ -1025,7 +1025,8 @@ bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                     source=PASSCHANGE_SRC,
                     deps='''LIBCLI_SAMR
                     INIT_LSA
-                    msrpc3''',
+                    msrpc3
+                    krb5samba''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
@@ -1103,7 +1104,7 @@ bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG_INTERNAL',
 
 bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
                     source=RPC_CLIENT_SCHANNEL_SRC,
-                    deps='samba-util',
+                    deps='samba-util krb5samba',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('INIT_LSA',
@@ -1421,7 +1422,8 @@ bld.SAMBA3_BINARY('smbcacls',
                  talloc
                  popt_samba3
                  msrpc3
-                 libcli_lsa3''',
+                 libcli_lsa3
+                 krb5samba''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('smbcquotas',

@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 
-bld.RECURSE('posix')
-bld.RECURSE('common')
-bld.RECURSE('unixuid')
-bld.RECURSE('sysdep')
+bld.SAMBA_LIBRARY('ntvfs',
+                  source='ntvfs_base.c ntvfs_generic.c ntvfs_interface.c ntvfs_util.c',
+                  autoproto='ntvfs_proto.h',
+                  deps='tevent samba-modules',
+                  private_library=True,
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED()
+                  )
+
+if bld.AD_DC_BUILD_IS_ENABLED():
+    bld.RECURSE('posix')
+    bld.RECURSE('common')
+    bld.RECURSE('unixuid')
+    bld.RECURSE('sysdep')
 
 bld.SAMBA_MODULE('ntvfs_cifs',
 	source='cifs/vfs_cifs.c',
@@ -63,11 +72,4 @@ bld.SAMBA_MODULE('ntvfs_nbench',
 	deps='talloc'
 	)
 
-
-bld.SAMBA_LIBRARY('ntvfs',
-                  source='ntvfs_base.c ntvfs_generic.c ntvfs_interface.c ntvfs_util.c',
-                  autoproto='ntvfs_proto.h',
-                  deps='tevent samba-modules',
-                  private_library=True
-                  )
 

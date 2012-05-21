@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+add_deps = ''
+if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
+    add_deps = ' asn1'
+
 bld.SAMBA_LIBRARY('krb5samba',
                   source='krb5_samba.c keytab_util.c',
-                  deps='samba-util asn1util talloc krb5 com_err',
-		  private_library=True
-		  )
+                  deps='samba-util asn1util talloc krb5 com_err' + add_deps,
+                  private_library=True
+                 )

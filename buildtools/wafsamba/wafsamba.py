@@ -413,6 +413,9 @@ def SAMBA_MODULE(bld, modname, source,
         source = bld.SUBDIR(subdir, source)
 
     if internal_module or BUILTIN_LIBRARY(bld, modname):
+        # Do not create modules for disabled subsystems
+        if subsystem and GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
+            return
         bld.SAMBA_SUBSYSTEM(modname, source,
                     deps=deps,
                     includes=includes,
@@ -428,6 +431,10 @@ def SAMBA_MODULE(bld, modname, source,
 
     if not enabled:
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
+        return
+
+    # Do not create modules for disabled subsystems
+    if subsystem and GET_TARGET_TYPE(bld, subsystem) == 'DISABLED':
         return
 
     obj_target = modname + '.objlist'

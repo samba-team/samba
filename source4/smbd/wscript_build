@@ -4,7 +4,8 @@ bld.SAMBA_LIBRARY('service',
 	source='service.c service_stream.c service_named_pipe.c service_task.c',
 	autoproto='service_proto.h',
 	deps='tevent MESSAGING samba_socket RPC_NDR_IRPC NDR_NAMED_PIPE_AUTH npa_tstream gssapi samba-credentials LIBTSOCKET LIBSAMBA_TSOCKET process_model',
-	private_library=True
+	private_library=True,
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -14,6 +15,13 @@ bld.SAMBA_SUBSYSTEM('PIDFILE',
 	autoproto='pidfile.h'
 	)
 
+bld.SAMBA_LIBRARY('process_model',
+                  source='process_model.c',
+                  autoproto='process_model_proto.h',
+                  deps='samba-util samba-hostconfig samba-modules',
+                  private_library=True,
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED()
+                  )
 
 bld.SAMBA_BINARY('samba',
 	source='server.c',
@@ -22,11 +30,9 @@ bld.SAMBA_BINARY('samba',
 	deps='''events process_model service samba-hostconfig samba-util POPT_SAMBA PIDFILE
                 popt gensec registry ntptr ntvfs share cluster COMMON_SCHANNEL SECRETS''',
 	pyembed=True,
-	install_path='${SBINDIR}'
+	install_path='${SBINDIR}',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
-
-
-
 
 bld.SAMBA_MODULE('process_model_single',
                  source='process_single.c',
@@ -72,11 +78,4 @@ bld.SAMBA_MODULE('process_model_onefork',
                  internal_module=False
                  )
 
-
-bld.SAMBA_LIBRARY('process_model',
-                  source='process_model.c',
-                  autoproto='process_model_proto.h',
-                  deps='samba-util samba-hostconfig samba-modules',
-                  private_library=True
-                  )
 

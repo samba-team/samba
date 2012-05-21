@@ -37,7 +37,7 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_ADEX',
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
                     source=IDMAP_HASH_SRC,
-                    deps='samba-util',
+                    deps='samba-util krb5samba',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
@@ -142,7 +142,7 @@ bld.SAMBA3_LIBRARY('nss_info',
 bld.SAMBA3_MODULE('nss_info_template',
                  subsystem='nss_info',
                  source=NSS_INFO_TEMPLATE_SRC,
-                 deps='samba-util',
+                 deps='samba-util krb5samba',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('nss_info_template'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('nss_info_template'))

@@ -5,6 +5,7 @@ bld.SAMBA_SUBSYSTEM('WEB_WSGI',
 		source='wsgi.c',
 		pyext=True,
 		deps='talloc LIBTSOCKET',
+		enabled=bld.AD_DC_BUILD_IS_ENABLED()
 		)
 
 
@@ -15,4 +16,5 @@ bld.SAMBA_MODULE('service_web',
 		deps='LIBTLS process_model LIBPYTHON WEB_WSGI',
 		pyembed=True,
 		internal_module=False,
+		enabled=bld.AD_DC_BUILD_IS_ENABLED()
 		)

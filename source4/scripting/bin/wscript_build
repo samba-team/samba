@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-bld.SAMBA_SCRIPT('samba_dnsupdate', pattern='samba_dnsupdate', installdir='.')
-bld.SAMBA_SCRIPT('samba_spnupdate', pattern='samba_spnupdate', installdir='.')
-bld.SAMBA_SCRIPT('samba_kcc', pattern='samba_kcc', installdir='.')
-bld.SAMBA_SCRIPT('upgradeprovision', pattern='upgradeprovision', installdir='.')
+if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+    for script in ['samba_dnsupdate', 'samba_spnupdate', 'samba_kcc', 'upgradeprovision', 'samba_upgradedns']:
+        bld.SAMBA_SCRIPT(script, pattern=script, installdir='.')
+
 bld.SAMBA_SCRIPT('samba-tool', pattern='samba-tool', installdir='.')
-bld.SAMBA_SCRIPT('samba_upgradedns', pattern='samba_upgradedns', installdir='.')

@@ -32,6 +32,14 @@ def set_options(opt):
     opt.RECURSE('source3')
     opt.RECURSE('lib/util')
 
+    opt.add_option('--with-system-mitkrb5',
+                   help='enable system MIT krb5 build (includes Samba 4 client and Samba 3 code base)',
+                   action='store_true', dest='with_system_mitkrb5', default=False)
+
+    opt.add_option('--without-ad-dc',
+                   help='disable AD DC functionality (enables Samba 4 client and Samba 3 code base). Requires system MIT krb5',
+                   action='store_true', dest='with_system_mitkrb5', default=False)
+
     gr = opt.option_group('developer options')
     gr.add_option('--enable-build-farm',
                    help='enable special build farm options',
@@ -84,8 +92,11 @@ def configure(conf):
 
     conf.RECURSE('dynconfig')
     conf.RECURSE('lib/ldb')
-    if Options.options.with_mit_krb5_checks:
-        conf.PROCESS_SEPARATE_RULE('krb5')
+
+    if Options.options.with_system_mitkrb5:
+        conf.PROCESS_SEPARATE_RULE('system_mitkrb5')
+    else:
+        conf.DEFINE('AD_DC_BUILD_IS_ENABLED', 1)
     # Only process heimdal_build for non-MIT KRB5 builds
     # When MIT KRB5 checks are done as above, conf.env.KRB5_VENDOR will be set
     # to the lowcased output of 'krb5-config --vendor'.

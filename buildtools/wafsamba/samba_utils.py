@@ -642,8 +642,17 @@ def PROCESS_SEPARATE_RULE(self, rule):
     if txt:
         dc = {'ctx': self}
         if getattr(self.__class__, 'pre_recurse', None):
-            dc = self.pre_recurse(txt, file_path, [])
+            dc = self.pre_recurse(txt, file_path, self.curdir)
         exec(compile(txt, file_path, 'exec'), dc)
+        if getattr(self.__class__, 'post_recurse', None):
+            dc = self.post_recurse(txt, file_path, self.curdir)
 
 Build.BuildContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
 ConfigurationContext.PROCESS_SEPARATE_RULE = PROCESS_SEPARATE_RULE
+
+def AD_DC_BUILD_IS_ENABLED(self):
+    if self.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+        return True
+    return False
+
+Build.BuildContext.AD_DC_BUILD_IS_ENABLED = AD_DC_BUILD_IS_ENABLED

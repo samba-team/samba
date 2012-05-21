@@ -3,24 +3,40 @@ import Logs, Options
 # Check for kerberos
 have_gssapi=False
 
-conf.check_cfg(args="--cflags --libs", package="com_err", uselib_store="com_err")
-conf.CHECK_FUNCS_IN('_et_list', 'com_err')
-conf.CHECK_HEADERS('com_err.h', lib='com_err')
+def krb5_define_syslib(conf, lib, deps):
+    found = 'FOUND_SYSTEMLIB_' + lib
+    if found in conf.env:
+        return
+    conf.SET_TARGET_TYPE(lib, 'SYSLIB')
+    conf.SET_SYSLIB_DEPS(lib, deps)
+    conf.env[found] = True
 
 Logs.info("Looking for kerberos features")
 conf.find_program('krb5-config.heimdal', var='HEIMDAL_KRB5_CONFIG')
 conf.find_program('krb5-config', var='KRB5_CONFIG')
 if conf.env.KRB5_CONFIG:
     conf.check_cfg(path="krb5-config", args="--cflags --libs",
-               package="gssapi", uselib_store="KRB5")
+               package="", uselib_store="KRB5")
+    krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
+    for lib in conf.env['LIB_KRB5']:
+        krb5_define_syslib(conf, lib, lib)
+
+    conf.check_cfg(path="krb5-config", args="--cflags --libs",
+               package="gssapi", uselib_store="GSSAPI")
+    krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
+
     vendor = conf.cmd_and_log("%(path)s --vendor" % dict(path=conf.env.KRB5_CONFIG), dict())
     conf.env.KRB5_VENDOR = vendor.strip().lower()
     if conf.env.KRB5_VENDOR != 'heimdal':
         conf.define('USING_SYSTEM_KRB5', 1)
         del conf.env.HEIMDAL_KRB5_CONFIG
 
+conf.check_cfg(args="--cflags --libs", package="com_err", uselib_store="com_err")
+conf.CHECK_FUNCS_IN('_et_list', 'com_err')
+conf.CHECK_HEADERS('com_err.h', lib='com_err')
+
 conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
-conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h', lib='krb5')
+conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h gssapi/gssapi_krb5.h', lib='gssapi')
 
 conf.CHECK_FUNCS_IN('krb5_encrypt_data', 'k5crypto')
 conf.CHECK_FUNCS_IN('des_set_key','crypto')

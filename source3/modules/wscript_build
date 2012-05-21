@@ -188,8 +188,8 @@ bld.SAMBA3_MODULE('vfs_posix_eadb',
                  source='vfs_posix_eadb.c',
                  deps='tdb-wrap posix_eadb',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_posix_eadb'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_posix_eadb'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_posix_eadb') and bld.AD_DC_BUILD_IS_ENABLED(),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_posix_eadb') and bld.AD_DC_BUILD_IS_ENABLED())
 
 bld.SAMBA3_MODULE('vfs_posixacl',
                  subsystem='vfs',
@@ -457,8 +457,8 @@ bld.SAMBA3_MODULE('vfs_dfs_samba4',
                  source='vfs_dfs_samba4.c',
                  deps='samba-util dfs_server_ad samdb tevent',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_dfs_samba4'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_dfs_samba4'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_dfs_samba4') and bld.AD_DC_BUILD_IS_ENABLED(),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_dfs_samba4') and bld.AD_DC_BUILD_IS_ENABLED())
 
 PERFCOUNT_TEST_SRC = 'perfcount_test.c'
 

@@ -124,7 +124,8 @@ else:
 
 bld.RECURSE('libcli/smbreadline')
 bld.RECURSE('codepages')
-bld.RECURSE('source4/setup')
+if bld.AD_DC_BUILD_IS_ENABLED():
+    bld.RECURSE('source4/setup')
 bld.RECURSE('source4/scripting')
 bld.RECURSE('pidl')
 bld.RECURSE('lib')

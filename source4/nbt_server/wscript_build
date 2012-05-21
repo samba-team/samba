@@ -3,7 +3,8 @@
 bld.SAMBA_SUBSYSTEM('WINSDB',
 	source='wins/winsdb.c wins/wins_hook.c',
 	autoproto='wins/winsdb_proto.h',
-	public_deps='ldb ldbsamba'
+	public_deps='ldb ldbsamba',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -14,27 +15,31 @@ bld.SAMBA_MODULE('ldb_wins_ldb',
         module_init_name='ldb_init_module',
 	deps='ldb netif samba-hostconfig samba-util',
 	internal_module=False,
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
 bld.SAMBA_SUBSYSTEM('NBTD_WINS',
 	source='wins/winsserver.c wins/winsclient.c wins/winswack.c wins/wins_dns_proxy.c',
 	autoproto='wins/winsserver_proto.h',
-	deps='cli-nbt WINSDB'
+	deps='cli-nbt WINSDB',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
 bld.SAMBA_SUBSYSTEM('NBTD_DGRAM',
 	source='dgram/request.c dgram/netlogon.c dgram/browse.c',
 	autoproto='dgram/proto.h',
-	deps='LIBCLI_DGRAM CLDAPD'
+	deps='LIBCLI_DGRAM CLDAPD',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
 bld.SAMBA_SUBSYSTEM('NBT_SERVER',
 	source='interfaces.c register.c query.c nodestatus.c defense.c packet.c irpc.c',
 	autoproto='nbt_server_proto.h',
-	deps='cli-nbt NBTD_WINS NBTD_DGRAM'
+	deps='cli-nbt NBTD_WINS NBTD_DGRAM service',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -44,5 +49,6 @@ bld.SAMBA_MODULE('service_nbtd',
 	init_function='server_service_nbtd_init',
 	deps='NBT_SERVER process_model',
 	internal_module=False,
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 

@@ -28,7 +28,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('winbind')
     opt.SAMBA3_ADD_OPTION('swat')
     opt.SAMBA3_ADD_OPTION('ads')
-    opt.SAMBA3_ADD_OPTION('mit-krb5-checks', default=False)
     opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
@@ -1396,7 +1395,8 @@ main() {
         default_shared_modules.extend(TO_LIST('vfs_skel_opaque vfs_skel_transparent vfs_shadow_copy_test'))
         default_shared_modules.extend(TO_LIST('auth_skel pdb_test'))
 
-    default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4 vfs_dfs_samba4'))
+    if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+        default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4 vfs_dfs_samba4'))
 
     if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
         default_static_modules.extend(TO_LIST('vfs_posixacl'))

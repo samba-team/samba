@@ -5,5 +5,6 @@ bld.SAMBA_MODULE('ECHO',
         subsystem='service',
         init_function='server_service_echo_init',
         deps='samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET',
-        local_include=False
+        local_include=False,
+        enabled=bld.AD_DC_BUILD_IS_ENABLED()
         )

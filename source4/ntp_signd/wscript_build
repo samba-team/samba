@@ -6,5 +6,6 @@ bld.SAMBA_MODULE('service_ntp_signd',
 	init_function='server_service_ntp_signd_init',
 	deps='samdb NDR_NTP_SIGND LIBTSOCKET LIBSAMBA_TSOCKET',
 	internal_module=False,
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
