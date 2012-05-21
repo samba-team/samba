@@ -612,7 +612,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 			}
 			return NT_STATUS_INVALID_PARAMETER;
-		} else if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
+		} else if (smb_gss_oid_equal(gensec_gssapi_state->gss_oid,
+					     gss_mech_krb5)) {
 			switch (min_stat) {
 			case KRB5KRB_AP_ERR_TKT_NYV:
 				DEBUG(1, ("Error with ticket to contact %s: possible clock skew between us and the KDC or target server: %s\n",
@@ -1225,7 +1226,8 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		/* Only for GSSAPI/Krb5 */
-		if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
+		if (smb_gss_oid_equal(gensec_gssapi_state->gss_oid,
+				      gss_mech_krb5)) {
 			return true;
 		}
 	}

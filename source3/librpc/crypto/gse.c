@@ -57,24 +57,6 @@ struct gse_context {
 	gss_OID ret_mech;
 };
 
-#ifndef HAVE_GSS_OID_EQUAL
-
-static bool gss_oid_equal(const gss_OID o1, const gss_OID o2)
-{
-	if (o1 == o2) {
-		return true;
-	}
-	if ((o1 == NULL && o2 != NULL) || (o1 != NULL && o2 == NULL)) {
-		return false;
-	}
-	if (o1->length != o2->length) {
-		return false;
-	}
-	return memcmp(o1->elements, o2->elements, o1->length) == false;
-}
-
-#endif
-
 /* free non talloc dependent contexts */
 static int gse_context_destructor(void *ptr)
 {
@@ -126,7 +108,8 @@ static int gse_context_destructor(void *ptr)
 	 * this code to EAP or other GSS mechanisms determines an
 	 * implementation-dependent way of releasing any dynamically
 	 * allocated OID */
-	SMB_ASSERT(gss_oid_equal(&gse_ctx->gss_mech, GSS_C_NO_OID) || gss_oid_equal(&gse_ctx->gss_mech, gss_mech_krb5));
+	SMB_ASSERT(smb_gss_oid_equal(&gse_ctx->gss_mech, GSS_C_NO_OID) ||
+		   smb_gss_oid_equal(&gse_ctx->gss_mech, gss_mech_krb5));
 
 	return 0;
 }
@@ -994,7 +977,7 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		/* Only for GSE/Krb5 */
-		if (gss_oid_equal(gse_ctx->ret_mech, gss_mech_krb5)) {
+		if (smb_gss_oid_equal(gse_ctx->ret_mech, gss_mech_krb5)) {
 			return true;
 		}
 	}

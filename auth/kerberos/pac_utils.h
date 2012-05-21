@@ -22,7 +22,7 @@
 #define _PAC_UTILS_H
 
 #include "lib/krb5_wrap/krb5_samba.h"
-#include "system/gssapi.h"
+#include "lib/krb5_wrap/gss_samba.h"
 
 struct PAC_SIGNATURE_DATA;
 struct PAC_DATA;
