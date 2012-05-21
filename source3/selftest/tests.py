@@ -107,7 +107,8 @@ local_tests=[
 	"LOCAL-CONV-AUTH-INFO",
 	"LOCAL-IDMAP-TDB-COMMON",
 	"LOCAL-hex_encode_buf",
-	"LOCAL-sprintf_append"]
+	"LOCAL-sprintf_append",
+	"LOCAL-remove_duplicate_addrs2"]
 
 for t in local_tests:
     plantestsuite("samba3.smbtorture_s3.%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "-e"])

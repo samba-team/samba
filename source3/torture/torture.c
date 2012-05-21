@@ -8726,6 +8726,109 @@ static bool run_local_hex_encode_buf(int dummy)
 	return true;
 }
 
+static const char *remove_duplicate_addrs2_test_strings_vector[] = {
+	"0.0.0.0",
+	"::0",
+	"1.2.3.1",
+	"0.0.0.0",
+	"0.0.0.0",
+	"1.2.3.2",
+	"1.2.3.3",
+	"1.2.3.4",
+	"1.2.3.5",
+	"::0",
+	"1.2.3.6",
+	"1.2.3.7",
+	"::0",
+	"::0",
+	"::0",
+	"1.2.3.8",
+	"1.2.3.9",
+	"1.2.3.10",
+	"1.2.3.11",
+	"1.2.3.12",
+	"1.2.3.13",
+	"1001:1111:1111:1000:0:1111:1111:1111",
+	"1.2.3.1",
+	"1.2.3.2",
+	"1.2.3.3",
+	"1.2.3.12",
+	"::0",
+	"::0"
+};
+
+static const char *remove_duplicate_addrs2_test_strings_result[] = {
+	"1.2.3.1",
+	"1.2.3.2",
+	"1.2.3.3",
+	"1.2.3.4",
+	"1.2.3.5",
+	"1.2.3.6",
+	"1.2.3.7",
+	"1.2.3.8",
+	"1.2.3.9",
+	"1.2.3.10",
+	"1.2.3.11",
+	"1.2.3.12",
+	"1.2.3.13",
+	"1001:1111:1111:1000:0:1111:1111:1111"
+};
+
+static bool run_local_remove_duplicate_addrs2(int dummy)
+{
+	struct ip_service test_vector[28];
+	int count, i;
+
+	/* Construct the sockaddr_storage test vector. */
+	for (i = 0; i < 28; i++) {
+		struct addrinfo hints;
+		struct addrinfo *res = NULL;
+		int ret;
+
+		memset(&hints, '\0', sizeof(hints));
+		hints.ai_flags = AI_NUMERICHOST;
+		ret = getaddrinfo(remove_duplicate_addrs2_test_strings_vector[i],
+				NULL,
+				&hints,
+				&res);
+		if (ret) {
+			fprintf(stderr, "getaddrinfo failed on [%s]\n",
+				remove_duplicate_addrs2_test_strings_vector[i]);
+			return false;
+		}
+		memset(&test_vector[i], '\0', sizeof(test_vector[i]));
+		memcpy(&test_vector[i].ss,
+			res->ai_addr,
+			res->ai_addrlen);
+		freeaddrinfo(res);
+	}
+
+	count = remove_duplicate_addrs2(test_vector, i);
+
+	if (count != 14) {
+		fprintf(stderr, "count wrong (%d) should be 14\n",
+			count);
+		return false;
+	}
+
+	for (i = 0; i < count; i++) {
+		char addr[INET6_ADDRSTRLEN];
+
+		print_sockaddr(addr, sizeof(addr), &test_vector[i].ss);
+
+		if (strcmp(addr, remove_duplicate_addrs2_test_strings_result[i]) != 0) {
+			fprintf(stderr, "mismatch on [%d] [%s] [%s]\n",
+				i,
+				addr,
+				remove_duplicate_addrs2_test_strings_result[i]);
+			return false;
+		}
+	}
+
+	printf("run_local_remove_duplicate_addrs2: success\n");
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -8936,6 +9039,7 @@ static struct {
 	{ "LOCAL-sprintf_append", run_local_sprintf_append, 0},
 	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
 	{ "LOCAL-IDMAP-TDB-COMMON", run_idmap_tdb_common_test, 0},
+	{ "LOCAL-remove_duplicate_addrs2", run_local_remove_duplicate_addrs2, 0},
 	{NULL, NULL, 0}};
 
 

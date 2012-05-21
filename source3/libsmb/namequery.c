@@ -1102,7 +1102,7 @@ static void sort_service_list(struct ip_service *servlist, int count)
  Remove any duplicate address/port pairs in the list
  *********************************************************************/
 
-static int remove_duplicate_addrs2(struct ip_service *iplist, int count )
+int remove_duplicate_addrs2(struct ip_service *iplist, int count )
 {
 	int i, j;
 
