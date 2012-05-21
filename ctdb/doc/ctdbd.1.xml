@@ -862,6 +862,34 @@
     </para>
     </refsect2>
 
+    <refsect2><title>DBRecordCountWarn</title>
+    <para>Default: 100000</para>
+    <para>
+    When set to non-zero, ctdb will log a warning when we try to recover a
+    database with more than this many records. This will produce a warning
+    if a database grows uncontrollably with orphaned records.
+    </para>
+    </refsect2>
+
+    <refsect2><title>DBRecordSizeWarn</title>
+    <para>Default: 10000000</para>
+    <para>
+    When set to non-zero, ctdb will log a warning when we try to recover a
+    database where a single record is bigger than this. This will produce
+    a warning if a database record grows uncontrollably with orphaned
+    sub-records.
+    </para>
+    </refsect2>
+
+    <refsect2><title>DBSizeWarn</title>
+    <para>Default: 1000000000</para>
+    <para>
+    When set to non-zero, ctdb will log a warning when we try to recover a
+    database bigger than this. This will produce
+    a warning if a database grows uncontrollably.
+    </para>
+    </refsect2>
+
     <refsect2><title>VerboseMemoryNames</title>
     <para>Default: 0</para>
     <para>

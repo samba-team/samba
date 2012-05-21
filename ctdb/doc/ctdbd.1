@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: ctdbd
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 03/23/2012
+.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
+.\"      Date: 05/21/2012
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDBD" "1" "03/23/2012" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "05/21/2012" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -483,6 +483,21 @@ When you enable this tunable, CTDB will no longer attempt to recover the cluster
 Default: 0
 .PP
 When set to 1, ctdb will allow ip addresses to be failed over onto this node\&. Any ip addresses that the node currently hosts will remain on the node but no new ip addresses can be failed over onto the node\&.
+.SS "DBRecordCountWarn"
+.PP
+Default: 100000
+.PP
+When set to non\-zero, ctdb will log a warning when we try to recover a database with more than this many records\&. This will produce a warning if a database grows uncontrollably with orphaned records\&.
+.SS "DBRecordSizeWarn"
+.PP
+Default: 10000000
+.PP
+When set to non\-zero, ctdb will log a warning when we try to recover a database where a single record is bigger than this\&. This will produce a warning if a database record grows uncontrollably with orphaned sub\-records\&.
+.SS "DBSizeWarn"
+.PP
+Default: 1000000000
+.PP
+When set to non\-zero, ctdb will log a warning when we try to recover a database bigger than this\&. This will produce a warning if a database grows uncontrollably\&.
 .SS "VerboseMemoryNames"
 .PP
 Default: 0
