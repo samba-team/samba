@@ -74,6 +74,8 @@ done
 for i in "events.d" "functions" ; do
     ln -sf "${etcdir}/ctdb/${i}" "${ctdb_datadir}/eventscripts/etc-ctdb/${i}"
 done
+# test_wrap needs to set TEST_BIN_DIR
+sed -i -e "s@^TEST_SCRIPTS_DIR=.*@&\nexport TEST_BIN_DIR=\"${libdir}/ctdb-tests\"@" "${ctdb_datadir}/scripts/test_wrap"
 
 ctdb_libdir="${destdir}${libdir}/ctdb-tests"
 mkdir -p  "${destdir}${libdir}"
