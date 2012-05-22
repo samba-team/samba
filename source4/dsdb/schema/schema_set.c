@@ -665,6 +665,8 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_schema *schema,
 				       struct ldb_message *msg)
 {
+	const char* tstring;
+	time_t ts;
 	if (samdb_find_attribute(ldb, msg,
 				 "objectclass", "attributeSchema") != NULL) {
 		return dsdb_set_attribute_from_ldb(ldb, schema, msg);
@@ -672,7 +674,14 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_sche
 				 "objectclass", "classSchema") != NULL) {
 		return dsdb_set_class_from_ldb(schema, msg);
 	}
-
+	tstring = ldb_msg_find_attr_as_string(msg, "whenChanged", NULL);
+	/* keep a trace of the ts of the most recently changed object */
+	if (tstring) {
+		ts = ldb_string_to_time(tstring);
+		if (ts > schema->ts_last_change) {
+			schema->ts_last_change = ts;
+		}
+	}
 	/* Don't fail on things not classes or attributes */
 	return WERR_OK;
 }
@@ -753,6 +762,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 		goto failed;
 	}
 
+	schema->ts_last_change = 0;
 	/* load the attribute and class definitions out of df */
 	while ((ldif = ldb_ldif_read_string(ldb, &df))) {
 		talloc_steal(mem_ctx, ldif);

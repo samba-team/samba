@@ -807,6 +807,7 @@ int dsdb_load_ldb_results_into_schema(TALLOC_CTX *mem_ctx, struct ldb_context *l
 {
 	unsigned int i;
 
+	schema->ts_last_change = 0;
 	for (i=0; i < attrs_class_res->count; i++) {
 		WERROR status = dsdb_schema_set_el_from_ldb_msg(ldb, schema, attrs_class_res->msgs[i]);
 		if (!W_ERROR_IS_OK(status)) {

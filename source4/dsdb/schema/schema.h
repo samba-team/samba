@@ -245,6 +245,7 @@ struct dsdb_schema {
 	struct ldb_module *loaded_from_module;
 	struct dsdb_schema *(*refresh_fn)(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema);
 	bool refresh_in_progress;
+	time_t ts_last_change;
 	time_t last_refresh;
 	/* an 'opaque' sequence number that the reload function may also wish to use */
 	uint64_t reload_seq_number;
