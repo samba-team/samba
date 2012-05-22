@@ -1158,6 +1158,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 		}
 
 		ads_destroy( &ads );
+		return false;
 	}
 #endif
 
