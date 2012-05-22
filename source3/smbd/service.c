@@ -576,7 +576,6 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
-	conn->used = True;
 	conn->printer = (strncmp(dev,"LPT",3) == 0);
 	conn->ipc = ( (strncmp(dev,"IPC",3) == 0) ||
 		      ( lp_enable_asu_support() && strequal(dev,"ADMIN$")) );

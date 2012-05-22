@@ -5063,8 +5063,6 @@ void reply_tdis(struct smb_request *req)
 		return;
 	}
 
-	conn->used = False;
-
 	close_cnum(conn,req->vuid);
 	req->conn = NULL;
 

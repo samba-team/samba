@@ -400,7 +400,6 @@ typedef struct connection_struct {
 
 	time_t lastused;
 	time_t lastused_count;
-	bool used;
 	int num_files_open;
 	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
 	int encrypt_level;
