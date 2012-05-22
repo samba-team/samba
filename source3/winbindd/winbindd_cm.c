@@ -1161,7 +1161,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	status = nbt_getdc(winbind_messaging_context(), pss, domain->name,
+	status = nbt_getdc(winbind_messaging_context(), 10, pss, domain->name,
 			   &domain->sid, nt_version, mem_ctx, &nt_version,
 			   &dc_name, NULL);
 	if (NT_STATUS_IS_OK(status)) {
