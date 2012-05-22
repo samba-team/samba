@@ -653,6 +653,17 @@ bool share_mode_stale_pid(struct share_mode_data *d, unsigned i)
 		   (unsigned)d->num_share_modes));
 	*e = d->share_modes[d->num_share_modes-1];
 	d->num_share_modes -= 1;
+
+	if (d->num_share_modes == 0 &&
+	    d->num_delete_tokens) {
+		/*
+		 * We cannot have any delete tokens
+		 * if there are no valid share modes.
+		 */
+		TALLOC_FREE(d->delete_tokens);
+		d->num_delete_tokens = 0;
+	}
+
 	d->modified = true;
 	return true;
 }
