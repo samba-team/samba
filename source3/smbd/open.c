@@ -984,12 +984,23 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	*file_existed = True;
-
 	/* A delete on close prohibits everything */
 
 	if (is_delete_on_close_set(lck, name_hash)) {
-		return NT_STATUS_DELETE_PENDING;
+		/*
+		 * Check the delete on close token
+		 * is valid. It could have been left
+		 * after a server crash.
+		 */
+		for(i = 0; i < lck->data->num_share_modes; i++) {
+			if (!share_mode_stale_pid(lck->data, i)) {
+
+				*file_existed = true;
+
+				return NT_STATUS_DELETE_PENDING;
+			}
+		}
+		return NT_STATUS_OK;
 	}
 
 	if (is_stat_open(access_mask)) {
@@ -1029,8 +1040,14 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				continue;
 			}
 
+			*file_existed = true;
+
 			return NT_STATUS_SHARING_VIOLATION;
 		}
+	}
+
+	if (lck->data->num_share_modes != 0) {
+		*file_existed = true;
 	}
 
 	return NT_STATUS_OK;
