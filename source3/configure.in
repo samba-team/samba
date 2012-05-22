@@ -1954,9 +1954,7 @@ AC_SUBST(LIBTDB_OBJ0)
 if test "x$enable_external_libtdb" = xno
 then
 	m4_include(../lib/tdb/libtdb.m4)
-	if test x"$USESHARED" == x"no" ; then
-		LINK_LIBTDB=STATIC
-	fi
+	LINK_LIBTDB=STATIC
 	LIBTDBVERSION=`grep ^VERSION ${tdbdir}/wscript | sed -e "s/'//g" -e 's/.* //'`
 	SMB_LIBRARY(tdb, 1, ${LIBTDBVERSION})
 	LIBTDB_OBJ0=""
