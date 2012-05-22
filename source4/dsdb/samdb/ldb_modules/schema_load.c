@@ -29,18 +29,133 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
+#include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/tdb_compat/tdb_compat.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
+#include "system/filesys.h"
 struct schema_load_private_data {
 	bool in_transaction;
+	struct tdb_wrap *metadata;
 };
 
 static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_dn, uint64_t current_usn,
 			       struct dsdb_schema **schema);
 
+/*
+ * Open sam.ldb.d/metadata.tdb.
+ */
+static int schema_metadata_open(struct ldb_module *module)
+{
+	struct schema_load_private_data *data = talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx;
+	struct loadparm_context *lp_ctx;
+	const char *sam_name;
+	char *filename;
+	int open_flags;
+	struct stat statbuf;
+
+	if (!data) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"schema_load: metadata not initialized");
+	}
+	data->metadata = NULL;
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
+
+	sam_name = (const char *)ldb_get_opaque(ldb, "ldb_url");
+	if (strncmp("tdb://", sam_name, 6) == 0) {
+		sam_name += 6;
+	}
+	if (!sam_name) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+	filename = talloc_asprintf(tmp_ctx, "%s.d/metadata.tdb", sam_name);
+	if (!filename) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	open_flags = O_RDWR;
+	if (stat(filename, &statbuf) != 0) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	lp_ctx = talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
+				       struct loadparm_context);
+
+	data->metadata = tdb_wrap_open(data, filename, 10,
+					      TDB_DEFAULT, open_flags, 0660,
+					      lp_ctx);
+	if (data->metadata == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+static int schema_metadata_get_uint64(struct ldb_module *module,
+					 const char *key, uint64_t *value,
+					 uint64_t default_value)
+{
+	struct schema_load_private_data *data = talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+	struct tdb_context *tdb;
+	TDB_DATA tdb_key, tdb_data;
+	char *value_str;
+	TALLOC_CTX *tmp_ctx;
+
+	if (!data || !data->metadata) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"schema: metadata tdb not initialized");
+	}
+
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
+
+	tdb = data->metadata->tdb;
+
+	tdb_key.dptr = (uint8_t *)discard_const_p(char, key);
+	tdb_key.dsize = strlen(key);
+
+	tdb_data = tdb_fetch_compat(tdb, tdb_key);
+	if (!tdb_data.dptr) {
+		if (tdb_error(tdb) == TDB_ERR_NOEXIST) {
+			*value = default_value;
+			return LDB_SUCCESS;
+		} else {
+			return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+						tdb_errorstr_compat(tdb));
+		}
+	}
+
+	value_str = talloc_strndup(tmp_ctx, (char *)tdb_data.dptr, tdb_data.dsize);
+	if (value_str == NULL) {
+		SAFE_FREE(tdb_data.dptr);
+		talloc_free(tmp_ctx);
+		return ldb_module_oom(module);
+	}
+
+	*value = strtoull(value_str, NULL, 10);
+
+	SAFE_FREE(tdb_data.dptr);
+	talloc_free(tmp_ctx);
+
+	return LDB_SUCCESS;
+}
+
 static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct dsdb_schema *schema, bool is_global_schema)
 {
-	uint64_t current_usn;
+	uint64_t current_usn, value;
 	int ret;
 	struct ldb_result *res;
 	struct ldb_request *treq;
@@ -104,6 +219,15 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	 * actually changed (and therefor completely reloaded) we would
 	 * continue to hit the database to get the highest USN.
 	 */
+
+	ret = schema_metadata_get_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, &value, 0);
+	if (ret == LDB_SUCCESS) {
+		schema->metadata_usn = value;
+	} else {
+		/* From an old provision it can happen that the tdb didn't exists yet */
+		DEBUG(0, ("Error while searching for the schema usn in the metadata\n"));
+		schema->metadata_usn = 0;
+	}
 	schema->last_refresh = ts;
 
 	ctrl = talloc(treq, struct dsdb_control_current_partition);
@@ -311,14 +435,71 @@ static int schema_load_init(struct ldb_module *module)
 		current_usn = 0;
 	}
 
-	return dsdb_schema_from_db(module, schema_dn, current_usn, &schema);
+	ret = dsdb_schema_from_db(module, schema_dn, current_usn, &schema);
+	/* We don't care too much on the result of this action
+	 * the most probable reason for this to fail is that the tdb didn't
+	 * exists yet and this will be corrected by the partition module.
+	 */
+	if (ret == LDB_SUCCESS && schema_metadata_open(module) == LDB_SUCCESS) {
+		uint64_t value;
+
+		ret = schema_metadata_get_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, &value, 0);
+		if (ret == LDB_SUCCESS) {
+			schema->metadata_usn = value;
+		} else {
+			schema->metadata_usn = 0;
+		}
+	}
+	return ret;
+}
+
+static int schema_search(struct ldb_module *module, struct ldb_request *req)
+{
+	struct dsdb_schema *schema;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	uint64_t value;
+	int ret;
+	struct schema_load_private_data *private_data =
+		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (schema && private_data && !private_data->in_transaction) {
+		ret = schema_metadata_get_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, &value, 0);
+		if (ret == LDB_SUCCESS && schema->metadata_usn < value) {
+			/* The usn of the schema was changed in the metadata,
+			* this indicate that another process has modified the schema and
+			* that a reload is needed.
+			*/
+			schema->last_refresh = 0;
+			schema = dsdb_get_schema(ldb, NULL);
+		}
+	}
+
+	return ldb_next_request(module, req);
 }
 
 static int schema_load_start_transaction(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
 		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+	struct dsdb_schema *schema;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	uint64_t value;
+	int ret;
 
+	schema = dsdb_get_schema(ldb, NULL);
+	if (!private_data->metadata) {
+		schema_metadata_open(module);
+	}
+	ret = schema_metadata_get_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, &value, 0);
+	if (ret == LDB_SUCCESS && schema->metadata_usn < value) {
+		/* The usn of the schema was changed in the metadata,
+		 * this indicate that another process has modified the schema and
+		 * that a reload is needed.
+		 */
+		schema->last_refresh = 0;
+		schema = dsdb_get_schema(ldb, NULL);
+	}
 	private_data->in_transaction = true;
 
 	return ldb_next_start_trans(module);
@@ -372,6 +553,7 @@ static const struct ldb_module_ops ldb_schema_load_module_ops = {
 	.name		= "schema_load",
 	.init_context	= schema_load_init,
 	.extended	= schema_load_extended,
+	.search		= schema_search,
 	.start_transaction = schema_load_start_transaction,
 	.end_transaction   = schema_load_end_transaction,
 	.del_transaction   = schema_load_del_transaction,

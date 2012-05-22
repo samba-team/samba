@@ -247,7 +247,14 @@ struct dsdb_schema {
 	bool refresh_in_progress;
 	time_t ts_last_change;
 	time_t last_refresh;
-	/* an 'opaque' sequence number that the reload function may also wish to use */
+	/* This 'opaque' is stored in the metadata and is used by one process to signal
+	 * that others have to reload the schema
+	 */
+	uint64_t metadata_usn;
+	/* an 'opaque' sequence number that is used in the reload to check if a reload
+	 * should really be performed, as the schema is periodically reloaded this
+	 * is still needed in order to avoid costly complete schema reload.
+	 */
 	uint64_t reload_seq_number;
 
 	/* Should the syntax handlers in this case handle all incoming OIDs automatically, assigning them as an OID if no text name is known? */
