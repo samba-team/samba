@@ -81,21 +81,6 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 }
 
 /****************************************************************************
- Close all conn structures.
- Return true if any were closed.
-****************************************************************************/
-
-void conn_close_all(struct smbd_server_connection *sconn)
-{
-	if (sconn->using_smb2) {
-		smbXsrv_session_logoff_all(sconn->conn);
-	} else {
-		smb1srv_tcon_disconnect_all(sconn->conn);
-	}
-}
-
-
-/****************************************************************************
  Forcibly unmount a share.
  All instances of the parameter 'sharename' share are unmounted.
  The special sharename '*' forces unmount of all shares.
