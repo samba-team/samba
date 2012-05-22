@@ -544,7 +544,7 @@ LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 	     libsmb/namequery.o ../libcli/nbt/lmhosts.o ../libcli/dns/dns_hosts_file.o libsmb/conncache.o \
-	     ../lib/addds/dnsquery.o libads/sitename_cache.o
+	     ../lib/addns/dnsquery.o libads/sitename_cache.o
 
 NTERR_OBJ = ../libcli/util/nterr.o libsmb/smberr.o
 DOSERR_OBJ = ../libcli/util/doserr.o
