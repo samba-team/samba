@@ -79,10 +79,10 @@ static struct files_struct *log_writeable_file_fn(
 enum server_exit_reason { SERVER_EXIT_NORMAL, SERVER_EXIT_ABNORMAL };
 
 static void exit_server_common(enum server_exit_reason how,
-	const char *const reason) _NORETURN_;
+	const char *reason) _NORETURN_;
 
 static void exit_server_common(enum server_exit_reason how,
-	const char *const reason)
+	const char *reason)
 {
 	struct smbXsrv_connection *conn = global_smbXsrv_connection;
 	struct smbd_server_connection *sconn = NULL;
@@ -103,12 +103,40 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 
 	if (sconn) {
+		NTSTATUS status;
+
 		if (lp_log_writeable_files_on_exit()) {
 			bool found = false;
 			files_forall(sconn, log_writeable_file_fn, &found);
 		}
-		conn_close_all(sconn);
-		invalidate_all_vuids(sconn);
+
+		/*
+		 * Note: this is a no-op for smb2 as
+		 * conn->tcon_table is empty
+		 */
+		status = smb1srv_tcon_disconnect_all(conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Server exit (%s)\n",
+				(reason ? reason : "normal exit")));
+			DEBUG(0, ("exit_server_common: "
+				  "smb1srv_tcon_disconnect_all() failed (%s) - "
+				  "triggering cleanup\n", nt_errstr(status)));
+			how = SERVER_EXIT_ABNORMAL;
+			reason = "smb1srv_tcon_disconnect_all failed";
+		}
+
+		status = smbXsrv_session_logoff_all(conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Server exit (%s)\n",
+				(reason ? reason : "normal exit")));
+			DEBUG(0, ("exit_server_common: "
+				  "smbXsrv_session_logoff_all() failed (%s) - "
+				  "triggering cleanup\n", nt_errstr(status)));
+			how = SERVER_EXIT_ABNORMAL;
+			reason = "smbXsrv_session_logoff_all failed";
+		}
+
+		change_to_root_user();
 	}
 
 	/* 3 second timeout. */
