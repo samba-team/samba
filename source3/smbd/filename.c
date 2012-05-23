@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "fake_file.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
@@ -1309,6 +1310,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				dfs_path,
 				name_in,
 				allow_wcards,
+				!conn->sconn->using_smb2,
 				&fname,
 				ppath_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {

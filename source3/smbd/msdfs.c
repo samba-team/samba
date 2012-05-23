@@ -1555,6 +1555,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				bool dfs_pathnames,
 				const char *name_in,
 				bool allow_wcards,
+				bool allow_broken_path,
 				char **pp_name_out,
 				bool *ppath_contains_wcard)
 {
@@ -1566,7 +1567,7 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 					conn,
 					name_in,
 					allow_wcards,
-					!smbd_server_conn->using_smb2,
+					allow_broken_path,
 					pp_name_out,
 					&path_contains_wcard);
 

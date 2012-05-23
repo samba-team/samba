@@ -6236,6 +6236,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				       req->flags2 & FLAGS2_DFS_PATHNAMES,
 				       newname,
 				       true,
+				       !conn->sconn->using_smb2,
 				       &newname,
 				       &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
