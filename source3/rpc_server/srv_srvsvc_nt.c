@@ -1397,9 +1397,11 @@ WERROR _srvsvc_NetShareGetInfo(pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetShareGetInfo: %d\n", __LINE__));
 
-	fstrcpy(share_name, r->in.share_name);
+	if (!r->in.share_name) {
+		return WERR_INVALID_NAME;
+	}
 
-	snum = find_service(share_name);
+	snum = find_service(r->in.share_name, share_name);
 	if (snum < 0) {
 		return WERR_INVALID_NAME;
 	}
@@ -1507,7 +1509,7 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 			       struct srvsvc_NetShareSetInfo *r)
 {
 	char *command = NULL;
-	char *share_name = NULL;
+	fstring share_name;
 	char *comment = NULL;
 	const char *pathname = NULL;
 	int type;
@@ -1523,26 +1525,25 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetShareSetInfo: %d\n", __LINE__));
 
-	share_name = talloc_strdup(p->mem_ctx, r->in.share_name);
-	if (!share_name) {
-		return WERR_NOMEM;
+	if (!r->in.share_name) {
+		return WERR_INVALID_NAME;
 	}
 
 	if (r->out.parm_error) {
 		*r->out.parm_error = 0;
 	}
 
-	if ( strequal(share_name,"IPC$")
-		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
-		|| strequal(share_name,"global") )
+	if ( strequal(r->in.share_name,"IPC$")
+		|| ( lp_enable_asu_support() && strequal(r->in.share_name,"ADMIN$") )
+		|| strequal(r->in.share_name,"global") )
 	{
 		DEBUG(5,("_srvsvc_NetShareSetInfo: share %s cannot be "
 			"modified by a remote user.\n",
-			share_name ));
+			r->in.share_name ));
 		return WERR_ACCESS_DENIED;
 	}
 
-	snum = find_service(share_name);
+	snum = find_service(r->in.share_name, share_name);
 
 	/* Does this share exist ? */
 	if (snum < 0)
@@ -1737,7 +1738,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 			   struct srvsvc_NetShareAdd *r)
 {
 	char *command = NULL;
-	char *share_name = NULL;
+	char *share_name_in = NULL;
+	fstring share_name;
 	char *comment = NULL;
 	char *pathname = NULL;
 	int type;
@@ -1774,7 +1776,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		/* Not enough info in a level 1 to do anything. */
 		return WERR_ACCESS_DENIED;
 	case 2:
-		share_name = talloc_strdup(ctx, r->in.info->info2->name);
+		share_name_in = talloc_strdup(ctx, r->in.info->info2->name);
 		comment = talloc_strdup(ctx, r->in.info->info2->comment);
 		pathname = talloc_strdup(ctx, r->in.info->info2->path);
 		max_connections = (r->in.info->info2->max_users == (uint32_t)-1) ?
@@ -1785,7 +1787,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		/* No path. Not enough info in a level 501 to do anything. */
 		return WERR_ACCESS_DENIED;
 	case 502:
-		share_name = talloc_strdup(ctx, r->in.info->info502->name);
+		share_name_in = talloc_strdup(ctx, r->in.info->info502->name);
 		comment = talloc_strdup(ctx, r->in.info->info502->comment);
 		pathname = talloc_strdup(ctx, r->in.info->info502->path);
 		max_connections = (r->in.info->info502->max_users == (uint32_t)-1) ?
@@ -1813,21 +1815,21 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 
 	/* check for invalid share names */
 
-	if (!share_name || !validate_net_name(share_name,
+	if (!share_name_in || !validate_net_name(share_name_in,
 				INVALID_SHARENAME_CHARS,
-				strlen(share_name))) {
+				strlen(share_name_in))) {
 		DEBUG(5,("_srvsvc_NetShareAdd: Bad sharename \"%s\"\n",
-					share_name ? share_name : ""));
+					share_name_in ? share_name_in : ""));
 		return WERR_INVALID_NAME;
 	}
 
-	if (strequal(share_name,"IPC$") || strequal(share_name,"global")
+	if (strequal(share_name_in,"IPC$") || strequal(share_name_in,"global")
 			|| (lp_enable_asu_support() &&
-					strequal(share_name,"ADMIN$"))) {
+					strequal(share_name_in,"ADMIN$"))) {
 		return WERR_ACCESS_DENIED;
 	}
 
-	snum = find_service(share_name);
+	snum = find_service(share_name_in, share_name);
 
 	/* Share already exists. */
 	if (snum >= 0) {
@@ -1845,7 +1847,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 	}
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
-	string_replace(share_name, '"', ' ');
+	string_replace(share_name_in, '"', ' ');
 	string_replace(path, '"', ' ');
 	if (comment) {
 		string_replace(comment, '"', ' ');
@@ -1855,7 +1857,7 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 			"%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
 			lp_add_share_cmd(),
 			get_dyn_CONFIGFILE(),
-			share_name,
+			share_name_in,
 			path,
 			comment ? comment : "",
 			max_connections);
@@ -1892,6 +1894,8 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 
 	if (psd) {
+		/* Note we use share_name here, not share_name_in as
+		   we need a canonicalized name for setting security. */
 		if (!set_share_security(share_name, psd)) {
 			DEBUG(0,("_srvsvc_NetShareAdd: Failed to add security info to share %s.\n",
 				share_name ));
@@ -1919,7 +1923,7 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p,
 			   struct srvsvc_NetShareDel *r)
 {
 	char *command = NULL;
-	char *share_name = NULL;
+	fstring share_name;
 	int ret;
 	int snum;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
@@ -1929,22 +1933,21 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetShareDel: %d\n", __LINE__));
 
-	share_name = talloc_strdup(p->mem_ctx, r->in.share_name);
-	if (!share_name) {
+	if (!r->in.share_name) {
 		return WERR_NET_NAME_NOT_FOUND;
 	}
-	if ( strequal(share_name,"IPC$")
-		|| ( lp_enable_asu_support() && strequal(share_name,"ADMIN$") )
-		|| strequal(share_name,"global") )
+	if ( strequal(r->in.share_name,"IPC$")
+		|| ( lp_enable_asu_support() && strequal(r->in.share_name,"ADMIN$") )
+		|| strequal(r->in.share_name,"global") )
 	{
 		return WERR_ACCESS_DENIED;
 	}
 
-	if (!(params = get_share_params(p->mem_ctx, share_name))) {
+	if (!(params = get_share_params(p->mem_ctx, r->in.share_name))) {
 		return WERR_NO_SUCH_SHARE;
 	}
 
-	snum = find_service(share_name);
+	snum = find_service(r->in.share_name, share_name);
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
@@ -2087,9 +2090,11 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 
 	ZERO_STRUCT(st);
 
-	fstrcpy(servicename, r->in.share);
+	if (!r->in.share) {
+		return WERR_INVALID_NAME;
+	}
 
-	snum = find_service(servicename);
+	snum = find_service(r->in.share, servicename);
 	if (snum == -1) {
 		DEBUG(10, ("Could not find service %s\n", servicename));
 		werr = WERR_NET_NAME_NOT_FOUND;
@@ -2217,9 +2222,11 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 
 	ZERO_STRUCT(st);
 
-	fstrcpy(servicename, r->in.share);
+	if (!r->in.share) {
+		return WERR_INVALID_NAME;
+	}
 
-	snum = find_service(servicename);
+	snum = find_service(r->in.share, servicename);
 	if (snum == -1) {
 		DEBUG(10, ("Could not find service %s\n", servicename));
 		werr = WERR_NET_NAME_NOT_FOUND;

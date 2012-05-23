@@ -733,8 +733,7 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 		return res;
 	}
 
-	fstrcpy(sname, service);
-	snum = find_service(sname);
+	snum = find_service(service, sname);
 	if (snum == -1) {
 		/*
 		 * Should not happen, but we should not fail just *here*.
