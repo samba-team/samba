@@ -65,6 +65,8 @@ struct dlz_bind9_data {
 	dns_dlz_writeablezone_t *writeable_zone;
 };
 
+static struct dlz_bind9_data *dlz_bind9_state = NULL;
+static int dlz_bind9_state_ref_count = 0;
 
 static const char *zone_prefixes[] = {
 	"CN=MicrosoftDNS,DC=DomainDnsZones",
@@ -570,6 +572,12 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	struct ldb_dn *dn;
 	NTSTATUS nt_status;
 
+	if (dlz_bind9_state != NULL) {
+		*dbdata = dlz_bind9_state;
+		dlz_bind9_state_ref_count++;
+		return ISC_R_SUCCESS;
+	}
+
 	state = talloc_zero(NULL, struct dlz_bind9_data);
 	if (state == NULL) {
 		return ISC_R_NOMEMORY;
@@ -664,6 +672,8 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	state->auth_context->generate_session_info_pac = b9_generate_session_info_pac;
 
 	*dbdata = state;
+	dlz_bind9_state = state;
+	dlz_bind9_state_ref_count++;
 
 	return ISC_R_SUCCESS;
 
@@ -679,7 +689,13 @@ _PUBLIC_ void dlz_destroy(void *dbdata)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	state->log(ISC_LOG_INFO, "samba_dlz: shutting down");
-	talloc_free(state);
+
+	dlz_bind9_state_ref_count--;
+	if (dlz_bind9_state_ref_count == 0) {
+		talloc_unlink(state, state->samdb);
+		talloc_free(state);
+		dlz_bind9_state = NULL;
+	}
 }
 
 
