@@ -472,11 +472,6 @@ bool create_junction(TALLOC_CTX *ctx,
 bool create_msdfs_link(const struct junction_map *jucn);
 bool remove_msdfs_link(const struct junction_map *jucn);
 struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn);
-NTSTATUS resolve_dfspath(TALLOC_CTX *ctx,
-			connection_struct *conn,
-			bool dfs_pathnames,
-			const char *name_in,
-			char **pp_name_out);
 NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_pathnames,
