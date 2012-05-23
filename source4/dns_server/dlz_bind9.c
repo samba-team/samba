@@ -552,10 +552,11 @@ static void b9_debug(void *private_ptr, int msg_level, const char *msg)
 	state->log(isc_log_level, "samba_dlz: %s", msg);
 }
 
-int dlz_state_debug_unregister(struct dlz_bind9_data *state)
+static int dlz_state_debug_unregister(struct dlz_bind9_data *state)
 {
 	/* Stop logging (to the bind9 logs) */
 	debug_set_callback(NULL, NULL);
+	return 0;
 }
 
 /*
