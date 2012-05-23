@@ -25,8 +25,6 @@
 #include <ccan/hash/hash.h>
 #include "lib/util/bitmap.h"
 
-#define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))
-
 #define FILE_HANDLE_OFFSET 0x1000
 
 /****************************************************************************
