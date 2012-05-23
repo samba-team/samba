@@ -129,11 +129,12 @@ gratarp_sniff_wait_show ()
 
 ctdb_test_check_real_cluster ()
 {
-    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-	return 0
-    fi
+    [ -z "$TEST_LOCAL_DAEMONS" ] || \
+	die "ERROR: This test must be run against a real/virtual cluster, not local daemons."
 
-    echo "ERROR: This test must be run on a real/virtual cluster, not local daemons."
-    return 1
+    for i in $(onnode -q all hostname) ; do
+	[ "$h" != "$i" ] || \
+	    die "ERROR: This test must not be run from a cluster node."
+    done
 }
 
