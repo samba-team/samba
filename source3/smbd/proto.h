@@ -396,6 +396,7 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 
 /* The following definitions come from smbd/ipc.c  */
 
+NTSTATUS nt_status_np_pipe(NTSTATUS status);
 void send_trans_reply(connection_struct *conn,
 		      struct smb_request *req,
 		      char *rparam, int rparam_len,
