@@ -300,14 +300,20 @@ int add_home_service(const char *service, const char *username, const char *home
 /**
  * Find a service entry.
  *
- * @param service is modified (to canonical form??)
+ * @param service_in is modified (to canonical form??)
+ * and returned in return parameter service.
  **/
 
-int find_service(fstring service)
+int find_service(const char *service_in, fstring service)
 {
 	int iService;
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
+	if (!service_in) {
+		return -1;
+	}
+
+	fstrcpy(service, service_in);
 	all_string_sub(service,"\\","/",0);
 
 	iService = lp_servicenumber(service);
@@ -394,7 +400,7 @@ int find_service(fstring service)
 				goto fail;
 			}
 
-			iService = find_service(defservice);
+			iService = find_service(defservice, service);
 			if (iService >= 0) {
 				all_string_sub(service, "_","/",0);
 				iService = lp_add_service(service, iService);
@@ -1177,7 +1183,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				fstrcpy(unix_username,
 					current_user_info.smb_name);
 				map_username(sconn, unix_username);
-				snum = find_service(unix_username);
+				snum = find_service(unix_username, unix_username);
 			} 
 			if (snum != -1) {
 				DEBUG(5, ("making a connection to 'homes' "
@@ -1205,7 +1211,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 
 	strlower_m(service);
 
-	snum = find_service(service);
+	snum = find_service(service, service);
 
 	if (snum < 0) {
 		if (strequal(service,"IPC$") ||

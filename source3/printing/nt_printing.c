@@ -1472,9 +1472,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		return 3;
 	}
 
-	fstrcpy(printdollar, "print$");
-
-	printdollar_snum = find_service(printdollar);
+	printdollar_snum = find_service("print$", printdollar);
 	if (printdollar_snum == -1) {
 		*perr = WERR_NO_SUCH_SHARE;
 		return -1;
@@ -1864,9 +1862,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	fstrcpy(printdollar, "print$");
-
-	printdollar_snum = find_service(printdollar);
+	printdollar_snum = find_service("print$", printdollar);
 	if (printdollar_snum == -1) {
 		*perr = WERR_NO_SUCH_SHARE;
 		return WERR_NO_SUCH_SHARE;
@@ -5134,9 +5130,7 @@ static bool delete_driver_files(struct pipes_struct *rpc_pipe,
 	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n",
 		r->driver_name, r->version));
 
-	fstrcpy(printdollar, "print$");
-
-	printdollar_snum = find_service(printdollar);
+	printdollar_snum = find_service("print$", printdollar);
 	if (printdollar_snum == -1) {
 		return false;
 	}
