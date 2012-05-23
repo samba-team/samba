@@ -616,7 +616,10 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 		return -1;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+	nt_status = create_conn_struct(talloc_tos(),
+				       server_event_context(),
+				       server_messaging_context(),
+				       &conn,
 				       printdollar_snum,
 				       lp_pathname(printdollar_snum),
 				       session_info, &oldcwd);
@@ -1000,7 +1003,10 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 		return WERR_NO_SUCH_SHARE;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+	nt_status = create_conn_struct(talloc_tos(),
+				       server_event_context(),
+				       server_messaging_context(),
+				       &conn,
 				       printdollar_snum,
 				       lp_pathname(printdollar_snum),
 				       session_info, &oldcwd);
@@ -1533,7 +1539,10 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 		return false;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+	nt_status = create_conn_struct(talloc_tos(),
+				       server_event_context(),
+				       server_messaging_context(),
+				       &conn,
 				       printdollar_snum,
 				       lp_pathname(printdollar_snum),
 				       session_info, &oldcwd);

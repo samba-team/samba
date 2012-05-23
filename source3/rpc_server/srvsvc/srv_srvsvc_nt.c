@@ -2133,7 +2133,10 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+	nt_status = create_conn_struct(talloc_tos(),
+				       server_event_context(),
+				       server_messaging_context(),
+				       &conn,
 				       snum, lp_pathname(snum),
 				       p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2274,7 +2277,10 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+	nt_status = create_conn_struct(talloc_tos(),
+				       server_event_context(),
+				       server_messaging_context(),
+				       &conn,
 				       snum, lp_pathname(snum),
 				       p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {

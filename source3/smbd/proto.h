@@ -480,12 +480,13 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				char **pp_name_out,
 				bool *ppath_contains_wcard);
 NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
-				struct smbd_server_connection *sconn,
-				connection_struct **pconn,
-				int snum,
-				const char *path,
-				const struct auth_session_info *session_info,
-				char **poldcwd);
+			    struct tevent_context *ev,
+			    struct messaging_context *msg,
+			    connection_struct **pconn,
+			    int snum,
+			    const char *path,
+			    const struct auth_session_info *session_info,
+			    char **poldcwd);
 
 /* The following definitions come from smbd/negprot.c  */
 

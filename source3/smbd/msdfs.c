@@ -223,12 +223,13 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 *********************************************************/
 
 NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
-				struct smbd_server_connection *sconn,
-				connection_struct **pconn,
-				int snum,
-				const char *path,
-				const struct auth_session_info *session_info,
-				char **poldcwd)
+			    struct tevent_context *ev,
+			    struct messaging_context *msg,
+			    connection_struct **pconn,
+			    int snum,
+			    const char *path,
+			    const struct auth_session_info *session_info,
+			    char **poldcwd)
 {
 	connection_struct *conn;
 	char *connpath;
@@ -254,6 +255,18 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	conn->sconn = talloc_zero(conn, struct smbd_server_connection);
+	if (conn->sconn == NULL) {
+		TALLOC_FREE(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	conn->sconn->ev_ctx = ev;
+	conn->sconn->msg_ctx = msg;
+	conn->sconn->sock = -1;
+	conn->sconn->smb1.echo_handler.trusted_fd = -1;
+	conn->sconn->smb1.echo_handler.socket_lock_fd = -1;
+
 	/* needed for smbd_vfs_init() */
 
 	if (!(conn->params = talloc_zero(conn, struct share_params))) {
@@ -265,8 +278,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	conn->params->service = snum;
 	conn->cnum = (unsigned)-1;
 
-	conn->sconn = sconn;
-	DLIST_ADD(sconn->connections, conn);
+	DLIST_ADD(conn->sconn->connections, conn);
 	conn->sconn->num_connections++;
 
 	if (session_info != NULL) {
@@ -967,7 +979,10 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct(ctx, sconn, &conn, snum,
+	status = create_conn_struct(ctx,
+				    server_event_context(),
+				    server_messaging_context(),
+				    &conn, snum,
 				    lp_pathname(snum), NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
@@ -1143,7 +1158,10 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 	if(snum < 0) {
 		return False;
 	}
-	status = create_conn_struct(talloc_tos(), smbd_server_conn, conn_out,
+	status = create_conn_struct(talloc_tos(),
+				    server_event_context(),
+				    server_messaging_context(),
+				    conn_out,
 				    snum, lp_pathname(snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -1305,7 +1323,10 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(talloc_tos(), smbd_server_conn, &conn,
+	status = create_conn_struct(talloc_tos(),
+				    server_event_context(),
+				    server_messaging_context(),
+				    &conn,
 				    snum, connect_path, NULL, &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
@@ -1378,7 +1399,10 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(ctx, smbd_server_conn, &conn, snum, connect_path, NULL,
+	status = create_conn_struct(ctx,
+				    server_event_context(),
+				    server_messaging_context(),
+				    &conn, snum, connect_path, NULL,
 				    &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
