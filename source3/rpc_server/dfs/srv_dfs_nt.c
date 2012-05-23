@@ -75,8 +75,9 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	}
 
 	/* The following call can change the cwd. */
-	status = get_referred_path(ctx, r->in.path, smbd_server_conn, jn,
-				   &consumedcnt, &self_ref);
+	status = get_referred_path(ctx, r->in.path,
+				   true, /*allow_broken_path */
+				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
@@ -142,7 +143,8 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
 	}
 
-	status = get_referred_path(ctx, r->in.dfs_entry_path, smbd_server_conn,
+	status = get_referred_path(ctx, r->in.dfs_entry_path,
+				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
 		return WERR_DFS_NO_SUCH_VOL;
@@ -369,7 +371,8 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	}
 
 	/* The following call can change the cwd. */
-	status = get_referred_path(ctx, r->in.dfs_entry_path, smbd_server_conn,
+	status = get_referred_path(ctx, r->in.dfs_entry_path,
+				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status) ||
 			consumedcnt < strlen(r->in.dfs_entry_path)) {

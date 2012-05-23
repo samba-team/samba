@@ -22,6 +22,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "smbd/globals.h"
 #include "ntioctl.h"
 #include "smbprofile.h"
 #include "../libcli/security/security.h"
@@ -209,7 +210,8 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	}
 
 	/* The following call can change cwd. */
-	status = get_referred_path(r, pathnamep, handle->conn->sconn,
+	status = get_referred_path(r, pathnamep,
+				   !handle->conn->sconn->using_smb2,
 				   junction, &consumedcnt, &self_referral);
 	if (!NT_STATUS_IS_OK(status)) {
 		vfs_ChDir(handle->conn, handle->conn->connectpath);

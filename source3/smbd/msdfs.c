@@ -856,7 +856,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			const char *dfs_path,
-			struct smbd_server_connection *sconn,
+			bool allow_broken_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
 			bool *self_referralp)
@@ -875,7 +875,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	*self_referralp = False;
 
-	status = parse_dfs_path(NULL, dfs_path, False, !sconn->using_smb2,
+	status = parse_dfs_path(NULL, dfs_path, False, allow_broken_path,
 				pdp, &dummy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
