@@ -656,18 +656,24 @@ static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq)
 	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
 					      struct smbd_smb2_ioctl_state);
 	NTSTATUS status;
+	NTSTATUS old;
 	ssize_t nread = -1;
 	bool is_data_outstanding = false;
 
 	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+	TALLOC_FREE(subreq);
+
+	old = status;
+	status = nt_status_np_pipe(old);
 
 	DEBUG(10,("smbd_smb2_ioctl_pipe_read_done: np_read_recv nread = %d "
-		 "is_data_outstanding = %d, status = %s\n",
+		 "is_data_outstanding = %d, status = %s%s%s\n",
 		(int)nread,
 		(int)is_data_outstanding,
-		nt_errstr(status) ));
+		nt_errstr(old),
+		NT_STATUS_EQUAL(old, status)?"":" => ",
+		NT_STATUS_EQUAL(old, status)?"":nt_errstr(status)));
 
-	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;

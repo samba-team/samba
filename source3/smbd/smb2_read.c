@@ -567,6 +567,8 @@ static void smbd_smb2_read_pipe_done(struct tevent_req *subreq)
 	status = np_read_recv(subreq, &nread, &is_data_outstanding);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		NTSTATUS old = status;
+		status = nt_status_np_pipe(old);
 		tevent_req_nterror(req, status);
 		return;
 	}
