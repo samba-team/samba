@@ -361,8 +361,10 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 		return WERR_NOMEM;
 	}
 
-	if(!create_junction(ctx, r->in.dfs_entry_path,
-			    !smbd_server_conn->using_smb2, jn)) {
+	ret = create_junction(ctx, r->in.dfs_entry_path,
+			      true, /* allow broken_path */
+			      jn);
+	if (!ret) {
 		return WERR_DFS_NO_SUCH_SERVER;
 	}
 
