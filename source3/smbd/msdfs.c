@@ -822,8 +822,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
 		fstring service_name;
-		fstrcpy(service_name, jucn->service_name);
-		if ((snum = find_service(service_name)) < 0) {
+		if ((snum = find_service(jucn->service_name, service_name)) < 0) {
 			return NT_STATUS_NOT_FOUND;
 		}
 		TALLOC_FREE(jucn->service_name);
