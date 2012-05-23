@@ -616,6 +616,8 @@ static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
 
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		NTSTATUS old = status;
+		status = nt_status_np_pipe(old);
 		tevent_req_nterror(req, status);
 		return;
 	}

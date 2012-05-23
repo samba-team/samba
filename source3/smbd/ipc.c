@@ -301,11 +301,23 @@ static void api_dcerpc_cmd_write_done(struct tevent_req *subreq)
 
 	status = np_write_recv(subreq, &nwritten);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status) || (nwritten != state->num_data)) {
-		DEBUG(10, ("Could not write to pipe: %s (%d/%d)\n",
-			   nt_errstr(status), (int)state->num_data,
-			   (int)nwritten));
-		reply_nterror(req, NT_STATUS_PIPE_NOT_AVAILABLE);
+	if (!NT_STATUS_IS_OK(status)) {
+		NTSTATUS old = status;
+		status = nt_status_np_pipe(old);
+
+		DEBUG(10, ("Could not write to pipe: %s%s%s\n",
+			   nt_errstr(old),
+			   NT_STATUS_EQUAL(old, status)?"":" => ",
+			   NT_STATUS_EQUAL(old, status)?"":nt_errstr(status)));
+		reply_nterror(req, status);
+		goto send;
+	}
+	if (nwritten != state->num_data) {
+		status = NT_STATUS_PIPE_NOT_AVAILABLE;
+		DEBUG(10, ("Could not write to pipe: (%d/%d) => %s\n",
+			   (int)state->num_data,
+			   (int)nwritten, nt_errstr(status)));
+		reply_nterror(req, status);
 		goto send;
 	}
 
@@ -351,8 +363,13 @@ static void api_dcerpc_cmd_read_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Could not read from to pipe: %s\n",
-			   nt_errstr(status)));
+		NTSTATUS old = status;
+		status = nt_status_np_pipe(old);
+
+		DEBUG(10, ("Could not read from to pipe: %s%s%s\n",
+			   nt_errstr(old),
+			   NT_STATUS_EQUAL(old, status)?"":" => ",
+			   NT_STATUS_EQUAL(old, status)?"":nt_errstr(status)));
 		reply_nterror(req, status);
 
 		if (!srv_send_smb(req->sconn, (char *)req->outbuf,

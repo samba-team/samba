@@ -454,6 +454,8 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	status = np_read_recv(subreq, &nread, &is_data_outstanding);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
+		NTSTATUS old = status;
+		status = nt_status_np_pipe(old);
 		reply_nterror(req, status);
 		goto done;
 	}
