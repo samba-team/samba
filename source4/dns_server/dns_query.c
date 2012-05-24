@@ -311,6 +311,115 @@ static WERROR handle_question(struct dns_server *dns,
 
 }
 
+struct dns_server_process_query_state {
+	struct dns_res_rec *answers;
+	uint16_t ancount;
+	struct dns_res_rec *nsrecs;
+	uint16_t nscount;
+	struct dns_res_rec *additional;
+	uint16_t arcount;
+};
+
+static void dns_server_process_query_got_response(struct tevent_req *subreq);
+
+static struct tevent_req *dns_server_process_query_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct dns_server *dns,	struct dns_request_state *req_state,
+	const struct dns_name_packet *in)
+{
+	struct tevent_req *req, *subreq;
+	struct dns_server_process_query_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct dns_server_process_query_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	if (in->qdcount != 1) {
+		tevent_req_werror(req, DNS_ERR(FORMAT_ERROR));
+		return tevent_req_post(req, ev);
+	}
+
+	/* Windows returns NOT_IMPLEMENTED on this as well */
+	if (in->questions[0].question_class == DNS_QCLASS_NONE) {
+		tevent_req_werror(req, DNS_ERR(NOT_IMPLEMENTED));
+		return tevent_req_post(req, ev);
+	}
+
+	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
+		WERROR err;
+
+		req_state->flags |= DNS_FLAG_AUTHORITATIVE;
+		err = handle_question(dns, state, &in->questions[0],
+				      &state->answers, &state->ancount);
+		if (tevent_req_werror(req, err)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	if ((req_state->flags & DNS_FLAG_RECURSION_DESIRED) &&
+	    (req_state->flags & DNS_FLAG_RECURSION_AVAIL)) {
+		DEBUG(2, ("Not authoritative for '%s', forwarding\n",
+			  in->questions[0].name));
+
+		subreq = ask_forwarder_send(
+			state, ev, lpcfg_dns_forwarder(dns->task->lp_ctx),
+			&in->questions[0]);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq, dns_server_process_query_got_response, req);
+		return req;
+	}
+
+	tevent_req_werror(req, DNS_ERR(NAME_ERROR));
+	return tevent_req_post(req, ev);
+}
+
+static void dns_server_process_query_got_response(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct dns_server_process_query_state *state = tevent_req_data(
+		req, struct dns_server_process_query_state);
+	WERROR err;
+
+	err = ask_forwarder_recv(subreq, state,
+				 &state->answers, &state->ancount,
+				 &state->nsrecs, &state->nscount,
+				 &state->additional, &state->arcount);
+	TALLOC_FREE(subreq);
+	if (tevent_req_werror(req, err)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static WERROR dns_server_process_query_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx,
+	struct dns_res_rec **answers,    uint16_t *ancount,
+	struct dns_res_rec **nsrecs,     uint16_t *nscount,
+	struct dns_res_rec **additional, uint16_t *arcount)
+{
+	struct dns_server_process_query_state *state = tevent_req_data(
+		req, struct dns_server_process_query_state);
+	WERROR err;
+
+	if (tevent_req_is_werror(req, &err)) {
+		return err;
+	}
+	*answers = talloc_move(mem_ctx, &state->answers);
+	*ancount = state->ancount;
+	*nsrecs = talloc_move(mem_ctx, &state->nsrecs);
+	*nscount = state->nscount;
+	*additional = talloc_move(mem_ctx, &state->additional);
+	*arcount = state->arcount;
+	return WERR_OK;
+}
+
 WERROR dns_server_process_query(struct dns_server *dns,
 				struct dns_request_state *state,
 				TALLOC_CTX *mem_ctx,
@@ -319,51 +428,25 @@ WERROR dns_server_process_query(struct dns_server *dns,
 				struct dns_res_rec **nsrecs,     uint16_t *nscount,
 				struct dns_res_rec **additional, uint16_t *arcount)
 {
-	uint16_t num_answers=0, num_nsrecs=0, num_additional=0;
-	struct dns_res_rec *ans=NULL, *ns=NULL, *adds=NULL;
-	WERROR werror;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	WERROR err = WERR_NOMEM;
 
-	if (in->qdcount != 1) {
-		return DNS_ERR(FORMAT_ERROR);
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	/* Windows returns NOT_IMPLEMENTED on this as well */
-	if (in->questions[0].question_class == DNS_QCLASS_NONE) {
-		return DNS_ERR(NOT_IMPLEMENTED);
+	req = dns_server_process_query_send(ev, ev, dns, state, in);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
-		state->flags |= DNS_FLAG_AUTHORITATIVE;
-		werror = handle_question(dns, mem_ctx, &in->questions[0],
-					 &ans, &num_answers);
-	} else {
-		if (state->flags & DNS_FLAG_RECURSION_DESIRED &&
-		    state->flags & DNS_FLAG_RECURSION_AVAIL) {
-			DEBUG(2, ("Not authoritative for '%s', forwarding\n",
-				  in->questions[0].name));
-			werror = ask_forwarder(dns, mem_ctx, &in->questions[0],
-					       &ans, &num_answers,
-					       &ns, &num_nsrecs,
-					       &adds, &num_additional);
-		} else {
-			werror = DNS_ERR(NAME_ERROR);
-		}
+	if (!tevent_req_poll_werror(req, ev, &err)) {
+		goto fail;
 	}
-	W_ERROR_NOT_OK_GOTO(werror, query_failed);
-
-	*answers = ans;
-	*ancount = num_answers;
-
-	/*FIXME: Do something for these */
-	*nsrecs  = ns;
-	*nscount = num_nsrecs;
-
-	*additional = adds;
-	*arcount    = num_additional;
-
-	return WERR_OK;
-
-query_failed:
-	/*FIXME: add our SOA record to nsrecs */
-	return werror;
+	err = dns_server_process_query_recv(req, mem_ctx, answers, ancount,
+					    nsrecs, nscount,
+					    additional, arcount);
+fail:
+	TALLOC_FREE(ev);
+	return err;
 }
