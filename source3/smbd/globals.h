@@ -108,9 +108,6 @@ extern struct vfs_init_function_entry *backends;
 extern char *sparse_buf;
 extern char *LastDir;
 
-/* Current number of oplocks we have outstanding. */
-extern int32_t exclusive_oplocks_open;
-extern int32_t level_II_oplocks_open;
 extern struct kernel_oplocks *koplocks;
 
 struct smbd_parent_context;
@@ -518,6 +515,12 @@ struct smbd_server_connection {
 	} searches;
 
 	uint64_t num_requests;
+
+	/* Current number of oplocks we have outstanding. */
+	struct {
+		int32_t exclusive_open;
+		int32_t level_II_open;
+	} oplocks;
 
 	struct {
 		struct fd_event *fde;

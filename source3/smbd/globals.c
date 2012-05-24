@@ -93,9 +93,6 @@ struct vfs_init_function_entry *backends = NULL;
 char *sparse_buf = NULL;
 char *LastDir = NULL;
 
-/* Current number of oplocks we have outstanding. */
-int32_t exclusive_oplocks_open = 0;
-int32_t level_II_oplocks_open = 0;
 struct kernel_oplocks *koplocks = NULL;
 
 struct smbd_parent_context *am_parent = NULL;

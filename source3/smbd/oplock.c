@@ -53,7 +53,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 
 bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
-
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
@@ -75,9 +75,9 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 	fsp->oplock_type = oplock_type;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	if (oplock_type == LEVEL_II_OPLOCK) {
-		level_II_oplocks_open++;
+		sconn->oplocks.level_II_open++;
 	} else if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		exclusive_oplocks_open++;
+		sconn->oplocks.exclusive_open++;
 	}
 
 	DEBUG(5,("set_file_oplock: granted oplock on file %s, %s/%lu, "
@@ -95,6 +95,8 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 
 void release_file_oplock(files_struct *fsp)
 {
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    koplocks) {
@@ -102,13 +104,13 @@ void release_file_oplock(files_struct *fsp)
 	}
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		level_II_oplocks_open--;
+		sconn->oplocks.level_II_open--;
 	} else if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		exclusive_oplocks_open--;
+		sconn->oplocks.exclusive_open--;
 	}
 
-	SMB_ASSERT(exclusive_oplocks_open>=0);
-	SMB_ASSERT(level_II_oplocks_open>=0);
+	SMB_ASSERT(sconn->oplocks.exclusive_open>=0);
+	SMB_ASSERT(sconn->oplocks.level_II_open>=0);
 
 	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		/* This doesn't matter for close. */
@@ -130,6 +132,8 @@ void release_file_oplock(files_struct *fsp)
 
 static void downgrade_file_oplock(files_struct *fsp)
 {
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+
 	if (!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0, ("trying to downgrade an already-downgraded oplock!\n"));
 		return;
@@ -139,8 +143,8 @@ static void downgrade_file_oplock(files_struct *fsp)
 		koplocks->ops->release_oplock(koplocks, fsp, LEVEL_II_OPLOCK);
 	}
 	fsp->oplock_type = LEVEL_II_OPLOCK;
-	exclusive_oplocks_open--;
-	level_II_oplocks_open++;
+	sconn->oplocks.exclusive_open--;
+	sconn->oplocks.level_II_open++;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 }
 
@@ -265,7 +269,8 @@ static files_struct *initial_break_processing(
 		dbgtext( "initial_break_processing: called for %s/%u\n",
 			 file_id_string_tos(&id), (int)file_id);
 		dbgtext( "Current oplocks_open (exclusive = %d, levelII = %d)\n",
-			exclusive_oplocks_open, level_II_oplocks_open );
+			sconn->oplocks.exclusive_open,
+			sconn->oplocks.level_II_open);
 	}
 
 	/*
