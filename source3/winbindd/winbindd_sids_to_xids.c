@@ -240,22 +240,30 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 
 	for (i=0; i<state->num_sids; i++) {
 		char type;
-		uint64_t unix_id = (uint64_t)-1;
+		uint32_t unix_id = UINT32_MAX;
 		bool found = true;
 
 		if (state->cached[i].sid != NULL) {
 			unix_id = state->cached[i].xid.id;
-			if (state->cached[i].xid.type == ID_TYPE_UID) {
+
+			switch (state->cached[i].xid.type) {
+			case ID_TYPE_UID:
 				type = 'U';
-			} else {
+				break;
+			case ID_TYPE_GID:
 				type = 'G';
+				break;
+			case ID_TYPE_BOTH:
+				type = 'B';
+				break;
+			default:
+				found = false;
+				break;
 			}
 		} else {
 			struct unixid id;
+
 			unix_id = state->ids.ids[num_non_cached].unix_id;
-			if (unix_id == -1) {
-				found = false;
-			}
 
 			id.id = unix_id;
 			id.type = state->ids.ids[num_non_cached].type;
@@ -275,8 +283,13 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 				break;
 			default:
 				found = false;
+				break;
 			}
 			num_non_cached += 1;
+		}
+
+		if (unix_id == UINT32_MAX) {
+			found = false;
 		}
 
 		if (found) {
