@@ -113,6 +113,7 @@ def cmd_testonly(opt):
     binary_mapping = ('nmblookup3:nmblookup,' +
                       'nmblookup4:nmblookup4,' +
                       'smbclient3:smbclient3,' +
+                      'smbclient4:smbclient,' +
                       'smbtorture4:smbtorture,' + 
                       'ntlm_auth3:ntlm_auth3')
 
