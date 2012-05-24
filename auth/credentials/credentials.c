@@ -483,7 +483,11 @@ _PUBLIC_ bool cli_credentials_set_domain(struct cli_credentials *cred,
 		 * calculations */
 		cred->domain = strupper_talloc(cred, val);
 		cred->domain_obtained = obtained;
-		cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
+		/* setting domain does not mean we have to invalidate ccache 
+		 * because domain in not used for Kerberos operations.
+		 * If ccache invalidation is required, one will anyway specify
+		 * a password to kinit, and that will force invalidation of the ccache
+		 */
 		return true;
 	}
 
