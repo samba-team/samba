@@ -634,7 +634,7 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 
 	/* cleanup somestuff for the next request */
 	DLIST_REMOVE(req->smb_conn->requests, req);
-	talloc_free(req->ntvfs);
+	talloc_unlink(req, req->ntvfs);
 	req->ntvfs = NULL;
 	talloc_free(req->io_ptr);
 	req->io_ptr = NULL;
