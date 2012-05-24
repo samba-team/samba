@@ -3152,8 +3152,6 @@ static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 					enum protocol_types protocol)
 {
-	NTSTATUS status;
-
 	set_Protocol(protocol);
 	conn->protocol = protocol;
 
