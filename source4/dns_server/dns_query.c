@@ -47,9 +47,15 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	switch (rec->wType) {
 	case DNS_QTYPE_CNAME:
 		ans[ai].rdata.cname_record = talloc_strdup(ans, rec->data.cname);
+		if (ans[ai].rdata.cname_record == NULL) {
+			return WERR_NOMEM;
+		}
 		break;
 	case DNS_QTYPE_A:
 		ans[ai].rdata.ipv4_record = talloc_strdup(ans, rec->data.ipv4);
+		if (ans[ai].rdata.ipv4_record == NULL) {
+			return WERR_NOMEM;
+		}
 		break;
 	case DNS_QTYPE_AAAA:
 		ans[ai].rdata.ipv6_record = rec->data.ipv6;
@@ -77,9 +83,15 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		break;
 	case DNS_QTYPE_TXT:
 		tmp = talloc_asprintf(ans, "\"%s\"", rec->data.txt.str[0]);
+		if (tmp == NULL) {
+			return WERR_NOMEM;
+		}
 		for (i=1; i<rec->data.txt.count; i++) {
 			tmp = talloc_asprintf_append(tmp, " \"%s\"",
 						     rec->data.txt.str[i]);
+			if (tmp == NULL) {
+				return WERR_NOMEM;
+			}
 		}
 		ans[ai].rdata.txt_record.txt = tmp;
 		break;
@@ -89,6 +101,9 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	}
 
 	ans[ai].name = talloc_strdup(ans, question->name);
+	if (ans[ai].name == NULL) {
+		return WERR_NOMEM;
+	}
 	ans[ai].rr_type = rec->wType;
 	ans[ai].rr_class = DNS_QCLASS_IN;
 	ans[ai].ttl = rec->dwTtlSeconds;
