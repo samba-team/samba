@@ -19,6 +19,7 @@
 
 #include "../replace/replace.h"
 #include "tevent_werror.h"
+#include "libcli/util/error.h"
 
 bool _tevent_req_werror(struct tevent_req *req,
 			WERROR werror,
@@ -78,4 +79,16 @@ void tevent_req_simple_finish_werror(struct tevent_req *subreq,
 		return;
 	}
 	tevent_req_done(req);
+}
+
+bool tevent_req_poll_werror(struct tevent_req *req,
+			    struct tevent_context *ev,
+			    WERROR *err)
+{
+	bool ret = tevent_req_poll(req, ev);
+	if (!ret) {
+		NTSTATUS status = map_nt_error_from_unix_common(errno);
+		*err = ntstatus_to_werror(status);
+	}
+	return ret;
 }

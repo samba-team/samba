@@ -40,4 +40,7 @@ WERROR tevent_req_simple_recv_werror(struct tevent_req *req);
 void tevent_req_simple_finish_werror(struct tevent_req *subreq,
 				     WERROR subreq_error);
 
+bool tevent_req_poll_werror(struct tevent_req *req,
+			    struct tevent_context *ev,
+			    WERROR *err);
 #endif
