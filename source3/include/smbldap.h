@@ -44,6 +44,8 @@ struct smbldap_state {
 	bool anonymous;
 	char *bind_dn;
 	char *bind_secret;
+	int (*bind_callback)(LDAP *ldap_struct, struct smbldap_state *ldap_state, void *data);
+	void *bind_callback_data;
 
 	bool paged_results;
 

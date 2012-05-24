@@ -976,7 +976,20 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state)
 #endif /*defined(LDAP_API_FEATURE_X_OPENLDAP) && (LDAP_API_VERSION > 2000)*/
 #endif
 
-	rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
+	/* When there is an alternative bind callback is set,
+	   attempt to use it to perform the bind */
+	if (ldap_state->bind_callback != NULL) {
+		/* We have to allow bind callback to be run under become_root/unbecome_root
+		   to make sure within smbd the callback has proper write access to its resources,
+		   like credential cache. This is similar to passdb case where this callback is supposed
+		   to be used. When used outside smbd, become_root()/unbecome_root() are no-op.
+		*/
+		become_root();
+		rc = ldap_state->bind_callback(ldap_struct, ldap_state, ldap_state->bind_callback_data);
+		unbecome_root();
+	} else {
+		rc = ldap_simple_bind_s(ldap_struct, ldap_state->bind_dn, ldap_state->bind_secret);
+	}
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
@@ -1667,6 +1680,8 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
+	(*ldap_state)->bind_callback = NULL;
+	(*ldap_state)->bind_callback_data = NULL;
 
 	TALLOC_FREE(*ldap_state);
 
@@ -1846,6 +1861,9 @@ bool smbldap_set_creds(struct smbldap_state *ldap_state, bool anon, const char *
 	/* free any previously set credential */
 
 	SAFE_FREE(ldap_state->bind_dn);
+	ldap_state->bind_callback = NULL;
+	ldap_state->bind_callback_data = NULL;
+
 	if (ldap_state->bind_secret) {
 		/* make sure secrets are zeroed out of memory */
 		memset(ldap_state->bind_secret, '\0', strlen(ldap_state->bind_secret));
