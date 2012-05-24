@@ -1490,7 +1490,24 @@ bool sids_to_unix_ids(const struct dom_sid *sids, uint32_t num_sids,
 			continue;
 		}
 	}
+
 done:
+	for (i=0; i<num_sids; i++) {
+		switch(ids[i].type) {
+		case WBC_ID_TYPE_GID:
+			if (ids[i].id.gid == (gid_t)-1) {
+				ids[i].type = WBC_ID_TYPE_NOT_SPECIFIED;
+			}
+			break;
+		case WBC_ID_TYPE_UID:
+			if (ids[i].id.uid == (uid_t)-1) {
+				ids[i].type = WBC_ID_TYPE_NOT_SPECIFIED;
+			}
+			break;
+		case WBC_ID_TYPE_NOT_SPECIFIED:
+			break;
+		}
+	}
 	ret = true;
 fail:
 	TALLOC_FREE(wbc_ids);
