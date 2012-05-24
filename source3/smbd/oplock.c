@@ -26,15 +26,6 @@
 #include "messages.h"
 #include "../librpc/gen_ndr/open_files.h"
 
-/****************************************************************************
- Get the number of current exclusive oplocks.
-****************************************************************************/
-
-int32 get_number_of_exclusive_open_oplocks(void)
-{
-  return exclusive_oplocks_open;
-}
-
 /*
  * helper function used by the kernel oplock backends to post the break message
  */
