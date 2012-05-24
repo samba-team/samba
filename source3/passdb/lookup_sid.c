@@ -1347,6 +1347,20 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 		}
 	}
 done:
+	for (i=0; i<num_sids; i++) {
+		switch(ids[i].type) {
+		case WBC_ID_TYPE_GID:
+		case WBC_ID_TYPE_UID:
+		case WBC_ID_TYPE_BOTH:
+			if (ids[i].id == -1) {
+				ids[i].type = ID_TYPE_NOT_SPECIFIED;
+			}
+			break;
+		case WBC_ID_TYPE_NOT_SPECIFIED:
+			break;
+		}
+	}
+
 	ret = true;
 fail:
 	TALLOC_FREE(wbc_ids);
