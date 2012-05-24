@@ -227,7 +227,7 @@ testit_expect_failure "try to change password too quickly (command should not su
 
 testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
 
-testit "del user" $VALGRIND $samba_tool user delete nettestuser -U"$USERNAME%$PASSWORD" -k no $@ || failed=`expr $failed + 1`
+testit "del user" $VALGRIND $samba_tool user delete nettestuser -U"$USERNAME%$PASSWORD" $CONFIG -k no $@ || failed=`expr $failed + 1`
 
 rm -f tmpccfile tmppassfile tmpuserpassfile tmpuserccache tmpkpasswdscript tmpsmbpasswdscript
 exit $failed
