@@ -189,38 +189,59 @@ void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
  Initialise file structures.
 ****************************************************************************/
 
-bool file_init(struct smbd_server_connection *sconn)
+static int files_max_open_fds;
+
+bool file_init_global(void)
 {
-	int request_max_open_files = lp_max_open_files();
+	int request_max = lp_max_open_files();
 	int real_lim;
+	int real_max;
+
+	if (files_max_open_fds != 0) {
+		return true;
+	}
 
 	/*
 	 * Set the max_open files to be the requested
 	 * max plus a fudgefactor to allow for the extra
 	 * fd's we need such as log files etc...
 	 */
-	real_lim = set_maxfiles(request_max_open_files + MAX_OPEN_FUDGEFACTOR);
+	real_lim = set_maxfiles(request_max + MAX_OPEN_FUDGEFACTOR);
 
-	sconn->real_max_open_files = real_lim - MAX_OPEN_FUDGEFACTOR;
+	real_max = real_lim - MAX_OPEN_FUDGEFACTOR;
 
-	if (sconn->real_max_open_files + FILE_HANDLE_OFFSET + MAX_OPEN_PIPES
-	    > 65536)
-		sconn->real_max_open_files =
-			65536 - FILE_HANDLE_OFFSET - MAX_OPEN_PIPES;
-
-	if(sconn->real_max_open_files != request_max_open_files) {
-		DEBUG(1, ("file_init: Information only: requested %d "
-			  "open files, %d are available.\n",
-			  request_max_open_files, sconn->real_max_open_files));
+	if (real_max + FILE_HANDLE_OFFSET + MAX_OPEN_PIPES > 65536) {
+		real_max = 65536 - FILE_HANDLE_OFFSET - MAX_OPEN_PIPES;
 	}
 
-	SMB_ASSERT(sconn->real_max_open_files > 100);
+	if (real_max != request_max) {
+		DEBUG(1, ("file_init_global: Information only: requested %d "
+			  "open files, %d are available.\n",
+			  request_max, real_max));
+	}
+
+	SMB_ASSERT(real_max > 100);
+
+	files_max_open_fds = real_max;
+	return true;
+}
+
+bool file_init(struct smbd_server_connection *sconn)
+{
+	bool ok;
+
+	ok = file_init_global();
+	if (!ok) {
+		return false;
+	}
+
+	sconn->real_max_open_files = files_max_open_fds;
 
 	sconn->file_bmap = bitmap_talloc(sconn, sconn->real_max_open_files);
-
 	if (!sconn->file_bmap) {
 		return false;
 	}
+
 	return true;
 }
 
