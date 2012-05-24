@@ -147,7 +147,7 @@ sub wait_for_start($$)
 
 	# This will return quickly when things are up, but be slow if we
 	# need to wait for (eg) SSL init
-	my $nmblookup =  Samba::bindir_path($self, "nmblookup");
+	my $nmblookup =  Samba::bindir_path($self, "nmblookup4");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
