@@ -110,7 +110,7 @@ class dbcheck(object):
             return True
         if c == 'NONE':
             setattr(self, all_attr, 'NONE')
-            return True
+            return False
         return c
 
     def do_modify(self, m, controls, msg, validate=True):
