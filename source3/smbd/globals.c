@@ -54,8 +54,6 @@ TDB_CONTEXT *tdb_mangled_cache = NULL;
 */
 unsigned mangle_prefix = 0;
 
-struct msg_state *smbd_msg_state = NULL;
-
 bool logged_ioctl_message = false;
 
 time_t last_smb_conf_reload_time = 0;
