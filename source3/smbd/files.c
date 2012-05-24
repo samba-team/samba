@@ -48,29 +48,36 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result)
 {
 	struct smbd_server_connection *sconn = conn->sconn;
-	int i;
+	int i = -1;
 	files_struct *fsp;
 	NTSTATUS status;
 
-	/* we want to give out file handles differently on each new
-	   connection because of a common bug in MS clients where they try to
-	   reuse a file descriptor from an earlier smb connection. This code
-	   increases the chance that the errant client will get an error rather
-	   than causing corruption */
-	if (sconn->first_file == 0) {
-		sconn->first_file = (getpid() ^ (int)time(NULL));
-		sconn->first_file %= sconn->real_max_open_files;
-	}
+	if (sconn->file_bmap != NULL) {
 
-	/* TODO: Port the id-tree implementation from Samba4 */
+		/*
+		 * we want to give out file handles differently on each new
+		 * connection because of a common bug in MS clients where they
+		 * try to reuse a file descriptor from an earlier smb
+		 * connection. This code increases the chance that the errant
+		 * client will get an error rather than causing corruption
+		 */
+		if (sconn->first_file == 0) {
+			sconn->first_file = (getpid() ^ (int)time(NULL));
+			sconn->first_file %= sconn->real_max_open_files;
+		}
 
-	i = bitmap_find(sconn->file_bmap, sconn->first_file);
-	if (i == -1) {
-		DEBUG(0,("ERROR! Out of file structures\n"));
-		/* TODO: We have to unconditionally return a DOS error here,
-		 * W2k3 even returns ERRDOS/ERRnofids for ntcreate&x with
-		 * NTSTATUS negotiated */
-		return NT_STATUS_TOO_MANY_OPENED_FILES;
+		/* TODO: Port the id-tree implementation from Samba4 */
+
+		i = bitmap_find(sconn->file_bmap, sconn->first_file);
+		if (i == -1) {
+			DEBUG(0,("ERROR! Out of file structures\n"));
+			/*
+			 * TODO: We have to unconditionally return a DOS error
+			 * here, W2k3 even returns ERRDOS/ERRnofids for
+			 * ntcreate&x with NTSTATUS negotiated
+			 */
+			return NT_STATUS_TOO_MANY_OPENED_FILES;
+		}
 	}
 
 	/*
@@ -96,16 +103,19 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	fsp->fh->ref_count = 1;
 	fsp->fh->fd = -1;
 
+	fsp->fnum = -1;
 	fsp->conn = conn;
 	fsp->fh->gen_id = get_gen_count(sconn);
 	GetTimeOfDay(&fsp->open_time);
 
-	sconn->first_file = (i+1) % (sconn->real_max_open_files);
+	if (sconn->file_bmap != NULL) {
+		sconn->first_file = (i+1) % (sconn->real_max_open_files);
 
-	bitmap_set(sconn->file_bmap, i);
+		bitmap_set(sconn->file_bmap, i);
 
-	fsp->fnum = i + FILE_HANDLE_OFFSET;
-	SMB_ASSERT(fsp->fnum < 65536);
+		fsp->fnum = i + FILE_HANDLE_OFFSET;
+		SMB_ASSERT(fsp->fnum < 65536);
+	}
 
 	DLIST_ADD(sconn->files, fsp);
 	sconn->num_files += 1;
@@ -454,7 +464,9 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	/* Ensure this event will never fire. */
 	TALLOC_FREE(fsp->update_write_time_event);
 
-	bitmap_clear(sconn->file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
+	if (sconn->file_bmap != NULL) {
+		bitmap_clear(sconn->file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
+	}
 	DEBUG(5,("freed files structure %d (%u used)\n",
 		 fsp->fnum, (unsigned int)sconn->num_files));
 
@@ -501,6 +513,10 @@ static struct files_struct *file_fnum(struct smbd_server_connection *sconn,
 	int count=0;
 
 	for (fsp=sconn->files; fsp; fsp=fsp->next, count++) {
+		if (fsp->fnum == -1) {
+			continue;
+		}
+
 		if (fsp->fnum == fnum) {
 			if (count > 10) {
 				DLIST_PROMOTE(sconn->files, fsp);
