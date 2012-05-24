@@ -292,7 +292,7 @@ struct dns_server_process_query_state {
 
 static void dns_server_process_query_got_response(struct tevent_req *subreq);
 
-static struct tevent_req *dns_server_process_query_send(
+struct tevent_req *dns_server_process_query_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct dns_server *dns,	struct dns_request_state *req_state,
 	const struct dns_name_packet *in)
@@ -368,7 +368,7 @@ static void dns_server_process_query_got_response(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static WERROR dns_server_process_query_recv(
+WERROR dns_server_process_query_recv(
 	struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	struct dns_res_rec **answers,    uint16_t *ancount,
 	struct dns_res_rec **nsrecs,     uint16_t *nscount,

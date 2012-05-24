@@ -42,6 +42,7 @@
 #include "dsdb/common/util.h"
 #include "auth/session.h"
 #include "lib/util/dlinklist.h"
+#include "lib/util/tevent_werror.h"
 
 NTSTATUS server_service_dns_init(void);
 
@@ -93,113 +94,168 @@ static void dns_tcp_send(struct stream_connection *conn, uint16_t flags)
 	dns_tcp_terminate_connection(dnsconn, "dns_tcp_send: called");
 }
 
-static NTSTATUS dns_process(struct dns_server *dns,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *in,
-			    DATA_BLOB *out)
+struct dns_process_state {
+	DATA_BLOB *in;
+	struct dns_name_packet in_packet;
+	struct dns_request_state state;
+	uint16_t dns_err;
+	struct dns_name_packet out_packet;
+	DATA_BLOB out;
+};
+
+static void dns_process_done(struct tevent_req *subreq);
+
+static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct dns_server *dns,
+					   DATA_BLOB *in)
 {
+	struct tevent_req *req, *subreq;
+	struct dns_process_state *state;
 	enum ndr_err_code ndr_err;
 	WERROR ret;
-	uint16_t dns_err = DNS_RCODE_OK;
-	struct dns_request_state *state;
-	struct dns_name_packet *in_packet;
-	struct dns_name_packet *out_packet;
-	struct dns_res_rec *answers = NULL, *nsrecs = NULL, *additional = NULL;
-	uint16_t num_answers = 0 , num_nsrecs = 0, num_additional = 0;
+
+	req = tevent_req_create(mem_ctx, &state, struct dns_process_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->in = in;
 
 	if (in->length < 12) {
-		return NT_STATUS_INVALID_PARAMETER;
+		tevent_req_werror(req, WERR_INVALID_PARAM);
+		return tevent_req_post(req, ev);
 	}
-
-	state = talloc_zero(mem_ctx, struct dns_request_state);
-
-	in_packet = talloc_zero(state, struct dns_name_packet);
-	/* TODO: We don't really need an out_packet. */
-	out_packet = talloc_zero(state, struct dns_name_packet);
-
-	if ((state == NULL) || (in_packet == NULL) || (out_packet == NULL)) {
-		TALLOC_FREE(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-
 	dump_data(8, in->data, in->length);
 
-	ndr_err = ndr_pull_struct_blob(in, in_packet, in_packet,
-			(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
+	ndr_err = ndr_pull_struct_blob(
+		in, state, &state->in_packet,
+		(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
+
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(in_packet);
-		DEBUG(0, ("Failed to parse packet %d!\n", ndr_err));
-		dns_err = DNS_RCODE_FORMERR;
-		goto drop;
+		state->dns_err = DNS_RCODE_FORMERR;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 	if (DEBUGLVL(8)) {
-		NDR_PRINT_DEBUG(dns_name_packet, in_packet);
+		NDR_PRINT_DEBUG(dns_name_packet, &state->in_packet);
 	}
-	*out_packet = *in_packet;
-	state->flags |= in_packet->operation | DNS_FLAG_REPLY;
+
+	state->state.flags = state->in_packet.operation;
+	state->state.flags |= DNS_FLAG_REPLY;
 
 	if (lpcfg_dns_recursive_queries(dns->task->lp_ctx)) {
-		state->flags |= DNS_FLAG_RECURSION_AVAIL;
+		state->state.flags |= DNS_FLAG_RECURSION_AVAIL;
 	}
 
-	switch (in_packet->operation & DNS_OPCODE) {
+	state->out_packet = state->in_packet;
+
+	switch (state->in_packet.operation & DNS_OPCODE) {
 	case DNS_OPCODE_QUERY:
-
-		ret = dns_server_process_query(dns, state,
-					       out_packet, in_packet,
-					       &answers, &num_answers,
-					       &nsrecs,  &num_nsrecs,
-					       &additional, &num_additional);
-
-		break;
+		subreq = dns_server_process_query_send(
+			state, ev, dns, &state->state, &state->in_packet);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, dns_process_done, req);
+		return req;
 	case DNS_OPCODE_UPDATE:
-		ret = dns_server_process_update(dns, state,
-						out_packet, in_packet,
-						&answers, &num_answers,
-						&nsrecs,  &num_nsrecs,
-						&additional, &num_additional);
+		ret = dns_server_process_update(
+			dns, &state->state, state, &state->in_packet,
+			&state->out_packet.answers, &state->out_packet.ancount,
+			&state->out_packet.nsrecs,  &state->out_packet.nscount,
+			&state->out_packet.additional,
+			&state->out_packet.arcount);
 		break;
 	default:
 		ret = WERR_DNS_ERROR_RCODE_NOT_IMPLEMENTED;
-		break;
 	}
-
-	if (W_ERROR_IS_OK(ret)) {
-		out_packet->ancount = num_answers;
-		out_packet->answers = answers;
-
-		out_packet->nscount = num_nsrecs;
-		out_packet->nsrecs  = nsrecs;
-
-		out_packet->arcount = num_additional;
-		out_packet->additional = additional;
-	} else {
-		out_packet->operation |= werr_to_dns_err(ret);
+	if (!W_ERROR_IS_OK(ret)) {
+		state->dns_err = werr_to_dns_err(ret);
 	}
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
 
-	out_packet->operation |= state->flags;
+static void dns_process_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct dns_process_state *state = tevent_req_data(
+		req, struct dns_process_state);
+	WERROR ret;
 
-	if (DEBUGLVL(8)) {
-		NDR_PRINT_DEBUG(dns_name_packet, out_packet);
+	ret = dns_server_process_query_recv(
+		subreq, state,
+		&state->out_packet.answers, &state->out_packet.ancount,
+		&state->out_packet.nsrecs,  &state->out_packet.nscount,
+		&state->out_packet.additional, &state->out_packet.arcount);
+	TALLOC_FREE(subreq);
+
+	if (!W_ERROR_IS_OK(ret)) {
+		state->dns_err = werr_to_dns_err(ret);
 	}
-	ndr_err = ndr_push_struct_blob(out, out_packet, out_packet,
-			(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(in_packet);
-		TALLOC_FREE(out_packet);
-		DEBUG(0, ("Failed to push packet %d!\n", ndr_err));
-		dns_err = DNS_RCODE_SERVFAIL;
+	tevent_req_done(req);
+}
+
+static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			       DATA_BLOB *out)
+{
+	struct dns_process_state *state = tevent_req_data(
+		req, struct dns_process_state);
+	enum ndr_err_code ndr_err;
+	WERROR ret;
+
+	if (tevent_req_is_werror(req, &ret)) {
+		return ret;
+	}
+	if (state->dns_err != DNS_RCODE_OK) {
 		goto drop;
 	}
+	state->out_packet.operation |= state->state.flags;
 
-	dump_data(8, out->data, out->length);
-	return NT_STATUS_OK;
+	ndr_err = ndr_push_struct_blob(
+		out, mem_ctx, &state->out_packet,
+		(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1, ("Failed to push packet: %s!\n",
+			  ndr_errstr(ndr_err)));
+		state->dns_err = DNS_RCODE_SERVFAIL;
+		goto drop;
+	}
+	return WERR_OK;
 
 drop:
-	*out = *in;
+	*out = data_blob_talloc(mem_ctx, state->in->data, state->in->length);
+	if (out->data == NULL) {
+		return WERR_NOMEM;
+	}
 	out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
-	out->data[3] |= dns_err;
-	return NT_STATUS_OK;
+	out->data[3] |= state->dns_err;
+	return WERR_OK;
+}
+
+static WERROR dns_process(struct dns_server *dns, TALLOC_CTX *mem_ctx,
+			  DATA_BLOB *in, DATA_BLOB *out)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	WERROR err = WERR_NOMEM;
+
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = dns_process_send(ev, ev, dns, in);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_werror(req, ev, &err)) {
+		goto fail;
+	}
+	err = dns_process_recv(req, mem_ctx, out);
+fail:
+	TALLOC_FREE(ev);
+	return err;
 }
 
 struct dns_tcp_call {
@@ -218,6 +274,7 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 				      struct dns_tcp_connection);
 	struct dns_tcp_call *call;
 	NTSTATUS status;
+	WERROR err;
 
 	call = talloc(dns_conn, struct dns_tcp_call);
 	if (call == NULL) {
@@ -254,9 +311,10 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	call->in.length -= 2;
 
 	/* Call dns */
-	status = dns_process(dns_conn->dns_socket->dns, call, &call->in, &call->out);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("dns_process returned %s\n", nt_errstr(status)));
+	err = dns_process(dns_conn->dns_socket->dns, call, &call->in,
+			  &call->out);
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(1, ("dns_process returned %s\n", win_errstr(err)));
 		dns_tcp_terminate_connection(dns_conn,
 				"dns_tcp_call_loop: process function failed");
 		return;
@@ -410,7 +468,7 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 	uint8_t *buf;
 	ssize_t len;
 	int sys_errno;
-	NTSTATUS status;
+	WERROR err;
 
 	call = talloc(sock, struct dns_udp_call);
 	if (call == NULL) {
@@ -434,10 +492,10 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 		 tsocket_address_string(call->src, call)));
 
 	/* Call dns_process */
-	status = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
-	if (!NT_STATUS_IS_OK(status)) {
+	err = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
+	if (!W_ERROR_IS_OK(err)) {
 		talloc_free(call);
-		DEBUG(0, ("dns_process returned %s\n", nt_errstr(status)));
+		DEBUG(0, ("dns_process returned %s\n", win_errstr(err)));
 		goto done;
 	}
 
