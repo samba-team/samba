@@ -102,7 +102,7 @@ struct smbd_parent_context *am_parent = NULL;
 struct memcache *smbd_memcache_ctx = NULL;
 bool exit_firsttime = true;
 
-struct smbd_server_connection *smbd_server_conn = NULL;
+struct smbXsrv_connection *global_smbXsrv_connection = NULL;
 
 struct memcache *smbd_memcache(void)
 {
@@ -142,13 +142,4 @@ void smbd_init_globals(void)
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
-
-	smbd_server_conn = talloc_zero(server_event_context(), struct smbd_server_connection);
-	if (!smbd_server_conn) {
-		exit_server("failed to create smbd_server_connection");
-	}
-
-	smbd_server_conn->ev_ctx = server_event_context();
-	smbd_server_conn->smb1.echo_handler.trusted_fd = -1;
-	smbd_server_conn->smb1.echo_handler.socket_lock_fd = -1;
 }

@@ -638,6 +638,6 @@ struct smbd_server_connection {
 	struct smbXsrv_connection *conn;
 };
 
-extern struct smbd_server_connection *smbd_server_conn;
+extern struct smbXsrv_connection *global_smbXsrv_connection;
 
 void smbd_init_globals(void);

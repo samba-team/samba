@@ -534,7 +534,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
 	struct messaging_context *msg_ctx = s->parent->msg_ctx;
-	struct smbd_server_connection *sconn = smbd_server_conn;
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	int fd;
@@ -542,7 +541,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	uint64_t unique_id;
 
 	fd = accept(s->fd, (struct sockaddr *)(void *)&addr,&in_addrlen);
-	sconn->sock = fd;
 	if (fd == -1 && errno == EINTR)
 		return;
 
@@ -553,15 +551,14 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	}
 
 	if (s->parent->interactive) {
-		reinit_after_fork(msg_ctx, sconn->ev_ctx, true);
-		smbd_process(ev, sconn);
+		reinit_after_fork(msg_ctx, ev, true);
+		smbd_process(ev, msg_ctx, fd, true);
 		exit_server_cleanly("end of interactive mode");
 		return;
 	}
 
 	if (!allowable_number_of_smbd_processes(s->parent)) {
 		close(fd);
-		sconn->sock = -1;
 		return;
 	}
 
@@ -614,18 +611,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
-		smbd_setup_sig_term_handler(sconn);
-		smbd_setup_sig_hup_handler(sconn);
-
-		if (!serverid_register(messaging_server_id(msg_ctx),
-				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
-				       |FLAG_MSG_DBWRAP
-				       |FLAG_MSG_PRINT_GENERAL)) {
-			exit_server_cleanly("Could not register myself in "
-					    "serverid.tdb");
-		}
-
-		smbd_process(ev, sconn);
+		smbd_process(ev, msg_ctx, fd, false);
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
@@ -646,7 +632,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		getpeername failure if we reopen the logs
 		and use %I in the filename.
 	*/
-	sconn->sock = -1;
 
 	if (pid != 0) {
 		add_child_pid(s->parent, pid);
@@ -1329,8 +1314,6 @@ extern void build_options(bool screen);
 		}
 	}
 
-	smbd_server_conn->msg_ctx = msg_ctx;
-
 	parent = talloc_zero(ev_ctx, struct smbd_parent_context);
 	if (!parent) {
 		exit_server("talloc(struct smbd_parent_context) failed");
@@ -1497,13 +1480,15 @@ extern void build_options(bool screen);
 	}
 
 	if (!is_daemon) {
+		int sock;
+
 		/* inetd mode */
 		TALLOC_FREE(frame);
 
 		/* Started from inetd. fd 0 is the socket. */
 		/* We will abort gracefully when the client or remote system
 		   goes away */
-		smbd_server_conn->sock = dup(0);
+		sock = dup(0);
 
 		/* close stdin, stdout (if not logging to it), but not stderr */
 		close_low_fds(true, !debug_get_output_is_stdout(), false);
@@ -1515,7 +1500,7 @@ extern void build_options(bool screen);
 	        /* Stop zombies */
 		smbd_setup_sig_chld_handler(parent);
 
-		smbd_process(ev_ctx, smbd_server_conn);
+		smbd_process(ev_ctx, msg_ctx, sock, true);
 
 		exit_server_cleanly(NULL);
 		return(0);

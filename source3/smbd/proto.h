@@ -802,7 +802,9 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 		      struct smb_request ***reqs, unsigned *num_reqs);
 bool req_is_in_chain(struct smb_request *req);
 void smbd_process(struct tevent_context *ev_ctx,
-		  struct smbd_server_connection *sconn);
+		  struct messaging_context *msg_ctx,
+		  int sock_fd,
+		  bool interactive);
 bool fork_echo_handler(struct smbd_server_connection *sconn);
 
 /* The following definitions come from smbd/quotas.c  */

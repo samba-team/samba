@@ -85,7 +85,12 @@ static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
 {
 	bool had_open_conn = false;
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbXsrv_connection *conn = global_smbXsrv_connection;
+	struct smbd_server_connection *sconn = NULL;
+
+	if (conn != NULL) {
+		sconn = conn->sconn;
+	}
 
 	if (!exit_firsttime)
 		exit(0);
@@ -158,7 +163,8 @@ static void exit_server_common(enum server_exit_reason how,
 	 * because smbd_msg_ctx is not a talloc child of smbd_server_conn.
 	 */
 	sconn = NULL;
-	TALLOC_FREE(smbd_server_conn);
+	conn = NULL;
+	TALLOC_FREE(global_smbXsrv_connection);
 	server_messaging_context_free();
 	server_event_context_free();
 	TALLOC_FREE(smbd_memcache_ctx);

@@ -39,6 +39,7 @@
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security_token.h"
 #include "lib/id_cache.h"
+#include "serverid.h"
 
 extern bool global_machine_password_needs_changing;
 
@@ -3163,9 +3164,13 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 ****************************************************************************/
 
 void smbd_process(struct tevent_context *ev_ctx,
-		  struct smbd_server_connection *sconn)
+		  struct messaging_context *msg_ctx,
+		  int sock_fd,
+		  bool interactive)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbXsrv_connection *conn;
+	struct smbd_server_connection *sconn;
 	struct sockaddr_storage ss;
 	struct sockaddr *sa = NULL;
 	socklen_t sa_socklen;
@@ -3176,10 +3181,45 @@ void smbd_process(struct tevent_context *ev_ctx,
 	char *rhost;
 	int ret;
 
-	sconn->conn = talloc_zero(sconn, struct smbXsrv_connection);
-	if (sconn->conn == NULL) {
+	conn = talloc_zero(ev_ctx, struct smbXsrv_connection);
+	if (conn == NULL) {
 		DEBUG(0,("talloc_zero(struct smbXsrv_connection)\n"));
 		exit_server_cleanly("talloc_zero(struct smbXsrv_connection).\n");
+	}
+
+	conn->ev_ctx = ev_ctx;
+	conn->msg_ctx = msg_ctx;
+
+	sconn = talloc_zero(conn, struct smbd_server_connection);
+	if (!sconn) {
+		exit_server("failed to create smbd_server_connection");
+	}
+
+	conn->sconn = sconn;
+	sconn->conn = conn;
+
+	/*
+	 * TODO: remove this...:-)
+	 */
+	global_smbXsrv_connection = conn;
+
+	sconn->ev_ctx = ev_ctx;
+	sconn->msg_ctx = msg_ctx;
+	sconn->sock = sock_fd;
+	sconn->smb1.echo_handler.trusted_fd = -1;
+	sconn->smb1.echo_handler.socket_lock_fd = -1;
+
+	if (!interactive) {
+		smbd_setup_sig_term_handler(sconn);
+		smbd_setup_sig_hup_handler(sconn);
+
+		if (!serverid_register(messaging_server_id(msg_ctx),
+				       FLAG_MSG_GENERAL|FLAG_MSG_SMBD
+				       |FLAG_MSG_DBWRAP
+				       |FLAG_MSG_PRINT_GENERAL)) {
+			exit_server_cleanly("Could not register myself in "
+					    "serverid.tdb");
+		}
 	}
 
 	if (lp_srv_maxprotocol() >= PROTOCOL_SMB2_02) {
@@ -3449,9 +3489,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
-	sconn->conn->sconn = sconn;
-	sconn->conn->ev_ctx = sconn->ev_ctx;
-	sconn->conn->msg_ctx = sconn->msg_ctx;
 	sconn->conn->local_address = sconn->local_address;
 	sconn->conn->remote_address = sconn->remote_address;
 	sconn->conn->remote_hostname = sconn->remote_hostname;
