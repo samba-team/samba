@@ -72,6 +72,14 @@ testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
+#
+# These tests demonstrate that a credential cache in the environment does not
+# override a username/password, even an incorrect one, on the command line
+#
+
+testit_expect_failure  "Test login with user kerberos ccache, but wrong password specified" $VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k yes -Unettestuser@$REALM%wrongpass && failed=`expr $failed + 1`
+testit_expect_failure  "Test login with user kerberos ccache, but old password specified" $VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k yes -Unettestuser@$REALM%$USERPASS && failed=`expr $failed + 1`
+
 
 USERPASS=$NEWUSERPASS
 WEAKPASS=testpass1
