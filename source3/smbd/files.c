@@ -107,6 +107,11 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	SMB_ASSERT(fsp->fnum < 65536);
 
+	DLIST_ADD(sconn->files, fsp);
+	sconn->num_files += 1;
+
+	conn->num_files_open++;
+
 	/*
 	 * Create an smb_filename with "" for the base_name.  There are very
 	 * few NULL checks, so make sure it's initialized with something. to
@@ -115,12 +120,9 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	status = create_synthetic_smb_fname(fsp, "", NULL, NULL,
 					    &fsp->fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(fsp);
-		TALLOC_FREE(fsp->fh);
+		file_free(NULL, fsp);
+		return status;
 	}
-
-	DLIST_ADD(sconn->files, fsp);
-	sconn->num_files += 1;
 
 	DEBUG(5,("allocated file structure %d, fnum = %d (%u used)\n",
 		 i, fsp->fnum, (unsigned int)sconn->num_files));
@@ -135,8 +137,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	  a cache hit to the *end* of the list. */
 
 	ZERO_STRUCT(sconn->fsp_fi_cache);
-
-	conn->num_files_open++;
 
 	*result = fsp;
 	return NT_STATUS_OK;
