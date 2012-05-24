@@ -117,8 +117,10 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	/* TODO: We don't really need an out_packet. */
 	out_packet = talloc_zero(state, struct dns_name_packet);
 
-	if (in_packet == NULL) return NT_STATUS_NO_MEMORY;
-	if (out_packet == NULL) return NT_STATUS_NO_MEMORY;
+	if ((state == NULL) || (in_packet == NULL) || (out_packet == NULL)) {
+		TALLOC_FREE(state);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dump_data(8, in->data, in->length);
 
