@@ -113,6 +113,15 @@ static void message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 
 /*
+ * timeout handler - noop
+ */
+static void timeout_handler(struct event_context *ev, struct timed_event *timer,
+			    struct timeval curtime, void *private_data)
+{
+	return;
+}
+
+/*
   benchmark the following:
 
   fetch a record
@@ -129,6 +138,7 @@ static void bench_fetch(struct ctdb_context *ctdb, struct event_context *ev)
 	}
 	
 	start_timer();
+	event_add_timed(ev, ctdb, timeval_current_ofs(timelimit,0), timeout_handler, NULL);
 
 	while (end_timer() < timelimit) {
 		if (pnn == 0 && msg_count % 100 == 0 && end_timer() > 0) {
@@ -235,6 +245,13 @@ int main(int argc, const char *argv[])
 		event_loop_once(ev);
 	}
 
+	/* This test has a race condition. If CTDB receives the message from previous
+	 * node, before this node has registered for that message, this node will never
+	 * receive that message and will block on receive. Sleeping for some time will
+	 * hopefully ensure that the test program on all the nodes register for messages.
+	 */
+	printf("Sleeping for %d seconds\n", num_nodes);
+	sleep(num_nodes);
 	bench_fetch(ctdb, ev);
 
 	key.dptr = discard_const(TESTKEY);
