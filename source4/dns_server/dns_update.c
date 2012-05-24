@@ -397,21 +397,13 @@ static WERROR handle_one_update(struct dns_server *dns,
 
 	switch (update->rr_type) {
 	case DNS_QTYPE_A:
-		break;
 	case DNS_QTYPE_NS:
-		break;
 	case DNS_QTYPE_CNAME:
-		break;
 	case DNS_QTYPE_SOA:
-		break;
 	case DNS_QTYPE_PTR:
-		break;
 	case DNS_QTYPE_MX:
-		break;
 	case DNS_QTYPE_AAAA:
-		break;
 	case DNS_QTYPE_SRV:
-		break;
 	case DNS_QTYPE_TXT:
 		break;
 	default:
