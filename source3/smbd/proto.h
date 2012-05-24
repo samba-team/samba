@@ -667,7 +667,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
-bool should_notify_deferred_opens(void);
+bool should_notify_deferred_opens(struct smbd_server_connection *sconn);
 void break_level2_to_none_async(files_struct *fsp);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void contend_level2_oplocks_begin(files_struct *fsp,

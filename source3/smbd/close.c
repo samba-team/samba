@@ -173,7 +173,7 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 	uint32_t i, num_deferred;
 	struct share_mode_entry *deferred;
 
-	if (!should_notify_deferred_opens()) {
+	if (!should_notify_deferred_opens(sconn)) {
 		return;
 	}
 

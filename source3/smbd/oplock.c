@@ -208,7 +208,7 @@ bool downgrade_oplock(files_struct *fsp)
 /*
  * Some kernel oplock implementations handle the notification themselves.
  */
-bool should_notify_deferred_opens()
+bool should_notify_deferred_opens(struct smbd_server_connection *sconn)
 {
 	return !(koplocks &&
 		(koplocks->flags & KOPLOCKS_DEFERRED_OPEN_NOTIFICATION));
