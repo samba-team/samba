@@ -1,4 +1,4 @@
-import Logs, Options
+import Logs, Options, sys
 
 # Check for kerberos
 have_gssapi=False
@@ -30,6 +30,13 @@ if conf.env.KRB5_CONFIG:
     if conf.env.KRB5_VENDOR != 'heimdal':
         conf.define('USING_SYSTEM_KRB5', 1)
         del conf.env.HEIMDAL_KRB5_CONFIG
+        kversion = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG), dict()).strip()
+        kversion_split = map(int, kversion.split(" ")[-1].split("."))
+        if kversion_split < [1, 9]:
+            Logs.error('ERROR: MIT krb5 build requires at least 1.9.0. %s is found and cannot be used' % (kversion))
+            sys.exit(1)
+        else:
+            Logs.info('%s is detected, MIT krb5 build can proceed' % (kversion))
 
 conf.check_cfg(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')
