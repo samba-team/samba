@@ -3337,6 +3337,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("Failed to init smb_signing");
 	}
 
+	if (!file_init(sconn)) {
+		exit_server("file_init() failed");
+	}
+
 	/* Setup oplocks */
 	if (!init_oplocks(sconn))
 		exit_server("Failed to init oplocks");

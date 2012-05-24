@@ -1436,8 +1436,8 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	if (!file_init(smbd_server_conn)) {
-		DEBUG(0, ("ERROR: file_init failed\n"));
+	if (!file_init_global()) {
+		DEBUG(0, ("ERROR: file_init_global() failed\n"));
 		return -1;
 	}
 
