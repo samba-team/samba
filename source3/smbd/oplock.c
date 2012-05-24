@@ -54,6 +54,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
@@ -96,6 +97,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 void release_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
@@ -133,6 +135,7 @@ void release_file_oplock(files_struct *fsp)
 static void downgrade_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 
 	if (!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0, ("trying to downgrade an already-downgraded oplock!\n"));
@@ -210,6 +213,7 @@ bool downgrade_oplock(files_struct *fsp)
  */
 bool should_notify_deferred_opens(struct smbd_server_connection *sconn)
 {
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	return !(koplocks &&
 		(koplocks->flags & KOPLOCKS_DEFERRED_OPEN_NOTIFICATION));
 }
@@ -336,6 +340,9 @@ static void oplock_timeout_handler(struct event_context *ctx,
 
 static void add_oplock_timeout_handler(files_struct *fsp)
 {
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+
 	/*
 	 * If kernel oplocks already notifies smbds when an oplock break times
 	 * out, just return.
@@ -487,6 +494,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
@@ -639,6 +647,8 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 
 void reply_to_oplock_break_requests(files_struct *fsp)
 {
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	int i;
 
 	/*
@@ -896,6 +906,9 @@ done:
 void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type)
 {
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+
 	if (koplocks && koplocks->ops->contend_level2_oplocks_begin) {
 		koplocks->ops->contend_level2_oplocks_begin(fsp, type);
 		return;
@@ -907,6 +920,9 @@ void smbd_contend_level2_oplocks_begin(files_struct *fsp,
 void smbd_contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type)
 {
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+
 	/* Only kernel oplocks implement this so far */
 	if (koplocks && koplocks->ops->contend_level2_oplocks_end) {
 		koplocks->ops->contend_level2_oplocks_end(fsp, type);
@@ -981,6 +997,8 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 
 void init_kernel_oplocks(struct smbd_server_connection *sconn)
 {
+	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+
 	/* only initialize once */
 	if (koplocks == NULL) {
 #if HAVE_KERNEL_OPLOCKS_IRIX
@@ -988,5 +1006,6 @@ void init_kernel_oplocks(struct smbd_server_connection *sconn)
 #elif HAVE_KERNEL_OPLOCKS_LINUX
 		koplocks = linux_init_kernel_oplocks(sconn);
 #endif
+		sconn->oplocks.kernel_ops = koplocks;
 	}
 }

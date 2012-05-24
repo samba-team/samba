@@ -93,8 +93,6 @@ struct vfs_init_function_entry *backends = NULL;
 char *sparse_buf = NULL;
 char *LastDir = NULL;
 
-struct kernel_oplocks *koplocks = NULL;
-
 struct smbd_parent_context *am_parent = NULL;
 struct memcache *smbd_memcache_ctx = NULL;
 bool exit_firsttime = true;

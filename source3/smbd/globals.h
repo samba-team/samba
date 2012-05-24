@@ -108,8 +108,6 @@ extern struct vfs_init_function_entry *backends;
 extern char *sparse_buf;
 extern char *LastDir;
 
-extern struct kernel_oplocks *koplocks;
-
 struct smbd_parent_context;
 extern struct smbd_parent_context *am_parent;
 extern struct memcache *smbd_memcache_ctx;
@@ -520,6 +518,7 @@ struct smbd_server_connection {
 	struct {
 		int32_t exclusive_open;
 		int32_t level_II_open;
+		struct kernel_oplocks *kernel_ops;
 	} oplocks;
 
 	struct {
