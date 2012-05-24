@@ -240,36 +240,6 @@ static WERROR ask_forwarder_recv(
 	return WERR_OK;
 }
 
-static WERROR ask_forwarder(struct dns_server *dns,
-			    TALLOC_CTX *mem_ctx,
-			    struct dns_name_question *question,
-			    struct dns_res_rec **answers, uint16_t *ancount,
-			    struct dns_res_rec **nsrecs, uint16_t *nscount,
-			    struct dns_res_rec **additional, uint16_t *arcount)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	WERROR err = WERR_NOMEM;
-
-	ev = tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = ask_forwarder_send(
-		ev, ev, lpcfg_dns_forwarder(dns->task->lp_ctx), question);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_werror(req, ev, &err)) {
-		goto fail;
-	}
-	err = ask_forwarder_recv(req, mem_ctx, answers, ancount,
-				 nsrecs, nscount, additional, arcount);
-fail:
-	TALLOC_FREE(ev);
-	return err;
-}
-
 static WERROR handle_question(struct dns_server *dns,
 			      TALLOC_CTX *mem_ctx,
 			      const struct dns_name_question *question,
