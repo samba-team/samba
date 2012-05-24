@@ -87,8 +87,8 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 			return WERR_NOMEM;
 		}
 		for (i=1; i<rec->data.txt.count; i++) {
-			tmp = talloc_asprintf_append(tmp, " \"%s\"",
-						     rec->data.txt.str[i]);
+			tmp = talloc_asprintf_append_buffer(
+				tmp, " \"%s\"", rec->data.txt.str[i]);
 			if (tmp == NULL) {
 				return WERR_NOMEM;
 			}
