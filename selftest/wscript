@@ -111,6 +111,7 @@ def cmd_testonly(opt):
             os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
 
     binary_mapping = ('nmblookup3:nmblookup3,' +
+                      'nmblookup4:nmblookup,' +
                       'smbclient3:smbclient3,' +
                       'smbtorture4:smbtorture,' + 
                       'ntlm_auth3:ntlm_auth3')
