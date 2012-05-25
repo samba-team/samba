@@ -1,4 +1,4 @@
-What's new in Samba 4 beta1
+What's new in Samba 4 alpha21
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba4 beta1 is not a final Samba release, however we are now making
+Samba4 alpha21 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -26,9 +26,9 @@ Samba 3.x release to Samba 4.0 alpha at this stage.
 In particular note that the new default configuration 's3fs' may have
 different stability characteristics compared with our previous default
 file server.  We are making this release so that we can find and fix
-any of these issues that arise in the real world.  AD DC installations
+any of these issues that arise in the real world.  New AD DC installations
 can provision with --use-ntvfs to obtain the previous default file
-server.
+server.  Existing installations will be unaffected at this stage.
 
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
 alpha releases, you should backup all configuration and data.
@@ -36,7 +36,7 @@ alpha releases, you should backup all configuration and data.
 NEW FEATURES
 ============
 
-Samba 4.0 beta supports the server-side of the Active Directory logon
+Samba 4.0 alpha supports the server-side of the Active Directory logon
 environment used by Windows 2000 and later, so we can do full domain
 join and domain logon operations with these clients.
 
@@ -72,11 +72,11 @@ internal workings of the DC code is now implemented in python.
 CHANGES SINCE alpha20
 =====================
 
-For a list of changes since alpha 19, please see the git log.
+For a list of changes since alpha20, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0alpha20..samba-4.0.0beta1
+$ git log samba-4.0.0alpha20..samba-4.0.0alpha21
 
 Some major user-visible changes include:
 
@@ -102,7 +102,7 @@ the team improves and develops support these new protocols.
 KNOWN ISSUES
 ============
 
-- We are making this beta release to gain real-world use of the 's3fs'
+- We are making this alpha release to gain real-world use of the 's3fs'
   file server combination we will use for the Samba 4.0 release.
   Users should expect some rough edges: in particular, there are
   warnings about invalid parameters from the two respective parameter
