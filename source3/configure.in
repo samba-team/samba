@@ -4131,6 +4131,7 @@ if test x"$with_ads_support" != x"no"; then
     AC_REMOVE_DEFINE(HAVE_GSSAPI_H)
     AC_REMOVE_DEFINE(HAVE_GSSAPI_GSSAPI_GENERIC_H)
     AC_REMOVE_DEFINE(HAVE_GSSAPI_GSSAPI_H)
+    AC_REMOVE_DEFINE(HAVE_GSSAPI)
     KRB5_LIBS=""
     with_ads_support=no
   fi
