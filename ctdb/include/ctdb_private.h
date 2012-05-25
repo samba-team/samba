@@ -134,6 +134,7 @@ struct ctdb_tunable {
 	uint32_t db_record_count_warn;
 	uint32_t db_record_size_warn;
 	uint32_t db_size_warn;
+	uint32_t pulldb_preallocation_size;
 };
 
 /*

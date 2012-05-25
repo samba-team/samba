@@ -348,6 +348,7 @@ struct pulldb_data {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_marshall_buffer *pulldata;
 	uint32_t len;
+	uint32_t allocated_len;
 	bool failed;
 };
 
@@ -364,7 +365,10 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		params->failed = true;
 		return -1;
 	}
-	params->pulldata = talloc_realloc_size(NULL, params->pulldata, rec->length + params->len);
+	if (params->len + rec->length >= params->allocated_len) {
+		params->allocated_len = rec->length + params->len + ctdb->tunable.pulldb_preallocation_size;
+		params->pulldata = talloc_realloc_size(NULL, params->pulldata, params->allocated_len);
+	}
 	if (params->pulldata == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to expand pulldb_data to %u\n", rec->length + params->len));
 		ctdb_fatal(params->ctdb, "failed to allocate memory for recovery. shutting down\n");
@@ -414,6 +418,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	params.ctdb_db = ctdb_db;
 	params.pulldata = reply;
 	params.len = offsetof(struct ctdb_marshall_buffer, data);
+	params.allocated_len = params.len;
 	params.failed = false;
 
 	if (ctdb_db->unhealthy_reason) {

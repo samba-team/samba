@@ -1178,6 +1178,7 @@ struct recdb_data {
 	struct ctdb_context *ctdb;
 	struct ctdb_marshall_buffer *recdata;
 	uint32_t len;
+	uint32_t allocated_len;
 	bool failed;
 	bool persistent;
 };
@@ -1206,7 +1207,10 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 		params->failed = true;
 		return -1;
 	}
-	params->recdata = talloc_realloc_size(NULL, params->recdata, rec->length + params->len);
+	if (params->len + rec->length >= params->allocated_len) {
+		params->allocated_len = rec->length + params->len + params->ctdb->tunable.pulldb_preallocation_size;
+		params->recdata = talloc_realloc_size(NULL, params->recdata, params->allocated_len);
+	}
 	if (params->recdata == NULL) {
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to expand recdata to %u (%u records)\n", 
 			 rec->length + params->len, params->recdata->count));
@@ -1245,6 +1249,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	params.ctdb = ctdb;
 	params.recdata = recdata;
 	params.len = offsetof(struct ctdb_marshall_buffer, data);
+	params.allocated_len = params.len;
 	params.failed = false;
 	params.persistent = persistent;
 
