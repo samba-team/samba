@@ -78,6 +78,13 @@ maintainers:
 policy:
          Please ping me when changes made, so I can sync with CCAN project.
 
+files: libcli/dns
+maintainers:
+         Kai Blin <kai@samba.org>
+policy:
+         Mail/CC changes to the maintainer, commit the changes
+         unless the maintainer objects.
+
 =======================================================================
 
 Samba Maintainers System
