@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('clidns',
-        source='dns.c dns_hosts_file.c',
-        public_deps='LIBTSOCKET tevent-util',
-        private_library=True,
-        vars=locals())
+bld.SAMBA_SUBSYSTEM('clidns',
+        source='dns.c',
+        public_deps='LIBTSOCKET tevent-util')
+
+bld.SAMBA_SUBSYSTEM('dnshostsfile',
+        source='dns_hosts_file.c',
+        public_deps='samba-util errors')

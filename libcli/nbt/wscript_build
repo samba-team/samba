@@ -8,7 +8,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 
 bld.SAMBA_SUBSYSTEM('lmhosts',
                     source='lmhosts.c',
-                    deps='clidns replace talloc'
+                    deps='replace talloc'
                     )
 
 bld.SAMBA_LIBRARY('cli-nbt',

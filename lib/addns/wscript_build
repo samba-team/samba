@@ -2,6 +2,6 @@
 
 bld.SAMBA_LIBRARY('addns',
                    source='dnsquery.c dnsrecord.c dnsutils.c dnssock.c dnsgss.c dnsmarshall.c error.c',
-                   public_deps='clidns samba-util gssapi uuid resolv',
+                   public_deps='dnshostsfile samba-util gssapi uuid resolv',
                    private_library=True,
                    vars=locals())
