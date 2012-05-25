@@ -380,11 +380,11 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 		(*pflags) &= ~LIBNDR_FLAG_LITTLE_ENDIAN;
 		(*pflags) &= ~LIBNDR_FLAG_NDR64;
 	}
-	if (new_flags & LIBNDR_FLAG_REMAINING) {
-		(*pflags) &= ~LIBNDR_ALIGN_FLAGS;
-	}
 	if (new_flags & LIBNDR_ALIGN_FLAGS) {
-		(*pflags) &= ~LIBNDR_FLAG_REMAINING;
+		/* Ensure we only have the passed-in
+		   align flag set in the new_flags,
+		   remove any old align flag. */
+		(*pflags) &= ~LIBNDR_ALIGN_FLAGS;
 	}
 	if (new_flags & LIBNDR_FLAG_NO_RELATIVE_REVERSE) {
 		(*pflags) &= ~LIBNDR_FLAG_RELATIVE_REVERSE;
