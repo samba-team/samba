@@ -600,7 +600,7 @@ Starting nfs: OK"
 			    knfsd:bs)
 				_t="Trying to restart NFS service"
 				;;
-			    lockd)
+			    lockd|lockd:b)
 				_t="\
 Trying to restart lock manager service
 Stopping nfslock: OK
