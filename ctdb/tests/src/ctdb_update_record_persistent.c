@@ -42,8 +42,8 @@ static void update_once(struct ctdb_context *ctdb, struct event_context *ev, str
 	olddata = tdb_fetch(ctdb_db->ltdb->tdb, key);
 	if (olddata.dsize != 0) {
 		memcpy(&header, olddata.dptr, sizeof(header));
-		header.rsn++;
-	}
+	} 
+	header.rsn++;
 
 	if (ctdb_ctrl_updaterecord(ctdb, ctdb, timeval_zero(), CTDB_CURRENT_NODE, ctdb_db, key, &header, data) != 0) {
 		printf("Failed to update record\n");
