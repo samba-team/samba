@@ -648,7 +648,7 @@ NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 	}
 	SSVAL(param, 0, 0x03);	/* max referral level */
 
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      path, strlen(path)+1,
 				      NULL);
 	if (!param) {

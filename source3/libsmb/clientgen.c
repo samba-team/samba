@@ -65,15 +65,6 @@ bool cli_set_backup_intent(struct cli_state *cli, bool flag)
 }
 
 /****************************************************************************
- convenience routine to find if we negotiated ucs2
-****************************************************************************/
-
-bool cli_ucs2(struct cli_state *cli)
-{
-	return smbXcli_conn_use_unicode(cli->conn);
-}
-
-/****************************************************************************
  Initialize Domain, user or password.
 ****************************************************************************/
 

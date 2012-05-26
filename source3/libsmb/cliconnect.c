@@ -163,7 +163,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 		 * Plaintext mode needed, assume plaintext supplied.
 		 */
 		buf = talloc_array(talloc_tos(), uint8_t, 0);
-		buf = smb_bytes_push_str(buf, cli_ucs2(cli), pass, passlen+1,
+		buf = smb_bytes_push_str(buf, smbXcli_conn_use_unicode(cli->conn), pass, passlen+1,
 					 &converted_size);
 		if (tevent_req_nomem(buf, req)) {
 			return tevent_req_post(req, ev);
@@ -197,7 +197,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 	if (tevent_req_nomem(tmp, req)) {
 		return tevent_req_post(req, ev);
 	}
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), tmp, strlen(tmp)+1,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), tmp, strlen(tmp)+1,
 				   NULL);
 	TALLOC_FREE(tmp);
 
@@ -205,10 +205,10 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 	if (tevent_req_nomem(tmp, req)) {
 		return tevent_req_post(req, ev);
 	}
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), tmp, strlen(tmp)+1,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), tmp, strlen(tmp)+1,
 				   NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix", 5, NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba", 6, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "Unix", 5, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "Samba", 6, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -415,12 +415,12 @@ struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
 
 	bytes = talloc_array(state, uint8_t, 0);
 
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "",  1, /* username */
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "",  1, /* username */
 				   NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, /* workgroup */
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "", 1, /* workgroup */
 				   NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix", 5, NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba", 6, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "Unix", 5, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "Samba", 6, NULL);
 
 	if (bytes == NULL) {
 		TALLOC_FREE(req);
@@ -629,18 +629,18 @@ static struct tevent_req *cli_session_setup_plain_send(
 	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli, 0));
 
 	bytes = talloc_array(state, uint8_t, 0);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), pass, strlen(pass)+1,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), pass, strlen(pass)+1,
 				   &passlen);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
-	SSVAL(vwv + (cli_ucs2(cli) ? 8 : 7), 0, passlen);
+	SSVAL(vwv + (smbXcli_conn_use_unicode(cli->conn) ? 8 : 7), 0, passlen);
 
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   user, strlen(user)+1, NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   workgroup, strlen(workgroup)+1, NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   "Unix", 5, NULL);
 
 	version = talloc_asprintf(talloc_tos(), "Samba %s",
@@ -648,7 +648,7 @@ static struct tevent_req *cli_session_setup_plain_send(
 	if (tevent_req_nomem(version, req)){
 		return tevent_req_post(req, ev);
 	}
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   version, strlen(version)+1, NULL);
 	TALLOC_FREE(version);
 
@@ -985,7 +985,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 	data_blob_free(&lm_response);
 	data_blob_free(&nt_response);
 
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   user, strlen(user)+1, NULL);
 
 	/*
@@ -995,13 +995,13 @@ static struct tevent_req *cli_session_setup_nt1_send(
 	if (tevent_req_nomem(workgroup_upper, req)) {
 		return tevent_req_post(req, ev);
 	}
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   workgroup_upper, strlen(workgroup_upper)+1,
 				   NULL);
 	TALLOC_FREE(workgroup_upper);
 
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix", 5, NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba", 6, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "Unix", 5, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "Samba", 6, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1264,9 +1264,9 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 	state->blob.data += thistime;
 	state->blob.length -= thistime;
 
-	state->buf = smb_bytes_push_str(state->buf, cli_ucs2(state->cli),
+	state->buf = smb_bytes_push_str(state->buf, smbXcli_conn_use_unicode(state->cli->conn),
 					"Unix", 5, NULL);
-	state->buf = smb_bytes_push_str(state->buf, cli_ucs2(state->cli),
+	state->buf = smb_bytes_push_str(state->buf, smbXcli_conn_use_unicode(state->cli->conn),
 					"Samba", 6, NULL);
 	if (state->buf == NULL) {
 		return false;
@@ -2340,7 +2340,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(req);
 		return NULL;
 	}
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), tmp, strlen(tmp)+1,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), tmp, strlen(tmp)+1,
 				   NULL);
 	TALLOC_FREE(tmp);
 
@@ -2863,13 +2863,13 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 
 	bytes = talloc_array(talloc_tos(), uint8_t, 0);
 	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   service, strlen(service)+1, NULL);
 	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   pass, strlen(pass)+1, NULL);
 	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   dev, strlen(dev)+1, NULL);
 
 	status = cli_smb(talloc_tos(), cli, SMBtcon, 0, 0, NULL,

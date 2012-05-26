@@ -1297,7 +1297,7 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 
 	/* The returned data is a pushed string, not raw data. */
 	if (!convert_string_talloc(talloc_tos(),
-				   cli_ucs2(cli) ? CH_UTF16LE : CH_DOS,
+				   smbXcli_conn_use_unicode(cli->conn) ? CH_UTF16LE : CH_DOS,
 				   CH_UNIX,
 				   rdata + 4,
 				   len,

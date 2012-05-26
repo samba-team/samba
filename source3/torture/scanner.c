@@ -21,6 +21,7 @@
 #include "system/filesys.h"
 #include "torture/proto.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #define VERBOSE 0
 #define OP_MIN 0
@@ -179,7 +180,7 @@ static bool scan_trans2(struct cli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      fname, strlen(fname)+1, NULL);
 	if (param == NULL) return True;
 
@@ -197,7 +198,7 @@ static bool scan_trans2(struct cli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      newfname, strlen(newfname)+1, NULL);
 	if (param == NULL) return True;
 
@@ -216,7 +217,7 @@ static bool scan_trans2(struct cli_state *cli, int op, int level,
 	if (param == NULL) return True;
 
 	SSVAL(param, 0, level);
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      dname, strlen(dname)+1, NULL);
 	if (param == NULL) return True;
 
@@ -424,7 +425,7 @@ static bool scan_nttrans(struct cli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      fname, strlen(fname)+1, NULL);
 	if (param == NULL) return True;
 
@@ -442,7 +443,7 @@ static bool scan_nttrans(struct cli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      newfname, strlen(newfname)+1, NULL);
 	if (param == NULL) return True;
 
@@ -461,7 +462,7 @@ static bool scan_nttrans(struct cli_state *cli, int op, int level,
 	if (param == NULL) return True;
 
 	SSVAL(param, 0, level);
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      dname, strlen(dname)+1, NULL);
 	if (param == NULL) return True;
 

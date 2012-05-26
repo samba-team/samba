@@ -191,7 +191,7 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->param, 0, level);
 
 	state->param = trans2_bytes_push_str(
-		state->param, cli_ucs2(cli), path, strlen(path)+1, NULL);
+		state->param, smbXcli_conn_use_unicode(cli->conn), path, strlen(path)+1, NULL);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -302,7 +302,7 @@ static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	state->data = trans2_bytes_push_str(
-		state->data, cli_ucs2(cli), oldname, strlen(oldname)+1, NULL);
+		state->data, smbXcli_conn_use_unicode(cli->conn), oldname, strlen(oldname)+1, NULL);
 
 	subreq = cli_setpathinfo_send(
 		state, ev, cli, level, newname,
@@ -403,7 +403,7 @@ struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct readlink_state *state = NULL;
-	uint32_t maxbytelen = (uint32_t)(cli_ucs2(cli) ? len*3 : len);
+	uint32_t maxbytelen = (uint32_t)(smbXcli_conn_use_unicode(cli->conn) ? len*3 : len);
 
 	req = tevent_req_create(mem_ctx, &state, struct readlink_state);
 	if (req == NULL) {
@@ -464,7 +464,7 @@ NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
 	}
 	/* The returned data is a pushed string, not raw data. */
 	if (!convert_string_talloc(state,
-				cli_ucs2(cli) ? CH_UTF16LE : CH_DOS, 
+				smbXcli_conn_use_unicode(cli->conn) ? CH_UTF16LE : CH_DOS, 
 				CH_UNIX,
 				state->data,
 				state->num_data,
@@ -1048,7 +1048,7 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_src,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname_src,
 				   strlen(fname_src)+1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -1061,7 +1061,7 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes[talloc_get_size(bytes)-1] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_dst,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname_dst,
 				   strlen(fname_dst)+1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -1170,7 +1170,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_src,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname_src,
 				   strlen(fname_src)+1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -1183,7 +1183,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes[talloc_get_size(bytes)-1] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname_dst,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname_dst,
 				   strlen(fname_dst)+1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -1370,7 +1370,7 @@ struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
@@ -1474,7 +1474,7 @@ struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), dname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), dname,
 				   strlen(dname)+1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
@@ -1578,7 +1578,7 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), dname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), dname,
 				   strlen(dname)+1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
@@ -1820,12 +1820,12 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	SCVAL(vwv+23, 1, SecurityFlags);
 
 	bytes = talloc_array(state, uint8_t, 0);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   fname, strlen(fname)+1,
 				   &converted_len);
 
 	/* sigh. this copes with broken netapp filer behaviour */
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, NULL);
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "", 1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -1989,7 +1989,7 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      fname, strlen(fname),
 				      &converted_len);
 	if (tevent_req_nomem(param, req)) {
@@ -2192,7 +2192,7 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes = talloc_array(state, uint8_t, 0);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
@@ -3415,7 +3415,7 @@ struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
@@ -3673,7 +3673,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -3685,7 +3685,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	}
 
 	bytes[talloc_get_size(bytes)-1] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "",
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "",
 				   1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -3791,7 +3791,7 @@ struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 
 	if (tevent_req_nomem(bytes, req)) {
@@ -4026,7 +4026,7 @@ struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), path,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), path,
 				   strlen(path)+1, NULL);
 	if (tevent_req_nomem(bytes, req)) {
 		return tevent_req_post(req, ev);
@@ -4245,7 +4245,7 @@ NTSTATUS cli_set_ea_path(struct cli_state *cli, const char *path,
 	SSVAL(param,2,0);
 	SSVAL(param,4,0);
 
-	param = trans2_bytes_push_str(param, cli_ucs2(cli),
+	param = trans2_bytes_push_str(param, smbXcli_conn_use_unicode(cli->conn),
 				      path, strlen(path)+1,
 				      NULL);
 	param_len = talloc_get_size(param);
@@ -4586,7 +4586,7 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 	memset(state->param, '\0', 6);
 	SSVAL(state->param, 0, SMB_POSIX_PATH_OPEN);
 
-	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), fname,
+	state->param = trans2_bytes_push_str(state->param, smbXcli_conn_use_unicode(cli->conn), fname,
 				   strlen(fname)+1, NULL);
 
 	if (tevent_req_nomem(state->param, req)) {
@@ -5146,7 +5146,7 @@ struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 	}
 	SSVAL(state->param, 0, level);
 	state->param = trans2_bytes_push_str(
-		state->param, cli_ucs2(cli), fname, strlen(fname)+1, NULL);
+		state->param, smbXcli_conn_use_unicode(cli->conn), fname, strlen(fname)+1, NULL);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}

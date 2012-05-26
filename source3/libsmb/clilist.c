@@ -324,7 +324,7 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), mask,
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), mask,
 				   strlen(mask)+1, NULL);
 
 	bytes = smb_bytes_push_bytes(bytes, 5, (const uint8_t *)&zero, 2);
@@ -428,7 +428,7 @@ static void cli_list_old_done(struct tevent_req *subreq)
 		return;
 	}
 	bytes[0] = 4;
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(state->cli), "",
+	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(state->cli->conn), "",
 				   1, NULL);
 	bytes = smb_bytes_push_bytes(bytes, 5, state->search_status,
 				     sizeof(state->search_status));
@@ -591,7 +591,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->param, 6, state->info_level);
 	SIVAL(state->param, 8, 0);
 
-	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli),
+	state->param = trans2_bytes_push_str(state->param, smbXcli_conn_use_unicode(cli->conn),
 					     state->mask, strlen(state->mask)+1,
 					     NULL);
 	if (tevent_req_nomem(state->param, req)) {
@@ -774,7 +774,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 		data_blob_free(&last_name_raw);
 	} else {
 		state->param = trans2_bytes_push_str(state->param,
-						     cli_ucs2(state->cli),
+						     smbXcli_conn_use_unicode(state->cli->conn),
 						     state->mask,
 						     strlen(state->mask)+1,
 						     NULL);
