@@ -613,7 +613,6 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
 	     libsmb/clioplock.o libsmb/clirap2.o \
 	     libsmb/async_smb.o \
-	     libsmb/clisigning.o \
 	     ../libcli/smb/smb_seal.o \
 	     ../libcli/smb/read_smb.o \
 	     ../libcli/smb/smbXcli_base.o \

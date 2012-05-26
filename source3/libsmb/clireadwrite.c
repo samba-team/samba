@@ -44,7 +44,7 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 	if (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP) {
 		useable_space = 0xFFFFFF - data_offset;
 
-		if (client_is_signing_on(cli)) {
+		if (smb1cli_conn_signing_is_active(cli->conn)) {
 			return min_space;
 		}
 
@@ -97,7 +97,7 @@ static size_t cli_write_max_bufsize(struct cli_state *cli,
 		return min_space;
 	}
 
-	if (client_is_signing_on(cli)) {
+	if (smb1cli_conn_signing_is_active(cli->conn)) {
 		return min_space;
 	}
 

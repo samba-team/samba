@@ -837,14 +837,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		   uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		   uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata);
 
-/* The following definitions come from libsmb/clisigning.c  */
-
-bool cli_simple_set_signing(struct cli_state *cli,
-			    const DATA_BLOB user_session_key,
-			    const DATA_BLOB response);
-bool cli_check_sign_mac(struct cli_state *cli, const char *buf, uint32_t seqnum);
-bool client_is_signing_on(struct cli_state *cli);
-
 /* The following definitions come from libsmb/reparse_symlink.c  */
 
 bool symlink_reparse_buffer_marshall(

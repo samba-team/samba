@@ -1086,8 +1086,8 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	if (cli_simple_set_signing(cli, state->session_key, state->response)
-	    && !cli_check_sign_mac(cli, (char *)in, 1)) {
+	if (smb1cli_conn_activate_signing(cli->conn, state->session_key, state->response)
+	    && !smb1cli_conn_check_signing(cli->conn, (uint8_t *)in, 1)) {
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
@@ -1526,9 +1526,9 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 			return;
 		}
 	} else {
-		if (cli_simple_set_signing(state->cli, state->session_key_krb5,
+		if (smb1cli_conn_activate_signing(state->cli->conn, state->session_key_krb5,
 					   data_blob_null)
-		    && !cli_check_sign_mac(state->cli, inbuf, 1)) {
+		    && !smb1cli_conn_check_signing(state->cli->conn, (uint8_t *)inbuf, 1)) {
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
@@ -1733,10 +1733,10 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 				return;
 			}
 		} else {
-			if (cli_simple_set_signing(
-				    state->cli, state->ntlmssp_state->session_key,
+			if (smb1cli_conn_activate_signing(
+				    state->cli->conn, state->ntlmssp_state->session_key,
 				    data_blob_null)
-			    && !cli_check_sign_mac(state->cli, inbuf, 1)) {
+			    && !smb1cli_conn_check_signing(state->cli->conn, (uint8_t *)inbuf, 1)) {
 				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 				return;
 			}
