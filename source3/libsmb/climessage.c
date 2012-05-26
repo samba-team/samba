@@ -21,6 +21,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/libsmb.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 struct cli_message_start_state {
 	uint16_t grp;
@@ -388,7 +389,7 @@ NTSTATUS cli_message(struct cli_state *cli, const char *host,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */

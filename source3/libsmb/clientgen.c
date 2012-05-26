@@ -546,7 +546,7 @@ NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data)
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -614,7 +614,7 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
         struct tevent_req *req = NULL;
         NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-        if (cli_has_async_calls(cli)) {
+        if (smbXcli_conn_has_async_calls(cli->conn)) {
                 return NT_STATUS_INVALID_PARAMETER;
         }
         ev = tevent_context_init(mem_ctx);

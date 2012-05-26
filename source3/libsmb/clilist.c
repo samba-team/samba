@@ -22,6 +22,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "trans2.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /****************************************************************************
  Calculate a safe next_entry_offset.
@@ -487,7 +488,7 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	struct file_info *finfo;
 	size_t i, num_finfo;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -822,7 +823,7 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 	struct file_info *finfo = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -938,7 +939,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 	size_t i, num_finfo;
 	uint16_t info_level;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */

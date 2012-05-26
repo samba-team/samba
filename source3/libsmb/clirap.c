@@ -28,6 +28,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/clirap.h"
 #include "trans2.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
@@ -670,7 +671,7 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -845,7 +846,7 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -956,7 +957,7 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -1244,7 +1245,7 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */

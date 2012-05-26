@@ -318,8 +318,3 @@ NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
 {
 	return smb1cli_req_chain_submit(reqs, num_reqs);
 }
-
-bool cli_has_async_calls(struct cli_state *cli)
-{
-	return smbXcli_conn_has_async_calls(cli->conn);
-}

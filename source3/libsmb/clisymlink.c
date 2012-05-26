@@ -26,6 +26,7 @@
 #include "trans2.h"
 #include "libcli/security/secdesc.h"
 #include "libcli/security/security.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 struct cli_symlink_state {
 	struct tevent_context *ev;
@@ -204,7 +205,7 @@ NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
@@ -378,7 +379,7 @@ NTSTATUS cli_readlink(struct cli_state *cli, const char *fname,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}

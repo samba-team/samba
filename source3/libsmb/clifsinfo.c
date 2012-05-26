@@ -129,7 +129,7 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
 		 * Can't use sync call while an async call is in flight
 		 */
@@ -242,7 +242,7 @@ NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ev = tevent_context_init(talloc_tos());
@@ -339,7 +339,7 @@ NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	if (cli_has_async_calls(cli)) {
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	ev = tevent_context_init(talloc_tos());
