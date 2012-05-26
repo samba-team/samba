@@ -78,9 +78,13 @@ def set_options(opt):
                    action="store", dest='PRIVATELIBDIR', default=None)
 
     opt.add_option('--with-libiconv',
-                   help='additional directory to search for for libiconv',
+                   help='additional directory to search for libiconv',
                    action='store', dest='iconv_open', default='/usr/local',
                    match = ['Checking for library iconv', 'Checking for iconv_open', 'Checking for header iconv.h'])
+    opt.add_option('--with-gettext',
+                   help='additional directory to search for gettext',
+                   action='store', dest='gettext_location', default='/usr/local',
+                   match = ['Checking for library intl', 'Checking for header libintl.h'])
 
     gr = opt.option_group('developer options')
 
