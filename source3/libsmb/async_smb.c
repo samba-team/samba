@@ -23,30 +23,6 @@
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-/*
- * Fetch a smb request's mid. Only valid after the request has been sent by
- * cli_smb_req_send().
- */
-uint16_t cli_smb_req_mid(struct tevent_req *req)
-{
-	return smb1cli_req_mid(req);
-}
-
-void cli_smb_req_set_mid(struct tevent_req *req, uint16_t mid)
-{
-	smb1cli_req_set_mid(req, mid);
-}
-
-uint32_t cli_smb_req_seqnum(struct tevent_req *req)
-{
-	return smb1cli_req_seqnum(req);
-}
-
-void cli_smb_req_set_seqnum(struct tevent_req *req, uint32_t seqnum)
-{
-	smb1cli_req_set_seqnum(req, seqnum);
-}
-
 struct cli_smb_req_state {
 	struct cli_state *cli;
 	uint8_t smb_command;
@@ -129,11 +105,6 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state->ptr, cli_smb_req_state_ptr_destructor);
 
 	return state->req;
-}
-
-NTSTATUS cli_smb_req_send(struct tevent_req *req)
-{
-	return smb1cli_req_chain_submit(&req, 1);
 }
 
 struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
@@ -307,14 +278,4 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 	}
 
 	return status;
-}
-
-size_t cli_smb_wct_ofs(struct tevent_req **reqs, int num_reqs)
-{
-	return smb1cli_req_wct_ofs(reqs, num_reqs);
-}
-
-NTSTATUS cli_smb_chain_send(struct tevent_req **reqs, int num_reqs)
-{
-	return smb1cli_req_chain_submit(reqs, num_reqs);
 }

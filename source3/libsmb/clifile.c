@@ -2226,7 +2226,7 @@ struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		return NULL;
 	}
 
-	status = cli_smb_req_send(subreq);
+	status = smb1cli_req_chain_submit(&subreq, 1);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2472,7 +2472,7 @@ struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = cli_smb_req_send(subreq);
+	status = smb1cli_req_chain_submit(&subreq, 1);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}

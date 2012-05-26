@@ -25,6 +25,7 @@
 #include "async_smb.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "libcli/security/security.h"
+#include "libcli/smb/smbXcli_base.h"
 
 struct chain3_andx_state {
 	uint16_t fnum;
@@ -75,7 +76,7 @@ static struct tevent_req *chain3_andx_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, chain3_andx_close_done, req);
 
-	status = cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs));
+	status = smb1cli_req_chain_submit(smbreqs, ARRAY_SIZE(smbreqs));
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}

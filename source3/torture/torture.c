@@ -6540,7 +6540,7 @@ static bool run_chain1(int dummy)
 	if (reqs[2] == NULL) return false;
 	tevent_req_set_callback(reqs[2], chain1_close_completion, &done);
 
-	status = cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs));
+	status = smb1cli_req_chain_submit(smbreqs, ARRAY_SIZE(smbreqs));
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
@@ -6596,7 +6596,7 @@ static bool run_chain2(int dummy)
 	if (reqs[1] == NULL) return false;
 	tevent_req_set_callback(reqs[1], chain2_tcon_completion, &done);
 
-	status = cli_smb_chain_send(smbreqs, ARRAY_SIZE(smbreqs));
+	status = smb1cli_req_chain_submit(smbreqs, ARRAY_SIZE(smbreqs));
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}

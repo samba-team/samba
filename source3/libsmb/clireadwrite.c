@@ -194,7 +194,7 @@ struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = cli_smb_req_send(subreq);
+	status = smb1cli_req_chain_submit(&subreq, 1);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -867,7 +867,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	SSVAL(vwv+10, 0, state->size);
 
 	SSVAL(vwv+11, 0,
-	      cli_smb_wct_ofs(reqs_before, num_reqs_before)
+	      smb1cli_req_wct_ofs(reqs_before, num_reqs_before)
 	      + 1		/* the wct field */
 	      + wct * 2		/* vwv */
 	      + 2		/* num_bytes field */
@@ -908,7 +908,7 @@ struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = cli_smb_req_send(subreq);
+	status = smb1cli_req_chain_submit(&subreq, 1);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
