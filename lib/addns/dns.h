@@ -42,10 +42,6 @@
 #include <time.h>
 #include <netdb.h>
 
-#ifdef HAVE_UUID_UUID_H
-#include <uuid/uuid.h>
-#endif
-
 #include <talloc.h>
 
 /*******************************************************************

@@ -22,12 +22,13 @@
   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "includes.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_misc.h"
+
 #include "dns.h"
 #include <ctype.h>
 
-#ifdef HAVE_SYS_UUID_H
-#include <sys/uuid.h>
-#endif
 
 static DNS_ERROR LabelList( TALLOC_CTX *mem_ctx,
 			    const char *name,
@@ -137,17 +138,10 @@ char *dns_generate_keyname( TALLOC_CTX *mem_ctx )
 	char *result = NULL;
 #if defined(WITH_DNS_UPDATES)
 
-	uuid_t uuid;
+	struct GUID guid;
 
-	/*
-	 * uuid_unparse gives 36 bytes plus '\0'
-	 */
-	if (!(result = talloc_array(mem_ctx, char, 37))) {
-		return NULL;
-	}
-
-	uuid_generate( uuid );
-	uuid_unparse( uuid, result );
+	guid = GUID_random();
+	result = GUID_string(mem_ctx, &guid);
 
 #endif
 

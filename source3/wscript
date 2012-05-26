@@ -785,11 +785,7 @@ int i; i = PAM_RADIO_TYPE;
                                 mandatory=True,
                                 msg="Checking whether setuidx is available")
     if Options.options.with_dnsupdate:
-        conf.CHECK_HEADERS('uuid/uuid.h')
-        conf.CHECK_FUNCS_IN('uuid_generate', 'uuid')
-        if not conf.CONFIG_SET('HAVE_UUID_UUID_H') and not conf.CONFIG_SET('HAVE_UUID_GENERATE'):
-            Logs.warn("--with-dnsupdate=yes but uuid support not sufficient")
-        elif not conf.CONFIG_SET('HAVE_KRB5'):
+        if not conf.CONFIG_SET('HAVE_KRB5'):
             Logs.warn("--with-dnsupdate=yes but gssapi support not sufficient")
         else:
             conf.DEFINE('WITH_DNS_UPDATES', 1)

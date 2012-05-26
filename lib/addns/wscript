@@ -3,4 +3,5 @@
 import Options
 
 def configure(conf):
-    conf.CHECK_HEADERS('sys/uuid.h')
+    pass
+    #conf.CHECK_HEADERS('sys/uuid.h')
