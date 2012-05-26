@@ -2277,7 +2277,7 @@ static const char *get_conf_item_string(struct pwb_context *ctx,
 			goto out;
 		}
 
-		parm_opt = iniparser_getstring,(ctx->dict, key, NULL);
+		parm_opt = iniparser_getstring(ctx->dict, key, NULL);
 		TALLOC_FREE(key);
 
 		_pam_log_debug(ctx, LOG_INFO, "CONFIG file: %s '%s'\n",
