@@ -234,7 +234,6 @@ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_REQUEST(struct ndr_push *ndr, int 
 		if (ndr_size_dom_sid0(&r->sid, ndr->flags)) {
 			struct ndr_push *_ndr_sid;
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
-			ndr->flags &= ~LIBNDR_FLAG_NOALIGN;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_pad));
 			ndr->flags = _flags_save_DATA_BLOB;
@@ -280,7 +279,6 @@ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_REQUEST(struct ndr_pull *ndr, int 
 		if (r->sid_size) {
 			uint32_t _flags_save_DATA_BLOB = ndr->flags;
 			struct ndr_pull *_ndr_sid;
-			ndr->flags &= ~LIBNDR_FLAG_NOALIGN;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_pad));
 			ndr->flags = _flags_save_DATA_BLOB;
