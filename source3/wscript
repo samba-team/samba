@@ -789,8 +789,6 @@ int i; i = PAM_RADIO_TYPE;
             Logs.warn("--with-dnsupdate=yes but gssapi support not sufficient")
         else:
             conf.DEFINE('WITH_DNS_UPDATES', 1)
-    else:
-        conf.SET_TARGET_TYPE('uuid', 'EMPTY')
     conf.CHECK_HEADERS('valgrind.h valgrind/valgrind.h valgrind/memcheck.h')
     if Options.options.developer:
         if conf.CONFIG_SET('HAVE_VALGRIND_H') or conf.CONFIG_SET('HAVE_VALGRIND_VALGRIND_H'):

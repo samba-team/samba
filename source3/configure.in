@@ -90,7 +90,6 @@ AC_SUBST(ACL_LIBS)
 AC_SUBST(PASSDB_LIBS)
 AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
-AC_SUBST(UUID_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(GPEXT_LIBS)
 AC_SUBST(PAM_MODULES)
@@ -610,7 +609,6 @@ AC_CHECK_HEADERS(langinfo.h locale.h)
 AC_CHECK_HEADERS(xfs/libxfs.h)
 AC_CHECK_HEADERS(netgroup.h)
 AC_CHECK_HEADERS(linux/falloc.h)
-AC_CHECK_HEADERS(sys/uuid.h)
 AC_CHECK_HEADERS(CommonCrypto/CommonDigest.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
@@ -4171,51 +4169,12 @@ if test x"$with_dnsupdate_support" != x"no"; then
 			with_dnsupdate_support=no
 		fi
 	fi
-  ##################################################################
-  # then test for uuid.h (necessary to generate unique DNS keynames
-  # (uuid.h is required for this test)
-	AC_CHECK_HEADERS(uuid/uuid.h)
-
-	
-	if test x"$ac_cv_header_uuid_uuid_h" != x"yes"; then
-		if test x"$with_dnsupdate_support" = x"yes"; then
-			AC_MSG_ERROR(uuid.h is needed to enable DNS Updates support)
-		else
-			AC_MSG_NOTICE(uuid.h is needed to enable DNS Updates support)
-		fi
-		with_dnsupdate_support=no
-	fi
 fi
 
 if test x"$with_dnsupdate_support" != x"no"; then
-
-  ########################################################
-  # Now see if we can find the uuid libs in standard paths
-  # On some systems, the uuid API is in libc, so we have to
-  # be careful not to insert a spurious -luuid.
-
-  UUID_LIBS=""
-  AC_LIBTESTFUNC(uuid, uuid_generate,
-	  [
-	    case " $LIBS " in
-		*\ -luuid\ *)
-		UUID_LIBS="-luuid"
-		SMB_REMOVE_LIB(uuid)
-		;;
-	    esac
-
-	    with_dnsupdate_support=yes
-	    AC_DEFINE(WITH_DNS_UPDATES,1,[Whether to enable DNS Update support])
-	],
-	[
-	    if test x"$with_dnsupdate_support" = x"yes"; then
-		AC_MSG_ERROR(libuuid is needed to enable DNS Updates support)
-	    else
-		AC_MSG_WARN(libuuid is needed to enable DNS Updates support)
-	    fi
-	    with_dnsupdate_support=no
-	])
+      AC_DEFINE(WITH_DNS_UPDATES,1,[Whether to enable DNS Update support])
 fi
+
   # finally print out the result:
 AC_MSG_CHECKING(whether DNS Updates support is used)
 AC_MSG_RESULT([$with_dnsupdate_support])
@@ -6681,9 +6640,6 @@ if test x"$with_ads_support" != x"no"; then
 fi
 if test x"$with_ldap_support" != x"no"; then
     AC_MSG_RESULT([    LDAP_LIBS = $LDAP_LIBS])
-fi
-if test x"$with_dnsupdate_support" != x"no"; then
-    AC_MSG_RESULT([    UUID_LIBS = $UUID_LIBS])
 fi
 if test x"$have_dnssd_support" != x"no"; then
     AC_MSG_RESULT([    DNSSD_LIBS = $DNSSD_LIBS])
