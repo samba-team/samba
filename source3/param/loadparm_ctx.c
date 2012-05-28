@@ -113,6 +113,8 @@ static const struct loadparm_s3_context s3_fns =
 
 	.srv_minprotocol = lp_srv_minprotocol,
 	.srv_maxprotocol = lp_srv_maxprotocol,
+
+	.passwordserver = lp_passwordserver
 };
 
 const struct loadparm_s3_context *loadparm_s3_context(void)

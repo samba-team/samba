@@ -334,9 +334,9 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "password server",
-		.type		= P_LIST,
+		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szPasswordServers),
+		.offset		= GLOBAL_VAR(szPasswordServer),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -1562,7 +1562,7 @@ FN_GLOBAL_STRING(ntptr_providor, ntptr_providor)
 FN_GLOBAL_STRING(passdb_backend, passdb_backend)
 FN_GLOBAL_STRING(auto_services, szAutoServices)
 FN_GLOBAL_STRING(passwd_chat, szPasswdChat)
-FN_GLOBAL_LIST(passwordserver, szPasswordServers)
+FN_GLOBAL_CONST_STRING(passwordserver, szPasswordServer)
 FN_GLOBAL_LIST(name_resolve_order, szNameResolveOrder)
 FN_GLOBAL_STRING(realm, szRealm_upper)
 FN_GLOBAL_STRING(dnsdomain, szRealm_lower)
