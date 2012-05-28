@@ -635,7 +635,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     INIT_SAMR
                     ''',
                     public_headers='../source3/lib/netapi/netapi.h',
-                    pc_files=[],
+                    pc_files='libnet/netapi.pc',
                     vnum='0',
                     vars=locals())
 
