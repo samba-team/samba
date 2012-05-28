@@ -477,11 +477,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		/* Strip \\ off the name. */
-		if (pipe_name[0] == '\\') {
-			pipe_name++;
-		}
-
 		status = open_np_file(smb1req, pipe_name, &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
