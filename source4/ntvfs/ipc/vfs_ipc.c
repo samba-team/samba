@@ -260,9 +260,15 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	case RAW_OPEN_NTCREATEX:
 	case RAW_OPEN_NTTRANS_CREATE:
 		fname = oi->ntcreatex.in.fname;
+		while (fname[0] == '\\') fname++;
 		break;
 	case RAW_OPEN_OPENX:
 		fname = oi->openx.in.fname;
+		while (fname[0] == '\\') fname++;
+		if (strncasecmp(fname, "PIPE\\", 5) != 0) {
+			return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
+		}
+		while (fname[0] == '\\') fname++;
 		break;
 	case RAW_OPEN_SMB2:
 		fname = oi->smb2.in.fname;
@@ -283,8 +289,6 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 
 	p = talloc(h, struct pipe_state);
 	NT_STATUS_HAVE_NO_MEMORY(p);
-
-	while (fname[0] == '\\') fname++;
 
 	/* check for valid characters in name */
 	fname = strlower_talloc(p, fname);
