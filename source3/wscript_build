@@ -711,9 +711,9 @@ bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      vars=locals())
 
 bld.SAMBA_GENERATOR('param/param_global_h',
-                    source= 'param/loadparm.c ../script/mkparamdefs.pl',
+                    source= '../script/mkparamdefs.pl param/loadparm.c ../lib/param/param_functions.c',
                     target='param/param_global.h',
-                    rule='${PERL} ${SRC[1].abspath(env)} ${SRC[0].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
+                    rule='${PERL} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${SRC[2].abspath(env)} --file ${TGT} --generate-scope=GLOBAL')
 
 bld.SAMBA3_SUBSYSTEM('param',
                    source=PARAM_WITHOUT_REG_SRC,

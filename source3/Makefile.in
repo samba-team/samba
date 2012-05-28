@@ -1682,13 +1682,13 @@ mkparam: ../lib/param/param_local.h ../lib/param/param_global.h param/param_glob
 ../lib/param/param_local.h:
 	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/param_functions.c --file ../lib/param/param_local.h --generate-scope=LOCAL
 ../lib/param/param_global.h:
-	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/loadparm.c --file ../lib/param/param_global.h --generate-scope=GLOBAL
+	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/param_functions.c $(srcdir)/../lib/param/loadparm.c --file ../lib/param/param_global.h --generate-scope=GLOBAL
 param/param_global.h:
-	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/param/loadparm.c --file param/param_global.h --generate-scope=GLOBAL
+	 $(PERL) ../script/mkparamdefs.pl $(srcdir)/../lib/param/param_functions.c $(srcdir)/param/loadparm.c --file param/param_global.h --generate-scope=GLOBAL
 ../lib/param/param_proto.h:
-	 $(PERL) ../source4/script/mkproto.pl $(srcdir)/../lib/param/loadparm.c --public ../lib/param/param_proto.h  --private ../lib/param/param_proto.h
+	 $(PERL) ../source4/script/mkproto.pl $(srcdir)/../lib/param/param_functions.c $(srcdir)/../lib/param/loadparm.c --public ../lib/param/param_proto.h  --private ../lib/param/param_proto.h
 ../lib/param/s3_param.h:
-	 $(PERL) ../script/mks3param.pl $(srcdir)/../lib/param/loadparm.c --file ../lib/param/s3_param.h
+	 $(PERL) ../script/mks3param.pl $(srcdir)/../lib/param/param_functions.c $(srcdir)/../lib/param/loadparm.c --file ../lib/param/s3_param.h
 
 
 #####################################################################
