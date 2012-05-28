@@ -1,4 +1,4 @@
-<samba:parameter name="min protocol"
+<samba:parameter name="server min protocol"
                  context="G"
 				 type="string"
                  developer="1"
@@ -16,6 +16,9 @@
     also refer to the <smbconfoption name="lanman auth"/> parameter.  Otherwise, you should never need 
     to change this parameter.</para>
 </description>
+
+<related>server min protocol</related>
+<synonym>min protocol</synonym>
 
 <value type="default">CORE</value>
 <value type="example">NT1</value>

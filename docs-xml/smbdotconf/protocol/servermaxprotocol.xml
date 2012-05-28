@@ -1,4 +1,4 @@
-<samba:parameter name="max protocol"
+<samba:parameter name="server max protocol"
                  context="G"
 				 type="enum"
                  developer="1"
@@ -59,8 +59,8 @@
 	the appropriate protocol.</para>
 </description>
 
-<related>min protocol</related>
-<synonym>protocol</synonym>
+<related>server min protocol</related>
+<synonym>max protocol</synonym>
 
 <value type="default">SMB2</value>
 <value type="example">LANMAN1</value>
