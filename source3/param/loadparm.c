@@ -735,7 +735,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "passdb backend",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szPassdbBackend),
+		.offset		= GLOBAL_VAR(passdb_backend),
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
@@ -2016,7 +2016,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "socket options",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szSocketOptions),
+		.offset		= GLOBAL_VAR(socket_options),
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -4747,7 +4747,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szPanicAction, "/bin/sleep 999999999");
 #endif
 
-	string_set(&Globals.szSocketOptions, DEFAULT_SOCKET_OPTIONS);
+	string_set(&Globals.socket_options, DEFAULT_SOCKET_OPTIONS);
 
 	string_set(&Globals.szLogonDrive, "");
 	/* %N is the NIS auto.home server if -DAUTOHOME is used, else same as %L */
@@ -4852,7 +4852,7 @@ static void init_globals(bool reinit_globals)
 	   a large number of sites (tridge) */
 	Globals.bHostnameLookups = false;
 
-	string_set(&Globals.szPassdbBackend, "tdbsam");
+	string_set(&Globals.passdb_backend, "tdbsam");
 	string_set(&Globals.szLdapSuffix, "");
 	string_set(&Globals.szLdapMachineSuffix, "");
 	string_set(&Globals.szLdapUserSuffix, "");
@@ -5143,7 +5143,7 @@ FN_GLOBAL_BOOL(winbind_sealed_pipes, bWinbindSealedPipes)
 FN_GLOBAL_CONST_STRING(afs_username_map, szAfsUsernameMap)
 FN_GLOBAL_CONST_STRING(dedicated_keytab_file, szDedicatedKeytabFile)
 FN_GLOBAL_BOOL(wins_dns_proxy, bWINSdnsProxy)
-FN_GLOBAL_CONST_STRING(dnsdomain, szDnsDomain)
+FN_GLOBAL_CONST_STRING(dnsdomain, szRealm_lower)
 FN_GLOBAL_CONST_STRING(dns_forwarder, dns_forwarder)
 FN_GLOBAL_CONST_STRING(dos_charset, dos_charset)
 FN_GLOBAL_CONST_STRING(guestaccount, szGuestaccount)
@@ -5157,15 +5157,15 @@ FN_GLOBAL_CONST_STRING(name_resolve_order, szNameResolveOrder)
 FN_GLOBAL_CONST_STRING(ncalrpc_dir, ncalrpc_dir)
 FN_GLOBAL_CONST_STRING(netbios_name, szNetbiosName)
 FN_GLOBAL_CONST_STRING(netbios_scope, szNetbiosScope)
-FN_GLOBAL_CONST_STRING(passdb_backend, szPassdbBackend)
 FN_GLOBAL_CONST_STRING(ntp_signd_socket_directory, szNTPSignDSocketDirectory)
+FN_GLOBAL_CONST_STRING(passdb_backend, passdb_backend)
 FN_GLOBAL_CONST_STRING(passwordserver, szPasswordServer)
 FN_GLOBAL_CONST_STRING(piddir, szPidDir)
 FN_GLOBAL_CONST_STRING(private_dir, szPrivateDir)
-FN_GLOBAL_CONST_STRING(realm, szRealmUpper)
+FN_GLOBAL_CONST_STRING(realm, szRealm_upper)
 FN_GLOBAL_CONST_STRING(smb_passwd_file, szSMBPasswdFile)
+FN_GLOBAL_CONST_STRING(socket_options, socket_options)
 FN_GLOBAL_CONST_STRING(smb_ports, smb_ports)
-FN_GLOBAL_CONST_STRING(socket_options, szSocketOptions)
 FN_GLOBAL_CONST_STRING(template_homedir, szTemplateHomedir)
 FN_GLOBAL_CONST_STRING(template_shell, szTemplateShell)
 FN_GLOBAL_CONST_STRING(unix_charset, unix_charset)
@@ -6980,8 +6980,8 @@ static bool handle_realm(struct loadparm_context *unused, int snum, const char *
 	char *dnsdomain = strlower_talloc(talloc_tos(), pszParmValue);
 
 	ret &= string_set(&Globals.szRealm, pszParmValue);
-	ret &= string_set(&Globals.szRealmUpper, realm);
-	ret &= string_set(&Globals.szDnsDomain, dnsdomain);
+	ret &= string_set(&Globals.szRealm_upper, realm);
+	ret &= string_set(&Globals.szRealm_lower, dnsdomain);
 	TALLOC_FREE(realm);
 	TALLOC_FREE(dnsdomain);
 
