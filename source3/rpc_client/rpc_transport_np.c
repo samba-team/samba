@@ -52,6 +52,10 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	while (pipe_name[0] == '\\') {
+		pipe_name++;
+	}
+
 	subreq = tstream_cli_np_open_send(state, ev, cli, pipe_name);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
