@@ -470,7 +470,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 
 	if (handle->private_data == NULL) {
 		TALLOC_FREE(handle);
-		return NT_STATUS_PIPE_NOT_AVAILABLE;
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	*phandle = handle;
