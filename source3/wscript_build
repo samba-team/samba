@@ -644,7 +644,7 @@ bld.SAMBA3_LIBRARY('smbsharemodes',
                     public_deps='''talloc tdb_compat''',
                     deps='''ccan''',
                     public_headers='include/smb_share_modes.h',
-                    pc_files=[],
+                    pc_files='libsmb/smbsharemodes.pc',
                     vnum='0',
                     vars=locals())
 
