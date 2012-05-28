@@ -151,8 +151,20 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (state->is_smb1) {
+		const char *smb1_npipe;
+
+		/*
+		 * Windows and newer Samba versions allow
+		 * the pipe name without leading backslash,
+		 * but we should better behave like windows clients
+		 */
+		smb1_npipe = talloc_asprintf(state, "\\%s", state->npipe);
+		if (tevent_req_nomem(smb1_npipe, req)) {
+			return tevent_req_post(req, ev);
+		}
+
 		subreq = cli_ntcreate_send(state, ev, cli,
-					   npipe,
+					   smb1_npipe,
 					   0,
 					   DESIRED_ACCESS_PIPE,
 					   0,
