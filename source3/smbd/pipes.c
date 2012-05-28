@@ -31,11 +31,6 @@
 #include "libcli/security/security.h"
 #include "rpc_server/srv_pipe_hnd.h"
 
-#define	PIPE		"\\PIPE\\"
-#define	PIPELEN		strlen(PIPE)
-
-#define MAX_PIPE_NAME_LEN	24
-
 NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		      struct files_struct **pfsp)
 {
@@ -112,15 +107,24 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	/* If the name doesn't start \PIPE\ then this is directed */
 	/* at a mailslot or something we really, really don't understand, */
 	/* not just something we really don't understand. */
-	if ( strncmp(pipe_name,PIPE,PIPELEN) != 0 ) {
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+
+#define	PIPE		"PIPE\\"
+#define	PIPELEN		strlen(PIPE)
+
+	fname = pipe_name;
+	while (fname[0] == '\\') {
+		fname++;
+	}
+	if (!strnequal(fname, PIPE, PIPELEN)) {
+		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 		return;
 	}
+	fname += PIPELEN;
+	while (fname[0] == '\\') {
+		fname++;
+	}
 
-	DEBUG(4,("Opening pipe %s.\n", pipe_name));
-
-	/* Strip \PIPE\ off the name. */
-	fname = pipe_name + PIPELEN;
+	DEBUG(4,("Opening pipe %s => %s.\n", pipe_name, fname));
 
 #if 0
 	/*
