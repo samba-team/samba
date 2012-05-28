@@ -453,28 +453,31 @@ static const struct stream_server_ops dns_tcp_stream_ops = {
 };
 
 struct dns_udp_call {
+	struct dns_udp_socket *sock;
 	struct tsocket_address *src;
 	DATA_BLOB in;
 	DATA_BLOB out;
 };
 
+static void dns_udp_call_process_done(struct tevent_req *subreq);
 static void dns_udp_call_sendto_done(struct tevent_req *subreq);
 
 static void dns_udp_call_loop(struct tevent_req *subreq)
 {
 	struct dns_udp_socket *sock = tevent_req_callback_data(subreq,
 				      struct dns_udp_socket);
+	struct dns_server *dns = sock->dns_socket->dns;
 	struct dns_udp_call *call;
 	uint8_t *buf;
 	ssize_t len;
 	int sys_errno;
-	WERROR err;
 
 	call = talloc(sock, struct dns_udp_call);
 	if (call == NULL) {
 		talloc_free(call);
 		goto done;
 	}
+	call->sock = sock;
 
 	len = tdgram_recvfrom_recv(subreq, &sys_errno,
 				   call, &buf, &call->src);
@@ -491,26 +494,13 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 		 (long)call->in.length,
 		 tsocket_address_string(call->src, call)));
 
-	/* Call dns_process */
-	err = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
-	if (!W_ERROR_IS_OK(err)) {
-		talloc_free(call);
-		DEBUG(0, ("dns_process returned %s\n", win_errstr(err)));
-		goto done;
-	}
-
-	subreq = tdgram_sendto_queue_send(call,
-					  sock->dns_socket->dns->task->event_ctx,
-					  sock->dgram,
-					  sock->send_queue,
-					  call->out.data,
-					  call->out.length,
-					  call->src);
+	subreq = dns_process_send(call, dns->task->event_ctx, dns,
+				  &call->in);
 	if (subreq == NULL) {
-		talloc_free(call);
+		TALLOC_FREE(call);
 		goto done;
 	}
-	tevent_req_set_callback(subreq, dns_udp_call_sendto_done, call);
+	tevent_req_set_callback(subreq, dns_udp_call_process_done, call);
 
 done:
 	subreq = tdgram_recvfrom_send(sock,
@@ -525,6 +515,36 @@ done:
 	tevent_req_set_callback(subreq, dns_udp_call_loop, sock);
 }
 
+static void dns_udp_call_process_done(struct tevent_req *subreq)
+{
+	struct dns_udp_call *call = tevent_req_callback_data(
+		subreq, struct dns_udp_call);
+	struct dns_udp_socket *sock = call->sock;
+	struct dns_server *dns = sock->dns_socket->dns;
+	WERROR err;
+
+	err = dns_process_recv(subreq, call, &call->out);
+	TALLOC_FREE(subreq);
+	if (!W_ERROR_IS_OK(err)) {
+		DEBUG(1, ("dns_process returned %s\n", win_errstr(err)));
+		TALLOC_FREE(call);
+		return;
+	}
+
+	subreq = tdgram_sendto_queue_send(call,
+					  dns->task->event_ctx,
+					  sock->dgram,
+					  sock->send_queue,
+					  call->out.data,
+					  call->out.length,
+					  call->src);
+	if (subreq == NULL) {
+		talloc_free(call);
+		return;
+	}
+	tevent_req_set_callback(subreq, dns_udp_call_sendto_done, call);
+
+}
 static void dns_udp_call_sendto_done(struct tevent_req *subreq)
 {
 	struct dns_udp_call *call = tevent_req_callback_data(subreq,
