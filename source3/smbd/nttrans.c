@@ -291,8 +291,10 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 
 	DEBUG(4,("nt_open_pipe: Opening pipe %s.\n", fname));
 
-	/* Strip \\ off the name. */
-	fname++;
+	/* Strip \\ off the name if present. */
+	while (fname[0] == '\\') {
+		fname++;
+	}
 
 	status = open_np_file(req, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
