@@ -991,7 +991,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szWINSservers),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "wins support",
@@ -999,7 +1000,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bWINSsupport),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
 		.label		= "wins hook",
