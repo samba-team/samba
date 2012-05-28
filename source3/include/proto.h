@@ -1241,7 +1241,7 @@ int lp_min_wins_ttl(void);
 int lp_max_log_size(void);
 int lp_max_open_files(void);
 int lp_open_files_db_hash_size(void);
-int lp_maxxmit(void);
+int lp_max_xmit(void);
 int lp_maxmux(void);
 int lp_passwordlevel(void);
 int lp_usernamelevel(void);
