@@ -6677,7 +6677,7 @@ fi
 ])
 
 AC_OUTPUT(Makefile
-	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh
+	  script/findsmb smbadduser script/installbin.sh script/uninstallbin.sh
 	  lib/netapi/examples/Makefile
 	  lib/netapi/tests/Makefile
 	  pkgconfig/smbclient.pc
