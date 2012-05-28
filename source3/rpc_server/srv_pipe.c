@@ -376,21 +376,12 @@ static bool check_bind_req(struct pipes_struct *p,
 
 /**
  * Is a named pipe known?
- * @param[in] cli_filename	The pipe name requested by the client
+ * @param[in] pipename		Just the filename
  * @result			Do we want to serve this?
  */
-bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
+bool is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 {
-	const char *pipename = cli_filename;
 	NTSTATUS status;
-
-	if (strnequal(pipename, "\\PIPE\\", 6)) {
-		pipename += 5;
-	}
-
-	if (*pipename == '\\') {
-		pipename += 1;
-	}
 
 	if (lp_disable_spoolss() && strequal(pipename, "spoolss")) {
 		DEBUG(10, ("refusing spoolss access\n"));
@@ -403,7 +394,7 @@ bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 
 	status = smb_probe_module("rpc", pipename);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("is_known_pipename: %s unknown\n", cli_filename));
+		DEBUG(10, ("is_known_pipename: %s unknown\n", pipename));
 		return false;
 	}
 	DEBUG(10, ("is_known_pipename: %s loaded dynamically\n", pipename));
