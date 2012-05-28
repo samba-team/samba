@@ -928,7 +928,7 @@ static bool open_sockets(bool isdaemon, int port)
 #ifndef SYNC_DNS
 	/* Setup the async dns. We do it here so it doesn't have all the other
 		stuff initialised and thus chewing memory and sockets */
-	if(lp_we_are_a_wins_server() && lp_dns_proxy()) {
+	if(lp_we_are_a_wins_server() && lp_wins_dns_proxy()) {
 		start_async_dns(msg);
 	}
 #endif

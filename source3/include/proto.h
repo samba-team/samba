@@ -1177,7 +1177,7 @@ bool lp_disable_netbios(void);
 bool lp_reset_on_zero_vc(void);
 bool lp_log_writeable_files_on_exit(void);
 bool lp_ms_add_printer_wizard(void);
-bool lp_dns_proxy(void);
+bool lp_wins_dns_proxy(void);
 bool lp_we_are_a_wins_server(void);
 bool lp_wins_proxy(void);
 bool lp_local_master(void);

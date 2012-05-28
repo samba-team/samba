@@ -2092,7 +2092,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
 	 * Name not found in WINS - try a dns query if it's a 0x20 name.
 	 */
 
-	if(lp_dns_proxy() && ((question->name_type == 0x20) || question->name_type == 0)) {
+	if(lp_wins_dns_proxy() && ((question->name_type == 0x20) || question->name_type == 0)) {
 		DEBUG(3,("wins_process_name_query: name query for name %s not found - doing dns lookup.\n",
 				nmb_namestr(question) ));
 
