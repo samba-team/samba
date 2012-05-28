@@ -247,6 +247,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.samba3.spoolss", "rpc.samba3.wkssvc", "rpc.samba3.winreg",
        "rpc.samba3.getaliasmembership-0",
        "rpc.samba3.netlogon", "rpc.samba3.sessionkey", "rpc.samba3.getusername",
+       "rpc.samba3.smb1-pipe-name", "rpc.samba3.smb2-pipe-name",
        "rpc.svcctl", "rpc.ntsvcs", "rpc.winreg", "rpc.eventlog",
        "rpc.spoolss.printserver", "rpc.spoolss.win", "rpc.spoolss.notify", "rpc.spoolss.printer",
        "rpc.spoolss.driver",
