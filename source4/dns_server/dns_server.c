@@ -266,15 +266,16 @@ struct dns_tcp_call {
 	struct iovec out_iov[2];
 };
 
+static void dns_tcp_call_process_done(struct tevent_req *subreq);
 static void dns_tcp_call_writev_done(struct tevent_req *subreq);
 
 static void dns_tcp_call_loop(struct tevent_req *subreq)
 {
 	struct dns_tcp_connection *dns_conn = tevent_req_callback_data(subreq,
 				      struct dns_tcp_connection);
+	struct dns_server *dns = dns_conn->dns_socket->dns;
 	struct dns_tcp_call *call;
 	NTSTATUS status;
-	WERROR err;
 
 	call = talloc(dns_conn, struct dns_tcp_call);
 	if (call == NULL) {
@@ -310,9 +311,43 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	call->in.data += 2;
 	call->in.length -= 2;
 
-	/* Call dns */
-	err = dns_process(dns_conn->dns_socket->dns, call, &call->in,
-			  &call->out);
+	subreq = dns_process_send(call, dns->task->event_ctx, dns,
+				  &call->in);
+	if (subreq == NULL) {
+		dns_tcp_terminate_connection(
+			dns_conn, "dns_tcp_call_loop: dns_process_send "
+			"failed\n");
+		return;
+	}
+	tevent_req_set_callback(subreq, dns_tcp_call_process_done, call);
+
+	/*
+	 * The dns tcp pdu's has the length as 2 byte (initial_read_size),
+	 * packet_full_request_u16 provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(dns_conn,
+					    dns_conn->conn->event.ctx,
+					    dns_conn->tstream,
+					    2, /* initial_read_size */
+					    packet_full_request_u16,
+					    dns_conn);
+	if (subreq == NULL) {
+		dns_tcp_terminate_connection(dns_conn, "dns_tcp_call_loop: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, dns_tcp_call_loop, dns_conn);
+}
+
+static void dns_tcp_call_process_done(struct tevent_req *subreq)
+{
+	struct dns_tcp_call *call = tevent_req_callback_data(subreq,
+			struct dns_tcp_call);
+	struct dns_tcp_connection *dns_conn = call->dns_conn;
+	WERROR err;
+
+	err = dns_process_recv(subreq, call, &call->out);
+	TALLOC_FREE(subreq);
 	if (!W_ERROR_IS_OK(err)) {
 		DEBUG(1, ("dns_process returned %s\n", win_errstr(err)));
 		dns_tcp_terminate_connection(dns_conn,
@@ -339,23 +374,6 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, dns_tcp_call_writev_done, call);
-
-	/*
-	 * The dns tcp pdu's has the length as 2 byte (initial_read_size),
-	 * packet_full_request_u16 provides the pdu length then.
-	 */
-	subreq = tstream_read_pdu_blob_send(dns_conn,
-					    dns_conn->conn->event.ctx,
-					    dns_conn->tstream,
-					    2, /* initial_read_size */
-					    packet_full_request_u16,
-					    dns_conn);
-	if (subreq == NULL) {
-		dns_tcp_terminate_connection(dns_conn, "dns_tcp_call_loop: "
-				"no memory for tstream_read_pdu_blob_send");
-		return;
-	}
-	tevent_req_set_callback(subreq, dns_tcp_call_loop, dns_conn);
 }
 
 static void dns_tcp_call_writev_done(struct tevent_req *subreq)
