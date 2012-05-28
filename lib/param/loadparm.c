@@ -622,7 +622,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(srv_maxprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "max protocol",
@@ -630,7 +631,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(srv_maxprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "protocol",
@@ -647,7 +649,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(srv_minprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "min protocol",
@@ -655,7 +658,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(srv_minprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client max protocol",
