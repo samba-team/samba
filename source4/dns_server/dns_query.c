@@ -389,34 +389,3 @@ WERROR dns_server_process_query_recv(
 	*arcount = state->arcount;
 	return WERR_OK;
 }
-
-WERROR dns_server_process_query(struct dns_server *dns,
-				struct dns_request_state *state,
-				TALLOC_CTX *mem_ctx,
-				struct dns_name_packet *in,
-				struct dns_res_rec **answers,    uint16_t *ancount,
-				struct dns_res_rec **nsrecs,     uint16_t *nscount,
-				struct dns_res_rec **additional, uint16_t *arcount)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	WERROR err = WERR_NOMEM;
-
-	ev = tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = dns_server_process_query_send(ev, ev, dns, state, in);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_werror(req, ev, &err)) {
-		goto fail;
-	}
-	err = dns_server_process_query_recv(req, mem_ctx, answers, ancount,
-					    nsrecs, nscount,
-					    additional, arcount);
-fail:
-	TALLOC_FREE(ev);
-	return err;
-}
