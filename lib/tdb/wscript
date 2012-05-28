@@ -167,7 +167,7 @@ def build(bld):
 def testonly(ctx):
     '''run tdb testsuite'''
     import Utils, samba_utils, shutil
-    ecode = 0;
+    ecode = 0
 
     test_prefix = "%s/st" % (Utils.g_module.blddir)
     shutil.rmtree(test_prefix, ignore_errors=True)
@@ -192,15 +192,15 @@ def testonly(ctx):
             if ret != 0:
                 print("%s failed:" % f)
                 samba_utils.RUN_COMMAND("cat " + os.path.join(testdir, 'test-output'))
-                ecode = ret;
-                break;
+                ecode = ret
+                break
 
     if ecode == 0:
         cmd = os.path.join(Utils.g_module.blddir, 'tdbtorture')
         ret = samba_utils.RUN_COMMAND(cmd)
         print("testsuite returned %d" % ret)
         if ret != 0:
-            ecode = ret;
+            ecode = ret
     sys.exit(ecode)
 
 # WAF doesn't build the unit tests for this, maybe because they don't link with tdb?
