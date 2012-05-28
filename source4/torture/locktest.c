@@ -242,7 +242,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 				parms.lockx.level = RAW_LOCK_LOCKX;
 				parms.lockx.in.file.fnum = fn;
 	
-				ltype = (rec->lock_op == READ_LOCK? 1 : 0);
+				ltype = (rec->lock_type == READ_LOCK? 1 : 0);
 				ltype |= LOCKING_ANDX_LARGE_FILES;
 				parms.lockx.in.mode = ltype;
 				parms.lockx.in.timeout = LOCK_TIMEOUT;
