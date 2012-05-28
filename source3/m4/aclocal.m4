@@ -412,6 +412,7 @@ AC_DEFUN(LIB_REMOVE_USR_LIB,[
     -Wl,-rpath-Wl,/usr/lib/) l="";;
     -Wl,-rpath-Wl,/usr/lib64) l="";;
     -Wl,-rpath-Wl,/usr/lib64/) l="";;
+    -rpath=/usr/lib:*) l="-rpath=${i#-rpath=*:}";;
     *)
     	s=" "
         if test x"[$]ac_new_flags" = x""; then

@@ -13,17 +13,23 @@ def krb5_define_syslib(conf, lib, deps):
 
 Logs.info("Looking for kerberos features")
 conf.find_program('krb5-config.heimdal', var='HEIMDAL_KRB5_CONFIG')
-conf.find_program('krb5-config', var='KRB5_CONFIG')
+
+if isinstance(Options.options.with_system_mitkrb5, list):
+    path_krb5_config = [x+'/bin' for x in Options.options.with_system_mitkrb5]
+else:
+    path_krb5_config = None
+
+conf.find_program('krb5-config', path_list=path_krb5_config, var='KRB5_CONFIG')
 if conf.env.KRB5_CONFIG:
-    conf.check_cfg(path="krb5-config", args="--cflags --libs",
+    conf.check_cfg(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                package="", uselib_store="KRB5")
     krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
-    for lib in conf.env['LIB_KRB5']:
-        krb5_define_syslib(conf, lib, lib)
 
-    conf.check_cfg(path="krb5-config", args="--cflags --libs",
+    conf.check_cfg(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                package="gssapi", uselib_store="GSSAPI")
     krb5_define_syslib(conf, "gssapi", conf.env['LIB_GSSAPI'])
+    if 'gssapi_krb5' in conf.env['LIB_GSSAPI']:
+        krb5_define_syslib(conf, "gssapi_krb5", conf.env['LIB_GSSAPI'])
 
     vendor = conf.cmd_and_log("%(path)s --vendor" % dict(path=conf.env.KRB5_CONFIG), dict())
     conf.env.KRB5_VENDOR = vendor.strip().lower()
@@ -49,9 +55,14 @@ conf.CHECK_FUNCS_IN('krb5_encrypt_data', 'k5crypto')
 conf.CHECK_FUNCS_IN('des_set_key','crypto')
 conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
 conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
-if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi') or \
-   conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi_krb5'):
+
+if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5'):
     have_gssapi=True
+
+if not have_gssapi:
+    Logs.error("ERROR: WAF build with MIT Krb5 requires working GSSAPI implementation")
+    sys.exit(1)
+
 conf.CHECK_FUNCS_IN('''
        gss_wrap_iov
        gss_krb5_import_cred
@@ -62,7 +73,7 @@ conf.CHECK_FUNCS_IN('''
        gsskrb5_extract_authz_data_from_sec_context
        gss_krb5_export_lucid_sec_context
        gss_import_cred gss_export_cred
-       ''', 'gssapi gssapi_krb5 krb5')
+       ''', 'gssapi gssapi_krb5')
 conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
 conf.CHECK_FUNCS('''
        krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes

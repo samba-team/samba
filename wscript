@@ -17,6 +17,20 @@ samba_dist.DIST_BLACKLIST('.gitignore .bzrignore')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 
+# This callback optionally takes a list of paths as arguments:
+# --with-system_mitkrb5 /path/to/krb5 /another/path
+def system_mitkrb5_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, True)
+    value = []
+    for arg in parser.rargs:
+        # stop on --foo like options
+        if arg[:2] == "--" and len(arg) > 2:
+            break
+        value.append(arg)
+    if len(value)>0:
+        del parser.rargs[:len(value)]
+        setattr(parser.values, option.dest, value)
+
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
@@ -33,8 +47,9 @@ def set_options(opt):
     opt.RECURSE('lib/util')
 
     opt.add_option('--with-system-mitkrb5',
-                   help='enable system MIT krb5 build (includes Samba 4 client and Samba 3 code base)',
-                   action='store_true', dest='with_system_mitkrb5', default=False)
+                   help='enable system MIT krb5 build (includes Samba 4 client and Samba 3 code base).'+
+                        'You may specify list of paths where Kerberos is installed (e.g. /usr/local /usr/kerberos) to search krb5-config',
+                   action='callback', callback=system_mitkrb5_callback, dest='with_system_mitkrb5', default=False)
 
     opt.add_option('--without-ad-dc',
                    help='disable AD DC functionality (enables Samba 4 client and Samba 3 code base). Requires system MIT krb5',
