@@ -3876,6 +3876,257 @@ done:
 	return ret;
 }
 
+static bool torture_rpc_smb1_pipe_name(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_state *cli;
+	struct smbcli_options options;
+	struct smbcli_session_options session_options;
+	union smb_open io;
+	union smb_close cl;
+	uint16_t fnum;
+
+	mem_ctx = talloc_init("torture_samba3_smb1_pipe_name");
+	torture_assert(torture, (mem_ctx != NULL), "talloc_init failed");
+
+	lpcfg_smbcli_options(torture->lp_ctx, &options);
+	lpcfg_smbcli_session_options(torture->lp_ctx, &session_options);
+
+	status = smbcli_full_connection(mem_ctx, &cli,
+					torture_setting_string(torture, "host", NULL),
+					lpcfg_smb_ports(torture->lp_ctx),
+					"IPC$", NULL,
+					lpcfg_socket_options(torture->lp_ctx),
+					cmdline_credentials,
+					lpcfg_resolve_context(torture->lp_ctx),
+					torture->ev, &options, &session_options,
+					lpcfg_gensec_settings(torture, torture->lp_ctx));
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smbcli_full_connection failed");
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.access_mask = DESIRED_ACCESS_PIPE;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+				       NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.ntcreatex.in.security_flags = 0;
+
+	io.ntcreatex.in.fname = "__none__";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for '__none__'");
+
+	io.ntcreatex.in.fname = "pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for 'pipe\\srvsvc'");
+
+	io.ntcreatex.in.fname = "\\pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for '\\pipe\\srvsvc'");
+
+	io.ntcreatex.in.fname = "srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for 'srvsvc'");
+	fnum = io.ntcreatex.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.ntcreatex.in.fname = "\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\srvsvc'");
+	fnum = io.ntcreatex.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.ntcreatex.in.fname = "\\\\\\\\\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\\\\\\\\\srvsvc'");
+	fnum = io.ntcreatex.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.nttrans.in.access_mask = DESIRED_ACCESS_PIPE;
+	io.nttrans.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+				       NTCREATEX_SHARE_ACCESS_WRITE;
+	io.nttrans.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.nttrans.in.impersonation = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.nttrans.in.security_flags = 0;
+
+	io.nttrans.in.fname = "__none__";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for '__none__'");
+
+	io.nttrans.in.fname = "pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for 'pipe\\srvsvc'");
+
+	io.nttrans.in.fname = "\\pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for '\\pipe\\srvsvc'");
+
+	io.nttrans.in.fname = "srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for 'srvsvc'");
+	fnum = io.nttrans.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.nttrans.in.fname = "\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\srvsvc'");
+	fnum = io.nttrans.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.nttrans.in.fname = "\\\\\\\\\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\\\\\\\\\srvsvc'");
+	fnum = io.nttrans.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_OPENX;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR;
+	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
+
+	io.openx.in.fname = "__none__";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD,
+					   ret, done,
+					   "smb_raw_open for '__none__'");
+
+	io.openx.in.fname = "srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD,
+					   ret, done,
+					   "smb_raw_open for 'srvsvc'");
+
+	io.openx.in.fname = "\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD,
+					   ret, done,
+					   "smb_raw_open for '\\srvsvc'");
+
+	io.openx.in.fname = "\\pipesrvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD,
+					   ret, done,
+					   "smb_raw_open for '\\pipesrvsvc'");
+
+	io.openx.in.fname = "pipe\\__none__";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for 'pipe\\__none__'");
+
+	io.openx.in.fname = "\\pipe\\__none__";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_equal_goto(torture, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done,
+					   "smb_raw_open for '\\pipe\\__none__'");
+
+	io.openx.in.fname = "pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for 'pipe\\srvsvc'");
+	fnum = io.openx.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.openx.in.fname = "\\pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\pipe\\srvsvc'");
+	fnum = io.openx.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.openx.in.fname = "\\\\\\\\\\pipe\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\\\\\\\\\pipe\\srvsvc'");
+	fnum = io.openx.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+
+	io.openx.in.fname = "\\\\\\\\\\pipe\\\\\\\\\\srvsvc";
+	status = smb_raw_open(cli->tree, torture, &io);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_create failed for '\\\\\\\\\\pipe\\\\\\\\\\srvsvc'");
+	fnum = io.openx.out.file.fnum;
+	ZERO_STRUCT(cl);
+	cl.generic.level = RAW_CLOSE_CLOSE;
+	cl.close.in.file.fnum = fnum;
+	status = smb_raw_close(cli->tree, &cl);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb_raw_close failed");
+	ret = true;
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool torture_rpc_smb2_pipe_name(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx;
@@ -4233,6 +4484,7 @@ struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "smb-reauth2", torture_rpc_smb_reauth2);
 	torture_suite_add_simple_test(suite, "smb2-reauth1", torture_rpc_smb2_reauth1);
 	torture_suite_add_simple_test(suite, "smb2-reauth2", torture_rpc_smb2_reauth2);
+	torture_suite_add_simple_test(suite, "smb1-pipe-name", torture_rpc_smb1_pipe_name);
 	torture_suite_add_simple_test(suite, "smb2-pipe-name", torture_rpc_smb2_pipe_name);
 	torture_suite_add_simple_test(suite, "smb2-pipe-read-close", torture_rpc_smb2_pipe_read_close);
 	torture_suite_add_simple_test(suite, "smb2-pipe-read-tdis", torture_rpc_smb2_pipe_read_tdis);
