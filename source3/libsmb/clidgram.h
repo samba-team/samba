@@ -37,6 +37,7 @@ NTSTATUS nbt_getdc_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			uint32_t *nt_version, const char **dc_name,
 			struct netlogon_samlogon_response **samlogon_response);
 NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
+		   uint32_t timeout_in_seconds,
 		   const struct sockaddr_storage *dc_addr,
 		   const char *domain_name,
 		   const struct dom_sid *sid,
