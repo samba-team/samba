@@ -32,6 +32,7 @@ wbinfo = binpath('wbinfo')
 net = binpath('net')
 smbtorture3 = binpath('smbtorture3')
 ntlm_auth = binpath('ntlm_auth3')
+dbwrap_tool = binpath('dbwrap_tool')
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--basedir=$SELFTEST_TMPDIR",
@@ -75,7 +76,7 @@ plantestsuite("samba3.blackbox.failure", "s3dc:local", [os.path.join(samba3srcdi
 
 plantestsuite("samba3.local_s3", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_local_s3.sh")])
 
-plantestsuite("samba3.blackbox.registry.upgrade", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), net, binpath('dbwrap_tool')])
+plantestsuite("samba3.blackbox.registry.upgrade", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), net, dbwrap_tool])
 
 tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
         "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
@@ -205,7 +206,7 @@ plantestsuite("samba3.blackbox.net.misc", "s3dc:local", [os.path.join(samba3srcd
 plantestsuite("samba3.blackbox.net.local.registry", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
                                                        scriptdir, "$SMB_CONF_PATH", net, configuration])
 plantestsuite("samba3.blackbox.net.registry.check", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_check.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration,binpath('dbwrap_tool')])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration,dbwrap_tool])
 plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
                                                        scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
