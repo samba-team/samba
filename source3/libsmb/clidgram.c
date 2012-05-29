@@ -450,8 +450,6 @@ NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	enum tevent_req_state err_state;
-	uint64_t error;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	ev = tevent_context_init(frame);
@@ -473,11 +471,6 @@ NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
 	status = nbt_getdc_recv(req, mem_ctx, pnt_version, dc_name,
 				samlogon_response);
  fail:
-	if (ev && req &&
-			tevent_req_is_error(req, &err_state, &error) &&
-			err_state == TEVENT_REQ_TIMED_OUT) {
-		status = NT_STATUS_IO_TIMEOUT;
-	}
 	TALLOC_FREE(frame);
 	return status;
 }
