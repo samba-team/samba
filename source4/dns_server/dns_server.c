@@ -234,30 +234,6 @@ drop:
 	return WERR_OK;
 }
 
-static WERROR dns_process(struct dns_server *dns, TALLOC_CTX *mem_ctx,
-			  DATA_BLOB *in, DATA_BLOB *out)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	WERROR err = WERR_NOMEM;
-
-	ev = tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = dns_process_send(ev, ev, dns, in);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_werror(req, ev, &err)) {
-		goto fail;
-	}
-	err = dns_process_recv(req, mem_ctx, out);
-fail:
-	TALLOC_FREE(ev);
-	return err;
-}
-
 struct dns_tcp_call {
 	struct dns_tcp_connection *dns_conn;
 	DATA_BLOB in;
