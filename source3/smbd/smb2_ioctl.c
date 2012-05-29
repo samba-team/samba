@@ -90,13 +90,42 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	in_input_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_input_buffer.length = in_input_length;
 
-	if (req->compat_chain_fsp) {
-		/* skip check */
-	} else if (in_file_id_persistent == UINT64_MAX &&
-		   in_file_id_volatile == UINT64_MAX) {
-		/* without a handle */
-	} else if (in_file_id_persistent != in_file_id_volatile) {
-		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
+	/*
+	 * If the Flags field of the request is not SMB2_0_IOCTL_IS_FSCTL the
+	 * server MUST fail the request with STATUS_NOT_SUPPORTED.
+	 */
+	if (in_flags != SMB2_IOCTL_FLAG_IS_FSCTL) {
+		return smbd_smb2_request_error(req, NT_STATUS_NOT_SUPPORTED);
+	}
+
+	switch (in_ctl_code) {
+	case FSCTL_DFS_GET_REFERRALS:
+	case FSCTL_DFS_GET_REFERRALS_EX:
+	case FSCTL_PIPE_WAIT:
+	case FSCTL_VALIDATE_NEGOTIATE_INFO_224:
+	case FSCTL_VALIDATE_NEGOTIATE_INFO:
+	case FSCTL_QUERY_NETWORK_INTERFACE_INFO:
+		/*
+		 * Some SMB2 specific CtlCodes like FSCTL_DFS_GET_REFERRALS or
+		 * FSCTL_PIPE_WAIT does not take a file handle.
+		 *
+		 * If FileId in the SMB2 Header of the request is not
+		 * 0xFFFFFFFFFFFFFFFF, then the server MUST fail the request
+		 * with STATUS_INVALID_PARAMETER.
+		 */
+		if (in_file_id_persistent != UINT64_MAX ||
+		    in_file_id_volatile != UINT64_MAX) {
+			return smbd_smb2_request_error(req,
+				NT_STATUS_INVALID_PARAMETER);
+		}
+		break;
+	default:
+		if (req->compat_chain_fsp) {
+			/* skip check */
+		} else if (in_file_id_persistent != in_file_id_volatile) {
+			return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
+		}
+		break;
 	}
 
 	subreq = smbd_smb2_ioctl_send(req,
