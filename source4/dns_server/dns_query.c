@@ -63,7 +63,8 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.ipv6_record);
 		break;
 	case DNS_TYPE_NS:
-		ans[ai].rdata.ns_record = rec->data.ns;
+		ans[ai].rdata.ns_record = talloc_strdup(ans, rec->data.ns);
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.ns_record);
 		break;
 	case DNS_QTYPE_SRV:
 		ans[ai].rdata.srv_record.priority = rec->data.srv.wPriority;
