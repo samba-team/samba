@@ -201,28 +201,37 @@ for env in ["s3dc"]:
     plantestsuite("samba3.blackbox.smbclient_s3.crypt (%s)" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient, wbinfo, configuration, "-e"])
 
 #TODO encrypted against member, with member creds, and with DC creds
-plantestsuite("samba3.blackbox.net.misc", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
-plantestsuite("samba3.blackbox.net.local.registry", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
-plantestsuite("samba3.blackbox.net.registry.check", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_check.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration,dbwrap_tool])
-plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
+plantestsuite("samba3.blackbox.net.misc", "s3dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration])
+plantestsuite("samba3.blackbox.net.local.registry", "s3dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration])
+plantestsuite("samba3.blackbox.net.registry.check", "s3dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_registry_check.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration,dbwrap_tool])
+plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc",
+              [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
-plantestsuite("samba3.blackbox.net.local.registry.roundtrip", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
-plantestsuite("samba3.blackbox.net.rpc.registry.roundtrip", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
+plantestsuite("samba3.blackbox.net.local.registry.roundtrip", "s3dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration])
+plantestsuite("samba3.blackbox.net.rpc.registry.roundtrip", "s3dc",
+              [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
-plantestsuite("samba3.blackbox.net.local.conf", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
-plantestsuite("samba3.blackbox.net.rpc.conf", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
+plantestsuite("samba3.blackbox.net.local.conf", "s3dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration])
+plantestsuite("samba3.blackbox.net.rpc.conf", "s3dc",
+              [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
 
-plantestsuite("samba3.blackbox.testparm", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_testparm_s3.sh"),
-                                                       "$LOCAL_PATH"])
+plantestsuite("samba3.blackbox.testparm", "s3dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_testparm_s3.sh"),
+               "$LOCAL_PATH"])
 
 plantestsuite(
     "samba3.pthreadpool", "s3dc",
