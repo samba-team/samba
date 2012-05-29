@@ -29,6 +29,7 @@ scriptdir=os.path.join(samba3srcdir, "../script/tests")
 
 smbclient = binpath('smbclient3')
 wbinfo = binpath('wbinfo')
+net = binpath('net')
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--basedir=$SELFTEST_TMPDIR",
@@ -72,7 +73,7 @@ plantestsuite("samba3.blackbox.failure", "s3dc:local", [os.path.join(samba3srcdi
 
 plantestsuite("samba3.local_s3", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_local_s3.sh")])
 
-plantestsuite("samba3.blackbox.registry.upgrade", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), binpath('net'), binpath('dbwrap_tool')])
+plantestsuite("samba3.blackbox.registry.upgrade", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), net, binpath('dbwrap_tool')])
 
 tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
         "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
@@ -198,23 +199,23 @@ for env in ["s3dc"]:
 
 #TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
 plantestsuite("samba3.blackbox.net.local.registry", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
 plantestsuite("samba3.blackbox.net.registry.check", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_check.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration,binpath('dbwrap_tool')])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration,binpath('dbwrap_tool')])
 plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
 plantestsuite("samba3.blackbox.net.local.registry.roundtrip", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
 plantestsuite("samba3.blackbox.net.rpc.registry.roundtrip", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_registry_roundtrip.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
 plantestsuite("samba3.blackbox.net.local.conf", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration])
 plantestsuite("samba3.blackbox.net.rpc.conf", "s3dc", [os.path.join(samba3srcdir, "script/tests/test_net_conf.sh"),
-                                                       scriptdir, "$SMB_CONF_PATH", binpath('net'), configuration, 'rpc'])
+                                                       scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])
 
 
 plantestsuite("samba3.blackbox.testparm", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_testparm_s3.sh"),
