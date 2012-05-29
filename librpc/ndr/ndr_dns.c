@@ -85,7 +85,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 			/* its a reserved length field */
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
 					      "BAD DNS NAME component, " \
-					      "reserved lenght field: 0x%02x",
+					      "reserved length field: 0x%02x",
 					      (len &0xC));
 		}
 		if (*offset + len + 1 > ndr->data_size) {
@@ -256,13 +256,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr,
 				return ndr_push_error(ndr,
 						      NDR_ERR_LENGTH,
 						      "Invalid...Unexpected " \
-						      "blob lenght is too " \
+						      "blob length is too " \
 						      "large");
 			}
 		}
 		if (r->unexpected.length > UINT16_MAX) {
 			return ndr_push_error(ndr, NDR_ERR_LENGTH,
-					      "Unexpected blob lenght "\
+					      "Unexpected blob length "\
 					      "is too large");
 		}
 
