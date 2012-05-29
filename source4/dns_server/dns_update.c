@@ -715,7 +715,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	}
 
 	if (z == NULL) {
-		DEBUG(0, ("We're not authorative for this zone\n"));
+		DEBUG(0, ("We're not authoritative for this zone\n"));
 		return DNS_ERR(NOTAUTH);
 	}
 

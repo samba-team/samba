@@ -259,7 +259,7 @@ WERROR dns_server_process_query(struct dns_server *dns,
 	} else {
 		if (state->flags & DNS_FLAG_RECURSION_DESIRED &&
 		    state->flags & DNS_FLAG_RECURSION_AVAIL) {
-			DEBUG(2, ("Not authorative for '%s', forwarding\n",
+			DEBUG(2, ("Not authoritative for '%s', forwarding\n",
 				  in->questions[0].name));
 			werror = ask_forwarder(dns, mem_ctx, &in->questions[0],
 					       &ans, &num_answers,
