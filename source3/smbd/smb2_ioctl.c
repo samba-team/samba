@@ -63,6 +63,10 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	DATA_BLOB in_output_buffer = data_blob_null;
 	uint32_t in_max_output_length;
 	uint32_t in_flags;
+	uint32_t data_length_in;
+	uint32_t data_length_out;
+	uint32_t data_length_tmp;
+	uint32_t data_length_max;
 	struct tevent_req *subreq;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x39);
@@ -149,6 +153,27 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 		in_output_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 		in_output_buffer.data += tmp_ofs;
 		in_output_buffer.length = in_output_length;
+	}
+
+	/*
+	 * verify the credits and avoid overflows
+	 * in_input_buffer.length and in_output_buffer.length
+	 * are already verified.
+	 */
+	data_length_in = in_input_buffer.length + in_output_buffer.length;
+
+	data_length_out = in_max_input_length;
+	data_length_tmp = UINT32_MAX - data_length_out;
+	if (data_length_tmp < in_max_output_length) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+	data_length_out += in_max_output_length;
+
+	data_length_max = MAX(data_length_in, data_length_out);
+
+	status = smbd_smb2_request_verify_creditcharge(req, data_length_max);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
 	}
 
 	/*
