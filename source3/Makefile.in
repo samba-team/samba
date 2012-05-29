@@ -2547,7 +2547,7 @@ bin/vlp@EXEEXT@: $(BINARY_PREREQS) $(VLP_OBJ) $(LIBTDB)
 bin/winbind_krb5_locator.@SHLIBEXT@: $(BINARY_PREREQS) $(WINBIND_KRB5_LOCATOR_OBJ) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(WINBIND_KRB5_LOCATOR_OBJ) $(LIBWBCLIENT_LIBS) $(KRB5LIBS) \
-		@SONAMEFLAG@`basename $@`
+		$(LIBREPLACE_LIBS) @SONAMEFLAG@`basename $@`
 
 bin/pam_winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_WINBIND_OBJ) $(LIBTALLOC) $(LIBWBCLIENT)
 	@echo "Linking shared library $@"
