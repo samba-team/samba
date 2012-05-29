@@ -39,8 +39,8 @@ struct dns_udp_request_state {
 };
 
 /* Declare callback functions used below. */
-static void dns_request_get_reply(struct tevent_req *subreq);
-static void dns_request_done(struct tevent_req *subreq);
+static void dns_udp_request_get_reply(struct tevent_req *subreq);
+static void dns_udp_request_done(struct tevent_req *subreq);
 
 struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -92,11 +92,11 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	tevent_req_set_callback(subreq, dns_request_get_reply, req);
+	tevent_req_set_callback(subreq, dns_udp_request_get_reply, req);
 	return req;
 }
 
-static void dns_request_get_reply(struct tevent_req *subreq)
+static void dns_udp_request_get_reply(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 						struct tevent_req);
@@ -123,11 +123,11 @@ static void dns_request_get_reply(struct tevent_req *subreq)
 		return;
 	}
 
-	tevent_req_set_callback(subreq, dns_request_done, req);
+	tevent_req_set_callback(subreq, dns_udp_request_done, req);
 	return;
 }
 
-static void dns_request_done(struct tevent_req *subreq)
+static void dns_udp_request_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 						struct tevent_req);
