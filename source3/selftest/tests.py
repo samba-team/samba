@@ -31,6 +31,7 @@ smbclient = binpath('smbclient3')
 wbinfo = binpath('wbinfo')
 net = binpath('net')
 smbtorture3 = binpath('smbtorture3')
+ntlm_auth = binpath('ntlm_auth3')
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--basedir=$SELFTEST_TMPDIR",
@@ -162,17 +163,17 @@ for env in ["s3dc", "member", "s3member"]:
         
     plantestsuite(
         "samba3.ntlm_auth.diagnostics(%s:local)" % env, "%s:local" % env,
-        [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), binpath('ntlm_auth3'), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
+        [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), ntlm_auth, '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
-    plantestsuite("samba3.ntlm_auth.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, binpath('ntlm_auth3'),  '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
+    plantestsuite("samba3.ntlm_auth.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, ntlm_auth,  '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
 env = "s3member"
 t = "--krb5auth=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD"
 plantestsuite("samba3.wbinfo_s3.(%s:local).%s" % (env, t), "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_wbinfo_s3.sh"), t])
 
-plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, binpath('ntlm_auth3'), '$PREFIX/ktest/krb5_ccache-2', '$SERVER', configuration])
+plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, ntlm_auth, '$PREFIX/ktest/krb5_ccache-2', '$SERVER', configuration])
 
-plantestsuite("samba3.ntlm_auth.krb5(ktest:local)", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, binpath('ntlm_auth3'), '$PREFIX/ktest/krb5_ccache-3', '$SERVER', configuration])
+plantestsuite("samba3.ntlm_auth.krb5(ktest:local)", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, ntlm_auth, '$PREFIX/ktest/krb5_ccache-3', '$SERVER', configuration])
 
 
 for env in ["maptoguest", "secshare"]:
