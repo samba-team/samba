@@ -33,6 +33,8 @@ if validate:
 else:
     validate_list = []
 
+nmblookup = binpath('nmblookup4')
+
 def plansmbtorturetestsuite(name, env, options, modname=None):
     if modname is None:
         modname = "samba4.%s" % name
@@ -309,7 +311,7 @@ plantestsuite("samba4.blackbox.ktpass(dc)", "dc", [os.path.join(bbdir, "test_ktp
 plantestsuite("samba4.blackbox.passwords(dc:local)", "dc:local", [os.path.join(bbdir, "test_passwords.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX"])
 plantestsuite("samba4.blackbox.export.keytab(dc:local)", "dc:local", [os.path.join(bbdir, "test_export_keytab.sh"), '$SERVER', '$USERNAME', '$REALM', '$DOMAIN', "$PREFIX"])
 plantestsuite("samba4.blackbox.cifsdd(dc)", "dc", [os.path.join(samba4srcdir, "client/tests/test_cifsdd.sh"), '$SERVER', '$USERNAME', '$PASSWORD', "$DOMAIN"])
-plantestsuite("samba4.blackbox.nmblookup(dc)", "dc", [os.path.join(samba4srcdir, "utils/tests/test_nmblookup.sh"), '$NETBIOSNAME', '$NETBIOSALIAS', '$SERVER', '$SERVER_IP'])
+plantestsuite("samba4.blackbox.nmblookup(dc)", "dc", [os.path.join(samba4srcdir, "utils/tests/test_nmblookup.sh"), '$NETBIOSNAME', '$NETBIOSALIAS', '$SERVER', '$SERVER_IP', nmblookup])
 plantestsuite("samba4.blackbox.locktest(dc)", "dc", [os.path.join(samba4srcdir, "torture/tests/test_locktest.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX'])
 plantestsuite("samba4.blackbox.masktest", "dc", [os.path.join(samba4srcdir, "torture/tests/test_masktest.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', '$PREFIX'])
 plantestsuite("samba4.blackbox.gentest(dc)", "dc", [os.path.join(samba4srcdir, "torture/tests/test_gentest.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$DOMAIN', "$PREFIX"])
