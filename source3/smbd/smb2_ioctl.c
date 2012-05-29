@@ -46,12 +46,21 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	NTSTATUS status;
 	const uint8_t *inbody;
 	int i = req->current_idx;
+	uint32_t min_buffer_offset;
+	uint32_t max_buffer_offset;
+	uint32_t min_output_offset;
+	uint32_t allowed_length_in;
+	uint32_t allowed_length_out;
 	uint32_t in_ctl_code;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
 	uint32_t in_input_offset;
 	uint32_t in_input_length;
-	DATA_BLOB in_input_buffer;
+	DATA_BLOB in_input_buffer = data_blob_null;
+	uint32_t in_max_input_length;
+	uint32_t in_output_offset;
+	uint32_t in_output_length;
+	DATA_BLOB in_output_buffer = data_blob_null;
 	uint32_t in_max_output_length;
 	uint32_t in_flags;
 	struct tevent_req *subreq;
@@ -67,8 +76,15 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	in_file_id_volatile	= BVAL(inbody, 0x10);
 	in_input_offset		= IVAL(inbody, 0x18);
 	in_input_length		= IVAL(inbody, 0x1C);
+	in_max_input_length	= IVAL(inbody, 0x20);
+	in_output_offset	= IVAL(inbody, 0x24);
+	in_output_length	= IVAL(inbody, 0x28);
 	in_max_output_length	= IVAL(inbody, 0x2C);
 	in_flags		= IVAL(inbody, 0x30);
+
+	min_buffer_offset = SMB2_HDR_BODY + req->in.vector[i+1].iov_len;
+	max_buffer_offset = min_buffer_offset + req->in.vector[i+2].iov_len;
+	min_output_offset = min_buffer_offset;
 
 	/*
 	 * InputOffset (4 bytes): The offset, in bytes, from the beginning of
@@ -78,17 +94,62 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	 * <49> If no input data is required for the FSCTL/IOCTL command being
 	 * issued, Windows-based clients set this field to any value.
 	 */
-	if ((in_input_length > 0)
-	 && (in_input_offset != (SMB2_HDR_BODY + req->in.vector[i+1].iov_len))) {
+	allowed_length_in = 0;
+	if ((in_input_offset > 0) && (in_input_length > 0)) {
+		uint32_t tmp_ofs;
+
+		if (in_input_offset < min_buffer_offset) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+		if (in_input_offset > max_buffer_offset) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+		allowed_length_in = max_buffer_offset - in_input_offset;
+
+		tmp_ofs = in_input_offset - min_buffer_offset;
+		in_input_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+		in_input_buffer.data += tmp_ofs;
+		in_input_buffer.length = in_input_length;
+		min_output_offset += tmp_ofs;
+		min_output_offset += in_input_length;
+	}
+
+	if (in_input_length > allowed_length_in) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (in_input_length > req->in.vector[i+2].iov_len) {
+	allowed_length_out = 0;
+	if (in_output_offset > 0) {
+		if (in_output_offset < min_buffer_offset) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+		if (in_output_offset > max_buffer_offset) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+		allowed_length_out = max_buffer_offset - in_output_offset;
+	}
+
+	if (in_output_length > allowed_length_out) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_input_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
-	in_input_buffer.length = in_input_length;
+	if (in_output_length > 0) {
+		uint32_t tmp_ofs;
+
+		if (in_output_offset < min_output_offset) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+
+		tmp_ofs = in_output_offset - min_buffer_offset;
+		in_output_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+		in_output_buffer.data += tmp_ofs;
+		in_output_buffer.length = in_output_length;
+	}
 
 	/*
 	 * If the Flags field of the request is not SMB2_0_IOCTL_IS_FSCTL the
