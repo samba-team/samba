@@ -59,7 +59,8 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		}
 		break;
 	case DNS_QTYPE_AAAA:
-		ans[ai].rdata.ipv6_record = rec->data.ipv6;
+		ans[ai].rdata.ipv6_record = talloc_strdup(ans, rec->data.ipv6);
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.ipv6_record);
 		break;
 	case DNS_TYPE_NS:
 		ans[ai].rdata.ns_record = rec->data.ns;
