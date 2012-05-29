@@ -436,6 +436,7 @@ NTSTATUS nbt_getdc_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
+		   uint32_t timeout_in_seconds,
 		   const struct sockaddr_storage *dc_addr,
 		   const char *domain_name,
 		   const struct dom_sid *sid,
@@ -457,6 +458,10 @@ NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
 	req = nbt_getdc_send(ev, ev, msg_ctx, dc_addr, domain_name,
 			     sid, nt_version);
 	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_set_endtime(req, ev,
+			timeval_current_ofs(timeout_in_seconds, 0))) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
