@@ -48,15 +48,11 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	switch (rec->wType) {
 	case DNS_QTYPE_CNAME:
 		ans[ai].rdata.cname_record = talloc_strdup(ans, rec->data.cname);
-		if (ans[ai].rdata.cname_record == NULL) {
-			return WERR_NOMEM;
-		}
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.cname_record);
 		break;
 	case DNS_QTYPE_A:
 		ans[ai].rdata.ipv4_record = talloc_strdup(ans, rec->data.ipv4);
-		if (ans[ai].rdata.ipv4_record == NULL) {
-			return WERR_NOMEM;
-		}
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.ipv4_record);
 		break;
 	case DNS_QTYPE_AAAA:
 		ans[ai].rdata.ipv6_record = talloc_strdup(ans, rec->data.ipv6);
@@ -72,21 +68,15 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		ans[ai].rdata.srv_record.port     = rec->data.srv.wPort;
 		ans[ai].rdata.srv_record.target   = talloc_strdup(
 			ans, rec->data.srv.nameTarget);
-		if (ans[ai].rdata.srv_record.target == NULL) {
-			return WERR_NOMEM;
-		}
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.srv_record.target);
 		break;
 	case DNS_QTYPE_SOA:
 		ans[ai].rdata.soa_record.mname	 = talloc_strdup(
 			ans, rec->data.soa.mname);
-		if (ans[ai].rdata.soa_record.mname == NULL) {
-			return WERR_NOMEM;
-		}
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.soa_record.mname);
 		ans[ai].rdata.soa_record.rname	 = talloc_strdup(
 			ans, rec->data.soa.rname);
-		if (ans[ai].rdata.soa_record.rname == NULL) {
-			return WERR_NOMEM;
-		}
+		W_ERROR_HAVE_NO_MEMORY(ans[ai].rdata.soa_record.rname);
 		ans[ai].rdata.soa_record.serial	 = rec->data.soa.serial;
 		ans[ai].rdata.soa_record.refresh = rec->data.soa.refresh;
 		ans[ai].rdata.soa_record.retry	 = rec->data.soa.retry;
@@ -98,15 +88,11 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		break;
 	case DNS_QTYPE_TXT:
 		tmp = talloc_asprintf(ans, "\"%s\"", rec->data.txt.str[0]);
-		if (tmp == NULL) {
-			return WERR_NOMEM;
-		}
+		W_ERROR_HAVE_NO_MEMORY(tmp);
 		for (i=1; i<rec->data.txt.count; i++) {
 			tmp = talloc_asprintf_append_buffer(
 				tmp, " \"%s\"", rec->data.txt.str[i]);
-			if (tmp == NULL) {
-				return WERR_NOMEM;
-			}
+			W_ERROR_HAVE_NO_MEMORY(tmp);
 		}
 		ans[ai].rdata.txt_record.txt = tmp;
 		break;
@@ -116,9 +102,7 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	}
 
 	ans[ai].name = talloc_strdup(ans, question->name);
-	if (ans[ai].name == NULL) {
-		return WERR_NOMEM;
-	}
+	W_ERROR_HAVE_NO_MEMORY(ans[ai].name);
 	ans[ai].rr_type = rec->wType;
 	ans[ai].rr_class = DNS_QCLASS_IN;
 	ans[ai].ttl = rec->dwTtlSeconds;
