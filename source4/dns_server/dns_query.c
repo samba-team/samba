@@ -67,11 +67,23 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 		ans[ai].rdata.srv_record.priority = rec->data.srv.wPriority;
 		ans[ai].rdata.srv_record.weight   = rec->data.srv.wWeight;
 		ans[ai].rdata.srv_record.port     = rec->data.srv.wPort;
-		ans[ai].rdata.srv_record.target   = rec->data.srv.nameTarget;
+		ans[ai].rdata.srv_record.target   = talloc_strdup(
+			ans, rec->data.srv.nameTarget);
+		if (ans[ai].rdata.srv_record.target == NULL) {
+			return WERR_NOMEM;
+		}
 		break;
 	case DNS_QTYPE_SOA:
-		ans[ai].rdata.soa_record.mname	 = rec->data.soa.mname;
-		ans[ai].rdata.soa_record.rname	 = rec->data.soa.rname;
+		ans[ai].rdata.soa_record.mname	 = talloc_strdup(
+			ans, rec->data.soa.mname);
+		if (ans[ai].rdata.soa_record.mname == NULL) {
+			return WERR_NOMEM;
+		}
+		ans[ai].rdata.soa_record.rname	 = talloc_strdup(
+			ans, rec->data.soa.rname);
+		if (ans[ai].rdata.soa_record.rname == NULL) {
+			return WERR_NOMEM;
+		}
 		ans[ai].rdata.soa_record.serial	 = rec->data.soa.serial;
 		ans[ai].rdata.soa_record.refresh = rec->data.soa.refresh;
 		ans[ai].rdata.soa_record.retry	 = rec->data.soa.retry;
