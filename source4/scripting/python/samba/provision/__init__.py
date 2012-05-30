@@ -1604,7 +1604,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         backend_type=None, sitename=None,
         ol_mmr_urls=None, ol_olc=None, slapd_path=None,
         useeadb=False, am_rodc=False,
-        lp=None, use_ntvfs=True):
+        lp=None, use_ntvfs=False):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
