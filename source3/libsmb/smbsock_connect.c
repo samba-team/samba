@@ -330,7 +330,7 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 					const char *calling_name,
 					int calling_type)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct smbsock_connect_state *state;
 
 	req = tevent_req_create(mem_ctx, &state, struct smbsock_connect_state);
@@ -352,11 +352,16 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state, smbsock_connect_state_destructor);
 
 	if (port == NBT_SMB_PORT) {
-		subreq = tevent_wakeup_send(state, ev, timeval_set(0, 0));
-		if (tevent_req_nomem(subreq, req)) {
+		state->req_139 = nb_connect_send(state, state->ev, state->addr,
+						 state->called_name,
+						 state->called_type,
+						 state->calling_name,
+						 state->calling_type);
+		if (tevent_req_nomem(state->req_139, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, smbsock_connect_do_139, req);
+		tevent_req_set_callback(
+			state->req_139, smbsock_connect_connected, req);
 		return req;
 	}
 	if (port != 0) {
