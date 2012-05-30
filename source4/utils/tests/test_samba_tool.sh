@@ -6,12 +6,12 @@ SERVER_IP=$2
 USERNAME=$3
 PASSWORD=$4
 DOMAIN=$5
-shift 5
+smbclient=$6
+shift 6
 
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient"
 samba_tool="$samba4bindir/samba-tool"
 
 testit() {
