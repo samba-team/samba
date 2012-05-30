@@ -112,6 +112,7 @@ class DNSTest(TestCase):
                 if s is not None:
                     s.close()
 
+class TestSimpleQueries(DNSTest):
     def test_one_a_query(self):
         "create a query packet containing one query record"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
@@ -237,6 +238,8 @@ class DNSTest(TestCase):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
 
+
+class TestDNSUpdates(DNSTest):
     def test_two_updates(self):
         "create two update requests"
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
