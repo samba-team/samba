@@ -39,7 +39,7 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
 
-	if (!data && !data->metadata && !data->metadata->db) {
+	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata tdb not initialized");
 	}
@@ -98,7 +98,7 @@ static int partition_metadata_set_uint64(struct ldb_module *module,
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
 
-	if (!data && !data->metadata && !data->metadata->db) {
+	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata tdb not initialized");
 	}
@@ -359,7 +359,7 @@ int partition_metadata_sequence_number_increment(struct ldb_module *module, uint
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				    struct partition_private_data);
-	if (!data && !data->metadata) {
+	if (!data || !data->metadata) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata not initialized");
 	}
@@ -390,7 +390,7 @@ int partition_metadata_start_trans(struct ldb_module *module)
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
-	if (!data && !data->metadata && !data->metadata->db) {
+	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata not initialized");
 	}
@@ -417,7 +417,7 @@ int partition_metadata_prepare_commit(struct ldb_module *module)
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
-	if (!data && !data->metadata && !data->metadata->db) {
+	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata not initialized");
 	}
@@ -447,7 +447,7 @@ int partition_metadata_end_trans(struct ldb_module *module)
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
-	if (!data && !data->metadata && !data->metadata->db) {
+	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata not initialized");
 	}
@@ -479,7 +479,7 @@ int partition_metadata_del_trans(struct ldb_module *module)
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
-	if (!data && !data->metadata && !data->metadata->db) {
+	if (!data || !data->metadata || !data->metadata->db) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: metadata not initialized");
 	}
