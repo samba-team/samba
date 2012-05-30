@@ -4101,6 +4101,11 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
+  if test x"$ac_cv_func_ext_gss_wrap_iov" != x"yes" ; then
+    AC_MSG_WARN(gss_wrap_iov not found in -lgssapi)
+    use_ads=no
+  fi
+
   if test x"$ac_cv_func_ext_gss_get_name_attribute" != x"yes" ; then
     if test x"$ac_cv_func_ext_gsskrb5_extract_authz_data_from_sec_context" != x"yes" -o \
             x"$ac_cv_func_ext_gss_inquire_sec_context_by_oid" != x"yes"
