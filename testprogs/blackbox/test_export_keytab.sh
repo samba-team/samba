@@ -5,7 +5,7 @@
 
 if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_extract_keytab.sh SERVER USERNAME REALM DOMAIN PREFIX
+Usage: test_extract_keytab.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
@@ -15,11 +15,11 @@ USERNAME=$2
 REALM=$3
 DOMAIN=$4
 PREFIX=$5
-shift 5
+smbclient=$6
+shift 6
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient"
 samba4kinit="$samba4bindir/samba4kinit"
 samba_tool="$samba4bindir/samba-tool"
 newuser="$samba_tool user create"
