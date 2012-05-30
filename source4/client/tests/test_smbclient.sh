@@ -5,7 +5,7 @@
 
 if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_smbclient.sh SERVER USERNAME PASSWORD DOMAIN PREFIX
+Usage: test_smbclient.sh SERVER USERNAME PASSWORD DOMAIN PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
@@ -15,11 +15,9 @@ USERNAME=$2
 PASSWORD=$3
 DOMAIN=$4
 PREFIX=$5
-shift 5
+smbclient=$6
+shift 6
 failed=0
-
-samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
