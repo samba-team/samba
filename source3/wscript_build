@@ -1364,7 +1364,7 @@ bld.SAMBA3_BINARY('smbget',
                  smbclient''',
                  vars=locals())
 
-bld.SAMBA3_BINARY('nmblookup' + bld.env.suffix3,
+bld.SAMBA3_BINARY('nmblookup',
                  source=NMBLOOKUP_SRC,
                  deps='''
                  talloc
