@@ -552,7 +552,7 @@ def test_howto(t):
     '''test the Samba4 howto'''
 
     t.setvar("SAMBA_VERSION", "Version 4")
-    t.setvar("smbclient", "bin/smbclient")
+    t.setvar("smbclient", "bin/smbclient4")
     t.check_prerequesites()
 
     # we don't need fsync safety in these tests

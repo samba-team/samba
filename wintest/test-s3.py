@@ -187,7 +187,7 @@ def test_s3(t):
     '''basic s3 testing'''
 
     t.setvar("SAMBA_VERSION", "Version 4")
-    t.setvar("smbclient", "bin/smbclient")
+    t.setvar("smbclient", "bin/smbclient4")
     t.check_prerequesites()
     set_libpath(t)
 
