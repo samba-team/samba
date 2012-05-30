@@ -2835,8 +2835,8 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	}
 
 	if (service) {
-		nt_status = cli_tcon_andx(cli, service, service_type, password,
-					  pw_len);
+		nt_status = cli_tree_connect(cli, service, service_type,
+					     password, pw_len);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);
