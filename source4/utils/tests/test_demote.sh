@@ -8,12 +8,12 @@ PASSWORD=$4
 DOMAIN=$5
 DC=$6
 PROV=$7
-shift 7
+smbclient=$8
+shift 8
 
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient"
 samba_tool="$samba4bindir/samba-tool"
 
 testit() {
