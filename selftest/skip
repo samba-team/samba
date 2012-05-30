@@ -102,4 +102,3 @@ bench # don't run benchmarks in our selftest
 ^samba4.drs.delete_object.python # flakey test
 ^samba4.rpc.unixinfo # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
-^samba.*.local.ndr.nbt_netlogon_packet # until bug #8373 is fixed
