@@ -187,7 +187,7 @@ static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct ndr_syntax_id *lsarpc_syntax = &ndr_table_lsarpc.syntax_id;
 
-	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
+	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
