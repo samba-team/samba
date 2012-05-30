@@ -153,6 +153,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 	memcpy(this_key.dptr, rec->key.dptr, node->keysize);
 	TALLOC_FREE(rec_priv->node);
+	rec_priv->node = node;
 
 	memcpy(this_val.dptr, data.dptr, node->valuesize);
 
