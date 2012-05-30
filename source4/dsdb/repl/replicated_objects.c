@@ -624,11 +624,66 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 	 * a schema cache being refreshed from database.
 	 */
 	if (working_schema) {
+		struct ldb_message *msg;
+		struct ldb_request *req;
+
+		/* Force a reload */
+		working_schema->last_refresh = 0;
 		cur_schema = dsdb_get_schema(ldb, NULL);
 		/* TODO: What we do in case dsdb_get_schema() fail?
 		 *       We can't fallback at this point anymore */
 		if (cur_schema) {
 			dsdb_make_schema_global(ldb, cur_schema);
+		}
+		msg = ldb_msg_new(ldb);
+		if (msg == 0) {
+			return WERR_NOMEM;
+		}
+		msg->dn = NULL;
+
+		ret = ldb_msg_add_string(msg, "schemaUpdateNow", "1");
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return WERR_INTERNAL_ERROR;
+		}
+
+		ret = ldb_build_mod_req(&req, ldb, ldb,
+				msg,
+				LDB_SCOPE_BASE,
+				NULL,
+				ldb_op_default_callback,
+				NULL);
+
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = ldb_transaction_start(ldb);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			talloc_free(req);
+			DEBUG(0, ("Autotransaction start failed\n"));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = ldb_request(ldb, req);
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		}
+
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_transaction_commit(ldb);
+		} else {
+			DEBUG(0, ("Schema update now failed: %s\n", ldb_strerror(ret)));
+			ldb_transaction_cancel(ldb);
+		}
+
+		talloc_free(msg);
+		talloc_free(req);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Commit failed: %s\n", ldb_strerror(ret)));
+			return WERR_DS_INTERNAL_FAILURE;
 		}
 	}
 
