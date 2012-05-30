@@ -8,6 +8,7 @@ srcdir = "."
 import samba_version
 
 bld.env.suffix3 = "3"
+bld.env.suffix4 = "4"
 
 # create separate build groups for building the asn1 and et compiler, then
 # building the C from ASN1 and IDL, and finally the main build process
