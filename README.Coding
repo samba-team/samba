@@ -367,3 +367,13 @@ Bad Example:
 	ret = some_function_my_name(get_some_name());
 	...
 
+Control-Flow changing macros
+----------------------------
+
+Macros like NT_STATUS_NOT_OK_RETURN that change control flow
+(return/goto/etc) from within the macro are considered bad, because
+they look like function calls that never change control flow. Please
+do not use them in new code.
+
+The only exception is the test code that depends repeated use of calls
+like CHECK_STATUS, CHECK_VAL and others.
