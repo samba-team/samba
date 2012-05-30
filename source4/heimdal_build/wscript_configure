@@ -154,7 +154,7 @@ conf.define('HAVE_ENCTYPE_ARCFOUR_HMAC', 1)
 conf.define('HAVE_KRB5_PDU_NONE_DECL', 1)
 conf.define('HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96', 1)
 conf.define('HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96', 1)
-conf.define('HAVE_KRB5_KRB5_PRINCIPAL_GET_NUM_COMP', 1)
+conf.define('HAVE_KRB5_PRINCIPAL_GET_NUM_COMP', 1)
 conf.define('HAVE_GSSAPI_GSSAPI_SPNEGO_H', 1)
 
 heimdal_includedirs = []

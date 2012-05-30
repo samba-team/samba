@@ -64,14 +64,6 @@
 #define AP_OPTS_USE_SUBKEY 0
 #endif
 
-#ifndef krb5_princ_size
-#if defined(HAVE_KRB5_KRB5_PRINCIPAL_GET_NUM_COMP)
-#define krb5_princ_size krb5_principal_get_num_comp
-#else
-#error krb5_princ_size unavailable
-#endif
-#endif
-
 typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_address **addrs;
