@@ -1217,7 +1217,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  ''',
                  vars=locals())
 
-bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
+bld.SAMBA3_BINARY('client/smbclient',
                  source=CLIENT_SRC,
                  deps='''
                  talloc
