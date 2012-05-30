@@ -197,13 +197,15 @@ _PUBLIC_ void ndr_print_dnsp_string_list(struct ndr_print *ndr, const char *name
 _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string_list(struct ndr_pull *ndr, int ndr_flags, struct dnsp_string_list *list)
 {
 	list->count = 0;
-	list->str = talloc_array(ndr->current_mem_ctx, char *, list->count);
+	list->str = talloc_array(ndr->current_mem_ctx, const char *,
+				 list->count);
 	if (! list->str) {
 		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string_list");
 	}
 
 	while (ndr->offset < ndr->data_size) {
-		list->str = talloc_realloc(ndr->current_mem_ctx, list->str, char *, list->count+1);
+		list->str = talloc_realloc(ndr->current_mem_ctx, list->str,
+					   const char *, list->count+1);
 		if (! list->str) {
 			return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string_list");
 		}
