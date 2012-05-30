@@ -2491,7 +2491,7 @@ static NTSTATUS resolve_ads(const char *name,
 
 	*return_count = 0;
 
-	while ( i < numdcs && (*return_count<numaddrs) ) {
+	for (i = 0; i < numdcs && (*return_count<numaddrs); i++ ) {
 		/* If we don't have an IP list for a name, lookup it up */
 		if (!dcs[i].ss_s) {
 			/* We need to get all IP addresses here. */
