@@ -360,6 +360,10 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 		return LDB_SUCCESS;
 	}
 
+	if (!filter_ctx->schema) {
+		/* Schema not setup yet */
+		return LDB_SUCCESS;
+	}
 	attribute = dsdb_attribute_by_lDAPDisplayName(filter_ctx->schema, tree->u.equality.attr);
 	if (attribute == NULL) {
 		return LDB_SUCCESS;
