@@ -121,7 +121,17 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 			rec_priv->node->valuesize = data.dsize;
 			return NT_STATUS_OK;
 		}
+	}
 
+	node = (struct db_rbt_node *)talloc_size(db_ctx,
+		offsetof(struct db_rbt_node, data) + rec->key.dsize
+		+ data.dsize);
+
+	if (node == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (rec_priv->node != NULL) {
 		/*
 		 * We need to delete the key from the tree and start fresh,
 		 * there's not enough space in the existing record
@@ -133,15 +143,6 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 * Keep the existing node around for a while: If the record
 		 * existed before, we reference the key data in there.
 		 */
-	}
-
-	node = (struct db_rbt_node *)talloc_size(db_ctx,
-		offsetof(struct db_rbt_node, data) + rec->key.dsize
-		+ data.dsize);
-
-	if (node == NULL) {
-		TALLOC_FREE(rec_priv->node);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCT(node->rb_node);
