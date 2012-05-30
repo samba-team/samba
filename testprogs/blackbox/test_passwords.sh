@@ -5,7 +5,7 @@
 
 if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_passwords.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX
+Usage: test_passwords.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
@@ -16,11 +16,11 @@ PASSWORD=$3
 REALM=$4
 DOMAIN=$5
 PREFIX=$6
-shift 6
+smbclient=$7
+shift 7
 failed=0
 
 samba4bindir="$BINDIR"
-smbclient="$samba4bindir/smbclient"
 samba4kinit="$samba4bindir/samba4kinit"
 samba_tool="$samba4bindir/samba-tool"
 smbpasswd="$samba4bindir/smbpasswd"
