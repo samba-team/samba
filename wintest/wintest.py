@@ -878,8 +878,9 @@ RebootOnCompletion=No
         self.setwinvars(vm)
         self.info('Testing smbclient')
         self.chdir('${PREFIX}')
-        self.cmd_contains("bin/smbclient --version", ["${SAMBA_VERSION}"])
-        self.retry_cmd('bin/smbclient -L ${WIN_HOSTNAME} -U%s%%%s %s' % (username, password, args), ["IPC"], retries=60, delay=5)
+        smbclient = self.getvar("smbclient")
+        self.cmd_contains("%s --version" % (smbclient), ["${SAMBA_VERSION}"])
+        self.retry_cmd('%s -L ${WIN_HOSTNAME} -U%s%%%s %s' % (smbclient, username, password, args), ["IPC"], retries=60, delay=5)
 
     def test_net_use(self, vm, realm, domain, username, password):
         self.setwinvars(vm)

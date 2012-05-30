@@ -76,11 +76,12 @@ def test_wbinfo(t):
 
 def test_smbclient(t):
     t.info('Testing smbclient')
+    smbclient = t.getvar("smbclient")
     t.chdir('${PREFIX}')
-    t.cmd_contains("bin/smbclient --version", ["Version 4."])
-    t.cmd_contains('bin/smbclient -L ${INTERFACE_IP} -U%', ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 4."],
+    t.cmd_contains("%s --version" % (smbclient), ["Version 4."])
+    t.cmd_contains('%s -L ${INTERFACE_IP} -U%%' % (smbclient), ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 4."],
                    casefold=True)
-    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%${PASSWORD2}')
+    child = t.pexpect_spawn('%s //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%%${PASSWORD2}' % (smbclient))
     child.expect("smb:")
     child.sendline("dir")
     child.expect("blocks available")
@@ -91,7 +92,7 @@ def test_smbclient(t):
     child.sendline("cd ..")
     child.sendline("rmdir testdir")
 
-    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%${PASSWORD2} -k')
+    child = t.pexpect_spawn('%s //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%%${PASSWORD2} -k' % (smbclient))
     child.expect("smb:")
     child.sendline("dir")
     child.expect("blocks available")
@@ -186,6 +187,7 @@ def test_s3(t):
     '''basic s3 testing'''
 
     t.setvar("SAMBA_VERSION", "Version 4")
+    t.setvar("smbclient", "bin/smbclient")
     t.check_prerequesites()
     set_libpath(t)
 
