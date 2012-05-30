@@ -323,10 +323,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_stop_keepalive(ctdb);
 		ctdb_stop_monitoring(ctdb);
 		ctdb_release_all_ips(ctdb);
+		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
 		if (ctdb->methods != NULL) {
 			ctdb->methods->shutdown(ctdb);
 		}
-		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
 		exit(0);
 
 	case CTDB_CONTROL_TAKEOVER_IPv4:
