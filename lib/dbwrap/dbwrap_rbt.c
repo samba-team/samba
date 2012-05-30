@@ -30,7 +30,6 @@ struct db_rbt_ctx {
 };
 
 struct db_rbt_rec {
-	struct db_rbt_ctx *db_ctx;
 	struct db_rbt_node *node;
 };
 
@@ -92,6 +91,8 @@ static void db_rbt_parse_node(struct db_rbt_node *node,
 
 static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 {
+	struct db_rbt_ctx *db_ctx = talloc_get_type_abort(
+		rec->db->private_data, struct db_rbt_ctx);
 	struct db_rbt_rec *rec_priv = (struct db_rbt_rec *)rec->private_data;
 	struct db_rbt_node *node;
 
@@ -126,7 +127,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 * there's not enough space in the existing record
 		 */
 
-		rb_erase(&rec_priv->node->rb_node, &rec_priv->db_ctx->tree);
+		rb_erase(&rec_priv->node->rb_node, &db_ctx->tree);
 
 		/*
 		 * Keep the existing node around for a while: If the record
@@ -134,7 +135,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 */
 	}
 
-	node = (struct db_rbt_node *)talloc_size(rec_priv->db_ctx,
+	node = (struct db_rbt_node *)talloc_size(db_ctx,
 		offsetof(struct db_rbt_node, data) + rec->key.dsize
 		+ data.dsize);
 
@@ -156,7 +157,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	memcpy(this_val.dptr, data.dptr, node->valuesize);
 
 	parent = NULL;
-	p = &rec_priv->db_ctx->tree.rb_node;
+	p = &db_ctx->tree.rb_node;
 
 	while (*p) {
 		struct db_rbt_node *r;
@@ -183,20 +184,22 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	}
 
 	rb_link_node(&node->rb_node, parent, p);
-	rb_insert_color(&node->rb_node, &rec_priv->db_ctx->tree);
+	rb_insert_color(&node->rb_node, &db_ctx->tree);
 
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS db_rbt_delete(struct db_record *rec)
 {
+	struct db_rbt_ctx *db_ctx = talloc_get_type_abort(
+		rec->db->private_data, struct db_rbt_ctx);
 	struct db_rbt_rec *rec_priv = (struct db_rbt_rec *)rec->private_data;
 
 	if (rec_priv->node == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	rb_erase(&rec_priv->node->rb_node, &rec_priv->db_ctx->tree);
+	rb_erase(&rec_priv->node->rb_node, &db_ctx->tree);
 	TALLOC_FREE(rec_priv->node);
 
 	return NT_STATUS_OK;
@@ -256,9 +259,6 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 					     TALLOC_CTX *mem_ctx,
 					     TDB_DATA key)
 {
-	struct db_rbt_ctx *ctx = talloc_get_type_abort(
-		db_ctx->private_data, struct db_rbt_ctx);
-
 	struct db_rbt_rec *rec_priv;
 	struct db_record *result;
 	size_t size;
@@ -290,7 +290,6 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 
 	rec_priv = (struct db_rbt_rec *)
 		((char *)result + DBWRAP_RBT_ALIGN(sizeof(struct db_record)));
-	rec_priv->db_ctx = ctx;
 
 	result->store = db_rbt_store;
 	result->delete_rec = db_rbt_delete;
