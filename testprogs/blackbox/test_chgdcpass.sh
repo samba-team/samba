@@ -5,7 +5,7 @@
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_kinit.sh SERVER USERNAME REALM DOMAIN PREFIX
+Usage: test_kinit.sh SERVER USERNAME REALM DOMAIN PREFIX SMBCLIENT
 EOF
 exit 1;
 fi
@@ -17,12 +17,12 @@ DOMAIN=$4
 PREFIX=$5
 ENCTYPE=$6
 PROVDIR=$7
-shift 7
+smbclient=$8
+shift 8
 failed=0
 
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-smbclient="$samba4bindir/smbclient"
 samba4kinit="$samba4bindir/samba4kinit"
 
 machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
