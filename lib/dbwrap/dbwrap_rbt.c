@@ -206,6 +206,17 @@ static NTSTATUS db_rbt_delete(struct db_record *rec)
 
 	return NT_STATUS_OK;
 }
+
+static NTSTATUS db_rbt_store_deny(struct db_record *rec, TDB_DATA data, int flag)
+{
+	return NT_STATUS_MEDIA_WRITE_PROTECTED;
+}
+
+static NTSTATUS db_rbt_delete_deny(struct db_record *rec)
+{
+	return NT_STATUS_MEDIA_WRITE_PROTECTED;
+}
+
 struct db_rbt_search_result {
 	TDB_DATA key;
 	TDB_DATA val;
@@ -346,27 +357,47 @@ static NTSTATUS db_rbt_parse_record(struct db_context *db, TDB_DATA key,
 	return NT_STATUS_OK;
 }
 
-static int db_rbt_traverse_internal(struct rb_node *n,
+static int db_rbt_traverse_internal(struct db_context *db,
+				    struct rb_node *n,
 				    int (*f)(struct db_record *db,
 					     void *private_data),
-				    void *private_data, uint32_t* count)
+				    void *private_data, uint32_t* count,
+				    bool rw)
 {
-	struct db_rbt_node *r;
+	struct rb_node *rb_right;
+	struct rb_node *rb_left;
 	struct db_record rec;
+	struct db_rbt_rec rec_priv;
 	int ret;
 
 	if (n == NULL) {
 		return 0;
 	}
 
-	ret = db_rbt_traverse_internal(n->rb_left, f, private_data, count);
+	rb_left = n->rb_left;
+	rb_right = n->rb_right;
+
+	ret = db_rbt_traverse_internal(db, rb_left, f, private_data, count, rw);
 	if (ret != 0) {
 		return ret;
 	}
 
-	r = db_rbt2node(n);
+	ZERO_STRUCT(rec_priv);
+	rec_priv.node = db_rbt2node(n);
+	/* n might be altered by the callback function */
+	n = NULL;
+
 	ZERO_STRUCT(rec);
-	db_rbt_parse_node(r, &rec.key, &rec.value);
+	rec.db = db;
+	rec.private_data = &rec_priv;
+	if (rw) {
+		rec.store = db_rbt_store;
+		rec.delete_rec = db_rbt_delete;
+	} else {
+		rec.store = db_rbt_store_deny;
+		rec.delete_rec = db_rbt_delete_deny;
+	}
+	db_rbt_parse_node(rec_priv.node, &rec.key, &rec.value);
 
 	ret = f(&rec, private_data);
 	(*count) ++;
@@ -374,7 +405,15 @@ static int db_rbt_traverse_internal(struct rb_node *n,
 		return ret;
 	}
 
-	return db_rbt_traverse_internal(n->rb_right, f, private_data, count);
+	if (rec_priv.node != NULL) {
+		/*
+		 * If the current record is still there
+		 * we should take the current rb_right.
+		 */
+		rb_right = rec_priv.node->rb_node.rb_right;
+	}
+
+	return db_rbt_traverse_internal(db, rb_right, f, private_data, count, rw);
 }
 
 static int db_rbt_traverse(struct db_context *db,
@@ -386,7 +425,30 @@ static int db_rbt_traverse(struct db_context *db,
 		db->private_data, struct db_rbt_ctx);
 	uint32_t count = 0;
 
-	int ret =  db_rbt_traverse_internal(ctx->tree.rb_node, f, private_data, &count);
+	int ret = db_rbt_traverse_internal(db, ctx->tree.rb_node,
+					   f, private_data, &count,
+					   true /* rw */);
+	if (ret != 0) {
+		return -1;
+	}
+	if (count > INT_MAX) {
+		return -1;
+	}
+	return count;
+}
+
+static int db_rbt_traverse_read(struct db_context *db,
+				int (*f)(struct db_record *db,
+					 void *private_data),
+				void *private_data)
+{
+	struct db_rbt_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_rbt_ctx);
+	uint32_t count = 0;
+
+	int ret = db_rbt_traverse_internal(db, ctx->tree.rb_node,
+					   f, private_data, &count,
+					   false /* rw */);
 	if (ret != 0) {
 		return -1;
 	}
@@ -435,7 +497,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->fetch_locked = db_rbt_fetch_locked;
 	result->try_fetch_locked = NULL;
 	result->traverse = db_rbt_traverse;
-	result->traverse_read = db_rbt_traverse;
+	result->traverse_read = db_rbt_traverse_read;
 	result->get_seqnum = db_rbt_get_seqnum;
 	result->transaction_start = db_rbt_trans_dummy;
 	result->transaction_commit = db_rbt_trans_dummy;
