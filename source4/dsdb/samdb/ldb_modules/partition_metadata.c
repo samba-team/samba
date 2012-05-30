@@ -139,6 +139,38 @@ static int partition_metadata_set_uint64(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+int partition_metadata_inc_schema_sequence(struct ldb_module *module)
+{
+	struct partition_private_data *data;
+	int ret;
+	uint64_t value;
+
+	data = talloc_get_type_abort(ldb_module_get_private(module),
+				    struct partition_private_data);
+	if (!data || !data->metadata) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"partition_metadata: metadata not initialized");
+	}
+
+	if (data->metadata->in_transaction == 0) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"partition_metadata: increment sequence number without transaction");
+	}
+	ret = partition_metadata_get_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, &value, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	value++;
+	ret = partition_metadata_set_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, value, false);
+	if (ret == LDB_ERR_OPERATIONS_ERROR) {
+		/* Modify failed, let's try the add */
+		ret = partition_metadata_set_uint64(module, DSDB_METADATA_SCHEMA_SEQ_NUM, value, true);
+	}
+	return ret;
+}
+
+
 
 /*
  * Open sam.ldb.d/metadata.tdb.

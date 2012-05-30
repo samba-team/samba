@@ -1215,6 +1215,13 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) == 0) {
+		/* Update the metadata.tdb to increment the schema version if needed*/
+		DEBUG(10, ("Incrementing the sequence_number after schema_update_now\n"));
+		ret = partition_metadata_inc_schema_sequence(module);
+		return ldb_module_done(req, NULL, NULL, ret);
+	}
+
 	/* see if we are still up-to-date */
 	ret = partition_reload_if_required(module, data, req);
 	if (ret != LDB_SUCCESS) {

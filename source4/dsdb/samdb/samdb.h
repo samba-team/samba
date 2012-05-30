@@ -218,4 +218,6 @@ struct dsdb_fsmo_extended_op {
 };
 
 #define DSDB_ACL_CHECKS_DIRSYNC_FLAG 0x1
+
+#define DSDB_METADATA_SCHEMA_SEQ_NUM	"SCHEMA_SEQ_NUM"
 #endif /* __SAMDB_H__ */

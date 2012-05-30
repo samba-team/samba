@@ -363,8 +363,8 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 	*lastts = 0;
 	ldb_set_opaque(ldb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME, lastts);
 
-	/* This is a no-op.  We reload as soon as we can */
-	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+	/* Pass to next module, the partition one should finish the chain */
+	return ldb_next_request(module, req);
 }
 
 
