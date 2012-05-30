@@ -1416,8 +1416,8 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 		  fsp->oplock_type, fsp_str_dbg(fsp)));
 }
 
-bool request_timed_out(struct timeval request_time,
-		       struct timeval timeout)
+static bool request_timed_out(struct timeval request_time,
+			      struct timeval timeout)
 {
 	struct timeval now, end_time;
 	GetTimeOfDay(&now);
