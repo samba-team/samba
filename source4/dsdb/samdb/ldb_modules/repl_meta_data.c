@@ -2790,7 +2790,6 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 						OBJECT_TOMBSTONE=4, OBJECT_REMOVED=5 };
 	enum deletion_state deletion_state, next_deletion_state;
 	bool enabled;
-	int functional_level;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
@@ -2806,8 +2805,6 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	if (!schema) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	functional_level = dsdb_functional_level(ldb);
 
 	old_dn = ldb_dn_copy(tmp_ctx, req->op.del.dn);
 
