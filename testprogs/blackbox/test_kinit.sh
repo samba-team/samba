@@ -5,7 +5,7 @@
 
 if [ $# -lt 5 ]; then
 cat <<EOF
-Usage: test_kinit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX
+Usage: test_kinit.sh SERVER USERNAME PASSWORD REALM DOMAIN PREFIX ENCTYPE SMBCLIENT
 EOF
 exit 1;
 fi
@@ -17,12 +17,12 @@ REALM=$4
 DOMAIN=$5
 PREFIX=$6
 ENCTYPE=$7
-shift 7
+smbclient=$8
+shift 8
 failed=0
 
 samba4bindir="$BINDIR"
 samba4srcdir="$SRCDIR/source4"
-smbclient="$samba4bindir/smbclient"
 samba4kinit="$samba4bindir/samba4kinit"
 samba_tool="$samba4bindir/samba-tool"
 ldbmodify="$samba4bindir/ldbmodify"
