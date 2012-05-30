@@ -4781,7 +4781,7 @@ static void init_globals(bool reinit_globals)
 	Globals.max_open_files = max_open_files();
 	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
 	Globals.srv_maxprotocol = PROTOCOL_SMB2_02;
-	Globals.srv_minprotocol = PROTOCOL_CORE;
+	Globals.srv_minprotocol = PROTOCOL_LANMAN1;
 	Globals.security = SEC_USER;
 	Globals.paranoid_server_security = true;
 	Globals.bEncryptPasswords = true;

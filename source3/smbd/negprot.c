@@ -57,39 +57,6 @@ static void get_challenge(struct smbd_server_connection *sconn, uint8 buff[8])
 }
 
 /****************************************************************************
- Reply for the core protocol.
-****************************************************************************/
-
-static void reply_corep(struct smb_request *req, uint16 choice)
-{
-	reply_outbuf(req, 1, 0);
-	SSVAL(req->outbuf, smb_vwv0, choice);
-
-	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_CORE);
-}
-
-/****************************************************************************
- Reply for the coreplus protocol.
-****************************************************************************/
-
-static void reply_coreplus(struct smb_request *req, uint16 choice)
-{
-	int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
-
-	reply_outbuf(req, 13, 0);
-
-	SSVAL(req->outbuf,smb_vwv0,choice);
-	SSVAL(req->outbuf,smb_vwv5,raw); /* tell redirector we support
-			readbraw and writebraw (possibly) */
-	/* Reply, SMBlockread, SMBwritelock supported. */
-	SCVAL(req->outbuf,smb_flg,FLAG_REPLY|FLAG_SUPPORT_LOCKREAD);
-	SSVAL(req->outbuf,smb_vwv1,0x1); /* user level security, don't
-					  * encrypt */
-
-	smbXsrv_connection_init_tables(req->sconn->conn, PROTOCOL_COREPLUS);
-}
-
-/****************************************************************************
  Reply for the lanman 1.0 protocol.
 ****************************************************************************/
 
@@ -529,8 +496,6 @@ static const struct {
 	{"DOS LM1.2X002",           "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
 	{"LANMAN1.0",               "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
 	{"MICROSOFT NETWORKS 3.0",  "LANMAN1",  reply_lanman1,  PROTOCOL_LANMAN1},
-	{"MICROSOFT NETWORKS 1.03", "COREPLUS", reply_coreplus, PROTOCOL_COREPLUS},
-	{"PC NETWORK PROGRAM 1.0",  "CORE",     reply_corep,    PROTOCOL_CORE}, 
 	{NULL,NULL,NULL,0},
 };
 
