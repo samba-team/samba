@@ -2514,6 +2514,10 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 			  const char *dev, const char *pass, int passlen)
 {
+	NTSTATUS status;
+	uint16_t max_xmit = 0;
+	uint16_t tid = 0;
+
 	cli->share = talloc_strdup(cli, share);
 	if (!cli->share) {
 		return NT_STATUS_NO_MEMORY;
@@ -2523,7 +2527,17 @@ NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 		return smb2cli_tcon(cli, share);
 	}
 
-	return cli_tcon_andx(cli, share, dev, pass, passlen);
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_LANMAN1) {
+		return cli_tcon_andx(cli, share, dev, pass, passlen);
+	}
+
+	status = cli_raw_tcon(cli, share, pass, dev, &max_xmit, &tid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	cli->smb1.tid = tid;
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
