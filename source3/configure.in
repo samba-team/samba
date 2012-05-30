@@ -3542,6 +3542,12 @@ if test x"$with_ads_support" != x"no"; then
 	AC_DEFINE(HAVE_GSSAPI, , [Whether the platform has GSSAPI support])
   fi
 
+  # This is for FreeBSD (and possibly others). gss_mech_krb5 is a
+  # #define to GSS_KRB5_MECHANISM, which is defined in -lgssapi_krb5
+  # Also, gsskrb5_extract_authz_data_from_sec_context is in -lgssapi_krb5
+  AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS, GSS_KRB5_MECHANISM,
+  		   [KRB5_LIBS="$KRB5_LIBS -lgssapi_krb5"])
+
   AC_CHECK_FUNC_EXT(krb5_set_real_time, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_in_tkt_etypes, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_set_default_tgs_enctypes, $KRB5_LIBS)
@@ -3567,6 +3573,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_principal_compare_any_realm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_parse_name_norealm, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_princ_size, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_make_principal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_principal_get_num_comp, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_init_creds_opt_set_pac_request, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_get_renewed_creds, $KRB5_LIBS)
@@ -3597,11 +3604,6 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(gss_oid_equal, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_inquire_sec_context_by_oid, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_wrap_iov, $KRB5_LIBS)
-
-  # This is for FreeBSD (and possibly others). gss_mech_krb5 is a
-  # #define to GSS_KRB5_MECHANISM, which is defined in -lgssapi_krb5
-  AC_CHECK_LIB_EXT(gssapi_krb5, KRB5_LIBS, GSS_KRB5_MECHANISM,
-  		   [KRB5_LIBS="$KRB5_LIBS -lgssapi_krb5"])
 
   # MIT krb5 1.8 does not expose this call (yet)
   AC_CHECK_DECLS(krb5_get_credentials_for_user, [], [], [#include <krb5.h>])
@@ -4068,17 +4070,15 @@ if test x"$with_ads_support" != x"no"; then
     use_ads=no
   fi
 
-  if test x"$ac_cv_func_ext_krb5_c_string_to_key" != x"yes"
+  if test x"$ac_cv_func_ext_krb5_principal2salt" != x"yes" -o \
+     	  x"$ac_cv_func_ext_krb5_c_string_to_key" != x"yes"
   then
-    AC_MSG_WARN(krb5_c_string_to_key not found in -lkrb5)
-    use_ads=no
-  fi
-
-  if test x"$ac_cv_func_ext_krb5_principal2salt" != x"yes" -a \
-          x"$ac_cv_func_ext_krb5_get_pw_salt" != x"yes"
-  then
-    AC_MSG_WARN(no CREATE_KEY_FUNCTIONS detected)
-    use_ads=no
+	if test x"$ac_cv_func_ext_krb5_get_pw_salt" != x"yes" -o \
+     	     x"$ac_cv_func_ext_krb5_string_to_key_salt" != x"yes"
+	then
+	      AC_MSG_WARN(no CREATE_KEY_FUNCTIONS detected)
+	      use_ads=no
+	fi
   fi
 
   if test x"$ac_cv_func_ext_krb5_get_permitted_enctypes" != x"yes" -a \
