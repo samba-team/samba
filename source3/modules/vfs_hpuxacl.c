@@ -191,14 +191,6 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
         /* 
 	 * HPUX doesn't have the facl call. Fake it using the path.... JRA. 
 	 */
-	/* For all I see, the info should already be in the fsp
-	 * parameter, but get it again to be safe --- necessary? */
-        files_struct *file_struct_p = file_find_fd(fsp->conn->sconn,
-						   fsp->fh->fd);
-        if (file_struct_p == NULL) {
-                errno = EBADF;
-                return NULL;
-        }
         /*
          * We know we're in the same conn context. So we
          * can use the relative path.
@@ -207,7 +199,7 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 		"hpuxacl_sys_acl_get_file (no facl syscall on HPUX).\n"));
 
         return hpuxacl_sys_acl_get_file(handle,
-					file_struct_p->fsp_name->base_name,
+					fsp->fsp_name->base_name,
 					SMB_ACL_TYPE_ACCESS);
 }
 
@@ -331,14 +323,6 @@ int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
         /*
          * HPUX doesn't have the facl call. Fake it using the path.... JRA.
          */
-	/* For all I see, the info should already be in the fsp
-	 * parameter, but get it again to be safe --- necessary? */
-        files_struct *file_struct_p = file_find_fd(fsp->conn->sconn,
-						   fsp->fh->fd);
-        if (file_struct_p == NULL) {
-                errno = EBADF;
-                return -1;
-        }
         /*
          * We know we're in the same conn context. So we
          * can use the relative path.
@@ -347,7 +331,7 @@ int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		"hpuxacl_sys_acl_set_file (no facl syscall on HPUX)\n"));
 
         return hpuxacl_sys_acl_set_file(handle,
-					file_struct_p->fsp_name->base_name,
+					fsp->fsp_name->base_name,
 					SMB_ACL_TYPE_ACCESS, theacl);
 }
 
