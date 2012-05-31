@@ -804,6 +804,7 @@ bool reload_services(bool test)
 			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
+		TALLOC_FREE(fname);
 	}
 
 	reopen_logs();
