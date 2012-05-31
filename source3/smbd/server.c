@@ -416,6 +416,24 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	struct smbd_child_pid *child;
 	struct server_id child_id;
 
+	child_id = pid_to_procid(pid);
+
+	for (child = parent->children; child != NULL; child = child->next) {
+		if (child->pid == pid) {
+			struct smbd_child_pid *tmp = child;
+			DLIST_REMOVE(parent->children, child);
+			TALLOC_FREE(tmp);
+			parent->num_children -= 1;
+			break;
+		}
+	}
+
+	if (child == NULL) {
+		/* not all forked child processes are added to the children list */
+		DEBUG(2, ("Could not find child %d -- ignoring\n", (int)pid));
+		return;
+	}
+
 	if (unclean_shutdown) {
 		/* a child terminated uncleanly so tickle all
 		   processes to see if they can grab any of the
@@ -435,25 +453,10 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		}
 	}
 
-	child_id = pid_to_procid(pid);
-
 	if (!serverid_deregister(child_id)) {
 		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
 			  (int)pid));
 	}
-
-	for (child = parent->children; child != NULL; child = child->next) {
-		if (child->pid == pid) {
-			struct smbd_child_pid *tmp = child;
-			DLIST_REMOVE(parent->children, child);
-			TALLOC_FREE(tmp);
-			parent->num_children -= 1;
-			return;
-		}
-	}
-
-	/* not all forked child processes are added to the children list */
-	DEBUG(2, ("Could not find child %d -- ignoring\n", (int)pid));
 }
 
 /****************************************************************************
