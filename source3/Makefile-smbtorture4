@@ -10,7 +10,7 @@ samba4-configure:
 
 .PHONY: samba4-configure
 
-bin/smbtorture4: $(BINARY_PREREQS) samba4-configure
+bin/smbtorture4: $(BINARY_PREREQS) samba4-configure samba4-config-compare
 	cd .. && $(WAF_BUILD) --targets=smbtorture
 	cp ../bin/smbtorture bin/smbtorture4
 
@@ -21,3 +21,8 @@ bin/ndrdump4: $(BINARY_PREREQS) samba4-configure
 	cp ../bin/ndrdump bin/ndrdump4
 
 .PHONY: bin/ndrdump4
+
+samba4-config-compare: samba4-configure
+	@echo "Comparing config.h from autoconf and waf"
+	@echo "Configure checks missing from WAF are:"
+	../buildtools/compare_config_h3.sh include/autoconf/config.h ../bin/default/include/config.h

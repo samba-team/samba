@@ -1,0 +1,10 @@
+^.define HAVE_.*KRB5
+^.define HAVE_.*KEYTAB
+^.define HAVE__ET_LIST
+^.define HAVE_LIBK5CRYPTO
+^.define HAVE_GSS
+^.define static
+^.define STATIC
+^.define PACKAGE
+^.define STRING_STATIC_MODULES
+^.define perfcount_test_init
