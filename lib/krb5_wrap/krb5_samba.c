@@ -2162,7 +2162,11 @@ krb5_error_code smb_krb5_cc_get_lifetime(krb5_context context,
 	}
 
 	while ((kerr = krb5_cc_next_cred(context, id, &cursor, &cred)) == 0) {
+#ifndef HAVE_FLAGS_IN_KRB5_CREDS
 		if (cred.ticket_flags & TKT_FLG_INITIAL) {
+#else
+		if (cred.flags.b.initial) {
+#endif
 			if (now < cred.times.endtime) {
 				*t = (time_t) (cred.times.endtime - now);
 			}

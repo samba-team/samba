@@ -3596,6 +3596,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_cc_get_lifetime, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_cc_retrieve_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_free_checksum_contents, $KRB5_LIBS)
+  AC_CHECK_FUNC_EXT(krb5_create_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_c_make_checksum, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_krb5_import_cred, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(gss_get_name_attribute, $KRB5_LIBS)
@@ -4006,6 +4007,17 @@ if test x"$with_ads_support" != x"no"; then
 
   AC_HAVE_DECL(KRB5_PDU_NONE,[#include <krb5.h>])
 
+  AC_CACHE_CHECK([for flags in krb5_creds],
+                samba_cv_HAVE_FLAGS_IN_KRB5_CREDS,[
+    AC_TRY_COMPILE([#include <krb5.h>],
+      [krb5_creds creds; creds.flags.b.initial = 0;],
+      samba_cv_HAVE_FLAGS_IN_KRB5_CREDS=yes,
+      samba_cv_HAVE_FLAGS_IN_KRB5_CREDS=no)])
+
+  if test x"$samba_cv_HAVE_FLAGS_IN_KRB5_CREDS" = x"yes"; then
+    AC_DEFINE(HAVE_FLAGS_IN_KRB5_CREDS,1,
+               [Whether the krb5_creds struct has a flags property])
+  fi
   #
   #
   # Now the decisions whether we can support krb5
