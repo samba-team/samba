@@ -900,6 +900,13 @@ RebootOnCompletion=No
         self.parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
         self.parser.add_option("--nocleanup", action='store_true', default=False, help='disable cleanup code')
         self.parser.add_option("--use-ntvfs", action='store_true', default=False, help='use NTVFS for the fileserver')
+        self.parser.add_option("--dns-backend", type="choice",
+            choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
+            help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+                 "BIND9_FLATFILE uses bind9 text database to store zone information, " \
+                 "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+                 "NONE skips the DNS setup entirely (not recommended)",
+            default="BIND9_DLZ")
 
         self.opts, self.args = self.parser.parse_args()
 
@@ -938,3 +945,10 @@ RebootOnCompletion=No
             self.setvar('USE_NTVFS', "--use-ntvfs")
         else:
             self.setvar('USE_NTVFS', "")
+
+        self.setvar('NAMESERVER_BACKEND', self.opts.dns_backend)
+
+        if self.opts.dns_backend == 'SAMBA_INTERNAL':
+            self.setvar('ALLOW_DNS_UPDATES', '--option=allow dns updates = True')
+        else:
+            self.setvar('ALLOW_DNS_UPDATES', '')

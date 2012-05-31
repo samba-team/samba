@@ -36,7 +36,9 @@ def provision_s4(t, func_level="2008"):
                '--host-ip=${INTERFACE_IP}',
                '--option=bind interfaces only=yes',
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
-               '${USE_NTVFS}']
+               '${USE_NTVFS}',
+               '--dns-backend=${NAMESERVER_BACKEND}',
+               '${ALLOW_DNS_UPDATES}']
     if t.getvar('INTERFACE_IPV6'):
         provision.append('--host-ip6=${INTERFACE_IPV6}')
     t.run_cmd(provision)
@@ -113,7 +115,8 @@ def test_dyndns(t):
     '''test that dynamic DNS is working'''
     t.chdir('${PREFIX}')
     t.run_cmd("sbin/samba_dnsupdate --fail-immediately")
-    t.rndc_cmd("flush")
+    if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
+        t.rndc_cmd("flush")
 
 
 def run_winjoin(t, vm):
@@ -393,7 +396,8 @@ def prep_join_as_dc(t, vm):
     t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool domain join DC")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
-    t.rndc_cmd('flush')
+    if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
+        t.rndc_cmd('flush')
     t.run_cmd("rm -rf etc/smb.conf private")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
@@ -559,10 +563,12 @@ def test_howto(t):
     # we don't need fsync safety in these tests
     t.putenv('TDB_NO_FSYNC', '1')
 
-    if not t.skip("configure_bind"):
-        t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
-    if not t.skip("stop_bind"):
-        t.stop_bind()
+    if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
+        if not t.skip("configure_bind"):
+            t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
+        if not t.skip("stop_bind"):
+            t.stop_bind()
+
     if not t.skip("stop_vms"):
         t.stop_vms()
 
@@ -583,10 +589,13 @@ def test_howto(t):
         test_smbclient(t)
 
     t.set_nameserver(t.getvar('INTERFACE_IP'))
-    if not t.skip("configure_bind2"):
-        t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
-    if not t.skip("start_bind"):
-        t.start_bind()
+
+    if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
+        if not t.skip("configure_bind2"):
+            t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
+        if not t.skip("start_bind"):
+            t.start_bind()
+
     if not t.skip("dns"):
         test_dns(t)
     if not t.skip("kerberos"):
