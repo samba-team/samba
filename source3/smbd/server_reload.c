@@ -127,6 +127,7 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
+		TALLOC_FREE(fname);
 	}
 
 	reopen_logs();
