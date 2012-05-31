@@ -11,25 +11,26 @@ bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
 	source='common/forward.c common/reply.c dcesrv_auth.c common/loadparm.c',
 	autoproto='common/proto.h',
 	deps='ldb DCERPC_SHARE samba_server_gensec',
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	enabled=True
 	)
 
 bld.SAMBA_LIBRARY('dcerpc_server',
 	source='dcerpc_server.c dcesrv_mgmt.c handles.c',
 	pc_files='dcerpc_server.pc',
-	deps='LIBCLI_AUTH ndr samba_server_gensec dcerpc_remote service',
+	deps='LIBCLI_AUTH DCERPC_COMMON ndr samba_server_gensec dcerpc_remote service',
 	public_deps='dcerpc',
 	autoproto='dcerpc_server_proto.h',
 	public_headers='dcerpc_server.h',
 	vnum='0.0.1',
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	enabled=True
 	)
 
 bld.SAMBA_MODULE('dcerpc_rpcecho',
 	source='echo/rpc_echo.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_rpcecho_init',
-	deps='ndr-standard events'
+	deps='ndr-standard events',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -37,7 +38,8 @@ bld.SAMBA_MODULE('dcerpc_epmapper',
 	source='epmapper/rpc_epmapper.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_epmapper_init',
-	deps='NDR_EPMAPPER'
+	deps='NDR_EPMAPPER',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -45,7 +47,8 @@ bld.SAMBA_MODULE('dcerpc_remote',
 	source='remote/dcesrv_remote.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_remote_init',
-	deps='LIBCLI_SMB ndr-table'
+	deps='LIBCLI_SMB ndr-table',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -54,7 +57,8 @@ bld.SAMBA_MODULE('dcerpc_srvsvc',
 	autoproto='srvsvc/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_srvsvc_init',
-	deps='DCERPC_COMMON NDR_SRVSVC share ntvfs'
+	deps='DCERPC_COMMON NDR_SRVSVC share ntvfs',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -62,7 +66,8 @@ bld.SAMBA_MODULE('dcerpc_wkssvc',
 	source='wkssvc/dcesrv_wkssvc.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_wkssvc_init',
-	deps='DCERPC_COMMON ndr-standard'
+	deps='DCERPC_COMMON ndr-standard',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -70,7 +75,8 @@ bld.SAMBA_MODULE('dcerpc_unixinfo',
 	source='unixinfo/dcesrv_unixinfo.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_unixinfo_init',
-	deps='DCERPC_COMMON samdb NDR_UNIXINFO LIBWBCLIENT_OLD'
+	deps='DCERPC_COMMON samdb NDR_UNIXINFO LIBWBCLIENT_OLD',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -79,7 +85,8 @@ bld.SAMBA_MODULE('dcesrv_samr',
 	autoproto='samr/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_samr_init',
-	deps='samdb DCERPC_COMMON ndr-standard'
+	deps='samdb DCERPC_COMMON ndr-standard',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -88,7 +95,8 @@ bld.SAMBA_MODULE('dcerpc_winreg',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_winreg_init',
 	deps='registry ndr-standard',
-	internal_module=True
+	internal_module=True,
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -96,7 +104,8 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
 	source='netlogon/dcerpc_netlogon.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_netlogon_init',
-	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNEL ndr-standard auth4_sam samba-hostconfig CLDAPD'
+	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNEL ndr-standard auth4_sam samba-hostconfig CLDAPD',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -105,7 +114,8 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	autoproto='lsa/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_lsa_init',
-	deps='samdb DCERPC_COMMON ndr-standard LIBCLI_AUTH NDR_DSSETUP com_err security UTIL_LSARPC'
+	deps='samdb DCERPC_COMMON ndr-standard LIBCLI_AUTH NDR_DSSETUP com_err security UTIL_LSARPC',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -114,7 +124,8 @@ bld.SAMBA_MODULE('dcerpc_backupkey',
 	autoproto='backupkey/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_backupkey_init',
-	deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY krb5 hx509 hcrypto'
+	deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY krb5 hx509 hcrypto',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -123,7 +134,8 @@ bld.SAMBA_MODULE('dcerpc_spoolss',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_spoolss_init',
 	deps='DCERPC_COMMON NDR_SPOOLSS ntptr RPC_NDR_SPOOLSS',
-	internal_module=True
+	internal_module=True,
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -131,7 +143,8 @@ bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_drsuapi_init',
-	deps='samdb DCERPC_COMMON NDR_DRSUAPI security'
+	deps='samdb DCERPC_COMMON NDR_DRSUAPI security',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -139,21 +152,24 @@ bld.SAMBA_MODULE('dcerpc_browser',
 	source='browser/dcesrv_browser.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_browser_init',
-	deps='DCERPC_COMMON NDR_BROWSER'
+	deps='DCERPC_COMMON NDR_BROWSER',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 bld.SAMBA_MODULE('dcerpc_eventlog',
 	source='eventlog/dcesrv_eventlog6.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_eventlog6_init',
-	deps='DCERPC_COMMON'
+	deps='DCERPC_COMMON',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 bld.SAMBA_MODULE('dcerpc_dnsserver',
     source='dnsserver/dcerpc_dnsserver.c dnsserver/dnsutils.c dnsserver/dnsdata.c dnsserver/dnsdb.c',
     subsystem='dcerpc_server',
     init_function='dcerpc_server_dnsserver_init',
-    deps='DCERPC_COMMON'
+    deps='DCERPC_COMMON',
+    enabled=bld.AD_DC_BUILD_IS_ENABLED()
     )
 
 
@@ -163,6 +179,7 @@ bld.SAMBA_MODULE('service_dcerpc',
 	subsystem='service',
 	init_function='server_service_rpc_init',
 	internal_module=False,
-	deps='dcerpc_server'
+	deps='dcerpc_server',
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
