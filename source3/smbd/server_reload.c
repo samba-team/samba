@@ -146,6 +146,7 @@ bool reload_services(struct smbd_server_connection *sconn,
 			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
+		TALLOC_FREE(fname);
 	}
 
 	reopen_logs();

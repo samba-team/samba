@@ -8809,7 +8809,11 @@ static bool lp_load_ex(const char *pszFname,
 		}
 	}
 
-	lp_add_auto_services(lp_auto_services());
+	{
+		char *serv = lp_auto_services();
+		lp_add_auto_services(serv);
+		TALLOC_FREE(serv);
+	}
 
 	if (add_ipc) {
 		/* When 'restrict anonymous = 2' guest connections to ipc$
