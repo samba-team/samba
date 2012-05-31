@@ -657,9 +657,11 @@ bool reopen_logs( void )
 			SAFE_FREE(fname);
 			fname = SMB_STRDUP(logfname);
 			if (!fname) {
+				TALLOC_FREE(logfname);
 				return false;
 			}
 		}
+		TALLOC_FREE(logfname);
 	}
 
 	debugf = fname;
@@ -1028,6 +1030,8 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 	 */
 	if( lp_timestamp_logs() || lp_debug_prefix_timestamp() || !(lp_loaded()) ) {
 		char header_str[200];
+		char *curtime = current_timestring(talloc_tos(),
+					lp_debug_hires_timestamp());
 
 		header_str[0] = '\0';
 
@@ -1050,19 +1054,18 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 				 ", class=%s",
 				 default_classname_table[cls]);
 		}
-  
+
 		/* Print it all out at once to prevent split syslog output. */
 		if( lp_debug_prefix_timestamp() ) {
 		    (void)Debug1( "[%s, %2d%s] ",
-			current_timestring(talloc_tos(),
-					   lp_debug_hires_timestamp()),
+			curtime,
 			level, header_str);
 		} else {
 		    (void)Debug1( "[%s, %2d%s] %s(%s)\n",
-			current_timestring(talloc_tos(),
-					   lp_debug_hires_timestamp()),
+			curtime,
 			level, header_str, location, func );
 		}
+		TALLOC_FREE(curtime);
 	}
 
 	errno = old_errno;

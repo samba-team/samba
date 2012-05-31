@@ -67,11 +67,12 @@ static bool reload_services_file(const char *lfile)
 	bool ret;
 
 	if (lp_loaded()) {
-		const char *fname = lp_configfile();
+		char *fname = lp_configfile();
 
 		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 		}
+		TALLOC_FREE(fname);
 	}
 
 	/* if this is a child, restore the logfile to the special
