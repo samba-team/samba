@@ -27,8 +27,8 @@ DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 			    uint16 q_type, uint16 q_class,
 			    struct dns_request **preq )
 {
-	struct dns_request *req;
-	struct dns_question *q;
+	struct dns_request *req = NULL;
+	struct dns_question *q = NULL;
 	DNS_ERROR err;
 
 	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_request)) ||
@@ -60,8 +60,8 @@ DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
 DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 			     struct dns_update_request **preq )
 {
-	struct dns_update_request *req;
-	struct dns_zone *z;
+	struct dns_update_request *req = NULL;
+	struct dns_zone *z = NULL;
 	DNS_ERROR err;
 
 	if (!(req = TALLOC_ZERO_P(mem_ctx, struct dns_update_request)) ||
@@ -95,7 +95,7 @@ DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 			  uint16 data_length, uint8 *data,
 			  struct dns_rrec **prec)
 {
-	struct dns_rrec *rec;
+	struct dns_rrec *rec = NULL;
 	DNS_ERROR err;
 
 	if (!(rec = talloc(mem_ctx, struct dns_rrec))) {
@@ -181,8 +181,8 @@ DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 uint16 key_length, const uint8 *key,
 				 struct dns_rrec **prec)
 {
-	struct dns_buffer *buf;
-	struct dns_domain_name *algorithm;
+	struct dns_buffer *buf = NULL;
+	struct dns_domain_name *algorithm = NULL;
 	DNS_ERROR err;
 
 	if (!(buf = dns_create_buffer(mem_ctx))) {
@@ -217,7 +217,7 @@ DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 				     struct dns_tkey_record **ptkey)
 {
-	struct dns_tkey_record *tkey;
+	struct dns_tkey_record *tkey = NULL;
 	struct dns_buffer buf;
 	uint32 tmp_inception, tmp_expiration;
 	
@@ -269,8 +269,8 @@ DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 uint16 original_id, uint16 error,
 				 struct dns_rrec **prec)
 {
-	struct dns_buffer *buf;
-	struct dns_domain_name *algorithm;
+	struct dns_buffer *buf = NULL;
+	struct dns_domain_name *algorithm = NULL;
 	DNS_ERROR err;
 
 	if (!(buf = dns_create_buffer(mem_ctx))) {
@@ -331,8 +331,8 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 			   const struct sockaddr_storage *sslist,
 			   struct dns_update_request **preq)
 {
-	struct dns_update_request *req;
-	struct dns_rrec *rec;
+	struct dns_update_request *req = NULL;
+	struct dns_rrec *rec = NULL;
 	DNS_ERROR err;
 	uint16 i;
 
@@ -369,8 +369,8 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    size_t num_addrs,
 				    struct dns_update_request **preq)
 {
-	struct dns_update_request *req;
-	struct dns_rrec *rec;
+	struct dns_update_request *req = NULL;
+	struct dns_rrec *rec = NULL;
 	DNS_ERROR err;
 	size_t i;
 
