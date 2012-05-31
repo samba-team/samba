@@ -365,11 +365,12 @@ static bool reload_nmbd_services(bool test)
 	set_remote_machine_name("nmbd", False);
 
 	if ( lp_loaded() ) {
-		const char *fname = lp_configfile();
+		char *fname = lp_configfile();
 		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;
 		}
+		TALLOC_FREE(fname);
 	}
 
 	if ( test && !lp_file_list_changed() )

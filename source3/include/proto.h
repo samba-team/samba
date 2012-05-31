@@ -1338,9 +1338,9 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 /* The following definitions come from param/loadparm.c  */
 
 char *lp_smb_ports(void);
-char *lp_dos_charset(void);
-char *lp_unix_charset(void);
-char *lp_display_charset(void);
+const char *lp_dos_charset(void);
+const char *lp_unix_charset(void);
+const char *lp_display_charset(void);
 char *lp_logfile(void);
 char *lp_configfile(void);
 char *lp_smb_passwd_file(void);
