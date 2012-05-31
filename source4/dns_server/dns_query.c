@@ -315,7 +315,6 @@ static WERROR handle_question(struct dns_server *dns,
 	*answers = ans;
 
 	return WERR_OK;
-
 }
 
 struct dns_server_process_query_state {
