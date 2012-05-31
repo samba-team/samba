@@ -87,6 +87,7 @@ static void exit_server_common(enum server_exit_reason how,
 	bool had_open_conn = false;
 	struct smbXsrv_connection *conn = global_smbXsrv_connection;
 	struct smbd_server_connection *sconn = NULL;
+	struct messaging_context *msg_ctx = server_messaging_context();
 
 	if (conn != NULL) {
 		sconn = conn->sconn;
@@ -112,14 +113,14 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 
 	/* 3 second timeout. */
-	print_notify_send_messages(sconn->msg_ctx, 3);
+	print_notify_send_messages(msg_ctx, 3);
 
 	/* delete our entry in the serverid database. */
 	if (am_parent) {
 		/*
 		 * For children the parent takes care of cleaning up
 		 */
-		serverid_deregister(messaging_server_id(sconn->msg_ctx));
+		serverid_deregister(messaging_server_id(msg_ctx));
 	}
 
 #ifdef WITH_DFS
