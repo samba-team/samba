@@ -901,6 +901,7 @@ RebootOnCompletion=No
         self.parser.add_option("--prefix", type='string', default=None, help='override install prefix')
         self.parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
         self.parser.add_option("--nocleanup", action='store_true', default=False, help='disable cleanup code')
+        self.parser.add_option("--use-ntvfs", action='store_true', default=False, help='use NTVFS for the fileserver')
 
         self.opts, self.args = self.parser.parse_args()
 
@@ -934,3 +935,8 @@ RebootOnCompletion=No
             self.info('cleaning')
             self.chdir('${SOURCETREE}/' + subdir)
             self.run_cmd('make clean')
+
+        if self.opts.use_ntvfs:
+            self.setvar('USE_NTVFS', "--use-ntvfs")
+        else:
+            self.setvar('USE_NTVFS', "")
