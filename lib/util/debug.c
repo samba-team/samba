@@ -551,7 +551,6 @@ bool reopen_logs_internal(void)
 	int old_fd = 0;
 	bool ret = true;
 
-	char *fname = NULL;
 	if (state.reopening_logs) {
 		return true;
 	}
@@ -580,8 +579,7 @@ bool reopen_logs_internal(void)
 
 	oldumask = umask( 022 );
 
-	fname = state.debugf;
-	if (!fname) {
+	if (!state.debugf) {
 		return false;
 	}
 
