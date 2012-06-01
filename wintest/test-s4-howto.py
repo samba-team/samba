@@ -581,6 +581,8 @@ def test_howto(t):
         start_s4(t)
     if not t.skip("smbclient"):
         test_smbclient(t)
+
+    t.set_nameserver(t.getvar('INTERFACE_IP'))
     if not t.skip("configure_bind2"):
         t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
     if not t.skip("start_bind"):

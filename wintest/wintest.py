@@ -437,8 +437,6 @@ options {
         self.info("Restarting bind9")
         self.chdir('${PREFIX}')
 
-        self.set_nameserver(self.getvar('INTERFACE_IP'))
-
         self.run_cmd("mkdir -p var/named/data")
         self.run_cmd("chown -R ${BIND_USER} var/named")
 
