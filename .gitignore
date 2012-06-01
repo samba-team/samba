@@ -86,7 +86,6 @@ source3/nsswitch/*.so
 source3/pkgconfig/*.pc
 source3/proto_exists
 source3/script/findsmb
-source3/script/gen-8bit-gap.sh
 source3/script/installbin.sh
 source3/script/uninstallbin.sh
 source3/smbadduser
