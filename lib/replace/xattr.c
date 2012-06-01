@@ -70,7 +70,6 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 			return retval;
 	}
 
-	DEBUG(10,("rep_getxattr: extattr_get_file() failed with: %s\n", strerror(errno)));
 	return -1;
 #elif defined(HAVE_ATTR_GET)
 	int retval, flags = 0;
@@ -123,7 +122,6 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 			return retval;
 	}
 
-	DEBUG(10,("rep_fgetxattr: extattr_get_fd() failed with: %s\n", strerror(errno)));
 	return -1;
 #elif defined(HAVE_ATTR_GETF)
 	int retval, flags = 0;
@@ -623,7 +621,6 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 		size_t listlen = strlen(de->d_name) + 1;
 		if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) {
 			/* we don't want "." and ".." here: */
-			DEBUG(10,("skipped EA %s\n",de->d_name));
 			continue;
 		}
 
@@ -644,7 +641,6 @@ static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 	}
 
 	if (closedir(dirp) == -1) {
-		DEBUG(0,("closedir dirp failed: %s\n",strerror(errno)));
 		return -1;
 	}
 	return len;
@@ -665,7 +661,6 @@ static int solaris_attropen(const char *path, const char *attrpath, int oflag, m
 {
 	int filedes = attropen(path, attrpath, oflag, mode);
 	if (filedes == -1) {
-		DEBUG(10,("attropen FAILED: path: %s, name: %s, errno: %s\n",path,attrpath,strerror(errno)));
 		if (errno == EINVAL) {
 			errno = ENOTSUP;
 		} else {
@@ -679,7 +674,6 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode)
 {
 	int filedes = openat(fildes, path, oflag, mode);
 	if (filedes == -1) {
-		DEBUG(10,("openat FAILED: fd: %d, path: %s, errno: %s\n",filedes,path,strerror(errno)));
 		if (errno == EINVAL) {
 			errno = ENOTSUP;
 		} else {
@@ -694,7 +688,6 @@ static int solaris_write_xattr(int attrfd, const char *value, size_t size)
 	if ((ftruncate(attrfd, 0) == 0) && (write(attrfd, value, size) == size)) {
 		return 0;
 	} else {
-		DEBUG(10,("solaris_write_xattr FAILED!\n"));
 		return -1;
 	}
 }
