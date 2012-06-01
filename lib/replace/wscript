@@ -231,6 +231,12 @@ fremoveea fsetea getea listea
 removeea setea
 ''', 'attr', checklibc=True)
 
+    if (conf.CONFIG_SET('HAVE_ATTR_LISTF') or
+        conf.CONFIG_SET('HAVE_EXTATTR_LIST_FD') or
+        conf.CONFIG_SET('HAVE_FLISTEA') or
+        conf.CONFIG_SET('HAVE_FLISTXATTR')):
+            conf.DEFINE('HAVE_XATTR_SUPPORT', 1)
+
     # Darwin has extra options to xattr-family functions
     conf.CHECK_CODE('getxattr(0, 0, 0, 0, 0, 0);',
                     'XATTR_ADD_OPT',

@@ -24,7 +24,6 @@
 #include "tdb_compat.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "librpc/ndr/libndr.h"
-#include "lib/util/wrap_xattr.h"
 #include "ntvfs/posix/posix_eadb.h"
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"

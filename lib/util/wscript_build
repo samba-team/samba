@@ -38,15 +38,6 @@ bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
 	)
 
 
-bld.SAMBA_LIBRARY('wrap_xattr',
-	source='wrap_xattr.c',
-	public_deps='attr',
-	deps='talloc',
-	local_include=False,
-	private_library=True
-	)
-
-
 bld.SAMBA_LIBRARY('util_tdb',
 	source='util_tdb.c',
 	local_include=False,
