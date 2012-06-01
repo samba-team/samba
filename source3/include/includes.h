@@ -137,21 +137,6 @@
 #endif
 #endif
 
-/* mutually exclusive (SuSE 8.2) */
-#if HAVE_ATTR_XATTR_H
-#include <attr/xattr.h>
-#elif HAVE_SYS_XATTR_H
-#include <sys/xattr.h>
-#endif
-
-#ifdef HAVE_SYS_EA_H
-#include <sys/ea.h>
-#endif
-
-#ifdef HAVE_SYS_EXTATTR_H
-#include <sys/extattr.h>
-#endif
-
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
@@ -499,14 +484,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
  */
 #if defined(HAVE_SYS_FS_VX_QUOTA_H)
 #define VXFS_QUOTA
-#endif
-
-#ifndef XATTR_CREATE
-#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
-#endif
-
-#ifndef XATTR_REPLACE
-#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
 #ifdef TRUE

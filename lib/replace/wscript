@@ -211,6 +211,32 @@ def configure(conf):
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
+    conf.SET_TARGET_TYPE('attr', 'EMPTY')
+
+    conf.CHECK_FUNCS_IN('''
+fgetxattr flistea flistxattr
+fremovexattr fsetxattr getxattr
+listxattr removexattr setxattr
+''', 'attr', checklibc=True)
+
+    # We need to check for linux xattrs first, as we do not wish to link to -lattr
+    # (the XFS compat API) on Linux systems with the native xattr API
+    if not conf.CONFIG_SET('HAVE_GETXATTR'):
+        conf.CHECK_FUNCS_IN('''
+attr_get attr_getf attr_list attr_listf attropen attr_remove
+attr_removef attr_set attr_setf extattr_delete_fd extattr_delete_file
+extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file
+extattr_set_fd extattr_set_file fgetea flistea
+fremoveea fsetea getea listea
+removeea setea
+''', 'attr', checklibc=True)
+
+    # Darwin has extra options to xattr-family functions
+    conf.CHECK_CODE('getxattr(0, 0, 0, 0, 0, 0);',
+                    'XATTR_ADD_OPT',
+                    msg="Checking whether xattr interface takes additional options",
+                    headers='sys/types.h attr/xattr.h sys/xattr.h')
+
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl',
                         checklibc=True, headers='dlfcn.h dl.h')
 
@@ -474,6 +500,8 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_INET_ATON'):     REPLACE_SOURCE += ' inet_aton.c'
     if not bld.CONFIG_SET('HAVE_INET_NTOP'):     REPLACE_SOURCE += ' inet_ntop.c'
     if not bld.CONFIG_SET('HAVE_INET_PTON'):     REPLACE_SOURCE += ' inet_pton.c'
+    if not bld.CONFIG_SET('HAVE_GETXATTR') or bld.CONFIG_SET('XATTR_ADD_OPT'):
+                                                 REPLACE_SOURCE += ' xattr.c'
 
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
@@ -484,7 +512,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl nsl socket rt' + extra_libs)
+                      deps='crypt dl nsl socket rt attr' + extra_libs)
 
     bld.SAMBA_SUBSYSTEM('replace-test',
                       source='''test/testsuite.c test/strptime.c

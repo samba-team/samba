@@ -2029,42 +2029,42 @@ static int vfswrap_sys_acl_free_qualifier(vfs_handle_struct *handle,  void *qual
 
 static ssize_t vfswrap_getxattr(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size)
 {
-	return sys_getxattr(path, name, value, size);
+	return getxattr(path, name, value, size);
 }
 
 static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
-	return sys_fgetxattr(fsp->fh->fd, name, value, size);
+	return fgetxattr(fsp->fh->fd, name, value, size);
 }
 
 static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
 {
-	return sys_listxattr(path, list, size);
+	return listxattr(path, list, size);
 }
 
 static ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
-	return sys_flistxattr(fsp->fh->fd, list, size);
+	return flistxattr(fsp->fh->fd, list, size);
 }
 
 static int vfswrap_removexattr(struct vfs_handle_struct *handle, const char *path, const char *name)
 {
-	return sys_removexattr(path, name);
+	return removexattr(path, name);
 }
 
 static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
-	return sys_fremovexattr(fsp->fh->fd, name);
+	return fremovexattr(fsp->fh->fd, name);
 }
 
 static int vfswrap_setxattr(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
 {
-	return sys_setxattr(path, name, value, size, flags);
+	return setxattr(path, name, value, size, flags);
 }
 
 static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
-	return sys_fsetxattr(fsp->fh->fd, name, value, size, flags);
+	return fsetxattr(fsp->fh->fd, name, value, size, flags);
 }
 
 static int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)

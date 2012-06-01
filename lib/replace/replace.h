@@ -543,6 +543,46 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 /* prototype is in "system/network.h" */
 #endif
 
+#if !defined(HAVE_GETXATTR) || defined(XATTR_ADD_OPT)
+#define getxattr rep_getxattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADD_OPT)
+#define fgetxattr rep_fgetxattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADD_OPT)
+#define listxattr rep_listxattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADD_OPT)
+#define flistxattr rep_flistxattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADD_OPT)
+#define removexattr rep_removexattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADD_OPT)
+#define fremovexattr rep_fremovexattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_SETXATTR) || defined(XATTR_ADD_OPT)
+#define setxattr rep_setxattr
+/* prototype is in "system/filesys.h" */
+#endif
+
+#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADD_OPT)
+#define fsetxattr rep_fsetxattr
+/* prototype is in "system/filesys.h" */
+#endif
+
 #ifndef HAVE_GET_CURRENT_DIR_NAME
 #define get_current_dir_name rep_get_current_dir_name
 char *rep_get_current_dir_name(void);

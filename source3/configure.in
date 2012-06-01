@@ -668,9 +668,6 @@ AC_CHECK_HEADERS(shadow.h)
 AC_CHECK_HEADERS(nss.h nss_common.h nsswitch.h ns_api.h sys/security.h)
 AC_CHECK_HEADERS(syscall.h sys/syscall.h)
 
-AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
-AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
-
 AC_CHECK_HEADERS(sys/cdefs.h glob.h)
 
 # For experimental utmp support (lastlog on some BSD-like systems)
@@ -1258,62 +1255,6 @@ AC_LIBTESTFUNC(security, getprpwnam)
 AC_LIBTESTFUNC(sec, getprpwnam)
 
 AC_CHECK_FUNCS(strsignal)
-
-############################################
-# Check for EA implementations
-case "$host_os" in
-  *osf*)
-	AC_SEARCH_LIBS(getproplist, [proplist])
-	AC_CHECK_FUNCS(getproplist fgetproplist setproplist fsetproplist)
-	AC_CHECK_FUNCS(delproplist fdelproplist add_proplist_entry get_proplist_entry)
-	AC_CHECK_FUNCS(sizeof_proplist_entry)
-  ;;
-  *freebsd4* | *dragonfly* )
-	AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
-  ;;
-  *solaris*)
-	AC_CHECK_FUNCS(attropen)
-  ;;
-  *)
-	AC_SEARCH_LIBS(getxattr, [attr])
-	AC_CHECK_FUNCS(getxattr,[
-		AC_CHECK_FUNCS(fgetxattr listxattr flistxattr removexattr fremovexattr setxattr fsetxattr)
-		])
-	AC_CHECK_FUNCS(getea,[
-		AC_CHECK_FUNCS(fgetea listea flistea removeea fremoveea setea fsetea)
-		])
-	AC_CHECK_FUNCS(attr_get,[
-		AC_CHECK_FUNCS(attr_list attr_set attr_remove attr_getf attr_listf attr_setf attr_removef)
-		])
-	AC_CHECK_FUNCS(extattr_delete_file,[
-		AC_CHECK_FUNCS(extattr_delete_fd extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file extattr_set_fd extattr_set_file)
-		])
-  ;;
-esac
-
-########################################################
-# Do xattr functions take additional options like on Darwin?
-if test x"$ac_cv_func_getxattr" = x"yes" ; then
-	AC_CACHE_CHECK([whether xattr interface takes additional options], smb_attr_cv_xattr_add_opt, [
-		old_LIBS=$LIBS
-		LIBS="$LIBS $ACL_LIBS"
-		AC_TRY_COMPILE([
-			#include <sys/types.h>
-			#if HAVE_ATTR_XATTR_H
-			#include <attr/xattr.h>
-			#elif HAVE_SYS_XATTR_H
-			#include <sys/xattr.h>
-			#endif
-		],[
-			getxattr(0, 0, 0, 0, 0, 0);
-		],
-	        [smb_attr_cv_xattr_add_opt=yes],
-		[smb_attr_cv_xattr_add_opt=no;LIBS=$old_LIBS])
-	])
-	if test x"$smb_attr_cv_xattr_add_opt" = x"yes"; then
-		AC_DEFINE(XATTR_ADD_OPT, 1, [xattr functions have additional options])
-	fi
-fi
 
 AC_DISABLE_STATIC
 AC_ENABLE_SHARED

@@ -144,6 +144,53 @@ AC_CHECK_FUNCS(clock_gettime,libreplace_cv_have_clock_gettime=yes,[
 		libreplace_cv_have_clock_gettime=yes
 		AC_DEFINE(HAVE_CLOCK_GETTIME, 1, Define to 1 if there is support for clock_gettime)])
 ])
+
+AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
+
+############################################
+# Check for EA implementations
+case "$host_os" in
+  *freebsd4* | *dragonfly* )
+	AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
+  ;;
+  *)
+	AC_SEARCH_LIBS(getxattr, [attr])
+	AC_CHECK_FUNCS(attr_get attr_getf attr_list attr_listf attropen attr_remove)
+	AC_CHECK_FUNCS(attr_removef attr_set attr_setf extattr_delete_fd extattr_delete_file)
+	AC_CHECK_FUNCS(extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file)
+	AC_CHECK_FUNCS(extattr_set_fd extattr_set_file fgetea fgetxattr flistea flistxattr)
+	AC_CHECK_FUNCS(fremoveea fremovexattr fsetea fsetxattr getea getxattr listea)
+	AC_CHECK_FUNCS(listxattr removeea removexattr setea setxattr)
+
+  ;;
+esac
+
+
+########################################################
+# Do xattr functions take additional options like on Darwin?
+if test x"$ac_cv_func_getxattr" = x"yes" ; then
+	AC_CACHE_CHECK([whether xattr interface takes additional options], smb_attr_cv_xattr_add_opt, [
+		old_LIBS=$LIBS
+		LIBS="$LIBS $ACL_LIBS"
+		AC_TRY_COMPILE([
+			#include <sys/types.h>
+			#if HAVE_ATTR_XATTR_H
+			#include <attr/xattr.h>
+			#elif HAVE_SYS_XATTR_H
+			#include <sys/xattr.h>
+			#endif
+		],[
+			getxattr(0, 0, 0, 0, 0, 0);
+		],
+	        [smb_attr_cv_xattr_add_opt=yes],
+		[smb_attr_cv_xattr_add_opt=no;LIBS=$old_LIBS])
+	])
+	if test x"$smb_attr_cv_xattr_add_opt" = x"yes"; then
+		AC_DEFINE(XATTR_ADD_OPT, 1, [xattr functions have additional options])
+	fi
+fi
+
 AC_CHECK_FUNCS(get_current_dir_name)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
