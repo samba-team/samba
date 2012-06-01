@@ -332,6 +332,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
+	struct server_id self = messaging_server_id(conn->sconn->msg_ctx);
 	bool delete_file = false;
 	bool changed_user = false;
 	struct share_mode_lock *lck = NULL;
@@ -386,12 +387,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
-	if (!del_share_mode(lck, fsp)) {
-		DEBUG(0, ("close_remove_share_mode: Could not delete share "
-			  "entry for file %s\n",
-			  fsp_str_dbg(fsp)));
-	}
-
 	if (fsp->initial_delete_on_close &&
 			!is_delete_on_close_set(lck, fsp->name_hash)) {
 		bool became_user = False;
@@ -432,6 +427,10 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			    && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 				continue;
 			}
+			if (procid_equal(&self, &e->pid) &&
+			    (e->share_file_id == fsp->fh->gen_id)) {
+				continue;
+			}
 			if (share_mode_stale_pid(lck->data, i)) {
 				continue;
 			}
@@ -452,6 +451,13 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
 
 	if (!normal_close || !delete_file) {
+
+		if (!del_share_mode(lck, fsp)) {
+			DEBUG(0, ("close_remove_share_mode: Could not delete "
+				  "share entry for file %s\n",
+				  fsp_str_dbg(fsp)));
+		}
+
 		TALLOC_FREE(lck);
 		return NT_STATUS_OK;
 	}
@@ -569,6 +575,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	if (changed_user) {
 		/* unbecome user. */
 		pop_sec_ctx();
+	}
+
+	if (!del_share_mode(lck, fsp)) {
+		DEBUG(0, ("close_remove_share_mode: Could not delete share "
+			  "entry for file %s\n", fsp_str_dbg(fsp)));
 	}
 
 	TALLOC_FREE(lck);
