@@ -1350,6 +1350,7 @@ int main(int argc, char **argv, char **envp)
 		}
 	}
 
+	dump_core_setup("winbindd", lp_logfile());
 	if (is_daemon && interactive) {
 		d_fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
@@ -1389,6 +1390,7 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0, ("error opening config file '%s'\n", get_dyn_CONFIGFILE()));
 		exit(1);
 	}
+	dump_core_setup("winbindd", lp_logfile());
 
 	/* Initialise messaging system */
 
