@@ -231,11 +231,11 @@ static WERROR handle_question(struct dns_server *dns,
 			      const struct dns_name_question *question,
 			      struct dns_res_rec **answers, uint16_t *ancount)
 {
-	struct dns_res_rec *ans;
+	struct dns_res_rec *ans = *answers;
 	WERROR werror;
 	unsigned int ri;
 	struct dnsp_DnssrvRpcRecord *recs;
-	uint16_t rec_count, ai = 0;
+	uint16_t rec_count, ai = *ancount;
 	struct ldb_dn *dn = NULL;
 
 	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
@@ -244,16 +244,67 @@ static WERROR handle_question(struct dns_server *dns,
 	werror = dns_lookup_records(dns, mem_ctx, dn, &recs, &rec_count);
 	W_ERROR_NOT_OK_RETURN(werror);
 
-	ans = talloc_zero_array(mem_ctx, struct dns_res_rec, rec_count);
-	W_ERROR_HAVE_NO_MEMORY(ans);
+	ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec, rec_count + ai);
+	if (ans == NULL) {
+		return WERR_NOMEM;
+	}
 
 	for (ri = 0; ri < rec_count; ri++) {
+		if ((recs[ri].wType == DNS_TYPE_CNAME) &&
+		    ((question->question_type == DNS_QTYPE_A) ||
+		     (question->question_type == DNS_QTYPE_AAAA))) {
+			struct dns_name_question *new_q =
+				talloc(mem_ctx, struct dns_name_question);
+
+			if (new_q == NULL) {
+				return WERR_NOMEM;
+			}
+
+			/* We reply with one more record, so grow the array */
+			ans = talloc_realloc(mem_ctx, ans, struct dns_res_rec,
+					     rec_count + 1);
+			if (ans == NULL) {
+				TALLOC_FREE(new_q);
+				return WERR_NOMEM;
+			}
+
+			/* First put in the CNAME record */
+			werror = create_response_rr(question, &recs[ri], &ans, &ai);
+			if (!W_ERROR_IS_OK(werror)) {
+				return werror;
+			}
+
+			/* And then look up the name it points at.. */
+
+			/* First build up the new question */
+			new_q->question_type = question->question_type;
+			new_q->question_class = question->question_class;
+			if (new_q->question_type == DNS_QTYPE_A) {
+				new_q->name = talloc_strdup(new_q, recs[ri].data.ipv4);
+			} else if (new_q->question_type == DNS_QTYPE_AAAA) {
+				new_q->name = talloc_strdup(new_q, recs[ri].data.ipv6);
+			}
+			if (new_q->name == NULL) {
+				TALLOC_FREE(new_q);
+				return WERR_NOMEM;
+			}
+			/* and then call the lookup again */
+			werror = handle_question(dns, mem_ctx, new_q, &ans, &ai);
+			if (!W_ERROR_IS_OK(werror)) {
+				return werror;
+			}
+
+
+			continue;
+		}
 		if ((question->question_type != DNS_QTYPE_ALL) &&
 		    (recs[ri].wType != question->question_type)) {
 			continue;
 		}
 		werror = create_response_rr(question, &recs[ri], &ans, &ai);
-		W_ERROR_NOT_OK_RETURN(werror);
+		if (!W_ERROR_IS_OK(werror)) {
+			return werror;
+		}
 	}
 
 	if (ai == 0) {

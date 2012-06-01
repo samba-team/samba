@@ -469,6 +469,82 @@ class TestDNSUpdates(DNSTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
 
 
+class TestComplexQueries(DNSTest):
+    def setUp(self):
+        super(TestComplexQueries, self).setUp()
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        updates = []
+        r = dns.res_rec()
+        r.name = "cname_test.%s" % self.get_dns_domain()
+        r.rr_type = dns.DNS_QTYPE_CNAME
+        r.rr_class = dns.DNS_QCLASS_IN
+        r.ttl = 900
+        r.length = 0xffff
+        r.rdata = "%s.%s" % (os.getenv('DC_SERVER'), self.get_dns_domain())
+        updates.append(r)
+        p.nscount = len(updates)
+        p.nsrecs = updates
+
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+
+    def tearDown(self):
+        super(TestComplexQueries, self).tearDown()
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        updates = []
+        r = dns.res_rec()
+        r.name = "cname_test.%s" % self.get_dns_domain()
+        r.rr_type = dns.DNS_QTYPE_CNAME
+        r.rr_class = dns.DNS_QCLASS_NONE
+        r.ttl = 0
+        r.length = 0xffff
+        r.rdata = "%s.%s" % (os.getenv('DC_SERVER'), self.get_dns_domain())
+        updates.append(r)
+        p.nscount = len(updates)
+        p.nsrecs = updates
+
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+
+    def test_one_a_query(self):
+        "create a query packet containing one query record"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "cname_test.%s" % self.get_dns_domain()
+        q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 2)
+        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
+        self.assertEquals(response.answers[0].rdata, "%s.%s" %
+                          (os.getenv('DC_SERVER'), self.get_dns_domain()))
+        self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
+        self.assertEquals(response.answers[1].rdata,
+                          os.getenv('DC_SERVER_IP'))
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()
