@@ -1081,12 +1081,8 @@ bool get_delete_on_close_token(struct share_mode_lock *lck,
 	if (dt == NULL) {
 		return false;
 	}
-	if (pp_nt_tok) {
-		*pp_nt_tok = dt->delete_nt_token;
-	}
-	if (pp_tok) {
-		*pp_tok =  dt->delete_token;
-	}
+	*pp_nt_tok = dt->delete_nt_token;
+	*pp_tok =  dt->delete_token;
 	return true;
 }
 
