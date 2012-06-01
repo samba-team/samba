@@ -9,14 +9,6 @@ conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, h
 
 conf.CHECK_FUNCS('sigprocmask sigblock sigaction')
 
-xattr_headers='sys/attributes.h attr/xattr.h sys/xattr.h'
-
-conf.CHECK_CODE('getxattr(NULL, NULL, NULL, 0, 0, 0)',
-                headers=xattr_headers, local_include=False,
-                define='XATTR_ADDITIONAL_OPTIONS',
-                msg='Checking for darwin xattr api')
-
-
 conf.CHECK_STRUCTURE_MEMBER('struct statvfs', 'f_frsize', define='HAVE_FRSIZE', headers='sys/statvfs.h')
 
 # all the different ways of doing statfs

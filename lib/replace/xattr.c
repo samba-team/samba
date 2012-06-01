@@ -42,7 +42,7 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode);
 ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_GETXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return getxattr(path, name, value, size);
 #else
 	int options = 0;
@@ -98,7 +98,7 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 {
 #if defined(HAVE_FGETXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return fgetxattr(filedes, name, value, size);
 #else
 	int options = 0;
@@ -311,7 +311,7 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 ssize_t rep_listxattr (const char *path, char *list, size_t size)
 {
 #if defined(HAVE_LISTXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return listxattr(path, list, size);
 #else
 	int options = 0;
@@ -342,7 +342,7 @@ ssize_t rep_listxattr (const char *path, char *list, size_t size)
 ssize_t rep_flistxattr (int filedes, char *list, size_t size)
 {
 #if defined(HAVE_FLISTXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return flistxattr(filedes, list, size);
 #else
 	int options = 0;
@@ -373,7 +373,7 @@ ssize_t rep_flistxattr (int filedes, char *list, size_t size)
 int rep_removexattr (const char *path, const char *name)
 {
 #if defined(HAVE_REMOVEXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return removexattr(path, name);
 #else
 	int options = 0;
@@ -412,7 +412,7 @@ int rep_removexattr (const char *path, const char *name)
 int rep_fremovexattr (int filedes, const char *name)
 {
 #if defined(HAVE_FREMOVEXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return fremovexattr(filedes, name);
 #else
 	int options = 0;
@@ -451,7 +451,7 @@ int rep_fremovexattr (int filedes, const char *name)
 int rep_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return setxattr(path, name, value, size, flags);
 #else
 	int options = 0;
@@ -516,7 +516,7 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_FSETXATTR)
-#ifndef XATTR_ADD_OPT
+#ifndef XATTR_ADDITIONAL_OPTIONS
 	return fsetxattr(filedes, name, value, size, flags);
 #else
 	int options = 0;

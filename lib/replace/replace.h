@@ -543,42 +543,42 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 /* prototype is in "system/network.h" */
 #endif
 
-#if !defined(HAVE_GETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_GETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define getxattr rep_getxattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define fgetxattr rep_fgetxattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define listxattr rep_listxattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define flistxattr rep_flistxattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define removexattr rep_removexattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define fremovexattr rep_fremovexattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_SETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_SETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define setxattr rep_setxattr
 /* prototype is in "system/filesys.h" */
 #endif
 
-#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 #define fsetxattr rep_fsetxattr
 /* prototype is in "system/filesys.h" */
 #endif

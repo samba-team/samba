@@ -224,42 +224,42 @@
 #endif
 
 
-#if !defined(HAVE_GETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_GETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t size);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 ssize_t rep_listxattr (const char *path, char *list, size_t size);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 ssize_t rep_flistxattr (int filedes, char *list, size_t size);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 int rep_removexattr (const char *path, const char *name);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 int rep_fremovexattr (int filedes, const char *name);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_SETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_SETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 int rep_setxattr (const char *path, const char *name, const void *value, size_t size, int flags);
 /* define is in "replace.h" */
 #endif
 
-#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADD_OPT)
+#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
 int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);
 /* define is in "replace.h" */
 #endif

@@ -181,13 +181,13 @@ if test x"$ac_cv_func_getxattr" = x"yes" ; then
 			#include <sys/xattr.h>
 			#endif
 		],[
-			getxattr(0, 0, 0, 0, 0, 0);
+			getxattr(NULL, NULL, NULL, 0, 0, 0);
 		],
 	        [smb_attr_cv_xattr_add_opt=yes],
 		[smb_attr_cv_xattr_add_opt=no;LIBS=$old_LIBS])
 	])
 	if test x"$smb_attr_cv_xattr_add_opt" = x"yes"; then
-		AC_DEFINE(XATTR_ADD_OPT, 1, [xattr functions have additional options])
+		AC_DEFINE(XATTR_ADDITIONAL_OPTIONS, 1, [xattr functions have additional options])
 	fi
 fi
 
