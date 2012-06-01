@@ -83,7 +83,6 @@ static void exit_server_common(enum server_exit_reason how,
 static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
 {
-	bool had_open_conn = false;
 	struct smbd_server_connection *sconn = smbd_server_conn;
 
 	if (!exit_firsttime)
@@ -101,7 +100,7 @@ static void exit_server_common(enum server_exit_reason how,
 			bool found = false;
 			files_forall(sconn, log_writeable_file_fn, &found);
 		}
-		had_open_conn = conn_close_all(sconn);
+		(void)conn_close_all(sconn);
 		invalidate_all_vuids(sconn);
 	}
 
@@ -175,6 +174,8 @@ static void exit_server_common(enum server_exit_reason how,
 
 		dump_core();
 
+		/* Notreached. */
+		exit(1);
 	} else {
 		DEBUG(3,("Server exit (%s)\n",
 			(reason ? reason : "normal exit")));
@@ -184,15 +185,7 @@ static void exit_server_common(enum server_exit_reason how,
 		gencache_stabilize();
 	}
 
-	/* if we had any open SMB connections when we exited then we
-	   need to tell the parent smbd so that it can trigger a retry
-	   of any locks we may have been holding or open files we were
-	   blocking */
-	if (had_open_conn) {
-		exit(1);
-	} else {
-		exit(0);
-	}
+	exit(0);
 }
 
 void exit_server(const char *const explanation)
