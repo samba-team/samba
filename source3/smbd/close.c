@@ -361,8 +361,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
 			  "lock for file %s\n", fsp_str_dbg(fsp)));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (fsp->write_time_forced) {
