@@ -1303,6 +1303,15 @@ int main(int argc, char **argv, char **envp)
 		}
 	}
 
+	/* We call dump_core_setup one more time because the command line can
+	 * set the log file or the log-basename and this will influence where
+	 * cores are stored. Without this call get_dyn_LOGFILEBASE will be
+	 * the default value derived from build's prefix. For EOM this value
+	 * is often not related to the path where winbindd is actually run
+	 * in production.
+	 */
+	dump_core_setup("winbindd");
+
 	if (is_daemon && interactive) {
 		d_fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
@@ -1341,6 +1350,11 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0, ("error opening config file\n"));
 		exit(1);
 	}
+	/* After parsing the configuration file we setup the core path one more time
+	 * as the log file might have been set in the configuration and cores's
+	 * path is by default basename(lp_logfile()).
+	 */
+	dump_core_setup("winbindd");
 
 	/* Initialise messaging system */
 
