@@ -1045,6 +1045,26 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 	return True;
 }
 
+static struct delete_token *find_delete_on_close_token(
+	struct share_mode_data *d, uint32_t name_hash)
+{
+	uint32_t i;
+
+	DEBUG(10, ("find_delete_on_close_token: name_hash = 0x%x\n",
+		   (unsigned int)name_hash));
+
+	for (i=0; i<d->num_delete_tokens; i++) {
+		struct delete_token *dt = &d->delete_tokens[i];
+
+		DEBUG(10, ("find__delete_on_close_token: dt->name_hash = 0x%x\n",
+			   (unsigned int)dt->name_hash ));
+		if (dt->name_hash == name_hash) {
+			return dt;
+		}
+	}
+	return NULL;
+}
+
 /****************************************************************************
  Return the NT token and UNIX token if there's a match. Return true if
  found, false if not.
@@ -1055,31 +1075,24 @@ bool get_delete_on_close_token(struct share_mode_lock *lck,
 					const struct security_token **pp_nt_tok,
 					const struct security_unix_token **pp_tok)
 {
-	int i;
+	struct delete_token *dt;
 
-	DEBUG(10,("get_delete_on_close_token: name_hash = 0x%x\n",
-			(unsigned int)name_hash ));
-
-	for (i=0; i<lck->data->num_delete_tokens; i++) {
-		struct delete_token *dt = &lck->data->delete_tokens[i];
-		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = 0x%x\n",
-				(unsigned int)dt->name_hash ));
-		if (dt->name_hash == name_hash) {
-			if (pp_nt_tok) {
-				*pp_nt_tok = dt->delete_nt_token;
-			}
-			if (pp_tok) {
-				*pp_tok =  dt->delete_token;
-			}
-			return true;
-		}
+	dt = find_delete_on_close_token(lck->data, name_hash);
+	if (dt == NULL) {
+		return false;
 	}
-	return false;
+	if (pp_nt_tok) {
+		*pp_nt_tok = dt->delete_nt_token;
+	}
+	if (pp_tok) {
+		*pp_tok =  dt->delete_token;
+	}
+	return true;
 }
 
 bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash)
 {
-	return get_delete_on_close_token(lck, name_hash, NULL, NULL);
+	return find_delete_on_close_token(lck->data, name_hash) != NULL;
 }
 
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
