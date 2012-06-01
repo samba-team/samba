@@ -341,6 +341,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	const struct security_unix_token *del_token = NULL;
 	const struct security_token *del_nt_token = NULL;
 	bool got_tokens = false;
+	bool normal_close;
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
@@ -449,8 +450,9 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * reference to a file.
 	 */
 
-	if (!(close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) ||
-			!delete_file) {
+	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
+
+	if (!normal_close || !delete_file) {
 		TALLOC_FREE(lck);
 		return NT_STATUS_OK;
 	}
