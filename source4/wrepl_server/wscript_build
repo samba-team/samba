@@ -6,7 +6,6 @@ bld.SAMBA_MODULE('service_wrepl',
 	subsystem='service',
 	init_function='server_service_wrepl_init',
 	internal_module=False,
-	deps='LIBCLI_WREPL WINSDB process_model RPC_NDR_IRPC',
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	deps='LIBCLI_WREPL WINSDB process_model RPC_NDR_IRPC'
 	)
 

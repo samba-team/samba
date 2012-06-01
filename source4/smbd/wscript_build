@@ -5,7 +5,7 @@ bld.SAMBA_LIBRARY('service',
 	autoproto='service_proto.h',
 	deps='tevent MESSAGING samba_socket RPC_NDR_IRPC NDR_NAMED_PIPE_AUTH npa_tstream gssapi samba-credentials LIBTSOCKET LIBSAMBA_TSOCKET process_model',
 	private_library=True,
-	enabled=True
+	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
@@ -20,7 +20,7 @@ bld.SAMBA_LIBRARY('process_model',
                   autoproto='process_model_proto.h',
                   deps='samba-util samba-hostconfig samba-modules',
                   private_library=True,
-                  enabled=True
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED()
                   )
 
 bld.SAMBA_BINARY('samba',
