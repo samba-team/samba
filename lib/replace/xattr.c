@@ -257,7 +257,7 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 	size_t ent_size, left = size;
 	char *bp = list;
 
-	while (True) {
+	while (true) {
 	    if (filedes)
 		retval = attr_listf(filedes, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
 	    else
@@ -283,7 +283,7 @@ static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t 
 	if (retval == 0) {
 	    flags |= ATTR_ROOT;
 	    cursor = 0;
-	    while (True) {
+	    while (true) {
 		if (filedes)
 		    retval = attr_listf(filedes, attr_buffer, ATTR_MAX_VALUELEN, flags, cursor);
 		else
