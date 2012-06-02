@@ -24,5 +24,7 @@ bin/ndrdump4: $(BINARY_PREREQS) samba4-configure
 
 samba4-config-compare: samba4-configure
 	@echo "Comparing config.h from autoconf and waf"
-	@echo "Configure checks missing from WAF are:"
+	@echo "Configure results missing from WAF are:"
 	../buildtools/compare_config_h3.sh include/autoconf/config.h ../bin/default/include/config.h
+	@echo "Configure results additionaly found by WAF are:"
+	DIFF="comm -13" ../buildtools/compare_config_h3.sh include/autoconf/config.h ../bin/default/include/config.h
