@@ -941,7 +941,7 @@ main() {
                             ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
                             ''',
                             '_HAVE_SENDFILE',
-                            headers='sys/sendfile',
+                            headers='sys/sendfile.h',
                             msg='Checking for linux sendfile support')
 
             # Try and cope with broken Linux sendfile....
