@@ -104,7 +104,7 @@ struct cli_state {
 		uint16_t pid;
 		uint16_t vc_num;
 		uint16_t tid;
-		uint16_t uid;
+		struct smbXcli_session *session;
 	} smb1;
 
 	struct {

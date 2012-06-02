@@ -62,6 +62,7 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 	uint8_t clear_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
+	uint16_t uid = 0;
 
 	state = talloc_zero(mem_ctx, struct cli_smb_req_state);
 	if (state == NULL) {
@@ -87,13 +88,14 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
 
+	uid = cli_state_get_uid(cli);
 	state->req = smb1cli_req_create(state, ev, cli->conn, smb_command,
 					additional_flags, clear_flags,
 					additional_flags2, clear_flags2,
 					cli->timeout,
 					cli->smb1.pid,
 					cli->smb1.tid,
-					cli->smb1.uid,
+					uid,
 					wct, vwv, iov_count, bytes_iov);
 	if (state->req == NULL) {
 		talloc_free(state);
@@ -120,6 +122,7 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 	uint8_t clear_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
+	uint16_t uid = 0;
 
 	state = talloc_zero(mem_ctx, struct cli_smb_req_state);
 	if (state == NULL) {
@@ -145,13 +148,14 @@ struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx,
 		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
 
+	uid = cli_state_get_uid(cli);
 	state->req = smb1cli_req_send(state, ev, cli->conn, smb_command,
 				additional_flags, clear_flags,
 				additional_flags2, clear_flags2,
 				cli->timeout,
 				cli->smb1.pid,
 				cli->smb1.tid,
-				cli->smb1.uid,
+				uid,
 				wct, vwv, num_bytes, bytes);
 	if (state->req == NULL) {
 		talloc_free(state);

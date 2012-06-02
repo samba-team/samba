@@ -269,7 +269,10 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	cli->smb1.pid = (uint16_t)getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
 	cli->smb1.tid = UINT16_MAX;
-	cli->smb1.uid = UID_FIELD_INVALID;
+	cli->smb1.session = smbXcli_session_create(cli, cli->conn);
+	if (cli->smb1.session == NULL) {
+		goto error;
+	}
 
 	cli->initialised = 1;
 	return cli;
@@ -398,13 +401,13 @@ uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid)
 
 uint16_t cli_state_get_uid(struct cli_state *cli)
 {
-	return cli->smb1.uid;
+	return smb1cli_session_current_id(cli->smb1.session);
 }
 
 uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid)
 {
-	uint16_t ret = cli->smb1.uid;
-	cli->smb1.uid = uid;
+	uint16_t ret = smb1cli_session_current_id(cli->smb1.session);
+	smb1cli_session_set_id(cli->smb1.session, uid);
 	return ret;
 }
 
