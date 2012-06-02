@@ -345,6 +345,16 @@ removeea setea
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
 
+    conf.CHECK_CODE('#include "test/shared_mmap.c"',
+                    addmain=False, add_headers=False, execute=True,
+                    define='HAVE_SHARED_MMAP',
+                    msg="Checking for HAVE_SHARED_MMAP")
+
+    conf.CHECK_CODE('#include "test/shared_mremap.c"',
+                    addmain=False, add_headers=False, execute=True,
+                    define='HAVE_MREMAP',
+                    msg="Checking for HAVE_MREMAP")
+
     # OpenBSD (and I've heard HPUX) doesn't sync between mmap and write.
     # FIXME: Anything other than a 0 or 1 exit code should abort configure!
     conf.CHECK_CODE('#include "test/incoherent_mmap.c"',
