@@ -1047,6 +1047,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				enum file_close_type close_type)
 {
+	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	struct share_mode_lock *lck = NULL;
 	bool delete_dir = False;
 	NTSTATUS status = NT_STATUS_OK;
@@ -1064,11 +1065,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		DEBUG(0, ("close_directory: Could not get share mode lock for "
 			  "%s\n", fsp_str_dbg(fsp)));
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!del_share_mode(lck, fsp)) {
-		DEBUG(0, ("close_directory: Could not delete share entry for "
-			  "%s\n", fsp_str_dbg(fsp)));
 	}
 
 	if (fsp->initial_delete_on_close) {
@@ -1107,6 +1103,10 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 					continue;
 				}
+				if (procid_equal(&self, &e->pid) &&
+				    (e->share_file_id == fsp->fh->gen_id)) {
+					continue;
+				}
 				if (share_mode_stale_pid(lck->data, i)) {
 					continue;
 				}
@@ -1130,6 +1130,11 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				del_token->ngroups,
 				del_token->groups,
 				del_nt_token);
+
+		if (!del_share_mode(lck, fsp)) {
+			DEBUG(0, ("close_directory: Could not delete share entry for "
+				  "%s\n", fsp_str_dbg(fsp)));
+		}
 
 		TALLOC_FREE(lck);
 
@@ -1162,6 +1167,11 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			remove_pending_change_notify_requests_by_fid(fsp, NT_STATUS_DELETE_PENDING);
 		}
 	} else {
+		if (!del_share_mode(lck, fsp)) {
+			DEBUG(0, ("close_directory: Could not delete share entry for "
+				  "%s\n", fsp_str_dbg(fsp)));
+		}
+
 		TALLOC_FREE(lck);
 		remove_pending_change_notify_requests_by_fid(
 			fsp, NT_STATUS_OK);
