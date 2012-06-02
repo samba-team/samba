@@ -148,6 +148,8 @@ AC_CHECK_FUNCS(clock_gettime,libreplace_cv_have_clock_gettime=yes,[
 AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
 AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
 
+LIBREPLACE_FILESYS_LIBS=""
+
 ############################################
 # Check for EA implementations
 case "$host_os" in
@@ -163,6 +165,11 @@ case "$host_os" in
 	AC_CHECK_FUNCS(fremoveea fremovexattr fsetea fsetxattr getea getxattr listea)
 	AC_CHECK_FUNCS(listxattr removeea removexattr setea setxattr)
 
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, flistea)
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, flistxattr)
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, attr_listf)
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, extattr_list_fd)
+
   ;;
 esac
 
@@ -172,7 +179,7 @@ esac
 if test x"$ac_cv_func_getxattr" = x"yes" ; then
 	AC_CACHE_CHECK([whether xattr interface takes additional options], smb_attr_cv_xattr_add_opt, [
 		old_LIBS=$LIBS
-		LIBS="$LIBS $ACL_LIBS"
+		LIBS="$LIBS $LIBREPLACE_FILESYS_LIBS"
 		AC_TRY_COMPILE([
 			#include <sys/types.h>
 			#if HAVE_ATTR_XATTR_H
