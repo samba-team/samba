@@ -544,42 +544,42 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 #endif
 
 #if !defined(HAVE_GETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define getxattr rep_getxattr
+#define getxattr(path, name, value, size) rep_getxattr(path, name, value, size)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_FGETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define fgetxattr rep_fgetxattr
+#define fgetxattr(filedes, name, value, size) rep_fgetxattr(filedes, name, value, size)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_LISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define listxattr rep_listxattr
+#define listxattr(path, list, size) rep_listxattr(path, list, size)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define flistxattr rep_flistxattr
+#define flistxattr(filedes, value, size) rep_flistxattr(filedes, value, size)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define removexattr rep_removexattr
+#define removexattr(path, name) rep_removexattr(path, name)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define fremovexattr rep_fremovexattr
+#define fremovexattr(filedes, name) rep_fremovexattr(filedes, name)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_SETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define setxattr rep_setxattr
+#define setxattr(path, name, value, size, flags) rep_setxattr(path, name, value, size, flags)
 /* prototype is in "system/filesys.h" */
 #endif
 
 #if !defined(HAVE_FSETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define fsetxattr rep_fsetxattr
+#define fsetxattr(filedes, name, value, size, flags) rep_fsetxattr(filedes, name, value, size, flags)
 /* prototype is in "system/filesys.h" */
 #endif
 
