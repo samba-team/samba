@@ -23,6 +23,7 @@
 
 struct smbXcli_conn;
 struct smbXcli_session;
+struct smbXcli_tcon;
 struct smb_trans_enc_state;
 struct GUID;
 
@@ -269,6 +270,24 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 					 const DATA_BLOB channel_key,
 					 const struct iovec *recv_iov);
+
+struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx);
+uint16_t smb1cli_tcon_current_id(struct smbXcli_tcon *tcon);
+void smb1cli_tcon_set_id(struct smbXcli_tcon *tcon, uint16_t tcon_id);
+bool smb1cli_tcon_set_values(struct smbXcli_tcon *tcon,
+			     uint16_t tcon_id,
+			     uint16_t optional_support,
+			     uint32_t maximal_access,
+			     uint32_t guest_maximal_access,
+			     const char *service,
+			     const char *fs_type);
+uint32_t smb2cli_tcon_current_id(struct smbXcli_tcon *tcon);
+void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
+			     uint32_t tcon_id,
+			     uint8_t type,
+			     uint32_t flags,
+			     uint32_t capabilities,
+			     uint32_t maximal_access);
 
 struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,

@@ -35,6 +35,7 @@
 struct smbXcli_conn;
 struct smbXcli_req;
 struct smbXcli_session;
+struct smbXcli_tcon;
 
 struct smbXcli_conn {
 	int read_fd;
@@ -147,6 +148,25 @@ struct smbXcli_session {
 		uint64_t channel_nonce;
 		uint64_t channel_next;
 		DATA_BLOB channel_signing_key;
+	} smb2;
+};
+
+struct smbXcli_tcon {
+	struct {
+		uint16_t tcon_id;
+		uint16_t optional_support;
+		uint32_t maximal_access;
+		uint32_t guest_maximal_access;
+		char *service;
+		char *fs_type;
+	} smb1;
+
+	struct {
+		uint32_t tcon_id;
+		uint8_t type;
+		uint32_t flags;
+		uint32_t capabilities;
+		uint32_t maximal_access;
 	} smb2;
 };
 
@@ -4534,4 +4554,73 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	}
 
 	return NT_STATUS_OK;
+}
+
+struct smbXcli_tcon *smbXcli_tcon_create(TALLOC_CTX *mem_ctx)
+{
+	struct smbXcli_tcon *tcon;
+
+	tcon = talloc_zero(mem_ctx, struct smbXcli_tcon);
+	if (tcon == NULL) {
+		return NULL;
+	}
+
+	return tcon;
+}
+
+uint16_t smb1cli_tcon_current_id(struct smbXcli_tcon *tcon)
+{
+	return tcon->smb1.tcon_id;
+}
+
+void smb1cli_tcon_set_id(struct smbXcli_tcon *tcon, uint16_t tcon_id)
+{
+	tcon->smb1.tcon_id = tcon_id;
+}
+
+bool smb1cli_tcon_set_values(struct smbXcli_tcon *tcon,
+			     uint16_t tcon_id,
+			     uint16_t optional_support,
+			     uint32_t maximal_access,
+			     uint32_t guest_maximal_access,
+			     const char *service,
+			     const char *fs_type)
+{
+	tcon->smb1.tcon_id = tcon_id;
+	tcon->smb1.optional_support = optional_support;
+	tcon->smb1.maximal_access = maximal_access;
+	tcon->smb1.guest_maximal_access = guest_maximal_access;
+
+	TALLOC_FREE(tcon->smb1.service);
+	tcon->smb1.service = talloc_strdup(tcon, service);
+	if (service != NULL && tcon->smb1.service == NULL) {
+		return false;
+	}
+
+	TALLOC_FREE(tcon->smb1.fs_type);
+	tcon->smb1.fs_type = talloc_strdup(tcon, fs_type);
+	if (fs_type != NULL && tcon->smb1.fs_type == NULL) {
+		return false;
+	}
+
+	return true;
+}
+
+uint32_t smb2cli_tcon_current_id(struct smbXcli_tcon *tcon)
+{
+	return tcon->smb2.tcon_id;
+}
+
+void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
+			     uint32_t tcon_id,
+			     uint8_t type,
+			     uint32_t flags,
+			     uint32_t capabilities,
+			     uint32_t maximal_access)
+{
+	tcon->smb2.tcon_id = tcon_id;
+	tcon->smb2.type = type;
+	tcon->smb2.flags = flags;
+	tcon->smb2.capabilities = capabilities;
+	tcon->smb2.maximal_access = maximal_access;
 }
