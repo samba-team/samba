@@ -170,6 +170,7 @@ static int compare_share_mode_times(const void *p1, const void *p2)
 static void notify_deferred_opens(struct smbd_server_connection *sconn,
 				  struct share_mode_lock *lck)
 {
+	struct server_id self = messaging_server_id(sconn->msg_ctx);
 	uint32_t i, num_deferred;
 	struct share_mode_entry *deferred;
 
@@ -231,7 +232,7 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 	for (i=0; i<num_deferred; i++) {
 		struct share_mode_entry *e = &deferred[i];
 
- 		if (procid_is_me(&e->pid)) {
+		if (procid_equal(&self, &e->pid)) {
  			/*
  			 * We need to notify ourself to retry the open.  Do
  			 * this by finding the queued SMB record, moving it to
