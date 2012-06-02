@@ -25,6 +25,7 @@
 
 #include "replace.h"
 #include "system/filesys.h"
+#include "system/dir.h"
 
 /******** Solaris EA helper function prototypes ********/
 #ifdef HAVE_ATTROPEN
