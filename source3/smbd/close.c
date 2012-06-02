@@ -1063,8 +1063,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for "
 			  "%s\n", fsp_str_dbg(fsp)));
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!del_share_mode(lck, fsp)) {
