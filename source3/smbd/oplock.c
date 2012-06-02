@@ -494,6 +494,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
+	struct server_id self = messaging_server_id(sconn->msg_ctx);
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 
 	if (data->data == NULL) {
@@ -562,7 +563,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	/* Need to wait before sending a break
 	   message if we sent ourselves this message. */
-	if (procid_is_me(&src)) {
+	if (procid_equal(&self, &src)) {
 		wait_before_sending_break();
 	}
 
@@ -802,6 +803,7 @@ static void do_break_to_none(struct tevent_req *req)
 {
 	struct break_to_none_state *state = tevent_req_callback_data(
 		req, struct break_to_none_state);
+	struct server_id self = messaging_server_id(state->sconn->msg_ctx);
 	bool ret;
 	int i;
 	struct share_mode_lock *lck;
@@ -873,7 +875,7 @@ static void do_break_to_none(struct tevent_req *req)
  		 * Bugid #5980.
  		 */
 
-		if (procid_is_me(&share_entry->pid)) {
+		if (procid_equal(&self, &share_entry->pid)) {
 			struct files_struct *cur_fsp =
 				initial_break_processing(state->sconn,
 					share_entry->id,
