@@ -894,9 +894,10 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 				      int num,
 				      struct share_mode_entry *share_entry)
 {
+	struct server_id self = messaging_server_id(sconn->msg_ctx);
 	files_struct *fsp;
 
-	if (!procid_is_me(&share_entry->pid)) {
+	if (!procid_equal(&self, &share_entry->pid)) {
 		return;
 	}
 
@@ -1335,6 +1336,7 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct smb_request *req,
 		       struct deferred_open_record *state)
 {
+	struct server_id self = messaging_server_id(req->sconn->msg_ctx);
 	int i;
 
 	/* Paranoia check */
@@ -1343,7 +1345,7 @@ static void defer_open(struct share_mode_lock *lck,
 		struct share_mode_entry *e = &lck->data->share_modes[i];
 
 		if (is_deferred_open_entry(e) &&
-		    procid_is_me(&e->pid) &&
+		    procid_equal(&self, &e->pid) &&
 		    (e->op_mid == req->mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
 				"request: mid=%llu, exiting\n",
@@ -1364,8 +1366,7 @@ static void defer_open(struct share_mode_lock *lck,
 				       state->id, (char *)state, sizeof(*state))) {
 		exit_server("push_deferred_open_message_smb failed");
 	}
-	add_deferred_open(lck, req->mid, request_time,
-			  messaging_server_id(req->sconn->msg_ctx), state->id);
+	add_deferred_open(lck, req->mid, request_time, self, state->id);
 }
 
 
