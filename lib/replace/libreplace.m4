@@ -49,7 +49,7 @@ fi
 LIBREPLACEOBJ="$libreplacedir/replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
-LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/snprintf.o"
+LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/snprintf.o  $libreplacedir/xattr.o"
 
 AC_TYPE_UID_T
 AC_TYPE_MODE_T
