@@ -268,19 +268,19 @@ if test x"$samba_cv_compound_literals" = xyes ; then
 	     [whether we have compound literals])
 fi
 
-AC_CACHE_CHECK([whether we have __builtin_have_isblank],
-	       samba_cv_builtin_have_isblank,
+AC_CACHE_CHECK([whether we have isblank],
+	       samba_cv_have_isblank,
 	       [
 	         AC_LINK_IFELSE(
 			[#include <ctype.h>
 			 int main(void) { return isblank(' ') ? 0 : 1; }
 			],
-			samba_cv_builtin_have_isblank=yes)
+			samba_cv_have_isblank=yes)
 		])
 
-if test x"$samba_cv_builtin_have_isblank" = xyes ; then
-   AC_DEFINE(HAVE_BUILTIN_HAVE_ISBLANK, 1,
-	     [whether we have __builtin_have_isblank])
+if test x"$samba_cv_have_isblank" = xyes ; then
+   AC_DEFINE(HAVE_ISBLANK, 1,
+	     [whether we have isblank])
 fi
 
 # FIXME: We could use endian.h or sys/endian.h here, and __BYTE_ORDER for
