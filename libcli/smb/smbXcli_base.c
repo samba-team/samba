@@ -132,6 +132,10 @@ struct smbXcli_session {
 	struct smbXcli_conn *conn;
 
 	struct {
+		uint16_t session_id;
+	} smb1;
+
+	struct {
 		uint64_t session_id;
 		uint16_t session_flags;
 		DATA_BLOB application_key;
@@ -4206,6 +4210,17 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	session->conn = conn;
 
 	return session;
+}
+
+uint16_t smb1cli_session_current_id(struct smbXcli_session *session)
+{
+	return session->smb1.session_id;
+}
+
+void smb1cli_session_set_id(struct smbXcli_session *session,
+			    uint16_t session_id)
+{
+	session->smb1.session_id = session_id;
 }
 
 uint8_t smb2cli_session_security_mode(struct smbXcli_session *session)
