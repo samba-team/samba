@@ -188,11 +188,6 @@ krb5_error_code smb_krb5_get_credentials(krb5_context context,
 					 krb5_principal server,
 					 krb5_principal impersonate_princ,
 					 krb5_creds **out_creds);
-krb5_error_code smb_krb5_get_creds(const char *server_s,
-				   time_t time_offset,
-				   const char *cc,
-				   const char *impersonate_princ_s,
-				   krb5_creds **creds_p);
 krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
 						krb5_enctype enctype,
 						const void *data,
