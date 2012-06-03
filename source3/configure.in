@@ -468,7 +468,6 @@ default_shared_modules="$default_shared_modules vfs_time_audit"
 default_shared_modules="$default_shared_modules idmap_autorid"
 
 if test "x$developer" = xyes; then
-   default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
    default_static_modules="$default_static_modules auth_netlogond"
    default_shared_modules="$default_shared_modules perfcount_test"
 fi
@@ -6323,7 +6322,6 @@ fi
 SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o passdb/pdb_ldap_util.o,
 		   "bin/ldapsam.$SHLIBEXT", PDB,
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
-SMB_MODULE(pdb_ads, passdb/pdb_ads.o \$(TLDAP_OBJ), "bin/ads.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_wbc_sam, passdb/pdb_wbc_sam.o, "bin/wbc_sam.$SHLIBEXT", PDB)
