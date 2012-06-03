@@ -3253,15 +3253,6 @@ realdistclean:: distclean
 	-rm -f include/version.h
 	-rm -f configure
 
-# this target is really just for my use. It only works on a limited
-# range of machines and is used to produce a list of potentially
-# dead (ie. unused) functions in the code. (tridge)
-finddead::
-	nm */*.o |grep 'U ' | awk '{print $$2}' | sort -u > nmused.txt
-	nm */*.o |grep 'T ' | awk '{print $$3}' | sort -u > nmfns.txt
-	comm -13 nmused.txt nmfns.txt
-
-
 # when configure.in is updated, reconfigure
 $(srcdir)/configure: $(srcdir)/configure.in
 	@echo "WARNING: you need to rerun ./autogen.sh"
