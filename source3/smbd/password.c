@@ -118,15 +118,6 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 	TALLOC_FREE(vuser);
 }
 
-/****************************************************************************
- Invalidate all vuid entries for this process.
-****************************************************************************/
-
-void invalidate_all_vuids(struct smbd_server_connection *sconn)
-{
-	smbXsrv_session_logoff_all(sconn->conn);
-}
-
 int register_homes_share(const char *username)
 {
 	int result;

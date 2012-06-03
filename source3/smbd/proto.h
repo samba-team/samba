@@ -693,7 +693,6 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
 					  uint64_t vuid);
 void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid);
-void invalidate_all_vuids(struct smbd_server_connection *sconn);
 int register_homes_share(const char *username);
 
 /* The following definitions come from smbd/pipes.c  */
