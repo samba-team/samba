@@ -543,46 +543,6 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 /* prototype is in "system/network.h" */
 #endif
 
-#if !defined(HAVE_GETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define getxattr(path, name, value, size) rep_getxattr(path, name, value, size)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define fgetxattr(filedes, name, value, size) rep_fgetxattr(filedes, name, value, size)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define listxattr(path, list, size) rep_listxattr(path, list, size)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define flistxattr(filedes, value, size) rep_flistxattr(filedes, value, size)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define removexattr(path, name) rep_removexattr(path, name)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define fremovexattr(filedes, name) rep_fremovexattr(filedes, name)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_SETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define setxattr(path, name, value, size, flags) rep_setxattr(path, name, value, size, flags)
-/* prototype is in "system/filesys.h" */
-#endif
-
-#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
-#define fsetxattr(filedes, name, value, size, flags) rep_fsetxattr(filedes, name, value, size, flags)
-/* prototype is in "system/filesys.h" */
-#endif
-
 #ifndef HAVE_GET_CURRENT_DIR_NAME
 #define get_current_dir_name rep_get_current_dir_name
 char *rep_get_current_dir_name(void);
