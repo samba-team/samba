@@ -73,6 +73,6 @@
 <related>server min protocol</related>
 <synonym>max protocol</synonym>
 
-<value type="default">SMB2</value>
+<value type="default">SMB3</value>
 <value type="example">LANMAN1</value>
 </samba:parameter>
