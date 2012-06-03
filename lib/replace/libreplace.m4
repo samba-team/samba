@@ -188,7 +188,7 @@ if test x"$ac_cv_func_getxattr" = x"yes" ; then
 			#include <sys/xattr.h>
 			#endif
 		],[
-			getxattr(NULL, NULL, NULL, 0, 0, 0);
+			getxattr(0, 0, 0, 0, 0, 0);
 		],
 	        [smb_attr_cv_xattr_add_opt=yes],
 		[smb_attr_cv_xattr_add_opt=no;LIBS=$old_LIBS])
