@@ -7,7 +7,6 @@ AUTH_UNIX_SRC = 'auth_unix.c'
 AUTH_WINBIND_SRC = 'auth_winbind.c'
 AUTH_WBC_SRC = 'auth_wbc.c'
 AUTH_SCRIPT_SRC = 'auth_script.c'
-AUTH_NETLOGOND_SRC = 'auth_netlogond.c'
 
 AUTH_SRC = '''auth.c
            user_krb5.c
@@ -83,14 +82,6 @@ bld.SAMBA3_MODULE('auth_builtin',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_builtin'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_builtin'))
-
-bld.SAMBA3_MODULE('auth_netlogond',
-                 subsystem='auth',
-                 source=AUTH_NETLOGOND_SRC,
-                 deps='TLDAP',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_netlogond'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_netlogond'))
 
 bld.SAMBA3_MODULE('auth_script',
                  subsystem='auth',

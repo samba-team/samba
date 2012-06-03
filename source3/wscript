@@ -1370,7 +1370,7 @@ main() {
                                       vfs_time_audit idmap_autorid''')
 
     if Options.options.developer:
-        default_static_modules.extend(TO_LIST('auth_netlogond charset_weird'))
+        default_static_modules.extend(TO_LIST('charset_weird'))
         default_shared_modules.extend(TO_LIST('perfcount_test'))
         default_shared_modules.extend(TO_LIST('vfs_skel_opaque vfs_skel_transparent vfs_shadow_copy_test'))
         default_shared_modules.extend(TO_LIST('auth_skel pdb_test'))

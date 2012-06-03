@@ -468,7 +468,6 @@ default_shared_modules="$default_shared_modules vfs_time_audit"
 default_shared_modules="$default_shared_modules idmap_autorid"
 
 if test "x$developer" = xyes; then
-   default_static_modules="$default_static_modules auth_netlogond"
    default_shared_modules="$default_shared_modules perfcount_test"
 fi
 
@@ -6349,7 +6348,6 @@ SMB_MODULE(auth_wbc, \$(AUTH_WBC_OBJ), "bin/wbc.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_script, \$(AUTH_SCRIPT_OBJ), "bin/script.$SHLIBEXT", AUTH)
-SMB_MODULE(auth_netlogond, \$(AUTH_NETLOGOND_OBJ), "bin/netlogond.$SHLIBEXT", AUTH)
 SMB_SUBSYSTEM(AUTH,auth/auth.o)
 
 SMB_MODULE(vfs_default, \$(VFS_DEFAULT_OBJ), "bin/default.$SHLIBEXT", VFS)
