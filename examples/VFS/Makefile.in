@@ -27,6 +27,13 @@ libdir		= @libdir@
 
 VFS_LIBDIR	= $(libdir)/vfs
 
+# Note, if make fails, it might be because your version of make does not
+# support what we need. Try installing GNU make and rerun make.
+#
+# Note also, that if your module requires more than one object file to be
+# linked in you will have to modify Makefile.in to accommodate your needs and
+# then rerun configure before you can build.
+
 # Change these targets to the names of your modules if building out of tree
 MODULES		= skel_opaque.@SHLIBEXT@ shadow_copy_test.@SHLIBEXT@ \
 		skel_transparent.@SHLIBEXT@
@@ -37,13 +44,19 @@ all: $(MODULES)
 
 .SUFFIXES: .@SHLIBEXT@
 
-.@OBJEXT@.@SHLIBEXT@:
-	@echo "Linking $<"
-	@$(CC) $(LDSHFLAGS) $(LDFLAGS) $*.@OBJEXT@ -o $*.@SHLIBEXT@
+# You might need to create an explicit rule for your shared object if your
+# shared object is built from multiple .c files.
 
-.c.@OBJEXT@:
+.c.@SHLIBEXT@:
 	@echo "Compiling $<"
 	@$(CC) $(FLAGS) -c $< -D$*_init=samba_init_module
+	@echo "Linking $@"
+	@$(CC) $(LDSHFLAGS) $(LDFLAGS) $*.@OBJEXT@ -o $*.@SHLIBEXT@
+
+# You might need to uncomment this if you have other .c files to compile
+#.c.@OBJEXT@:
+#	@echo "Compiling $<"
+#	@$(CC) $(FLAGS) -c $< -D$*_init=samba_init_module
 
 install: default
 	$(INSTALLCMD) -d $(VFS_LIBDIR)
