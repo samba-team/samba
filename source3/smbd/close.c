@@ -1140,7 +1140,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(5, ("delete_all_streams failed: %s\n",
 					  nt_errstr(status)));
-				goto out;
+				return status;
 			}
 		}
 
@@ -1181,8 +1181,6 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	close_filestruct(fsp);
 	file_free(req, fsp);
 
- out:
-	TALLOC_FREE(lck);
 	if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_OK(status1)) {
 		status = status1;
 	}
