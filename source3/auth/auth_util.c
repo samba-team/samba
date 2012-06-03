@@ -506,8 +506,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	session_info->unix_info->sanitized_username =
 				talloc_strdup(session_info->unix_info, tmp);
 
-	session_info->unix_info->system = server_info->system;
-
 	if (session_key) {
 		data_blob_free(&session_info->session_key);
 		session_info->session_key = data_blob_talloc(session_info,
@@ -1046,8 +1044,6 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	(*session_info)->unix_info->system = true;
 
 	TALLOC_FREE((*session_info)->security_token->sids);
 	(*session_info)->security_token->num_sids = 0;

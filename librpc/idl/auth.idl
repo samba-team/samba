@@ -60,11 +60,6 @@ interface auth
 	} auth_user_info_torture;
 
 	typedef [public] struct {
-		/* These match exactly the values from the
-		 * auth_serversupplied_info, but should be changed to
-		 * checks involving just the SIDs */
-		boolean8 system;
-
 		[unique,charset(UTF8),string] char *unix_name;
 
 		/*

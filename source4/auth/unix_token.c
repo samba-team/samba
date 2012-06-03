@@ -142,8 +142,6 @@ NTSTATUS auth_session_info_fill_unix(struct wbc_context *wbc_ctx,
 	session_info->unix_info = talloc_zero(session_info, struct auth_user_info_unix);
 	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info);
 
-	session_info->unix_info->system = security_token_is_system(session_info->security_token);
-
 	session_info->unix_info->unix_name = talloc_asprintf(session_info->unix_info,
 							     "%s%s%s", session_info->info->domain_name,
 							     lpcfg_winbind_separator(lp_ctx),

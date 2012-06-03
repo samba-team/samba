@@ -2711,7 +2711,7 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 
 	ZERO_STRUCTP(r);
 
-	if (p->session_info->unix_info->system) {
+	if (security_token_is_system(p->session_info->security_token)) {
 		goto query;
 	}
 
