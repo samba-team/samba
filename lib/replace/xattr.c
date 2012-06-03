@@ -49,6 +49,9 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return getxattr(path, name, value, size);
 #else
+
+/* So that we do not recursivly call this function */
+#undef getxattr
 	int options = 0;
 	return getxattr(path, name, value, size, 0, options);
 #endif
@@ -105,6 +108,9 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return fgetxattr(filedes, name, value, size);
 #else
+
+/* So that we do not recursivly call this function */
+#undef fgetxattr
 	int options = 0;
 	return fgetxattr(filedes, name, value, size, 0, options);
 #endif
@@ -318,6 +324,8 @@ ssize_t rep_listxattr (const char *path, char *list, size_t size)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return listxattr(path, list, size);
 #else
+/* So that we do not recursivly call this function */
+#undef listxattr
 	int options = 0;
 	return listxattr(path, list, size, options);
 #endif
@@ -349,6 +357,8 @@ ssize_t rep_flistxattr (int filedes, char *list, size_t size)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return flistxattr(filedes, list, size);
 #else
+/* So that we do not recursivly call this function */
+#undef flistxattr
 	int options = 0;
 	return flistxattr(filedes, list, size, options);
 #endif
@@ -380,6 +390,8 @@ int rep_removexattr (const char *path, const char *name)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return removexattr(path, name);
 #else
+/* So that we do not recursivly call this function */
+#undef removexattr
 	int options = 0;
 	return removexattr(path, name, options);
 #endif
@@ -419,6 +431,8 @@ int rep_fremovexattr (int filedes, const char *name)
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return fremovexattr(filedes, name);
 #else
+/* So that we do not recursivly call this function */
+#undef fremovexattr
 	int options = 0;
 	return fremovexattr(filedes, name, options);
 #endif
@@ -458,6 +472,8 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return setxattr(path, name, value, size, flags);
 #else
+/* So that we do not recursivly call this function */
+#undef setxattr
 	int options = 0;
 	return setxattr(path, name, value, size, 0, options);
 #endif
@@ -523,6 +539,8 @@ int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size
 #ifndef XATTR_ADDITIONAL_OPTIONS
 	return fsetxattr(filedes, name, value, size, flags);
 #else
+/* So that we do not recursivly call this function */
+#undef fsetxattr
 	int options = 0;
 	return fsetxattr(filedes, name, value, size, 0, options);
 #endif
