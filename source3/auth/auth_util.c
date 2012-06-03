@@ -1049,6 +1049,9 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 
 	(*session_info)->unix_info->system = true;
 
+	TALLOC_FREE((*session_info)->security_token->sids);
+	(*session_info)->security_token->num_sids = 0;
+
 	status = add_sid_to_array_unique((*session_info)->security_token->sids,
 					 &global_sid_System,
 					 &(*session_info)->security_token->sids,
