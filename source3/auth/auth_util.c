@@ -934,25 +934,31 @@ done:
 	return status;
 }
 
-/****************************************************************************
-  Fake a auth_session_info just from a username (as a
-  session_info structure, with create_local_token() already called on
-  it.
-****************************************************************************/
+/***************************************************************************
+ Make (and fill) a auth_session_info struct for a system user login.
+ This *must* succeed for smbd to start.
+***************************************************************************/
 
-static NTSTATUS make_system_session_info_from_pw(TALLOC_CTX *mem_ctx,
-						 struct passwd *pwd,
-						 struct auth_session_info **session_info)
+static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
+					    struct auth_session_info **session_info)
 {
+	struct passwd *pwd;
+	NTSTATUS status;
+
 	struct auth_serversupplied_info *server_info;
 	const char *domain = lp_netbios_name();
 	struct netr_SamInfo3 info3;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	pwd = getpwuid_alloc(tmp_ctx, sec_initial_uid());
+	if (pwd == NULL) {
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	}
 
 	ZERO_STRUCT(info3);
@@ -979,70 +985,12 @@ static NTSTATUS make_system_session_info_from_pw(TALLOC_CTX *mem_ctx,
 
 	/* Now turn the server_info into a session_info with the full token etc */
 	status = create_local_token(mem_ctx, server_info, NULL, pwd->pw_name, session_info);
+	talloc_free(server_info);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("create_local_token failed: %s\n",
 			  nt_errstr(status)));
 		goto done;
-	}
-
-	talloc_free(server_info);
-
-	/* SYSTEM has all privilages */
-	(*session_info)->security_token->privilege_mask = ~0;
-	
-	talloc_steal(mem_ctx, *session_info);
-
-	status = NT_STATUS_OK;
-done:
-	TALLOC_FREE(tmp_ctx);
-	return status;
-}
-
-static NTSTATUS make_session_info_from_pw(TALLOC_CTX *mem_ctx,
-					  struct passwd *pwd,
-					  bool is_guest,
-					  struct auth_session_info **session_info)
-{
-	struct auth_serversupplied_info *result;
-	NTSTATUS status;
-
-	status = make_server_info_pw(&result, pwd->pw_name, pwd);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	result->nss_token = true;
-	result->guest = is_guest;
-
-	/* Now turn the server_info into a session_info with the full token etc */
-	status = create_local_token(mem_ctx, result, NULL, pwd->pw_name, session_info);
-	talloc_free(result);
-	return status;
-}
-
-/***************************************************************************
- Make (and fill) a auth_session_info struct for a system user login.
- This *must* succeed for smbd to start.
-***************************************************************************/
-
-static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
-					    struct auth_session_info **session_info)
-{
-	struct passwd *pwd;
-	NTSTATUS status;
-
-	pwd = getpwuid_alloc(mem_ctx, sec_initial_uid());
-	if (pwd == NULL) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	status = make_system_session_info_from_pw(mem_ctx,
-						  pwd,
-						  session_info);
-	TALLOC_FREE(pwd);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	TALLOC_FREE((*session_info)->security_token->sids);
@@ -1053,11 +1001,17 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 					 &(*session_info)->security_token->sids,
 					 &(*session_info)->security_token->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE((*session_info));
-		return status;
+		goto done;
 	}
 
-	return NT_STATUS_OK;
+	/* SYSTEM has all privilages */
+	(*session_info)->security_token->privilege_mask = ~0;
+
+	talloc_steal(mem_ctx, *session_info);
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return status;
 }
 
 /****************************************************************************
@@ -1073,20 +1027,27 @@ NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
 {
 	struct passwd *pwd;
 	NTSTATUS status;
+	struct auth_serversupplied_info *result;
 
 	pwd = Get_Pwnam_alloc(talloc_tos(), username);
 	if (pwd == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	status = make_session_info_from_pw(mem_ctx, pwd, is_guest, session_info);
+	status = make_server_info_pw(&result, pwd->pw_name, pwd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(pwd);
 		return status;
 	}
 
+	result->nss_token = true;
+	result->guest = is_guest;
+
+	/* Now turn the server_info into a session_info with the full token etc */
+	status = create_local_token(mem_ctx, result, NULL, pwd->pw_name, session_info);
+	TALLOC_FREE(result);
 	TALLOC_FREE(pwd);
+
 	return status;
 }
 
