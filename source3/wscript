@@ -305,8 +305,12 @@ utimensat vsyslog _write __write __xstat
 
     #FIXME: add more checks
     if Options.options.with_acl_support:
-        conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
-        if conf.CHECK_CODE('''
+        if (host_os.rfind('darwin') > -1):
+            conf.DEFINE('HAVE_NO_ACLS', 1)
+            conf.SET_TARGET_TYPE('acl', 'EMPTY')
+        else:
+            conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
+            if conf.CHECK_CODE('''
 acl_t acl;
 int entry_id;
 acl_entry_t *entry_p;
@@ -315,7 +319,7 @@ return acl_get_entry(acl, entry_id, entry_p);
                         'HAVE_POSIX_ACLS',
                         headers='sys/types.h sys/acl.h', link=False,
                         msg="Checking for POSIX ACL support") :
-            conf.CHECK_CODE('''
+                conf.CHECK_CODE('''
 acl_permset_t permset_d;
 acl_perm_t perm;
 return acl_get_perm_np(permset_d, perm);
