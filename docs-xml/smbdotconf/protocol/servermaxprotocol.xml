@@ -50,7 +50,7 @@
 		    <para><constant>SMB2_24</constant>: Windows 8 beta SMB2 version.</para>
 		</listitem>
 	    </itemizedlist>
-	    <para>By default SMB2 selects the SMB2_02 variant.</para>
+	    <para>By default SMB2 selects the SMB2_10 variant.</para>
 	</listitem>
 
 	<listitem>
