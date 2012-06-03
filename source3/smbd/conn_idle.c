@@ -85,10 +85,8 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
  Return true if any were closed.
 ****************************************************************************/
 
-bool conn_close_all(struct smbd_server_connection *sconn)
+void conn_close_all(struct smbd_server_connection *sconn)
 {
-	bool ret = false;
-
 	if (sconn->using_smb2) {
 		/* SMB2 */
 		struct smbd_smb2_session *sess;
@@ -101,7 +99,6 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 			for (tcon = sess->tcons.list; tcon; tcon = tc_next) {
 				tc_next = tcon->next;
 				TALLOC_FREE(tcon);
-				ret = true;
 			}
 		}
 	} else {
@@ -112,10 +109,8 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 			next=conn->next;
 			set_current_service(conn, 0, True);
 			close_cnum(conn, conn->vuid);
-			ret = true;
 		}
 	}
-	return ret;
 }
 
 

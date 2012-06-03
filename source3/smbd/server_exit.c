@@ -107,7 +107,7 @@ static void exit_server_common(enum server_exit_reason how,
 			bool found = false;
 			files_forall(sconn, log_writeable_file_fn, &found);
 		}
-		(void)conn_close_all(sconn);
+		conn_close_all(sconn);
 		invalidate_all_vuids(sconn);
 	}
 

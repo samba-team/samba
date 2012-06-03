@@ -149,7 +149,7 @@ bool conn_snum_used(struct smbd_server_connection *sconn, int snum);
 connection_struct *conn_find(struct smbd_server_connection *sconn,
 			     unsigned cnum);
 connection_struct *conn_new(struct smbd_server_connection *sconn);
-bool conn_close_all(struct smbd_server_connection *sconn);
+void conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint16 vuid);
 void conn_free(connection_struct *conn);
