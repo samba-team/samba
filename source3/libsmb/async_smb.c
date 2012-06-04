@@ -275,6 +275,11 @@ NTSTATUS cli_smb_recv(struct tevent_req *req,
 		} else {
 			*pinbuf = inbuf;
 		}
+	} else if (mem_ctx != NULL) {
+		if (talloc_reference_count(inbuf) == 0) {
+			(void)talloc_move(mem_ctx, &inbuf);
+			TALLOC_FREE(recv_iov);
+		}
 	}
 
 	return status;
