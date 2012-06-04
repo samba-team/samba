@@ -627,19 +627,6 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     #Load non-existant file
     if os.path.exists(smbconf):
         lp.load(smbconf)
-    if eadb:
-        if use_ntvfs and not lp.get("posix:eadb"):
-            if targetdir is not None:
-                privdir = os.path.join(targetdir, "private")
-            else:
-                privdir = lp.get("private dir")
-            lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
-        elif not use_ntvfs and not lp.get("xattr_tdb:file"):
-            if targetdir is not None:
-                statedir = os.path.join(targetdir, "state")
-            else:
-                statedir = lp.get("state dir")
-            lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
 
     if global_param is not None:
         for ent in global_param:
@@ -655,6 +642,20 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
         lp.set("lock dir", os.path.abspath(targetdir))
         lp.set("state directory",  global_settings["state directory"])
         lp.set("cache directory", global_settings["cache directory"])
+
+    if eadb:
+        if use_ntvfs and not lp.get("posix:eadb"):
+            if targetdir is not None:
+                privdir = os.path.join(targetdir, "private")
+            else:
+                privdir = lp.get("private dir")
+            lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
+        elif not use_ntvfs and not lp.get("xattr_tdb:file"):
+            if targetdir is not None:
+                statedir = os.path.join(targetdir, "state")
+            else:
+                statedir = lp.get("state directory")
+            lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
 
     shares = {}
     if serverrole == "domain controller":
