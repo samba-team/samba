@@ -57,7 +57,17 @@ SAMBA_VERSION_TP_RELEASE=
 # e.g. SAMBA_VERSION_ALPHA_RELEASE=1                   #
 #  ->  "4.0.0alpha1"                                   #
 ########################################################
-SAMBA_VERSION_ALPHA_RELEASE=22
+SAMBA_VERSION_ALPHA_RELEASE=
+
+########################################################
+# For 'alpha' releases the version will be             #
+#                                                      #
+# <MAJOR>.<MINOR>.<RELEASE>beta<TP_RELEASE>            #
+#                                                      #
+# e.g. SAMBA_VERSION_BETA_RELEASE=1                    #
+#  ->  "4.0.0beta1"                                    #
+########################################################
+SAMBA_VERSION_BETA_RELEASE=1
 
 ########################################################
 # For 'pre' releases the version will be               #

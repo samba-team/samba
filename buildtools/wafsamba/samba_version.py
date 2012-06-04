@@ -107,6 +107,7 @@ also accepted as dictionary entries here
         self.REVISION=None
         self.TP_RELEASE=None
         self.ALPHA_RELEASE=None
+        self.BETA_RELEASE=None
         self.PRE_RELEASE=None
         self.RC_RELEASE=None
         self.IS_SNAPSHOT=True
@@ -137,7 +138,7 @@ also accepted as dictionary entries here
         SAMBA_VERSION_STRING = ("%u.%u.%u" % (self.MAJOR, self.MINOR, self.RELEASE))
 
 ##
-## maybe add "3.0.22a" or "4.0.0tp11" or "4.0.0alpha1" or "3.0.22pre1" or "3.0.22rc1"
+## maybe add "3.0.22a" or "4.0.0tp11" or "4.0.0alpha1" or "4.0.0beta1" or "3.0.22pre1" or "3.0.22rc1"
 ## We do not do pre or rc version on patch/letter releases
 ##
         if self.REVISION is not None:
@@ -148,6 +149,9 @@ also accepted as dictionary entries here
         if self.ALPHA_RELEASE is not None:
             self.ALPHA_RELEASE = int(self.ALPHA_RELEASE)
             SAMBA_VERSION_STRING += ("alpha%u" % self.ALPHA_RELEASE)
+        if self.BETA_RELEASE is not None:
+            self.BETA_RELEASE = int(self.BETA_RELEASE)
+            SAMBA_VERSION_STRING += ("beta%u" % self.BETA_RELEASE)
         if self.PRE_RELEASE is not None:
             self.PRE_RELEASE = int(self.PRE_RELEASE)
             SAMBA_VERSION_STRING += ("pre%u" % self.PRE_RELEASE)
@@ -200,6 +204,9 @@ also accepted as dictionary entries here
 
         if self.ALPHA_RELEASE is not None:
             string+="#define SAMBA_VERSION_ALPHA_RELEASE %u\n" % self.ALPHA_RELEASE
+
+        if self.BETA_RELEASE is not None:
+            string+="#define SAMBA_VERSION_BETA_RELEASE %u\n" % self.BETA_RELEASE
 
         if self.PRE_RELEASE is not None:
             string+="#define SAMBA_VERSION_PRE_RELEASE %u\n" % self.PRE_RELEASE
