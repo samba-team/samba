@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha21
+What's new in Samba 4 beta1
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba4 alpha21 is not a final Samba release, however we are now making
+Samba4 beta1 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -21,22 +21,23 @@ controller work previously known as 'samba4'.
 Samba4 is subjected to an awesome battery of tests on an automated
 basis, we have found Samba 4.0 to be very stable in it's behavior.
 However, we still recommend against upgrading production servers from
-Samba 3.x release to Samba 4.0 alpha at this stage.
+Samba 3.x release to Samba 4.0 beta at this stage.
 
 In particular note that the new default configuration 's3fs' may have
 different stability characteristics compared with our previous default
 file server.  We are making this release so that we can find and fix
-any of these issues that arise in the real world.  New AD DC installations
-can provision with --use-ntvfs to obtain the previous default file
-server.  Existing installations will be unaffected at this stage.
+any of these issues that arise in the real world.  New AD DC
+installations can provision or join with --use-ntvfs to obtain the
+previous default file server.  Existing installations will be
+unaffected at this stage.
 
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
-alpha releases, you should backup all configuration and data.
+beta releases, you should backup all configuration and data.
 
 NEW FEATURES
 ============
 
-Samba 4.0 alpha supports the server-side of the Active Directory logon
+Samba 4.0 beta supports the server-side of the Active Directory logon
 environment used by Windows 2000 and later, so we can do full domain
 join and domain logon operations with these clients.
 
@@ -46,7 +47,7 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
-Samba 4.0 alpha ships with two distinct file servers.  We now use the
+Samba 4.0 beta ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
 default.  For pure file server work, the binaries users would expect
 from that series (nmbd, winbindd, smbpasswd) continue to be available.
@@ -69,47 +70,40 @@ internal workings of the DC code is now implemented in python.
 
 
 
-CHANGES SINCE alpha20
+CHANGES SINCE alpha21
 =====================
 
-For a list of changes since alpha20, please see the git log.
+For a list of changes since alpha21, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0alpha20..samba-4.0.0alpha21
+$ git log samba-4.0.0alpha21..samba-4.0.0beta1
 
 Some major user-visible changes include:
 
-For installations that do not need an AD Domain controller, we can now
-build using MIT Kerberos from the local system.  This is important for
-some distributors.  This is enabled with the new --with-system-mitkrb5
-configure option.  A synonym is the new --without-ad-dc option.
+The internal DNS server has had some stability improvements, and
+now handles forwarded DNS replies in an async manner.
 
-The 's3fs' effort has moved to a new stage, with this now being the
-default mode of operation for new provisions.  
+The build of libtdb.so and libtalloc.so has been removed from the
+autoconf build.  Use the build in lib/talloc and lib/tdb to build
+this software for use across the system.
 
-The BIND 9 DLZ plugin has had some stability improvements under BIND reloads.
+The smbclient and nmblookup binaries have been renamed in the top
+level build, so smbclient/nmblookup are now the implementations from
+the Samba 3.x heritage.
 
-The 'samba-tool domain samba3upgrade' tool will now generally import
-all group members, and correctly imports domain password policies. 
-
-Some major but less visible changes include:
-
-Continued early implementation work on the SMB 2.2 protocol client and server as
-the team improves and develops support these new protocols.
+Improved handling of the cleanup of smbd child processes (removing a
+number of scary warnings from our log output).
 
 
 KNOWN ISSUES
 ============
 
-- We are making this alpha release to gain real-world use of the 's3fs'
+- We are making this beta release to gain real-world use of the 's3fs'
   file server combination we will use for the Samba 4.0 release.
   Users should expect some rough edges: in particular, there are
   warnings about invalid parameters from the two respective parameter
   parsing engines.
-
-- There have been improvements to FreeBSD support, but more work is
-  still required to finish this effort
 
 - upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
