@@ -25,13 +25,13 @@
 #include "smbd/globals.h"
 #include "smbprofile.h"
 
-typedef struct write_cache {
+struct write_cache {
 	off_t file_size;
 	off_t offset;
 	size_t alloc_size;
 	size_t data_size;
 	char *data;
-} write_cache;
+};
 
 static bool setup_write_cache(files_struct *, off_t);
 
@@ -41,7 +41,7 @@ static bool setup_write_cache(files_struct *, off_t);
 
 static bool read_from_write_cache(files_struct *fsp,char *data,off_t pos,size_t n)
 {
-	write_cache *wcp = fsp->wcp;
+	struct write_cache *wcp = fsp->wcp;
 
 	if(!wcp) {
 		return False;
@@ -171,7 +171,7 @@ static ssize_t real_write_file(struct smb_request *req,
 static int wcp_file_size_change(files_struct *fsp)
 {
 	int ret;
-	write_cache *wcp = fsp->wcp;
+	struct write_cache *wcp = fsp->wcp;
 
 	wcp->file_size = wcp->offset + wcp->data_size;
 	ret = SMB_VFS_FTRUNCATE(fsp, wcp->file_size);
@@ -298,7 +298,7 @@ ssize_t write_file(struct smb_request *req,
 			off_t pos,
 			size_t n)
 {
-	write_cache *wcp = fsp->wcp;
+	struct write_cache *wcp = fsp->wcp;
 	ssize_t total_written = 0;
 	int write_path = -1;
 
@@ -887,7 +887,7 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 
 void delete_write_cache(files_struct *fsp)
 {
-	write_cache *wcp;
+	struct write_cache *wcp;
 
 	if(!fsp) {
 		return;
@@ -916,7 +916,7 @@ void delete_write_cache(files_struct *fsp)
 static bool setup_write_cache(files_struct *fsp, off_t file_size)
 {
 	ssize_t alloc_size = lp_write_cache_size(SNUM(fsp->conn));
-	write_cache *wcp;
+	struct write_cache *wcp;
 
 	if (allocated_write_caches >= MAX_WRITE_CACHES) {
 		return False;
@@ -926,7 +926,7 @@ static bool setup_write_cache(files_struct *fsp, off_t file_size)
 		return False;
 	}
 
-	if((wcp = SMB_MALLOC_P(write_cache)) == NULL) {
+	if((wcp = SMB_MALLOC_P(struct write_cache)) == NULL) {
 		DEBUG(0,("setup_write_cache: malloc fail.\n"));
 		return False;
 	}
@@ -983,7 +983,7 @@ void set_filelen_write_cache(files_struct *fsp, off_t file_size)
 
 ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason)
 {
-	write_cache *wcp = fsp->wcp;
+	struct write_cache *wcp = fsp->wcp;
 	size_t data_size;
 	ssize_t ret;
 
