@@ -586,6 +586,9 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to)
 {
+	/* this can never happen for print files */
+	SMB_ASSERT(from->print_file == NULL);
+
 	TALLOC_FREE(to->fh);
 
 	to->fh = from->fh;
@@ -609,14 +612,6 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 	to->modified = from->modified;
 	to->is_directory = from->is_directory;
 	to->aio_write_behind = from->aio_write_behind;
-
-	if (from->print_file) {
-		to->print_file = talloc(to, struct print_file_data);
-		if (!to->print_file) return NT_STATUS_NO_MEMORY;
-		to->print_file->rap_jobid = from->print_file->rap_jobid;
-	} else {
-		to->print_file = NULL;
-	}
 
 	return fsp_set_smb_fname(to, from->fsp_name);
 }
