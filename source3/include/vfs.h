@@ -251,7 +251,7 @@ typedef struct files_struct {
 
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
-	uint16_t vuid;
+	uint64_t vuid; /* SMB2 compat */
 	bool read_only;
 };
 
