@@ -1149,6 +1149,7 @@ void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
 				   files_struct *fsp, size_t ext_size,
 				   void (*destroy_fn)(void *p_data));
 void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
+void vfs_remove_all_fsp_extensions(struct files_struct *fsp);
 void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 bool smbd_vfs_init(connection_struct *conn);
