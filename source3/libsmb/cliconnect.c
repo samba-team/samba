@@ -46,15 +46,15 @@
 *******************************************************/
 
 static NTSTATUS smb_bytes_talloc_string(TALLOC_CTX *mem_ctx,
-					char *inbuf,
+					const uint8_t *hdr,
 					char **dest,
 					uint8_t *src,
 					size_t srclen,
 					ssize_t *destlen)
 {
 	*destlen = clistr_pull_talloc(mem_ctx,
-				inbuf,
-				SVAL(inbuf, smb_flg2),
+				(const char *)hdr,
+				SVAL(hdr, HDR_FLG2),
 				dest,
 				(char *)src,
 				srclen,
@@ -232,7 +232,7 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	struct cli_state *cli = state->cli;
 	uint32_t num_bytes;
 	uint8_t *in;
-	char *inbuf;
+	uint8_t *inhdr;
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
@@ -248,14 +248,14 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbuf = (char *)in;
+	inhdr = in + NBT_HDR_SIZE;
 	p = bytes;
 
-	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
+	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_os,
 					p,
 					bytes+num_bytes-p,
@@ -268,7 +268,7 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_type,
 					p,
 					bytes+num_bytes-p,
@@ -281,7 +281,7 @@ static void cli_session_setup_lanman2_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_domain,
 					p,
 					bytes+num_bytes-p,
@@ -470,7 +470,7 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	struct cli_state *cli = state->cli;
 	uint32_t num_bytes;
 	uint8_t *in;
-	char *inbuf;
+	uint8_t *inhdr;
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
@@ -486,14 +486,14 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbuf = (char *)in;
+	inhdr = in + NBT_HDR_SIZE;
 	p = bytes;
 
-	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
+	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_os,
 					p,
 					bytes+num_bytes-p,
@@ -506,7 +506,7 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_type,
 					p,
 					bytes+num_bytes-p,
@@ -519,7 +519,7 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_domain,
 					p,
 					bytes+num_bytes-p,
@@ -674,7 +674,7 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	struct cli_state *cli = state->cli;
 	uint32_t num_bytes;
 	uint8_t *in;
-	char *inbuf;
+	uint8_t *inhdr;
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
@@ -689,14 +689,14 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbuf = (char *)in;
+	inhdr = in + NBT_HDR_SIZE;
 	p = bytes;
 
-	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
+	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_os,
 					p,
 					bytes+num_bytes-p,
@@ -709,7 +709,7 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_type,
 					p,
 					bytes+num_bytes-p,
@@ -722,7 +722,7 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_domain,
 					p,
 					bytes+num_bytes-p,
@@ -1024,7 +1024,7 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	struct cli_state *cli = state->cli;
 	uint32_t num_bytes;
 	uint8_t *in;
-	char *inbuf;
+	uint8_t *inhdr;
 	uint8_t *bytes;
 	uint8_t *p;
 	NTSTATUS status;
@@ -1040,14 +1040,14 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbuf = (char *)in;
+	inhdr = in + NBT_HDR_SIZE;
 	p = bytes;
 
-	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
+	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_os,
 					p,
 					bytes+num_bytes-p,
@@ -1059,7 +1059,7 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_type,
 					p,
 					bytes+num_bytes-p,
@@ -1071,7 +1071,7 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					inbuf,
+					inhdr,
 					&cli->server_domain,
 					p,
 					bytes+num_bytes-p,
@@ -1295,7 +1295,8 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t *p;
 	uint16_t blob_length;
-	uint8_t *inbuf;
+	uint8_t *in;
+	uint8_t *inhdr;
 	ssize_t ret;
 
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
@@ -1303,7 +1304,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 						    &state->recv_iov,
 						    &state->ret_blob);
 	} else {
-		status = cli_smb_recv(subreq, state, &inbuf, 4, &wct, &vwv,
+		status = cli_smb_recv(subreq, state, &in, 4, &wct, &vwv,
 				      &num_bytes, &bytes);
 		TALLOC_FREE(state->buf);
 	}
@@ -1320,8 +1321,9 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		goto next;
 	}
 
-	state->inbuf = (char *)inbuf;
-	cli_state_set_uid(state->cli, SVAL(inbuf, smb_uid));
+	state->inbuf = (char *)in;
+	inhdr = in + NBT_HDR_SIZE;
+	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
 
 	blob_length = SVAL(vwv+3, 0);
@@ -1334,7 +1336,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	p = bytes + blob_length;
 
 	status = smb_bytes_talloc_string(cli,
-					(char *)inbuf,
+					inhdr,
 					&cli->server_os,
 					p,
 					bytes+num_bytes-p,
@@ -1347,7 +1349,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					(char *)inbuf,
+					inhdr,
 					&cli->server_type,
 					p,
 					bytes+num_bytes-p,
@@ -1360,7 +1362,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	p += ret;
 
 	status = smb_bytes_talloc_string(cli,
-					(char *)inbuf,
+					inhdr,
 					&cli->server_domain,
 					p,
 					bytes+num_bytes-p,
