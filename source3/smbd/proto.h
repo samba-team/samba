@@ -611,16 +611,6 @@ bool open_match_attributes(connection_struct *conn,
 			   mode_t existing_unx_mode,
 			   mode_t new_unx_mode,
 			   mode_t *returned_unx_mode);
-NTSTATUS fcb_or_dos_open(struct smb_request *req,
-			 connection_struct *conn,
-			 files_struct *fsp_to_dup_into,
-			 const struct smb_filename *smb_fname,
-			 struct file_id id,
-			 uint16 file_pid,
-			 uint16 vuid,
-			 uint32 access_mask,
-			 uint32 share_access,
-			 uint32 create_options);
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid);
 NTSTATUS open_file_fchmod(connection_struct *conn,

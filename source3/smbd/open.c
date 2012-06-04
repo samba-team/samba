@@ -1422,16 +1422,16 @@ bool open_match_attributes(connection_struct *conn,
  Try and find a duplicated file handle.
 ****************************************************************************/
 
-NTSTATUS fcb_or_dos_open(struct smb_request *req,
-				     connection_struct *conn,
-				     files_struct *fsp_to_dup_into,
-				     const struct smb_filename *smb_fname,
-				     struct file_id id,
-				     uint16 file_pid,
-				     uint16 vuid,
-				     uint32 access_mask,
-				     uint32 share_access,
-				     uint32 create_options)
+static NTSTATUS fcb_or_dos_open(struct smb_request *req,
+				connection_struct *conn,
+				files_struct *fsp_to_dup_into,
+				const struct smb_filename *smb_fname,
+				struct file_id id,
+				uint16 file_pid,
+				uint16 vuid,
+				uint32 access_mask,
+				uint32 share_access,
+				uint32 create_options)
 {
 	files_struct *fsp;
 
