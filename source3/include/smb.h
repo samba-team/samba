@@ -127,14 +127,6 @@ typedef union unid_t {
 
 #include "librpc/gen_ndr/security.h"
 
-typedef struct write_cache {
-	off_t file_size;
-	off_t offset;
-	size_t alloc_size;
-	size_t data_size;
-	char *data;
-} write_cache;
-
 struct fd_handle {
 	size_t ref_count;
 	int fd;
@@ -230,7 +222,7 @@ typedef struct files_struct {
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
 	uint16 file_pid;
 	uint16 vuid;
-	write_cache *wcp;
+	struct write_cache *wcp;
 	struct timeval open_time;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */

@@ -25,6 +25,14 @@
 #include "smbd/globals.h"
 #include "smbprofile.h"
 
+typedef struct write_cache {
+	off_t file_size;
+	off_t offset;
+	size_t alloc_size;
+	size_t data_size;
+	char *data;
+} write_cache;
+
 static bool setup_write_cache(files_struct *, off_t);
 
 /****************************************************************************
