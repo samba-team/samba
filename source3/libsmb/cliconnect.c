@@ -2413,7 +2413,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		req, struct cli_tcon_andx_state);
 	struct cli_state *cli = state->cli;
 	uint8_t *in;
-	char *inbuf;
+	uint8_t *inhdr;
 	uint8_t wct;
 	uint16_t *vwv;
 	uint32_t num_bytes;
@@ -2428,12 +2428,12 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbuf = (char *)in;
+	inhdr = in + NBT_HDR_SIZE;
 
 	if (num_bytes) {
 		if (clistr_pull_talloc(cli,
-				inbuf,
-				SVAL(inbuf, smb_flg2),
+				(const char *)inhdr,
+				SVAL(inhdr, HDR_FLG2),
 				&cli->dev,
 				bytes,
 				num_bytes,
@@ -2465,7 +2465,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
 	}
 
-	cli->smb1.tid = SVAL(inbuf,smb_tid);
+	cli->smb1.tid = SVAL(inhdr, HDR_TID);
 	tevent_req_done(req);
 }
 
