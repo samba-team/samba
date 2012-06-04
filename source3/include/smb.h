@@ -151,10 +151,6 @@ struct wb_context;
 struct rpc_cli_smbd_conn;
 struct fncall_context;
 
-struct share_mode_lock {
-	struct share_mode_data *data;
-};
-
 struct vfs_fsp_data {
     struct vfs_fsp_data *next;
     struct vfs_handle_struct *owner;
