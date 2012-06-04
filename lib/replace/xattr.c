@@ -4,6 +4,8 @@
    Copyright (C) Jeremy Allison  1998-2005
    Copyright (C) Timur Bakeyev        2005
    Copyright (C) Bjoern Jacke    2006-2007
+   Copyright (C) Herb Lewis           2003
+   Copyright (C) Andrew Bartlett      2012
 
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
