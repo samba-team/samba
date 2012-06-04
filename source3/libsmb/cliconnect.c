@@ -1159,7 +1159,7 @@ struct cli_sesssetup_blob_state {
 	struct iovec *recv_iov;
 
 	NTSTATUS status;
-	char *inbuf;
+	uint8_t *inbuf;
 	DATA_BLOB ret_blob;
 };
 
@@ -1321,7 +1321,7 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		goto next;
 	}
 
-	state->inbuf = (char *)in;
+	state->inbuf = in;
 	inhdr = in + NBT_HDR_SIZE;
 	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
 	cli->is_guestlogin = ((SVAL(vwv+2, 0) & 1) != 0);
@@ -1392,13 +1392,13 @@ next:
 static NTSTATUS cli_sesssetup_blob_recv(struct tevent_req *req,
 					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *pblob,
-					char **pinbuf,
+					uint8_t **pinbuf,
 					struct iovec **precv_iov)
 {
 	struct cli_sesssetup_blob_state *state = tevent_req_data(
 		req, struct cli_sesssetup_blob_state);
 	NTSTATUS status;
-	char *inbuf;
+	uint8_t *inbuf;
 	struct iovec *recv_iov;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1505,7 +1505,7 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_session_setup_kerberos_state *state = tevent_req_data(
 		req, struct cli_session_setup_kerberos_state);
-	char *inbuf = NULL;
+	uint8_t *inbuf = NULL;
 	struct iovec *recv_iov = NULL;
 	NTSTATUS status;
 
@@ -1530,7 +1530,7 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 	} else {
 		if (smb1cli_conn_activate_signing(state->cli->conn, state->session_key_krb5,
 					   data_blob_null)
-		    && !smb1cli_conn_check_signing(state->cli->conn, (uint8_t *)inbuf, 1)) {
+		    && !smb1cli_conn_check_signing(state->cli->conn, inbuf, 1)) {
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
@@ -1687,7 +1687,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
 		req, struct cli_session_setup_ntlmssp_state);
 	DATA_BLOB blob_in, msg_in, blob_out;
-	char *inbuf = NULL;
+	uint8_t *inbuf = NULL;
 	struct iovec *recv_iov = NULL;
 	bool parse_ret;
 	NTSTATUS status;
@@ -1738,7 +1738,7 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 			if (smb1cli_conn_activate_signing(
 				    state->cli->conn, state->ntlmssp_state->session_key,
 				    data_blob_null)
-			    && !smb1cli_conn_check_signing(state->cli->conn, (uint8_t *)inbuf, 1)) {
+			    && !smb1cli_conn_check_signing(state->cli->conn, inbuf, 1)) {
 				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 				return;
 			}
