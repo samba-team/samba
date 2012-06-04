@@ -151,16 +151,6 @@ struct wb_context;
 struct rpc_cli_smbd_conn;
 struct fncall_context;
 
-struct vfs_fsp_data {
-    struct vfs_fsp_data *next;
-    struct vfs_handle_struct *owner;
-    void (*destroy)(void *p_data);
-    void *_dummy_;
-    /* NOTE: This structure contains four pointers so that we can guarantee
-     * that the end of the structure is always both 4-byte and 8-byte aligned.
-     */
-};
-
 /* the basic packet size, assuming no words or bytes */
 #define smb_size 39
 
