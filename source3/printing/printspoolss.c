@@ -25,6 +25,15 @@
 #include "smbd/globals.h"
 #include "../libcli/security/security.h"
 
+struct print_file_data {
+	char *svcname;
+	char *docname;
+	char *filename;
+	struct policy_handle handle;
+	uint32_t jobid;
+	uint16 rap_jobid;
+};
+
 void print_spool_terminate(struct connection_struct *conn,
 			   struct print_file_data *print_file);
 
