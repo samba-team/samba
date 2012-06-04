@@ -4619,7 +4619,6 @@ case "$host_os" in
 	    AC_MSG_RESULT(yes)
 
 	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
-	    samba_cv_found_xfs_header=yes
 	    AC_MSG_CHECKING(whether to use the lib/sysquotas_xfs.c builtin support)
 	    AC_MSG_RESULT(yes)
 	    ;;
@@ -4738,6 +4737,22 @@ if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
 fi
 fi
 
+AC_CACHE_CHECK([for NFS QUOTAS],samba_cv_HAVE_NFS_QUOTAS,[
+AC_TRY_COMPILE([
+#include <rpc/rpc.h>
+#include <rpc/types.h>
+#include <rpcsvc/rquota.h>
+#ifdef HAVE_RPC_NETTYPE_H
+#include <rpc/nettype.h>
+#endif
+#include <rpc/xdr.h>
+],[clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");],
+		   samba_cv_HAVE_NFS_QUOTAS=yes, samba_cv_HAVE_NFS_QUOTAS=no)])
+
+if test x"$samba_cv_HAVE_NFS_QUOTAS" = x"yes"; then
+    AC_DEFINE(HAVE_NFS_QUOTAS,1,[NFS quota support is available])
+fi
+
 #################################################
 # check for mntent.h and struct mntent
 AC_CHECK_HEADERS(mntent.h)
@@ -4768,20 +4783,6 @@ if test x"$samba_cv_WITH_SYS_QUOTAS" = x"yes"; then
 fi
 
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
-AC_CACHE_CHECK([whether the sys_quota interface works],samba_cv_SYSQUOTA_WORKS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_COMPILE([
-#include "confdefs.h"
-#define NO_PROTO_H 1
-#define NO_CONFIG_H 1
-#define HAVE_SYS_QUOTAS 1
-#include "${srcdir-.}/${samba_cv_sysquotas_file}"
-#include "${srcdir-.}/lib/sysquotas.c"
-],[],samba_cv_SYSQUOTA_WORKS=yes,samba_cv_SYSQUOTA_WORKS=no)
-CPPFLAGS="$SAVE_CPPFLAGS"
-])
-if test x"$samba_cv_SYSQUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
     if test x"$samba_cv_TRY_SYS_QUOTAS" != x"no"; then
 	AC_DEFINE(WITH_QUOTAS,1,[Whether to use disk quota support])
@@ -4792,62 +4793,13 @@ AC_MSG_CHECKING(whether to use the new lib/sysquotas.c interface)
         AC_MSG_RESULT(no)
     fi
 fi
-fi
-
-if test x"$samba_cv_SYSQUOTA_FOUND" != x"no"; then
-AC_CACHE_CHECK([whether the sys_quota interface works with NFS],samba_cv_SYSQUOTA_WORKS_NFS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_COMPILE([
-#include "confdefs.h"
-#define NO_PROTO_H 1
-#define NO_CONFIG_H 1
-#define HAVE_SYS_QUOTAS 1
-#define HAVE_NFS_QUOTAS 1
-#include "${srcdir-.}/lib/sysquotas_nfs.c"
-],[],samba_cv_SYSQUOTA_WORKS_NFS=yes,samba_cv_SYSQUOTA_WORKS_NFS=no)
-CPPFLAGS="$SAVE_CPPFLAGS"
-])
-if test x"$samba_cv_SYSQUOTA_WORKS_NFS" = x"yes"; then
-    if test x"$samba_cv_WE_USE_SYS_QUOTAS" = x"yes"; then
-	AC_DEFINE(HAVE_NFS_QUOTAS,1,[Whether nfs quota support is available])
-    fi
-fi
-fi
 
 if test x"$samba_cv_SYSQUOTA_FOUND" != x"no" -a x"$samba_cv_found_xfs_header" = x"yes"; then
-AC_CACHE_CHECK([whether the sys_quota interface works with XFS],samba_cv_SYSQUOTA_WORKS_XFS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_COMPILE([
-#include "confdefs.h"
-#define NO_PROTO_H 1
-#define NO_CONFIG_H 1
-#define HAVE_SYS_QUOTAS 1
-#define HAVE_XFS_QUOTAS 1
-#include "${srcdir-.}/lib/sysquotas_xfs.c"
-],[],samba_cv_SYSQUOTA_WORKS_XFS=yes,samba_cv_SYSQUOTA_WORKS_XFS=no)
-CPPFLAGS="$SAVE_CPPFLAGS"
-])
-if test x"$samba_cv_SYSQUOTA_WORKS_XFS" = x"yes"; then
     if test x"$samba_cv_WE_USE_SYS_QUOTAS" = x"yes"; then
 	AC_DEFINE(HAVE_XFS_QUOTAS,1,[Whether xfs quota support is available])
     fi
 fi
-fi
 
-AC_CACHE_CHECK([whether the old quota support works],samba_cv_QUOTA_WORKS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
-AC_TRY_COMPILE([
-#include "confdefs.h"
-#define NO_PROTO_H 1
-#define NO_CONFIG_H 1
-#include "${srcdir-.}/smbd/quotas.c"
-],[],samba_cv_QUOTA_WORKS=yes,samba_cv_QUOTA_WORKS=no)
-CPPFLAGS="$SAVE_CPPFLAGS"
-])
-if test x"$samba_cv_QUOTA_WORKS" = x"yes"; then
 AC_MSG_CHECKING(whether to use the old quota support)
     if test x"$samba_cv_WE_USE_SYS_QUOTAS" != x"yes"; then
       if test x"$samba_cv_TRY_QUOTAS" != x"no"; then
@@ -4859,7 +4811,6 @@ AC_MSG_CHECKING(whether to use the old quota support)
     else
       AC_MSG_RESULT(no)
     fi
-fi
 
 ####################
 # End of quota check samba_cv_RUN_QUOTA_TESTS
