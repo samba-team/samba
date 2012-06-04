@@ -1661,18 +1661,6 @@ def provision(logger, session_info, credentials, smbconf=None,
         server_services.append("+s3fs")
         global_param["dcerpc endpoint servers"] = ["-winreg", "-srvsvc"]
 
-        if targetdir is not None:
-            file = tempfile.NamedTemporaryFile(dir=os.path.abspath(targetdir))
-        else:
-            file = tempfile.NamedTemporaryFile(dir=os.path.abspath(os.path.dirname(lp.get("private dir"))))
-        try:
-            try:
-                smbd.set_simple_acl(file.name, root_uid, wheel_gid)
-            except Exception:
-                raise ProvisioningError("Your filesystem or build does not support posix ACLs, s3fs is unworkable in this mode")
-        finally:
-            file.close()
-
     if len(server_services) > 0:
         global_param["server services"] = server_services
 
@@ -1743,6 +1731,22 @@ def provision(logger, session_info, credentials, smbconf=None,
         os.mkdir(os.path.join(paths.private_dir, "tls"))
     if not os.path.exists(paths.state_dir):
         os.mkdir(paths.state_dir)
+
+    if paths.sysvol and not os.path.exists(paths.sysvol):
+        os.makedirs(paths.sysvol, 0775)
+
+    if not use_ntvfs and serverrole == "domain controller":
+        if paths.sysvol is None:
+            raise MissingShareError("sysvol", paths.smbconf)
+
+        file = tempfile.NamedTemporaryFile(dir=os.path.abspath(paths.sysvol))
+        try:
+            try:
+                smbd.set_simple_acl(file.name, root_uid, wheel_gid)
+            except Exception:
+                raise ProvisioningError("Your filesystem or build does not support posix ACLs, s3fs is unworkable in this mode")
+        finally:
+            file.close()
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
 
