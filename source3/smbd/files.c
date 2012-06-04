@@ -511,9 +511,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	}
 
 	/* Drop all remaining extensions. */
-	while (fsp->vfs_extension) {
-		vfs_remove_fsp_extension(fsp->vfs_extension->owner, fsp);
-	}
+	vfs_remove_all_fsp_extensions(fsp);
 
 	/* this is paranoia, just in case someone tries to reuse the
 	   information */
