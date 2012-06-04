@@ -47,12 +47,13 @@ class dc_join(object):
 
     def __init__(ctx, server=None, creds=None, lp=None, site=None,
             netbios_name=None, targetdir=None, domain=None,
-            machinepass=None):
+            machinepass=None, use_ntvfs=False):
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
         ctx.netbios_name = netbios_name
         ctx.targetdir = targetdir
+        ctx.use_ntvfs = use_ntvfs
 
         ctx.creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
         ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
@@ -595,7 +596,7 @@ class dc_join(object):
                 hostname=ctx.myname, domainsid=ctx.domsid,
                 machinepass=ctx.acct_pass, serverrole="domain controller",
                 sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
-                dns_backend="NONE")
+                use_ntvfs=ctx.use_ntvfs, dns_backend="NONE")
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
@@ -882,11 +883,11 @@ class dc_join(object):
 
 def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None, domain_critical_only=False,
-              machinepass=None):
+              machinepass=None, use_ntvfs=False):
     """join as a RODC"""
 
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass)
+                  machinepass, use_ntvfs)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -936,10 +937,10 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
             targetdir=None, domain=None, domain_critical_only=False,
-            machinepass=None):
+            machinepass=None, use_ntvfs=False):
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass)
+                  machinepass, use_ntvfs)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -966,10 +967,10 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=None,
                    targetdir=None, parent_domain=None, dnsdomain=None, netbios_domain=None,
-                   machinepass=None):
+                   machinepass=None, use_ntvfs=False):
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain,
-                  machinepass)
+                  machinepass, use_ntvfs)
     ctx.subdomain = True
     ctx.parent_domain_name = ctx.domain_name
     ctx.domain_name = netbios_domain

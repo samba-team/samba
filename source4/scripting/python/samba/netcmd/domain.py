@@ -146,14 +146,17 @@ class cmd_domain_join(Command):
                help="only replicate critical domain objects",
                action="store_true"),
         Option("--machinepass", type=str, metavar="PASSWORD",
-               help="choose machine password (otherwise random)")
+               help="choose machine password (otherwise random)"),
+        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+               action="store_true")
         ]
 
     takes_args = ["domain", "role?"]
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
-            domain_critical_only=False, parent_domain=None, machinepass=None):
+            domain_critical_only=False, parent_domain=None, machinepass=None,
+            use_ntvfs=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -178,13 +181,13 @@ class cmd_domain_join(Command):
             join_DC(server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
-                    machinepass=machinepass)
+                    machinepass=machinepass, use_ntvfs=use_ntvfs)
             return
         elif role == "RODC":
             join_RODC(server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
-                      machinepass=machinepass)
+                      machinepass=machinepass, use_ntvfs=use_ntvfs)
             return
         elif role == "SUBDOMAIN":
             netbios_domain = lp.get("workgroup")
@@ -192,7 +195,7 @@ class cmd_domain_join(Command):
                 parent_domain = ".".join(domain.split(".")[1:])
             join_subdomain(server=server, creds=creds, lp=lp, dnsdomain=domain, parent_domain=parent_domain,
                            site=site, netbios_name=netbios_name, netbios_domain=netbios_domain, targetdir=targetdir,
-                           machinepass=machinepass)
+                           machinepass=machinepass, use_ntvfs=use_ntvfs)
             return
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
