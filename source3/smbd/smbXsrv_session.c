@@ -749,6 +749,12 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 
 		global->session_wire_id = id;
 
+		status = smb2srv_tcon_table_init(session);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(session);
+			return status;
+		}
+
 		session->local_id = global->session_global_id;
 
 		key = smbXsrv_session_local_id_to_key(session->local_id, key_buf);
@@ -1005,6 +1011,20 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 
 	if (session->compat) {
 		file_close_user(conn->sconn, session->compat->vuid);
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		status = smb2srv_tcon_disconnect_all(session);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
+				  "smb2srv_tcon_disconnect_all() failed: %s\n",
+				  session->global->session_global_id,
+				  nt_errstr(status)));
+			error = status;
+		}
+	}
+
+	if (session->compat) {
 		invalidate_vuid(conn->sconn, session->compat->vuid);
 		session->compat = NULL;
 	}
