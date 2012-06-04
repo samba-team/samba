@@ -161,6 +161,9 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
 		const char *oid_str = NULL;
 		asn1_read_OID(data,talloc_autofree_context(),&oid_str);
+		if (data->has_error) {
+			break;
+		}
 		OIDs[i] = CONST_DISCARD(char *, oid_str);
 	}
 	OIDs[i] = NULL;
