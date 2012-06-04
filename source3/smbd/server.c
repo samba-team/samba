@@ -42,6 +42,7 @@
 #include "lib/id_cache.h"
 #include "lib/param/param.h"
 #include "lib/background.h"
+#include "lib/conn_tdb.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;

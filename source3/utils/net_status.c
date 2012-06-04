@@ -20,6 +20,7 @@
 #include "utils/net.h"
 #include "session.h"
 #include "messages.h"
+#include "lib/conn_tdb.h"
 
 int net_status_usage(struct net_context *c, int argc, const char **argv)
 {

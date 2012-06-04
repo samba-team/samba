@@ -36,6 +36,7 @@
 #include "smbprofile.h"
 #include "../libcli/security/security.h"
 #include "auth/gensec/gensec.h"
+#include "lib/conn_tdb.h"
 
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.

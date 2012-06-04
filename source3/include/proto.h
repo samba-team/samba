@@ -87,25 +87,6 @@ size_t align_string(const void *base_ptr, const char *p, int flags);
 size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
 
-/* The following definitions come from lib/conn_tdb.c  */
-
-struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
-					  connection_struct *conn,
-					  const char *name);
-int connections_traverse(int (*fn)(struct db_record *rec,
-				   void *private_data),
-			 void *private_data);
-int connections_forall(int (*fn)(struct db_record *rec,
-				 const struct connections_key *key,
-				 const struct connections_data *data,
-				 void *private_data),
-		       void *private_data);
-int connections_forall_read(int (*fn)(const struct connections_key *key,
-				      const struct connections_data *data,
-				      void *private_data),
-			    void *private_data);
-bool connections_init(bool rw);
-
 /* The following definitions come from lib/dmallocmsg.c  */
 
 void register_dmalloc_msgs(struct messaging_context *msg_ctx);

@@ -22,6 +22,7 @@
 #include "libcli/security/security.h"
 #include "locking/proto.h"
 #include "librpc/gen_ndr/open_files.h"
+#include "lib/conn_tdb.h"
 
 #define _(x) lang_msg_rotate(talloc_tos(),x)
 

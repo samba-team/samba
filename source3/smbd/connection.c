@@ -24,6 +24,7 @@
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
 #include "messages.h"
+#include "lib/conn_tdb.h"
 
 /****************************************************************************
  Delete a connection record.

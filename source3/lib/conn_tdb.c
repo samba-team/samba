@@ -23,6 +23,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "messages.h"
+#include "lib/conn_tdb.h"
 
 static struct db_context *connections_db_ctx(bool rw)
 {

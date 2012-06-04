@@ -22,6 +22,7 @@
 #include "dbwrap/dbwrap.h"
 #include "serverid.h"
 #include "session.h"
+#include "lib/conn_tdb.h"
 
 static int net_serverid_list_fn(const struct server_id *id,
 				uint32_t msg_flags, void *priv)

@@ -42,6 +42,7 @@
 #include "librpc/gen_ndr/open_files.h"
 #include "smbd/proto.h"
 #include "librpc/gen_ndr/notify.h"
+#include "lib/conn_tdb.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
