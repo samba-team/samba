@@ -97,9 +97,8 @@ static void cli_message_start_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	uint8_t wct;
 	uint16_t *vwv;
-	uint8_t *inbuf;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 0, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 0, &wct, &vwv,
 			      NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {

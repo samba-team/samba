@@ -1852,10 +1852,9 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	uint32_t num_bytes;
 	uint8_t *bytes;
-	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 3, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 3, &wct, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -2241,10 +2240,9 @@ static void cli_openx_done(struct tevent_req *subreq)
 		req, struct cli_openx_state);
 	uint8_t wct;
 	uint16_t *vwv;
-	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 3, &wct, &vwv, NULL,
+	status = cli_smb_recv(subreq, state, NULL, 3, &wct, &vwv, NULL,
 			      NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -3279,10 +3277,9 @@ static void cli_getattrE_done(struct tevent_req *subreq)
 		req, struct cli_getattrE_state);
 	uint8_t wct;
 	uint16_t *vwv = NULL;
-	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 11, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 11, &wct, &vwv,
 			      NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -3439,10 +3436,9 @@ static void cli_getatr_done(struct tevent_req *subreq)
 		req, struct cli_getatr_state);
 	uint8_t wct;
 	uint16_t *vwv = NULL;
-	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 4, &wct, &vwv, NULL,
+	status = cli_smb_recv(subreq, state, NULL, 4, &wct, &vwv, NULL,
 			      NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -3922,10 +3918,9 @@ static void cli_dskattr_done(struct tevent_req *subreq)
 		req, struct cli_dskattr_state);
 	uint8_t wct;
 	uint16_t *vwv = NULL;
-	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 4, &wct, &vwv, NULL,
+	status = cli_smb_recv(subreq, state, NULL, 4, &wct, &vwv, NULL,
 			      NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
@@ -4052,9 +4047,8 @@ static void cli_ctemp_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	uint32_t num_bytes = 0;
 	uint8_t *bytes = NULL;
-	uint8_t *inbuf;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 1, &wcnt, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 1, &wcnt, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {

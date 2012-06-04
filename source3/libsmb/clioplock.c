@@ -71,10 +71,9 @@ static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq)
 	uint16_t *vwv;
 	uint32_t num_bytes;
 	uint8_t *bytes;
-	uint8_t *inbuf;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, &inbuf, 8, &wct, &vwv,
+	status = cli_smb_recv(subreq, state, NULL, 8, &wct, &vwv,
 			      &num_bytes, &bytes);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
