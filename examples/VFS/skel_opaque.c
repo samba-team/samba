@@ -23,7 +23,6 @@
 
 
 #include "../source3/include/includes.h"
-#include "smbd/proto.h"
 
 /* PLEASE,PLEASE READ THE VFS MODULES CHAPTER OF THE 
    SAMBA DEVELOPERS GUIDE!!!!!!

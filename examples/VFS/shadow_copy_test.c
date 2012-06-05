@@ -20,7 +20,6 @@
 
 #include "../source3/include/includes.h"
 #include "ntioctl.h"
-#include "smbd/proto.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
