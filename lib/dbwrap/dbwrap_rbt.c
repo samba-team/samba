@@ -382,7 +382,6 @@ static int db_rbt_traverse_internal(struct db_context *db,
 		return ret;
 	}
 
-	ZERO_STRUCT(rec_priv);
 	rec_priv.node = db_rbt2node(n);
 	/* n might be altered by the callback function */
 	n = NULL;
