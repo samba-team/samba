@@ -449,7 +449,7 @@ static void api_no_reply(connection_struct *conn, struct smb_request *req)
  Handle remote api calls delivered to a named pipe already opened.
  ****************************************************************************/
 
-static void api_fd_reply(connection_struct *conn, uint16 vuid,
+static void api_fd_reply(connection_struct *conn, uint64_t vuid,
 			 struct smb_request *req,
 			 uint16 *setup, uint8_t *data, char *params,
 			 int suwcnt, int tdscnt, int tpscnt,
@@ -493,8 +493,8 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	}
 
 	if (vuid != fsp->vuid) {
-		DEBUG(1, ("Got pipe request (pnum %x) using invalid VUID %d, "
-			  "expected %llu\n", pnum, vuid,
+		DEBUG(1, ("Got pipe request (pnum %x) using invalid VUID %llu, "
+			  "expected %llu\n", pnum, (unsigned long long)vuid,
 			  (unsigned long long)fsp->vuid));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
@@ -530,7 +530,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
  Handle named pipe commands.
 ****************************************************************************/
 
-static void named_pipe(connection_struct *conn, uint16 vuid,
+static void named_pipe(connection_struct *conn, uint64_t vuid,
 		       struct smb_request *req,
 		       const char *name, uint16 *setup,
 		       char *data, char *params,
