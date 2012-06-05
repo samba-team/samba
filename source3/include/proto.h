@@ -242,36 +242,6 @@ void standard_sub_advanced(const char *servicename, const char *user,
 			   const char *smb_name, const char *domain_name,
 			   char *str, size_t len);
 
-/* The following definitions come from lib/sysacls.c  */
-
-int sys_acl_get_entry(SMB_ACL_T acl_d, int entry_id, SMB_ACL_ENTRY_T *entry_p);
-int sys_acl_get_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *type_p);
-int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
-void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d);
-int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
-int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
-int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
-char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p);
-SMB_ACL_T sys_acl_init(int count);
-int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
-int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
-int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
-int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
-int sys_acl_free_text(char *text);
-int sys_acl_free_acl(SMB_ACL_T acl_d) ;
-int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
-int sys_acl_valid(SMB_ACL_T acl_d);
-SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle, 
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp);
-int sys_acl_set_file(vfs_handle_struct *handle,
-		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
-int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   SMB_ACL_T acl_d);
-int sys_acl_delete_def_file(vfs_handle_struct *handle,
-			    const char *path);
-int no_acl_syscall_error(int err);
-
 /* The following definitions come from lib/sysquotas.c  */
 
 int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
