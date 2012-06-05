@@ -1090,7 +1090,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
  Close a cnum.
 ****************************************************************************/
 
-void close_cnum(connection_struct *conn, uint16 vuid)
+void close_cnum(connection_struct *conn, uint64_t vuid)
 {
 	file_close_conn(conn);
 
