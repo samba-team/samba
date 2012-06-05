@@ -192,7 +192,7 @@ typedef struct files_struct {
 	struct file_id file_id;
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
 	uint16 file_pid;
-	uint16 vuid;
+	uint64_t vuid; /* SMB2 compat */
 	struct write_cache *wcp;
 	struct timeval open_time;
 	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */

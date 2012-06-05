@@ -494,7 +494,8 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 
 	if (vuid != fsp->vuid) {
 		DEBUG(1, ("Got pipe request (pnum %x) using invalid VUID %d, "
-			  "expected %d\n", pnum, vuid, fsp->vuid));
+			  "expected %llu\n", pnum, vuid,
+			  (unsigned long long)fsp->vuid));
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return;
 	}

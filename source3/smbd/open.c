@@ -1442,9 +1442,9 @@ static NTSTATUS fcb_or_dos_open(struct smb_request *req,
 	    fsp = file_find_di_next(fsp)) {
 
 		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, "
-			  "vuid = %u, file_pid = %u, private_options = 0x%x "
+			  "vuid = %llu, file_pid = %u, private_options = 0x%x "
 			  "access_mask = 0x%x\n", fsp_str_dbg(fsp),
-			  fsp->fh->fd, (unsigned int)fsp->vuid,
+			  fsp->fh->fd, (unsigned long long)fsp->vuid,
 			  (unsigned int)fsp->file_pid,
 			  (unsigned int)fsp->fh->private_options,
 			  (unsigned int)fsp->access_mask ));
