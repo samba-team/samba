@@ -28,7 +28,7 @@
 #include "printing/queue_process.h"
 #include "serverid.h"
 #include "locking/proto.h"
-#include "smbd/proto.h"
+#include "smbd/smbd.h"
 #include "rpc_server/rpc_config.h"
 #include "printing/load.h"
 
