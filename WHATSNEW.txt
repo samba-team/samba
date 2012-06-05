@@ -34,6 +34,7 @@ unaffected at this stage.
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
 beta releases, you should backup all configuration and data.
 
+
 NEW FEATURES
 ============
 
@@ -64,10 +65,20 @@ As mentioned above, this change to the default file server may cause
 instability, as we learn about the real-world interactions between
 these two key components. 
 
-A new scripting interface has been added to Samba 4, allowing Python
-programs to interface to Samba's internals, and many tools and
-internal workings of the DC code is now implemented in python.  
+As DNS is an integral part of Active Directory, we also provide a DNS
+solution, using the BIND DLZ mechanism in versions 9.8 and 9.9.
+During the provision, a configuration file will be generated for bind
+to make it use this plugin.  We also have a project to provide a
+minimal internal DNS server from within the Samba process, for easier
+'out of the box' configuration.  Note however that this is not yet
+complete (pending addition of secure DNS update support).
 
+To provide accurate timestamps to Windows clients, we integrate with
+the NTP project to provide secured NTP replies. 
+
+Finally, a new scripting interface has been added to Samba 4, allowing
+Python programs to interface to Samba's internals, and many tools and
+internal workings of the DC code is now implemented in python.
 
 
 CHANGES SINCE alpha21
@@ -97,6 +108,7 @@ number of scary warnings from our log output).
 
 Much improved support for FreeBSD, including extended attribute
 support on the filesystem for the AD DC.
+
 
 KNOWN ISSUES
 ============
@@ -139,6 +151,7 @@ KNOWN ISSUES
 - The DRS replication code may fail.  Please contact the team if you
   experience issues with DRS replication, as we have fixed many issues
   here in response to feedback from our production users. 
+
 
 RUNNING Samba 4.0 as an AD DC
 =============================
