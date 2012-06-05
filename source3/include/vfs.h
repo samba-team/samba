@@ -309,7 +309,7 @@ typedef struct connection_struct {
 	 */
 	gid_t force_group_gid;
 
-	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
+	uint64_t vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
 
 	time_t lastused;
 	time_t lastused_count;
