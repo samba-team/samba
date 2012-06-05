@@ -112,6 +112,9 @@ KNOWN ISSUES
   in an application partition in our directory.  The replicaton of
   this partition is not yet reliable.
 
+- Replication may fail on FreeBSD due to getaddrinfo() rejecting names
+  containing _.  A workaround will be in the next beta.
+
 - upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
   been made since alpha16.  
