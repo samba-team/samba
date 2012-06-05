@@ -169,26 +169,6 @@ struct sys_notify_context {
 	void *private_data; 	/* For use by the system backend */
 };
 
-struct notify_change_buf {
-	/*
-	 * If no requests are pending, changes are queued here. Simple array,
-	 * we only append.
-	 */
-
-	/*
-	 * num_changes == -1 means that we have got a catch-all change, when
-	 * asked we just return NT_STATUS_OK without specific changes.
-	 */
-	int num_changes;
-	struct notify_change *changes;
-
-	/*
-	 * If no changes are around requests are queued here. Using a linked
-	 * list, because we have to append at the end and delete from the top.
-	 */
-	struct notify_change_request *requests;
-};
-
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	int fnum;

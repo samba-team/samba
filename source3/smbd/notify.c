@@ -24,6 +24,26 @@
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/ndr_notify.h"
 
+struct notify_change_buf {
+	/*
+	 * If no requests are pending, changes are queued here. Simple array,
+	 * we only append.
+	 */
+
+	/*
+	 * num_changes == -1 means that we have got a catch-all change, when
+	 * asked we just return NT_STATUS_OK without specific changes.
+	 */
+	int num_changes;
+	struct notify_change *changes;
+
+	/*
+	 * If no changes are around requests are queued here. Using a linked
+	 * list, because we have to append at the end and delete from the top.
+	 */
+	struct notify_change_request *requests;
+};
+
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
