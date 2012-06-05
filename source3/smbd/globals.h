@@ -438,6 +438,7 @@ struct smbd_smb2_request {
 };
 
 struct smbd_server_connection;
+struct user_struct;
 
 struct smbd_smb2_session {
 	struct smbd_smb2_session *prev, *next;
@@ -472,6 +473,19 @@ struct smbd_smb2_tcon {
 
 struct pending_message_list;
 struct pending_auth_data;
+
+struct user_struct {
+	struct user_struct *next, *prev;
+	uint16 vuid; /* Tag for this entry. */
+
+	char *session_keystr; /* used by utmp and pam session code.
+				 TDB key string */
+	int homes_snum;
+
+	struct auth_session_info *session_info;
+
+	struct gensec_security *gensec_security;
+};
 
 struct smbd_server_connection {
 	int sock;

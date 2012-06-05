@@ -918,19 +918,6 @@ struct node_status_extra {
 	/* There really is more here ... */ 
 };
 
-struct user_struct {
-	struct user_struct *next, *prev;
-	uint16 vuid; /* Tag for this entry. */
-
-	char *session_keystr; /* used by utmp and pam session code.  
-				 TDB key string */
-	int homes_snum;
-
-	struct auth_session_info *session_info;
-
-	struct gensec_security *gensec_security;
-};
-
 /*
    Do you want session setups at user level security with a invalid
    password to be rejected or allowed in as guest? WinNT rejects them
