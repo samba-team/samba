@@ -340,6 +340,67 @@ typedef struct connection_struct {
 
 } connection_struct;
 
+struct smbd_smb2_request;
+struct privilege_paths;
+
+struct smb_request {
+	uint8_t cmd;
+	uint16 flags2;
+	uint16 smbpid;
+	uint64_t mid; /* For compatibility with SMB2. */
+	uint32_t seqnum;
+	uint16 vuid;
+	uint16 tid;
+	uint8  wct;
+	const uint16_t *vwv;
+	uint16_t buflen;
+	const uint8_t *buf;
+	const uint8 *inbuf;
+
+	/*
+	 * Async handling in the main smb processing loop is directed by
+	 * outbuf: reply_xxx routines indicate sync behaviour by putting their
+	 * reply into "outbuf". If they leave it as NULL, they take care of it
+	 * themselves, possibly later.
+	 *
+	 * If async handling is wanted, the reply_xxx routine must make sure
+	 * that it talloc_move()s the smb_req somewhere else.
+	 */
+	uint8 *outbuf;
+
+	size_t unread_bytes;
+	bool encrypted;
+	connection_struct *conn;
+	struct smbd_server_connection *sconn;
+	struct smb_perfcount_data pcd;
+
+	/*
+	 * Chained request handling
+	 */
+	struct files_struct *chain_fsp;
+
+	/*
+	 * state information for async smb handling
+	 */
+	void *async_priv;
+
+	/*
+	 * Back pointer to smb2 request.
+	 */
+	struct smbd_smb2_request *smb2req;
+
+	/*
+	 * Pathnames used if request done
+	 * under privilege.
+	 */
+	struct privilege_paths *priv_paths;
+
+	/*
+	 * Request list for chained requests, we're part of it.
+	 */
+	struct smb_request **chain;
+};
+
 /*
  * Info about an alternate data stream
  */
