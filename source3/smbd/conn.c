@@ -186,7 +186,7 @@ find_again:
  Clear a vuid out of the connection's vuid cache
 ****************************************************************************/
 
-static void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
+static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 {
 	int i;
 
@@ -231,7 +231,7 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
  Called from invalidate_vuid()
 ****************************************************************************/
 
-void conn_clear_vuid_caches(struct smbd_server_connection *sconn,uint16_t vuid)
+void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint64_t vuid)
 {
 	connection_struct *conn;
 
