@@ -2073,7 +2073,7 @@ void reply_open_and_X(struct smb_request *req)
 void reply_ulogoffX(struct smb_request *req)
 {
 	struct smbd_server_connection *sconn = req->sconn;
-	user_struct *vuser;
+	struct user_struct *vuser;
 
 	START_PROFILE(SMBulogoffX);
 

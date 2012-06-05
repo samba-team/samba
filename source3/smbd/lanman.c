@@ -4627,7 +4627,7 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 	char* name;
 		/* With share level security vuid will always be zero.
 		   Don't depend on vuser being non-null !!. JRA */
-	user_struct *vuser = get_valid_user_struct(sconn, vuid);
+	struct user_struct *vuser = get_valid_user_struct(sconn, vuid);
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -5855,7 +5855,7 @@ void api_reply(connection_struct *conn, uint16 vuid,
 	/* Check whether this api call can be done anonymously */
 
 	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
-		user_struct *user = get_valid_user_struct(req->sconn, vuid);
+		struct user_struct *user = get_valid_user_struct(req->sconn, vuid);
 
 		if (!user || security_session_user_level(user->session_info, NULL) < SECURITY_USER) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);

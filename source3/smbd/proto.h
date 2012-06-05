@@ -687,10 +687,10 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 
 /* The following definitions come from smbd/password.c  */
 
-user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
+struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
 				   uint16 vuid);
 bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint16 vuid);
-user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
+struct user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
 					  uint16 vuid);
 void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid);
 void invalidate_all_vuids(struct smbd_server_connection *sconn);
@@ -984,7 +984,7 @@ int find_service(TALLOC_CTX *ctx, const char *service, char **p_service_out);
 struct smbd_smb2_tcon;
 connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					struct smbd_smb2_tcon *tcon,
-					user_struct *vuser,
+					struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus);
 connection_struct *make_connection(struct smbd_server_connection *sconn,
@@ -996,8 +996,8 @@ void close_cnum(connection_struct *conn, uint16 vuid);
 /* The following definitions come from smbd/session.c  */
 struct sessionid;
 bool session_init(void);
-bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser);
-void session_yield(user_struct *vuser);
+bool session_claim(struct smbd_server_connection *sconn, struct user_struct *vuser);
+void session_yield(struct user_struct *vuser);
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 
 /* The following definitions come from smbd/sesssetup.c  */

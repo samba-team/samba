@@ -127,7 +127,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	uint16 data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
 	int vuid = req->vuid;
-	user_struct *vuser = NULL;
+	struct user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint16_t action = 0;

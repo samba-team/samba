@@ -224,7 +224,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 
 	session->session_key = session->session_info->session_key;
 
-	session->compat_vuser = talloc_zero(session, user_struct);
+	session->compat_vuser = talloc_zero(session, struct user_struct);
 	if (session->compat_vuser == NULL) {
 		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;

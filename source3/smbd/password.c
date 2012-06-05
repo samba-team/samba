@@ -41,12 +41,12 @@ enum server_allocated_state { SERVER_ALLOCATED_REQUIRED_YES,
 				SERVER_ALLOCATED_REQUIRED_NO,
 				SERVER_ALLOCATED_REQUIRED_ANY};
 
-static user_struct *get_valid_user_struct_internal(
+static struct user_struct *get_valid_user_struct_internal(
 			struct smbd_server_connection *sconn,
 			uint16 vuid,
 			enum server_allocated_state server_allocated)
 {
-	user_struct *usp;
+	struct user_struct *usp;
 	int count=0;
 
 	if (vuid == UID_FIELD_INVALID)
@@ -84,7 +84,7 @@ static user_struct *get_valid_user_struct_internal(
  tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
-user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
+struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
 				   uint16 vuid)
 {
 	return get_valid_user_struct_internal(sconn, vuid,
@@ -100,7 +100,7 @@ bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint16 vuid)
  Get the user struct of a partial NTLMSSP login
 ****************************************************************************/
 
-user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
+struct user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
 					  uint16 vuid)
 {
 	return get_valid_user_struct_internal(sconn, vuid,
@@ -113,7 +113,7 @@ user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
 
 void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid)
 {
-	user_struct *vuser = NULL;
+	struct user_struct *vuser = NULL;
 
 	vuser = get_valid_user_struct_internal(sconn, vuid,
 			SERVER_ALLOCATED_REQUIRED_ANY);
@@ -169,14 +169,14 @@ static void increment_next_vuid(uint16_t *vuid)
 
 int register_initial_vuid(struct smbd_server_connection *sconn)
 {
-	user_struct *vuser;
+	struct user_struct *vuser;
 
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
 	if (sconn->num_users >= 0xFFFF-VUID_OFFSET) {
 		return UID_FIELD_INVALID;
 	}
 
-	if((vuser = talloc_zero(NULL, user_struct)) == NULL) {
+	if((vuser = talloc_zero(NULL, struct user_struct)) == NULL) {
 		DEBUG(0,("register_initial_vuid: "
 				"Failed to talloc users struct!\n"));
 		return UID_FIELD_INVALID;
@@ -261,7 +261,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 			struct auth_session_info *session_info,
 			DATA_BLOB response_blob)
 {
-	user_struct *vuser;
+	struct user_struct *vuser;
 	bool guest = security_session_user_level(session_info, NULL) < SECURITY_USER;
 
 	vuser = get_partial_auth_user_struct(sconn, vuid);

@@ -449,7 +449,7 @@ struct smbd_smb2_session {
 	DATA_BLOB session_key;
 	bool do_signing;
 
-	user_struct *compat_vuser;
+	struct user_struct *compat_vuser;
 
 	struct {
 		/* an id tree used to allocate tids */

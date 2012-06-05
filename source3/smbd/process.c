@@ -1391,7 +1391,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 	 */
 
 	if (session_tag != sconn->smb1.sessions.last_session_tag) {
-		user_struct *vuser = NULL;
+		struct user_struct *vuser = NULL;
 
 		sconn->smb1.sessions.last_session_tag = session_tag;
 		if(session_tag != UID_FIELD_INVALID) {

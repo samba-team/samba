@@ -536,7 +536,7 @@ static void create_share_access_mask(connection_struct *conn, int snum)
 
 static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 					connection_struct *conn,
-					int snum, user_struct *vuser,
+					int snum, struct user_struct *vuser,
 					const char *pdev)
 {
 	struct smb_filename *smb_fname_cpath = NULL;
@@ -913,7 +913,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 ****************************************************************************/
 
 static connection_struct *make_connection_smb1(struct smbd_server_connection *sconn,
-					int snum, user_struct *vuser,
+					int snum, struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
@@ -942,7 +942,7 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 
 connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					struct smbd_smb2_tcon *tcon,
-					user_struct *vuser,
+					struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
@@ -977,7 +977,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				   NTSTATUS *status)
 {
 	uid_t euid;
-	user_struct *vuser = NULL;
+	struct user_struct *vuser = NULL;
 	char *service = NULL;
 	fstring dev;
 	int snum = -1;

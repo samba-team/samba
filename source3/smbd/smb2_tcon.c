@@ -203,7 +203,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	int snum = -1;
 	struct smbd_smb2_tcon *tcon;
 	connection_struct *compat_conn = NULL;
-	user_struct *compat_vuser = req->session->compat_vuser;
+	struct user_struct *compat_vuser = req->session->compat_vuser;
 	int id;
 	NTSTATUS status;
 

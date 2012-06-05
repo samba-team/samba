@@ -40,7 +40,7 @@
  called when a session is created
 ********************************************************************/
 
-bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
+bool session_claim(struct smbd_server_connection *sconn, struct user_struct *vuser)
 {
 	struct server_id pid = messaging_server_id(sconn->msg_ctx);
 	TDB_DATA data;
@@ -194,7 +194,7 @@ bool session_claim(struct smbd_server_connection *sconn, user_struct *vuser)
  called when a session is destroyed
 ********************************************************************/
 
-void session_yield(user_struct *vuser)
+void session_yield(struct user_struct *vuser)
 {
 	struct sessionid sessionid;
 	struct db_record *rec;
