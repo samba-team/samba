@@ -38,7 +38,8 @@ def provision_s4(t, func_level="2008"):
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
                '${USE_NTVFS}',
                '--dns-backend=${NAMESERVER_BACKEND}',
-               '${ALLOW_DNS_UPDATES}']
+               '${ALLOW_DNS_UPDATES}',
+               '${DNS_RECURSIVE_QUERIES}']
     if t.getvar('INTERFACE_IPV6'):
         provision.append('--host-ip6=${INTERFACE_IPV6}')
     t.run_cmd(provision)

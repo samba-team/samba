@@ -950,5 +950,8 @@ RebootOnCompletion=No
 
         if self.opts.dns_backend == 'SAMBA_INTERNAL':
             self.setvar('ALLOW_DNS_UPDATES', '--option=allow dns updates = True')
+            # we need recursive queries, since host expects answers with RA-bit
+            self.setvar('DNS_RECURSIVE_QUERIES', '--option=dns recursive queries = Yes')
         else:
             self.setvar('ALLOW_DNS_UPDATES', '')
+            self.setvar('DNS_RECURSIVE_QUERIES', '')
