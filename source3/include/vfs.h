@@ -1070,4 +1070,14 @@ bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
 int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
 			     const struct smb_filename *fname);
 
+NTSTATUS smb_register_vfs(int version, const char *name,
+			  const struct vfs_fn_pointers *fns);
+void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
+				   files_struct *fsp, size_t ext_size,
+				   void (*destroy_fn)(void *p_data));
+void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
+void vfs_remove_all_fsp_extensions(struct files_struct *fsp);
+void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
+void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
+
 #endif /* _VFS_H */

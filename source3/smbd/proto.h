@@ -1133,16 +1133,7 @@ void sys_utmp_claim(const char *username, const char *hostname,
 
 /* The following definitions come from smbd/vfs.c  */
 
-NTSTATUS smb_register_vfs(int version, const char *name,
-			  const struct vfs_fn_pointers *fns);
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object);
-void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
-				   files_struct *fsp, size_t ext_size,
-				   void (*destroy_fn)(void *p_data));
-void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
-void vfs_remove_all_fsp_extensions(struct files_struct *fsp);
-void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
-void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp);
 bool smbd_vfs_init(connection_struct *conn);
 NTSTATUS vfs_file_exist(connection_struct *conn, struct smb_filename *smb_fname);
 ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
