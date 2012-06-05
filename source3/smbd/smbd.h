@@ -33,4 +33,34 @@ struct privilege_paths {
 	struct smb_filename file_name;
 };
 
+struct trans_state {
+	struct trans_state *next, *prev;
+	uint16 vuid;
+	uint64_t mid;
+
+	uint32 max_param_return;
+	uint32 max_data_return;
+	uint32 max_setup_return;
+
+	uint8 cmd;		/* SMBtrans or SMBtrans2 */
+
+	char *name;		/* for trans requests */
+	uint16 call;		/* for trans2 and nttrans requests */
+
+	bool close_on_completion;
+	bool one_way;
+
+	unsigned int setup_count;
+	uint16 *setup;
+
+	size_t received_data;
+	size_t received_param;
+
+	size_t total_param;
+	char *param;
+
+	size_t total_data;
+	char *data;
+};
+
 #endif /* _SMBD_SMBD_H */
