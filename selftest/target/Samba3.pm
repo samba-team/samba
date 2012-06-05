@@ -984,6 +984,15 @@ sub provision($$$$$$)
 	comment = smb username is [%U]
 	create mask = 777
 	force create mode = 777
+[posix_share]
+	path = $shrdir
+	comment = smb username is [%U]
+	create mask = 0777
+	force create mode = 0
+	directory mask = 0777
+	force directory mode = 0
+	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so
+
 [print\$]
 	copy = tmp
 	";
