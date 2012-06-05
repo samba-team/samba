@@ -185,6 +185,7 @@ void print_spool_end(files_struct *fsp, enum file_close_type close_type);
 
 void print_spool_terminate(struct connection_struct *conn,
 			   struct print_file_data *print_file);
+uint16_t print_spool_rap_jobid(struct print_file_data *print_file);
 
 /* The following definitions come from printing/printing.c  */
 

@@ -34,6 +34,15 @@ struct print_file_data {
 	uint16 rap_jobid;
 };
 
+uint16_t print_spool_rap_jobid(struct print_file_data *print_file)
+{
+	if (print_file == NULL) {
+		return 0;
+	}
+
+	return print_file->rap_jobid;
+}
+
 void print_spool_terminate(struct connection_struct *conn,
 			   struct print_file_data *print_file);
 
