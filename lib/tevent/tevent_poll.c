@@ -201,7 +201,9 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		timeout += (tvalp->tv_usec + 999) / 1000;
 	}
 
+	tevent_trace_point_callback(poll_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	pollrtn = poll(poll_ev->fds, poll_ev->num_fds, timeout);
+	tevent_trace_point_callback(poll_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
 	if (pollrtn == -1 && errno == EINTR && ev->signal_events) {
 		tevent_common_check_signal(ev);

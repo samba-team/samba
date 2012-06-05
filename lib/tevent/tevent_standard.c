@@ -278,7 +278,9 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		return 0;
 	}
 
+	tevent_trace_point_callback(std_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
+	tevent_trace_point_callback(std_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
 	if (ret == -1 && errno == EINTR && std_ev->ev->signal_events) {
 		if (tevent_common_check_signal(std_ev->ev)) {

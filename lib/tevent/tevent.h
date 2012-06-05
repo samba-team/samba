@@ -501,6 +501,49 @@ int tevent_set_debug(struct tevent_context *ev,
  */
 int tevent_set_debug_stderr(struct tevent_context *ev);
 
+enum tevent_trace_point {
+	/**
+	 * Corresponds to a trace point just before waiting
+	 */
+	TEVENT_TRACE_BEFORE_WAIT,
+	/**
+	 * Corresponds to a trace point just after waiting
+	 */
+	TEVENT_TRACE_AFTER_WAIT,
+};
+
+typedef void (*tevent_trace_callback_t)(enum tevent_trace_point,
+					void *private_data);
+
+/**
+ * Register a callback to be called at certain trace points
+ *
+ * @param[in] ev             Event context
+ * @param[in] cb             Trace callback
+ * @param[in] private_data   Data to be passed to callback
+ *
+ * @note The callback will be called at trace points defined by
+ * tevent_trace_point.  Call with NULL to reset.
+ */
+void tevent_set_trace_callback(struct tevent_context *ev,
+			       tevent_trace_callback_t cb,
+			       void *private_data);
+
+/**
+ * Retrieve the current trace callback
+ *
+ * @param[in] ev             Event context
+ * @param[out] cb            Registered trace callback
+ * @param[out] private_data  Registered data to be passed to callback
+ *
+ * @note This can be used to allow one component that wants to
+ * register a callback to respect the callback that another component
+ * has already registered.
+ */
+void tevent_get_trace_callback(struct tevent_context *ev,
+			       tevent_trace_callback_t *cb,
+			       void *private_data);
+
 /**
  * @}
  */
