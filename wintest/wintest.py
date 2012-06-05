@@ -554,7 +554,7 @@ options {
     def get_is_dc(self, child):
         '''check if a windows machine is a domain controller'''
         child.sendline("dcdiag")
-        i = child.expect(["is not a Directory Server",
+        i = child.expect(["is not a [Directory Server|DC]",
                           "is not recognized as an internal or external command",
                           "Home Server = ",
                           "passed test Replications"])
