@@ -745,6 +745,14 @@ sub provision($$$$$$$$)
 	create mask = 777
 	force create mode = 777
 
+[posix_share]
+	path = $ctx->{share}
+	read only = no
+	create mask = 0777
+	force create mode = 0
+	directory mask = 0777
+	force directory mode = 0
+
 [test1]
 	path = $ctx->{share}/test1
 	read only = no
