@@ -1743,7 +1743,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		}
 	}
 
-	if (fsp->notify->num_changes != 0) {
+	if (change_notify_fsp_has_changes(fsp)) {
 
 		/*
 		 * We've got changes pending, respond immediately

@@ -270,7 +270,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (fsp->notify->num_changes != 0) {
+	if (change_notify_fsp_has_changes(fsp)) {
 
 		/*
 		 * We've got changes pending, respond immediately
