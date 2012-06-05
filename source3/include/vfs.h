@@ -358,6 +358,16 @@ struct smb_file_time {
 	struct timespec create_time;
 };
 
+/*
+ * smb_filename
+ */
+struct smb_filename {
+	char *base_name;
+	char *stream_name;
+	char *original_lcomp;
+	SMB_STRUCT_STAT st;
+};
+
 #define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
 				handle = handle->next; \
 			 }

@@ -1041,16 +1041,6 @@ struct smb_extended_info {
 #define UCF_POSIX_PATHNAMES		0x00000008
 #define UCF_UNIX_NAME_LOOKUP		0x00000010
 
-/*
- * smb_filename
- */
-struct smb_filename {
-	char *base_name;
-	char *stream_name;
-	char *original_lcomp;
-	SMB_STRUCT_STAT st;
-};
-
 /* Used to keep track of deferred opens. */
 struct deferred_open_record;
 
