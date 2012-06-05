@@ -154,7 +154,7 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 			if (strequal(lp_servicename(SNUM(conn)), sharename)) {
 				DEBUG(1,("Forcing close of share %s cnum=%d\n",
 					sharename, conn->cnum));
-				close_cnum(conn, (uint16)-1);
+				close_cnum(conn, UID_FIELD_INVALID);
 			}
 		}
 	}
