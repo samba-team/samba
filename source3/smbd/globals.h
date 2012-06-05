@@ -20,7 +20,7 @@
 
 #include "system/select.h"
 
-#if defined(WITH_AIO)
+#if defined(HAVE_AIO)
 struct aio_extra;
 extern struct aio_extra *aio_list_head;
 extern struct tevent_signal *aio_signal_event;

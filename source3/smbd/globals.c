@@ -25,7 +25,7 @@
 #include "messages.h"
 #include "tdb_compat.h"
 
-#if defined(WITH_AIO)
+#if defined(HAVE_AIO)
 struct aio_extra *aio_list_head = NULL;
 struct tevent_signal *aio_signal_event = NULL;
 int aio_pending_size = 0;

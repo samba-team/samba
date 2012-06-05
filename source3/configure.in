@@ -5339,15 +5339,21 @@ esac
 #################################################
 # check for AIO support
 
+with_aio=auto
 AC_MSG_CHECKING(whether to support asynchronous io)
 AC_ARG_WITH(aio-support,
-[AS_HELP_STRING([--with-aio-support], [Include asynchronous io support (default=no)])],
-[ case "$withval" in
-  yes)
+[AS_HELP_STRING([--with-aio-support], [Include asynchronous io support (default=auto)])],
+[  case "$withval" in
+    yes|no)
+	with_aio=$withval
+	;;
+   esac ])
 
-	AC_MSG_RESULT(yes)
-	case "$host_os" in
-	*)
+AC_MSG_RESULT($with_aio)
+
+if test x"$with_aio" = x"no"; then
+    AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support should be built in])
+else
 		AIO_LIBS=$LIBS
 		no_rt_LIBS=$LIBS
 		AC_CHECK_LIB(rt,aio_read,[AIO_LIBS="$LIBS -lrt"])
@@ -5362,7 +5368,7 @@ AC_ARG_WITH(aio-support,
 samba_cv_HAVE_AIO=yes,samba_cv_HAVE_AIO=no)
 		LIBS=$aio_LIBS])
 		if test x"$samba_cv_HAVE_AIO" = x"yes"; then
-			AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+			AC_DEFINE(HAVE_AIO, 1, [Using asynchronous io])
 			LIBS=$AIO_LIBS
 			AC_MSG_CHECKING(for aio_read)
 			AC_LINK_IFELSE([AC_LANG_SOURCE([#include <aio.h>
@@ -5405,19 +5411,11 @@ int main() { struct aiocb a; return aio_cancel(1, &a); }])],
 int main() { struct aiocb a; return aio_suspend(&a, 1, NULL); }])],
 [AC_DEFINE(HAVE_AIO_SUSPEND, 1, [Have aio_suspend]) AC_MSG_RESULT(yes)],
 [AC_MSG_RESULT(no)])
+		else
+			AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support is available])
+			AC_MSG_RESULT(no)
 		fi
-
-            ;;
-        esac
-        ;;
-  *)
-    AC_MSG_RESULT(no)
-    AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support is available])
-    ;;
-  esac ],
-  AC_DEFINE(HAVE_NO_AIO,1,[Whether no asynchronous io support should be built in])
-  AC_MSG_RESULT(no)
-)
+fi
 
 if test x"$samba_cv_HAVE_AIO" = x"yes"; then
 	if test x"$samba_cv_msghdr_msg_control" = x"yes" -o \
@@ -5455,7 +5453,7 @@ io_getevents(ctx, 1, 1, &ioev, &ts);],
 samba_cv_HAVE_LINUX_KERNEL_AIO=yes,samba_cv_HAVE_LINUX_KERNEL_AIO=no)
 		LIBS=$aio_LIBS])
 	    if test x"$samba_cv_HAVE_LINUX_KERNEL_AIO" = x"yes"; then
-		AC_DEFINE(WITH_AIO, 1, [Using asynchronous io])
+		AC_DEFINE(HAVE_AIO, 1, [Using asynchronous io])
 		default_shared_modules="$default_shared_modules vfs_aio_linux"
 	    fi
             ;;

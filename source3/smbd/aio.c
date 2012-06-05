@@ -23,7 +23,7 @@
 #include "smbd/globals.h"
 #include "../lib/util/tevent_ntstatus.h"
 
-#if defined(WITH_AIO)
+#if defined(HAVE_AIO)
 
 /* The signal we'll use to signify aio done. */
 #ifndef RT_SIGNAL_AIO

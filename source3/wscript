@@ -362,8 +362,6 @@ return acl_get_perm_np(permset_d, perm);
                         headers='sys/types.h aio.h',
                         lib='aio rt')
         if conf.CONFIG_SET('HAVE_AIO'):
-            conf.DEFINE('WITH_AIO', '1')
-        if conf.CONFIG_SET('HAVE_AIO'):
             conf.CHECK_CODE('struct aiocb a; return aio_read(&a);', 'HAVE_AIO_READ', msg='Checking for aio_read', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_write(&a);', 'HAVE_AIO_WRITE', msg='Checking for aio_write', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_fsync(1, &a);', 'HAVE_AIO_FSYNC', msg='Checking for aio_fsync', headers='aio.h', lib='aio rt')

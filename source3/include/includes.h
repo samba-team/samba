@@ -149,7 +149,7 @@
 #include <netgroup.h>
 #endif
 
-#if defined(HAVE_AIO_H) && defined(WITH_AIO)
+#if defined(HAVE_AIO_H) && defined(HAVE_AIO)
 #include <aio.h>
 #endif
 
@@ -343,7 +343,7 @@ typedef struct stat_ex SMB_STRUCT_STAT;
  */
 
 #ifndef SMB_STRUCT_AIOCB
-#  if defined(WITH_AIO)
+#  if defined(HAVE_AIO)
 #      define SMB_STRUCT_AIOCB struct aiocb
 #  else
 #    define SMB_STRUCT_AIOCB int /* AIO not being used but we still need the define.... */

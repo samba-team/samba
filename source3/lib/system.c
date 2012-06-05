@@ -1365,7 +1365,7 @@ int sys_get_number_of_cores(void)
 }
 #endif
 
-#if defined(WITH_AIO)
+#if defined(HAVE_AIO)
 
 /*******************************************************************
  An aio_read wrapper.
@@ -1464,7 +1464,7 @@ int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct
 	return -1;
 #endif
 }
-#else /* !WITH_AIO */
+#else /* !HAVE_AIO */
 
 int sys_aio_read(SMB_STRUCT_AIOCB *aiocb)
 {
@@ -1507,4 +1507,4 @@ int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct
 	errno = ENOSYS;
 	return -1;
 }
-#endif /* WITH_AIO */
+#endif /* HAVE_AIO */
