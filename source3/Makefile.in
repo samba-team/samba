@@ -3557,7 +3557,6 @@ bin/ndrdump4: $(BINARY_PREREQS)
 vfs_examples:
 	( \
 	cd ../examples/VFS && \
-	./autogen.sh && \
 	./configure && \
 	make clean && \
 	make \
