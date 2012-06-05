@@ -1032,14 +1032,6 @@ struct smb_extended_info {
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
 
-/* time info */
-struct smb_file_time {
-	struct timespec mtime;
-	struct timespec atime;
-	struct timespec ctime;
-	struct timespec create_time;
-};
-
 /*
  * unix_convert_flags
  */

@@ -350,6 +350,14 @@ struct stream_struct {
 	char *name;
 };
 
+/* time info */
+struct smb_file_time {
+	struct timespec mtime;
+	struct timespec atime;
+	struct timespec ctime;
+	struct timespec create_time;
+};
+
 #define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
 				handle = handle->next; \
 			 }
