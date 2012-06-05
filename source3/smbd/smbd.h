@@ -38,7 +38,7 @@ struct privilege_paths {
 
 struct trans_state {
 	struct trans_state *next, *prev;
-	uint16 vuid;
+	uint64_t vuid; /* SMB2 compat */
 	uint64_t mid;
 
 	uint32 max_param_return;
