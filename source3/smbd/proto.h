@@ -408,7 +408,7 @@ void reply_transs(struct smb_request *req);
 
 /* The following definitions come from smbd/lanman.c  */
 
-void api_reply(connection_struct *conn, uint16 vuid,
+void api_reply(connection_struct *conn, uint64_t vuid,
 	       struct smb_request *req,
 	       char *data, char *params,
 	       int tdscnt, int tpscnt,
