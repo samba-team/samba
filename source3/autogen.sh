@@ -75,6 +75,15 @@ $AUTOCONF $IPATHS || exit 1
 
 rm -rf autom4te*.cache
 
+( cd ../examples/VFS || exit 1
+  echo "$0: running $AUTOHEADER in ../examples/VFS/"
+  $AUTOHEADER || exit 1
+  echo "$0: running $AUTOCONF in ../examples/VFS/"
+  $AUTOCONF || exit 1
+  rm -rf autom4te*.cache
+) || exit 1
+
+
 if gcc -E tests/preproc-dummy.c -o /dev/null ;
 then
     PIDL_OUTPUTDIR="librpc/gen_ndr" CPP="gcc -E" PIDL=../pidl/pidl \
