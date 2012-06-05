@@ -95,6 +95,8 @@ the Samba 3.x heritage.
 Improved handling of the cleanup of smbd child processes (removing a
 number of scary warnings from our log output).
 
+Much improved support for FreeBSD, including extended attribute
+support on the filesystem for the AD DC.
 
 KNOWN ISSUES
 ============
