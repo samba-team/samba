@@ -86,7 +86,7 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 ********************************************************************/
 
 static bool check_user_ok(connection_struct *conn,
-			uint16_t vuid,
+			uint64_t vuid,
 			const struct auth_session_info *session_info,
 			int snum)
 {
@@ -191,7 +191,7 @@ static bool check_user_ok(connection_struct *conn,
 
 static bool change_to_user_internal(connection_struct *conn,
 				    const struct auth_session_info *session_info,
-				    uint16_t vuid)
+				    uint64_t vuid)
 {
 	int snum;
 	gid_t gid;
@@ -275,7 +275,7 @@ static bool change_to_user_internal(connection_struct *conn,
 	return true;
 }
 
-bool change_to_user(connection_struct *conn, uint16_t vuid)
+bool change_to_user(connection_struct *conn, uint64_t vuid)
 {
 	const struct auth_session_info *session_info = NULL;
 	struct user_struct *vuser;
@@ -298,16 +298,16 @@ bool change_to_user(connection_struct *conn, uint16_t vuid)
 
 	if (vuser == NULL) {
 		/* Invalid vuid sent */
-		DEBUG(2,("Invalid vuid %d used on "
-			 "share %s.\n", vuid, lp_servicename(snum) ));
+		DEBUG(2,("Invalid vuid %llu used on share %s.\n",
+			 (unsigned long long)vuid, lp_servicename(snum)));
 		return false;
 	}
 
 	session_info = vuser->session_info;
 
 	if (!conn->force_user && vuser == NULL) {
-		DEBUG(2,("Invalid vuid used %d in accessing "
-			"share %s.\n", vuid, lp_servicename(snum) ));
+		DEBUG(2,("Invalid vuid used %llu in accessing share %s.\n",
+			 (unsigned long long)vuid, lp_servicename(snum)));
 		return False;
 	}
 
@@ -399,8 +399,8 @@ static void push_conn_ctx(void)
 	ctx_p->conn = current_user.conn;
 	ctx_p->vuid = current_user.vuid;
 
-	DEBUG(4, ("push_conn_ctx(%u) : conn_ctx_stack_ndx = %d\n",
-		(unsigned int)ctx_p->vuid, conn_ctx_stack_ndx ));
+	DEBUG(4, ("push_conn_ctx(%llu) : conn_ctx_stack_ndx = %d\n",
+		(unsigned long long)ctx_p->vuid, conn_ctx_stack_ndx));
 
 	conn_ctx_stack_ndx++;
 }
@@ -457,7 +457,7 @@ void smbd_unbecome_root(void)
  Saves and restores the connection context.
 ****************************************************************************/
 
-bool become_user(connection_struct *conn, uint16 vuid)
+bool become_user(connection_struct *conn, uint64_t vuid)
 {
 	if (!push_sec_ctx())
 		return False;
@@ -535,7 +535,7 @@ const struct security_token *get_current_nttok(connection_struct *conn)
 	return current_user.nt_user_token;
 }
 
-uint16_t get_current_vuid(connection_struct *conn)
+uint64_t get_current_vuid(connection_struct *conn)
 {
 	return current_user.vuid;
 }

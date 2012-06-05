@@ -1097,7 +1097,7 @@ void reply_transs2(struct smb_request *req);
 /* The following definitions come from smbd/uid.c  */
 
 bool change_to_guest(void);
-bool change_to_user(connection_struct *conn, uint16 vuid);
+bool change_to_user(connection_struct *conn, uint64_t vuid);
 bool change_to_root_user(void);
 bool smbd_change_to_root_user(void);
 bool become_authenticated_pipe_user(struct auth_session_info *session_info);
@@ -1106,7 +1106,7 @@ void become_root(void);
 void unbecome_root(void);
 void smbd_become_root(void);
 void smbd_unbecome_root(void);
-bool become_user(connection_struct *conn, uint16 vuid);
+bool become_user(connection_struct *conn, uint64_t vuid);
 bool become_user_by_session(connection_struct *conn,
 			    const struct auth_session_info *session_info);
 bool unbecome_user(void);
@@ -1114,7 +1114,7 @@ uid_t get_current_uid(connection_struct *conn);
 gid_t get_current_gid(connection_struct *conn);
 const struct security_unix_token *get_current_utok(connection_struct *conn);
 const struct security_token *get_current_nttok(connection_struct *conn);
-uint16_t get_current_vuid(connection_struct *conn);
+uint64_t get_current_vuid(connection_struct *conn);
 
 /* The following definitions come from smbd/utmp.c  */
 
