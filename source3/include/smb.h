@@ -158,7 +158,7 @@ struct sys_notify_context {
 
 struct current_user {
 	struct connection_struct *conn;
-	uint16 vuid;
+	uint64_t vuid; /* SMB2 compat */
 	struct security_unix_token ut;
 	struct security_token *nt_user_token;
 };
