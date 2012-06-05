@@ -39,6 +39,23 @@ struct notify_change_request {
 
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name);
 
+bool change_notify_fsp_has_changes(struct files_struct *fsp)
+{
+	if (fsp == NULL) {
+		return false;
+	}
+
+	if (fsp->notify == NULL) {
+		return false;
+	}
+
+	if (fsp->notify->num_changes == 0) {
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * For NTCancel, we need to find the notify_change_request indexed by
  * mid. Separate list here.

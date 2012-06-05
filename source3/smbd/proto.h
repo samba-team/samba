@@ -496,6 +496,7 @@ void reply_negprot(struct smb_request *req);
 
 /* The following definitions come from smbd/notify.c  */
 
+bool change_notify_fsp_has_changes(struct files_struct *fsp);
 void change_notify_reply(struct smb_request *req,
 			 NTSTATUS error_code,
 			 uint32_t max_param,
