@@ -15,7 +15,7 @@ Samba-3.0.x		This release turned into maintenance mode since we
 Samba-3.6.x		This is the current stable Samba 3 release intended
 			for all Samba production server.
 
-Samba-4.0		A future release including the AD domain controller
+Samba-4.0		Our next release including the AD domain controller
                         feature, and the file server and other functionality 
                         from Samba 3.6.
 
