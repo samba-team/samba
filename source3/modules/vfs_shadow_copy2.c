@@ -98,7 +98,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "include/ntioctl.h"
-#include "smbd/proto.h"
 #include <ccan/hash/hash.h>
 #include "util_tdb.h"
 
