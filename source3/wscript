@@ -788,6 +788,7 @@ int i; i = PAM_RADIO_TYPE;
 ''',
                 'HAVE_LINUX_NETLINK_H',
                 msg="Checking whether Linux netlink is available"):
+
         conf.CHECK_CODE('''
 #include <bits/sockaddr.h>
 #include <linux/netlink.h>
@@ -795,6 +796,7 @@ int i; i = PAM_RADIO_TYPE;
 ''',
                 'HAVE_LINUX_RTNETLINK_H',
                 msg='Checking whether Linux rtnetlink is available')
+
     conf.CHECK_CODE('''
 #include "../tests/fcntl_lock.c"
 ''',
