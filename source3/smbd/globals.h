@@ -96,7 +96,7 @@ extern uint16_t fnf_handle;
 
 struct conn_ctx {
 	connection_struct *conn;
-	uint16 vuid;
+	uint64_t vuid;
 };
 /* A stack of current_user connection contexts. */
 extern struct conn_ctx conn_ctx_stack[MAX_SEC_CTX_DEPTH];
