@@ -249,6 +249,16 @@ typedef struct files_struct {
 
 } files_struct;
 
+/*
+ * Info about an alternate data stream
+ */
+
+struct stream_struct {
+	off_t size;
+	off_t alloc_size;
+	char *name;
+};
+
 #define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
 				handle = handle->next; \
 			 }

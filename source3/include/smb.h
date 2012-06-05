@@ -167,16 +167,6 @@ typedef struct {
 	bool is_wild;
 } name_compare_entry;
 
-/*
- * Info about an alternate data stream
- */
-
-struct stream_struct {
-	off_t size;
-	off_t alloc_size;
-	char *name;
-};
-
 /* Include VFS stuff */
 
 #include "smb_acls.h"
