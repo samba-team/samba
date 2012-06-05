@@ -65,4 +65,13 @@ struct trans_state {
 	char *data;
 };
 
+/*
+ * unix_convert_flags
+ */
+#define UCF_SAVE_LCOMP			0x00000001
+#define UCF_ALWAYS_ALLOW_WCARD_LCOMP	0x00000002
+#define UCF_COND_ALLOW_WCARD_LCOMP	0x00000004
+#define UCF_POSIX_PATHNAMES		0x00000008
+#define UCF_UNIX_NAME_LOOKUP		0x00000010
+
 #endif /* _SMBD_SMBD_H */
