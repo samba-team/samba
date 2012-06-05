@@ -19,6 +19,8 @@
 #ifndef _SMBD_SMBD_H
 #define _SMBD_SMBD_H
 
+struct dptr_struct;
+
 #include "smb_acls.h"
 #include "vfs.h"
 #include "smbd/proto.h"

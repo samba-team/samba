@@ -151,106 +151,13 @@ struct sys_notify_context {
 #include "ntquotas.h"
 #include "sysquotas.h"
 
-struct vuid_cache_entry {
-	struct auth_session_info *session_info;
-	uint16_t vuid;
-	bool read_only;
-};
-
-struct vuid_cache {
-	unsigned int next_entry;
-	struct vuid_cache_entry array[VUID_CACHE_SIZE];
-};
-
-typedef struct {
-	char *name;
-	bool is_wild;
-} name_compare_entry;
-
 /* Include VFS stuff */
 
 #include "smb_acls.h"
 #include "vfs.h"
 
-struct dfree_cached_info {
-	time_t last_dfree_time;
-	uint64_t dfree_ret;
-	uint64_t bsize;
-	uint64_t dfree;
-	uint64_t dsize;
-};
-
-struct dptr_struct;
-
-struct share_params {
-	int service;
-};
-
-typedef struct connection_struct {
-	struct connection_struct *next, *prev;
-	struct smbd_server_connection *sconn; /* can be NULL */
-	unsigned cnum; /* an index passed over the wire */
-	struct share_params *params;
-	bool force_user;
-	struct vuid_cache vuid_cache;
-	bool printer;
-	bool ipc;
-	bool read_only; /* Attributes for the current user of the share. */
-	uint32_t share_access;
-	/* Does this filesystem honor
-	   sub second timestamps on files
-	   and directories when setting time ? */
-	enum timestamp_set_resolution ts_res;
-	char *connectpath;
-	char *origpath;
-
-	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
-
-	/*
-	 * This represents the user information on this connection. Depending
-	 * on the vuid using this tid, this might change per SMB request.
-	 */
-	struct auth_session_info *session_info;
-
-	/*
-	 * If the "force group" parameter is set, this is the primary gid that
-	 * may be used in the users token, depending on the vuid using this tid.
-	 */
-	gid_t force_group_gid;
-
-	uint16 vuid; /* vuid of user who *opened* this connection, or UID_FIELD_INVALID */
-
-	time_t lastused;
-	time_t lastused_count;
-	int num_files_open;
-	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
-	int encrypt_level;
-	bool encrypted_tid;
-
-	/* Semantics requested by the client or forced by the server config. */
-	bool case_sensitive;
-	bool case_preserve;
-	bool short_case_preserve;
-
-	/* Semantics provided by the underlying filesystem. */
-	int fs_capabilities;
-	/* Device number of the directory of the share mount.
-	   Used to ensure unique FileIndex returns. */
-	SMB_DEV_T base_share_dev;
-
-	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
-	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
-	name_compare_entry *veto_oplock_list; /* Per-share list of files to refuse oplocks on. */       
-	name_compare_entry *aio_write_behind_list; /* Per-share list of files to use aio write behind on. */       
-	struct dfree_cached_info *dfree_info;
-	struct trans_state *pending_trans;
-
-	struct rpc_pipe_client *spoolss_pipe;
-
-} connection_struct;
-
 struct current_user {
-	connection_struct *conn;
+	struct connection_struct *conn;
 	uint16 vuid;
 	struct security_unix_token ut;
 	struct security_token *nt_user_token;
