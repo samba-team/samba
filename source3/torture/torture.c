@@ -5402,6 +5402,13 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
+	/* Ensure st_mode == 0600 */
+	if ((sbuf.st_ex_mode & 07777) != 0600) {
+		printf("posix_open - bad permissions 0%o != 0600\n",
+				(unsigned int)(sbuf.st_ex_mode & 07777));
+		goto out;
+	}
+
 	/* Test ftruncate - set file size back to zero. */
 	status = cli_ftruncate(cli1, fnum1, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5629,6 +5636,26 @@ static bool run_simple_posix_open_test(int dummy)
 	status = cli_posix_rmdir(cli1, dname);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("POSIX rmdir failed (%s)\n", nt_errstr(status));
+		goto out;
+	}
+
+	/* Check directory opens with a specific permission. */
+	status = cli_posix_mkdir(cli1, dname, 0700);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX mkdir of %s failed (%s)\n", dname, nt_errstr(status));
+		goto out;
+	}
+
+	/* Ensure st_mode == 0700 */
+	status = cli_posix_stat(cli1, dname, &sbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("stat failed (%s)\n", nt_errstr(status));
+		goto out;
+	}
+
+	if ((sbuf.st_ex_mode & 07777) != 0700) {
+		printf("posix_mkdir - bad permissions 0%o != 0700\n",
+				(unsigned int)(sbuf.st_ex_mode & 07777));
 		goto out;
 	}
 
