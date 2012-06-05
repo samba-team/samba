@@ -57,7 +57,7 @@ void print_spool_terminate(struct connection_struct *conn,
 
 NTSTATUS print_spool_open(files_struct *fsp,
 			  const char *fname,
-			  uint16_t current_vuid)
+			  uint64_t current_vuid)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;

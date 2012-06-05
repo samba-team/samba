@@ -176,7 +176,7 @@ struct tdb_print_db {
 
 NTSTATUS print_spool_open(files_struct *fsp,
 			  const char *fname,
-			  uint16_t current_vuid);
+			  uint64_t current_vuid);
 
 int print_spool_write(files_struct *fsp, const char *data, uint32_t size,
 		      off_t offset, uint32_t *written);
