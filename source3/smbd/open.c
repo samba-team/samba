@@ -1428,7 +1428,7 @@ static NTSTATUS fcb_or_dos_open(struct smb_request *req,
 				const struct smb_filename *smb_fname,
 				struct file_id id,
 				uint16 file_pid,
-				uint16 vuid,
+				uint64_t vuid,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_options)
