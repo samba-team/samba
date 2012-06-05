@@ -2080,8 +2080,8 @@ void reply_ulogoffX(struct smb_request *req)
 	vuser = get_valid_user_struct(sconn, req->vuid);
 
 	if(vuser == NULL) {
-		DEBUG(3,("ulogoff, vuser id %d does not map to user.\n",
-			 req->vuid));
+		DEBUG(3,("ulogoff, vuser id %llu does not map to user.\n",
+			 (unsigned long long)req->vuid));
 
 		req->vuid = UID_FIELD_INVALID;
 		reply_force_doserror(req, ERRSRV, ERRbaduid);
@@ -2101,7 +2101,8 @@ void reply_ulogoffX(struct smb_request *req)
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
-	DEBUG( 3, ( "ulogoffX vuid=%d\n", req->vuid ) );
+	DEBUG(3, ("ulogoffX vuid=%llu\n",
+		  (unsigned long long)req->vuid));
 
 	END_PROFILE(SMBulogoffX);
 	req->vuid = UID_FIELD_INVALID;

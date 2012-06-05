@@ -349,7 +349,7 @@ struct smb_request {
 	uint16 smbpid;
 	uint64_t mid; /* For compatibility with SMB2. */
 	uint32_t seqnum;
-	uint16 vuid;
+	uint64_t vuid; /* For compatibility with SMB2. */
 	uint16 tid;
 	uint8  wct;
 	const uint16_t *vwv;
