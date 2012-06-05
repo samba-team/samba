@@ -107,6 +107,11 @@ KNOWN ISSUES
   warnings about invalid parameters from the two respective parameter
   parsing engines.
 
+- Replication of DNS data from one AD server to another may not work.
+  The DNS data used by the internal DNS server and bind9_dlz is stored
+  in an application partition in our directory.  The replicaton of
+  this partition is not yet reliable.
+
 - upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
   been made since alpha16.  
