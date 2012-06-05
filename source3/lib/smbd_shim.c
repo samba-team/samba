@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "smbd_shim.h"
-#include "smbd/proto.h"
 
 static struct smbd_shim shim;
 
