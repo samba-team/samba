@@ -944,11 +944,8 @@ void reply_ioctl(struct smb_request *req)
 				return;
 			}
 			/* Job number */
-			if (fsp->print_file) {
-				SSVAL(p, 0, fsp->print_file->rap_jobid);
-			} else {
-				SSVAL(p, 0, 0);
-			}
+			SSVAL(p, 0, print_spool_rap_jobid(fsp->print_file));
+
 			srvstr_push((char *)req->outbuf, req->flags2, p+2,
 				    lp_netbios_name(), 15,
 				    STR_TERMINATE|STR_ASCII);
