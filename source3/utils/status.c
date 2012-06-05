@@ -40,7 +40,7 @@
 #include "locking/proto.h"
 #include "messages.h"
 #include "librpc/gen_ndr/open_files.h"
-#include "smbd/proto.h"
+#include "smbd/smbd.h"
 #include "librpc/gen_ndr/notify.h"
 #include "lib/conn_tdb.h"
 
