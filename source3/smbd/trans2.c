@@ -37,6 +37,7 @@
 #include "auth.h"
 #include "smbprofile.h"
 #include "rpc_server/srv_pipe_hnd.h"
+#include "printing.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -8419,11 +8420,8 @@ static void call_trans2ioctl(connection_struct *conn,
 			CAN ACCEPT THIS IN UNICODE. JRA. */
 
 		/* Job number */
-		if (fsp->print_file) {
-			SSVAL(pdata, 0, fsp->print_file->rap_jobid);
-		} else {
-			SSVAL(pdata, 0, 0);
-		}
+		SSVAL(pdata, 0, print_spool_rap_jobid(fsp->print_file));
+
 		srvstr_push(pdata, req->flags2, pdata + 2,
 			    lp_netbios_name(), 15,
 			    STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
