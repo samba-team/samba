@@ -803,6 +803,19 @@ int i; i = PAM_RADIO_TYPE;
                 execute=True,
                 msg='Checking whether fcntl locking is available')
 
+# glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
+    if not conf.CHECK_CODE('''
+#define _XOPEN_SOURCE 600
+#include <stdlib.h>
+#if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
+#error probably broken posix_fallocate
+#endif
+''',
+                           '_HAVE_UNBROKEN_POSIX_FALLOCATE',
+                           msg='for broken posix_fallocate'):
+        conf.DEFINE('HAVE_BROKEN_POSIX_FALLOCATE', '1')
+
+
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
                                 define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtimensec',
