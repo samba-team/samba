@@ -1279,15 +1279,6 @@ struct smb_filename {
 	SMB_STRUCT_STAT st;
 };
 
-/*
- * Pathnames used if request done
- * under privilege.
- */
-struct privilege_paths {
-	struct smb_filename parent_name;
-	struct smb_filename file_name;
-};
-
 /* Used to keep track of deferred opens. */
 struct deferred_open_record;
 

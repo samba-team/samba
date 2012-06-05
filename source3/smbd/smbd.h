@@ -24,4 +24,13 @@
 #include "smbd/proto.h"
 #include "locking/proto.h"
 
+/*
+ * Pathnames used if request done
+ * under privilege.
+ */
+struct privilege_paths {
+	struct smb_filename parent_name;
+	struct smb_filename file_name;
+};
+
 #endif /* _SMBD_SMBD_H */
