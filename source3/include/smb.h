@@ -112,11 +112,6 @@
 #define OPENX_FILE_CREATE_IF_NOT_EXIST 0x10
 #define OPENX_FILE_FAIL_IF_NOT_EXIST 0
 
-typedef union unid_t {
-	uid_t uid;
-	gid_t gid;
-} unid_t;
-
 /* pipe string names */
 
 #ifndef MAXSUBAUTHS

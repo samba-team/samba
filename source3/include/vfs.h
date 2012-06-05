@@ -162,6 +162,11 @@ struct blocking_lock_record;
 struct smb_filename;
 struct dfs_GetDFSReferral;
 
+typedef union unid_t {
+	uid_t uid;
+	gid_t gid;
+} unid_t;
+
 #define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
 				handle = handle->next; \
 			 }
