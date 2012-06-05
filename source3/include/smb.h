@@ -1032,9 +1032,6 @@ struct smb_extended_info {
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
 
-/* Used inside aio code. */
-struct aio_extra;
-
 /*
  * Reasons for cache flush.
  */
