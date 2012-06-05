@@ -119,8 +119,9 @@ bool session_claim(struct smbd_server_connection *sconn, struct user_struct *vus
 			 SESSION_UTMP_TEMPLATE, i);
 	} else
 	{
-		snprintf(keystr, sizeof(keystr), "ID/%s/%u",
-			 procid_str_static(&pid), vuser->vuid);
+		snprintf(keystr, sizeof(keystr), "ID/%s/%llu",
+			 procid_str_static(&pid),
+			 (unsigned long long)vuser->vuid);
 
 		rec = sessionid_fetch_record(NULL, keystr);
 		if (rec == NULL) {
@@ -130,7 +131,7 @@ bool session_claim(struct smbd_server_connection *sconn, struct user_struct *vus
 
 		snprintf(sessionid.id_str, sizeof(sessionid.id_str),
 			 SESSION_TEMPLATE, (long unsigned int)getpid(),
-			 vuser->vuid);
+			 (unsigned long long)vuser->vuid);
 	}
 
 	SMB_ASSERT(rec != NULL);

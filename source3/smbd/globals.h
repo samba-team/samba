@@ -476,7 +476,7 @@ struct pending_auth_data;
 
 struct user_struct {
 	struct user_struct *next, *prev;
-	uint16 vuid; /* Tag for this entry. */
+	uint64_t vuid; /* Tag for this entry. */
 
 	char *session_keystr; /* used by utmp and pam session code.
 				 TDB key string */
@@ -590,7 +590,7 @@ struct smbd_server_connection {
 			 *  Set by us for CORE protocol.
 			 */
 			int max_send;
-			uint16_t last_session_tag;
+			uint64_t last_session_tag;
 
 			/*
 			 * this holds info on user ids that are already

@@ -126,7 +126,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	const char *p2;
 	uint16 data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
-	int vuid = req->vuid;
+	uint64_t vuid = req->vuid;
 	struct user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_server_connection *sconn = req->sconn;
@@ -259,7 +259,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct auth_session_info *session_info = NULL;
-		int tmp_vuid;
+		uint64_t tmp_vuid;
 
 		status = gensec_session_info(vuser->gensec_security,
 					     talloc_tos(),
@@ -391,7 +391,7 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 
 void reply_sesssetup_and_X(struct smb_request *req)
 {
-	int sess_vuid;
+	uint64_t sess_vuid;
 	int smb_bufsize;
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;

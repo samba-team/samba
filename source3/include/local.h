@@ -167,7 +167,7 @@
 
 #ifndef SESSION_TEMPLATE
 /* Paramaters are 'pid' and 'vuid' */
-#define SESSION_TEMPLATE "smb/%lu/%d"
+#define SESSION_TEMPLATE "smb/%lu/%llu"
 #endif
 
 #ifndef SESSION_UTMP_TEMPLATE

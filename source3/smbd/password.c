@@ -43,7 +43,7 @@ enum server_allocated_state { SERVER_ALLOCATED_REQUIRED_YES,
 
 static struct user_struct *get_valid_user_struct_internal(
 			struct smbd_server_connection *sconn,
-			uint16 vuid,
+			uint64_t vuid,
 			enum server_allocated_state server_allocated)
 {
 	struct user_struct *usp;
@@ -85,13 +85,13 @@ static struct user_struct *get_valid_user_struct_internal(
 ****************************************************************************/
 
 struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
-				   uint16 vuid)
+					  uint64_t vuid)
 {
 	return get_valid_user_struct_internal(sconn, vuid,
 			SERVER_ALLOCATED_REQUIRED_YES);
 }
 
-bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint16 vuid)
+bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 {
 	return (get_partial_auth_user_struct(sconn, vuid) != NULL);
 }
@@ -101,7 +101,7 @@ bool is_partial_auth_vuid(struct smbd_server_connection *sconn, uint16 vuid)
 ****************************************************************************/
 
 struct user_struct *get_partial_auth_user_struct(struct smbd_server_connection *sconn,
-					  uint16 vuid)
+						 uint64_t vuid)
 {
 	return get_valid_user_struct_internal(sconn, vuid,
 			SERVER_ALLOCATED_REQUIRED_NO);
@@ -111,7 +111,7 @@ struct user_struct *get_partial_auth_user_struct(struct smbd_server_connection *
  Invalidate a uid.
 ****************************************************************************/
 
-void invalidate_vuid(struct smbd_server_connection *sconn, uint16 vuid)
+void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 {
 	struct user_struct *vuser = NULL;
 
@@ -167,7 +167,7 @@ static void increment_next_vuid(uint16_t *vuid)
  Create a new partial auth user struct.
 *****************************************************/
 
-int register_initial_vuid(struct smbd_server_connection *sconn)
+uint64_t register_initial_vuid(struct smbd_server_connection *sconn)
 {
 	struct user_struct *vuser;
 
@@ -256,10 +256,10 @@ int register_homes_share(const char *username)
  *
  */
 
-int register_existing_vuid(struct smbd_server_connection *sconn,
-			uint16 vuid,
-			struct auth_session_info *session_info,
-			DATA_BLOB response_blob)
+uint64_t register_existing_vuid(struct smbd_server_connection *sconn,
+				uint64_t vuid,
+				struct auth_session_info *session_info,
+				DATA_BLOB response_blob)
 {
 	struct user_struct *vuser;
 	bool guest = security_session_user_level(session_info, NULL) < SECURITY_USER;
@@ -299,13 +299,14 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 	SMB_ASSERT(vuser->session_info->unix_token);
 
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
-		"and will be vuid %u\n", (int)vuser->session_info->unix_token->uid,
-		 vuser->session_info->unix_info->unix_name, vuser->vuid));
+		"and will be vuid %llu\n", (int)vuser->session_info->unix_token->uid,
+		 vuser->session_info->unix_info->unix_name,
+		 (unsigned long long)vuser->vuid));
 
 	if (!session_claim(sconn, vuser)) {
 		DEBUG(1, ("register_existing_vuid: Failed to claim session "
-			"for vuid=%d\n",
-			vuser->vuid));
+			"for vuid=%llu\n",
+			(unsigned long long)vuser->vuid));
 		goto fail;
 	}
 

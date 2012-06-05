@@ -244,8 +244,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbd_smb2_session *session,
 
 	if (!session_claim(session->sconn, session->compat_vuser)) {
 		DEBUG(1, ("smb2: Failed to claim session "
-			"for vuid=%d\n",
-			session->compat_vuser->vuid));
+			"for vuid=%llu\n",
+			(unsigned long long)session->compat_vuser->vuid));
 		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}

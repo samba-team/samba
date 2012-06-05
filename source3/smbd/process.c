@@ -1354,7 +1354,7 @@ static void smb_dump(const char *name, int type, const char *data)
 static connection_struct *switch_message(uint8 type, struct smb_request *req)
 {
 	int flags;
-	uint16 session_tag;
+	uint64_t session_tag;
 	connection_struct *conn = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 
