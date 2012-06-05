@@ -5484,28 +5484,10 @@ ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
 ],
 samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
-# Try and cope with broken Linux sendfile....
-		AC_CACHE_CHECK([for broken linux sendfile support],samba_cv_HAVE_BROKEN_LINUX_SENDFILE,[
-		AC_TRY_LINK([\
-#if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
-#undef _FILE_OFFSET_BITS
-#endif
-#include <sys/sendfile.h>],
-[\
-int tofd, fromfd;
-off_t offset;
-size_t total;
-ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
-],
-samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)])
-
         if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
     		AC_DEFINE(HAVE_SENDFILE,1,[Whether sendfile() is available])
 		AC_DEFINE(LINUX_SENDFILE_API,1,[Whether linux sendfile() API is available])
 		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile() should be used])
-	elif test x"$samba_cv_HAVE_BROKEN_LINUX_SENDFILE" = x"yes"; then
-		AC_DEFINE(LINUX_BROKEN_SENDFILE_API,1,[Whether (linux) sendfile() is broken])
-		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile should be used])
 	else
 		AC_MSG_RESULT(no);
 	fi

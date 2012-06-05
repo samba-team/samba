@@ -961,24 +961,9 @@ main() {
                             headers='sys/sendfile.h',
                             msg='Checking for linux sendfile support')
 
-            # Try and cope with broken Linux sendfile....
-            conf.CHECK_CODE('''#if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
-                            #undef _FILE_OFFSET_BITS
-                            #endif
-                            #include <sys/sendfile.h>
-                            int tofd, fromfd;
-                            off_t offset;
-                            size_t total;
-                            ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
-                            ''',
-                            '_HAVE_BROKEN_LINUX_SENDFILE',
-                            msg='Checking for broken linux sendfile support')
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('LINUX_SENDFILE_API', '1')
-                conf.DEFINE('WITH_SENDFILE', '1')
-            elif conf.CONFIG_SET('_HAVE_BROKEN_LINUX_SENDFILE'):
-                conf.DEFINE('LINUX_BROKEN_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('freebsd') > -1) or (host_os.rfind('dragonfly') > -1):
             conf.CHECK_CODE('''
