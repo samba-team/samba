@@ -989,7 +989,7 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					NTSTATUS *pstatus);
 connection_struct *make_connection(struct smbd_server_connection *sconn,
 				   const char *service_in,
-				   const char *pdev, uint16 vuid,
+				   const char *pdev, uint64_t vuid,
 				   NTSTATUS *status);
 void close_cnum(connection_struct *conn, uint16 vuid);
 
