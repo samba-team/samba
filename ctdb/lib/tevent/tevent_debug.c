@@ -93,3 +93,27 @@ void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 	ev->debug_ops.debug(ev->debug_ops.context, level, fmt, ap);
 	va_end(ap);
 }
+
+void tevent_set_trace_callback(struct tevent_context *ev,
+			       tevent_trace_callback_t cb,
+			       void *private_data)
+{
+	ev->tracing.callback = cb;
+	ev->tracing.private_data = private_data;
+}
+
+void tevent_get_trace_callback(struct tevent_context *ev,
+			       tevent_trace_callback_t *cb,
+			       void *private_data)
+{
+	*cb = ev->tracing.callback;
+	*(void**)private_data = ev->tracing.private_data;
+}
+
+void tevent_trace_point_callback(struct tevent_context *ev,
+				 enum tevent_trace_point tp)
+{
+	if (ev->tracing.callback != NULL) {
+		ev->tracing.callback(tp, ev->tracing.private_data);
+	}
+}

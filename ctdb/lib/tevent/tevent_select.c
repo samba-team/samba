@@ -167,7 +167,9 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		return 0;
 	}
 
+	tevent_trace_point_callback(select_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+	tevent_trace_point_callback(select_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
 	if (selrtn == -1 && errno == EINTR &&
 	    select_ev->ev->signal_events) {

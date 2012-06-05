@@ -258,6 +258,11 @@ struct tevent_context {
 		tevent_nesting_hook hook_fn;
 		void *hook_private;
 	} nesting;
+
+	struct {
+		tevent_trace_callback_t callback;
+		void *private_data;
+	} tracing;
 };
 
 
@@ -313,3 +318,6 @@ bool tevent_poll_init(void);
 #ifdef HAVE_EPOLL
 bool tevent_epoll_init(void);
 #endif
+
+void tevent_trace_point_callback(struct tevent_context *ev,
+				 enum tevent_trace_point);
