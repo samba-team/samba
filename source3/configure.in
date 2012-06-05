@@ -2053,14 +2053,6 @@ if test x"$samba_cv_HAVE_MAKEDEV" = x"yes"; then
     AC_DEFINE(HAVE_MAKEDEV,1,[Whether the macro for makedev is available])
 fi
 
-AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
-AC_TRY_RUN([#include <stdio.h>
-main() { char c; c=250; exit((c > 0)?0:1); }],
-samba_cv_HAVE_UNSIGNED_CHAR=yes,samba_cv_HAVE_UNSIGNED_CHAR=no,samba_cv_HAVE_UNSIGNED_CHAR=cross)])
-if test x"$samba_cv_HAVE_UNSIGNED_CHAR" = x"yes"; then
-    AC_DEFINE(HAVE_UNSIGNED_CHAR,1,[Whether the 'unsigned char' type is available])
-fi
-
 AC_CACHE_CHECK([whether seekdir returns void],samba_cv_SEEKDIR_RETURNS_VOID,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <dirent.h>
