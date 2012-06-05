@@ -173,7 +173,7 @@ void file_close_conn(connection_struct *conn)
 ****************************************************************************/
 
 void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
-		    int vuid)
+		    uint64_t vuid)
 {
 	files_struct *fsp, *next;
 
@@ -249,7 +249,7 @@ bool file_init(struct smbd_server_connection *sconn)
  Close files open by a specified vuid.
 ****************************************************************************/
 
-void file_close_user(struct smbd_server_connection *sconn, int vuid)
+void file_close_user(struct smbd_server_connection *sconn, uint64_t vuid)
 {
 	files_struct *fsp, *next;
 

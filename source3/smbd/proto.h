@@ -368,10 +368,10 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
 void file_close_conn(connection_struct *conn);
 void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
-		    int vuid);
+		    uint64_t vuid);
 bool file_init_global(void);
 bool file_init(struct smbd_server_connection *sconn);
-void file_close_user(struct smbd_server_connection *sconn, int vuid);
+void file_close_user(struct smbd_server_connection *sconn, uint64_t vuid);
 struct files_struct *files_forall(
 	struct smbd_server_connection *sconn,
 	struct files_struct *(*fn)(struct files_struct *fsp,
