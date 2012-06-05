@@ -167,6 +167,88 @@ typedef union unid_t {
 	gid_t gid;
 } unid_t;
 
+struct fd_handle {
+	size_t ref_count;
+	int fd;
+	uint64_t position_information;
+	off_t pos;
+	uint32 private_options;	/* NT Create options, but we only look at
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_DOS and
+				 * NTCREATEX_OPTIONS_PRIVATE_DENY_FCB and
+				 * NTCREATEX_OPTIONS_PRIVATE_DELETE_ON_CLOSE
+				 * for print files *only*, where
+				 * DELETE_ON_CLOSE is not stored in the share
+				 * mode database.
+				 */
+	unsigned long gen_id;
+};
+
+typedef struct files_struct {
+	struct files_struct *next, *prev;
+	int fnum;
+	struct connection_struct *conn;
+	struct fd_handle *fh;
+	unsigned int num_smb_operations;
+	struct file_id file_id;
+	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
+	uint16 file_pid;
+	uint16 vuid;
+	struct write_cache *wcp;
+	struct timeval open_time;
+	uint32 access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
+	uint32 share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
+
+	bool update_write_time_triggered;
+	struct timed_event *update_write_time_event;
+	bool update_write_time_on_close;
+	struct timespec close_write_time;
+	bool write_time_forced;
+
+	int oplock_type;
+	int sent_oplock_break;
+	struct timed_event *oplock_timeout;
+	struct lock_struct last_lock_failure;
+	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
+
+	struct share_mode_entry *pending_break_messages;
+	int num_pending_break_messages;
+
+	bool can_lock;
+	bool can_read;
+	bool can_write;
+	bool modified;
+	bool is_directory;
+	bool aio_write_behind;
+	bool lockdb_clean;
+	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
+	bool delete_on_close;
+	bool posix_open;
+	bool is_sparse;
+	struct smb_filename *fsp_name;
+	uint32_t name_hash;		/* Jenkins hash of full pathname. */
+
+	struct vfs_fsp_data *vfs_extension;
+	struct fake_file_handle *fake_file_handle;
+
+	struct notify_change_buf *notify;
+
+	struct files_struct *base_fsp; /* placeholder for delete on close */
+
+	/*
+	 * Read-only cached brlock record, thrown away when the
+	 * brlock.tdb seqnum changes. This avoids fetching data from
+	 * the brlock.tdb on every read/write call.
+	 */
+	int brlock_seqnum;
+	struct byte_range_lock *brlock_rec;
+
+	struct dptr_struct *dptr;
+
+	/* if not NULL, means this is a print file */
+	struct print_file_data *print_file;
+
+} files_struct;
+
 #define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
 				handle = handle->next; \
 			 }
