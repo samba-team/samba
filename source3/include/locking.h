@@ -39,7 +39,7 @@ enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 
 struct lock_context {
 	uint64_t smblctx;
-	uint16 tid;
+	uint32_t tid;
 	struct server_id pid;
 };
 
