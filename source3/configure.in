@@ -5774,7 +5774,7 @@ case "$host_os" in
 		NSSSONAMEVERSIONSUFFIX=".2"
 		WINBIND_NSS_EXTRA_OBJS="../nsswitch/winbind_nss_linux.o"
 		;;
-	*freebsd[[5-9]]*)
+	*freebsd[[5-9]]* | *freebsd1[[0-9]]*)
 		# FreeBSD winbind client is implemented as a wrapper around
 		# the Linux version.
 		NSSSONAMEVERSIONSUFFIX=".1"
@@ -5784,7 +5784,7 @@ case "$host_os" in
 		WINBIND_WINS_NSS="../nsswitch/nss_wins.$SHLIBEXT"
 		;;
 
-	*netbsd*[[3-9]]*)
+	*netbsd*[[3-9]]* | *netbsd1[[0-9]]*)
 		# NetBSD winbind client is implemented as a wrapper
 		# around the Linux version. It needs getpwent_r() to
 		# indicate libc's use of the correct nsdispatch API.
