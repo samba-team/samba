@@ -54,10 +54,10 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 			(unsigned int)pls->context.tid,
 			server_id_str(talloc_tos(), &pls->context.pid) ));
 
-	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
+	DEBUG(10,("start = %.0f, size = %.0f, fnum = %llu, %s %s\n",
 		(double)pls->start,
 		(double)pls->size,
-		pls->fnum,
+		(unsigned long long)pls->fnum,
 		lock_type_name(pls->lock_type),
 		lock_flav_name(pls->lock_flav) ));
 }

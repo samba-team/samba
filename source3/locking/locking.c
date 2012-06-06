@@ -154,11 +154,11 @@ bool strict_lock_default(files_struct *fsp, struct lock_struct *plock)
 	}
 
 	DEBUG(10,("strict_lock_default: flavour = %s brl start=%.0f "
-			"len=%.0f %s for fnum %d file %s\n",
+			"len=%.0f %s for fnum %llu file %s\n",
 			lock_flav_name(plock->lock_flav),
 			(double)plock->start, (double)plock->size,
 			ret ? "unlocked" : "locked",
-			plock->fnum, fsp_str_dbg(fsp)));
+			(unsigned long long)plock->fnum, fsp_str_dbg(fsp)));
 
 	return ret;
 }

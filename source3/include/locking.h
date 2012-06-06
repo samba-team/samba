@@ -66,7 +66,7 @@ struct lock_struct {
 	struct lock_context context;
 	br_off start;
 	br_off size;
-	uint16 fnum;
+	uint64_t fnum;
 	enum brl_type lock_type;
 	enum brl_flavour lock_flav;
 };

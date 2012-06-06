@@ -791,7 +791,8 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx,
 
 		for (l_curr = lhead; l_curr;) {
 
-			DEBUG(10,("posix_lock_list: lock: fnum=%d: start=%.0f,size=%.0f:type=%s", lock->fnum,
+			DEBUG(10,("posix_lock_list: lock: fnum=%llu: start=%.0f,size=%.0f:type=%s",
+				(unsigned long long)lock->fnum,
 				(double)lock->start, (double)lock->size, posix_lock_type_name(lock->lock_type) ));
 
 			if ( (l_curr->start >= (lock->start + lock->size)) ||
