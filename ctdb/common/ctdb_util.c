@@ -642,10 +642,15 @@ void ctdb_lockdown_memory(struct ctdb_context *ctdb)
 		return;
 	}
 
+	/* Ignore when running in local daemons mode */
+	if (getpid() != 0) {
+		return;
+	}
+
 	/* Avoid compiler optimizing out dummy. */
 	mlock(dummy, sizeof(dummy));
 	if (mlockall(MCL_CURRENT) != 0) {
-		DEBUG(DEBUG_WARNING,("Failed to lock memory: %s'\n",
+		DEBUG(DEBUG_WARNING,("Failed to lockdown memory: %s'\n",
 				     strerror(errno)));
 	}
 #endif
