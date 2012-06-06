@@ -190,7 +190,7 @@ static int traverse_fn1(const struct connections_key *key,
 			const struct connections_data *crec,
 			void *private_data)
 {
-	if (crec->cnum == -1 && process_exists(crec->pid)) {
+	if (crec->cnum == TID_FIELD_INVALID && process_exists(crec->pid)) {
 		char buf[30];
 		slprintf(buf,sizeof(buf)-1,"kill_%s", procid_str_static(&crec->pid));
 		if (cgi_variable(buf)) {
@@ -206,7 +206,7 @@ static int traverse_fn2(const struct connections_key *key,
                         const struct connections_data *crec,
                         void *private_data)
 {
-	if (crec->cnum == -1 || !process_exists(crec->pid) ||
+	if (crec->cnum == TID_FIELD_INVALID || !process_exists(crec->pid) ||
 	    procid_equal(&crec->pid, &smbd_pid))
 		return 0;
 
@@ -230,7 +230,7 @@ static int traverse_fn3(const struct connections_key *key,
                         const struct connections_data *crec,
                         void *private_data)
 {
-	if (crec->cnum == -1 || !process_exists(crec->pid))
+	if (crec->cnum == TID_FIELD_INVALID || !process_exists(crec->pid))
 		return 0;
 
 	printf("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",

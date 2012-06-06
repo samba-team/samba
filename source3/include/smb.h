@@ -672,6 +672,7 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 #define UID_FIELD_INVALID 0
 #define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
 
+#define TID_FIELD_INVALID -1
 #define CNUM_OFFSET 1 /* shift for bitmap index */
 
 /* 

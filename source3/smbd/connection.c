@@ -71,7 +71,7 @@ static int count_fn(struct db_record *rec,
 {
 	struct count_stat *cs = (struct count_stat *)udp;
 
-	if (crec->cnum == -1) {
+	if (crec->cnum == TID_FIELD_INVALID) {
 		return 0;
 	}
 

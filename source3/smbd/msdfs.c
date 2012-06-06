@@ -276,7 +276,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	conn->params->service = snum;
-	conn->cnum = (unsigned)-1;
+	conn->cnum = TID_FIELD_INVALID;
 
 	DLIST_ADD(conn->sconn->connections, conn);
 	conn->sconn->num_connections++;

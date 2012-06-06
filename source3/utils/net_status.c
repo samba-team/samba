@@ -96,7 +96,7 @@ static int show_share(struct db_record *rec,
 		      const struct connections_data *crec,
 		      void *state)
 {
-	if (crec->cnum == -1)
+	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
 
 	if (!process_exists(crec->pid)) {
@@ -143,7 +143,7 @@ static int show_share_parseable(const struct connections_key *key,
 	int i;
 	bool guest = true;
 
-	if (crec->cnum == -1)
+	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
 
 	if (!process_exists(crec->pid)) {

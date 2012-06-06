@@ -250,7 +250,7 @@ static int traverse_fn1(const struct connections_key *key,
 			const struct connections_data *crec,
 			void *state)
 {
-	if (crec->cnum == -1)
+	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
 
 	if (!process_exists(crec->pid) || !Ucrit_checkUid(crec->uid)) {
