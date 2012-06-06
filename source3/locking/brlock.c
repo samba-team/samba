@@ -1486,7 +1486,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 		    struct byte_range_lock *br_lck)
 {
 	files_struct *fsp = br_lck->fsp;
-	uint16 tid = fsp->conn->cnum;
+	uint32_t tid = fsp->conn->cnum;
 	int fnum = fsp->fnum;
 	unsigned int i;
 	struct lock_struct *locks = br_lck->lock_data;

@@ -147,7 +147,7 @@ void conn_init(struct smbd_server_connection *sconn);
 int conn_num_open(struct smbd_server_connection *sconn);
 bool conn_snum_used(struct smbd_server_connection *sconn, int snum);
 connection_struct *conn_find(struct smbd_server_connection *sconn,
-			     unsigned cnum);
+			     uint32_t cnum);
 connection_struct *conn_new(struct smbd_server_connection *sconn);
 void conn_close_all(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);

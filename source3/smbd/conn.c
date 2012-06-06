@@ -71,7 +71,7 @@ bool conn_snum_used(struct smbd_server_connection *sconn,
  Find a conn given a cnum.
 ****************************************************************************/
 
-connection_struct *conn_find(struct smbd_server_connection *sconn,unsigned cnum)
+connection_struct *conn_find(struct smbd_server_connection *sconn, uint32_t cnum)
 {
 	size_t count=0;
 	struct connection_struct *conn;
