@@ -359,7 +359,7 @@ bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
 		}
 	}
 
-	return 0;
+	return true;
 }
 
 
