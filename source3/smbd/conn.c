@@ -98,6 +98,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 {
 	connection_struct *conn;
 	int i;
+	uint32_t cnum;
         int find_offset = 1;
 
 	if (sconn->using_smb2) {
@@ -156,7 +157,8 @@ find_again:
 	 * which is limited to 16 bits (we skip 0xffff which is the
 	 * NULL TID).
 	 */
-	if (i > 65534) {
+	cnum = i + CNUM_OFFSET;
+	if (cnum >= 0xFFFF) {
 		DEBUG(0, ("Maximum connection limit reached\n"));
 		return NULL;
 	}
@@ -168,7 +170,7 @@ find_again:
 		return NULL;
 	}
 	conn->sconn = sconn;
-	conn->cnum = i;
+	conn->cnum = cnum;
 	conn->force_group_gid = (gid_t)-1;
 
 	bitmap_set(sconn->smb1.tcons.bmap, i);
@@ -293,12 +295,16 @@ void conn_free(connection_struct *conn)
 	}
 
 	if (!conn->sconn->using_smb2 &&
-	    conn->sconn->smb1.tcons.bmap != NULL) {
+	    conn->sconn->smb1.tcons.bmap != NULL &&
+	    conn->cnum >= CNUM_OFFSET &&
+	    conn->cnum < 0xFFFF)
+	{
+		int i = conn->cnum - CNUM_OFFSET;
 		/*
 		 * Can be NULL for fake connections created by
 		 * create_conn_struct()
 		 */
-		bitmap_clear(conn->sconn->smb1.tcons.bmap, conn->cnum);
+		bitmap_clear(conn->sconn->smb1.tcons.bmap, i);
 	}
 
 	DLIST_REMOVE(conn->sconn->connections, conn);
