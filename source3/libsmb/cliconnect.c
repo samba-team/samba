@@ -2062,7 +2062,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 		if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested LM password but 'client plaintext auth = no'"
+			DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -2101,7 +2101,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (!lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested LM password but 'client plaintext auth = no'"
+			DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -2294,9 +2294,9 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 			uint8_t *tmp_pass;
 
 			if (!lp_client_plaintext_auth() && (*pass)) {
-				DEBUG(1, ("Server requested plaintext "
+				DEBUG(1, ("Server requested PLAINTEXT "
 					  "password but "
-					  "'client lanman auth = no' or 'client ntlmv2 auth = yes'\n"));
+					  "'client plaintext auth = no' or 'client ntlmv2 auth = yes'\n"));
 				goto access_denied;
 			}
 
@@ -2872,8 +2872,8 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 	NTSTATUS status;
 
 	if (!lp_client_plaintext_auth() && (*pass)) {
-		DEBUG(1, ("Server requested plaintext password but 'client "
-			  "plaintext auth' is disabled\n"));
+		DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
+			  " or 'client ntlmv2 auth = yes'\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
