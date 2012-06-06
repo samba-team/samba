@@ -1,8 +1,10 @@
 #!/bin/sh
 # add a autobuild message to the HEAD commit
 
-if grep -q '^Autobuild.User' "$1"; then
-    echo "Already marked as tested"
+branch=$(git branch --contains HEAD | grep '^\* ' | sed -e 's/^\* //')
+
+if grep -q "^Autobuild\-User($branch): " "$1"; then
+    echo "Already marked as tested for $branch"
     exit 0
 fi
 
@@ -13,7 +15,7 @@ if test -z "$mailaddr" ; then
 fi
 cat <<EOF >> "$1"
 
-Autobuild-User: $fullname <$mailaddr>
-Autobuild-Date: $(date) on $(hostname)
+Autobuild-User($branch): $fullname <$mailaddr>
+Autobuild-Date($branch): $(date) on $(hostname)
 EOF
 exit 0
