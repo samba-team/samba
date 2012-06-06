@@ -1182,6 +1182,18 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		      const ctdb_sock_addr *src,
 		      uint32_t seq, uint32_t ack, int rst);
 
+/* Details of a byte range lock */
+struct ctdb_lock_info {
+	ino_t inode;
+	off_t start, end;
+	bool waiting;
+	bool read_only;
+};
+
+char *ctdb_get_process_name(pid_t pid);
+bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info);
+bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid);
+
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *iface,

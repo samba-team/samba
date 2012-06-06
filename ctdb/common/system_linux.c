@@ -574,3 +574,182 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	return ret;
 }
 
+/*
+ * Find the process name from process ID
+ */
+char *ctdb_get_process_name(pid_t pid)
+{
+	char path[32];
+	char buf[PATH_MAX];
+	char *ptr;
+	int n;
+
+	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
+	n = readlink(path, buf, sizeof(buf));
+	if (n < 0) {
+		return NULL;
+	}
+
+	/* Remove any extra fields */
+	buf[n] = '\0';
+	ptr = strtok(buf, " ");
+	return strdup(ptr);
+}
+
+
+/*
+ * Parsing a line from /proc/locks,
+ */
+static bool parse_proc_locks_line(char *line, pid_t *pid,
+				  struct ctdb_lock_info *curlock)
+{
+	char *ptr, *saveptr;
+
+	/* output of /proc/locks
+	 *
+	 * lock assigned
+	 * 1: POSIX  ADVISORY  WRITE 25945 fd:00:6424820 212 212
+	 *
+	 * lock waiting
+	 * 1: -> POSIX  ADVISORY  WRITE 25946 fd:00:6424820 212 212
+	 */
+
+	/* Id: */
+	ptr = strtok_r(line, " ", &saveptr);
+	if (ptr == NULL) return false;
+
+	/* -> */
+	ptr = strtok_r(NULL, " ", &saveptr);
+	if (ptr == NULL) return false;
+	if (strcmp(ptr, "->") == 0) {
+		curlock->waiting = true;
+		ptr = strtok_r(NULL, " ", &saveptr);
+	} else {
+		curlock->waiting = false;
+	}
+
+	/* POSIX */
+	if (ptr == NULL || strcmp(ptr, "POSIX") != 0) {
+		return false;
+	}
+
+	/* ADVISORY */
+	ptr = strtok_r(NULL, " ", &saveptr);
+	if (ptr == NULL) return false;
+
+	/* WRITE */
+	ptr = strtok_r(NULL, " ", &saveptr);
+	if (ptr == NULL) return false;
+	if (strcmp(ptr, "READ") == 0) {
+		curlock->read_only = true;
+	} else if (strcmp(ptr, "WRITE") == 0) {
+		curlock->read_only = false;
+	} else {
+		return false;
+	}
+
+	/* PID */
+	ptr = strtok_r(NULL, " ", &saveptr);
+	if (ptr == NULL) return false;
+	*pid = atoi(ptr);
+
+	/* MAJOR:MINOR:INODE */
+	ptr = strtok_r(NULL, " :", &saveptr);
+	if (ptr == NULL) return false;
+	ptr = strtok_r(NULL, " :", &saveptr);
+	if (ptr == NULL) return false;
+	ptr = strtok_r(NULL, " :", &saveptr);
+	if (ptr == NULL) return false;
+	curlock->inode = atol(ptr);
+
+	/* START OFFSET */
+	ptr = strtok_r(NULL, " ", &saveptr);
+	if (ptr == NULL) return false;
+	curlock->start = atol(ptr);
+
+	/* END OFFSET */
+	ptr = strtok_r(NULL, " ", &saveptr);
+	if (ptr == NULL) return false;
+	if (strncmp(ptr, "EOF", 3) == 0) {
+		curlock->end = (off_t)-1;
+	} else {
+		curlock->end = atol(ptr);
+	}
+
+	return true;
+}
+
+/*
+ * Find information of lock being waited on for given process ID
+ */
+bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
+{
+	FILE *fp;
+	struct ctdb_lock_info curlock;
+	pid_t pid;
+	char buf[1024];
+	char *ptr;
+	bool status = false;
+
+	if ((fp = fopen("/proc/locks", "r")) == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read locks information"));
+		return false;
+	}
+	while ((ptr = fgets(buf, sizeof(buf), fp)) != NULL) {
+		if (! parse_proc_locks_line(buf, &pid, &curlock)) {
+			continue;
+		}
+		if (pid == req_pid && curlock.waiting) {
+			*lock_info = curlock;
+			status = true;
+			break;
+		}
+	}
+	fclose(fp);
+
+	return status;
+}
+
+/*
+ * Find process ID which holds an overlapping byte lock for required
+ * inode and byte range.
+ */
+bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid)
+{
+	FILE *fp;
+	struct ctdb_lock_info curlock;
+	pid_t pid;
+	char buf[1024];
+	char *ptr;
+	bool status = false;
+
+	if ((fp = fopen("/proc/locks", "r")) == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read locks information"));
+		return false;
+	}
+	while ((ptr = fgets(buf, sizeof(buf), fp)) != NULL) {
+		if (! parse_proc_locks_line(buf, &pid, &curlock)) {
+			continue;
+		}
+
+		if (curlock.waiting) {
+			continue;
+		}
+
+		if (curlock.inode != reqlock->inode) {
+			continue;
+		}
+
+		if (curlock.start > reqlock->end ||
+		    curlock.end < reqlock->start) {
+			/* Outside the required range */
+			continue;
+		}
+		*blocker_pid = pid;
+		status = true;
+		break;
+	}
+	fclose(fp);
+
+	return status;
+}

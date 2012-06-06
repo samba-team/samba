@@ -373,3 +373,20 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	return ret;
 }
 
+char *ctdb_get_process_name(pid_t pid)
+{
+	/* FIXME: not implemented */
+	return NULL;
+}
+
+bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
+{
+	/* FIXME: not implemented */
+	return false;
+}
+
+bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid)
+{
+	/* FIXME: not implemented */
+	return false;
+}
