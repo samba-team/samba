@@ -93,10 +93,10 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 		bool prefer_ipv4)
 {
 	struct addrinfo *res = NULL;
+	int int_flags;
 #if defined(HAVE_IPV6)
 	char addr[INET6_ADDRSTRLEN];
 	unsigned int scope_id = 0;
-	int int_flags;
 
 	if (strchr_m(str, ':')) {
 		char *p = strchr_m(str, '%');
