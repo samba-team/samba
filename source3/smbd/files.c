@@ -54,6 +54,54 @@ static unsigned long get_gen_count(struct smbd_server_connection *sconn)
 	return sconn->file_gen_counter;
 }
 
+/**
+ * create new fsp to be used for file_new or a durable handle reconnect
+ */
+NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
+		 files_struct **result)
+{
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	files_struct *fsp = NULL;
+	struct smbd_server_connection *sconn = conn->sconn;
+
+	fsp = talloc_zero(mem_ctx, struct files_struct);
+	if (fsp == NULL) {
+		goto fail;
+	}
+
+	/*
+	 * This can't be a child of fsp because the file_handle can be ref'd
+	 * when doing a dos/fcb open, which will then share the file_handle
+	 * across multiple fsps.
+	 */
+	fsp->fh = talloc_zero(mem_ctx, struct fd_handle);
+	if (fsp->fh == NULL) {
+		goto fail;
+	}
+
+	fsp->fh->ref_count = 1;
+	fsp->fh->fd = -1;
+
+	fsp->fnum = -1;
+	fsp->conn = conn;
+
+	DLIST_ADD(sconn->files, fsp);
+	sconn->num_files += 1;
+
+	conn->num_files_open++;
+
+	*result = fsp;
+	return NT_STATUS_OK;
+
+fail:
+	if (fsp != NULL) {
+		TALLOC_FREE(fsp->fh);
+	}
+	TALLOC_FREE(fsp);
+
+	return status;
+}
+
 /****************************************************************************
  Find first available file slot.
 ****************************************************************************/
@@ -65,6 +113,13 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	int i = -1;
 	files_struct *fsp;
 	NTSTATUS status;
+
+	status = fsp_new(conn, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	GetTimeOfDay(&fsp->open_time);
 
 	if (sconn->file_bmap != NULL) {
 
@@ -92,36 +147,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 			 */
 			return NT_STATUS_TOO_MANY_OPENED_FILES;
 		}
-	}
 
-	/*
-	 * Make a child of the connection_struct as an fsp can't exist
-	 * independent of a connection.
-	 */
-	fsp = talloc_zero(conn, struct files_struct);
-	if (!fsp) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/*
-	 * This can't be a child of fsp because the file_handle can be ref'd
-	 * when doing a dos/fcb open, which will then share the file_handle
-	 * across multiple fsps.
-	 */
-	fsp->fh = talloc_zero(conn, struct fd_handle);
-	if (!fsp->fh) {
-		TALLOC_FREE(fsp);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	fsp->fh->ref_count = 1;
-	fsp->fh->fd = -1;
-
-	fsp->fnum = -1;
-	fsp->conn = conn;
-	GetTimeOfDay(&fsp->open_time);
-
-	if (sconn->file_bmap != NULL) {
 		sconn->first_file = (i+1) % (sconn->real_max_open_files);
 
 		bitmap_set(sconn->file_bmap, i);
@@ -131,11 +157,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 		fsp->fh->gen_id = get_gen_count(sconn);
 	}
-
-	DLIST_ADD(sconn->files, fsp);
-	sconn->num_files += 1;
-
-	conn->num_files_open++;
 
 	/*
 	 * Create an smb_filename with "" for the base_name.  There are very

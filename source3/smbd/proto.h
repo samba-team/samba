@@ -364,6 +364,8 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from smbd/files.c  */
 
+NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
+		 files_struct **result);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
 void file_close_conn(connection_struct *conn);
