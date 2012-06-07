@@ -39,6 +39,89 @@ def set_options(opt):
                        action="store_true", dest='disable_python', default=False)
 
 def configure(conf):
+    conf.env.TEST_RUN_SRC=['test/run-001-encode.c',
+                           'test/run-001-fls.c',
+                           'test/run-01-new_database.c',
+                           'test/run-02-expand.c',
+                           'test/run-03-coalesce.c',
+                           'test/run-04-basichash.c',
+                           'test/run-05-readonly-open.c',
+                           'test/run-10-simple-store.c',
+                           'test/run-11-simple-fetch.c',
+                           'test/run-12-check.c',
+                           'test/run-15-append.c',
+                           'test/run-20-growhash.c',
+                           'test/run-25-hashoverload.c',
+                           'test/run-30-exhaust-before-expand.c',
+                           'test/run-35-convert.c',
+                           'test/run-50-multiple-freelists.c',
+                           'test/run-56-open-during-transaction.c',
+                           'test/run-57-die-during-transaction.c',
+                           'test/run-64-bit-tdb.c',
+                           'test/run-90-get-set-attributes.c',
+                           'test/run-capabilities.c',
+                           'test/run-expand-in-transaction.c',
+                           'test/run-features.c',
+                           'test/run-lockall.c',
+                           'test/run-remap-in-read_traverse.c',
+                           'test/run-seed.c',
+                           'test/run-tdb1-3G-file.c',
+                           'test/run-tdb1-bad-tdb-header.c',
+                           'test/run-tdb1.c',
+                           'test/run-tdb1-check.c',
+                           'test/run-tdb1-corrupt.c',
+                           'test/run-tdb1-endian.c',
+                           'test/run-tdb1-hashsize.c',
+                           'test/run-tdb1-incompatible.c',
+                           'test/run-tdb1-nested-transactions.c',
+                           'test/run-tdb1-nested-traverse.c',
+                           'test/run-tdb1-no-lock-during-traverse.c',
+                           'test/run-tdb1-oldhash.c',
+                           'test/run-tdb1-readonly-check.c',
+                           'test/run-tdb1-rwlock-check.c',
+                           'test/run-tdb1-seqnum-wrap.c',
+                           'test/run-tdb1-summary.c',
+                           'test/run-tdb1-traverse-in-transaction.c',
+                           'test/run-tdb1-wronghash-fail.c',
+                           'test/run-tdb1-zero-append.c',
+                           'test/run-tdb_errorstr.c',
+                           'test/run-tdb_foreach.c',
+                           'test/run-traverse.c']
+    conf.env.TEST_API_SRC=['test/api-12-store.c',
+                           'test/api-13-delete.c',
+                           'test/api-14-exists.c',
+                           'test/api-16-wipe_all.c',
+                           'test/api-21-parse_record.c',
+                           'test/api-55-transaction.c',
+                           'test/api-80-tdb_fd.c',
+                           'test/api-81-seqnum.c',
+                           'test/api-82-lockattr.c',
+                           'test/api-83-openhook.c',
+                           'test/api-91-get-stats.c',
+                           'test/api-92-get-set-readonly.c',
+                           'test/api-93-repack.c',
+                           'test/api-add-remove-flags.c',
+                           'test/api-check-callback.c',
+                           'test/api-firstkey-nextkey.c',
+                           'test/api-fork-test.c',
+                           'test/api-locktimeout.c',
+                           'test/api-missing-entries.c',
+                           'test/api-open-multiple-times.c',
+                           'test/api-record-expand.c',
+                           'test/api-simple-delete.c',
+                           'test/api-summary.c',
+                           'test/api-tdb1-flag-removal.c']
+    conf.env.TEST_API_HELPER_SRC=['test/helpapi-external-agent.c']
+    conf.env.TEST_RUN_HELPER_SRC=['test/helprun-external-agent.c',
+                                  'test/helprun-layout.c']
+    conf.env.TEST_HELPER_SRC=['test/external-agent.c',
+                              'test/failtest_helper.c',
+                              'test/lock-tracking.c',
+                              'test/logging.c',
+                              'test/tap-interface.c',
+                              'test/tdb1-external-agent.c',
+                              'test/tdb1-lock-tracking.c']
+
     if Options.options.BUILD_TDB2:
         conf.DEFINE('BUILD_TDB2', 1)
         conf.RECURSE('lib/replace')
@@ -68,18 +151,6 @@ def configure(conf):
         conf.ADD_EXTRA_INCLUDES('''#lib''')
 
         conf.SAMBA_CONFIG_H()
-
-        # Seems like env can't contain sets?
-        conf.env.tdb2_test = {}
-        conf.env.tdb2_test['run'] = glob.glob('test/run*.c')
-        conf.env.tdb2_test['api'] = glob.glob('test/api*.c')
-        conf.env.tdb2_test['runhelper'] = glob.glob('test/helprun*.c')
-        conf.env.tdb2_test['apihelper'] = glob.glob('test/helpapi*.c')
-        conf.env.tdb2_test['helper'] = list(set(glob.glob('test/*.c'))
-                                            - set(conf.env.tdb2_test['run'])
-                                            - set(conf.env.tdb2_test['api'])
-                                            - set(conf.env.tdb2_test['runhelper'])
-                                            - set(conf.env.tdb2_test['apihelper']))
 
 def build(bld):
     if bld.env.BUILD_TDB2:
@@ -135,27 +206,27 @@ def build(bld):
                              deps='tdb')
 
             # FIXME: We need CCAN for some API tests, but waf thinks it's
-            # already available via tdb.  It is, but not publicly.
+            # already available via tdb2.  It is, but not publicly.
             # Workaround is to build a private, non-hiding version.
-            bld.SAMBA_SUBSYSTEM('tdb-testing',
+            bld.SAMBA_SUBSYSTEM('tdb2-testing',
                                 SRC,
                                 deps='replace ccan',
                                 includes='.')
 
-            bld.SAMBA_SUBSYSTEM('tdb2-test-helpers',
-                                bld.env.tdb2_test['helper'], deps='replace')
-            bld.SAMBA_SUBSYSTEM('tdb2-run-helpers',
-                                bld.env.tdb2_test['runhelper'], deps='replace')
-            bld.SAMBA_SUBSYSTEM('tdb2-api-helpers',
-                                bld.env.tdb2_test['apihelper'], deps='replace tdb-testing')
+            bld.SAMBA_SUBSYSTEM('tdb2-test-helpers', bld.env.TEST_HELPER_SRC,
+                                deps='replace')
+            bld.SAMBA_SUBSYSTEM('tdb2-run-helpers', bld.env.TEST_RUN_HELPER_SRC,
+                                deps='replace')
+            bld.SAMBA_SUBSYSTEM('tdb2-api-helpers', bld.env.TEST_API_HELPER_SRC,
+                                deps='replace tdb2-testing')
 
-            for f in bld.env.tdb2_test['run']:
+            for f in bld.env.TEST_RUN_SRC:
                 base = os.path.splitext(os.path.basename(f))[0]
                 bld.SAMBA_BINARY('tdb2-' + base, f,
                                  deps='ccan replace tdb2-test-helpers tdb2-run-helpers',
                                  install=False)
 
-            for f in bld.env.tdb2_test['api']:
+            for f in bld.env.TEST_API_SRC:
                 base = os.path.splitext(os.path.basename(f))[0]
                 bld.SAMBA_BINARY('tdb2-' + base, f,
                                  deps='ccan replace tdb2-test-helpers tdb2-api-helpers',
@@ -195,7 +266,7 @@ def testonly(ctx):
         if Options.options.VALGRINDLOG is not None:
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
-        for f in env.tdb2_test['run'] + env.tdb2_test['api']:
+        for f in env.TEST_RUN_SRC + env.TEST_API_SRC:
             name = "tdb2-" + os.path.splitext(os.path.basename(f))[0]
             cmd = "cd " + testdir + " && $VALGRIND " + os.path.abspath(os.path.join(Utils.g_module.blddir, name)) + " > test-output 2>&1"
             print("..." + f)
