@@ -30,6 +30,9 @@
 #include "tevent_internal.h"
 
 struct poll_event_context {
+	/* a pointer back to the generic event_context */
+	struct tevent_context *ev;
+
 	/*
 	 * These two arrays are maintained together.
 	 */
@@ -52,6 +55,7 @@ static int poll_event_context_init(struct tevent_context *ev)
 	if (poll_ev == NULL) {
 		return -1;
 	}
+	poll_ev->ev = ev;
 	ev->additional_data = poll_ev;
 	return 0;
 }
