@@ -1340,7 +1340,7 @@ main() {
             PTHREAD_CFLAGS='-D_THREAD_SAFE -pthread'
             PTHREAD_LDFLAGS='-pthread'
     if PTHREAD_LDFLAGS == 'error':
-        if conf.CHECK_FUNC('pthread_attr_init'):
+        if conf.CHECK_FUNCS('pthread_attr_init'):
             PTHREAD_CFLAGS='-D_REENTRANT'
             PTHREAD_LDFLAGS='-lpthread'
     # especially for HP-UX, where the CHECK_FUNC macro fails to test for
