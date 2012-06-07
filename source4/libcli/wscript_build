@@ -12,7 +12,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA_TSOCKET',
 bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
 	source='util/clilsa.c',
 	autoproto='util/clilsa.h',
-	public_deps='RPC_NDR_LSA',
+	public_deps='RPC_NDR_LSA dcerpc',
 	deps='security'
 	)
 
@@ -67,9 +67,9 @@ bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
-	source='finddcs_nbt.c finddcs_cldap.c',
+	source='finddcs_cldap.c',
 	autoproto='finddcs_proto.h',
-	public_deps='cli-nbt MESSAGING RPC_NDR_IRPC cli_cldap'
+	public_deps='cli_cldap'
 	)
 
 
