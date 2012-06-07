@@ -113,6 +113,14 @@ def CHECK_LARGEFILE(conf, define='HAVE_LARGEFILE'):
                        msg='Checking for -D_FILE_OFFSET_BITS=64'):
         conf.DEFINE('_FILE_OFFSET_BITS', 64)
         return True
+
+    if conf.CHECK_CODE('return !(sizeof(off_t) >= 8)',
+                       define,
+                       execute=True,
+                       cflags='-D_LARGE_FILES',
+                       msg='Checking for -D_LARGE_FILES'):
+        conf.DEFINE('_LARGE_FILES', 1)
+        return True
     return False
 
 
