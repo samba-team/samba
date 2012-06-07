@@ -35,7 +35,7 @@ bld.RECURSE('libsmbclient')
 heimdal_specific = dict()
 heimdal_specific['ndr'] = ('','')
 heimdal_specific['rpc'] = ('','')
-if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
+if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
 	heimdal_specific['ndr'] = (' ndr/backupkey.c','')
 	heimdal_specific['rpc'] = (' rpc/backupkey.c rpc/spoolss_notify.c rpc/spoolss_win.c',
 				    ' RPC_NDR_BACKUPKEY SMB_SERVER dcerpc_server ntvfs')

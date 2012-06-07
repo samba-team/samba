@@ -528,7 +528,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "asyncbind", torture_async_bind);
 	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
 	torture_suite_add_suite(suite, torture_rpc_bind(suite));
-#ifdef SAMBA4_USES_HEIMDAL /* Add Heimdal-specific KDC test */
+#ifdef AD_DC_BUILD_IS_ENABLED /* Add Heimdal-specific KDC test */
 	torture_suite_add_suite(suite, torture_rpc_backupkey(suite));
 #endif
 
