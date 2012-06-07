@@ -37,9 +37,15 @@ if conf.env.KRB5_CONFIG:
         conf.define('USING_SYSTEM_KRB5', 1)
         del conf.env.HEIMDAL_KRB5_CONFIG
         kversion = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG), dict()).strip()
-        kversion_split = map(int, kversion.split(" ")[-1].split("."))
-        if kversion_split < [1, 9]:
+        kversion_split = kversion.split(' ')[-1].split('.')
+        # drop '-prerelease' suffix
+        if kversion_split[-1].find('-') > 0:
+            last_digit = kversion_split[-1].split('-')[0]
+            kversion_split[-1] = last_digit
+        kversion_check = map(int, kversion_split)
+        if kversion_check < [1, 9]:
             Logs.error('ERROR: MIT krb5 build requires at least 1.9.0. %s is found and cannot be used' % (kversion))
+            Logs.error('ERROR: You may try to build with embedded Heimdal Kerebros by not specifying --with-system-mitkrb5')
             sys.exit(1)
         else:
             Logs.info('%s is detected, MIT krb5 build can proceed' % (kversion))
