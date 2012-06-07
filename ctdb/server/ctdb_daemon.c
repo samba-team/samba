@@ -1045,6 +1045,51 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 				 tdb_null, NULL, NULL);
 }
 
+static struct timeval tevent_before_wait_ts;
+static struct timeval tevent_after_wait_ts;
+
+static void ctdb_tevent_trace(enum tevent_trace_point tp,
+			      void *private_data)
+{
+	struct timeval diff;
+	struct timeval now;
+
+	if (getpid() != ctdbd_pid) {
+		return;
+	}
+
+	now = timeval_current();
+
+	switch (tp) {
+	case TEVENT_TRACE_BEFORE_WAIT:
+		if (!timeval_is_zero(&tevent_after_wait_ts)) {
+			diff = timeval_until(&tevent_after_wait_ts, &now);
+			if (diff.tv_sec > 3) {
+				DEBUG(DEBUG_ERR,
+				      ("Handling event took %ld seconds!\n",
+				       diff.tv_sec));
+			}
+		}
+		tevent_before_wait_ts = now;
+		break;
+
+	case TEVENT_TRACE_AFTER_WAIT:
+		if (!timeval_is_zero(&tevent_before_wait_ts)) {
+			diff = timeval_until(&tevent_before_wait_ts, &now);
+			if (diff.tv_sec > 3) {
+				DEBUG(DEBUG_CRIT,
+				      ("No event for %ld seconds!\n",
+				       diff.tv_sec));
+			}
+		}
+		tevent_after_wait_ts = now;
+		break;
+
+	default:
+		/* Do nothing for future tevent trace points */ ;
+	}
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -1099,6 +1144,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	ctdb->ev = event_context_init(NULL);
 	tevent_loop_allow_nesting(ctdb->ev);
+	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, NULL);
 	ret = ctdb_init_tevent_logging(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ALERT,("Failed to initialize TEVENT logging\n"));
