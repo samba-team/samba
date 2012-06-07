@@ -54,16 +54,17 @@ static struct db_record *connections_fetch_record(TALLOC_CTX *mem_ctx,
 	return dbwrap_fetch_locked(ctx, mem_ctx, key);
 }
 
-struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
-					  connection_struct *conn,
-					  const char *name)
+struct db_record *connections_fetch_entry_ext(TALLOC_CTX *mem_ctx,
+					      struct server_id id,
+					      int cnum,
+					      const char *name)
 {
 	struct connections_key ckey;
 	TDB_DATA key;
 
 	ZERO_STRUCT(ckey);
-	ckey.pid = messaging_server_id(conn->sconn->msg_ctx);
-	ckey.cnum = conn->cnum;
+	ckey.pid = id;
+	ckey.cnum = cnum;
 	strlcpy(ckey.name, name, sizeof(ckey.name));
 
 	key.dsize = sizeof(ckey);
@@ -71,6 +72,15 @@ struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
 
 	return connections_fetch_record(mem_ctx, key);
 }
+
+struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
+					  connection_struct *conn,
+					  const char *name)
+{
+	struct server_id id = messaging_server_id(conn->sconn->msg_ctx);
+	return connections_fetch_entry_ext(mem_ctx, id, conn->cnum, name);
+}
+
 
 struct conn_traverse_state {
 	int (*fn)(struct db_record *rec,
