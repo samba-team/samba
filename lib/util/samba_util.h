@@ -76,7 +76,7 @@ _PUBLIC_ void fault_configure(smb_panic_handler_t panic_handler);
 _PUBLIC_ void fault_setup(void);
 _PUBLIC_ void fault_setup_disable(void);
 _PUBLIC_ void dump_core_setup(const char *progname, const char *logfile);
-_PUBLIC_ void smb_panic(const char *reason);
+_PUBLIC_ _NORETURN_ void smb_panic(const char *reason);
 
 
 /**
