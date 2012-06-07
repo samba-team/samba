@@ -2800,13 +2800,13 @@ AC_TRY_COMPILE([
   #define _XOPEN_SOURCE 600
   #include <stdlib.h>
   #if defined(__GLIBC__) && ((__GLIBC__ < 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 4))
-    probably broken posix_fallocate
+  #error probably broken posix_fallocate
   #endif
 ], [
 ], 
 samba_cv_HAVE_BROKEN_POSIX_FALLOCATE=no,samba_cv_HAVE_BROKEN_POSIX_FALLOCATE=yes)])
 if test x"$samba_cv_HAVE_BROKEN_POSIX_FALLOCATE" = xyes; then
-	AC_DEFINE(HAVE_BROKEN_POSIX_FALLOCATE,, Whether we have a broken posix_fallocate)
+	AC_DEFINE(HAVE_BROKEN_POSIX_FALLOCATE, 1, Whether we have a broken posix_fallocate)
 fi
 
 

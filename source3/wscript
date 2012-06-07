@@ -812,7 +812,7 @@ int i; i = PAM_RADIO_TYPE;
 #endif
 ''',
                            '_HAVE_UNBROKEN_POSIX_FALLOCATE',
-                           msg='for broken posix_fallocate'):
+                           msg='Checking for broken posix_fallocate'):
         conf.DEFINE('HAVE_BROKEN_POSIX_FALLOCATE', '1')
 
 
