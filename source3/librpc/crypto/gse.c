@@ -688,8 +688,24 @@ NTSTATUS gse_get_pac_blob(struct gse_context *gse_ctx,
 			  TALLOC_CTX *mem_ctx, DATA_BLOB *pac_blob)
 {
 	OM_uint32 gss_min, gss_maj;
-	gss_buffer_desc pac_buffer;
-	gss_buffer_desc pac_display_buffer;
+/*
+ * gss_get_name_attribute() in MIT krb5 1.10.0 can return unintialized pac_display_buffer
+ * and later gss_release_buffer() will crash on attempting to release it.
+ *
+ * So always initialize the buffer descriptors.
+ *
+ * See following links for more details:
+ * http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=658514
+ * http://krbdev.mit.edu/rt/Ticket/Display.html?user=guest&pass=guest&id=7087
+ */
+	gss_buffer_desc pac_buffer = {
+		.value = NULL,
+		.length = 0
+	};
+	gss_buffer_desc pac_display_buffer = {
+		.value = NULL,
+		.length = 0
+	};
 	gss_buffer_desc pac_name = {
 		.value = discard_const_p(char, "urn:mspac:"),
 		.length = sizeof("urn:mspac:") - 1
