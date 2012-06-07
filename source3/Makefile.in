@@ -212,7 +212,7 @@ SBIN_PROGS = bin/smbd bin/nmbd @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
 
 BIN_PROGS1 = bin/smbclient bin/net bin/smbspool \
 	bin/testparm bin/smbstatus bin/smbget \
-	bin/smbta-util
+	bin/smbta-util bin/cclean
 BIN_PROGS2 = bin/smbcontrol bin/smbtree $(TDBBACKUP) \
 	bin/nmblookup bin/pdbedit $(TDBDUMP) \
 	$(TDBRESTORE) $(TDBTOOL) bin/dbwrap_tool
@@ -1048,6 +1048,12 @@ STATUS_OBJ = utils/status.o utils/status_profile.o \
 	     smbd/notify_internal.o autoconf/librpc/gen_ndr/ndr_notify.o \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	     $(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
+
+CCLEAN_OBJ = utils/cclean.o utils/interact.o \
+	$(LOCKING_OBJ) $(PARAM_OBJ) \
+        $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
+        $(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
+
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 	$(LIBSMB_ERR_OBJ) $(POPT_LIB_OBJ) $(PRINTBASE_OBJ)
@@ -1963,6 +1969,11 @@ bin/smbta-util: $(BINARY_PREREQS) $(SMBTA_UTIL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(
 bin/smbstatus: $(BINARY_PREREQS) $(STATUS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
+		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+
+bin/cclean: $(BINARY_PREREQS) $(CCLEAN_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+	@echo Linking $@
+	@$(CC) -o $@ $(CCLEAN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 bin/smbcontrol: $(BINARY_PREREQS) $(SMBCONTROL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
