@@ -130,8 +130,6 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 	return fde;
 }
 
-extern pid_t ctdbd_pid;
-
 /*
   event loop handling using select()
 */
@@ -169,9 +167,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		return 0;
 	}
 
-	if (getpid() == ctdbd_pid) tevent_before_wait(select_ev->ev);
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
-	if (getpid() == ctdbd_pid) tevent_after_wait(select_ev->ev);
 
 	if (selrtn == -1 && errno == EINTR &&
 	    select_ev->ev->signal_events) {

@@ -242,8 +242,6 @@ static void epoll_change_event(struct epoll_event_context *epoll_ev, struct teve
 	}
 }
 
-extern pid_t ctdbd_pid;
-
 /*
   event loop handling using epoll
 */
@@ -266,9 +264,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		return 0;
 	}
 
-	if (getpid() == ctdbd_pid) tevent_before_wait(epoll_ev->ev);
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
-	if (getpid() == ctdbd_pid) tevent_after_wait(epoll_ev->ev);
 
 	if (ret == -1 && errno == EINTR && epoll_ev->ev->signal_events) {
 		if (tevent_common_check_signal(epoll_ev->ev)) {
