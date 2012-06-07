@@ -387,6 +387,7 @@ files_struct *file_find_di_first(struct smbd_server_connection *sconn,
 files_struct *file_find_di_next(files_struct *start_fsp);
 bool file_find_subpath(files_struct *dir_fsp);
 void file_sync_all(connection_struct *conn);
+void fsp_free(files_struct *fsp);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
 uint64_t fsp_persistent_id(const struct files_struct *fsp);

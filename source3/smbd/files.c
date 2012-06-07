@@ -499,6 +499,32 @@ void file_sync_all(connection_struct *conn)
  Free up a fsp.
 ****************************************************************************/
 
+void fsp_free(files_struct *fsp)
+{
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+
+	DLIST_REMOVE(sconn->files, fsp);
+	SMB_ASSERT(sconn->num_files > 0);
+	sconn->num_files--;
+
+	TALLOC_FREE(fsp->fake_file_handle);
+
+	if (fsp->fh->ref_count == 1) {
+		TALLOC_FREE(fsp->fh);
+	} else {
+		fsp->fh->ref_count--;
+	}
+
+	fsp->conn->num_files_open--;
+
+	/* this is paranoia, just in case someone tries to reuse the
+	   information */
+	ZERO_STRUCTP(fsp);
+
+	/* fsp->fsp_name is a talloc child and is free'd automatically. */
+	TALLOC_FREE(fsp);
+}
+
 void file_free(struct smb_request *req, files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
@@ -538,26 +564,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	/* Drop all remaining extensions. */
 	vfs_remove_all_fsp_extensions(fsp);
 
-	DLIST_REMOVE(sconn->files, fsp);
-	SMB_ASSERT(sconn->num_files > 0);
-	sconn->num_files--;
-
-	TALLOC_FREE(fsp->fake_file_handle);
-
-	if (fsp->fh->ref_count == 1) {
-		TALLOC_FREE(fsp->fh);
-	} else {
-		fsp->fh->ref_count--;
-	}
-
-	fsp->conn->num_files_open--;
-
-	/* this is paranoia, just in case someone tries to reuse the
-	   information */
-	ZERO_STRUCTP(fsp);
-
-	/* fsp->fsp_name is a talloc child and is free'd automatically. */
-	TALLOC_FREE(fsp);
+	fsp_free(fsp);
 
 	DEBUG(5,("freed files structure %d (%u used)\n",
 		 fnum, (unsigned int)sconn->num_files));
