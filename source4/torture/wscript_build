@@ -165,14 +165,14 @@ bld.SAMBA_BINARY('smbtorture',
 bld.SAMBA_BINARY('gentest',
 	source='gentest.c',
 	manpages='man/gentest.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB smbclient-raw'
+	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB smbclient-raw param_options'
 	)
 
 
 bld.SAMBA_BINARY('masktest',
 	source='masktest.c',
 	manpages='man/masktest.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB'
+	deps='samba-hostconfig samba-util popt POPT_SAMBA POPT_CREDENTIALS LIBCLI_SMB param_options'
 	)
 
 
@@ -183,6 +183,6 @@ bld.SAMBA_BINARY('locktest',
 	#cflags='--coverage',
 	# GCOV='1',
 	manpages='man/locktest.1',
-	deps='popt POPT_SAMBA POPT_CREDENTIALS samba-util LIBCLI_SMB samba-hostconfig',
+	deps='popt POPT_SAMBA POPT_CREDENTIALS samba-util LIBCLI_SMB samba-hostconfig param_options',
 	)
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 
-bld.SAMBA_SUBSYSTEM('MESSAGING',
+bld.SAMBA_LIBRARY('MESSAGING',
 	source='messaging.c',
-	public_deps='samba-util tdb-wrap NDR_IRPC UNIX_PRIVS util_tdb cluster ndr samba_socket dcerpc'
+	public_deps='samba-util tdb-wrap NDR_IRPC UNIX_PRIVS util_tdb cluster ndr samba_socket dcerpc',
+                  private_library=True
 	)
 
 

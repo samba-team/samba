@@ -158,7 +158,7 @@ bld.SAMBA_LIBRARY('dcerpc',
 
 bld.SAMBA_SUBSYSTEM('pyrpc_util',
 	source='rpc/pyrpc_util.c',
-	public_deps='pytalloc-util pyparam_util dcerpc',
+	public_deps='pytalloc-util pyparam_util dcerpc MESSAGING',
 	pyext=True,
 	)
 
