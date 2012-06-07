@@ -21,6 +21,9 @@ def set_options(opt):
     opt.BUILTIN_DEFAULT('replace,ccan')
     opt.PRIVATE_EXTENSION_DEFAULT('tdb2', noextension='tdb2')
     opt.RECURSE('lib/replace')
+    opt.add_option('--enable-developer',
+                   help=("Turn on developer warnings and debugging"),
+                   action="store_true", dest='developer', default=False)
     opt.add_option('--enable-tdb2',
                    help=("Use tdb2 API instead of tdb1 [True]"),
                    action="store_true", dest='BUILD_TDB2', default=True)
@@ -39,6 +42,9 @@ def set_options(opt):
                        action="store_true", dest='disable_python', default=False)
 
 def configure(conf):
+    if Options.options.developer:
+        conf.env.DEVELOPER_MODE = True
+
     conf.env.TEST_RUN_SRC=['test/run-001-encode.c',
                            'test/run-001-fls.c',
                            'test/run-01-new_database.c',
@@ -205,33 +211,6 @@ def build(bld):
                              'tools/tdb2backup.c',
                              deps='tdb')
 
-            # FIXME: We need CCAN for some API tests, but waf thinks it's
-            # already available via tdb2.  It is, but not publicly.
-            # Workaround is to build a private, non-hiding version.
-            bld.SAMBA_SUBSYSTEM('tdb2-testing',
-                                SRC,
-                                deps='replace ccan',
-                                includes='.')
-
-            bld.SAMBA_SUBSYSTEM('tdb2-test-helpers', bld.env.TEST_HELPER_SRC,
-                                deps='replace')
-            bld.SAMBA_SUBSYSTEM('tdb2-run-helpers', bld.env.TEST_RUN_HELPER_SRC,
-                                deps='replace')
-            bld.SAMBA_SUBSYSTEM('tdb2-api-helpers', bld.env.TEST_API_HELPER_SRC,
-                                deps='replace tdb2-testing')
-
-            for f in bld.env.TEST_RUN_SRC:
-                base = os.path.splitext(os.path.basename(f))[0]
-                bld.SAMBA_BINARY('tdb2-' + base, f,
-                                 deps='ccan replace tdb2-test-helpers tdb2-run-helpers',
-                                 install=False)
-
-            for f in bld.env.TEST_API_SRC:
-                base = os.path.splitext(os.path.basename(f))[0]
-                bld.SAMBA_BINARY('tdb2-' + base, f,
-                                 deps='ccan replace tdb2-test-helpers tdb2-api-helpers',
-                                 install=False)
-
             if not bld.CONFIG_SET('USING_SYSTEM_PYTDB'):
                 bld.SAMBA_PYTHON('pytdb',
                                  source='pytdb.c',
@@ -240,6 +219,34 @@ def build(bld):
                                  realname='tdb.so',
                                  cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
+            if bld.env.DEVELOPER_MODE:
+                # FIXME: We need CCAN for some API tests, but waf thinks it's
+                # already available via tdb2.  It is, but not publicly.
+                # Workaround is to build a private, non-hiding version.
+                bld.SAMBA_SUBSYSTEM('tdb2-testing',
+                                    SRC,
+                                    deps='replace ccan',
+                                    includes='.')
+
+                bld.SAMBA_SUBSYSTEM('tdb2-test-helpers', bld.env.TEST_HELPER_SRC,
+                                    deps='replace')
+                bld.SAMBA_SUBSYSTEM('tdb2-run-helpers', bld.env.TEST_RUN_HELPER_SRC,
+                                    deps='replace')
+                bld.SAMBA_SUBSYSTEM('tdb2-api-helpers', bld.env.TEST_API_HELPER_SRC,
+                                    deps='replace tdb2-testing')
+
+                for f in bld.env.TEST_RUN_SRC:
+                    base = os.path.splitext(os.path.basename(f))[0]
+                    bld.SAMBA_BINARY('tdb2-' + base, f,
+                                     deps='ccan replace tdb2-test-helpers tdb2-run-helpers ccan-failtest',
+                                     install=False)
+
+                for f in bld.env.TEST_API_SRC:
+                    base = os.path.splitext(os.path.basename(f))[0]
+                    bld.SAMBA_BINARY('tdb2-' + base, f,
+                                     deps='ccan replace tdb2-test-helpers tdb2-api-helpers',
+                                     install=False)
+
 def testonly(ctx):
     '''run tdb2 testsuite'''
     import Utils, samba_utils, shutil
@@ -247,7 +254,8 @@ def testonly(ctx):
 
     env = samba_utils.LOAD_ENVIRONMENT()
 
-    if env.BUILD_TDB2 and env.standalone_tdb2:
+    if env.BUILD_TDB2 and env.standalone_tdb2 and env.DEVELOPER_MODE:
+
         # FIXME: This is horrible :(
         test_prefix = "%s/st" % (Utils.g_module.blddir)
         shutil.rmtree(test_prefix, ignore_errors=True)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import Logs, sys
+import Logs, sys, Options
 
 def configure(conf):
     conf.DEFINE('HAVE_CCAN', 1)
@@ -121,8 +121,18 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 
 def build(bld):
+
+    for ccan_dir in ["hash", "htable", "ilog", "likely", "list", "read_write_all", "str", "tally", "time"]:
+        bld.SAMBA_SUBSYSTEM('ccan-%s' % ccan_dir,
+                            source=bld.path.ant_glob('%s/*.c' % ccan_dir))
+
+    if bld.env.DEVELOPER_MODE:
+        bld.SAMBA_LIBRARY('ccan-failtest',
+                          source=bld.path.ant_glob('failtest/*.c'),
+                          deps='execinfo ccan ccan-failtest ccan-htable ccan-list ccan-read_write_all ccan-time',
+                          private_library=True)
+
     bld.SAMBA_LIBRARY('ccan',
-                      vnum="0.1-init-1161-g661d41f",
-                      source=bld.path.ant_glob('*/*.c'),
-                      deps='execinfo',
+                      source='',
+                      deps='ccan-hash ccan-ilog ccan-likely ccan-tally',
                       private_library=True)
