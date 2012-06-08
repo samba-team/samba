@@ -3349,11 +3349,11 @@ static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_re
 }
 
 /*
-  callback for replmd_replicated_apply_add()
+  callback for replmd_replicated_apply_add() and replmd_replicated_handle_rename()
   This copes with the creation of conflict records in the case where
   the DN exists, but with a different objectGUID
  */
-static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *ares)
+static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct ldb_reply *ares, int (*callback)(struct ldb_request *req, struct ldb_reply *ares))
 {
 	struct ldb_dn *conflict_dn;
 	struct replmd_replicated_request *ar =
@@ -3370,7 +3370,7 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 	if (ares->error != LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		/* call the normal callback for everything except
 		   conflicts */
-		return replmd_op_callback(req, ares);
+		return callback(req, ares);
 	}
 
 	ret = samdb_rodc(ldb_module_get_ctx(ar->module), &rodc);
@@ -3381,7 +3381,17 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 	 * we have a conflict, and need to decide if we will keep the
 	 * new record or the old record
 	 */
-	conflict_dn = req->op.add.message->dn;
+
+	switch (req->operation) {
+	case LDB_ADD:
+		conflict_dn = req->op.add.message->dn;
+		break;
+	case LDB_RENAME:
+		conflict_dn = req->op.rename.newdn;
+		break;
+	default:
+		return ldb_module_operr(ar->module);
+	}
 
 	if (rodc) {
 		/*
@@ -3396,12 +3406,6 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 				       ldb_dn_get_linearized(conflict_dn));
 		goto failed;
 	}
-
- 	/*
-	 * we have a conflict, and need to decide if we will keep the
-	 * new record or the old record
-	 */
-	conflict_dn = req->op.add.message->dn;
 
 	/*
 	 * first we need the replPropertyMetaData attribute from the
@@ -3469,6 +3473,13 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 		struct ldb_dn *new_dn;
 		struct ldb_message *new_msg;
 
+		if (req->operation == LDB_RENAME) {
+			DEBUG(0,(__location__ ": Unable to handle incoming renames where this would "
+				 "create a conflict. Incoming record is %s\n",
+				 ldb_dn_get_extended_linearized(req, conflict_dn, 1)));
+			goto failed;
+		}
+
 		guid = samdb_result_guid(req->op.add.message, "objectGUID");
 		if (GUID_all_zero(&guid)) {
 			DEBUG(0,(__location__ ": Failed to find objectGUID for conflicting incoming record %s\n",
@@ -3485,17 +3496,27 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 		DEBUG(1,(__location__ ": Resolving conflict record via incoming rename '%s' -> '%s'\n",
 			 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
 
-		/* re-submit the request, but with a different
-		   callback, so we don't loop forever. */
-		new_msg = ldb_msg_copy_shallow(req, req->op.add.message);
-		if (!new_msg) {
-			goto failed;
-			DEBUG(0,(__location__ ": Failed to copy conflict DN message for %s\n",
-				 ldb_dn_get_linearized(conflict_dn)));
+		switch (req->operation) {
+		case LDB_ADD:
+			/* re-submit the request, but with a different
+			   callback, so we don't loop forever. */
+			new_msg = ldb_msg_copy_shallow(req, req->op.add.message);
+			if (!new_msg) {
+				goto failed;
+				DEBUG(0,(__location__ ": Failed to copy conflict DN message for %s\n",
+					 ldb_dn_get_linearized(conflict_dn)));
+			}
+			new_msg->dn = new_dn;
+			req->op.add.message = new_msg;
+			req->callback = replmd_op_name_modify_callback;
+			break;
+		case LDB_RENAME:
+			req->op.rename.newdn = new_dn;
+			req->callback = callback;
+			break;
+		default:
+			return ldb_module_operr(ar->module);
 		}
-		new_msg->dn = new_dn;
-		req->op.add.message = new_msg;
-		req->callback = replmd_op_name_modify_callback;
 
 		return ldb_next_request(ar->module, req);
 	} else {
@@ -3539,7 +3560,7 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 			goto failed;
 		}
 
-		req->callback = replmd_op_callback;
+		req->callback = callback;
 
 		return ldb_next_request(ar->module, req);
 	}
@@ -3549,7 +3570,27 @@ failed:
 	 * will stop with an error, but there is not much else we can
 	 * do
 	 */
-	return replmd_op_callback(req, ares);
+	return callback(req, ares);
+}
+
+/*
+  callback for replmd_replicated_apply_add()
+  This copes with the creation of conflict records in the case where
+  the DN exists, but with a different objectGUID
+ */
+static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	return replmd_op_possible_conflict_callback(req, ares, replmd_op_callback);
+}
+
+/*
+  callback for replmd_replicated_handle_rename()
+  This copes with the creation of conflict records in the case where
+  the DN exists, but with a different objectGUID
+ */
+static int replmd_op_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	return replmd_op_possible_conflict_callback(req, ares, ldb_modify_default_callback);
 }
 
 /*
@@ -3816,14 +3857,50 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 	   object we've received is in fact newer */
 	if (!md_remote || !md_local ||
 	    replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
+		struct ldb_request *req;
+		int ret;
+		TALLOC_CTX *tmp_ctx = talloc_new(msg);
+		struct ldb_result *res;
+
 		DEBUG(4,("replmd_replicated_request rename %s => %s\n",
 			 ldb_dn_get_linearized(ar->search_msg->dn),
 			 ldb_dn_get_linearized(msg->dn)));
+
+
+		res = talloc_zero(tmp_ctx, struct ldb_result);
+		if (!res) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(ldb_module_get_ctx(ar->module));
+		}
+
 		/* pass rename to the next module
 		 * so it doesn't appear as an originating update */
-		return dsdb_module_rename(ar->module,
-					  ar->search_msg->dn, msg->dn,
-					  DSDB_FLAG_NEXT_MODULE | DSDB_MODIFY_RELAX, parent);
+		ret = ldb_build_rename_req(&req, ldb_module_get_ctx(ar->module), tmp_ctx,
+					   ar->search_msg->dn, msg->dn,
+					   NULL,
+					   ar,
+					   replmd_op_rename_callback,
+					   parent);
+		LDB_REQ_SET_LOCATION(req);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		ret = dsdb_request_add_controls(req, DSDB_MODIFY_RELAX);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		ret = ldb_next_request(ar->module, req);
+
+		if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		}
+
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	/* we're going to keep our old object */
