@@ -485,7 +485,7 @@ plantestsuite("samba4.ldap.bind(dc)", "dc", [python, os.path.join(srcdir(), "aut
 planoldpythontestsuite("vampire_dc", "samba.tests.blackbox.samba_tool_drs",
         environ={'DC1': '$DC_SERVER', 'DC2': '$VAMPIRE_DC_SERVER'},
         extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
-planoldpythontestsuite("vampire_dc", "replica_sync",
+planoldpythontestsuite("vampire_dc:local", "replica_sync",
         extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
         name="samba4.drs.replica_sync.python(vampire_dc)",
         environ={'DC1': '$DC_SERVER', 'DC2': '$VAMPIRE_DC_SERVER'},

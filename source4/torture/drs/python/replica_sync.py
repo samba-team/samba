@@ -63,3 +63,9 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         """Tests we cann't replicate when replication is disabled"""
         self._disable_inbound_repl(self.dnsname_dc1)
         out = self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
+
+    def test_ReplLocal(self):
+        """Tests we can replicate direct to the local db"""
+        self._enable_inbound_repl(self.dnsname_dc1)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=False, local=True, full_sync=True)
+
