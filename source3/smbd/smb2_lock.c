@@ -46,8 +46,8 @@ static void remove_pending_lock(struct smbd_smb2_lock_state *state,
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
+						 struct files_struct *in_fsp,
 						 uint32_t in_smbpid,
-						 uint64_t in_file_id_volatile,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks);
 static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req);
@@ -62,6 +62,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	uint16_t in_lock_count;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	struct files_struct *in_fsp;
 	struct smbd_smb2_lock_element *in_locks;
 	struct tevent_req *subreq;
 	const uint8_t *lock_buffer;
@@ -90,12 +91,6 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (req->compat_chain_fsp) {
-		/* skip check */
-	} else if (in_file_id_persistent != in_file_id_volatile) {
-		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
-	}
-
 	in_locks = talloc_array(req, struct smbd_smb2_lock_element,
 				in_lock_count);
 	if (in_locks == NULL) {
@@ -121,11 +116,14 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 		lock_buffer += 0x18;
 	}
 
-	subreq = smbd_smb2_lock_send(req,
-				     req->sconn->ev_ctx,
-				     req,
+	in_fsp = file_fsp_smb2(req, in_file_id_persistent, in_file_id_volatile);
+	if (in_fsp == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
+	}
+
+	subreq = smbd_smb2_lock_send(req, req->sconn->ev_ctx,
+				     req, in_fsp,
 				     in_smbpid,
-				     in_file_id_volatile,
 				     in_lock_count,
 				     in_locks);
 	if (subreq == NULL) {
@@ -207,16 +205,14 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
+						 struct files_struct *fsp,
 						 uint32_t in_smbpid,
-						 uint64_t in_file_id_volatile,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks)
 {
 	struct tevent_req *req;
 	struct smbd_smb2_lock_state *state;
 	struct smb_request *smb1req;
-	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp;
 	int32_t timeout = -1;
 	bool isunlock = false;
 	uint16_t i;
@@ -238,22 +234,8 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	}
 	state->smb1req = smb1req;
 
-	DEBUG(10,("smbd_smb2_lock_send: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
-
-	fsp = file_fsp(smb1req, (uint16_t)in_file_id_volatile);
-	if (fsp == NULL) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
-	if (conn != fsp->conn) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
-	if (smb2req->session->vuid != fsp->vuid) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
+	DEBUG(10,("smbd_smb2_lock_send: %s - fnum[%d]\n",
+		  fsp_str_dbg(fsp), fsp->fnum));
 
 	locks = talloc_array(state, struct smbd_lock_element, in_lock_count);
 	if (locks == NULL) {
