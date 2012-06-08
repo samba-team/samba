@@ -87,27 +87,12 @@ ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 	fsp->fh->pos = pos;
 
 	if (n > 0) {
-#ifdef DMF_FIX
-		int numretries = 3;
-tryagain:
-		readret = SMB_VFS_PREAD(fsp,data,n,pos);
-
-		if (readret == -1) {
-			if ((errno == EAGAIN) && numretries) {
-				DEBUG(3,("read_file EAGAIN retry in 10 seconds\n"));
-				(void)sleep(10);
-				--numretries;
-				goto tryagain;
-			}
-			return -1;
-		}
-#else /* NO DMF fix. */
 		readret = SMB_VFS_PREAD(fsp,data,n,pos);
 
 		if (readret == -1) {
 			return -1;
 		}
-#endif
+
 		if (readret > 0) {
 			ret += readret;
 		}
