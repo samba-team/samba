@@ -3159,6 +3159,19 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 	return NT_STATUS_OK;
 }
 
+static void smbd_tevent_trace_callback(enum tevent_trace_point point,
+				       void *private_data)
+{
+	switch (point) {
+	case TEVENT_TRACE_BEFORE_WAIT:
+		START_PROFILE(smbd_idle);
+		break;
+	case TEVENT_TRACE_AFTER_WAIT:
+		END_PROFILE(smbd_idle);
+		break;
+	}
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
@@ -3495,6 +3508,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 	sconn->conn->protocol = PROTOCOL_NONE;
 
 	TALLOC_FREE(frame);
+
+	tevent_set_trace_callback(ev_ctx, smbd_tevent_trace_callback, NULL);
 
 	while (True) {
 		frame = talloc_stackframe_pool(8192);
