@@ -46,4 +46,20 @@ interface open_files
 		uint8 modified;
 		[ignore] db_record *record;
 	} share_mode_data;
+
+	/* these are 0x30 (48) characters */
+	const string VFS_DEFAULT_DURABLE_COOKIE_MAGIC =
+		"VFS_DEFAULT_DURABLE_COOKIE_MAGIC                ";
+	const uint32 VFS_DEFAULT_DURABLE_COOKIE_VERSION = 0;
+
+	typedef [public] struct {
+		[value(VFS_DEFAULT_DURABLE_COOKIE_MAGIC),charset(DOS)] uint8 magic[0x30];
+		[value(VFS_DEFAULT_DURABLE_COOKIE_VERSION)] uint32 version;
+		boolean8 allow_reconnect;
+		file_id id;
+		[string,charset(UTF8)] char *servicepath;
+		[string,charset(UTF8)] char *base_name;
+		hyper initial_allocation_size;
+		hyper position_information;
+	} vfs_default_durable_cookie;
 }

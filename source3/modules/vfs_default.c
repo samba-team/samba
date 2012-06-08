@@ -2232,7 +2232,7 @@ static NTSTATUS vfswrap_durable_cookie(struct vfs_handle_struct *handle,
 				       TALLOC_CTX *mem_ctx,
 				       DATA_BLOB *cookie)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return vfs_default_durable_cookie(fsp, mem_ctx, cookie);
 }
 
 static NTSTATUS vfswrap_durable_disconnect(struct vfs_handle_struct *handle,
@@ -2241,7 +2241,8 @@ static NTSTATUS vfswrap_durable_disconnect(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,
 					   DATA_BLOB *new_cookie)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return vfs_default_durable_disconnect(fsp, old_cookie, mem_ctx,
+					      new_cookie);
 }
 
 static NTSTATUS vfswrap_durable_reconnect(struct vfs_handle_struct *handle,
@@ -2252,7 +2253,9 @@ static NTSTATUS vfswrap_durable_reconnect(struct vfs_handle_struct *handle,
 					  struct files_struct **fsp,
 					  DATA_BLOB *new_cookie)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return vfs_default_durable_reconnect(handle->conn, smb1req, op,
+					     old_cookie, mem_ctx,
+					     fsp, new_cookie);
 }
 
 static struct vfs_fn_pointers vfs_default_fns = {

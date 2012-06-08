@@ -1162,4 +1162,21 @@ NTSTATUS vfs_streaminfo(connection_struct *conn,
 void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			   uint16_t port);
 
+/* The following definitions come from smbd/smb2_create.c */
+
+NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *cookie_blob);
+NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
+					const DATA_BLOB old_cookie,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *new_cookie);
+NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
+				       struct smb_request *smb1req,
+				       struct smbXsrv_open *op,
+				       const DATA_BLOB old_cookie,
+				       TALLOC_CTX *mem_ctx,
+				       files_struct **result,
+				       DATA_BLOB *new_cookie);
+
 #endif /* _SMBD_PROTO_H_ */
