@@ -386,7 +386,6 @@ void file_sync_all(connection_struct *conn);
 void fsp_free(files_struct *fsp);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
-uint64_t fsp_persistent_id(const struct files_struct *fsp);
 struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 				   uint64_t persistent_id,
 				   uint64_t volatile_id);

@@ -252,7 +252,7 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 	}
 
 	init_strict_lock_struct(fsp,
-				fsp->fnum,
+				fsp->op->global->open_persistent_id,
 				in_offset,
 				in_length,
 				READ_LOCK,
@@ -479,7 +479,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	/* Fallback to synchronous. */
 
 	init_strict_lock_struct(fsp,
-				fsp->fnum,
+				fsp->op->global->open_persistent_id,
 				in_offset,
 				in_length,
 				READ_LOCK,

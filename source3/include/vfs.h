@@ -186,6 +186,7 @@ struct fd_handle {
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	uint64_t fnum;
+	struct smbXsrv_open0 *op;
 	struct connection_struct *conn;
 	struct fd_handle *fh;
 	unsigned int num_smb_operations;

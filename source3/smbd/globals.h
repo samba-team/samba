@@ -354,8 +354,19 @@ struct smbXsrv_connection {
 
 	uint64_t smbd_idle_profstamp;
 
+	/*
+	 * this session_table is used for SMB1 and SMB2,
+	 */
 	struct smbXsrv_session_table *session_table;
+	/*
+	 * this tcon_table is only used for SMB1.
+	 */
 	struct smbXsrv_tcon_table *tcon_table;
+	/*
+	 * this open_table is used for SMB1 and SMB2,
+	 * because we have a global sconn->real_max_open_files
+	 * limit.
+	 */
 	struct smbXsrv_open_table *open_table;
 };
 
@@ -552,11 +563,8 @@ struct smbd_server_connection {
 	size_t num_files;
 	struct files_struct *files;
 
-	struct bitmap *file_bmap;
 	int real_max_open_files;
 	struct fsp_singleton_cache fsp_fi_cache;
-	unsigned long file_gen_counter;
-	int first_file;
 
 	struct pending_message_list *deferred_open_queue;
 

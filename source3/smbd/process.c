@@ -3211,6 +3211,11 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		status = smb2srv_open_table_init(conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else {
 		status = smb1srv_session_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3218,6 +3223,11 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 		}
 
 		status = smb1srv_tcon_table_init(conn);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = smb1srv_open_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

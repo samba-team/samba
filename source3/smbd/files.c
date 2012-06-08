@@ -27,33 +27,6 @@
 
 #define FILE_HANDLE_OFFSET 0x1000
 
-/****************************************************************************
- Return a unique number identifying this fsp over the life of this pid,
- and try to make it as globally unique as possible.
- See bug #8995 for the details.
-****************************************************************************/
-
-static unsigned long get_gen_count(struct smbd_server_connection *sconn)
-{
-	/*
-	 * While fsp->fh->gen_id is 'unsigned long' currently
-	 * (which might by 8 bytes),
-	 * there's some oplock code which truncates it to
-	 * uint32_t(using IVAL()).
-	 */
-	if (sconn->file_gen_counter == 0) {
-		sconn->file_gen_counter = generate_random();
-	}
-	sconn->file_gen_counter += 1;
-	if (sconn->file_gen_counter >= UINT32_MAX) {
-		sconn->file_gen_counter = 0;
-	}
-	if (sconn->file_gen_counter == 0) {
-		sconn->file_gen_counter += 1;
-	}
-	return sconn->file_gen_counter;
-}
-
 /**
  * create new fsp to be used for file_new or a durable handle reconnect
  */
@@ -110,7 +83,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result)
 {
 	struct smbd_server_connection *sconn = conn->sconn;
-	int i = -1;
 	files_struct *fsp;
 	NTSTATUS status;
 
@@ -121,41 +93,21 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 	GetTimeOfDay(&fsp->open_time);
 
-	if (sconn->file_bmap != NULL) {
+	if (sconn->conn) {
+		struct smbXsrv_open *op = NULL;
+		NTTIME now = timeval_to_nttime(&fsp->open_time);
 
-		/*
-		 * we want to give out file handles differently on each new
-		 * connection because of a common bug in MS clients where they
-		 * try to reuse a file descriptor from an earlier smb
-		 * connection. This code increases the chance that the errant
-		 * client will get an error rather than causing corruption
-		 */
-		if (sconn->first_file == 0) {
-			sconn->first_file = (getpid() ^ (int)time(NULL));
-			sconn->first_file %= sconn->real_max_open_files;
+		status = smbXsrv_open_create(sconn->conn,
+					     conn->session_info,
+					     now, &op);
+		if (!NT_STATUS_IS_OK(status)) {
+			file_free(NULL, fsp);
+			return status;
 		}
-
-		/* TODO: Port the id-tree implementation from Samba4 */
-
-		i = bitmap_find(sconn->file_bmap, sconn->first_file);
-		if (i == -1) {
-			DEBUG(0,("ERROR! Out of file structures\n"));
-			/*
-			 * TODO: We have to unconditionally return a DOS error
-			 * here, W2k3 even returns ERRDOS/ERRnofids for
-			 * ntcreate&x with NTSTATUS negotiated
-			 */
-			return NT_STATUS_TOO_MANY_OPENED_FILES;
-		}
-
-		sconn->first_file = (i+1) % (sconn->real_max_open_files);
-
-		bitmap_set(sconn->file_bmap, i);
-
-		fsp->fnum = i + FILE_HANDLE_OFFSET;
-		SMB_ASSERT(fsp->fnum < 65536);
-
-		fsp->fh->gen_id = get_gen_count(sconn);
+		fsp->op = op;
+		op->compat = fsp;
+		fsp->fnum = op->local_id;
+		fsp->fh->gen_id = smbXsrv_open_hash(op);
 	}
 
 	/*
@@ -170,8 +122,8 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(5,("allocated file structure %d, %s (%u used)\n",
-		 i, fsp_fnum_dbg(fsp), (unsigned int)sconn->num_files));
+	DEBUG(5,("allocated file structure %s (%u used)\n",
+		 fsp_fnum_dbg(fsp), (unsigned int)sconn->num_files));
 
 	if (req != NULL) {
 		req->chain_fsp = fsp;
@@ -272,11 +224,6 @@ bool file_init(struct smbd_server_connection *sconn)
 	}
 
 	sconn->real_max_open_files = files_max_open_fds;
-
-	sconn->file_bmap = bitmap_talloc(sconn, sconn->real_max_open_files);
-	if (!sconn->file_bmap) {
-		return false;
-	}
 
 	return true;
 }
@@ -540,9 +487,10 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	/* Ensure this event will never fire. */
 	TALLOC_FREE(fsp->update_write_time_event);
 
-	if (sconn->file_bmap != NULL) {
-		bitmap_clear(sconn->file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
+	if (fsp->op != NULL) {
+		fsp->op->compat = NULL;
 	}
+	TALLOC_FREE(fsp->op);
 
 	if ((req != NULL) && (fsp == req->chain_fsp)) {
 		req->chain_fsp = NULL;
@@ -571,36 +519,14 @@ void file_free(struct smb_request *req, files_struct *fsp)
 }
 
 /****************************************************************************
- Get an fsp from a 16 bit fnum.
-****************************************************************************/
-
-static struct files_struct *file_fnum(struct smbd_server_connection *sconn,
-				      uint16 fnum)
-{
-	files_struct *fsp;
-	int count=0;
-
-	for (fsp=sconn->files; fsp; fsp=fsp->next, count++) {
-		if (fsp->fnum == FNUM_FIELD_INVALID) {
-			continue;
-		}
-
-		if (fsp->fnum == fnum) {
-			if (count > 10) {
-				DLIST_PROMOTE(sconn->files, fsp);
-			}
-			return fsp;
-		}
-	}
-	return NULL;
-}
-
-/****************************************************************************
  Get an fsp from a packet given a 16 bit fnum.
 ****************************************************************************/
 
 files_struct *file_fsp(struct smb_request *req, uint16 fid)
 {
+	struct smbXsrv_open *op;
+	NTSTATUS status;
+	NTTIME now = 0;
 	files_struct *fsp;
 
 	if (req == NULL) {
@@ -620,59 +546,49 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 		return req->chain_fsp;
 	}
 
-	fsp = file_fnum(req->sconn, fid);
+	if (req->sconn->conn == NULL) {
+		return NULL;
+	}
+
+	now = timeval_to_nttime(&req->request_time);
+
+	status = smb1srv_open_lookup(req->sconn->conn,
+				     fid, now, &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	fsp = op->compat;
 	if (fsp != NULL) {
 		req->chain_fsp = fsp;
 	}
 	return fsp;
 }
 
-uint64_t fsp_persistent_id(const struct files_struct *fsp)
-{
-	uint64_t persistent_id;
-
-	/*
-	 * This calculates a number that is most likely
-	 * globally unique. In future we will have a database
-	 * to make it completely unique.
-	 *
-	 * 32-bit random gen_id
-	 * 16-bit truncated open_time
-	 * 16-bit fnum (valatile_id)
-	 */
-	persistent_id = fsp->fh->gen_id & UINT32_MAX;
-	persistent_id <<= 16;
-	persistent_id &= 0x0000FFFFFFFF0000LLU;
-	persistent_id |= fsp->open_time.tv_usec & UINT16_MAX;
-	persistent_id <<= 16;
-	persistent_id &= 0xFFFFFFFFFFFF0000LLU;
-	persistent_id |= fsp->fnum & UINT16_MAX;
-
-	return persistent_id;
-}
-
 struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 				   uint64_t persistent_id,
 				   uint64_t volatile_id)
 {
+	struct smbXsrv_open *op;
+	NTSTATUS status;
+	NTTIME now = 0;
 	struct files_struct *fsp;
-	uint64_t fsp_persistent;
 
 	if (smb2req->compat_chain_fsp != NULL) {
 		return smb2req->compat_chain_fsp;
 	}
 
-	if (volatile_id > UINT16_MAX) {
+	now = timeval_to_nttime(&smb2req->request_time);
+
+	status = smb2srv_open_lookup(smb2req->sconn->conn,
+				     persistent_id, volatile_id,
+				     now, &op);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
-	fsp = file_fnum(smb2req->sconn, (uint16_t)volatile_id);
+	fsp = op->compat;
 	if (fsp == NULL) {
-		return NULL;
-	}
-	fsp_persistent = fsp_persistent_id(fsp);
-
-	if (persistent_id != fsp_persistent) {
 		return NULL;
 	}
 
