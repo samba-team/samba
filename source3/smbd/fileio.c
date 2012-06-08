@@ -64,7 +64,7 @@ static bool read_from_write_cache(files_struct *fsp,char *data,off_t pos,size_t 
 
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 {
-	ssize_t ret=0,readret;
+	ssize_t ret = 0;
 
 	/* you can't read from print files */
 	if (fsp->print_file) {
@@ -87,14 +87,10 @@ ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n)
 	fsp->fh->pos = pos;
 
 	if (n > 0) {
-		readret = SMB_VFS_PREAD(fsp,data,n,pos);
+		ret = SMB_VFS_PREAD(fsp,data,n,pos);
 
-		if (readret == -1) {
+		if (ret == -1) {
 			return -1;
-		}
-
-		if (readret > 0) {
-			ret += readret;
 		}
 	}
 
