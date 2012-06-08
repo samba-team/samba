@@ -51,7 +51,7 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
  if oplock set.
 ****************************************************************************/
 
-bool set_file_oplock(files_struct *fsp, int oplock_type)
+NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
@@ -62,15 +62,16 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 		    !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
 			DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
 				   "don't support them\n"));
-			return false;
+			return NT_STATUS_NOT_SUPPORTED;
 		}
 	}
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    use_kernel &&
-	    !koplocks->ops->set_oplock(koplocks, fsp, oplock_type)) {
-		return False;
+	    !koplocks->ops->set_oplock(koplocks, fsp, oplock_type))
+	{
+		return map_nt_error_from_unix(errno);
 	}
 
 	fsp->oplock_type = oplock_type;
@@ -87,7 +88,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 		 fsp->fh->gen_id, (int)fsp->open_time.tv_sec,
 		 (int)fsp->open_time.tv_usec ));
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

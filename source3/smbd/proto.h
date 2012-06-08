@@ -654,7 +654,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 /* The following definitions come from smbd/oplock.c  */
 
 void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
-bool set_file_oplock(files_struct *fsp, int oplock_type);
+NTSTATUS set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
