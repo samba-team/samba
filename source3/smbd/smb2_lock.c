@@ -866,10 +866,8 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 		struct smbd_smb2_lock_state *state = NULL;
 		files_struct *fsp_curr = NULL;
 		int i = smb2req->current_idx;
-		uint64_t in_file_id_volatile;
 		struct blocking_lock_record *blr = NULL;
 		const uint8_t *inhdr;
-		const uint8_t *inbody;
 
 		nextreq = smb2req->next;
 
@@ -888,9 +886,6 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			continue;
 		}
 
-		inbody = (const uint8_t *)smb2req->in.vector[i+1].iov_base;
-		in_file_id_volatile = BVAL(inbody, 0x10);
-
 		state = tevent_req_data(smb2req->subreq,
 				struct smbd_smb2_lock_state);
 		if (!state) {
@@ -898,7 +893,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			continue;
 		}
 
-		fsp_curr = file_fsp(state->smb1req, (uint16_t)in_file_id_volatile);
+		fsp_curr = smb2req->compat_chain_fsp;
 		if (fsp_curr == NULL) {
 			/* Strange - is this even possible ? */
 			continue;
