@@ -335,7 +335,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		locks[i].smblctx = in_file_id_volatile;
+		locks[i].smblctx = fsp->fnum;
 		locks[i].offset = in_locks[i].offset;
 		locks[i].count  = in_locks[i].length;
 
