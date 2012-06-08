@@ -777,11 +777,9 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = True;
 	fsp->can_read = ((access_mask & FILE_READ_DATA) != 0);
-	if (!CAN_WRITE(conn)) {
-		fsp->can_write = False;
-	} else {
-		fsp->can_write = ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
-	}
+	fsp->can_write =
+		CAN_WRITE(conn) &&
+		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
 	fsp->print_file = NULL;
 	fsp->modified = False;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
