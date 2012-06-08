@@ -52,7 +52,7 @@ bld.SAMBA3_MODULE('idmap_ad',
                  deps='IDMAP_AD',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad' and bld.env.HAVE_LDAP))
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad') and bld.env.HAVE_LDAP)
 
 bld.SAMBA3_MODULE('idmap_rid',
                  subsystem='idmap',
