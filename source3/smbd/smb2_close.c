@@ -106,6 +106,7 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 				      &out_allocation_size,
 				      &out_end_of_file,
 				      &out_file_attributes);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		error = smbd_smb2_request_error(req, status);
 		if (!NT_STATUS_IS_OK(error)) {
