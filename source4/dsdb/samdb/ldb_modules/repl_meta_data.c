@@ -3466,7 +3466,8 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 		goto failed;
 	}
 
-	rename_incoming_record = !replmd_replPropertyMetaData1_is_newer(omd_name, rmd_name);
+	rename_incoming_record = !(ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING) &&
+		!replmd_replPropertyMetaData1_is_newer(omd_name, rmd_name);
 
 	if (rename_incoming_record) {
 		struct GUID guid;
@@ -3855,7 +3856,8 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 	md_local  = replmd_replPropertyMetaData1_find_attid(omd, DRSUAPI_ATTID_name);
 	/* if there is no name attribute then we have to assume the
 	   object we've received is in fact newer */
-	if (!md_remote || !md_local ||
+	if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING ||
+	    !md_remote || !md_local ||
 	    replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
 		struct ldb_request *req;
 		int ret;
