@@ -551,6 +551,49 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 	return fsp;
 }
 
+struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
+				   uint64_t persistent_id,
+				   uint64_t volatile_id)
+{
+	struct files_struct *fsp;
+
+	if (smb2req->compat_chain_fsp != NULL) {
+		return smb2req->compat_chain_fsp;
+	}
+
+	if (persistent_id != volatile_id) {
+		return NULL;
+	}
+
+	if (volatile_id > UINT16_MAX) {
+		return NULL;
+	}
+
+	fsp = file_fnum(smb2req->sconn, (uint16_t)volatile_id);
+	if (fsp == NULL) {
+		return NULL;
+	}
+
+	if (smb2req->tcon == NULL) {
+		return NULL;
+	}
+
+	if (smb2req->tcon->compat_conn != fsp->conn) {
+		return NULL;
+	}
+
+	if (smb2req->session == NULL) {
+		return NULL;
+	}
+
+	if (smb2req->session->vuid != fsp->vuid) {
+		return NULL;
+	}
+
+	smb2req->compat_chain_fsp = fsp;
+	return fsp;
+}
+
 /****************************************************************************
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
