@@ -27,8 +27,8 @@
 static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
-					       uint16_t in_flags,
-					       uint64_t in_file_id_volatile);
+					       struct files_struct *in_fsp,
+					       uint16_t in_flags);
 static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
 				     uint16_t *out_flags,
 				     NTTIME *out_creation_time,
@@ -48,6 +48,7 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	uint16_t in_flags;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	struct files_struct *in_fsp;
 	NTSTATUS status;
 	struct tevent_req *subreq;
 
@@ -61,17 +62,13 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
 
-	if (req->compat_chain_fsp) {
-		/* skip check */
-	} else if (in_file_id_persistent != in_file_id_volatile) {
+	in_fsp = file_fsp_smb2(req, in_file_id_persistent, in_file_id_volatile);
+	if (in_fsp == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	subreq = smbd_smb2_close_send(req,
-				      req->sconn->ev_ctx,
-				      req,
-				      in_flags,
-				      in_file_id_volatile);
+	subreq = smbd_smb2_close_send(req, req->sconn->ev_ctx,
+				      req, in_fsp, in_flags);
 	if (subreq == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_NO_MEMORY);
 	}
@@ -148,8 +145,8 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
+				struct files_struct *fsp,
 				uint16_t in_flags,
-				uint64_t in_file_id_volatile,
 				uint16_t *out_flags,
 				NTTIME *out_creation_time,
 				NTTIME *out_last_access_time,
@@ -162,7 +159,6 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	NTSTATUS status;
 	struct smb_request *smbreq;
 	connection_struct *conn = req->tcon->compat_conn;
-	files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
 	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	uint64_t allocation_size = 0;
@@ -185,23 +181,12 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	*out_end_of_file = 0;
 	*out_file_attributes = 0;
 
-	DEBUG(10,("smbd_smb2_close: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
+	DEBUG(10,("smbd_smb2_close: %s - fnum[%d]\n",
+		  fsp_str_dbg(fsp), fsp->fnum));
 
 	smbreq = smbd_smb2_fake_smb_request(req);
 	if (smbreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
-	if (fsp == NULL) {
-		return NT_STATUS_FILE_CLOSED;
-	}
-	if (conn != fsp->conn) {
-		return NT_STATUS_FILE_CLOSED;
-	}
-	if (req->session->vuid != fsp->vuid) {
-		return NT_STATUS_FILE_CLOSED;
 	}
 
 	posix_open = fsp->posix_open;
@@ -270,8 +255,8 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 }
 
 struct smbd_smb2_close_state {
+	struct files_struct *in_fsp;
 	uint16_t in_flags;
-	uint64_t in_file_id_volatile;
 	uint16_t out_flags;
 	NTTIME out_creation_time;
 	NTTIME out_last_access_time;
@@ -285,8 +270,8 @@ struct smbd_smb2_close_state {
 static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
-					       uint16_t in_flags,
-					       uint64_t in_file_id_volatile)
+					       struct files_struct *in_fsp,
+					       uint16_t in_flags)
 {
 	struct tevent_req *req;
 	struct smbd_smb2_close_state *state;
@@ -297,12 +282,12 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->in_fsp = in_fsp;
 	state->in_flags = in_flags;
-	state->in_file_id_volatile = in_file_id_volatile;
 
 	status = smbd_smb2_close(smb2req,
+				 state->in_fsp,
 				 state->in_flags,
-				 state->in_file_id_volatile,
 				 &state->out_flags,
 				 &state->out_creation_time,
 				 &state->out_last_access_time,
