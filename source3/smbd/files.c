@@ -604,11 +604,9 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 	to->oplock_type = from->oplock_type;
 	to->can_lock = from->can_lock;
 	to->can_read = ((access_mask & FILE_READ_DATA) != 0);
-	if (!CAN_WRITE(from->conn)) {
-		to->can_write = False;
-	} else {
-		to->can_write = ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
-	}
+	to->can_write =
+		CAN_WRITE(from->conn) &&
+		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) != 0);
 	to->modified = from->modified;
 	to->is_directory = from->is_directory;
 	to->aio_write_behind = from->aio_write_behind;
