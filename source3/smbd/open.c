@@ -776,7 +776,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
 	fsp->file_pid = req ? req->smbpid : 0;
 	fsp->can_lock = True;
-	fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
+	fsp->can_read = (access_mask & FILE_READ_DATA) ? True : False;
 	if (!CAN_WRITE(conn)) {
 		fsp->can_write = False;
 	} else {
