@@ -574,6 +574,9 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 	fsp = file_fnum(req->sconn, fid);
 	if (fsp != NULL) {
 		req->chain_fsp = fsp;
+		if (req->smb2req != NULL) {
+			req->smb2req->compat_chain_fsp = fsp;
+		}
 	}
 	return fsp;
 }
