@@ -16,7 +16,6 @@ static int ftruncate_check(int fd, off_t length);
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include <err.h>
 #include "external-agent.h"
 #include "logging.h"
 

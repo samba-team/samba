@@ -1,7 +1,6 @@
 #include "tdb2-source.h"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 
 static uint64_t tdb1_dumb_hash(const void *key, size_t len, uint64_t seed,
 			       void *unused)

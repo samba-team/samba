@@ -1,6 +1,5 @@
 #include "tdb2-source.h"
 #include "tap-interface.h"
-#include <err.h>
 #include "logging.h"
 
 static bool empty_freetable(struct tdb_context *tdb)

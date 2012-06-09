@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <err.h>
+#include <ccan/err/err.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <limits.h>

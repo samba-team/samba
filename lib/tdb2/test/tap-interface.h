@@ -22,7 +22,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
-#include <err.h>
+#include <ccan/err/err.h>
 
 #ifndef __location__
 #define __TAP_STRING_LINE1__(s)    #s

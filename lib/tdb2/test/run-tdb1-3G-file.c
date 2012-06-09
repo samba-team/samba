@@ -1,7 +1,6 @@
 #include "tdb2-source.h"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 #include "logging.h"
 
 static int tdb1_expand_file_sparse(struct tdb_context *tdb,

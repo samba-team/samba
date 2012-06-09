@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <err.h>
+#include <ccan/err/err.h>
 
 int main(int argc, char *argv[])
 {

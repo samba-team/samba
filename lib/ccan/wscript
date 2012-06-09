@@ -129,10 +129,10 @@ def build(bld):
     if bld.env.DEVELOPER_MODE:
         bld.SAMBA_LIBRARY('ccan-failtest',
                           source=bld.path.ant_glob('failtest/*.c'),
-                          deps='execinfo ccan ccan-err ccan-htable ccan-list ccan-read_write_all ccan-time',
+                          deps='execinfo ccan ccan-htable ccan-list ccan-read_write_all ccan-time',
                           private_library=True)
 
     bld.SAMBA_LIBRARY('ccan',
                       source='',
-                      deps='ccan-hash ccan-ilog ccan-likely ccan-tally',
+                      deps='ccan-err ccan-hash ccan-ilog ccan-likely ccan-tally',
                       private_library=True)

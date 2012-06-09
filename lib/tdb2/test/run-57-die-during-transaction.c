@@ -93,7 +93,6 @@ static void free_all(void)
 
 #include <stdbool.h>
 #include <stdarg.h>
-#include <err.h>
 #include <setjmp.h>
 #include "external-agent.h"
 #include "logging.h"

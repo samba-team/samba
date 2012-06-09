@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <err.h>
+#include <ccan/err/err.h>
 #include "logging.h"
 
 struct tdb_layout *new_tdb_layout(void)

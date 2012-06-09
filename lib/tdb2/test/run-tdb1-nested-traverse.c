@@ -5,7 +5,6 @@
 #undef fcntl
 #include <stdlib.h>
 #include <stdbool.h>
-#include <err.h>
 #include "tdb1-external-agent.h"
 #include "logging.h"
 

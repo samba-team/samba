@@ -4,7 +4,7 @@
 
 #include "config.h"
 #include "tdb2.h"
-#include <err.h>
+#include <ccan/err/err.h>
 #ifdef HAVE_LIBREPLACE
 #include <replace.h>
 #else

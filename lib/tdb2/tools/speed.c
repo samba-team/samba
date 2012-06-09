@@ -1,5 +1,5 @@
 /* Simple speed test for TDB */
-#include <err.h>
+#include <ccan/err/err.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>

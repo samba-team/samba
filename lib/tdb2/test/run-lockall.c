@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include <err.h>
+#include <ccan/err/err.h>
 #include "external-agent.h"
 #include "logging.h"
 

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <err.h>
+#include <ccan/err/err.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
