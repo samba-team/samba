@@ -122,14 +122,14 @@ def configure(conf):
 
 def build(bld):
 
-    for ccan_dir in ["hash", "htable", "ilog", "likely", "list", "read_write_all", "str", "tally", "time"]:
+    for ccan_dir in ["err", "hash", "htable", "ilog", "likely", "list", "read_write_all", "str", "tally", "time"]:
         bld.SAMBA_SUBSYSTEM('ccan-%s' % ccan_dir,
                             source=bld.path.ant_glob('%s/*.c' % ccan_dir))
 
     if bld.env.DEVELOPER_MODE:
         bld.SAMBA_LIBRARY('ccan-failtest',
                           source=bld.path.ant_glob('failtest/*.c'),
-                          deps='execinfo ccan ccan-failtest ccan-htable ccan-list ccan-read_write_all ccan-time',
+                          deps='execinfo ccan ccan-err ccan-htable ccan-list ccan-read_write_all ccan-time',
                           private_library=True)
 
     bld.SAMBA_LIBRARY('ccan',
