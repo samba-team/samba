@@ -653,6 +653,11 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 					 &py_ldb, &str))
 		return NULL;
 
+	if (!PyLdb_Check(py_ldb)) {
+		PyErr_SetString(PyExc_TypeError, "Expected Ldb");
+		return NULL;
+	}
+
 	ldb_ctx = pyldb_Ldb_AsLdbContext(py_ldb);
 
 	mem_ctx = talloc_new(NULL);
@@ -2479,6 +2484,11 @@ static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O!O!|I",
 			      &PyLdb, &py_ldb, &PyDict_Type, &py_dict,
 			      &mod_flags)) {
+		return NULL;
+	}
+
+	if (!PyLdb_Check(py_ldb)) {
+		PyErr_SetString(PyExc_TypeError, "Expected Ldb");
 		return NULL;
 	}
 
