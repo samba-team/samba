@@ -69,9 +69,7 @@ static void reply_lanman1(struct smb_request *req, uint16 choice)
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
 
-	if (lp_security()>=SEC_USER) {
-		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	}
+	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	if (sconn->smb1.negprot.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
@@ -116,9 +114,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
 
-	if (lp_security()>=SEC_USER) {
-		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	}
+	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	if (sconn->smb1.negprot.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
@@ -299,9 +295,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	if (lp_host_msdfs())
 		capabilities |= CAP_DFS;
 
-	if (lp_security() >= SEC_USER) {
-		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
-	}
+	secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	if (sconn->smb1.negprot.encrypted_passwords) {
 		secword |= NEGOTIATE_SECURITY_CHALLENGE_RESPONSE;
 	}
@@ -310,18 +304,11 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	signing_required = smb_signing_is_mandatory(req->sconn->smb1.signing_state);
 
 	if (signing_enabled) {
-	       	if (lp_security() >= SEC_USER) {
-			secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
-			/* No raw mode with smb signing. */
-			capabilities &= ~CAP_RAW_MODE;
-			if (signing_required) {
-				secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
-			}
-		} else {
-			DEBUG(0,("reply_nt1: smb signing is incompatible with share level security !\n"));
-			if (signing_required) {
-				exit_server_cleanly("reply_nt1: smb signing required and share level security selected.");
-			}
+		secword |= NEGOTIATE_SECURITY_SIGNATURES_ENABLED;
+		/* No raw mode with smb signing. */
+		capabilities &= ~CAP_RAW_MODE;
+		if (signing_required) {
+			secword |=NEGOTIATE_SECURITY_SIGNATURES_REQUIRED;
 		}
 	}
 
