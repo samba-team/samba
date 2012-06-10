@@ -75,7 +75,7 @@ uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct tevent_contex
 		case ROLE_DOMAIN_MEMBER:
 			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
 			break;
-		case ROLE_DOMAIN_CONTROLLER:
+		case ROLE_ACTIVE_DIRECTORY_DC:
 		{
 			struct ldb_context *samctx;
 			TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);

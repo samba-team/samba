@@ -183,7 +183,7 @@ static void kccsrv_task_init(struct task_server *task)
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "kccsrv: no KCC required in domain member configuration", false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want a KCC */
 		break;
 	}

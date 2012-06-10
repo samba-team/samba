@@ -78,10 +78,11 @@ static const struct enum_list enum_server_role[] = {
 	{ROLE_STANDALONE, "standalone"},
 	{ROLE_DOMAIN_MEMBER, "member server"},
 	{ROLE_DOMAIN_MEMBER, "member"},
-	/* note that currently
-	   ROLE_DOMAIN_CONTROLLER == ROLE_DOMAIN_BDC */
-	{ROLE_DOMAIN_CONTROLLER, "domain controller"},
-	{ROLE_DOMAIN_CONTROLLER, "dc"},
+	{ROLE_DOMAIN_PDC, "classic primary domain controller"},
+	{ROLE_DOMAIN_BDC, "classic backup domain controller"},
+	{ROLE_ACTIVE_DIRECTORY_DC, "active directory domain controller"},
+	{ROLE_ACTIVE_DIRECTORY_DC, "domain controller"},
+	{ROLE_ACTIVE_DIRECTORY_DC, "dc"},
 	{-1, NULL}
 };
 

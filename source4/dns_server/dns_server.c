@@ -698,7 +698,7 @@ static void dns_task_init(struct task_server *task)
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "dns: no DNS required in member server configuration", false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want a DNS */
 		break;
 	}

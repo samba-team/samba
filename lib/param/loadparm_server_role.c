@@ -41,6 +41,7 @@ static const struct srv_role_tab {
 	{ ROLE_DOMAIN_MEMBER, "ROLE_DOMAIN_MEMBER" },
 	{ ROLE_DOMAIN_BDC, "ROLE_DOMAIN_BDC" },
 	{ ROLE_DOMAIN_PDC, "ROLE_DOMAIN_PDC" },
+	{ ROLE_ACTIVE_DIRECTORY_DC, "ROLE_ACTIVE_DIRECTORY_DC" },
 	{ 0, NULL }
 };
 
@@ -83,7 +84,7 @@ int lp_find_server_role(int server_role, int security, int domain_logons, int do
 			break;
 		case SEC_ADS:
 			if (domain_logons) {
-				role = ROLE_DOMAIN_CONTROLLER;
+				role = ROLE_DOMAIN_BDC;
 				break;
 			}
 			role = ROLE_DOMAIN_MEMBER;
@@ -158,6 +159,7 @@ bool lp_is_security_and_server_role_valid(int server_role, int security)
 
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		if (security == SEC_USER || security == SEC_ADS || security == SEC_DOMAIN) {
 			valid = true;
 		}

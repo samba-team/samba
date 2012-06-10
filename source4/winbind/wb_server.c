@@ -264,8 +264,7 @@ static void winbind_task_init(struct task_server *task)
 			return;
 		}
 		break;
-	case ROLE_DOMAIN_CONTROLLER:
-	case ROLE_DOMAIN_PDC:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->lp_ctx,
 						     lpcfg_workgroup(service->task->lp_ctx),
@@ -279,6 +278,10 @@ static void winbind_task_init(struct task_server *task)
 			return;
 		}
 		break;
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		task_server_terminate(task, "Cannot start 'samba' winbindd as a 'classic samba' DC: use winbindd instead", true);
+		return;
 	}
 	service->primary_sid = primary_sid;
 

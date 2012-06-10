@@ -205,7 +205,7 @@ static void cldapd_task_init(struct task_server *task)
 		task_server_terminate(task, "cldap_server: no CLDAP server required in member server configuration",
 				      false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want an CLDAP server */
 		break;
 	}

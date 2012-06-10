@@ -162,7 +162,7 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 
 	if ((!cli_credentials_is_anonymous(state->domain->libnet_ctx->cred)) &&
 	    ((lpcfg_server_role(service->task->lp_ctx) == ROLE_DOMAIN_MEMBER) ||
-	     (lpcfg_server_role(service->task->lp_ctx) == ROLE_DOMAIN_CONTROLLER)) &&
+	     (lpcfg_server_role(service->task->lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC)) &&
 	    (dom_sid_equal(state->domain->info->sid,
 			   state->service->primary_sid))) {
 		state->domain->netlogon_binding->flags |= DCERPC_SCHANNEL | DCERPC_SCHANNEL_AUTO;

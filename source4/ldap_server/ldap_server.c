@@ -907,7 +907,7 @@ static void ldapsrv_task_init(struct task_server *task)
 		task_server_terminate(task, "ldap_server: no LDAP server required in member server configuration", 
 				      false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want an LDAP server */
 		break;
 	}

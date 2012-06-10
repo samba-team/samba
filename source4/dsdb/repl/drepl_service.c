@@ -434,7 +434,7 @@ static void dreplsrv_task_init(struct task_server *task)
 		task_server_terminate(task, "dreplsrv: no DSDB replication required in domain member configuration",
 				      false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want DSDB replication */
 		break;
 	}

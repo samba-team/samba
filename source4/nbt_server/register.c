@@ -289,7 +289,7 @@ void nbtd_register_names(struct nbtd_server *nbtsrv)
 		aliases++;
 	}
 
-	if (lpcfg_server_role(nbtsrv->task->lp_ctx) == ROLE_DOMAIN_CONTROLLER)	{
+	if (lpcfg_server_role(nbtsrv->task->lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC)	{
 		bool is_pdc = samdb_is_pdc(nbtsrv->sam_ctx);
 		if (is_pdc) {
 			nbtd_register_name(nbtsrv, lpcfg_workgroup(nbtsrv->task->lp_ctx),

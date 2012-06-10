@@ -30,17 +30,13 @@ enum server_role {
 	ROLE_DOMAIN_MEMBER = 1,
 	ROLE_DOMAIN_BDC    = 2,
 	ROLE_DOMAIN_PDC    = 3,
+	
+	/* not in samr.idl */
+	ROLE_ACTIVE_DIRECTORY_DC = 4,
 
 	/* To determine the role automatically, this is not a valid role */
 	ROLE_AUTO          = 100
 };
-
-/* keep compatibility with the s4 'ROLE_DOMAIN_CONTROLLER' by mapping
- * it to ROLE_DOMAIN_BDC. The PDC/BDC split is really historical from
- * NT4 domains which were not multi-master, but even in AD there is
- * only one machine that has the PDC FSMO role in a domain.
-*/
-#define ROLE_DOMAIN_CONTROLLER ROLE_DOMAIN_BDC
 
 /* security levels for 'security =' option
 

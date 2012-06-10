@@ -594,7 +594,7 @@ static void dnsupdate_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct dnsupdate_service *service;
 
-	if (lpcfg_server_role(task->lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(task->lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC) {
 		/* not useful for non-DC */
 		return;
 	}

@@ -136,7 +136,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 		 * on non-DCs
 		 */
 
-		if (lpcfg_server_role(lp_ctx) >= ROLE_DOMAIN_CONTROLLER) {
+		if (lpcfg_server_role(lp_ctx) >= ROLE_ACTIVE_DIRECTORY_DC) {
 			signing_setting = SMB_SIGNING_REQUIRED;
 		} else {
 			signing_setting = SMB_SIGNING_OFF;

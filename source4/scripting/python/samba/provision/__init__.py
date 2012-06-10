@@ -532,7 +532,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if lp.get("server role").lower() != serverrole:
         raise ProvisioningError("guess_names: 'server role=%s' in %s must match chosen server role '%s'!  Please remove the smb.conf file and let provision generate it" % (lp.get("server role"), lp.configfile, serverrole))
 
-    if serverrole == "domain controller":
+    if serverrole == "active directory domain controller":
         if domain is None:
             # This will, for better or worse, default to 'WORKGROUP'
             domain = lp.get("workgroup")
@@ -658,7 +658,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
             lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
 
     shares = {}
-    if serverrole == "domain controller":
+    if serverrole == "active directory domain controller":
         shares["sysvol"] = os.path.join(lp.get("state directory"), "sysvol")
         shares["netlogon"] = os.path.join(shares["sysvol"], realm.lower(),
             "scripts")
@@ -1489,7 +1489,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                        dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                        next_rid=next_rid, dc_rid=dc_rid)
 
-    if serverrole == "domain controller":
+    if serverrole == "active directory domain controller":
         # Set up group policies (domain policy and domain controller
         # policy)
         create_default_gpo(paths.sysvol, names.dnsdomain, policyguid,
@@ -1568,11 +1568,12 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 _ROLES_MAP = {
     "ROLE_STANDALONE": "standalone",
     "ROLE_DOMAIN_MEMBER": "member server",
-    "ROLE_DOMAIN_BDC": "domain controller",
-    "ROLE_DOMAIN_PDC": "domain controller",
-    "dc": "domain controller",
+    "ROLE_DOMAIN_BDC": "active directory domain controller",
+    "ROLE_DOMAIN_PDC": "active directory domain controller",
+    "dc": "active directory domain controller",
     "member": "member server",
-    "domain controller": "domain controller",
+    "domain controller": "active directory domain controller",
+    "active directory domain controller": "active directory domain controller",
     "member server": "member server",
     "standalone": "standalone",
     }
@@ -1584,7 +1585,7 @@ def sanitize_server_role(role):
     :param role: Server role
     :raise ValueError: If the role can not be interpreted
     :return: Sanitized server role (one of "member server",
-        "domain controller", "standalone")
+        "active directory domain controller", "standalone")
     """
     try:
         return  _ROLES_MAP[role]
@@ -1614,7 +1615,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     try:
         serverrole = sanitize_server_role(serverrole)
     except ValueError:
-        raise ProvisioningError('server role (%s) should be one of "domain controller", "member server", "standalone"' % serverrole)
+        raise ProvisioningError('server role (%s) should be one of "active directory domain controller", "member server", "standalone"' % serverrole)
 
     if ldapadminpass is None:
         # Make a new, random password between Samba and it's LDAP server
@@ -1735,7 +1736,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     if paths.sysvol and not os.path.exists(paths.sysvol):
         os.makedirs(paths.sysvol, 0775)
 
-    if not use_ntvfs and serverrole == "domain controller":
+    if not use_ntvfs and serverrole == "active directory domain controller":
         if paths.sysvol is None:
             raise MissingShareError("sysvol", paths.smbconf)
 
@@ -1813,7 +1814,7 @@ def provision(logger, session_info, credentials, smbconf=None,
                             serverrole=serverrole,
                             schema=schema, fill=samdb_fill, am_rodc=am_rodc)
 
-        if serverrole == "domain controller":
+        if serverrole == "active directory domain controller":
             if paths.netlogon is None:
                 raise MissingShareError("netlogon", paths.smbconf)
 
@@ -1848,7 +1849,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         logger.info("A Kerberos configuration suitable for Samba 4 has been "
                     "generated at %s", paths.krb5conf)
 
-        if serverrole == "domain controller":
+        if serverrole == "active directory domain controller":
             create_dns_update_list(lp, logger, paths)
 
         backend_result = provision_backend.post_setup()
@@ -1913,7 +1914,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
         configdn=configdn, serverdn=serverdn, domain=domain,
         hostname=hostname, hostip=None, domainsid=domainsid,
-        machinepass=machinepass, serverrole="domain controller",
+        machinepass=machinepass, serverrole="active directory domain controller",
         sitename=sitename, dns_backend=dns_backend, dnspass=dnspass)
     res.lp.set("debuglevel", str(debuglevel))
     return res

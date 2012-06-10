@@ -392,7 +392,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		return 1;
 	}
 
-	if (lpcfg_server_role(cmdline_lp_ctx) == ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(cmdline_lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC) {
 		if (!open_schannel_session_store(talloc_autofree_context(), cmdline_lp_ctx)) {
 			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
 			exit(1);

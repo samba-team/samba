@@ -420,7 +420,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 		case ROLE_DOMAIN_MEMBER:
 			role		= DS_ROLE_MEMBER_SERVER;
 			break;
-		case ROLE_DOMAIN_CONTROLLER:
+		case ROLE_ACTIVE_DIRECTORY_DC:
 			if (samdb_is_pdc(state->sam_ldb)) {
 				role	= DS_ROLE_PRIMARY_DC;
 			} else {
@@ -439,7 +439,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 			W_ERROR_HAVE_NO_MEMORY(domain);
 			/* TODO: what is with dns_domain and forest and guid? */
 			break;
-		case ROLE_DOMAIN_CONTROLLER:
+		case ROLE_ACTIVE_DIRECTORY_DC:
 			flags		= DS_ROLE_PRIMARY_DS_RUNNING;
 
 			if (state->mixed_domain == 1) {

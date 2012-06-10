@@ -447,7 +447,7 @@ static NTSTATUS dodomain_referral(struct loadparm_context *lp_ctx,
 	/* In the future this needs to be fetched from the ldb */
 	uint32_t found_domain = 2;
 
-	if (lpcfg_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC) {
 		DEBUG(10 ,("Received a domain referral request on a non DC\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -529,7 +529,7 @@ static NTSTATUS dodc_referral(struct loadparm_context *lp_ctx,
 	struct dfs_referral_type *referrals;
 	const char *referral_str;
 
-	if (lpcfg_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -640,7 +640,7 @@ static NTSTATUS dosysvol_referral(struct loadparm_context *lp_ctx,
 	NTSTATUS status;
 	struct dfs_referral_type *referrals;
 
-	if (lpcfg_server_role(lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

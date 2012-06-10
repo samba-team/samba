@@ -871,7 +871,11 @@ static void kdc_task_init(struct task_server *task)
 	case ROLE_DOMAIN_MEMBER:
 		task_server_terminate(task, "kdc: no KDC required in member server configuration", false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		task_server_terminate(task, "Cannot start KDC as a 'classic Samba' DC", true);
+		return;
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want a KDC */
 		break;
 	}

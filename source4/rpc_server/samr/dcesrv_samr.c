@@ -500,7 +500,7 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount",
 						 0);
 	switch (state->role) {
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* This pulls the NetBIOS name from the
 		   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
 		   string */
@@ -511,8 +511,8 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 		}
 		break;
 	case ROLE_DOMAIN_PDC:
-		info->role = SAMR_ROLE_DOMAIN_PDC;
-		break;
+	case ROLE_DOMAIN_BDC:
+		return NT_STATUS_INTERNAL_ERROR;
 	case ROLE_DOMAIN_MEMBER:
 		info->role = SAMR_ROLE_DOMAIN_MEMBER;
 		break;
@@ -606,7 +606,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
 {
 
 	switch (state->role) {
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* This pulls the NetBIOS name from the
 		   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
 		   string */

@@ -157,7 +157,7 @@ static bool test_server_role_dc_specified(struct torture_context *tctx)
 {
 	struct loadparm_context *lp_ctx = loadparm_init(tctx);
 	torture_assert(tctx, lpcfg_set_option(lp_ctx, "server role=domain controller"), "lpcfg_set_option failed");
-	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_DOMAIN_CONTROLLER, "ROLE should be DC");
+	torture_assert_int_equal(tctx, lpcfg_server_role(lp_ctx), ROLE_ACTIVE_DIRECTORY_DC, "ROLE should be DC");
 	torture_assert_int_equal(tctx, lpcfg_security(lp_ctx), SEC_USER, "security should be USER");
 	return true;
 }

@@ -190,7 +190,7 @@ copy an IP address from one buffer to another
  Check to see if we are a DC for this domain
 *****************************************************************************/
 
-#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC) 
+#define IS_DC  (lp_server_role()==ROLE_DOMAIN_PDC || lp_server_role()==ROLE_DOMAIN_BDC || lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) 
 
 /*
  * If you add any entries to KERBEROS_VERIFY defines, please modify the below expressions

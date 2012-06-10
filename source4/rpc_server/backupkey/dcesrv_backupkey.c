@@ -1269,7 +1269,7 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	if (lpcfg_server_role(dce_call->conn->dce_ctx->lp_ctx) != ROLE_DOMAIN_CONTROLLER) {
+	if (lpcfg_server_role(dce_call->conn->dce_ctx->lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC) {
 		return WERR_NOT_SUPPORTED;
 	}
 

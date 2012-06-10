@@ -303,7 +303,7 @@ static void echo_task_init(struct task_server *task)
 		task_server_terminate(task, "echo: Not starting echo server " \
 				      "for domain members", false);
 		return;
-	case ROLE_DOMAIN_CONTROLLER:
+	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want to run the echo server */
 		break;
 	}
