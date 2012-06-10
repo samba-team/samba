@@ -4,6 +4,7 @@
    Map SIDs to unixids and back
 
    Copyright (C) Kai Blin 2008
+   Copyright (C) Andrew Bartlett 2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,6 +29,8 @@
 #include "winbind/idmap.h"
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "dsdb/samdb/samdb.h"
+#include "../libds/common/flags.h"
 
 /**
  * Get uid/gid bounds from idmap database
@@ -180,6 +183,12 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 	if (idmap_ctx->unix_users_sid == NULL) {
 		return NULL;
 	}
+	
+	idmap_ctx->samdb = samdb_connect(idmap_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
+	if (idmap_ctx->samdb == NULL) {
+		DEBUG(0, ("Failed to load sam.ldb in idmap_init\n"));
+		return NULL;
+	}
 
 	return idmap_ctx;
 }
@@ -206,15 +215,78 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
 	struct ldb_context *ldb = idmap_ctx->ldb_ctx;
 	struct ldb_result *res = NULL;
+	struct ldb_message *msg;
 	struct dom_sid *unix_sid, *new_sid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *id_type;
 
+	const char *sam_attrs[] = {"objectSid", NULL};
+	
+	/* 
+	 * First check against our local DB, to see if this user has a
+	 * mapping there.  This means that the Samba4 AD DC behaves
+	 * much like a winbindd member server running idmap_ad
+	 */
+	
 	switch (unixid->type) {
 		case ID_TYPE_UID:
+			ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &msg, NULL, LDB_SCOPE_SUBTREE, 
+					      sam_attrs, 0,
+					      "(&(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)(uidNumber=%u)(objectSid=*)"
+					      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+					      ATYPE_ACCOUNT, unixid->id);
+			if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+				DEBUG(1, ("Search for uidNumber=%lu gave duplicate results, failing to map to a SID!\n",
+					  (unsigned long)unixid->id));
+				status = NT_STATUS_NONE_MAPPED;
+				goto failed;
+			} else if (ret == LDB_SUCCESS) {
+				*sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
+				if (*sid) {
+					DEBUG(1, ("Search for uidNumber=%lu did not return an objectSid!\n",
+						  (unsigned long)unixid->id));
+					status = NT_STATUS_NONE_MAPPED;
+					goto failed;
+				}
+				talloc_free(tmp_ctx);
+				return NT_STATUS_OK;
+			} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+				DEBUG(1, ("Search for uidNumber=%lu gave '%s', failing to map to a SID!\n",
+					  (unsigned long)unixid->id, ldb_errstring(idmap_ctx->samdb)));
+				status = NT_STATUS_NONE_MAPPED;
+				goto failed;
+			}
+
 			id_type = "ID_TYPE_UID";
 			break;
 		case ID_TYPE_GID:
+			ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &msg, NULL, LDB_SCOPE_SUBTREE, 
+					      sam_attrs, 0,
+					      "(&(|(sAMaccountType=%u)(sAMaccountType=%u))(gidNumber=%u)"
+					      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+					      ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP, unixid->id);
+			if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+				DEBUG(1, ("Search for gidNumber=%lu gave duplicate results, failing to map to a SID!\n",
+					  (unsigned long)unixid->id));
+				status = NT_STATUS_NONE_MAPPED;
+				goto failed;
+			} else if (ret == LDB_SUCCESS) {
+				*sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
+				if (*sid) {
+					DEBUG(1, ("Search for gidNumber=%lu did not return an objectSid!\n",
+						  (unsigned long)unixid->id));
+					status = NT_STATUS_NONE_MAPPED;
+					goto failed;
+				}
+				talloc_free(tmp_ctx);
+				return NT_STATUS_OK;
+			} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+				DEBUG(1, ("Search for gidNumber=%lu gave '%s', failing to map to a SID!\n",
+					  (unsigned long)unixid->id, ldb_errstring(idmap_ctx->samdb)));
+				status = NT_STATUS_NONE_MAPPED;
+				goto failed;
+			}
+
 			id_type = "ID_TYPE_GID";
 			break;
 		default:
@@ -299,13 +371,14 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 	NTSTATUS status = NT_STATUS_NONE_MAPPED;
 	struct ldb_context *ldb = idmap_ctx->ldb_ctx;
 	struct ldb_dn *dn;
-	struct ldb_message *hwm_msg, *map_msg;
+	struct ldb_message *hwm_msg, *map_msg, *sam_msg;
 	struct ldb_result *res = NULL;
 	int trans;
 	uint32_t low, high, hwm, new_xid;
 	char *sid_string, *unixid_string, *hwm_string;
 	bool hwm_entry_exists;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	const char *sam_attrs[] = {"uidNumber", "gidNumber", "samAccountType", NULL};
 
 	if (dom_sid_in_domain(idmap_ctx->unix_users_sid, sid)) {
 		uint32_t rid;
@@ -337,7 +410,54 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 
 		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
-	 }
+	}
+
+	/* 
+	 * First check against our local DB, to see if this user has a
+	 * mapping there.  This means that the Samba4 AD DC behaves
+	 * much like a winbindd member server running idmap_ad
+	 */
+	
+	ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &sam_msg, NULL, LDB_SCOPE_SUBTREE, sam_attrs, 0,
+			      "(&(objectSid=%s)"
+			      "(|(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)"
+			      "(sAMaccountType=%u)"
+			      "(sAMaccountType=%u))"
+			      "(|(uidNumber=*)(gidNumber=*))"
+			      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+			      dom_sid_string(tmp_ctx, sid), ATYPE_ACCOUNT, ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
+	if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
+		DEBUG(1, ("Search for objectSid=%s gave duplicate results, failing to map to a unix ID!\n",
+			  dom_sid_string(tmp_ctx, sid)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	} else if (ret == LDB_SUCCESS) {
+		uint32_t account_type = ldb_msg_find_attr_as_uint(sam_msg, "sAMaccountType", 0);
+		if (account_type & ATYPE_ACCOUNT) {
+			const struct ldb_val *v = ldb_msg_find_ldb_val(sam_msg, "uidNumber");
+			if (v) {
+				unixid->type = ID_TYPE_UID;
+				unixid->id = ldb_msg_find_attr_as_uint(sam_msg, "uidNumber", -1);
+				talloc_free(tmp_ctx);
+				return NT_STATUS_OK;
+			}
+
+		} else if ((account_type == ATYPE_SECURITY_GLOBAL_GROUP) || (account_type == ATYPE_SECURITY_LOCAL_GROUP)) {
+			const struct ldb_val *v = ldb_msg_find_ldb_val(sam_msg, "gidNumber");
+			if (v) {
+				unixid->type = ID_TYPE_GID;
+				unixid->id = ldb_msg_find_attr_as_uint(sam_msg, "gidNumber", -1);
+				talloc_free(tmp_ctx);
+				return NT_STATUS_OK;
+			}
+		}
+	} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+		DEBUG(1, ("Search for objectSid=%s gave '%s', failing to map to a SID!\n",
+			  dom_sid_string(tmp_ctx, sid), ldb_errstring(idmap_ctx->samdb)));
+
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
 
 	ret = ldb_search(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
