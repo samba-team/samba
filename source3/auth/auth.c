@@ -489,7 +489,8 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 		switch (lp_security()) 
 		{
 		case SEC_DOMAIN:
-			DEBUG(5,("Making default auth method list for security=domain\n"));
+		case SEC_ADS:
+			DEBUG(5,("Making default auth method list for security=domain and security=ads\n"));
 			auth_method_list = str_list_make_v3(
 				talloc_tos(), "guest sam winbind:ntdomain",
 				NULL);
@@ -513,12 +514,6 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 				auth_method_list = str_list_make_v3(
 					talloc_tos(), "guest unix", NULL);
 			}
-			break;
-		case SEC_ADS:
-			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make_v3(
-				talloc_tos(), "guest sam winbind:ntdomain",
-				NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
