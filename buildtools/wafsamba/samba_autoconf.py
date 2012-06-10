@@ -467,7 +467,16 @@ def CONFIG_GET(conf, option):
 @conf
 def CONFIG_SET(conf, option):
     '''return True if a configuration option was found'''
-    return (option in conf.env) and (conf.env[option] != ())
+    if option not in conf.env:
+        return False
+    v = conf.env[option]
+    if v == None:
+        return False
+    if v == []:
+        return False
+    if v == ():
+        return False
+    return True
 Build.BuildContext.CONFIG_SET = CONFIG_SET
 Build.BuildContext.CONFIG_GET = CONFIG_GET
 
