@@ -291,8 +291,8 @@ static NTSTATUS fd_open(struct connection_struct *conn,
 
 	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
-#ifdef O_NOFOLLOW
 		int posix_errno = errno;
+#ifdef O_NOFOLLOW
 #if defined(ENOTSUP) && defined(OSF1)
 		/* handle special Tru64 errno */
 		if (errno == ENOTSUP) {
