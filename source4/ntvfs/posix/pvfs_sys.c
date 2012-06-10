@@ -405,11 +405,32 @@ int pvfs_sys_unlink(struct pvfs_state *pvfs, const char *filename, bool allow_ov
 static bool contains_symlink(const char *path)
 {
 	int fd = open(path, PVFS_NOFOLLOW | O_RDONLY);
+	int posix_errno = errno;
 	if (fd != -1) {
 		close(fd);
 		return false;
 	}
-	return (errno == ELOOP);
+
+#if defined(ENOTSUP) && defined(OSF1)
+	/* handle special Tru64 errno */
+	if (errno == ENOTSUP) {
+		posix_errno = ELOOP;
+	}
+#endif /* ENOTSUP */
+
+#ifdef EFTYPE
+	/* fix broken NetBSD errno */
+	if (errno == EFTYPE) {
+		posix_errno = ELOOP;
+	}
+#endif /* EFTYPE */
+
+	/* fix broken FreeBSD errno */
+	if (errno == EMLINK) {
+		posix_errno = ELOOP;
+	}
+
+	return (posix_errno == ELOOP);
 }
 
 /*
