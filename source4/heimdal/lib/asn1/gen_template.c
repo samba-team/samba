@@ -545,12 +545,14 @@ template_members(struct templatehead *temp, const char *basetype, const char *na
     case TNull:
 	break;
     case TBitString: {
-	struct templatehead template = ASN1_TAILQ_HEAD_INITIALIZER(template);
+	struct templatehead template;
 	struct template *q;
 	Member *m;
 	size_t count = 0, i;
 	char *bname = NULL;
 	FILE *f = get_code_file();
+
+	ASN1_TAILQ_INIT(&template);
 
 	if (ASN1_TAILQ_EMPTY(t->members)) {
 	    add_line(temp, "{ A1_PARSE_T(A1T_HEIM_BIT_STRING), %s, NULL }", poffset);
@@ -681,7 +683,7 @@ template_members(struct templatehead *temp, const char *basetype, const char *na
 	break;
     }
     case TChoice: {
-	struct templatehead template = ASN1_TAILQ_HEAD_INITIALIZER(template);
+	struct templatehead template;
 	struct template *q;
 	size_t count = 0, i;
 	char *tname = NULL;
@@ -689,6 +691,8 @@ template_members(struct templatehead *temp, const char *basetype, const char *na
 	Member *m;
 	int ellipsis = 0;
 	char *e;
+
+	ASN1_TAILQ_INIT(&template);
 
 	if (asprintf(&tname, "asn1_choice_%s_%s%x",
 		     basetype, name ? name : "", (unsigned int)(uintptr_t)t) < 0 || tname == NULL)
