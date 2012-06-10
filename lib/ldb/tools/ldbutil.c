@@ -29,6 +29,7 @@
  *  Author: Matthieu Patou
  */
 
+#include "replace.h"
 #include "ldb.h"
 #include "ldb_module.h"
 #include "ldbutil.h"

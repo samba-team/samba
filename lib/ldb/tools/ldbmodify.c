@@ -31,6 +31,7 @@
  *  Author: Andrew Tridgell
  */
 
+#include "replace.h"
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "ldbutil.h"

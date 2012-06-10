@@ -33,6 +33,7 @@
  *  Author: Stefan Metzmacher
  */
 
+#include "replace.h"
 #include "ldb.h"
 #include "tools/cmdline.h"
 
