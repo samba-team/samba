@@ -274,17 +274,13 @@ void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
 void vfs_remove_all_fsp_extensions(files_struct *fsp)
 {
 	struct vfs_fsp_data *curr;
-	struct vfs_fsp_data *prev;
+	struct vfs_fsp_data *next;
 
-	for (curr = fsp->vfs_extension, prev = NULL;
-	     curr;
-	     prev = curr, curr = curr->next)
-	{
-		if (prev) {
-			prev->next = curr->next;
-		} else {
-			fsp->vfs_extension = curr->next;
-		}
+	for (curr = fsp->vfs_extension; curr; curr = next) {
+
+		next = curr->next;
+		fsp->vfs_extension = next;
+
 		if (curr->destroy) {
 			curr->destroy(EXT_DATA_AREA(curr));
 		}
