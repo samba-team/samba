@@ -106,6 +106,28 @@ NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *p
 	return NT_STATUS_OK;
 }
 
+NTSTATUS ntlmssp_set_password_hash(struct ntlmssp_state *state,
+				   const char *pwhash)
+{
+	char nt_hash[16];
+	size_t converted;
+
+	converted = strhex_to_str(
+		nt_hash, sizeof(nt_hash), pwhash, strlen(pwhash));
+	if (converted != sizeof(nt_hash)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	TALLOC_FREE(state->lm_hash);
+	TALLOC_FREE(state->nt_hash);
+
+	state->nt_hash = (uint8_t *)talloc_memdup(state, nt_hash, 16);
+	if (!state->nt_hash) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
+}
+
 /**
  * Set a domain on an NTLMSSP context - ensures it is talloc()ed
  *
