@@ -147,7 +147,7 @@ class TestGetSourceEncoding(testtools.TestCase):
                 self.addCleanup(os.remove, self.filename)
                 self.addCleanup(linecache.cache.pop, self.filename, None)
 
-    def test_nonexistant_file_as_ascii(self):
+    def test_nonexistent_file_as_ascii(self):
         """When file can't be found, the encoding should default to ascii"""
         self.assertEquals("ascii", _get_source_encoding(self.filename))
 
