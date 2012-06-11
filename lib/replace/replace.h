@@ -451,7 +451,7 @@ void rep_vsyslog (int facility_priority, const char *format, va_list arglist) PR
 typedef int (*comparison_fn_t)(const void *, const void *);
 #endif
 
-#ifdef REPLACE_STRPTIME
+#ifndef HAVE_WORKING_STRPTIME
 #define strptime rep_strptime
 struct tm;
 char *rep_strptime(const char *buf, const char *format, struct tm *tm);

@@ -311,13 +311,14 @@ removeea setea
     conf.CHECK_HEADERS('poll.h')
     conf.CHECK_FUNCS('poll')
 
-    if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
-                           #include "test/strptime.c"''',
-                           define='HAVE_STRPTIME',
-                           execute=True,
-                           addmain=False,
-                           msg='Checking for working strptime'):
-        conf.DEFINE('REPLACE_STRPTIME', 1)
+    conf.CHECK_FUNCS('strptime')
+    conf.CHECK_DECLS('strptime', headers='time.h')
+    conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
+                       #include "test/strptime.c"''',
+                       define='HAVE_WORKING_STRPTIME',
+                       execute=True,
+                       addmain=False,
+                       msg='Checking for working strptime')
 
     conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
 
@@ -460,6 +461,9 @@ REPLACEMENT_FUNCTIONS = {
     # Note: C99_VSNPRINTF is not a function, but a special condition
     # for replacement
     'snprintf.c': ['C99_VSNPRINTF', 'snprintf', 'vsnprintf', 'asprintf', 'vasprintf'],
+    # Note: WORKING_STRPTIME is not a function, but a special condition
+    # for replacement
+    'strptime.c': ['WORKING_STRPTIME', 'strptime'],
     }
 
 
@@ -468,7 +472,6 @@ def build(bld):
 
     REPLACE_HOSTCC_SOURCE = ''
 
-    if bld.CONFIG_SET('REPLACE_STRPTIME'):       REPLACE_HOSTCC_SOURCE += ' strptime.c'
     for filename, functions in REPLACEMENT_FUNCTIONS.iteritems():
         for function in functions:
             if not bld.CONFIG_SET('HAVE_%s' % function.upper()):
