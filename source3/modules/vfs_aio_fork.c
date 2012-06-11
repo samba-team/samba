@@ -794,6 +794,7 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 	int i;
 	int ret = -1;
 	bool timed_out = false;
+	int err;
 
 	children = init_aio_children(handle);
 	if (children == NULL) {
@@ -885,7 +886,9 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 
   out:
 
+	err = errno;
 	TALLOC_FREE(frame);
+	errno = err;
 	return ret;
 }
 
