@@ -117,17 +117,12 @@ int lp_find_security(int server_role, int security)
 	}
 
 	switch (server_role) {
-	case ROLE_AUTO:
-	case ROLE_STANDALONE:
-		return SEC_USER;
 	case ROLE_DOMAIN_MEMBER:
 #if (defined(HAVE_ADS) || _SAMBA_BUILD_ >= 4)
 		return SEC_ADS;
 #else
 		return SEC_DOMAIN;
 #endif
-	case ROLE_DOMAIN_PDC:
-	case ROLE_DOMAIN_BDC:
 	default:
 		return SEC_USER;
 	}
