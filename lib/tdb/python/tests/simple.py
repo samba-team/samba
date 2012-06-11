@@ -13,8 +13,8 @@ import os, tempfile
 
 class OpenTdbTests(TestCase):
 
-    def test_nonexistant_read(self):
-        self.assertRaises(IOError, tdb.Tdb, "/some/nonexistant/file", 0,
+    def test_nonexistent_read(self):
+        self.assertRaises(IOError, tdb.Tdb, "/some/nonexistent/file", 0,
                 tdb.DEFAULT, os.O_RDWR)
 
 class CloseTdbTests(TestCase):
