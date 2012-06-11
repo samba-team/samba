@@ -316,7 +316,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 
 			/* We know this name is ok, it's already passed the checks. */
 
-		} else if (fsp && fsp->fh->fd == -1) {
+		} else if (fsp->fh->fd == -1) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
