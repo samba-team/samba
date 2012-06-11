@@ -624,7 +624,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
 
     if lp is None:
         lp = samba.param.LoadParm()
-    #Load non-existant file
+    #Load non-existent file
     if os.path.exists(smbconf):
         lp.load(smbconf)
 
