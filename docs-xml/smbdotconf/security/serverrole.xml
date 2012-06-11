@@ -51,9 +51,31 @@
     exist as well as the account on the Domain Controller to allow 
     Samba to have a valid UNIX account to map file access to.  Winbind can provide this.</para>
 
-    <para><anchor id="DC"/><emphasis>SERVER ROLE = DOMAIN CONTROLLER</emphasis></para>
+    <para><anchor id="PDC"/><emphasis>SERVER ROLE = CLASSIC PRIMARY DOMAIN CONTROLLER</emphasis></para>
 
-    <para>This mode of operation runs Samba as a domain controller, providing domain logon services to Windows and Samba clients of the domain.  Clients must be joined to the domain to create a secure, trusted path across the network.</para>
+    <para>This mode of operation runs a classic Samba primary domain
+    controller, providing domain logon services to Windows and Samba
+    clients of an NT4-like domain.  Clients must be joined to the domain to
+    create a secure, trusted path across the network.  There must be
+    only one PDC per NetBIOS scope (typcially a broadcast network or
+    clients served by a single WINS server).</para>
+
+    <para><anchor id="BDC"/><emphasis>SERVER ROLE = NETBIOS BACKUP DOMAIN CONTROLLER</emphasis></para>
+
+    <para>This mode of operation runs a classic Samba backup domain
+    controller, providing domain logon services to Windows and Samba
+    clients of an NT4-like domain.  As a BDC, this allows
+    multiple Samba servers to provide rudundent logon services to a
+    single NetBIOS scope.</para>
+
+    <para><anchor id="AD-DC"/><emphasis>SERVER ROLE = ACTIVE DIRECTORY DOMAIN CONTROLLER</emphasis></para>
+
+    <para>This mode of operation runs Samba as an active directory
+    domain controller, providing domain logon services to Windows and
+    Samba clients of the domain.  This role requires special
+    configuration, see the <ulink
+    url="http://wiki.samba.org/index.php/Samba4/HOWTO">Samba4
+    HOWTO</ulink></para>
 
 </description>
 
