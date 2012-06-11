@@ -24,7 +24,6 @@
 
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/ndr/libndr.h"
-#include "system/network.h"
 /*
   possible states for pending requests
 */
