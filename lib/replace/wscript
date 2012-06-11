@@ -475,7 +475,9 @@ REPLACEMENT_FUNCTIONS = {
                   'dprintf', 'get_current_dir_name',
                   'strerror_r', 'clock_gettime'],
     'timegm.c': ['timegm'],
-    'snprintf.c': ['snprintf'],
+    # Note: C99_VSNPRINTF is not a function, but a special condition
+    # for replacement
+    'snprintf.c': ['C99_VSNPRINTF', 'snprintf', 'vsnprintf', 'asprintf', 'vasprintf'],
     }
 
 
