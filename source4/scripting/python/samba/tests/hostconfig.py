@@ -63,7 +63,7 @@ class ShareTests(TestCase):
         shares = self._get_shares({"global": {}})
         self.assertEquals(0, len(shares))
 
-    def test_getitem_nonexistant(self):
+    def test_getitem_nonexistent(self):
         shares = self._get_shares({"global": {}})
         self.assertRaises(KeyError, shares.__getitem__, "bla")
 
