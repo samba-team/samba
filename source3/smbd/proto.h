@@ -599,6 +599,8 @@ void reply_nttranss(struct smb_request *req);
 NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint32_t access_mask);
+NTSTATUS fd_open(struct connection_struct *conn, files_struct *fsp,
+		 int flags, mode_t mode);
 NTSTATUS fd_close(files_struct *fsp);
 void change_file_owner_to_parent(connection_struct *conn,
 				 const char *inherit_from_dir,

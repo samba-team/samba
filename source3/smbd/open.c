@@ -274,10 +274,10 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
-static NTSTATUS fd_open(struct connection_struct *conn,
-		    files_struct *fsp,
-		    int flags,
-		    mode_t mode)
+NTSTATUS fd_open(struct connection_struct *conn,
+		 files_struct *fsp,
+		 int flags,
+		 mode_t mode)
 {
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
