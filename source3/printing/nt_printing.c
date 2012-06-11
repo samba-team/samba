@@ -1627,7 +1627,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	2: file doesn't exist
 	3: can't allocate memory
 	4: can't free memory
-	5: non existant struct
+	5: non existent struct
 */
 
 /*
