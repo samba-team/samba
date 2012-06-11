@@ -688,25 +688,27 @@ void check_log_size( void )
 
 	maxlog = state.settings.max_log_size * 1024;
 
-	if (state.schedule_reopen_logs ||
-	   (fstat(state.fd, &st) == 0
+	if (state.schedule_reopen_logs) {
+	    (void)reopen_logs_internal();
+	}
+
+	if (maxlog && (fstat(state.fd, &st) == 0
 	    && st.st_size > maxlog )) {
 		(void)reopen_logs_internal();
-		if (state.fd > 0 && fstat(state.fd, &st) == 0) {
-			if (st.st_size > maxlog) {
-				char *name = NULL;
-
-				if (asprintf(&name, "%s.old", state.debugf ) < 0) {
-					return;
-				}
-				(void)rename(state.debugf, name);
-
-				if (!reopen_logs_internal()) {
-					/* We failed to reopen a log - continue using the old name. */
-					(void)rename(name, state.debugf);
-				}
-				SAFE_FREE(name);
+		if (state.fd > 2 && (fstat(state.fd, &st) == 0
+				     && st.st_size > maxlog)) {
+			char *name = NULL;
+			
+			if (asprintf(&name, "%s.old", state.debugf ) < 0) {
+				return;
 			}
+			(void)rename(state.debugf, name);
+			
+			if (!reopen_logs_internal()) {
+				/* We failed to reopen a log - continue using the old name. */
+				(void)rename(name, state.debugf);
+			}
+			SAFE_FREE(name);
 		}
 	}
 
