@@ -362,7 +362,7 @@ fullpath is a full path starting from / or a relative path to the
 current working directory
 shortname is the filename without directory components
 basename, is the directory without file name component
-allow_nonexistant return TRUE if stat() on the requested file fails
+allow_nonexistent return TRUE if stat() on the requested file fails
 recheck_time, the time in milliseconds to wait for the daemon to
 create a .scanned file
 recheck_tries, the number of tries to wait
@@ -375,7 +375,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 				     struct smb_filename *smb_fname,
 				     const char *shortname,
 				     const char *base_name,
-				     int allow_nonexistant,
+				     int allow_nonexistent,
 				     int recheck_time, int recheck_tries,
 				     int recheck_size, int loop)
 {
@@ -403,9 +403,9 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 		if (retval != 0) {
 			/* failed to stat this file?!? --> hide it */
 			DEBUG(SCANNEDONLY_DEBUG,("no valid stat, return"
-						 " allow_nonexistant=%d\n",
-						 allow_nonexistant));
-			return allow_nonexistant;
+						 " allow_nonexistent=%d\n",
+						 allow_nonexistent));
+			return allow_nonexistent;
 		}
 	}
 	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
