@@ -372,7 +372,7 @@ class DnTests(TestCase):
         x = ldb.Dn(self.ldb, "dc=foo16,bar=bloe")
         self.assertEquals("bar=bloe", x.parent().__str__())
 
-    def test_parent_nonexistant(self):
+    def test_parent_nonexistent(self):
         x = ldb.Dn(self.ldb, "@BLA")
         self.assertEquals(None, x.parent())
 
