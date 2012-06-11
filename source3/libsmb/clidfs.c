@@ -129,6 +129,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	if (get_cmdline_auth_info_use_ccache(auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
 	}
+	if (get_cmdline_auth_info_use_pw_nt_hash(auth_info)) {
+		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
+	}
 
 	status = cli_connect_nb(
 		server, NULL, port, name_type, NULL,
