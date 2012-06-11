@@ -451,25 +451,25 @@ static void nss_test_errors(void)
 	pwd = getpwnam("nosuchname");
 	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
 		total_errors++;
-		printf("ERROR Non existant user gave error %d\n", last_error);
+		printf("ERROR Non existent user gave error %d\n", last_error);
 	}
 
 	pwd = getpwuid(0xFFF0);
 	if (pwd || last_error != NSS_STATUS_NOTFOUND) {
 		total_errors++;
-		printf("ERROR Non existant uid gave error %d\n", last_error);
+		printf("ERROR Non existent uid gave error %d\n", last_error);
 	}
 
 	grp = getgrnam("nosuchgroup");
 	if (grp || last_error != NSS_STATUS_NOTFOUND) {
 		total_errors++;
-		printf("ERROR Non existant group gave error %d\n", last_error);
+		printf("ERROR Non existent group gave error %d\n", last_error);
 	}
 
 	grp = getgrgid(0xFFF0);
 	if (grp || last_error != NSS_STATUS_NOTFOUND) {
 		total_errors++;
-		printf("ERROR Non existant gid gave error %d\n", last_error);
+		printf("ERROR Non existent gid gave error %d\n", last_error);
 	}
 }
 
