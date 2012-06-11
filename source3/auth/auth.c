@@ -486,34 +486,40 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
 	}
 
 	if (auth_method_list == NULL) {
-		switch (lp_security()) 
+		switch (lp_server_role()) 
 		{
-		case SEC_DOMAIN:
-		case SEC_ADS:
-			DEBUG(5,("Making default auth method list for security=domain and security=ads\n"));
+		case ROLE_DOMAIN_MEMBER:
+			DEBUG(5,("Making default auth method list for server role = 'domain member'\n"));
 			auth_method_list = str_list_make_v3(
 				talloc_tos(), "guest sam winbind:ntdomain",
 				NULL);
 			break;
-		case SEC_USER:
-			if (lp_encrypted_passwords()) {	
-				if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
-					DEBUG(5,("Making default auth method list for DC, security=user, encrypt passwords = yes\n"));
-					auth_method_list = str_list_make_v3(
-						talloc_tos(),
-						"guest sam winbind:trustdomain",
-						NULL);
-				} else {
-					DEBUG(5,("Making default auth method list for standalone security=user, encrypt passwords = yes\n"));
-					auth_method_list = str_list_make_v3(
+		case ROLE_DOMAIN_BDC:
+		case ROLE_DOMAIN_PDC:
+			DEBUG(5,("Making default auth method list for DC\n"));
+			auth_method_list = str_list_make_v3(
+				talloc_tos(),
+				"guest sam winbind:trustdomain",
+				NULL);
+			break;
+		case ROLE_STANDALONE:
+			DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = yes\n"));
+			if (lp_encrypted_passwords()) {
+				auth_method_list = str_list_make_v3(
 						talloc_tos(), "guest sam",
 						NULL);
-				}
 			} else {
-				DEBUG(5,("Making default auth method list for security=user, encrypt passwords = no\n"));
+				DEBUG(5,("Making default auth method list for server role = 'standalone server', encrypt passwords = no\n"));
 				auth_method_list = str_list_make_v3(
 					talloc_tos(), "guest unix", NULL);
 			}
+			break;
+		case ROLE_ACTIVE_DIRECTORY_DC:
+			DEBUG(5,("Making default auth method list for server role = 'active directory domain controller'\n"));
+			auth_method_list = str_list_make_v3(
+				talloc_tos(),
+				"samba4",
+				NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
