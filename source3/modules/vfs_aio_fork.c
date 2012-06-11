@@ -861,6 +861,10 @@ static int aio_fork_suspend(struct vfs_handle_struct *handle,
 					     EVENT_FD_READ,
 					     handle_aio_completion,
 					     child);
+			if (event == NULL) {
+				errno = ENOMEM;
+				goto out;
+			}
 
 			child->called_from_suspend = true;
 
