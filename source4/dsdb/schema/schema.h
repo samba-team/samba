@@ -247,12 +247,14 @@ struct dsdb_schema {
 	bool refresh_in_progress;
 	time_t ts_last_change;
 	time_t last_refresh;
-	/* This 'opaque' is stored in the metadata and is used by one process to signal
-	 * that others have to reload the schema
+	/* This 'opaque' is stored in the metadata and is used to check if the currently
+	 * loaded schema needs a reload because another process has signaled that it has been
+	 * requested to reload the schema (either due through DRS or via the schemaUpdateNow).
 	 */
 	uint64_t metadata_usn;
-	/* an 'opaque' sequence number that is used in the reload to check if a reload
-	 * should really be performed, as the schema is periodically reloaded this
+	/* an 'opaque' sequence number that corresponds to the highest USN of the schema
+	 * partition it used in the reload to check if a reload
+	 * should really be performed. As the schema is periodically reloaded this
 	 * is still needed in order to avoid costly complete schema reload.
 	 */
 	uint64_t reload_seq_number;
