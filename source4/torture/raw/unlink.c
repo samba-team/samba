@@ -48,7 +48,7 @@ static bool test_unlink(struct torture_context *tctx, struct smbcli_state *cli)
 
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
-	printf("Trying non-existant file\n");
+	printf("Trying non-existent file\n");
 	io.unlink.in.pattern = fname;
 	io.unlink.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);

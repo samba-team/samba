@@ -367,7 +367,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	notify.smb2.in.file.handle = h1;
 	req = smb2_notify_send(tree1, &(notify.smb2));
 
-	status = smb2_util_unlink(tree1, BASEDIR "\\nonexistant.txt");
+	status = smb2_util_unlink(tree1, BASEDIR "\\nonexistent.txt");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	/* (1st unlink) as the 2nd notify directly returns,
@@ -400,7 +400,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 		"(3rd notify) this notify will only see the 1st unlink\n");
 	req = smb2_notify_send(tree1, &(notify.smb2));
 
-	status = smb2_util_unlink(tree1, BASEDIR "\\nonexistant.txt");
+	status = smb2_util_unlink(tree1, BASEDIR "\\nonexistent.txt");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	for (i=1;i<count;i++) {

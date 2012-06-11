@@ -7950,7 +7950,7 @@ static bool test_samr_ValidatePassword(struct dcerpc_pipe *p,
 	r.out.rep = &repp;
 
 	ZERO_STRUCT(req);
-	req.req3.account.string = "non-existant-account-aklsdji";
+	req.req3.account.string = "non-existent-account-aklsdji";
 
 	for (i=0; passwords[i]; i++) {
 		req.req3.password.string = passwords[i];

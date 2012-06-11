@@ -203,7 +203,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 	basedir_data = talloc_asprintf(tctx, "%s::$DATA", BASEDIR);
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 
-	printf("(%s) opening non-existant directory stream\n", __location__);
+	printf("(%s) opening non-existent directory stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
@@ -282,7 +282,7 @@ static bool test_stream_io(struct torture_context *tctx,
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(tctx, "%s:%s:$DaTa", fname, "Second Stream");
 
-	printf("(%s) creating a stream on a non-existant file\n", __location__);
+	printf("(%s) creating a stream on a non-existent file\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
@@ -509,7 +509,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 
 	sname1 = talloc_asprintf(tctx, "%s:%s", fname, "Stream One");
 
-	printf("(%s) opening non-existant file stream\n", __location__);
+	printf("(%s) opening non-existent file stream\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;

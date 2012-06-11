@@ -189,7 +189,7 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	notify.nttrans.in.file.fnum = fnum;
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
-	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistant.txt");
+	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistent.txt");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	/* (1st unlink) as the 2nd notify directly returns,
@@ -219,7 +219,7 @@ static bool test_notify_dir(struct torture_context *mem_ctx,
 	printf("(3rd notify) this notify will only see the 1st unlink\n");
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
-	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistant.txt");
+	status = smbcli_unlink(cli->tree, BASEDIR "\\nonexistent.txt");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	printf("Testing notify on wildcard unlink for %d files\n", count-1);

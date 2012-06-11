@@ -1703,7 +1703,7 @@ static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct sm
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Checking RAW_NTCREATEX_READX chained on "
-			      "non-existant file \n");
+			      "non-existent file \n");
 
 	/* ntcreatex parameters */
 	io.generic.level = RAW_OPEN_NTCREATEX_READX;
@@ -1727,7 +1727,7 @@ static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct sm
 	io.ntcreatexreadx.in.remaining = 0;
 	io.ntcreatexreadx.out.data = (uint8_t *)buf2;
 
-	/* try to open the non-existant file */
+	/* try to open the non-existent file */
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	fnum = io.ntcreatexreadx.out.file.fnum;
