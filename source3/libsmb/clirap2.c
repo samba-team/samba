@@ -1127,7 +1127,7 @@ int cli_NetFileClose(struct cli_state *cli, uint32 file_id )
 		if (res == 0) {
 			/* nothing to do */
 		} else if (res == 2314){
-			DEBUG(1, ("NetFileClose2 - attempt to close non-existant file open instance\n"));
+			DEBUG(1, ("NetFileClose2 - attempt to close non-existent file open instance\n"));
 		} else {
 			DEBUG(4,("NetFileClose2 res=%d\n", res));
 		}
