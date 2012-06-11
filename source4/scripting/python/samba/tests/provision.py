@@ -124,7 +124,8 @@ class Disabled(object):
 class SanitizeServerRoleTests(TestCase):
 
     def test_same(self):
-        self.assertEquals("standalone", sanitize_server_role("standalone"))
+        self.assertEquals("standalone server", 
+            sanitize_server_role("standalone server"))
         self.assertEquals("member server",
             sanitize_server_role("member server"))
 
@@ -132,7 +133,9 @@ class SanitizeServerRoleTests(TestCase):
         self.assertRaises(ValueError, sanitize_server_role, "foo")
 
     def test_valid(self):
-        self.assertEquals("standalone", sanitize_server_role("ROLE_STANDALONE"))
+        self.assertEquals("standalone server", sanitize_server_role("ROLE_STANDALONE"))
+        self.assertEquals("standalone server", sanitize_server_role("standalone"))
+        self.assertEquals("active directory domain controller", sanitize_server_role("domain controller"))
 
 
 class DummyLogger(object):

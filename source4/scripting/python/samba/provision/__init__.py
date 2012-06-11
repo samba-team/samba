@@ -603,7 +603,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     netbiosname = determine_netbios_name(hostname)
 
     if serverrole is None:
-        serverrole = "standalone"
+        serverrole = "standalone server"
 
     if sid_generator is None:
         sid_generator = "internal"
@@ -1566,7 +1566,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
 
 
 _ROLES_MAP = {
-    "ROLE_STANDALONE": "standalone",
+    "ROLE_STANDALONE": "standalone server",
     "ROLE_DOMAIN_MEMBER": "member server",
     "ROLE_DOMAIN_BDC": "active directory domain controller",
     "ROLE_DOMAIN_PDC": "active directory domain controller",
@@ -1575,7 +1575,8 @@ _ROLES_MAP = {
     "domain controller": "active directory domain controller",
     "active directory domain controller": "active directory domain controller",
     "member server": "member server",
-    "standalone": "standalone",
+    "standalone": "standalone server",
+    "standalone server": "standalone server",
     }
 
 
@@ -1585,7 +1586,7 @@ def sanitize_server_role(role):
     :param role: Server role
     :raise ValueError: If the role can not be interpreted
     :return: Sanitized server role (one of "member server",
-        "active directory domain controller", "standalone")
+        "active directory domain controller", "standalone server")
     """
     try:
         return  _ROLES_MAP[role]
@@ -1615,7 +1616,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     try:
         serverrole = sanitize_server_role(serverrole)
     except ValueError:
-        raise ProvisioningError('server role (%s) should be one of "active directory domain controller", "member server", "standalone"' % serverrole)
+        raise ProvisioningError('server role (%s) should be one of "active directory domain controller", "member server", "standalone server"' % serverrole)
 
     if ldapadminpass is None:
         # Make a new, random password between Samba and it's LDAP server

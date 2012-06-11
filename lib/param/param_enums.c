@@ -75,6 +75,7 @@ static const struct enum_list enum_csc_policy[] = {
 /* Server role options */
 static const struct enum_list enum_server_role[] = {
 	{ROLE_AUTO, "auto"},
+	{ROLE_STANDALONE, "standalone server"},
 	{ROLE_STANDALONE, "standalone"},
 	{ROLE_DOMAIN_MEMBER, "member server"},
 	{ROLE_DOMAIN_MEMBER, "member"},
