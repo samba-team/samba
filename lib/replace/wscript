@@ -475,6 +475,7 @@ REPLACEMENT_FUNCTIONS = {
                   'dprintf', 'get_current_dir_name',
                   'strerror_r', 'clock_gettime'],
     'timegm.c': ['timegm'],
+    'snprintf.c': ['snprintf'],
     }
 
 
@@ -483,7 +484,6 @@ def build(bld):
 
     REPLACE_HOSTCC_SOURCE = ''
 
-    if not bld.CONFIG_SET('HAVE_C99_VSNPRINTF'): REPLACE_HOSTCC_SOURCE += ' snprintf.c'
     if bld.CONFIG_SET('REPLACE_STRPTIME'):       REPLACE_HOSTCC_SOURCE += ' strptime.c'
     for filename, functions in REPLACEMENT_FUNCTIONS.iteritems():
         for function in functions:
