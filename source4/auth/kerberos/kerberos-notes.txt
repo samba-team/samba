@@ -527,11 +527,11 @@ SHA-1.  So, nowadays, this password-based in-memory keytab is seen as too
 slow, and is falling into disuse.
 
 Traditional 'MIT' behaviour is to use a keytab, containing salted key
-data, extracted from the KDC.  (In this modal, there is no 'service
+data, extracted from the KDC.  (In this model, there is no 'service
 password', instead the keys are often simply application of random
 bytes).  Heimdal also implements this behaviour.
 
-The windows modal is very different - instead of sharing a keytab with
+The windows model is very different - instead of sharing a keytab with
 each member server, a random utf-16 pseudo-textual password is stored 
 for the whole machine.  
 The password is set with non-kerberos mechanisms (particularly SAMR, 
