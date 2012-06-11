@@ -1648,7 +1648,11 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
-	status = ntlmssp_set_password(state->ntlmssp_state, pass);
+	if (cli->pw_nt_hash) {
+		status = ntlmssp_set_password_hash(state->ntlmssp_state, pass);
+	} else {
+		status = ntlmssp_set_password(state->ntlmssp_state, pass);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}

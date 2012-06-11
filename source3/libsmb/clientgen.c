@@ -209,6 +209,10 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		cli->use_ccache = true;
 	}
 
+	if (flags & CLI_FULL_CONNECTION_USE_NT_HASH) {
+		cli->pw_nt_hash = true;
+	}
+
 	if (flags & CLI_FULL_CONNECTION_OPLOCKS) {
 		cli->use_oplocks = true;
 	}
