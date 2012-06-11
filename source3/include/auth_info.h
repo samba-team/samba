@@ -31,6 +31,7 @@ struct user_auth_info {
 	bool use_machine_account;
 	bool fallback_after_kerberos;
 	bool use_ccache;
+	bool use_pw_nt_hash;
 };
 
 struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
@@ -49,6 +50,10 @@ int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info,
 				      bool b);
 bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_pw_nt_hash(struct user_auth_info *auth_info,
+					  bool b);
+bool get_cmdline_auth_info_use_pw_nt_hash(
+	const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 					bool b);
 bool get_cmdline_auth_info_use_kerberos(const struct user_auth_info *auth_info);

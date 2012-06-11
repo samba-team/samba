@@ -136,6 +136,18 @@ bool get_cmdline_auth_info_use_ccache(const struct user_auth_info *auth_info)
 	return auth_info->use_ccache;
 }
 
+void set_cmdline_auth_info_use_pw_nt_hash(struct user_auth_info *auth_info,
+					  bool b)
+{
+	auth_info->use_pw_nt_hash = b;
+}
+
+bool get_cmdline_auth_info_use_pw_nt_hash(
+	const struct user_auth_info *auth_info)
+{
+	return auth_info->use_pw_nt_hash;
+}
+
 void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
 					bool b)
 {
