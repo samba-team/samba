@@ -450,15 +450,6 @@ SMBC_remove_unused_server(SMBCCTX * context,
                           SMBCSRV * srv);
 
 void
-SMBC_call_auth_fn(TALLOC_CTX *ctx,
-                  SMBCCTX *context,
-                  const char *server,
-                  const char *share,
-                  char **pp_workgroup,
-                  char **pp_username,
-                  char **pp_password);
-
-void
 SMBC_get_auth_data(const char *server, const char *share,
                    char *workgroup_buf, int workgroup_buf_len,
                    char *username_buf, int username_buf_len,

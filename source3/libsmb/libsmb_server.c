@@ -96,7 +96,7 @@ SMBC_remove_unused_server(SMBCCTX * context,
 /****************************************************************
  * Call the auth_fn with fixed size (fstring) buffers.
  ***************************************************************/
-void
+static void
 SMBC_call_auth_fn(TALLOC_CTX *ctx,
                   SMBCCTX *context,
                   const char *server,
