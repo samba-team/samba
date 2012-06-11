@@ -14,7 +14,7 @@
 	that group to modify the permissions on it. This allows the delegation of security controls
 	on a point in the filesystem to the group owner of a directory and anything below it also owned
 	by that group. This means there are multiple people with permissions to modify ACLs on a file
-	or directory, easing managability.
+	or directory, easing manageability.
 	</para>
 	<para>
 	This parameter allows Samba to also permit delegation of the control over a point in the exported

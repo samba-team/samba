@@ -13,7 +13,7 @@ HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\
 </programlisting>
 	registry key in Windows 2000 and Windows NT.  When set to 0, user
 	and group list information is returned to anyone who asks.  When set
-    to 1, only an authenticated user can retrive user and
+    to 1, only an authenticated user can retrieve user and
     group list information.  For the value 2, supported by
     Windows 2000/XP and Samba, no anonymous connections are allowed at
     all.  This can break third party and Microsoft

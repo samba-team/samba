@@ -14,7 +14,7 @@
     <para>
 	Please note that for user or share mode security, the username map is applied prior to validating the user
 	credentials.  Domain member servers (domain or ads) apply the username map after the user has been
-	successfully authenticated by the domain controller and require fully qualified enties in the map table (e.g.
+	successfully authenticated by the domain controller and require fully qualified entries in the map table (e.g.
 	biddle = <literal>DOMAIN\foo</literal>).
 	</para>
     

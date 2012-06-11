@@ -17,7 +17,7 @@
 	To use this option, a basic ldap tree must be provided and the ldap suffix parameters must be properly
 	configured. On virgin servers the default users and groups (Administrator, Guest, Domain Users,
 	Domain Admins, Domain Guests) can be precreated with the command <command moreinfo="none">net sam
-	provision</command>. To run this command the ldap server must be running, Winindd must be running and
+	provision</command>. To run this command the ldap server must be running, Winbindd must be running and
 	the smb.conf ldap options must be properly configured.
 
 	The typical ldap setup used with the <smbconfoption name="ldapsam:trusted">yes</smbconfoption> option

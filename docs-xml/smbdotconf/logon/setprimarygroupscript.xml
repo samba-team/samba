@@ -7,7 +7,7 @@
 
 	<para>Thanks to the Posix subsystem in NT a Windows User has a
 	primary group in addition to the auxiliary groups.  This script
-	sets the primary group in the unix userdatase when an
+	sets the primary group in the unix user database when an
 	administrator sets the primary group from the windows user
 	manager or when fetching a SAM with <command>net rpc
 	vampire</command>. <parameter>%u</parameter> will be replaced

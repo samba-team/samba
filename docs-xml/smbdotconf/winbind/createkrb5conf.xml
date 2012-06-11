@@ -6,7 +6,7 @@
 <description>
 
 	<para>
-	Setting this paramter to <value type="example">no</value> prevents
+	Setting this parameter to <value type="example">no</value> prevents
 	winbind from creating custom krb5.conf files. Winbind normally does
 	this because the krb5 libraries are not AD-site-aware and thus would
 	pick any domain controller out of potentially very many. Winbind

@@ -8,7 +8,7 @@
 	<manvolnum>8</manvolnum></citerefentry> that
 	should stop a shutdown procedure issued by the <smbconfoption name="shutdown script"/>.</para>
 		
-	<para>If the connected user posseses the <constant>SeRemoteShutdownPrivilege</constant>,
+	<para>If the connected user possesses the <constant>SeRemoteShutdownPrivilege</constant>,
 	right, this command will be run as root.</para>
 </description>
 <value type="default">&quot;&quot;</value>

@@ -14,7 +14,7 @@ but user testing is recommended. If set to zero Samba processes SMBwriteX calls 
 normal way. To enable POSIX large write support (SMB/CIFS writes up to 16Mb) this option must be
 nonzero. The maximum value is 128k. Values greater than 128k will be silently set to 128k.</para>
 <para>Note this option will have NO EFFECT if set on a SMB signed connection.</para>
-<para>The default is zero, which diables this option.</para>
+<para>The default is zero, which disables this option.</para>
 </description>
 
 <related>min receivefile size</related>

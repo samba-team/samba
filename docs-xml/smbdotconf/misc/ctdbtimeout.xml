@@ -25,7 +25,7 @@
 	  Be aware that if you set this parameter, this needs to be in
 	  the file smb.conf, it is not really helpful to put this into
 	  a registry configuration (typical on a cluster), because to
-	  access the registry contact to ctdb is requred.
+	  access the registry contact to ctdb is required.
 	</para>
 	<para>Setting <parameter>ctdb timeout</parameter> to n makes
 	  any process waiting longer than n seconds for a reply by the

@@ -686,7 +686,7 @@ net groupmap add {rid=int|sid=string} unixgroup=string \
 <refsect3>
 <title>GROUPMAP MODIFY</title>
 
-<para>Update en existing group entry.</para>
+<para>Update an existing group entry.</para>
 
 <para>
 <programlisting>

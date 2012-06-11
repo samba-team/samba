@@ -11,7 +11,7 @@
 
     <para>Setting this option to a larger value could be useful to sites
     transitioning from WinNT and Win2k, as existing user and 
-    group rids would otherwise clash with sytem users etc. 
+    group rids would otherwise clash with system users etc. 
     </para>
 
     <para>All UIDs and GIDs must be able to be resolved into SIDs for  

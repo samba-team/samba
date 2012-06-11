@@ -13,7 +13,7 @@
 
     <para>
 	To use the CUPS printing interface set <command moreinfo="none">printcap name = cups </command>. This should
-	be supplemented by an addtional setting <smbconfoption name="printing">cups</smbconfoption> in the [global]
+	be supplemented by an additional setting <smbconfoption name="printing">cups</smbconfoption> in the [global]
 	section.  <command moreinfo="none">printcap name = cups</command> will use the  &quot;dummy&quot; printcap
 	created by CUPS, as specified in your CUPS configuration file.
     </para>

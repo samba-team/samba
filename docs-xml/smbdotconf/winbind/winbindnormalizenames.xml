@@ -21,7 +21,7 @@
 	  idmap and nss_info plugin for the specifics on how to configure
 	  name aliasing for a specific configuration.  Name aliasing takes
 	  precedence (and is mutually exclusive) over the whitespace
-	  replacement mechanism discussed previsouly.
+	  replacement mechanism discussed previously.
 	  </para>
 
 </description>

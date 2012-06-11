@@ -19,7 +19,7 @@
     printer using MS-RPC.  The problem is that because the client
     considers the printer to be local, it will attempt to issue the
     OpenPrinterEx() call requesting access rights associated  with the
-    logged on user. If the user possesses local administator rights but
+    logged on user. If the user possesses local administrator rights but
     not root privilege on the Samba host (often the case), the
     OpenPrinterEx() call will fail.  The result is that the client will
     now display an &quot;Access Denied; Unable to connect&quot; message

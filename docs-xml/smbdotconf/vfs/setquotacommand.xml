@@ -9,7 +9,7 @@
 	samba can use.</para>
 
 	<para>This option is only available if Samba was configured with the argument <command>--with-sys-quotas</command> or 
-	on linux when <command>./configure --with-quotas</command> was used and a working quota api 
+	on Linux when <command>./configure --with-quotas</command> was used and a working quota api 
 	was found in the system. Most packages are configured with these options already.</para>
 
 	<para>This parameter should specify the path to a script that 

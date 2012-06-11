@@ -18,7 +18,7 @@
 	<para>
 	The idmap configuration is hence divided into groups, one group
 	for each domain to be configured, and one group with the the
-	asterisk instead of a proper domain name, which speifies the
+	asterisk instead of a proper domain name, which specifies the
 	default configuration that is used to catch all domains that do
 	not have an explicit idmap configuration of their own.
 	</para>
@@ -83,7 +83,7 @@
 		Defines the available matching uid and gid range for which the
 		backend is authoritative. For allocating backends, this also
 		defines the start and the end of the range for allocating
-		new unid IDs.
+		new uniq IDs.
 		</para>
 		<para>
 		winbind uses this parameter to find the backend that is

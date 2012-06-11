@@ -17,7 +17,7 @@
 		 <emphasis>1</emphasis> for tracing function calls.
 	</para>
 	<para>
-		The debug ouput from the LDAP libraries appears with the
+		The debug output from the LDAP libraries appears with the
 		prefix [LDAP] in Samba's logging output.
 		The level at which LDAP logging is printed is controlled by the
 		parameter <parameter>ldap debug threshold</parameter>.

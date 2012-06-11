@@ -5,13 +5,13 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Some version of NT 4.x allow non-guest 
-    users with a bad passowrd. When this option is enabled, samba will not 
+    users with a bad password. When this option is enabled, samba will not 
     use a broken NT 4.x server as password server, but instead complain
     to the logs and exit.  
     </para>
 
     <para>Disabling this option prevents Samba from making
-    this check, which involves deliberatly attempting a
+    this check, which involves deliberately attempting a
     bad logon to the remote server.</para>
 </description>
 
