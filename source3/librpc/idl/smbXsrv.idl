@@ -177,6 +177,32 @@ interface smbXsrv
 		[in] smbXsrv_sessionB blob
 		);
 
+	/*
+	 * smbXsrv_session_close is use in the MSG_SMBXSRV_SESSION_CLOSE
+	 * message
+	 */
+	typedef struct {
+		uint32					old_session_global_id;
+		hyper					old_session_wire_id;
+		NTTIME					old_creation_time;
+		hyper					new_session_wire_id;
+	} smbXsrv_session_close0;
+
+	typedef union {
+		[case(0)] smbXsrv_session_close0	*info0;
+		[default] hyper				*dummy;
+	} smbXsrv_session_closeU;
+
+	typedef [public] struct {
+		smbXsrv_version_values			version;
+		[value(0)] uint32			reserved;
+		[switch_is(version)] smbXsrv_session_closeU	info;
+	} smbXsrv_session_closeB;
+
+	void smbXsrv_session_close_decode(
+		[in] smbXsrv_session_closeB blob
+		);
+
 	/* tree connects */
 
 	typedef struct {
