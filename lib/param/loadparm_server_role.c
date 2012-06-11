@@ -75,18 +75,7 @@ int lp_find_server_role(int server_role, int security, int domain_logons, int do
 
 	switch (security) {
 		case SEC_DOMAIN:
-			if (domain_logons) {
-				DEBUG(1, ("Server's Role (logon server) NOT ADVISED with domain-level security\n"));
-				role = ROLE_DOMAIN_BDC;
-				break;
-			}
-			role = ROLE_DOMAIN_MEMBER;
-			break;
 		case SEC_ADS:
-			if (domain_logons) {
-				role = ROLE_DOMAIN_BDC;
-				break;
-			}
 			role = ROLE_DOMAIN_MEMBER;
 			break;
 		case SEC_AUTO:
@@ -145,22 +134,17 @@ bool lp_is_security_and_server_role_valid(int server_role, int security)
 	case ROLE_AUTO:
 		valid = true;
 		break;
-	case ROLE_STANDALONE:
-		if (security == SEC_USER) {
-			valid = true;
-		}
-		break;
-
 	case ROLE_DOMAIN_MEMBER:
 		if (security == SEC_ADS || security == SEC_DOMAIN) {
 			valid = true;
 		}
 		break;
 
+	case ROLE_STANDALONE:
 	case ROLE_DOMAIN_PDC:
 	case ROLE_DOMAIN_BDC:
 	case ROLE_ACTIVE_DIRECTORY_DC:
-		if (security == SEC_USER || security == SEC_ADS || security == SEC_DOMAIN) {
+		if (security == SEC_USER) {
 			valid = true;
 		}
 		break;
