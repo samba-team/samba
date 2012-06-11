@@ -262,7 +262,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	gensec_krb5_state->ap_req_options = AP_OPTS_USE_SUBKEY;
 
 	if (gensec_krb5_state->gssapi) {
-		/* The Fake GSSAPI modal emulates Samba3, which does not do mutual authentication */
+		/* The Fake GSSAPI model emulates Samba3, which does not do mutual authentication */
 		if (gensec_setting_bool(gensec_security->settings, "gensec_fake_gssapi_krb5", "mutual", false)) {
 			gensec_krb5_state->ap_req_options |= AP_OPTS_MUTUAL_REQUIRED;
 		}
