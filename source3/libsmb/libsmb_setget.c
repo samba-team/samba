@@ -457,6 +457,24 @@ smbc_setOptionUseCCache(SMBCCTX *c, smbc_bool b)
         }
 }
 
+/** Get whether to enable use of the winbind ccache */
+smbc_bool
+smbc_getOptionUseNTHash(SMBCCTX *c)
+{
+        return (c->flags & SMB_CTX_FLAG_USE_NT_HASH) != 0;
+}
+
+/** Set indication that the password supplied is the NT hash */
+void
+smbc_setOptionUseNTHash(SMBCCTX *c, smbc_bool b)
+{
+        if (b) {
+                c->flags |= SMB_CTX_FLAG_USE_NT_HASH;
+        } else {
+                c->flags &= ~SMB_CTX_FLAG_USE_NT_HASH;
+        }
+}
+
 /** Get the function for obtaining authentication data */
 smbc_get_auth_data_fn
 smbc_getFunctionAuthData(SMBCCTX *c)

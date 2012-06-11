@@ -743,6 +743,14 @@ smbc_getOptionUseCCache(SMBCCTX *c);
 void
 smbc_setOptionUseCCache(SMBCCTX *c, smbc_bool b);
 
+/** Get indication that the password supplied is the NT hash */
+smbc_bool
+smbc_getOptionUseNTHash(SMBCCTX *c);
+
+/** Set indication that the password supplied is the NT hash */
+void
+smbc_setOptionUseNTHash(SMBCCTX *c, smbc_bool b);
+
 
 
 /*************************************

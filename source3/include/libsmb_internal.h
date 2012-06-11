@@ -48,6 +48,10 @@ typedef struct DOS_ATTR_DESC {
 	SMB_INO_T inode;
 } DOS_ATTR_DESC;
 
+/*
+ * Extension of libsmbclient.h's #defines
+ */
+#define SMB_CTX_FLAG_USE_NT_HASH (1 << 4)
 
 /*
  * Internal flags for extended attributes

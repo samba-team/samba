@@ -417,6 +417,10 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
 	}
 
+	if (smbc_getOptionUseNTHash(context)) {
+		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
+	}
+
         if (share == NULL || *share == '\0' || is_ipc) {
 		/*
 		 * Try 139 first for IPC$
