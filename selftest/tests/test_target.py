@@ -125,5 +125,5 @@ class EnvironmentManagerTests(TestCase):
         env = self.mgr.setup_env("something", "prefix")
         self.assertIs(env, self.mgr.get_running_env("something"))
 
-    def test_get_running_env_nonexistant(self):
+    def test_get_running_env_nonexistent(self):
         self.assertIs(None, self.mgr.get_running_env("something"))
