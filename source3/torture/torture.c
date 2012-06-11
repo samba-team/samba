@@ -6071,7 +6071,7 @@ bool torture_chkpath_test(int dummy)
 		ret = check_error(__LINE__, status, ERRDOS, ERRbadfile,
 				  NT_STATUS_OBJECT_NAME_NOT_FOUND);
 	} else {
-		printf("* chkpath on a non existant file should fail\n");
+		printf("* chkpath on a non existent file should fail\n");
 		ret = False;
 	}
 
@@ -6211,10 +6211,10 @@ static bool run_eatest(int dummy)
 		correct = False;
 	}
 
-	/* Try and delete a non existant EA. */
+	/* Try and delete a non existent EA. */
 	status = cli_set_ea_path(cli, fname, "foo", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("deleting non-existant EA 'foo' should succeed. %s\n",
+		printf("deleting non-existent EA 'foo' should succeed. %s\n",
 		       nt_errstr(status));
 		correct = False;
 	}
