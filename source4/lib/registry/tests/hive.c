@@ -29,7 +29,7 @@
 #include "libcli/security/security.h"
 #include "lib/registry/tests/proto.h"
 
-static bool test_del_nonexistant_key(struct torture_context *tctx,
+static bool test_del_nonexistent_key(struct torture_context *tctx,
 				     const void *test_data)
 {
 	const struct hive_key *root = (const struct hive_key *)test_data;
@@ -346,8 +346,8 @@ static bool test_hive_security(struct torture_context *tctx, const void *_data)
 
 static void tcase_add_tests(struct torture_tcase *tcase)
 {
-	torture_tcase_add_simple_test_const(tcase, "del_nonexistant_key",
-						test_del_nonexistant_key);
+	torture_tcase_add_simple_test_const(tcase, "del_nonexistent_key",
+						test_del_nonexistent_key);
 	torture_tcase_add_simple_test_const(tcase, "add_subkey",
 						test_add_subkey);
 	torture_tcase_add_simple_test(tcase, "flush_key",
