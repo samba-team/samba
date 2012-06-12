@@ -406,37 +406,18 @@ bool posix_locking_end(void)
 static void increment_windows_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
-	struct db_record *rec;
-	int lock_ref_count = 0;
+	int32_t lock_ref_count = 0;
 	NTSTATUS status;
-	TDB_DATA value;
 
-	rec = dbwrap_fetch_locked(
-		posix_pending_close_db, talloc_tos(),
-		locking_ref_count_key_fsp(fsp, &tmp));
-
-	SMB_ASSERT(rec != NULL);
-
-	value = dbwrap_record_get_value(rec);
-
-	if (value.dptr != NULL) {
-		SMB_ASSERT(value.dsize == sizeof(lock_ref_count));
-		memcpy(&lock_ref_count, value.dptr,
-		       sizeof(lock_ref_count));
-	}
-
-	lock_ref_count++;
-
-	status = dbwrap_record_store(rec,
-				     make_tdb_data((uint8 *)&lock_ref_count,
-				     sizeof(lock_ref_count)), 0);
+	status = dbwrap_change_int32_atomic(
+		posix_pending_close_db, locking_ref_count_key_fsp(fsp, &tmp),
+		&lock_ref_count, 1);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
-
-	TALLOC_FREE(rec);
+	SMB_ASSERT(lock_ref_count < INT32_MAX);
 
 	DEBUG(10,("increment_windows_lock_ref_count for file now %s = %d\n",
-		  fsp_str_dbg(fsp), lock_ref_count));
+		  fsp_str_dbg(fsp), (int)lock_ref_count));
 }
 
 /****************************************************************************
@@ -446,44 +427,18 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
 {
 	struct lock_ref_count_key tmp;
-	struct db_record *rec;
-	int lock_ref_count = 0;
+	int32_t lock_ref_count = 0;
 	NTSTATUS status;
-	TDB_DATA value;
 
-	rec = dbwrap_fetch_locked(
-		posix_pending_close_db, talloc_tos(),
-		locking_ref_count_key_fsp(fsp, &tmp));
-
-	if (rec == NULL) {
-		DEBUG(0, ("reduce_windows_lock_ref_count: rec not found\n"));
-		return;
-	}
-
-	value = dbwrap_record_get_value(rec);
-
-	if ((value.dptr == NULL) ||  (value.dsize != sizeof(lock_ref_count))) {
-		DEBUG(0, ("reduce_windows_lock_ref_count: wrong value\n"));
-		TALLOC_FREE(rec);
-		return;
-	}
-
-	memcpy(&lock_ref_count, value.dptr, sizeof(lock_ref_count));
-
-	SMB_ASSERT(lock_ref_count > 0);
-
-	lock_ref_count -= dcount;
-
-	status = dbwrap_record_store(rec,
-				     make_tdb_data((uint8 *)&lock_ref_count,
-				     sizeof(lock_ref_count)), 0);
+	status = dbwrap_change_int32_atomic(
+		posix_pending_close_db, locking_ref_count_key_fsp(fsp, &tmp),
+		&lock_ref_count, -dcount);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
-
-	TALLOC_FREE(rec);
+	SMB_ASSERT(lock_ref_count >= 0);
 
 	DEBUG(10,("reduce_windows_lock_ref_count for file now %s = %d\n",
-		  fsp_str_dbg(fsp), lock_ref_count));
+		  fsp_str_dbg(fsp), (int)lock_ref_count));
 }
 
 static void decrement_windows_lock_ref_count(files_struct *fsp)
@@ -495,43 +450,22 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
  Fetch the lock ref count.
 ****************************************************************************/
 
-static int get_windows_lock_ref_count(files_struct *fsp)
+static int32_t get_windows_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
-	TDB_DATA dbuf;
 	NTSTATUS status;
-	int lock_ref_count = 0;
+	int32_t lock_ref_count = 0;
 
-	status = dbwrap_fetch(
-		posix_pending_close_db, talloc_tos(),
-		locking_ref_count_key_fsp(fsp, &tmp), &dbuf);
+	status = dbwrap_fetch_int32(
+		posix_pending_close_db, locking_ref_count_key_fsp(fsp, &tmp),
+		&lock_ref_count);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		goto done;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DEBUG(0, ("get_windows_lock_ref_count: Error fetching "
 			  "lock ref count for file %s: %s\n",
 			  fsp_str_dbg(fsp), nt_errstr(status)));
-		goto done;
 	}
-
-	if (dbuf.dsize != sizeof(lock_ref_count)) {
-		DEBUG(0, ("get_windows_lock_ref_count: invalid entry "
-			  "in lock ref count record for file %s: "
-			  "(invalid data size %u)\n",
-			  fsp_str_dbg(fsp), (unsigned int)dbuf.dsize));
-		goto done;
-	}
-
-	memcpy(&lock_ref_count, dbuf.dptr, sizeof(lock_ref_count));
-	TALLOC_FREE(dbuf.dptr);
-
-done:
-	DEBUG(10,("get_windows_lock_count for file %s = %d\n",
-		  fsp_str_dbg(fsp), lock_ref_count));
-
 	return lock_ref_count;
 }
 
@@ -542,18 +476,11 @@ done:
 static void delete_windows_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
-	struct db_record *rec;
-
-	rec = dbwrap_fetch_locked(
-		posix_pending_close_db, talloc_tos(),
-		locking_ref_count_key_fsp(fsp, &tmp));
-
-	SMB_ASSERT(rec != NULL);
 
 	/* Not a bug if it doesn't exist - no locks were ever granted. */
 
-	dbwrap_record_delete(rec);
-	TALLOC_FREE(rec);
+	dbwrap_delete(posix_pending_close_db,
+		      locking_ref_count_key_fsp(fsp, &tmp));
 
 	DEBUG(10,("delete_windows_lock_ref_count for file %s\n",
 		  fsp_str_dbg(fsp)));
