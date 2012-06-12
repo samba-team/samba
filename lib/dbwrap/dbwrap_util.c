@@ -36,7 +36,7 @@ NTSTATUS dbwrap_fetch_int32(struct db_context *db, const char *keystr,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dbwrap_fetch_bystring(db, NULL, keystr, &dbuf);
+	status = dbwrap_fetch_bystring(db, talloc_tos(), keystr, &dbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -58,7 +58,8 @@ NTSTATUS dbwrap_store_int32(struct db_context *db, const char *keystr,
 	int32_t v_store;
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	rec = dbwrap_fetch_locked(db, talloc_tos(),
+				  string_term_tdb_data(keystr));
 	if (rec == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -83,7 +84,7 @@ NTSTATUS dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dbwrap_fetch_bystring(db, NULL, keystr, &dbuf);
+	status = dbwrap_fetch_bystring(db, talloc_tos(), keystr, &dbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -105,7 +106,8 @@ NTSTATUS dbwrap_store_uint32(struct db_context *db, const char *keystr,
 	uint32_t v_store;
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(keystr));
+	rec = dbwrap_fetch_locked(db, talloc_tos(),
+				  string_term_tdb_data(keystr));
 	if (rec == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -146,7 +148,8 @@ static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
 
 	state = (struct dbwrap_change_uint32_atomic_context *)private_data;
 
-	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
+	rec = dbwrap_fetch_locked(db, talloc_tos(),
+				  string_term_tdb_data(state->keystr));
 	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -235,7 +238,8 @@ static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
 
 	state = (struct dbwrap_change_int32_atomic_context *)private_data;
 
-	rec = dbwrap_fetch_locked(db, NULL, string_term_tdb_data(state->keystr));
+	rec = dbwrap_fetch_locked(db, talloc_tos(),
+				  string_term_tdb_data(state->keystr));
 	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
