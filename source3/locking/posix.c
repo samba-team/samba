@@ -424,8 +424,7 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
  Bulk delete - subtract as many locks as we've just deleted.
 ****************************************************************************/
 
-static void reduce_windows_lock_ref_count(files_struct *fsp,
-					  unsigned int dcount)
+static void decrement_windows_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	int32_t lock_ref_count = 0;
@@ -433,18 +432,13 @@ static void reduce_windows_lock_ref_count(files_struct *fsp,
 
 	status = dbwrap_change_int32_atomic(
 		posix_pending_close_db, locking_ref_count_key_fsp(fsp, &tmp),
-		&lock_ref_count, -dcount);
+		&lock_ref_count, -1);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 	SMB_ASSERT(lock_ref_count >= 0);
 
 	DEBUG(10,("reduce_windows_lock_ref_count for file now %s = %d\n",
 		  fsp_str_dbg(fsp), (int)lock_ref_count));
-}
-
-static void decrement_windows_lock_ref_count(files_struct *fsp)
-{
-	reduce_windows_lock_ref_count(fsp, 1);
 }
 
 /****************************************************************************
