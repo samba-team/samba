@@ -492,9 +492,12 @@ options {
 
         while retries > 0:
             child = self.pexpect_spawn("nc -v -z -w 1 %s %u" % (hostname, port), crlf=False, timeout=1)
-            i = child.expect(['succeeded', 'failed', pexpect.EOF, pexpect.TIMEOUT])
+            child.expect([pexpect.EOF, pexpect.TIMEOUT])
+            child.close()
+            i = child.exitstatus
             if wait_for_fail:
-                if i > 0:
+                #wait for timeout or fail
+                if i == None or i > 0:
                     return
             else:
                 if i == 0:
