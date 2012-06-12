@@ -675,6 +675,8 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 #define TID_FIELD_INVALID 0
 #define CNUM_OFFSET 1 /* shift for bitmap index */
 
+#define FNUM_FIELD_INVALID -1
+
 /* 
  * Size of buffer to use when moving files across filesystems. 
  */
