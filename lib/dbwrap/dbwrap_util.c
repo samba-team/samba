@@ -26,29 +26,40 @@
 #include "dbwrap.h"
 #include "lib/util/util_tdb.h"
 
+struct dbwrap_fetch_int32_state {
+	NTSTATUS status;
+	int32_t result;
+};
+
+static void dbwrap_fetch_int32_parser(TDB_DATA key, TDB_DATA data,
+				      void *private_data)
+{
+	struct dbwrap_fetch_int32_state *state =
+		(struct dbwrap_fetch_int32_state *)private_data;
+
+	if (data.dsize != sizeof(state->result)) {
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+	state->result = IVAL(data.dptr, 0);
+	state->status = NT_STATUS_OK;
+}
+
 NTSTATUS dbwrap_fetch_int32(struct db_context *db, TDB_DATA key,
 			    int32_t *result)
 {
-	TDB_DATA dbuf;
-	NTSTATUS status;
+	struct dbwrap_fetch_int32_state state;
 
 	if (result == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dbwrap_fetch(db, talloc_tos(), key, &dbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	dbwrap_parse_record(db, key, dbwrap_fetch_int32_parser, &state);
 
-	if ((dbuf.dptr == NULL) || (dbuf.dsize != sizeof(int32_t))) {
-		TALLOC_FREE(dbuf.dptr);
-		return NT_STATUS_NOT_FOUND;
+	if (NT_STATUS_IS_OK(state.status)) {
+		*result = state.result;
 	}
-
-	*result = IVAL(dbuf.dptr, 0);
-	TALLOC_FREE(dbuf.dptr);
-	return NT_STATUS_OK;
+	return state.status;
 }
 
 NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
