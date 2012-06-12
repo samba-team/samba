@@ -83,7 +83,7 @@
 		Defines the available matching uid and gid range for which the
 		backend is authoritative. For allocating backends, this also
 		defines the start and the end of the range for allocating
-		new uniq IDs.
+		new unique IDs.
 		</para>
 		<para>
 		winbind uses this parameter to find the backend that is
