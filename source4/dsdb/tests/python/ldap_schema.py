@@ -94,6 +94,15 @@ isSingleValued: TRUE
 systemOnly: FALSE
 """
         self.ldb.add_ldif(ldif)
+        # We must do a schemaUpdateNow otherwise it's not 100% sure that the schema
+        # will contain the new attribute
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.ldb.modify_ldif(ldif)
 
         # Search for created attribute
         res = []
