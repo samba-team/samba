@@ -1283,6 +1283,7 @@ struct traverse_state {
 	struct db_context *db;
 	int (*fn)(struct db_record *rec, void *private_data);
 	void *private_data;
+	int count;
 };
 
 static void traverse_callback(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -1339,6 +1340,7 @@ static int db_ctdb_traverse(struct db_context *db,
 				      void *private_data),
 			    void *private_data)
 {
+	NTSTATUS status;
         struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
@@ -1346,6 +1348,7 @@ static int db_ctdb_traverse(struct db_context *db,
 	state.db = db;
 	state.fn = fn;
 	state.private_data = private_data;
+	state.count = 0;
 
 	if (db->persistent) {
 		struct tdb_context *ltdb = ctx->wtdb->tdb;
@@ -1365,7 +1368,6 @@ static int db_ctdb_traverse(struct db_context *db,
 			struct db_context *newkeys = db_open_rbt(talloc_tos());
 			struct ctdb_marshall_buffer *mbuf = ctx->transaction->m_write;
 			struct ctdb_rec_data *rec=NULL;
-			NTSTATUS status;
 			int i;
 			int count = 0;
 
@@ -1397,9 +1399,11 @@ static int db_ctdb_traverse(struct db_context *db,
 		return ret;
 	}
 
-
-	ctdbd_traverse(ctx->db_id, traverse_callback, &state);
-	return 0;
+	status = ctdbd_traverse(ctx->db_id, traverse_callback, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return state.count;
 }
 
 static NTSTATUS db_ctdb_store_deny(struct db_record *rec, TDB_DATA data, int flag)
@@ -1422,6 +1426,7 @@ static void traverse_read_callback(TDB_DATA key, TDB_DATA data, void *private_da
 	rec.delete_rec = db_ctdb_delete_deny;
 	rec.private_data = state->db;
 	state->fn(&rec, state->private_data);
+	state->count++;
 }
 
 static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
@@ -1453,6 +1458,7 @@ static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TD
 	rec.value.dsize -= sizeof(struct ctdb_ltdb_header);
 	rec.value.dptr += sizeof(struct ctdb_ltdb_header);
 
+	state->count++;
 	return state->fn(&rec, state->private_data);
 }
 
@@ -1461,6 +1467,7 @@ static int db_ctdb_traverse_read(struct db_context *db,
 					   void *private_data),
 				 void *private_data)
 {
+	NTSTATUS status;
         struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
                                                         struct db_ctdb_ctx);
 	struct traverse_state state;
@@ -1468,6 +1475,7 @@ static int db_ctdb_traverse_read(struct db_context *db,
 	state.db = db;
 	state.fn = fn;
 	state.private_data = private_data;
+	state.count = 0;
 
 	if (db->persistent) {
 		/* for persistent databases we don't need to do a ctdb traverse,
@@ -1475,8 +1483,11 @@ static int db_ctdb_traverse_read(struct db_context *db,
 		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
 	}
 
-	ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
-	return 0;
+	status = ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+	return state.count;
 }
 
 static int db_ctdb_get_seqnum(struct db_context *db)
