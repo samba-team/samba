@@ -207,7 +207,6 @@ bool is_posix_locked(files_struct *fsp,
 			enum brl_flavour lock_flav);
 bool posix_locking_init(bool read_only);
 bool posix_locking_end(void);
-void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount);
 int fd_close_posix(struct files_struct *fsp);
 bool set_posix_lock_windows_flavour(files_struct *fsp,
 			uint64_t u_offset,

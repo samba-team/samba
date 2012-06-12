@@ -424,7 +424,8 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
  Bulk delete - subtract as many locks as we've just deleted.
 ****************************************************************************/
 
-void reduce_windows_lock_ref_count(files_struct *fsp, unsigned int dcount)
+static void reduce_windows_lock_ref_count(files_struct *fsp,
+					  unsigned int dcount)
 {
 	struct lock_ref_count_key tmp;
 	int32_t lock_ref_count = 0;
