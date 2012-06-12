@@ -531,9 +531,8 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 
 	if (server_info->security_token) {
 		/* Just copy the token, it has already been finalised
-		 * (nasty hack to support a cached guest session_info,
-		 * and a possible strategy for auth_samba4 to pass in
-		 * a finalised session) */
+		 * (nasty hack to support a cached guest/system session_info
+		 */
 
 		session_info->security_token = dup_nt_token(session_info, server_info->security_token);
 		if (!session_info->security_token) {
@@ -770,26 +769,16 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 }
 
 static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
-				 struct passwd *pwd,
 				 struct netr_SamInfo3 *info3)
 {
 	NTSTATUS status;
 	struct dom_sid *system_sid;
-	const char *tmp;
 
 	/* Set account name */
-	tmp = talloc_strdup(mem_ctx, pwd->pw_name);
-	if (tmp == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	init_lsa_String(&info3->base.account_name, tmp);
+	init_lsa_String(&info3->base.account_name, "SYSTEM");
 
 	/* Set domain name */
-	tmp = talloc_strdup(mem_ctx, get_global_sam_name());
-	if (tmp == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	init_lsa_StringLarge(&info3->base.logon_domain, tmp);
+	init_lsa_StringLarge(&info3->base.logon_domain, "NT AUTHORITY");
 
 
 	/* The SID set here will be overwirtten anyway, but try and make it SID_NT_SYSTEM anyway */
@@ -942,12 +931,8 @@ done:
 static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **session_info)
 {
-	struct passwd *pwd;
 	NTSTATUS status;
-
 	struct auth_serversupplied_info *server_info;
-	const char *domain = lp_netbios_name();
-	struct netr_SamInfo3 info3;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_stackframe();
@@ -955,36 +940,57 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pwd = getpwuid_alloc(tmp_ctx, sec_initial_uid());
-	if (pwd == NULL) {
-		status = NT_STATUS_NO_SUCH_USER;
+	server_info = make_server_info(tmp_ctx);
+	if (!server_info) {
+		status = NT_STATUS_NO_MEMORY;
+		DEBUG(0, ("failed making server_info\n"));
 		goto done;
 	}
 
-	ZERO_STRUCT(info3);
+	server_info->info3 = talloc_zero(server_info, struct netr_SamInfo3);
+	if (!server_info->info3) {
+		status = NT_STATUS_NO_MEMORY;
+		DEBUG(0, ("talloc failed setting info3\n"));
+		goto done;
+	}
 
-	status = get_system_info3(tmp_ctx, pwd, &info3);
+	status = get_system_info3(server_info, server_info->info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed creating system info3 with %s\n",
 			  nt_errstr(status)));
 		goto done;
 	}
 
-	status = make_server_info_info3(tmp_ctx,
-					pwd->pw_name,
-					domain,
-					&server_info,
-					&info3);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("make_server_info_info3 failed with %s\n",
-			  nt_errstr(status)));
+	server_info->utok.uid = sec_initial_uid();
+	server_info->utok.gid = sec_initial_gid();
+	server_info->unix_name = talloc_strdup(server_info, uidtoname(server_info->utok.uid));
+
+	if (!server_info->unix_name) {
+		status = NT_STATUS_NO_MEMORY;
+		DEBUG(0, ("talloc_asprintf failed setting unix_name\n"));
 		goto done;
 	}
 
-	server_info->nss_token = true;
+	server_info->security_token = talloc_zero(server_info, struct security_token);
+	if (!server_info->security_token) {
+		status = NT_STATUS_NO_MEMORY;
+		DEBUG(0, ("talloc failed setting security token\n"));
+		goto done;
+	}
+
+	status = add_sid_to_array_unique(server_info->security_token->sids,
+					 &global_sid_System,
+					 &server_info->security_token->sids,
+					 &server_info->security_token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	/* SYSTEM has all privilages */
+	server_info->security_token->privilege_mask = ~0;
 
 	/* Now turn the server_info into a session_info with the full token etc */
-	status = create_local_token(mem_ctx, server_info, NULL, pwd->pw_name, session_info);
+	status = create_local_token(mem_ctx, server_info, NULL, "SYSTEM", session_info);
 	talloc_free(server_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -992,20 +998,6 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 			  nt_errstr(status)));
 		goto done;
 	}
-
-	TALLOC_FREE((*session_info)->security_token->sids);
-	(*session_info)->security_token->num_sids = 0;
-
-	status = add_sid_to_array_unique((*session_info)->security_token->sids,
-					 &global_sid_System,
-					 &(*session_info)->security_token->sids,
-					 &(*session_info)->security_token->num_sids);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	/* SYSTEM has all privilages */
-	(*session_info)->security_token->privilege_mask = ~0;
 
 	talloc_steal(mem_ctx, *session_info);
 
