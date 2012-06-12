@@ -4878,7 +4878,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	ZERO_STRUCT( finfo );
 	ZERO_STRUCT( fh );
 
-	finfo.fnum = -1;
+	finfo.fnum = FNUM_FIELD_INVALID;
 	finfo.conn = conn;
 	finfo.fh = &fh;
 	finfo.fh->fd = -1;

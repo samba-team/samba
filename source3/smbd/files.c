@@ -82,7 +82,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 	fsp->fh->ref_count = 1;
 	fsp->fh->fd = -1;
 
-	fsp->fnum = -1;
+	fsp->fnum = FNUM_FIELD_INVALID;
 	fsp->conn = conn;
 
 	DLIST_ADD(sconn->files, fsp);
@@ -581,7 +581,7 @@ static struct files_struct *file_fnum(struct smbd_server_connection *sconn,
 	int count=0;
 
 	for (fsp=sconn->files; fsp; fsp=fsp->next, count++) {
-		if (fsp->fnum == -1) {
+		if (fsp->fnum == FNUM_FIELD_INVALID) {
 			continue;
 		}
 

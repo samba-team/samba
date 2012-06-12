@@ -3271,7 +3271,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			ZERO_STRUCT(quotas);
 
 			fsp.conn = conn;
-			fsp.fnum = -1;
+			fsp.fnum = FNUM_FIELD_INVALID;
 
 			/* access check */
 			if (get_current_uid(conn) != 0) {
@@ -4290,7 +4290,8 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	}
 
 	DEBUG(5,("smbd_do_qfilepathinfo: %s (fnum = %d) level=%d max_data=%u\n",
-		 smb_fname_str_dbg(smb_fname), fsp ? fsp->fnum : -1,
+		 smb_fname_str_dbg(smb_fname),
+		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
 		 info_level, max_data_bytes));
 
 	mode = dos_mode(conn, smb_fname);
@@ -5323,7 +5324,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d "
 		 "total_data=%d\n", smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : -1, info_level,tran_call,total_data));
+		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 info_level,tran_call,total_data));
 
 	/* Pull out any data sent here before we realloc. */
 	switch (info_level) {
@@ -7654,7 +7656,8 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 
 	DEBUG(3,("smbd_do_setfilepathinfo: %s (fnum %d) info_level=%d "
 		 "totdata=%d\n", smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : -1, info_level, total_data));
+		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 info_level, total_data));
 
 	switch (info_level) {
 
@@ -8077,7 +8080,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 
 	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d "
 		 "totdata=%d\n", tran_call, smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : -1, info_level,total_data));
+		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 info_level,total_data));
 
 	/* Realloc the parameter size */
 	*pparams = (char *)SMB_REALLOC(*pparams,2);

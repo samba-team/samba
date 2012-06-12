@@ -372,7 +372,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("smbd_smb2_ioctl: ctl_code[0x%08x] %s fnum[%d]\n",
 		   (unsigned)in_ctl_code,
 		   fsp ? fsp_str_dbg(fsp) : "<no handle>",
-		   fsp ? fsp->fnum : -1));
+		   fsp ? fsp->fnum : FNUM_FIELD_INVALID));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
