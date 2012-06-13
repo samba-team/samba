@@ -125,7 +125,7 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 }
 
 /**
- * Return a debug string using the talloc_tos().
+ * Return a debug string of the path name of an fsp using the talloc_tos().
  */
 const char *fsp_str_dbg(const struct files_struct *fsp)
 {
