@@ -20,8 +20,6 @@
 #include "includes.h"
 #include "../lib/util/tevent_unix.h"
 
-#if WITH_PTHREADPOOL
-
 #include "lib/pthreadpool/pthreadpool.h"
 
 struct fncall_state {
@@ -323,43 +321,3 @@ int fncall_recv(struct tevent_req *req, int *perr)
 	}
 	return 0;
 }
-
-#else  /* WITH_PTHREADPOOL */
-
-struct fncall_context {
-	uint8_t dummy;
-};
-
-struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
-					   int max_threads)
-{
-	return talloc(mem_ctx, struct fncall_context);
-}
-
-struct fncall_state {
-	uint8_t dummy;
-};
-
-struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       struct fncall_context *ctx,
-			       void (*fn)(void *private_data),
-			       void *private_data)
-{
-	struct tevent_req *req;
-	struct fncall_state *state;
-
-	req = tevent_req_create(mem_ctx, &state, struct fncall_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	fn(private_data);
-	tevent_req_post(req, ev);
-	return req;
-}
-
-int fncall_recv(struct tevent_req *req, int *perr)
-{
-	return 0;
-}
-
-#endif

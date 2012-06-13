@@ -6180,7 +6180,6 @@ else
     AC_SUBST(PTHREADPOOL_OBJ, "lib/pthreadpool/pthreadpool_sync.o")
 fi
 
-AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
 PTHREADPOOLTEST="bin/pthreadpooltest"
 AC_SUBST(PTHREADPOOLTEST)
 
