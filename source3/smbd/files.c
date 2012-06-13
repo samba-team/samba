@@ -28,12 +28,26 @@
 #define FILE_HANDLE_OFFSET 0x1000
 
 /****************************************************************************
- Return a unique number identifying this fsp over the life of this pid.
+ Return a unique number identifying this fsp over the life of this pid,
+ and try to make it as globally unique as possible.
+ See bug #8995 for the details.
 ****************************************************************************/
 
 static unsigned long get_gen_count(struct smbd_server_connection *sconn)
 {
+	/*
+	 * While fsp->fh->gen_id is 'unsigned long' currently
+	 * (which might by 8 bytes),
+	 * there's some oplock code which truncates it to
+	 * uint32_t(using IVAL()).
+	 */
+	if (sconn->file_gen_counter == 0) {
+		sconn->file_gen_counter = generate_random();
+	}
 	sconn->file_gen_counter += 1;
+	if (sconn->file_gen_counter >= UINT32_MAX) {
+		sconn->file_gen_counter = 0;
+	}
 	if (sconn->file_gen_counter == 0) {
 		sconn->file_gen_counter += 1;
 	}
@@ -314,6 +328,10 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 {
 	int count=0;
 	files_struct *fsp;
+
+	if (gen_id == 0) {
+		return NULL;
+	}
 
 	for (fsp=sconn->files; fsp; fsp=fsp->next,count++) {
 		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
