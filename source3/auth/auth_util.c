@@ -804,7 +804,7 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 	info3->base.rid = DOMAIN_RID_ADMINISTRATOR;
 
 	/* Primary gid */
-	info3->base.primary_gid = dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM);
+	info3->base.primary_gid = DOMAIN_RID_ADMINS;
 
 	return NT_STATUS_OK;
 }
