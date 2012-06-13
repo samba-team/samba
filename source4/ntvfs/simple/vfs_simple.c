@@ -1058,36 +1058,36 @@ NTSTATUS ntvfs_simple_init(void)
 	ZERO_STRUCT(ops);
 
 	/* fill in all the operations */
-	ops.connect = svfs_connect;
-	ops.disconnect = svfs_disconnect;
-	ops.unlink = svfs_unlink;
-	ops.chkpath = svfs_chkpath;
-	ops.qpathinfo = svfs_qpathinfo;
-	ops.setpathinfo = svfs_setpathinfo;
-	ops.open = svfs_open;
-	ops.mkdir = svfs_mkdir;
-	ops.rmdir = svfs_rmdir;
-	ops.rename = svfs_rename;
-	ops.copy = svfs_copy;
-	ops.ioctl = svfs_ioctl;
-	ops.read = svfs_read;
-	ops.write = svfs_write;
-	ops.seek = svfs_seek;
-	ops.flush = svfs_flush;	
-	ops.close = svfs_close;
-	ops.exit = svfs_exit;
-	ops.lock = svfs_lock;
-	ops.setfileinfo = svfs_setfileinfo;
-	ops.qfileinfo = svfs_qfileinfo;
-	ops.fsinfo = svfs_fsinfo;
-	ops.lpq = svfs_lpq;
-	ops.search_first = svfs_search_first;
-	ops.search_next = svfs_search_next;
-	ops.search_close = svfs_search_close;
-	ops.trans = svfs_trans;
-	ops.logoff = svfs_logoff;
-	ops.async_setup = svfs_async_setup;
-	ops.cancel = svfs_cancel;
+	ops.connect_fn = svfs_connect;
+	ops.disconnect_fn = svfs_disconnect;
+	ops.unlink_fn = svfs_unlink;
+	ops.chkpath_fn = svfs_chkpath;
+	ops.qpathinfo_fn = svfs_qpathinfo;
+	ops.setpathinfo_fn = svfs_setpathinfo;
+	ops.open_fn = svfs_open;
+	ops.mkdir_fn = svfs_mkdir;
+	ops.rmdir_fn = svfs_rmdir;
+	ops.rename_fn = svfs_rename;
+	ops.copy_fn = svfs_copy;
+	ops.ioctl_fn = svfs_ioctl;
+	ops.read_fn = svfs_read;
+	ops.write_fn = svfs_write;
+	ops.seek_fn = svfs_seek;
+	ops.flush_fn = svfs_flush;
+	ops.close_fn = svfs_close;
+	ops.exit_fn = svfs_exit;
+	ops.lock_fn = svfs_lock;
+	ops.setfileinfo_fn = svfs_setfileinfo;
+	ops.qfileinfo_fn = svfs_qfileinfo;
+	ops.fsinfo_fn = svfs_fsinfo;
+	ops.lpq_fn = svfs_lpq;
+	ops.search_first_fn = svfs_search_first;
+	ops.search_next_fn = svfs_search_next;
+	ops.search_close_fn = svfs_search_close;
+	ops.trans_fn = svfs_trans;
+	ops.logoff_fn = svfs_logoff;
+	ops.async_setup_fn = svfs_async_setup;
+	ops.cancel_fn = svfs_cancel;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under names 'simple'

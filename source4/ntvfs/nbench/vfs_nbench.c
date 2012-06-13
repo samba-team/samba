@@ -930,40 +930,40 @@ NTSTATUS ntvfs_nbench_init(void)
 	ops.type = NTVFS_DISK;
 	
 	/* fill in all the operations */
-	ops.connect = nbench_connect;
-	ops.disconnect = nbench_disconnect;
-	ops.unlink = nbench_unlink;
-	ops.chkpath = nbench_chkpath;
-	ops.qpathinfo = nbench_qpathinfo;
-	ops.setpathinfo = nbench_setpathinfo;
-	ops.open = nbench_open;
-	ops.mkdir = nbench_mkdir;
-	ops.rmdir = nbench_rmdir;
-	ops.rename = nbench_rename;
-	ops.copy = nbench_copy;
-	ops.ioctl = nbench_ioctl;
-	ops.read = nbench_read;
-	ops.write = nbench_write;
-	ops.seek = nbench_seek;
-	ops.flush = nbench_flush;	
-	ops.close = nbench_close;
-	ops.exit = nbench_exit;
-	ops.lock = nbench_lock;
-	ops.setfileinfo = nbench_setfileinfo;
-	ops.qfileinfo = nbench_qfileinfo;
-	ops.fsinfo = nbench_fsinfo;
-	ops.lpq = nbench_lpq;
-	ops.search_first = nbench_search_first;
-	ops.search_next = nbench_search_next;
-	ops.search_close = nbench_search_close;
-	ops.trans = nbench_trans;
-	ops.logoff = nbench_logoff;
-	ops.async_setup = nbench_async_setup;
-	ops.cancel = nbench_cancel;
+	ops.connect_fn = nbench_connect;
+	ops.disconnect_fn = nbench_disconnect;
+	ops.unlink_fn = nbench_unlink;
+	ops.chkpath_fn = nbench_chkpath;
+	ops.qpathinfo_fn = nbench_qpathinfo;
+	ops.setpathinfo_fn = nbench_setpathinfo;
+	ops.open_fn = nbench_open;
+	ops.mkdir_fn = nbench_mkdir;
+	ops.rmdir_fn = nbench_rmdir;
+	ops.rename_fn = nbench_rename;
+	ops.copy_fn = nbench_copy;
+	ops.ioctl_fn = nbench_ioctl;
+	ops.read_fn = nbench_read;
+	ops.write_fn = nbench_write;
+	ops.seek_fn = nbench_seek;
+	ops.flush_fn = nbench_flush;
+	ops.close_fn = nbench_close;
+	ops.exit_fn = nbench_exit;
+	ops.lock_fn = nbench_lock;
+	ops.setfileinfo_fn = nbench_setfileinfo;
+	ops.qfileinfo_fn = nbench_qfileinfo;
+	ops.fsinfo_fn = nbench_fsinfo;
+	ops.lpq_fn = nbench_lpq;
+	ops.search_first_fn = nbench_search_first;
+	ops.search_next_fn = nbench_search_next;
+	ops.search_close_fn = nbench_search_close;
+	ops.trans_fn = nbench_trans;
+	ops.logoff_fn = nbench_logoff;
+	ops.async_setup_fn = nbench_async_setup;
+	ops.cancel_fn = nbench_cancel;
 
 	/* we don't register a trans2 handler as we want to be able to
 	   log individual trans2 requests */
-	ops.trans2 = NULL;
+	ops.trans2_fn = NULL;
 
 	/* register ourselves with the NTVFS subsystem. */
 	ret = ntvfs_register(&ops, &vers);

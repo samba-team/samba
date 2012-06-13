@@ -26,10 +26,10 @@
 NTSTATUS ntvfs_connect(struct ntvfs_request *req, union smb_tcon *tcon)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->connect) {
+	if (!ntvfs->ops->connect_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->connect(ntvfs, req, tcon);
+	return ntvfs->ops->connect_fn(ntvfs, req, tcon);
 }
 
 NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
@@ -39,10 +39,10 @@ NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
 		return NT_STATUS_INVALID_CONNECTION;
 	}
 	ntvfs = ntvfs_ctx->modules;
-	if (!ntvfs->ops->disconnect) {
+	if (!ntvfs->ops->disconnect_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->disconnect(ntvfs);
+	return ntvfs->ops->disconnect_fn(ntvfs);
 }
 
 /* async setup - called by a backend that wants to setup any state for
@@ -50,102 +50,102 @@ NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
 NTSTATUS ntvfs_async_setup(struct ntvfs_request *req, void *private_data)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->async_setup) {
+	if (!ntvfs->ops->async_setup_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->async_setup(ntvfs, req, private_data);
+	return ntvfs->ops->async_setup_fn(ntvfs, req, private_data);
 }
 
 /* filesystem operations */
 NTSTATUS ntvfs_fsinfo(struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->fsinfo) {
+	if (!ntvfs->ops->fsinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->fsinfo(ntvfs, req, fs);
+	return ntvfs->ops->fsinfo_fn(ntvfs, req, fs);
 }
 
 /* path operations */
 NTSTATUS ntvfs_unlink(struct ntvfs_request *req, union smb_unlink *unl)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->unlink) {
+	if (!ntvfs->ops->unlink_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->unlink(ntvfs, req, unl);
+	return ntvfs->ops->unlink_fn(ntvfs, req, unl);
 }
 
 NTSTATUS ntvfs_chkpath(struct ntvfs_request *req, union smb_chkpath *cp)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->chkpath) {
+	if (!ntvfs->ops->chkpath_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->chkpath(ntvfs, req, cp);
+	return ntvfs->ops->chkpath_fn(ntvfs, req, cp);
 }
 
 NTSTATUS ntvfs_qpathinfo(struct ntvfs_request *req, union smb_fileinfo *st)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->qpathinfo) {
+	if (!ntvfs->ops->qpathinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->qpathinfo(ntvfs, req, st);
+	return ntvfs->ops->qpathinfo_fn(ntvfs, req, st);
 }
 
 NTSTATUS ntvfs_setpathinfo(struct ntvfs_request *req, union smb_setfileinfo *st)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->setpathinfo) {
+	if (!ntvfs->ops->setpathinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->setpathinfo(ntvfs, req, st);
+	return ntvfs->ops->setpathinfo_fn(ntvfs, req, st);
 }
 
 NTSTATUS ntvfs_open(struct ntvfs_request *req, union smb_open *oi)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->open) {
+	if (!ntvfs->ops->open_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->open(ntvfs, req, oi);
+	return ntvfs->ops->open_fn(ntvfs, req, oi);
 }
 
 NTSTATUS ntvfs_mkdir(struct ntvfs_request *req, union smb_mkdir *md)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->mkdir) {
+	if (!ntvfs->ops->mkdir_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->mkdir(ntvfs, req, md);
+	return ntvfs->ops->mkdir_fn(ntvfs, req, md);
 }
 
 NTSTATUS ntvfs_rmdir(struct ntvfs_request *req, struct smb_rmdir *rd)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->rmdir) {
+	if (!ntvfs->ops->rmdir_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->rmdir(ntvfs, req, rd);
+	return ntvfs->ops->rmdir_fn(ntvfs, req, rd);
 }
 
 NTSTATUS ntvfs_rename(struct ntvfs_request *req, union smb_rename *ren)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->rename) {
+	if (!ntvfs->ops->rename_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->rename(ntvfs, req, ren);
+	return ntvfs->ops->rename_fn(ntvfs, req, ren);
 }
 
 NTSTATUS ntvfs_copy(struct ntvfs_request *req, struct smb_copy *cp)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->copy) {
+	if (!ntvfs->ops->copy_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->copy(ntvfs, req, cp);
+	return ntvfs->ops->copy_fn(ntvfs, req, cp);
 }
 
 /* directory search */
@@ -153,161 +153,161 @@ NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search_first *i
 				     bool ntvfs_callback(void *private_data, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->search_first) {
+	if (!ntvfs->ops->search_first_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->search_first(ntvfs, req, io, private_data, ntvfs_callback);
+	return ntvfs->ops->search_first_fn(ntvfs, req, io, private_data, ntvfs_callback);
 }
 
 NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_next *io, void *private_data,
 				    bool ntvfs_callback(void *private_data, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->search_next) {
+	if (!ntvfs->ops->search_next_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->search_next(ntvfs, req, io, private_data, ntvfs_callback);
+	return ntvfs->ops->search_next_fn(ntvfs, req, io, private_data, ntvfs_callback);
 }
 
 NTSTATUS ntvfs_search_close(struct ntvfs_request *req, union smb_search_close *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->search_close) {
+	if (!ntvfs->ops->search_close_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->search_close(ntvfs, req, io);
+	return ntvfs->ops->search_close_fn(ntvfs, req, io);
 }
 
 /* operations on open files */
 NTSTATUS ntvfs_ioctl(struct ntvfs_request *req, union smb_ioctl *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->ioctl) {
+	if (!ntvfs->ops->ioctl_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->ioctl(ntvfs, req, io);
+	return ntvfs->ops->ioctl_fn(ntvfs, req, io);
 }
 
 NTSTATUS ntvfs_read(struct ntvfs_request *req, union smb_read *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->read) {
+	if (!ntvfs->ops->read_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->read(ntvfs, req, io);
+	return ntvfs->ops->read_fn(ntvfs, req, io);
 }
 
 NTSTATUS ntvfs_write(struct ntvfs_request *req, union smb_write *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->write) {
+	if (!ntvfs->ops->write_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->write(ntvfs, req, io);
+	return ntvfs->ops->write_fn(ntvfs, req, io);
 }
 
 NTSTATUS ntvfs_seek(struct ntvfs_request *req, union smb_seek *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->seek) {
+	if (!ntvfs->ops->seek_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->seek(ntvfs, req, io);
+	return ntvfs->ops->seek_fn(ntvfs, req, io);
 }
 
 NTSTATUS ntvfs_flush(struct ntvfs_request *req,
 			      union smb_flush *flush)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->flush) {
+	if (!ntvfs->ops->flush_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->flush(ntvfs, req, flush);
+	return ntvfs->ops->flush_fn(ntvfs, req, flush);
 }
 
 NTSTATUS ntvfs_lock(struct ntvfs_request *req, union smb_lock *lck)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->lock) {
+	if (!ntvfs->ops->lock_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->lock(ntvfs, req, lck);
+	return ntvfs->ops->lock_fn(ntvfs, req, lck);
 }
 
 NTSTATUS ntvfs_qfileinfo(struct ntvfs_request *req, union smb_fileinfo *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->qfileinfo) {
+	if (!ntvfs->ops->qfileinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->qfileinfo(ntvfs, req, info);
+	return ntvfs->ops->qfileinfo_fn(ntvfs, req, info);
 }
 
 NTSTATUS ntvfs_setfileinfo(struct ntvfs_request *req, union smb_setfileinfo *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->setfileinfo) {
+	if (!ntvfs->ops->setfileinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->setfileinfo(ntvfs, req, info);
+	return ntvfs->ops->setfileinfo_fn(ntvfs, req, info);
 }
 
 NTSTATUS ntvfs_close(struct ntvfs_request *req, union smb_close *io)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->close) {
+	if (!ntvfs->ops->close_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->close(ntvfs, req, io);
+	return ntvfs->ops->close_fn(ntvfs, req, io);
 }
 
 /* trans interface - used by IPC backend for pipes and RAP calls */
 NTSTATUS ntvfs_trans(struct ntvfs_request *req, struct smb_trans2 *trans)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->trans) {
+	if (!ntvfs->ops->trans_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->trans(ntvfs, req, trans);
+	return ntvfs->ops->trans_fn(ntvfs, req, trans);
 }
 
 /* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
 NTSTATUS ntvfs_trans2(struct ntvfs_request *req, struct smb_trans2 *trans2)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->trans2) {
+	if (!ntvfs->ops->trans2_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->trans2(ntvfs, req, trans2);
+	return ntvfs->ops->trans2_fn(ntvfs, req, trans2);
 }
 
 /* printing specific operations */
 NTSTATUS ntvfs_lpq(struct ntvfs_request *req, union smb_lpq *lpq)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->lpq) {
+	if (!ntvfs->ops->lpq_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->lpq(ntvfs, req, lpq);
+	return ntvfs->ops->lpq_fn(ntvfs, req, lpq);
 }
 
 /* logoff - called when a vuid is closed */
 NTSTATUS ntvfs_logoff(struct ntvfs_request *req)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->logoff) {
+	if (!ntvfs->ops->logoff_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->logoff(ntvfs, req);
+	return ntvfs->ops->logoff_fn(ntvfs, req);
 }
 
 NTSTATUS ntvfs_exit(struct ntvfs_request *req)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->exit) {
+	if (!ntvfs->ops->exit_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->exit(ntvfs, req);
+	return ntvfs->ops->exit_fn(ntvfs, req);
 }
 
 /*
@@ -316,10 +316,10 @@ NTSTATUS ntvfs_exit(struct ntvfs_request *req)
 NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->notify) {
+	if (!ntvfs->ops->notify_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->notify(ntvfs, req, info);
+	return ntvfs->ops->notify_fn(ntvfs, req, info);
 }
 
 /*
@@ -328,10 +328,10 @@ NTSTATUS ntvfs_notify(struct ntvfs_request *req, union smb_notify *info)
 NTSTATUS ntvfs_cancel(struct ntvfs_request *req)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
-	if (!ntvfs->ops->cancel) {
+	if (!ntvfs->ops->cancel_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->cancel(ntvfs, req);
+	return ntvfs->ops->cancel_fn(ntvfs, req);
 }
 
 /* initial setup */
@@ -339,18 +339,18 @@ NTSTATUS ntvfs_next_connect(struct ntvfs_module_context *ntvfs,
 				     struct ntvfs_request *req,
 				     union smb_tcon *tcon)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->connect) {
+	if (!ntvfs->next || !ntvfs->next->ops->connect_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->connect(ntvfs->next, req, tcon);
+	return ntvfs->next->ops->connect_fn(ntvfs->next, req, tcon);
 }
 
 NTSTATUS ntvfs_next_disconnect(struct ntvfs_module_context *ntvfs)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->disconnect) {
+	if (!ntvfs->next || !ntvfs->next->ops->disconnect_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->disconnect(ntvfs->next);
+	return ntvfs->next->ops->disconnect_fn(ntvfs->next);
 }
 
 /* async_setup - called when setting up for a async request */
@@ -358,10 +358,10 @@ NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs,
 					 struct ntvfs_request *req, 
 					 void *private_data)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->async_setup) {
+	if (!ntvfs->next || !ntvfs->next->ops->async_setup_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->async_setup(ntvfs->next, req, private_data);
+	return ntvfs->next->ops->async_setup_fn(ntvfs->next, req, private_data);
 }
 
 /* filesystem operations */
@@ -369,10 +369,10 @@ NTSTATUS ntvfs_next_fsinfo(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
 				    union smb_fsinfo *fs)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->fsinfo) {
+	if (!ntvfs->next || !ntvfs->next->ops->fsinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->fsinfo(ntvfs->next, req, fs);
+	return ntvfs->next->ops->fsinfo_fn(ntvfs->next, req, fs);
 }
 
 /* path operations */
@@ -380,90 +380,90 @@ NTSTATUS ntvfs_next_unlink(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
 				    union smb_unlink *unl)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->unlink) {
+	if (!ntvfs->next || !ntvfs->next->ops->unlink_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->unlink(ntvfs->next, req, unl);
+	return ntvfs->next->ops->unlink_fn(ntvfs->next, req, unl);
 }
 
 NTSTATUS ntvfs_next_chkpath(struct ntvfs_module_context *ntvfs, 
 				     struct ntvfs_request *req,
 				     union smb_chkpath *cp)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->chkpath) {
+	if (!ntvfs->next || !ntvfs->next->ops->chkpath_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->chkpath(ntvfs->next, req, cp);
+	return ntvfs->next->ops->chkpath_fn(ntvfs->next, req, cp);
 }
 
 NTSTATUS ntvfs_next_qpathinfo(struct ntvfs_module_context *ntvfs, 
 				       struct ntvfs_request *req,
 				       union smb_fileinfo *st)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->qpathinfo) {
+	if (!ntvfs->next || !ntvfs->next->ops->qpathinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->qpathinfo(ntvfs->next, req, st);
+	return ntvfs->next->ops->qpathinfo_fn(ntvfs->next, req, st);
 }
 
 NTSTATUS ntvfs_next_setpathinfo(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
 					 union smb_setfileinfo *st)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->setpathinfo) {
+	if (!ntvfs->next || !ntvfs->next->ops->setpathinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->setpathinfo(ntvfs->next, req, st);
+	return ntvfs->next->ops->setpathinfo_fn(ntvfs->next, req, st);
 }
 
 NTSTATUS ntvfs_next_mkdir(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_mkdir *md)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->mkdir) {
+	if (!ntvfs->next || !ntvfs->next->ops->mkdir_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->mkdir(ntvfs->next, req, md);
+	return ntvfs->next->ops->mkdir_fn(ntvfs->next, req, md);
 }
 
 NTSTATUS ntvfs_next_rmdir(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   struct smb_rmdir *rd)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->rmdir) {
+	if (!ntvfs->next || !ntvfs->next->ops->rmdir_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->rmdir(ntvfs->next, req, rd);
+	return ntvfs->next->ops->rmdir_fn(ntvfs->next, req, rd);
 }
 
 NTSTATUS ntvfs_next_rename(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req,
 				    union smb_rename *ren)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->rename) {
+	if (!ntvfs->next || !ntvfs->next->ops->rename_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->rename(ntvfs->next, req, ren);
+	return ntvfs->next->ops->rename_fn(ntvfs->next, req, ren);
 }
 
 NTSTATUS ntvfs_next_copy(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  struct smb_copy *cp)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->copy) {
+	if (!ntvfs->next || !ntvfs->next->ops->copy_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->copy(ntvfs->next, req, cp);
+	return ntvfs->next->ops->copy_fn(ntvfs->next, req, cp);
 }
 
 NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_open *oi)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->open) {
+	if (!ntvfs->next || !ntvfs->next->ops->open_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->open(ntvfs->next, req, oi);
+	return ntvfs->next->ops->open_fn(ntvfs->next, req, oi);
 }
 
 
@@ -473,10 +473,10 @@ NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs,
 					  union smb_search_first *io, void *private_data,
 					  bool (*callback)(void *private_data, const union smb_search_data *file))
 {
-	if (!ntvfs->next || !ntvfs->next->ops->search_first) {
+	if (!ntvfs->next || !ntvfs->next->ops->search_first_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->search_first(ntvfs->next, req, io, private_data, callback);
+	return ntvfs->next->ops->search_first_fn(ntvfs->next, req, io, private_data, callback);
 }
 
 NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs, 
@@ -484,20 +484,20 @@ NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs,
 					 union smb_search_next *io, void *private_data,
 					 bool (*callback)(void *private_data, const union smb_search_data *file))
 {
-	if (!ntvfs->next || !ntvfs->next->ops->search_next) {
+	if (!ntvfs->next || !ntvfs->next->ops->search_next_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->search_next(ntvfs->next, req, io, private_data, callback);
+	return ntvfs->next->ops->search_next_fn(ntvfs->next, req, io, private_data, callback);
 }
 
 NTSTATUS ntvfs_next_search_close(struct ntvfs_module_context *ntvfs, 
 					  struct ntvfs_request *req,
 					  union smb_search_close *io)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->search_close) {
+	if (!ntvfs->next || !ntvfs->next->ops->search_close_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->search_close(ntvfs->next, req, io);
+	return ntvfs->next->ops->search_close_fn(ntvfs->next, req, io);
 }
 
 /* operations on open files */
@@ -505,90 +505,90 @@ NTSTATUS ntvfs_next_ioctl(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
 				   union smb_ioctl *io)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->ioctl) {
+	if (!ntvfs->next || !ntvfs->next->ops->ioctl_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->ioctl(ntvfs->next, req, io);
+	return ntvfs->next->ops->ioctl_fn(ntvfs->next, req, io);
 }
 
 NTSTATUS ntvfs_next_read(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_read *io)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->read) {
+	if (!ntvfs->next || !ntvfs->next->ops->read_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->read(ntvfs->next, req, io);
+	return ntvfs->next->ops->read_fn(ntvfs->next, req, io);
 }
 
 NTSTATUS ntvfs_next_write(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_write *io)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->write) {
+	if (!ntvfs->next || !ntvfs->next->ops->write_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->write(ntvfs->next, req, io);
+	return ntvfs->next->ops->write_fn(ntvfs->next, req, io);
 }
 
 NTSTATUS ntvfs_next_seek(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_seek *io)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->seek) {
+	if (!ntvfs->next || !ntvfs->next->ops->seek_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->seek(ntvfs->next, req, io);
+	return ntvfs->next->ops->seek_fn(ntvfs->next, req, io);
 }
 
 NTSTATUS ntvfs_next_flush(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_flush *flush)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->flush) {
+	if (!ntvfs->next || !ntvfs->next->ops->flush_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->flush(ntvfs->next, req, flush);
+	return ntvfs->next->ops->flush_fn(ntvfs->next, req, flush);
 }
 
 NTSTATUS ntvfs_next_lock(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req,
 				  union smb_lock *lck)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->lock) {
+	if (!ntvfs->next || !ntvfs->next->ops->lock_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->lock(ntvfs->next, req, lck);
+	return ntvfs->next->ops->lock_fn(ntvfs->next, req, lck);
 }
 
 NTSTATUS ntvfs_next_qfileinfo(struct ntvfs_module_context *ntvfs, 
 				       struct ntvfs_request *req,
 				       union smb_fileinfo *info)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->qfileinfo) {
+	if (!ntvfs->next || !ntvfs->next->ops->qfileinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->qfileinfo(ntvfs->next, req, info);
+	return ntvfs->next->ops->qfileinfo_fn(ntvfs->next, req, info);
 }
 
 NTSTATUS ntvfs_next_setfileinfo(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
 					 union smb_setfileinfo *info)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->setfileinfo) {
+	if (!ntvfs->next || !ntvfs->next->ops->setfileinfo_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->setfileinfo(ntvfs->next, req, info);
+	return ntvfs->next->ops->setfileinfo_fn(ntvfs->next, req, info);
 }
 
 NTSTATUS ntvfs_next_close(struct ntvfs_module_context *ntvfs, 
 				   struct ntvfs_request *req,
 				   union smb_close *io)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->close) {
+	if (!ntvfs->next || !ntvfs->next->ops->close_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->close(ntvfs->next, req, io);
+	return ntvfs->next->ops->close_fn(ntvfs->next, req, io);
 }
 
 /* trans interface - used by IPC backend for pipes and RAP calls */
@@ -596,10 +596,10 @@ NTSTATUS ntvfs_next_trans(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
 				   struct smb_trans2 *trans)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->trans) {
+	if (!ntvfs->next || !ntvfs->next->ops->trans_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->trans(ntvfs->next, req, trans);
+	return ntvfs->next->ops->trans_fn(ntvfs->next, req, trans);
 }
 
 /* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
@@ -607,10 +607,10 @@ NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
 				    struct smb_trans2 *trans2)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->trans2) {
+	if (!ntvfs->next || !ntvfs->next->ops->trans2_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->trans2(ntvfs->next, req, trans2);
+	return ntvfs->next->ops->trans2_fn(ntvfs->next, req, trans2);
 }
 
 /*
@@ -620,20 +620,20 @@ NTSTATUS ntvfs_next_notify(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req,
 				    union smb_notify *info)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->notify) {
+	if (!ntvfs->next || !ntvfs->next->ops->notify_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->notify(ntvfs->next, req, info);
+	return ntvfs->next->ops->notify_fn(ntvfs->next, req, info);
 }
 
 /* cancel - called to cancel an outstanding async request */
 NTSTATUS ntvfs_next_cancel(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->cancel) {
+	if (!ntvfs->next || !ntvfs->next->ops->cancel_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->cancel(ntvfs->next, req);
+	return ntvfs->next->ops->cancel_fn(ntvfs->next, req);
 }
 
 /* printing specific operations */
@@ -641,10 +641,10 @@ NTSTATUS ntvfs_next_lpq(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_lpq *lpq)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->lpq) {
+	if (!ntvfs->next || !ntvfs->next->ops->lpq_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->lpq(ntvfs->next, req, lpq);
+	return ntvfs->next->ops->lpq_fn(ntvfs->next, req, lpq);
 }
 
 
@@ -652,19 +652,19 @@ NTSTATUS ntvfs_next_lpq(struct ntvfs_module_context *ntvfs,
 NTSTATUS ntvfs_next_logoff(struct ntvfs_module_context *ntvfs, 
 				    struct ntvfs_request *req)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->logoff) {
+	if (!ntvfs->next || !ntvfs->next->ops->logoff_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->logoff(ntvfs->next, req);
+	return ntvfs->next->ops->logoff_fn(ntvfs->next, req);
 }
 
 NTSTATUS ntvfs_next_exit(struct ntvfs_module_context *ntvfs, 
 				  struct ntvfs_request *req)
 {
-	if (!ntvfs->next || !ntvfs->next->ops->exit) {
+	if (!ntvfs->next || !ntvfs->next->ops->exit_fn) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->exit(ntvfs->next, req);
+	return ntvfs->next->ops->exit_fn(ntvfs->next, req);
 }
 
 /* client connection callback */

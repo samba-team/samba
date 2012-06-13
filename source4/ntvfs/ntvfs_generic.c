@@ -255,7 +255,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		sf->standard.in.create_time = 0;
 		sf->standard.in.write_time  = write_time;
 		sf->standard.in.access_time = 0;
-		status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
+		status = ntvfs->ops->setfileinfo_fn(ntvfs, req, sf);
 	}
 
 	if (set_size != 0) {
@@ -264,7 +264,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		sf->generic.level            = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 		sf->generic.in.file.ntvfs    = io2->generic.out.file.ntvfs;
 		sf->end_of_file_info.in.size = set_size;
-		status = ntvfs->ops->setfileinfo(ntvfs, req, sf);
+		status = ntvfs->ops->setfileinfo_fn(ntvfs, req, sf);
 		if (NT_STATUS_IS_OK(status)) {
 			io->openx.out.size = io->openx.in.size;
 		}
@@ -416,7 +416,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.file_attr = io->openx.in.file_attrs;
 		io2->generic.in.fname = io->openx.in.fname;
 		
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 		
 		
@@ -433,7 +433,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.file_attr = io->openold.in.search_attrs;
 		io2->generic.in.fname = io->openold.in.fname;
 
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_T2OPEN:
@@ -459,7 +459,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.ea_list->num_eas = io->t2open.in.num_eas;
 		io2->generic.in.ea_list->eas     = io->t2open.in.eas;
 
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_MKNEW:
@@ -472,7 +472,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_CREATE:
@@ -485,7 +485,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 
 	case RAW_OPEN_CTEMP:
@@ -501,7 +501,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.share_access = 
 			NTCREATEX_SHARE_ACCESS_READ | 
 			NTCREATEX_SHARE_ACCESS_WRITE;
-		status = ntvfs->ops->open(ntvfs, req, io2);
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 	case RAW_OPEN_SMB2:
 		switch (io->smb2.in.oplock_level) {
@@ -549,7 +549,7 @@ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 		io2->generic.in.create_options &= ~NTCREATEX_OPTIONS_SYNC_ALERT;
 		io2->generic.in.create_options &= ~NTCREATEX_OPTIONS_ASYNC_ALERT;
 
-		status = ntvfs->ops->open(ntvfs, req, io2);		
+		status = ntvfs->ops->open_fn(ntvfs, req, io2);
 		break;
 
 	default:
@@ -700,7 +700,7 @@ NTSTATUS ntvfs_map_fsinfo(struct ntvfs_module_context *ntvfs,
 	/* ask the backend for the generic info */
 	fs2->generic.level = RAW_QFS_GENERIC;
 
-	status = ntvfs->ops->fsinfo(ntvfs, req, fs2);
+	status = ntvfs->ops->fsinfo_fn(ntvfs, req, fs2);
 	return ntvfs_map_async_finish(req, status);
 }
 
@@ -986,7 +986,7 @@ NTSTATUS ntvfs_map_qfileinfo(struct ntvfs_module_context *ntvfs,
 	info2->generic.level = RAW_FILEINFO_GENERIC;
 	info2->generic.in.file.ntvfs= info->generic.in.file.ntvfs;
 
-	status = ntvfs->ops->qfileinfo(ntvfs, req, info2);
+	status = ntvfs->ops->qfileinfo_fn(ntvfs, req, info2);
 	return ntvfs_map_async_finish(req, status);
 }
 
@@ -1035,7 +1035,7 @@ NTSTATUS ntvfs_map_qpathinfo(struct ntvfs_module_context *ntvfs,
 	info2->generic.level		= RAW_FILEINFO_GENERIC;
 	info2->generic.in.file.path	= info->generic.in.file.path;
 
-	status = ntvfs->ops->qpathinfo(ntvfs, req, info2);
+	status = ntvfs->ops->qpathinfo_fn(ntvfs, req, info2);
 	return ntvfs_map_async_finish(req, status);
 }
 
@@ -1179,7 +1179,7 @@ NTSTATUS ntvfs_map_lock(struct ntvfs_module_context *ntvfs,
 	 * as lock() doesn't have any output fields
 	 */
 
-	return ntvfs->ops->lock(ntvfs, req, lck2);
+	return ntvfs->ops->lock_fn(ntvfs, req, lck2);
 }
 
 
@@ -1222,7 +1222,7 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 			/* do the lock sync for now */
 			state = req->async_states->state;
 			req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
-			status = ntvfs->ops->lock(ntvfs, req, lck);
+			status = ntvfs->ops->lock_fn(ntvfs, req, lck);
 			req->async_states->state = state;
 		}
 		break;
@@ -1243,7 +1243,7 @@ static NTSTATUS ntvfs_map_write_finish(struct ntvfs_module_context *ntvfs,
 			/* do the close sync for now */
 			state = req->async_states->state;
 			req->async_states->state &= ~NTVFS_ASYNC_STATE_MAY_ASYNC;
-			status = ntvfs->ops->close(ntvfs, req, cl);
+			status = ntvfs->ops->close_fn(ntvfs, req, cl);
 			req->async_states->state = state;
 		}
 		break;
@@ -1300,7 +1300,7 @@ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		wr2->writex.in.remaining = wr->write.in.remaining;
 		wr2->writex.in.count     = wr->write.in.count;
 		wr2->writex.in.data      = wr->write.in.data;
-		status = ntvfs->ops->write(ntvfs, req, wr2);
+		status = ntvfs->ops->write_fn(ntvfs, req, wr2);
 		break;
 
 	case RAW_WRITE_WRITEUNLOCK:
@@ -1310,7 +1310,7 @@ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		wr2->writex.in.remaining = wr->writeunlock.in.remaining;
 		wr2->writex.in.count     = wr->writeunlock.in.count;
 		wr2->writex.in.data      = wr->writeunlock.in.data;
-		status = ntvfs->ops->write(ntvfs, req, wr2);
+		status = ntvfs->ops->write_fn(ntvfs, req, wr2);
 		break;
 
 	case RAW_WRITE_WRITECLOSE:
@@ -1320,7 +1320,7 @@ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		wr2->writex.in.remaining = 0;
 		wr2->writex.in.count     = wr->writeclose.in.count;
 		wr2->writex.in.data      = wr->writeclose.in.data;
-		status = ntvfs->ops->write(ntvfs, req, wr2);
+		status = ntvfs->ops->write_fn(ntvfs, req, wr2);
 		break;
 
 	case RAW_WRITE_SPLWRITE:
@@ -1330,7 +1330,7 @@ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		wr2->writex.in.remaining = 0;
 		wr2->writex.in.count     = wr->splwrite.in.count;
 		wr2->writex.in.data      = wr->splwrite.in.data;
-		status = ntvfs->ops->write(ntvfs, req, wr2);
+		status = ntvfs->ops->write_fn(ntvfs, req, wr2);
 		break;
 
 	case RAW_WRITE_SMB2:
@@ -1340,7 +1340,7 @@ NTSTATUS ntvfs_map_write(struct ntvfs_module_context *ntvfs,
 		wr2->writex.in.remaining = 0;
 		wr2->writex.in.count     = wr->smb2.in.data.length;
 		wr2->writex.in.data      = wr->smb2.in.data.data;
-		status = ntvfs->ops->write(ntvfs, req, wr2);
+		status = ntvfs->ops->write_fn(ntvfs, req, wr2);
 	}
 
 	return ntvfs_map_async_finish(req, status);
@@ -1416,7 +1416,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		rd2->readx.in.maxcnt    = rd->read.in.count;
 		rd2->readx.in.remaining = rd->read.in.remaining;
 		rd2->readx.out.data     = rd->read.out.data;
-		status = ntvfs->ops->read(ntvfs, req, rd2);
+		status = ntvfs->ops->read_fn(ntvfs, req, rd2);
 		break;
 
 	case RAW_READ_READBRAW:
@@ -1426,7 +1426,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		rd2->readx.in.maxcnt    = rd->readbraw.in.maxcnt;
 		rd2->readx.in.remaining = 0;
 		rd2->readx.out.data     = rd->readbraw.out.data;
-		status = ntvfs->ops->read(ntvfs, req, rd2);
+		status = ntvfs->ops->read_fn(ntvfs, req, rd2);
 		break;
 
 	case RAW_READ_LOCKREAD:
@@ -1443,7 +1443,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		lck->lock.in.file.ntvfs	= rd->lockread.in.file.ntvfs;
 		lck->lock.in.count	= rd->lockread.in.count;
 		lck->lock.in.offset	= rd->lockread.in.offset;
-		status = ntvfs->ops->lock(ntvfs, req, lck);
+		status = ntvfs->ops->lock_fn(ntvfs, req, lck);
 		req->async_states->state = state;
 
 		rd2->readx.in.file.ntvfs= rd->lockread.in.file.ntvfs;
@@ -1454,7 +1454,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		rd2->readx.out.data     = rd->lockread.out.data;
 
 		if (NT_STATUS_IS_OK(status)) {
-			status = ntvfs->ops->read(ntvfs, req, rd2);
+			status = ntvfs->ops->read_fn(ntvfs, req, rd2);
 		}
 		break;
 
@@ -1465,7 +1465,7 @@ NTSTATUS ntvfs_map_read(struct ntvfs_module_context *ntvfs,
 		rd2->readx.in.maxcnt    = rd->smb2.in.length;
 		rd2->readx.in.remaining = 0;
 		rd2->readx.out.data     = rd->smb2.out.data.data;
-		status = ntvfs->ops->read(ntvfs, req, rd2);
+		status = ntvfs->ops->read_fn(ntvfs, req, rd2);
 		break;
 	}
 
@@ -1549,7 +1549,7 @@ NTSTATUS ntvfs_map_close(struct ntvfs_module_context *ntvfs,
 				       (second_stage_t)ntvfs_map_close_finish);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = ntvfs->ops->close(ntvfs, req, cl2);
+	status = ntvfs->ops->close_fn(ntvfs, req, cl2);
 
 	return ntvfs_map_async_finish(req, status);
 }
@@ -1611,7 +1611,7 @@ NTSTATUS ntvfs_map_notify(struct ntvfs_module_context *ntvfs,
 		nt2->nttrans.in.buffer_size		= nt->smb2.in.buffer_size;
 		nt2->nttrans.in.completion_filter	= nt->smb2.in.completion_filter;
 		nt2->nttrans.in.recursive		= nt->smb2.in.recursive;
-		status = ntvfs->ops->notify(ntvfs, req, nt2);
+		status = ntvfs->ops->notify_fn(ntvfs, req, nt2);
 		break;
 	}
 

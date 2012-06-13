@@ -115,10 +115,10 @@ NTSTATUS ntvfs_print_init(void)
 	ops.type = NTVFS_PRINT;
 	
 	/* fill in all the operations */
-	ops.connect = print_connect;
-	ops.disconnect = print_disconnect;
-	ops.unlink = print_unlink;
-	ops.ioctl = print_ioctl;
+	ops.connect_fn = print_connect;
+	ops.disconnect_fn = print_disconnect;
+	ops.unlink_fn = print_unlink;
+	ops.ioctl_fn = print_ioctl;
 
 	/* register ourselves with the NTVFS subsystem. We register under the name 'default'
 	   as we wish to be the default backend */

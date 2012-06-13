@@ -47,120 +47,120 @@ struct ntvfs_ops {
 	enum ntvfs_type type;
 
 	/* initial setup */
-	NTSTATUS (*connect)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*connect_fn)(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req,
 			    union smb_tcon *tcon);
-	NTSTATUS (*disconnect)(struct ntvfs_module_context *ntvfs);
+	NTSTATUS (*disconnect_fn)(struct ntvfs_module_context *ntvfs);
 
 	/* async_setup - called when a backend is processing a async request */
-	NTSTATUS (*async_setup)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*async_setup_fn)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
 				void *private_data);
 
 	/* filesystem operations */
-	NTSTATUS (*fsinfo)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*fsinfo_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_fsinfo *fs);
 
 	/* path operations */
-	NTSTATUS (*unlink)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*unlink_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_unlink *unl);
-	NTSTATUS (*chkpath)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*chkpath_fn)(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req,
 			    union smb_chkpath *cp);
-	NTSTATUS (*qpathinfo)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*qpathinfo_fn)(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req,
 			      union smb_fileinfo *st);
-	NTSTATUS (*setpathinfo)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*setpathinfo_fn)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
 				union smb_setfileinfo *st);
-	NTSTATUS (*mkdir)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*mkdir_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  union smb_mkdir *md);
-	NTSTATUS (*rmdir)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*rmdir_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  struct smb_rmdir *rd);
-	NTSTATUS (*rename)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*rename_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_rename *ren);
-	NTSTATUS (*copy)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*copy_fn)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
 			 struct smb_copy *cp);
-	NTSTATUS (*open)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*open_fn)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
 			 union smb_open *oi);
 
 	/* directory search */
-	NTSTATUS (*search_first)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*search_first_fn)(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_search_first *io, void *private_data,
-				 bool (*callback)(void *private_data, const union smb_search_data *file));
-	NTSTATUS (*search_next)(struct ntvfs_module_context *ntvfs,
+				 bool (*callback_fn)(void *private_data, const union smb_search_data *file));
+	NTSTATUS (*search_next_fn)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
 				union smb_search_next *io, void *private_data,
-				bool (*callback)(void *private_data, const union smb_search_data *file));
-	NTSTATUS (*search_close)(struct ntvfs_module_context *ntvfs,
+				bool (*callback_fn)(void *private_data, const union smb_search_data *file));
+	NTSTATUS (*search_close_fn)(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_search_close *io);
 
 	/* operations on open files */
-	NTSTATUS (*ioctl)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*ioctl_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  union smb_ioctl *io);
-	NTSTATUS (*read)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*read_fn)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
 			 union smb_read *io);
-	NTSTATUS (*write)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*write_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  union smb_write *io);
-	NTSTATUS (*seek)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*seek_fn)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
 			 union smb_seek *io);
-	NTSTATUS (*flush)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*flush_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  union smb_flush *flush);
-	NTSTATUS (*lock)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*lock_fn)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req,
 			 union smb_lock *lck);
-	NTSTATUS (*qfileinfo)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*qfileinfo_fn)(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req,
 			      union smb_fileinfo *info);
-	NTSTATUS (*setfileinfo)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*setfileinfo_fn)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
 				union smb_setfileinfo *info);
-	NTSTATUS (*close)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*close_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  union smb_close *io);
 
 	/* trans interface - used by IPC backend for pipes and RAP calls */
-	NTSTATUS (*trans)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*trans_fn)(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req,
 			  struct smb_trans2 *trans);
 
 	/* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
-	NTSTATUS (*trans2)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*trans2_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   struct smb_trans2 *trans2);
 
 	/* change notify request */
-	NTSTATUS (*notify)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*notify_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_notify *info);
 
 	/* cancel - cancels any pending async request */
-	NTSTATUS (*cancel)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*cancel_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req);
 
 	/* printing specific operations */
-	NTSTATUS (*lpq)(struct ntvfs_module_context *ntvfs, 
+	NTSTATUS (*lpq_fn)(struct ntvfs_module_context *ntvfs,
 			struct ntvfs_request *req,
 			union smb_lpq *lpq);
 
 	/* logoff - called when a vuid is closed */
-	NTSTATUS (*logoff)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*logoff_fn)(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req);
-	NTSTATUS (*exit)(struct ntvfs_module_context *ntvfs,
+	NTSTATUS (*exit_fn)(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req);
 };
 

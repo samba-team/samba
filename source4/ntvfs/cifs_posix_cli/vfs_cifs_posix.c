@@ -1061,36 +1061,36 @@ NTSTATUS ntvfs_cifs_posix_init(void)
 	ZERO_STRUCT(ops);
 
 	/* fill in all the operations */
-	ops.connect = cifspsx_connect;
-	ops.disconnect = cifspsx_disconnect;
-	ops.unlink = cifspsx_unlink;
-	ops.chkpath = cifspsx_chkpath;
-	ops.qpathinfo = cifspsx_qpathinfo;
-	ops.setpathinfo = cifspsx_setpathinfo;
-	ops.open = cifspsx_open;
-	ops.mkdir = cifspsx_mkdir;
-	ops.rmdir = cifspsx_rmdir;
-	ops.rename = cifspsx_rename;
-	ops.copy = cifspsx_copy;
-	ops.ioctl = cifspsx_ioctl;
-	ops.read = cifspsx_read;
-	ops.write = cifspsx_write;
-	ops.seek = cifspsx_seek;
-	ops.flush = cifspsx_flush;	
-	ops.close = cifspsx_close;
-	ops.exit = cifspsx_exit;
-	ops.lock = cifspsx_lock;
-	ops.setfileinfo = cifspsx_setfileinfo;
-	ops.qfileinfo = cifspsx_qfileinfo;
-	ops.fsinfo = cifspsx_fsinfo;
-	ops.lpq = cifspsx_lpq;
-	ops.search_first = cifspsx_search_first;
-	ops.search_next = cifspsx_search_next;
-	ops.search_close = cifspsx_search_close;
-	ops.trans = cifspsx_trans;
-	ops.logoff = cifspsx_logoff;
-	ops.async_setup = cifspsx_async_setup;
-	ops.cancel = cifspsx_cancel;
+	ops.connect_fn = cifspsx_connect;
+	ops.disconnect_fn = cifspsx_disconnect;
+	ops.unlink_fn = cifspsx_unlink;
+	ops.chkpath_fn = cifspsx_chkpath;
+	ops.qpathinfo_fn = cifspsx_qpathinfo;
+	ops.setpathinfo_fn = cifspsx_setpathinfo;
+	ops.open_fn = cifspsx_open;
+	ops.mkdir_fn = cifspsx_mkdir;
+	ops.rmdir_fn = cifspsx_rmdir;
+	ops.rename_fn = cifspsx_rename;
+	ops.copy_fn = cifspsx_copy;
+	ops.ioctl_fn = cifspsx_ioctl;
+	ops.read_fn = cifspsx_read;
+	ops.write_fn = cifspsx_write;
+	ops.seek_fn = cifspsx_seek;
+	ops.flush_fn = cifspsx_flush;
+	ops.close_fn = cifspsx_close;
+	ops.exit_fn = cifspsx_exit;
+	ops.lock_fn = cifspsx_lock;
+	ops.setfileinfo_fn = cifspsx_setfileinfo;
+	ops.qfileinfo_fn = cifspsx_qfileinfo;
+	ops.fsinfo_fn = cifspsx_fsinfo;
+	ops.lpq_fn = cifspsx_lpq;
+	ops.search_first_fn = cifspsx_search_first;
+	ops.search_next_fn = cifspsx_search_next;
+	ops.search_close_fn = cifspsx_search_close;
+	ops.trans_fn = cifspsx_trans;
+	ops.logoff_fn = cifspsx_logoff;
+	ops.async_setup_fn = cifspsx_async_setup;
+	ops.cancel_fn = cifspsx_cancel;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under names 'cifsposix'
