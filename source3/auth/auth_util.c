@@ -963,7 +963,9 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 
 	server_info->utok.uid = sec_initial_uid();
 	server_info->utok.gid = sec_initial_gid();
-	server_info->unix_name = talloc_strdup(server_info, uidtoname(server_info->utok.uid));
+	server_info->unix_name = talloc_asprintf(server_info,
+						 "NT AUTHORITY%cSYSTEM",
+						 *lp_winbind_separator());
 
 	if (!server_info->unix_name) {
 		status = NT_STATUS_NO_MEMORY;
