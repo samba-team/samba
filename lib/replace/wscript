@@ -314,6 +314,7 @@ removeea setea
     if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
                            #include "test/strptime.c"''',
                            define='HAVE_STRPTIME',
+                           execute=True,
                            addmain=False,
                            msg='Checking for working strptime'):
         conf.DEFINE('REPLACE_STRPTIME', 1)
