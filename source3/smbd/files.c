@@ -119,7 +119,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 	fsp->fnum = -1;
 	fsp->conn = conn;
-	fsp->fh->gen_id = get_gen_count(sconn);
 	GetTimeOfDay(&fsp->open_time);
 
 	if (sconn->file_bmap != NULL) {
@@ -129,6 +128,8 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 		fsp->fnum = i + FILE_HANDLE_OFFSET;
 		SMB_ASSERT(fsp->fnum < 65536);
+
+		fsp->fh->gen_id = get_gen_count(sconn);
 	}
 
 	DLIST_ADD(sconn->files, fsp);
