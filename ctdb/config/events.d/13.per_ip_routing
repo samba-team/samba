@@ -217,7 +217,7 @@ add_routing_for_ip ()
     _pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
     _table_id="${table_id_prefix}${_ip}"
 
-    del_routing_for_ip "$_ip"
+    del_routing_for_ip "$_ip" >/dev/null 2>&1
 
     ip rule add from "$_ip" pref "$_pref" table "$_table_id" || \
 	die "add_routing_for_ip: failed to add rule for $_ip"
@@ -238,9 +238,17 @@ del_routing_for_ip ()
     _pref="$CTDB_PER_IP_ROUTING_RULE_PREF"
     _table_id="${table_id_prefix}${_ip}"
 
-    # Do this unconditionally since we own any matching table ids...
-    ip rule del from $_ip pref $_pref table $_table_id 2>/dev/null
-    ip route flush table $_table_id 2>/dev/null
+    # Do this unconditionally since we own any matching table ids.
+    # However, print a meaningful message if something goes wrong.
+    _cmd="ip rule del from $_ip pref $_pref table $_table_id"
+    _out=$($_cmd 2>&1) || \
+	cat <<EOF
+WARNING: Failed to delete policy routing rule
+  Command "$_cmd" failed:
+  $_out
+EOF
+    # This should never fail, so don't redirect output.
+    ip route flush table $_table_id
 }
 
 ######################################################################
