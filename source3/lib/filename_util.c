@@ -125,8 +125,7 @@ const char *smb_fname_str_dbg(const struct smb_filename *smb_fname)
 }
 
 /**
- * Return a debug string using the talloc_tos().  This can only be called from
- * DEBUG() macros due to the debut_ctx().
+ * Return a debug string using the talloc_tos().
  */
 const char *fsp_str_dbg(const struct files_struct *fsp)
 {
