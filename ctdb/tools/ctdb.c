@@ -619,6 +619,15 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 		printf(" %d", dbstatistics->hop_count_bucket[i]);
 	}
 	printf("\n");
+	printf("Num Hot Keys:     %d\n", dbstatistics->num_hot_keys);
+	for (i = 0; i < dbstatistics->num_hot_keys; i++) {
+		int j;
+		printf("Count:%d Key:", dbstatistics->hot_keys[i].count);
+		for (j = 0; j < dbstatistics->hot_keys[i].key.dsize; j++) {
+			printf("%02x", dbstatistics->hot_keys[i].key.dptr[j]&0xff);
+		}
+		printf("\n");
+	}
 
 	ctdb_free_dbstat(dbstatistics);
 	return 0;

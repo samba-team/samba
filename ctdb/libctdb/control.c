@@ -120,6 +120,9 @@ bool ctdb_getdbstat_recv(struct ctdb_connection *ctdb,
 {
 	struct ctdb_reply_control *reply;
 	struct ctdb_db_statistics *s;
+	struct ctdb_db_statistics_wire *wire;
+	int i;
+	char *ptr;
 
 	reply = unpack_reply_control(req, CTDB_CONTROL_GET_DB_STATISTICS);
 	if (!reply) {
@@ -129,16 +132,36 @@ bool ctdb_getdbstat_recv(struct ctdb_connection *ctdb,
 		DEBUG(ctdb, LOG_ERR, "ctdb_getpnn_recv: status -1");
 		return false;
 	}
-	if (reply->datalen != sizeof(struct ctdb_db_statistics)) {
-		DEBUG(ctdb, LOG_ERR, "ctdb_getdbstat_recv: returned data is %d bytes but should be %d", reply->datalen, (int)sizeof(struct ctdb_db_statistics));
+	if (reply->datalen < offsetof(struct ctdb_db_statistics_wire, hot_keys)) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getdbstat_recv: returned data is %d bytes but should be >= %d", reply->datalen, (int)sizeof(struct ctdb_db_statistics));
 		return false;
 	}
 
-	s = malloc(sizeof(struct ctdb_db_statistics));
+	wire = reply->data;
+
+	s = malloc(offsetof(struct ctdb_db_statistics, hot_keys) + sizeof(struct ctdb_db_hot_key) * wire->num_hot_keys);
 	if (!s) {
 		return false;
 	}
-	memcpy(s, reply->data, sizeof(struct ctdb_db_statistics));
+	s->db_ro_delegations = wire->db_ro_delegations;
+	s->db_ro_revokes     = wire->db_ro_revokes;
+	for (i = 0; i < MAX_COUNT_BUCKETS; i++) {
+		s->hop_count_bucket[i] = wire->hop_count_bucket[i];
+	}
+	s->num_hot_keys      = wire->num_hot_keys;
+	ptr = &wire->hot_keys[0];
+	for (i = 0; i < wire->num_hot_keys; i++) {
+		s->hot_keys[i].count = *(uint32_t *)ptr;
+		ptr += 4;
+
+		s->hot_keys[i].key.dsize = *(uint32_t *)ptr;
+		ptr += 4;
+
+		s->hot_keys[i].key.dptr = malloc(s->hot_keys[i].key.dsize);
+		memcpy(s->hot_keys[i].key.dptr, ptr, s->hot_keys[i].key.dsize);
+		ptr += s->hot_keys[i].key.dsize;
+	}
+
 	*stat = s;
 
 	return true;
@@ -158,9 +181,18 @@ struct ctdb_request *ctdb_getdbstat_send(struct ctdb_connection *ctdb,
 
 void ctdb_free_dbstat(struct ctdb_db_statistics *stat)
 {
+	int i;
+
 	if (stat == NULL) {
 		return;
 	}
+
+	for (i = 0; i < stat->num_hot_keys; i++) {
+		if (stat->hot_keys[i].key.dptr != NULL) {
+			free(stat->hot_keys[i].key.dptr);
+		}
+	}
+
 	free(stat);
 }
 

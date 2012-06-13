@@ -667,6 +667,54 @@ ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context
 	return 0;
 }
 
+static void
+ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key, int hopcount)
+{
+	int i;
+
+	/* smallest value is always at index 0 */
+	if (hopcount <= ctdb_db->statistics.hot_keys[0].count) {
+		return;
+	}
+
+	/* see if we already know this key */
+	for (i = 0; i < MAX_HOT_KEYS; i++) {
+		if (key.dsize != ctdb_db->statistics.hot_keys[i].key.dsize) {
+			continue;
+		}
+		if (memcmp(key.dptr, ctdb_db->statistics.hot_keys[i].key.dptr, key.dsize)) {
+			continue;
+		}
+		/* found an entry for this key */
+		if (hopcount <= ctdb_db->statistics.hot_keys[i].count) {
+			return;
+		}
+		ctdb_db->statistics.hot_keys[i].count = hopcount;
+		goto sort_keys;
+	}
+
+	if (ctdb_db->statistics.hot_keys[0].key.dptr != NULL) {
+		talloc_free(ctdb_db->statistics.hot_keys[0].key.dptr);
+	}
+	ctdb_db->statistics.hot_keys[0].key.dsize = key.dsize;
+	ctdb_db->statistics.hot_keys[0].key.dptr  = talloc_memdup(ctdb_db, key.dptr, key.dsize);
+	ctdb_db->statistics.hot_keys[0].count = hopcount;
+
+
+sort_keys:
+	for (i = 2; i < MAX_HOT_KEYS; i++) {
+		if (ctdb_db->statistics.hot_keys[i].count < ctdb_db->statistics.hot_keys[0].count) {
+			hopcount = ctdb_db->statistics.hot_keys[i].count;
+			ctdb_db->statistics.hot_keys[i].count = ctdb_db->statistics.hot_keys[0].count;
+			ctdb_db->statistics.hot_keys[0].count = hopcount;
+
+			key = ctdb_db->statistics.hot_keys[i].key;
+			ctdb_db->statistics.hot_keys[i].key = ctdb_db->statistics.hot_keys[0].key;
+			ctdb_db->statistics.hot_keys[0].key = key;
+		}
+	}
+}
+
 /*
   called when a CTDB_REQ_CALL packet comes in
 */
@@ -867,7 +915,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 	CTDB_INCREMENT_STAT(ctdb, hop_count_bucket[bucket]);
 	CTDB_INCREMENT_DB_STAT(ctdb_db, hop_count_bucket[bucket]);
-
+	ctdb_update_db_stat_hot_keys(ctdb_db, call->key, c->hopcount);
 
 	/* If this database supports sticky records, then check if the
 	   hopcount is big. If it is it means the record is hot and we

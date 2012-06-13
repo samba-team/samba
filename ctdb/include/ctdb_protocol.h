@@ -614,6 +614,7 @@ struct ctdb_traverse_start_ext {
   ctdb statistics information
  */
 #define MAX_COUNT_BUCKETS 16
+#define MAX_HOT_KEYS      10
 
 struct ctdb_statistics {
 	uint32_t num_clients;
@@ -680,10 +681,23 @@ struct ctdb_statistics_wire {
 /*
  * db statistics
  */
+struct ctdb_db_hot_key {
+	uint32_t count;
+	TDB_DATA key;
+};
 struct ctdb_db_statistics {
 	uint32_t db_ro_delegations;
 	uint32_t db_ro_revokes;
 	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];
+	uint32_t num_hot_keys;
+	struct ctdb_db_hot_key hot_keys[MAX_HOT_KEYS];
+};
+struct ctdb_db_statistics_wire {
+	uint32_t db_ro_delegations;
+	uint32_t db_ro_revokes;
+	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];
+	uint32_t num_hot_keys;
+	char hot_keys[1];
 };
 
 /*
