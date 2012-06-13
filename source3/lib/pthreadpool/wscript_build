@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 
-bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
-                     source='pthreadpool.c',
-                     deps='pthread rt replace',
-                     enabled=bld.env.WITH_PTHREADPOOL)
+if bld.env.WITH_PTHREADPOOL:
+    bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
+                         source='pthreadpool.c',
+                         deps='pthread rt replace')
+else:
+    bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
+                         source='pthreadpool_sync.c',
+                         deps='replace')
+
 
 bld.SAMBA3_BINARY('pthreadpooltest',
                   source='tests.c',

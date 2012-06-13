@@ -6172,14 +6172,17 @@ fi
 if test x"$enable_pthreadpool" = x"yes" -a x"$samba_cv_HAVE_PTHREAD" = x"yes"; then
     LIBS="$LIBS $PTHREAD_LDFLAGS"
     CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-    AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
     AC_SUBST(PTHREADPOOL_OBJ, "lib/pthreadpool/pthreadpool.o")
-    PTHREADPOOLTEST="bin/pthreadpooltest"
-    AC_SUBST(PTHREADPOOLTEST)
     if test x"$samba_cv_HAVE_AIO" = x"yes"; then
         default_shared_modules="$default_shared_modules vfs_aio_pthread"
     fi
+else
+    AC_SUBST(PTHREADPOOL_OBJ, "lib/pthreadpool/pthreadpool_sync.o")
 fi
+
+AC_DEFINE(WITH_PTHREADPOOL, 1, [Whether to include pthreadpool helpers])
+PTHREADPOOLTEST="bin/pthreadpooltest"
+AC_SUBST(PTHREADPOOLTEST)
 
 
 #################################################
