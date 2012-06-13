@@ -31,8 +31,6 @@
 #include <stdlib.h>
 #endif
 
-#define debug_fprintf(file, fmt, ...) do {/*nothing*/} while (0)
-
 static int read_linehead(FILE *f)
 {
 	int i, c;
