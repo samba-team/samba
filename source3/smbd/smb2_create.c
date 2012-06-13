@@ -822,7 +822,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	if (state->out_file_attributes == 0) {
 		state->out_file_attributes = FILE_ATTRIBUTE_NORMAL;
 	}
-	state->out_file_id_persistent = result->fnum;
+	state->out_file_id_persistent = fsp_persistent_id(result);
 	state->out_file_id_volatile = result->fnum;
 	state->out_context_blobs = out_context_blobs;
 
