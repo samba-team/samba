@@ -237,6 +237,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 				SMB2_OPLOCK_LEVEL_II :
 				SMB2_OPLOCK_LEVEL_NONE;
 	NTSTATUS status;
+	uint64_t fsp_persistent = fsp_persistent_id(fsp);
 
 	DEBUG(10,("send_break_message_smb2: sending oplock break "
 		"for file %s, fnum = %d, smb2 level %u\n",
@@ -245,7 +246,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 		(unsigned int)smb2_oplock_level ));
 
 	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
-					(uint64_t)fsp->fnum,
+					fsp_persistent,
 					(uint64_t)fsp->fnum,
 					smb2_oplock_level);
 	if (!NT_STATUS_IS_OK(status)) {

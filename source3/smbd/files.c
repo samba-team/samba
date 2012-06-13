@@ -595,13 +595,10 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 				   uint64_t volatile_id)
 {
 	struct files_struct *fsp;
+	uint64_t fsp_persistent;
 
 	if (smb2req->compat_chain_fsp != NULL) {
 		return smb2req->compat_chain_fsp;
-	}
-
-	if (persistent_id != volatile_id) {
-		return NULL;
 	}
 
 	if (volatile_id > UINT16_MAX) {
@@ -610,6 +607,11 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 
 	fsp = file_fnum(smb2req->sconn, (uint16_t)volatile_id);
 	if (fsp == NULL) {
+		return NULL;
+	}
+	fsp_persistent = fsp_persistent_id(fsp);
+
+	if (persistent_id != fsp_persistent) {
 		return NULL;
 	}
 
