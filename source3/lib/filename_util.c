@@ -132,6 +132,34 @@ const char *fsp_str_dbg(const struct files_struct *fsp)
 	return smb_fname_str_dbg(fsp->fsp_name);
 }
 
+/**
+ * Create a debug string for the fnum of an fsp.
+ *
+ * This is allocated to talloc_tos() or a string constant
+ * in certain corner cases. The returned string should
+ * hence not be free'd directly but only via the talloc stack.
+ */
+const char *fsp_fnum_dbg(const struct files_struct *fsp)
+{
+	char *str;
+
+	if (fsp == NULL) {
+		return "fnum [fsp is NULL]";
+	}
+
+	if (fsp->fnum == FNUM_FIELD_INVALID) {
+		return "fnum [invalid value]";
+	}
+
+	str = talloc_asprintf(talloc_tos(), "fnum %d", fsp->fnum);
+	if (str == NULL) {
+		DEBUG(1, ("%s: talloc_asprintf failed\n", __FUNCTION__));
+		return "fnum [talloc failed!]";
+	}
+
+	return str;
+}
+
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out)
