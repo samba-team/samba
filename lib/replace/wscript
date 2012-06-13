@@ -341,7 +341,7 @@ removeea setea
 
     conf.CHECK_CODE('#include "test/snprintf.c"',
                     define="HAVE_C99_VSNPRINTF",
-                    execute=1,
+                    execute=True,
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
 
