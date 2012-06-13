@@ -838,13 +838,11 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				const char *dn,
 				struct security_token **token)
 {
+#ifdef HAVE_ADS
 	struct security_token *ad_token = NULL;
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 
-#ifndef HAVE_ADS
-	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-#endif
 	status = ads_get_sid_token(ads, mem_ctx, dn, &ad_token);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -855,4 +853,7 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 		return ADS_ERROR_NT(ntstatus);
 	}
 	return ADS_SUCCESS;
+#else
+	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+#endif
 }
