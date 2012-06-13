@@ -40,10 +40,34 @@ static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 	union netr_CONTROL_QUERY_INFORMATION query;
 	const char *domain = lp_workgroup();
 	struct dcerpc_binding_handle *b = cli->binding_handle;
-
-	if (argc > 5) {
+	int i;
+#define fn_code_level(x, item) { x, #x, #item }
+	struct {
+		enum netr_LogonControlCode code;
+		const char *name;
+		const char *argument;
+	} supported_levels[] = {
+		fn_code_level(NETLOGON_CONTROL_REDISCOVER, domain),
+		fn_code_level(NETLOGON_CONTROL_TC_QUERY, domain),
+		fn_code_level(NETLOGON_CONTROL_TRANSPORT_NOTIFY, domain),
+		fn_code_level(NETLOGON_CONTROL_FIND_USER, user),
+		fn_code_level(NETLOGON_CONTROL_CHANGE_PASSWORD, domain),
+		fn_code_level(NETLOGON_CONTROL_TC_VERIFY, domain),
+		fn_code_level(NETLOGON_CONTROL_SET_DBFLAG, debug_level),
+		{0, 0, 0}
+	};
+#undef fn_code_level
+	if ((argc > 5) || (argc < 2)) {
 		fprintf(stderr, "Usage: %s <logon_server> <function_code> "
-			"<level> <domain>\n", argv[0]);
+			"<level:1..4> <argument>\n", argv[0]);
+		fprintf(stderr, "Supported combinations:\n");
+		fprintf(stderr, "function_code\targument\n");
+		for(i=0; supported_levels[i].code; i++) {
+			fprintf(stderr, "%7d\t\t%s\t(%s)\n",
+				supported_levels[i].code,
+				supported_levels[i].argument,
+				supported_levels[i].name);
+		}
 		return WERR_OK;
 	}
 
@@ -66,8 +90,16 @@ static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 	switch (function_code) {
 		case NETLOGON_CONTROL_REDISCOVER:
 		case NETLOGON_CONTROL_TC_QUERY:
+		case NETLOGON_CONTROL_CHANGE_PASSWORD:
+		case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
+		case NETLOGON_CONTROL_TC_VERIFY:
 			data.domain = domain;
 			break;
+		case NETLOGON_CONTROL_FIND_USER:
+			data.user = domain;
+			break;
+		case NETLOGON_CONTROL_SET_DBFLAG:
+			data.debug_level = atoi(domain);
 		default:
 			break;
 	}
