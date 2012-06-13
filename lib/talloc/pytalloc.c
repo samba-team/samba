@@ -27,7 +27,6 @@ void inittalloc(void);
 static PyObject *pytalloc_report_full(PyObject *self, PyObject *args)
 {
 	PyObject *py_obj = Py_None;
-	PyTypeObject *type;
 
 	if (!PyArg_ParseTuple(args, "|O", &py_obj))
 		return NULL;
@@ -35,7 +34,6 @@ static PyObject *pytalloc_report_full(PyObject *self, PyObject *args)
 	if (py_obj == Py_None) {
 		talloc_report_full(NULL, stdout);
 	} else {
-		type = (PyTypeObject*)PyObject_Type(py_obj);
 		talloc_report_full(pytalloc_get_mem_ctx(py_obj), stdout);
 	}
 	return Py_None;
@@ -52,7 +50,6 @@ static PyObject *pytalloc_enable_null_tracking(PyObject *self)
 static PyObject *pytalloc_total_blocks(PyObject *self, PyObject *args)
 {
 	PyObject *py_obj = Py_None;
-	PyTypeObject *type;
 
 	if (!PyArg_ParseTuple(args, "|O", &py_obj))
 		return NULL;
@@ -60,8 +57,6 @@ static PyObject *pytalloc_total_blocks(PyObject *self, PyObject *args)
 	if (py_obj == Py_None) {
 		return PyLong_FromLong(talloc_total_blocks(NULL));
 	}
-
-	type = (PyTypeObject*)PyObject_Type(py_obj);
 
 	return PyLong_FromLong(talloc_total_blocks(pytalloc_get_mem_ctx(py_obj)));
 }
