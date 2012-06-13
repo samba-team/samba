@@ -2296,8 +2296,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
-	/* Ensure we have a directory attribute. */
-	file_attributes |= FILE_ATTRIBUTE_DIRECTORY;
+	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS)) {
+		/* Ensure we have a directory attribute. */
+		file_attributes |= FILE_ATTRIBUTE_DIRECTORY;
+	}
 
 	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
 		 "share_access = 0x%x create_options = 0x%x, "
