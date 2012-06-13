@@ -65,26 +65,6 @@
 	return ret;
 }
 
-#elif defined(HAVE_QUOTACTL_3)
-/* int quotactl (char *spec, int request, char *arg); */
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_QUOTA_H
-#include <sys/quota.h>
-#endif
-
- int autoconf_quota(void)
-{
-	int ret = -1;
-	struct q_request request;
-
-	ret = quotactl("/", Q_GETQUOTA, &request);
-
-	return ret;
-}
-
 #elif defined(HAVE_QUOTACTL_2)
 
 #error HAVE_QUOTACTL_2 not implemented

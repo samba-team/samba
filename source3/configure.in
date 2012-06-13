@@ -500,13 +500,6 @@ case "$host_os" in
       ;;
 
 #
-# CRAY Unicos has broken const handling
-       *unicos*)
-	  AC_MSG_RESULT([disabling const])
-	  CPPFLAGS="$CPPFLAGS -Dconst="
-	  ;;
-	
-#
 # AIX4.x doesn't even admit to having large
 # files *at all* unless the -D_LARGE_FILE or -D_LARGE_FILE_API flags are set.
 #
@@ -4718,22 +4711,6 @@ if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
 	[#include <sys/typeѕ.h>
 	#include <sys/quota.h>])
 
-fi
-fi
-
-if test x"$samba_cv_SYSQUOTA_FOUND" != x"yes"; then
-AC_CACHE_CHECK([for CRAY int quotactl (char *spec, int request, char *arg)],samba_cv_HAVE_QUOTACTL_3,[
-AC_TRY_RUN_STRICT([
-#define HAVE_QUOTACTL_3 1
-#define AUTOCONF_TEST 1
-#include "confdefs.h"
-#include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
-           samba_cv_HAVE_QUOTACTL_3=yes,samba_cv_HAVE_QUOTACTL_3=no,samba_cv_HAVE_QUOTACTL_3=cross)])
-if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
-    echo "CRAY int quotactl (char *spec, int request, char *arg) is NOT reworked for the sys_quota api"
-    samba_cv_SYSQUOTA_FOUND=yes;
-    AC_DEFINE(HAVE_QUOTACTL_3,1,[Whether CRAY int quotactl (char *spec, int request, char *arg); is available])
-    samba_cv_sysquotas_file="lib/sysquotas_3.c"
 fi
 fi
 
