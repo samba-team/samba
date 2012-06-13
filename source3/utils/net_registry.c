@@ -124,16 +124,17 @@ done:
 	return werr;
 }
 
-static WERROR registry_enumkey(struct registry_key* parent, const char* keyname, bool recursive)
+static WERROR registry_enumkey(struct registry_key *parent, const char *keyname,
+			       bool recursive)
 {
 	WERROR werr;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	char*  subkey_name;
+	char *subkey_name;
 	NTTIME modtime;
 	uint32_t count;
-	char* valname = NULL;
+	char *valname = NULL;
 	struct registry_value *valvalue = NULL;
-	struct registry_key* key = NULL;
+	struct registry_key *key = NULL;
 
 	werr = reg_openkey(ctx, parent, keyname, REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -204,7 +205,7 @@ static int net_registry_enumerate(struct net_context *c, int argc,
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
-	char* name = NULL;
+	char *name = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;
 
@@ -238,7 +239,7 @@ static int net_registry_enumerate_recursive(struct net_context *c, int argc,
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
-	char* name = NULL;
+	char *name = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	int ret = -1;
 
@@ -910,18 +911,18 @@ struct import_ctx {
 };
 
 
-static WERROR import_create_key(struct import_ctx* ctx,
-				struct registry_key* parent,
-				const char* name, void** pkey, bool* existing)
+static WERROR import_create_key(struct import_ctx *ctx,
+				struct registry_key *parent,
+				const char *name, void **pkey, bool *existing)
 {
 	WERROR werr;
-	void* mem_ctx = talloc_new(ctx->mem_ctx);
+	TALLOC_CTX *mem_ctx = talloc_new(ctx->mem_ctx);
 
-	struct registry_key* key = NULL;
+	struct registry_key *key = NULL;
 	enum winreg_CreateAction action;
 
 	if (parent == NULL) {
-		char* subkeyname = NULL;
+		char *subkeyname = NULL;
 		werr = open_hive(mem_ctx, name, REG_KEY_WRITE,
 			 &parent, &subkeyname);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -960,20 +961,20 @@ done:
 	return werr;
 }
 
-static WERROR import_close_key(struct import_ctx* ctx,
-			       struct registry_key* key)
+static WERROR import_close_key(struct import_ctx *ctx,
+			       struct registry_key *key)
 {
 	return WERR_OK;
 }
 
-static WERROR import_delete_key(struct import_ctx* ctx,
-				struct registry_key* parent, const char* name)
+static WERROR import_delete_key(struct import_ctx *ctx,
+				struct registry_key *parent, const char *name)
 {
 	WERROR werr;
-	void* mem_ctx = talloc_new(talloc_tos());
+	TALLOC_CTX *mem_ctx = talloc_new(talloc_tos());
 
 	if (parent == NULL) {
-		char* subkeyname = NULL;
+		char *subkeyname = NULL;
 		werr = open_hive(mem_ctx, name, REG_KEY_WRITE,
 			 &parent, &subkeyname);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -986,8 +987,8 @@ static WERROR import_delete_key(struct import_ctx* ctx,
 
 	werr = reg_deletekey_recursive(parent, name);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "reg_deletekey_recursive %s: %s\n", _("failed"),
-			  win_errstr(werr));
+		d_fprintf(stderr, "reg_deletekey_recursive %s: %s\n",
+			  _("failed"), win_errstr(werr));
 		goto done;
 	}
 
@@ -996,9 +997,9 @@ done:
 	return werr;
 }
 
-static WERROR import_create_val (struct import_ctx* ctx,
-				 struct registry_key* parent, const char* name,
-				 const struct registry_value* value)
+static WERROR import_create_val (struct import_ctx *ctx,
+				 struct registry_key *parent, const char *name,
+				 const struct registry_value *value)
 {
 	WERROR werr;
 
@@ -1014,7 +1015,9 @@ static WERROR import_create_val (struct import_ctx* ctx,
 	return werr;
 }
 
-static WERROR import_delete_val (struct import_ctx* ctx, struct registry_key* parent, const char* name) {
+static WERROR import_delete_val (struct import_ctx *ctx,
+				 struct registry_key *parent, const char *name)
+{
 	WERROR werr;
 
 	if (parent == NULL) {
@@ -1296,8 +1299,8 @@ done:
  * @{
  */
 
-static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
-			   struct reg_format* f)
+static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key *key,
+			   struct reg_format *f)
 {
 	int ret=-1;
 	WERROR werr;
@@ -1331,7 +1334,7 @@ static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
 		     W_ERROR_IS_OK(werr);
 	     count++)
 	{
-		struct registry_key* subkey = NULL;
+		struct registry_key *subkey = NULL;
 
 		werr = reg_openkey(ctx, key, subkey_name, REG_KEY_READ,
 				   &subkey);
@@ -1361,7 +1364,7 @@ static int net_registry_export(struct net_context *c, int argc,
 	WERROR werr;
 	struct registry_key *key = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
-	struct reg_format* f=NULL;
+	struct reg_format *f=NULL;
 
 	if (argc < 2 || argc > 3 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1405,9 +1408,9 @@ static int net_registry_convert(struct net_context *c, int argc,
 			       const char **argv)
 {
 	int ret;
-	void* mem_ctx;
-	const char* in_opt  = NULL;
-	const char* out_opt = NULL;
+	TALLOC_CTX *mem_ctx;
+	const char *in_opt  = NULL;
+	const char *out_opt = NULL;
 
 	if (argc < 2 || argc > 4|| c->display_usage) {
 		d_printf("%s\n%s",
@@ -1450,7 +1453,7 @@ static int net_registry_convert(struct net_context *c, int argc,
 static int net_registry_check(struct net_context *c, int argc,
 			      const char **argv)
 {
-	const char* dbfile;
+	const char *dbfile;
 	struct check_options opts;
 
 	if (argc > 1|| c->display_usage) {
