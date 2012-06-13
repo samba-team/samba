@@ -775,7 +775,8 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 				 struct passwd *pwd,
 				 struct netr_SamInfo3 *info3)
 {
-	struct dom_sid domain_sid;
+	NTSTATUS status;
+	struct dom_sid *system_sid;
 	const char *tmp;
 
 	/* Set account name */
@@ -792,19 +793,24 @@ static NTSTATUS get_system_info3(TALLOC_CTX *mem_ctx,
 	}
 	init_lsa_StringLarge(&info3->base.logon_domain, tmp);
 
-	/* Domain sid */
-	sid_copy(&domain_sid, get_global_sam_sid());
 
-	info3->base.domain_sid = dom_sid_dup(mem_ctx, &domain_sid);
-	if (info3->base.domain_sid == NULL) {
+	/* The SID set here will be overwirtten anyway, but try and make it SID_NT_SYSTEM anyway */
+	/* Domain sid is NT_AUTHORITY */
+	
+	system_sid = dom_sid_parse_talloc(mem_ctx, SID_NT_SYSTEM);
+	if (system_sid == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/* Admin rid */
-	info3->base.rid = DOMAIN_RID_ADMINISTRATOR;
-
-	/* Primary gid */
-	info3->base.primary_gid = DOMAIN_RID_ADMINS;
+	
+	status = dom_sid_split_rid(mem_ctx, system_sid, &info3->base.domain_sid, 
+				   &info3->base.rid);
+	TALLOC_FREE(system_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	/* Primary gid is the same */
+	info3->base.primary_gid = info3->base.rid;
 
 	return NT_STATUS_OK;
 }
