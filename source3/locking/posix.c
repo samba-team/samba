@@ -392,12 +392,10 @@ bool posix_locking_end(void)
 ****************************************************************************/
 
 /****************************************************************************
- The records in posix_pending_close_tdb are composed of an array of ints
- keyed by dev/ino pair.
- The first int is a reference count of the number of outstanding locks on
- all open fd's on this dev/ino pair. Any subsequent ints are the fd's that
- were open on this dev/ino pair that should have been closed, but can't as
- the lock ref count is non zero.
+ The records in posix_pending_close_db are composed of an array of
+ ints keyed by dev/ino pair. Those ints are the fd's that were open on
+ this dev/ino pair that should have been closed, but can't as the lock
+ ref count is non zero.
 ****************************************************************************/
 
 /****************************************************************************
@@ -568,7 +566,8 @@ static void delete_windows_lock_ref_count(files_struct *fsp)
 static void add_fd_to_close_entry(files_struct *fsp)
 {
 	struct db_record *rec;
-	uint8_t *new_data;
+	int *fds;
+	size_t num_fds;
 	NTSTATUS status;
 	TDB_DATA value;
 
@@ -579,19 +578,18 @@ static void add_fd_to_close_entry(files_struct *fsp)
 	SMB_ASSERT(rec != NULL);
 
 	value = dbwrap_record_get_value(rec);
+	SMB_ASSERT((value.dsize % sizeof(int)) == 0);
 
-	new_data = talloc_array(rec, uint8_t,
-				value.dsize + sizeof(fsp->fh->fd));
+	num_fds = value.dsize / sizeof(int);
+	fds = talloc_array(rec, int, num_fds+1);
 
-	SMB_ASSERT(new_data != NULL);
+	SMB_ASSERT(fds != NULL);
 
-	memcpy(new_data, value.dptr, value.dsize);
-	memcpy(new_data + value.dsize,
-	       &fsp->fh->fd, sizeof(fsp->fh->fd));
+	memcpy(fds, value.dptr, value.dsize);
+	fds[num_fds] = fsp->fh->fd;
 
 	status = dbwrap_record_store(
-		rec, make_tdb_data(new_data,
-				   value.dsize + sizeof(fsp->fh->fd)), 0);
+		rec, make_tdb_data((uint8_t *)fds, talloc_get_size(fds)), 0);
 
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
