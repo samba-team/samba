@@ -2,7 +2,7 @@
 # Update our copy of waf
 
 TARGETDIR="`dirname $0`"
-WORKDIR="`mktemp -d -t update-waf`"
+WORKDIR="`mktemp -d -t update-waf-XXXXXX`"
 
 mkdir -p "$WORKDIR"
 
