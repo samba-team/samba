@@ -731,8 +731,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		SIVAL(p,0,perms);
 	}
 
-	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n",
-		fsp->fnum, smb_fname_str_dbg(smb_fname)));
+	DEBUG(5,("reply_ntcreate_and_X: %s, open name = %s\n",
+		fsp_fnum_dbg(fsp), smb_fname_str_dbg(smb_fname)));
 
  out:
 	END_PROFILE(SMBntcreateX);
@@ -2463,7 +2463,9 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			break;
 
 		default:
-			DEBUG(0,("do_nt_transact_get_user_quota: fnum %d unknown level 0x%04hX\n",fsp->fnum,level));
+			DEBUG(0, ("do_nt_transact_get_user_quota: %s: unknown "
+				  "level 0x%04hX\n",
+				  fsp_fnum_dbg(fsp), level));
 			reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 			return;
 			break;
