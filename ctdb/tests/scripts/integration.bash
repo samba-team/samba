@@ -238,14 +238,13 @@ select_test_node_and_ips ()
 {
     all_ips_on_node 0
 
-    # When selecting test_node we just want a node that has public
-    # IPs.  This will work and is economically semi-random.  :-)
-    local x
-    read x test_node <<<"$out"
-
+    test_node=""  # this matches no PNN
     test_node_ips=""
     local ip pnn
     while read ip pnn ; do
+	if [ -z "$test_node" -a "$pnn" != "-1" ] ; then
+	    test_node="$pnn"
+	fi
 	if [ "$pnn" = "$test_node" ] ; then
             test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
 	fi
