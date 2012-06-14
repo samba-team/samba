@@ -394,7 +394,7 @@ static bool check_version(struct check_ctx* ctx) {
 	char action = 's';
 	struct check_actions* act = &ctx->action;
 
-	status = dbwrap_fetch_uint32(ctx->db, key, &version);
+	status = dbwrap_fetch_uint32_bystring(ctx->db, key, &version);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("No version number, assume 2\n");
 		action = get_action(&act->no_version, NULL, NULL);
@@ -424,7 +424,7 @@ static void check_hwm(struct check_ctx* ctx, const char* key, uint32_t target) {
 	NTSTATUS status;
 	struct check_actions* act = &ctx->action;
 
-	status = dbwrap_fetch_uint32(ctx->db, key, &hwm);
+	status = dbwrap_fetch_uint32_bystring(ctx->db, key, &hwm);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("No %s should be %d\n", key, target);
 		action = get_action(&act->invalid_hwm, NULL, NULL);

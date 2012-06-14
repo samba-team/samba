@@ -59,7 +59,7 @@ static int dbwrap_tool_fetch_uint32(struct db_context *db,
 	uint32_t value;
 	NTSTATUS ret;
 
-	ret = dbwrap_fetch_uint32(db, keyname, &value);
+	ret = dbwrap_fetch_uint32_bystring(db, keyname, &value);
 	if (NT_STATUS_IS_OK(ret)) {
 		d_printf("%u\n", value);
 		return 0;

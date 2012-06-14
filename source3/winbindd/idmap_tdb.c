@@ -258,12 +258,12 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	ctx = talloc_get_type(dom->private_data,
 			      struct idmap_tdb_common_context);
 
-	status = dbwrap_fetch_uint32(ctx->db, HWM_USER, &low_uid);
+	status = dbwrap_fetch_uint32_bystring(ctx->db, HWM_USER, &low_uid);
 	if (!NT_STATUS_IS_OK(status) || low_uid < dom->low_id) {
 		update_uid = true;
 	}
 
-	status = dbwrap_fetch_uint32(ctx->db, HWM_GROUP, &low_gid);
+	status = dbwrap_fetch_uint32_bystring(ctx->db, HWM_GROUP, &low_gid);
 	if (!NT_STATUS_IS_OK(status) || low_gid < dom->low_id) {
 		update_gid = true;
 	}

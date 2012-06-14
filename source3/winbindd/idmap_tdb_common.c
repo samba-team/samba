@@ -56,7 +56,7 @@ static NTSTATUS idmap_tdb_common_allocate_id_action(struct db_context *db,
 
 	state = (struct idmap_tdb_common_allocate_id_context *)private_data;
 
-	ret = dbwrap_fetch_uint32(db, state->hwmkey, &hwm);
+	ret = dbwrap_fetch_uint32_bystring(db, state->hwmkey, &hwm);
 	if (!NT_STATUS_IS_OK(ret)) {
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;

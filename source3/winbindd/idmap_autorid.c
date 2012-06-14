@@ -68,7 +68,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 
 	cfg = (struct autorid_domain_config *)private_data;
 
-	ret = dbwrap_fetch_uint32(db, cfg->sid, &(cfg->domainnum));
+	ret = dbwrap_fetch_uint32_bystring(db, cfg->sid, &(cfg->domainnum));
 
 	if (NT_STATUS_IS_OK(ret)) {
 		/* entry is already present*/
@@ -78,7 +78,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	DEBUG(10, ("Acquiring new range for domain %s\n", cfg->sid));
 
 	/* fetch the current HWM */
-	ret = dbwrap_fetch_uint32(db, HWM, &hwm);
+	ret = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching current "
 			  "HWM value: %s\n", nt_errstr(ret)));
@@ -146,7 +146,8 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom,
 	 * if it is not found create a mapping in a transaction unless
 	 * read-only mode has been set
 	 */
-	ret = dbwrap_fetch_uint32(autorid_db, dom->sid, &(dom->domainnum));
+	ret = dbwrap_fetch_uint32_bystring(autorid_db, dom->sid,
+					   &(dom->domainnum));
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (read_only) {
@@ -605,7 +606,7 @@ static NTSTATUS idmap_autorid_init_hwm(const char *hwm) {
 	NTSTATUS status;
 	uint32_t hwmval;
 
-	status = dbwrap_fetch_uint32(autorid_db, hwm, &hwmval);
+	status = dbwrap_fetch_uint32_bystring(autorid_db, hwm, &hwmval);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))  {
 		status = dbwrap_trans_store_int32(autorid_db, hwm, 0);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -843,7 +844,7 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom)
 	/* read previously stored config and current HWM */
 	storedconfig = idmap_autorid_loadconfig(talloc_tos());
 
-	status = dbwrap_fetch_uint32(autorid_db, HWM, &hwm);
+	status = dbwrap_fetch_uint32_bystring(autorid_db, HWM, &hwm);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Fatal error while fetching current "
 			  "HWM value: %s\n", nt_errstr(status)));

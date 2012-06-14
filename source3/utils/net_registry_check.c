@@ -844,7 +844,8 @@ static bool get_version(struct check_ctx *ctx) {
 	uint32_t info_version = 0;
 	NTSTATUS status;
 
-	status = dbwrap_fetch_uint32(ctx->idb, "INFO/version", &info_version);
+	status = dbwrap_fetch_uint32_bystring(ctx->idb, "INFO/version",
+					      &info_version);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Warning: no INFO/version found!\n");
 		/* info_version = guess_version(ctx); */
@@ -923,7 +924,7 @@ dbwrap_store_uint32_verbose(struct db_context *db, const char *key, uint32_t nva
 	uint32_t oval;
 	NTSTATUS status;
 
-	status = dbwrap_fetch_uint32(db, key, &oval);
+	status = dbwrap_fetch_uint32_bystring(db, key, &oval);
 	if (NT_STATUS_IS_OK(status)) {
 		if (nval == oval) {
 			goto done;

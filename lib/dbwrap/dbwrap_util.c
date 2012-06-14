@@ -74,8 +74,8 @@ NTSTATUS dbwrap_store_int32_bystring(struct db_context *db, const char *keystr,
 	return status;
 }
 
-NTSTATUS dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
-			     uint32_t *val)
+NTSTATUS dbwrap_fetch_uint32_bystring(struct db_context *db,
+				      const char *keystr, uint32_t *val)
 {
 	TDB_DATA dbuf;
 	NTSTATUS status;
