@@ -3074,8 +3074,8 @@ void msg_file_was_renamed(struct messaging_context *msg,
 	    fsp = file_find_di_next(fsp)) {
 		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
 
-			DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",
-				fsp->fnum, fsp_str_dbg(fsp),
+			DEBUG(10,("msg_file_was_renamed: renaming file %s from %s -> %s\n",
+				fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 				smb_fname_str_dbg(smb_fname)));
 			status = fsp_set_smb_fname(fsp, smb_fname);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -3087,10 +3087,10 @@ void msg_file_was_renamed(struct messaging_context *msg,
 			   actually within this share and adjust newname accordingly. */
 	                DEBUG(10,("msg_file_was_renamed: share mismatch (sharepath %s "
 				"not sharepath %s) "
-				"fnum %d from %s -> %s\n",
+				"%s from %s -> %s\n",
 				fsp->conn->connectpath,
 				sharepath,
-				fsp->fnum,
+				fsp_fnum_dbg(fsp),
 				fsp_str_dbg(fsp),
 				smb_fname_str_dbg(smb_fname)));
 		}
