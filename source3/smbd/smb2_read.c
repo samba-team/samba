@@ -351,8 +351,8 @@ NTSTATUS smb2_read_complete(struct tevent_req *req, ssize_t nread, int err)
 		return NT_STATUS_END_OF_FILE;
 	}
 
-	DEBUG(3,("smbd_smb2_read: fnum=[%d/%s] length=%lu offset=%lu read=%lu\n",
-		fsp->fnum,
+	DEBUG(3,("smbd_smb2_read: %s, file %s, length=%lu offset=%lu read=%lu\n",
+		fsp_fnum_dbg(fsp),
 		fsp_str_dbg(fsp),
 		(unsigned long)state->in_length,
 		(unsigned long)state->in_offset,
@@ -406,8 +406,8 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	state->out_data = data_blob_null;
 	state->out_remaining = 0;
 
-	DEBUG(10,("smbd_smb2_read: %s - fnum[%d]\n",
-		  fsp_str_dbg(fsp), fsp->fnum));
+	DEBUG(10,("smbd_smb2_read: %s - %s\n",
+		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
@@ -519,10 +519,10 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
-	DEBUG(10,("smbd_smb2_read: file %s fnum[%d] offset=%llu "
+	DEBUG(10,("smbd_smb2_read: file %s, %s, offset=%llu "
 		"len=%llu returned %lld\n",
 		fsp_str_dbg(fsp),
-		fsp->fnum,
+		fsp_fnum_dbg(fsp),
 		(unsigned long long)in_offset,
 		(unsigned long long)in_length,
 		(long long)nread));
