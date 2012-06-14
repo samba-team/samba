@@ -723,8 +723,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 			SSVAL(outbuf,smb_err,ERRdiskfull);
 		}
 
-		DEBUG(3,("handle_aio_write: fnum=%d num=%d wrote=%d\n",
-			 fsp->fnum, (int)numtowrite, (int)nwritten));
+		DEBUG(3,("handle_aio_write: %s, num=%d wrote=%d\n",
+			 fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 		status = sync_file(fsp->conn,fsp, aio_ex->write_through);
 		if (!NT_STATUS_IS_OK(status)) {
 			errcode = errno;
