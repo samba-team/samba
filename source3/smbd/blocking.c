@@ -254,10 +254,10 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	}
 
 	DEBUG(3,("push_blocking_lock_request: lock request blocked with "
-		"expiry time (%u sec. %u usec) (+%d msec) for fnum = %d, name = %s\n",
+		"expiry time (%u sec. %u usec) (+%d msec) for %s, name = %s\n",
 		(unsigned int)blr->expire_time.tv_sec,
 		(unsigned int)blr->expire_time.tv_usec, lock_timeout,
-		blr->fsp->fnum, fsp_str_dbg(blr->fsp)));
+		fsp_fnum_dbg(blr->fsp), fsp_str_dbg(blr->fsp)));
 
 	return True;
 }
@@ -485,8 +485,8 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 		 * Success - we got all the locks.
 		 */
 
-		DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d "
-			 "num_locks=%d\n", fsp_str_dbg(fsp), fsp->fnum,
+		DEBUG(3,("process_lockingX file = %s, %s, type=%d "
+			 "num_locks=%d\n", fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
 			 (unsigned int)locktype, num_locks));
 
 		reply_lockingX_success(blr);
@@ -508,9 +508,10 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 	 * Still can't get all the locks - keep waiting.
 	 */
 
-	DEBUG(10,("process_lockingX: only got %d locks of %d needed for file %s, fnum = %d. \
-Waiting....\n", 
-		 blr->lock_num, num_locks, fsp_str_dbg(fsp), fsp->fnum));
+	DEBUG(10, ("process_lockingX: only got %d locks of %d needed for "
+		   "file %s, %s. Waiting....\n",
+		   blr->lock_num, num_locks, fsp_str_dbg(fsp),
+		   fsp_fnum_dbg(fsp)));
 
 	return False;
 }
@@ -612,8 +613,8 @@ void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
 		}
 
 		DEBUG(10, ("remove_pending_lock_requests_by_fid - removing "
-			   "request type %d for file %s fnum = %d\n",
-			   blr->req->cmd, fsp_str_dbg(fsp), fsp->fnum));
+			   "request type %d for file %s, %s\n",
+			   blr->req->cmd, fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
 		blr_cancelled = blocking_lock_cancel_smb1(fsp,
 				     blr->smblctx,
@@ -664,9 +665,9 @@ void remove_pending_lock_requests_by_mid_smb1(
 
 		if (br_lck) {
 			DEBUG(10, ("remove_pending_lock_requests_by_mid_smb1 - "
-				   "removing request type %d for file %s fnum "
-				   "= %d\n", blr->req->cmd, fsp_str_dbg(fsp),
-				   fsp->fnum ));
+				   "removing request type %d for file %s, %s\n",
+				   blr->req->cmd, fsp_str_dbg(fsp),
+				   fsp_fnum_dbg(fsp)));
 
 			brl_lock_cancel(br_lck,
 					blr->smblctx,
@@ -800,8 +801,8 @@ void process_blocking_lock_queue(struct smbd_server_connection *sconn)
 
 			if (br_lck) {
 				DEBUG(5,("process_blocking_lock_queue: "
-					 "pending lock fnum = %d for file %s "
-					 "timed out.\n", blr->fsp->fnum,
+					 "pending lock for %s, file %s "
+					 "timed out.\n", fsp_fnum_dbg(blr->fsp),
 					 fsp_str_dbg(blr->fsp)));
 
 				brl_lock_cancel(br_lck,
