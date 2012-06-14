@@ -28,7 +28,8 @@ fi
 ## Find newer files rather than rebuild all of them. Also handle the case
 ## where the pidl compiler itself is newer.
 ##
-PIDL_NEWEST=$(ls -rt $(find $PIDL_DIR -type f) | tail -n -1)
+PIDL_NEWEST=`find $PIDL_DIR -type f -print | xargs ls -rt | tail -1`
+echo "jfyi: PIDL_NEWEST is $PIDL_NEWEST"
 
 list=""
 for f in ${IDL_FILES}; do
