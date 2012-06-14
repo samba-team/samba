@@ -1315,9 +1315,9 @@ bool brl_locktest(struct byte_range_lock *br_lck,
 	if(lp_posix_locking(fsp->conn->params) && (lock_flav == WINDOWS_LOCK)) {
 		ret = is_posix_locked(fsp, &start, &size, &lock_type, WINDOWS_LOCK);
 
-		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
+		DEBUG(10,("brl_locktest: posix start=%.0f len=%.0f %s for %s file %s\n",
 			(double)start, (double)size, ret ? "locked" : "unlocked",
-			fsp->fnum, fsp_str_dbg(fsp)));
+			fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 		/* We need to return the inverse of is_posix_locked. */
 		ret = !ret;
@@ -1381,9 +1381,9 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 	if(lp_posix_locking(fsp->conn->params)) {
 		bool ret = is_posix_locked(fsp, pstart, psize, plock_type, POSIX_LOCK);
 
-		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for fnum %d file %s\n",
+		DEBUG(10,("brl_lockquery: posix start=%.0f len=%.0f %s for %s file %s\n",
 			(double)*pstart, (double)*psize, ret ? "locked" : "unlocked",
-			fsp->fnum, fsp_str_dbg(fsp)));
+			fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 		if (ret) {
 			/* Hmmm. No clue what to set smblctx to - use -1. */
