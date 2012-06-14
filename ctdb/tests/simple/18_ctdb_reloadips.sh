@@ -83,24 +83,23 @@ try_command_on_node any $CTDB sync
 
 select_test_node_and_ips
 
-first_ip=${test_node_ips%% *}
-echo "Removing IP $first_ip from node $test_node"
+echo "Removing IP $test_ip from node $test_node"
 
-try_command_on_node $test_node "mv $addresses $backup && grep -v '^${first_ip}/' $backup >$addresses"
+try_command_on_node $test_node "mv $addresses $backup && grep -v '^${test_ip}/' $backup >$addresses"
 
 try_command_on_node any $CTDB reloadips -n all
 
 try_command_on_node $test_node $CTDB ip
 
-if grep "^${first_ip} " <<<"$out" ; then
+if grep "^${test_ip} " <<<"$out" ; then
     cat <<EOF
-BAD: node $test_node can still host IP $first_ip:
+BAD: node $test_node can still host IP $test_ip:
 $out
 EOF
     exit 1
 fi
 
 cat <<EOF
-GOOD: node $test_node is no longer hosting IP $first_ip:
+GOOD: node $test_node is no longer hosting IP $test_ip:
 $out
 EOF
