@@ -173,8 +173,8 @@ bool remove_oplock(files_struct *fsp)
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("remove_oplock: failed to remove share oplock for "
-			 "file %s fnum %d, %s\n",
-			 fsp_str_dbg(fsp), fsp->fnum,
+			 "file %s, %s, %s\n",
+			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
 			 file_id_string_tos(&fsp->file_id)));
 	}
 	release_file_oplock(fsp);
@@ -199,8 +199,8 @@ bool downgrade_oplock(files_struct *fsp)
 	ret = downgrade_share_oplock(lck, fsp);
 	if (!ret) {
 		DEBUG(0,("downgrade_oplock: failed to downgrade share oplock "
-			 "for file %s fnum %d, file_id %s\n",
-			 fsp_str_dbg(fsp), fsp->fnum,
+			 "for file %s, %s, file_id %s\n",
+			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
 			 file_id_string_tos(&fsp->file_id)));
 	}
 
@@ -413,7 +413,7 @@ void break_level2_to_none_async(files_struct *fsp)
 	SMB_ASSERT(fsp->oplock_type == LEVEL_II_OPLOCK);
 
 	DEBUG(10,("process_oplock_async_level2_break_message: sending break "
-		  "to none message for fid %d, file %s\n", fsp->fnum,
+		  "to none message for %s, file %s\n", fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp)));
 
 	/* Now send a break to none message to our client. */
