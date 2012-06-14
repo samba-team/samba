@@ -203,7 +203,7 @@ void reply_pipe_write(struct smb_request *req)
 
 	data = req->buf + 3;
 
-	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
+	DEBUG(6, ("reply_pipe_write: %s, name: %s len: %d\n", fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp), (int)state->numtowrite));
 
 	subreq = np_write_send(state, req->sconn->ev_ctx,
@@ -299,8 +299,8 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		((SVAL(req->vwv+7, 0) & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
 		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
 
-	DEBUG(6, ("reply_pipe_write_and_X: %x name: %s len: %d\n",
-		  (int)fsp->fnum, fsp_str_dbg(fsp), (int)state->numtowrite));
+	DEBUG(6, ("reply_pipe_write_and_X: %s, name: %s len: %d\n",
+		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp), (int)state->numtowrite));
 
 	data = (const uint8_t *)smb_base(req->inbuf) + smb_doff;
 
