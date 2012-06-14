@@ -597,6 +597,30 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 	return fsp;
 }
 
+uint64_t fsp_persistent_id(const struct files_struct *fsp)
+{
+	uint64_t persistent_id;
+
+	/*
+	 * This calculates a number that is most likely
+	 * globally unique. In future we will have a database
+	 * to make it completely unique.
+	 *
+	 * 32-bit random gen_id
+	 * 16-bit truncated open_time
+	 * 16-bit fnum (valatile_id)
+	 */
+	persistent_id = fsp->fh->gen_id & UINT32_MAX;
+	persistent_id <<= 16;
+	persistent_id &= 0x0000FFFFFFFF0000LLU;
+	persistent_id |= fsp->open_time.tv_usec & UINT16_MAX;
+	persistent_id <<= 16;
+	persistent_id &= 0xFFFFFFFFFFFF0000LLU;
+	persistent_id |= fsp->fnum & UINT16_MAX;
+
+	return persistent_id;
+}
+
 struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 				   uint64_t persistent_id,
 				   uint64_t volatile_id)
