@@ -58,7 +58,6 @@ void ctdb_load_nodes_file(struct ctdb_context *ctdb) {}
 
 /* CTDB_SERVER_OBJ */
 #include "server/ctdb_daemon.c"
-#include "server/ctdb_lockwait.c"
 #include "server/ctdb_recoverd.c"
 #include "server/ctdb_recover.c"
 #include "server/ctdb_freeze.c"

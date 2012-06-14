@@ -567,8 +567,6 @@ struct ctdb_db_context {
 	struct ctdb_vacuum_handle *vacuum_handle;
 	char *unhealthy_reason;
 	int pending_requests;
-	struct lockwait_handle *lockwait_active;
-	struct lockwait_handle *lockwait_overflow;
 	struct revokechild_handle *revokechild_active;
 	struct ctdb_persistent_state *persistent_state;
 	struct trbt_tree *delete_queue;
@@ -839,10 +837,6 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t vnn,
 int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 			     uint64_t srvid, TDB_DATA data);
 
-
-struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
-				      TDB_DATA key,
-				      void (*callback)(void *), void *private_data);
 
 struct ctdb_call_state *ctdb_daemon_call_send(struct ctdb_db_context *ctdb_db, 
 					      struct ctdb_call *call);

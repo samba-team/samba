@@ -248,7 +248,7 @@ struct lock_fetch_state {
 /*
   called when we should retry the operation
  */
-static void lock_fetch_callback(void *p)
+static void lock_fetch_callback(void *p, bool locked)
 {
 	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
 	if (!state->ignore_generation &&
@@ -271,9 +271,9 @@ static void lock_fetch_callback(void *p)
    1) tries to get the chainlock. If it succeeds, then it returns 0
 
    2) if it fails to get a chainlock immediately then it sets up a
-   non-blocking chainlock via ctdb_lockwait, and when it gets the
+   non-blocking chainlock via ctdb_lock_record, and when it gets the
    chainlock it re-submits this ctdb request to the main packet
-   receive function
+   receive function.
 
    This effectively queues all ctdb requests that cannot be
    immediately satisfied until it can get the lock. This means that
@@ -293,7 +293,7 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 {
 	int ret;
 	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
-	struct lockwait_handle *h;
+	struct lock_request *lreq;
 	struct lock_fetch_state *state;
 	
 	ret = tdb_chainlock_nonblock(tdb, key);
@@ -325,15 +325,14 @@ int ctdb_ltdb_lock_requeue(struct ctdb_db_context *ctdb_db,
 	state->ignore_generation = ignore_generation;
 
 	/* now the contended path */
-	h = ctdb_lockwait(ctdb_db, key, lock_fetch_callback, state);
-	if (h == NULL) {
+	lreq = ctdb_lock_record(ctdb_db, key, true, lock_fetch_callback, state);
+	if (lreq == NULL) {
 		return -1;
 	}
 
 	/* we need to move the packet off the temporary context in ctdb_input_pkt(),
 	   so it won't be freed yet */
 	talloc_steal(state, hdr);
-	talloc_steal(state, h);
 
 	/* now tell the caller than we will retry asynchronously */
 	return -2;

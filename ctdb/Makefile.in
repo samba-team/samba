@@ -80,7 +80,7 @@ CTDB_CLIENT_OBJ = client/ctdb_client.o \
 	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) $(TALLOC_OBJ) $(TDB_OBJ) \
 	@LIBREPLACEOBJ@ $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
 
-CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
+CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o \
 	server/ctdb_recoverd.o server/ctdb_recover.o server/ctdb_freeze.o \
 	server/ctdb_tunables.o server/ctdb_monitor.o server/ctdb_server.o \
 	server/ctdb_control.o server/ctdb_call.o server/ctdb_ltdb_server.o \

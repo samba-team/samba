@@ -671,8 +671,6 @@ struct ctdb_statistics {
 	} locks;
 	uint32_t total_calls;
 	uint32_t pending_calls;
-	uint32_t lockwait_calls;
-	uint32_t pending_lockwait_calls;
 	uint32_t childwrite_calls;
 	uint32_t pending_childwrite_calls;
 	uint32_t memory_used;
@@ -680,7 +678,6 @@ struct ctdb_statistics {
 	uint32_t max_hop_count;
 	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];
 	struct latency_counter call_latency;
-	struct latency_counter lockwait_latency;
 	struct latency_counter childwrite_latency;
 	uint32_t num_recoveries;
 	struct timeval statistics_start_time;
