@@ -83,8 +83,8 @@ interface auth
 		uint32 num_sids;
 		[size_is(num_sids)] dom_sid sids[*];
 		auth_user_info *info;
-		DATA_BLOB user_session_key;
-		DATA_BLOB lm_session_key;
+		[noprint] DATA_BLOB user_session_key;
+		[noprint] DATA_BLOB lm_session_key;
 	} auth_user_info_dc;
 
 	typedef [public] struct {
@@ -104,13 +104,13 @@ interface auth
 		 * Bottom line, it is not the same as the session keys in info3.
 		 */
 
-		DATA_BLOB session_key;
+		[noprint] DATA_BLOB session_key;
 
 		[value(NULL), ignore] cli_credentials *credentials;
 	} auth_session_info;
 
 	typedef [public] struct {
 		auth_session_info *session_info;
-		DATA_BLOB exported_gssapi_credentials;
+		[noprint] DATA_BLOB exported_gssapi_credentials;
 	} auth_session_info_transport;
 }
