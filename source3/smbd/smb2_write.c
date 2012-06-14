@@ -184,9 +184,9 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 	if (nwritten == -1) {
 		status = map_nt_error_from_unix(err);
 
-		DEBUG(2, ("smb2_write failed: fnum=[%d/%s] "
+		DEBUG(2, ("smb2_write failed: %s, file %s, "
 			  "length=%lu offset=%lu nwritten=-1: %s\n",
-			  fsp->fnum,
+			  fsp_fnum_dbg(fsp),
 			  fsp_str_dbg(fsp),
 			  (unsigned long)state->in_length,
 			  (unsigned long)state->in_offset,
@@ -195,9 +195,9 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 		return status;
 	}
 
-	DEBUG(3,("smb2: fnum=[%d/%s] "
+	DEBUG(3,("smb2: %s, file %s, "
 		"length=%lu offset=%lu wrote=%lu\n",
-		fsp->fnum,
+		fsp_fnum_dbg(fsp),
 		fsp_str_dbg(fsp),
 		(unsigned long)state->in_length,
 		(unsigned long)state->in_offset,
@@ -262,8 +262,8 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 	state->in_length = in_data.length;
 	state->out_count = 0;
 
-	DEBUG(10,("smbd_smb2_write: %s - fnum[%d]\n",
-		  fsp_str_dbg(fsp), fsp->fnum));
+	DEBUG(10,("smbd_smb2_write: %s - %s\n",
+		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
