@@ -193,7 +193,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 			wm = dom->low_id;
 		}
 
-		status = dbwrap_store_int32(db, HWM_USER, wm);
+		status = dbwrap_store_int32_bystring(db, HWM_USER, wm);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to byteswap user hwm in idmap "
 				  "database: %s\n", nt_errstr(status)));
@@ -211,7 +211,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 			wm = dom->low_id;
 		}
 
-		status = dbwrap_store_int32(db, HWM_GROUP, wm);
+		status = dbwrap_store_int32_bystring(db, HWM_GROUP, wm);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to byteswap group hwm in idmap "
 				  "database: %s\n", nt_errstr(status)));
@@ -235,7 +235,8 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 		return False;
 	}
 
-	status = dbwrap_store_int32(db, "IDMAP_VERSION", IDMAP_VERSION);
+	status = dbwrap_store_int32_bystring(db, "IDMAP_VERSION",
+					     IDMAP_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Unable to store idmap version in database: %s\n",
 			  nt_errstr(status)));

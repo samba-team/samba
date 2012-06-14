@@ -51,8 +51,8 @@ NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dbwrap_store_int32(struct db_context *db, const char *keystr,
-			    int32_t v)
+NTSTATUS dbwrap_store_int32_bystring(struct db_context *db, const char *keystr,
+				     int32_t v)
 {
 	struct db_record *rec;
 	int32_t v_store;
