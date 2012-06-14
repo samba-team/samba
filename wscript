@@ -239,7 +239,18 @@ def wafdocs(ctx):
 
 def dist():
     '''makes a tarball for distribution'''
-    samba_version.load_version(env=None)
+    sambaversion = samba_version.load_version(env=None)
+
+    if sambaversion.IS_SNAPSHOT:
+        # write .distversion file and add to tar
+        f = '.distversion'
+        distversionf = open(f, 'w')
+        for field in sambaversion.vcs_fields:
+            distveroption = field + '=' + str(sambaversion.vcs_fields[field])
+            distversionf.write(distveroption + '\n')
+        distversionf.close()
+        samba_dist.DIST_FILES('.distversion')
+
     samba_dist.dist()
 
 def distcheck():

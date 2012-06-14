@@ -92,6 +92,41 @@ def git_version_summary(path, env=None):
     return (ret, fields)
 
 
+def distversion_version_summary(path):
+    #get version from .distversion file
+    f = open(path + '/.distversion', 'r')
+    suffix = None
+    fields = {}
+
+    for line in f:
+        line = line.strip()
+        if line == '':
+            continue
+        if line.startswith("#"):
+            continue
+        try:
+            split_line = line.split("=")
+            if split_line[1] != "":
+                key = split_line[0]
+                value = split_line[1]
+                if key == "SUFFIX":
+                    suffix = value
+                    continue
+                fields[key] = value
+        except:
+            print("Failed to parse line %s from .distversion file." % (line))
+            raise
+    f.close()
+
+    if "COMMIT_TIME" in fields:
+        fields["COMMIT_TIME"] = int(fields["COMMIT_TIME"])
+
+    if suffix is None:
+        return ("UNKNOWN", fields)
+
+    return (suffix, fields)
+
+
 class SambaVersion(object):
 
     def __init__(self, version_dict, path, env=None, is_install=True):
@@ -167,9 +202,12 @@ also accepted as dictionary entries here
                 suffix, self.vcs_fields = git_version_summary(path, env=env)
             elif os.path.exists(os.path.join(path, ".bzr")):
                 suffix, self.vcs_fields = bzr_version_summary(path)
+            elif os.path.exists(os.path.join(path, ".distversion")):
+                suffix, self.vcs_fields = distversion_version_summary(path)
             else:
                 suffix = "UNKNOWN"
                 self.vcs_fields = {}
+            self.vcs_fields["SUFFIX"] = suffix
             SAMBA_VERSION_STRING += "-" + suffix
         else:
             self.vcs_fields = {}

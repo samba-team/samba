@@ -5,6 +5,7 @@ import Utils, os, sys, tarfile, stat, Scripting, Logs, Options
 from samba_utils import *
 
 dist_dirs = None
+dist_files = None
 dist_blacklist = ""
 
 def add_symlink(tar, fname, abspath, basedir):
@@ -157,6 +158,22 @@ def dist(appname='',version=''):
             fname = dist_base + '/' + f
             add_tarfile(tar, fname, abspath, dir)
 
+    if dist_files:
+        for file in dist_files.split():
+            if file.find(':') != -1:
+                destfile = file.split(':')[1]
+                file = file.split(':')[0]
+            else:
+                destfile = file
+
+            absfile = os.path.join(srcdir, file)
+
+            if destfile != file:
+                file = destfile
+
+            fname = dist_base + '/' + file
+            add_tarfile(tar, fname, absfile, file)
+
     tar.close()
 
     if Options.options.SIGN_RELEASE:
@@ -193,6 +210,13 @@ def DIST_DIRS(dirs):
     global dist_dirs
     if not dist_dirs:
         dist_dirs = dirs
+
+@conf
+def DIST_FILES(files):
+    '''set additional files for packaging, relative to top srcdir'''
+    global dist_files
+    if not dist_files:
+        dist_files = files
 
 @conf
 def DIST_BLACKLIST(blacklist):
