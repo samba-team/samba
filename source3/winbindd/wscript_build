@@ -42,12 +42,13 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
                     source=IDMAP_AD_SRC,
-                    deps='ads',
+                    deps='ads nss_info',
                     vars=locals(),
                     enabled=bld.env.HAVE_LDAP)
 
 bld.SAMBA3_MODULE('idmap_ad',
                  subsystem='idmap',
+                 allow_undefined_symbols=True,
                  source='',
                  deps='IDMAP_AD',
                  init_function='',
