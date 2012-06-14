@@ -247,7 +247,7 @@ void send_break_message_smb2(files_struct *fsp, int level)
 
 	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
 					fsp_persistent,
-					(uint64_t)fsp->fnum,
+					fsp->fnum,
 					smb2_oplock_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(fsp->conn->sconn,
