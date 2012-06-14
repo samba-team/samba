@@ -170,8 +170,8 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(5,("allocated file structure %d, fnum = %d (%u used)\n",
-		 i, fsp->fnum, (unsigned int)sconn->num_files));
+	DEBUG(5,("allocated file structure %d, %s (%u used)\n",
+		 i, fsp_fnum_dbg(fsp), (unsigned int)sconn->num_files));
 
 	if (req != NULL) {
 		req->chain_fsp = fsp;
