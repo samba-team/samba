@@ -234,8 +234,8 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	}
 	state->smb1req = smb1req;
 
-	DEBUG(10,("smbd_smb2_lock_send: %s - fnum[%d]\n",
-		  fsp_str_dbg(fsp), fsp->fnum));
+	DEBUG(10,("smbd_smb2_lock_send: %s - %s\n",
+		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
 	locks = talloc_array(state, struct smbd_lock_element, in_lock_count);
 	if (locks == NULL) {
@@ -748,9 +748,9 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 		 */
 
 		DEBUG(3,("reprocess_blocked_smb2_lock SUCCESS file = %s, "
-			"fnum=%d num_locks=%d\n",
+			"%s, num_locks=%d\n",
 			fsp_str_dbg(fsp),
-			fsp->fnum,
+			fsp_fnum_dbg(fsp),
 			(int)state->lock_count));
 
 		tevent_req_done(smb2req->subreq);
@@ -785,11 +785,11 @@ static void reprocess_blocked_smb2_lock(struct smbd_smb2_request *smb2req,
 	 */
 
 	DEBUG(10,("reprocess_blocked_smb2_lock: only got %d locks of %d needed "
-		"for file %s, fnum = %d. Still waiting....\n",
+		"for file %s, %s. Still waiting....\n",
 		(int)blr->lock_num,
 		(int)state->lock_count,
 		fsp_str_dbg(fsp),
-		(int)fsp->fnum));
+		fsp_fnum_dbg(fsp)));
 
         return;
 
