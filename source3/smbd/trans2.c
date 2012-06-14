@@ -4289,9 +4289,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	DEBUG(5,("smbd_do_qfilepathinfo: %s (fnum = %d) level=%d max_data=%u\n",
+	DEBUG(5,("smbd_do_qfilepathinfo: %s (%s) level=%d max_data=%u\n",
 		 smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 fsp_fnum_dbg(fsp),
 		 info_level, max_data_bytes));
 
 	mode = dos_mode(conn, smb_fname);
@@ -5157,8 +5157,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			 * Original code - this is an open file.
 			 */
 			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
-				DEBUG(3, ("fstat of fnum %d failed (%s)\n",
-					  fsp->fnum, strerror(errno)));
+				DEBUG(3, ("fstat of %s failed (%s)\n",
+					  fsp_fnum_dbg(fsp), strerror(errno)));
 				reply_nterror(req,
 					map_nt_error_from_unix(errno));
 				return;
@@ -5322,9 +5322,9 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	DEBUG(3,("call_trans2qfilepathinfo %s (fnum = %d) level=%d call=%d "
+	DEBUG(3,("call_trans2qfilepathinfo %s (%s) level=%d call=%d "
 		 "total_data=%d\n", smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 fsp_fnum_dbg(fsp),
 		 info_level,tran_call,total_data));
 
 	/* Pull out any data sent here before we realloc. */
@@ -6110,8 +6110,8 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb2_file_rename_information: "
-		  "SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
-		  fsp->fnum, fsp_str_dbg(fsp),
+		  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
+		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 		  smb_fname_str_dbg(smb_fname_dst)));
 	status = rename_internals_fsp(conn, fsp, smb_fname_dst,
 				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
@@ -6178,8 +6178,8 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_file_link_information: "
-		  "SMB_FILE_LINK_INFORMATION (fnum %d) %s -> %s\n",
-		  fsp->fnum, fsp_str_dbg(fsp),
+		  "SMB_FILE_LINK_INFORMATION (%s) %s -> %s\n",
+		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 		  smb_fname_str_dbg(smb_fname_dst)));
 	status = hardlink_internals(ctx,
 				conn,
@@ -6341,8 +6341,8 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 	if (fsp) {
 		DEBUG(10,("smb_file_rename_information: "
-			  "SMB_FILE_RENAME_INFORMATION (fnum %d) %s -> %s\n",
-			  fsp->fnum, fsp_str_dbg(fsp),
+			  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
+			  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 			  smb_fname_str_dbg(smb_fname_dst)));
 		status = rename_internals_fsp(conn, fsp, smb_fname_dst, 0,
 					      overwrite);
@@ -7654,9 +7654,9 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	DEBUG(3,("smbd_do_setfilepathinfo: %s (fnum %d) info_level=%d "
+	DEBUG(3,("smbd_do_setfilepathinfo: %s (%s) info_level=%d "
 		 "totdata=%d\n", smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 fsp_fnum_dbg(fsp),
 		 info_level, total_data));
 
 	switch (info_level) {
@@ -8010,7 +8010,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			 */
 			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat "
-					 "of fnum %d failed (%s)\n", fsp->fnum,
+					 "of %s failed (%s)\n", fsp_fnum_dbg(fsp),
 					 strerror(errno)));
 				reply_nterror(req, map_nt_error_from_unix(errno));
 				return;
@@ -8078,9 +8078,9 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (fnum %d) info_level=%d "
+	DEBUG(3,("call_trans2setfilepathinfo(%d) %s (%s) info_level=%d "
 		 "totdata=%d\n", tran_call, smb_fname_str_dbg(smb_fname),
-		 fsp ? fsp->fnum : FNUM_FIELD_INVALID,
+		 fsp_fnum_dbg(fsp),
 		 info_level,total_data));
 
 	/* Realloc the parameter size */
