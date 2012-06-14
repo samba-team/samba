@@ -163,9 +163,9 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 	state->smb2req = smb2req;
 	state->out_oplock_level = SMB2_OPLOCK_LEVEL_NONE;
 
-	DEBUG(10,("smbd_smb2_oplock_break_send: %s - fnum[%d] "
+	DEBUG(10,("smbd_smb2_oplock_break_send: %s - %s, "
 		  "samba level %d\n",
-		  fsp_str_dbg(fsp), fsp->fnum,
+		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
 		  oplocklevel));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
@@ -174,10 +174,10 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(5,("smbd_smb2_oplock_break_send: got SMB2 oplock break (%u) from client "
-		"for file %s fnum = %d\n",
+		"for file %s, %s\n",
 		(unsigned int)in_oplock_level,
 		fsp_str_dbg(fsp),
-		fsp->fnum ));
+		fsp_fnum_dbg(fsp)));
 
 	/* Are we awaiting a break message ? */
 	if (fsp->oplock_timeout == NULL) {
@@ -240,9 +240,9 @@ void send_break_message_smb2(files_struct *fsp, int level)
 	uint64_t fsp_persistent = fsp_persistent_id(fsp);
 
 	DEBUG(10,("send_break_message_smb2: sending oplock break "
-		"for file %s, fnum = %d, smb2 level %u\n",
+		"for file %s, %s, smb2 level %u\n",
 		fsp_str_dbg(fsp),
-		fsp->fnum,
+		fsp_fnum_dbg(fsp),
 		(unsigned int)smb2_oplock_level ));
 
 	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
