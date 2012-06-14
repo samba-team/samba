@@ -156,8 +156,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(5,("open_fake_file_shared: fname = %s, FID = %d, access_mask = 0x%x\n",
-		 smb_fname_str_dbg(smb_fname), fsp->fnum,
+	DEBUG(5,("open_fake_file_shared: fname = %s, %s, access_mask = 0x%x\n",
+		 smb_fname_str_dbg(smb_fname), fsp_fnum_dbg(fsp),
 		 (unsigned int)access_mask));
 
 	fsp->conn = conn;
