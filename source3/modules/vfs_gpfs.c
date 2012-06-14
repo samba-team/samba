@@ -45,6 +45,7 @@ struct gpfs_config_data {
 	bool getrealfilename;
 	bool dfreequota;
 	bool prealloc;
+	bool acl;
 };
 
 
@@ -350,8 +351,18 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 {
 	SMB4ACL_T *pacl = NULL;
 	int	result;
+	struct gpfs_config_data *config;
 
 	*ppdesc = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
+	}
+
 	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
 
 	if (result == 0)
@@ -372,8 +383,18 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 {
 	SMB4ACL_T *pacl = NULL;
 	int	result;
+	struct gpfs_config_data *config;
 
 	*ppdesc = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
+	}
+
 	result = gpfs_get_nfs4_acl(name, &pacl);
 
 	if (result == 0)
@@ -514,6 +535,16 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 
 static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
 {
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	}
+
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
 
@@ -627,6 +658,15 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 					  SMB_ACL_TYPE_T type)
 {
 	gpfs_aclType_t gpfs_type;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NULL);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
+	}
 
 	switch(type) {
 	case SMB_ACL_TYPE_ACCESS:
@@ -646,6 +686,16 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 					files_struct *fsp)
 {
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NULL);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
+	}
+
 	return gpfsacl_get_posix_acl(fsp->fsp_name->base_name,
 				     GPFS_ACL_TYPE_ACCESS);
 }
@@ -744,6 +794,15 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 {
 	struct gpfs_acl *gpfs_acl;
 	int result;
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, type, theacl);
+	}
 
 	gpfs_acl = smb2gpfs_acl(theacl, type);
 	if (gpfs_acl == NULL) {
@@ -760,6 +819,16 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 				  files_struct *fsp,
 				  SMB_ACL_T theacl)
 {
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
+	}
+
 	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name->base_name,
 					SMB_ACL_TYPE_ACCESS, theacl);
 }
@@ -767,6 +836,16 @@ static int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 static int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 					   const char *path)
 {
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return -1);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
+	}
+
 	errno = ENOTSUP;
 	return -1;
 }
@@ -1424,6 +1503,8 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 
 	config->prealloc = lp_parm_bool(SNUM(handle->conn), "gpfs",
 				   "prealloc", true);
+
+	config->acl = lp_parm_bool(SNUM(handle->conn), "gpfs", "acl", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
