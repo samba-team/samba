@@ -366,28 +366,55 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 }
 
+static void notify_parent_dir(connection_struct *conn,
+				uint32 action, uint32 filter,
+				const char *path)
+{
+	struct smb_filename smb_fname_parent;
+	char *parent;
+	const char *name;
+	char *oldwd;
+
+	if (!parent_dirname(talloc_tos(), path, &parent, &name)) {
+		DEBUG(1, ("Can't get parent dirname, giving up\n"));
+		return;
+	}
+
+	ZERO_STRUCT(smb_fname_parent);
+	smb_fname_parent.base_name = parent;
+
+	oldwd = vfs_GetWd(parent, conn);
+	if (oldwd == NULL) {
+		DEBUG(1, ("vfs_GetWd failed!\n"));
+		goto done;
+	}
+	if (vfs_ChDir(conn, conn->connectpath) == -1) {
+		DEBUG(1, ("Could not chdir to connect path!\n"));
+		goto done;
+	}
+
+	if (SMB_VFS_STAT(conn, &smb_fname_parent) == -1) {
+		goto chdir_done;
+	}
+
+	notify_onelevel(conn->notify_ctx, action, filter,
+			SMB_VFS_FILE_ID_CREATE(conn, &smb_fname_parent.st),
+			name);
+chdir_done:
+	vfs_ChDir(conn, oldwd);
+done:
+	TALLOC_FREE(parent);
+}
+
 void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path)
 {
-	char *fullpath;
-	char *parent;
-	const char *name;
+	char *fullpath = NULL;
 
 	if (path[0] == '.' && path[1] == '/') {
 		path += 2;
 	}
-	if (parent_dirname(talloc_tos(), path, &parent, &name)) {
-		struct smb_filename smb_fname_parent;
-
-		ZERO_STRUCT(smb_fname_parent);
-		smb_fname_parent.base_name = parent;
-
-		if (SMB_VFS_STAT(conn, &smb_fname_parent) != -1) {
-			notify_onelevel(conn->notify_ctx, action, filter,
-			    SMB_VFS_FILE_ID_CREATE(conn, &smb_fname_parent.st),
-			    name);
-		}
-	}
+	notify_parent_dir(conn, action, filter, path);
 
 	fullpath = talloc_asprintf(talloc_tos(), "%s/%s", conn->connectpath,
 				   path);
