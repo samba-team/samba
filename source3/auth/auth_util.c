@@ -982,6 +982,10 @@ static NTSTATUS make_system_session_info_from_pw(TALLOC_CTX *mem_ctx,
 	}
 
 	talloc_free(server_info);
+
+	/* SYSTEM has all privilages */
+	(*session_info)->security_token->privilege_mask = ~0;
+	
 	talloc_steal(mem_ctx, *session_info);
 
 	status = NT_STATUS_OK;
