@@ -41,7 +41,7 @@ static int dbwrap_tool_fetch_int32(struct db_context *db,
 	int32_t value;
 	NTSTATUS status;
 
-	status = dbwrap_fetch_int32(db, keyname, &value);
+	status = dbwrap_fetch_int32_bystring(db, keyname, &value);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Error fetching int32 from key '%s': %s\n",
 			 keyname, nt_errstr(status));

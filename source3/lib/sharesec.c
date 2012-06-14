@@ -156,7 +156,7 @@ bool share_info_db_init(void)
 		return False;
 	}
 
-	status = dbwrap_fetch_int32(share_db, vstring, &vers_id);
+	status = dbwrap_fetch_int32_bystring(share_db, vstring, &vers_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		vers_id = 0;
 	}
@@ -171,7 +171,7 @@ bool share_info_db_init(void)
 		return false;
 	}
 
-	status = dbwrap_fetch_int32(share_db, vstring, &vers_id);
+	status = dbwrap_fetch_int32_bystring(share_db, vstring, &vers_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		vers_id = 0;
 	}

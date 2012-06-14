@@ -168,7 +168,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 #endif
 	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
-	status = dbwrap_fetch_int32(db, "IDMAP_VERSION", &vers);
+	status = dbwrap_fetch_int32_bystring(db, "IDMAP_VERSION", &vers);
 	if (!NT_STATUS_IS_OK(status)) {
 		vers = -1;
 	}
@@ -182,7 +182,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 
 		int32 wm;
 
-		status = dbwrap_fetch_int32(db, HWM_USER, &wm);
+		status = dbwrap_fetch_int32_bystring(db, HWM_USER, &wm);
 		if (!NT_STATUS_IS_OK(status)) {
 			wm = -1;
 		}
@@ -200,7 +200,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 			return False;
 		}
 
-		status = dbwrap_fetch_int32(db, HWM_GROUP, &wm);
+		status = dbwrap_fetch_int32_bystring(db, HWM_GROUP, &wm);
 		if (!NT_STATUS_IS_OK(status)) {
 			wm = -1;
 		}
@@ -345,7 +345,7 @@ static NTSTATUS idmap_tdb_open_db(struct idmap_domain *dom)
 	}
 
 	/* check against earlier versions */
-	ret = dbwrap_fetch_int32(db, "IDMAP_VERSION", &version);
+	ret = dbwrap_fetch_int32_bystring(db, "IDMAP_VERSION", &version);
 	if (!NT_STATUS_IS_OK(ret)) {
 		version = -1;
 	}

@@ -26,8 +26,8 @@
 #include "dbwrap.h"
 #include "lib/util/util_tdb.h"
 
-NTSTATUS dbwrap_fetch_int32(struct db_context *db, const char *keystr,
-			    int32_t *result)
+NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
+				     int32_t *result)
 {
 	TDB_DATA dbuf;
 	NTSTATUS status;

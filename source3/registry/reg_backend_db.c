@@ -72,7 +72,8 @@ static NTSTATUS regdb_trans_do_action(struct db_context *db, void *private_data)
 	int32_t version_id;
 	struct regdb_trans_ctx *ctx = (struct regdb_trans_ctx *)private_data;
 
-	status = dbwrap_fetch_int32(db, REGDB_VERSION_KEYNAME, &version_id);
+	status = dbwrap_fetch_int32_bystring(db, REGDB_VERSION_KEYNAME,
+					     &version_id);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ERROR: could not fetch registry db version: %s. "
@@ -754,7 +755,8 @@ WERROR regdb_init(void)
 	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
 		   regdb_refcount));
 
-	status = dbwrap_fetch_int32(regdb, REGDB_VERSION_KEYNAME, &vers_id);
+	status = dbwrap_fetch_int32_bystring(regdb, REGDB_VERSION_KEYNAME,
+					     &vers_id);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("regdb_init: registry version uninitialized "
 			   "(got %d), initializing to version %d\n",
