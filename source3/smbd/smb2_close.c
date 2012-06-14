@@ -181,8 +181,8 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	*out_end_of_file = 0;
 	*out_file_attributes = 0;
 
-	DEBUG(10,("smbd_smb2_close: %s - fnum[%d]\n",
-		  fsp_str_dbg(fsp), fsp->fnum));
+	DEBUG(10,("smbd_smb2_close: %s - %s\n",
+		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
 	smbreq = smbd_smb2_fake_smb_request(req);
 	if (smbreq == NULL) {
