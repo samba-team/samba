@@ -265,8 +265,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 	state->status = NT_STATUS_OK;
 	state->out_output_buffer = data_blob_null;
 
-	DEBUG(10,("smbd_smb2_getinfo_send: %s - fnum[%d]\n",
-		  fsp_str_dbg(fsp), fsp->fnum));
+	DEBUG(10,("smbd_smb2_getinfo_send: %s - %s\n",
+		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
@@ -355,8 +355,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 
 			if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
 				DEBUG(3, ("smbd_smb2_getinfo_send: "
-					  "fstat of fnum %d failed (%s)\n",
-					  fsp->fnum, strerror(errno)));
+					  "fstat of %s failed (%s)\n",
+					  fsp_fnum_dbg(fsp), strerror(errno)));
 				status = map_nt_error_from_unix(errno);
 				tevent_req_nterror(req, status);
 				return tevent_req_post(req, ev);
