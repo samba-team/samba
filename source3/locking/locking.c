@@ -267,10 +267,10 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
 	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f "
-		"blocking_lock=%s requested for fnum %d file %s\n",
+		"blocking_lock=%s requested for %s file %s\n",
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
 		(double)offset, (double)count, blocking_lock ? "true" :
-		"false", fsp->fnum, fsp_str_dbg(fsp)));
+		"false", fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
@@ -318,8 +318,8 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
-		  (double)offset, (double)count, fsp->fnum,
+	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for %s file %s\n",
+		  (double)offset, (double)count, fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
@@ -369,8 +369,8 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
-	DEBUG(10,("do_lock_cancel: cancel start=%.0f len=%.0f requested for fnum %d file %s\n",
-		  (double)offset, (double)count, fsp->fnum,
+	DEBUG(10,("do_lock_cancel: cancel start=%.0f len=%.0f requested for %s file %s\n",
+		  (double)offset, (double)count, fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp)));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
@@ -1013,8 +1013,8 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close,
 	struct share_mode_lock *lck;
 
 	DEBUG(10,("set_delete_on_close: %s delete on close flag for "
-		  "fnum = %d, file %s\n",
-		  delete_on_close ? "Adding" : "Removing", fsp->fnum,
+		  "%s, file %s\n",
+		  delete_on_close ? "Adding" : "Removing", fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp)));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
