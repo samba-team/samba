@@ -819,7 +819,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 * I think I'll make this be the inode+dev. JRA.
 		 */
 
-		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on FID[0x%04X]\n",fsp->fnum));
+		DEBUG(10,("FSCTL_CREATE_OR_GET_OBJECT_ID: called on %s\n",
+			  fsp_fnum_dbg(fsp)));
 
 		*out_len = (max_out_len >= 64) ? 64 : max_out_len;
 		/* Hmmm, will this cause problems if less data asked for? */
@@ -839,14 +840,16 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	case FSCTL_GET_REPARSE_POINT:
 	{
 		/* Fail it with STATUS_NOT_A_REPARSE_POINT */
-		DEBUG(10, ("FSCTL_GET_REPARSE_POINT: called on FID[0x%04X] Status: NOT_IMPLEMENTED\n", fsp->fnum));
+		DEBUG(10, ("FSCTL_GET_REPARSE_POINT: called on %s. "
+			   "Status: NOT_IMPLEMENTED\n", fsp_fnum_dbg(fsp)));
 		return NT_STATUS_NOT_A_REPARSE_POINT;
 	}
 
 	case FSCTL_SET_REPARSE_POINT:
 	{
 		/* Fail it with STATUS_NOT_A_REPARSE_POINT */
-		DEBUG(10, ("FSCTL_SET_REPARSE_POINT: called on FID[0x%04X] Status: NOT_IMPLEMENTED\n", fsp->fnum));
+		DEBUG(10, ("FSCTL_SET_REPARSE_POINT: called on %s. "
+			   "Status: NOT_IMPLEMENTED\n", fsp_fnum_dbg(fsp)));
 		return NT_STATUS_NOT_A_REPARSE_POINT;
 	}
 
@@ -967,7 +970,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		uid_t uid;
 		size_t sid_len;
 
-		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: called on FID[0x%04X]\n", fsp->fnum));
+		DEBUG(10, ("FSCTL_FIND_FILES_BY_SID: called on %s\n",
+			   fsp_fnum_dbg(fsp)));
 
 		if (in_len < 8) {
 			/* NT_STATUS_BUFFER_TOO_SMALL maybe? */
@@ -1079,8 +1083,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 
 	case FSCTL_IS_VOLUME_DIRTY:
 	{
-		DEBUG(10,("FSCTL_IS_VOLUME_DIRTY: called on FID[0x%04X] "
-			  "(but not implemented)\n", fsp->fnum));
+		DEBUG(10,("FSCTL_IS_VOLUME_DIRTY: called on %s "
+			  "(but not implemented)\n", fsp_fnum_dbg(fsp)));
 		/*
 		 * http://msdn.microsoft.com/en-us/library/cc232128%28PROT.10%29.aspx
 		 * says we have to respond with NT_STATUS_INVALID_PARAMETER
