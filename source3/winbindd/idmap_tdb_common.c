@@ -583,7 +583,7 @@ static NTSTATUS idmap_tdb_common_sids_to_unixids_action(struct db_context *db,
 			}
 		}
 
-		if ((state->ids[i]->status == ID_MAPPED)) {
+		if (state->ids[i]->status == ID_MAPPED) {
 			num_mapped += 1;
 		}
 
