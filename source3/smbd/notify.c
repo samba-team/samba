@@ -352,6 +352,7 @@ static void notify_parent_dir(connection_struct *conn,
 	struct smb_filename smb_fname_parent;
 	char *parent;
 	const char *name;
+	char *oldwd;
 
 	if (!parent_dirname(talloc_tos(), path, &parent, &name)) {
 		return;
@@ -360,12 +361,23 @@ static void notify_parent_dir(connection_struct *conn,
 	ZERO_STRUCT(smb_fname_parent);
 	smb_fname_parent.base_name = parent;
 
-	if (SMB_VFS_STAT(conn, &smb_fname_parent) == -1) {
+	oldwd = vfs_GetWd(parent, conn);
+	if (oldwd == NULL) {
 		goto done;
 	}
+	if (vfs_ChDir(conn, conn->connectpath) == -1) {
+		goto done;
+	}
+
+	if (SMB_VFS_STAT(conn, &smb_fname_parent) == -1) {
+		goto chdir_done;
+	}
+
 	notify_onelevel(conn->notify_ctx, action, filter,
 			SMB_VFS_FILE_ID_CREATE(conn, &smb_fname_parent.st),
 			name);
+chdir_done:
+	vfs_ChDir(conn, oldwd);
 done:
 	TALLOC_FREE(parent);
 }
