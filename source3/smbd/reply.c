@@ -3254,9 +3254,9 @@ void reply_readbraw(struct smb_request *req)
 		nread = 0;
 #endif
 
-	DEBUG( 3, ( "reply_readbraw: fnum=%d start=%.0f max=%lu "
+	DEBUG( 3, ( "reply_readbraw: %s start=%.0f max=%lu "
 		"min=%lu nread=%lu\n",
-		fsp->fnum, (double)startpos,
+		fsp_fnum_dbg(fsp), (double)startpos,
 		(unsigned long)maxcount,
 		(unsigned long)mincount,
 		(unsigned long)nread ) );
@@ -3375,8 +3375,8 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	SCVAL(p,0,0); /* pad byte. */
 	SSVAL(p,1,nread);
 
-	DEBUG(3,("lockread fnum=%d num=%d nread=%d\n",
-		 fsp->fnum, (int)numtoread, (int)nread));
+	DEBUG(3,("lockread %s num=%d nread=%d\n",
+		 fsp_fnum_dbg(fsp), (int)numtoread, (int)nread));
 
 	END_PROFILE(SMBlockread);
 	return;
@@ -3467,8 +3467,8 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 	SCVAL(smb_buf(req->outbuf),0,1);
 	SSVAL(smb_buf(req->outbuf),1,nread);
 
-	DEBUG( 3, ( "read fnum=%d num=%d nread=%d\n",
-		fsp->fnum, (int)numtoread, (int)nread ) );
+	DEBUG(3, ("read %s num=%d nread=%d\n",
+		  fsp_fnum_dbg(fsp), (int)numtoread, (int)nread));
 
 strict_unlock:
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
@@ -3595,8 +3595,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 						 strerror(errno)));
 					exit_server_cleanly("send_file_readX: fake_sendfile failed");
 				}
-				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
-					fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+				DEBUG(3, ("send_file_readX: fake_sendfile %s max=%d nread=%d\n",
+					  fsp_fnum_dbg(fsp), (int)smb_maxcnt, (int)nread));
 				/* No outbuf here means successful sendfile. */
 				goto strict_unlock;
 			}
@@ -3619,8 +3619,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			goto normal_read;
 		}
 
-		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
-			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+		DEBUG(3, ("send_file_readX: sendfile %s max=%d nread=%d\n",
+			  fsp_fnum_dbg(fsp), (int)smb_maxcnt, (int)nread));
 
 		/* Deal with possible short send. */
 		if (nread != smb_maxcnt + sizeof(headerbuf)) {
@@ -3688,8 +3688,8 @@ nosendfile_read:
 
 	setup_readX_header(req, (char *)req->outbuf, nread);
 
-	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
-		    fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+	DEBUG(3, ("send_file_readX %s max=%d nread=%d\n",
+		  fsp_fnum_dbg(fsp), (int)smb_maxcnt, (int)nread));
 	return;
 
  strict_unlock:
@@ -3970,9 +3970,9 @@ void reply_writebraw(struct smb_request *req)
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
 
-	DEBUG(3,("reply_writebraw: initial write fnum=%d start=%.0f num=%d "
+	DEBUG(3, ("reply_writebraw: initial write %s start=%.0f num=%d "
 			"wrote=%d sync=%d\n",
-		fsp->fnum, (double)startpos, (int)numtowrite,
+		fsp_fnum_dbg(fsp), (double)startpos, (int)numtowrite,
 		(int)nwritten, (int)write_through));
 
 	if (nwritten < (ssize_t)numtowrite)  {
@@ -4077,9 +4077,9 @@ void reply_writebraw(struct smb_request *req)
 		goto strict_unlock;
 	}
 
-	DEBUG(3,("reply_writebraw: secondart write fnum=%d start=%.0f num=%d "
+	DEBUG(3,("reply_writebraw: secondart write %s start=%.0f num=%d "
 		"wrote=%d\n",
-		fsp->fnum, (double)startpos, (int)numtowrite,
+		fsp_fnum_dbg(fsp), (double)startpos, (int)numtowrite,
 		(int)total_written));
 
 	if (!fsp->print_file) {
@@ -4218,8 +4218,8 @@ void reply_writeunlock(struct smb_request *req)
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
 
-	DEBUG(3,("writeunlock fnum=%d num=%d wrote=%d\n",
-		 fsp->fnum, (int)numtowrite, (int)nwritten));
+	DEBUG(3, ("writeunlock %s num=%d wrote=%d\n",
+		  fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 
 strict_unlock:
 	if (numtowrite && !fsp->print_file) {
@@ -4345,7 +4345,7 @@ void reply_write(struct smb_request *req)
 		SSVAL(req->outbuf,smb_err,ERRdiskfull);
 	}
 
-	DEBUG(3,("write fnum=%d num=%d wrote=%d\n", fsp->fnum, (int)numtowrite, (int)nwritten));
+	DEBUG(3, ("write %s num=%d wrote=%d\n", fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 
 strict_unlock:
 	if (!fsp->print_file) {
@@ -4588,8 +4588,8 @@ void reply_write_and_X(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
 	SSVAL(req->outbuf,smb_vwv4,nwritten>>16);
 
-	DEBUG(3,("writeX fnum=%d num=%d wrote=%d\n",
-		fsp->fnum, (int)numtowrite, (int)nwritten));
+	DEBUG(3,("writeX %s num=%d wrote=%d\n",
+		fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
 
 	status = sync_file(conn, fsp, write_through);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4696,8 +4696,8 @@ void reply_lseek(struct smb_request *req)
 	reply_outbuf(req, 2, 0);
 	SIVAL(req->outbuf,smb_vwv0,res);
 
-	DEBUG(3,("lseek fnum=%d ofs=%.0f newpos = %.0f mode=%d\n",
-		fsp->fnum, (double)startpos, (double)res, mode));
+	DEBUG(3,("lseek %s ofs=%.0f newpos = %.0f mode=%d\n",
+		fsp_fnum_dbg(fsp), (double)startpos, (double)res, mode));
 
 	END_PROFILE(SMBlseek);
 	return;
@@ -4799,7 +4799,7 @@ void reply_close(struct smb_request *req)
 		/*
 		 * Special case - close NT SMB directory handle.
 		 */
-		DEBUG(3,("close directory fnum=%d\n", fsp->fnum));
+		DEBUG(3,("close directory %s\n", fsp_fnum_dbg(fsp)));
 		status = close_file(req, fsp, NORMAL_CLOSE);
 	} else {
 		time_t t;
@@ -4807,8 +4807,8 @@ void reply_close(struct smb_request *req)
 		 * Close ordinary file.
 		 */
 
-		DEBUG(3,("close fd=%d fnum=%d (numopen=%d)\n",
-			 fsp->fh->fd, fsp->fnum,
+		DEBUG(3,("close fd=%d %s (numopen=%d)\n",
+			 fsp->fh->fd, fsp_fnum_dbg(fsp),
 			 conn->num_files_open));
 
 		/*
@@ -4906,8 +4906,8 @@ void reply_writeclose(struct smb_request *req)
 		close_status = close_file(req, fsp, NORMAL_CLOSE);
 	}
 
-	DEBUG(3,("writeclose fnum=%d num=%d wrote=%d (numopen=%d)\n",
-		 fsp->fnum, (int)numtowrite, (int)nwritten,
+	DEBUG(3,("writeclose %s num=%d wrote=%d (numopen=%d)\n",
+		 fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten,
 		 conn->num_files_open));
 
 	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
@@ -4966,8 +4966,8 @@ void reply_lock(struct smb_request *req)
 	count = (uint64_t)IVAL(req->vwv+1, 0);
 	offset = (uint64_t)IVAL(req->vwv+3, 0);
 
-	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
-		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
+	DEBUG(3,("lock fd=%d %s offset=%.0f count=%.0f\n",
+		 fsp->fh->fd, fsp_fnum_dbg(fsp), (double)offset, (double)count));
 
 	br_lck = do_lock(req->sconn->msg_ctx,
 			fsp,
@@ -5037,8 +5037,8 @@ void reply_unlock(struct smb_request *req)
 		return;
 	}
 
-	DEBUG( 3, ( "unlock fd=%d fnum=%d offset=%.0f count=%.0f\n",
-		    fsp->fh->fd, fsp->fnum, (double)offset, (double)count ) );
+	DEBUG( 3, ( "unlock fd=%d %s offset=%.0f count=%.0f\n",
+		    fsp->fh->fd, fsp_fnum_dbg(fsp), (double)offset, (double)count ) );
 
 	reply_outbuf(req, 0, 0);
 
@@ -5184,8 +5184,8 @@ void reply_printopen(struct smb_request *req)
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
-	DEBUG(3,("openprint fd=%d fnum=%d\n",
-		 fsp->fh->fd, fsp->fnum));
+	DEBUG(3,("openprint fd=%d %s\n",
+		 fsp->fh->fd, fsp_fnum_dbg(fsp)));
 
 	END_PROFILE(SMBsplopen);
 	return;
@@ -5222,8 +5222,8 @@ void reply_printclose(struct smb_request *req)
 		return;
 	}
 
-	DEBUG(3,("printclose fd=%d fnum=%d\n",
-		 fsp->fh->fd,fsp->fnum));
+	DEBUG(3,("printclose fd=%d %s\n",
+		 fsp->fh->fd, fsp_fnum_dbg(fsp)));
 
 	status = close_file(req, fsp, NORMAL_CLOSE);
 
@@ -5461,7 +5461,7 @@ void reply_printwrite(struct smb_request *req)
 		return;
 	}
 
-	DEBUG( 3, ( "printwrite fnum=%d num=%d\n", fsp->fnum, numtowrite ) );
+	DEBUG(3, ("printwrite %s num=%d\n", fsp_fnum_dbg(fsp), numtowrite));
 
 	END_PROFILE(SMBsplwr);
 	return;
@@ -5792,8 +5792,8 @@ static void rename_open_files(connection_struct *conn,
 		if (fsp->name_hash != orig_name_hash) {
 			continue;
 		}
-		DEBUG(10, ("rename_open_files: renaming file fnum %d "
-			   "(file_id %s) from %s -> %s\n", fsp->fnum,
+		DEBUG(10, ("rename_open_files: renaming file %s "
+			   "(file_id %s) from %s -> %s\n", fsp_fnum_dbg(fsp),
 			   file_id_string_tos(&fsp->file_id), fsp_str_dbg(fsp),
 			   smb_fname_str_dbg(smb_fname_dst)));
 
@@ -7568,8 +7568,8 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		return status;
 	}
 
-	DEBUG(3, ("smbd_do_locking: fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-		  fsp->fnum, (unsigned int)type, num_locks, num_ulocks));
+	DEBUG(3, ("smbd_do_locking: %s type=%d num_locks=%d num_ulocks=%d\n",
+		  fsp_fnum_dbg(fsp), (unsigned int)type, num_locks, num_ulocks));
 
 	return NT_STATUS_OK;
 }
@@ -7637,8 +7637,8 @@ void reply_lockingX(struct smb_request *req)
 		bool result;
 
 		DEBUG(5,("reply_lockingX: oplock break reply (%u) from client "
-			 "for fnum = %d\n", (unsigned int)oplocklevel,
-			 fsp->fnum ));
+			 "for %s\n", (unsigned int)oplocklevel,
+			 fsp_fnum_dbg(fsp)));
 
 		/*
 		 * Make sure we have granted an exclusive or batch oplock on
@@ -7654,9 +7654,9 @@ void reply_lockingX(struct smb_request *req)
 			   message here - just ignore it. JRA. */
 
 			DEBUG(5,("reply_lockingX: Error : oplock break from "
-				 "client for fnum = %d (oplock=%d) and no "
+				 "client for %s (oplock=%d) and no "
 				 "oplock granted on this file (%s).\n",
-				 fsp->fnum, fsp->oplock_type,
+				 fsp_fnum_dbg(fsp), fsp->oplock_type,
 				 fsp_str_dbg(fsp)));
 
 			/* if this is a pure oplock break request then don't
@@ -7794,8 +7794,8 @@ void reply_lockingX(struct smb_request *req)
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
-	DEBUG(3, ("lockingX fnum=%d type=%d num_locks=%d num_ulocks=%d\n",
-		  fsp->fnum, (unsigned int)locktype, num_locks, num_ulocks));
+	DEBUG(3, ("lockingX %s type=%d num_locks=%d num_ulocks=%d\n",
+		  fsp_fnum_dbg(fsp), (unsigned int)locktype, num_locks, num_ulocks));
 
 	END_PROFILE(SMBlockingX);
 }
@@ -7893,9 +7893,9 @@ void reply_setattrE(struct smb_request *req)
 		goto out;
 	}
 
-	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%u modtime=%u "
+	DEBUG( 3, ( "reply_setattrE %s actime=%u modtime=%u "
 	       " createtime=%u\n",
-		fsp->fnum,
+		fsp_fnum_dbg(fsp),
 		(unsigned int)ft.atime.tv_sec,
 		(unsigned int)ft.mtime.tv_sec,
 		(unsigned int)ft.create_time.tv_sec
@@ -7998,7 +7998,7 @@ void reply_getattrE(struct smb_request *req)
 	}
 	SSVAL(req->outbuf,smb_vwv10, mode);
 
-	DEBUG( 3, ( "reply_getattrE fnum=%d\n", fsp->fnum));
+	DEBUG( 3, ( "reply_getattrE %s\n", fsp_fnum_dbg(fsp)));
 
 	END_PROFILE(SMBgetattrE);
 	return;
