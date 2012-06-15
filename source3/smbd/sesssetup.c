@@ -333,6 +333,7 @@ static int shutdown_other_smbds(const struct connections_key *key,
 				void *private_data)
 {
 	struct shutdown_state *state = (struct shutdown_state *)private_data;
+	struct server_id self_pid = messaging_server_id(state->msg_ctx);
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
 		   server_id_str(talloc_tos(), &crec->pid), crec->addr));
@@ -342,7 +343,7 @@ static int shutdown_other_smbds(const struct connections_key *key,
 		return 0;
 	}
 
-	if (procid_is_me(&crec->pid)) {
+	if (procid_equal(&crec->pid, &self_pid)) {
 		DEBUG(10, ("It's me\n"));
 		return 0;
 	}
