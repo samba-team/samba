@@ -112,8 +112,9 @@ NTSTATUS dbwrap_trans_change_int32_atomic_bystring(struct db_context *db,
 NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 			    int flag);
 NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key);
-NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
-				  int32_t v);
+NTSTATUS dbwrap_trans_store_int32_bystring(struct db_context *db,
+					   const char *keystr,
+					   int32_t v);
 NTSTATUS dbwrap_trans_store_uint32(struct db_context *db, const char *keystr,
 				   uint32_t v);
 NTSTATUS dbwrap_trans_store_bystring(struct db_context *db, const char *key,

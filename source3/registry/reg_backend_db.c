@@ -485,7 +485,8 @@ static WERROR regdb_store_regdb_version(struct db_context *db, uint32_t version)
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	status = dbwrap_trans_store_int32(db, REGDB_VERSION_KEYNAME, version);
+	status = dbwrap_trans_store_int32_bystring(db, REGDB_VERSION_KEYNAME,
+						   version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("regdb_store_regdb_version: error storing %s = %d: %s\n",
 			  REGDB_VERSION_KEYNAME, version, nt_errstr(status)));

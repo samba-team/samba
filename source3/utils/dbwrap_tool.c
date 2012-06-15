@@ -136,7 +136,7 @@ static int dbwrap_tool_store_int32(struct db_context *db,
 	NTSTATUS status;
 	int32_t value = (int32_t)strtol(data, NULL, 10);
 
-	status = dbwrap_trans_store_int32(db, keyname, value);
+	status = dbwrap_trans_store_int32_bystring(db, keyname, value);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR: could not store int32 key '%s': %s\n",

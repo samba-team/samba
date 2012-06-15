@@ -380,8 +380,9 @@ NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key)
 	return status;
 }
 
-NTSTATUS dbwrap_trans_store_int32(struct db_context *db, const char *keystr,
-				  int32_t v)
+NTSTATUS dbwrap_trans_store_int32_bystring(struct db_context *db,
+					   const char *keystr,
+					   int32_t v)
 {
 	int32_t v_store;
 
