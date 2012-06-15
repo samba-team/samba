@@ -456,7 +456,7 @@ struct tevent_context *s3_tevent_context_init(TALLOC_CTX *mem_ctx)
 }
 
 struct idle_event {
-	struct timed_event *te;
+	struct tevent_timer *te;
 	struct timeval interval;
 	char *name;
 	bool (*handler)(const struct timeval *now, void *private_data);
@@ -464,7 +464,7 @@ struct idle_event {
 };
 
 static void smbd_idle_event_handler(struct tevent_context *ctx,
-				    struct timer_event *te,
+				    struct tevent_timer *te,
 				    struct timeval now,
 				    void *private_data)
 {
