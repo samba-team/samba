@@ -69,7 +69,7 @@ static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 bool brl_same_context(const struct lock_context *ctx1, 
 			     const struct lock_context *ctx2)
 {
-	return (procid_equal(&ctx1->pid, &ctx2->pid) &&
+	return (serverid_equal(&ctx1->pid, &ctx2->pid) &&
 		(ctx1->smblctx == ctx2->smblctx) &&
 		(ctx1->tid == ctx2->tid));
 }
@@ -252,7 +252,7 @@ NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
-	if (procid_equal(&lock->context.pid, &fsp->last_lock_failure.context.pid) &&
+	if (serverid_equal(&lock->context.pid, &fsp->last_lock_failure.context.pid) &&
 			lock->context.tid == fsp->last_lock_failure.context.tid &&
 			lock->fnum == fsp->last_lock_failure.fnum &&
 			lock->start == fsp->last_lock_failure.start) {
@@ -1509,7 +1509,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 	for (i=0; i < num_locks_copy; i++) {
 		struct lock_struct *lock = &locks_copy[i];
 
-		if (lock->context.tid == tid && procid_equal(&lock->context.pid, &pid) &&
+		if (lock->context.tid == tid && serverid_equal(&lock->context.pid, &pid) &&
 				(lock->fnum == fnum)) {
 			brl_unlock(msg_ctx,
 				br_lck,
@@ -1958,7 +1958,7 @@ void brl_revalidate(struct messaging_context *msg_ctx,
 	ZERO_STRUCT(last_pid);
 
 	for (i=0; i<state->num_pids; i++) {
-		if (procid_equal(&last_pid, &state->pids[i])) {
+		if (serverid_equal(&last_pid, &state->pids[i])) {
 			/*
 			 * We've seen that one already
 			 */

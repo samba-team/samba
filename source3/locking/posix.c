@@ -777,7 +777,7 @@ static struct lock_list *posix_lock_list(TALLOC_CTX *ctx,
 		}
 
 		/* Ignore locks not owned by this process. */
-		if (!procid_equal(&lock->context.pid, &lock_ctx->pid)) {
+		if (!serverid_equal(&lock->context.pid, &lock_ctx->pid)) {
 			continue;
 		}
 

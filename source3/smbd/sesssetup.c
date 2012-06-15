@@ -343,7 +343,7 @@ static int shutdown_other_smbds(const struct connections_key *key,
 		return 0;
 	}
 
-	if (procid_equal(&crec->pid, &self_pid)) {
+	if (serverid_equal(&crec->pid, &self_pid)) {
 		DEBUG(10, ("It's me\n"));
 		return 0;
 	}

@@ -564,7 +564,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	/* Need to wait before sending a break
 	   message if we sent ourselves this message. */
-	if (procid_equal(&self, &src)) {
+	if (serverid_equal(&self, &src)) {
 		wait_before_sending_break();
 	}
 
@@ -876,7 +876,7 @@ static void do_break_to_none(struct tevent_req *req)
  		 * Bugid #5980.
  		 */
 
-		if (procid_equal(&self, &share_entry->pid)) {
+		if (serverid_equal(&self, &share_entry->pid)) {
 			struct files_struct *cur_fsp =
 				initial_break_processing(state->sconn,
 					share_entry->id,

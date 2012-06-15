@@ -913,7 +913,7 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 	struct server_id self = messaging_server_id(sconn->msg_ctx);
 	files_struct *fsp;
 
-	if (!procid_equal(&self, &share_entry->pid)) {
+	if (!serverid_equal(&self, &share_entry->pid)) {
 		return;
 	}
 
@@ -1363,7 +1363,7 @@ static void defer_open(struct share_mode_lock *lck,
 		struct share_mode_entry *e = &lck->data->share_modes[i];
 
 		if (is_deferred_open_entry(e) &&
-		    procid_equal(&self, &e->pid) &&
+		    serverid_equal(&self, &e->pid) &&
 		    (e->op_mid == req->mid)) {
 			DEBUG(0, ("Trying to defer an already deferred "
 				"request: mid=%llu, exiting\n",

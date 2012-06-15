@@ -2058,7 +2058,7 @@ struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
 	return server_id;
 }
 
-bool procid_equal(const struct server_id *p1, const struct server_id *p2)
+bool serverid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	if (p1->pid != p2->pid) {
 		return false;

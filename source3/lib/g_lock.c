@@ -119,7 +119,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 	}
 
 	for (i=0; i<num_locks; i++) {
-		if (procid_equal(&self, &locks[i].pid)) {
+		if (serverid_equal(&self, &locks[i].pid)) {
 			status = NT_STATUS_INTERNAL_ERROR;
 			goto done;
 		}
@@ -327,7 +327,7 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, const char *name)
 		goto done;
 	}
 	for (i=0; i<num_locks; i++) {
-		if (procid_equal(&self, &locks[i].pid)) {
+		if (serverid_equal(&self, &locks[i].pid)) {
 			break;
 		}
 	}

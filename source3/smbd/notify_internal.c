@@ -453,7 +453,7 @@ static NTSTATUS notify_del_entry(struct db_record *rec,
 		if (e->private_data != private_data) {
 			continue;
 		}
-		if (procid_equal(&e->server, pid)) {
+		if (serverid_equal(&e->server, pid)) {
 			break;
 		}
 	}

@@ -856,7 +856,7 @@ static void sess_file_fn( const struct share_mode_entry *e,
 {
 	struct sess_file_count *sess = (struct sess_file_count *)data;
 
-	if ( procid_equal(&e->pid, &sess->pid) && (sess->uid == e->uid) ) {
+	if (serverid_equal(&e->pid, &sess->pid) && (sess->uid == e->uid)) {
 		sess->count++;
 	}
 

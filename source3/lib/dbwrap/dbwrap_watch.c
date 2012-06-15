@@ -166,7 +166,7 @@ static NTSTATUS dbwrap_record_del_watcher(TDB_DATA w_key, struct server_id id)
 	num_ids = value.dsize / sizeof(struct server_id);
 
 	for (i=0; i<num_ids; i++) {
-		if (procid_equal(&id, &ids[i])) {
+		if (serverid_equal(&id, &ids[i])) {
 			ids[i] = ids[num_ids-1];
 			value.dsize -= sizeof(struct server_id);
 			break;

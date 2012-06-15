@@ -232,7 +232,7 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
 	for (i=0; i<num_deferred; i++) {
 		struct share_mode_entry *e = &deferred[i];
 
-		if (procid_equal(&self, &e->pid)) {
+		if (serverid_equal(&self, &e->pid)) {
  			/*
  			 * We need to notify ourself to retry the open.  Do
  			 * this by finding the queued SMB record, moving it to
@@ -427,7 +427,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			    && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 				continue;
 			}
-			if (procid_equal(&self, &e->pid) &&
+			if (serverid_equal(&self, &e->pid) &&
 			    (e->share_file_id == fsp->fh->gen_id)) {
 				continue;
 			}
@@ -1103,7 +1103,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 					continue;
 				}
-				if (procid_equal(&self, &e->pid) &&
+				if (serverid_equal(&self, &e->pid) &&
 				    (e->share_file_id == fsp->fh->gen_id)) {
 					continue;
 				}

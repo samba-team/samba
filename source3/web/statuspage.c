@@ -89,7 +89,7 @@ static char *mapPid2Machine (struct server_id pid)
 	/* show machine name rather PID on table "Open Files"? */
 	if (PID_or_Machine) {
 		for (map = pidmap; map != NULL; map = map->next) {
-			if (procid_equal(&pid, &map->pid)) {
+			if (serverid_equal(&pid, &map->pid)) {
 				if (map->machine == NULL)	/* no machine name */
 					break;			/* show PID */
 
@@ -207,7 +207,7 @@ static int traverse_fn2(const struct connections_key *key,
                         void *private_data)
 {
 	if (crec->cnum == TID_FIELD_INVALID || !process_exists(crec->pid) ||
-	    procid_equal(&crec->pid, &smbd_pid))
+	    serverid_equal(&crec->pid, &smbd_pid))
 		return 0;
 
 	addPid2Machine (crec->pid, crec->machine);

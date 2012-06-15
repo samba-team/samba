@@ -553,7 +553,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		se->name_hash = new_name_hash;
 
 		/* But not to ourselves... */
-		if (procid_equal(&se->pid, &self_pid)) {
+		if (serverid_equal(&se->pid, &self_pid)) {
 			continue;
 		}
 
@@ -755,7 +755,7 @@ static bool share_modes_identical(struct share_mode_entry *e1,
 	   sharing the same share mode entry may validly differ in
 	   fsp->share_access field. */
 
-	return (procid_equal(&e1->pid, &e2->pid) &&
+	return (serverid_equal(&e1->pid, &e2->pid) &&
 		file_id_equal(&e1->id, &e2->id) &&
 		e1->share_file_id == e2->share_file_id );
 }
@@ -763,7 +763,7 @@ static bool share_modes_identical(struct share_mode_entry *e1,
 static bool deferred_open_identical(struct share_mode_entry *e1,
 				    struct share_mode_entry *e2)
 {
-	return (procid_equal(&e1->pid, &e2->pid) &&
+	return (serverid_equal(&e1->pid, &e2->pid) &&
 		(e1->op_mid == e2->op_mid) &&
 		file_id_equal(&e1->id, &e2->id));
 }
