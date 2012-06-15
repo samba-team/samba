@@ -2079,12 +2079,6 @@ bool procid_equal(const struct server_id *p1, const struct server_id *p2)
 	return true;
 }
 
-bool cluster_id_equal(const struct server_id *id1,
-		      const struct server_id *id2)
-{
-	return procid_equal(id1, id2);
-}
-
 bool procid_is_me(const struct server_id *pid)
 {
 	if (pid->pid != getpid())

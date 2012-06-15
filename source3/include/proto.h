@@ -471,8 +471,6 @@ struct server_id pid_to_procid(pid_t pid);
 struct server_id procid_self(void);
 struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx);
 bool procid_equal(const struct server_id *p1, const struct server_id *p2);
-bool cluster_id_equal(const struct server_id *id1,
-		      const struct server_id *id2);
 bool procid_is_me(const struct server_id *pid);
 struct server_id interpret_pid(const char *pid_string);
 char *procid_str_static(const struct server_id *pid);
