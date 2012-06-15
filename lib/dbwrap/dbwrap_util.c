@@ -180,8 +180,10 @@ done:
 	return ret;
 }
 
-NTSTATUS dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
-				     uint32_t *oldval, uint32_t change_val)
+NTSTATUS dbwrap_change_uint32_atomic_bystring(struct db_context *db,
+					      const char *keystr,
+					      uint32_t *oldval,
+					      uint32_t change_val)
 {
 	NTSTATUS ret;
 	struct dbwrap_change_uint32_atomic_context state;

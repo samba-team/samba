@@ -94,7 +94,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* increase the HWM */
-	ret = dbwrap_change_uint32_atomic(db, HWM, &domainnum, 1);
+	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &domainnum, 1);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching a new "
 			  "domain range value!\n"));
