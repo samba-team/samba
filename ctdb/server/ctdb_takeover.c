@@ -3763,7 +3763,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 		}
 		if (i == ips->num) {
 			struct ctdb_control_ip_iface pub;
-			char *ifaces = NULL;
+			const char *ifaces = NULL;
 			int iface = 0;
 
 			DEBUG(DEBUG_NOTICE,("RELOADIPS: New ip:%s found, adding it.\n", ctdb_addr_to_str(&vnn->public_address)));

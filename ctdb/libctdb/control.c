@@ -137,7 +137,7 @@ bool ctdb_getdbstat_recv(struct ctdb_connection *ctdb,
 		return false;
 	}
 
-	wire = reply->data;
+	wire = (struct ctdb_db_statistics_wire *)reply->data;
 
 	s = malloc(offsetof(struct ctdb_db_statistics, hot_keys) + sizeof(struct ctdb_db_hot_key) * wire->num_hot_keys);
 	if (!s) {
