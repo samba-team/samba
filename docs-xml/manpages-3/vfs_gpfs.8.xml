@@ -190,6 +190,26 @@
 		</varlistentry>
 		<varlistentry>
 
+		<term>gpfs:acl = [ yes | no ]</term>
+		<listitem>
+		<para>
+		This option lets Samba use or ignore GPFS ACLs.
+		</para>
+
+		<itemizedlist>
+		<listitem><para>
+		<command>yes(default)</command> - use GPFS ACLs.
+		</para></listitem>
+		<listitem><para>
+		<command>no</command> - do not use GPFS ACLs and pass everything
+		to the next SMB_VFS module.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+		<varlistentry>
+
 		<term>gpfs:refuse_dacl_protected = [ yes | no ]</term>
 		<listitem>
 		<para>
