@@ -394,8 +394,9 @@ NTSTATUS dbwrap_trans_store_int32_bystring(struct db_context *db,
 				  TDB_REPLACE);
 }
 
-NTSTATUS dbwrap_trans_store_uint32(struct db_context *db, const char *keystr,
-				   uint32_t v)
+NTSTATUS dbwrap_trans_store_uint32_bystring(struct db_context *db,
+					    const char *keystr,
+					    uint32_t v)
 {
 	uint32_t v_store;
 

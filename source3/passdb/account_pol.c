@@ -375,7 +375,7 @@ bool account_policy_set(enum pdb_policy_type type, uint32_t value)
 		return False;
 	}
 
-	status = dbwrap_trans_store_uint32(db, name, value);
+	status = dbwrap_trans_store_uint32_bystring(db, name, value);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("store_uint32 failed for type %d (%s) on value "
 			  "%u: %s\n", type, name, value, nt_errstr(status)));
