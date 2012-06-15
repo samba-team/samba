@@ -49,8 +49,8 @@ static void get_rand_seed(void *userdata, int *new_seed)
 {
 	*new_seed = getpid();
 	if (db_ctx) {
-		dbwrap_trans_change_int32_atomic(db_ctx, "INFO/random_seed",
-						 new_seed, 1);
+		dbwrap_trans_change_int32_atomic_bystring(
+			db_ctx, "INFO/random_seed", new_seed, 1);
 	}
 }
 

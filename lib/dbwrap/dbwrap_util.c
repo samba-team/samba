@@ -289,10 +289,10 @@ NTSTATUS dbwrap_change_int32_atomic_bystring(struct db_context *db,
 	return ret;
 }
 
-NTSTATUS dbwrap_trans_change_int32_atomic(struct db_context *db,
-					  const char *keystr,
-					  int32_t *oldval,
-					  int32_t change_val)
+NTSTATUS dbwrap_trans_change_int32_atomic_bystring(struct db_context *db,
+						   const char *keystr,
+						   int32_t *oldval,
+						   int32_t change_val)
 {
 	NTSTATUS ret;
 	struct dbwrap_change_int32_atomic_context state;

@@ -105,10 +105,10 @@ NTSTATUS dbwrap_change_int32_atomic_bystring(struct db_context *db,
 					     const char *keystr,
 					     int32_t *oldval,
 					     int32_t change_val);
-NTSTATUS dbwrap_trans_change_int32_atomic(struct db_context *db,
-					  const char *keystr,
-					  int32_t *oldval,
-					  int32_t change_val);
+NTSTATUS dbwrap_trans_change_int32_atomic_bystring(struct db_context *db,
+						   const char *keystr,
+						   int32_t *oldval,
+						   int32_t change_val);
 NTSTATUS dbwrap_trans_store(struct db_context *db, TDB_DATA key, TDB_DATA dbuf,
 			    int flag);
 NTSTATUS dbwrap_trans_delete(struct db_context *db, TDB_DATA key);
