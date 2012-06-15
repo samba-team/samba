@@ -88,8 +88,9 @@ static unsigned int Ucrit_checkPid(struct server_id pid)
 		return 1;
 
 	for (i=0;i<Ucrit_MaxPid;i++) {
-		if (cluster_id_equal(&pid, &Ucrit_pid[i])) 
+		if (procid_equal(&pid, &Ucrit_pid[i])) {
 			return 1;
+		}
 	}
 
 	return 0;
