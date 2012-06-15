@@ -30,8 +30,8 @@
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct smbd_smb2_request *smb2req,
+					      struct files_struct *in_fsp,
 					      uint32_t in_smbpid,
-					      uint64_t in_file_id_volatile,
 					      uint32_t in_length,
 					      uint64_t in_offset,
 					      uint32_t in_minimum,
@@ -53,6 +53,7 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 	uint64_t in_offset;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	struct files_struct *in_fsp;
 	uint32_t in_minimum_count;
 	uint32_t in_remaining_bytes;
 	struct tevent_req *subreq;
@@ -80,17 +81,14 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (req->compat_chain_fsp) {
-		/* skip check */
-	} else if (in_file_id_persistent != in_file_id_volatile) {
+	in_fsp = file_fsp_smb2(req, in_file_id_persistent, in_file_id_volatile);
+	if (in_fsp == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	subreq = smbd_smb2_read_send(req,
-				     req->sconn->smb2.event_ctx,
-				     req,
+	subreq = smbd_smb2_read_send(req, req->sconn->smb2.event_ctx,
+				     req, in_fsp,
 				     in_smbpid,
-				     in_file_id_volatile,
 				     in_length,
 				     in_offset,
 				     in_minimum_count,
@@ -170,7 +168,6 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 struct smbd_smb2_read_state {
 	struct smbd_smb2_request *smb2req;
 	files_struct *fsp;
-	uint64_t in_file_id_volatile;
 	uint32_t in_length;
 	uint64_t in_offset;
 	uint32_t in_minimum;
@@ -367,8 +364,8 @@ NTSTATUS smb2_read_complete(struct tevent_req *req, ssize_t nread, int err)
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct smbd_smb2_request *smb2req,
+					      struct files_struct *fsp,
 					      uint32_t in_smbpid,
-					      uint64_t in_file_id_volatile,
 					      uint32_t in_length,
 					      uint64_t in_offset,
 					      uint32_t in_minimum,
@@ -379,7 +376,6 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_read_state *state = NULL;
 	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp = NULL;
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno;
@@ -396,34 +392,20 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	state->out_data = data_blob_null;
 	state->out_remaining = 0;
 
-	DEBUG(10,("smbd_smb2_read: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
+	DEBUG(10,("smbd_smb2_read: %s - fnum[%d]\n",
+		  fsp_str_dbg(fsp), fsp->fnum));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
-	if (fsp == NULL) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
-	if (conn != fsp->conn) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
-	if (smb2req->session->vuid != fsp->vuid) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
 	if (fsp->is_directory) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
 		return tevent_req_post(req, ev);
 	}
 
 	state->fsp = fsp;
-	state->in_file_id_volatile = in_file_id_volatile;
 
 	if (IS_IPC(smbreq->conn)) {
 		struct tevent_req *subreq = NULL;
@@ -526,10 +508,10 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 
 	SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 
-	DEBUG(10,("smbd_smb2_read: file %s handle [0x%016llX] offset=%llu "
+	DEBUG(10,("smbd_smb2_read: file %s fnum[%d] offset=%llu "
 		"len=%llu returned %lld\n",
 		fsp_str_dbg(fsp),
-		(unsigned long long)in_file_id_volatile,
+		fsp->fnum,
 		(unsigned long long)in_offset,
 		(unsigned long long)in_length,
 		(long long)nread));
