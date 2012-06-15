@@ -174,7 +174,7 @@
 		<listitem>
 		<para>
 		GPFS ACLs doesn't know about the 'APPEND' right.
-		This optionen lets Samba map the 'APPEND' right to 'WRITE'.
+		This option lets Samba map the 'APPEND' right to 'WRITE'.
 		</para>
 
 		<itemizedlist>
