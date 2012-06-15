@@ -940,7 +940,7 @@ dbwrap_store_uint32_verbose(struct db_context *db, const char *key, uint32_t nva
 		goto done;
 	}
 
-	status = dbwrap_store_uint32(db, key, nval);
+	status = dbwrap_store_uint32_bystring(db, key, nval);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf ("store %s failed: %s\n", key, nt_errstr(status));
 	}
@@ -1259,8 +1259,8 @@ static bool check_ctx_write_new_db(struct check_ctx *ctx) {
 		return false;
 	}
 
-	status = dbwrap_store_uint32(ctx->odb,
-				     "INFO/version", ctx->version);
+	status = dbwrap_store_uint32_bystring(ctx->odb, "INFO/version",
+					      ctx->version);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("write version failed: %s\n", nt_errstr(status)));
 		return false;

@@ -278,7 +278,8 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	}
 
 	if (update_uid) {
-		status = dbwrap_store_uint32(ctx->db, HWM_USER, dom->low_id);
+		status = dbwrap_store_uint32_bystring(ctx->db, HWM_USER,
+						      dom->low_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			dbwrap_transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise user hwm in idmap "
@@ -288,7 +289,8 @@ static NTSTATUS idmap_tdb_init_hwm(struct idmap_domain *dom)
 	}
 
 	if (update_gid) {
-		status = dbwrap_store_uint32(ctx->db, HWM_GROUP, dom->low_id);
+		status = dbwrap_store_uint32_bystring(ctx->db, HWM_GROUP,
+						      dom->low_id);
 		if (!NT_STATUS_IS_OK(status)) {
 			dbwrap_transaction_cancel(ctx->db);
 			DEBUG(0, ("Unable to initialise group hwm in idmap "

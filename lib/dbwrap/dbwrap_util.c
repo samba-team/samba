@@ -99,8 +99,8 @@ NTSTATUS dbwrap_fetch_uint32_bystring(struct db_context *db,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dbwrap_store_uint32(struct db_context *db, const char *keystr,
-			     uint32_t v)
+NTSTATUS dbwrap_store_uint32_bystring(struct db_context *db,
+				      const char *keystr, uint32_t v)
 {
 	struct db_record *rec;
 	uint32_t v_store;

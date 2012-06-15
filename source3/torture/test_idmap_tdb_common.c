@@ -103,13 +103,15 @@ static bool open_db(struct idmap_tdb_common_context *ctx)
 		return false;
 	}
 
-	status = dbwrap_store_uint32(ctx->db, ctx->hwmkey_uid, LOW_ID);
+	status = dbwrap_store_uint32_bystring(ctx->db, ctx->hwmkey_uid,
+					      LOW_ID);
 	if(!NT_STATUS_IS_OK(status)) {
 		dbwrap_transaction_cancel(ctx->db);
 		return false;
 	}
 
-	status = dbwrap_store_uint32(ctx->db, ctx->hwmkey_gid, LOW_ID);
+	status = dbwrap_store_uint32_bystring(ctx->db, ctx->hwmkey_gid,
+					      LOW_ID);
 	if(!NT_STATUS_IS_OK(status)) {
 		dbwrap_transaction_cancel(ctx->db);
 		return false;

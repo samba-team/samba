@@ -102,7 +102,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* store away the new mapping in both directions */
-	ret = dbwrap_store_uint32(db, cfg->sid, domainnum);
+	ret = dbwrap_store_uint32_bystring(db, cfg->sid, domainnum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
 			  "domain->range assignment!\n"));
