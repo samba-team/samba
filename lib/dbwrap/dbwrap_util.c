@@ -223,7 +223,7 @@ NTSTATUS dbwrap_trans_change_uint32_atomic_bystring(struct db_context *db,
  */
 
 struct dbwrap_change_int32_atomic_context {
-	const char *keystr;
+	TDB_DATA key;
 	int32_t *oldval;
 	int32_t change_val;
 };
@@ -240,8 +240,7 @@ static NTSTATUS dbwrap_change_int32_atomic_action(struct db_context *db,
 
 	state = (struct dbwrap_change_int32_atomic_context *)private_data;
 
-	rec = dbwrap_fetch_locked(db, talloc_tos(),
-				  string_term_tdb_data(state->keystr));
+	rec = dbwrap_fetch_locked(db, talloc_tos(), state->key);
 	if (!rec) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -272,21 +271,30 @@ done:
 	return ret;
 }
 
-NTSTATUS dbwrap_change_int32_atomic_bystring(struct db_context *db,
-					     const char *keystr,
-					     int32_t *oldval,
-					     int32_t change_val)
+NTSTATUS dbwrap_change_int32_atomic(struct db_context *db,
+				    TDB_DATA key,
+				    int32_t *oldval,
+				    int32_t change_val)
 {
 	NTSTATUS ret;
 	struct dbwrap_change_int32_atomic_context state;
 
-	state.keystr = keystr;
+	state.key = key;
 	state.oldval = oldval;
 	state.change_val = change_val;
 
 	ret = dbwrap_change_int32_atomic_action(db, &state);
 
 	return ret;
+}
+
+NTSTATUS dbwrap_change_int32_atomic_bystring(struct db_context *db,
+					     const char *keystr,
+					     int32_t *oldval,
+					     int32_t change_val)
+{
+	return dbwrap_change_int32_atomic(db, string_term_tdb_data(keystr),
+					  oldval, change_val);
 }
 
 NTSTATUS dbwrap_trans_change_int32_atomic_bystring(struct db_context *db,
@@ -297,7 +305,7 @@ NTSTATUS dbwrap_trans_change_int32_atomic_bystring(struct db_context *db,
 	NTSTATUS ret;
 	struct dbwrap_change_int32_atomic_context state;
 
-	state.keystr = keystr;
+	state.key = string_term_tdb_data(keystr);
 	state.oldval = oldval;
 	state.change_val = change_val;
 
