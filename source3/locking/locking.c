@@ -482,6 +482,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	int i;
 	bool strip_two_chars = false;
 	bool has_stream = smb_fname_dst->stream_name != NULL;
+	struct server_id self_pid = messaging_server_id(msg_ctx);
 
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
 		   servicepath, smb_fname_dst->base_name));
@@ -552,7 +553,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		se->name_hash = new_name_hash;
 
 		/* But not to ourselves... */
-		if (procid_is_me(&se->pid)) {
+		if (procid_equal(&se->pid, &self_pid)) {
 			continue;
 		}
 
