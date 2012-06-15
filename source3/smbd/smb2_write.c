@@ -28,8 +28,8 @@
 static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
+					       struct files_struct *in_fsp,
 					       uint32_t in_smbpid,
-					       uint64_t in_file_id_volatile,
 					       DATA_BLOB in_data,
 					       uint64_t in_offset,
 					       uint32_t in_flags);
@@ -50,6 +50,7 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	uint64_t in_offset;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	struct files_struct *in_fsp;
 	uint32_t in_flags;
 	struct tevent_req *subreq;
 
@@ -88,17 +89,14 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	in_data_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
 	in_data_buffer.length = in_data_length;
 
-	if (req->compat_chain_fsp) {
-		/* skip check */
-	} else if (in_file_id_persistent != in_file_id_volatile) {
+	in_fsp = file_fsp_smb2(req, in_file_id_persistent, in_file_id_volatile);
+	if (in_fsp == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
-	subreq = smbd_smb2_write_send(req,
-				      req->sconn->smb2.event_ctx,
-				      req,
+	subreq = smbd_smb2_write_send(req, req->sconn->smb2.event_ctx,
+				      req, in_fsp,
 				      in_smbpid,
-				      in_file_id_volatile,
 				      in_data_buffer,
 				      in_offset,
 				      in_flags);
@@ -215,8 +213,8 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
+					       struct files_struct *fsp,
 					       uint32_t in_smbpid,
-					       uint64_t in_file_id_volatile,
 					       DATA_BLOB in_data,
 					       uint64_t in_offset,
 					       uint32_t in_flags)
@@ -226,7 +224,6 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 	struct smbd_smb2_write_state *state = NULL;
 	struct smb_request *smbreq = NULL;
 	connection_struct *conn = smb2req->tcon->compat_conn;
-	files_struct *fsp = NULL;
 	ssize_t nwritten;
 	struct lock_struct lock;
 
@@ -242,25 +239,11 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 	state->in_length = in_data.length;
 	state->out_count = 0;
 
-	DEBUG(10,("smbd_smb2_write: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
+	DEBUG(10,("smbd_smb2_write: %s - fnum[%d]\n",
+		  fsp_str_dbg(fsp), fsp->fnum));
 
 	smbreq = smbd_smb2_fake_smb_request(smb2req);
 	if (tevent_req_nomem(smbreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
-	if (fsp == NULL) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
-	if (conn != fsp->conn) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-		return tevent_req_post(req, ev);
-	}
-	if (smb2req->session->vuid != fsp->vuid) {
-		tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
 		return tevent_req_post(req, ev);
 	}
 
