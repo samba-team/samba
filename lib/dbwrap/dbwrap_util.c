@@ -26,8 +26,8 @@
 #include "dbwrap.h"
 #include "lib/util/util_tdb.h"
 
-NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
-				     int32_t *result)
+NTSTATUS dbwrap_fetch_int32(struct db_context *db, TDB_DATA key,
+			    int32_t *result)
 {
 	TDB_DATA dbuf;
 	NTSTATUS status;
@@ -36,7 +36,7 @@ NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dbwrap_fetch_bystring(db, talloc_tos(), keystr, &dbuf);
+	status = dbwrap_fetch(db, talloc_tos(), key, &dbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -49,6 +49,12 @@ NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
 	*result = IVAL(dbuf.dptr, 0);
 	TALLOC_FREE(dbuf.dptr);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS dbwrap_fetch_int32_bystring(struct db_context *db, const char *keystr,
+				     int32_t *result)
+{
+	return dbwrap_fetch_int32(db, string_term_tdb_data(keystr), result);
 }
 
 NTSTATUS dbwrap_store_int32_bystring(struct db_context *db, const char *keystr,
