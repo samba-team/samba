@@ -293,6 +293,31 @@ add_missing_routes ()
     } || exit $?
 }
 
+# Remove rules/routes for addresses that we're not hosting.  If a
+# releaseip event failed in an earlier script then we might not have
+# had a chance to remove the corresponding rules/routes.
+remove_bogus_routes ()
+{
+    # Get a IPs current hosted by this node, each anchored with '@'.
+    _ips=$(ctdb ip -v -Y | awk -F: 'NR > 1 && $4 != "" {printf "@%s@\n", $2}')
+
+    ip rule show |
+    while read _p _x _i _x _t ; do
+	# Remove trailing colon after priority/preference.
+	_p="${_p%:}"
+	# Only remove rules that match our priority/preference.
+	[ "$CTDB_PER_IP_ROUTING_RULE_PREF" = "$_p" ] || continue
+	# Only remove rules for which we don't have an IP.  This could
+	# be done with grep, but let's do it with shell prefix removal
+	# to avoid unnecessary processes.  This falls through if
+	# "@${_i}@" isn't present in $_ips.
+	[ "$_ips" = "${_ips#*@${_i}@}" ] || continue
+
+	echo "Removing ip rule/routes for unhosted public address $_i"
+	del_routing_for_ip "$_i"
+    done
+}
+
 ######################################################################
 
 ctdb_check_args "$@"
@@ -354,6 +379,7 @@ case "$1" in
 
     ipreallocated)
 	add_missing_routes
+	remove_bogus_routes
 	;;
 
     *)
