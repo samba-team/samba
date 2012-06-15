@@ -5927,7 +5927,6 @@ int main(int argc, const char *argv[])
 		DEBUG(DEBUG_ERR, ("Failed to initialize event system\n"));
 		exit(1);
 	}
-	tevent_loop_allow_nesting(ev);
 
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {
