@@ -50,6 +50,8 @@
 
 	<para>This module is stackable.</para>
 
+	<para>Since Samba 4.0 all options are per share options.</para>
+
 </refsect1>
 
 
