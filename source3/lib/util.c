@@ -2066,6 +2066,9 @@ bool procid_equal(const struct server_id *p1, const struct server_id *p2)
 		return False;
 	if (p1->vnn != p2->vnn)
 		return False;
+	if (p1->unique_id != p2->unique_id) {
+		return false;
+	}
 	return True;
 }
 
