@@ -95,11 +95,11 @@ else
    echo "some autconf tests might not work properly"
 fi
 
-perl ../script/mkparamdefs.pl ../lib/param/param_functions.c --file ../lib/param/param_local.h --generate-scope=LOCAL
-perl ../script/mkparamdefs.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --file ../lib/param/param_global.h --generate-scope=GLOBAL
-perl ../script/mkparamdefs.pl param/loadparm.c ../lib/param/param_functions.c --file param/param_global.h --generate-scope=GLOBAL
-perl ../source4/script/mkproto.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --public ../lib/param/param_proto.h  --private ../lib/param/param_proto.h
-perl ../script/mks3param.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --file ../lib/param/s3_param.h
+perl ../script/mkparamdefs.pl ../lib/param/param_functions.c --file autoconf/lib/param/param_local.h --generate-scope=LOCAL
+perl ../script/mkparamdefs.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --file autoconf/lib/param/param_global.h --generate-scope=GLOBAL
+perl ../script/mkparamdefs.pl param/loadparm.c ../lib/param/param_functions.c --file autoconf/source3/param/param_global.h --generate-scope=GLOBAL
+perl ../source4/script/mkproto.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --public autoconf/lib/param/param_proto.h  --private ../lib/param/param_proto.h
+perl ../script/mks3param.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --file autoconf/lib/param/s3_param.h
 
 echo "Now run ./configure (or ./configure.developer) and then make."
 exit 0

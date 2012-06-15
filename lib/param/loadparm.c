@@ -62,7 +62,7 @@
 #include "lib/param/param.h"
 #include "lib/param/loadparm.h"
 #include "auth/gensec/gensec.h"
-#include "s3_param.h"
+#include "lib/param/s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
 #include "source4/dns_server/dns_update.h"
@@ -88,7 +88,7 @@ static bool defaults_saved = false;
 	int domain_logons;						\
 	int bPreferredMaster;
 
-#include "param_global.h"
+#include "lib/param/param_global.h"
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
@@ -105,7 +105,7 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
 static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
 
-#include "param_enums.c"
+#include "lib/param/param_enums.c"
 
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)

@@ -48,7 +48,7 @@ struct smbcli_session_options;
 struct gensec_settings;
 
 #ifdef CONFIG_H_IS_FROM_SAMBA
-#include "param/param_proto.h"
+#include "lib/param/param_proto.h"
 #endif
 
 const char **lpcfg_interfaces(struct loadparm_context *);
