@@ -75,4 +75,6 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx);
  */
 uint64_t serverid_get_random_unique_id(void);
 
+bool serverid_equal(const struct server_id *p1, const struct server_id *p2);
+
 #endif

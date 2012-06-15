@@ -2058,27 +2058,6 @@ struct server_id *new_server_id_task(TALLOC_CTX *mem_ctx)
 	return server_id;
 }
 
-bool serverid_equal(const struct server_id *p1, const struct server_id *p2)
-{
-	if (p1->pid != p2->pid) {
-		return false;
-	}
-
-	if (p1->task_id != p2->task_id) {
-		return false;
-	}
-
-	if (p1->vnn != p2->vnn) {
-		return false;
-	}
-
-	if (p1->unique_id != p2->unique_id) {
-		return false;
-	}
-
-	return true;
-}
-
 bool procid_is_me(const struct server_id *pid)
 {
 	if (pid->pid != getpid())
