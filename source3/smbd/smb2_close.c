@@ -24,8 +24,8 @@
 #include "../libcli/smb/smb_common.h"
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
+				struct files_struct *fsp,
 				uint16_t in_flags,
-				uint64_t in_file_id_volatile,
 				DATA_BLOB *outbody);
 
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
@@ -37,6 +37,7 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	uint16_t in_flags;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
+	struct files_struct *in_fsp;
 	NTSTATUS status;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x18);
@@ -54,15 +55,14 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
 
-	if (req->compat_chain_fsp) {
-		/* skip check */
-	} else if (in_file_id_persistent != in_file_id_volatile) {
+	in_fsp = file_fsp_smb2(req, in_file_id_persistent, in_file_id_volatile);
+	if (in_fsp == NULL) {
 		return smbd_smb2_request_error(req, NT_STATUS_FILE_CLOSED);
 	}
 
 	status = smbd_smb2_close(req,
+				in_fsp,
 				in_flags,
-				in_file_id_volatile,
 				&outbody);
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
@@ -73,14 +73,13 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 }
 
 static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
+				struct files_struct *fsp,
 				uint16_t in_flags,
-				uint64_t in_file_id_volatile,
 				DATA_BLOB *outbody)
 {
 	NTSTATUS status;
 	struct smb_request *smbreq;
 	connection_struct *conn = req->tcon->compat_conn;
-	files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
 	struct timespec mdate_ts, adate_ts, cdate_ts, create_date_ts;
 	uint64_t allocation_size = 0;
@@ -94,23 +93,12 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	ZERO_STRUCT(mdate_ts);
 	ZERO_STRUCT(cdate_ts);
 
-	DEBUG(10,("smbd_smb2_close: file_id[0x%016llX]\n",
-		  (unsigned long long)in_file_id_volatile));
+	DEBUG(10,("smbd_smb2_close: %s - fnum[%d]\n",
+		  fsp_str_dbg(fsp), fsp->fnum));
 
 	smbreq = smbd_smb2_fake_smb_request(req);
 	if (smbreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	fsp = file_fsp(smbreq, (uint16_t)in_file_id_volatile);
-	if (fsp == NULL) {
-		return NT_STATUS_FILE_CLOSED;
-	}
-	if (conn != fsp->conn) {
-		return NT_STATUS_FILE_CLOSED;
-	}
-	if (req->session->vuid != fsp->vuid) {
-		return NT_STATUS_FILE_CLOSED;
 	}
 
 	posix_open = fsp->posix_open;
