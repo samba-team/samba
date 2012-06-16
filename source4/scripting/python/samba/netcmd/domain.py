@@ -814,14 +814,14 @@ class cmd_domain_passwordsettings(Command):
             raise CommandError("Wrong argument '%s'!" % subcommand)
 
 
-class cmd_domain_samba3upgrade(Command):
-    """Upgrade from Samba3 database to Samba4 AD database.
+class cmd_domain_classicupgrade(Command):
+    """Upgrade from Samba classic (NT4-like) database to Samba AD DC database.
 
-    Specify either a directory with all samba3 databases and state files (with --dbdir) or
-    samba3 testparm utility (with --testparm).
+    Specify either a directory with all Samba classic DC databases and state files (with --dbdir) or
+    the testparm utility from your classic installation (with --testparm).
     """
 
-    synopsis = "%prog [options] <samba3_smb_conf>"
+    synopsis = "%prog [options] <classic_smb_conf>"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -830,9 +830,9 @@ class cmd_domain_samba3upgrade(Command):
 
     takes_options = [
         Option("--dbdir", type="string", metavar="DIR",
-                  help="Path to samba3 database directory"),
+                  help="Path to samba classic DC database directory"),
         Option("--testparm", type="string", metavar="PATH",
-                  help="Path to samba3 testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
+                  help="Path to samba classic DC testparm utility from the previous installation.  This allows the default paths of the previous installation to be followed"),
         Option("--targetdir", type="string", metavar="DIR",
                   help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
         Option("--quiet", help="Be quiet", action="store_true"),
@@ -939,4 +939,5 @@ class cmd_domain(SuperCommand):
     subcommands["join"] = cmd_domain_join()
     subcommands["level"] = cmd_domain_level()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
-    subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
+    subcommands["classicupgrade"] = cmd_domain_classicupgrade()
+    subcommands["samba3upgrade"] = cmd_domain_classicupgrade()
