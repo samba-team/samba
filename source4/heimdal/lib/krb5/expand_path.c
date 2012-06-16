@@ -328,7 +328,7 @@ _expand_null(krb5_context context, PTYPE param, const char *postfix, char **ret)
 }
 
 
-static const struct token {
+static const struct {
     const char * tok;
     int ftype;
 #define FTYPE_CSIDL 0
