@@ -2928,6 +2928,12 @@ void reply_nttranss(struct smb_request *req)
 
 	show_msg((const char *)req->inbuf);
 
+	/* Windows clients expect all replies to
+	   an NT transact secondary (SMBnttranss 0xA1)
+	   to have a command code of NT transact
+	   (SMBnttrans 0xA0). See bug #8989 for details. */
+	req->cmd = SMBnttrans;
+
 	if (req->wct < 18) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnttranss);
