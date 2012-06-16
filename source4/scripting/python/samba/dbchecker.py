@@ -118,6 +118,7 @@ class dbcheck(object):
         if self.verbose:
             self.report(self.samdb.write_ldif(m, ldb.CHANGETYPE_MODIFY))
         try:
+            controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.modify(m, controls=controls, validate=validate)
         except Exception, err:
             self.report("%s : %s" % (msg, err))
