@@ -61,6 +61,8 @@ cat - > $PREFIX/samba3-upgrade/samba3/smb2.conf <<EOF
    domain logons = yes
 EOF
 
+mv $PREFIX/samba3-upgrade/samba3/wins.dat2 $PREFIX/samba3-upgrade/samba3/wins.dat
+
 testit "samba3-upgrade-dc" $samba_tool domain samba3upgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3
 testit "samba3-upgrade-dc-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 testit "samba3-upgrade-dc-getdomainsid" $samba_net getdomainsid -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf

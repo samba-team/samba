@@ -304,7 +304,8 @@ def shellsplit(text):
         if c == "\"":
             inquotes = not inquotes
         elif c in ("\t", "\n", " ") and not inquotes:
-            ret.append(current)
+            if current != "":
+                ret.append(current)
             current = ""
         else:
             current += c
