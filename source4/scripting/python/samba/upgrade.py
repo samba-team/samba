@@ -746,8 +746,15 @@ Please fix this account before attempting to upgrade again
     # Export users to samba4 backend
     logger.info("Importing users")
     for username in userdata:
-        if username.lower() == 'administrator' or username.lower() == 'root':
-            continue
+        if username.lower() == 'administrator':
+            if userdata[username].user_sid != dom_sid(str(domainsid) + "-500"):
+                raise ProvisioningError("User 'Administrator' in your existing directory does not have SID ending in -500")
+        if username.lower() == 'root':
+            if userdata[username].user_sid == dom_sid(str(domainsid) + "-500"):
+                logger.warn('User root has been replaced by Administrator')
+            else:
+                logger.warn('User root has been kept in the directory, it should be removed in favour of the Administrator user')
+
         s4_passdb.add_sam_account(userdata[username])
         if username in uids:
             add_ad_posix_idmap_entry(result.samdb, userdata[username].user_sid, uids[username], "ID_TYPE_UID", logger)
