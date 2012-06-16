@@ -463,6 +463,8 @@ for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
         # isn't available on DCs with Windows 2000 domain function level -
         # therefore skip it in that configuration
         plantestsuite("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
+
+plantestsuite("samba4.blackbox.dbcheck.alpha13", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-alpha13.sh"), '$PREFIX_ABS/provision', configuration])
 planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
