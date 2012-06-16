@@ -8870,6 +8870,15 @@ void reply_transs2(struct smb_request *req)
 
 	show_msg((const char *)req->inbuf);
 
+	/* Windows clients expect all replies to
+	   a transact secondary (SMBtranss2 0x33)
+	   to have a command code of transact
+	   (SMBtrans2 0x32). See bug #8989
+	   and also [MS-CIFS] section 2.2.4.47.2
+	   for details.
+	*/
+	req->cmd = SMBtrans2;
+
 	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtranss2);
