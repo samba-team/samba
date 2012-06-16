@@ -580,7 +580,8 @@ sub provision_raw_step1($$)
 	panic action = $RealBin/gdb_backtrace \%d
 	wins support = yes
 	server role = $ctx->{server_role}
-	server services = +echo +dns
+	server services = +echo +dns +smb -s3fs
+        dcerpc endpoint servers = +winreg +srvsvc
 	notify:inotify = false
 	ldb:nosync = true
 #We don't want to pass our self-tests if the PAC code is wrong

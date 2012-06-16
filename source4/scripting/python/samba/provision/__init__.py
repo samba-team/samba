@@ -1658,10 +1658,10 @@ def provision(logger, session_info, credentials, smbconf=None,
     if dns_backend == "SAMBA_INTERNAL":
         server_services.append("+dns")
 
-    if not use_ntvfs:
-        server_services.append("-smb")
-        server_services.append("+s3fs")
-        global_param["dcerpc endpoint servers"] = ["-winreg", "-srvsvc"]
+    if use_ntvfs:
+        server_services.append("+smb")
+        server_services.append("-s3fs")
+        global_param["dcerpc endpoint servers"] = ["+winreg", "+srvsvc"]
 
     if len(server_services) > 0:
         global_param["server services"] = server_services
