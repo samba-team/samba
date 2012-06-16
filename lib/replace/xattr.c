@@ -252,7 +252,7 @@ static ssize_t bsd_attr_list (int type, extattr_arg arg, char *list, size_t size
 
 #endif
 
-#if defined(HAVE_ATTR_LIST) && defined(HAVE_SYS_ATTRIBUTES_H)
+#if defined(HAVE_ATTR_LIST) && (defined(HAVE_SYS_ATTRIBUTES_H) || defined(HAVE_ATTR_ATTRIBUTES_H))
 static char attr_buffer[ATTR_MAX_VALUELEN];
 
 static ssize_t irix_attr_list(const char *path, int filedes, char *list, size_t size, int flags)

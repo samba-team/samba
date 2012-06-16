@@ -114,6 +114,8 @@
 
 #if HAVE_SYS_ATTRIBUTES_H
 #include <sys/attributes.h>
+#elif HAVE_ATTR_ATTRIBUTES_H
+#include <attr/attributes.h>
 #endif
 
 /* mutually exclusive (SuSE 8.2) */

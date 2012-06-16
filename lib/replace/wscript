@@ -43,7 +43,7 @@ def configure(conf):
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
     conf.CHECK_HEADERS('libaio.h locale.h ndir.h pwd.h')
     conf.CHECK_HEADERS('shadow.h sys/acl.h')
-    conf.CHECK_HEADERS('sys/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
+    conf.CHECK_HEADERS('sys/attributes.h attr/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
     conf.CHECK_HEADERS('sys/fcntl.h sys/filio.h sys/filsys.h sys/fs/s5param.h sys/fs/vx/quota.h')
     conf.CHECK_HEADERS('sys/id.h sys/ioctl.h sys/ipc.h sys/mman.h sys/mode.h sys/ndir.h sys/priv.h')
     conf.CHECK_HEADERS('sys/resource.h sys/security.h sys/shm.h sys/statfs.h sys/statvfs.h sys/termio.h')
