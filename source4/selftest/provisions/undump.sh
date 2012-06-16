@@ -1,18 +1,35 @@
 #!/bin/sh
 # undump a provision directory
 
-[ "$#" -eq 1 ] || {
-    echo "Usage: undump.sh <DIRECTORY>"
+[ "$#" -gt 0 ] || {
+    echo "Usage: undump.sh <DIRECTORY> [TARGETDIR] [TDBRESTORE]"
     exit 1
 }
+
+TDBRESTORE=tdbrestore
+[ "$#" -lt 3 ] || {
+    TDBRESTORE=$3
+}
+
+
 dirbase="$1"
-for f in $(find $dirbase -name '*.dump'); do
-    dname=$(dirname $f)
+
+TARGETDIR=`pwd`/$dirbase
+
+cd $dirbase
+
+[ "$#" -lt 2 ] || {
+    TARGETDIR=$2
+}
+
+for f in $(find . -name '*.dump'); do
+    dname=$TARGETDIR/$(dirname $f)
+    mkdir -p $dname
     bname=$(basename $f .dump)
     outname=$dname/$bname
     echo "Restoring $outname"
     rm -f $outname
-    bin/tdbrestore $outname < $f || {
+    $TDBRESTORE $outname < $f || {
 	echo "Failed to restore $outname"
 	exit 1
     }
