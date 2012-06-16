@@ -907,9 +907,11 @@ class cmd_domain_classicupgrade(Command):
             paths["state directory"] = dbdir
             paths["private dir"] = dbdir
             paths["lock directory"] = dbdir
+            paths["smb passwd file"] = dbdir + "/smbpasswd"
         else:
             paths["state directory"] = get_testparm_var(testparm, smbconf, "state directory")
             paths["private dir"] = get_testparm_var(testparm, smbconf, "private dir")
+            paths["smb passwd file"] = get_testparm_var(testparm, smbconf, "smb passwd file")
             paths["lock directory"] = get_testparm_var(testparm, smbconf, "lock directory")
             # "testparm" from Samba 3 < 3.4.x is not aware of the parameter
             # "state directory", instead make use of "lock directory"
