@@ -125,7 +125,6 @@ static int net_g_lock_dump(struct net_context *c, int argc, const char **argv)
 	struct tevent_context *ev = NULL;
 	struct messaging_context *msg = NULL;
 	struct g_lock_ctx *g_ctx = NULL;
-	NTSTATUS status;
 	int ret = -1;
 
 	if (argc != 1) {
@@ -137,7 +136,7 @@ static int net_g_lock_dump(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	status = g_lock_dump(g_ctx, argv[0], net_g_lock_dump_fn, NULL);
+	(void)g_lock_dump(g_ctx, argv[0], net_g_lock_dump_fn, NULL);
 
 	ret = 0;
 done:
