@@ -230,9 +230,9 @@ def testonly(ctx):
         if not os.path.exists(link):
             os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
 
-        if Options.options.VALGRIND:
+        if env.options['VALGRIND']:
             os.environ['VALGRIND'] = 'valgrind -q --num-callers=30 --error-exitcode=11'
-        if Options.options.VALGRINDLOG is not None:
+        if env.options['VALGRINDLOG']:
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
         for f in env.NTDB_TEST_RUN_SRC + env.NTDB_TEST_API_SRC:
