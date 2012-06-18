@@ -2,6 +2,11 @@
 #include "tap-interface.h"
 #include "logging.h"
 
+/* The largest 32-bit value which is still a multiple of NTDB_PGSIZE */
+#define ALMOST_4G ((uint32_t)-NTDB_PGSIZE)
+/* And this pushes it over 32 bits */
+#define A_LITTLE_BIT (NTDB_PGSIZE * 2)
+
 int main(int argc, char *argv[])
 {
 	unsigned int i;
@@ -33,13 +38,14 @@ int main(int argc, char *argv[])
 		old_size = ntdb->file->map_size;
 
 		/* This makes a sparse file */
-		ok1(ftruncate(ntdb->file->fd, 0xFFFFFFF0) == 0);
-		ok1(add_free_record(ntdb, old_size, 0xFFFFFFF0 - old_size,
+		ok1(ftruncate(ntdb->file->fd, ALMOST_4G) == 0);
+		ok1(add_free_record(ntdb, old_size, ALMOST_4G - old_size,
 				    NTDB_LOCK_WAIT, false) == NTDB_SUCCESS);
 
 		/* Now add a little record past the 4G barrier. */
-		ok1(ntdb_expand_file(ntdb, 100) == NTDB_SUCCESS);
-		ok1(add_free_record(ntdb, 0xFFFFFFF0, 100, NTDB_LOCK_WAIT, false)
+		ok1(ntdb_expand_file(ntdb, A_LITTLE_BIT) == NTDB_SUCCESS);
+		ok1(add_free_record(ntdb, ALMOST_4G, A_LITTLE_BIT,
+				    NTDB_LOCK_WAIT, false)
 		    == NTDB_SUCCESS);
 
 		ok1(ntdb_check(ntdb, NULL, NULL) == NTDB_SUCCESS);
@@ -52,7 +58,7 @@ int main(int argc, char *argv[])
 
 		/* Make sure it put it at end as we expected. */
 		off = find_and_lock(ntdb, k, F_RDLCK, &h, &rec, NULL);
-		ok1(off >= 0xFFFFFFF0);
+		ok1(off >= ALMOST_4G);
 		ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
 
 		ok1(ntdb_fetch(ntdb, k, &d) == 0);

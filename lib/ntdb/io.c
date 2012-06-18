@@ -441,6 +441,7 @@ static enum NTDB_ERROR ntdb_expand_file(struct ntdb_context *ntdb,
 	char buf[8192];
 	enum NTDB_ERROR ecode;
 
+	assert((ntdb->file->map_size + addition) % NTDB_PGSIZE == 0);
 	if (ntdb->flags & NTDB_RDONLY) {
 		return ntdb_logerr(ntdb, NTDB_ERR_RDONLY, NTDB_LOG_USE_ERROR,
 				  "Expand on read-only database");

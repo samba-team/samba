@@ -899,9 +899,14 @@ ntdb_off_t ntdb_expand_adjust(ntdb_off_t map_size, ntdb_off_t size)
 		new_size = map_size * 1.25;
 	}
 
-	/* Round the database up to a multiple of the page size */
 	if (new_size < top_size)
 		new_size = top_size;
+
+	/* We always make the file a multiple of transaction page
+	 * size.  This guarantees that the transaction recovery area
+	 * is always aligned, otherwise the transaction code can overwrite
+	 * itself. */
+	new_size = (new_size + NTDB_PGSIZE-1) & ~(NTDB_PGSIZE-1);
 	return new_size - map_size;
 }
 
@@ -933,10 +938,10 @@ static enum NTDB_ERROR ntdb_expand(struct ntdb_context *ntdb, ntdb_len_t size)
 		return NTDB_SUCCESS;
 	}
 
+	/* We need room for the record header too. */
+	size = adjust_size(0, sizeof(struct ntdb_used_record) + size);
 	/* Overallocate. */
 	wanted = ntdb_expand_adjust(old_size, size);
-	/* We need room for the record header too. */
-	wanted = adjust_size(0, sizeof(struct ntdb_used_record) + wanted);
 
 	ecode = ntdb->io->expand_file(ntdb, wanted);
 	if (ecode != NTDB_SUCCESS) {

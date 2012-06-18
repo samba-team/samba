@@ -25,6 +25,7 @@
 */
 
 #include "private.h"
+#include <assert.h>
 #define SAFE_FREE(x) do { if ((x) != NULL) {free((void *)x); (x)=NULL;} } while(0)
 
 /*
@@ -119,9 +120,6 @@ struct ntdb_transaction {
 	ntdb_len_t old_map_size;
 };
 
-/* This doesn't really need to be pagesize, but we use it for similar reasons. */
-#define PAGESIZE 65536
-
 /*
   read while in a transaction. We need to check first if the data is in our list
   of transaction elements, then if not do a real read
@@ -133,8 +131,8 @@ static enum NTDB_ERROR transaction_read(struct ntdb_context *ntdb, ntdb_off_t of
 	enum NTDB_ERROR ecode;
 
 	/* break it down into block sized ops */
-	while (len + (off % PAGESIZE) > PAGESIZE) {
-		ntdb_len_t len2 = PAGESIZE - (off % PAGESIZE);
+	while (len + (off % NTDB_PGSIZE) > NTDB_PGSIZE) {
+		ntdb_len_t len2 = NTDB_PGSIZE - (off % NTDB_PGSIZE);
 		ecode = transaction_read(ntdb, off, buf, len2);
 		if (ecode != NTDB_SUCCESS) {
 			return ecode;
@@ -148,7 +146,7 @@ static enum NTDB_ERROR transaction_read(struct ntdb_context *ntdb, ntdb_off_t of
 		return NTDB_SUCCESS;
 	}
 
-	blk = off / PAGESIZE;
+	blk = off / NTDB_PGSIZE;
 
 	/* see if we have it in the block list */
 	if (ntdb->transaction->num_blocks <= blk ||
@@ -170,7 +168,7 @@ static enum NTDB_ERROR transaction_read(struct ntdb_context *ntdb, ntdb_off_t of
 	}
 
 	/* now copy it out of this block */
-	memcpy(buf, ntdb->transaction->blocks[blk] + (off % PAGESIZE), len);
+	memcpy(buf, ntdb->transaction->blocks[blk] + (off % NTDB_PGSIZE), len);
 	return NTDB_SUCCESS;
 
 fail:
@@ -199,8 +197,8 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 	}
 
 	/* break it up into block sized chunks */
-	while (len + (off % PAGESIZE) > PAGESIZE) {
-		ntdb_len_t len2 = PAGESIZE - (off % PAGESIZE);
+	while (len + (off % NTDB_PGSIZE) > NTDB_PGSIZE) {
+		ntdb_len_t len2 = NTDB_PGSIZE - (off % NTDB_PGSIZE);
 		ecode = transaction_write(ntdb, off, buf, len2);
 		if (ecode != NTDB_SUCCESS) {
 			return ecode;
@@ -216,8 +214,8 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 		return NTDB_SUCCESS;
 	}
 
-	blk = off / PAGESIZE;
-	off = off % PAGESIZE;
+	blk = off / NTDB_PGSIZE;
+	off = off % NTDB_PGSIZE;
 
 	if (ntdb->transaction->num_blocks <= blk) {
 		uint8_t **new_blocks;
@@ -245,20 +243,20 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 
 	/* allocate and fill a block? */
 	if (ntdb->transaction->blocks[blk] == NULL) {
-		ntdb->transaction->blocks[blk] = (uint8_t *)calloc(PAGESIZE, 1);
+		ntdb->transaction->blocks[blk] = (uint8_t *)calloc(NTDB_PGSIZE, 1);
 		if (ntdb->transaction->blocks[blk] == NULL) {
 			ecode = ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 					   "transaction_write:"
 					   " failed to allocate");
 			goto fail;
 		}
-		if (ntdb->transaction->old_map_size > blk * PAGESIZE) {
-			ntdb_len_t len2 = PAGESIZE;
-			if (len2 + (blk * PAGESIZE) > ntdb->transaction->old_map_size) {
-				len2 = ntdb->transaction->old_map_size - (blk * PAGESIZE);
+		if (ntdb->transaction->old_map_size > blk * NTDB_PGSIZE) {
+			ntdb_len_t len2 = NTDB_PGSIZE;
+			if (len2 + (blk * NTDB_PGSIZE) > ntdb->transaction->old_map_size) {
+				len2 = ntdb->transaction->old_map_size - (blk * NTDB_PGSIZE);
 			}
 			ecode = ntdb->transaction->io_methods->tread(ntdb,
-					blk * PAGESIZE,
+					blk * NTDB_PGSIZE,
 					ntdb->transaction->blocks[blk],
 					len2);
 			if (ecode != NTDB_SUCCESS) {
@@ -307,8 +305,8 @@ static void transaction_write_existing(struct ntdb_context *ntdb, ntdb_off_t off
 	size_t blk;
 
 	/* break it up into block sized chunks */
-	while (len + (off % PAGESIZE) > PAGESIZE) {
-		ntdb_len_t len2 = PAGESIZE - (off % PAGESIZE);
+	while (len + (off % NTDB_PGSIZE) > NTDB_PGSIZE) {
+		ntdb_len_t len2 = NTDB_PGSIZE - (off % NTDB_PGSIZE);
 		transaction_write_existing(ntdb, off, buf, len2);
 		len -= len2;
 		off += len2;
@@ -321,8 +319,8 @@ static void transaction_write_existing(struct ntdb_context *ntdb, ntdb_off_t off
 		return;
 	}
 
-	blk = off / PAGESIZE;
-	off = off % PAGESIZE;
+	blk = off / NTDB_PGSIZE;
+	off = off % NTDB_PGSIZE;
 
 	if (ntdb->transaction->num_blocks <= blk ||
 	    ntdb->transaction->blocks[blk] == NULL) {
@@ -367,6 +365,8 @@ static enum NTDB_ERROR transaction_expand_file(struct ntdb_context *ntdb,
 {
 	enum NTDB_ERROR ecode;
 
+	assert((ntdb->file->map_size + addition) % NTDB_PGSIZE == 0);
+
 	/* add a write to the transaction elements, so subsequent
 	   reads see the zero data */
 	ecode = transaction_write(ntdb, ntdb->file->map_size, NULL, addition);
@@ -379,10 +379,10 @@ static enum NTDB_ERROR transaction_expand_file(struct ntdb_context *ntdb,
 static void *transaction_direct(struct ntdb_context *ntdb, ntdb_off_t off,
 				size_t len, bool write_mode)
 {
-	size_t blk = off / PAGESIZE, end_blk;
+	size_t blk = off / NTDB_PGSIZE, end_blk;
 
 	/* This is wrong for zero-length blocks, but will fail gracefully */
-	end_blk = (off + len - 1) / PAGESIZE;
+	end_blk = (off + len - 1) / NTDB_PGSIZE;
 
 	/* Can only do direct if in single block and we've already copied. */
 	if (write_mode) {
@@ -393,7 +393,7 @@ static void *transaction_direct(struct ntdb_context *ntdb, ntdb_off_t off,
 			ntdb->stats.transaction_write_direct_fail++;
 			return NULL;
 		}
-		return ntdb->transaction->blocks[blk] + off % PAGESIZE;
+		return ntdb->transaction->blocks[blk] + off % NTDB_PGSIZE;
 	}
 
 	ntdb->stats.transaction_read_direct++;
@@ -401,7 +401,7 @@ static void *transaction_direct(struct ntdb_context *ntdb, ntdb_off_t off,
 	if (blk == end_blk
 	    && blk < ntdb->transaction->num_blocks
 	    && ntdb->transaction->blocks[blk])
-		return ntdb->transaction->blocks[blk] + off % PAGESIZE;
+		return ntdb->transaction->blocks[blk] + off % NTDB_PGSIZE;
 
 	/* Otherwise must be all not copied. */
 	while (blk <= end_blk) {
@@ -624,7 +624,7 @@ static ntdb_len_t ntdb_recovery_size(struct ntdb_context *ntdb)
 
 	recovery_size = 0;
 	for (i=0;i<ntdb->transaction->num_blocks;i++) {
-		if (i * PAGESIZE >= ntdb->transaction->old_map_size) {
+		if (i * NTDB_PGSIZE >= ntdb->transaction->old_map_size) {
 			break;
 		}
 		if (ntdb->transaction->blocks[i] == NULL) {
@@ -634,7 +634,7 @@ static ntdb_len_t ntdb_recovery_size(struct ntdb_context *ntdb)
 		if (i == ntdb->transaction->num_blocks-1) {
 			recovery_size += ntdb->transaction->last_block_size;
 		} else {
-			recovery_size += PAGESIZE;
+			recovery_size += NTDB_PGSIZE;
 		}
 	}
 
@@ -746,8 +746,8 @@ static struct ntdb_recovery_record *alloc_recovery(struct ntdb_context *ntdb,
 			continue;
 		}
 
-		offset = i * PAGESIZE;
-		length = PAGESIZE;
+		offset = i * NTDB_PGSIZE;
+		length = NTDB_PGSIZE;
 		if (i == ntdb->transaction->num_blocks-1) {
 			length = ntdb->transaction->last_block_size;
 		}
@@ -822,8 +822,8 @@ static ntdb_off_t create_recovery_area(struct ntdb_context *ntdb,
 	rec->max_len = ntdb_expand_adjust(ntdb->file->map_size, rec_length);
 
 	/* Round up to a page. */
-	rec->max_len = ((sizeof(*rec) + rec->max_len + PAGESIZE-1)
-			& ~(PAGESIZE-1))
+	rec->max_len = ((sizeof(*rec) + rec->max_len + NTDB_PGSIZE-1)
+			& ~(NTDB_PGSIZE-1))
 		- sizeof(*rec);
 
 	off = ntdb->file->map_size;
@@ -1101,8 +1101,8 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 			continue;
 		}
 
-		offset = i * PAGESIZE;
-		length = PAGESIZE;
+		offset = i * NTDB_PGSIZE;
+		length = NTDB_PGSIZE;
 		if (i == ntdb->transaction->num_blocks-1) {
 			length = ntdb->transaction->last_block_size;
 		}

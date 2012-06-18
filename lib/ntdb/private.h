@@ -98,6 +98,10 @@ typedef uint64_t ntdb_off_t;
 #define NTDB_PTR_ERR(p) ((enum NTDB_ERROR)(long)(p))
 #define NTDB_ERR_PTR(err) ((void *)(long)(err))
 
+/* This doesn't really need to be pagesize, but we use it for similar
+ * reasons. */
+#define NTDB_PGSIZE 65536
+
 /* Common case of returning true, false or -ve error. */
 typedef int ntdb_bool_err;
 

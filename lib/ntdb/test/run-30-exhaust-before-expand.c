@@ -27,11 +27,11 @@ int main(int argc, char *argv[])
 			NTDB_INTERNAL|NTDB_CONVERT, NTDB_CONVERT,
 			NTDB_NOMMAP|NTDB_CONVERT };
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 9 + 1);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 11 + 1);
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		NTDB_DATA k;
-		uint64_t size;
+		NTDB_DATA k, d;
+		uint64_t size, old_size;
 		bool was_empty = false;
 
 		k.dptr = (void *)&j;
@@ -43,6 +43,8 @@ int main(int argc, char *argv[])
 		if (!ntdb)
 			continue;
 
+		old_size = ntdb->file->map_size;
+
 		ok1(empty_freetable(ntdb));
 		/* Need some hash lock for expand. */
 		ok1(ntdb_lock_hashes(ntdb, 0, 1, F_WRLCK, NTDB_LOCK_WAIT) == 0);
@@ -53,8 +55,17 @@ int main(int argc, char *argv[])
 		ok1(!empty_freetable(ntdb));
 
 		size = ntdb->file->map_size;
-		/* Insert minimal-length records until we expand. */
-		for (j = 0; ntdb->file->map_size == size; j++) {
+
+		/* Create one record to chew up most space. */
+		d.dsize = (size - old_size - 32);
+		d.dptr = malloc(d.dsize);
+		j = 0;
+		ok1(ntdb_store(ntdb, k, d, NTDB_INSERT) == 0);
+		ok1(ntdb->file->map_size == size);
+		free(d.dptr);
+
+		/* Now insert minimal-length records until we expand. */
+		for (j = 1; ntdb->file->map_size == size; j++) {
 			was_empty = empty_freetable(ntdb);
 			if (ntdb_store(ntdb, k, k, NTDB_INSERT) != 0)
 				err(1, "Failed to store record %i", j);
