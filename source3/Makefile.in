@@ -170,8 +170,6 @@ FLAGS = -I. \
 	$(ISA) \
 	-I$(srcdir)/lib \
 	-I.. \
-	-Iautoconf \
-	-Iautoconf/source3 \
 	-I./../lib/ldb/include \
 	-D_SAMBA_BUILD_=3
 

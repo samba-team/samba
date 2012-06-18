@@ -35,7 +35,8 @@ done
 AC_SUBST(LIBTEVENT_OBJ0)
 LIBS="${LIBS} ${TEVENT_LIBS}"
 
-SAMBA_CPPFLAGS="-Iinclude/autoconf -Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
+SAMBA_CPPFLAGS="-Iinclude/autoconf -Iautoconf -Iautoconf/source3"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TEVENT_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${CCAN_CFLAGS}"
