@@ -13,6 +13,7 @@
 #include "logging.h"
 
 #define TEST_DBNAME "run-lockall.ntdb"
+#define KEY_STR "key"
 
 #undef fcntl
 
@@ -40,26 +41,29 @@ int main(int argc, char *argv[])
 		ok1(ret == SUCCESS);
 
 		ok1(ntdb_lockall(ntdb) == NTDB_SUCCESS);
-		ok1(external_agent_operation(agent, STORE, "key")
+		ok1(external_agent_operation(agent, STORE, KEY_STR "=" KEY_STR)
 		    == WOULD_HAVE_BLOCKED);
-		ok1(external_agent_operation(agent, FETCH, "key")
+		ok1(external_agent_operation(agent, FETCH, KEY_STR "=" KEY_STR)
 		    == WOULD_HAVE_BLOCKED);
 		/* Test nesting. */
 		ok1(ntdb_lockall(ntdb) == NTDB_SUCCESS);
 		ntdb_unlockall(ntdb);
 		ntdb_unlockall(ntdb);
 
-		ok1(external_agent_operation(agent, STORE, "key") == SUCCESS);
+		ok1(external_agent_operation(agent, STORE, KEY_STR "=" KEY_STR)
+		    == SUCCESS);
 
 		ok1(ntdb_lockall_read(ntdb) == NTDB_SUCCESS);
-		ok1(external_agent_operation(agent, STORE, "key")
+		ok1(external_agent_operation(agent, STORE, KEY_STR "=" KEY_STR)
 		    == WOULD_HAVE_BLOCKED);
-		ok1(external_agent_operation(agent, FETCH, "key") == SUCCESS);
+		ok1(external_agent_operation(agent, FETCH, KEY_STR "=" KEY_STR)
+		    == SUCCESS);
 		ok1(ntdb_lockall_read(ntdb) == NTDB_SUCCESS);
 		ntdb_unlockall_read(ntdb);
 		ntdb_unlockall_read(ntdb);
 
-		ok1(external_agent_operation(agent, STORE, "key") == SUCCESS);
+		ok1(external_agent_operation(agent, STORE, KEY_STR "=" KEY_STR)
+		    == SUCCESS);
 		ok1(external_agent_operation(agent, CLOSE, NULL) == SUCCESS);
 		ntdb_close(ntdb);
 	}

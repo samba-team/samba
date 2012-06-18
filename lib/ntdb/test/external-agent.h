@@ -29,7 +29,7 @@ enum agent_return {
 
 /* Ask the external agent to try to do an operation.
  * name == ntdb name for OPEN/OPEN_WITH_CLEAR_IF_FIRST,
- * record name for FETCH/STORE (store stores name as data too)
+ * <key>=<data> for FETCH/STORE.
  */
 enum agent_return external_agent_operation(struct agent *handle,
 					   enum operation op,

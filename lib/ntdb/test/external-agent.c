@@ -45,11 +45,12 @@ static enum NTDB_ERROR clear_if_first(int fd, void *arg)
 
 static enum agent_return do_operation(enum operation op, const char *name)
 {
-	NTDB_DATA k;
+	NTDB_DATA k, d;
 	enum agent_return ret;
 	NTDB_DATA data;
 	enum NTDB_ERROR ecode;
 	union ntdb_attribute cif;
+	const char *eq;
 
 	if (op != OPEN && op != OPEN_WITH_HOOK && !ntdb) {
 		diag("external: No ntdb open!");
@@ -58,7 +59,15 @@ static enum agent_return do_operation(enum operation op, const char *name)
 
 	diag("external: %s", operation_name(op));
 
-	k = ntdb_mkdata(name, strlen(name));
+	eq = strchr(name, '=');
+	if (eq) {
+		k = ntdb_mkdata(name, eq - name);
+		d = ntdb_mkdata(eq + 1, strlen(eq+1));
+	} else {
+		k = ntdb_mkdata(name, strlen(name));
+		d.dsize = 0;
+		d.dptr = NULL;
+	}
 
 	locking_would_block = 0;
 	switch (op) {
@@ -99,7 +108,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 			ret = FAILED;
 		} else if (ecode < 0) {
 			ret = OTHER_FAILURE;
-		} else if (!ntdb_deq(data, k)) {
+		} else if (!ntdb_deq(data, d)) {
 			ret = OTHER_FAILURE;
 			external_agent_free(data.dptr);
 		} else {
@@ -108,7 +117,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		}
 		break;
 	case STORE:
-		ret = ntdb_store(ntdb, k, k, 0) == 0 ? SUCCESS : OTHER_FAILURE;
+		ret = ntdb_store(ntdb, k, d, 0) == 0 ? SUCCESS : OTHER_FAILURE;
 		break;
 	case TRANSACTION_START:
 		ret = ntdb_transaction_start(ntdb) == 0 ? SUCCESS : OTHER_FAILURE;

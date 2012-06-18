@@ -11,6 +11,8 @@
 #include "external-agent.h"
 #include "logging.h"
 
+#define KEY_STR "key"
+
 static enum NTDB_ERROR clear_if_first(int fd, void *arg)
 {
 /* We hold a lock offset 4 always, so we can tell if anyone is holding it.
@@ -45,7 +47,7 @@ int main(int argc, char *argv[])
 	struct ntdb_context *ntdb;
 	struct agent *agent;
 	union ntdb_attribute cif;
-	NTDB_DATA key = ntdb_mkdata("key", 3);
+	NTDB_DATA key = ntdb_mkdata(KEY_STR, strlen(KEY_STR));
 	int flags[] = { NTDB_DEFAULT, NTDB_NOMMAP,
 			NTDB_CONVERT, NTDB_NOMMAP|NTDB_CONVERT };
 
@@ -74,7 +76,8 @@ int main(int argc, char *argv[])
 		/* Agent should not clear it, since it's still open. */
 		ok1(external_agent_operation(agent, OPEN_WITH_HOOK,
 					     "run-83-openhook.ntdb") == SUCCESS);
-		ok1(external_agent_operation(agent, FETCH, "key") == SUCCESS);
+		ok1(external_agent_operation(agent, FETCH, KEY_STR "=" KEY_STR)
+		    == SUCCESS);
 		ok1(external_agent_operation(agent, CLOSE, "") == SUCCESS);
 
 		/* Still exists for us too. */
@@ -85,7 +88,8 @@ int main(int argc, char *argv[])
 
 		ok1(external_agent_operation(agent, OPEN_WITH_HOOK,
 					     "run-83-openhook.ntdb") == SUCCESS);
-		ok1(external_agent_operation(agent, FETCH, "key") == FAILED);
+		ok1(external_agent_operation(agent, FETCH, KEY_STR "=" KEY_STR)
+		    == FAILED);
 		ok1(external_agent_operation(agent, CLOSE, "") == SUCCESS);
 
 		ok1(tap_log_messages == 0);

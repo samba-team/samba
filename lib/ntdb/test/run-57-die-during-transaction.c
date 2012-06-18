@@ -184,7 +184,8 @@ reset:
 			return false;
 		}
 
-		ret = external_agent_operation(agent, op, KEY_STRING);
+		ret = external_agent_operation(agent, op,
+					       KEY_STRING "=" KEY_STRING);
 		if (ret != SUCCESS) {
 			diag("Step %u op %s failed = %s", current,
 			     operation_name(op),
@@ -237,7 +238,7 @@ reset:
 	if (ret != SUCCESS)
 		errx(1, "Agent failed to open: %s", agent_return_name(ret));
 
-	ret = external_agent_operation(agent, FETCH, KEY_STRING);
+	ret = external_agent_operation(agent, FETCH, KEY_STRING "=" KEY_STRING);
 	if (ret != SUCCESS)
 		errx(1, "Agent failed find key: %s", agent_return_name(ret));
 

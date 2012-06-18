@@ -18,8 +18,8 @@ static unsigned add_records_to_grow(struct agent *agent, int fd, ntdb_len_t size
 	unsigned int i;
 
 	for (i = 0; !file_larger(fd, size); i++) {
-		char data[20];
-		sprintf(data, "%i", i);
+		char data[50];
+		sprintf(data, "%i=%i", i, i);
 		if (external_agent_operation(agent, STORE, data) != SUCCESS)
 			return 0;
 	}
