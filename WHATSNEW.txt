@@ -109,7 +109,7 @@ The default file server for EXISTING USERS has changed to s3fs.  To
 continue to use ntvfs, you must set in your smb.conf:
 
     server services = +smb -s3fs
-    dcerpc endpoint services = +winreg +srvsvc
+    dcerpc endpoint servers = +winreg +srvsvc
 
 samba-tool dbcheck will now upgrade older databases that are missing
 GUIDs in the schema partition.  
