@@ -74,13 +74,9 @@ int ltdb_err_map(enum TDB_ERROR tdb_code)
 	case TDB_ERR_IO:
 		return LDB_ERR_PROTOCOL_ERROR;
 	case TDB_ERR_LOCK:
-#ifndef BUILD_TDB2
 	case TDB_ERR_NOLOCK:
-#endif
 		return LDB_ERR_BUSY;
-#ifndef BUILD_TDB2
 	case TDB_ERR_LOCK_TIMEOUT:
-#endif
 		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	case TDB_ERR_EXISTS:
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;

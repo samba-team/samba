@@ -462,12 +462,7 @@ bool gencache_stabilize(void)
 
 	res = tdb_transaction_start_nonblock(cache);
 	if (res != 0) {
-
-#if BUILD_TDB2
-		if (res == TDB_ERR_LOCK)
-#else
 		if (tdb_error(cache) == TDB_ERR_NOLOCK)
-#endif
 		{
 			/*
 			 * Someone else already does the stabilize,

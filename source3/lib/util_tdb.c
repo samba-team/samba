@@ -28,101 +28,6 @@
 #undef calloc
 #undef strdup
 
-#ifdef BUILD_TDB2
-static struct flock flock_struct;
-
-/* Return a value which is none of v1, v2 or v3. */
-static inline short int invalid_value(short int v1, short int v2, short int v3)
-{
-	short int try = (v1+v2+v3)^((v1+v2+v3) << 16);
-	while (try == v1 || try == v2 || try == v3)
-		try++;
-	return try;
-}
-
-/* We invalidate in as many ways as we can, so the OS rejects it */
-static void invalidate_flock_struct(int signum)
-{
-	flock_struct.l_type = invalid_value(F_RDLCK, F_WRLCK, F_UNLCK);
-	flock_struct.l_whence = invalid_value(SEEK_SET, SEEK_CUR, SEEK_END);
-	flock_struct.l_start = -1;
-	/* A large negative. */
-	flock_struct.l_len = (((off_t)1 << (sizeof(off_t)*CHAR_BIT - 1)) + 1);
-}
-
-static int timeout_lock(int fd, int rw, off_t off, off_t len, bool waitflag,
-			void *_timeout)
-{
-	int ret, saved_errno;
-	unsigned int timeout = *(unsigned int *)_timeout;
-
-	flock_struct.l_type = rw;
-	flock_struct.l_whence = SEEK_SET;
-	flock_struct.l_start = off;
-	flock_struct.l_len = len;
-
-	CatchSignal(SIGALRM, invalidate_flock_struct);
-	alarm(timeout);
-
-	for (;;) {
-		if (waitflag)
-			ret = fcntl(fd, F_SETLKW, &flock_struct);
-		else
-			ret = fcntl(fd, F_SETLK, &flock_struct);
-
-		if (ret == 0)
-			break;
-
-		/* Not signalled?  Something else went wrong. */
-		if (flock_struct.l_len == len) {
-			if (errno == EAGAIN || errno == EINTR)
-				continue;
-			saved_errno = errno;
-			break;
-		} else {
-			saved_errno = EINTR;
-			break;
-		}
-	}
-
-	alarm(0);
-	errno = saved_errno;
-	return ret;
-}
-
-static int tdb_chainlock_with_timeout_internal(struct tdb_context *tdb,
-					       TDB_DATA key,
-					       unsigned int timeout,
-					       int rw_type)
-{
-	union tdb_attribute locking;
-	enum TDB_ERROR ecode;
-
-	if (timeout) {
-		locking.base.attr = TDB_ATTRIBUTE_FLOCK;
-		ecode = tdb_get_attribute(tdb, &locking);
-		if (ecode != TDB_SUCCESS)
-			return -1;
-
-		/* Replace locking function with our own. */
-		locking.flock.data = &timeout;
-		locking.flock.lock = timeout_lock;
-
-		ecode = tdb_set_attribute(tdb, &locking);
-		if (ecode != TDB_SUCCESS)
-			return -1;
-	}
-	if (rw_type == F_RDLCK)
-		ecode = tdb_chainlock_read(tdb, key);
-	else
-		ecode = tdb_chainlock(tdb, key);
-
-	if (timeout) {
-		tdb_unset_attribute(tdb, TDB_ATTRIBUTE_FLOCK);
-	}
-	return ecode == TDB_SUCCESS ? 0 : -1;
-}
-#else
 /* these are little tdb utility functions that are meant to make
    dealing with a tdb database a little less cumbersome in Samba */
 
@@ -175,7 +80,6 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 
 	return ret == 0 ? 0 : -1;
 }
-#endif /* TDB1 */
 
 /****************************************************************************
  Write lock a chain. Return non-zero if timeout or lock failed.
@@ -470,15 +374,6 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
  Log tdb messages via DEBUG().
 ****************************************************************************/
 
-#ifdef BUILD_TDB2
-static void tdb_log(TDB_CONTEXT *tdb, enum tdb_log_level level,
-		    enum TDB_ERROR ecode, const char *message, void *unused)
-{
-	DEBUG((int)level, ("tdb(%s):%s: %s",
-			   tdb_name(tdb) ? tdb_name(tdb) : "unnamed",
-			   tdb_errorstr(ecode), message));
-}
-#else
 static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
@@ -495,7 +390,6 @@ static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *fo
 	DEBUG((int)level, ("tdb(%s): %s", tdb_name(tdb) ? tdb_name(tdb) : "unnamed", ptr));
 	SAFE_FREE(ptr);
 }
-#endif /* TDB1 */
 
 /****************************************************************************
  Like tdb_open() but also setup a logging function that redirects to

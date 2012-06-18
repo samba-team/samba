@@ -388,7 +388,6 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 		result = NT_STATUS_FILE_LOCK_CONFLICT;
 		break;
 
-#ifndef BUILD_TDB2
 	case TDB_ERR_NOLOCK:
 	case TDB_ERR_LOCK_TIMEOUT:
 		/*
@@ -396,7 +395,6 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 		 */
 		result = NT_STATUS_FILE_LOCK_CONFLICT;
 		break;
-#endif
 	case TDB_ERR_NOEXIST:
 		result = NT_STATUS_NOT_FOUND;
 		break;
@@ -406,11 +404,9 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 	case TDB_ERR_RDONLY:
 		result = NT_STATUS_ACCESS_DENIED;
 		break;
-#ifndef BUILD_TDB2
 	case TDB_ERR_NESTING:
 		result = NT_STATUS_INTERNAL_ERROR;
 		break;
-#endif
 	};
 	return result;
 }

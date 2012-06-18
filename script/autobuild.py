@@ -21,7 +21,6 @@ builddirs = {
     "samba4-libs"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
-    "tdb2"    : "lib/tdb2",
     "talloc"  : "lib/talloc",
     "replace" : "lib/replace",
     "tevent"  : "lib/tevent",
@@ -31,7 +30,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba4", "samba4-libs", "ldb", "tdb", "tdb2", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba3", "samba4", "samba4-libs", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
@@ -67,11 +66,11 @@ tasks = {
                       ("tevent-make", "cd lib/tevent && make -j", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --disable-tdb2 --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("ldb-make", "cd lib/ldb && make -j", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --disable-tdb2 --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain")],
 
@@ -91,14 +90,6 @@ tasks = {
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
-
-    "tdb2" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-               ("make", "make -j", "text/plain"),
-               ("install", "make install", "text/plain"),
-               ("test", "make test", "text/plain"),
-               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-               ("distcheck", "make distcheck", "text/plain"),
-               ("clean", "make clean", "text/plain") ],
 
     "talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make -j", "text/plain"),

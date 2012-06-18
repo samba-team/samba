@@ -3,22 +3,15 @@
 import Options
 
 def set_options(opt):
-    opt.RECURSE('lib/tdb2')
     opt.RECURSE('lib/tdb')
 
 def configure(conf):
-    if getattr(Options.options, 'BUILD_TDB2', False):
-        conf.RECURSE('lib/tdb2')
-    else:
-        conf.RECURSE('lib/tdb')
+    conf.RECURSE('lib/tdb')
     conf.RECURSE('lib/ccan')
 
 def build(bld):
     bld.RECURSE('lib/ccan')
-    if bld.env.BUILD_TDB2:
-        bld.RECURSE('lib/tdb2')
-    else:
-        bld.RECURSE('lib/tdb')
+    bld.RECURSE('lib/tdb')
     bld.SAMBA_LIBRARY('tdb_compat',
                       source='tdb_compat.c',
 		      deps='replace tdb ccan',

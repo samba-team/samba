@@ -57,7 +57,6 @@ static int tdb_validate_child(struct tdb_context *tdb,
 		goto out;
 	}
 
-#ifndef BUILD_TDB2
 	/* Check if the tdb's freelist is good. */
 	if (tdb_validate_freelist(tdb, &num_entries) == -1) {
 		v_status.bad_freelist = True;
@@ -67,7 +66,6 @@ static int tdb_validate_child(struct tdb_context *tdb,
 
 	DEBUG(10,("tdb_validate_child: tdb %s freelist has %d entries\n",
 		  tdb_name(tdb), num_entries));
-#endif
 
 	/* Now traverse the tdb to validate it. */
 	num_entries = tdb_traverse(tdb, validate_fn, (void *)&v_status);
@@ -292,11 +290,9 @@ static int tdb_backup(TALLOC_CTX *ctx, const char *src_path,
 
 	unlink(tmp_path);
 
-#ifndef BUILD_TDB2
 	if (!hash_size) {
 		hash_size = tdb_hash_size(src_tdb);
 	}
-#endif
 
 	dst_tdb = tdb_open_log(tmp_path, hash_size,
 			       TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL,

@@ -764,13 +764,8 @@ const struct mangle_fns *mangle_hash_init(void)
 	mangle_reset();
 
 	/* Create the in-memory tdb using our custom hash function. */
-#ifndef BUILD_TDB2
 	tdb_mangled_cache = tdb_open_ex("mangled_cache", 1031, TDB_INTERNAL,
 				(O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
-#else
-	/* FIXME: We should *never* open a tdb without logging! */
-	tdb_mangled_cache = tdb_open("mangled_cache", TDB_INTERNAL, 0, 0, NULL);
-#endif
 
 	return &mangle_hash_fns;
 }

@@ -150,7 +150,6 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 	struct convert_fn_state s;
 	NTSTATUS status;
 
-#if BUILD_TDB2
 	/* If we are bigendian, tdb is bigendian if NOT converted. */
 	union {
 		uint16 large;
@@ -163,9 +162,6 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 		assert(u.small[0] == 0x02);
 		bigendianheader = (dbwrap_get_flags(db) & TDB_CONVERT);
 	}
-#else
-	bigendianheader = (dbwrap_get_flags(db) & TDB_BIGENDIAN) ? True : False;
-#endif
 	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
 	status = dbwrap_fetch_int32_bystring(db, "IDMAP_VERSION", &vers);

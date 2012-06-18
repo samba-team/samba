@@ -24,33 +24,6 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/param/param.h"
 
-/* FIXME: TDB2 does this internally, so no need to wrap multiple opens! */
-#if BUILD_TDB2
-static void tdb_wrap_log(struct tdb_context *tdb,
-			 enum tdb_log_level level,
-			 enum TDB_ERROR ecode,
-			 const char *message,
-			 void *unused)
-{
-	int dl;
-	const char *name = tdb_name(tdb);
-
-	switch (level) {
-	case TDB_LOG_USE_ERROR:
-	case TDB_LOG_ERROR:
-		dl = 0;
-		break;
-	case TDB_LOG_WARNING:
-		dl = 2;
-		break;
-	default:
-		dl = 0;
-	}
-
-	DEBUG(dl, ("tdb(%s):%s: %s", name ? name : "unnamed",
-		   tdb_errorstr(ecode), message));
-}
-#else
 /*
  Log tdb messages via DEBUG().
 */
@@ -92,7 +65,6 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 		free(ptr);
 	}
 }
-#endif
 
 struct tdb_wrap_private {
 	struct tdb_context *tdb;

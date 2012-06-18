@@ -61,18 +61,11 @@ def s3_fix_kwargs(bld, kwargs):
                             '../source4/heimdal_build',
                             '../bin/default/source4/heimdal/lib/asn1' ]
 
-    if bld.CONFIG_SET('BUILD_TDB2'):
-        if bld.CONFIG_SET('USING_SYSTEM_TDB2'):
-            (tdb2_includes, tdb2_ldflags, tdb2_cpppath) = library_flags(bld, 'tdb')
-            extra_includes += tdb2_cpppath
-        else:
-            extra_includes += [ '../lib/tdb2' ]
+    if bld.CONFIG_SET('USING_SYSTEM_TDB'):
+        (tdb_includes, tdb_ldflags, tdb_cpppath) = library_flags(bld, 'tdb')
+        extra_includes += tdb_cpppath
     else:
-        if bld.CONFIG_SET('USING_SYSTEM_TDB'):
-            (tdb_includes, tdb_ldflags, tdb_cpppath) = library_flags(bld, 'tdb')
-            extra_includes += tdb_cpppath
-        else:
-            extra_includes += [ '../lib/tdb/include' ]
+        extra_includes += [ '../lib/tdb/include' ]
 
     if bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
         (tevent_includes, tevent_ldflags, tevent_cpppath) = library_flags(bld, 'tevent')

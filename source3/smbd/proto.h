@@ -1047,13 +1047,8 @@ void smbd_send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
 void stat_cache_delete(const char *name);
-#if BUILD_TDB2
-struct tdb_data;
-unsigned int fast_string_hash(struct tdb_data *key);
-#else
 struct TDB_DATA;
 unsigned int fast_string_hash(struct TDB_DATA *key);
-#endif
 bool reset_stat_cache( void );
 
 /* The following definitions come from smbd/statvfs.c  */
