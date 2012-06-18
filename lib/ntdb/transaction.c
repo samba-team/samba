@@ -927,7 +927,8 @@ static enum NTDB_ERROR transaction_setup_recovery(struct ntdb_context *ntdb)
 	ntdb_convert(ntdb, recovery, sizeof(*recovery));
 
 	/* write the recovery data to the recovery area */
-	ecode = methods->twrite(ntdb, recovery_off, recovery, recovery_size);
+	ecode = methods->twrite(ntdb, recovery_off, recovery,
+				sizeof(*recovery) + recovery_size);
 	if (ecode != NTDB_SUCCESS) {
 		free(recovery);
 		return ntdb_logerr(ntdb, ecode, NTDB_LOG_ERROR,

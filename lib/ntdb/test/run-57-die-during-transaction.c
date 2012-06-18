@@ -103,6 +103,7 @@ static int target, current;
 static jmp_buf jmpbuf;
 #define TEST_DBNAME "run-57-die-during-transaction.ntdb"
 #define KEY_STRING "helloworld"
+#define DATA_STRING "Helloworld"
 
 static void maybe_die(int fd)
 {
@@ -152,14 +153,18 @@ static int ftruncate_check(int fd, off_t length)
 	return ret;
 }
 
-static bool test_death(enum operation op, struct agent *agent)
+static bool test_death(enum operation op, struct agent *agent,
+		       bool pre_create_recovery)
 {
 	struct ntdb_context *ntdb = NULL;
-	NTDB_DATA key;
+	NTDB_DATA key, data;
 	enum agent_return ret;
 	int needed_recovery = 0;
 
 	current = target = 0;
+	/* Big long data to force a change. */
+	data = ntdb_mkdata(DATA_STRING, strlen(DATA_STRING));
+
 reset:
 	unlink(TEST_DBNAME);
 	ntdb = ntdb_open(TEST_DBNAME, NTDB_NOMMAP,
@@ -184,8 +189,14 @@ reset:
 			return false;
 		}
 
+		/* Could be key, or data. */
 		ret = external_agent_operation(agent, op,
 					       KEY_STRING "=" KEY_STRING);
+		if (ret != SUCCESS) {
+			ret = external_agent_operation(agent, op,
+						       KEY_STRING
+						       "=" DATA_STRING);
+		}
 		if (ret != SUCCESS) {
 			diag("Step %u op %s failed = %s", current,
 			     operation_name(op),
@@ -228,8 +239,20 @@ reset:
 
 	/* Put key for agent to fetch. */
 	key = ntdb_mkdata(KEY_STRING, strlen(KEY_STRING));
+
+	if (pre_create_recovery) {
+		/* Using a transaction now means we allocate the recovery
+		 * area immediately.  That makes the later transaction smaller
+		 * and thus tickles a bug we had. */
+		if (ntdb_transaction_start(ntdb) != 0)
+			return false;
+	}
 	if (ntdb_store(ntdb, key, key, NTDB_INSERT) != 0)
 		return false;
+	if (pre_create_recovery) {
+		if (ntdb_transaction_commit(ntdb) != 0)
+			return false;
+	}
 
 	/* This is the key we insert in transaction. */
 	key.dsize--;
@@ -246,7 +269,7 @@ reset:
 	if (ntdb_transaction_start(ntdb) != 0)
 		return false;
 
-	if (ntdb_store(ntdb, key, key, NTDB_INSERT) != 0)
+	if (ntdb_store(ntdb, key, data, NTDB_INSERT) != 0)
 		return false;
 
 	if (ntdb_transaction_commit(ntdb) != 0)
@@ -275,9 +298,9 @@ int main(int argc, char *argv[])
 {
 	enum operation ops[] = { FETCH, STORE, TRANSACTION_START };
 	struct agent *agent;
-	int i;
+	int i, j;
 
-	plan_tests(12);
+	plan_tests(24);
 	unlock_callback = maybe_die;
 
 	external_agent_free = free_noleak;
@@ -285,9 +308,12 @@ int main(int argc, char *argv[])
 	if (!agent)
 		err(1, "preparing agent");
 
-	for (i = 0; i < sizeof(ops)/sizeof(ops[0]); i++) {
-		diag("Testing %s after death", operation_name(ops[i]));
-		ok1(test_death(ops[i], agent));
+	for (j = 0; j < 2; j++) {
+		for (i = 0; i < sizeof(ops)/sizeof(ops[0]); i++) {
+			diag("Testing %s after death (%s recovery area)",
+			     operation_name(ops[i]), j ? "with" : "without");
+			ok1(test_death(ops[i], agent, j));
+		}
 	}
 
 	free_external_agent(agent);
