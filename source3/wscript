@@ -1367,7 +1367,8 @@ main() {
                                       vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
                                       vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
                                       vfs_crossrename vfs_linux_xfs_sgid
-                                      vfs_time_audit idmap_autorid''')
+                                      vfs_time_audit idmap_autorid idmap_tdb2
+                                      idmap_rid idmap_hash''')
 
     if Options.options.developer:
         default_static_modules.extend(TO_LIST('charset_weird'))
