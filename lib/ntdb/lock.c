@@ -232,7 +232,7 @@ static enum NTDB_ERROR ntdb_brunlock(struct ntdb_context *ntdb,
 		return NTDB_SUCCESS;
 	}
 
-	if (!check_lock_pid(ntdb, "ntdb_brunlock", true))
+	if (!check_lock_pid(ntdb, "ntdb_brunlock", false))
 		return NTDB_ERR_LOCK;
 
 	if (unlock(ntdb, rw_type, offset, len) == -1) {

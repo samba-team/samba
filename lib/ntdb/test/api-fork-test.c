@@ -22,12 +22,16 @@
 #include <stdlib.h>
 #include "logging.h"
 
+static bool am_child = false;
+
 static enum NTDB_ERROR fork_in_parse(NTDB_DATA key, NTDB_DATA data,
 				    struct ntdb_context *ntdb)
 {
 	int status;
 
 	if (fork() == 0) {
+		am_child = true;
+
 		/* We expect this to fail. */
 		if (ntdb_store(ntdb, key, data, NTDB_REPLACE) != NTDB_ERR_LOCK)
 			exit(1);
@@ -38,10 +42,7 @@ static enum NTDB_ERROR fork_in_parse(NTDB_DATA key, NTDB_DATA data,
 		if (tap_log_messages != 2)
 			exit(2);
 
-		ntdb_close(ntdb);
-		if (tap_log_messages != 2)
-			exit(3);
-		exit(0);
+		return NTDB_SUCCESS;
 	}
 	wait(&status);
 	ok1(WIFEXITED(status) && WEXITSTATUS(status) == 0);
@@ -83,11 +84,12 @@ int main(int argc, char *argv[])
 			if (tap_log_messages != 2)
 				return 2;
 
+			/* Child can do this without any complaints. */
 			ntdb_chainunlock(ntdb, key);
-			if (tap_log_messages != 3)
+			if (tap_log_messages != 2)
 				return 3;
 			ntdb_close(ntdb);
-			if (tap_log_messages != 3)
+			if (tap_log_messages != 2)
 				return 4;
 			return 0;
 		}
@@ -107,6 +109,7 @@ int main(int argc, char *argv[])
 			if (tap_log_messages != 2)
 				return 2;
 
+			/* Child can do this without any complaints. */
 			ntdb_unlockall(ntdb);
 			if (tap_log_messages != 2)
 				return 3;
@@ -132,6 +135,7 @@ int main(int argc, char *argv[])
 			if (tap_log_messages != 2)
 				return 2;
 
+			/* Child can do this without any complaints. */
 			ntdb_unlockall_read(ntdb);
 			if (tap_log_messages != 2)
 				return 3;
@@ -148,6 +152,8 @@ int main(int argc, char *argv[])
 		/* If transactions is empty, noop "commit" succeeds. */
 		ok1(ntdb_delete(ntdb, key) == NTDB_SUCCESS);
 		if (fork() == 0) {
+			int last_log_messages;
+
 			/* We expect this to fail. */
 			if (ntdb_store(ntdb, key, data, NTDB_REPLACE) != NTDB_ERR_LOCK)
 				return 1;
@@ -158,11 +164,19 @@ int main(int argc, char *argv[])
 			if (tap_log_messages != 2)
 				return 2;
 
-			if (ntdb_transaction_commit(ntdb) != NTDB_ERR_LOCK)
+			if (ntdb_transaction_prepare_commit(ntdb)
+			    != NTDB_ERR_LOCK)
 				return 3;
+			if (tap_log_messages == 2)
+				return 4;
 
+			last_log_messages = tap_log_messages;
+			/* Child can do this without any complaints. */
+			ntdb_transaction_cancel(ntdb);
+			if (tap_log_messages != last_log_messages)
+				return 4;
 			ntdb_close(ntdb);
-			if (tap_log_messages < 3)
+			if (tap_log_messages != last_log_messages)
 				return 4;
 			return 0;
 		}
@@ -173,6 +187,12 @@ int main(int argc, char *argv[])
 		ok1(ntdb_parse_record(ntdb, key, fork_in_parse, ntdb)
 		    == NTDB_SUCCESS);
 		ntdb_close(ntdb);
+		if (am_child) {
+			/* Child can return from parse without complaints. */
+			if (tap_log_messages != 2)
+				exit(3);
+			exit(0);
+		}
 		ok1(tap_log_messages == 0);
 	}
 	return exit_status();
