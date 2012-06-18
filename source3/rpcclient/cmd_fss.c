@@ -312,7 +312,7 @@ static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 			  nt_errstr(status), r_scset_prep.out.result));
 		goto err_out;
 	}
-	printf("%s: prepare completed in %lu secs\n",
+	printf("%s: prepare completed in %llu secs\n",
 	       GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
 	       (uint64_t)(time_mono(NULL) - start_time));
 
@@ -326,7 +326,7 @@ static NTSTATUS cmd_fss_create_expose(struct rpc_pipe_client *cli,
 			  nt_errstr(status), r_scset_commit.out.result));
 		goto err_out;
 	}
-	printf("%s: commit completed in %lu secs\n",
+	printf("%s: commit completed in %llu secs\n",
 	       GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
 	       (uint64_t)(time_mono(NULL) - start_time));
 
