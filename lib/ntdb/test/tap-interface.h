@@ -37,5 +37,5 @@ extern unsigned tap_ok_count, tap_ok_target;
 #define ok1(e) ok((e), "%s:%s", __location__, #e)
 #define pass(...) (printf("."), tap_ok_count++)
 #define fail(...) warnx(__VA_ARGS__)
-#define diag printf
+#define diag(...) do { printf(__VA_ARGS__); printf("\n"); } while(0)
 #define exit_status() (tap_ok_count == tap_ok_target ? 0 : 1)
