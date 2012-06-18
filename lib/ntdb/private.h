@@ -100,7 +100,7 @@ typedef uint64_t ntdb_off_t;
 
 /* This doesn't really need to be pagesize, but we use it for similar
  * reasons. */
-#define NTDB_PGSIZE 65536
+#define NTDB_PGSIZE 16384
 
 /* Common case of returning true, false or -ve error. */
 typedef int ntdb_bool_err;
