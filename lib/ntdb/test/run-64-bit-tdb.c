@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 		return exit_status();
 	}
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 14);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 16);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		off_t old_size;
 		NTDB_DATA k, d;
@@ -36,6 +36,15 @@ int main(int argc, char *argv[])
 			continue;
 
 		old_size = ntdb->file->map_size;
+
+		/* Add a fake record to chew up the existing free space. */
+		k = ntdb_mkdata("fake", 4);
+		d.dsize = ntdb->file->map_size - sizeof(struct new_database)- 8;
+		d.dptr = malloc(d.dsize);
+		memset(d.dptr, 0, d.dsize);
+		ok1(ntdb_store(ntdb, k, d, NTDB_INSERT) == 0);
+		ok1(ntdb->file->map_size == old_size);
+		free(d.dptr);
 
 		/* This makes a sparse file */
 		ok1(ftruncate(ntdb->file->fd, ALMOST_4G) == 0);

@@ -19,12 +19,16 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		union ntdb_attribute *attr;
-		NTDB_DATA key = ntdb_mkdata("key", 3);
+		NTDB_DATA key = ntdb_mkdata("key", 3), data;
 
 		ntdb = ntdb_open("run-91-get-stats.ntdb", flags[i],
 			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
-		ok1(ntdb_store(ntdb, key, key, NTDB_REPLACE) == 0);
+		/* Force an expansion */
+		data.dsize = 65536;
+		data.dptr = calloc(data.dsize, 1);
+		ok1(ntdb_store(ntdb, key, data, NTDB_REPLACE) == 0);
+		free(data.dptr);
 
 		/* Use malloc so valgrind will catch overruns. */
 		attr = malloc(sizeof *attr);

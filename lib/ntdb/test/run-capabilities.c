@@ -29,7 +29,7 @@ static void create_ntdb(const char *name,
 	va_list ap;
 	struct ntdb_layout *layout;
 	struct ntdb_context *ntdb;
-	int fd;
+	int fd, clen;
 
 	key = ntdb_mkdata("Hello", 5);
 	data = ntdb_mkdata("world", 5);
@@ -38,10 +38,11 @@ static void create_ntdb(const char *name,
 	layout = new_ntdb_layout();
 	ntdb_layout_add_freetable(layout);
 	ntdb_layout_add_used(layout, key, data, 6);
-	ntdb_layout_add_free(layout, 80, 0);
+	clen = len_of(breaks_check, breaks_write, breaks_open);
+	ntdb_layout_add_free(layout, 56480 - clen, 0);
 	ntdb_layout_add_capability(layout, cap,
-				  breaks_write, breaks_check, breaks_open,
-				  len_of(breaks_check, breaks_write, breaks_open));
+				   breaks_write, breaks_check, breaks_open,
+				   clen);
 
 	va_start(ap, breaks_open);
 	while ((cap = va_arg(ap, int)) != 0) {
@@ -51,12 +52,11 @@ static void create_ntdb(const char *name,
 
 		key.dsize--;
 		ntdb_layout_add_used(layout, key, data, 11 - key.dsize);
-		ntdb_layout_add_free(layout, 80, 0);
+		clen = len_of(breaks_check, breaks_write, breaks_open);
+		ntdb_layout_add_free(layout, 65456 - clen, 0);
 		ntdb_layout_add_capability(layout, cap,
 					  breaks_write, breaks_check,
-					  breaks_open,
-					  len_of(breaks_check, breaks_write,
-						 breaks_open));
+					  breaks_open, clen);
 	}
 	va_end(ap);
 

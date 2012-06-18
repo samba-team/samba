@@ -108,6 +108,7 @@ static void ntdb_context_init(struct ntdb_context *ntdb)
 struct new_database {
 	struct ntdb_header hdr;
 	struct ntdb_freetable ftable;
+	struct ntdb_free_record remainder;
 };
 
 /* initialise a new database */
@@ -116,84 +117,109 @@ static enum NTDB_ERROR ntdb_new_database(struct ntdb_context *ntdb,
 				       struct ntdb_header *hdr)
 {
 	/* We make it up in memory, then write it out if not internal */
-	struct new_database newdb;
+	struct new_database *newdb;
 	unsigned int magic_len;
 	ssize_t rlen;
+	size_t dbsize, remaindersize;
 	enum NTDB_ERROR ecode;
 
-	/* Fill in the header */
-	newdb.hdr.version = NTDB_VERSION;
-	if (seed)
-		newdb.hdr.hash_seed = seed->seed;
-	else
-		newdb.hdr.hash_seed = random_number(ntdb);
-	newdb.hdr.hash_test = NTDB_HASH_MAGIC;
-	newdb.hdr.hash_test = ntdb->hash_fn(&newdb.hdr.hash_test,
-					   sizeof(newdb.hdr.hash_test),
-					   newdb.hdr.hash_seed,
-					   ntdb->hash_data);
-	newdb.hdr.recovery = 0;
-	newdb.hdr.features_used = newdb.hdr.features_offered = NTDB_FEATURE_MASK;
-	newdb.hdr.seqnum = 0;
-	newdb.hdr.capabilities = 0;
-	memset(newdb.hdr.reserved, 0, sizeof(newdb.hdr.reserved));
-	/* Initial hashes are empty. */
-	memset(newdb.hdr.hashtable, 0, sizeof(newdb.hdr.hashtable));
-
-	/* Free is empty. */
-	newdb.hdr.free_table = offsetof(struct new_database, ftable);
-	memset(&newdb.ftable, 0, sizeof(newdb.ftable));
-	ecode = set_header(NULL, &newdb.ftable.hdr, NTDB_FTABLE_MAGIC, 0,
-			   sizeof(newdb.ftable) - sizeof(newdb.ftable.hdr),
-			   sizeof(newdb.ftable) - sizeof(newdb.ftable.hdr),
-			   0);
-	if (ecode != NTDB_SUCCESS) {
-		return ecode;
+	/* Always make db a multiple of NTDB_PGSIZE */
+	dbsize = (sizeof(*newdb) + NTDB_PGSIZE-1) & ~(NTDB_PGSIZE-1);
+	remaindersize = dbsize - sizeof(*newdb);
+	newdb = malloc(dbsize);
+	if (!newdb) {
+		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
+				   "ntdb_new_database: failed to allocate");
 	}
 
+	/* Fill in the header */
+	newdb->hdr.version = NTDB_VERSION;
+	if (seed)
+		newdb->hdr.hash_seed = seed->seed;
+	else
+		newdb->hdr.hash_seed = random_number(ntdb);
+	newdb->hdr.hash_test = NTDB_HASH_MAGIC;
+	newdb->hdr.hash_test = ntdb->hash_fn(&newdb->hdr.hash_test,
+					   sizeof(newdb->hdr.hash_test),
+					   newdb->hdr.hash_seed,
+					   ntdb->hash_data);
+	newdb->hdr.recovery = 0;
+	newdb->hdr.features_used = newdb->hdr.features_offered = NTDB_FEATURE_MASK;
+	newdb->hdr.seqnum = 0;
+	newdb->hdr.capabilities = 0;
+	memset(newdb->hdr.reserved, 0, sizeof(newdb->hdr.reserved));
+	/* Initial hashes are empty. */
+	memset(newdb->hdr.hashtable, 0, sizeof(newdb->hdr.hashtable));
+
+	/* Free is empty. */
+	newdb->hdr.free_table = offsetof(struct new_database, ftable);
+	memset(&newdb->ftable, 0, sizeof(newdb->ftable));
+	ecode = set_header(NULL, &newdb->ftable.hdr, NTDB_FTABLE_MAGIC, 0,
+			   sizeof(newdb->ftable) - sizeof(newdb->ftable.hdr),
+			   sizeof(newdb->ftable) - sizeof(newdb->ftable.hdr),
+			   0);
+	if (ecode != NTDB_SUCCESS) {
+		goto out;
+	}
+
+	/* Rest of database is a free record, containing junk. */
+	newdb->remainder.ftable_and_len
+		= (remaindersize + sizeof(newdb->remainder)
+		   - sizeof(struct ntdb_used_record));
+	newdb->remainder.next = 0;
+	newdb->remainder.magic_and_prev
+		= (NTDB_FREE_MAGIC << (64-NTDB_OFF_UPPER_STEAL))
+		| offsetof(struct new_database, remainder);
+	memset(&newdb->remainder + 1, 0x43, remaindersize);
+
+	/* Put in our single free entry. */
+	newdb->ftable.buckets[size_to_bucket(remaindersize)] =
+		offsetof(struct new_database, remainder);
+
 	/* Magic food */
-	memset(newdb.hdr.magic_food, 0, sizeof(newdb.hdr.magic_food));
-	strcpy(newdb.hdr.magic_food, NTDB_MAGIC_FOOD);
+	memset(newdb->hdr.magic_food, 0, sizeof(newdb->hdr.magic_food));
+	strcpy(newdb->hdr.magic_food, NTDB_MAGIC_FOOD);
 
 	/* This creates an endian-converted database, as if read from disk */
-	magic_len = sizeof(newdb.hdr.magic_food);
+	magic_len = sizeof(newdb->hdr.magic_food);
 	ntdb_convert(ntdb,
-		    (char *)&newdb.hdr + magic_len, sizeof(newdb) - magic_len);
+		     (char *)&newdb->hdr + magic_len,
+		     sizeof(*newdb) - magic_len);
 
-	*hdr = newdb.hdr;
+	*hdr = newdb->hdr;
 
 	if (ntdb->flags & NTDB_INTERNAL) {
-		ntdb->file->map_size = sizeof(newdb);
-		ntdb->file->map_ptr = malloc(ntdb->file->map_size);
-		if (!ntdb->file->map_ptr) {
-			return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
-					  "ntdb_new_database:"
-					  " failed to allocate");
-		}
-		memcpy(ntdb->file->map_ptr, &newdb, ntdb->file->map_size);
+		ntdb->file->map_size = dbsize;
+		ntdb->file->map_ptr = newdb;
 		return NTDB_SUCCESS;
 	}
 	if (lseek(ntdb->file->fd, 0, SEEK_SET) == -1) {
-		return ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
-				  "ntdb_new_database:"
-				  " failed to seek: %s", strerror(errno));
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
+				    "ntdb_new_database:"
+				    " failed to seek: %s", strerror(errno));
+		goto out;
 	}
 
 	if (ftruncate(ntdb->file->fd, 0) == -1) {
-		return ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
-				  "ntdb_new_database:"
-				  " failed to truncate: %s", strerror(errno));
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
+				    "ntdb_new_database:"
+				    " failed to truncate: %s", strerror(errno));
+		goto out;
 	}
 
-	rlen = write(ntdb->file->fd, &newdb, sizeof(newdb));
-	if (rlen != sizeof(newdb)) {
+	rlen = write(ntdb->file->fd, newdb, dbsize);
+	if (rlen != dbsize) {
 		if (rlen >= 0)
 			errno = ENOSPC;
-		return ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
-				  "ntdb_new_database: %zi writing header: %s",
-				  rlen, strerror(errno));
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
+				    "ntdb_new_database: %zi writing header: %s",
+				    rlen, strerror(errno));
+		goto out;
 	}
-	return NTDB_SUCCESS;
+
+out:
+	free(newdb);
+	return ecode;
 }
 
 static enum NTDB_ERROR ntdb_new_file(struct ntdb_context *ntdb)
@@ -653,6 +679,15 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	ecode = ntdb->io->oob(ntdb, ntdb->file->map_size, 1, true);
 	if (unlikely(ecode != NTDB_SUCCESS))
 		goto fail;
+
+	if (ntdb->file->map_size % NTDB_PGSIZE != 0) {
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
+				    "ntdb_open:"
+				    " %s size %llu isn't a multiple of %u",
+				    name, (long long)ntdb->file->map_size,
+				    NTDB_PGSIZE);
+		goto fail;
+	}
 
 	/* Now it's fully formed, recover if necessary. */
 	berr = ntdb_needs_recovery(ntdb);

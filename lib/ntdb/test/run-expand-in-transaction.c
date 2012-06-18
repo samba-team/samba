@@ -11,10 +11,11 @@ int main(int argc, char *argv[])
 	NTDB_DATA key = ntdb_mkdata("key", 3);
 	NTDB_DATA data = ntdb_mkdata("data", 4);
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 7 + 1);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 9 + 1);
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		size_t size;
+		NTDB_DATA k, d;
 		ntdb = ntdb_open("run-expand-in-transaction.ntdb", flags[i],
 			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
@@ -22,6 +23,14 @@ int main(int argc, char *argv[])
 			continue;
 
 		size = ntdb->file->map_size;
+		/* Add a fake record to chew up the existing free space. */
+		k = ntdb_mkdata("fake", 4);
+		d.dsize = ntdb->file->map_size - sizeof(struct new_database)- 8;
+		d.dptr = malloc(d.dsize);
+		memset(d.dptr, 0, d.dsize);
+		ok1(ntdb_store(ntdb, k, d, NTDB_INSERT) == 0);
+		ok1(ntdb->file->map_size == size);
+		free(d.dptr);
 		ok1(ntdb_transaction_start(ntdb) == 0);
 		ok1(ntdb_store(ntdb, key, data, NTDB_INSERT) == 0);
 		ok1(ntdb->file->map_size > size);
