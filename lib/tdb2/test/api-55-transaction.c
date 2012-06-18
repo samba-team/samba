@@ -13,10 +13,7 @@ int main(int argc, char *argv[])
 	struct tdb_context *tdb;
 	unsigned char *buffer;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 	struct tdb_data key = tdb_mkdata("key", 3);
 	struct tdb_data data;
 

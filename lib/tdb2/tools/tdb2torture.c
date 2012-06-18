@@ -21,9 +21,6 @@
 #include <sys/wait.h>
 #endif
 
-/* Currently we default to creating a tdb1.  This will change! */
-#define TDB2_IS_DEFAULT false
-
 //#define REOPEN_PROB 30
 #define DELETE_PROB 8
 #define STORE_PROB 4
@@ -248,7 +245,7 @@ static int traverse_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,
 
 static void usage(void)
 {
-	printf("Usage: tdbtorture"
+	printf("Usage: tdb2torture"
 #if TRANSACTION_PROB
 	       " [-t]"
 #endif
@@ -354,7 +351,6 @@ int main(int argc, char * const *argv)
 	int kill_random = 0;
 	int *done;
 	int tdb_flags = TDB_DEFAULT;
-	bool tdb2 = TDB2_IS_DEFAULT;
 	char *test_tdb;
 
 	log_attr.base.attr = TDB_ATTRIBUTE_LOG;
@@ -363,7 +359,7 @@ int main(int argc, char * const *argv)
 	seed_attr.base.attr = TDB_ATTRIBUTE_SEED;
 	seed_attr.base.next = NULL;
 
-	while ((c = getopt(argc, argv, "n:l:s:thkS12")) != -1) {
+	while ((c = getopt(argc, argv, "n:l:s:thkS")) != -1) {
 		switch (c) {
 		case 'n':
 			num_procs = strtol(optarg, NULL, 0);
@@ -388,24 +384,12 @@ int main(int argc, char * const *argv)
 		case 'k':
 			kill_random = 1;
 			break;
-		case '1':
-			tdb2 = false;
-			break;
-		case '2':
-			tdb2 = true;
-			break;
 		default:
 			usage();
 		}
 	}
 
-	if (!tdb2) {
-		tdb_flags |= TDB_VERSION1;
-		/* TDB1 tdbs don't use seed. */
-		log_attr.base.next = NULL;
-	}
-
-	test_tdb = test_path("torture.tdb");
+	test_tdb = test_path("torture.tdb2");
 
 	unlink(test_tdb);
 

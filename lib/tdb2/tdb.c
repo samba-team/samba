@@ -116,12 +116,6 @@ _PUBLIC_ enum TDB_ERROR tdb_store(struct tdb_context *tdb,
 	struct tdb_used_record rec;
 	enum TDB_ERROR ecode;
 
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_store(tdb, key, dbuf, flag) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
-
 	off = find_and_lock(tdb, key, F_WRLCK, &h, &rec, NULL);
 	if (TDB_OFF_IS_ERR(off)) {
 		return tdb->last_error = TDB_OFF_TO_ERR(off);
@@ -184,12 +178,6 @@ _PUBLIC_ enum TDB_ERROR tdb_append(struct tdb_context *tdb,
 	unsigned char *newdata;
 	struct tdb_data new_dbuf;
 	enum TDB_ERROR ecode;
-
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_append(tdb, key, dbuf) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
 
 	off = find_and_lock(tdb, key, F_WRLCK, &h, &rec, NULL);
 	if (TDB_OFF_IS_ERR(off)) {
@@ -256,9 +244,6 @@ _PUBLIC_ enum TDB_ERROR tdb_fetch(struct tdb_context *tdb, struct tdb_data key,
 	struct hash_info h;
 	enum TDB_ERROR ecode;
 
-	if (tdb->flags & TDB_VERSION1)
-		return tdb1_fetch(tdb, key, data);
-
 	off = find_and_lock(tdb, key, F_RDLCK, &h, &rec, NULL);
 	if (TDB_OFF_IS_ERR(off)) {
 		return tdb->last_error = TDB_OFF_TO_ERR(off);
@@ -286,10 +271,6 @@ _PUBLIC_ bool tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 	struct tdb_used_record rec;
 	struct hash_info h;
 
-	if (tdb->flags & TDB_VERSION1) {
-		return tdb1_exists(tdb, key);
-	}
-
 	off = find_and_lock(tdb, key, F_RDLCK, &h, &rec, NULL);
 	if (TDB_OFF_IS_ERR(off)) {
 		tdb->last_error = TDB_OFF_TO_ERR(off);
@@ -307,12 +288,6 @@ _PUBLIC_ enum TDB_ERROR tdb_delete(struct tdb_context *tdb, struct tdb_data key)
 	struct tdb_used_record rec;
 	struct hash_info h;
 	enum TDB_ERROR ecode;
-
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_delete(tdb, key) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
 
 	off = find_and_lock(tdb, key, F_WRLCK, &h, &rec, NULL);
 	if (TDB_OFF_IS_ERR(off)) {
@@ -353,10 +328,7 @@ _PUBLIC_ unsigned int tdb_get_flags(struct tdb_context *tdb)
 
 static bool inside_transaction(const struct tdb_context *tdb)
 {
-	if (tdb->flags & TDB_VERSION1)
-		return tdb->tdb1.transaction != NULL;
-	else
-		return tdb->tdb2.transaction != NULL;
+	return tdb->tdb2.transaction != NULL;
 }
 
 static bool readonly_changable(struct tdb_context *tdb, const char *caller)
@@ -523,11 +495,6 @@ _PUBLIC_ enum TDB_ERROR tdb_parse_record_(struct tdb_context *tdb,
 	struct hash_info h;
 	enum TDB_ERROR ecode;
 
-	if (tdb->flags & TDB_VERSION1) {
-		return tdb->last_error = tdb1_parse_record(tdb, key, parse,
-							   data);
-	}
-
 	off = find_and_lock(tdb, key, F_RDLCK, &h, &rec, NULL);
 	if (TDB_OFF_IS_ERR(off)) {
 		return tdb->last_error = TDB_OFF_TO_ERR(off);
@@ -561,17 +528,6 @@ _PUBLIC_ const char *tdb_name(const struct tdb_context *tdb)
 _PUBLIC_ int64_t tdb_get_seqnum(struct tdb_context *tdb)
 {
 	tdb_off_t off;
-
-	if (tdb->flags & TDB_VERSION1) {
-		tdb1_off_t val;
-		tdb->last_error = TDB_SUCCESS;
-		val = tdb1_get_seqnum(tdb);
-
-		if (tdb->last_error != TDB_SUCCESS)
-			return TDB_ERR_TO_OFF(tdb->last_error);
-		else
-			return val;
-	}
 
 	off = tdb_read_off(tdb, offsetof(struct tdb_header, seqnum));
 	if (TDB_OFF_IS_ERR(off))

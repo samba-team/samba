@@ -103,20 +103,7 @@ struct tdb_context *tdb_open(const char *name, int tdb_flags,
 #define TDB_SEQNUM   128 /* maintain a sequence number */
 #define TDB_ALLOW_NESTING   256 /* fake nested transactions */
 #define TDB_RDONLY   512 /* implied by O_RDONLY */
-#define TDB_VERSION1  1024 /* create/open an old style TDB */
 #define TDB_CANT_CHECK  2048 /* has a feature which we don't understand */
-
-/**
- * tdb1_incompatible_hash - better (Jenkins) hash for tdb1
- *
- * This is better than the default hash for tdb1; but older versions of the
- * tdb library (prior to version 1.2.6) won't be able to open them.
- *
- * It only makes sense to specify this (using tdb_attribute_hash) when
- * creating (with O_CREAT) an old tdb version using TDB_VERSION1.  It's
- * equivalent to the TDB_INCOMPATIBLE_HASH flag for tdb1.
- */
-uint64_t tdb1_incompatible_hash(const void *, size_t, uint64_t, void *);
 
 /**
  * tdb_close - close and free a tdb.
@@ -653,8 +640,6 @@ enum tdb_attribute_type {
 	TDB_ATTRIBUTE_STATS = 3,
 	TDB_ATTRIBUTE_OPENHOOK = 4,
 	TDB_ATTRIBUTE_FLOCK = 5,
-	TDB_ATTRIBUTE_TDB1_HASHSIZE = 128,
-	TDB_ATTRIBUTE_TDB1_MAX_DEAD = 129,
 };
 
 /**
@@ -678,9 +663,8 @@ enum TDB_ERROR tdb_get_attribute(struct tdb_context *tdb,
  * of the same type.  It returns TDB_ERR_EINVAL if the attribute is
  * unknown or invalid.
  *
- * Note that TDB_ATTRIBUTE_HASH, TDB_ATTRIBUTE_SEED,
- * TDB_ATTRIBUTE_OPENHOOK and TDB_ATTRIBUTE_TDB1_HASHSIZE cannot
- * currently be set after tdb_open.
+ * Note that TDB_ATTRIBUTE_HASH, TDB_ATTRIBUTE_SEED, and
+ * TDB_ATTRIBUTE_OPENHOOK cannot currently be set after tdb_open.
  */
 enum TDB_ERROR tdb_set_attribute(struct tdb_context *tdb,
 				 const union tdb_attribute *attr);
@@ -887,32 +871,6 @@ struct tdb_attribute_flock {
 };
 
 /**
- * struct tdb_attribute_tdb1_hashsize - tdb1 hashsize
- *
- * This attribute allows setting the TDB1 hashsize; it only makes sense with
- * O_CREAT and TDB_VERSION1.
- *
- * Hashsize should generally be a prime, such as 10007.
- */
-struct tdb_attribute_tdb1_hashsize {
-	struct tdb_attribute_base base; /* .attr = TDB_ATTRIBUTE_TDB1_HASHSIZE */
-	unsigned int hsize;
-};
-
-/**
- * struct tdb_attribute_tdb1_max_dead - tdb1 number of maximum dead records.
- *
- * TDB1 has a method to speed up its slow free list: it lets a certain
- * number of "dead" records build up before freeing them.  This is
- * particularly useful for volatile TDBs; setting it to 5 is
- * equivalent to tdb1's TDB_VOLATILE flag.
- */
-struct tdb_attribute_tdb1_max_dead {
-	struct tdb_attribute_base base; /* .attr = TDB_ATTRIBUTE_TDB1_MAX_DEAD */
-	unsigned int max_dead;
-};
-
-/**
  * union tdb_attribute - tdb attributes.
  *
  * This represents all the known attributes.
@@ -930,8 +888,6 @@ union tdb_attribute {
 	struct tdb_attribute_stats stats;
 	struct tdb_attribute_openhook openhook;
 	struct tdb_attribute_flock flock;
-	struct tdb_attribute_tdb1_hashsize tdb1_hashsize;
-	struct tdb_attribute_tdb1_max_dead tdb1_max_dead;
 };
 
 #ifdef  __cplusplus

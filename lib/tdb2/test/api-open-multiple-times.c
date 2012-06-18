@@ -9,16 +9,13 @@
 
 int main(int argc, char *argv[])
 {
-	unsigned int i, extra_messages;
+	unsigned int i;
 	struct tdb_context *tdb, *tdb2;
 	struct tdb_data key = { (unsigned char *)&i, sizeof(i) };
 	struct tdb_data data = { (unsigned char *)&i, sizeof(i) };
 	struct tdb_data d = { NULL, 0 }; /* Bogus GCC warning */
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 28);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
@@ -28,11 +25,6 @@ int main(int argc, char *argv[])
 		if (!tdb)
 			continue;
 
-		if (flags[i] & TDB_VERSION1) {
-			extra_messages = 1;
-		} else {
-			extra_messages = 0;
-		}
 		tdb2 = tdb_open("run-open-multiple-times.tdb", flags[i],
 				O_RDWR|O_CREAT, 0600, &tap_log_attr);
 		ok1(tdb_check(tdb, NULL, NULL) == 0);
@@ -65,15 +57,12 @@ int main(int argc, char *argv[])
 
 		/* Anything in the other one should fail. */
 		ok1(tdb_fetch(tdb, key, &d) == TDB_ERR_LOCK);
-		tap_log_messages -= extra_messages;
 		ok1(tap_log_messages == 1);
 		ok1(tdb_store(tdb, key, data, TDB_REPLACE) == TDB_ERR_LOCK);
-		tap_log_messages -= extra_messages;
 		ok1(tap_log_messages == 2);
 		ok1(tdb_transaction_start(tdb) == TDB_ERR_LOCK);
 		ok1(tap_log_messages == 3);
 		ok1(tdb_chainlock(tdb, key) == TDB_ERR_LOCK);
-		tap_log_messages -= extra_messages;
 		ok1(tap_log_messages == 4);
 
 		/* Transaciton should work as normal. */

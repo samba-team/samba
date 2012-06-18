@@ -12,12 +12,6 @@ static tdb_off_t tdb_offset(struct tdb_context *tdb, struct tdb_data key)
 	struct tdb_used_record urec;
 	struct hash_info h;
 
-	if (tdb_get_flags(tdb) & TDB_VERSION1) {
-		struct tdb1_record rec;
-		return tdb1_find(tdb, key, tdb_hash(tdb, key.dptr, key.dsize),
-				 &rec);
-	}
-
 	off = find_and_lock(tdb, key, F_RDLCK, &h, &urec, NULL);
 	if (TDB_OFF_IS_ERR(off))
 		return 0;
@@ -33,12 +27,7 @@ int main(int argc, char *argv[])
 	tdb_off_t oldoff = 0, newoff;
 	int flags[] = { TDB_INTERNAL, TDB_DEFAULT, TDB_NOMMAP,
 			TDB_INTERNAL|TDB_CONVERT, TDB_CONVERT,
-			TDB_NOMMAP|TDB_CONVERT,
-			TDB_INTERNAL|TDB_VERSION1, TDB_VERSION1,
-			TDB_NOMMAP|TDB_VERSION1,
-			TDB_INTERNAL|TDB_CONVERT|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_NOMMAP|TDB_CONVERT };
 	struct tdb_data key = tdb_mkdata("key", 3);
 	struct tdb_data data;
 
@@ -75,15 +64,9 @@ int main(int argc, char *argv[])
 		}
 		ok1(!tdb->file || (tdb->file->allrecord_lock.count == 0
 				   && tdb->file->num_lockrecs == 0));
-		if (flags[i] & TDB_VERSION1) {
-			/* TDB1 simply over-size by 25%. */
-			ok(moves <= ilog64(j / SIZE_STEP)*4,
-			   "Moved %u times", moves);
-		} else {
-			/* We should increase by 50% each time... */
-			ok(moves <= ilog64(j / SIZE_STEP)*2,
-			   "Moved %u times", moves);
-		}
+		/* We should increase by 50% each time... */
+		ok(moves <= ilog64(j / SIZE_STEP)*2,
+		   "Moved %u times", moves);
 		tdb_close(tdb);
 	}
 
@@ -114,15 +97,9 @@ int main(int argc, char *argv[])
 		}
 		ok1(!tdb->file || (tdb->file->allrecord_lock.count == 0
 				   && tdb->file->num_lockrecs == 0));
-		if (flags[i] & TDB_VERSION1) {
-			/* TDB1 simply over-size by 25%. */
-			ok(moves <= ilog64(j / SIZE_STEP)*4,
-			   "Moved %u times", moves);
-		} else {
-			/* We should increase by 50% each time... */
-			ok(moves <= ilog64(j / SIZE_STEP)*2,
-			   "Moved %u times", moves);
-		}
+		/* We should increase by 50% each time... */
+		ok(moves <= ilog64(j / SIZE_STEP)*2,
+		   "Moved %u times", moves);
 		tdb_close(tdb);
 	}
 

@@ -11,12 +11,7 @@ int main(int argc, char *argv[])
 	struct tdb_context *tdb;
 	int flags[] = { TDB_INTERNAL, TDB_DEFAULT, TDB_NOMMAP,
 			TDB_INTERNAL|TDB_CONVERT, TDB_CONVERT,
-			TDB_NOMMAP|TDB_CONVERT,
-			TDB_INTERNAL|TDB_VERSION1, TDB_VERSION1,
-			TDB_NOMMAP|TDB_VERSION1,
-			TDB_INTERNAL|TDB_CONVERT|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_NOMMAP|TDB_CONVERT };
 
 	failtest_init(argc, argv);
 	failtest_hook = block_repeat_failures;

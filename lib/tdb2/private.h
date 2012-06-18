@@ -72,7 +72,6 @@ typedef uint64_t tdb_off_t;
 
 #define TDB_MAGIC_FOOD "TDB file\n"
 #define TDB_VERSION ((uint64_t)(0x26011967 + 7))
-#define TDB1_VERSION (0x26011967 + 6)
 #define TDB_USED_MAGIC ((uint64_t)0x1999)
 #define TDB_HTABLE_MAGIC ((uint64_t)0x1888)
 #define TDB_CHAIN_MAGIC ((uint64_t)0x1777)
@@ -305,9 +304,6 @@ struct traverse_info {
 	/* This makes delete-everything-inside-traverse work as expected. */
 	tdb_off_t prev;
 };
-
-typedef uint32_t tdb1_len_t;
-typedef uint32_t tdb1_off_t;
 
 enum tdb_lock_flags {
 	/* WAIT == F_SETLKW, NOWAIT == F_SETLK */
@@ -578,26 +574,6 @@ int tdb_fcntl_unlock(int fd, int rw, off_t off, off_t len, void *);
 enum TDB_ERROR tdb_transaction_recover(struct tdb_context *tdb);
 tdb_bool_err tdb_needs_recovery(struct tdb_context *tdb);
 
-/* this is stored at the front of every database */
-struct tdb1_header {
-	char magic_food[32]; /* for /etc/magic */
-	uint32_t version; /* version of the code */
-	uint32_t hash_size; /* number of hash entries */
-	tdb1_off_t rwlocks; /* obsolete - kept to detect old formats */
-	tdb1_off_t recovery_start; /* offset of transaction recovery region */
-	tdb1_off_t sequence_number; /* used when TDB1_SEQNUM is set */
-	uint32_t magic1_hash; /* hash of TDB_MAGIC_FOOD. */
-	uint32_t magic2_hash; /* hash of TDB1_MAGIC. */
-	tdb1_off_t reserved[27];
-};
-
-struct tdb1_traverse_lock {
-	struct tdb1_traverse_lock *next;
-	uint32_t off;
-	uint32_t hash;
-	int lock_rw;
-};
-
 struct tdb_context {
 	/* Single list of all TDBs, to detect multiple opens. */
 	struct tdb_context *next;
@@ -660,84 +636,7 @@ struct tdb_context {
 		/* Direct access information */
 		struct tdb_access_hdr *access;
 	} tdb2;
-
-	struct {
-		int traverse_read; /* read-only traversal */
-		int traverse_write; /* read-write traversal */
-
-		struct tdb1_header header; /* a cached copy of the header */
-		struct tdb1_traverse_lock travlocks; /* current traversal locks */
-		const struct tdb1_methods *io;
-		struct tdb1_transaction *transaction;
-		int page_size;
-		int max_dead_records;
-	} tdb1;
 };
-
-#define TDB1_BYTEREV(x) (((((x)&0xff)<<24)|((x)&0xFF00)<<8)|(((x)>>8)&0xFF00)|((x)>>24))
-
-/* tdb1_check.c: */
-int tdb1_check(struct tdb_context *tdb,
-	       enum TDB_ERROR (*check)(TDB_DATA key, TDB_DATA data, void *),
-	       void *private_data);
-
-
-/* tdb1_open.c: */
-enum TDB_ERROR tdb1_new_database(struct tdb_context *tdb,
-				 struct tdb_attribute_tdb1_hashsize *hashsize,
-				 struct tdb_attribute_tdb1_max_dead *max_dead);
-enum TDB_ERROR tdb1_open(struct tdb_context *tdb,
-			 struct tdb_attribute_tdb1_max_dead *max_dead);
-
-/* tdb1_io.c: */
-enum TDB_ERROR tdb1_probe_length(struct tdb_context *tdb);
-
-/* tdb1_lock.c: */
-int tdb1_allrecord_lock(struct tdb_context *tdb, int ltype,
-			enum tdb_lock_flags flags, bool upgradable);
-int tdb1_allrecord_unlock(struct tdb_context *tdb, int ltype);
-
-int tdb1_chainlock(struct tdb_context *tdb, TDB_DATA key);
-int tdb1_chainunlock(struct tdb_context *tdb, TDB_DATA key);
-int tdb1_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
-int tdb1_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
-
-/* tdb1_transaction.c: */
-int tdb1_transaction_recover(struct tdb_context *tdb);
-int tdb1_transaction_cancel(struct tdb_context *tdb);
-
-/* tdb1_traverse.c: */
-int tdb1_traverse(struct tdb_context *tdb,
-		  int (*)(struct tdb_context *, TDB_DATA, TDB_DATA, void *),
-		  void *private_data);
-
-/* tdb1_summary.c: */
-char *tdb1_summary(struct tdb_context *tdb);
-
-/* tdb1_tdb.c: */
-int tdb1_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
-enum TDB_ERROR tdb1_fetch(struct tdb_context *tdb, TDB_DATA key,
-			  TDB_DATA *data);
-int tdb1_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);
-int tdb1_delete(struct tdb_context *tdb, TDB_DATA key);
-int tdb1_exists(struct tdb_context *tdb, TDB_DATA key);
-enum TDB_ERROR tdb1_parse_record(struct tdb_context *tdb, TDB_DATA key,
-				 enum TDB_ERROR (*parser)(TDB_DATA key,
-							  TDB_DATA data,
-							  void *private_data),
-				 void *private_data);
-void tdb1_increment_seqnum_nonblock(struct tdb_context *tdb);
-int tdb1_get_seqnum(struct tdb_context *tdb);
-int tdb1_wipe_all(struct tdb_context *tdb);
-
-/* tdb1_transaction.c: */
-int tdb1_transaction_start(struct tdb_context *tdb);
-int tdb1_transaction_prepare_commit(struct tdb_context *tdb);
-int tdb1_transaction_commit(struct tdb_context *tdb);
-
-/* tdb1_traverse.c: */
-TDB_DATA tdb1_firstkey(struct tdb_context *tdb);
-TDB_DATA tdb1_nextkey(struct tdb_context *tdb, TDB_DATA key);
 
 /* tdb.c: */
 enum TDB_ERROR COLD PRINTF_FMT(4, 5)

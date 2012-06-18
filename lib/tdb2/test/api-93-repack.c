@@ -53,10 +53,7 @@ int main(int argc, char *argv[])
 	bool found[NUM_TESTS];
 	struct tdb_context *tdb;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_VERSION1|TDB_NOMMAP,
-			TDB_VERSION1|TDB_CONVERT,
-			TDB_VERSION1|TDB_NOMMAP|TDB_CONVERT
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT
 	};
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 6 + 1);

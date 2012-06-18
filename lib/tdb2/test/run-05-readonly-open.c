@@ -10,10 +10,7 @@ int main(int argc, char *argv[])
 	unsigned int i;
 	struct tdb_context *tdb;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 	struct tdb_data key = tdb_mkdata("key", 3);
 	struct tdb_data data = tdb_mkdata("data", 4), d;
 	union tdb_attribute seed_attr;
@@ -32,8 +29,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		tdb = tdb_open("run-05-readonly-open.tdb", flags[i],
 			       O_RDWR|O_CREAT|O_TRUNC, 0600,
-			       flags[i] & TDB_VERSION1
-			       ? &tap_log_attr : &seed_attr);
+			       &seed_attr);
 		ok1(tdb_store(tdb, key, data, TDB_INSERT) == 0);
 		tdb_close(tdb);
 

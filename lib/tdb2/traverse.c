@@ -28,13 +28,6 @@ _PUBLIC_ int64_t tdb_traverse_(struct tdb_context *tdb,
 	struct tdb_data k, d;
 	int64_t count = 0;
 
-	if (tdb->flags & TDB_VERSION1) {
-		count = tdb1_traverse(tdb, fn, p);
-		if (count == -1)
-			return TDB_ERR_TO_OFF(tdb->last_error);
-		return count;
-	}
-
 	k.dptr = NULL;
 	for (ecode = first_in_hash(tdb, &tinfo, &k, &d.dsize);
 	     ecode == TDB_SUCCESS;
@@ -61,16 +54,6 @@ _PUBLIC_ enum TDB_ERROR tdb_firstkey(struct tdb_context *tdb, struct tdb_data *k
 {
 	struct traverse_info tinfo;
 
-	if (tdb->flags & TDB_VERSION1) {
-		tdb->last_error = TDB_SUCCESS;
-		*key = tdb1_firstkey(tdb);
-		/* TDB1 didn't set error for last key. */
-		if (!key->dptr && tdb->last_error == TDB_SUCCESS) {
-			tdb->last_error = TDB_ERR_NOEXIST;
-		}
-		return tdb->last_error;
-	}
-
 	return tdb->last_error = first_in_hash(tdb, &tinfo, key, NULL);
 }
 
@@ -80,18 +63,6 @@ _PUBLIC_ enum TDB_ERROR tdb_nextkey(struct tdb_context *tdb, struct tdb_data *ke
 	struct traverse_info tinfo;
 	struct hash_info h;
 	struct tdb_used_record rec;
-
-	if (tdb->flags & TDB_VERSION1) {
-		struct tdb_data last_key = *key;
-		tdb->last_error = TDB_SUCCESS;
-		*key = tdb1_nextkey(tdb, last_key);
-		free(last_key.dptr);
-		/* TDB1 didn't set error for last key. */
-		if (!key->dptr && tdb->last_error == TDB_SUCCESS) {
-			tdb->last_error = TDB_ERR_NOEXIST;
-		}
-		return tdb->last_error;
-	}
 
 	tinfo.prev = find_and_lock(tdb, *key, F_RDLCK, &h, &rec, &tinfo);
 	free(key->dptr);
@@ -114,12 +85,6 @@ _PUBLIC_ enum TDB_ERROR tdb_wipe_all(struct tdb_context *tdb)
 {
 	enum TDB_ERROR ecode;
 	int64_t count;
-
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_wipe_all(tdb) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
 
 	ecode = tdb_allrecord_lock(tdb, F_WRLCK, TDB_LOCK_WAIT, false);
 	if (ecode != TDB_SUCCESS)

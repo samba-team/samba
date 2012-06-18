@@ -21,10 +21,7 @@ int main(int argc, char *argv[])
 {
 	struct agent *agent;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 	int i;
 
 	plan_tests(13 * sizeof(flags)/sizeof(flags[0]) + 1);

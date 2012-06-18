@@ -47,10 +47,7 @@ int main(int argc, char *argv[])
 	union tdb_attribute cif;
 	struct tdb_data key = tdb_mkdata("key", 3);
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 
 	cif.openhook.base.attr = TDB_ATTRIBUTE_OPENHOOK;
 	cif.openhook.base.next = &tap_log_attr;

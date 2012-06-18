@@ -24,10 +24,7 @@ int main(int argc, char *argv[])
 	unsigned int i;
 	struct tdb_context *tdb;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 	union tdb_attribute seed_attr;
 	union tdb_attribute hash_attr;
 	union tdb_attribute lock_attr;
@@ -47,8 +44,7 @@ int main(int argc, char *argv[])
 	lock_attr.flock.unlock = myunlock;
 	lock_attr.flock.data = &lock_attr;
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 49
-		   + sizeof(flags) / sizeof(flags[0]) / 2);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 50);
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		union tdb_attribute attr;
@@ -65,26 +61,17 @@ int main(int argc, char *argv[])
 		attr.base.attr = TDB_ATTRIBUTE_HASH;
 		ok1(tdb_get_attribute(tdb, &attr) == 0);
 		ok1(attr.base.attr == TDB_ATTRIBUTE_HASH);
-		if (flags[i] & TDB_VERSION1) {
-			ok1(attr.hash.fn == tdb1_old_hash);
-		} else {
-			ok1(attr.hash.fn == tdb_jenkins_hash);
-		}
+		ok1(attr.hash.fn == tdb_jenkins_hash);
 		attr.base.attr = TDB_ATTRIBUTE_FLOCK;
 		ok1(tdb_get_attribute(tdb, &attr) == 0);
 		ok1(attr.base.attr == TDB_ATTRIBUTE_FLOCK);
 		ok1(attr.flock.lock == tdb_fcntl_lock);
 		ok1(attr.flock.unlock == tdb_fcntl_unlock);
 		attr.base.attr = TDB_ATTRIBUTE_SEED;
-		if (flags[i] & TDB_VERSION1) {
-			ok1(tdb_get_attribute(tdb, &attr) == TDB_ERR_EINVAL);
-			tap_log_messages = 0;
-		} else {
-			ok1(tdb_get_attribute(tdb, &attr) == 0);
-			ok1(attr.base.attr == TDB_ATTRIBUTE_SEED);
-			/* This is possible, just astronomically unlikely. */
-			ok1(attr.seed.seed != 0);
-		}
+		ok1(tdb_get_attribute(tdb, &attr) == 0);
+		ok1(attr.base.attr == TDB_ATTRIBUTE_SEED);
+		/* This is possible, just astronomically unlikely. */
+		ok1(attr.seed.seed != 0);
 
 		/* Unset attributes. */
 		tdb_unset_attribute(tdb, TDB_ATTRIBUTE_LOG);
@@ -128,14 +115,6 @@ int main(int argc, char *argv[])
 			       O_RDWR|O_CREAT|O_TRUNC, 0600,
 			       &seed_attr);
 
-		if (flags[i] & TDB_VERSION1) {
-			ok1(!tdb);
-			ok1(tap_log_messages == 1);
-			tap_log_messages = 0;
-			tdb = tdb_open("run-90-get-set-attributes.tdb", flags[i],
-				       O_RDWR|O_CREAT|O_TRUNC, 0600,
-				       &hash_attr);
-		}
 		ok1(tdb);
 
 		/* Get will succeed */
@@ -159,15 +138,9 @@ int main(int argc, char *argv[])
 		ok1(attr.flock.data == &lock_attr);
 
 		attr.base.attr = TDB_ATTRIBUTE_SEED;
-		if (flags[i] & TDB_VERSION1) {
-			ok1(tdb_get_attribute(tdb, &attr) == TDB_ERR_EINVAL);
-			ok1(tap_log_messages == 1);
-			tap_log_messages = 0;
-		} else {
-			ok1(tdb_get_attribute(tdb, &attr) == 0);
-			ok1(attr.base.attr == TDB_ATTRIBUTE_SEED);
-			ok1(attr.seed.seed == seed_attr.seed.seed);
-		}
+		ok1(tdb_get_attribute(tdb, &attr) == 0);
+		ok1(attr.base.attr == TDB_ATTRIBUTE_SEED);
+		ok1(attr.seed.seed == seed_attr.seed.seed);
 
 		/* Unset attributes. */
 		tdb_unset_attribute(tdb, TDB_ATTRIBUTE_HASH);

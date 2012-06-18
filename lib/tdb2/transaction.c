@@ -521,12 +521,6 @@ _PUBLIC_ enum TDB_ERROR tdb_transaction_start(struct tdb_context *tdb)
 {
 	enum TDB_ERROR ecode;
 
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_transaction_start(tdb) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
-
 	tdb->stats.transactions++;
 	/* some sanity checks */
 	if (tdb->flags & TDB_INTERNAL) {
@@ -623,10 +617,6 @@ fail_allrecord_lock:
 */
 _PUBLIC_ void tdb_transaction_cancel(struct tdb_context *tdb)
 {
-	if (tdb->flags & TDB_VERSION1) {
-		tdb1_transaction_cancel(tdb);
-		return;
-	}
 	tdb->stats.transaction_cancel++;
 	_tdb_transaction_cancel(tdb);
 }
@@ -1067,11 +1057,6 @@ static enum TDB_ERROR _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 */
 _PUBLIC_ enum TDB_ERROR tdb_transaction_prepare_commit(struct tdb_context *tdb)
 {
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_transaction_prepare_commit(tdb) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
 	return tdb->last_error = _tdb_transaction_prepare_commit(tdb);
 }
 
@@ -1083,12 +1068,6 @@ _PUBLIC_ enum TDB_ERROR tdb_transaction_commit(struct tdb_context *tdb)
 	const struct tdb_methods *methods;
 	int i;
 	enum TDB_ERROR ecode;
-
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_transaction_commit(tdb) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
 
 	if (tdb->tdb2.transaction == NULL) {
 		return tdb->last_error = tdb_logerr(tdb, TDB_ERR_EINVAL,

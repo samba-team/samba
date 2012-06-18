@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tdb'
-VERSION = '2.0.0'
+VERSION = '2.0.1'
 
 blddir = 'bin'
 
@@ -71,25 +71,6 @@ def configure(conf):
                            'test/run-lockall.c',
                            'test/run-remap-in-read_traverse.c',
                            'test/run-seed.c',
-                           'test/run-tdb1-3G-file.c',
-                           'test/run-tdb1-bad-tdb-header.c',
-                           'test/run-tdb1.c',
-                           'test/run-tdb1-check.c',
-                           'test/run-tdb1-corrupt.c',
-                           'test/run-tdb1-endian.c',
-                           'test/run-tdb1-hashsize.c',
-                           'test/run-tdb1-incompatible.c',
-                           'test/run-tdb1-nested-transactions.c',
-                           'test/run-tdb1-nested-traverse.c',
-                           'test/run-tdb1-no-lock-during-traverse.c',
-                           'test/run-tdb1-oldhash.c',
-                           'test/run-tdb1-readonly-check.c',
-                           'test/run-tdb1-rwlock-check.c',
-                           'test/run-tdb1-seqnum-wrap.c',
-                           'test/run-tdb1-summary.c',
-                           'test/run-tdb1-traverse-in-transaction.c',
-                           'test/run-tdb1-wronghash-fail.c',
-                           'test/run-tdb1-zero-append.c',
                            'test/run-tdb_errorstr.c',
                            'test/run-tdb_foreach.c',
                            'test/run-traverse.c']
@@ -115,8 +96,7 @@ def configure(conf):
                            'test/api-open-multiple-times.c',
                            'test/api-record-expand.c',
                            'test/api-simple-delete.c',
-                           'test/api-summary.c',
-                           'test/api-tdb1-flag-removal.c']
+                           'test/api-summary.c']
     conf.env.TEST_API_HELPER_SRC=['test/helpapi-external-agent.c']
     conf.env.TEST_RUN_HELPER_SRC=['test/helprun-external-agent.c',
                                   'test/helprun-layout.c']
@@ -124,9 +104,7 @@ def configure(conf):
                               'test/failtest_helper.c',
                               'test/lock-tracking.c',
                               'test/logging.c',
-                              'test/tap-interface.c',
-                              'test/tdb1-external-agent.c',
-                              'test/tdb1-lock-tracking.c']
+                              'test/tap-interface.c']
 
     if Options.options.BUILD_TDB2:
         conf.DEFINE('BUILD_TDB2', 1)
@@ -170,11 +148,7 @@ def build(bld):
             private_library = True
 
         SRC = '''check.c free.c hash.c io.c lock.c open.c
-                 summary.c tdb.c transaction.c traverse.c
-                 tdb1_check.c tdb1_freelist.c tdb1_hash.c
-                 tdb1_io.c tdb1_lock.c tdb1_open.c
-                 tdb1_summary.c tdb1_tdb.c tdb1_transaction.c
-                 tdb1_traverse.c'''
+                 summary.c tdb.c transaction.c traverse.c'''
 
         if not bld.CONFIG_SET('USING_SYSTEM_TDB2'):
             bld.SAMBA_LIBRARY('tdb',
@@ -182,7 +156,7 @@ def build(bld):
                               deps='replace ccan',
                               includes='.',
                               abi_directory='ABI',
-                              abi_match='tdb_* tdb1_incompatible_hash',
+                              abi_match='tdb_*',
                               hide_symbols=True,
                               vnum=VERSION,
                               public_headers='tdb2.h',

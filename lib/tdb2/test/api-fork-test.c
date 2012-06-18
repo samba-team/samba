@@ -25,24 +25,16 @@
 static enum TDB_ERROR fork_in_parse(TDB_DATA key, TDB_DATA data,
 				    struct tdb_context *tdb)
 {
-	int status, extra_messages;
-
-	if (tdb_get_flags(tdb) & TDB_VERSION1) {
-		extra_messages = 1;
-	} else {
-		extra_messages = 0;
-	}
+	int status;
 
 	if (fork() == 0) {
 		/* We expect this to fail. */
 		if (tdb_store(tdb, key, data, TDB_REPLACE) != TDB_ERR_LOCK)
 			exit(1);
-		tap_log_messages -= extra_messages;
 
 		if (tdb_fetch(tdb, key, &data) != TDB_ERR_LOCK)
 			exit(1);
 
-		tap_log_messages -= extra_messages;
 		if (tap_log_messages != 2)
 			exit(2);
 
@@ -61,22 +53,13 @@ int main(int argc, char *argv[])
 	unsigned int i;
 	struct tdb_context *tdb;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 	struct tdb_data key = tdb_mkdata("key", 3);
 	struct tdb_data data = tdb_mkdata("data", 4);
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 14);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		int status, extra_messages;
-
-		if (flags[i] & TDB_VERSION1) {
-			extra_messages = 1;
-		} else {
-			extra_messages = 0;
-		}
+		int status;
 
 		tap_log_messages = 0;
 
@@ -93,11 +76,9 @@ int main(int argc, char *argv[])
 			/* We expect this to fail. */
 			if (tdb_store(tdb, key, data, TDB_REPLACE) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tdb_fetch(tdb, key, &data) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tap_log_messages != 2)
 				return 2;
@@ -119,11 +100,9 @@ int main(int argc, char *argv[])
 			/* We expect this to fail. */
 			if (tdb_store(tdb, key, data, TDB_REPLACE) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tdb_fetch(tdb, key, &data) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tap_log_messages != 2)
 				return 2;
@@ -146,11 +125,9 @@ int main(int argc, char *argv[])
 			/* This would always fail anyway... */
 			if (tdb_store(tdb, key, data, TDB_REPLACE) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tdb_fetch(tdb, key, &data) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tap_log_messages != 2)
 				return 2;
@@ -174,18 +151,15 @@ int main(int argc, char *argv[])
 			/* We expect this to fail. */
 			if (tdb_store(tdb, key, data, TDB_REPLACE) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tdb_fetch(tdb, key, &data) != TDB_ERR_LOCK)
 				return 1;
-			tap_log_messages -= extra_messages;
 
 			if (tap_log_messages != 2)
 				return 2;
 
 			if (tdb_transaction_commit(tdb) != TDB_ERR_LOCK)
 				return 3;
-			tap_log_messages -= extra_messages;
 
 			tdb_close(tdb);
 			if (tap_log_messages < 3)

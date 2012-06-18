@@ -46,10 +46,7 @@ int main(int argc, char *argv[])
 	unsigned int i;
 	struct tdb_context *tdb;
 	int flags[] = { TDB_DEFAULT, TDB_NOMMAP,
-			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT,
-			TDB_VERSION1, TDB_NOMMAP|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_CONVERT, TDB_NOMMAP|TDB_CONVERT };
 	union tdb_attribute lock_attr;
 	struct tdb_data key = tdb_mkdata("key", 3);
 	struct tdb_data data = tdb_mkdata("data", 4);
@@ -65,14 +62,6 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		struct tdb_data d;
-		unsigned int num_oom_messages;
-
-		/* TDB1 double logs here. */
-		if (flags[i] & TDB_VERSION1) {
-			num_oom_messages = 2;
-		} else {
-			num_oom_messages = 1;
-		}
 
 		/* Nonblocking open; expect no error message. */
 		lock_err = EAGAIN;
@@ -114,7 +103,7 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 		lock_err = ENOMEM;
 		ok1(tdb_store(tdb, key, data, TDB_REPLACE) == TDB_ERR_LOCK);
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		/* Nonblocking fetch. */
@@ -126,7 +115,7 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 		lock_err = ENOMEM;
 		ok1(!tdb_exists(tdb, key));
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		lock_err = EAGAIN;
@@ -137,7 +126,7 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 		lock_err = ENOMEM;
 		ok1(tdb_fetch(tdb, key, &d) == TDB_ERR_LOCK);
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		/* Nonblocking delete. */
@@ -149,7 +138,7 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 		lock_err = ENOMEM;
 		ok1(tdb_delete(tdb, key) == TDB_ERR_LOCK);
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		/* Nonblocking locks. */
@@ -161,7 +150,7 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 		lock_err = ENOMEM;
 		ok1(tdb_chainlock(tdb, key) == TDB_ERR_LOCK);
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		lock_err = EAGAIN;
@@ -172,7 +161,7 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 		lock_err = ENOMEM;
 		ok1(tdb_chainlock_read(tdb, key) == TDB_ERR_LOCK);
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		lock_err = EAGAIN;
@@ -211,7 +200,7 @@ int main(int argc, char *argv[])
 		trav_err = ENOMEM;
 		lock_err = 0;
 		ok1(tdb_traverse(tdb, trav, &lock_err) == TDB_ERR_LOCK);
-		ok1(tap_log_messages == num_oom_messages);
+		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		/* Nonblocking transactions. */

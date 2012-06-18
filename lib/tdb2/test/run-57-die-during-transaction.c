@@ -151,7 +151,7 @@ static int ftruncate_check(int fd, off_t length)
 	return ret;
 }
 
-static bool test_death(enum operation op, struct agent *agent, int flags)
+static bool test_death(enum operation op, struct agent *agent)
 {
 	struct tdb_context *tdb = NULL;
 	TDB_DATA key;
@@ -161,7 +161,7 @@ static bool test_death(enum operation op, struct agent *agent, int flags)
 	current = target = 0;
 reset:
 	unlink(TEST_DBNAME);
-	tdb = tdb_open(TEST_DBNAME, flags|TDB_NOMMAP,
+	tdb = tdb_open(TEST_DBNAME, TDB_NOMMAP,
 		       O_CREAT|O_TRUNC|O_RDWR, 0600, &tap_log_attr);
 	if (!tdb) {
 		diag("Failed opening TDB: %s", strerror(errno));
@@ -273,9 +273,9 @@ int main(int argc, char *argv[])
 {
 	enum operation ops[] = { FETCH, STORE, TRANSACTION_START };
 	struct agent *agent;
-	int i, flags;
+	int i;
 
-	plan_tests(24);
+	plan_tests(12);
 	unlock_callback = maybe_die;
 
 	external_agent_free = free_noleak;
@@ -283,11 +283,9 @@ int main(int argc, char *argv[])
 	if (!agent)
 		err(1, "preparing agent");
 
-	for (flags = TDB_DEFAULT; flags <= TDB_VERSION1; flags += TDB_VERSION1) {
-		for (i = 0; i < sizeof(ops)/sizeof(ops[0]); i++) {
-			diag("Testing %s after death", operation_name(ops[i]));
-			ok1(test_death(ops[i], agent, flags));
-		}
+	for (i = 0; i < sizeof(ops)/sizeof(ops[0]); i++) {
+		diag("Testing %s after death", operation_name(ops[i]));
+		ok1(test_death(ops[i], agent));
 	}
 
 	free_external_agent(agent);

@@ -346,9 +346,8 @@ enum TDB_ERROR tdb_nest_lock(struct tdb_context *tdb,
 	struct tdb_lock *new_lck;
 	enum TDB_ERROR ecode;
 
-	if (!(tdb->flags & TDB_VERSION1)
-	    && offset > (TDB_HASH_LOCK_START + TDB_HASH_LOCK_RANGE
-			 + tdb->file->map_size / 8)) {
+	if (offset > (TDB_HASH_LOCK_START + TDB_HASH_LOCK_RANGE
+		      + tdb->file->map_size / 8)) {
 		return tdb_logerr(tdb, TDB_ERR_LOCK, TDB_LOG_ERROR,
 				  "tdb_nest_lock: invalid offset %zu ltype=%d",
 				  (size_t)offset, ltype);
@@ -533,12 +532,6 @@ enum TDB_ERROR tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
 	enum TDB_ERROR ecode;
 	tdb_bool_err berr;
 
-	if (tdb->flags & TDB_VERSION1) {
-		if (tdb1_allrecord_lock(tdb, ltype, flags, upgradable) == -1)
-			return tdb->last_error;
-		return TDB_SUCCESS;
-	}
-
 	if (tdb->flags & TDB_NOLOCK)
 		return TDB_SUCCESS;
 
@@ -653,11 +646,6 @@ void tdb_unlock_expand(struct tdb_context *tdb, int ltype)
 /* unlock entire db */
 void tdb_allrecord_unlock(struct tdb_context *tdb, int ltype)
 {
-	if (tdb->flags & TDB_VERSION1) {
-		tdb1_allrecord_unlock(tdb, ltype);
-		return;
-	}
-
 	if (tdb->flags & TDB_NOLOCK)
 		return;
 

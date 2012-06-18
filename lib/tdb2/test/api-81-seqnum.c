@@ -16,14 +16,9 @@ int main(int argc, char *argv[])
 	struct tdb_data data = tdb_mkdata("data", 4);
 	int flags[] = { TDB_INTERNAL, TDB_DEFAULT, TDB_NOMMAP,
 			TDB_INTERNAL|TDB_CONVERT, TDB_CONVERT,
-			TDB_NOMMAP|TDB_CONVERT,
-			TDB_INTERNAL|TDB_VERSION1, TDB_VERSION1,
-			TDB_NOMMAP|TDB_VERSION1,
-			TDB_INTERNAL|TDB_CONVERT|TDB_VERSION1,
-			TDB_CONVERT|TDB_VERSION1,
-			TDB_NOMMAP|TDB_CONVERT|TDB_VERSION1 };
+			TDB_NOMMAP|TDB_CONVERT };
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 15 + 8 * 13);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 15 + 4 * 13);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		tdb = tdb_open("api-81-seqnum.tdb", flags[i]|TDB_SEQNUM,
 			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
@@ -39,9 +34,6 @@ int main(int argc, char *argv[])
 			free(d.dptr);
 		ok1(tdb_get_seqnum(tdb) == seq);
 		ok1(tdb_append(tdb, key, data) == TDB_SUCCESS);
-		/* Append in tdb1 (or store over value) bumps twice! */
-		if (flags[i] & TDB_VERSION1)
-			seq++;
 		ok1(tdb_get_seqnum(tdb) == ++seq);
 
 		ok1(tdb_delete(tdb, key) == TDB_SUCCESS);
@@ -57,9 +49,6 @@ int main(int argc, char *argv[])
 			ok1(tdb_transaction_start(tdb) == TDB_SUCCESS);
 			ok1(tdb_store(tdb, key, data, TDB_INSERT) == 0);
 			ok1(tdb_get_seqnum(tdb) == ++seq);
-			/* Append in tdb1 (or store over value) bumps twice! */
-			if (flags[i] & TDB_VERSION1)
-				seq++;
 			ok1(tdb_append(tdb, key, data) == TDB_SUCCESS);
 			ok1(tdb_get_seqnum(tdb) == ++seq);
 			ok1(tdb_delete(tdb, key) == TDB_SUCCESS);

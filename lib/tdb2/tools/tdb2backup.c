@@ -44,9 +44,6 @@
 #include "tdb2.h"
 #include "system/filesys.h"
 
-/* Currently we default to creating a tdb1.  This will change! */
-#define TDB2_IS_DEFAULT false
-
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
@@ -101,8 +98,7 @@ static int test_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, void *s
   only doing the backup if its OK
   this function is also used for restore
 */
-static int backup_tdb(const char *old_name, const char *new_name,
-		      bool tdb2, int hash_size)
+static int backup_tdb(const char *old_name, const char *new_name)
 {
 	struct tdb_context *tdb;
 	struct tdb_context *tdb_new;
@@ -110,12 +106,7 @@ static int backup_tdb(const char *old_name, const char *new_name,
 	struct stat st;
 	int count1, count2;
 	enum TDB_ERROR err;
-	union tdb_attribute log_attr, hsize_attr;
-	int tdb_flags = TDB_DEFAULT;
-
-	if (!tdb2) {
-		tdb_flags |= TDB_VERSION1;
-	}
+	union tdb_attribute log_attr;
 
 	tmp_name = add_suffix(new_name, ".tmp");
 
@@ -138,16 +129,8 @@ static int backup_tdb(const char *old_name, const char *new_name,
 		return 1;
 	}
 
-	/* create the new tdb */
-	if (!tdb2 && hash_size) {
-		hsize_attr.base.attr = TDB_ATTRIBUTE_TDB1_HASHSIZE;
-		hsize_attr.base.next = NULL;
-		hsize_attr.tdb1_hashsize.hsize = hash_size;
-		log_attr.base.next = &hsize_attr;
-	}
-
 	unlink(tmp_name);
-	tdb_new = tdb_open(tmp_name, tdb_flags,
+	tdb_new = tdb_open(tmp_name, TDB_DEFAULT,
 			   O_RDWR|O_CREAT|O_EXCL, st.st_mode & 0777,
 			   &log_attr);
 	if (!tdb_new) {
@@ -270,7 +253,7 @@ static int verify_tdb(const char *fname, const char *bak_name)
 	/* count is < 0 means an error */
 	if (count < 0) {
 		printf("restoring %s\n", fname);
-		return backup_tdb(bak_name, fname, TDB2_IS_DEFAULT, 0);
+		return backup_tdb(bak_name, fname);
 	}
 
 	printf("%s : %d records\n", fname, count);
@@ -295,14 +278,11 @@ static int file_newer(const char *fname1, const char *fname2)
 
 static void usage(void)
 {
-	printf("Usage: tdbbackup [options] <fname...>\n\n");
+	printf("Usage: tdb2backup [options] <fname...>\n\n");
 	printf("   -h            this help message\n");
-	printf("   -1            make the backup a TDB1 file\n");
-	printf("   -2            make the backup a TDB2 file\n");
 	printf("   -v            verify mode (restore if corrupt)\n");
 	printf("   -s suffix     set the backup suffix\n");
 	printf("   -v            verify mode (restore if corrupt)\n");
-	printf("   -n hashsize   set the new hash size for the backup\n");
 }
 
 
@@ -312,11 +292,9 @@ static void usage(void)
 	int ret = 0;
 	int c;
 	int verify = 0;
-	int hashsize = 0;
-	bool tdb2 = TDB2_IS_DEFAULT;
 	const char *suffix = ".bak";
 
-	while ((c = getopt(argc, argv, "vhs:n:12")) != -1) {
+	while ((c = getopt(argc, argv, "vhs:")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
@@ -324,17 +302,8 @@ static void usage(void)
 		case 'v':
 			verify = 1;
 			break;
-		case '1':
-			tdb2 = false;
-			break;
-		case '2':
-			tdb2 = true;
-			break;
 		case 's':
 			suffix = optarg;
-			break;
-		case 'n':
-			hashsize = atoi(optarg);
 			break;
 		}
 	}
@@ -359,7 +328,7 @@ static void usage(void)
 			}
 		} else {
 			if (file_newer(fname, bak_name) &&
-			    backup_tdb(fname, bak_name, tdb2, hashsize) != 0) {
+			    backup_tdb(fname, bak_name) != 0) {
 				ret = 1;
 			}
 		}
