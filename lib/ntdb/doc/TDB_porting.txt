@@ -1,0 +1,65 @@
+Interface differences between TDB and NTDB.
+
+- ntdb shares 'struct TDB_DATA' with tdb, but TDB defines the TDB_DATA
+  typedef, whereas ntdb defines NTDB_DATA (ie. both are compatible).
+  If you include both ntdb.h and tdb.h, #include tdb.h first,
+  otherwise you'll get a compile error when tdb.h re-defined struct
+  TDB_DATA.
+
+- ntdb functions return NTDB_SUCCESS (ie 0) on success, and a negative
+  error on failure, whereas tdb functions returned 0 on success, and
+  -1 on failure.  tdb then used tdb_error() to determine the error;
+  this is also supported in ntdb to ease backwards compatibility,
+  though the other form is preferred.
+
+- ntdb's ntdb_fetch() returns an error, tdb's returned the data directly
+  (or tdb_null, and you were supposed to check tdb_error() to find out why).
+
+- ntdb's ntdb_nextkey() frees the old key's dptr, in tdb you needed to do
+  this manually.
+
+- tdb's tdb_open/tdb_open_ex took an explicit hash size.  ntdb's hash table
+  resizes as required.
+
+- ntdb uses a linked list of attribute structures to implement logging and
+  alternate hashes.  tdb used tdb_open_ex, which was not extensible.
+
+- ntdb does locking on read-only databases (ie. O_RDONLY passed to ntdb_open).
+  tdb did not: use the NTDB_NOLOCK flag if you want to suppress locking.
+
+- ntdb's log function is simpler than tdb's log function.  The string is
+  already formatted, and it takes an enum ntdb_log_level not a tdb_debug_level,
+  and which has only three values: NTDB_LOG_ERROR, NTDB_LOG_USE_ERROR and
+  NTDB_LOG_WARNING.
+
+- ntdb provides ntdb_deq() for comparing two NTDB_DATA, and ntdb_mkdata() for
+  creating an NTDB_DATA.
+
+- ntdb's ntdb_name() returns a copy of the name even for NTDB_INTERNAL dbs.
+
+- ntdb does not need tdb_reopen() or tdb_reopen_all().  If you call
+  fork() after during certain operations the child should close the
+  tdb, or complete the operations before continuing to use the tdb:
+
+	ntdb_transaction_start(): child must ntdb_transaction_cancel()
+	ntdb_lockall(): child must call ntdb_unlockall()
+	ntdb_lockall_read(): child must call ntdb_unlockall_read()
+	ntdb_chainlock(): child must call ntdb_chainunlock()
+	ntdb_parse() callback: child must return from ntdb_parse()
+
+- ntdb will not open a non-tdb file, even if O_CREAT is specified.
+
+- There is no ntdb_traverse_read.  For operating on TDB files, you can
+  simulate it by ntdb_add_flag(tdb, NTDB_RDONLY); ntdb_traverse();
+  ntdb_remove_flag(tdb, NTDB_RDONLY).  This may be desirable because
+  traverse on TDB files use a write lock on the entire database
+  unless it's read-only.
+
+- Failure inside a transaction (such as a lock function failing) does
+  not implicitly cancel the transaction; you still need to call
+  ntdb_transaction_cancel().
+
+- There is no NTDB_CLEAR_IF_FIRST flag; it has severe scalability and
+  API problems.  If necessary, you can emulate this by using the open
+  hook and placing a 1-byte lock at offset 4.  If your program forks,
+  you will need to place this lock again in the child.
