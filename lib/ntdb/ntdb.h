@@ -727,6 +727,8 @@ struct ntdb_attribute_base {
  * @NTDB_LOG_WARNING: used for informational messages on issues which
  *		     are unusual but handled by NTDB internally, such
  *		     as a failure to mmap or failure to open /dev/urandom.
+ *		     It's also used when ntdb_open() fails without O_CREAT
+ *		     because a file does not exist.
  */
 enum ntdb_log_level {
 	NTDB_LOG_ERROR,

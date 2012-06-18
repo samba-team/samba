@@ -517,9 +517,17 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 		ntdb->file->map_size = 0;
 
 		if ((ntdb->file->fd = open(name, open_flags, mode)) == -1) {
+			enum ntdb_log_level lvl;
 			/* errno set by open(2) */
 			saved_errno = errno;
-			ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
+
+			/* Probing for files like this is a common pattern. */
+			if (!(open_flags & O_CREAT) && errno == ENOENT) {
+				lvl = NTDB_LOG_WARNING;
+			} else {
+				lvl = NTDB_LOG_ERROR;
+			}
+			ntdb_logerr(ntdb, NTDB_ERR_IO, lvl,
 				   "ntdb_open: could not open file %s: %s",
 				   name, strerror(errno));
 
