@@ -12,7 +12,7 @@ Interface differences between TDB1 and TDB2.
 - tdb2's tdb_fetch() returns an error, tdb1's returned the data directly
   (or tdb_null, and you were supposed to check tdb_error() to find out why).
 
-- tdb2's tdb_nextkey() frees the old key's dptr, in tdb2 you needed to do
+- tdb2's tdb_nextkey() frees the old key's dptr, in tdb1 you needed to do
   this manually.
 
 - tdb1's tdb_open/tdb_open_ex took an explicit hash size.  tdb2's hash table
