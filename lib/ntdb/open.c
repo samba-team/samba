@@ -508,48 +508,55 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 		ntdb->file = find_file(st.st_dev, st.st_ino);
 
 	if (!ntdb->file) {
-		int fd;
+		ecode = ntdb_new_file(ntdb);
+		if (ecode != NTDB_SUCCESS) {
+			goto fail;
+		}
 
-		if ((fd = open(name, open_flags, mode)) == -1) {
+		/* Set this now, as ntdb_nest_lock examines it. */
+		ntdb->file->map_size = 0;
+
+		if ((ntdb->file->fd = open(name, open_flags, mode)) == -1) {
 			/* errno set by open(2) */
 			saved_errno = errno;
 			ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
 				   "ntdb_open: could not open file %s: %s",
 				   name, strerror(errno));
+
+			goto fail_errno;
+		}
+
+		/* ensure there is only one process initialising at once:
+		 * do it immediately to reduce the create/openlock race. */
+		ecode = ntdb_lock_open(ntdb, openlock,
+				       NTDB_LOCK_WAIT|NTDB_LOCK_NOCHECK);
+		if (ecode != NTDB_SUCCESS) {
+			saved_errno = errno;
 			goto fail_errno;
 		}
 
 		/* on exec, don't inherit the fd */
-		v = fcntl(fd, F_GETFD, 0);
-		fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+		v = fcntl(ntdb->file->fd, F_GETFD, 0);
+		fcntl(ntdb->file->fd, F_SETFD, v | FD_CLOEXEC);
 
-		if (fstat(fd, &st) == -1) {
+		if (fstat(ntdb->file->fd, &st) == -1) {
 			saved_errno = errno;
 			ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
 				   "ntdb_open: could not stat open %s: %s",
 				   name, strerror(errno));
-			close(fd);
 			goto fail_errno;
 		}
 
-		ecode = ntdb_new_file(ntdb);
-		if (ecode != NTDB_SUCCESS) {
-			close(fd);
-			goto fail;
-		}
-
-		ntdb->file->fd = fd;
 		ntdb->file->device = st.st_dev;
 		ntdb->file->inode = st.st_ino;
-		ntdb->file->map_ptr = NULL;
-		ntdb->file->map_size = 0;
-	}
-
-	/* ensure there is only one process initialising at once */
-	ecode = ntdb_lock_open(ntdb, openlock, NTDB_LOCK_WAIT|NTDB_LOCK_NOCHECK);
-	if (ecode != NTDB_SUCCESS) {
-		saved_errno = errno;
-		goto fail_errno;
+	} else {
+		/* ensure there is only one process initialising at once */
+		ecode = ntdb_lock_open(ntdb, openlock,
+				       NTDB_LOCK_WAIT|NTDB_LOCK_NOCHECK);
+		if (ecode != NTDB_SUCCESS) {
+			saved_errno = errno;
+			goto fail_errno;
+		}
 	}
 
 	/* call their open hook if they gave us one. */
@@ -696,7 +703,7 @@ fail_errno:
 				} else
 					ntdb_munmap(ntdb->file);
 			}
-			if (close(ntdb->file->fd) != 0)
+			if (ntdb->file->fd != -1 && close(ntdb->file->fd) != 0)
 				ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
 					   "ntdb_open: failed to close ntdb fd"
 					   " on error: %s", strerror(errno));
