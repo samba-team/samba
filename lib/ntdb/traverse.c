@@ -37,16 +37,14 @@ _PUBLIC_ int64_t ntdb_traverse_(struct ntdb_context *ntdb,
 		count++;
 		if (fn && fn(ntdb, k, d, p)) {
 			free(k.dptr);
-			ntdb->last_error = NTDB_SUCCESS;
 			return count;
 		}
 		free(k.dptr);
 	}
 
 	if (ecode != NTDB_ERR_NOEXIST) {
-		return NTDB_ERR_TO_OFF(ntdb->last_error = ecode);
+		return NTDB_ERR_TO_OFF(ecode);
 	}
-	ntdb->last_error = NTDB_SUCCESS;
 	return count;
 }
 
@@ -54,7 +52,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_firstkey(struct ntdb_context *ntdb, NTDB_DATA *key
 {
 	struct traverse_info tinfo;
 
-	return ntdb->last_error = first_in_hash(ntdb, &tinfo, key, NULL);
+	return first_in_hash(ntdb, &tinfo, key, NULL);
 }
 
 /* We lock twice, not very efficient.  We could keep last key & tinfo cached. */
@@ -67,11 +65,11 @@ _PUBLIC_ enum NTDB_ERROR ntdb_nextkey(struct ntdb_context *ntdb, NTDB_DATA *key)
 	tinfo.prev = find_and_lock(ntdb, *key, F_RDLCK, &h, &rec, &tinfo);
 	free(key->dptr);
 	if (NTDB_OFF_IS_ERR(tinfo.prev)) {
-		return ntdb->last_error = NTDB_OFF_TO_ERR(tinfo.prev);
+		return NTDB_OFF_TO_ERR(tinfo.prev);
 	}
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
 
-	return ntdb->last_error = next_in_hash(ntdb, &tinfo, key, NULL);
+	return next_in_hash(ntdb, &tinfo, key, NULL);
 }
 
 static int wipe_one(struct ntdb_context *ntdb,
@@ -88,12 +86,12 @@ _PUBLIC_ enum NTDB_ERROR ntdb_wipe_all(struct ntdb_context *ntdb)
 
 	ecode = ntdb_allrecord_lock(ntdb, F_WRLCK, NTDB_LOCK_WAIT, false);
 	if (ecode != NTDB_SUCCESS)
-		return ntdb->last_error = ecode;
+		return ecode;
 
 	/* FIXME: Be smarter. */
 	count = ntdb_traverse(ntdb, wipe_one, &ecode);
 	if (count < 0)
 		ecode = NTDB_OFF_TO_ERR(count);
 	ntdb_allrecord_unlock(ntdb, F_WRLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }

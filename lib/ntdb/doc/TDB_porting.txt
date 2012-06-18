@@ -9,8 +9,7 @@ Interface differences between TDB and NTDB.
 - ntdb functions return NTDB_SUCCESS (ie 0) on success, and a negative
   error on failure, whereas tdb functions returned 0 on success, and
   -1 on failure.  tdb then used tdb_error() to determine the error;
-  this is also supported in ntdb to ease backwards compatibility,
-  though the other form is preferred.
+  this API is nasty if we ever want to support threads, so is not supported.
 
 - ntdb's ntdb_fetch() returns an error, tdb's returned the data directly
   (or tdb_null, and you were supposed to check tdb_error() to find out why).

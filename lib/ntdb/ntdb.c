@@ -118,7 +118,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_store(struct ntdb_context *ntdb,
 
 	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
-		return ntdb->last_error = NTDB_OFF_TO_ERR(off);
+		return NTDB_OFF_TO_ERR(off);
 	}
 
 	/* Now we have lock on this hash bucket. */
@@ -148,7 +148,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_store(struct ntdb_context *ntdb,
 				}
 				ntdb_unlock_hashes(ntdb, h.hlock_start,
 						  h.hlock_range, F_WRLCK);
-				return ntdb->last_error = NTDB_SUCCESS;
+				return NTDB_SUCCESS;
 			}
 		} else {
 			if (flag == NTDB_MODIFY) {
@@ -165,7 +165,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_store(struct ntdb_context *ntdb,
 	ecode = replace_data(ntdb, &h, key, dbuf, off, old_room, off);
 out:
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_WRLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }
 
 _PUBLIC_ enum NTDB_ERROR ntdb_append(struct ntdb_context *ntdb,
@@ -181,7 +181,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_append(struct ntdb_context *ntdb,
 
 	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
-		return ntdb->last_error = NTDB_OFF_TO_ERR(off);
+		return NTDB_OFF_TO_ERR(off);
 	}
 
 	if (off) {
@@ -233,7 +233,7 @@ out_free_newdata:
 	free(newdata);
 out:
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_WRLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }
 
 _PUBLIC_ enum NTDB_ERROR ntdb_fetch(struct ntdb_context *ntdb, NTDB_DATA key,
@@ -246,7 +246,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_fetch(struct ntdb_context *ntdb, NTDB_DATA key,
 
 	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
-		return ntdb->last_error = NTDB_OFF_TO_ERR(off);
+		return NTDB_OFF_TO_ERR(off);
 	}
 
 	if (!off) {
@@ -262,7 +262,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_fetch(struct ntdb_context *ntdb, NTDB_DATA key,
 	}
 
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }
 
 _PUBLIC_ bool ntdb_exists(struct ntdb_context *ntdb, NTDB_DATA key)
@@ -273,12 +273,10 @@ _PUBLIC_ bool ntdb_exists(struct ntdb_context *ntdb, NTDB_DATA key)
 
 	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
-		ntdb->last_error = NTDB_OFF_TO_ERR(off);
 		return false;
 	}
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
 
-	ntdb->last_error = NTDB_SUCCESS;
 	return off ? true : false;
 }
 
@@ -291,7 +289,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_delete(struct ntdb_context *ntdb, NTDB_DATA key)
 
 	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
-		return ntdb->last_error = NTDB_OFF_TO_ERR(off);
+		return NTDB_OFF_TO_ERR(off);
 	}
 
 	if (!off) {
@@ -318,7 +316,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_delete(struct ntdb_context *ntdb, NTDB_DATA key)
 
 unlock:
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_WRLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }
 
 _PUBLIC_ unsigned int ntdb_get_flags(struct ntdb_context *ntdb)
@@ -334,11 +332,10 @@ static bool inside_transaction(const struct ntdb_context *ntdb)
 static bool readonly_changable(struct ntdb_context *ntdb, const char *caller)
 {
 	if (inside_transaction(ntdb)) {
-		ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-					     NTDB_LOG_USE_ERROR,
-					     "%s: can't change"
-					     " NTDB_RDONLY inside transaction",
-					     caller);
+		ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+			    "%s: can't change"
+			    " NTDB_RDONLY inside transaction",
+			    caller);
 		return false;
 	}
 	return true;
@@ -347,9 +344,8 @@ static bool readonly_changable(struct ntdb_context *ntdb, const char *caller)
 _PUBLIC_ void ntdb_add_flag(struct ntdb_context *ntdb, unsigned flag)
 {
 	if (ntdb->flags & NTDB_INTERNAL) {
-		ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-					     NTDB_LOG_USE_ERROR,
-					     "ntdb_add_flag: internal db");
+		ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+			    "ntdb_add_flag: internal db");
 		return;
 	}
 	switch (flag) {
@@ -376,19 +372,16 @@ _PUBLIC_ void ntdb_add_flag(struct ntdb_context *ntdb, unsigned flag)
 			ntdb->flags |= NTDB_RDONLY;
 		break;
 	default:
-		ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-					     NTDB_LOG_USE_ERROR,
-					     "ntdb_add_flag: Unknown flag %u",
-					     flag);
+		ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+			    "ntdb_add_flag: Unknown flag %u", flag);
 	}
 }
 
 _PUBLIC_ void ntdb_remove_flag(struct ntdb_context *ntdb, unsigned flag)
 {
 	if (ntdb->flags & NTDB_INTERNAL) {
-		ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-					     NTDB_LOG_USE_ERROR,
-					     "ntdb_remove_flag: internal db");
+		ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+			    "ntdb_remove_flag: internal db");
 		return;
 	}
 	switch (flag) {
@@ -413,21 +406,19 @@ _PUBLIC_ void ntdb_remove_flag(struct ntdb_context *ntdb, unsigned flag)
 		break;
 	case NTDB_RDONLY:
 		if ((ntdb->open_flags & O_ACCMODE) == O_RDONLY) {
-			ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-						     NTDB_LOG_USE_ERROR,
-						     "ntdb_remove_flag: can't"
-						     " remove NTDB_RDONLY on ntdb"
-						     " opened with O_RDONLY");
+			ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+				    "ntdb_remove_flag: can't"
+				    " remove NTDB_RDONLY on ntdb"
+				    " opened with O_RDONLY");
 			break;
 		}
 		if (readonly_changable(ntdb, "ntdb_remove_flag"))
 			ntdb->flags &= ~NTDB_RDONLY;
 		break;
 	default:
-		ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-					     NTDB_LOG_USE_ERROR,
-					     "ntdb_remove_flag: Unknown flag %u",
-					     flag);
+		ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+			    "ntdb_remove_flag: Unknown flag %u",
+			    flag);
 	}
 }
 
@@ -446,11 +437,6 @@ _PUBLIC_ const char *ntdb_errorstr(enum NTDB_ERROR ecode)
 	case NTDB_ERR_TO_OFF(NTDB_ERR_RDONLY): return "write not permitted";
 	}
 	return "Invalid error code";
-}
-
-_PUBLIC_ enum NTDB_ERROR ntdb_error(struct ntdb_context *ntdb)
-{
-	return ntdb->last_error;
 }
 
 enum NTDB_ERROR COLD ntdb_logerr(struct ntdb_context *ntdb,
@@ -497,7 +483,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_parse_record_(struct ntdb_context *ntdb,
 
 	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
-		return ntdb->last_error = NTDB_OFF_TO_ERR(off);
+		return NTDB_OFF_TO_ERR(off);
 	}
 
 	if (!off) {
@@ -517,7 +503,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_parse_record_(struct ntdb_context *ntdb,
 	}
 
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }
 
 _PUBLIC_ const char *ntdb_name(const struct ntdb_context *ntdb)
@@ -527,14 +513,7 @@ _PUBLIC_ const char *ntdb_name(const struct ntdb_context *ntdb)
 
 _PUBLIC_ int64_t ntdb_get_seqnum(struct ntdb_context *ntdb)
 {
-	ntdb_off_t off;
-
-	off = ntdb_read_off(ntdb, offsetof(struct ntdb_header, seqnum));
-	if (NTDB_OFF_IS_ERR(off))
-		ntdb->last_error = NTDB_OFF_TO_ERR(off);
-	else
-		ntdb->last_error = NTDB_SUCCESS;
-	return off;
+	return ntdb_read_off(ntdb, offsetof(struct ntdb_header, seqnum));
 }
 
 
@@ -577,7 +556,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_repack(struct ntdb_context *ntdb)
 					 __location__
 					 " Failed to create tmp_db");
 		ntdb_transaction_cancel(ntdb);
-		return ntdb->last_error = state.error;
+		return state.error;
 	}
 
 	state.dest_db = tmp_db;

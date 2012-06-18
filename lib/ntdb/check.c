@@ -812,13 +812,13 @@ _PUBLIC_ enum NTDB_ERROR ntdb_check_(struct ntdb_context *ntdb,
 
 	ecode = ntdb_allrecord_lock(ntdb, F_RDLCK, NTDB_LOCK_WAIT, false);
 	if (ecode != NTDB_SUCCESS) {
-		return ntdb->last_error = ecode;
+		return ecode;
 	}
 
 	ecode = ntdb_lock_expand(ntdb, F_RDLCK);
 	if (ecode != NTDB_SUCCESS) {
 		ntdb_allrecord_unlock(ntdb, F_RDLCK);
-		return ntdb->last_error = ecode;
+		return ecode;
 	}
 
 	ecode = check_header(ntdb, &recovery, &features, &num_capabilities);
@@ -860,5 +860,5 @@ out:
 	ntdb_unlock_expand(ntdb, F_RDLCK);
 	free(fr);
 	free(used);
-	return ntdb->last_error = ecode;
+	return ecode;
 }

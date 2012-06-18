@@ -524,31 +524,26 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 	ntdb->stats.transactions++;
 	/* some sanity checks */
 	if (ntdb->flags & NTDB_INTERNAL) {
-		return ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-						    NTDB_LOG_USE_ERROR,
-						    "ntdb_transaction_start:"
-						    " cannot start a"
-						    " transaction on an"
-						    " internal ntdb");
+		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+				   "ntdb_transaction_start:"
+				   " cannot start a transaction on an"
+				   " internal ntdb");
 	}
 
 	if (ntdb->flags & NTDB_RDONLY) {
-		return ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_RDONLY,
-						    NTDB_LOG_USE_ERROR,
-						    "ntdb_transaction_start:"
-						    " cannot start a"
-						    " transaction on a "
-						    " read-only ntdb");
+		return ntdb_logerr(ntdb, NTDB_ERR_RDONLY, NTDB_LOG_USE_ERROR,
+				   "ntdb_transaction_start:"
+				   " cannot start a transaction on a"
+				   " read-only ntdb");
 	}
 
 	/* cope with nested ntdb_transaction_start() calls */
 	if (ntdb->transaction != NULL) {
 		if (!(ntdb->flags & NTDB_ALLOW_NESTING)) {
-			return ntdb->last_error
-				= ntdb_logerr(ntdb, NTDB_ERR_IO,
-					     NTDB_LOG_USE_ERROR,
-					     "ntdb_transaction_start:"
-					     " already inside transaction");
+			return ntdb_logerr(ntdb, NTDB_ERR_IO,
+					   NTDB_LOG_USE_ERROR,
+					   "ntdb_transaction_start:"
+					   " already inside transaction");
 		}
 		ntdb->transaction->nesting++;
 		ntdb->stats.transaction_nest++;
@@ -559,21 +554,19 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 		/* the caller must not have any locks when starting a
 		   transaction as otherwise we'll be screwed by lack
 		   of nested locks in POSIX */
-		return ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_LOCK,
-						    NTDB_LOG_USE_ERROR,
-						    "ntdb_transaction_start:"
-						    " cannot start a"
-						    " transaction with locks"
-						    " held");
+		return ntdb_logerr(ntdb, NTDB_ERR_LOCK,
+				   NTDB_LOG_USE_ERROR,
+				   "ntdb_transaction_start:"
+				   " cannot start a transaction with locks"
+				   " held");
 	}
 
 	ntdb->transaction = (struct ntdb_transaction *)
 		calloc(sizeof(struct ntdb_transaction), 1);
 	if (ntdb->transaction == NULL) {
-		return ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_OOM,
-						    NTDB_LOG_ERROR,
-						    "ntdb_transaction_start:"
-						    " cannot allocate");
+		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
+				   "ntdb_transaction_start:"
+				   " cannot allocate");
 	}
 
 	/* get the transaction write lock. This is a blocking lock. As
@@ -583,7 +576,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 	if (ecode != NTDB_SUCCESS) {
 		SAFE_FREE(ntdb->transaction->blocks);
 		SAFE_FREE(ntdb->transaction);
-		return ntdb->last_error = ecode;
+		return ecode;
 	}
 
 	/* get a read lock over entire file. This is upgraded to a write
@@ -602,13 +595,13 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 	   transaction specific methods */
 	ntdb->transaction->io_methods = ntdb->io;
 	ntdb->io = &transaction_methods;
-	return ntdb->last_error = NTDB_SUCCESS;
+	return NTDB_SUCCESS;
 
 fail_allrecord_lock:
 	ntdb_transaction_unlock(ntdb, F_WRLCK);
 	SAFE_FREE(ntdb->transaction->blocks);
 	SAFE_FREE(ntdb->transaction);
-	return ntdb->last_error = ecode;
+	return ecode;
 }
 
 
@@ -1057,7 +1050,7 @@ static enum NTDB_ERROR _ntdb_transaction_prepare_commit(struct ntdb_context *ntd
 */
 _PUBLIC_ enum NTDB_ERROR ntdb_transaction_prepare_commit(struct ntdb_context *ntdb)
 {
-	return ntdb->last_error = _ntdb_transaction_prepare_commit(ntdb);
+	return _ntdb_transaction_prepare_commit(ntdb);
 }
 
 /*
@@ -1070,30 +1063,29 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 	enum NTDB_ERROR ecode;
 
 	if (ntdb->transaction == NULL) {
-		return ntdb->last_error = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-						    NTDB_LOG_USE_ERROR,
-						    "ntdb_transaction_commit:"
-						    " no transaction");
+		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+				   "ntdb_transaction_commit:"
+				   " no transaction");
 	}
 
 	ntdb_trace(ntdb, "ntdb_transaction_commit");
 
 	if (ntdb->transaction->nesting != 0) {
 		ntdb->transaction->nesting--;
-		return ntdb->last_error = NTDB_SUCCESS;
+		return NTDB_SUCCESS;
 	}
 
 	/* check for a null transaction */
 	if (ntdb->transaction->blocks == NULL) {
 		_ntdb_transaction_cancel(ntdb);
-		return ntdb->last_error = NTDB_SUCCESS;
+		return NTDB_SUCCESS;
 	}
 
 	if (!ntdb->transaction->prepared) {
 		ecode = _ntdb_transaction_prepare_commit(ntdb);
 		if (ecode != NTDB_SUCCESS) {
 			_ntdb_transaction_cancel(ntdb);
-			return ntdb->last_error = ecode;
+			return ecode;
 		}
 	}
 
@@ -1125,7 +1117,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 
 			_ntdb_transaction_cancel(ntdb);
 
-			return ntdb->last_error = ecode;
+			return ecode;
 		}
 		SAFE_FREE(ntdb->transaction->blocks[i]);
 	}
@@ -1136,7 +1128,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 	/* ensure the new data is on disk */
 	ecode = transaction_sync(ntdb, 0, ntdb->file->map_size);
 	if (ecode != NTDB_SUCCESS) {
-		return ntdb->last_error = ecode;
+		return ecode;
 	}
 
 	/*
@@ -1159,7 +1151,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 	ntdb->transaction->old_map_size = ntdb->file->map_size;
 	_ntdb_transaction_cancel(ntdb);
 
-	return ntdb->last_error = NTDB_SUCCESS;
+	return NTDB_SUCCESS;
 }
 
 

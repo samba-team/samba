@@ -209,13 +209,13 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 
 	ecode = ntdb_allrecord_lock(ntdb, F_RDLCK, NTDB_LOCK_WAIT, false);
 	if (ecode != NTDB_SUCCESS) {
-		return ntdb->last_error = ecode;
+		return ecode;
 	}
 
 	ecode = ntdb_lock_expand(ntdb, F_RDLCK);
 	if (ecode != NTDB_SUCCESS) {
 		ntdb_allrecord_unlock(ntdb, F_RDLCK);
-		return ntdb->last_error = ecode;
+		return ecode;
 	}
 
 	/* Start stats off empty. */
@@ -326,5 +326,5 @@ unlock:
 
 	ntdb_allrecord_unlock(ntdb, F_RDLCK);
 	ntdb_unlock_expand(ntdb, F_RDLCK);
-	return ntdb->last_error = ecode;
+	return ecode;
 }

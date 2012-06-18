@@ -853,8 +853,7 @@ static enum NTDB_ERROR chainlock(struct ntdb_context *ntdb, const NTDB_DATA *key
    contention - it cannot guarantee how many records will be locked */
 _PUBLIC_ enum NTDB_ERROR ntdb_chainlock(struct ntdb_context *ntdb, NTDB_DATA key)
 {
-	return ntdb->last_error = chainlock(ntdb, &key, F_WRLCK, NTDB_LOCK_WAIT,
-					   "ntdb_chainlock");
+	return chainlock(ntdb, &key, F_WRLCK, NTDB_LOCK_WAIT, "ntdb_chainlock");
 }
 
 _PUBLIC_ void ntdb_chainunlock(struct ntdb_context *ntdb, NTDB_DATA key)
@@ -874,8 +873,8 @@ _PUBLIC_ void ntdb_chainunlock(struct ntdb_context *ntdb, NTDB_DATA key)
 
 _PUBLIC_ enum NTDB_ERROR ntdb_chainlock_read(struct ntdb_context *ntdb, NTDB_DATA key)
 {
-	return ntdb->last_error = chainlock(ntdb, &key, F_RDLCK, NTDB_LOCK_WAIT,
-					   "ntdb_chainlock_read");
+	return chainlock(ntdb, &key, F_RDLCK, NTDB_LOCK_WAIT,
+			 "ntdb_chainlock_read");
 }
 
 _PUBLIC_ void ntdb_chainunlock_read(struct ntdb_context *ntdb, NTDB_DATA key)

@@ -221,34 +221,31 @@ _PUBLIC_ enum NTDB_ERROR ntdb_set_attribute(struct ntdb_context *ntdb,
 	case NTDB_ATTRIBUTE_HASH:
 	case NTDB_ATTRIBUTE_SEED:
 	case NTDB_ATTRIBUTE_OPENHOOK:
-		return ntdb->last_error
-			= ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-				     NTDB_LOG_USE_ERROR,
-				     "ntdb_set_attribute:"
-				     " cannot set %s after opening",
-				     attr->base.attr == NTDB_ATTRIBUTE_HASH
-				     ? "NTDB_ATTRIBUTE_HASH"
-				     : attr->base.attr == NTDB_ATTRIBUTE_SEED
-				     ? "NTDB_ATTRIBUTE_SEED"
-				     : "NTDB_ATTRIBUTE_OPENHOOK");
+		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
+				   NTDB_LOG_USE_ERROR,
+				   "ntdb_set_attribute:"
+				   " cannot set %s after opening",
+				   attr->base.attr == NTDB_ATTRIBUTE_HASH
+				   ? "NTDB_ATTRIBUTE_HASH"
+				   : attr->base.attr == NTDB_ATTRIBUTE_SEED
+				   ? "NTDB_ATTRIBUTE_SEED"
+				   : "NTDB_ATTRIBUTE_OPENHOOK");
 	case NTDB_ATTRIBUTE_STATS:
-		return ntdb->last_error
-			= ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-				     NTDB_LOG_USE_ERROR,
-				     "ntdb_set_attribute:"
-				     " cannot set NTDB_ATTRIBUTE_STATS");
+		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
+				   NTDB_LOG_USE_ERROR,
+				   "ntdb_set_attribute:"
+				   " cannot set NTDB_ATTRIBUTE_STATS");
 	case NTDB_ATTRIBUTE_FLOCK:
 		ntdb->lock_fn = attr->flock.lock;
 		ntdb->unlock_fn = attr->flock.unlock;
 		ntdb->lock_data = attr->flock.data;
 		break;
 	default:
-		return ntdb->last_error
-			= ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-				     NTDB_LOG_USE_ERROR,
-				     "ntdb_set_attribute:"
-				     " unknown attribute type %u",
-				     attr->base.attr);
+		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
+				   NTDB_LOG_USE_ERROR,
+				   "ntdb_set_attribute:"
+				   " unknown attribute type %u",
+				   attr->base.attr);
 	}
 	return NTDB_SUCCESS;
 }
@@ -259,7 +256,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_get_attribute(struct ntdb_context *ntdb,
 	switch (attr->base.attr) {
 	case NTDB_ATTRIBUTE_LOG:
 		if (!ntdb->log_fn)
-			return ntdb->last_error = NTDB_ERR_NOEXIST;
+			return NTDB_ERR_NOEXIST;
 		attr->log.fn = ntdb->log_fn;
 		attr->log.data = ntdb->log_data;
 		break;
@@ -272,7 +269,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_get_attribute(struct ntdb_context *ntdb,
 		break;
 	case NTDB_ATTRIBUTE_OPENHOOK:
 		if (!ntdb->openhook)
-			return ntdb->last_error = NTDB_ERR_NOEXIST;
+			return NTDB_ERR_NOEXIST;
 		attr->openhook.fn = ntdb->openhook;
 		attr->openhook.data = ntdb->openhook_data;
 		break;
@@ -289,12 +286,11 @@ _PUBLIC_ enum NTDB_ERROR ntdb_get_attribute(struct ntdb_context *ntdb,
 		attr->flock.data = ntdb->lock_data;
 		break;
 	default:
-		return ntdb->last_error
-			= ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
-				     NTDB_LOG_USE_ERROR,
-				     "ntdb_get_attribute:"
-				     " unknown attribute type %u",
-				     attr->base.attr);
+		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
+				   NTDB_LOG_USE_ERROR,
+				   "ntdb_get_attribute:"
+				   " unknown attribute type %u",
+				   attr->base.attr);
 	}
 	attr->base.next = NULL;
 	return NTDB_SUCCESS;
@@ -415,7 +411,6 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	ntdb->flags = ntdb_flags;
 	ntdb->log_fn = NULL;
 	ntdb->open_flags = open_flags;
-	ntdb->last_error = NTDB_SUCCESS;
 	ntdb->file = NULL;
 	ntdb->openhook = NULL;
 	ntdb->lock_fn = ntdb_fcntl_lock;

@@ -596,9 +596,6 @@ struct ntdb_context {
 	enum NTDB_ERROR (*openhook)(int fd, void *data);
 	void *openhook_data;
 
-	/* Last error we returned. */
-	enum NTDB_ERROR last_error;
-
 	/* Are we accessing directly? (debugging check). */
 	int direct_access;
 

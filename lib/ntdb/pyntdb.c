@@ -275,8 +275,6 @@ static PyObject *obj_has_key(PyNtdbObject *self, PyObject *args)
 	key = PyString_AsNtdb_Data(py_key);
 	if (ntdb_exists(self->ctx, key))
 		return Py_True;
-	if (ntdb_error(self->ctx) != NTDB_ERR_NOEXIST)
-		PyErr_NTDB_ERROR_IS_ERR_RAISE(ntdb_error(self->ctx));
 	return Py_False;
 }
 

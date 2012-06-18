@@ -568,17 +568,6 @@ enum NTDB_ERROR ntdb_check_(struct ntdb_context *ntdb,
 			    void *data);
 
 /**
- * ntdb_error - get the last error (not threadsafe)
- * @ntdb: the ntdb context returned from ntdb_open()
- *
- * Returns the last error returned by a NTDB function.
- *
- * This makes porting from TDB easier, but note that the last error is not
- * reliable in threaded programs.
- */
-enum NTDB_ERROR ntdb_error(struct ntdb_context *ntdb);
-
-/**
  * enum ntdb_summary_flags - flags for ntdb_summary.
  */
 enum ntdb_summary_flags {

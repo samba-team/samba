@@ -80,11 +80,14 @@ static void segv_handler(int sig, siginfo_t *info, void *p)
 	_exit(11);
 }
 
-static void fatal(struct ntdb_context *ntdb, const char *why)
+static void warn_on_err(enum NTDB_ERROR e, struct ntdb_context *ntdb,
+			const char *why)
 {
-	fprintf(stderr, "%u:%s:%s\n", getpid(), why,
-		ntdb ? ntdb_errorstr(ntdb_error(ntdb)) : "(no ntdb)");
-	error_count++;
+	if (e != NTDB_SUCCESS) {
+		fprintf(stderr, "%u:%s:%s\n", getpid(), why,
+			ntdb ? ntdb_errorstr(e) : "(no ntdb)");
+		error_count++;
+	}
 }
 
 static char *randbuf(int len)
@@ -129,6 +132,7 @@ static void addrec_db(void)
 	int klen, dlen;
 	char *k, *d;
 	NTDB_DATA key, data;
+	enum NTDB_ERROR e;
 
 	klen = 1 + (rand() % KEYLEN);
 	dlen = 1 + (rand() % DATALEN);
@@ -151,21 +155,18 @@ static void addrec_db(void)
 
 #if TRANSACTION_PROB
 	if (in_traverse == 0 && in_transaction == 0 && (always_transaction || random() % TRANSACTION_PROB == 0)) {
-		if (ntdb_transaction_start(db) != 0) {
-			fatal(db, "ntdb_transaction_start failed");
-		}
+		e = ntdb_transaction_start(db);
+		warn_on_err(e, db, "ntdb_transaction_start failed");
 		in_transaction++;
 		goto next;
 	}
 	if (in_traverse == 0 && in_transaction && random() % TRANSACTION_PROB == 0) {
 		if (random() % TRANSACTION_PREPARE_PROB == 0) {
-			if (ntdb_transaction_prepare_commit(db) != 0) {
-				fatal(db, "ntdb_transaction_prepare_commit failed");
-			}
+			e = ntdb_transaction_prepare_commit(db);
+			warn_on_err(e, db, "ntdb_transaction_prepare_commit failed");
 		}
-		if (ntdb_transaction_commit(db) != 0) {
-			fatal(db, "ntdb_transaction_commit failed");
-		}
+		e = ntdb_transaction_commit(db);
+		warn_on_err(e, db, "ntdb_transaction_commit failed");
 		in_transaction--;
 		goto next;
 	}
@@ -186,18 +187,16 @@ static void addrec_db(void)
 
 #if STORE_PROB
 	if (random() % STORE_PROB == 0) {
-		if (ntdb_store(db, key, data, NTDB_REPLACE) != 0) {
-			fatal(db, "ntdb_store failed");
-		}
+		e = ntdb_store(db, key, data, NTDB_REPLACE);
+		warn_on_err(e, db, "ntdb_store failed");
 		goto next;
 	}
 #endif
 
 #if APPEND_PROB
 	if (random() % APPEND_PROB == 0) {
-		if (ntdb_append(db, key, data) != 0) {
-			fatal(db, "ntdb_append failed");
-		}
+		e = ntdb_append(db, key, data);
+		warn_on_err(e, db, "ntdb_append failed");
 		goto next;
 	}
 #endif
@@ -209,9 +208,8 @@ static void addrec_db(void)
 			data.dsize = 0;
 			data.dptr = NULL;
 		}
-		if (ntdb_store(db, key, data, NTDB_REPLACE) != 0) {
-			fatal(db, "ntdb_store failed");
-		}
+		e = ntdb_store(db, key, data, NTDB_REPLACE);
+		warn_on_err(e, db, "ntdb_store failed");
 		if (data.dptr) free(data.dptr);
 		ntdb_chainunlock(db, key);
 		goto next;
@@ -272,7 +270,9 @@ static int run_child(const char *filename, int i, int seed, unsigned num_loops,
 	db = ntdb_open(filename, ntdb_flags, O_RDWR | O_CREAT, 0600,
 		      &log_attr);
 	if (!db) {
-		fatal(NULL, "db open failed");
+		fprintf(stderr, "%u:%s:%s\n", getpid(), filename,
+			"db open failed");
+		exit(1);
 	}
 
 #if 0
@@ -295,6 +295,8 @@ static int run_child(const char *filename, int i, int seed, unsigned num_loops,
 	}
 
 	if (error_count == 0) {
+		enum NTDB_ERROR e;
+
 		ntdb_traverse(db, NULL, NULL);
 #if TRANSACTION_PROB
 		if (always_transaction) {
@@ -302,8 +304,12 @@ static int run_child(const char *filename, int i, int seed, unsigned num_loops,
 				ntdb_transaction_cancel(db);
 				in_transaction--;
 			}
-			if (ntdb_transaction_start(db) != 0)
-				fatal(db, "ntdb_transaction_start failed");
+			e = ntdb_transaction_start(db);
+			if (e) {
+				warn_on_err(e, db,
+					    "ntdb_transaction_start failed");
+				exit(1);
+			}
 		}
 #endif
 		ntdb_traverse(db, traverse_fn, NULL);
@@ -311,8 +317,8 @@ static int run_child(const char *filename, int i, int seed, unsigned num_loops,
 
 #if TRANSACTION_PROB
 		if (always_transaction) {
-			if (ntdb_transaction_commit(db) != 0)
-				fatal(db, "ntdb_transaction_commit failed");
+			e = ntdb_transaction_commit(db);
+			warn_on_err(e, db, "ntdb_transaction_commit failed");
 		}
 #endif
 	}
@@ -352,6 +358,7 @@ int main(int argc, char * const *argv)
 	int *done;
 	int ntdb_flags = NTDB_DEFAULT;
 	char *test_ntdb;
+	enum NTDB_ERROR e;
 
 	log_attr.base.attr = NTDB_ATTRIBUTE_LOG;
 	log_attr.base.next = &seed_attr;
@@ -513,11 +520,13 @@ done:
 		db = ntdb_open(test_ntdb, NTDB_DEFAULT, O_RDWR | O_CREAT,
 			      0600, &log_attr);
 		if (!db) {
-			fatal(db, "db open failed");
+			fprintf(stderr, "%u:%s:%s\n", getpid(), test_ntdb,
+				"db open failed");
 			exit(1);
 		}
-		if (ntdb_check(db, NULL, NULL) != 0) {
-			fatal(db, "db check failed");
+		e = ntdb_check(db, NULL, NULL);
+		if (e) {
+			warn_on_err(e, db, "db check failed");
 			exit(1);
 		}
 		ntdb_close(db);
