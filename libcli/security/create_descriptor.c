@@ -132,7 +132,6 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 	uint32_t i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_acl *tmp_acl = talloc_zero(mem_ctx, struct security_acl);
-	struct dom_sid *co, *cg;
 	if (!tmp_acl) {
 		return NULL;
 	}
@@ -140,8 +139,6 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 	if (!acl) {
 		return NULL;
 	}
-	co = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_OWNER);
-	cg = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_GROUP);
 
 	for (i=0; i < acl->num_aces; i++) {
 		struct security_ace *ace = &acl->aces[i];
@@ -217,7 +214,6 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_acl *tmp_acl = talloc_zero(tmp_ctx, struct security_acl);
 	struct security_acl *new_acl;
-	struct dom_sid *co, *cg;
 
 	if (!acl)
 		return NULL;
@@ -227,9 +223,6 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 
 	tmp_acl->revision = acl->revision;
 	DEBUG(6,(__location__ ": acl revision %d\n", acl->revision));
-
-	co = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_OWNER);
-	cg = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_GROUP);
 
 	for (i=0; i < acl->num_aces; i++){
 		struct security_ace *ace = &acl->aces[i];
