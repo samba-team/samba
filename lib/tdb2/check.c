@@ -497,10 +497,10 @@ static enum TDB_ERROR check_free(struct tdb_context *tdb,
 
 	}
 
-	ecode = tdb->tdb2.io->oob(tdb, off,
-				  frec_len(frec)
-				  + sizeof(struct tdb_used_record),
-				  false);
+	ecode = tdb->io->oob(tdb, off,
+			     frec_len(frec)
+			     + sizeof(struct tdb_used_record),
+			     false);
 	if (ecode != TDB_SUCCESS) {
 		return ecode;
 	}
@@ -606,7 +606,7 @@ tdb_off_t dead_space(struct tdb_context *tdb, tdb_off_t off)
 
 	for (len = 0; off + len < tdb->file->map_size; len++) {
 		char c;
-		ecode = tdb->tdb2.io->tread(tdb, off, &c, 1);
+		ecode = tdb->io->tread(tdb, off, &c, 1);
 		if (ecode != TDB_SUCCESS) {
 			return TDB_ERR_TO_OFF(ecode);
 		}

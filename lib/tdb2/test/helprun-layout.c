@@ -191,8 +191,8 @@ static void add_to_freetable(struct tdb_context *tdb,
 			     unsigned ftable,
 			     struct tle_freetable *freetable)
 {
-	tdb->tdb2.ftable_off = freetable->base.off;
-	tdb->tdb2.ftable = ftable;
+	tdb->ftable_off = freetable->base.off;
+	tdb->ftable = ftable;
 	add_free_record(tdb, eoff, sizeof(struct tdb_used_record) + elen,
 			TDB_LOCK_WAIT, false);
 }
@@ -367,7 +367,7 @@ struct tdb_context *tdb_layout_get(struct tdb_layout *layout,
 		}
 	}
 
-	tdb->tdb2.ftable_off = find_ftable(layout, 0)->base.off;
+	tdb->ftable_off = find_ftable(layout, 0)->base.off;
 	return tdb;
 }
 

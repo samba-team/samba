@@ -72,13 +72,13 @@ static enum TDB_ERROR replace_data(struct tdb_context *tdb,
 	}
 
 	new_off += sizeof(struct tdb_used_record);
-	ecode = tdb->tdb2.io->twrite(tdb, new_off, key.dptr, key.dsize);
+	ecode = tdb->io->twrite(tdb, new_off, key.dptr, key.dsize);
 	if (ecode != TDB_SUCCESS) {
 		return ecode;
 	}
 
 	new_off += key.dsize;
-	ecode = tdb->tdb2.io->twrite(tdb, new_off, dbuf.dptr, dbuf.dsize);
+	ecode = tdb->io->twrite(tdb, new_off, dbuf.dptr, dbuf.dsize);
 	if (ecode != TDB_SUCCESS) {
 		return ecode;
 	}
@@ -96,10 +96,10 @@ static enum TDB_ERROR update_data(struct tdb_context *tdb,
 {
 	enum TDB_ERROR ecode;
 
-	ecode = tdb->tdb2.io->twrite(tdb, off, dbuf.dptr, dbuf.dsize);
+	ecode = tdb->io->twrite(tdb, off, dbuf.dptr, dbuf.dsize);
 	if (ecode == TDB_SUCCESS && extra) {
 		/* Put a zero in; future versions may append other data. */
-		ecode = tdb->tdb2.io->twrite(tdb, off + dbuf.dsize, "", 1);
+		ecode = tdb->io->twrite(tdb, off + dbuf.dsize, "", 1);
 	}
 	if (tdb->flags & TDB_SEQNUM)
 		tdb_inc_seqnum(tdb);
@@ -213,8 +213,8 @@ _PUBLIC_ enum TDB_ERROR tdb_append(struct tdb_context *tdb,
 						    + dbuf.dsize));
 			goto out;
 		}
-		ecode = tdb->tdb2.io->tread(tdb, off + sizeof(rec) + key.dsize,
-					    newdata, old_dlen);
+		ecode = tdb->io->tread(tdb, off + sizeof(rec) + key.dsize,
+				       newdata, old_dlen);
 		if (ecode != TDB_SUCCESS) {
 			goto out_free_newdata;
 		}
@@ -328,7 +328,7 @@ _PUBLIC_ unsigned int tdb_get_flags(struct tdb_context *tdb)
 
 static bool inside_transaction(const struct tdb_context *tdb)
 {
-	return tdb->tdb2.transaction != NULL;
+	return tdb->transaction != NULL;
 }
 
 static bool readonly_changable(struct tdb_context *tdb, const char *caller)

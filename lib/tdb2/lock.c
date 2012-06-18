@@ -183,9 +183,9 @@ static int unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 
    note that a len of zero means lock to end of file
 */
-enum TDB_ERROR tdb_brlock(struct tdb_context *tdb,
-			  int rw_type, tdb_off_t offset, tdb_off_t len,
-			  enum tdb_lock_flags flags)
+static enum TDB_ERROR tdb_brlock(struct tdb_context *tdb,
+				 int rw_type, tdb_off_t offset, tdb_off_t len,
+				 enum tdb_lock_flags flags)
 {
 	int ret;
 
@@ -225,8 +225,8 @@ enum TDB_ERROR tdb_brlock(struct tdb_context *tdb,
 	return TDB_SUCCESS;
 }
 
-enum TDB_ERROR tdb_brunlock(struct tdb_context *tdb,
-			    int rw_type, tdb_off_t offset, size_t len)
+static enum TDB_ERROR tdb_brunlock(struct tdb_context *tdb,
+				   int rw_type, tdb_off_t offset, size_t len)
 {
 	if (tdb->flags & TDB_NOLOCK) {
 		return TDB_SUCCESS;
@@ -339,9 +339,9 @@ enum TDB_ERROR tdb_lock_and_recover(struct tdb_context *tdb)
 }
 
 /* lock an offset in the database. */
-enum TDB_ERROR tdb_nest_lock(struct tdb_context *tdb,
-			     tdb_off_t offset, int ltype,
-			     enum tdb_lock_flags flags)
+static enum TDB_ERROR tdb_nest_lock(struct tdb_context *tdb,
+				    tdb_off_t offset, int ltype,
+				    enum tdb_lock_flags flags)
 {
 	struct tdb_lock *new_lck;
 	enum TDB_ERROR ecode;
@@ -435,8 +435,8 @@ enum TDB_ERROR tdb_nest_lock(struct tdb_context *tdb,
 	return TDB_SUCCESS;
 }
 
-enum TDB_ERROR tdb_nest_unlock(struct tdb_context *tdb,
-			       tdb_off_t off, int ltype)
+static enum TDB_ERROR tdb_nest_unlock(struct tdb_context *tdb,
+				      tdb_off_t off, int ltype)
 {
 	struct tdb_lock *lck;
 	enum TDB_ERROR ecode;
@@ -491,9 +491,9 @@ void tdb_transaction_unlock(struct tdb_context *tdb, int ltype)
 
 /* We only need to lock individual bytes, but Linux merges consecutive locks
  * so we lock in contiguous ranges. */
-enum TDB_ERROR tdb_lock_gradual(struct tdb_context *tdb,
-				int ltype, enum tdb_lock_flags flags,
-				tdb_off_t off, tdb_off_t len)
+static enum TDB_ERROR tdb_lock_gradual(struct tdb_context *tdb,
+				       int ltype, enum tdb_lock_flags flags,
+				       tdb_off_t off, tdb_off_t len)
 {
 	enum TDB_ERROR ecode;
 	enum tdb_lock_flags nb_flags = (flags & ~TDB_LOCK_WAIT);

@@ -65,8 +65,8 @@ enum TDB_ERROR tdb_ftable_init(struct tdb_context *tdb)
 	unsigned int rnd, max = 0, count = 0;
 	tdb_off_t off;
 
-	tdb->tdb2.ftable_off = off = first_ftable(tdb);
-	tdb->tdb2.ftable = 0;
+	tdb->ftable_off = off = first_ftable(tdb);
+	tdb->ftable = 0;
 
 	while (off) {
 		if (TDB_OFF_IS_ERR(off)) {
@@ -75,8 +75,8 @@ enum TDB_ERROR tdb_ftable_init(struct tdb_context *tdb)
 
 		rnd = random();
 		if (rnd >= max) {
-			tdb->tdb2.ftable_off = off;
-			tdb->tdb2.ftable = count;
+			tdb->ftable_off = off;
+			tdb->ftable = count;
 			max = rnd;
 		}
 
@@ -218,7 +218,8 @@ static enum TDB_ERROR enqueue_in_free(struct tdb_context *tdb,
 		return TDB_OFF_TO_ERR(head);
 
 	/* We only need to set ftable_and_len; rest is set in enqueue_in_free */
-	new.ftable_and_len = ((uint64_t)tdb->tdb2.ftable << (64 - TDB_OFF_UPPER_STEAL))
+	new.ftable_and_len = ((uint64_t)tdb->ftable
+			      << (64 - TDB_OFF_UPPER_STEAL))
 		| len;
 
 	/* new->next = head. */
@@ -287,8 +288,8 @@ static tdb_off_t ftable_offset(struct tdb_context *tdb, unsigned int ftable)
 	tdb_off_t off;
 	unsigned int i;
 
-	if (likely(tdb->tdb2.ftable == ftable))
-		return tdb->tdb2.ftable_off;
+	if (likely(tdb->ftable == ftable))
+		return tdb->ftable_off;
 
 	off = first_ftable(tdb);
 	for (i = 0; i < ftable; i++) {
@@ -595,7 +596,7 @@ enum TDB_ERROR add_free_record(struct tdb_context *tdb,
 
 	len = len_with_header - sizeof(struct tdb_used_record);
 
-	b_off = bucket_off(tdb->tdb2.ftable_off, size_to_bucket(len));
+	b_off = bucket_off(tdb->ftable_off, size_to_bucket(len));
 	ecode = tdb_lock_free_bucket(tdb, b_off, waitflag);
 	if (ecode != TDB_SUCCESS) {
 		return ecode;
@@ -606,7 +607,7 @@ enum TDB_ERROR add_free_record(struct tdb_context *tdb,
 
 	/* Coalescing unlocks free list. */
 	if (!ecode && coalesce_ok)
-		ecode = coalesce_list(tdb, tdb->tdb2.ftable_off, b_off, 2);
+		ecode = coalesce_list(tdb, tdb->ftable_off, b_off, 2);
 	else
 		tdb_unlock_free_bucket(tdb, b_off);
 	return ecode;
@@ -752,8 +753,8 @@ static tdb_off_t lock_and_alloc(struct tdb_context *tdb,
 
 		/* For futureproofing, we put a 0 in any unused space. */
 		if (rec_extra_padding(&rec)) {
-			ecode = tdb->tdb2.io->twrite(tdb, best_off + sizeof(rec)
-						     + keylen + datalen, "", 1);
+			ecode = tdb->io->twrite(tdb, best_off + sizeof(rec)
+						+ keylen + datalen, "", 1);
 			if (ecode != TDB_SUCCESS) {
 				goto unlock_err;
 			}
@@ -800,9 +801,9 @@ static tdb_off_t get_free(struct tdb_context *tdb,
 	else
 		start_b = size_to_bucket(adjust_size(keylen, datalen));
 
-	ftable_off = tdb->tdb2.ftable_off;
-	ftable = tdb->tdb2.ftable;
-	while (!wrapped || ftable_off != tdb->tdb2.ftable_off) {
+	ftable_off = tdb->ftable_off;
+	ftable = tdb->ftable;
+	while (!wrapped || ftable_off != tdb->ftable_off) {
 		/* Start at exact size bucket, and search up... */
 		for (b = find_free_head(tdb, ftable_off, start_b);
 		     b < TDB_FREE_BUCKETS;
@@ -819,8 +820,8 @@ static tdb_off_t get_free(struct tdb_context *tdb,
 				if (b == TDB_FREE_BUCKETS - 1)
 					tdb->stats.alloc_bucket_max++;
 				/* Worked?  Stay using this list. */
-				tdb->tdb2.ftable_off = ftable_off;
-				tdb->tdb2.ftable = ftable;
+				tdb->ftable_off = ftable_off;
+				tdb->ftable = ftable;
 				return off;
 			}
 			/* Didn't work.  Try next bucket. */
@@ -926,7 +927,7 @@ static enum TDB_ERROR tdb_expand(struct tdb_context *tdb, tdb_len_t size)
 
 	/* Someone else may have expanded the file, so retry. */
 	old_size = tdb->file->map_size;
-	tdb->tdb2.io->oob(tdb, tdb->file->map_size, 1, true);
+	tdb->io->oob(tdb, tdb->file->map_size, 1, true);
 	if (tdb->file->map_size != old_size) {
 		tdb_unlock_expand(tdb, F_WRLCK);
 		return TDB_SUCCESS;
@@ -937,7 +938,7 @@ static enum TDB_ERROR tdb_expand(struct tdb_context *tdb, tdb_len_t size)
 	/* We need room for the record header too. */
 	wanted = adjust_size(0, sizeof(struct tdb_used_record) + wanted);
 
-	ecode = tdb->tdb2.io->expand_file(tdb, wanted);
+	ecode = tdb->io->expand_file(tdb, wanted);
 	if (ecode != TDB_SUCCESS) {
 		tdb_unlock_expand(tdb, F_WRLCK);
 		return ecode;
@@ -957,7 +958,7 @@ tdb_off_t alloc(struct tdb_context *tdb, size_t keylen, size_t datalen,
 	tdb_off_t off;
 
 	/* We can't hold pointers during this: we could unmap! */
-	assert(!tdb->tdb2.direct_access);
+	assert(!tdb->direct_access);
 
 	for (;;) {
 		enum TDB_ERROR ecode;

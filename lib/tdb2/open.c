@@ -100,9 +100,9 @@ static void tdb2_context_init(struct tdb_context *tdb)
 {
 	/* Initialize the TDB2 fields here */
 	tdb_io_init(tdb);
-	tdb->tdb2.direct_access = 0;
-	tdb->tdb2.transaction = NULL;
-	tdb->tdb2.access = NULL;
+	tdb->direct_access = 0;
+	tdb->transaction = NULL;
+	tdb->access = NULL;
 }
 
 struct new_database {
@@ -640,7 +640,7 @@ _PUBLIC_ struct tdb_context *tdb_open(const char *name, int tdb_flags,
 	tdb_unlock_open(tdb, openlock);
 
 	/* This makes sure we have current map_size and mmap. */
-	ecode = tdb->tdb2.io->oob(tdb, tdb->file->map_size, 1, true);
+	ecode = tdb->io->oob(tdb, tdb->file->map_size, 1, true);
 	if (unlikely(ecode != TDB_SUCCESS))
 		goto fail;
 
@@ -722,7 +722,7 @@ _PUBLIC_ int tdb_close(struct tdb_context *tdb)
 
 	tdb_trace(tdb, "tdb_close");
 
-	if (tdb->tdb2.transaction) {
+	if (tdb->transaction) {
 		tdb_transaction_cancel(tdb);
 	}
 
