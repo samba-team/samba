@@ -21,6 +21,8 @@ AC_SUBST(CCAN_CFLAGS)
 # All the configuration checks.  Regrettably, the __attribute__ checks will
 # give false positives on old GCCs, since they just cause warnings.  But that's
 # fairly harmless.
+AC_CHECK_HEADERS(err.h)
+
 AC_CACHE_CHECK([whether we can compile with __attribute__((cold))],
 	       samba_cv_attribute_cold,
 	       [
