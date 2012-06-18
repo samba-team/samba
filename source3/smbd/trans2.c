@@ -863,12 +863,6 @@ void send_trans2_replies(connection_struct *conn,
 		reply_outbuf(req, 10, total_sent_thistime + alignment_offset
 			     + data_alignment_offset);
 
-		/*
-		 * We might have SMBtrans2s in req which was transferred to
-		 * the outbuf, fix that.
-		 */
-		SCVAL(req->outbuf, smb_com, SMBtrans2);
-
 		/* Set total params and data to be sent */
 		SSVAL(req->outbuf,smb_tprcnt,paramsize);
 		SSVAL(req->outbuf,smb_tdrcnt,datasize);
@@ -8838,6 +8832,15 @@ void reply_transs2(struct smb_request *req)
 	START_PROFILE(SMBtranss2);
 
 	show_msg((char *)req->inbuf);
+
+	/* Windows clients expect all replies to
+	   a transact secondary (SMBtranss2 0x33)
+	   to have a command code of transact
+	   (SMBtrans2 0x32). See bug #8989
+	   and also [MS-CIFS] section 2.2.4.47.2
+	   for details.
+	*/
+	req->cmd = SMBtrans2;
 
 	if (req->wct < 8) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
