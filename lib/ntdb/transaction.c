@@ -100,7 +100,6 @@ struct ntdb_transaction {
 	   written to, it gets created in this list */
 	uint8_t **blocks;
 	size_t num_blocks;
-	size_t last_block_size; /* number of valid bytes in the last block */
 
 	/* non-zero when an internal transaction error has
 	   occurred. All write operations will then fail until the
@@ -157,14 +156,6 @@ static enum NTDB_ERROR transaction_read(struct ntdb_context *ntdb, ntdb_off_t of
 			goto fail;
 		}
 		return 0;
-	}
-
-	/* it is in the block list. Now check for the last block */
-	if (blk == ntdb->transaction->num_blocks-1) {
-		if (len > ntdb->transaction->last_block_size) {
-			ecode = NTDB_ERR_IO;
-			goto fail;
-		}
 	}
 
 	/* now copy it out of this block */
@@ -238,7 +229,6 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 		       (1+(blk - ntdb->transaction->num_blocks))*sizeof(uint8_t *));
 		ntdb->transaction->blocks = new_blocks;
 		ntdb->transaction->num_blocks = blk+1;
-		ntdb->transaction->last_block_size = 0;
 	}
 
 	/* allocate and fill a block? */
@@ -269,9 +259,6 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 				SAFE_FREE(ntdb->transaction->blocks[blk]);
 				goto fail;
 			}
-			if (blk == ntdb->transaction->num_blocks-1) {
-				ntdb->transaction->last_block_size = len2;
-			}
 		}
 	}
 
@@ -281,12 +268,6 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 	} else {
 		memcpy(ntdb->transaction->blocks[blk] + off, buf, len);
 	}
-	if (blk == ntdb->transaction->num_blocks-1) {
-		if (len + off > ntdb->transaction->last_block_size) {
-			ntdb->transaction->last_block_size = len + off;
-		}
-	}
-
 	return NTDB_SUCCESS;
 
 fail:
@@ -325,14 +306,6 @@ static void transaction_write_existing(struct ntdb_context *ntdb, ntdb_off_t off
 	if (ntdb->transaction->num_blocks <= blk ||
 	    ntdb->transaction->blocks[blk] == NULL) {
 		return;
-	}
-
-	if (blk == ntdb->transaction->num_blocks-1 &&
-	    off + len > ntdb->transaction->last_block_size) {
-		if (off >= ntdb->transaction->last_block_size) {
-			return;
-		}
-		len = ntdb->transaction->last_block_size - off;
 	}
 
 	/* overwrite part of an existing block */
@@ -630,12 +603,7 @@ static ntdb_len_t ntdb_recovery_size(struct ntdb_context *ntdb)
 		if (ntdb->transaction->blocks[i] == NULL) {
 			continue;
 		}
-		recovery_size += 2*sizeof(ntdb_off_t);
-		if (i == ntdb->transaction->num_blocks-1) {
-			recovery_size += ntdb->transaction->last_block_size;
-		} else {
-			recovery_size += NTDB_PGSIZE;
-		}
+		recovery_size += 2*sizeof(ntdb_off_t) + NTDB_PGSIZE;
 	}
 
 	return recovery_size;
@@ -748,10 +716,6 @@ static struct ntdb_recovery_record *alloc_recovery(struct ntdb_context *ntdb,
 
 		offset = i * NTDB_PGSIZE;
 		length = NTDB_PGSIZE;
-		if (i == ntdb->transaction->num_blocks-1) {
-			length = ntdb->transaction->last_block_size;
-		}
-
 		if (offset >= ntdb->transaction->old_map_size) {
 			continue;
 		}
@@ -762,10 +726,6 @@ static struct ntdb_recovery_record *alloc_recovery(struct ntdb_context *ntdb,
 					   " transaction data over new region"
 					   " boundary");
 			goto fail;
-		}
-		if (offset + length > ntdb->transaction->old_map_size) {
-			/* Short read at EOF. */
-			length = ntdb->transaction->old_map_size - offset;
 		}
 		buffer = ntdb_access_read(ntdb, offset, length, false);
 		if (NTDB_PTR_IS_ERR(buffer)) {
@@ -1103,9 +1063,6 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 
 		offset = i * NTDB_PGSIZE;
 		length = NTDB_PGSIZE;
-		if (i == ntdb->transaction->num_blocks-1) {
-			length = ntdb->transaction->last_block_size;
-		}
 
 		ecode = methods->twrite(ntdb, offset,
 					ntdb->transaction->blocks[i], length);
