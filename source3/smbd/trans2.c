@@ -890,12 +890,6 @@ void send_trans2_replies(connection_struct *conn,
 		reply_outbuf(req, 10, total_sent_thistime + alignment_offset
 			     + data_alignment_offset);
 
-		/*
-		 * We might have SMBtrans2s in req which was transferred to
-		 * the outbuf, fix that.
-		 */
-		SCVAL(req->outbuf, smb_com, SMBtrans2);
-
 		/* Set total params and data to be sent */
 		SSVAL(req->outbuf,smb_tprcnt,paramsize);
 		SSVAL(req->outbuf,smb_tdrcnt,datasize);

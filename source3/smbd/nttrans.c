@@ -143,11 +143,6 @@ static void send_nt_replies(connection_struct *conn,
 			     + data_alignment_offset);
 
 		/*
-		 * We might have had SMBnttranss in req->inbuf, fix that.
-		 */
-		SCVAL(req->outbuf, smb_com, SMBnttrans);
-
-		/*
 		 * Set total params and data to be sent.
 		 */
 
