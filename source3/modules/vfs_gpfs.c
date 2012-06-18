@@ -1562,7 +1562,8 @@ static void vfs_gpfs_disk_free_quota(struct gpfs_quotaInfo qi, time_t cur_time,
 	 * When the grace time for the exceeded soft block quota has been
 	 * exceeded, the soft block quota becomes an additional hard limit.
 	 */
-	if (qi.blockGraceTime && cur_time > qi.blockGraceTime) {
+	if (qi.blockSoftLimit &&
+	    qi.blockGraceTime && cur_time > qi.blockGraceTime) {
 		/* report disk as full */
 		*dfree = 0;
 		*dsize = MIN(*dsize, usage);
