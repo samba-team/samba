@@ -231,7 +231,7 @@ def testonly(ctx):
             os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
 
         if Options.options.VALGRIND:
-            os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
+            os.environ['VALGRIND'] = 'valgrind -q --num-callers=30 --error-exitcode=11'
         if Options.options.VALGRINDLOG is not None:
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
