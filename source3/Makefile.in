@@ -3245,6 +3245,7 @@ distclean:: realclean
 realdistclean:: distclean
 	-rm -f include/autoconf/config.h.in
 	-rm -f include/autoconf/version.h
+	-rm -f autoconf/librpc/gen_ndr/*.[ch]
 	-rm -f configure
 
 # when configure.in is updated, reconfigure
