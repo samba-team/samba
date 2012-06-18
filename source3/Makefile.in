@@ -3199,12 +3199,11 @@ cleanlibs::
 clean:: cleanlibs
 	-rm -f include/build_env.h
 	-rm -f smbd/build_options.c
-	-rm -f param/param_local.h
-	-rm -f param/param_global.h
-	-rm -f ../lib/param/param_local.h
-	-rm -f ../lib/param/param_global.h
-	-rm -f ../lib/param/param_proto.h
-	-rm -f ../lib/param/s3_param.h
+	-rm -f autoconf/lib/param/param_local.h
+	-rm -f autoconf/lib/param/param_global.h
+	-rm -f autoconf/lib/param/param_proto.h
+	-rm -f autoconf/lib/param/s3_param.h
+	-rm -f autoconf/source3/param/param_global.h
 	-rm -f $(PRECOMPILED_HEADER)
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o */*/*/*/*.o \
