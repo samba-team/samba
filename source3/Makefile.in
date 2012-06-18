@@ -3381,7 +3381,6 @@ bin/ndrdump4: $(BINARY_PREREQS)
 vfs_examples:
 	( \
 	cd ../examples/VFS && \
-	test -e ./configure || exit 0 && \
 	./configure && \
 	make clean && \
 	make \
