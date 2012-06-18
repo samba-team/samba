@@ -107,7 +107,7 @@ def configure(conf):
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
-long ret = splice(0,0,1,0,400,0);
+long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
 ''',
         'HAVE_LINUX_SPLICE',
         headers='fcntl.h'):

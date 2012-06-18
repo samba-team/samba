@@ -5676,7 +5676,7 @@ AC_CACHE_CHECK([for Linux splice],
 #include <unistd.h>
 #endif
 #include <fcntl.h>],
-    [long ret = splice(0,0,1,0,400,0);],
+    [long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);],
     samba_cv_HAVE_LINUX_SPLICE=yes,
     samba_cv_HAVE_LINUX_SPLICE=no)])
 ;;
