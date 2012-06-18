@@ -93,6 +93,9 @@ int lpcfg_parm_bytes(struct loadparm_context *lp_ctx,
 unsigned long lpcfg_parm_ulong(struct loadparm_context *lp_ctx,
 			    struct loadparm_service *service, const char *type,
 			    const char *option, unsigned long default_v);
+long lpcfg_parm_long(struct loadparm_context *lp_ctx,
+		     struct loadparm_service *service, const char *type,
+		     const char *option, long default_v);
 double lpcfg_parm_double(struct loadparm_context *lp_ctx,
 		      struct loadparm_service *service, const char *type,
 		      const char *option, double default_v);
