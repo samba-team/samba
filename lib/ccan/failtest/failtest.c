@@ -200,7 +200,6 @@ static int move_fd_to_high(int fd)
 
 	if (getrlimit(RLIMIT_NOFILE, &lim) == 0) {
 		max = lim.rlim_cur;
-		printf("Max is %i\n", max);
 	} else
 		max = FD_SETSIZE;
 
