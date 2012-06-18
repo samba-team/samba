@@ -17,7 +17,9 @@ def find_irixcc(conf):
     cc = None
     if v['CC']: cc = v['CC']
     elif 'CC' in conf.environ: cc = conf.environ['CC']
-    if not cc: cc = conf.find_program('cc', var='CC')
+    if not cc:
+        cc = conf.find_program('cc', var='CC')
+        cc += ' -c99'
     if not cc: conf.fatal('irixcc was not found')
     cc = conf.cmd_to_list(cc)
 
