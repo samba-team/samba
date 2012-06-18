@@ -3244,7 +3244,7 @@ distclean:: realclean
 
 realdistclean:: distclean
 	-rm -f include/autoconf/config.h.in
-	-rm -f include/version.h
+	-rm -f include/autoconf/version.h
 	-rm -f configure
 
 # when configure.in is updated, reconfigure
