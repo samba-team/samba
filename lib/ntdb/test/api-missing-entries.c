@@ -11,10 +11,10 @@
 #define NUM_RECORDS 1189
 
 /* We use the same seed which we saw this failure on. */
-static uint64_t failhash(const void *key, size_t len, uint64_t seed, void *p)
+static uint32_t failhash(const void *key, size_t len, uint32_t seed, void *p)
 {
-	seed = 699537674708983027ULL;
-	return hash64_stable((const unsigned char *)key, len, seed);
+	return hash64_stable((const unsigned char *)key, len,
+			     699537674708983027ULL);
 }
 
 int main(int argc, char *argv[])

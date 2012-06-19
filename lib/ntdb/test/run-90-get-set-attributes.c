@@ -13,7 +13,7 @@ static int myunlock(int fd, int rw, off_t off, off_t len, void *unused)
 	return 0;
 }
 
-static uint64_t hash_fn(const void *key, size_t len, uint64_t seed,
+static uint32_t hash_fn(const void *key, size_t len, uint32_t seed,
 			void *priv)
 {
 	return 0;

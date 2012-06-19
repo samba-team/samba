@@ -765,7 +765,7 @@ struct ntdb_attribute_log {
  */
 struct ntdb_attribute_hash {
 	struct ntdb_attribute_base base; /* .attr = NTDB_ATTRIBUTE_HASH */
-	uint64_t (*fn)(const void *key, size_t len, uint64_t seed,
+	uint32_t (*fn)(const void *key, size_t len, uint32_t seed,
 		       void *data);
 	void *data;
 };
@@ -809,7 +809,6 @@ struct ntdb_attribute_stats {
 	uint64_t     alloc_coalesce_succeeded;
 	uint64_t       alloc_coalesce_num_merged;
 	uint64_t compares;
-	uint64_t   compare_wrong_bucket;
 	uint64_t   compare_wrong_offsetbits;
 	uint64_t   compare_wrong_keylen;
 	uint64_t   compare_wrong_rechash;
@@ -822,6 +821,8 @@ struct ntdb_attribute_stats {
 	uint64_t      transaction_read_direct_fail;
 	uint64_t   transaction_write_direct;
 	uint64_t      transaction_write_direct_fail;
+	uint64_t traverses;
+	uint64_t	traverse_val_vanished;
 	uint64_t expands;
 	uint64_t frees;
 	uint64_t locks;

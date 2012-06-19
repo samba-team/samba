@@ -19,7 +19,6 @@
 #include <ccan/likely/likely.h>
 #include <ccan/ilog/ilog.h>
 #include <time.h>
-#include <assert.h>
 #include <limits.h>
 
 static unsigned fls64(uint64_t val)
@@ -646,8 +645,7 @@ static ntdb_off_t lock_and_alloc(struct ntdb_context *ntdb,
 				ntdb_off_t bucket,
 				size_t keylen, size_t datalen,
 				bool want_extra,
-				unsigned magic,
-				unsigned hashlow)
+				unsigned magic)
 {
 	ntdb_off_t off, b_off,best_off;
 	struct ntdb_free_record best = { 0 };
@@ -741,7 +739,7 @@ static ntdb_off_t lock_and_alloc(struct ntdb_context *ntdb,
 		/* We need to mark non-free before we drop lock, otherwise
 		 * coalesce() could try to merge it! */
 		ecode = set_header(ntdb, &rec, magic, keylen, datalen,
-				   frec_len(&best) - leftover, hashlow);
+				   frec_len(&best) - leftover);
 		if (ecode != NTDB_SUCCESS) {
 			goto unlock_err;
 		}
@@ -788,7 +786,7 @@ unlock_err:
 /* Get a free block from current free list, or 0 if none, -ve on error. */
 static ntdb_off_t get_free(struct ntdb_context *ntdb,
 			  size_t keylen, size_t datalen, bool want_extra,
-			  unsigned magic, unsigned hashlow)
+			  unsigned magic)
 {
 	ntdb_off_t off, ftable_off;
 	ntdb_off_t start_b, b, ftable;
@@ -811,7 +809,7 @@ static ntdb_off_t get_free(struct ntdb_context *ntdb,
 			/* Try getting one from list. */
 			off = lock_and_alloc(ntdb, ftable_off,
 					     b, keylen, datalen, want_extra,
-					     magic, hashlow);
+					     magic);
 			if (NTDB_OFF_IS_ERR(off))
 				return off;
 			if (off != 0) {
@@ -854,13 +852,11 @@ static ntdb_off_t get_free(struct ntdb_context *ntdb,
 enum NTDB_ERROR set_header(struct ntdb_context *ntdb,
 			  struct ntdb_used_record *rec,
 			  unsigned magic, uint64_t keylen, uint64_t datalen,
-			  uint64_t actuallen, unsigned hashlow)
+			  uint64_t actuallen)
 {
 	uint64_t keybits = (fls64(keylen) + 1) / 2;
 
-	/* Use bottom bits of hash, so it's independent of hash table size. */
-	rec->magic_and_meta = (hashlow & ((1 << 11)-1))
-		| ((actuallen - (keylen + datalen)) << 11)
+	rec->magic_and_meta = ((actuallen - (keylen + datalen)) << 11)
 		| (keybits << 43)
 		| ((uint64_t)magic << 48);
 	rec->key_and_data_len = (keylen | (datalen << (keybits*2)));
@@ -958,7 +954,7 @@ static enum NTDB_ERROR ntdb_expand(struct ntdb_context *ntdb, ntdb_len_t size)
 
 /* This won't fail: it will expand the database if it has to. */
 ntdb_off_t alloc(struct ntdb_context *ntdb, size_t keylen, size_t datalen,
-		uint64_t hash, unsigned magic, bool growing)
+		 unsigned magic, bool growing)
 {
 	ntdb_off_t off;
 
@@ -967,7 +963,7 @@ ntdb_off_t alloc(struct ntdb_context *ntdb, size_t keylen, size_t datalen,
 
 	for (;;) {
 		enum NTDB_ERROR ecode;
-		off = get_free(ntdb, keylen, datalen, growing, magic, hash);
+		off = get_free(ntdb, keylen, datalen, growing, magic);
 		if (likely(off != 0))
 			break;
 

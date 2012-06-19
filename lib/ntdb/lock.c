@@ -26,7 +26,6 @@
 */
 
 #include "private.h"
-#include <assert.h>
 #include <ccan/build_assert/build_assert.h>
 
 /* If we were threaded, we could wait for unlock, but we're not, so fail. */
@@ -346,12 +345,8 @@ static enum NTDB_ERROR ntdb_nest_lock(struct ntdb_context *ntdb,
 	struct ntdb_lock *new_lck;
 	enum NTDB_ERROR ecode;
 
-	if (offset > (NTDB_HASH_LOCK_START + NTDB_HASH_LOCK_RANGE
-		      + ntdb->file->map_size / 8)) {
-		return ntdb_logerr(ntdb, NTDB_ERR_LOCK, NTDB_LOG_ERROR,
-				  "ntdb_nest_lock: invalid offset %zu ltype=%d",
-				  (size_t)offset, ltype);
-	}
+	assert(offset <= (NTDB_HASH_LOCK_START + (1 << ntdb->hash_bits)
+			  + ntdb->file->map_size / 8));
 
 	if (ntdb->flags & NTDB_NOLOCK)
 		return NTDB_SUCCESS;
@@ -581,17 +576,17 @@ enum NTDB_ERROR ntdb_allrecord_lock(struct ntdb_context *ntdb, int ltype,
 again:
 	/* Lock hashes, gradually. */
 	ecode = ntdb_lock_gradual(ntdb, ltype, flags, NTDB_HASH_LOCK_START,
-				 NTDB_HASH_LOCK_RANGE);
+				  1 << ntdb->hash_bits);
 	if (ecode != NTDB_SUCCESS)
 		return ecode;
 
 	/* Lock free tables: there to end of file. */
 	ecode = ntdb_brlock(ntdb, ltype,
-			   NTDB_HASH_LOCK_START + NTDB_HASH_LOCK_RANGE,
-			   0, flags);
+			    NTDB_HASH_LOCK_START + (1 << ntdb->hash_bits),
+			    0, flags);
 	if (ecode != NTDB_SUCCESS) {
 		ntdb_brunlock(ntdb, ltype, NTDB_HASH_LOCK_START,
-			     NTDB_HASH_LOCK_RANGE);
+			      1 << ntdb->hash_bits);
 		return ecode;
 	}
 
@@ -700,7 +695,7 @@ bool ntdb_has_hash_locks(struct ntdb_context *ntdb)
 	for (i=0; i<ntdb->file->num_lockrecs; i++) {
 		if (ntdb->file->lockrecs[i].off >= NTDB_HASH_LOCK_START
 		    && ntdb->file->lockrecs[i].off < (NTDB_HASH_LOCK_START
-						     + NTDB_HASH_LOCK_RANGE))
+						      + (1 << ntdb->hash_bits)))
 			return true;
 	}
 	return false;
@@ -715,20 +710,19 @@ static bool ntdb_has_free_lock(struct ntdb_context *ntdb)
 
 	for (i=0; i<ntdb->file->num_lockrecs; i++) {
 		if (ntdb->file->lockrecs[i].off
-		    > NTDB_HASH_LOCK_START + NTDB_HASH_LOCK_RANGE)
+		    > NTDB_HASH_LOCK_START + (1 << ntdb->hash_bits))
 			return true;
 	}
 	return false;
 }
 
-enum NTDB_ERROR ntdb_lock_hashes(struct ntdb_context *ntdb,
-			       ntdb_off_t hash_lock,
-			       ntdb_len_t hash_range,
-			       int ltype, enum ntdb_lock_flags waitflag)
+enum NTDB_ERROR ntdb_lock_hash(struct ntdb_context *ntdb,
+			       unsigned int h,
+			       int ltype)
 {
-	/* FIXME: Do this properly, using hlock_range */
-	unsigned l = NTDB_HASH_LOCK_START
-		+ (hash_lock >> (64 - NTDB_HASH_LOCK_RANGE_BITS));
+	unsigned l = NTDB_HASH_LOCK_START + h;
+
+	assert(h < (1 << ntdb->hash_bits));
 
 	/* a allrecord lock allows us to avoid per chain locks */
 	if (ntdb->file->allrecord_lock.count) {
@@ -760,15 +754,13 @@ enum NTDB_ERROR ntdb_lock_hashes(struct ntdb_context *ntdb,
 				  " already have expansion lock");
 	}
 
-	return ntdb_nest_lock(ntdb, l, ltype, waitflag);
+	return ntdb_nest_lock(ntdb, l, ltype, NTDB_LOCK_WAIT);
 }
 
-enum NTDB_ERROR ntdb_unlock_hashes(struct ntdb_context *ntdb,
-				 ntdb_off_t hash_lock,
-				 ntdb_len_t hash_range, int ltype)
+enum NTDB_ERROR ntdb_unlock_hash(struct ntdb_context *ntdb,
+				 unsigned int h, int ltype)
 {
-	unsigned l = NTDB_HASH_LOCK_START
-		+ (hash_lock >> (64 - NTDB_HASH_LOCK_RANGE_BITS));
+	unsigned l = NTDB_HASH_LOCK_START + (h & ((1 << ntdb->hash_bits)-1));
 
 	if (ntdb->flags & NTDB_NOLOCK)
 		return 0;
@@ -791,14 +783,15 @@ enum NTDB_ERROR ntdb_unlock_hashes(struct ntdb_context *ntdb,
 	return ntdb_nest_unlock(ntdb, l, ltype);
 }
 
-/* Hash locks use NTDB_HASH_LOCK_START + the next 30 bits.
+/* Hash locks use NTDB_HASH_LOCK_START + <number of hash entries>..
  * Then we begin; bucket offsets are sizeof(ntdb_len_t) apart, so we divide.
  * The result is that on 32 bit systems we don't use lock values > 2^31 on
  * files that are less than 4GB.
  */
-static ntdb_off_t free_lock_off(ntdb_off_t b_off)
+static ntdb_off_t free_lock_off(const struct ntdb_context *ntdb,
+				ntdb_off_t b_off)
 {
-	return NTDB_HASH_LOCK_START + NTDB_HASH_LOCK_RANGE
+	return NTDB_HASH_LOCK_START + (1 << ntdb->hash_bits)
 		+ b_off / sizeof(ntdb_off_t);
 }
 
@@ -834,7 +827,8 @@ enum NTDB_ERROR ntdb_lock_free_bucket(struct ntdb_context *ntdb, ntdb_off_t b_of
 	}
 #endif
 
-	return ntdb_nest_lock(ntdb, free_lock_off(b_off), F_WRLCK, waitflag);
+	return ntdb_nest_lock(ntdb, free_lock_off(ntdb, b_off), F_WRLCK,
+			      waitflag);
 }
 
 void ntdb_unlock_free_bucket(struct ntdb_context *ntdb, ntdb_off_t b_off)
@@ -842,7 +836,7 @@ void ntdb_unlock_free_bucket(struct ntdb_context *ntdb, ntdb_off_t b_off)
 	if (ntdb->file->allrecord_lock.count)
 		return;
 
-	ntdb_nest_unlock(ntdb, free_lock_off(b_off), F_WRLCK);
+	ntdb_nest_unlock(ntdb, free_lock_off(ntdb, b_off), F_WRLCK);
 }
 
 _PUBLIC_ enum NTDB_ERROR ntdb_lockall(struct ntdb_context *ntdb)

@@ -2,16 +2,15 @@
 #include "tap-interface.h"
 #include "logging.h"
 
-/* We rig the hash so adjacent-numbered records always clash. */
-static uint64_t clash(const void *key, size_t len, uint64_t seed, void *priv)
+/* We rig the hash so all records clash. */
+static uint32_t clash(const void *key, size_t len, uint32_t seed, void *priv)
 {
-	return ((uint64_t)*(const unsigned int *)key)
-		<< (64 - NTDB_TOPLEVEL_HASH_BITS - 1);
+	return *((const unsigned int *)key) << 20;
 }
 
 int main(int argc, char *argv[])
 {
-	unsigned int i, j;
+	unsigned int i;
 	struct ntdb_context *ntdb;
 	unsigned int v;
 	struct ntdb_used_record rec;
@@ -26,11 +25,10 @@ int main(int argc, char *argv[])
 
 	hattr.base.next = &tap_log_attr;
 
-	plan_tests(sizeof(flags) / sizeof(flags[0])
-		   * (91 + (2 * ((1 << NTDB_HASH_GROUP_BITS) - 1))) + 1);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 137 + 1);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		struct hash_info h;
-		ntdb_off_t new_off, off, subhash;
+		ntdb_off_t new_off, new_off2, off;
 
 		ntdb = ntdb_open("run-04-basichash.ntdb", flags[i],
 			       O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
@@ -40,26 +38,24 @@ int main(int argc, char *argv[])
 
 		v = 0;
 		/* Should not find it. */
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in group 0, bucket 0. */
-		ok1(h.group_start == offsetof(struct ntdb_header, hashtable));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 0);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS);
+		/* Should have located space in top table, bucket 0. */
+		ok1(h.table == NTDB_HASH_OFFSET);
+		ok1(h.table_size == (1 << ntdb->hash_bits));
+		ok1(h.bucket == 0);
+		ok1(h.old_val == 0);
 
 		/* Should have lock on bucket 0 */
-		ok1(h.hlock_start == 0);
-		ok1(h.hlock_range ==
-		    1ULL << (64-(NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS)));
+		ok1(h.h == 0);
 		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
 		ok1((ntdb->flags & NTDB_NOLOCK)
 		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
 		/* FIXME: Check lock length */
 
 		/* Allocate a new record. */
-		new_off = alloc(ntdb, key.dsize, dbuf.dsize, h.h,
+		new_off = alloc(ntdb, key.dsize, dbuf.dsize,
 				NTDB_USED_MAGIC, false);
 		ok1(!NTDB_OFF_IS_ERR(new_off));
 
@@ -73,91 +69,93 @@ int main(int argc, char *argv[])
 		ok1(!ntdb->io->twrite(ntdb, off, dbuf.dptr, dbuf.dsize));
 
 		/* We should be able to unlock that OK. */
-		ok1(ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range,
-				      F_WRLCK) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		/* Database should be consistent. */
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		/* Now, this should give a successful lookup. */
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL)
-		    == new_off);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in group 0, bucket 0. */
-		ok1(h.group_start == offsetof(struct ntdb_header, hashtable));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 0);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS);
+		/* Should have located it in top table, bucket 0. */
+		ok1(h.table == NTDB_HASH_OFFSET);
+		ok1(h.table_size == (1 << ntdb->hash_bits));
+		ok1(h.bucket == 0);
 
 		/* Should have lock on bucket 0 */
-		ok1(h.hlock_start == 0);
-		ok1(h.hlock_range ==
-		    1ULL << (64-(NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS)));
+		ok1(h.h == 0);
 		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
 		ok1((ntdb->flags & NTDB_NOLOCK)
 		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
 		/* FIXME: Check lock length */
 
-		ok1(ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range,
-				      F_WRLCK) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		/* Database should be consistent. */
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		/* Test expansion. */
 		v = 1;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in group 0, bucket 1. */
-		ok1(h.group_start == offsetof(struct ntdb_header, hashtable));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 1);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS);
+		/* Should have located clash in toplevel bucket 0. */
+		ok1(h.table == NTDB_HASH_OFFSET);
+		ok1(h.table_size == (1 << ntdb->hash_bits));
+		ok1(h.bucket == 0);
+		ok1((h.old_val & NTDB_OFF_MASK) == new_off);
 
 		/* Should have lock on bucket 0 */
-		ok1(h.hlock_start == 0);
-		ok1(h.hlock_range ==
-		    1ULL << (64-(NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS)));
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
 		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
 		ok1((ntdb->flags & NTDB_NOLOCK)
 		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
 		/* FIXME: Check lock length */
 
-		/* Make it expand 0'th bucket. */
-		ok1(expand_group(ntdb, &h) == 0);
-		/* First one should be subhash, next should be empty. */
-		ok1(is_subhash(h.group[0]));
-		subhash = (h.group[0] & NTDB_OFF_MASK);
-		for (j = 1; j < (1 << NTDB_HASH_GROUP_BITS); j++)
-			ok1(h.group[j] == 0);
+		new_off2 = alloc(ntdb, key.dsize, dbuf.dsize,
+				 NTDB_USED_MAGIC, false);
+		ok1(!NTDB_OFF_IS_ERR(new_off2));
 
-		ok1(ntdb_write_convert(ntdb, h.group_start,
-				      h.group, sizeof(h.group)) == 0);
-		ok1(ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range,
-				      F_WRLCK) == 0);
+		off = new_off2 + sizeof(struct ntdb_used_record);
+		ok1(!ntdb->io->twrite(ntdb, off, key.dptr, key.dsize));
+		off += key.dsize;
+		ok1(!ntdb->io->twrite(ntdb, off, dbuf.dptr, dbuf.dsize));
+
+		/* We should be able to add it now. */
+		ok1(add_to_hash(ntdb, &h, new_off2) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		/* Should be happy with expansion. */
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
-		/* Should be able to find it. */
-		v = 0;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL)
-		    == new_off);
+		/* Should be able to find both. */
+		v = 1;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off2);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in expanded group 0, bucket 0. */
-		ok1(h.group_start == subhash + sizeof(struct ntdb_used_record));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 0);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS
-		    + NTDB_SUBLEVEL_HASH_BITS);
+		/* Should have located space in chain. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 2);
+		ok1(h.bucket == 1);
+		/* Should have lock on bucket 0 */
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
+		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
+		ok1((ntdb->flags & NTDB_NOLOCK)
+		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
+
+		v = 0;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		/* Should have created correct hash. */
+		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
+		/* Should have located space in chain. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 2);
+		ok1(h.bucket == 0);
 
 		/* Should have lock on bucket 0 */
-		ok1(h.hlock_start == 0);
-		ok1(h.hlock_range ==
-		    1ULL << (64-(NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS)));
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
 		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
 		ok1((ntdb->flags & NTDB_NOLOCK)
 		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
@@ -171,86 +169,149 @@ int main(int argc, char *argv[])
 				    + rec_data_length(&rec)
 				    + rec_extra_padding(&rec),
 				    NTDB_LOCK_NOWAIT, false) == 0);
-		ok1(ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range,
-				      F_WRLCK) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
-		/* Test second-level expansion: should expand 0th bucket. */
-		v = 0;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
+		/* Should still be able to find other record. */
+		v = 1;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off2);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in group 0, bucket 0. */
-		ok1(h.group_start == subhash + sizeof(struct ntdb_used_record));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 0);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS+NTDB_SUBLEVEL_HASH_BITS);
-
+		/* Should have located space in chain. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 2);
+		ok1(h.bucket == 1);
 		/* Should have lock on bucket 0 */
-		ok1(h.hlock_start == 0);
-		ok1(h.hlock_range ==
-		    1ULL << (64-(NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS)));
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
 		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
 		ok1((ntdb->flags & NTDB_NOLOCK)
 		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
-		/* FIXME: Check lock length */
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
-		ok1(expand_group(ntdb, &h) == 0);
-		/* First one should be subhash, next should be empty. */
-		ok1(is_subhash(h.group[0]));
-		subhash = (h.group[0] & NTDB_OFF_MASK);
-		for (j = 1; j < (1 << NTDB_HASH_GROUP_BITS); j++)
-			ok1(h.group[j] == 0);
-		ok1(ntdb_write_convert(ntdb, h.group_start,
-				      h.group, sizeof(h.group)) == 0);
-		ok1(ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range,
-				      F_WRLCK) == 0);
-
-		/* Should be happy with expansion. */
-		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
-
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
+		/* Now should find empty space. */
+		v = 0;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in group 0, bucket 0. */
-		ok1(h.group_start == subhash + sizeof(struct ntdb_used_record));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 0);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS
-		    + NTDB_SUBLEVEL_HASH_BITS * 2);
+		/* Should have located space in chain, bucket 0. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 2);
+		ok1(h.bucket == 0);
+		ok1(h.old_val == 0);
 
-		/* We should be able to add it now. */
-		/* Allocate a new record. */
-		new_off = alloc(ntdb, key.dsize, dbuf.dsize, h.h,
+		/* Adding another record should work. */
+		v = 2;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		/* Should have created correct hash. */
+		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
+		/* Should have located space in chain, bucket 0. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 2);
+		ok1(h.bucket == 0);
+		ok1(h.old_val == 0);
+
+		/* Should have lock on bucket 0 */
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
+		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
+		ok1((ntdb->flags & NTDB_NOLOCK)
+		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
+
+		new_off = alloc(ntdb, key.dsize, dbuf.dsize,
 				NTDB_USED_MAGIC, false);
-		ok1(!NTDB_OFF_IS_ERR(new_off));
+		ok1(!NTDB_OFF_IS_ERR(new_off2));
 		ok1(add_to_hash(ntdb, &h, new_off) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
-		/* Make sure we fill it in for later finding. */
 		off = new_off + sizeof(struct ntdb_used_record);
 		ok1(!ntdb->io->twrite(ntdb, off, key.dptr, key.dsize));
 		off += key.dsize;
 		ok1(!ntdb->io->twrite(ntdb, off, dbuf.dptr, dbuf.dsize));
 
-		/* We should be able to unlock that OK. */
-		ok1(ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range,
-				      F_WRLCK) == 0);
-
-		/* Database should be consistent. */
-		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
-
-		/* Should be able to find it. */
-		v = 0;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL)
-		    == new_off);
+		/* Adding another record should cause expansion. */
+		v = 3;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
-		/* Should have located space in expanded group 0, bucket 0. */
-		ok1(h.group_start == subhash + sizeof(struct ntdb_used_record));
-		ok1(h.home_bucket == 0);
-		ok1(h.found_bucket == 0);
-		ok1(h.hash_used == NTDB_TOPLEVEL_HASH_BITS
-		    + NTDB_SUBLEVEL_HASH_BITS * 2);
+		/* Should not have located space in chain. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 2);
+		ok1(h.bucket == 2);
+		ok1(h.old_val != 0);
+
+		/* Should have lock on bucket 0 */
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
+		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
+		ok1((ntdb->flags & NTDB_NOLOCK)
+		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
+
+		new_off = alloc(ntdb, key.dsize, dbuf.dsize,
+				NTDB_USED_MAGIC, false);
+		ok1(!NTDB_OFF_IS_ERR(new_off2));
+		off = new_off + sizeof(struct ntdb_used_record);
+		ok1(!ntdb->io->twrite(ntdb, off, key.dptr, key.dsize));
+		off += key.dsize;
+		ok1(!ntdb->io->twrite(ntdb, off, dbuf.dptr, dbuf.dsize));
+		ok1(add_to_hash(ntdb, &h, new_off) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
+
+		/* Retrieve it and check. */
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		/* Should have created correct hash. */
+		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
+		/* Should have appended to chain, bucket 2. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 3);
+		ok1(h.bucket == 2);
+
+		/* Should have lock on bucket 0 */
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
+		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
+		ok1((ntdb->flags & NTDB_NOLOCK)
+		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
+
+		/* YA record: relocation. */
+		v = 4;
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		/* Should have created correct hash. */
+		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
+		/* Should not have located space in chain. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 3);
+		ok1(h.bucket == 3);
+		ok1(h.old_val != 0);
+
+		/* Should have lock on bucket 0 */
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
+		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
+		ok1((ntdb->flags & NTDB_NOLOCK)
+		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
+
+		new_off = alloc(ntdb, key.dsize, dbuf.dsize,
+				NTDB_USED_MAGIC, false);
+		ok1(!NTDB_OFF_IS_ERR(new_off2));
+		off = new_off + sizeof(struct ntdb_used_record);
+		ok1(!ntdb->io->twrite(ntdb, off, key.dptr, key.dsize));
+		off += key.dsize;
+		ok1(!ntdb->io->twrite(ntdb, off, dbuf.dptr, dbuf.dsize));
+		ok1(add_to_hash(ntdb, &h, new_off) == 0);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
+
+		/* Retrieve it and check. */
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		/* Should have created correct hash. */
+		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
+		/* Should have appended to chain, bucket 2. */
+		ok1(h.table > NTDB_HASH_OFFSET);
+		ok1(h.table_size == 4);
+		ok1(h.bucket == 3);
+
+		/* Should have lock on bucket 0 */
+		ok1((h.h & ((1 << ntdb->hash_bits)-1)) == 0);
+		ok1((ntdb->flags & NTDB_NOLOCK) || ntdb->file->num_lockrecs == 1);
+		ok1((ntdb->flags & NTDB_NOLOCK)
+		    || ntdb->file->lockrecs[0].off == NTDB_HASH_LOCK_START);
+		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		ntdb_close(ntdb);
 	}

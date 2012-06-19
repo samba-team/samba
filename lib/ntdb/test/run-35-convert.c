@@ -24,6 +24,10 @@ int main(int argc, char *argv[])
 			failtest_exit(exit_status());
 
 		ntdb_close(ntdb);
+		/* We can fail in log message formatting or open.  That's OK */
+		if (failtest_has_failed()) {
+			failtest_exit(exit_status());
+		}
 		/* If we say NTDB_CONVERT, it must be converted */
 		ntdb = ntdb_open("run-35-convert.ntdb",
 			       flags[i]|NTDB_CONVERT,

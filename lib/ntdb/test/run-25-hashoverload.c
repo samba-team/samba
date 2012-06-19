@@ -2,7 +2,9 @@
 #include "tap-interface.h"
 #include "logging.h"
 
-static uint64_t badhash(const void *key, size_t len, uint64_t seed, void *priv)
+#define OVERLOAD 100
+
+static uint32_t badhash(const void *key, size_t len, uint32_t seed, void *priv)
 {
 	return 0;
 }
@@ -29,7 +31,7 @@ int main(int argc, char *argv[])
 
 	hattr.base.next = &tap_log_attr;
 
-	plan_tests(6883);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * (7 * OVERLOAD + 11) + 1);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		NTDB_DATA d = { NULL, 0 }; /* Bogus GCC warning */
 
@@ -39,70 +41,47 @@ int main(int argc, char *argv[])
 		if (!ntdb)
 			continue;
 
-		/* Fill a group. */
-		for (j = 0; j < (1 << NTDB_HASH_GROUP_BITS); j++) {
+		/* Overload a bucket. */
+		for (j = 0; j < OVERLOAD; j++) {
 			ok1(ntdb_store(ntdb, key, dbuf, NTDB_INSERT) == 0);
 		}
-		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
-
-		/* Now store one last value: should form chain. */
-		ok1(ntdb_store(ntdb, key, dbuf, NTDB_INSERT) == 0);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		/* Check we can find them all. */
-		for (j = 0; j < (1 << NTDB_HASH_GROUP_BITS) + 1; j++) {
+		for (j = 0; j < OVERLOAD; j++) {
 			ok1(ntdb_fetch(ntdb, key, &d) == NTDB_SUCCESS);
 			ok1(d.dsize == sizeof(j));
 			ok1(d.dptr != NULL);
 			ok1(d.dptr && memcmp(d.dptr, &j, d.dsize) == 0);
 			free(d.dptr);
 		}
-
-		/* Now add a *lot* more. */
-		for (j = (1 << NTDB_HASH_GROUP_BITS) + 1;
-		     j < (16 << NTDB_HASH_GROUP_BITS);
-		     j++) {
-			ok1(ntdb_store(ntdb, key, dbuf, NTDB_INSERT) == 0);
-			ok1(ntdb_fetch(ntdb, key, &d) == NTDB_SUCCESS);
-			ok1(d.dsize == sizeof(j));
-			ok1(d.dptr != NULL);
-			ok1(d.dptr && memcmp(d.dptr, &j, d.dsize) == 0);
-			free(d.dptr);
-		}
-		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		/* Traverse through them. */
-		ok1(ntdb_traverse(ntdb, trav, NULL) == j);
+		ok1(ntdb_traverse(ntdb, trav, NULL) == OVERLOAD);
 
-		/* Empty the first chain-worth. */
-		for (j = 0; j < (1 << NTDB_HASH_GROUP_BITS); j++)
+		/* Delete the first 99. */
+		for (j = 0; j < OVERLOAD-1; j++)
 			ok1(ntdb_delete(ntdb, key) == 0);
 
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
-		for (j = (1 << NTDB_HASH_GROUP_BITS);
-		     j < (16 << NTDB_HASH_GROUP_BITS);
-		     j++) {
-			ok1(ntdb_fetch(ntdb, key, &d) == NTDB_SUCCESS);
-			ok1(d.dsize == sizeof(j));
-			ok1(d.dptr != NULL);
-			ok1(d.dptr && memcmp(d.dptr, &j, d.dsize) == 0);
-			free(d.dptr);
-		}
+		ok1(ntdb_fetch(ntdb, key, &d) == NTDB_SUCCESS);
+		ok1(d.dsize == sizeof(j));
+		ok1(d.dptr != NULL);
+		ok1(d.dptr && memcmp(d.dptr, &j, d.dsize) == 0);
+		free(d.dptr);
 
 		/* Traverse through them. */
-		ok1(ntdb_traverse(ntdb, trav, NULL)
-		    == (15 << NTDB_HASH_GROUP_BITS));
+		ok1(ntdb_traverse(ntdb, trav, NULL) == 1);
 
 		/* Re-add */
-		for (j = 0; j < (1 << NTDB_HASH_GROUP_BITS); j++) {
+		for (j = 0; j < OVERLOAD-1; j++) {
 			ok1(ntdb_store(ntdb, key, dbuf, NTDB_INSERT) == 0);
 		}
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		/* Now try deleting as we go. */
-		ok1(ntdb_traverse(ntdb, trav, trav)
-		    == (16 << NTDB_HASH_GROUP_BITS));
+		ok1(ntdb_traverse(ntdb, trav, trav) == OVERLOAD);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 		ok1(ntdb_traverse(ntdb, trav, NULL) == 0);
 		ntdb_close(ntdb);

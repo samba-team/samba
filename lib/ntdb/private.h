@@ -48,6 +48,7 @@
 #include <utime.h>
 #include <unistd.h>
 #endif
+#include <assert.h>
 
 #ifndef TEST_IT
 #define TEST_IT(cond)
@@ -114,30 +115,17 @@ typedef int ntdb_bool_err;
 /* Hash chain locks. */
 #define NTDB_HASH_LOCK_START 64
 
-/* Range for hash locks. */
-#define NTDB_HASH_LOCK_RANGE_BITS 30
-#define NTDB_HASH_LOCK_RANGE (1 << NTDB_HASH_LOCK_RANGE_BITS)
-
-/* We have 1024 entries in the top level. */
-#define NTDB_TOPLEVEL_HASH_BITS 10
-/* And 64 entries in each sub-level: thus 64 bits exactly after 9 levels. */
-#define NTDB_SUBLEVEL_HASH_BITS 6
-/* And 8 entries in each group, ie 8 groups per sublevel. */
-#define NTDB_HASH_GROUP_BITS 3
-/* This is currently 10: beyond this we chain. */
-#define NTDB_MAX_LEVELS (1+(64-NTDB_TOPLEVEL_HASH_BITS) / NTDB_SUBLEVEL_HASH_BITS)
-
 /* Extend file by least 100 times larger than needed. */
 #define NTDB_EXTENSION_FACTOR 100
 
-/* We steal bits from the offsets to store hash info. */
-#define NTDB_OFF_HASH_GROUP_MASK ((1ULL << NTDB_HASH_GROUP_BITS) - 1)
 /* We steal this many upper bits, giving a maximum offset of 64 exabytes. */
 #define NTDB_OFF_UPPER_STEAL 8
-#define   NTDB_OFF_UPPER_STEAL_EXTRA 7
-/* The bit number where we store extra hash bits. */
-#define NTDB_OFF_HASH_EXTRA_BIT 57
-#define NTDB_OFF_UPPER_STEAL_SUBHASH_BIT 56
+
+/* And we use the lower bit, too. */
+#define NTDB_OFF_CHAIN_BIT	0
+
+/* Hash table sits just after the header. */
+#define NTDB_HASH_OFFSET (sizeof(struct ntdb_header))
 
 /* Additional features we understand.  Currently: none. */
 #define NTDB_FEATURE_MASK ((uint64_t)0)
@@ -145,7 +133,7 @@ typedef int ntdb_bool_err;
 /* The bit number where we store the extra hash bits. */
 /* Convenience mask to get actual offset. */
 #define NTDB_OFF_MASK							\
-	(((1ULL << (64 - NTDB_OFF_UPPER_STEAL)) - 1) - NTDB_OFF_HASH_GROUP_MASK)
+	(((1ULL << (64 - NTDB_OFF_UPPER_STEAL)) - 1) - (1<<NTDB_OFF_CHAIN_BIT))
 
 /* How many buckets in a free list: see size_to_bucket(). */
 #define NTDB_FREE_BUCKETS (64 - NTDB_OFF_UPPER_STEAL)
@@ -157,12 +145,14 @@ typedef int ntdb_bool_err;
 /* Indicates this entry is not on an flist (can happen during coalescing) */
 #define NTDB_FTABLE_NONE ((1ULL << NTDB_OFF_UPPER_STEAL) - 1)
 
+/* By default, hash is 64k bytes */
+#define NTDB_DEFAULT_HBITS 13
+
 struct ntdb_used_record {
 	/* For on-disk compatibility, we avoid bitfields:
 	   magic: 16,        (highest)
 	   key_len_bits: 5,
 	   extra_padding: 32
-	   hash_bits: 11
 	*/
         uint64_t magic_and_meta;
 	/* The bottom key_len_bits*2 are key length, rest is data length. */
@@ -187,11 +177,6 @@ static inline uint64_t rec_data_length(const struct ntdb_used_record *r)
 static inline uint64_t rec_extra_padding(const struct ntdb_used_record *r)
 {
 	return (r->magic_and_meta >> 11) & 0xFFFFFFFF;
-}
-
-static inline uint32_t rec_hash(const struct ntdb_used_record *r)
-{
-	return r->magic_and_meta & ((1 << 11) - 1);
 }
 
 static inline uint16_t rec_magic(const struct ntdb_used_record *r)
@@ -236,17 +221,12 @@ struct ntdb_recovery_record {
 	uint64_t eof;
 };
 
-/* If we bottom out of the subhashes, we chain. */
-struct ntdb_chain {
-	ntdb_off_t rec[1 << NTDB_HASH_GROUP_BITS];
-	ntdb_off_t next;
-};
-
 /* this is stored at the front of every database */
 struct ntdb_header {
 	char magic_food[64]; /* for /etc/magic */
 	/* FIXME: Make me 32 bit? */
 	uint64_t version; /* version of the code */
+	uint64_t hash_bits; /* bits for toplevel hash table. */
 	uint64_t hash_test; /* result of hashing HASH_MAGIC. */
 	uint64_t hash_seed; /* "random" seed written at creation time. */
 	ntdb_off_t free_table; /* (First) free table. */
@@ -260,8 +240,12 @@ struct ntdb_header {
 	ntdb_off_t capabilities; /* Optional linked list of capabilities. */
 	ntdb_off_t reserved[22];
 
-	/* Top level hash table. */
-	ntdb_off_t hashtable[1ULL << NTDB_TOPLEVEL_HASH_BITS];
+	/*
+	 * Hash table is next:
+	 *
+	 * struct ntdb_used_record htable_hdr;
+	 * ntdb_off_t htable[1 << hash_bits];
+	 */
 };
 
 struct ntdb_freetable {
@@ -280,33 +264,15 @@ struct ntdb_capability {
 /* Information about a particular (locked) hash entry. */
 struct hash_info {
 	/* Full hash value of entry. */
-	uint64_t h;
-	/* Start and length of lock acquired. */
-	ntdb_off_t hlock_start;
-	ntdb_len_t hlock_range;
-	/* Start of hash group. */
-	ntdb_off_t group_start;
-	/* Bucket we belong in. */
-	unsigned int home_bucket;
+	uint32_t h;
+	/* Start of hash table / chain. */
+	ntdb_off_t table;
+	/* Number of entries in this table/chain. */
+	ntdb_off_t table_size;
 	/* Bucket we (or an empty space) were found in. */
-	unsigned int found_bucket;
-	/* How many bits of the hash are already used. */
-	unsigned int hash_used;
-	/* Current working group. */
-	ntdb_off_t group[1 << NTDB_HASH_GROUP_BITS];
-};
-
-struct traverse_info {
-	struct traverse_level {
-		ntdb_off_t hashtable;
-		/* We ignore groups here, and treat it as a big array. */
-		unsigned entry;
-		unsigned int total_buckets;
-	} levels[NTDB_MAX_LEVELS + 1];
-	unsigned int num_levels;
-	unsigned int toplevel_group;
-	/* This makes delete-everything-inside-traverse work as expected. */
-	ntdb_off_t prev;
+	ntdb_off_t bucket;
+	/* Old value that was in that entry (if not found) */
+	ntdb_off_t old_val;
 };
 
 enum ntdb_lock_flags {
@@ -375,40 +341,46 @@ struct ntdb_methods {
 /*
   internal prototypes
 */
+/* Get bits from a value. */
+static inline uint32_t bits_from(uint64_t val, unsigned start, unsigned num)
+{
+	assert(num <= 32);
+	return (val >> start) & ((1U << num) - 1);
+}
+
+
 /* hash.c: */
-uint64_t ntdb_jenkins_hash(const void *key, size_t length, uint64_t seed,
+uint32_t ntdb_jenkins_hash(const void *key, size_t length, uint32_t seed,
 			   void *unused);
 
 enum NTDB_ERROR first_in_hash(struct ntdb_context *ntdb,
-			      struct traverse_info *tinfo,
+			      struct hash_info *h,
 			      NTDB_DATA *kbuf, size_t *dlen);
 
 enum NTDB_ERROR next_in_hash(struct ntdb_context *ntdb,
-			     struct traverse_info *tinfo,
+			     struct hash_info *h,
 			     NTDB_DATA *kbuf, size_t *dlen);
 
 /* Hash random memory. */
-uint64_t ntdb_hash(struct ntdb_context *ntdb, const void *ptr, size_t len);
-
-/* Hash on disk. */
-uint64_t hash_record(struct ntdb_context *ntdb, ntdb_off_t off);
+uint32_t ntdb_hash(struct ntdb_context *ntdb, const void *ptr, size_t len);
 
 /* Find and lock a hash entry (or where it would be). */
 ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 			 NTDB_DATA key,
 			 int ltype,
 			 struct hash_info *h,
-			 struct ntdb_used_record *rec,
-			 struct traverse_info *tinfo);
+			 struct ntdb_used_record *rec);
 
 enum NTDB_ERROR replace_in_hash(struct ntdb_context *ntdb,
-				struct hash_info *h,
+				const struct hash_info *h,
 				ntdb_off_t new_off);
 
-enum NTDB_ERROR add_to_hash(struct ntdb_context *ntdb, struct hash_info *h,
+enum NTDB_ERROR add_to_hash(struct ntdb_context *ntdb,
+			    const struct hash_info *h,
 			    ntdb_off_t new_off);
 
-enum NTDB_ERROR delete_from_hash(struct ntdb_context *ntdb, struct hash_info *h);
+enum NTDB_ERROR delete_from_hash(struct ntdb_context *ntdb,
+				 const struct hash_info *h);
 
 /* For ntdb_check */
 bool is_subhash(ntdb_off_t val);
@@ -424,7 +396,7 @@ ntdb_off_t next_ftable(struct ntdb_context *ntdb, ntdb_off_t ftable);
 
 /* This returns space or -ve error number. */
 ntdb_off_t alloc(struct ntdb_context *ntdb, size_t keylen, size_t datalen,
-		 uint64_t hash, unsigned magic, bool growing);
+		 unsigned magic, bool growing);
 
 /* Put this record in a free list. */
 enum NTDB_ERROR add_free_record(struct ntdb_context *ntdb,
@@ -436,7 +408,7 @@ enum NTDB_ERROR add_free_record(struct ntdb_context *ntdb,
 enum NTDB_ERROR set_header(struct ntdb_context *ntdb,
 			   struct ntdb_used_record *rec,
 			   unsigned magic, uint64_t keylen, uint64_t datalen,
-			   uint64_t actuallen, unsigned hashlow);
+			   uint64_t actuallen);
 
 /* Used by ntdb_check to verify. */
 unsigned int size_to_bucket(ntdb_len_t data_len);
@@ -504,13 +476,12 @@ enum NTDB_ERROR owner_conflict(struct ntdb_context *ntdb, const char *call);
 /* If we fork, we no longer really own locks. */
 bool check_lock_pid(struct ntdb_context *ntdb, const char *call, bool log);
 
-/* Lock/unlock a range of hashes. */
-enum NTDB_ERROR ntdb_lock_hashes(struct ntdb_context *ntdb,
-				 ntdb_off_t hash_lock, ntdb_len_t hash_range,
-				 int ltype, enum ntdb_lock_flags waitflag);
-enum NTDB_ERROR ntdb_unlock_hashes(struct ntdb_context *ntdb,
-				   ntdb_off_t hash_lock,
-				   ntdb_len_t hash_range, int ltype);
+/* Lock/unlock a hash bucket. */
+enum NTDB_ERROR ntdb_lock_hash(struct ntdb_context *ntdb,
+			       unsigned int hbucket,
+			       int ltype);
+enum NTDB_ERROR ntdb_unlock_hash(struct ntdb_context *ntdb,
+				 unsigned int hash, int ltype);
 
 /* For closing the file. */
 void ntdb_lock_cleanup(struct ntdb_context *ntdb);
@@ -588,9 +559,11 @@ struct ntdb_context {
 	struct ntdb_file *file;
 
 	/* Hash function. */
-	uint64_t (*hash_fn)(const void *key, size_t len, uint64_t seed, void *);
+	uint32_t (*hash_fn)(const void *key, size_t len, uint32_t seed, void *);
 	void *hash_data;
-	uint64_t hash_seed;
+	uint32_t hash_seed;
+	/* Bits in toplevel hash table. */
+	unsigned int hash_bits;
 
 	/* Allocate and free functions. */
 	void *(*alloc_fn)(const void *owner, size_t len, void *priv_data);

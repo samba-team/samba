@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 	alloc_attr.alloc.free = test_free;
 	alloc_attr.alloc.priv_data = &owner_weird_count;
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * (1 + 500 * 3 + 4) + 1);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * (1 + 700 * 3 + 4) + 1);
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		curr_ntdb = NULL;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 		if (!ntdb)
 			continue;
 
-		for (j = 0; j < 500; j++) {
+		for (j = 0; j < 700; j++) {
 			NTDB_DATA d = { NULL, 0 }; /* Bogus GCC warning */
 			ok1(ntdb_store(ntdb, key, data, NTDB_REPLACE) == 0);
 			ok1(ntdb_fetch(ntdb, key, &d) == NTDB_SUCCESS);

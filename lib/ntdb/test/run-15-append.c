@@ -12,10 +12,10 @@ static ntdb_off_t ntdb_offset(struct ntdb_context *ntdb, NTDB_DATA key)
 	struct ntdb_used_record urec;
 	struct hash_info h;
 
-	off = find_and_lock(ntdb, key, F_RDLCK, &h, &urec, NULL);
+	off = find_and_lock(ntdb, key, F_RDLCK, &h, &urec);
 	if (NTDB_OFF_IS_ERR(off))
 		return 0;
-	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
+	ntdb_unlock_hash(ntdb, h.h, F_RDLCK);
 	return off;
 }
 

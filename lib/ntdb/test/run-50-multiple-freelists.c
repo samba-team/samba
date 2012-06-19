@@ -39,27 +39,27 @@ int main(int argc, char *argv[])
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 	off = get_free(ntdb, 0, 80 - sizeof(struct ntdb_used_record), 0,
-		       NTDB_USED_MAGIC, 0);
+		       NTDB_USED_MAGIC);
 	ok1(off == layout->elem[3].base.off);
 	ok1(ntdb->ftable_off == layout->elem[0].base.off);
 
 	off = get_free(ntdb, 0, 160 - sizeof(struct ntdb_used_record), 0,
-		       NTDB_USED_MAGIC, 0);
+		       NTDB_USED_MAGIC);
 	ok1(off == layout->elem[5].base.off);
 	ok1(ntdb->ftable_off == layout->elem[1].base.off);
 
 	off = get_free(ntdb, 0, 320 - sizeof(struct ntdb_used_record), 0,
-		       NTDB_USED_MAGIC, 0);
+		       NTDB_USED_MAGIC);
 	ok1(off == layout->elem[7].base.off);
 	ok1(ntdb->ftable_off == layout->elem[2].base.off);
 
 	off = get_free(ntdb, 0, 40 - sizeof(struct ntdb_used_record), 0,
-		       NTDB_USED_MAGIC, 0);
+		       NTDB_USED_MAGIC);
 	ok1(off == layout->elem[9].base.off);
 	ok1(ntdb->ftable_off == layout->elem[0].base.off);
 
 	/* Now we fail. */
-	off = get_free(ntdb, 0, 0, 1, NTDB_USED_MAGIC, 0);
+	off = get_free(ntdb, 0, 0, 1, NTDB_USED_MAGIC);
 	ok1(off == 0);
 
 	ntdb_close(ntdb);

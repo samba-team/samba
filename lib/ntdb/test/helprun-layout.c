@@ -94,13 +94,6 @@ static ntdb_len_t data_record_len(struct tle_used *used)
 	return len;
 }
 
-static ntdb_len_t hashtable_len(struct tle_hashtable *htable)
-{
-	return sizeof(struct ntdb_used_record)
-		+ (sizeof(ntdb_off_t) << NTDB_SUBLEVEL_HASH_BITS)
-		+ htable->extra;
-}
-
 static ntdb_len_t capability_len(struct tle_capability *cap)
 {
 	return sizeof(struct ntdb_capability) + cap->extra;
@@ -128,23 +121,11 @@ static void set_data_record(void *mem, struct ntdb_context *ntdb,
 	struct ntdb_used_record *u = mem;
 
 	set_header(ntdb, u, NTDB_USED_MAGIC, used->key.dsize, used->data.dsize,
-		   used->key.dsize + used->data.dsize + used->extra,
-		   ntdb_hash(ntdb, used->key.dptr, used->key.dsize));
+		   used->key.dsize + used->data.dsize + used->extra);
 	memcpy(u + 1, used->key.dptr, used->key.dsize);
 	memcpy((char *)(u + 1) + used->key.dsize,
 	       used->data.dptr, used->data.dsize);
 	add_zero_pad(u, used->key.dsize + used->data.dsize, used->extra);
-}
-
-static void set_hashtable(void *mem, struct ntdb_context *ntdb,
-			  struct tle_hashtable *htable)
-{
-	struct ntdb_used_record *u = mem;
-	ntdb_len_t len = sizeof(ntdb_off_t) << NTDB_SUBLEVEL_HASH_BITS;
-
-	set_header(ntdb, u, NTDB_HTABLE_MAGIC, 0, len, len + htable->extra, 0);
-	memset(u + 1, 0, len);
-	add_zero_pad(u, len, htable->extra);
 }
 
 static void set_capability(void *mem, struct ntdb_context *ntdb,
@@ -156,7 +137,7 @@ static void set_capability(void *mem, struct ntdb_context *ntdb,
 
 	c->type = cap->type;
 	c->next = 0;
-	set_header(ntdb, &c->hdr, NTDB_CAP_MAGIC, 0, len, len, 0);
+	set_header(ntdb, &c->hdr, NTDB_CAP_MAGIC, 0, len, len);
 
 	/* Append to capability list. */
 	if (!last_cap) {
@@ -175,7 +156,7 @@ static void set_freetable(void *mem, struct ntdb_context *ntdb,
 	memset(ftable, 0, sizeof(*ftable));
 	set_header(ntdb, &ftable->hdr, NTDB_FTABLE_MAGIC, 0,
 			sizeof(*ftable) - sizeof(ftable->hdr),
-			sizeof(*ftable) - sizeof(ftable->hdr), 0);
+			sizeof(*ftable) - sizeof(ftable->hdr));
 
 	if (last_ftable) {
 		ftable = (struct ntdb_freetable *)((char *)hdr + last_ftable);
@@ -197,12 +178,6 @@ static void add_to_freetable(struct ntdb_context *ntdb,
 			NTDB_LOCK_WAIT, false);
 }
 
-static ntdb_off_t hbucket_off(ntdb_off_t group_start, unsigned ingroup)
-{
-	return group_start
-		+ (ingroup % (1 << NTDB_HASH_GROUP_BITS)) * sizeof(ntdb_off_t);
-}
-
 /* Get bits from a value. */
 static uint32_t bits(uint64_t val, unsigned start, unsigned num)
 {
@@ -210,22 +185,24 @@ static uint32_t bits(uint64_t val, unsigned start, unsigned num)
 	return (val >> start) & ((1U << num) - 1);
 }
 
-/* We take bits from the top: that way we can lock whole sections of the hash
- * by using lock ranges. */
-static uint32_t use_bits(uint64_t h, unsigned num, unsigned *used)
+static ntdb_off_t encode_offset(const struct ntdb_context *ntdb,
+				ntdb_off_t new_off, uint32_t hash)
 {
-	*used += num;
-	return bits(h, 64 - *used, num);
+	ntdb_off_t extra;
+
+	assert((new_off & (1ULL << NTDB_OFF_CHAIN_BIT)) == 0);
+	assert((new_off >> (64 - NTDB_OFF_UPPER_STEAL)) == 0);
+	/* We pack extra hash bits into the upper bits of the offset. */
+	extra = bits(hash, ntdb->hash_bits, NTDB_OFF_UPPER_STEAL);
+	extra <<= (64 - NTDB_OFF_UPPER_STEAL);
+
+	return new_off | extra;
 }
 
-static ntdb_off_t encode_offset(ntdb_off_t new_off, unsigned bucket,
-			       uint64_t h)
+static ntdb_off_t hbucket_off(ntdb_len_t idx)
 {
-	return bucket
-		| new_off
-		| ((uint64_t)bits(h, 64 - NTDB_OFF_UPPER_STEAL_EXTRA,
-				  NTDB_OFF_UPPER_STEAL_EXTRA)
-		   << NTDB_OFF_HASH_EXTRA_BIT);
+	return sizeof(struct ntdb_header) + sizeof(struct ntdb_used_record)
+		+ idx * sizeof(ntdb_off_t);
 }
 
 /* FIXME: Our hash table handling here is primitive: we don't expand! */
@@ -233,28 +210,14 @@ static void add_to_hashtable(struct ntdb_context *ntdb,
 			     ntdb_off_t eoff,
 			     NTDB_DATA key)
 {
-	uint64_t h = ntdb_hash(ntdb, key.dptr, key.dsize);
-	ntdb_off_t b_off, group_start;
-	unsigned i, group, in_group;
-	unsigned used = 0;
+	ntdb_off_t b_off;
+	uint32_t h = ntdb_hash(ntdb, key.dptr, key.dsize);
 
-	group = use_bits(h, NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS, &used);
-	in_group = use_bits(h, NTDB_HASH_GROUP_BITS, &used);
+	b_off = hbucket_off(h & ((1 << ntdb->hash_bits)-1));
+	if (ntdb_read_off(ntdb, b_off) != 0)
+		abort();
 
-	group_start = offsetof(struct ntdb_header, hashtable)
-		+ group * (sizeof(ntdb_off_t) << NTDB_HASH_GROUP_BITS);
-
-	for (i = 0; i < (1 << NTDB_HASH_GROUP_BITS); i++) {
-		unsigned bucket = (in_group + i) % (1 << NTDB_HASH_GROUP_BITS);
-
-		b_off = hbucket_off(group_start, bucket);
-		if (ntdb_read_off(ntdb, b_off) == 0) {
-			ntdb_write_off(ntdb, b_off,
-				      encode_offset(eoff, in_group, h));
-			return;
-		}
-	}
-	abort();
+	ntdb_write_off(ntdb, b_off, encode_offset(ntdb, eoff, h));
 }
 
 static struct tle_freetable *find_ftable(struct ntdb_layout *layout, unsigned num)
@@ -277,11 +240,16 @@ struct ntdb_context *ntdb_layout_get(struct ntdb_layout *layout,
 				   union ntdb_attribute *attr)
 {
 	unsigned int i;
-	ntdb_off_t off, len, last_ftable, last_cap;
+	ntdb_off_t off, hdrlen, len, last_ftable, last_cap;
 	char *mem;
 	struct ntdb_context *ntdb;
 
-	off = sizeof(struct ntdb_header);
+	/* Now populate our header, cribbing from a real NTDB header. */
+	ntdb = ntdb_open("layout", NTDB_INTERNAL, O_RDWR, 0, attr);
+
+	off = sizeof(struct ntdb_header) + sizeof(struct ntdb_used_record)
+		+ (sizeof(ntdb_off_t) << ntdb->hash_bits);
+	hdrlen = off;
 
 	/* First pass of layout: calc lengths */
 	for (i = 0; i < layout->num_elems; i++) {
@@ -297,9 +265,6 @@ struct ntdb_context *ntdb_layout_get(struct ntdb_layout *layout,
 		case DATA:
 			len = data_record_len(&e->used);
 			break;
-		case HASHTABLE:
-			len = hashtable_len(&e->hashtable);
-			break;
 		case CAPABILITY:
 			len = capability_len(&e->capability);
 			break;
@@ -312,9 +277,7 @@ struct ntdb_context *ntdb_layout_get(struct ntdb_layout *layout,
 	mem = malloc(off);
 	/* Fill with some weird pattern. */
 	memset(mem, 0x99, off);
-	/* Now populate our header, cribbing from a real NTDB header. */
-	ntdb = ntdb_open("layout", NTDB_INTERNAL, O_RDWR, 0, attr);
-	memcpy(mem, ntdb->file->map_ptr, sizeof(struct ntdb_header));
+	memcpy(mem, ntdb->file->map_ptr, hdrlen);
 
 	/* Mug the ntdb we have to make it use this. */
 	freefn(ntdb->file->map_ptr);
@@ -336,9 +299,6 @@ struct ntdb_context *ntdb_layout_get(struct ntdb_layout *layout,
 			break;
 		case DATA:
 			set_data_record(mem + e->base.off, ntdb, &e->used);
-			break;
-		case HASHTABLE:
-			set_hashtable(mem + e->base.off, ntdb, &e->hashtable);
 			break;
 		case CAPABILITY:
 			set_capability(mem + e->base.off, ntdb, &e->capability,

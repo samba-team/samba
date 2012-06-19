@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 
 		val = ntdb->file->map_size;
 		/* Need some hash lock for expand. */
-		ok1(ntdb_lock_hashes(ntdb, 0, 1, F_WRLCK, NTDB_LOCK_WAIT) == 0);
+		ok1(ntdb_lock_hash(ntdb, 0, F_WRLCK) == 0);
 		failtest_suppress = false;
 		if (!ok1(ntdb_expand(ntdb, 1) == 0)) {
 			failtest_suppress = true;
@@ -39,11 +39,11 @@ int main(int argc, char *argv[])
 		failtest_suppress = true;
 
 		ok1(ntdb->file->map_size >= val + 1 * NTDB_EXTENSION_FACTOR);
-		ok1(ntdb_unlock_hashes(ntdb, 0, 1, F_WRLCK) == 0);
+		ok1(ntdb_unlock_hash(ntdb, 0, F_WRLCK) == 0);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		val = ntdb->file->map_size;
-		ok1(ntdb_lock_hashes(ntdb, 0, 1, F_WRLCK, NTDB_LOCK_WAIT) == 0);
+		ok1(ntdb_lock_hash(ntdb, 0, F_WRLCK) == 0);
 		failtest_suppress = false;
 		if (!ok1(ntdb_expand(ntdb, 1024) == 0)) {
 			failtest_suppress = true;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		failtest_suppress = true;
-		ok1(ntdb_unlock_hashes(ntdb, 0, 1, F_WRLCK) == 0);
+		ok1(ntdb_unlock_hash(ntdb, 0, F_WRLCK) == 0);
 		ok1(ntdb->file->map_size >= val + 1024 * NTDB_EXTENSION_FACTOR);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 		ntdb_close(ntdb);

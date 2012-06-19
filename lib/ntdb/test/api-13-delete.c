@@ -8,14 +8,13 @@
 #include "logging.h"
 
 /* We rig the hash so adjacent-numbered records always clash. */
-static uint64_t clash(const void *key, size_t len, uint64_t seed, void *priv)
+static uint32_t clash(const void *key, size_t len, uint32_t seed, void *priv)
 {
-	return ((uint64_t)*(const unsigned int *)key)
-		<< (64 - NTDB_TOPLEVEL_HASH_BITS - 1);
+	return *((const unsigned int *)key) / 2;
 }
 
 /* We use the same seed which we saw a failure on. */
-static uint64_t fixedhash(const void *key, size_t len, uint64_t seed, void *p)
+static uint32_t fixedhash(const void *key, size_t len, uint32_t seed, void *p)
 {
 	return hash64_stable((const unsigned char *)key, len,
 			     *(uint64_t *)p);

@@ -16,7 +16,6 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "private.h"
-#include <assert.h>
 #include <ccan/tally/tally.h>
 
 #define SUMMARY_FORMAT \
@@ -30,9 +29,8 @@
 	"Number of uncoalesced records: %zu\n" \
 	"Smallest/average/largest uncoalesced runs: %zu/%zu/%zu\n%s" \
 	"Toplevel hash used: %u of %u\n" \
-	"Number of chains: %zu\n" \
-	"Number of subhashes: %zu\n" \
-	"Smallest/average/largest subhash entries: %zu/%zu/%zu\n%s" \
+	"Number of hashes: %zu\n" \
+	"Smallest/average/largest hash chains: %zu/%zu/%zu\n%s" \
 	"Percentage keys/data/padding/free/rechdrs/freehdrs/hashes: %.0f/%.0f/%.0f/%.0f/%.0f/%.0f/%.0f\n"
 
 #define BUCKET_SUMMARY_FORMAT_A					\
@@ -48,17 +46,17 @@
 #define HISTO_HEIGHT 20
 
 static ntdb_off_t count_hash(struct ntdb_context *ntdb,
-			    ntdb_off_t hash_off, unsigned bits)
+			     ntdb_off_t hash_off,
+			     ntdb_off_t num)
 {
 	const ntdb_off_t *h;
-	ntdb_off_t count = 0;
-	unsigned int i;
+	ntdb_off_t i, count = 0;
 
-	h = ntdb_access_read(ntdb, hash_off, sizeof(*h) << bits, true);
+	h = ntdb_access_read(ntdb, hash_off, sizeof(*h) * num, true);
 	if (NTDB_PTR_IS_ERR(h)) {
 		return NTDB_ERR_TO_OFF(NTDB_PTR_ERR(h));
 	}
-	for (i = 0; i < (1 << bits); i++)
+	for (i = 0; i < num; i++)
 		count += (h[i] != 0);
 
 	ntdb_access_release(ntdb, h);
@@ -66,14 +64,13 @@ static ntdb_off_t count_hash(struct ntdb_context *ntdb,
 }
 
 static enum NTDB_ERROR summarize(struct ntdb_context *ntdb,
-				struct tally *hashes,
 				struct tally *ftables,
 				struct tally *fr,
 				struct tally *keys,
 				struct tally *data,
 				struct tally *extra,
 				struct tally *uncoal,
-				struct tally *chains,
+				struct tally *hashes,
 				size_t *num_caps)
 {
 	ntdb_off_t off;
@@ -119,8 +116,8 @@ static enum NTDB_ERROR summarize(struct ntdb_context *ntdb,
 			tally_add(extra, rec_extra_padding(&p->u));
 		} else if (rec_magic(&p->u) == NTDB_HTABLE_MAGIC) {
 			ntdb_off_t count = count_hash(ntdb,
-						     off + sizeof(p->u),
-						     NTDB_SUBLEVEL_HASH_BITS);
+						      off + sizeof(p->u),
+						      1 << ntdb->hash_bits);
 			if (NTDB_OFF_IS_ERR(count)) {
 				return NTDB_OFF_TO_ERR(count);
 			}
@@ -139,7 +136,8 @@ static enum NTDB_ERROR summarize(struct ntdb_context *ntdb,
 			len = sizeof(p->u)
 				+ rec_data_length(&p->u)
 				+ rec_extra_padding(&p->u);
-			tally_add(chains, 1);
+			tally_add(hashes,
+				  rec_data_length(&p->u)/sizeof(ntdb_off_t));
 			tally_add(extra, rec_extra_padding(&p->u));
 		} else if (rec_magic(&p->u) == NTDB_CAP_MAGIC) {
 			len = sizeof(p->u)
@@ -200,12 +198,11 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 {
 	ntdb_len_t len;
 	size_t num_caps = 0;
-	struct tally *ftables, *hashes, *freet, *keys, *data, *extra, *uncoal,
-		*chains;
-	char *hashesg, *freeg, *keysg, *datag, *extrag, *uncoalg;
+	struct tally *ftables, *freet, *keys, *data, *extra, *uncoal, *hashes;
+	char *freeg, *keysg, *datag, *extrag, *uncoalg, *hashesg;
 	enum NTDB_ERROR ecode;
 
-	hashesg = freeg = keysg = datag = extrag = uncoalg = NULL;
+	freeg = keysg = datag = extrag = uncoalg = hashesg = NULL;
 
 	ecode = ntdb_allrecord_lock(ntdb, F_RDLCK, NTDB_LOCK_WAIT, false);
 	if (ecode != NTDB_SUCCESS) {
@@ -220,44 +217,43 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 
 	/* Start stats off empty. */
 	ftables = tally_new(HISTO_HEIGHT);
-	hashes = tally_new(HISTO_HEIGHT);
 	freet = tally_new(HISTO_HEIGHT);
 	keys = tally_new(HISTO_HEIGHT);
 	data = tally_new(HISTO_HEIGHT);
 	extra = tally_new(HISTO_HEIGHT);
 	uncoal = tally_new(HISTO_HEIGHT);
-	chains = tally_new(HISTO_HEIGHT);
-	if (!ftables || !hashes || !freet || !keys || !data || !extra
-	    || !uncoal || !chains) {
+	hashes = tally_new(HISTO_HEIGHT);
+	if (!ftables || !freet || !keys || !data || !extra
+	    || !uncoal || !hashes) {
 		ecode = ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				   "ntdb_summary: failed to allocate"
 				   " tally structures");
 		goto unlock;
 	}
 
-	ecode = summarize(ntdb, hashes, ftables, freet, keys, data, extra,
-			  uncoal, chains, &num_caps);
+	ecode = summarize(ntdb, ftables, freet, keys, data, extra,
+			  uncoal, hashes, &num_caps);
 	if (ecode != NTDB_SUCCESS) {
 		goto unlock;
 	}
 
 	if (flags & NTDB_SUMMARY_HISTOGRAMS) {
-		hashesg = tally_histogram(hashes, HISTO_WIDTH, HISTO_HEIGHT);
 		freeg = tally_histogram(freet, HISTO_WIDTH, HISTO_HEIGHT);
 		keysg = tally_histogram(keys, HISTO_WIDTH, HISTO_HEIGHT);
 		datag = tally_histogram(data, HISTO_WIDTH, HISTO_HEIGHT);
 		extrag = tally_histogram(extra, HISTO_WIDTH, HISTO_HEIGHT);
 		uncoalg = tally_histogram(uncoal, HISTO_WIDTH, HISTO_HEIGHT);
+		hashesg = tally_histogram(hashes, HISTO_WIDTH, HISTO_HEIGHT);
 	}
 
 	/* 20 is max length of a %llu. */
 	len = strlen(SUMMARY_FORMAT) + 33*20 + 1
-		+ (hashesg ? strlen(hashesg) : 0)
 		+ (freeg ? strlen(freeg) : 0)
 		+ (keysg ? strlen(keysg) : 0)
 		+ (datag ? strlen(datag) : 0)
 		+ (extrag ? strlen(extrag) : 0)
 		+ (uncoalg ? strlen(uncoalg) : 0)
+		+ (hashesg ? strlen(hashesg) : 0)
 		+ num_caps * (strlen(CAPABILITY_FORMAT) + 20
 			      + strlen(" (uncheckable,read-only)"));
 
@@ -284,11 +280,9 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 		tally_total(uncoal, NULL),
 		tally_min(uncoal), tally_mean(uncoal), tally_max(uncoal),
 		uncoalg ? uncoalg : "",
-		(unsigned)count_hash(ntdb, offsetof(struct ntdb_header,
-						   hashtable),
-				     NTDB_TOPLEVEL_HASH_BITS),
-		1 << NTDB_TOPLEVEL_HASH_BITS,
-		tally_num(chains),
+		(unsigned)count_hash(ntdb, sizeof(struct ntdb_header),
+				     1 << ntdb->hash_bits),
+		1 << ntdb->hash_bits,
 		tally_num(hashes),
 		tally_min(hashes), tally_mean(hashes), tally_max(hashes),
 		hashesg ? hashesg : "",
@@ -300,29 +294,26 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 		* sizeof(struct ntdb_used_record) * 100.0 / ntdb->file->map_size,
 		tally_num(ftables) * sizeof(struct ntdb_freetable)
 		* 100.0 / ntdb->file->map_size,
-		(tally_num(hashes)
-		 * (sizeof(ntdb_off_t) << NTDB_SUBLEVEL_HASH_BITS)
-		 + (sizeof(ntdb_off_t) << NTDB_TOPLEVEL_HASH_BITS)
-		 + sizeof(struct ntdb_chain) * tally_num(chains))
+		(tally_total(hashes, NULL) * sizeof(ntdb_off_t)
+		 + (sizeof(ntdb_off_t) << ntdb->hash_bits))
 		* 100.0 / ntdb->file->map_size);
 
 	add_capabilities(ntdb, *summary);
 
 unlock:
-	ntdb->free_fn(hashesg, ntdb->alloc_data);
 	ntdb->free_fn(freeg, ntdb->alloc_data);
 	ntdb->free_fn(keysg, ntdb->alloc_data);
 	ntdb->free_fn(datag, ntdb->alloc_data);
 	ntdb->free_fn(extrag, ntdb->alloc_data);
 	ntdb->free_fn(uncoalg, ntdb->alloc_data);
-	ntdb->free_fn(hashes, ntdb->alloc_data);
+	ntdb->free_fn(hashesg, ntdb->alloc_data);
 	ntdb->free_fn(freet, ntdb->alloc_data);
 	ntdb->free_fn(keys, ntdb->alloc_data);
 	ntdb->free_fn(data, ntdb->alloc_data);
 	ntdb->free_fn(extra, ntdb->alloc_data);
 	ntdb->free_fn(uncoal, ntdb->alloc_data);
 	ntdb->free_fn(ftables, ntdb->alloc_data);
-	ntdb->free_fn(chains, ntdb->alloc_data);
+	ntdb->free_fn(hashes, ntdb->alloc_data);
 
 	ntdb_allrecord_unlock(ntdb, F_RDLCK);
 	ntdb_unlock_expand(ntdb, F_RDLCK);

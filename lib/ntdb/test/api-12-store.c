@@ -9,7 +9,7 @@
 #include "logging.h"
 
 /* We use the same seed which we saw a failure on. */
-static uint64_t fixedhash(const void *key, size_t len, uint64_t seed, void *p)
+static uint32_t fixedhash(const void *key, size_t len, uint32_t seed, void *p)
 {
 	return hash64_stable((const unsigned char *)key, len,
 			     *(uint64_t *)p);

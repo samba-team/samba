@@ -39,7 +39,8 @@ int main(int argc, char *argv[])
 
 		/* Add a fake record to chew up the existing free space. */
 		k = ntdb_mkdata("fake", 4);
-		d.dsize = ntdb->file->map_size - sizeof(struct new_database)- 8;
+		d.dsize = ntdb->file->map_size
+			- NEW_DATABASE_HDR_SIZE(ntdb->hash_bits) - 8;
 		d.dptr = malloc(d.dsize);
 		memset(d.dptr, 0, d.dsize);
 		ok1(ntdb_store(ntdb, k, d, NTDB_INSERT) == 0);
@@ -66,9 +67,9 @@ int main(int argc, char *argv[])
 		ok1(ntdb_check(ntdb, NULL, NULL) == NTDB_SUCCESS);
 
 		/* Make sure it put it at end as we expected. */
-		off = find_and_lock(ntdb, k, F_RDLCK, &h, &rec, NULL);
+		off = find_and_lock(ntdb, k, F_RDLCK, &h, &rec);
 		ok1(off >= ALMOST_4G);
-		ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
+		ntdb_unlock_hash(ntdb, h.h, F_RDLCK);
 
 		ok1(ntdb_fetch(ntdb, k, &d) == 0);
 		ok1(d.dsize == 5);

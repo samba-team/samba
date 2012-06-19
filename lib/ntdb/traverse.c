@@ -24,14 +24,14 @@ _PUBLIC_ int64_t ntdb_traverse_(struct ntdb_context *ntdb,
 		      void *p)
 {
 	enum NTDB_ERROR ecode;
-	struct traverse_info tinfo;
+	struct hash_info h;
 	NTDB_DATA k, d;
 	int64_t count = 0;
 
 	k.dptr = NULL;
-	for (ecode = first_in_hash(ntdb, &tinfo, &k, &d.dsize);
+	for (ecode = first_in_hash(ntdb, &h, &k, &d.dsize);
 	     ecode == NTDB_SUCCESS;
-	     ecode = next_in_hash(ntdb, &tinfo, &k, &d.dsize)) {
+	     ecode = next_in_hash(ntdb, &h, &k, &d.dsize)) {
 		d.dptr = k.dptr + k.dsize;
 
 		count++;
@@ -50,26 +50,29 @@ _PUBLIC_ int64_t ntdb_traverse_(struct ntdb_context *ntdb,
 
 _PUBLIC_ enum NTDB_ERROR ntdb_firstkey(struct ntdb_context *ntdb, NTDB_DATA *key)
 {
-	struct traverse_info tinfo;
+	struct hash_info h;
 
-	return first_in_hash(ntdb, &tinfo, key, NULL);
+	return first_in_hash(ntdb, &h, key, NULL);
 }
 
-/* We lock twice, not very efficient.  We could keep last key & tinfo cached. */
+/* We lock twice, not very efficient.  We could keep last key & h cached. */
 _PUBLIC_ enum NTDB_ERROR ntdb_nextkey(struct ntdb_context *ntdb, NTDB_DATA *key)
 {
-	struct traverse_info tinfo;
 	struct hash_info h;
 	struct ntdb_used_record rec;
+	ntdb_off_t off;
 
-	tinfo.prev = find_and_lock(ntdb, *key, F_RDLCK, &h, &rec, &tinfo);
+	off = find_and_lock(ntdb, *key, F_RDLCK, &h, &rec);
 	ntdb->free_fn(key->dptr, ntdb->alloc_data);
-	if (NTDB_OFF_IS_ERR(tinfo.prev)) {
-		return NTDB_OFF_TO_ERR(tinfo.prev);
+	if (NTDB_OFF_IS_ERR(off)) {
+		return NTDB_OFF_TO_ERR(off);
 	}
-	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_RDLCK);
+	ntdb_unlock_hash(ntdb, h.h, F_RDLCK);
 
-	return next_in_hash(ntdb, &tinfo, key, NULL);
+	/* If we found something, skip to next. */
+	if (off)
+		h.bucket++;
+	return next_in_hash(ntdb, &h, key, NULL);
 }
 
 static int wipe_one(struct ntdb_context *ntdb,

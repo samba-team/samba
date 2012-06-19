@@ -82,8 +82,6 @@ static void dump_and_clear_stats(struct ntdb_context **ntdb,
 	       (unsigned long long)stats.stats.alloc_coalesce_num_merged);
 	printf("compares = %llu\n",
 	       (unsigned long long)stats.stats.compares);
-	printf("  compare_wrong_bucket = %llu\n",
-	       (unsigned long long)stats.stats.compare_wrong_bucket);
 	printf("  compare_wrong_offsetbits = %llu\n",
 	       (unsigned long long)stats.stats.compare_wrong_offsetbits);
 	printf("  compare_wrong_keylen = %llu\n",

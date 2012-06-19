@@ -38,8 +38,10 @@ static bool append(struct ntdb_context *ntdb,
 	return true;
 }
 
-static enum NTDB_ERROR check_header(struct ntdb_context *ntdb, ntdb_off_t *recovery,
-				   uint64_t *features, size_t *num_capabilities)
+static enum NTDB_ERROR check_header(struct ntdb_context *ntdb,
+				    ntdb_off_t *recovery,
+				    uint64_t *features,
+				    size_t *num_capabilities)
 {
 	uint64_t hash_test;
 	struct ntdb_header hdr;
@@ -112,30 +114,118 @@ static enum NTDB_ERROR check_header(struct ntdb_context *ntdb, ntdb_off_t *recov
 	return NTDB_SUCCESS;
 }
 
-static enum NTDB_ERROR check_hash_tree(struct ntdb_context *ntdb,
-				      ntdb_off_t off, unsigned int group_bits,
-				      uint64_t hprefix,
-				      unsigned hprefix_bits,
-				      ntdb_off_t used[],
-				      size_t num_used,
-				      size_t *num_found,
-				      enum NTDB_ERROR (*check)(NTDB_DATA,
-							      NTDB_DATA, void *),
-				      void *data);
+static int off_cmp(const ntdb_off_t *a, const ntdb_off_t *b)
+{
+	/* Can overflow an int. */
+	return *a > *b ? 1
+		: *a < *b ? -1
+		: 0;
+}
+
+static enum NTDB_ERROR check_entry(struct ntdb_context *ntdb,
+				   ntdb_off_t off_and_hash,
+				   ntdb_len_t bucket,
+				   ntdb_off_t used[],
+				   size_t num_used,
+				   size_t *num_found,
+				   enum NTDB_ERROR (*check)(NTDB_DATA,
+							    NTDB_DATA,
+							    void *),
+				   void *data)
+{
+	enum NTDB_ERROR ecode;
+	const struct ntdb_used_record *r;
+	const unsigned char *kptr;
+	ntdb_len_t klen, dlen;
+	uint32_t hash;
+	ntdb_off_t off = off_and_hash & NTDB_OFF_MASK;
+	ntdb_off_t *p;
+
+	/* Empty bucket is fine. */
+	if (!off_and_hash) {
+		return NTDB_SUCCESS;
+	}
+
+	/* This can't point to a chain, we handled those at toplevel. */
+	if (off_and_hash & (1ULL << NTDB_OFF_CHAIN_BIT)) {
+		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
+				   "ntdb_check: Invalid chain bit in offset "
+				   " %llu", (long long)off_and_hash);
+	}
+
+	p = asearch(&off, used, num_used, off_cmp);
+	if (!p) {
+		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
+				   "ntdb_check: Invalid offset"
+				   " %llu in hash", (long long)off);
+	}
+	/* Mark it invalid. */
+	*p ^= 1;
+	(*num_found)++;
+
+	r = ntdb_access_read(ntdb, off, sizeof(*r), true);
+	if (NTDB_PTR_IS_ERR(r)) {
+		return NTDB_PTR_ERR(r);
+	}
+	klen = rec_key_length(r);
+	dlen = rec_data_length(r);
+	ntdb_access_release(ntdb, r);
+
+	kptr = ntdb_access_read(ntdb, off + sizeof(*r), klen + dlen, false);
+	if (NTDB_PTR_IS_ERR(kptr)) {
+		return NTDB_PTR_ERR(kptr);
+	}
+
+	hash = ntdb_hash(ntdb, kptr, klen);
+
+	/* Are we in the right chain? */
+	if (bits_from(hash, 0, ntdb->hash_bits) != bucket) {
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
+				    NTDB_LOG_ERROR,
+				    "ntdb_check: Bad bucket %u vs %llu",
+				    bits_from(hash, 0, ntdb->hash_bits),
+				    (long long)bucket);
+	/* Next 8 bits should be the same as top bits of bucket. */
+	} else if (bits_from(hash, ntdb->hash_bits, NTDB_OFF_UPPER_STEAL)
+		   != bits_from(off_and_hash, 64-NTDB_OFF_UPPER_STEAL,
+				NTDB_OFF_UPPER_STEAL)) {
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
+				    NTDB_LOG_ERROR,
+				    "ntdb_check: Bad hash bits %llu vs %llu",
+				    (long long)off_and_hash,
+				    (long long)hash);
+	} else if (check) {
+		NTDB_DATA k, d;
+
+		k = ntdb_mkdata(kptr, klen);
+		d = ntdb_mkdata(kptr + klen, dlen);
+		ecode = check(k, d, data);
+	} else {
+		ecode = NTDB_SUCCESS;
+	}
+	ntdb_access_release(ntdb, kptr);
+
+	return ecode;
+}
 
 static enum NTDB_ERROR check_hash_chain(struct ntdb_context *ntdb,
-				       ntdb_off_t off,
-				       uint64_t hash,
-				       ntdb_off_t used[],
-				       size_t num_used,
-				       size_t *num_found,
-				       enum NTDB_ERROR (*check)(NTDB_DATA,
-							       NTDB_DATA,
-							       void *),
-				       void *data)
+					ntdb_off_t off,
+					ntdb_len_t bucket,
+					ntdb_off_t used[],
+					size_t num_used,
+					size_t *num_found,
+					enum NTDB_ERROR (*check)(NTDB_DATA,
+								 NTDB_DATA,
+								 void *),
+					void *data)
 {
 	struct ntdb_used_record rec;
 	enum NTDB_ERROR ecode;
+	const ntdb_off_t *entries;
+	ntdb_len_t i, num;
+
+	/* This is a used entry. */
+	(*num_found)++;
 
 	ecode = ntdb_read_convert(ntdb, off, &rec, sizeof(rec));
 	if (ecode != NTDB_SUCCESS) {
@@ -148,62 +238,55 @@ static enum NTDB_ERROR check_hash_chain(struct ntdb_context *ntdb,
 				  (long long)rec_magic(&rec));
 	}
 
-	if (rec_data_length(&rec) != sizeof(struct ntdb_chain)) {
+	if (rec_data_length(&rec) % sizeof(ntdb_off_t)) {
 		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
-				  "ntdb_check:"
-				  " Bad hash chain length %llu vs %zu",
-				  (long long)rec_data_length(&rec),
-				  sizeof(struct ntdb_chain));
+				  "ntdb_check: Bad hash chain data length %llu",
+				  (long long)rec_data_length(&rec));
 	}
+
 	if (rec_key_length(&rec) != 0) {
 		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
 				  "ntdb_check: Bad hash chain key length %llu",
 				  (long long)rec_key_length(&rec));
 	}
-	if (rec_hash(&rec) != 0) {
-		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
-				  "ntdb_check: Bad hash chain hash value %llu",
-				  (long long)rec_hash(&rec));
-	}
 
 	off += sizeof(rec);
-	ecode = check_hash_tree(ntdb, off, 0, hash, 64,
-				used, num_used, num_found, check, data);
-	if (ecode != NTDB_SUCCESS) {
-		return ecode;
+	num = rec_data_length(&rec) / sizeof(ntdb_off_t);
+	entries = ntdb_access_read(ntdb, off, rec_data_length(&rec), true);
+	if (NTDB_PTR_IS_ERR(entries)) {
+		return NTDB_PTR_ERR(entries);
 	}
 
-	off = ntdb_read_off(ntdb, off + offsetof(struct ntdb_chain, next));
-	if (NTDB_OFF_IS_ERR(off)) {
-		return NTDB_OFF_TO_ERR(off);
+	/* Check each non-deleted entry in chain. */
+	for (i = 0; i < num; i++) {
+		ecode = check_entry(ntdb, entries[i], bucket,
+				    used, num_used, num_found, check, data);
+		if (ecode) {
+			break;
+		}
 	}
-	if (off == 0)
-		return NTDB_SUCCESS;
-	(*num_found)++;
-	return check_hash_chain(ntdb, off, hash, used, num_used, num_found,
-				check, data);
+
+	ntdb_access_release(ntdb, entries);
+	return ecode;
 }
 
-static enum NTDB_ERROR check_hash_record(struct ntdb_context *ntdb,
-					ntdb_off_t off,
-					uint64_t hprefix,
-					unsigned hprefix_bits,
-					ntdb_off_t used[],
-					size_t num_used,
-					size_t *num_found,
-					enum NTDB_ERROR (*check)(NTDB_DATA,
-								NTDB_DATA,
-								void *),
-					void *data)
+static enum NTDB_ERROR check_hash(struct ntdb_context *ntdb,
+				  ntdb_off_t used[],
+				  size_t num_used,
+				  size_t num_other_used,
+				  enum NTDB_ERROR (*check)(NTDB_DATA,
+							   NTDB_DATA,
+							   void *),
+				  void *data)
 {
-	struct ntdb_used_record rec;
 	enum NTDB_ERROR ecode;
+	struct ntdb_used_record rec;
+	const ntdb_off_t *entries;
+	ntdb_len_t i;
+	/* Free tables and capabilities also show up as used, as do we. */
+	size_t num_found = num_other_used + 1;
 
-	if (hprefix_bits >= 64)
-		return check_hash_chain(ntdb, off, hprefix, used, num_used,
-					num_found, check, data);
-
-	ecode = ntdb_read_convert(ntdb, off, &rec, sizeof(rec));
+	ecode = ntdb_read_convert(ntdb, NTDB_HASH_OFFSET, &rec, sizeof(rec));
 	if (ecode != NTDB_SUCCESS) {
 		return ecode;
 	}
@@ -213,273 +296,45 @@ static enum NTDB_ERROR check_hash_record(struct ntdb_context *ntdb,
 				  "ntdb_check: Bad hash table magic %llu",
 				  (long long)rec_magic(&rec));
 	}
-	if (rec_data_length(&rec)
-	    != sizeof(ntdb_off_t) << NTDB_SUBLEVEL_HASH_BITS) {
+
+	if (rec_data_length(&rec) != (sizeof(ntdb_off_t) << ntdb->hash_bits)) {
 		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
-				  "ntdb_check:"
-				  " Bad hash table length %llu vs %llu",
-				  (long long)rec_data_length(&rec),
-				  (long long)sizeof(ntdb_off_t)
-				  << NTDB_SUBLEVEL_HASH_BITS);
+				  "ntdb_check: Bad hash table data length %llu",
+				  (long long)rec_data_length(&rec));
 	}
+
 	if (rec_key_length(&rec) != 0) {
 		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
 				  "ntdb_check: Bad hash table key length %llu",
 				  (long long)rec_key_length(&rec));
 	}
-	if (rec_hash(&rec) != 0) {
-		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
-				  "ntdb_check: Bad hash table hash value %llu",
-				  (long long)rec_hash(&rec));
+
+	entries = ntdb_access_read(ntdb, NTDB_HASH_OFFSET + sizeof(rec),
+				   rec_data_length(&rec), true);
+	if (NTDB_PTR_IS_ERR(entries)) {
+		return NTDB_PTR_ERR(entries);
 	}
 
-	off += sizeof(rec);
-	return check_hash_tree(ntdb, off,
-			       NTDB_SUBLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS,
-			       hprefix, hprefix_bits,
-			       used, num_used, num_found, check, data);
-}
-
-static int off_cmp(const ntdb_off_t *a, const ntdb_off_t *b)
-{
-	/* Can overflow an int. */
-	return *a > *b ? 1
-		: *a < *b ? -1
-		: 0;
-}
-
-static uint64_t get_bits(uint64_t h, unsigned num, unsigned *used)
-{
-	*used += num;
-
-	return (h >> (64 - *used)) & ((1U << num) - 1);
-}
-
-static enum NTDB_ERROR check_hash_tree(struct ntdb_context *ntdb,
-				      ntdb_off_t off, unsigned int group_bits,
-				      uint64_t hprefix,
-				      unsigned hprefix_bits,
-				      ntdb_off_t used[],
-				      size_t num_used,
-				      size_t *num_found,
-				      enum NTDB_ERROR (*check)(NTDB_DATA,
-							      NTDB_DATA, void *),
-				      void *data)
-{
-	unsigned int g, b;
-	const ntdb_off_t *hash;
-	struct ntdb_used_record rec;
-	enum NTDB_ERROR ecode;
-
-	hash = ntdb_access_read(ntdb, off,
-			       sizeof(ntdb_off_t)
-			       << (group_bits + NTDB_HASH_GROUP_BITS),
-			       true);
-	if (NTDB_PTR_IS_ERR(hash)) {
-		return NTDB_PTR_ERR(hash);
-	}
-
-	for (g = 0; g < (1 << group_bits); g++) {
-		const ntdb_off_t *group = hash + (g << NTDB_HASH_GROUP_BITS);
-		for (b = 0; b < (1 << NTDB_HASH_GROUP_BITS); b++) {
-			unsigned int bucket, i, used_bits;
-			uint64_t h;
-			ntdb_off_t *p;
-			if (group[b] == 0)
-				continue;
-
-			off = group[b] & NTDB_OFF_MASK;
-			p = asearch(&off, used, num_used, off_cmp);
-			if (!p) {
-				ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
-						   NTDB_LOG_ERROR,
-						   "ntdb_check: Invalid offset"
-						   " %llu in hash",
-						   (long long)off);
-				goto fail;
-			}
-			/* Mark it invalid. */
-			*p ^= 1;
-			(*num_found)++;
-
-			if (hprefix_bits == 64) {
-				/* Chained entries are unordered. */
-				if (is_subhash(group[b])) {
-					ecode = NTDB_ERR_CORRUPT;
-					ntdb_logerr(ntdb, ecode,
-						   NTDB_LOG_ERROR,
-						   "ntdb_check: Invalid chain"
-						   " entry subhash");
-					goto fail;
-				}
-				h = hash_record(ntdb, off);
-				if (h != hprefix) {
-					ecode = NTDB_ERR_CORRUPT;
-					ntdb_logerr(ntdb, ecode,
-						   NTDB_LOG_ERROR,
-						   "check: bad hash chain"
-						   " placement"
-						   " 0x%llx vs 0x%llx",
-						   (long long)h,
-						   (long long)hprefix);
-					goto fail;
-				}
-				ecode = ntdb_read_convert(ntdb, off, &rec,
-							 sizeof(rec));
-				if (ecode != NTDB_SUCCESS) {
-					goto fail;
-				}
-				goto check;
-			}
-
-			if (is_subhash(group[b])) {
-				uint64_t subprefix;
-				subprefix = (hprefix
-				     << (group_bits + NTDB_HASH_GROUP_BITS))
-					+ g * (1 << NTDB_HASH_GROUP_BITS) + b;
-
-				ecode = check_hash_record(ntdb,
-					       group[b] & NTDB_OFF_MASK,
-					       subprefix,
-					       hprefix_bits
-						       + group_bits
-						       + NTDB_HASH_GROUP_BITS,
-					       used, num_used, num_found,
-					       check, data);
-				if (ecode != NTDB_SUCCESS) {
-					goto fail;
-				}
-				continue;
-			}
-			/* A normal entry */
-
-			/* Does it belong here at all? */
-			h = hash_record(ntdb, off);
-			used_bits = 0;
-			if (get_bits(h, hprefix_bits, &used_bits) != hprefix
-			    && hprefix_bits) {
-				ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
-						   NTDB_LOG_ERROR,
-						   "check: bad hash placement"
-						   " 0x%llx vs 0x%llx",
-						   (long long)h,
-						   (long long)hprefix);
-				goto fail;
-			}
-
-			/* Does it belong in this group? */
-			if (get_bits(h, group_bits, &used_bits) != g) {
-				ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
-						   NTDB_LOG_ERROR,
-						   "check: bad group %llu"
-						   " vs %u",
-						   (long long)h, g);
-				goto fail;
-			}
-
-			/* Are bucket bits correct? */
-			bucket = group[b] & NTDB_OFF_HASH_GROUP_MASK;
-			if (get_bits(h, NTDB_HASH_GROUP_BITS, &used_bits)
-			    != bucket) {
-				used_bits -= NTDB_HASH_GROUP_BITS;
-				ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
-						   NTDB_LOG_ERROR,
-						   "check: bad bucket %u vs %u",
-						   (unsigned)get_bits(h,
-							NTDB_HASH_GROUP_BITS,
-							&used_bits),
-						   bucket);
-				goto fail;
-			}
-
-			/* There must not be any zero entries between
-			 * the bucket it belongs in and this one! */
-			for (i = bucket;
-			     i != b;
-			     i = (i + 1) % (1 << NTDB_HASH_GROUP_BITS)) {
-				if (group[i] == 0) {
-					ecode = NTDB_ERR_CORRUPT;
-					ntdb_logerr(ntdb, ecode,
-						   NTDB_LOG_ERROR,
-						   "check: bad group placement"
-						   " %u vs %u",
-						   b, bucket);
-					goto fail;
-				}
-			}
-
-			ecode = ntdb_read_convert(ntdb, off, &rec, sizeof(rec));
-			if (ecode != NTDB_SUCCESS) {
-				goto fail;
-			}
-
-			/* Bottom bits must match header. */
-			if ((h & ((1 << 11)-1)) != rec_hash(&rec)) {
-				ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT,
-						   NTDB_LOG_ERROR,
-						   "ntdb_check: Bad hash magic"
-						   " at offset %llu"
-						   " (0x%llx vs 0x%llx)",
-						   (long long)off,
-						   (long long)h,
-						   (long long)rec_hash(&rec));
-				goto fail;
-			}
-
-		check:
-			if (check) {
-				NTDB_DATA k, d;
-				const unsigned char *kptr;
-
-				kptr = ntdb_access_read(ntdb,
-						       off + sizeof(rec),
-						       rec_key_length(&rec)
-						       + rec_data_length(&rec),
-						       false);
-				if (NTDB_PTR_IS_ERR(kptr)) {
-					ecode = NTDB_PTR_ERR(kptr);
-					goto fail;
-				}
-
-				k = ntdb_mkdata(kptr, rec_key_length(&rec));
-				d = ntdb_mkdata(kptr + k.dsize,
-					       rec_data_length(&rec));
-				ecode = check(k, d, data);
-				ntdb_access_release(ntdb, kptr);
-				if (ecode != NTDB_SUCCESS) {
-					goto fail;
-				}
-			}
+	for (i = 0; i < (1 << ntdb->hash_bits); i++) {
+		ntdb_off_t off = entries[i] & NTDB_OFF_MASK;
+		if (entries[i] & (1ULL << NTDB_OFF_CHAIN_BIT)) {
+			ecode = check_hash_chain(ntdb, off, i,
+						 used, num_used, &num_found,
+						 check, data);
+		} else {
+			ecode = check_entry(ntdb, entries[i], i,
+					    used, num_used, &num_found,
+					    check, data);
+		}
+		if (ecode) {
+			break;
 		}
 	}
-	ntdb_access_release(ntdb, hash);
-	return NTDB_SUCCESS;
+	ntdb_access_release(ntdb, entries);
 
-fail:
-	ntdb_access_release(ntdb, hash);
-	return ecode;
-}
-
-static enum NTDB_ERROR check_hash(struct ntdb_context *ntdb,
-				 ntdb_off_t used[],
-				 size_t num_used, size_t num_other_used,
-				 enum NTDB_ERROR (*check)(NTDB_DATA, NTDB_DATA, void *),
-				 void *data)
-{
-	/* Free tables and capabilities also show up as used. */
-	size_t num_found = num_other_used;
-	enum NTDB_ERROR ecode;
-
-	ecode = check_hash_tree(ntdb, offsetof(struct ntdb_header, hashtable),
-				NTDB_TOPLEVEL_HASH_BITS-NTDB_HASH_GROUP_BITS,
-				0, 0, used, num_used, &num_found,
-				check, data);
-	if (ecode == NTDB_SUCCESS) {
-		if (num_found != num_used) {
-			ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
-					   "ntdb_check: Not all entries"
-					   " are in hash");
-		}
+	if (ecode == NTDB_SUCCESS && num_found != num_used) {
+		ecode = ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
+				    "ntdb_check: Not all entries are in hash");
 	}
 	return ecode;
 }
@@ -547,8 +402,7 @@ static enum NTDB_ERROR check_free_table(struct ntdb_context *ntdb,
 
 	if (rec_magic(&ft.hdr) != NTDB_FTABLE_MAGIC
 	    || rec_key_length(&ft.hdr) != 0
-	    || rec_data_length(&ft.hdr) != sizeof(ft) - sizeof(ft.hdr)
-	    || rec_hash(&ft.hdr) != 0) {
+	    || rec_data_length(&ft.hdr) != sizeof(ft) - sizeof(ft.hdr)) {
 		return ntdb_logerr(ntdb, NTDB_ERR_CORRUPT, NTDB_LOG_ERROR,
 				  "ntdb_check: Invalid header on free table");
 	}

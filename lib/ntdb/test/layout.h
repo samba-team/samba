@@ -32,7 +32,7 @@ void ntdb_layout_write(struct ntdb_layout *layout, void (*freefn)(void *),
 void ntdb_layout_free(struct ntdb_layout *layout);
 
 enum layout_type {
-	FREETABLE, FREE, DATA, HASHTABLE, CAPABILITY
+	FREETABLE, FREE, DATA, CAPABILITY
 };
 
 /* Shared by all union members. */
@@ -58,13 +58,6 @@ struct tle_used {
 	ntdb_len_t extra;
 };
 
-struct tle_hashtable {
-	struct tle_base base;
-	int parent;
-	unsigned int bucket;
-	ntdb_len_t extra;
-};
-
 struct tle_capability {
 	struct tle_base base;
 	uint64_t type;
@@ -76,7 +69,6 @@ union ntdb_layout_elem {
 	struct tle_freetable ftable;
 	struct tle_free free;
 	struct tle_used used;
-	struct tle_hashtable hashtable;
 	struct tle_capability capability;
 };
 

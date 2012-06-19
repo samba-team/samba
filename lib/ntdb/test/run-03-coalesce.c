@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	/* No coalescing can be done due to EOF */
 	layout = new_ntdb_layout();
 	ntdb_layout_add_freetable(layout);
-	len = 56544;
+	len = 15560;
 	ntdb_layout_add_free(layout, len, 0);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
@@ -60,24 +60,24 @@ int main(int argc, char *argv[])
 	/* No coalescing can be done due to used record */
 	layout = new_ntdb_layout();
 	ntdb_layout_add_freetable(layout);
-	ntdb_layout_add_free(layout, 56512, 0);
+	ntdb_layout_add_free(layout, 15528, 0);
 	ntdb_layout_add_used(layout, key, data, 6);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
 	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
 		       &tap_log_attr);
-	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 56512);
+	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 15528);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 	/* Figure out which bucket free entry is. */
-	b_off = bucket_off(ntdb->ftable_off, size_to_bucket(56512));
+	b_off = bucket_off(ntdb->ftable_off, size_to_bucket(15528));
 	/* Lock and fail to coalesce. */
 	ok1(ntdb_lock_free_bucket(ntdb, b_off, NTDB_LOCK_WAIT) == 0);
 	test = layout->elem[1].base.off;
-	ok1(coalesce(ntdb, layout->elem[1].base.off, b_off, 56512, &test)
+	ok1(coalesce(ntdb, layout->elem[1].base.off, b_off, 15528, &test)
 	    == 0);
 	ntdb_unlock_free_bucket(ntdb, b_off);
-	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 56512);
+	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 15528);
 	ok1(test == layout->elem[1].base.off);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 	ntdb_close(ntdb);
@@ -87,13 +87,13 @@ int main(int argc, char *argv[])
 	layout = new_ntdb_layout();
 	ntdb_layout_add_freetable(layout);
 	ntdb_layout_add_free(layout, 1024, 0);
-	ntdb_layout_add_free(layout, 55504, 0);
+	ntdb_layout_add_free(layout, 14520, 0);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
 	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
 		       &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 1024);
-	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 55504);
+	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 14520);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 	/* Figure out which bucket (first) free entry is. */
@@ -102,12 +102,12 @@ int main(int argc, char *argv[])
 	ok1(ntdb_lock_free_bucket(ntdb, b_off, NTDB_LOCK_WAIT) == 0);
 	test = layout->elem[2].base.off;
 	ok1(coalesce(ntdb, layout->elem[1].base.off, b_off, 1024, &test)
-	    == 1024 + sizeof(struct ntdb_used_record) + 55504);
+	    == 1024 + sizeof(struct ntdb_used_record) + 14520);
 	/* Should tell us it's erased this one... */
 	ok1(test == NTDB_ERR_NOEXIST);
 	ok1(ntdb->file->allrecord_lock.count == 0 && ntdb->file->num_lockrecs == 0);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off)
-	    == 1024 + sizeof(struct ntdb_used_record) + 55504);
+	    == 1024 + sizeof(struct ntdb_used_record) + 14520);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 	ntdb_close(ntdb);
 	ntdb_layout_free(layout);
@@ -116,14 +116,14 @@ int main(int argc, char *argv[])
 	layout = new_ntdb_layout();
 	ntdb_layout_add_freetable(layout);
 	ntdb_layout_add_free(layout, 1024, 0);
-	ntdb_layout_add_free(layout, 55472, 0);
+	ntdb_layout_add_free(layout, 14488, 0);
 	ntdb_layout_add_used(layout, key, data, 6);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
 	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
 		       &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 1024);
-	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 55472);
+	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 14488);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 	/* Figure out which bucket free entry is. */
@@ -132,10 +132,10 @@ int main(int argc, char *argv[])
 	ok1(ntdb_lock_free_bucket(ntdb, b_off, NTDB_LOCK_WAIT) == 0);
 	test = layout->elem[2].base.off;
 	ok1(coalesce(ntdb, layout->elem[1].base.off, b_off, 1024, &test)
-	    == 1024 + sizeof(struct ntdb_used_record) + 55472);
+	    == 1024 + sizeof(struct ntdb_used_record) + 14488);
 	ok1(ntdb->file->allrecord_lock.count == 0 && ntdb->file->num_lockrecs == 0);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off)
-	    == 1024 + sizeof(struct ntdb_used_record) + 55472);
+	    == 1024 + sizeof(struct ntdb_used_record) + 14488);
 	ok1(test == NTDB_ERR_NOEXIST);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 	ntdb_close(ntdb);
@@ -146,14 +146,14 @@ int main(int argc, char *argv[])
 	ntdb_layout_add_freetable(layout);
 	ntdb_layout_add_free(layout, 1024, 0);
 	ntdb_layout_add_free(layout, 512, 0);
-	ntdb_layout_add_free(layout, 54976, 0);
+	ntdb_layout_add_free(layout, 13992, 0);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
 	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
 		       &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 512);
-	ok1(free_record_length(ntdb, layout->elem[3].base.off) == 54976);
+	ok1(free_record_length(ntdb, layout->elem[3].base.off) == 13992);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 	/* Figure out which bucket free entry is. */
@@ -163,12 +163,12 @@ int main(int argc, char *argv[])
 	test = layout->elem[2].base.off;
 	ok1(coalesce(ntdb, layout->elem[1].base.off, b_off, 1024, &test)
 	    == 1024 + sizeof(struct ntdb_used_record) + 512
-	    + sizeof(struct ntdb_used_record) + 54976);
+	    + sizeof(struct ntdb_used_record) + 13992);
 	ok1(ntdb->file->allrecord_lock.count == 0
 	    && ntdb->file->num_lockrecs == 0);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off)
 	    == 1024 + sizeof(struct ntdb_used_record) + 512
-	    + sizeof(struct ntdb_used_record) + 54976);
+	    + sizeof(struct ntdb_used_record) + 13992);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 	ntdb_close(ntdb);
 	ntdb_layout_free(layout);

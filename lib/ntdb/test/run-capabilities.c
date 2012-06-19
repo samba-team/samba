@@ -39,7 +39,7 @@ static void create_ntdb(const char *name,
 	ntdb_layout_add_freetable(layout);
 	ntdb_layout_add_used(layout, key, data, 6);
 	clen = len_of(breaks_check, breaks_write, breaks_open);
-	ntdb_layout_add_free(layout, 56480 - clen, 0);
+	ntdb_layout_add_free(layout, 15496 - clen, 0);
 	ntdb_layout_add_capability(layout, cap,
 				   breaks_write, breaks_check, breaks_open,
 				   clen);
@@ -53,7 +53,7 @@ static void create_ntdb(const char *name,
 		key.dsize--;
 		ntdb_layout_add_used(layout, key, data, 11 - key.dsize);
 		clen = len_of(breaks_check, breaks_write, breaks_open);
-		ntdb_layout_add_free(layout, 65456 - clen, 0);
+		ntdb_layout_add_free(layout, 16304 - clen, 0);
 		ntdb_layout_add_capability(layout, cap,
 					  breaks_write, breaks_check,
 					  breaks_open, clen);

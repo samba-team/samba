@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	lock_attr.flock.unlock = ntdb_fcntl_unlock;
 	lock_attr.flock.data = &lock_err;
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 80);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 81);
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		NTDB_DATA d;
@@ -190,6 +190,9 @@ int main(int argc, char *argv[])
 		/* Nonblocking traverse; go nonblock partway through. */
 		lock_err = 0;
 		ok1(ntdb_store(ntdb, key, data, NTDB_REPLACE) == 0);
+		/* Need two entries to ensure two lock attempts! */
+		ok1(ntdb_store(ntdb, ntdb_mkdata("key2", 4), data,
+			       NTDB_REPLACE) == 0);
 		trav_err = EAGAIN;
 		ok1(ntdb_traverse(ntdb, trav, &lock_err) == NTDB_ERR_LOCK);
 		ok1(tap_log_messages == 0);

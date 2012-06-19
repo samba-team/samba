@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 		size = ntdb->file->map_size;
 
 		/* Create one record to chew up most space. */
-		d.dsize = size - sizeof(struct new_database) - 32;
+		d.dsize = size - NEW_DATABASE_HDR_SIZE(ntdb->hash_bits) - 32;
 		d.dptr = calloc(d.dsize, 1);
 		j = 0;
 		ok1(ntdb_store(ntdb, k, d, NTDB_INSERT) == 0);

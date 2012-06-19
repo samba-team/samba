@@ -47,7 +47,6 @@ def configure(conf):
                                 'test/run-11-simple-fetch.c',
                                 'test/run-12-check.c',
                                 'test/run-15-append.c',
-                                'test/run-20-growhash.c',
                                 'test/run-25-hashoverload.c',
                                 'test/run-30-exhaust-before-expand.c',
                                 'test/run-35-convert.c',

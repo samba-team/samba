@@ -17,7 +17,6 @@
 */
 #include "private.h"
 #include <ccan/build_assert/build_assert.h>
-#include <assert.h>
 
 /* all tdbs, to detect double-opens (fcntl file don't nest!) */
 static struct ntdb_context *tdbs = NULL;
@@ -53,10 +52,10 @@ static bool read_all(int fd, void *buf, size_t len)
 	return true;
 }
 
-static uint64_t random_number(struct ntdb_context *ntdb)
+static uint32_t random_number(struct ntdb_context *ntdb)
 {
 	int fd;
-	uint64_t ret = 0;
+	uint32_t ret = 0;
 	struct timeval now;
 
 	fd = open("/dev/urandom", O_RDONLY);
@@ -71,14 +70,14 @@ static uint64_t random_number(struct ntdb_context *ntdb)
 	fd = open("/dev/egd-pool", O_RDWR);
 	if (fd >= 0) {
 		/* Command is 1, next byte is size we want to read. */
-		char cmd[2] = { 1, sizeof(uint64_t) };
+		char cmd[2] = { 1, sizeof(uint32_t) };
 		if (write(fd, cmd, sizeof(cmd)) == sizeof(cmd)) {
-			char reply[1 + sizeof(uint64_t)];
+			char reply[1 + sizeof(uint32_t)];
 			int r = read(fd, reply, sizeof(reply));
 			if (r > 1) {
 				/* Copy at least some bytes. */
 				memcpy(&ret, reply+1, r - 1);
-				if (reply[0] == sizeof(uint64_t)
+				if (reply[0] == sizeof(uint32_t)
 				    && r == sizeof(reply)) {
 					close(fd);
 					return ret;
@@ -105,92 +104,119 @@ static void ntdb_context_init(struct ntdb_context *ntdb)
 	ntdb->access = NULL;
 }
 
-struct new_database {
-	struct ntdb_header hdr;
-	struct ntdb_freetable ftable;
-	struct ntdb_free_record remainder;
-};
+/* initialise a new database:
+ *
+ *	struct ntdb_header;
+ *	struct {
+ *		struct ntdb_used_record hash_header;
+ *		ntdb_off_t hash_buckets[1 << ntdb->hash_bits];
+ *	} hash;
+ *	struct ntdb_freetable ftable;
+ *	struct {
+ *		struct ntdb_free_record free_header;
+ *		char forty_three[...];
+ *	} remainder;
+ */
+#define NEW_DATABASE_HDR_SIZE(hbits)					\
+	(sizeof(struct ntdb_header)					\
+	 + sizeof(struct ntdb_used_record) + (sizeof(ntdb_off_t) << hbits) \
+	 + sizeof(struct ntdb_freetable)				\
+	 + sizeof(struct ntdb_free_record))
 
-/* initialise a new database */
 static enum NTDB_ERROR ntdb_new_database(struct ntdb_context *ntdb,
-				       struct ntdb_attribute_seed *seed,
-				       struct ntdb_header *hdr)
+					 struct ntdb_attribute_seed *seed,
+					 struct ntdb_header *rhdr)
 {
 	/* We make it up in memory, then write it out if not internal */
-	struct new_database *newdb;
+	struct ntdb_freetable *ftable;
+	struct ntdb_used_record *htable;
+	struct ntdb_header *hdr;
+	struct ntdb_free_record *remainder;
+	char *mem;
 	unsigned int magic_len;
 	ssize_t rlen;
-	size_t dbsize, remaindersize;
+	size_t dbsize, hashsize, hdrsize, remaindersize;
 	enum NTDB_ERROR ecode;
 
+	hashsize = sizeof(ntdb_off_t) << ntdb->hash_bits;
+
 	/* Always make db a multiple of NTDB_PGSIZE */
-	dbsize = (sizeof(*newdb) + NTDB_PGSIZE-1) & ~(NTDB_PGSIZE-1);
-	remaindersize = dbsize - sizeof(*newdb);
-	newdb = ntdb->alloc_fn(ntdb, dbsize, ntdb->alloc_data);
-	if (!newdb) {
+	hdrsize = NEW_DATABASE_HDR_SIZE(ntdb->hash_bits);
+	dbsize = (hdrsize + NTDB_PGSIZE-1) & ~(NTDB_PGSIZE-1);
+
+	mem = ntdb->alloc_fn(ntdb, dbsize, ntdb->alloc_data);
+	if (!mem) {
 		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				   "ntdb_new_database: failed to allocate");
 	}
 
+	hdr = (void *)mem;
+	htable = (void *)(mem + sizeof(*hdr));
+	ftable = (void *)(mem + sizeof(*hdr) + sizeof(*htable) + hashsize);
+	remainder = (void *)(mem + sizeof(*hdr) + sizeof(*htable) + hashsize
+			     + sizeof(*ftable));
+
 	/* Fill in the header */
-	newdb->hdr.version = NTDB_VERSION;
+	hdr->version = NTDB_VERSION;
 	if (seed)
-		newdb->hdr.hash_seed = seed->seed;
+		hdr->hash_seed = seed->seed;
 	else
-		newdb->hdr.hash_seed = random_number(ntdb);
-	newdb->hdr.hash_test = NTDB_HASH_MAGIC;
-	newdb->hdr.hash_test = ntdb->hash_fn(&newdb->hdr.hash_test,
-					   sizeof(newdb->hdr.hash_test),
-					   newdb->hdr.hash_seed,
-					   ntdb->hash_data);
-	newdb->hdr.recovery = 0;
-	newdb->hdr.features_used = newdb->hdr.features_offered = NTDB_FEATURE_MASK;
-	newdb->hdr.seqnum = 0;
-	newdb->hdr.capabilities = 0;
-	memset(newdb->hdr.reserved, 0, sizeof(newdb->hdr.reserved));
-	/* Initial hashes are empty. */
-	memset(newdb->hdr.hashtable, 0, sizeof(newdb->hdr.hashtable));
+		hdr->hash_seed = random_number(ntdb);
+	hdr->hash_test = NTDB_HASH_MAGIC;
+	hdr->hash_test = ntdb->hash_fn(&hdr->hash_test,
+				       sizeof(hdr->hash_test),
+				       hdr->hash_seed,
+				       ntdb->hash_data);
+	hdr->hash_bits = ntdb->hash_bits;
+	hdr->recovery = 0;
+	hdr->features_used = hdr->features_offered = NTDB_FEATURE_MASK;
+	hdr->seqnum = 0;
+	hdr->capabilities = 0;
+	memset(hdr->reserved, 0, sizeof(hdr->reserved));
+
+	/* Hash is all zero after header. */
+	set_header(NULL, htable, NTDB_HTABLE_MAGIC, 0, hashsize, hashsize);
+	memset(htable + 1, 0, hashsize);
 
 	/* Free is empty. */
-	newdb->hdr.free_table = offsetof(struct new_database, ftable);
-	memset(&newdb->ftable, 0, sizeof(newdb->ftable));
-	ecode = set_header(NULL, &newdb->ftable.hdr, NTDB_FTABLE_MAGIC, 0,
-			   sizeof(newdb->ftable) - sizeof(newdb->ftable.hdr),
-			   sizeof(newdb->ftable) - sizeof(newdb->ftable.hdr),
-			   0);
+	hdr->free_table = (char *)ftable - (char *)hdr;
+	memset(ftable, 0, sizeof(*ftable));
+	ecode = set_header(NULL, &ftable->hdr, NTDB_FTABLE_MAGIC, 0,
+			   sizeof(*ftable) - sizeof(ftable->hdr),
+			   sizeof(*ftable) - sizeof(ftable->hdr));
 	if (ecode != NTDB_SUCCESS) {
 		goto out;
 	}
 
 	/* Rest of database is a free record, containing junk. */
-	newdb->remainder.ftable_and_len
-		= (remaindersize + sizeof(newdb->remainder)
+	remaindersize = dbsize - hdrsize;
+	remainder->ftable_and_len
+		= (remaindersize + sizeof(*remainder)
 		   - sizeof(struct ntdb_used_record));
-	newdb->remainder.next = 0;
-	newdb->remainder.magic_and_prev
+	remainder->next = 0;
+	remainder->magic_and_prev
 		= (NTDB_FREE_MAGIC << (64-NTDB_OFF_UPPER_STEAL))
-		| offsetof(struct new_database, remainder);
-	memset(&newdb->remainder + 1, 0x43, remaindersize);
+		| ((char *)remainder - (char *)hdr);
+	memset(remainder + 1, 0x43, remaindersize);
 
 	/* Put in our single free entry. */
-	newdb->ftable.buckets[size_to_bucket(remaindersize)] =
-		offsetof(struct new_database, remainder);
+	ftable->buckets[size_to_bucket(remaindersize)] =
+		(char *)remainder - (char *)hdr;
 
 	/* Magic food */
-	memset(newdb->hdr.magic_food, 0, sizeof(newdb->hdr.magic_food));
-	strcpy(newdb->hdr.magic_food, NTDB_MAGIC_FOOD);
+	memset(hdr->magic_food, 0, sizeof(hdr->magic_food));
+	strcpy(hdr->magic_food, NTDB_MAGIC_FOOD);
 
 	/* This creates an endian-converted database, as if read from disk */
-	magic_len = sizeof(newdb->hdr.magic_food);
-	ntdb_convert(ntdb,
-		     (char *)&newdb->hdr + magic_len,
-		     sizeof(*newdb) - magic_len);
+	magic_len = sizeof(hdr->magic_food);
+	ntdb_convert(ntdb, (char *)hdr + magic_len, hdrsize - magic_len);
 
-	*hdr = newdb->hdr;
+	/* Return copy of header. */
+	*rhdr = *hdr;
 
 	if (ntdb->flags & NTDB_INTERNAL) {
 		ntdb->file->map_size = dbsize;
-		ntdb->file->map_ptr = newdb;
+		ntdb->file->map_ptr = hdr;
 		return NTDB_SUCCESS;
 	}
 	if (lseek(ntdb->file->fd, 0, SEEK_SET) == -1) {
@@ -207,7 +233,7 @@ static enum NTDB_ERROR ntdb_new_database(struct ntdb_context *ntdb,
 		goto out;
 	}
 
-	rlen = write(ntdb->file->fd, newdb, dbsize);
+	rlen = write(ntdb->file->fd, hdr, dbsize);
 	if (rlen != dbsize) {
 		if (rlen >= 0)
 			errno = ENOSPC;
@@ -218,7 +244,7 @@ static enum NTDB_ERROR ntdb_new_database(struct ntdb_context *ntdb,
 	}
 
 out:
-	ntdb->free_fn(newdb, ntdb->alloc_data);
+	ntdb->free_fn(hdr, ntdb->alloc_data);
 	return ecode;
 }
 
@@ -487,6 +513,7 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	ntdb->alloc_fn = default_alloc;
 	ntdb->expand_fn = default_expand;
 	ntdb->free_fn = default_free;
+	ntdb->hash_bits = NTDB_DEFAULT_HBITS; /* 64k of hash by default. */
 
 	while (attr) {
 		switch (attr->base.attr) {
@@ -687,6 +714,7 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	ntdb_context_init(ntdb);
 
 	ntdb_convert(ntdb, &hdr, sizeof(hdr));
+	ntdb->hash_bits = hdr.hash_bits;
 	ntdb->hash_seed = hdr.hash_seed;
 	hash_test = NTDB_HASH_MAGIC;
 	hash_test = ntdb_hash(ntdb, &hash_test, sizeof(hash_test));

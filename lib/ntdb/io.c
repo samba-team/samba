@@ -26,7 +26,6 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 #include "private.h"
-#include <assert.h>
 #include <ccan/likely/likely.h>
 
 void ntdb_munmap(struct ntdb_file *file)

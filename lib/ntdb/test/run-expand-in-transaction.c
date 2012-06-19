@@ -25,7 +25,8 @@ int main(int argc, char *argv[])
 		size = ntdb->file->map_size;
 		/* Add a fake record to chew up the existing free space. */
 		k = ntdb_mkdata("fake", 4);
-		d.dsize = ntdb->file->map_size - sizeof(struct new_database)- 8;
+		d.dsize = ntdb->file->map_size
+			- NEW_DATABASE_HDR_SIZE(ntdb->hash_bits) - 8;
 		d.dptr = malloc(d.dsize);
 		memset(d.dptr, 0, d.dsize);
 		ok1(ntdb_store(ntdb, k, d, NTDB_INSERT) == 0);
