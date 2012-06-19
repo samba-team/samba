@@ -393,12 +393,35 @@ static void *transaction_direct(struct ntdb_context *ntdb, ntdb_off_t off,
 	return ntdb->transaction->io_methods->direct(ntdb, off, len, false);
 }
 
+static ntdb_off_t transaction_read_off(struct ntdb_context *ntdb,
+				       ntdb_off_t off)
+{
+	ntdb_off_t ret;
+	enum NTDB_ERROR ecode;
+
+	ecode = transaction_read(ntdb, off, &ret, sizeof(ret));
+	ntdb_convert(ntdb, &ret, sizeof(ret));
+	if (ecode != NTDB_SUCCESS) {
+		return NTDB_ERR_TO_OFF(ecode);
+	}
+	return ret;
+}
+
+static enum NTDB_ERROR transaction_write_off(struct ntdb_context *ntdb,
+					     ntdb_off_t off, ntdb_off_t val)
+{
+	ntdb_convert(ntdb, &val, sizeof(val));
+	return transaction_write(ntdb, off, &val, sizeof(val));
+}
+
 static const struct ntdb_methods transaction_methods = {
 	transaction_read,
 	transaction_write,
 	transaction_oob,
 	transaction_expand_file,
 	transaction_direct,
+	transaction_read_off,
+	transaction_write_off,
 };
 
 /*

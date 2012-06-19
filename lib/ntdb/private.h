@@ -367,6 +367,9 @@ struct ntdb_methods {
 	enum NTDB_ERROR (*oob)(struct ntdb_context *, ntdb_off_t, ntdb_len_t, bool);
 	enum NTDB_ERROR (*expand_file)(struct ntdb_context *, ntdb_len_t);
 	void *(*direct)(struct ntdb_context *, ntdb_off_t, size_t, bool);
+	ntdb_off_t (*read_off)(struct ntdb_context *ntdb, ntdb_off_t off);
+	enum NTDB_ERROR (*write_off)(struct ntdb_context *ntdb, ntdb_off_t off,
+				     ntdb_off_t val);
 };
 
 /*
@@ -466,13 +469,6 @@ void *ntdb_access_write(struct ntdb_context *ntdb,
 void ntdb_access_release(struct ntdb_context *ntdb, const void *p);
 /* Commit result of ntdb_acces_write. */
 enum NTDB_ERROR ntdb_access_commit(struct ntdb_context *ntdb, void *p);
-
-/* Convenience routine to get an offset. */
-ntdb_off_t ntdb_read_off(struct ntdb_context *ntdb, ntdb_off_t off);
-
-/* Write an offset at an offset. */
-enum NTDB_ERROR ntdb_write_off(struct ntdb_context *ntdb, ntdb_off_t off,
-			       ntdb_off_t val);
 
 /* Clear an ondisk area. */
 enum NTDB_ERROR zero_out(struct ntdb_context *ntdb, ntdb_off_t off, ntdb_len_t len);
@@ -640,6 +636,21 @@ static inline enum NTDB_ERROR ntdb_oob(struct ntdb_context *ntdb,
 		    return NTDB_SUCCESS;
 	}
 	return ntdb->io->oob(ntdb, off, len, probe);
+}
+
+/* Convenience routine to get an offset. */
+static inline ntdb_off_t ntdb_read_off(struct ntdb_context *ntdb,
+				       ntdb_off_t off)
+{
+	return ntdb->io->read_off(ntdb, off);
+}
+
+/* Write an offset at an offset. */
+static inline enum NTDB_ERROR ntdb_write_off(struct ntdb_context *ntdb,
+					     ntdb_off_t off,
+			       ntdb_off_t val)
+{
+	return ntdb->io->write_off(ntdb, off, val);
 }
 
 #ifdef NTDB_TRACE

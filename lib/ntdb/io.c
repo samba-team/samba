@@ -238,27 +238,6 @@ enum NTDB_ERROR zero_out(struct ntdb_context *ntdb, ntdb_off_t off, ntdb_len_t l
 	return ecode;
 }
 
-ntdb_off_t ntdb_read_off(struct ntdb_context *ntdb, ntdb_off_t off)
-{
-	ntdb_off_t ret;
-	enum NTDB_ERROR ecode;
-
-	if (likely(!(ntdb->flags & NTDB_CONVERT))) {
-		ntdb_off_t *p = ntdb->io->direct(ntdb, off, sizeof(*p), false);
-		if (NTDB_PTR_IS_ERR(p)) {
-			return NTDB_ERR_TO_OFF(NTDB_PTR_ERR(p));
-		}
-		if (p)
-			return *p;
-	}
-
-	ecode = ntdb_read_convert(ntdb, off, &ret, sizeof(ret));
-	if (ecode != NTDB_SUCCESS) {
-		return NTDB_ERR_TO_OFF(ecode);
-	}
-	return ret;
-}
-
 /* write a lump of data at a specified offset */
 static enum NTDB_ERROR ntdb_write(struct ntdb_context *ntdb, ntdb_off_t off,
 				const void *buf, ntdb_len_t len)
@@ -357,27 +336,6 @@ enum NTDB_ERROR ntdb_read_convert(struct ntdb_context *ntdb, ntdb_off_t off,
 	enum NTDB_ERROR ecode = ntdb->io->tread(ntdb, off, rec, len);
 	ntdb_convert(ntdb, rec, len);
 	return ecode;
-}
-
-enum NTDB_ERROR ntdb_write_off(struct ntdb_context *ntdb,
-			     ntdb_off_t off, ntdb_off_t val)
-{
-	if (ntdb->flags & NTDB_RDONLY) {
-		return ntdb_logerr(ntdb, NTDB_ERR_RDONLY, NTDB_LOG_USE_ERROR,
-				  "Write to read-only database");
-	}
-
-	if (likely(!(ntdb->flags & NTDB_CONVERT))) {
-		ntdb_off_t *p = ntdb->io->direct(ntdb, off, sizeof(*p), true);
-		if (NTDB_PTR_IS_ERR(p)) {
-			return NTDB_PTR_ERR(p);
-		}
-		if (p) {
-			*p = val;
-			return NTDB_SUCCESS;
-		}
-	}
-	return ntdb_write_convert(ntdb, off, &val, sizeof(val));
 }
 
 static void *_ntdb_alloc_read(struct ntdb_context *ntdb, ntdb_off_t offset,
@@ -607,6 +565,63 @@ static void *ntdb_direct(struct ntdb_context *ntdb, ntdb_off_t off, size_t len,
 	return (char *)ntdb->file->map_ptr + off;
 }
 
+static ntdb_off_t ntdb_read_normal_off(struct ntdb_context *ntdb,
+				       ntdb_off_t off)
+{
+	ntdb_off_t ret;
+	enum NTDB_ERROR ecode;
+	ntdb_off_t *p;
+
+	p = ntdb_direct(ntdb, off, sizeof(*p), false);
+	if (NTDB_PTR_IS_ERR(p)) {
+		return NTDB_ERR_TO_OFF(NTDB_PTR_ERR(p));
+	}
+	if (likely(p)) {
+		return *p;
+	}
+
+	ecode = ntdb_read(ntdb, off, &ret, sizeof(ret));
+	if (ecode != NTDB_SUCCESS) {
+		return NTDB_ERR_TO_OFF(ecode);
+	}
+	return ret;
+}
+
+static ntdb_off_t ntdb_read_convert_off(struct ntdb_context *ntdb,
+					ntdb_off_t off)
+{
+	ntdb_off_t ret;
+	enum NTDB_ERROR ecode;
+
+	ecode = ntdb_read_convert(ntdb, off, &ret, sizeof(ret));
+	if (ecode != NTDB_SUCCESS) {
+		return NTDB_ERR_TO_OFF(ecode);
+	}
+	return ret;
+}
+
+static enum NTDB_ERROR ntdb_write_normal_off(struct ntdb_context *ntdb,
+					     ntdb_off_t off, ntdb_off_t val)
+{
+	ntdb_off_t *p;
+
+	p = ntdb_direct(ntdb, off, sizeof(*p), true);
+	if (NTDB_PTR_IS_ERR(p)) {
+		return NTDB_PTR_ERR(p);
+	}
+	if (likely(p)) {
+		*p = val;
+		return NTDB_SUCCESS;
+	}
+	return ntdb_write(ntdb, off, &val, sizeof(val));
+}
+
+static enum NTDB_ERROR ntdb_write_convert_off(struct ntdb_context *ntdb,
+					      ntdb_off_t off, ntdb_off_t val)
+{
+	return ntdb_write_convert(ntdb, off, &val, sizeof(val));
+}
+
 void ntdb_inc_seqnum(struct ntdb_context *ntdb)
 {
 	ntdb_off_t seq;
@@ -641,6 +656,18 @@ static const struct ntdb_methods io_methods = {
 	ntdb_normal_oob,
 	ntdb_expand_file,
 	ntdb_direct,
+	ntdb_read_normal_off,
+	ntdb_write_normal_off,
+};
+
+static const struct ntdb_methods io_convert_methods = {
+	ntdb_read,
+	ntdb_write,
+	ntdb_normal_oob,
+	ntdb_expand_file,
+	ntdb_direct,
+	ntdb_read_convert_off,
+	ntdb_write_convert_off,
 };
 
 /*
@@ -648,5 +675,8 @@ static const struct ntdb_methods io_methods = {
 */
 void ntdb_io_init(struct ntdb_context *ntdb)
 {
-	ntdb->io = &io_methods;
+	if (ntdb->flags & NTDB_CONVERT)
+		ntdb->io = &io_convert_methods;
+	else
+		ntdb->io = &io_methods;
 }
