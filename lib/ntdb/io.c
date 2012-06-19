@@ -120,7 +120,7 @@ static enum NTDB_ERROR ntdb_oob(struct ntdb_context *ntdb,
 
 		ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
 			   "ntdb_oob len %lld beyond internal"
-			   " malloc size %lld",
+			   " alloc size %lld",
 			   (long long)(off + len),
 			   (long long)ntdb->file->map_size);
 		return NTDB_ERR_IO;
@@ -336,7 +336,7 @@ enum NTDB_ERROR ntdb_write_convert(struct ntdb_context *ntdb, ntdb_off_t off,
 	enum NTDB_ERROR ecode;
 
 	if (unlikely((ntdb->flags & NTDB_CONVERT))) {
-		void *conv = malloc(len);
+		void *conv = ntdb->alloc_fn(ntdb, len, ntdb->alloc_data);
 		if (!conv) {
 			return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 					  "ntdb_write: no memory converting"
@@ -344,8 +344,8 @@ enum NTDB_ERROR ntdb_write_convert(struct ntdb_context *ntdb, ntdb_off_t off,
 		}
 		memcpy(conv, rec, len);
 		ecode = ntdb->io->twrite(ntdb, off,
-					ntdb_convert(ntdb, conv, len), len);
-		free(conv);
+					 ntdb_convert(ntdb, conv, len), len);
+		ntdb->free_fn(conv, ntdb->alloc_data);
 	} else {
 		ecode = ntdb->io->twrite(ntdb, off, rec, len);
 	}
@@ -388,16 +388,17 @@ static void *_ntdb_alloc_read(struct ntdb_context *ntdb, ntdb_off_t offset,
 	enum NTDB_ERROR ecode;
 
 	/* some systems don't like zero length malloc */
-	buf = malloc(prefix + len ? prefix + len : 1);
+	buf = ntdb->alloc_fn(ntdb, prefix + len ? prefix + len : 1,
+			  ntdb->alloc_data);
 	if (!buf) {
 		ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_USE_ERROR,
-			   "ntdb_alloc_read malloc failed len=%zu",
+			   "ntdb_alloc_read alloc failed len=%zu",
 			   (size_t)(prefix + len));
 		return NTDB_ERR_PTR(NTDB_ERR_OOM);
 	} else {
 		ecode = ntdb->io->tread(ntdb, offset, buf+prefix, len);
 		if (unlikely(ecode != NTDB_SUCCESS)) {
-			free(buf);
+			ntdb->free_fn(buf, ntdb->alloc_data);
 			return NTDB_ERR_PTR(ecode);
 		}
 	}
@@ -448,8 +449,9 @@ static enum NTDB_ERROR ntdb_expand_file(struct ntdb_context *ntdb,
 	}
 
 	if (ntdb->flags & NTDB_INTERNAL) {
-		char *new = realloc(ntdb->file->map_ptr,
-				    ntdb->file->map_size + addition);
+		char *new = ntdb->expand_fn(ntdb->file->map_ptr,
+					ntdb->file->map_size + addition,
+					ntdb->alloc_data);
 		if (!new) {
 			return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 					  "No memory to expand database");
@@ -566,7 +568,7 @@ void ntdb_access_release(struct ntdb_context *ntdb, const void *p)
 	if (hp) {
 		hdr = *hp;
 		*hp = hdr->next;
-		free(hdr);
+		ntdb->free_fn(hdr, ntdb->alloc_data);
 	} else
 		ntdb->direct_access--;
 }
@@ -583,7 +585,7 @@ enum NTDB_ERROR ntdb_access_commit(struct ntdb_context *ntdb, void *p)
 		else
 			ecode = ntdb_write(ntdb, hdr->off, p, hdr->len);
 		*hp = hdr->next;
-		free(hdr);
+		ntdb->free_fn(hdr, ntdb->alloc_data);
 	} else {
 		ntdb->direct_access--;
 		ecode = NTDB_SUCCESS;

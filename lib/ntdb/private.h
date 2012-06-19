@@ -596,6 +596,12 @@ struct ntdb_context {
 	void *hash_data;
 	uint64_t hash_seed;
 
+	/* Allocate and free functions. */
+	void *(*alloc_fn)(const void *owner, size_t len, void *priv_data);
+	void *(*expand_fn)(void *old, size_t newlen, void *priv_data);
+	void (*free_fn)(void *old, void *priv_data);
+	void *alloc_data;
+
 	/* Our open hook, if any. */
 	enum NTDB_ERROR (*openhook)(int fd, void *data);
 	void *openhook_data;

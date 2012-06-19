@@ -78,7 +78,7 @@ static void free_all(void)
 }
 
 #define malloc malloc_noleak
-#define free free_noleak
+#define free(x) free_noleak(x)
 #define realloc realloc_noleak
 
 #include "ntdb-source.h"

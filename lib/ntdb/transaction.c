@@ -26,7 +26,7 @@
 
 #include "private.h"
 #include <assert.h>
-#define SAFE_FREE(x) do { if ((x) != NULL) {free((void *)x); (x)=NULL;} } while(0)
+#define SAFE_FREE(ntdb, x) do { if ((x) != NULL) {ntdb->free_fn((void *)x, ntdb->alloc_data); (x)=NULL;} } while(0)
 
 /*
   transaction design:
@@ -213,12 +213,12 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 		uint8_t **new_blocks;
 		/* expand the blocks array */
 		if (ntdb->transaction->blocks == NULL) {
-			new_blocks = (uint8_t **)malloc(
-				(blk+1)*sizeof(uint8_t *));
+			new_blocks = (uint8_t **)ntdb->alloc_fn(ntdb,
+				    (blk+1)*sizeof(uint8_t *), ntdb->alloc_data);
 		} else {
-			new_blocks = (uint8_t **)realloc(
+			new_blocks = (uint8_t **)ntdb->expand_fn(
 				ntdb->transaction->blocks,
-				(blk+1)*sizeof(uint8_t *));
+				(blk+1)*sizeof(uint8_t *), ntdb->alloc_data);
 		}
 		if (new_blocks == NULL) {
 			ecode = ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
@@ -234,13 +234,16 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 
 	/* allocate and fill a block? */
 	if (ntdb->transaction->blocks[blk] == NULL) {
-		ntdb->transaction->blocks[blk] = (uint8_t *)calloc(NTDB_PGSIZE, 1);
+		ntdb->transaction->blocks[blk] = (uint8_t *)
+			ntdb->alloc_fn(ntdb->transaction->blocks, NTDB_PGSIZE,
+				   ntdb->alloc_data);
 		if (ntdb->transaction->blocks[blk] == NULL) {
 			ecode = ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 					   "transaction_write:"
 					   " failed to allocate");
 			goto fail;
 		}
+		memset(ntdb->transaction->blocks[blk], 0, NTDB_PGSIZE);
 		if (ntdb->transaction->old_map_size > blk * NTDB_PGSIZE) {
 			ntdb_len_t len2 = NTDB_PGSIZE;
 			if (len2 + (blk * NTDB_PGSIZE) > ntdb->transaction->old_map_size) {
@@ -257,7 +260,7 @@ static enum NTDB_ERROR transaction_write(struct ntdb_context *ntdb, ntdb_off_t o
 						   " failed to"
 						   " read old block: %s",
 						   strerror(errno));
-				SAFE_FREE(ntdb->transaction->blocks[blk]);
+				SAFE_FREE(ntdb, ntdb->transaction->blocks[blk]);
 				goto fail;
 			}
 		}
@@ -450,10 +453,11 @@ static void _ntdb_transaction_cancel(struct ntdb_context *ntdb)
 	/* free all the transaction blocks */
 	for (i=0;i<ntdb->transaction->num_blocks;i++) {
 		if (ntdb->transaction->blocks[i] != NULL) {
-			free(ntdb->transaction->blocks[i]);
+			ntdb->free_fn(ntdb->transaction->blocks[i],
+				      ntdb->alloc_data);
 		}
 	}
-	SAFE_FREE(ntdb->transaction->blocks);
+	SAFE_FREE(ntdb, ntdb->transaction->blocks);
 
 	if (ntdb->transaction->magic_offset) {
 		const struct ntdb_methods *methods = ntdb->transaction->io_methods;
@@ -484,7 +488,7 @@ static void _ntdb_transaction_cancel(struct ntdb_context *ntdb)
 	if (ntdb_has_open_lock(ntdb))
 		ntdb_unlock_open(ntdb, F_WRLCK);
 
-	SAFE_FREE(ntdb->transaction);
+	SAFE_FREE(ntdb, ntdb->transaction);
 }
 
 /*
@@ -536,20 +540,22 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 	}
 
 	ntdb->transaction = (struct ntdb_transaction *)
-		calloc(sizeof(struct ntdb_transaction), 1);
+		ntdb->alloc_fn(ntdb, sizeof(struct ntdb_transaction),
+			       ntdb->alloc_data);
 	if (ntdb->transaction == NULL) {
 		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				   "ntdb_transaction_start:"
 				   " cannot allocate");
 	}
+	memset(ntdb->transaction, 0, sizeof(*ntdb->transaction));
 
 	/* get the transaction write lock. This is a blocking lock. As
 	   discussed with Volker, there are a number of ways we could
 	   make this async, which we will probably do in the future */
 	ecode = ntdb_transaction_lock(ntdb, F_WRLCK);
 	if (ecode != NTDB_SUCCESS) {
-		SAFE_FREE(ntdb->transaction->blocks);
-		SAFE_FREE(ntdb->transaction);
+		SAFE_FREE(ntdb, ntdb->transaction->blocks);
+		SAFE_FREE(ntdb, ntdb->transaction);
 		return ecode;
 	}
 
@@ -573,8 +579,8 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 
 fail_allrecord_lock:
 	ntdb_transaction_unlock(ntdb, F_WRLCK);
-	SAFE_FREE(ntdb->transaction->blocks);
-	SAFE_FREE(ntdb->transaction);
+	SAFE_FREE(ntdb, ntdb->transaction->blocks);
+	SAFE_FREE(ntdb, ntdb->transaction);
 	return ecode;
 }
 
@@ -690,7 +696,8 @@ static struct ntdb_recovery_record *alloc_recovery(struct ntdb_context *ntdb,
 	unsigned char *p;
 	const struct ntdb_methods *old_methods = ntdb->io;
 
-	rec = malloc(sizeof(*rec) + ntdb_recovery_size(ntdb));
+	rec = ntdb->alloc_fn(ntdb, sizeof(*rec) + ntdb_recovery_size(ntdb),
+			 ntdb->alloc_data);
 	if (!rec) {
 		ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 			   "transaction_setup_recovery:"
@@ -764,7 +771,7 @@ static struct ntdb_recovery_record *alloc_recovery(struct ntdb_context *ntdb,
 	return rec;
 
 fail:
-	free(rec);
+	ntdb->free_fn(rec, ntdb->alloc_data);
 	ntdb->io = old_methods;
 	return NTDB_ERR_PTR(ecode);
 }
@@ -847,7 +854,7 @@ static enum NTDB_ERROR transaction_setup_recovery(struct ntdb_context *ntdb)
 
 	ecode = ntdb_recovery_area(ntdb, methods, &recovery_off, recovery);
 	if (ecode) {
-		free(recovery);
+		ntdb->free_fn(recovery, ntdb->alloc_data);
 		return ecode;
 	}
 
@@ -859,7 +866,7 @@ static enum NTDB_ERROR transaction_setup_recovery(struct ntdb_context *ntdb)
 						sizeof(*recovery)
 						+ recovery->max_len,
 						NTDB_LOCK_WAIT, true);
-			free(recovery);
+			ntdb->free_fn(recovery, ntdb->alloc_data);
 			if (ecode != NTDB_SUCCESS) {
 				return ntdb_logerr(ntdb, ecode, NTDB_LOG_ERROR,
 						  "ntdb_recovery_allocate:"
@@ -876,7 +883,7 @@ static enum NTDB_ERROR transaction_setup_recovery(struct ntdb_context *ntdb)
 		recovery_off = create_recovery_area(ntdb, recovery_size,
 						    recovery);
 		if (NTDB_OFF_IS_ERR(recovery_off)) {
-			free(recovery);
+			ntdb->free_fn(recovery, ntdb->alloc_data);
 			return NTDB_OFF_TO_ERR(recovery_off);
 		}
 	}
@@ -891,14 +898,14 @@ static enum NTDB_ERROR transaction_setup_recovery(struct ntdb_context *ntdb)
 	ecode = methods->twrite(ntdb, recovery_off, recovery,
 				sizeof(*recovery) + recovery_size);
 	if (ecode != NTDB_SUCCESS) {
-		free(recovery);
+		ntdb->free_fn(recovery, ntdb->alloc_data);
 		return ntdb_logerr(ntdb, ecode, NTDB_LOG_ERROR,
 				  "ntdb_transaction_setup_recovery:"
 				  " failed to write recovery data");
 	}
 	transaction_write_existing(ntdb, recovery_off, recovery, recovery_size);
 
-	free(recovery);
+	ntdb->free_fn(recovery, ntdb->alloc_data);
 
 	/* as we don't have ordered writes, we have to sync the recovery
 	   data before we update the magic to indicate that the recovery
@@ -1075,10 +1082,10 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 
 			return ecode;
 		}
-		SAFE_FREE(ntdb->transaction->blocks[i]);
+		SAFE_FREE(ntdb, ntdb->transaction->blocks[i]);
 	}
 
-	SAFE_FREE(ntdb->transaction->blocks);
+	SAFE_FREE(ntdb, ntdb->transaction->blocks);
 	ntdb->transaction->num_blocks = 0;
 
 	/* ensure the new data is on disk */
@@ -1158,7 +1165,7 @@ enum NTDB_ERROR ntdb_transaction_recover(struct ntdb_context *ntdb)
 
 	recovery_eof = rec.eof;
 
-	data = (unsigned char *)malloc(rec.len);
+	data = (unsigned char *)ntdb->alloc_fn(ntdb, rec.len, ntdb->alloc_data);
 	if (data == NULL) {
 		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				  "ntdb_transaction_recover:"
@@ -1186,7 +1193,7 @@ enum NTDB_ERROR ntdb_transaction_recover(struct ntdb_context *ntdb)
 
 		ecode = ntdb->io->twrite(ntdb, ofs, p, len);
 		if (ecode != NTDB_SUCCESS) {
-			free(data);
+			ntdb->free_fn(data, ntdb->alloc_data);
 			return ntdb_logerr(ntdb, ecode, NTDB_LOG_ERROR,
 					  "ntdb_transaction_recover:"
 					  " failed to recover %zu bytes"
@@ -1196,7 +1203,7 @@ enum NTDB_ERROR ntdb_transaction_recover(struct ntdb_context *ntdb)
 		p += len;
 	}
 
-	free(data);
+	ntdb->free_fn(data, ntdb->alloc_data);
 
 	ecode = transaction_sync(ntdb, 0, ntdb->file->map_size);
 	if (ecode != NTDB_SUCCESS) {

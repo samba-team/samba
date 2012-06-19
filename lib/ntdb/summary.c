@@ -261,7 +261,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 		+ num_caps * (strlen(CAPABILITY_FORMAT) + 20
 			      + strlen(" (uncheckable,read-only)"));
 
-	*summary = malloc(len);
+	*summary = ntdb->alloc_fn(ntdb, len, ntdb->alloc_data);
 	if (!*summary) {
 		ecode = ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				   "ntdb_summary: failed to allocate string");
@@ -309,20 +309,20 @@ _PUBLIC_ enum NTDB_ERROR ntdb_summary(struct ntdb_context *ntdb,
 	add_capabilities(ntdb, *summary);
 
 unlock:
-	free(hashesg);
-	free(freeg);
-	free(keysg);
-	free(datag);
-	free(extrag);
-	free(uncoalg);
-	free(hashes);
-	free(freet);
-	free(keys);
-	free(data);
-	free(extra);
-	free(uncoal);
-	free(ftables);
-	free(chains);
+	ntdb->free_fn(hashesg, ntdb->alloc_data);
+	ntdb->free_fn(freeg, ntdb->alloc_data);
+	ntdb->free_fn(keysg, ntdb->alloc_data);
+	ntdb->free_fn(datag, ntdb->alloc_data);
+	ntdb->free_fn(extrag, ntdb->alloc_data);
+	ntdb->free_fn(uncoalg, ntdb->alloc_data);
+	ntdb->free_fn(hashes, ntdb->alloc_data);
+	ntdb->free_fn(freet, ntdb->alloc_data);
+	ntdb->free_fn(keys, ntdb->alloc_data);
+	ntdb->free_fn(data, ntdb->alloc_data);
+	ntdb->free_fn(extra, ntdb->alloc_data);
+	ntdb->free_fn(uncoal, ntdb->alloc_data);
+	ntdb->free_fn(ftables, ntdb->alloc_data);
+	ntdb->free_fn(chains, ntdb->alloc_data);
 
 	ntdb_allrecord_unlock(ntdb, F_RDLCK);
 	ntdb_unlock_expand(ntdb, F_RDLCK);

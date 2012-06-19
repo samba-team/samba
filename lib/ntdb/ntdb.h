@@ -633,6 +633,7 @@ enum ntdb_attribute_type {
 	NTDB_ATTRIBUTE_STATS = 3,
 	NTDB_ATTRIBUTE_OPENHOOK = 4,
 	NTDB_ATTRIBUTE_FLOCK = 5,
+	NTDB_ATTRIBUTE_ALLOCATOR = 6
 };
 
 /**
@@ -865,6 +866,30 @@ struct ntdb_attribute_flock {
 };
 
 /**
+ * struct ntdb_attribute_allocator - allocator for ntdb to use.
+ *
+ * You can replace malloc/free with your own allocation functions.
+ * The allocator takes an "owner" pointer, which is either NULL (for
+ * the initial struct ntdb_context and struct ntdb_file), or a
+ * previously allocated pointer.  This is useful for relationship
+ * tracking, such as the talloc library.
+ *
+ * The expand function is realloc, but only ever used to expand an
+ * existing allocation.
+ *
+ * Be careful mixing allocators: two ntdb_contexts which have the same file
+ * open will share the same struct ntdb_file.  This may be allocated by one
+ * ntdb's allocator, and freed by the other.
+ */
+struct ntdb_attribute_allocator {
+	struct ntdb_attribute_base base; /* .attr = NTDB_ATTRIBUTE_ALLOCATOR */
+	void *(*alloc)(const void *owner, size_t len, void *priv_data);
+	void *(*expand)(void *old, size_t newlen, void *priv_data);
+	void (*free)(void *old, void *priv_data);
+	void *priv_data;
+};
+
+/**
  * union ntdb_attribute - ntdb attributes.
  *
  * This represents all the known attributes.
@@ -872,7 +897,8 @@ struct ntdb_attribute_flock {
  * See also:
  *	struct ntdb_attribute_log, struct ntdb_attribute_hash,
  *	struct ntdb_attribute_seed, struct ntdb_attribute_stats,
- *	struct ntdb_attribute_openhook, struct ntdb_attribute_flock.
+ *	struct ntdb_attribute_openhook, struct ntdb_attribute_flock,
+ *	struct ntdb_attribute_allocator alloc.
  */
 union ntdb_attribute {
 	struct ntdb_attribute_base base;
@@ -882,6 +908,7 @@ union ntdb_attribute {
 	struct ntdb_attribute_stats stats;
 	struct ntdb_attribute_openhook openhook;
 	struct ntdb_attribute_flock flock;
+	struct ntdb_attribute_allocator alloc;
 };
 
 #ifdef  __cplusplus

@@ -39,6 +39,7 @@ static bool is_unlock(const struct failtest_call *call)
 bool exit_check_log(struct tlist_calls *history)
 {
 	const struct failtest_call *i;
+	unsigned int malloc_count = 0;
 
 	tlist_for_each(history, i, list) {
 		if (!i->fail)
@@ -52,8 +53,11 @@ bool exit_check_log(struct tlist_calls *history)
 			continue;
 
 		/* Initial allocation of ntdb doesn't log. */
-		if (failmatch(i, INITIAL_NTDB_MALLOC))
-			continue;
+		if (i->type == FAILTEST_MALLOC) {
+			if (malloc_count++ == 0) {
+				continue;
+			}
+		}
 
 		/* We don't block "failures" on non-blocking locks. */
 		if (is_nonblocking_lock(i))
@@ -77,8 +81,7 @@ block_repeat_failures(struct tlist_calls *history)
 	if (failtest_suppress)
 		return FAIL_DONT_FAIL;
 
-	if (failmatch(last, INITIAL_NTDB_MALLOC)
-	    || failmatch(last, URANDOM_OPEN)
+	if (failmatch(last, URANDOM_OPEN)
 	    || failmatch(last, URANDOM_READ)) {
 		return FAIL_PROBE;
 	}

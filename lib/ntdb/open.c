@@ -126,7 +126,7 @@ static enum NTDB_ERROR ntdb_new_database(struct ntdb_context *ntdb,
 	/* Always make db a multiple of NTDB_PGSIZE */
 	dbsize = (sizeof(*newdb) + NTDB_PGSIZE-1) & ~(NTDB_PGSIZE-1);
 	remaindersize = dbsize - sizeof(*newdb);
-	newdb = malloc(dbsize);
+	newdb = ntdb->alloc_fn(ntdb, dbsize, ntdb->alloc_data);
 	if (!newdb) {
 		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				   "ntdb_new_database: failed to allocate");
@@ -218,13 +218,13 @@ static enum NTDB_ERROR ntdb_new_database(struct ntdb_context *ntdb,
 	}
 
 out:
-	free(newdb);
+	ntdb->free_fn(newdb, ntdb->alloc_data);
 	return ecode;
 }
 
 static enum NTDB_ERROR ntdb_new_file(struct ntdb_context *ntdb)
 {
-	ntdb->file = malloc(sizeof(*ntdb->file));
+	ntdb->file = ntdb->alloc_fn(NULL, sizeof(*ntdb->file), ntdb->alloc_data);
 	if (!ntdb->file)
 		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				  "ntdb_open: cannot alloc ntdb_file structure");
@@ -265,6 +265,12 @@ _PUBLIC_ enum NTDB_ERROR ntdb_set_attribute(struct ntdb_context *ntdb,
 		ntdb->lock_fn = attr->flock.lock;
 		ntdb->unlock_fn = attr->flock.unlock;
 		ntdb->lock_data = attr->flock.data;
+		break;
+	case NTDB_ATTRIBUTE_ALLOCATOR:
+		ntdb->alloc_fn = attr->alloc.alloc;
+		ntdb->expand_fn = attr->alloc.expand;
+		ntdb->free_fn = attr->alloc.free;
+		ntdb->alloc_data = attr->alloc.priv_data;
 		break;
 	default:
 		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
@@ -310,6 +316,12 @@ _PUBLIC_ enum NTDB_ERROR ntdb_get_attribute(struct ntdb_context *ntdb,
 		attr->flock.lock = ntdb->lock_fn;
 		attr->flock.unlock = ntdb->unlock_fn;
 		attr->flock.data = ntdb->lock_data;
+		break;
+	case NTDB_ATTRIBUTE_ALLOCATOR:
+		attr->alloc.alloc = ntdb->alloc_fn;
+		attr->alloc.expand = ntdb->expand_fn;
+		attr->alloc.free = ntdb->free_fn;
+		attr->alloc.priv_data = ntdb->alloc_data;
 		break;
 	default:
 		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
@@ -406,9 +418,40 @@ static enum NTDB_ERROR capabilities_ok(struct ntdb_context *ntdb,
 	return ecode;
 }
 
+static void *default_alloc(const void *owner, size_t len, void *priv_data)
+{
+	return malloc(len);
+}
+
+static void *default_expand(void *ptr, size_t len, void *priv_data)
+{
+	return realloc(ptr, len);
+}
+
+static void default_free(void *ptr, void *priv_data)
+{
+	free(ptr);
+}
+
+/* First allocation needs manual search of attributes. */
+static struct ntdb_context *alloc_ntdb(const union ntdb_attribute *attr,
+				       const char *name)
+{
+	size_t len = sizeof(struct ntdb_context) + strlen(name) + 1;
+
+	while (attr) {
+		if  (attr->base.attr == NTDB_ATTRIBUTE_ALLOCATOR) {
+			return attr->alloc.alloc(NULL, len,
+						 attr->alloc.priv_data);
+		}
+		attr = attr->base.next;
+	}
+	return default_alloc(NULL, len, NULL);
+}
+
 _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
-			     int open_flags, mode_t mode,
-			     union ntdb_attribute *attr)
+					int open_flags, mode_t mode,
+					union ntdb_attribute *attr)
 {
 	struct ntdb_context *ntdb;
 	struct stat st;
@@ -422,7 +465,7 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	enum NTDB_ERROR ecode;
 	int openlock;
 
-	ntdb = malloc(sizeof(*ntdb) + strlen(name) + 1);
+	ntdb = alloc_ntdb(attr, name);
 	if (!ntdb) {
 		/* Can't log this */
 		errno = ENOMEM;
@@ -441,6 +484,9 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	memset(&ntdb->stats, 0, sizeof(ntdb->stats));
 	ntdb->stats.base.attr = NTDB_ATTRIBUTE_STATS;
 	ntdb->stats.size = sizeof(ntdb->stats);
+	ntdb->alloc_fn = default_alloc;
+	ntdb->expand_fn = default_expand;
+	ntdb->free_fn = default_free;
 
 	while (attr) {
 		switch (attr->base.attr) {
@@ -738,7 +784,8 @@ fail_errno:
 			assert(ntdb->file->num_lockrecs == 0);
 			if (ntdb->file->map_ptr) {
 				if (ntdb->flags & NTDB_INTERNAL) {
-					free(ntdb->file->map_ptr);
+					ntdb->free_fn(ntdb->file->map_ptr,
+						      ntdb->alloc_data);
 				} else
 					ntdb_munmap(ntdb->file);
 			}
@@ -746,12 +793,12 @@ fail_errno:
 				ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
 					   "ntdb_open: failed to close ntdb fd"
 					   " on error: %s", strerror(errno));
-			free(ntdb->file->lockrecs);
-			free(ntdb->file);
+			ntdb->free_fn(ntdb->file->lockrecs, ntdb->alloc_data);
+			ntdb->free_fn(ntdb->file, ntdb->alloc_data);
 		}
 	}
 
-	free(ntdb);
+	ntdb->free_fn(ntdb, ntdb->alloc_data);
 	errno = saved_errno;
 	return NULL;
 }
@@ -769,7 +816,7 @@ _PUBLIC_ int ntdb_close(struct ntdb_context *ntdb)
 
 	if (ntdb->file->map_ptr) {
 		if (ntdb->flags & NTDB_INTERNAL)
-			free(ntdb->file->map_ptr);
+			ntdb->free_fn(ntdb->file->map_ptr, ntdb->alloc_data);
 		else
 			ntdb_munmap(ntdb->file);
 	}
@@ -777,8 +824,8 @@ _PUBLIC_ int ntdb_close(struct ntdb_context *ntdb)
 		ntdb_lock_cleanup(ntdb);
 		if (--ntdb->file->refcnt == 0) {
 			ret = close(ntdb->file->fd);
-			free(ntdb->file->lockrecs);
-			free(ntdb->file);
+			ntdb->free_fn(ntdb->file->lockrecs, ntdb->alloc_data);
+			ntdb->free_fn(ntdb->file, ntdb->alloc_data);
 		}
 	}
 
@@ -793,7 +840,7 @@ _PUBLIC_ int ntdb_close(struct ntdb_context *ntdb)
 #ifdef NTDB_TRACE
 	close(ntdb->tracefd);
 #endif
-	free(ntdb);
+	ntdb->free_fn(ntdb, ntdb->alloc_data);
 
 	return ret;
 }

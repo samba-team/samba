@@ -387,10 +387,16 @@ static enum NTDB_ERROR ntdb_nest_lock(struct ntdb_context *ntdb,
 				  "ntdb_nest_lock: already have a hash lock?");
 	}
 #endif
-
-	new_lck = (struct ntdb_lock *)realloc(
-		ntdb->file->lockrecs,
-		sizeof(*ntdb->file->lockrecs) * (ntdb->file->num_lockrecs+1));
+	if (ntdb->file->lockrecs == NULL) {
+		new_lck = ntdb->alloc_fn(ntdb->file, sizeof(*ntdb->file->lockrecs),
+				     ntdb->alloc_data);
+	} else {
+		new_lck = (struct ntdb_lock *)ntdb->expand_fn(
+			ntdb->file->lockrecs,
+			sizeof(*ntdb->file->lockrecs)
+			* (ntdb->file->num_lockrecs+1),
+			ntdb->alloc_data);
+	}
 	if (new_lck == NULL) {
 		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 				  "ntdb_nest_lock:"

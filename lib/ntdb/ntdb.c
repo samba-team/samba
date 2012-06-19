@@ -204,7 +204,8 @@ _PUBLIC_ enum NTDB_ERROR ntdb_append(struct ntdb_context *ntdb,
 		}
 
 		/* Slow path. */
-		newdata = malloc(key.dsize + old_dlen + dbuf.dsize);
+		newdata = ntdb->alloc_fn(ntdb, key.dsize + old_dlen + dbuf.dsize,
+				     ntdb->alloc_data);
 		if (!newdata) {
 			ecode = ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 					   "ntdb_append:"
@@ -230,7 +231,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_append(struct ntdb_context *ntdb,
 	ecode = replace_data(ntdb, &h, key, new_dbuf, off, old_room, true);
 
 out_free_newdata:
-	free(newdata);
+	ntdb->free_fn(newdata, ntdb->alloc_data);
 out:
 	ntdb_unlock_hashes(ntdb, h.hlock_start, h.hlock_range, F_WRLCK);
 	return ecode;
@@ -454,16 +455,20 @@ enum NTDB_ERROR COLD ntdb_logerr(struct ntdb_context *ntdb,
 		return ecode;
 
 	va_start(ap, fmt);
-	len = vasprintf(&message, fmt, ap);
+	len = vsnprintf(NULL, 0, fmt, ap);
 	va_end(ap);
 
-	if (len < 0) {
+	message = ntdb->alloc_fn(ntdb, len + 1, ntdb->alloc_data);
+	if (!message) {
 		ntdb->log_fn(ntdb, NTDB_LOG_ERROR, NTDB_ERR_OOM,
 			    "out of memory formatting message:", ntdb->log_data);
 		ntdb->log_fn(ntdb, level, ecode, fmt, ntdb->log_data);
 	} else {
+		va_start(ap, fmt);
+		vsnprintf(message, len+1, fmt, ap);
+		va_end(ap);
 		ntdb->log_fn(ntdb, level, ecode, message, ntdb->log_data);
-		free(message);
+		ntdb->free_fn(message, ntdb->alloc_data);
 	}
 	errno = saved_errno;
 	return ecode;

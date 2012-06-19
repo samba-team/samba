@@ -20,9 +20,17 @@
 #include <ccan/asearch/asearch.h>
 
 /* We keep an ordered array of offsets. */
-static bool append(ntdb_off_t **arr, size_t *num, ntdb_off_t off)
+static bool append(struct ntdb_context *ntdb,
+		   ntdb_off_t **arr, size_t *num, ntdb_off_t off)
 {
-	ntdb_off_t *new = realloc(*arr, (*num + 1) * sizeof(ntdb_off_t));
+	ntdb_off_t *new;
+
+	if (*num == 0) {
+		new = ntdb->alloc_fn(ntdb, sizeof(ntdb_off_t), ntdb->alloc_data);
+	} else {
+		new = ntdb->expand_fn(*arr, (*num + 1) * sizeof(ntdb_off_t),
+				  ntdb->alloc_data);
+	}
 	if (!new)
 		return false;
 	new[(*num)++] = off;
@@ -708,7 +716,7 @@ static enum NTDB_ERROR check_linear(struct ntdb_context *ntdb,
 			}
 			/* This record should be in free lists. */
 			if (frec_ftable(&rec.f) != NTDB_FTABLE_NONE
-			    && !append(fr, num_free, off)) {
+			    && !append(ntdb, fr, num_free, off)) {
 				return ntdb_logerr(ntdb, NTDB_ERR_OOM,
 						  NTDB_LOG_ERROR,
 						  "ntdb_check: tracking %zu'th"
@@ -722,7 +730,7 @@ static enum NTDB_ERROR check_linear(struct ntdb_context *ntdb,
 			uint64_t klen, dlen, extra;
 
 			/* This record is used! */
-			if (!append(used, num_used, off)) {
+			if (!append(ntdb, used, num_used, off)) {
 				return ntdb_logerr(ntdb, NTDB_ERR_OOM,
 						  NTDB_LOG_ERROR,
 						  "ntdb_check: tracking %zu'th"
@@ -858,7 +866,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_check_(struct ntdb_context *ntdb,
 out:
 	ntdb_allrecord_unlock(ntdb, F_RDLCK);
 	ntdb_unlock_expand(ntdb, F_RDLCK);
-	free(fr);
-	free(used);
+	ntdb->free_fn(fr, ntdb->alloc_data);
+	ntdb->free_fn(used, ntdb->alloc_data);
 	return ecode;
 }

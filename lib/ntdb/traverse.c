@@ -36,10 +36,10 @@ _PUBLIC_ int64_t ntdb_traverse_(struct ntdb_context *ntdb,
 
 		count++;
 		if (fn && fn(ntdb, k, d, p)) {
-			free(k.dptr);
+			ntdb->free_fn(k.dptr, ntdb->alloc_data);
 			return count;
 		}
-		free(k.dptr);
+		ntdb->free_fn(k.dptr, ntdb->alloc_data);
 	}
 
 	if (ecode != NTDB_ERR_NOEXIST) {
@@ -63,7 +63,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_nextkey(struct ntdb_context *ntdb, NTDB_DATA *key)
 	struct ntdb_used_record rec;
 
 	tinfo.prev = find_and_lock(ntdb, *key, F_RDLCK, &h, &rec, &tinfo);
-	free(key->dptr);
+	ntdb->free_fn(key->dptr, ntdb->alloc_data);
 	if (NTDB_OFF_IS_ERR(tinfo.prev)) {
 		return NTDB_OFF_TO_ERR(tinfo.prev);
 	}

@@ -69,6 +69,7 @@ def configure(conf):
                                 'test/api-13-delete.c',
                                 'test/api-14-exists.c',
                                 'test/api-16-wipe_all.c',
+                                'test/api-20-alloc-attr.c',
                                 'test/api-21-parse_record.c',
                                 'test/api-55-transaction.c',
                                 'test/api-80-tdb_fd.c',
