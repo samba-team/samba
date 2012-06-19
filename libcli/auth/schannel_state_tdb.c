@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "../lib/tdb_compat/tdb_compat.h"
+#include "../lib/tdb/include/tdb.h"
 #include "../lib/util/util_tdb.h"
 #include "../lib/param/param.h"
 #include "../libcli/auth/schannel.h"
@@ -101,7 +101,7 @@ NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
 	ret = tdb_store_bystring(tdb_sc->tdb, keystr, value, TDB_REPLACE);
 	if (ret != TDB_SUCCESS) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n",
-			 keystr, tdb_errorstr_compat(tdb_sc->tdb)));
+			 keystr, tdb_errorstr(tdb_sc->tdb)));
 		talloc_free(keystr);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
