@@ -505,10 +505,9 @@ static enum NTDB_ERROR check_free(struct ntdb_context *ntdb,
 
 	}
 
-	ecode = ntdb->io->oob(ntdb, off,
-			     frec_len(frec)
-			     + sizeof(struct ntdb_used_record),
-			     false);
+	ecode = ntdb_oob(ntdb, off,
+			 frec_len(frec) + sizeof(struct ntdb_used_record),
+			 false);
 	if (ecode != NTDB_SUCCESS) {
 		return ecode;
 	}

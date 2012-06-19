@@ -718,7 +718,7 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	ntdb_unlock_open(ntdb, openlock);
 
 	/* This makes sure we have current map_size and mmap. */
-	ecode = ntdb->io->oob(ntdb, ntdb->file->map_size, 1, true);
+	ecode = ntdb_oob(ntdb, ntdb->file->map_size, 1, true);
 	if (unlikely(ecode != NTDB_SUCCESS))
 		goto fail;
 

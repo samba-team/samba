@@ -92,8 +92,9 @@ enum NTDB_ERROR ntdb_mmap(struct ntdb_context *ntdb)
 
    If probe is true, len being too large isn't a failure.
 */
-static enum NTDB_ERROR ntdb_oob(struct ntdb_context *ntdb,
-			      ntdb_off_t off, ntdb_len_t len, bool probe)
+static enum NTDB_ERROR ntdb_normal_oob(struct ntdb_context *ntdb,
+				       ntdb_off_t off, ntdb_len_t len,
+				       bool probe)
 {
 	struct stat st;
 	enum NTDB_ERROR ecode;
@@ -112,8 +113,6 @@ static enum NTDB_ERROR ntdb_oob(struct ntdb_context *ntdb,
 				  (long long)off, (long long)len);
 	}
 
-	if (len + off <= ntdb->file->map_size)
-		return NTDB_SUCCESS;
 	if (ntdb->flags & NTDB_INTERNAL) {
 		if (probe)
 			return NTDB_SUCCESS;
@@ -271,7 +270,7 @@ static enum NTDB_ERROR ntdb_write(struct ntdb_context *ntdb, ntdb_off_t off,
 				  "Write to read-only database");
 	}
 
-	ecode = ntdb->io->oob(ntdb, off, len, false);
+	ecode = ntdb_oob(ntdb, off, len, false);
 	if (ecode != NTDB_SUCCESS) {
 		return ecode;
 	}
@@ -305,7 +304,7 @@ static enum NTDB_ERROR ntdb_read(struct ntdb_context *ntdb, ntdb_off_t off,
 {
 	enum NTDB_ERROR ecode;
 
-	ecode = ntdb->io->oob(ntdb, off, len, false);
+	ecode = ntdb_oob(ntdb, off, len, false);
 	if (ecode != NTDB_SUCCESS) {
 		return ecode;
 	}
@@ -639,7 +638,7 @@ void ntdb_inc_seqnum(struct ntdb_context *ntdb)
 static const struct ntdb_methods io_methods = {
 	ntdb_read,
 	ntdb_write,
-	ntdb_oob,
+	ntdb_normal_oob,
 	ntdb_expand_file,
 	ntdb_direct,
 };

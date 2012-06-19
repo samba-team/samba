@@ -568,7 +568,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_start(struct ntdb_context *ntdb)
 
 	/* make sure we know about any file expansions already done by
 	   anyone else */
-	ntdb->io->oob(ntdb, ntdb->file->map_size, 1, true);
+	ntdb_oob(ntdb, ntdb->file->map_size, 1, true);
 	ntdb->transaction->old_map_size = ntdb->file->map_size;
 
 	/* finally hook the io methods, replacing them with

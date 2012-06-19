@@ -630,6 +630,18 @@ enum NTDB_ERROR COLD PRINTF_FMT(4, 5)
 		    enum ntdb_log_level level,
 		    const char *fmt, ...);
 
+static inline enum NTDB_ERROR ntdb_oob(struct ntdb_context *ntdb,
+				       ntdb_off_t off, ntdb_len_t len,
+				       bool probe)
+{
+	if (likely(off + len >= off)
+	    && likely(off + len <= ntdb->file->map_size)
+	    && likely(!probe)) {
+		    return NTDB_SUCCESS;
+	}
+	return ntdb->io->oob(ntdb, off, len, probe);
+}
+
 #ifdef NTDB_TRACE
 void ntdb_trace(struct ntdb_context *ntdb, const char *op);
 void ntdb_trace_seqnum(struct ntdb_context *ntdb, uint32_t seqnum, const char *op);

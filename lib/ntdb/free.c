@@ -932,7 +932,7 @@ static enum NTDB_ERROR ntdb_expand(struct ntdb_context *ntdb, ntdb_len_t size)
 
 	/* Someone else may have expanded the file, so retry. */
 	old_size = ntdb->file->map_size;
-	ntdb->io->oob(ntdb, ntdb->file->map_size, 1, true);
+	ntdb_oob(ntdb, ntdb->file->map_size, 1, true);
 	if (ntdb->file->map_size != old_size) {
 		ntdb_unlock_expand(ntdb, F_WRLCK);
 		return NTDB_SUCCESS;
