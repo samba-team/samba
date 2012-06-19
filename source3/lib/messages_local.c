@@ -218,7 +218,7 @@ static NTSTATUS messaging_tdb_fetch(TDB_CONTEXT *msg_tdb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	data = tdb_fetch_compat(msg_tdb, key);
+	data = tdb_fetch(msg_tdb, key);
 
 	if (data.dptr == NULL) {
 		*presult = result;

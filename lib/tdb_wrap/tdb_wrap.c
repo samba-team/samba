@@ -91,6 +91,7 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 						      struct loadparm_context *lp_ctx)
 {
 	struct tdb_wrap_private *result;
+	struct tdb_logging_context lctx;
 
 	result = talloc(mem_ctx, struct tdb_wrap_private);
 	if (result == NULL) {
@@ -117,8 +118,9 @@ static struct tdb_wrap_private *tdb_wrap_private_open(TALLOC_CTX *mem_ctx,
 		hash_size = lpcfg_parm_int(lp_ctx, NULL, "tdb_hashsize", base, 0);
 	}
 
-	result->tdb = tdb_open_compat(name, hash_size, tdb_flags,
-				      open_flags, mode, tdb_wrap_log, NULL);
+	lctx.log_fn = tdb_wrap_log;
+	result->tdb = tdb_open_ex(name, hash_size, tdb_flags,
+				  open_flags, mode, &lctx, NULL);
 	if (result->tdb == NULL) {
 		goto fail;
 	}

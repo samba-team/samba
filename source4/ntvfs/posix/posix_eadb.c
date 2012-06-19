@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
-#include "tdb_compat.h"
 #include "vfs_posix.h"
 #include "posix_eadb.h"
 
@@ -130,7 +129,7 @@ NTSTATUS pull_xattr_blob_tdb_raw(struct tdb_wrap *ea_tdb,
 		return status;
 	}
 
-	tdata = tdb_fetch_compat(ea_tdb->tdb, tkey);
+	tdata = tdb_fetch(ea_tdb->tdb, tkey);
 	if (tdata.dptr == NULL) {
 		return NT_STATUS_NOT_FOUND;
 	}
