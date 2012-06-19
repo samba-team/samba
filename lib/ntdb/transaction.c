@@ -85,8 +85,9 @@
     intervention.
 
   - if NTDB_NOSYNC is passed to flags in ntdb_open then transactions are
-    still available, but no transaction recovery area is used and no
-    fsync/msync calls are made.
+    still available, but fsync/msync calls are made.  This means we
+    still are safe against unexpected death during transaction commit,
+    but not against machine reboots.
 */
 
 /*
@@ -977,14 +978,11 @@ static enum NTDB_ERROR _ntdb_transaction_prepare_commit(struct ntdb_context *ntd
 		return ecode;
 	}
 
-	/* Since we have whole db locked, we don't need the expansion lock. */
-	if (!(ntdb->flags & NTDB_NOSYNC)) {
-		/* Sets up ntdb->transaction->recovery and
-		 * ntdb->transaction->magic_offset. */
-		ecode = transaction_setup_recovery(ntdb);
-		if (ecode != NTDB_SUCCESS) {
-			return ecode;
-		}
+	/* Sets up ntdb->transaction->recovery and
+	 * ntdb->transaction->magic_offset. */
+	ecode = transaction_setup_recovery(ntdb);
+	if (ecode != NTDB_SUCCESS) {
+		return ecode;
 	}
 
 	ntdb->transaction->prepared = true;
