@@ -155,8 +155,6 @@ static NTSTATUS _idmap_adex_get_sid_from_id(struct
 						**ids)
 {
 	int i;
-	bool one_mapped = false;
-	bool all_mapped = true;
 	NTSTATUS nt_status;
         struct likewise_cell *cell;
 
@@ -187,12 +185,10 @@ static NTSTATUS _idmap_adex_get_sid_from_id(struct
 
 		if (!NT_STATUS_IS_OK(status)) {
 			ids[i]->status = ID_UNMAPPED;
-			all_mapped = false;
 			continue;
 		}
 
 		ids[i]->status = ID_MAPPED;
-		one_mapped = true;
 	}
 
 	return NT_STATUS_OK;
@@ -208,8 +204,6 @@ static NTSTATUS _idmap_adex_get_id_from_sid(struct
 						**ids)
 {
 	int i;
-	bool one_mapped = false;
-	bool all_mapped = true;
 	NTSTATUS nt_status;
         struct likewise_cell *cell;
 
@@ -240,12 +234,10 @@ static NTSTATUS _idmap_adex_get_id_from_sid(struct
 
 		if (!NT_STATUS_IS_OK(status)) {
 			ids[i]->status = ID_UNMAPPED;
-			all_mapped = false;
 			continue;
 		}
 
 		ids[i]->status = ID_MAPPED;
-		one_mapped = true;
 	}
 
 	return NT_STATUS_OK;
