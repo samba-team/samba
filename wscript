@@ -173,7 +173,7 @@ def etags(ctx):
     '''build TAGS file using etags'''
     import Utils
     source_root = os.path.dirname(Utils.g_module.root_path)
-    cmd = 'etags $(find %s -name "*.[ch]" | egrep -v \.inst\.)' % source_root
+    cmd = 'rm -f %s/TAGS && (find %s -name "*.[ch]" | egrep -v \.inst\. | xargs -n 100 etags -a)' % (source_root, source_root)
     print("Running: %s" % cmd)
     os.system(cmd)
 
