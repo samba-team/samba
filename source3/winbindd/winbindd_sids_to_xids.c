@@ -123,40 +123,86 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 static bool winbindd_sids_to_xids_in_cache(struct dom_sid *sid,
 					   struct id_map *map)
 {
-	uid_t uid;
-	gid_t gid;
-	bool expired;
+	bool is_online = is_domain_online(find_our_domain());
+	gid_t gid = (gid_t)-1;
+	bool gid_expired = false;
+	bool gid_cached = false;
+	bool gid_negative = false;
+	uid_t uid = (uid_t)-1;
+	bool uid_expired = false;
+	bool uid_cached = false;
+	bool uid_negative = false;
 
 	if (!winbindd_use_idmap_cache()) {
 		return false;
 	}
+
 	/*
 	 * SIDS_TO_XIDS is primarily used to resolve the user's group
 	 * sids. So we check groups before users.
 	 */
-	if (idmap_cache_find_sid2gid(sid, &gid, &expired)) {
-		if (expired && is_domain_online(find_our_domain())) {
-			return false;
+	gid_cached = idmap_cache_find_sid2gid(sid, &gid, &gid_expired);
+	if (!is_online) {
+		gid_expired = false;
+	}
+	if (gid_cached && !gid_expired) {
+		if (gid != (gid_t)-1) {
+			map->sid = sid;
+			map->xid.id = gid;
+			map->xid.type = ID_TYPE_GID;
+			map->status = ID_MAPPED;
+			return true;
 		}
+		gid_negative = true;
+	}
+	uid_cached = idmap_cache_find_sid2uid(sid, &uid, &uid_expired);
+	if (!is_online) {
+		uid_expired = false;
+	}
+	if (uid_cached && !uid_expired) {
+		if (uid != (uid_t)-1) {
+			map->sid = sid;
+			map->xid.id = uid;
+			map->xid.type = ID_TYPE_UID;
+			map->status = ID_MAPPED;
+			return true;
+		}
+		uid_negative = true;
+	}
+
+	/*
+	 * Here we know that we only have negative
+	 * or no entries.
+	 *
+	 * All valid cases already returned to the caller.
+	 */
+
+	if (gid_negative && uid_negative) {
 		map->sid = sid;
-		map->xid.id = gid;
+		map->xid.id = UINT32_MAX;
+		map->xid.type = ID_TYPE_NOT_SPECIFIED;
+		map->status = ID_MAPPED;
+		return true;
+	}
+
+	if (gid_negative) {
+		map->sid = sid;
+		map->xid.id = gid; /* this is (gid_t)-1 */
 		map->xid.type = ID_TYPE_GID;
 		map->status = ID_MAPPED;
 		return true;
 	}
-	if (idmap_cache_find_sid2uid(sid, &uid, &expired)) {
-		if (expired && is_domain_online(find_our_domain())) {
-			return false;
-		}
+
+	if (uid_negative) {
 		map->sid = sid;
-		map->xid.id = uid;
+		map->xid.id = uid; /* this is (uid_t)-1 */
 		map->xid.type = ID_TYPE_UID;
 		map->status = ID_MAPPED;
 		return true;
 	}
+
 	return false;
 }
-
 
 static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 {
