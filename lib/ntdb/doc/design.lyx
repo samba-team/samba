@@ -1,48 +1,66 @@
-#LyX 1.6.7 created this file. For more info see http://www.lyx.org/
-\lyxformat 345
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
 \begin_document
 \begin_header
 \textclass article
 \use_default_options true
+\maintain_unincluded_children false
 \language english
+\language_package default
 \inputencoding auto
+\fontencoding global
 \font_roman default
 \font_sans default
 \font_typewriter default
 \font_default_family default
+\use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
 
 \graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
 \paperfontsize default
 \use_hyperref false
 \papersize default
 \use_geometry false
 \use_amsmath 1
 \use_esint 1
+\use_mhchem 1
+\use_mathdots 1
 \cite_engine basic
 \use_bibtopic false
+\use_indices false
 \paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
 \secnumdepth 3
 \tocdepth 3
 \paragraph_separation indent
-\defskip medskip
+\paragraph_indentation default
 \quotes_language english
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
 \tracking_changes true
 \output_changes true
-\author ""
-\author ""
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
 \end_header
 
 \begin_body
 
 \begin_layout Title
-TDB2: A Redesigning The Trivial DataBase
+NTDB: Redesigning The Trivial DataBase
 \end_layout
 
 \begin_layout Author
@@ -50,7 +68,7 @@ Rusty Russell, IBM Corporation
 \end_layout
 
 \begin_layout Date
-17-March-2011
+19 June 2012
 \end_layout
 
 \begin_layout Abstract
@@ -87,7 +105,7 @@ The wider variety and greater demands of TDB-using code has lead to some
 \begin_layout Standard
 \begin_inset Tabular
 <lyxtabular version="3" rows="12" columns="3">
-<features>
+<features tabularvalignment="middle">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
 <column alignment="center" valignment="top" width="0">
@@ -451,6 +469,20 @@ This review is an attempt to catalog and address all the known issues with
  TDB and create solutions which address the problems without significantly
  increasing complexity; all involved are far too aware of the dangers of
  second system syndrome in rewriting a successful project like this.
+\end_layout
+
+\begin_layout Standard
+Note: the final decision was to make ntdb a separate library, with a separarate
+ 'ntdb' namespace so both can potentially be linked together.
+ This document still refers to
+\begin_inset Quotes eld
+\end_inset
+
+tdb
+\begin_inset Quotes erd
+\end_inset
+
+ everywhere, for simplicity.
 \end_layout
 
 \begin_layout Section
@@ -960,7 +992,6 @@ There are several issues with this approach.
  have under some circumstances.
  I don't believe this is currently the case, but it constrains the implementatio
 n.
-
 \end_layout
 
 \begin_layout Subsubsection
@@ -1025,7 +1056,7 @@ Status
 \end_layout
 
 \begin_layout Standard
-Incomplete.
+Complete.
 \end_layout
 
 \begin_layout Subsection
@@ -1114,7 +1145,7 @@ Status
 \end_layout
 
 \begin_layout Standard
-Incomplete.
+Complete.
 \end_layout
 
 \begin_layout Subsection
@@ -1291,6 +1322,7 @@ Status
 
 \begin_layout Standard
 Complete.
+ An open hook is provided to replicate this functionality if required.
 \end_layout
 
 \begin_layout Subsection
@@ -1433,7 +1465,7 @@ Status
 \end_layout
 
 \begin_layout Standard
-Deferred.
+Complete, using the NTDB_ATTRIBUTE_ALLOCATOR attribute.
 \end_layout
 
 \begin_layout Section
@@ -1661,7 +1693,12 @@ Status
 \end_layout
 
 \begin_layout Standard
-Complete.
+Ignore.
+ Scaling the hash automatically proved inefficient at small hash sizes;
+ we default to a 8192-element hash (changable via NTDB_ATTRIBUTE_HASHSIZE),
+ and when buckets clash we expand to an array of hash entries.
+ This scales slightly better than the tdb chain (due to the 8 top bits containin
+g extra hash).
 \end_layout
 
 \begin_layout Subsection
@@ -1738,7 +1775,6 @@ If it's more than max_dead, bulk free all the dead ones (similar to steps
 
 \begin_layout Enumerate
 Simply mark this record as dead and return.
-
 \end_layout
 
 \end_deeper
@@ -1920,7 +1956,6 @@ reference "sub:Records-Incur-A"
 \end_inset
 
 .
-
 \end_layout
 
 \begin_layout Standard
@@ -2357,7 +2392,11 @@ TDB Does Not Have Snapshot Support
 \end_layout
 
 \begin_layout Subsubsection
-Proposed SolutionNone.
+Proposed Solution
+\end_layout
+
+\begin_layout Standard
+None.
  At some point you say
 \begin_inset Quotes eld
 \end_inset
@@ -2666,7 +2705,6 @@ name "replay-attribute"
 
 \begin_layout Standard
 Tridge points out that an attribute can be later added to tdb_open (see
-
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "attributes"

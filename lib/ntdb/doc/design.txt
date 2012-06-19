@@ -1,8 +1,8 @@
-TDB2: A Redesigning The Trivial DataBase
+NTDB: Redesigning The Trivial DataBase
 
 Rusty Russell, IBM Corporation
 
-1-December-2010
+19 June 2012
 
 Abstract
 
@@ -64,6 +64,11 @@ issues with TDB and create solutions which address the problems
 without significantly increasing complexity; all involved are far
 too aware of the dangers of second system syndrome in rewriting a
 successful project like this.
+
+Note: the final decision was to make ntdb a separate library,
+with a separarate 'ntdb' namespace so both can potentially be
+linked together. This document still refers to “tdb” everywhere,
+for simplicity.
 
 2 API Issues
 
@@ -182,7 +187,7 @@ This flag can also be changed at runtime.
 
 2.3.1 Proposed Solution
 
-Given the usage patterns, it seems that the “least-surprise”
+Given the usage patterns, it seems that the“least-surprise”
 behavior of disallowing nested transactions should become the
 default. Additionally, it seems the outer transaction is the only
 code which knows whether inner transactions should be allowed, so
@@ -193,7 +198,7 @@ expanded for this relatively-obscure case.
 
 2.3.2 Status
 
-Incomplete; nesting flag is still defined as per tdb1.
+Complete; the nesting flag has been removed.
 
 2.4 Incorrect Hash Function is Not Detected
 
@@ -217,7 +222,7 @@ Complete.
 In response to scalability issues with the free list ([TDB-Freelist-Is]
 ) two API workarounds have been incorporated in TDB:
 tdb_set_max_dead() and the TDB_VOLATILE flag to tdb_open. The
-latter actually calls the former with an argument of “5”.
+latter actually calls the former with an argument of“5”.
 
 This code allows deleted records to accumulate without putting
 them in the free list. On delete we iterate through each chain
@@ -235,8 +240,8 @@ will become a no-op.
 
 2.5.2 Status
 
-Incomplete. TDB_VOLATILE still defined, but implementation should
-fail on unknown flags to be future-proof.
+Complete. Unknown flags cause tdb_open() to fail as well, so they
+can be detected at runtime.
 
 2.6 <TDB-Files-Cannot>TDB Files Cannot Be Opened Multiple Times
   In The Same Process
@@ -275,7 +280,7 @@ to allow other to create such an API.
 
 2.6.2 Status
 
-Incomplete.
+Complete.
 
 2.7 TDB API Is Not POSIX Thread-safe
 
@@ -283,19 +288,19 @@ The TDB API uses an error code which can be queried after an
 operation to determine what went wrong. This programming model
 does not work with threads, unless specific additional guarantees
 are given by the implementation. In addition, even
-otherwise-independent threads cannot open the same TDB (as in [TDB-Files-Cannot]
+otherwise-independent threads cannot open the same TDB (as in[TDB-Files-Cannot]
 ).
 
 2.7.1 Proposed Solution
 
 Reachitecting the API to include a tdb_errcode pointer would be a
-great deal of churn; we are better to guarantee that the
-tdb_errcode is per-thread so the current programming model can be
-maintained.
-
-This requires dynamic per-thread allocations, which is awkward
-with POSIX threads (pthread_key_create space is limited and we
-cannot simply allocate a key for every TDB).
+great deal of churn, but fortunately most functions return 0 on
+success and -1 on error: we can change these to return 0 on
+success and a negative error code on error, and the API remains
+similar to previous. The tdb_fetch, tdb_firstkey and tdb_nextkey
+functions need to take a TDB_DATA pointer and return an error
+code. It is also simpler to have tdb_nextkey replace its key
+argument in place, freeing up any old .dptr.
 
 Internal locking is required to make sure that fcntl locks do not
 overlap between threads, and also that the global list of tdbs is
@@ -304,12 +309,13 @@ maintained.
 The aim is that building tdb with -DTDB_PTHREAD will result in a
 pthread-safe version of the library, and otherwise no overhead
 will exist. Alternatively, a hooking mechanism similar to that
-proposed for [Proposed-Solution-locking-hook] could be used to
+proposed for[Proposed-Solution-locking-hook] could be used to
 enable pthread locking at runtime.
 
 2.7.2 Status
 
-Incomplete.
+Incomplete; API has been changed but thread safety has not been
+implemented.
 
 2.8 *_nonblock Functions And *_mark Functions Expose
   Implementation
@@ -375,7 +381,7 @@ it is needed.
 
 2.8.2 Status
 
-Incomplete.
+Complete.
 
 2.9 tdb_chainlock Functions Expose Implementation
 
@@ -427,7 +433,7 @@ otherwise EAGAIN.
 
 2.10.2 Status
 
-Incomplete.
+Complete.
 
 2.11 The API Uses Gratuitous Typedefs, Capitals
 
@@ -477,7 +483,7 @@ Complete.
 
 2.13 Various Callback Functions Are Not Typesafe
 
-The callback functions in tdb_set_logging_function (after [tdb_log_func-Doesnt-Take]
+The callback functions in tdb_set_logging_function (after[tdb_log_func-Doesnt-Take]
  is resolved), tdb_parse_record, tdb_traverse, tdb_traverse_read
 and tdb_check all take void * and must internally convert it to
 the argument type they were expecting.
@@ -499,7 +505,7 @@ http://ccan.ozlabs.org/info/typesafe_cb.html
 
 2.13.2 Status
 
-Incomplete.
+Complete.
 
 2.14 TDB_CLEAR_IF_FIRST Must Be Specified On All Opens,
   tdb_reopen_all Problematic
@@ -519,12 +525,12 @@ it alone has opened the TDB and will erase it.
 2.14.1 Proposed Solution
 
 Remove TDB_CLEAR_IF_FIRST. Other workarounds are possible, but
-see [TDB_CLEAR_IF_FIRST-Imposes-Performance].
+see[TDB_CLEAR_IF_FIRST-Imposes-Performance].
 
 2.14.2 Status
 
-Incomplete, TDB_CLEAR_IF_FIRST still defined, but not
-implemented.
+Complete. An open hook is provided to replicate this
+functionality if required.
 
 2.15 Extending The Header Is Difficult
 
@@ -537,7 +543,7 @@ not.
 
 2.15.1 Proposed Solution
 
-The header should contain a “format variant” value (64-bit). This
+The header should contain a“format variant” value (64-bit). This
 is divided into two 32-bit parts:
 
 1. The lower part reflects the format variant understood by code
@@ -558,7 +564,7 @@ writes to the database.
 
 2.15.2 Status
 
-Incomplete.
+Complete.
 
 2.16 Record Headers Are Not Expandible
 
@@ -576,7 +582,7 @@ would know the extension is not present on that record.
 
 2.16.2 Status
 
-Incomplete.
+Complete.
 
 2.17 TDB Does Not Use Talloc
 
@@ -589,10 +595,10 @@ conveniently.
 The allocation within TDB is not complicated enough to justify
 the use of talloc, and I am reluctant to force another
 (excellent) library on TDB users. Nonetheless a compromise is
-possible. An attribute (see [attributes]) can be added later to
+possible. An attribute (see[attributes]) can be added later to
 tdb_open() to provide an alternate allocation mechanism,
 specifically for talloc but usable by any other allocator (which
-would ignore the “context” argument).
+would ignore the“context” argument).
 
 This would form a talloc heirarchy as expected, but the caller
 would still have to attach a destructor to the tdb context
@@ -602,7 +608,7 @@ manage them (using talloc_free() or talloc_steal()).
 
 2.17.2 Status
 
-Deferred.
+Complete, using the NTDB_ATTRIBUTE_ALLOCATOR attribute.
 
 3 Performance And Scalability Issues
 
@@ -635,11 +641,11 @@ can simply unlink the old tdb at that point.
 
 3.1.2 Status
 
-Incomplete; TDB_CLEAR_IF_FIRST still defined, but does nothing.
+Complete.
 
 3.2 TDB Files Have a 4G Limit
 
-This seems to be becoming an issue (so much for “trivial”!),
+This seems to be becoming an issue (so much for“trivial”!),
 particularly for ldb.
 
 3.2.1 Proposed Solution
@@ -679,7 +685,7 @@ Record sizes will be 64 bit, with an error returned on 32 bit
 platforms which try to access such records (the current
 implementation would return TDB_ERR_OOM in a similar case). It
 seems unlikely that 32 bit keys will be a limitation, so the
-implementation may not support this (see [sub:Records-Incur-A]).
+implementation may not support this (see[sub:Records-Incur-A]).
 
 3.3.2 Status
 
@@ -728,7 +734,11 @@ invalid.
 
 3.4.2 Status
 
-Complete.
+Ignore. Scaling the hash automatically proved inefficient at
+small hash sizes; we default to a 8192-element hash (changable
+via NTDB_ATTRIBUTE_HASHSIZE), and when buckets clash we expand to
+an array of hash entries. This scales slightly better than the
+tdb chain (due to the 8 top bits containing extra hash).
 
 3.5 <TDB-Freelist-Is>TDB Freelist Is Highly Contended
 
@@ -783,7 +793,7 @@ Deleting a record occurs as follows:
 
 7. Otherwise, prepend ourselves to the free list.
 
-Disabling right-merging (step [right-merging]) causes
+Disabling right-merging (step[right-merging]) causes
 fragmentation; the other heuristics proved insufficient to
 address this, so the final answer to this was that when we expand
 the TDB file inside a transaction commit, we repack the entire
@@ -812,7 +822,7 @@ zone) which produces too many clashes for our hash table to
 handle well, and for coalescing we search by address. Thus an
 array of doubly-linked free lists seems preferable.
 
-There are various benefits in using per-size free lists (see [sub:TDB-Becomes-Fragmented]
+There are various benefits in using per-size free lists (see[sub:TDB-Becomes-Fragmented]
 ) but it's not clear this would reduce contention in the common
 case where all processes are allocating/freeing the same size.
 Thus we almost certainly need to divide in other ways: the most
@@ -822,7 +832,7 @@ ordering.
 
 Unfortunately it is difficult to know what heuristics should be
 used to determine zone sizes, and our transaction code relies on
-being able to create a “recovery area” by simply appending to the
+being able to create a“recovery area” by simply appending to the
 file (difficult if it would need to create a new zone header).
 Thus we use a linked-list of free tables; currently we only ever
 create one, but if there is more than one we choose one at random
@@ -862,9 +872,9 @@ coalescing at this point:
 This optimizes rapid insert/delete of free list entries by not
 coalescing them all the time.. First-fit address ordering
 ordering seems to be fairly good for keeping fragmentation low
-(see [sub:TDB-Becomes-Fragmented]). Note that address ordering
+(see[sub:TDB-Becomes-Fragmented]). Note that address ordering
 does not need a tailer to coalesce, though if we needed one we
-could have one cheaply: see [sub:Records-Incur-A].
+could have one cheaply: see[sub:Records-Incur-A].
 
 Each free entry has the free table number in the header: less
 than 255. It also contains a doubly-linked list for easy
@@ -884,7 +894,7 @@ db when a transaction commit needs to enlarge the file.
 
 The 25% overhead on allocation works in practice for ldb because
 indexes tend to expand by one record at a time. This internal
-fragmentation can be resolved by having an “expanded” bit in the
+fragmentation can be resolved by having an“expanded” bit in the
 header to note entries that have previously expanded, and
 allocating more space for them.
 
@@ -970,13 +980,13 @@ block:
   scale as fast as data, so I'm assuming a maximum key size of 32
   bits.
 
-4. 'full_hash' is used to avoid a memcmp on the “miss” case, but
+4. 'full_hash' is used to avoid a memcmp on the“miss” case, but
   this is diminishing returns after a handful of bits (at 10
   bits, it reduces 99.9% of false memcmp). As an aside, as the
   lower bits are already incorporated in the hash table
   resolution, the upper bits should be used here. Note that it's
   not clear that these bits will be a win, given the extra bits
-  in the hash table itself (see [sub:Hash-Size-Solution]).
+  in the hash table itself (see[sub:Hash-Size-Solution]).
 
 5. 'magic' does not need to be enlarged: it currently reflects
   one of 5 values (used, free, dead, recovery, and
@@ -1094,8 +1104,10 @@ Deferred.
 
 3.9 <sub:TDB-Does-Not>TDB Does Not Have Snapshot Support
 
-3.9.1 Proposed SolutionNone. At some point you say “use a real
-  database” (but see [replay-attribute]).
+3.9.1 Proposed Solution
+
+None. At some point you say“use a real database” (but see[replay-attribute]
+).
 
 But as a thought experiment, if we implemented transactions to
 only overwrite free entries (this is tricky: there must not be a
@@ -1128,7 +1140,7 @@ failed.
 
 3.10.1 Proposed Solution
 
-None (but see [replay-attribute]). We could solve a small part of
+None (but see[replay-attribute]). We could solve a small part of
 the problem by providing read-only transactions. These would
 allow one write transaction to begin, but it could not commit
 until all r/o transactions are done. This would require a new
@@ -1175,7 +1187,7 @@ indefinitely.
 
 3.12.1 Proposed Solution
 
-Remove reliability guarantees; see [traverse-Proposed-Solution].
+Remove reliability guarantees; see[traverse-Proposed-Solution].
 
 3.12.2 Status
 
@@ -1214,7 +1226,7 @@ normal (fast) usage, and occasionally empties the results into a
 transactional TDB. This kind of usage prioritizes performance
 over durability: as long as we are consistent, data can be lost.
 
-This would be more neatly implemented inside tdb: a “soft”
+This would be more neatly implemented inside tdb: a“soft”
 transaction commit (ie. syncless) which meant that data may be
 reverted on a crash.
 
@@ -1226,12 +1238,12 @@ Unfortunately any transaction scheme which overwrites old data
 requires a sync before that overwrite to avoid the possibility of
 corruption.
 
-It seems possible to use a scheme similar to that described in [sub:TDB-Does-Not]
+It seems possible to use a scheme similar to that described in[sub:TDB-Does-Not]
 ,where transactions are committed without overwriting existing
 data, and an array of top-level pointers were available in the
-header. If the transaction is “soft” then we would not need a
-sync at all: existing processes would pick up the new hash table
-and free list and work with that.
+header. If the transaction is“soft” then we would not need a sync
+at all: existing processes would pick up the new hash table and
+free list and work with that.
 
 At some later point, a sync would allow recovery of the old data
 into the free lists (perhaps when the array of top-level pointers
@@ -1249,7 +1261,7 @@ so it can coordinate cluster-wide transactions.
 3.15.1 Proposed Solution<replay-attribute>
 
 Tridge points out that an attribute can be later added to
-tdb_open (see [attributes]) to provide replay/trace hooks, which
+tdb_open (see[attributes]) to provide replay/trace hooks, which
 could become the basis for this and future parallel transactions
 and snapshot support.
 
