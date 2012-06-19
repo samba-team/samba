@@ -37,6 +37,7 @@ def set_options(opt):
     opt.RECURSE('lib/replace')
     opt.RECURSE('dynconfig')
     opt.RECURSE('lib/ldb')
+    opt.RECURSE('lib/ntdb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
     opt.RECURSE('lib/nss_wrapper')
@@ -123,6 +124,7 @@ def configure(conf):
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
     conf.RECURSE('lib/ccan')
+    conf.RECURSE('lib/ntdb')
     conf.RECURSE('lib/zlib')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
@@ -195,14 +197,14 @@ def pydoctor(ctx):
     '''build python apidocs'''
     bp = os.path.abspath('bin/python')
     mpaths = {}
-    for m in ['talloc', 'tdb', 'ldb']:
+    for m in ['talloc', 'tdb', 'ldb', 'ntdb']:
         f = os.popen("PYTHONPATH=%s python -c 'import %s; print %s.__file__'" % (bp, m, m), 'r')
         try:
             mpaths[m] = f.read().strip()
         finally:
             f.close()
     cmd='PYTHONPATH=%s pydoctor --introspect-c-modules --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba --add-module %s --add-module %s --add-module %s' % (
-        bp, mpaths['tdb'], mpaths['ldb'], mpaths['talloc'])
+        bp, mpaths['tdb'], mpaths['ldb'], mpaths['talloc'], mpaths['ntdb'])
     print("Running: %s" % cmd)
     os.system(cmd)
 
