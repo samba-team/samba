@@ -20,7 +20,7 @@
 #ifndef __DBWRAP_H__
 #define __DBWRAP_H__
 
-#include "tdb_compat.h"
+#include "tdb.h"
 
 struct db_record;
 struct db_context;
