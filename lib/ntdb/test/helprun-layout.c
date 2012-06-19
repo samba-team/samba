@@ -313,7 +313,7 @@ struct ntdb_context *ntdb_layout_get(struct ntdb_layout *layout,
 	/* Fill with some weird pattern. */
 	memset(mem, 0x99, off);
 	/* Now populate our header, cribbing from a real NTDB header. */
-	ntdb = ntdb_open(NULL, NTDB_INTERNAL, O_RDWR, 0, attr);
+	ntdb = ntdb_open("layout", NTDB_INTERNAL, O_RDWR, 0, attr);
 	memcpy(mem, ntdb->file->map_ptr, sizeof(struct ntdb_header));
 
 	/* Mug the ntdb we have to make it use this. */

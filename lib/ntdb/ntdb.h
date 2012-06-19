@@ -89,7 +89,7 @@ typedef struct TDB_DATA NTDB_DATA;
 
 /**
  * ntdb_open - open a database file
- * @name: the file name (can be NULL if flags contains NTDB_INTERNAL)
+ * @name: the file name (or database name if flags contains NTDB_INTERNAL)
  * @ntdb_flags: options for this database
  * @open_flags: flags argument for ntdb's open() call.
  * @mode: mode argument for ntdb's open() call.
@@ -680,8 +680,7 @@ void ntdb_unset_attribute(struct ntdb_context *ntdb,
  * ntdb_name - get the name of a ntdb
  * @ntdb: the ntdb context returned from ntdb_open()
  *
- * This returns a copy of the name string, made at ntdb_open() time.  If that
- * argument was NULL (possible for a NTDB_INTERNAL db) this will return NULL.
+ * This returns a copy of the name string, made at ntdb_open() time.
  *
  * This is mostly useful for logging.
  */

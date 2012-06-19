@@ -422,18 +422,14 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 	enum NTDB_ERROR ecode;
 	int openlock;
 
-	ntdb = malloc(sizeof(*ntdb) + (name ? strlen(name) + 1 : 0));
+	ntdb = malloc(sizeof(*ntdb) + strlen(name) + 1);
 	if (!ntdb) {
 		/* Can't log this */
 		errno = ENOMEM;
 		return NULL;
 	}
 	/* Set name immediately for logging functions. */
-	if (name) {
-		ntdb->name = strcpy((char *)(ntdb + 1), name);
-	} else {
-		ntdb->name = NULL;
-	}
+	ntdb->name = strcpy((char *)(ntdb + 1), name);
 	ntdb->flags = ntdb_flags;
 	ntdb->log_fn = NULL;
 	ntdb->open_flags = open_flags;
