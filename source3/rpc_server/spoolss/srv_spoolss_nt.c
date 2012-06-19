@@ -2202,7 +2202,7 @@ static WERROR spoolss_dpd_version(TALLOC_CTX *mem_ctx,
 	 * because the driver doesn not exist any more
 	 */
 	if (delete_files) {
-		delete_driver_files(get_session_info_system(), info);
+		delete_driver_files(p->session_info, info);
 	}
 
 done:
