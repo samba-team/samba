@@ -633,7 +633,8 @@ enum ntdb_attribute_type {
 	NTDB_ATTRIBUTE_STATS = 3,
 	NTDB_ATTRIBUTE_OPENHOOK = 4,
 	NTDB_ATTRIBUTE_FLOCK = 5,
-	NTDB_ATTRIBUTE_ALLOCATOR = 6
+	NTDB_ATTRIBUTE_ALLOCATOR = 6,
+	NTDB_ATTRIBUTE_HASHSIZE = 7
 };
 
 /**
@@ -867,6 +868,17 @@ struct ntdb_attribute_flock {
 };
 
 /**
+ * struct ntdb_attribute_hashsize - ntdb hashsize setting.
+ *
+ * This attribute is only settable on ntdb_open; it indicates that we create
+ * a hashtable of the given size, rather than the default.
+ */
+struct ntdb_attribute_hashsize {
+	struct ntdb_attribute_base base; /* .attr = NTDB_ATTRIBUTE_HASHSIZE */
+	uint32_t size;
+};
+
+/**
  * struct ntdb_attribute_allocator - allocator for ntdb to use.
  *
  * You can replace malloc/free with your own allocation functions.
@@ -910,6 +922,7 @@ union ntdb_attribute {
 	struct ntdb_attribute_openhook openhook;
 	struct ntdb_attribute_flock flock;
 	struct ntdb_attribute_allocator alloc;
+	struct ntdb_attribute_hashsize hashsize;
 };
 
 #ifdef  __cplusplus

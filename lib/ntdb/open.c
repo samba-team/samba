@@ -273,6 +273,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_set_attribute(struct ntdb_context *ntdb,
 	case NTDB_ATTRIBUTE_HASH:
 	case NTDB_ATTRIBUTE_SEED:
 	case NTDB_ATTRIBUTE_OPENHOOK:
+	case NTDB_ATTRIBUTE_HASHSIZE:
 		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
 				   NTDB_LOG_USE_ERROR,
 				   "ntdb_set_attribute:"
@@ -281,7 +282,9 @@ _PUBLIC_ enum NTDB_ERROR ntdb_set_attribute(struct ntdb_context *ntdb,
 				   ? "NTDB_ATTRIBUTE_HASH"
 				   : attr->base.attr == NTDB_ATTRIBUTE_SEED
 				   ? "NTDB_ATTRIBUTE_SEED"
-				   : "NTDB_ATTRIBUTE_OPENHOOK");
+				   : attr->base.attr == NTDB_ATTRIBUTE_OPENHOOK
+				   ? "NTDB_ATTRIBUTE_OPENHOOK"
+				   : "NTDB_ATTRIBUTE_HASHSIZE");
 	case NTDB_ATTRIBUTE_STATS:
 		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
 				   NTDB_LOG_USE_ERROR,
@@ -348,6 +351,9 @@ _PUBLIC_ enum NTDB_ERROR ntdb_get_attribute(struct ntdb_context *ntdb,
 		attr->alloc.expand = ntdb->expand_fn;
 		attr->alloc.free = ntdb->free_fn;
 		attr->alloc.priv_data = ntdb->alloc_data;
+		break;
+	case NTDB_ATTRIBUTE_HASHSIZE:
+		attr->hashsize.size = 1 << ntdb->hash_bits;
 		break;
 	default:
 		return ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
@@ -475,6 +481,15 @@ static struct ntdb_context *alloc_ntdb(const union ntdb_attribute *attr,
 	return default_alloc(NULL, len, NULL);
 }
 
+static unsigned int next_pow2(uint64_t size)
+{
+	unsigned int bits = 1;
+
+	while ((1ULL << bits) < size)
+		bits++;
+	return bits;
+}
+
 _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 					int open_flags, mode_t mode,
 					union ntdb_attribute *attr)
@@ -527,6 +542,17 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 		case NTDB_ATTRIBUTE_OPENHOOK:
 			ntdb->openhook = attr->openhook.fn;
 			ntdb->openhook_data = attr->openhook.data;
+			break;
+		case NTDB_ATTRIBUTE_HASHSIZE:
+			ntdb->hash_bits = next_pow2(attr->hashsize.size);
+			if (ntdb->hash_bits > 31) {
+				ecode = ntdb_logerr(ntdb, NTDB_ERR_EINVAL,
+						    NTDB_LOG_USE_ERROR,
+						    "ntdb_open: hash_size %u"
+						    " too large",
+						    attr->hashsize.size);
+				goto fail;
+			}
 			break;
 		default:
 			/* These are set as normal. */
