@@ -23,7 +23,6 @@
 #include "serverid.h"
 #include "messages.h"
 #include "ntdomain.h"
-#include <libgen.h>
 
 #include "lib/id_cache.h"
 
@@ -455,7 +454,8 @@ static void lsasd_handle_client(struct tevent_req *req)
 				    sd,
 				    NULL);
 	} else if (tsocket_address_is_unix(srv_addr)) {
-		char *p;
+		const char *p;
+		const char *b;
 
 		p = tsocket_address_unix_path(srv_addr, tmp_ctx);
 		if (p == NULL) {
@@ -463,22 +463,25 @@ static void lsasd_handle_client(struct tevent_req *req)
 			return;
 		}
 
-		if (strstr(p, "/np/")) {
-			p = basename(p);
+		b = strrchr(p, '/');
+		if (b != NULL) {
+			b++;
+		} else {
+			b = p;
+		}
 
+		if (strstr(p, "/np/")) {
 			named_pipe_accept_function(data->ev_ctx,
 						   data->msg_ctx,
-						   p,
+						   b,
 						   sd,
 						   lsasd_client_terminated,
 						   data);
 		} else {
-			p = basename(p);
-
 			dcerpc_ncacn_accept(data->ev_ctx,
 					    data->msg_ctx,
 					    NCALRPC,
-					    p,
+					    b,
 					    cli_addr,
 					    srv_addr,
 					    sd,
