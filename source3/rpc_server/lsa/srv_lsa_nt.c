@@ -4141,9 +4141,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 	struct dom_sid *sid = NULL;
 	const char *tname = NULL;
 	size_t dns_len = 0;
-	size_t nb_len;
 	size_t tlen = 0;
-	NTSTATUS nt_status;
 	uint32_t new_fti_idx;
 	uint32_t i;
 	/* use always TDO type, until we understand when Xref can be used */
@@ -4178,7 +4176,6 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 			dns_name = nrec->data.info.dns_name.string;
 			dns_len = nrec->data.info.dns_name.size;
 			nb_name = nrec->data.info.netbios_name.string;
-			nb_len = nrec->data.info.netbios_name.size;
 			sid = &nrec->data.info.sid;
 			break;
 		}
@@ -4248,19 +4245,19 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 		}
 
 		if (tln_conflict) {
-			nt_status = add_collision(c_info, new_fti_idx,
+			(void)add_collision(c_info, new_fti_idx,
 						  collision_type,
 						  LSA_TLN_DISABLED_CONFLICT,
 						  tdo_name);
 		}
 		if (sid_conflict) {
-			nt_status = add_collision(c_info, new_fti_idx,
+			(void)add_collision(c_info, new_fti_idx,
 						  collision_type,
 						  LSA_SID_DISABLED_CONFLICT,
 						  tdo_name);
 		}
 		if (nb_conflict) {
-			nt_status = add_collision(c_info, new_fti_idx,
+			(void)add_collision(c_info, new_fti_idx,
 						  collision_type,
 						  LSA_NB_DISABLED_CONFLICT,
 						  tdo_name);
