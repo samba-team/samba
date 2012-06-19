@@ -124,7 +124,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.sd_utils.dacl_add_ace(self.base_dn, mod)
 
         # add admins to the Domain Admins group
-        self.ldb_admin.add_remove_group_members("Domain Admins", self.admin_user,
+        self.ldb_admin.add_remove_group_members("Domain Admins", [self.admin_user],
                        add_members_operation=True)
 
     def tearDown(self):
@@ -477,7 +477,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         ctl[2] = "1"
         ctl[3] = "10000"
         control1 = str(":".join(ctl))
-        self.ldb_admin.add_remove_group_members("Administrators", self.simple_user,
+        self.ldb_admin.add_remove_group_members("Administrators", [self.simple_user],
                        add_members_operation=True)
 
         res = self.ldb_simple.search(self.base_dn,
@@ -492,7 +492,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         control1 = str(":".join(ctl))
 
         # remove the user from the group
-        self.ldb_admin.add_remove_group_members("Administrators", self.simple_user,
+        self.ldb_admin.add_remove_group_members("Administrators", [self.simple_user],
                        add_members_operation=False)
 
         res = self.ldb_simple.search(self.base_dn,
@@ -502,7 +502,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         self.assertEqual(len(res[0].get("member")), size )
 
         self.ldb_admin.newgroup("testgroup")
-        self.ldb_admin.add_remove_group_members("testgroup", self.simple_user,
+        self.ldb_admin.add_remove_group_members("testgroup", [self.simple_user],
                        add_members_operation=True)
 
         res = self.ldb_admin.search(self.base_dn,
@@ -532,7 +532,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         ctl[3] = "10000"
         control1 = str(":".join(ctl))
 
-        self.ldb_admin.add_remove_group_members("testgroup", self.simple_user,
+        self.ldb_admin.add_remove_group_members("testgroup", [self.simple_user],
                        add_members_operation=False)
 
         res = self.ldb_admin.search(self.base_dn,
@@ -608,9 +608,9 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         ctl[2] = "%d" % flag_incr_linked
         ctl[3] = "10000"
         control1 = str(":".join(ctl))
-        self.ldb_admin.add_remove_group_members("Administrators", self.simple_user,
+        self.ldb_admin.add_remove_group_members("Administrators", [self.simple_user],
                        add_members_operation=True)
-        self.ldb_admin.add_remove_group_members("Administrators", self.dirsync_user,
+        self.ldb_admin.add_remove_group_members("Administrators", [self.dirsync_user],
                        add_members_operation=True)
 
 
@@ -626,7 +626,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         control1 = str(":".join(ctl))
 
         # remove the user from the group
-        self.ldb_admin.add_remove_group_members("Administrators", self.simple_user,
+        self.ldb_admin.add_remove_group_members("Administrators", [self.simple_user],
                        add_members_operation=False)
 
         res = self.ldb_admin.search(self.base_dn,
@@ -642,7 +642,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         ctl[3] = "10000"
         control2 = str(":".join(ctl))
 
-        self.ldb_admin.add_remove_group_members("Administrators", self.dirsync_user,
+        self.ldb_admin.add_remove_group_members("Administrators", [self.dirsync_user],
                        add_members_operation=False)
 
         res = self.ldb_admin.search(self.base_dn,

@@ -226,19 +226,18 @@ pwdLastSet: 0
         else:
             self.transaction_commit()
 
-    def add_remove_group_members(self, groupname, listofmembers,
+    def add_remove_group_members(self, groupname, members,
                                   add_members_operation=True):
         """Adds or removes group members
 
         :param groupname: Name of the target group
-        :param listofmembers: Comma-separated list of group members
+        :param members: list of group members
         :param add_members_operation: Defines if its an add or remove
             operation
         """
 
         groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (
             ldb.binary_encode(groupname), "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
-        groupmembers = listofmembers.split(',')
 
         self.transaction_start()
         try:
@@ -255,7 +254,7 @@ dn: %s
 changetype: modify
 """ % (str(targetgroup[0].dn))
 
-            for member in groupmembers:
+            for member in members:
                 targetmember = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                     expression="(|(sAMAccountName=%s)(CN=%s))" % (
                     ldb.binary_encode(member), ldb.binary_encode(member)), attrs=[])

@@ -200,13 +200,13 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.ldb_admin.newuser("testuser8", "samba123@")
 
         self.ldb_admin.add_remove_group_members("Enterprise Admins",
-                                                "testuser1,testuser5,testuser6,testuser8",
+                                                ["testuser1", "testuser5", "testuser6", "testuser8"],
                                                 add_members_operation=True)
         self.ldb_admin.add_remove_group_members("Domain Admins",
-                                                "testuser2,testuser5,testuser6,testuser7",
+                                                ["testuser2","testuser5","testuser6","testuser7"],
                                                 add_members_operation=True)
         self.ldb_admin.add_remove_group_members("Schema Admins",
-                                                "testuser3,testuser6,testuser7,testuser8",
+                                                ["testuser3","testuser6","testuser7","testuser8"],
                                                 add_members_operation=True)
 
         self.results = {
@@ -1865,7 +1865,7 @@ class RightsAttributesTests(DescriptorTests):
         # User 2, Domain Admins
         self.ldb_admin.newuser("testuser_attr2", "samba123@")
         self.ldb_admin.add_remove_group_members("Domain Admins",
-                                                "testuser_attr2",
+                                                ["testuser_attr2"],
                                                 add_members_operation=True)
 
     def test_sDRightsEffective(self):

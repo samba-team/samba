@@ -206,7 +206,9 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
-            samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=True)
+            groupmembers = listofmembers.split(',')
+            samdb.add_remove_group_members(groupname, groupmembers,
+                    add_members_operation=True)
         except Exception, e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to add members "%s" to group "%s"' % (
@@ -256,7 +258,8 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
-            samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=False)
+            samdb.add_remove_group_members(groupname, listofmembers.split(","),
+                    add_members_operation=False)
         except Exception, e:
             # FIXME: Catch more specific exception
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)

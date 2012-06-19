@@ -128,9 +128,9 @@ class AclAddTests(AclTests):
         self.ldb_admin.newuser(self.regular_user, self.user_pass)
 
         # add admins to the Domain Admins group
-        self.ldb_admin.add_remove_group_members("Domain Admins", self.usr_admin_owner,
+        self.ldb_admin.add_remove_group_members("Domain Admins", [self.usr_admin_owner],
                        add_members_operation=True)
-        self.ldb_admin.add_remove_group_members("Domain Admins", self.usr_admin_not_owner,
+        self.ldb_admin.add_remove_group_members("Domain Admins", [self.usr_admin_not_owner],
                        add_members_operation=True)
 
         self.ldb_owner = self.get_ldb_connection(self.usr_admin_owner, self.user_pass)
@@ -613,7 +613,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.newuser(self.u2, self.user_pass)
         self.ldb_admin.newuser(self.u3, self.user_pass)
         self.ldb_admin.newgroup(self.group1, grouptype=samba.dsdb.GTYPE_SECURITY_GLOBAL_GROUP)
-        self.ldb_admin.add_remove_group_members(self.group1, self.u2,
+        self.ldb_admin.add_remove_group_members(self.group1, [self.u2],
                                                 add_members_operation=True)
         self.ldb_user = self.get_ldb_connection(self.u1, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
@@ -1521,7 +1521,7 @@ class AclExtendedTests(AclTests):
         self.ldb_admin.newuser(self.u1, self.user_pass)
         self.ldb_admin.newuser(self.u2, self.user_pass)
         self.ldb_admin.newuser(self.u3, self.user_pass)
-        self.ldb_admin.add_remove_group_members("Domain Admins", self.u3,
+        self.ldb_admin.add_remove_group_members("Domain Admins", [self.u3],
                                                 add_members_operation=True)
         self.ldb_user1 = self.get_ldb_connection(self.u1, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
