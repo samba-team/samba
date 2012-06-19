@@ -538,7 +538,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 
 	if (r->in.entry_handle == NULL ||
 	    ndr_policy_handle_empty(r->in.entry_handle)) {
-		struct GUID *obj;
 		char *srv_addr = NULL;
 
 		DEBUG(7, ("_epm_Lookup: No entry_handle found, creating it.\n"));
@@ -547,12 +546,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 		if (eps == NULL) {
 			rc = EPMAPPER_STATUS_NO_MEMORY;
 			goto done;
-		}
-
-		if (r->in.object == NULL || GUID_all_zero(r->in.object)) {
-			obj = NULL;
-		} else {
-			obj = r->in.object;
 		}
 
 		if (p->local_address != NULL) {
@@ -857,7 +850,6 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	error_status_t rc;
 	uint32_t count = 0;
 	uint32_t num_towers = 0;
-	uint32_t num_floors = 0;
 	uint32_t i;
 	bool ok;
 
@@ -897,7 +889,6 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	 * | Floor 6 | Routing                                               |
 	 * +---------+-------------------------------------------------------+
 	 */
-	num_floors = r->in.map_tower->tower.num_floors;
 	floors = r->in.map_tower->tower.floors;
 
 	/* We accept NDR as the transfer syntax */
