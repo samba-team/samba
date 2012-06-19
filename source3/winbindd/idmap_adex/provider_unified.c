@@ -98,8 +98,12 @@ static char* build_id_filter(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	BAIL_ON_PTR_ERROR(oc_filter, nt_status);
-	BAIL_ON_PTR_ERROR(attr_filter, nt_status);
+	if (oc_filter == NULL) {
+		goto done;
+	}
+	if (attr_filter == NULL) {
+		goto done;
+	}
 
 	/* Use "keywords=%s" for non-schema cells */
 
@@ -130,7 +134,6 @@ static char* build_alias_filter(TALLOC_CTX *mem_ctx,
 {
 	char *filter = NULL;
 	char *user_attr_filter, *group_attr_filter;
-	NTSTATUS nt_status;
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool use2307 = ((search_flags & LWCELL_FLAG_USE_RFC2307_ATTRS)
 			== LWCELL_FLAG_USE_RFC2307_ATTRS);
@@ -143,8 +146,12 @@ static char* build_alias_filter(TALLOC_CTX *mem_ctx,
 					   ADEX_ATTR_UID, alias);
 	group_attr_filter = talloc_asprintf(frame, "%s=%s",
 					    ADEX_ATTR_DISPLAYNAME, alias);
-	BAIL_ON_PTR_ERROR(user_attr_filter, nt_status);
-	BAIL_ON_PTR_ERROR(group_attr_filter, nt_status);
+	if (user_attr_filter == NULL) {
+		goto done;
+	}
+	if (group_attr_filter == NULL) {
+		goto done;
+	}
 
 	/* Use "keywords=%s" for non-schema cells */
 
