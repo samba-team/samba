@@ -46,6 +46,7 @@ static int loopnum;
 static int count_pipe;
 static union ntdb_attribute log_attr;
 static union ntdb_attribute seed_attr;
+static union ntdb_attribute hsize_attr;
 
 static void ntdb_log(struct ntdb_context *ntdb,
 		    enum ntdb_log_level level,
@@ -247,7 +248,7 @@ static void usage(void)
 #if TRANSACTION_PROB
 	       " [-t]"
 #endif
-	       " [-k] [-n NUM_PROCS] [-l NUM_LOOPS] [-s SEED] [-S]\n");
+	       " [-k] [-n NUM_PROCS] [-l NUM_LOOPS] [-s SEED] [-S] [-H HASH_SIZE]\n");
 	exit(0);
 }
 
@@ -364,9 +365,12 @@ int main(int argc, char * const *argv)
 	log_attr.base.next = &seed_attr;
 	log_attr.log.fn = ntdb_log;
 	seed_attr.base.attr = NTDB_ATTRIBUTE_SEED;
-	seed_attr.base.next = NULL;
+	seed_attr.base.next = &hsize_attr;
+	hsize_attr.base.attr = NTDB_ATTRIBUTE_HASHSIZE;
+	hsize_attr.base.next = NULL;
+	hsize_attr.hashsize.size = 2; /* stress it by default. */
 
-	while ((c = getopt(argc, argv, "n:l:s:thkS")) != -1) {
+	while ((c = getopt(argc, argv, "n:l:s:thkSH:")) != -1) {
 		switch (c) {
 		case 'n':
 			num_procs = strtol(optarg, NULL, 0);
@@ -390,6 +394,9 @@ int main(int argc, char * const *argv)
 			break;
 		case 'k':
 			kill_random = 1;
+			break;
+		case 'H':
+			hsize_attr.hashsize.size = strtol(optarg, NULL, 0);
 			break;
 		default:
 			usage();
