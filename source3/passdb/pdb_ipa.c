@@ -1301,7 +1301,6 @@ static NTSTATUS ipasam_create_dom_group(struct pdb_methods *pdb_methods,
 {
 	NTSTATUS status;
 	struct ldapsam_privates *ldap_state;
-	int ldap_op = LDAP_MOD_REPLACE;
 	char *dn;
 	uint32_t has_objectclass = 0;
 
@@ -1312,11 +1311,8 @@ static NTSTATUS ipasam_create_dom_group(struct pdb_methods *pdb_methods,
 	}
 
 	status = find_group(ldap_state, name, &dn, &has_objectclass);
-	if (NT_STATUS_IS_OK(status)) {
-		ldap_op = LDAP_MOD_REPLACE;
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		ldap_op = LDAP_MOD_ADD;
-	} else {
+	if (!NT_STATUS_IS_OK(status) &&
+			!NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		return status;
 	}
 
