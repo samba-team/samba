@@ -155,7 +155,7 @@ static int ltdb_dn_list_load(struct ldb_module *module,
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
 	key.dsize = strlen((char *)key.dptr);
 
-	rec = tdb_fetch_compat(ltdb->idxptr->itdb, key);
+	rec = tdb_fetch(ltdb->idxptr->itdb, key);
 	if (rec.dptr == NULL) {
 		goto normal_index;
 	}
@@ -261,7 +261,7 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	}
 
 	if (ltdb->idxptr->itdb == NULL) {
-		ltdb->idxptr->itdb = tdb_open_compat(NULL, 1000, TDB_INTERNAL, O_RDWR, 0, NULL, NULL);
+		ltdb->idxptr->itdb = tdb_open(NULL, 1000, TDB_INTERNAL, O_RDWR, 0);
 		if (ltdb->idxptr->itdb == NULL) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -270,7 +270,7 @@ static int ltdb_dn_list_store(struct ldb_module *module, struct ldb_dn *dn,
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
 	key.dsize = strlen((char *)key.dptr);
 
-	rec = tdb_fetch_compat(ltdb->idxptr->itdb, key);
+	rec = tdb_fetch(ltdb->idxptr->itdb, key);
 	if (rec.dptr != NULL) {
 		list2 = ltdb_index_idxptr(module, rec, false);
 		if (list2 == NULL) {

@@ -32,7 +32,7 @@
  */
 
 #include "ldb_tdb.h"
-#include <lib/tdb_compat/tdb_compat.h>
+#include <tdb.h>
 
 /*
   add one element to a message
@@ -224,7 +224,7 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_data = tdb_fetch_compat(ltdb->tdb, tdb_key);
+	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	talloc_free(tdb_key.dptr);
 	if (!tdb_data.dptr) {
 		return LDB_ERR_NO_SUCH_OBJECT;
@@ -256,7 +256,7 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_data = tdb_fetch_compat(ltdb->tdb, tdb_key);
+	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
 	talloc_free(tdb_key.dptr);
 	if (!tdb_data.dptr) {
 		return LDB_ERR_NO_SUCH_OBJECT;

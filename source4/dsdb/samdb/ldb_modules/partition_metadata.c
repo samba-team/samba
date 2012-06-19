@@ -54,14 +54,14 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 	tdb_key.dptr = (uint8_t *)discard_const_p(char, key);
 	tdb_key.dsize = strlen(key);
 
-	tdb_data = tdb_fetch_compat(tdb, tdb_key);
+	tdb_data = tdb_fetch(tdb, tdb_key);
 	if (!tdb_data.dptr) {
 		if (tdb_error(tdb) == TDB_ERR_NOEXIST) {
 			*value = default_value;
 			return LDB_SUCCESS;
 		} else {
 			return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-						tdb_errorstr_compat(tdb));
+						tdb_errorstr(tdb));
 		}
 	}
 
@@ -131,7 +131,7 @@ static int partition_metadata_set_uint64(struct ldb_module *module,
 	if (tdb_store(tdb, tdb_key, tdb_data, tdb_flag) != 0) {
 		talloc_free(tmp_ctx);
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					tdb_errorstr_compat(tdb));
+					tdb_errorstr(tdb));
 	}
 
 	talloc_free(tmp_ctx);
@@ -398,7 +398,7 @@ int partition_metadata_start_trans(struct ldb_module *module)
 
 	if (tdb_transaction_start(tdb) != 0) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					tdb_errorstr_compat(tdb));
+					tdb_errorstr(tdb));
 	}
 
 	data->metadata->in_transaction++;
@@ -430,7 +430,7 @@ int partition_metadata_prepare_commit(struct ldb_module *module)
 
 	if (tdb_transaction_prepare_commit(tdb) != 0) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					tdb_errorstr_compat(tdb));
+					tdb_errorstr(tdb));
 	}
 
 	return LDB_SUCCESS;
@@ -462,7 +462,7 @@ int partition_metadata_end_trans(struct ldb_module *module)
 
 	if (tdb_transaction_commit(tdb) != 0) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					tdb_errorstr_compat(tdb));
+					tdb_errorstr(tdb));
 	}
 
 	return LDB_SUCCESS;

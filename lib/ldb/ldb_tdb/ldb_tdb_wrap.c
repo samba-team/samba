@@ -99,6 +99,7 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 				   struct ldb_context *ldb)
 {
 	struct ltdb_wrap *w;
+	struct tdb_logging_context lctx;
 	struct stat st;
 
 	if (stat(path, &st) == 0) {
@@ -117,7 +118,10 @@ struct tdb_context *ltdb_wrap_open(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	w->tdb = tdb_open_compat(path, hash_size, tdb_flags, open_flags, mode, ltdb_log_fn, ldb);
+	lctx.log_fn = ltdb_log_fn;
+	lctx.log_private = ldb;
+	w->tdb = tdb_open_ex(path, hash_size, tdb_flags, open_flags, mode,
+			     &lctx, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;

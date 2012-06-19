@@ -16,24 +16,23 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 import wafsamba, samba_dist, Options
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                        lib/tdb:lib/tdb lib/tdb2:lib/tdb2 lib/tdb_compat:lib/tdb_compat lib/ccan:lib/ccan lib/tevent:lib/tevent lib/popt:lib/popt
+                        lib/tdb:lib/tdb lib/tdb2:lib/tdb2 lib/tdb:lib/tdb lib/ccan:lib/ccan lib/tevent:lib/tevent lib/popt:lib/popt
                         buildtools:buildtools''')
 
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('ldb', noextension='ldb')
-    opt.RECURSE('lib/tdb_compat')
+    opt.RECURSE('lib/tdb')
     opt.RECURSE('lib/tevent')
     opt.RECURSE('lib/replace')
     opt.tool_options('python') # options for disabling pyc or pyo compilation
 
 def configure(conf):
-    conf.RECURSE('lib/tdb_compat')
+    conf.RECURSE('lib/tdb')
     conf.RECURSE('lib/tevent')
     conf.RECURSE('lib/popt')
     conf.RECURSE('lib/replace')
-    conf.RECURSE('lib/tdb_compat')
     conf.find_program('python', var='PYTHON')
     conf.find_program('xsltproc', var='XSLTPROC')
     conf.check_tool('python')
@@ -78,11 +77,10 @@ def configure(conf):
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 
 def build(bld):
-    bld.RECURSE('lib/tdb_compat')
     bld.RECURSE('lib/tevent')
     bld.RECURSE('lib/popt')
     bld.RECURSE('lib/replace')
-    bld.RECURSE('lib/tdb_compat')
+    bld.RECURSE('lib/tdb')
 
     if bld.env.standalone_ldb:
         private_library = False
@@ -238,14 +236,14 @@ def build(bld):
                          init_function='ldb_tdb_init',
                          module_init_name='ldb_init_module',
                          internal_module=False,
-                         deps='tdb_compat ldb',
+                         deps='tdb ldb',
                          subsystem='ldb')
 
         # have a separate subsystem for common/ldb.c, so it can rebuild
         # for install with a different -DLDB_MODULESDIR=
         bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
                             'common/ldb.c',
-                            deps='tevent tdb_compat',
+                            deps='tevent tdb',
                             includes='include',
                             cflags=['-DLDB_MODULESDIR=\"%s\"' % modules_dir])
 

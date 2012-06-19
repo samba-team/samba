@@ -35,7 +35,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "../lib/util/dlinklist.h"
-#include "../lib/tdb_compat/tdb_compat.h"
+#include <tdb.h>
 
 /*
   this is used to catch debug messages from ldb
@@ -320,7 +320,8 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
 
 /*
   when we fork() we need to make sure that any open ldb contexts have
-  any open transactions cancelled
+  any open transactions cancelled (ntdb databases doesn't need reopening,
+  as we don't use clear_if_first).
  */
  void ldb_wrap_fork_hook(void)
 {

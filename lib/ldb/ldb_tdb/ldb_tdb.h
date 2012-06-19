@@ -1,7 +1,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
-#include "tdb_compat.h"
+#include "tdb.h"
 #include "ldb_module.h"
 
 /* this private structure is used by the ltdb backend in the
