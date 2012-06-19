@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
 		v = 0;
 		/* Should not find it. */
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located space in top table, bucket 0. */
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
 		/* Now, this should give a successful lookup. */
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == new_off);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located it in top table, bucket 0. */
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
 		/* Test expansion. */
 		v = 1;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located clash in toplevel bucket 0. */
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 
 		/* Should be able to find both. */
 		v = 1;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off2);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == new_off2);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located space in chain. */
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		v = 0;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == new_off);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located space in chain. */
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 
 		/* Should still be able to find other record. */
 		v = 1;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off2);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == new_off2);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located space in chain. */
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 
 		/* Now should find empty space. */
 		v = 0;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located space in chain, bucket 0. */
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 
 		/* Adding another record should work. */
 		v = 2;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have located space in chain, bucket 0. */
@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
 
 		/* Adding another record should cause expansion. */
 		v = 3;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should not have located space in chain. */
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		/* Retrieve it and check. */
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == new_off);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have appended to chain, bucket 2. */
@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
 
 		/* YA record: relocation. */
 		v = 4;
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == 0);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == 0);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should not have located space in chain. */
@@ -298,7 +298,7 @@ int main(int argc, char *argv[])
 		ok1(ntdb_unlock_hash(ntdb, h.h, F_WRLCK) == 0);
 
 		/* Retrieve it and check. */
-		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec) == new_off);
+		ok1(find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL) == new_off);
 		/* Should have created correct hash. */
 		ok1(h.h == ntdb_hash(ntdb, key.dptr, key.dsize));
 		/* Should have appended to chain, bucket 2. */

@@ -369,7 +369,8 @@ ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 			 NTDB_DATA key,
 			 int ltype,
 			 struct hash_info *h,
-			 struct ntdb_used_record *rec);
+			 struct ntdb_used_record *rec,
+			 const char **rkey);
 
 enum NTDB_ERROR replace_in_hash(struct ntdb_context *ntdb,
 				const struct hash_info *h,

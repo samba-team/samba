@@ -62,7 +62,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_nextkey(struct ntdb_context *ntdb, NTDB_DATA *key)
 	struct ntdb_used_record rec;
 	ntdb_off_t off;
 
-	off = find_and_lock(ntdb, *key, F_RDLCK, &h, &rec);
+	off = find_and_lock(ntdb, *key, F_RDLCK, &h, &rec, NULL);
 	ntdb->free_fn(key->dptr, ntdb->alloc_data);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return NTDB_OFF_TO_ERR(off);

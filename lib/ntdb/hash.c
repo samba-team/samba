@@ -33,7 +33,8 @@ uint32_t ntdb_hash(struct ntdb_context *ntdb, const void *ptr, size_t len)
 static ntdb_bool_err key_matches(struct ntdb_context *ntdb,
 				 const struct ntdb_used_record *rec,
 				 ntdb_off_t off,
-				 const NTDB_DATA *key)
+				 const NTDB_DATA *key,
+				 const char **rptr)
 {
 	ntdb_bool_err ret = false;
 	const char *rkey;
@@ -43,14 +44,20 @@ static ntdb_bool_err key_matches(struct ntdb_context *ntdb,
 		return ret;
 	}
 
-	rkey = ntdb_access_read(ntdb, off + sizeof(*rec), key->dsize, false);
+	rkey = ntdb_access_read(ntdb, off + sizeof(*rec),
+				key->dsize + rec_data_length(rec), false);
 	if (NTDB_PTR_IS_ERR(rkey)) {
 		return (ntdb_bool_err)NTDB_PTR_ERR(rkey);
 	}
-	if (memcmp(rkey, key->dptr, key->dsize) == 0)
-		ret = true;
-	else
-		ntdb->stats.compare_wrong_keycmp++;
+	if (memcmp(rkey, key->dptr, key->dsize) == 0) {
+		if (rptr) {
+			*rptr = rkey;
+		} else {
+			ntdb_access_release(ntdb, rkey);
+		}
+		return true;
+	}
+	ntdb->stats.compare_wrong_keycmp++;
 	ntdb_access_release(ntdb, rkey);
 	return ret;
 }
@@ -61,6 +68,7 @@ static ntdb_bool_err match(struct ntdb_context *ntdb,
 			   const NTDB_DATA *key,
 			   ntdb_off_t val,
 			   struct ntdb_used_record *rec,
+			   const char **rptr,
 			   const ntdb_off_t **mapped)
 {
 	ntdb_off_t off;
@@ -87,7 +95,7 @@ static ntdb_bool_err match(struct ntdb_context *ntdb,
 		return (ntdb_bool_err)ecode;
 	}
 
-	return key_matches(ntdb, rec, off, key);
+	return key_matches(ntdb, rec, off, key, rptr);
 }
 
 static bool is_chain(ntdb_off_t val)
@@ -107,10 +115,11 @@ static ntdb_off_t hbucket_off(ntdb_off_t base, ntdb_len_t idx)
  * If not found, the return value is 0.
  * If found, the return value is the offset, and *rec is the record. */
 ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
-			NTDB_DATA key,
-			int ltype,
-			struct hash_info *h,
-			struct ntdb_used_record *rec)
+			 NTDB_DATA key,
+			 int ltype,
+			 struct hash_info *h,
+			 struct ntdb_used_record *rec,
+			 const char **rptr)
 {
 	ntdb_off_t off, val;
 	const ntdb_off_t *arr = NULL;
@@ -140,9 +149,9 @@ ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 	}
 
 	/* Directly in hash table? */
-	if (!is_chain(val)) {
+	if (!likely(is_chain(val))) {
 		if (val) {
-			berr = match(ntdb, h->h, &key, val, rec, NULL);
+			berr = match(ntdb, h->h, &key, val, rec, rptr, NULL);
 			if (berr < 0) {
 				ecode = NTDB_OFF_TO_ERR(berr);
 				goto fail;
@@ -195,7 +204,7 @@ ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 				found_empty = true;
 			}
 		} else {
-			berr = match(ntdb, h->h, &key, val, rec, &arr);
+			berr = match(ntdb, h->h, &key, val, rec, rptr, &arr);
 			if (berr < 0) {
 				ecode = NTDB_OFF_TO_ERR(berr);
 				if (arr) {

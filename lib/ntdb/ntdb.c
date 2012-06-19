@@ -114,7 +114,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_store(struct ntdb_context *ntdb,
 	struct ntdb_used_record rec;
 	enum NTDB_ERROR ecode;
 
-	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec);
+	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return NTDB_OFF_TO_ERR(off);
 	}
@@ -176,7 +176,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_append(struct ntdb_context *ntdb,
 	NTDB_DATA new_dbuf;
 	enum NTDB_ERROR ecode;
 
-	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec);
+	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return NTDB_OFF_TO_ERR(off);
 	}
@@ -240,8 +240,9 @@ _PUBLIC_ enum NTDB_ERROR ntdb_fetch(struct ntdb_context *ntdb, NTDB_DATA key,
 	struct ntdb_used_record rec;
 	struct hash_info h;
 	enum NTDB_ERROR ecode;
+	const char *keyp;
 
-	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec);
+	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec, &keyp);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return NTDB_OFF_TO_ERR(off);
 	}
@@ -250,12 +251,14 @@ _PUBLIC_ enum NTDB_ERROR ntdb_fetch(struct ntdb_context *ntdb, NTDB_DATA key,
 		ecode = NTDB_ERR_NOEXIST;
 	} else {
 		data->dsize = rec_data_length(&rec);
-		data->dptr = ntdb_alloc_read(ntdb, off + sizeof(rec) + key.dsize,
-					    data->dsize);
-		if (NTDB_PTR_IS_ERR(data->dptr)) {
-			ecode = NTDB_PTR_ERR(data->dptr);
-		} else
+		data->dptr = ntdb->alloc_fn(ntdb, data->dsize, ntdb->alloc_data);
+		if (unlikely(!data->dptr)) {
+			ecode = NTDB_ERR_OOM;
+		} else {
+			memcpy(data->dptr, keyp + key.dsize, data->dsize);
 			ecode = NTDB_SUCCESS;
+		}
+		ntdb_access_release(ntdb, keyp);
 	}
 
 	ntdb_unlock_hash(ntdb, h.h, F_RDLCK);
@@ -268,7 +271,7 @@ _PUBLIC_ bool ntdb_exists(struct ntdb_context *ntdb, NTDB_DATA key)
 	struct ntdb_used_record rec;
 	struct hash_info h;
 
-	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec);
+	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return false;
 	}
@@ -284,7 +287,7 @@ _PUBLIC_ enum NTDB_ERROR ntdb_delete(struct ntdb_context *ntdb, NTDB_DATA key)
 	struct hash_info h;
 	enum NTDB_ERROR ecode;
 
-	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec);
+	off = find_and_lock(ntdb, key, F_WRLCK, &h, &rec, NULL);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return NTDB_OFF_TO_ERR(off);
 	}
@@ -481,8 +484,9 @@ _PUBLIC_ enum NTDB_ERROR ntdb_parse_record_(struct ntdb_context *ntdb,
 	struct ntdb_used_record rec;
 	struct hash_info h;
 	enum NTDB_ERROR ecode;
+	const char *keyp;
 
-	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec);
+	off = find_and_lock(ntdb, key, F_RDLCK, &h, &rec, &keyp);
 	if (NTDB_OFF_IS_ERR(off)) {
 		return NTDB_OFF_TO_ERR(off);
 	}
@@ -490,17 +494,11 @@ _PUBLIC_ enum NTDB_ERROR ntdb_parse_record_(struct ntdb_context *ntdb,
 	if (!off) {
 		ecode = NTDB_ERR_NOEXIST;
 	} else {
-		const void *dptr;
-		dptr = ntdb_access_read(ntdb, off + sizeof(rec) + key.dsize,
-				       rec_data_length(&rec), false);
-		if (NTDB_PTR_IS_ERR(dptr)) {
-			ecode = NTDB_PTR_ERR(dptr);
-		} else {
-			NTDB_DATA d = ntdb_mkdata(dptr, rec_data_length(&rec));
+		NTDB_DATA d = ntdb_mkdata(keyp + key.dsize,
+					  rec_data_length(&rec));
 
-			ecode = parse(key, d, data);
-			ntdb_access_release(ntdb, dptr);
-		}
+		ecode = parse(key, d, data);
+		ntdb_access_release(ntdb, keyp);
 	}
 
 	ntdb_unlock_hash(ntdb, h.h, F_RDLCK);

@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 		ok1(ntdb_check(ntdb, NULL, NULL) == NTDB_SUCCESS);
 
 		/* Make sure it put it at end as we expected. */
-		off = find_and_lock(ntdb, k, F_RDLCK, &h, &rec);
+		off = find_and_lock(ntdb, k, F_RDLCK, &h, &rec, NULL);
 		ok1(off >= ALMOST_4G);
 		ntdb_unlock_hash(ntdb, h.h, F_RDLCK);
 
