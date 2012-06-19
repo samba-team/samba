@@ -435,7 +435,6 @@ NTSTATUS _samr_Close(struct pipes_struct *p, struct samr_Close *r)
 NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 			  struct samr_OpenDomain *r)
 {
-	struct samr_connect_info *cinfo;
 	struct samr_domain_info *dinfo;
 	struct security_descriptor *psd = NULL;
 	uint32    acc_granted;
@@ -446,7 +445,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 
 	/* find the connection policy handle. */
 
-	cinfo = policy_handle_find(p, r->in.connect_handle, 0, NULL,
+	(void)policy_handle_find(p, r->in.connect_handle, 0, NULL,
 				   struct samr_connect_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -667,7 +666,6 @@ static bool check_change_pw_access(TALLOC_CTX *mem_ctx, struct dom_sid *user_sid
 NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 			     struct samr_QuerySecurity *r)
 {
-	struct samr_connect_info *cinfo;
 	struct samr_domain_info *dinfo;
 	struct samr_user_info *uinfo;
 	struct samr_group_info *ginfo;
@@ -676,7 +674,7 @@ NTSTATUS _samr_QuerySecurity(struct pipes_struct *p,
 	struct security_descriptor * psd = NULL;
 	size_t sd_size = 0;
 
-	cinfo = policy_handle_find(p, r->in.handle,
+	(void)policy_handle_find(p, r->in.handle,
 				   SEC_STD_READ_CONTROL, NULL,
 				   struct samr_connect_info, &status);
 	if (NT_STATUS_IS_OK(status)) {
@@ -3890,7 +3888,6 @@ NTSTATUS _samr_CreateUser(struct pipes_struct *p,
 NTSTATUS _samr_Connect(struct pipes_struct *p,
 		       struct samr_Connect *r)
 {
-	struct samr_connect_info *info;
 	uint32_t acc_granted;
 	struct policy_handle hnd;
 	uint32    des_access = r->in.access_mask;
@@ -3918,7 +3915,7 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 
 	/* set up the SAMR connect_anon response */
 
-	info = policy_handle_create(p, &hnd, acc_granted,
+	(void)policy_handle_create(p, &hnd, acc_granted,
 				    struct samr_connect_info,
 				    &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3936,7 +3933,6 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 NTSTATUS _samr_Connect2(struct pipes_struct *p,
 			struct samr_Connect2 *r)
 {
-	struct samr_connect_info *info = NULL;
 	struct policy_handle hnd;
 	struct security_descriptor *psd = NULL;
 	uint32    acc_granted;
@@ -3983,7 +3979,7 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
 
-	info = policy_handle_create(p, &hnd, acc_granted,
+	(void)policy_handle_create(p, &hnd, acc_granted,
 				    struct samr_connect_info, &nt_status);
         if (!NT_STATUS_IS_OK(nt_status)) {
                 return nt_status;
@@ -4065,14 +4061,13 @@ NTSTATUS _samr_LookupDomain(struct pipes_struct *p,
 			    struct samr_LookupDomain *r)
 {
 	NTSTATUS status;
-	struct samr_connect_info *info;
 	const char *domain_name;
 	struct dom_sid *sid = NULL;
 
 	/* win9x user manager likes to use SAMR_ACCESS_ENUM_DOMAINS here.
 	   Reverted that change so we will work with RAS servers again */
 
-	info = policy_handle_find(p, r->in.connect_handle,
+	(void)policy_handle_find(p, r->in.connect_handle,
 				  SAMR_ACCESS_LOOKUP_DOMAIN, NULL,
 				  struct samr_connect_info,
 				  &status);
@@ -4114,12 +4109,11 @@ NTSTATUS _samr_EnumDomains(struct pipes_struct *p,
 			   struct samr_EnumDomains *r)
 {
 	NTSTATUS status;
-	struct samr_connect_info *info;
 	uint32_t num_entries = 2;
 	struct samr_SamEntry *entry_array = NULL;
 	struct samr_SamArray *sam;
 
-	info = policy_handle_find(p, r->in.connect_handle,
+	(void)policy_handle_find(p, r->in.connect_handle,
 				  SAMR_ACCESS_ENUM_DOMAINS, NULL,
 				  struct samr_connect_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6499,7 +6493,6 @@ static NTSTATUS set_dom_info_12(TALLOC_CTX *mem_ctx,
 NTSTATUS _samr_SetDomainInfo(struct pipes_struct *p,
 			     struct samr_SetDomainInfo *r)
 {
-	struct samr_domain_info *dinfo;
 	NTSTATUS status;
 	uint32_t acc_required = 0;
 
@@ -6526,7 +6519,7 @@ NTSTATUS _samr_SetDomainInfo(struct pipes_struct *p,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	dinfo = policy_handle_find(p, r->in.domain_handle,
+	(void)policy_handle_find(p, r->in.domain_handle,
 				   acc_required, NULL,
 				   struct samr_domain_info, &status);
 	if (!NT_STATUS_IS_OK(status)) {
