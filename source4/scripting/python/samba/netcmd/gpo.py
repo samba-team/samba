@@ -910,10 +910,16 @@ class cmd_create(Command):
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
             # Create a file system security descriptor
-            fs_sd = security.descriptor(dsacl2fsacl(ds_sd, self.samdb.get_domain_sid()))
+            domain_sid = self.samdb.get_domain_sid()
+            sddl = dsacl2fsacl(ds_sd, domain_sid)
+            fs_sd = security.descriptor.from_sddl(sddl, security.dom_sid(domain_sid))
 
             # Set ACL
-            conn.set_acl(sharepath, fs_sd)
+            sio = ( security.SECINFO_OWNER |
+                    security.SECINFO_GROUP |
+                    security.SECINFO_DACL |
+                    security.SECINFO_PROTECTED_DACL )
+            conn.set_acl(sharepath, fs_sd, sio)
         except:
             self.samdb.transaction_cancel()
             raise
