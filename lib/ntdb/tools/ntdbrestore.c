@@ -1,5 +1,6 @@
 /*
-   ntdbrestore -- construct a ntdb from tdbdump output.
+   ntdbrestore -- construct a ntdb from (n)tdbdump output.
+   Copyright (C) Rusty Russell			2012
    Copyright (C) Volker Lendecke		2010
    Copyright (C) Simon McVittie			2005
 
@@ -188,11 +189,17 @@ fail:
 	return ret;
 }
 
-static int restore_ntdb(const char *fname)
+static int restore_ntdb(const char *fname, unsigned int hsize)
 {
 	struct ntdb_context *ntdb;
+	union ntdb_attribute hashsize;
 
-	ntdb = ntdb_open(fname, 0, O_RDWR|O_CREAT|O_EXCL, 0666, NULL);
+	hashsize.base.attr = NTDB_ATTRIBUTE_HASHSIZE;
+	hashsize.base.next = NULL;
+	hashsize.hashsize.size = hsize;
+
+	ntdb = ntdb_open(fname, 0, O_RDWR|O_CREAT|O_EXCL, 0666,
+			 hsize ? &hashsize : NULL);
 	if (!ntdb) {
 		perror("ntdb_open");
 		fprintf(stderr, "Failed to open %s\n", fname);
@@ -218,14 +225,27 @@ static int restore_ntdb(const char *fname)
 
 int main(int argc, char *argv[])
 {
-	char *fname;
+	unsigned int hsize = 0;
+	const char *execname = argv[0];
 
-	if (argc < 2) {
-		printf("Usage: %s dbname < tdbdump_output\n", argv[0]);
+	if (argv[1] && strcmp(argv[1], "-h") == 0) {
+		if (argv[2]) {
+			hsize = atoi(argv[2]);
+		}
+		if (hsize == 0) {
+			fprintf(stderr, "-h requires a integer value"
+				" (eg. 128 or 131072)\n");
+			exit(1);
+		}
+		argv += 2;
+		argc -= 2;
+	}
+	if (argc != 2) {
+		printf("Usage: %s [-h <hashsize>] dbname < tdbdump_output\n",
+		       execname);
 		exit(1);
 	}
 
-	fname = argv[1];
 
-	return restore_ntdb(fname);
+	return restore_ntdb(argv[1], hsize);
 }
