@@ -352,6 +352,8 @@ struct smbXsrv_connection {
 	} smb2;
 
 	struct msg_state *msg_state;
+
+	uint64_t smbd_idle_profstamp;
 };
 
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
