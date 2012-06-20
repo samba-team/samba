@@ -22,10 +22,12 @@ def find_irixcc(conf):
     cc = conf.cmd_to_list(cc)
 
     try:
-        if Utils.cmd_output(cc + ['-version']) != '':
+        if Utils.cmd_output(cc + ['-c99'] + ['-version']) != '':
             conf.fatal('irixcc %r was not found' % cc)
     except ValueError:
         conf.fatal('irixcc -v could not be executed')
+
+    conf.env.append_unique('CCFLAGS', '-c99')
 
     v['CC']  = cc
     v['CC_NAME'] = 'irix'
