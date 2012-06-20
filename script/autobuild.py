@@ -18,6 +18,7 @@ cleanup_list = []
 builddirs = {
     "samba3"  : "source3",
     "samba"  : ".",
+    "samba-ctdb" : ".",
     "samba-libs"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
@@ -54,6 +55,24 @@ tasks = {
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
+
+    "samba-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+
+                     # make sure we have tdb around:
+                     ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                     ("tdb-make", "cd lib/tdb && make", "text/plain"),
+                     ("tdb-install", "cd lib/tdb && make install", "text/plain"),
+
+                     # install the ctdb headers under the prefix:
+                     ("ctdb-header-install", "cp ./ctdb/include/* ${PREFIX_DIR}/include", "text/plain"),
+                     ("ctdb-header-ls", "ls ${PREFIX_DIR}/include/ctdb.h", "text/plain"),
+
+                     ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --with-ctdb-dir=${PREFIX_DIR} --bundled-libraries=!tdb", "text/plain"),
+                     ("make", "make", "text/plain"),
+                     ("check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
+                     ("install", "make install", "text/plain"),
+                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                     ("clean", "make clean", "text/plain") ],
 
     "samba-libs" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
