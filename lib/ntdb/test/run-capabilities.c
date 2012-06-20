@@ -30,6 +30,12 @@ static void create_ntdb(const char *name,
 	struct ntdb_layout *layout;
 	struct ntdb_context *ntdb;
 	int fd, clen;
+	union ntdb_attribute seed_attr;
+
+	/* Force a seed which doesn't allow records to clash! */
+	seed_attr.base.attr = NTDB_ATTRIBUTE_SEED;
+	seed_attr.base.next = &tap_log_attr;
+	seed_attr.seed.seed = 0;
 
 	key = ntdb_mkdata("Hello", 5);
 	data = ntdb_mkdata("world", 5);
@@ -61,7 +67,7 @@ static void create_ntdb(const char *name,
 	va_end(ap);
 
 	/* We open-code this, because we need to use the failtest write. */
-	ntdb = ntdb_layout_get(layout, failtest_free, &tap_log_attr);
+	ntdb = ntdb_layout_get(layout, failtest_free, &seed_attr);
 
 	fd = open(name, O_RDWR|O_TRUNC|O_CREAT, 0600);
 	if (fd < 0)
