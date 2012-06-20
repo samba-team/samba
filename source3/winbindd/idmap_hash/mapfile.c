@@ -67,7 +67,8 @@ static bool mapfile_read_line(fstring key, fstring value)
 	if (!lw_map_file)
 		return false;
 
-	if (x_fgets(buffer, sizeof(buffer)-1, lw_map_file) == NULL) {
+	p = x_fgets(buffer, sizeof(buffer)-1, lw_map_file);
+	if (p == NULL) {
 		return false;
 	}
 
