@@ -244,7 +244,7 @@ else
 fi
 
 if [ $tests_failed -gt 0 ] ; then
-    if $no_header ; then
+    if $no_header || $exit_on_fail ; then
 	exit $status
     else
 	exit 1
