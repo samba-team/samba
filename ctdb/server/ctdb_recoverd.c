@@ -2864,9 +2864,13 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 				}
 			} else {
 				if (ctdb->do_checkpublicip && ctdb_sys_have_ip(&ips->ips[j].addr)) {
-					DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
+
+					DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving. Removing it.\n", 
 						ctdb_addr_to_str(&ips->ips[j].addr)));
-					need_takeover_run = true;
+
+					if (ctdb_ctrl_release_ip(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ips->ips[j]) != 0) {
+						DEBUG(DEBUG_ERR,("Failed to release local ip address\n"));
+					}
 				}
 			}
 		}
