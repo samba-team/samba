@@ -166,6 +166,11 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
+	if (!ids) {
+		nt_status = NT_STATUS_INVALID_PARAMETER;
+		BAIL_ON_NTSTATUS_ERROR(nt_status);
+	}
+
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
@@ -173,11 +178,6 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 
 	nt_status = be_init(dom);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
-
-	if (!ids) {
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		BAIL_ON_NTSTATUS_ERROR(nt_status);
-	}
 
 	for (i=0; ids[i]; i++) {
 		uint32_t h_domain, h_rid;
