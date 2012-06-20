@@ -56,27 +56,27 @@ tasks = {
                  ("clean", "make clean", "text/plain") ],
 
     "samba4-libs" : [ ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("talloc-make", "cd lib/talloc && make -j", "text/plain"),
+                      ("talloc-make", "cd lib/talloc && make", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
                       ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("tdb-make", "cd lib/tdb && make -j", "text/plain"),
+                      ("tdb-make", "cd lib/tdb && make", "text/plain"),
                       ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
                       ("tevent-configure", "cd lib/tevent && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("tevent-make", "cd lib/tevent && make -j", "text/plain"),
+                      ("tevent-make", "cd lib/tevent && make", "text/plain"),
                       ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
                       ("ldb-configure", "cd lib/ldb && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("ldb-make", "cd lib/ldb && make -j", "text/plain"),
+                      ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
                       ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                      ("make", "make -j", "text/plain"),
+                      ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain")],
 
     "ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-              ("make", "make -j", "text/plain"),
+              ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -85,7 +85,7 @@ tasks = {
 
     # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
     "tdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-              ("make", "make -j", "text/plain"),
+              ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -93,7 +93,7 @@ tasks = {
               ("clean", "make clean", "text/plain") ],
 
     "ntdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-               ("make", "make -j", "text/plain"),
+               ("make", "make", "text/plain"),
                ("install", "make install", "text/plain"),
                ("test", "make test", "text/plain"),
                ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -101,7 +101,7 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     "talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                 ("make", "make -j", "text/plain"),
+                 ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -109,7 +109,7 @@ tasks = {
                  ("clean", "make clean", "text/plain") ],
 
     "replace" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                  ("make", "make -j", "text/plain"),
+                  ("make", "make", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
                   ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -117,7 +117,7 @@ tasks = {
                   ("clean", "make clean", "text/plain") ],
 
     "tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                 ("make", "make -j", "text/plain"),
+                 ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
