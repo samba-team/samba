@@ -33,7 +33,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba3", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
