@@ -1602,7 +1602,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         root=None, nobody=None, users=None, wheel=None, backup=None, aci=None,
         serverrole=None, dom_for_fun_level=None, 
         backend_type=None, sitename=None,
-        ol_mmr_urls=None, ol_olc=None, slapd_path=None,
+        ol_mmr_urls=None, ol_olc=None, slapd_path="/bin/false",
         useeadb=False, am_rodc=False,
         lp=None, use_ntvfs=False):
     """Provision samba4
