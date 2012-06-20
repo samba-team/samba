@@ -304,7 +304,7 @@ for t in tests:
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
     elif t == "unix.whoami":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD')
+        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:addc=true')
     elif t == "raw.samba3posixtimedlock":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/plugin_s4_dc/share')

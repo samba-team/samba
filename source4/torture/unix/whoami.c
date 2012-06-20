@@ -25,6 +25,12 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include <ldb.h>
+#include "lib/util/util_ldb.h"
+#include "ldb_wrap.h"
+#include "dsdb/samdb/samdb.h"
+#include "../libcli/security/security.h"
+
 
 /* Size (in bytes) of the required fields in the SMBwhoami response. */
 #define WHOAMI_REQUIRED_SIZE	40
@@ -92,7 +98,7 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx,
 	return cli;
 }
 
-static bool sid_parse(void *mem_ctx,
+static bool whoami_sid_parse(void *mem_ctx,
 		struct torture_context *torture,
 		DATA_BLOB *data, size_t *offset,
 		struct dom_sid **psid)
@@ -248,7 +254,7 @@ static bool smb_raw_query_posix_whoami(void *mem_ctx,
 				"out of memory");
 
 		for (i = 0; i < whoami->num_sids; ++i) {
-			if (!sid_parse(mem_ctx, torture,
+			if (!whoami_sid_parse(mem_ctx, torture,
 					&tp.out.data, &offset,
 					&whoami->sid_list[i])) {
 				return false;
@@ -264,12 +270,37 @@ static bool smb_raw_query_posix_whoami(void *mem_ctx,
 	return true;
 }
 
+static bool test_against_ldap(struct torture_context *torture, struct ldb_context *ldb, struct smb_whoami *whoami)
+{
+	struct ldb_message *msg;
+	struct ldb_message_element *el;
+
+	const char *attrs[] = { "tokenGroups", NULL };
+	int i;
+
+	torture_assert_int_equal(torture, dsdb_search_one(ldb, torture, &msg, NULL, LDB_SCOPE_BASE, attrs, 0, NULL), LDB_SUCCESS, "searching for tokenGroups");
+	el = ldb_msg_find_element(msg, "tokenGroups");
+	torture_assert(torture, el, "obtaining tokenGroups");
+	torture_assert_int_equal(torture, el->num_values, whoami->num_sids, "Number of SIDs from LDAP and number of SIDs from CIFS does not match!");
+
+	for (i = 0; i < el->num_values; i++) {
+		struct dom_sid *sid = talloc(torture, struct dom_sid);
+		torture_assert(torture, sid != NULL, "talloc failed");
+
+		torture_assert(torture, sid_blob_parse(el->values[i], sid), "sid parse failed");
+		torture_assert_str_equal(torture, dom_sid_string(sid, sid), dom_sid_string(sid, whoami->sid_list[i]), "SID from LDAP and SID from CIFS does not match!");
+		talloc_free(sid);
+	}
+	return true;
+}
+
 bool torture_unix_whoami(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
 	struct cli_credentials *anon_credentials;
 	struct smb_whoami whoami;
 	bool ret;
+	struct ldb_context *ldb;
 
 	cli = connect_to_server(torture, cmdline_credentials);
 	torture_assert(torture, cli, "connecting to server with authenticated credentials");
@@ -278,6 +309,17 @@ bool torture_unix_whoami(struct torture_context *torture)
 	torture_assert_goto(torture, smb_raw_query_posix_whoami(torture, torture,
 						       cli, &whoami, 0xFFFF), ret, fail,
 			    "calling SMB_QFS_POSIX_WHOAMI on an authenticated connection");
+
+	if (torture_setting_bool(torture, "addc", false)) {
+		ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, talloc_asprintf(torture, "ldap://%s", torture_setting_string(torture, "host", NULL)),
+				       NULL, cmdline_credentials, 0);
+		torture_assert(torture, ldb, "ldb connect failed");
+
+		/* We skip this testing if we could not contact the LDAP server */
+		if (!test_against_ldap(torture, ldb, &whoami)) {
+			goto fail;
+		}
+	}
 
 	/* Test that the server drops the UID and GID list. */
 	torture_assert_goto(torture, smb_raw_query_posix_whoami(torture, torture,
