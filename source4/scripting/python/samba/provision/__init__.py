@@ -591,7 +591,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 
 def make_smbconf(smbconf, hostname, domain, realm, targetdir,
-                 serverrole=None, sid_generator=None, eadb=False, use_ntvfs=False, lp=None,
+                 serverrole=None, eadb=False, use_ntvfs=False, lp=None,
                  global_param=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
@@ -604,9 +604,6 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
 
     if serverrole is None:
         serverrole = "standalone server"
-
-    if sid_generator is None:
-        sid_generator = "internal"
 
     assert domain is not None
     domain = domain.upper()
@@ -1630,10 +1627,6 @@ def provision(logger, session_info, credentials, smbconf=None,
     else:
         domainsid = security.dom_sid(domainsid)
 
-    sid_generator = "internal"
-    if backend_type == "fedora-ds":
-        sid_generator = "backend"
-
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])
     users_gid = findnss_gid([users or "users", 'users', 'other', 'staff'])
@@ -1679,11 +1672,11 @@ def provision(logger, session_info, credentials, smbconf=None,
         if data is None or data == "":
             make_smbconf(smbconf, hostname, domain, realm,
                          targetdir, serverrole=serverrole,
-                         sid_generator=sid_generator, eadb=useeadb, use_ntvfs=use_ntvfs,
+                         eadb=useeadb, use_ntvfs=use_ntvfs,
                          lp=lp, global_param=global_param)
     else:
         make_smbconf(smbconf, hostname, domain, realm, targetdir,
-                     serverrole=serverrole, sid_generator=sid_generator,
+                     serverrole=serverrole,
                      eadb=useeadb, use_ntvfs=use_ntvfs, lp=lp, global_param=global_param)
 
     if lp is None:

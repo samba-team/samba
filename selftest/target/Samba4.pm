@@ -461,7 +461,6 @@ sub provision_raw_prepare($$$$$$$$$)
 	$ctx->{domain} = $domain;
 	$ctx->{realm} = uc($realm);
 	$ctx->{dnsname} = lc($realm);
-	$ctx->{sid_generator} = "internal";
 
 	$ctx->{functional_level} = $functional_level;
 
@@ -601,11 +600,6 @@ sub provision_raw_step1($$)
 	# supports signin on compound related requests
 	server signing = on
 ";
-
-	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
-		print CONFFILE "
-	sid generator = $ctx->{sid_generator}";
-	}
 
 	print CONFFILE "
 
@@ -806,9 +800,6 @@ $extra_smbconf_shares
 		$ldap_uri =~ s|/|%2F|g;
 		$ldap_uri = "ldapi://$ldap_uri";
 		$ctx->{ldap_uri} = $ldap_uri;
-		if ($self->{ldap} eq "fedora-ds") {
-			$ctx->{sid_generator} = "backend";
-		}
 
 		$ctx->{ldap_instance} = lc($ctx->{netbiosname});
 	}
