@@ -1284,8 +1284,7 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 	int32_t cstatus;
 	bool persistent = (tdb_flags & TDB_CLEAR_IF_FIRST) == 0;
 
-	data.dptr = (uint8_t*)name;
-	data.dsize = strlen(name)+1;
+	data = string_term_tdb_data(name);
 
 	status = ctdbd_control(conn, CTDB_CURRENT_NODE,
 			       persistent
