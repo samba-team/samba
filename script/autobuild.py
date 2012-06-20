@@ -18,7 +18,7 @@ cleanup_list = []
 builddirs = {
     "samba3"  : "source3",
     "samba"  : ".",
-    "samba4-libs"  : ".",
+    "samba-libs"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "ntdb"    : "lib/ntdb",
@@ -31,7 +31,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba", "samba4-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba3", "samba", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
@@ -55,7 +55,7 @@ tasks = {
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
 
-    "samba4-libs" : [
+    "samba-libs" : [
                       ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
