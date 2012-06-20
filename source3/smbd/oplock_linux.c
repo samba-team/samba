@@ -76,9 +76,22 @@ int linux_setlease(int fd, int leasetype)
 {
 	int ret;
 
+	/* First set the signal handler. */
+	if (linux_set_lease_sighandler(fd) == -1) {
+		return -1;
+	}
 	ret = fcntl(fd, F_SETLEASE, leasetype);
 	if (ret == -1 && errno == EACCES) {
 		set_effective_capability(LEASE_CAPABILITY);
+		/*
+		 * Bug 8974 - work around Linux kernel bug
+		 * https://bugzilla.kernel.org/show_bug.cgi?id=43336.
+		 * "fcntl(F_SETLEASE) resets signal number when
+		 *  called multiple times"
+		 */
+		if (linux_set_lease_sighandler(fd) == -1) {
+			return -1;
+		}
 		ret = fcntl(fd, F_SETLEASE, leasetype);
 	}
 

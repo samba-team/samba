@@ -1044,11 +1044,6 @@ static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	START_PROFILE(syscall_linux_setlease);
 
 #ifdef HAVE_KERNEL_OPLOCKS_LINUX
-	/* first set the signal handler */
-	if(linux_set_lease_sighandler(fsp->fh->fd) == -1) {
-		return -1;
-	}
-
 	result = linux_setlease(fsp->fh->fd, leasetype);
 #else
 	errno = ENOSYS;
