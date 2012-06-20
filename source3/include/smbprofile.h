@@ -935,12 +935,19 @@ static inline uint64_t profile_timestamp(void)
 		ADD_PROFILE_COUNT(x,n); \
 	}
 
+#define START_PROFILE_RAW(x, _stamp, _count) \
+	_stamp = 0; \
+	if (do_profile_flag) { \
+		_stamp = do_profile_times ? profile_timestamp() : 0;\
+		INC_PROFILE_COUNT(_count); \
+	}
+
+#define START_PROFILE_STAMP(x, _stamp) \
+	START_PROFILE_RAW(x, _stamp, x##_count)
+
 #define START_PROFILE(x) \
 	uint64_t __profstamp_##x = 0; \
-	if (do_profile_flag) { \
-		__profstamp_##x = do_profile_times ? profile_timestamp() : 0;\
-		INC_PROFILE_COUNT(x##_count); \
-  	}
+	START_PROFILE_RAW(x, __profstamp_##x, x##_count)
 
 #define START_PROFILE_BYTES(x,n) \
 	uint64_t __profstamp_##x = 0; \
@@ -950,19 +957,28 @@ static inline uint64_t profile_timestamp(void)
 		ADD_PROFILE_COUNT(x##_bytes, n); \
   	}
 
-#define END_PROFILE(x) \
+#define END_PROFILE_RAW(x, _stamp, _time) \
 	if (do_profile_times) { \
-		ADD_PROFILE_COUNT(x##_time, \
-		    profile_timestamp() - __profstamp_##x); \
+		ADD_PROFILE_COUNT(_time, \
+		    profile_timestamp() - _stamp); \
 	}
+
+#define END_PROFILE_STAMP(x, _stamp) \
+	END_PROFILE_RAW(x, _stamp, x##_time)
+
+#define END_PROFILE(x) \
+	END_PROFILE_RAW(x, __profstamp_##x, x##_time)
+
 #else /* WITH_PROFILE */
 
 #define DO_PROFILE_INC(x)
 #define DO_PROFILE_DEC(x)
 #define DO_PROFILE_DEC_INC(x,y)
 #define DO_PROFILE_ADD(x,n)
+#define START_PROFILE_STAMP(x, _stamp)
 #define START_PROFILE(x)
 #define START_PROFILE_BYTES(x,n)
+#define END_PROFILE_STAMP(x, _stamp)
 #define END_PROFILE(x)
 #endif /* WITH_PROFILE */
 
