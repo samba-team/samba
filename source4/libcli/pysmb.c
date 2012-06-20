@@ -365,7 +365,7 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 	uint32_t sinfo = 0;
 	int fnum;
 
-	if (!PyArg_ParseTuple(args, "sO|i:get_acl", &filename, &py_sd, &sinfo)) {
+	if (!PyArg_ParseTuple(args, "sO|I:get_acl", &filename, &py_sd, &sinfo)) {
 		return NULL;
 	}
 
