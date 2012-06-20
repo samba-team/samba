@@ -17,6 +17,7 @@ cleanup_list = []
 
 builddirs = {
     "samba3"  : "source3",
+    "samba3-ctdb" : "source3",
     "samba"  : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
@@ -47,6 +48,15 @@ tasks = {
                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
+
+    "samba3-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("autogen", "./autogen.sh", "text/plain"),
+                      ("configure", "./configure.developer ${PREFIX} --with-cluster-support --with-ctdb=../ctdb", "text/plain"),
+                      ("make basics", "make basics", "text/plain"),
+                      ("make", "make all", "text/plain"), # don't use too many processes
+                      ("check", "LD_LIBRARY_PATH=./bin ./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
+                      ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+                      ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
     "samba" : [ ("configure", "./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
