@@ -89,6 +89,10 @@ bool idmap_cache_find_sid2unixid(const struct dom_sid *sid, struct unixid *id,
 			tmp_id.type = ID_TYPE_BOTH;
 			break;
 
+		case 'N':
+			tmp_id.type = ID_TYPE_NOT_SPECIFIED;
+			break;
+
 		case '\0':
 			DEBUG(0, ("FAILED to parse value for key [%s] "
 				  "(id=[%llu], endptr=[%s]): "
@@ -288,6 +292,9 @@ void idmap_cache_set_sid2unixid(const struct dom_sid *sid, struct unixid *unix_i
 			break;
 		case ID_TYPE_BOTH:
 			fstr_sprintf(value, "%d:B", (int)unix_id->id);
+			break;
+		case ID_TYPE_NOT_SPECIFIED:
+			fstr_sprintf(value, "%d:N", (int)unix_id->id);
 			break;
 		default:
 			return;
