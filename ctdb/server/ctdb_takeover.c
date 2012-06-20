@@ -794,6 +794,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	struct takeover_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
+	char *iface;
 
 	/* update our vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
@@ -818,24 +819,18 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 			ctdb_vnn_unassign_iface(ctdb, vnn);
 			return 0;
 		}
+	}
 
-		if (vnn->iface == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " release_ip of IP %s is known to the kernel, "
-					 "but we have no interface assigned, has someone manually configured it? Ignore for now.\n",
-					 ctdb_addr_to_str(&vnn->public_address)));
-			return 0;
-		}
-
-	} else if (vnn->iface == NULL) {
-		DEBUG(DEBUG_ERR, ("No interface found for IP %s.\n",
-				     ctdb_addr_to_str(&vnn->public_address)));
+	iface = ctdb_sys_find_ifname(&pip->addr);
+	if (iface == NULL) {
+		DEBUG(DEBUG_ERR, ("Could not find which interface the ip address is hosted on. can not release it\n"));
 		return 0;
 	}
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
 		ctdb_addr_to_str(&pip->addr),
-		vnn->public_netmask_bits, 
-		ctdb_vnn_iface_string(vnn),
+		vnn->public_netmask_bits,
+		iface,
 		pip->pnn));
 
 	state = talloc(ctdb, struct takeover_callback_state);
@@ -852,9 +847,10 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 false,
 					 CTDB_EVENT_RELEASE_IP,
 					 "%s %s %u",
-					 ctdb_vnn_iface_string(vnn),
+					 iface,
 					 ctdb_addr_to_str(&pip->addr),
 					 vnn->public_netmask_bits);
+	free(iface);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to release IP %s on interface %s\n",
 			ctdb_addr_to_str(&pip->addr),
