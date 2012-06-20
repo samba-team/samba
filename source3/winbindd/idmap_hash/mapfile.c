@@ -74,7 +74,12 @@ static bool mapfile_read_line(fstring key, fstring value)
 
 	/* Strip newlines and carriage returns */
 
-	len = strlen_m(buffer) - 1;
+	len = strlen_m(buffer);
+	if (len == 0) {
+		return false;
+	}
+	len -= 1;
+
 	while ((buffer[len] == '\n') || (buffer[len] == '\r')) {
 		buffer[len--] = '\0';
 	}
