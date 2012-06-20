@@ -40,7 +40,7 @@ tasks = {
                  # we split 'make -j 4', 'make bin/smbtorture4' and 'make -j 4 everything'
                  # because it makes it much easier to find errors.
                  ("make", "make -j 4", "text/plain"), # don't use too many processes
-                 ("make bin/smbtorture4", "make -j 4 bin/smbtorture4", "text/plain"),
+                 ("make bin/smbtorture4", "make bin/smbtorture4", "text/plain"),
                  ("make everything", "make -j 4 everything", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
