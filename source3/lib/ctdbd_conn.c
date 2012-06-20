@@ -246,7 +246,7 @@ static bool ctdb_req_complete(const uint8_t *buf, size_t available,
 		return False;
 	}
 
-	msglen = *((uint32 *)buf);
+	msglen = *((const uint32 *)buf);
 
 	DEBUG(11, ("msglen = %d\n", msglen));
 
@@ -1645,7 +1645,8 @@ static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
 #ifdef HAVE_IPV6
 	if (in->ss_family == AF_INET6) {
 		const char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
-		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)in;
+		const struct sockaddr_in6 *in6 =
+			(const struct sockaddr_in6 *)in;
 		struct sockaddr_in *out4 = (struct sockaddr_in *)out;
 		if (memcmp(&in6->sin6_addr, prefix, 12) == 0) {
 			memset(out, 0, sizeof(*out));
