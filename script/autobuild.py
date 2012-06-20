@@ -55,7 +55,9 @@ tasks = {
                  ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
-    "samba4-libs" : [ ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+    "samba4-libs" : [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("talloc-configure", "cd lib/talloc && PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
@@ -75,7 +77,9 @@ tasks = {
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain")],
 
-    "ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "ldb" : [
+              ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
@@ -84,7 +88,9 @@ tasks = {
               ("clean", "make clean", "text/plain") ],
 
     # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
-    "tdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "tdb" : [
+              ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
@@ -92,7 +98,9 @@ tasks = {
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
 
-    "ntdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "ntdb" : [
+               ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                ("make", "make", "text/plain"),
                ("install", "make install", "text/plain"),
                ("test", "make test", "text/plain"),
@@ -100,7 +108,9 @@ tasks = {
                ("distcheck", "make distcheck", "text/plain"),
                ("clean", "make clean", "text/plain") ],
 
-    "talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "talloc" : [
+                 ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -108,7 +118,9 @@ tasks = {
                  ("distcheck", "make distcheck", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
-    "replace" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "replace" : [
+                  ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
@@ -116,7 +128,9 @@ tasks = {
                   ("distcheck", "make distcheck", "text/plain"),
                   ("clean", "make clean", "text/plain") ],
 
-    "tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "tevent" : [
+                 ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -124,7 +138,9 @@ tasks = {
                  ("distcheck", "make distcheck", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
-    "pidl" : [ ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
+    "pidl" : [
+               ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+               ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
                ("touch", "touch *.yp", "text/plain"),
                ("make", "make", "text/plain"),
                ("test", "make test", "text/plain"),
