@@ -230,11 +230,20 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 	
 	switch (unixid->type) {
 		case ID_TYPE_UID:
-			ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &msg, NULL, LDB_SCOPE_SUBTREE, 
-					      sam_attrs, 0,
-					      "(&(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)(uidNumber=%u)(objectSid=*)"
-					      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
-					      ATYPE_ACCOUNT, unixid->id);
+			if (lpcfg_parm_bool(idmap_ctx->lp_ctx, NULL, "idmap_ldb", "use rfc2307", false)) {
+				ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &msg,
+						      ldb_get_default_basedn(idmap_ctx->samdb),
+						      LDB_SCOPE_SUBTREE,
+						      sam_attrs, 0,
+						      "(&(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)"
+						      "(uidNumber=%u)(objectSid=*)"
+						      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+						      ATYPE_ACCOUNT, unixid->id);
+			} else {
+				/* If we are not to use the rfc2307 attributes, we just emulate a non-match */
+				ret = LDB_ERR_NO_SUCH_OBJECT;
+			}
+
 			if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
 				DEBUG(1, ("Search for uidNumber=%lu gave duplicate results, failing to map to a SID!\n",
 					  (unsigned long)unixid->id));
@@ -242,7 +251,7 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 				goto failed;
 			} else if (ret == LDB_SUCCESS) {
 				*sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
-				if (*sid) {
+				if (*sid == NULL) {
 					DEBUG(1, ("Search for uidNumber=%lu did not return an objectSid!\n",
 						  (unsigned long)unixid->id));
 					status = NT_STATUS_NONE_MAPPED;
@@ -260,11 +269,19 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 			id_type = "ID_TYPE_UID";
 			break;
 		case ID_TYPE_GID:
-			ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &msg, NULL, LDB_SCOPE_SUBTREE, 
-					      sam_attrs, 0,
-					      "(&(|(sAMaccountType=%u)(sAMaccountType=%u))(gidNumber=%u)"
-					      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
-					      ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP, unixid->id);
+			if (lpcfg_parm_bool(idmap_ctx->lp_ctx, NULL, "idmap_ldb", "use rfc2307", false)) {
+				ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &msg,
+						      ldb_get_default_basedn(idmap_ctx->samdb),
+						      LDB_SCOPE_SUBTREE,
+						      sam_attrs, 0,
+						      "(&(|(sAMaccountType=%u)(sAMaccountType=%u))(gidNumber=%u)"
+						      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+						      ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP,
+						      unixid->id);
+			} else {
+				/* If we are not to use the rfc2307 attributes, we just emulate a non-match */
+				ret = LDB_ERR_NO_SUCH_OBJECT;
+			}
 			if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
 				DEBUG(1, ("Search for gidNumber=%lu gave duplicate results, failing to map to a SID!\n",
 					  (unsigned long)unixid->id));
@@ -272,7 +289,7 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 				goto failed;
 			} else if (ret == LDB_SUCCESS) {
 				*sid = samdb_result_dom_sid(mem_ctx, msg, "objectSid");
-				if (*sid) {
+				if (*sid == NULL) {
 					DEBUG(1, ("Search for gidNumber=%lu did not return an objectSid!\n",
 						  (unsigned long)unixid->id));
 					status = NT_STATUS_NONE_MAPPED;
@@ -418,14 +435,22 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 	 * much like a winbindd member server running idmap_ad
 	 */
 	
-	ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &sam_msg, NULL, LDB_SCOPE_SUBTREE, sam_attrs, 0,
-			      "(&(objectSid=%s)"
-			      "(|(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)"
-			      "(sAMaccountType=%u)"
-			      "(sAMaccountType=%u))"
-			      "(|(uidNumber=*)(gidNumber=*))"
-			      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
-			      dom_sid_string(tmp_ctx, sid), ATYPE_ACCOUNT, ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
+	if (lpcfg_parm_bool(idmap_ctx->lp_ctx, NULL, "idmap_ldb", "use rfc2307", false)) {
+		ret = dsdb_search_one(idmap_ctx->samdb, tmp_ctx, &sam_msg,
+				      ldb_get_default_basedn(idmap_ctx->samdb),
+				      LDB_SCOPE_SUBTREE, sam_attrs, 0,
+				      "(&(objectSid=%s)"
+				      "(|(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)"
+				      "(sAMaccountType=%u)"
+				      "(sAMaccountType=%u))"
+				      "(|(uidNumber=*)(gidNumber=*))"
+				      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+				      dom_sid_string(tmp_ctx, sid), ATYPE_ACCOUNT, ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
+	} else {
+		/* If we are not to use the rfc2307 attributes, we just emulate a non-match */
+		ret = LDB_ERR_NO_SUCH_OBJECT;
+	}
+
 	if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
 		DEBUG(1, ("Search for objectSid=%s gave duplicate results, failing to map to a unix ID!\n",
 			  dom_sid_string(tmp_ctx, sid)));

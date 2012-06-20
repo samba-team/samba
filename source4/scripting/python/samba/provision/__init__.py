@@ -1604,7 +1604,8 @@ def provision(logger, session_info, credentials, smbconf=None,
         backend_type=None, sitename=None,
         ol_mmr_urls=None, ol_olc=None, slapd_path="/bin/false",
         useeadb=False, am_rodc=False,
-        lp=None, use_ntvfs=False):
+        lp=None, use_ntvfs=False,
+        use_rfc2307=False):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -1648,6 +1649,9 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     server_services = []
     global_param = {}
+    if use_rfc2307:
+        global_param["idmap_ldb:use rfc2307"] = ["yes"]
+
     if dns_backend == "SAMBA_INTERNAL":
         server_services.append("+dns")
 

@@ -702,7 +702,7 @@ Please fix this account before attempting to upgrade again
                        dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
                        hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
-                       useeadb=useeadb, dns_backend=dns_backend)
+                       useeadb=useeadb, dns_backend=dns_backend, use_rfc2307=True)
     result.report_logger(logger)
 
     # Import WINS database
