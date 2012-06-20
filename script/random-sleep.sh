@@ -17,5 +17,5 @@ v=$(expr $r % $s)
 d=$(expr $l + $v)
 
 echo "$0: sleep $d ... start"
-#sleep $d
+sleep $d
 echo "$0: sleep $d ... end"
