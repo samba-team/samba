@@ -269,26 +269,20 @@ bool torture_unix_whoami(struct torture_context *torture)
 	struct smbcli_state *cli;
 	struct cli_credentials *anon_credentials;
 	struct smb_whoami whoami;
+	bool ret;
 
-	if (!(cli = connect_to_server(torture, cmdline_credentials))) {
-		return false;
-	}
+	cli = connect_to_server(torture, cmdline_credentials);
+	torture_assert(torture, cli, "connecting to server with authenticated credentials");
 
 	/* Test basic authenticated mapping. */
-	printf("calling SMB_QFS_POSIX_WHOAMI on an authenticated connection\n");
-	if (!smb_raw_query_posix_whoami(torture, torture,
-				cli, &whoami, 0xFFFF)) {
-		smbcli_tdis(cli);
-		return false;
-	}
+	torture_assert_goto(torture, smb_raw_query_posix_whoami(torture, torture,
+						       cli, &whoami, 0xFFFF), ret, fail,
+			    "calling SMB_QFS_POSIX_WHOAMI on an authenticated connection");
 
 	/* Test that the server drops the UID and GID list. */
-	printf("calling SMB_QFS_POSIX_WHOAMI with a small buffer\n");
-	if (!smb_raw_query_posix_whoami(torture, torture,
-				cli, &whoami, 0x40)) {
-		smbcli_tdis(cli);
-		return false;
-	}
+	torture_assert_goto(torture, smb_raw_query_posix_whoami(torture, torture,
+						  cli, &whoami, 0x40), ret, fail,
+		       "calling SMB_QFS_POSIX_WHOAMI with a small buffer\n");
 
 	torture_assert_int_equal(torture, whoami.num_gids, 0,
 			"invalid GID count");
@@ -299,18 +293,15 @@ bool torture_unix_whoami(struct torture_context *torture)
 
 	smbcli_tdis(cli);
 
-	printf("calling SMB_QFS_POSIX_WHOAMI on an anonymous connection\n");
+	torture_comment(torture, "calling SMB_QFS_POSIX_WHOAMI on an anonymous connection\n");
 	anon_credentials = cli_credentials_init_anon(torture);
 
-	if (!(cli = connect_to_server(torture, anon_credentials))) {
-		return false;
-	}
+	cli = connect_to_server(torture, anon_credentials);
+	torture_assert(torture, cli, "calling SMB_QFS_POSIX_WHOAMI on an anonymous connection");
 
-	if (!smb_raw_query_posix_whoami(torture, torture,
-				cli, &whoami, 0xFFFF)) {
-		smbcli_tdis(cli);
-		return false;
-	}
+	torture_assert_goto(torture, smb_raw_query_posix_whoami(torture, torture,
+								cli, &whoami, 0xFFFF), ret, fail,
+			    "calling SMB_QFS_POSIX_WHOAMI on an anonymous connection");
 
 	smbcli_tdis(cli);
 
@@ -327,6 +318,10 @@ bool torture_unix_whoami(struct torture_context *torture)
 	}
 
 	return true;
+fail:
+
+	smbcli_tdis(cli);
+	return ret;
 }
 
 /* vim: set sts=8 sw=8 : */
