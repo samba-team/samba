@@ -1109,8 +1109,8 @@ bool test_durable_open_lease(struct torture_context *tctx,
 /*
   Open, take BRL, disconnect, reconnect.
 */
-bool test_durable_open_lock(struct torture_context *tctx,
-			    struct smb2_tree *tree)
+bool test_durable_open_lock_lease(struct torture_context *tctx,
+				  struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
@@ -1134,7 +1134,7 @@ bool test_durable_open_lock(struct torture_context *tctx,
 	 * little funky.
 	 */
 	lease = random();
-	snprintf(fname, 256, "durable_open_lock_%s.dat", generate_random_str(tctx, 8));
+	snprintf(fname, 256, "durable_open_lease_lock_%s.dat", generate_random_str(tctx, 8));
 
 	/* Clean slate */
 	smb2_util_unlink(tree, fname);
@@ -1401,7 +1401,7 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
 	torture_suite_add_2smb2_test(suite, "lease", test_durable_open_lease);
-	torture_suite_add_1smb2_test(suite, "lock", test_durable_open_lock);
+	torture_suite_add_1smb2_test(suite, "lock-lease", test_durable_open_lock_lease);
 	torture_suite_add_2smb2_test(suite, "open2-lease",
 				     test_durable_open_open2_lease);
 	torture_suite_add_2smb2_test(suite, "open2-oplock",
