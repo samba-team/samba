@@ -183,7 +183,22 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+/*
+  check if we have ACL support
+ */
+static PyObject *py_smbd_have_posix_acls(PyObject *self, PyObject *args)
+{
+#ifdef HAVE_POSIX_ACLS
+	return PyBool_FromLong(true);
+#else
+	return PyBool_FromLong(false);
+#endif
+}
+
 static PyMethodDef py_smbd_methods[] = {
+	{ "have_posix_acls",
+		(PyCFunction)py_smbd_have_posix_acls, METH_VARARGS,
+		NULL },
 	{ "set_simple_acl",
 		(PyCFunction)py_smbd_set_simple_acl, METH_VARARGS,
 		NULL },
