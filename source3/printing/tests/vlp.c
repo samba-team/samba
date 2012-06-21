@@ -237,7 +237,8 @@ static int print_command(int argc, char **argv)
 
 	slprintf(job.jobname, sizeof(job.jobname) - 1, "%s", argv[2]);
 
-	if (!(pw = getpwuid(getuid()))) {
+	if (!(pw = getpwuid(geteuid()))) {
+		printf("getpwuid failed\n");
 		return 1;
 	}
 
