@@ -27,6 +27,7 @@ def set_options(opt):
     opt.add_option('--valgrind-log',
                    help=("where to put the valgrind log"),
                    action="store", dest='VALGRINDLOG', default=None)
+
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
                        help=("disable the pyntdb module"),
