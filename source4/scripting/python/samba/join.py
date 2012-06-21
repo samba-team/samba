@@ -47,13 +47,20 @@ class dc_join(object):
 
     def __init__(ctx, server=None, creds=None, lp=None, site=None,
             netbios_name=None, targetdir=None, domain=None,
-            machinepass=None, use_ntvfs=False):
+            machinepass=None, use_ntvfs=False, dns_backend=None):
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
         ctx.netbios_name = netbios_name
         ctx.targetdir = targetdir
         ctx.use_ntvfs = use_ntvfs
+        if dns_backend is None:
+            ctx.dns_backend = "NONE"
+        else:
+            ctx.dns_backend = dns_backend
+
+        ctx.nc_list = []
+        ctx.full_nc_list = []
 
         ctx.creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
         ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
@@ -402,14 +409,14 @@ class dc_join(object):
 
         if ctx.RODC:
             rec["objectCategory"] = "CN=NTDS-DSA-RO,%s" % ctx.schema_dn
-            rec["msDS-HasFullReplicaNCs"] = nc_list
+            rec["msDS-HasFullReplicaNCs"] = ctx.nc_list
             rec["options"] = "37"
             ctx.samdb.add(rec, ["rodc_join:1:1"])
         else:
             rec["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
             rec["HasMasterNCs"]      = nc_list
             if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-                rec["msDS-HasMasterNCs"] = nc_list
+                rec["msDS-HasMasterNCs"] = ctx.nc_list
             rec["options"] = "1"
             rec["invocationId"] = ndr_pack(ctx.invocation_id)
             ctx.DsAddEntry([rec])
@@ -555,7 +562,7 @@ class dc_join(object):
         rec2["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
         rec2["HasMasterNCs"]      = nc_list
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-            rec2["msDS-HasMasterNCs"] = nc_list
+            rec2["msDS-HasMasterNCs"] = ctx.nc_list
         rec2["options"] = "1"
         rec2["invocationId"] = ndr_pack(ctx.invocation_id)
 
@@ -596,7 +603,7 @@ class dc_join(object):
                 hostname=ctx.myname, domainsid=ctx.domsid,
                 machinepass=ctx.acct_pass, serverrole="domain controller",
                 sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
-                use_ntvfs=ctx.use_ntvfs, dns_backend="NONE")
+                use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend)
         print "Provision OK for domain DN %s" % presult.domaindn
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
@@ -687,6 +694,17 @@ class dc_join(object):
                 repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.domain_replica_flags)
+
+            if 'DC=DomainDnsZones,%s' % ctx.base_dn in ctx.nc_list:
+                repl.replicate('DC=DomainDnsZones,%s' % ctx.base_dn, source_dsa_invocation_id,
+                               destination_dsa_guid, rodc=ctx.RODC,
+                               replica_flags=ctx.replica_flags)
+
+            if 'DC=ForestDnsZones,%s' % ctx.root_dn in ctx.nc_list:
+                repl.replicate('DC=ForestDnsZones,%s' % ctx.root_dn, source_dsa_invocation_id,
+                               destination_dsa_guid, rodc=ctx.RODC,
+                               replica_flags=ctx.replica_flags)
+
             if ctx.RODC:
                 repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
                         destination_dsa_guid,
@@ -724,9 +742,8 @@ class dc_join(object):
         '''finalise the join, mark us synchronised and setup secrets db'''
 
         print "Sending DsReplicateUpdateRefs for all the partitions"
-        ctx.send_DsReplicaUpdateRefs(ctx.schema_dn)
-        ctx.send_DsReplicaUpdateRefs(ctx.config_dn)
-        ctx.send_DsReplicaUpdateRefs(ctx.base_dn)
+        for nc in ctx.full_nc_list:
+            ctx.send_DsReplicaUpdateRefs(nc)
 
         print "Setting isSynchronized and dsServiceName"
         m = ldb.Message()
@@ -865,6 +882,20 @@ class dc_join(object):
 
 
     def do_join(ctx):
+        ctx.nc_list = [ ctx.config_dn, ctx.schema_dn ]
+        ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+
+        if not ctx.subdomain:
+            ctx.nc_list += [ctx.base_dn]
+            if ctx.dns_backend != "NONE":
+                ctx.nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
+
+        if ctx.dns_backend != "NONE":
+            ctx.full_nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
+            ctx.full_nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
+            ctx.nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
+
+
         ctx.cleanup_old_join()
         try:
             ctx.join_add_objects()
@@ -883,11 +914,11 @@ class dc_join(object):
 
 def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None, domain_critical_only=False,
-              machinepass=None, use_ntvfs=False):
+              machinepass=None, use_ntvfs=False, dns_backend=None):
     """join as a RODC"""
 
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs)
+                  machinepass, use_ntvfs, dns_backend)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -937,10 +968,10 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
             targetdir=None, domain=None, domain_critical_only=False,
-            machinepass=None, use_ntvfs=False):
+            machinepass=None, use_ntvfs=False, dns_backend=None):
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs)
+                  machinepass, use_ntvfs, dns_backend)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -967,10 +998,10 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=None,
                    targetdir=None, parent_domain=None, dnsdomain=None, netbios_domain=None,
-                   machinepass=None, use_ntvfs=False):
+                   machinepass=None, use_ntvfs=False, dns_backend=None):
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain,
-                  machinepass, use_ntvfs)
+                  machinepass, use_ntvfs, dns_backend)
     ctx.subdomain = True
     ctx.parent_domain_name = ctx.domain_name
     ctx.domain_name = netbios_domain
