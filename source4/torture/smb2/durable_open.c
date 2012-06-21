@@ -1106,6 +1106,84 @@ bool test_durable_open_lease(struct torture_context *tctx,
 	return ret;
 }
 
+bool test_durable_open_lock_oplock(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_handle h;
+	struct smb2_lock lck;
+	struct smb2_lock_element el[2];
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+
+	/*
+	 */
+	snprintf(fname, 256, "durable_open_oplock_lock_%s.dat", generate_random_str(tctx, 8));
+
+	/* Clean slate */
+	smb2_util_unlink(tree, fname);
+
+	/* Create with lease */
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = true;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	ZERO_STRUCT(lck);
+	ZERO_STRUCT(el);
+	lck.in.locks		= el;
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= h;
+	el[0].offset		= 0;
+	el[0].length		= 1;
+	el[0].reserved		= 0x00000000;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Disconnect/Reconnect. */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = &h;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h = io.out.file.handle;
+
+	lck.in.file.handle	= h;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	smb2_util_close(tree, h);
+	smb2_util_unlink(tree, fname);
+	talloc_free(tree);
+
+	return ret;
+}
+
 /*
   Open, take BRL, disconnect, reconnect.
 */
@@ -1401,6 +1479,7 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
 	torture_suite_add_2smb2_test(suite, "lease", test_durable_open_lease);
+	torture_suite_add_1smb2_test(suite, "lock-oplock", test_durable_open_lock_oplock);
 	torture_suite_add_1smb2_test(suite, "lock-lease", test_durable_open_lock_lease);
 	torture_suite_add_2smb2_test(suite, "open2-lease",
 				     test_durable_open_open2_lease);
