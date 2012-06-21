@@ -35,9 +35,12 @@
 #include "libcli/libcli.h"
 #include "libcli/raw/raw_proto.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/smb2/smb2.h"
+#include "libcli/smb2/smb2_calls.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "torture/ndr/ndr.h"
+#include "torture/smb2/proto.h"
 
 #define TORTURE_WELLKNOWN_PRINTER	"torture_wkn_printer"
 #define TORTURE_PRINTER			"torture_printer"
@@ -7726,6 +7729,75 @@ static bool test_print_test_extended(struct torture_context *tctx,
 	return ret;
 }
 
+/* use smbd file IO to spool a print job */
+static bool test_print_test_smbd(struct torture_context *tctx,
+				 void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	NTSTATUS status;
+	uint32_t count;
+	union spoolss_JobInfo *info = NULL;
+	int i;
+
+	struct smb2_tree *tree;
+	struct smb2_handle job_h;
+	struct cli_credentials *credentials = cmdline_credentials;
+	struct smbcli_options options;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *share = t->info2.printername;
+
+	torture_comment(tctx, "Testing smbd job spooling\n");
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	status = smb2_connect_ext(mem_ctx,
+				  torture_setting_string(tctx, "host", NULL),
+				  lpcfg_smb_ports(tctx->lp_ctx),
+				  share,
+				  lpcfg_resolve_context(tctx->lp_ctx),
+				  credentials,
+				  0,
+				  &tree,
+				  tctx->ev,
+				  &options,
+				  lpcfg_socket_options(tctx->lp_ctx),
+				  lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect to SMB2 printer %s - %s\n",
+		       share, nt_errstr(status));
+		return false;
+	}
+
+	status = torture_smb2_testfile(tree, "smbd_spooler_job", &job_h);
+	torture_assert_ntstatus_ok(tctx, status, "smbd spool job create");
+
+	status = smb2_util_write(tree, job_h, "exciting print job data", 0,
+				 sizeof("exciting print job data"));
+	torture_assert_ntstatus_ok(tctx, status, "smbd spool job write");
+
+	/* check back end spoolss job was created */
+	torture_assert(tctx,
+		test_EnumJobs_args(tctx, b, &t->handle, 1, &count, &info),
+		"EnumJobs level 1 failed");
+
+	for (i = 0; i < count; i++) {
+		if (!strcmp(info[i].info1.document_name, "smbd_spooler_job")) {
+			break;
+		}
+	}
+	torture_assert(tctx, (i != count), "smbd_spooler_job not found");
+
+	status = smb2_util_close(tree, job_h);
+	torture_assert_ntstatus_ok(tctx, status, "smbd spool job close");
+
+	/* disconnect from printer share */
+	talloc_free(mem_ctx);
+
+	return true;
+}
+
 static bool test_printer_sd(struct torture_context *tctx,
 			    void *private_data)
 {
@@ -7907,6 +7979,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "csetprinter", test_csetprinter);
 	torture_tcase_add_simple_test(tcase, "print_test", test_print_test);
 	torture_tcase_add_simple_test(tcase, "print_test_extended", test_print_test_extended);
+	torture_tcase_add_simple_test(tcase, "print_test_smbd", test_print_test_smbd);
 	torture_tcase_add_simple_test(tcase, "printer_info", test_printer_info);
 	torture_tcase_add_simple_test(tcase, "sd", test_printer_sd);
 	torture_tcase_add_simple_test(tcase, "dm", test_printer_dm);
