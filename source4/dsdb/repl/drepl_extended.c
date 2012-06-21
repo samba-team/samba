@@ -39,6 +39,7 @@
   source_dsa_dn: the DN of the server that we are replicating from
  */
 static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
+					       TALLOC_CTX *mem_ctx,
 					       struct ldb_dn *nc_dn,
 					       struct ldb_dn *source_dsa_dn,
 					       uint64_t min_usn,
@@ -165,7 +166,7 @@ static void extended_op_callback(struct dreplsrv_service *service,
 				 void *cb_data)
 {
 	struct extended_op_data *data = talloc_get_type_abort(cb_data, struct extended_op_data);
-	talloc_free(data->sdsa);
+	talloc_unlink(data, data->sdsa);
 	data->callback(service, err, exop_error, data->callback_data);
 	talloc_free(data);
 }
@@ -184,23 +185,20 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 {
 	WERROR werr;
 	struct extended_op_data *data;
-	struct dreplsrv_partition_source_dsa *sdsa;
-
-	werr = drepl_create_extended_source_dsa(service, nc_dn, source_dsa_dn, min_usn, &sdsa);
-	W_ERROR_NOT_OK_RETURN(werr);
 
 	data = talloc(service, struct extended_op_data);
 	W_ERROR_HAVE_NO_MEMORY(data);
 
+	werr = drepl_create_extended_source_dsa(service, data, nc_dn, source_dsa_dn, min_usn, &data->sdsa);
+	W_ERROR_NOT_OK_RETURN(werr);
+
 	data->callback = callback;
 	data->callback_data = callback_data;
-	data->sdsa = sdsa;
 
-	werr = dreplsrv_schedule_partition_pull_source(service, sdsa,
+	werr = dreplsrv_schedule_partition_pull_source(service, data->sdsa,
 						       0, extended_op, fsmo_info,
 						       extended_op_callback, data);
 	if (!W_ERROR_IS_OK(werr)) {
-		talloc_free(sdsa);
 		talloc_free(data);
 	}
 
