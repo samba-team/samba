@@ -1116,6 +1116,12 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
 	if (db) {
+		if (db->persistent != persistent) {
+			DEBUG(DEBUG_ERR, ("ERROR: DB Attach %spersistent to %spersistent "
+					  "database %s", persistent ? "" : "non-",
+					  db-> persistent ? "" : "non-", db_name));
+			return -1;
+		}
 		outdata->dptr  = (uint8_t *)&db->db_id;
 		outdata->dsize = sizeof(db->db_id);
 		tdb_add_flags(db->ltdb->tdb, tdb_flags);
