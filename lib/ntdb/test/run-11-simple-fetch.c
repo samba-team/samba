@@ -22,8 +22,9 @@ int main(int argc, char *argv[])
 	failtest_suppress = true;
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 8 + 1);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-11-simple-fetch.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-11-simple-fetch.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		if (ntdb) {
 			NTDB_DATA d = { NULL, 0 }; /* Bogus GCC warning */

@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
 		struct ntdb_used_record rec;
 		ntdb_off_t off;
 
-		ntdb = ntdb_open("run-64-bit-ntdb.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-64-bit-ntdb.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;

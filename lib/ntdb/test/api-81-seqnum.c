@@ -20,8 +20,9 @@ int main(int argc, char *argv[])
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 15 + 4 * 13);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("api-81-seqnum.ntdb", flags[i]|NTDB_SEQNUM,
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("api-81-seqnum.ntdb",
+				 flags[i]|NTDB_SEQNUM|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		if (!ok1(ntdb))
 			continue;
 

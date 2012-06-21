@@ -60,15 +60,15 @@ int main(int argc, char *argv[])
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 13);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		/* Create it */
-		ntdb = ntdb_open("run-83-openhook.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, NULL);
+		ntdb = ntdb_open("run-83-openhook.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, NULL);
 		ok1(ntdb);
 		ok1(ntdb_store(ntdb, key, key, NTDB_REPLACE) == 0);
 		ntdb_close(ntdb);
 
 		/* Now, open with CIF, should clear it. */
-		ntdb = ntdb_open("run-83-openhook.ntdb", flags[i],
-			       O_RDWR, 0, &cif);
+		ntdb = ntdb_open("run-83-openhook.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR, 0, &cif);
 		ok1(ntdb);
 		ok1(!ntdb_exists(ntdb, key));
 		ok1(ntdb_store(ntdb, key, key, NTDB_REPLACE) == 0);

@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		struct ntdb_header hdr;
 		int fd;
-		ntdb = ntdb_open("run-seed.ntdb", flags[i],
+		ntdb = ntdb_open("run-seed.ntdb", flags[i]|MAYBE_NOSYNC,
 			       O_RDWR|O_CREAT|O_TRUNC, 0600, &attr);
 		ok1(ntdb);
 		if (!ntdb)

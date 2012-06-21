@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
 		enum agent_return ret;
 		struct ntdb_context *ntdb;
 
-		ntdb = ntdb_open(TEST_DBNAME, flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open(TEST_DBNAME, flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 
 		ret = external_agent_operation(agent, OPEN, TEST_DBNAME);

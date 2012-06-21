@@ -37,8 +37,9 @@ int main(int argc, char *argv[])
 		k.dptr = (void *)&j;
 		k.dsize = sizeof(j);
 
-		ntdb = ntdb_open("run-30-exhaust-before-expand.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-30-exhaust-before-expand.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;

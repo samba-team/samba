@@ -167,8 +167,8 @@ static bool test_death(enum operation op, struct agent *agent,
 
 reset:
 	unlink(TEST_DBNAME);
-	ntdb = ntdb_open(TEST_DBNAME, NTDB_NOMMAP,
-		       O_CREAT|O_TRUNC|O_RDWR, 0600, &tap_log_attr);
+	ntdb = ntdb_open(TEST_DBNAME, NTDB_NOMMAP|MAYBE_NOSYNC,
+			 O_CREAT|O_TRUNC|O_RDWR, 0600, &tap_log_attr);
 	if (!ntdb) {
 		diag("Failed opening NTDB: %s", strerror(errno));
 		return false;

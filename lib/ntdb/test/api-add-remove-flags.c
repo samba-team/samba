@@ -16,8 +16,9 @@ int main(int argc, char *argv[])
 
 	plan_tests(87);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-add-remove-flags.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-add-remove-flags.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;

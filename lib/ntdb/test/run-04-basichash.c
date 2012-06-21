@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
 		struct hash_info h;
 		ntdb_off_t new_off, new_off2, off;
 
-		ntdb = ntdb_open("run-04-basichash.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
+		ntdb = ntdb_open("run-04-basichash.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;

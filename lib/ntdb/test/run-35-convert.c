@@ -18,8 +18,8 @@ int main(int argc, char *argv[])
 	failtest_exit_check = exit_check_log;
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 4);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-35-convert.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-35-convert.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		if (!ok1(ntdb))
 			failtest_exit(exit_status());
 
@@ -30,8 +30,8 @@ int main(int argc, char *argv[])
 		}
 		/* If we say NTDB_CONVERT, it must be converted */
 		ntdb = ntdb_open("run-35-convert.ntdb",
-			       flags[i]|NTDB_CONVERT,
-			       O_RDWR, 0600, &tap_log_attr);
+				 flags[i]|NTDB_CONVERT|MAYBE_NOSYNC,
+				 O_RDWR, 0600, &tap_log_attr);
 		if (flags[i] & NTDB_CONVERT) {
 			if (!ntdb)
 				failtest_exit(exit_status());
@@ -47,11 +47,11 @@ int main(int argc, char *argv[])
 
 		/* If don't say NTDB_CONVERT, it *may* be converted */
 		ntdb = ntdb_open("run-35-convert.ntdb",
-			       flags[i] & ~NTDB_CONVERT,
-			       O_RDWR, 0600, &tap_log_attr);
+				 (flags[i] & ~NTDB_CONVERT)|MAYBE_NOSYNC,
+				 O_RDWR, 0600, &tap_log_attr);
 		if (!ntdb)
 			failtest_exit(exit_status());
-		ok1(ntdb_get_flags(ntdb) == flags[i]);
+		ok1(ntdb_get_flags(ntdb) == (flags[i]|MAYBE_NOSYNC));
 		ntdb_close(ntdb);
 	}
 	failtest_exit(exit_status());

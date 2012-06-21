@@ -38,12 +38,15 @@ int main(int argc, char *argv[])
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 8);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb0 = ntdb_open("run-ntdb_foreach0.ntdb", flags[i],
-				O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
-		ntdb1 = ntdb_open("run-ntdb_foreach1.ntdb", flags[i],
-				O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
-		ntdb = ntdb_open("run-ntdb_foreach2.ntdb", flags[i],
-				O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb0 = ntdb_open("run-ntdb_foreach0.ntdb",
+				  flags[i]|MAYBE_NOSYNC,
+				  O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb1 = ntdb_open("run-ntdb_foreach1.ntdb",
+				  flags[i]|MAYBE_NOSYNC,
+				  O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-ntdb_foreach2.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 
 		memset(found, 0, sizeof(found));
 		ntdb_foreach(set_found, found);
@@ -64,8 +67,9 @@ int main(int argc, char *argv[])
 		ntdb_foreach(set_found, found);
 		ok1(found[0] && !found[1] && !found[2]);
 
-		ntdb1 = ntdb_open("run-ntdb_foreach1.ntdb", flags[i],
-				O_RDWR, 0600, &tap_log_attr);
+		ntdb1 = ntdb_open("run-ntdb_foreach1.ntdb",
+				  flags[i]|MAYBE_NOSYNC,
+				  O_RDWR, 0600, &tap_log_attr);
 		memset(found, 0, sizeof(found));
 		ntdb_foreach(set_found, found);
 		ok1(found[0] && found[1] && !found[2]);

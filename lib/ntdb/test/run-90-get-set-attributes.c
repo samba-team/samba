@@ -50,8 +50,9 @@ int main(int argc, char *argv[])
 		union ntdb_attribute attr;
 
 		/* First open with no attributes. */
-		ntdb = ntdb_open("run-90-get-set-attributes.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, NULL);
+		ntdb = ntdb_open("run-90-get-set-attributes.ntdb",
+				 flags[i] |MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, NULL);
 		ok1(ntdb);
 
 		/* Get log on no attributes will fail */
@@ -111,9 +112,10 @@ int main(int argc, char *argv[])
 		ok1(tap_log_messages == 0);
 
 		/* Now open with all attributes. */
-		ntdb = ntdb_open("run-90-get-set-attributes.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600,
-			       &seed_attr);
+		ntdb = ntdb_open("run-90-get-set-attributes.ntdb",
+				 flags[i] | MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600,
+				 &seed_attr);
 
 		ok1(ntdb);
 

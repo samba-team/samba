@@ -65,31 +65,31 @@ int main(int argc, char *argv[])
 
 		/* Nonblocking open; expect no error message. */
 		lock_err = EAGAIN;
-		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
+		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
 		ok(errno == lock_err, "Errno is %u", errno);
 		ok1(!ntdb);
 		ok1(tap_log_messages == 0);
 
 		lock_err = EINTR;
-		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
+		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
 		ok(errno == lock_err, "Errno is %u", errno);
 		ok1(!ntdb);
 		ok1(tap_log_messages == 0);
 
 		/* Forced fail open. */
 		lock_err = ENOMEM;
-		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
+		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
 		ok1(errno == lock_err);
 		ok1(!ntdb);
 		ok1(tap_log_messages == 1);
 		tap_log_messages = 0;
 
 		lock_err = 0;
-		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
+		ntdb = ntdb_open("run-82-lockattr.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &lock_attr);
 		if (!ok1(ntdb))
 			continue;
 		ok1(tap_log_messages == 0);

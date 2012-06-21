@@ -96,8 +96,8 @@ int main(int argc, char *argv[])
 	create_ntdb("run-capabilities.ntdb", 1, false, false, false, 0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
+			 &tap_log_attr);
 	failtest_suppress = true;
 	if (!ok1(ntdb))
 		goto out;
@@ -112,8 +112,8 @@ int main(int argc, char *argv[])
 		   2, false, false, false, 0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
+			 &tap_log_attr);
 	failtest_suppress = true;
 	if (!ok1(ntdb))
 		goto out;
@@ -131,8 +131,8 @@ int main(int argc, char *argv[])
 		   2, true, false, false, 0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
+			 &tap_log_attr);
 	failtest_suppress = true;
 	if (!ok1(ntdb))
 		goto out;
@@ -154,8 +154,8 @@ int main(int argc, char *argv[])
 		   2, false, true, false, 0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
+			 &tap_log_attr);
 	failtest_suppress = true;
 	/* We expect a message. */
 	ok1(!ntdb);
@@ -167,8 +167,8 @@ int main(int argc, char *argv[])
 
 	/* We can open it read-only though! */
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDONLY, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDONLY, 0,
+			 &tap_log_attr);
 	failtest_suppress = true;
 	if (!ok1(ntdb))
 		goto out;
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 		   2, false, false, true, 0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
 		       &tap_log_attr);
 	failtest_suppress = true;
 	/* We expect a message. */
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 		   3, false, true, false, 0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
 		       &tap_log_attr);
 	failtest_suppress = true;
 	/* We expect a message. */
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 
 	/* We can open it read-only though! */
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDONLY, 0,
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDONLY, 0,
 		       &tap_log_attr);
 	failtest_suppress = true;
 	if (!ok1(ntdb))
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 		   0);
 
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDWR, 0,
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDWR, 0,
 		       &tap_log_attr);
 	failtest_suppress = true;
 	/* We expect a message. */
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
 	/* We can open it read-only though! */
 	failtest_suppress = false;
-	ntdb = ntdb_open("run-capabilities.ntdb", NTDB_DEFAULT, O_RDONLY, 0,
+	ntdb = ntdb_open("run-capabilities.ntdb", MAYBE_NOSYNC, O_RDONLY, 0,
 		       &tap_log_attr);
 	failtest_suppress = true;
 	if (!ok1(ntdb))

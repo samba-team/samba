@@ -19,8 +19,9 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		/* RW -> R0 */
-		ntdb = ntdb_open("run-92-get-set-readonly.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-92-get-set-readonly.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		ok1(!(ntdb_get_flags(ntdb) & NTDB_RDONLY));
 
@@ -69,8 +70,9 @@ int main(int argc, char *argv[])
 		ntdb_close(ntdb);
 
 		/* R0 -> RW */
-		ntdb = ntdb_open("run-92-get-set-readonly.ntdb", flags[i],
-			       O_RDONLY, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-92-get-set-readonly.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDONLY, 0600, &tap_log_attr);
 		ok1(ntdb);
 		ok1(ntdb_get_flags(ntdb) & NTDB_RDONLY);
 

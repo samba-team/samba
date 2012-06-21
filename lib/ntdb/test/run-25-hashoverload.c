@@ -35,8 +35,9 @@ int main(int argc, char *argv[])
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		NTDB_DATA d = { NULL, 0 }; /* Bogus GCC warning */
 
-		ntdb = ntdb_open("run-25-hashoverload.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
+		ntdb = ntdb_open("run-25-hashoverload.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;

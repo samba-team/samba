@@ -34,8 +34,8 @@ int main(int argc, char *argv[])
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * (1 + 500 * 3) + 1);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-12-store.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &fixed_hattr);
+		ntdb = ntdb_open("run-12-store.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &fixed_hattr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;

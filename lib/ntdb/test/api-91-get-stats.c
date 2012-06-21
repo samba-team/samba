@@ -21,8 +21,8 @@ int main(int argc, char *argv[])
 		union ntdb_attribute *attr;
 		NTDB_DATA key = ntdb_mkdata("key", 3), data;
 
-		ntdb = ntdb_open("run-91-get-stats.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-91-get-stats.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		/* Force an expansion */
 		data.dsize = 65536;

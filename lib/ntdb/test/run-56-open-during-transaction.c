@@ -144,8 +144,8 @@ int main(int argc, char *argv[])
 		     (flags[i] & NTDB_CONVERT) ? "CONVERT" : "DEFAULT",
 		     (flags[i] & NTDB_NOMMAP) ? "no mmap" : "mmap");
 		unlink(TEST_DBNAME);
-		ntdb = ntdb_open(TEST_DBNAME, flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open(TEST_DBNAME, flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 
 		opened = true;

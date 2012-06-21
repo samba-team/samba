@@ -19,14 +19,16 @@ int main(int argc, char *argv[])
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 28);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-open-multiple-times.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-open-multiple-times.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;
 
-		ntdb2 = ntdb_open("run-open-multiple-times.ntdb", flags[i],
-				O_RDWR|O_CREAT, 0600, &tap_log_attr);
+		ntdb2 = ntdb_open("run-open-multiple-times.ntdb",
+				  flags[i]|MAYBE_NOSYNC,
+				  O_RDWR|O_CREAT, 0600, &tap_log_attr);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 		ok1(ntdb_check(ntdb2, NULL, NULL) == 0);
 
@@ -49,8 +51,9 @@ int main(int argc, char *argv[])
 		free(d.dptr);
 
 		/* Reopen */
-		ntdb = ntdb_open("run-open-multiple-times.ntdb", flags[i],
-			       O_RDWR|O_CREAT, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-open-multiple-times.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT, 0600, &tap_log_attr);
 		ok1(ntdb);
 
 		ok1(ntdb_transaction_start(ntdb2) == 0);

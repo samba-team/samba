@@ -64,8 +64,9 @@ int main(int argc, char *argv[])
 
 		tap_log_messages = 0;
 
-		ntdb = ntdb_open("run-fork-test.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-fork-test.ntdb",
+				 flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		if (!ok1(ntdb))
 			continue;
 

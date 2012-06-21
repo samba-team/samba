@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
 	agent = prepare_external_agent();
 
-	ntdb = ntdb_open(filename, NTDB_DEFAULT,
+	ntdb = ntdb_open(filename, MAYBE_NOSYNC,
 		       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 
 	ok1(external_agent_operation(agent, OPEN, filename) == SUCCESS);

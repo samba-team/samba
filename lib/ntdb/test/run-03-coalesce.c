@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
 	ntdb_layout_add_free(layout, len, 0);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
-	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP|MAYBE_NOSYNC,
+			 O_RDWR, 0, &tap_log_attr);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == len);
 
@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
 	ntdb_layout_add_used(layout, key, data, 6);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
-	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP|MAYBE_NOSYNC,
+			 O_RDWR, 0, &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 15528);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
 	ntdb_layout_add_free(layout, 14520, 0);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
-	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP|MAYBE_NOSYNC,
+			 O_RDWR, 0, &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 14520);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
 	ntdb_layout_add_used(layout, key, data, 6);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
-	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP|MAYBE_NOSYNC,
+			 O_RDWR, 0, &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 14488);
 	ok1(ntdb_check(ntdb, NULL, NULL) == 0);
@@ -149,8 +149,8 @@ int main(int argc, char *argv[])
 	ntdb_layout_add_free(layout, 13992, 0);
 	ntdb_layout_write(layout, free, &tap_log_attr, "run-03-coalesce.ntdb");
 	/* NOMMAP is for lockcheck. */
-	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP, O_RDWR, 0,
-		       &tap_log_attr);
+	ntdb = ntdb_open("run-03-coalesce.ntdb", NTDB_NOMMAP|MAYBE_NOSYNC,
+			 O_RDWR, 0, &tap_log_attr);
 	ok1(free_record_length(ntdb, layout->elem[1].base.off) == 1024);
 	ok1(free_record_length(ntdb, layout->elem[2].base.off) == 512);
 	ok1(free_record_length(ntdb, layout->elem[3].base.off) == 13992);

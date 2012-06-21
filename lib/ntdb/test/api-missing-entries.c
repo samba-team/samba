@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	plan_tests(1 + NUM_RECORDS + 2);
 
 	ntdb = ntdb_open("run-missing-entries.ntdb", NTDB_INTERNAL,
-		       O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
+			 O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
 	if (ok1(ntdb)) {
 		for (i = 0; i < NUM_RECORDS; i++) {
 			ok1(ntdb_store(ntdb, key, data, NTDB_REPLACE) == 0);

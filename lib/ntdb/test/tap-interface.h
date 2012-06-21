@@ -23,6 +23,7 @@
 */
 #include <stdio.h>
 #include <ccan/err/err.h>
+#include "no-fsync.h"
 
 #ifndef __location__
 #define __TAP_STRING_LINE1__(s)    #s

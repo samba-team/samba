@@ -160,8 +160,8 @@ int main(int argc, char *argv[])
 	plan_tests(sizeof(flags) / sizeof(flags[0])
 		   * (39 * 3 + 5 + sizeof(vals)/sizeof(vals[0])*2) + 1);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-13-delete.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &clash_hattr);
+		ntdb = ntdb_open("run-13-delete.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &clash_hattr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 		ntdb_close(ntdb);
 
 		/* Deleting these entries in the db gave problems. */
-		ntdb = ntdb_open("run-13-delete.ntdb", flags[i],
+		ntdb = ntdb_open("run-13-delete.ntdb", flags[i]|MAYBE_NOSYNC,
 			       O_RDWR|O_CREAT|O_TRUNC, 0600, &fixed_hattr);
 		ok1(ntdb);
 		if (!ntdb)

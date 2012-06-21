@@ -76,7 +76,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 			diag("Already have ntdb %s open", ntdb_name(ntdb));
 			return OTHER_FAILURE;
 		}
-		ntdb = ntdb_open(name, NTDB_DEFAULT, O_RDWR, 0, &tap_log_attr);
+		ntdb = ntdb_open(name, MAYBE_NOSYNC, O_RDWR, 0, &tap_log_attr);
 		if (!ntdb) {
 			if (!locking_would_block)
 				diag("Opening ntdb gave %s", strerror(errno));
@@ -93,7 +93,7 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		cif.openhook.base.attr = NTDB_ATTRIBUTE_OPENHOOK;
 		cif.openhook.base.next = &tap_log_attr;
 		cif.openhook.fn = clear_if_first;
-		ntdb = ntdb_open(name, NTDB_DEFAULT, O_RDWR, 0, &cif);
+		ntdb = ntdb_open(name, MAYBE_NOSYNC, O_RDWR, 0, &cif);
 		if (!ntdb) {
 			if (!locking_would_block)
 				diag("Opening ntdb gave %s", strerror(errno));

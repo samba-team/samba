@@ -18,8 +18,8 @@ int main(int argc, char *argv[])
 	failtest_exit_check = exit_check_log;
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 3);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-new_database.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
+		ntdb = ntdb_open("run-new_database.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &tap_log_attr);
 		if (!ok1(ntdb))
 			failtest_exit(exit_status());
 

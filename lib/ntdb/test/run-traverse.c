@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
 
 	plan_tests(sizeof(flags) / sizeof(flags[0]) * 32 + 1);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
-		ntdb = ntdb_open("run-traverse.ntdb", flags[i],
-			       O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
+		ntdb = ntdb_open("run-traverse.ntdb", flags[i]|MAYBE_NOSYNC,
+				 O_RDWR|O_CREAT|O_TRUNC, 0600, &hattr);
 		ok1(ntdb);
 		if (!ntdb)
 			continue;
