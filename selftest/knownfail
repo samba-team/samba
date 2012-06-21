@@ -152,7 +152,7 @@
 ^samba3.smb2.notify.rec
 ^samba3.smb2.durable-open.file-position
 ^samba3.smb2.durable-open.lease
-^samba3.smb2.durable-open.lock
+^samba3.smb2.durable-open.lock-lease
 ^samba3.smb2.durable-open.open
 ^samba3.smb2.durable-open.reopen1
 ^samba3.smb2.durable-open.reopen2
