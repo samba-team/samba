@@ -325,11 +325,6 @@ nameserver %s
     def configure_bind(self, kerberos_support=False, include=None):
         self.chdir('${PREFIX}')
 
-        nameserver = self.get_nameserver()
-        if nameserver == self.getvar('INTERFACE_IP'):
-            raise RuntimeError("old /etc/resolv.conf must not contain %s as a nameserver, this will create loops with the generated dns configuration" % nameserver)
-        self.setvar('DNSSERVER', nameserver)
-
         if self.getvar('INTERFACE_IPV6'):
             ipv6_listen = 'listen-on-v6 port 53 { ${INTERFACE_IPV6}; };'
         else:
@@ -921,6 +916,11 @@ RebootOnCompletion=No
         self.putenv('TDB_NO_FSYNC', '1')
 
         self.load_config(self.opts.conf)
+
+        nameserver = self.get_nameserver()
+        if nameserver == self.getvar('INTERFACE_IP'):
+            raise RuntimeError("old /etc/resolv.conf must not contain %s as a nameserver, this will create loops with the generated dns configuration" % nameserver)
+        self.setvar('DNSSERVER', nameserver)
 
         self.set_skip(self.opts.skip)
         self.set_vms(self.opts.vms)
