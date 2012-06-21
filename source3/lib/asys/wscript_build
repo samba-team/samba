@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_SUBSYSTEM('LIBASYS',
+		     source='asys.c',
+		     deps='PTHREADPOOL')
+
+bld.SAMBA3_BINARY('asystest',
+		  source='tests.c',
+		  deps='LIBASYS')
