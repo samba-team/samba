@@ -13,6 +13,9 @@ from distutils.sysconfig import get_python_lib
 samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
 samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/git/samba.git')
 
+# This speeds up testing remarkably.
+os.environ['TDB_NO_FSYNC'] = '1'
+
 cleanup_list = []
 
 builddirs = {
@@ -45,7 +48,7 @@ tasks = {
                  ("make bin/smbtorture4", "make bin/smbtorture4", "text/plain"),
                  ("make everything", "make -j 4 everything", "text/plain"),
                  ("install", "make install", "text/plain"),
-                 ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
+                 ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
@@ -61,7 +64,7 @@ tasks = {
     # We have 'test' before 'install' because, 'test' should work without 'install'
     "samba" : [ ("configure", "./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
                 ("make", "make -j", "text/plain"),
-                ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
+                ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
@@ -111,12 +114,11 @@ tasks = {
               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
-              ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
+              ("test", "make test", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain") ],
 
-    # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
     "tdb" : [
               ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
