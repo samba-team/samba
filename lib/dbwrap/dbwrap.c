@@ -50,6 +50,19 @@ static int dbwrap_fallback_wipe(struct db_context *db)
 	return NT_STATUS_IS_OK(status) ? 0 : -1;
 }
 
+static int do_nothing(struct db_record *rec, void *unused)
+{
+	return 0;
+}
+
+/*
+ * Fallback check operation: just traverse.
+ */
+static int dbwrap_fallback_check(struct db_context *db)
+{
+	NTSTATUS status = dbwrap_traverse_read(db, do_nothing, NULL, NULL);
+	return NT_STATUS_IS_OK(status) ? 0 : -1;
+}
 
 /*
  * Wrapper functions for the backend methods
@@ -365,6 +378,14 @@ int dbwrap_wipe(struct db_context *db)
 		return dbwrap_fallback_wipe(db);
 	}
 	return db->wipe(db);
+}
+
+int dbwrap_check(struct db_context *db)
+{
+	if (db->check == NULL) {
+		return dbwrap_fallback_check(db);
+	}
+	return db->check(db);
 }
 
 int dbwrap_get_seqnum(struct db_context *db)

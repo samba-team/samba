@@ -69,6 +69,7 @@ NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 					    void *private_data),
 			     void *private_data);
 int dbwrap_wipe(struct db_context *db);
+int dbwrap_check(struct db_context *db);
 int dbwrap_get_seqnum(struct db_context *db);
 int dbwrap_transaction_start(struct db_context *db);
 int dbwrap_transaction_commit(struct db_context *db);

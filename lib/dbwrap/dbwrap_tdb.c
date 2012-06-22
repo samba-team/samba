@@ -187,6 +187,13 @@ static int db_tdb_wipe(struct db_context *db)
 	return tdb_wipe_all(ctx->wtdb->tdb);
 }
 
+static int db_tdb_check(struct db_context *db)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+	return tdb_check(ctx->wtdb->tdb, NULL, NULL);
+}
+
 struct db_tdb_parse_state {
 	void (*parser)(TDB_DATA key, TDB_DATA data,
 		       void *private_data);
@@ -434,6 +441,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->exists = db_tdb_exists;
 	result->wipe = db_tdb_wipe;
 	result->id = db_tdb_id;
+	result->check = db_tdb_check;
 	result->stored_callback = NULL;
 	return result;
 
