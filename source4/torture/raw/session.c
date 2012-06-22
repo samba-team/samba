@@ -26,6 +26,7 @@
 #include "param/param.h"
 #include "torture/util.h"
 #include "auth/credentials/credentials.h"
+#include "libcli/resolve/resolve.h"
 
 
 static bool test_session_reauth1(struct torture_context *tctx,
@@ -223,6 +224,204 @@ static bool test_session_reauth2(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_session_expire1(struct torture_context *tctx)
+{
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+	struct smbcli_session_options session_options;
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = cmdline_credentials;
+	struct smbcli_state *cli = NULL;
+	enum credentials_use_kerberos use_kerberos;
+	char fname[256];
+	union smb_fileinfo qfinfo;
+	uint16_t vuid;
+	uint16_t fnum;
+	struct smb_composite_sesssetup io_sesssetup;
+	size_t i;
+
+	use_kerberos = cli_credentials_get_kerberos_state(credentials);
+	if (use_kerberos != CRED_MUST_USE_KERBEROS) {
+		torture_warning(tctx, "smb2.session.expire1 requires -k yes!");
+		torture_skip(tctx, "smb2.session.expire1 requires -k yes!");
+	}
+
+	torture_assert_int_equal(tctx, use_kerberos, CRED_MUST_USE_KERBEROS,
+				 "please use -k yes");
+
+	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=4");
+
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
+
+	lpcfg_smbcli_session_options(tctx->lp_ctx, &session_options);
+
+	status = smbcli_full_connection(tctx, &cli,
+					host,
+					lpcfg_smb_ports(tctx->lp_ctx),
+					share, NULL,
+					lpcfg_socket_options(tctx->lp_ctx),
+					credentials,
+					lpcfg_resolve_context(tctx->lp_ctx),
+					tctx->ev, &options, &session_options,
+					lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smbcli_full_connection failed");
+
+	vuid = cli->session->vuid;
+
+	/* Add some random component to the file name. */
+	snprintf(fname, 256, "session_expire1_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smbcli_unlink(cli->tree, fname);
+
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0,
+				     SEC_RIGHTS_FILE_ALL,
+				     FILE_ATTRIBUTE_NORMAL,
+				     NTCREATEX_SHARE_ACCESS_NONE,
+				     NTCREATEX_DISP_OPEN_IF,
+				     NTCREATEX_OPTIONS_DELETE_ON_CLOSE,
+				     0);
+	torture_assert_ntstatus_ok_goto(tctx, smbcli_nt_error(cli->tree), ret,
+					done, "create file");
+	torture_assert_goto(tctx, fnum > 0, ret, done, "create file");
+
+	/* get the access information */
+
+	ZERO_STRUCT(qfinfo);
+
+	qfinfo.access_information.level = RAW_FILEINFO_ACCESS_INFORMATION;
+	qfinfo.access_information.in.file.fnum = fnum;
+
+	for (i=0; i < 2; i++) {
+		torture_comment(tctx, "query info => OK\n");
+		ZERO_STRUCT(qfinfo.access_information.out);
+		status = smb_raw_fileinfo(cli->tree, tctx, &qfinfo);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"raw_fileinfo failed");
+
+		torture_comment(tctx, "sleep 5 seconds\n");
+		smb_msleep(5*1000);
+	}
+
+	/*
+	 * the krb5 library may not handle expired creds
+	 * well, lets start with an empty ccache.
+	 */
+	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
+	/*
+	 * now with CAP_DYNAMIC_REAUTH
+	 *
+	 * This should trigger NT_STATUS_NETWORK_SESSION_EXPIRED
+	 */
+	ZERO_STRUCT(io_sesssetup);
+	io_sesssetup.in.sesskey      = cli->transport->negotiate.sesskey;
+	io_sesssetup.in.capabilities = cli->transport->negotiate.capabilities;
+	io_sesssetup.in.capabilities |= CAP_DYNAMIC_REAUTH;
+	io_sesssetup.in.credentials  = credentials;
+	io_sesssetup.in.workgroup    = lpcfg_workgroup(tctx->lp_ctx);
+	io_sesssetup.in.gensec_settings = lpcfg_gensec_settings(tctx,
+							tctx->lp_ctx);
+
+	torture_comment(tctx, "reauth with CAP_DYNAMIC_REAUTH => OK\n");
+	ZERO_STRUCT(io_sesssetup.out);
+	status = smb_composite_sesssetup(cli->session, &io_sesssetup);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"reauth failed");
+	torture_assert_int_equal_goto(tctx, io_sesssetup.out.vuid, vuid,
+				      ret, done, "reauth");
+
+	for (i=0; i < 2; i++) {
+		torture_comment(tctx, "query info => OK\n");
+		ZERO_STRUCT(qfinfo.access_information.out);
+		status = smb_raw_fileinfo(cli->tree, tctx, &qfinfo);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"raw_fileinfo failed");
+
+		torture_comment(tctx, "sleep 5 seconds\n");
+		smb_msleep(5*1000);
+
+		torture_comment(tctx, "query info => EXPIRED\n");
+		ZERO_STRUCT(qfinfo.access_information.out);
+		status = smb_raw_fileinfo(cli->tree, tctx, &qfinfo);
+		torture_assert_ntstatus_equal_goto(tctx, status,
+					NT_STATUS_NETWORK_SESSION_EXPIRED,
+					ret, done, "raw_fileinfo expired");
+
+		/*
+		 * the krb5 library may not handle expired creds
+		 * well, lets start with an empty ccache.
+		 */
+		cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
+		torture_comment(tctx, "reauth with CAP_DYNAMIC_REAUTH => OK\n");
+		ZERO_STRUCT(io_sesssetup.out);
+		status = smb_composite_sesssetup(cli->session, &io_sesssetup);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"reauth failed");
+		torture_assert_int_equal_goto(tctx, io_sesssetup.out.vuid, vuid,
+					      ret, done, "reauth");
+	}
+
+	torture_comment(tctx, "query info => OK\n");
+	ZERO_STRUCT(qfinfo.access_information.out);
+	status = smb_raw_fileinfo(cli->tree, tctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"raw_fileinfo failed");
+
+	/*
+	 * the krb5 library may not handle expired creds
+	 * well, lets start with an empty ccache.
+	 */
+	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
+
+	/*
+	 * now without CAP_DYNAMIC_REAUTH
+	 *
+	 * This should not trigger NT_STATUS_NETWORK_SESSION_EXPIRED
+	 */
+	torture_comment(tctx, "reauth without CAP_DYNAMIC_REAUTH => OK\n");
+	io_sesssetup.in.capabilities &= ~CAP_DYNAMIC_REAUTH;
+
+	ZERO_STRUCT(io_sesssetup.out);
+	status = smb_composite_sesssetup(cli->session, &io_sesssetup);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"reauth failed");
+	torture_assert_int_equal_goto(tctx, io_sesssetup.out.vuid, vuid,
+				      ret, done, "reauth");
+
+	for (i=0; i < 2; i++) {
+		torture_comment(tctx, "query info => OK\n");
+
+		ZERO_STRUCT(qfinfo.access_information.out);
+		status = smb_raw_fileinfo(cli->tree, tctx, &qfinfo);
+		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+						"raw_fileinfo failed");
+
+		torture_comment(tctx, "sleep 5 seconds\n");
+		smb_msleep(5*1000);
+	}
+
+	torture_comment(tctx, "query info => OK\n");
+	ZERO_STRUCT(qfinfo.access_information.out);
+	status = smb_raw_fileinfo(cli->tree, tctx, &qfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"raw_fileinfo failed");
+
+	ret = true;
+done:
+	if (fnum > 0) {
+		smbcli_close(cli->tree, fnum);
+	}
+
+	talloc_free(cli);
+	lpcfg_set_option(tctx->lp_ctx, "gensec_gssapi:requested_life_time=0");
+	return ret;
+}
+
 struct torture_suite *torture_raw_session(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "session");
@@ -230,6 +429,7 @@ struct torture_suite *torture_raw_session(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_1smb_test(suite, "reauth1", test_session_reauth1);
 	torture_suite_add_1smb_test(suite, "reauth2", test_session_reauth2);
+	torture_suite_add_simple_test(suite, "expire1", test_session_expire1);
 
 	return suite;
 }
