@@ -68,8 +68,7 @@ static ntdb_bool_err match(struct ntdb_context *ntdb,
 			   const NTDB_DATA *key,
 			   ntdb_off_t val,
 			   struct ntdb_used_record *rec,
-			   const char **rptr,
-			   const ntdb_off_t **mapped)
+			   const char **rptr)
 {
 	ntdb_off_t off;
 	enum NTDB_ERROR ecode;
@@ -81,12 +80,6 @@ static ntdb_bool_err match(struct ntdb_context *ntdb,
 	    != bits_from(val, 64-NTDB_OFF_UPPER_STEAL, NTDB_OFF_UPPER_STEAL)) {
 		ntdb->stats.compare_wrong_offsetbits++;
 		return false;
-	}
-
-	/* Unmap before we try to read actual record, which may cause expand */
-	if (mapped) {
-		ntdb_access_release(ntdb, *mapped);
-		*mapped = NULL;
 	}
 
 	off = val & NTDB_OFF_MASK;
@@ -151,7 +144,7 @@ ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 	/* Directly in hash table? */
 	if (!likely(is_chain(val))) {
 		if (val) {
-			berr = match(ntdb, h->h, &key, val, rec, rptr, NULL);
+			berr = match(ntdb, h->h, &key, val, rec, rptr);
 			if (berr < 0) {
 				ecode = NTDB_OFF_TO_ERR(berr);
 				goto fail;
@@ -184,41 +177,32 @@ ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 
 	h->table_size = rec_data_length(&chdr) / sizeof(ntdb_off_t);
 
+	arr = ntdb_access_read(ntdb, hbucket_off(h->table, 0),
+			       rec_data_length(&chdr), true);
+	if (NTDB_PTR_IS_ERR(arr)) {
+		ecode = NTDB_PTR_ERR(arr);
+		goto fail;
+	}
+
 	found_empty = false;
 	for (i = 0; i < h->table_size; i++) {
-		/* Careful!  match has to unmap this if we access a
-		 * record (may cause mmap of database to move. */
-		if (!arr) {
-			arr = ntdb_access_read(ntdb, hbucket_off(h->table, 0),
-					       rec_data_length(&chdr), true);
-			if (NTDB_PTR_IS_ERR(arr)) {
-				ecode = NTDB_PTR_ERR(arr);
-				goto fail;
-			}
-		}
-
-		val = arr[i];
-		if (val == 0) {
+		if (arr[i] == 0) {
 			if (!found_empty) {
 				h->bucket = i;
 				found_empty = true;
 			}
 		} else {
-			berr = match(ntdb, h->h, &key, val, rec, rptr, &arr);
+			berr = match(ntdb, h->h, &key, arr[i], rec, rptr);
 			if (berr < 0) {
 				ecode = NTDB_OFF_TO_ERR(berr);
-				if (arr) {
-					ntdb_access_release(ntdb, arr);
-				}
+				ntdb_access_release(ntdb, arr);
 				goto fail;
 			}
 			if (berr) {
 				/* We found it! */
 				h->bucket = i;
-				off = val & NTDB_OFF_MASK;
-				if (arr) {
-					ntdb_access_release(ntdb, arr);
-				}
+				off = arr[i] & NTDB_OFF_MASK;
+				ntdb_access_release(ntdb, arr);
 				return off;
 			}
 		}
@@ -229,9 +213,7 @@ ntdb_off_t find_and_lock(struct ntdb_context *ntdb,
 		h->bucket = i;
 	}
 
-	if (arr) {
-		ntdb_access_release(ntdb, arr);
-	}
+	ntdb_access_release(ntdb, arr);
 	return 0;
 
 fail:
