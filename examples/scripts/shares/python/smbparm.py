@@ -257,7 +257,6 @@ parm_table = {
 	"PARANOIDSERVERSECURITY" : ("paranoid server security", SambaParmBool, P_GLOBAL, "Yes"),
 	"WTMPDIRECTORY"          : ("wtmp directory", SambaParmString, P_GLOBAL, ""),
 	"ADDPRINTERCOMMAND"      : ("addprinter command", SambaParmString, P_GLOBAL, ""),
-	"PRINTERADMIN"           : ("printer admin", SambaParmString, P_LOCAL, ""),
 	"WINSSERVER"             : ("wins server", SambaParmString, P_GLOBAL, ""),
 	"LDAPTIMEOUT"            : ("ldap timeout", SambaParmString, P_GLOBAL, "15"),
 	"LOCKDIRECTORY"          : ("lock directory", SambaParmString, P_GLOBAL, "/var/lib/samba"),

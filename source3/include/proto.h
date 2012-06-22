@@ -1263,7 +1263,6 @@ char *lp_force_user(int );
 char *lp_force_group(int );
 const char **lp_readlist(int );
 const char **lp_writelist(int );
-const char **lp_printer_admin(int );
 char *lp_fstype(int );
 const char **lp_vfs_objects(int );
 char *lp_msdfs_proxy(int );

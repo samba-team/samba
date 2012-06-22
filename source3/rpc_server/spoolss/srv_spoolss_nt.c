@@ -1811,13 +1811,8 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 			if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
 			    !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-			    !nt_token_check_sid(&global_sid_Builtin_Print_Operators, p->session_info->security_token) &&
-			    !token_contains_name_in_list(
-				    uidtoname(p->session_info->unix_token->uid),
-				    p->session_info->info->domain_name,
-				    NULL,
-				    p->session_info->security_token,
-				    lp_printer_admin(snum))) {
+			    !nt_token_check_sid(&global_sid_Builtin_Print_Operators,
+						p->session_info->security_token)) {
 				close_printer_handle(p, r->out.handle);
 				ZERO_STRUCTP(r->out.handle);
 				DEBUG(3,("access DENIED as user is not root, "
@@ -2081,15 +2076,9 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->session_info->unix_token->uid != sec_initial_uid())
-	     && !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR)
-		&& !token_contains_name_in_list(
-			uidtoname(p->session_info->unix_token->uid),
-			p->session_info->info->domain_name,
-			NULL,
-			p->session_info->security_token,
-			lp_printer_admin(-1)) )
-	{
+	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
+	    !security_token_has_privilege(p->session_info->security_token,
+					  SEC_PRIV_PRINT_OPERATOR)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -2226,14 +2215,9 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->session_info->unix_token->uid != sec_initial_uid())
-		&& !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR)
-		&& !token_contains_name_in_list(
-			uidtoname(p->session_info->unix_token->uid),
-			p->session_info->info->domain_name,
-			NULL,
-			p->session_info->security_token, lp_printer_admin(-1)) )
-	{
+	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
+	    !security_token_has_privilege(p->session_info->security_token,
+					  SEC_PRIV_PRINT_OPERATOR)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -8664,12 +8648,8 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
-	    !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-	    !token_contains_name_in_list(uidtoname(p->session_info->unix_token->uid),
-					  p->session_info->info->domain_name,
-					  NULL,
-					  p->session_info->security_token,
-					  lp_printer_admin(snum))) {
+	    !security_token_has_privilege(p->session_info->security_token,
+					  SEC_PRIV_PRINT_OPERATOR)) {
 		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -8742,12 +8722,8 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	}
 
 	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
-	    !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-	    !token_contains_name_in_list(uidtoname(p->session_info->unix_token->uid),
-					  p->session_info->info->domain_name,
-					  NULL,
-					  p->session_info->security_token,
-					  lp_printer_admin(snum))) {
+	    !security_token_has_privilege(p->session_info->security_token,
+					  SEC_PRIV_PRINT_OPERATOR)) {
 		DEBUG(2,("_spoolss_DeleteForm: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -8816,12 +8792,8 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
-	     !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
-	     !token_contains_name_in_list(uidtoname(p->session_info->unix_token->uid),
-					  p->session_info->info->domain_name,
-					  NULL,
-					  p->session_info->security_token,
-					  lp_printer_admin(snum))) {
+	     !security_token_has_privilege(p->session_info->security_token,
+					   SEC_PRIV_PRINT_OPERATOR)) {
 		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
 	}

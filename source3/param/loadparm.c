@@ -179,7 +179,6 @@ static struct loadparm_service sDefault =
 	.force_group = NULL,
 	.readlist = NULL,
 	.writelist = NULL,
-	.printer_admin = NULL,
 	.volume = NULL,
 	.fstype = NULL,
 	.szVfsObjects = NULL,
@@ -1019,15 +1018,6 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
-	},
-	{
-		.label		= "printer admin",
-		.type		= P_LIST,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(printer_admin),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_PRINT | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "force user",

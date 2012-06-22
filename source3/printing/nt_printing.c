@@ -1783,17 +1783,6 @@ bool print_access_check(const struct auth_session_info *session_info,
 
 	DEBUG(4, ("access check was %s\n", NT_STATUS_IS_OK(status) ? "SUCCESS" : "FAILURE"));
 
-        /* see if we need to try the printer admin list */
-
-        if (!NT_STATUS_IS_OK(status) &&
-	    (token_contains_name_in_list(uidtoname(session_info->unix_token->uid),
-					 session_info->info->domain_name,
-					 NULL, session_info->security_token,
-					 lp_printer_admin(snum)))) {
-		talloc_destroy(mem_ctx);
-		return True;
-        }
-
 	talloc_destroy(mem_ctx);
 
 	if (!NT_STATUS_IS_OK(status)) {
