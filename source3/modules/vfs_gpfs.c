@@ -641,8 +641,8 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
 		   pacl->acl_nace));
 
 	result = gpfs2smb_acl(pacl);
-	if (result == NULL) {
-		goto done;
+	if (result != NULL) {
+		errno = 0;
 	}
 
  done:
