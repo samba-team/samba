@@ -21,15 +21,13 @@
 #ifndef _PASSDB_PDB_LDAP_SCHEMA_H_
 #define _PASSDB_PDB_LDAP_SCHEMA_H_
 
-/* specify schema versions between 2.2. and 3.0 */
-
-#define SCHEMAVER_SAMBAACCOUNT		1
-#define SCHEMAVER_SAMBASAMACCOUNT	2
+/* Schema versions */
+#define SCHEMAVER_SAMBAACCOUNT		1 /* Samba 2.2 */
+#define SCHEMAVER_SAMBASAMACCOUNT	2 /* Samba 3.0 */
 
 /* objectclass names */
 
 #define LDAP_OBJ_SAMBASAMACCOUNT	"sambaSamAccount"
-#define LDAP_OBJ_SAMBAACCOUNT		"sambaAccount"
 #define LDAP_OBJ_GROUPMAP		"sambaGroupMapping"
 #define LDAP_OBJ_DOMINFO		"sambaDomain"
 #define LDAP_OBJ_IDPOOL			"sambaUnixIdPool"
@@ -109,8 +107,6 @@ typedef struct _attrib_map_entry {
 
 /* structures */
 
-extern ATTRIB_MAP_ENTRY attrib_map_v22[];
-extern ATTRIB_MAP_ENTRY attrib_map_to_delete_v22[];
 extern ATTRIB_MAP_ENTRY attrib_map_v30[];
 extern ATTRIB_MAP_ENTRY attrib_map_to_delete_v30[];
 extern ATTRIB_MAP_ENTRY dominfo_attr_list[];

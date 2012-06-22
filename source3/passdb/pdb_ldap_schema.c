@@ -25,61 +25,6 @@
 #include "includes.h"
 #include "passdb/pdb_ldap_schema.h"
 
-/* attributes used by Samba 2.2 */
-
-ATTRIB_MAP_ENTRY attrib_map_v22[] = {
-	{ LDAP_ATTR_UID,		"uid" 		},
-	{ LDAP_ATTR_UIDNUMBER,		LDAP_ATTRIBUTE_UIDNUMBER},
-	{ LDAP_ATTR_GIDNUMBER,		LDAP_ATTRIBUTE_GIDNUMBER},
-	{ LDAP_ATTR_UNIX_HOME,		"homeDirectory"	},
-	{ LDAP_ATTR_PWD_LAST_SET,	"pwdLastSet"	},
-	{ LDAP_ATTR_PWD_CAN_CHANGE,	"pwdCanChange"	},
-	{ LDAP_ATTR_PWD_MUST_CHANGE,	"pwdMustChange"	},
-	{ LDAP_ATTR_LOGON_TIME,		"logonTime" 	},
-	{ LDAP_ATTR_LOGOFF_TIME,	"logoffTime"	},
-	{ LDAP_ATTR_KICKOFF_TIME,	"kickoffTime"	},
-	{ LDAP_ATTR_CN,			"cn"		},
-	{ LDAP_ATTR_SN,			"sn"		},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"	},
-	{ LDAP_ATTR_HOME_PATH,		"smbHome"	},
-	{ LDAP_ATTR_HOME_DRIVE,		"homeDrive"	},
-	{ LDAP_ATTR_LOGON_SCRIPT,	"scriptPath"	},
-	{ LDAP_ATTR_PROFILE_PATH,	"profilePath"	},
-	{ LDAP_ATTR_DESC,		"description"	},
-	{ LDAP_ATTR_USER_WKS,		"userWorkstations"},
-	{ LDAP_ATTR_USER_RID,		"rid"		},
-	{ LDAP_ATTR_PRIMARY_GROUP_RID,	"primaryGroupID"},
-	{ LDAP_ATTR_LMPW,		"lmPassword"	},
-	{ LDAP_ATTR_NTPW,		"ntPassword"	},
-	{ LDAP_ATTR_DOMAIN,		"domain"	},
-	{ LDAP_ATTR_OBJCLASS,		"objectClass"	},
-	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
-	{ LDAP_ATTR_MOD_TIMESTAMP,	"modifyTimestamp"	},
-	{ LDAP_ATTR_LIST_END,		NULL 		}
-};
-
-ATTRIB_MAP_ENTRY attrib_map_to_delete_v22[] = {
-	{ LDAP_ATTR_PWD_LAST_SET,	"pwdLastSet"	},
-	{ LDAP_ATTR_PWD_CAN_CHANGE,	"pwdCanChange"	},
-	{ LDAP_ATTR_PWD_MUST_CHANGE,	"pwdMustChange"	},
-	{ LDAP_ATTR_LOGON_TIME,		"logonTime" 	},
-	{ LDAP_ATTR_LOGOFF_TIME,	"logoffTime"	},
-	{ LDAP_ATTR_KICKOFF_TIME,	"kickoffTime"	},
-	{ LDAP_ATTR_DISPLAY_NAME,	"displayName"	},
-	{ LDAP_ATTR_HOME_PATH,		"smbHome"	},
-	{ LDAP_ATTR_HOME_DRIVE,		"homeDrives"	},
-	{ LDAP_ATTR_LOGON_SCRIPT,	"scriptPath"	},
-	{ LDAP_ATTR_PROFILE_PATH,	"profilePath"	},
-	{ LDAP_ATTR_USER_WKS,		"userWorkstations"},
-	{ LDAP_ATTR_USER_RID,		"rid"		},
-	{ LDAP_ATTR_PRIMARY_GROUP_RID,	"primaryGroupID"},
-	{ LDAP_ATTR_LMPW,		"lmPassword"	},
-	{ LDAP_ATTR_NTPW,		"ntPassword"	},
-	{ LDAP_ATTR_DOMAIN,		"domain"	},
-	{ LDAP_ATTR_ACB_INFO,		"acctFlags"	},
-	{ LDAP_ATTR_LIST_END,		NULL 		}
-};
-
 /* attributes used by Samba 3.0's sambaSamAccount */
 
 ATTRIB_MAP_ENTRY attrib_map_v30[] = {

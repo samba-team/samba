@@ -83,9 +83,6 @@ LDAP *priv2ld(struct ldapsam_privates *priv)
 static const char* get_userattr_key2string( int schema_ver, int key )
 {
 	switch ( schema_ver ) {
-		case SCHEMAVER_SAMBAACCOUNT:
-			return get_attr_key2string( attrib_map_v22, key );
-
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_key2string( attrib_map_v30, key );
 
@@ -103,9 +100,6 @@ static const char* get_userattr_key2string( int schema_ver, int key )
 const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver )
 {
 	switch ( schema_ver ) {
-		case SCHEMAVER_SAMBAACCOUNT:
-			return get_attr_list( mem_ctx, attrib_map_v22 );
-
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_list( mem_ctx, attrib_map_v30 );
 		default:
@@ -124,10 +118,6 @@ static const char** get_userattr_delete_list( TALLOC_CTX *mem_ctx,
 					      int schema_ver )
 {
 	switch ( schema_ver ) {
-		case SCHEMAVER_SAMBAACCOUNT:
-			return get_attr_list( mem_ctx,
-					      attrib_map_to_delete_v22 );
-
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_list( mem_ctx,
 					      attrib_map_to_delete_v30 );
@@ -151,9 +141,6 @@ static const char* get_objclass_filter( int schema_ver )
 	char *result;
 
 	switch( schema_ver ) {
-		case SCHEMAVER_SAMBAACCOUNT:
-			fstr_sprintf( objclass_filter, "(objectclass=%s)", LDAP_OBJ_SAMBAACCOUNT );
-			break;
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			fstr_sprintf( objclass_filter, "(objectclass=%s)", LDAP_OBJ_SAMBASAMACCOUNT );
 			break;
@@ -1179,23 +1166,6 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		const struct dom_sid *user_sid = pdb_get_user_sid(sampass);
 
 		switch ( ldap_state->schema_ver ) {
-			case SCHEMAVER_SAMBAACCOUNT:
-				if (!sid_peek_check_rid(&ldap_state->domain_sid, user_sid, &rid)) {
-					DEBUG(1, ("init_ldap_from_sam: User's SID (%s) is not for this domain (%s), cannot add to LDAP!\n", 
-						  sid_string_dbg(user_sid),
-						  sid_string_dbg(
-							  &ldap_state->domain_sid)));
-					return False;
-				}
-				if (asprintf(&temp, "%i", rid) < 0) {
-					return false;
-				}
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
-					get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_RID), 
-					temp);
-				SAFE_FREE(temp);
-				break;
-
 			case SCHEMAVER_SAMBASAMACCOUNT:
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 					get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_USER_SID), 
@@ -1216,24 +1186,6 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 		const struct dom_sid *group_sid = pdb_get_group_sid(sampass);
 
 		switch ( ldap_state->schema_ver ) {
-			case SCHEMAVER_SAMBAACCOUNT:
-				if (!sid_peek_check_rid(&ldap_state->domain_sid, group_sid, &rid)) {
-					DEBUG(1, ("init_ldap_from_sam: User's Primary Group SID (%s) is not for this domain (%s), cannot add to LDAP!\n",
-						  sid_string_dbg(group_sid),
-						  sid_string_dbg(
-							  &ldap_state->domain_sid)));
-					return False;
-				}
-
-				if (asprintf(&temp, "%i", rid) < 0) {
-					return false;
-				}
-				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
-					get_userattr_key2string(ldap_state->schema_ver, 
-					LDAP_ATTR_PRIMARY_GROUP_RID), temp);
-				SAFE_FREE(temp);
-				break;
-
 			case SCHEMAVER_SAMBASAMACCOUNT:
 				smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, existing, mods,
 					get_userattr_key2string(ldap_state->schema_ver, 
@@ -1620,18 +1572,8 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 			break;
 		}
 
-		case SCHEMAVER_SAMBAACCOUNT:
-			if (!sid_peek_check_rid(&ldap_state->domain_sid, sid, &rid)) {
-				return rc;
-			}
-
-			attr_list = get_userattr_list(NULL,
-						      ldap_state->schema_ver);
-			rc = ldapsam_search_suffix_by_rid(ldap_state, rid, result, attr_list );
-			TALLOC_FREE( attr_list );
-
-			if ( rc != LDAP_SUCCESS ) 
-				return rc;
+		default:
+			DEBUG(0,("Invalid schema version specified\n"));
 			break;
 	}
 	return rc;
@@ -1916,7 +1858,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
 	rc = ldapsam_delete_entry(
 		priv, mem_ctx, entry,
 		priv->schema_ver == SCHEMAVER_SAMBASAMACCOUNT ?
-		LDAP_OBJ_SAMBASAMACCOUNT : LDAP_OBJ_SAMBAACCOUNT,
+		LDAP_OBJ_SAMBASAMACCOUNT : 0,
 		attr_list);
 
 	result = (rc == LDAP_SUCCESS) ?
@@ -2306,9 +2248,6 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 		goto fn_exit;
 	}
 	switch ( ldap_state->schema_ver ) {
-		case SCHEMAVER_SAMBAACCOUNT:
-			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBAACCOUNT);
-			break;
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectclass", LDAP_OBJ_SAMBASAMACCOUNT);
 			break;
@@ -6506,35 +6445,6 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 }
 
 /**********************************************************************
- Initialise the 'compat' mode for pdb_ldap
- *********************************************************************/
-
-NTSTATUS pdb_init_ldapsam_compat(struct pdb_methods **pdb_method, const char *location)
-{
-	NTSTATUS nt_status;
-	struct ldapsam_privates *ldap_state;
-	char *uri = talloc_strdup( NULL, location );
-
-	trim_char( uri, '\"', '\"' );
-	nt_status = pdb_init_ldapsam_common( pdb_method, uri );
-	if ( uri )
-		TALLOC_FREE( uri );
-
-	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		return nt_status;
-	}
-
-	(*pdb_method)->name = "ldapsam_compat";
-
-	ldap_state = (struct ldapsam_privates *)((*pdb_method)->private_data);
-	ldap_state->schema_ver = SCHEMAVER_SAMBAACCOUNT;
-
-	sid_copy(&ldap_state->domain_sid, get_global_sam_sid());
-
-	return NT_STATUS_OK;
-}
-
-/**********************************************************************
  Initialise the normal mode for pdb_ldap
  *********************************************************************/
 
@@ -6691,9 +6601,6 @@ NTSTATUS pdb_ldap_init(void)
 {
 	NTSTATUS nt_status;
 	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam)))
-		return nt_status;
-
-	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam_compat", pdb_init_ldapsam_compat)))
 		return nt_status;
 
 	/* Let pdb_nds register backends */

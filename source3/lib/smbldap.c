@@ -411,12 +411,6 @@ static void smbldap_make_mod_internal(LDAP *ldap_struct, LDAPMessage *existing,
 	bool existed;
 	DATA_BLOB oldblob = data_blob_null;
 
-	if (attribute == NULL) {
-		/* This can actually happen for ldapsam_compat where we for
-		 * example don't have a password history */
-		return;
-	}
-
 	if (existing != NULL) {
 		if (op & LDAP_MOD_BVALUES) {
 			existed = smbldap_talloc_single_blob(talloc_tos(), ldap_struct, existing, attribute, &oldblob);

@@ -3098,8 +3098,6 @@ installmodules:: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(GPEXTLIBDIR) $(GPEXT_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PERFCOUNTLIBDIR) $(PERFCOUNT_MODULES)
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam.@SHLIBEXT@
-	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam_compat.@SHLIBEXT@
-	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) rhosts.@SHLIBEXT@ hostsequiv.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) sam.@SHLIBEXT@ sam_ignoredomain.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) domain.@SHLIBEXT@ trustdomain.@SHLIBEXT@ ntdomain.@SHLIBEXT@

@@ -873,23 +873,6 @@ static NTSTATUS pdb_init_NDS_ldapsam_common(struct pdb_methods **pdb_method, con
 	return NT_STATUS_OK;
 }
 
-
-/**********************************************************************
- Initialise the 'nds compat' mode for pdb_ldap
- *********************************************************************/
-
-static NTSTATUS pdb_init_NDS_ldapsam_compat(struct pdb_methods **pdb_method, const char *location)
-{
-	NTSTATUS nt_status = pdb_init_ldapsam_compat(pdb_method, location);
-
-	(*pdb_method)->name = "NDS_ldapsam_compat";
-
-	pdb_init_NDS_ldapsam_common(pdb_method, location);
-
-	return nt_status;
-}
-
-
 /**********************************************************************
  Initialise the 'nds' normal mode for pdb_ldap
  *********************************************************************/
@@ -909,9 +892,6 @@ NTSTATUS pdb_nds_init(void)
 {
 	NTSTATUS nt_status;
 	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "NDS_ldapsam", pdb_init_NDS_ldapsam)))
-		return nt_status;
-
-	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "NDS_ldapsam_compat", pdb_init_NDS_ldapsam_compat)))
 		return nt_status;
 
 	return NT_STATUS_OK;
