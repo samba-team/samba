@@ -67,14 +67,6 @@ entities.
 <sect1>
 <title>Features and Benefits</title>
 
-<para>
-Samba-3 provides for complete backward compatibility with Samba-2.2.x functionality
-as follows:
-<indexterm><primary>SAM backend</primary><secondary>smbpasswd</secondary></indexterm>
-<indexterm><primary>SAM backend</primary><secondary>ldapsam_compat</secondary></indexterm>
-<indexterm><primary>encrypted passwords</primary></indexterm>
-</para>
-
 <sect2>
 	<title>Backward Compatibility Account Storage Systems</title>
 
@@ -117,21 +109,6 @@ as follows:
 			<para>
 			This backend should be used only for backward compatibility with older
 			versions of Samba. It may be deprecated in future releases.
-			</para>
-		</listitem>
-	</varlistentry>
-
-	<varlistentry><term>ldapsam_compat (Samba-2.2 LDAP Compatibility)</term>
-		<listitem>
-			<para>
-<indexterm><primary>ldapsam_compat</primary></indexterm>
-<indexterm><primary>Samba-2.2.x LDAP schema</primary></indexterm>
-<indexterm><primary>OpenLDAP backend</primary></indexterm>
-			There is a password backend option that allows continued operation with
-			an existing OpenLDAP backend that uses the Samba-2.2.x LDAP schema extension.
-			This option is provided primarily as a migration tool, although there is
-			no reason to force migration at this time. This tool will eventually
-			be deprecated.
 			</para>
 		</listitem>
 	</varlistentry>

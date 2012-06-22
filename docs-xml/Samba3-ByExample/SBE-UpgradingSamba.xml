@@ -827,72 +827,10 @@ The recommended passdb backends at this time are
     replacement for stand alone servers
   * ldapsam - attribute rich account storage and retrieval
     backend utilizing an LDAP directory.
-  * ldapsam_compat - a 2.2 backward compatible LDAP account
-    backend
 
 Certain functions of the smbpasswd(8) tool have been split between the
 new smbpasswd(8) utility, the net(8) tool, and the new pdbedit(8)
 utility.  See the respective man pages for details.
-
-######################################################################
-LDAP
-####
-
-This section outlines the new features affecting Samba / LDAP
-integration.
-
-New Schema
-----------
-
-A new object class (sambaSamAccount) has been introduced to replace
-the old sambaAccount.  This change aids us in the renaming of
-attributes to prevent clashes with attributes from other vendors.
-There is a conversion script (examples/LDAP/convertSambaAccount) to
-modify and LDIF file to the new schema.
-
-Example:
-
-  $ ldapsearch .... -b "ou=people,dc=..." &gt; sambaAcct.ldif
-  $ convertSambaAccount --sid=&lt;Domain SID&gt; \
-    --input=sambaAcct.ldif --output=sambaSamAcct.ldif \
-    --changetype=[modify|add]
-
-The &lt;DOM SID&gt; can be obtained by running 'net getlocalsid
-&lt;DOMAINNAME&gt;' on the Samba PDC as root.  The changetype determines
-the format of the generated LDIF output--either create new entries
-or modify existing entries.
-
-The old sambaAccount schema may still be used by specifying the
-"ldapsam_compat" passdb backend.  However, the sambaAccount and
-associated attributes have been moved to the historical section of
-the schema file and must be uncommented before use if needed.
-The 2.2 object class declaration for a sambaAccount has not changed
-in the 3.0 samba.schema file.
-
-Other new object classes and their uses include:
-
-  * sambaDomain - domain information used to allocate rids
-    for users and groups as necessary.  The attributes are added
-    in 'ldap suffix' directory entry automatically if
-    an idmap uid/gid range has been set and the 'ldapsam'
-    passdb backend has been selected.
-
-  * sambaGroupMapping - an object representing the
-    relationship between a posixGroup and a Windows
-    group/SID.  These entries are stored in the 'ldap
-    group suffix' and managed by the 'net groupmap' command.
-
-  * sambaUnixIdPool - created in the 'ldap idmap suffix' entry
-    automatically and contains the next available 'idmap uid' and
-    'idmap gid'
-
-  * sambaIdmapEntry - object storing a mapping between a
-    SID and a UNIX uid/gid.  These objects are created by the
-    idmap_ldap module as needed.
-
-  * sambaSidEntry - object representing a SID alone, as a Structural
-    class on which to build the sambaIdmapEntry.
-
 
 New Suffix for Searching
 ------------------------

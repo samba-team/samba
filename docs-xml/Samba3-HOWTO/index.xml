@@ -174,8 +174,6 @@ The chapters in this part each cover specific Samba features.
 <title>Migration and Updating</title>
 
 	<?latex \cleardoublepage ?>
-	<xi:include href="TOSHARG-upgrading-to-3.0.xml"/>
-	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-NT4Migration.xml"/>
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-SWAT.xml"/>
