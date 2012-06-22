@@ -2484,7 +2484,7 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	if (nodemap->nodes[i].flags != c->new_flags) {
-		DEBUG(DEBUG_NOTICE,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->pnn, c->new_flags, c->old_flags));
+		DEBUG(DEBUG_NOTICE,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->pnn, c->new_flags, nodemap->nodes[i].flags));
 	}
 
 	disabled_flag_changed =  (nodemap->nodes[i].flags ^ c->new_flags) & NODE_FLAGS_DISABLED;
