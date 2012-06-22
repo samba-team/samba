@@ -5,6 +5,7 @@ bld.SAMBA_LIBRARY('dbwrap',
                   dbwrap_rbt.c
                   dbwrap_cache.c
                   dbwrap_tdb.c
+                  dbwrap_local_open.c
                   ''',
                   deps='samba-util util_tdb errors tdb tdb-wrap',
                   private_library=True)

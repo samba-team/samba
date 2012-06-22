@@ -133,4 +133,18 @@ NTSTATUS dbwrap_store_bystring_upper(struct db_context *db, const char *key,
 NTSTATUS dbwrap_fetch_bystring_upper(struct db_context *db, TALLOC_CTX *mem_ctx,
 				     const char *key, TDB_DATA *value);
 
+/**
+ * This opens an ntdb or tdb file: you can hand it a .ntdb or .tdb extension
+ * and it will decide (based on parameter settings, or else what exists) which
+ * to use.
+ *
+ * For backwards compatibility, it takes tdb-style open flags, not ntdb!
+ */
+struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
+				     struct loadparm_context *lp_ctx,
+				     const char *name,
+				     int hash_size, int tdb_flags,
+				     int open_flags, mode_t mode,
+				     enum dbwrap_lock_order lock_order);
+
 #endif /* __DBWRAP_H__ */

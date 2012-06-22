@@ -119,9 +119,9 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 
 	if (result == NULL) {
 		struct loadparm_context *lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
-		result = db_open_tdb(mem_ctx, lp_ctx, name, hash_size,
-				     tdb_flags, open_flags, mode,
-				     lock_order);
+		result = dbwrap_local_open(mem_ctx, lp_ctx, name, hash_size,
+					   tdb_flags, open_flags, mode,
+					   lock_order);
 		talloc_unlink(mem_ctx, lp_ctx);
 	}
 	return result;

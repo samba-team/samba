@@ -24,6 +24,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/util_tdb.h"
 #include "system/filesys.h"
+#include "ccan/str/str.h"
 
 struct db_tdb_ctx {
 	struct tdb_wrap *wtdb;
@@ -384,6 +385,12 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	struct db_context *result = NULL;
 	struct db_tdb_ctx *db_tdb;
 	struct stat st;
+
+	/* Extra paranoia. */
+	if (name && strends(name, ".ntdb")) {
+		DEBUG(0, ("can't try to open %s with tdb!\n", name));
+		return NULL;
+	}
 
 	result = talloc_zero(mem_ctx, struct db_context);
 	if (result == NULL) {
