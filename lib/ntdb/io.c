@@ -347,7 +347,7 @@ static void *_ntdb_alloc_read(struct ntdb_context *ntdb, ntdb_off_t offset,
 	buf = ntdb->alloc_fn(ntdb, prefix + len ? prefix + len : 1,
 			  ntdb->alloc_data);
 	if (!buf) {
-		ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_USE_ERROR,
+		ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 			   "ntdb_alloc_read alloc failed len=%zu",
 			   (size_t)(prefix + len));
 		return NTDB_ERR_PTR(NTDB_ERR_OOM);
