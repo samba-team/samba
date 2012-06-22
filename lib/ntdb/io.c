@@ -28,15 +28,46 @@
 #include "private.h"
 #include <ccan/likely/likely.h>
 
-void ntdb_munmap(struct ntdb_file *file)
+static void free_old_mmaps(struct ntdb_context *ntdb)
 {
-	if (file->fd == -1)
-		return;
+	struct ntdb_old_mmap *i;
 
-	if (file->map_ptr) {
-		munmap(file->map_ptr, file->map_size);
-		file->map_ptr = NULL;
+	assert(ntdb->file->direct_count == 0);
+
+	while ((i = ntdb->file->old_mmaps) != NULL) {
+		ntdb->file->old_mmaps = i->next;
+		munmap(i->map_ptr, i->map_size);
+		ntdb->free_fn(i, ntdb->alloc_data);
 	}
+}
+
+enum NTDB_ERROR ntdb_munmap(struct ntdb_context *ntdb)
+{
+	if (ntdb->file->fd == -1) {
+		return NTDB_SUCCESS;
+	}
+
+	if (!ntdb->file->map_ptr) {
+		return NTDB_SUCCESS;
+	}
+
+	/* We can't unmap now if there are accessors. */
+	if (ntdb->file->direct_count) {
+		struct ntdb_old_mmap *old
+			= ntdb->alloc_fn(ntdb, sizeof(*old), ntdb->alloc_data);
+		if (!old) {
+			return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
+					   "ntdb_munmap alloc failed");
+		}
+		old->next = ntdb->file->old_mmaps;
+		old->map_ptr = ntdb->file->map_ptr;
+		old->map_size = ntdb->file->map_size;
+		ntdb->file->old_mmaps = old;
+	} else {
+		munmap(ntdb->file->map_ptr, ntdb->file->map_size);
+		ntdb->file->map_ptr = NULL;
+	}
+	return NTDB_SUCCESS;
 }
 
 enum NTDB_ERROR ntdb_mmap(struct ntdb_context *ntdb)
@@ -98,11 +129,6 @@ static enum NTDB_ERROR ntdb_normal_oob(struct ntdb_context *ntdb,
 	struct stat st;
 	enum NTDB_ERROR ecode;
 
-	/* We can't hold pointers during this: we could unmap! */
-	assert(!ntdb->direct_access
-	       || (ntdb->flags & NTDB_NOLOCK)
-	       || ntdb_has_expansion_lock(ntdb));
-
 	if (len + off < len) {
 		if (probe)
 			return NTDB_SUCCESS;
@@ -149,7 +175,10 @@ static enum NTDB_ERROR ntdb_normal_oob(struct ntdb_context *ntdb,
 	}
 
 	/* Unmap, update size, remap */
-	ntdb_munmap(ntdb->file);
+	ecode = ntdb_munmap(ntdb);
+	if (ecode) {
+		return ecode;
+	}
 
 	ntdb->file->map_size = st.st_size;
 	return ntdb_mmap(ntdb);
@@ -418,7 +447,10 @@ static enum NTDB_ERROR ntdb_expand_file(struct ntdb_context *ntdb,
 	} else {
 		/* Unmap before trying to write; old NTDB claimed OpenBSD had
 		 * problem with this otherwise. */
-		ntdb_munmap(ntdb->file);
+		ecode = ntdb_munmap(ntdb);
+		if (ecode) {
+			return ecode;
+		}
 
 		/* If this fails, we try to fill anyway. */
 		if (ftruncate(ntdb->file->fd, ntdb->file->map_size + addition))
@@ -461,8 +493,9 @@ const void *ntdb_access_read(struct ntdb_context *ntdb,
 		if (convert) {
 			ntdb_convert(ntdb, (void *)ret, len);
 		}
-	} else
-		ntdb->direct_access++;
+	} else {
+		ntdb->file->direct_count++;
+	}
 
 	return ret;
 }
@@ -500,9 +533,9 @@ void *ntdb_access_write(struct ntdb_context *ntdb,
 		ret = hdr + 1;
 		if (convert)
 			ntdb_convert(ntdb, (void *)ret, len);
-	} else
-		ntdb->direct_access++;
-
+	} else {
+		ntdb->file->direct_count++;
+	}
 	return ret;
 }
 
@@ -525,8 +558,11 @@ void ntdb_access_release(struct ntdb_context *ntdb, const void *p)
 		hdr = *hp;
 		*hp = hdr->next;
 		ntdb->free_fn(hdr, ntdb->alloc_data);
-	} else
-		ntdb->direct_access--;
+	} else {
+		if (--ntdb->file->direct_count == 0) {
+			free_old_mmaps(ntdb);
+		}
+	}
 }
 
 enum NTDB_ERROR ntdb_access_commit(struct ntdb_context *ntdb, void *p)
@@ -543,7 +579,9 @@ enum NTDB_ERROR ntdb_access_commit(struct ntdb_context *ntdb, void *p)
 		*hp = hdr->next;
 		ntdb->free_fn(hdr, ntdb->alloc_data);
 	} else {
-		ntdb->direct_access--;
+		if (--ntdb->file->direct_count == 0) {
+			free_old_mmaps(ntdb);
+		}
 		ecode = NTDB_SUCCESS;
 	}
 

@@ -958,9 +958,6 @@ ntdb_off_t alloc(struct ntdb_context *ntdb, size_t keylen, size_t datalen,
 {
 	ntdb_off_t off;
 
-	/* We can't hold pointers during this: we could unmap! */
-	assert(!ntdb->direct_access);
-
 	for (;;) {
 		enum NTDB_ERROR ecode;
 		off = get_free(ntdb, keylen, datalen, growing, magic);

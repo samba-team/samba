@@ -301,6 +301,14 @@ struct ntdb_access_hdr {
 	bool convert;
 };
 
+/* mmaps we are keeping around because they are still direct accessed */
+struct ntdb_old_mmap {
+	struct ntdb_old_mmap *next;
+
+	void *map_ptr;
+	ntdb_len_t map_size;
+};
+
 struct ntdb_file {
 	/* How many are sharing us? */
 	unsigned int refcnt;
@@ -313,6 +321,12 @@ struct ntdb_file {
 
 	/* The file descriptor (-1 for NTDB_INTERNAL). */
 	int fd;
+
+	/* How many are accessing directly? */
+	unsigned int direct_count;
+
+	/* Old maps, still direct accessed. */
+	struct ntdb_old_mmap *old_mmaps;
 
 	/* Lock information */
 	pid_t locker;
@@ -429,7 +443,7 @@ void ntdb_io_init(struct ntdb_context *ntdb);
 void *ntdb_convert(const struct ntdb_context *ntdb, void *buf, ntdb_len_t size);
 
 /* Unmap and try to map the ntdb. */
-void ntdb_munmap(struct ntdb_file *file);
+enum NTDB_ERROR ntdb_munmap(struct ntdb_context *ntdb);
 enum NTDB_ERROR ntdb_mmap(struct ntdb_context *ntdb);
 
 /* Either alloc a copy, or give direct access.  Release frees or noop. */
@@ -575,9 +589,6 @@ struct ntdb_context {
 	/* Our open hook, if any. */
 	enum NTDB_ERROR (*openhook)(int fd, void *data);
 	void *openhook_data;
-
-	/* Are we accessing directly? (debugging check). */
-	int direct_access;
 
 	/* Set if we are in a transaction. */
 	struct ntdb_transaction *transaction;

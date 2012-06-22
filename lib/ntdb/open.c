@@ -99,7 +99,6 @@ static void ntdb_context_init(struct ntdb_context *ntdb)
 {
 	/* Initialize the NTDB fields here */
 	ntdb_io_init(ntdb);
-	ntdb->direct_access = 0;
 	ntdb->transaction = NULL;
 	ntdb->access = NULL;
 }
@@ -259,6 +258,8 @@ static enum NTDB_ERROR ntdb_new_file(struct ntdb_context *ntdb)
 	ntdb->file->allrecord_lock.count = 0;
 	ntdb->file->refcnt = 1;
 	ntdb->file->map_ptr = NULL;
+	ntdb->file->direct_count = 0;
+	ntdb->file->old_mmaps = NULL;
 	return NTDB_SUCCESS;
 }
 
@@ -841,7 +842,7 @@ fail_errno:
 					ntdb->free_fn(ntdb->file->map_ptr,
 						      ntdb->alloc_data);
 				} else
-					ntdb_munmap(ntdb->file);
+					ntdb_munmap(ntdb);
 			}
 			if (ntdb->file->fd != -1 && close(ntdb->file->fd) != 0)
 				ntdb_logerr(ntdb, NTDB_ERR_IO, NTDB_LOG_ERROR,
@@ -875,7 +876,7 @@ _PUBLIC_ int ntdb_close(struct ntdb_context *ntdb)
 				ntdb->free_fn(ntdb->file->map_ptr,
 					      ntdb->alloc_data);
 			} else {
-				ntdb_munmap(ntdb->file);
+				ntdb_munmap(ntdb);
 			}
 		}
 		ret = close(ntdb->file->fd);

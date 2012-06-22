@@ -234,7 +234,7 @@ out:
 }
 
 _PUBLIC_ enum NTDB_ERROR ntdb_fetch(struct ntdb_context *ntdb, NTDB_DATA key,
-			 NTDB_DATA *data)
+				    NTDB_DATA *data)
 {
 	ntdb_off_t off;
 	struct ntdb_used_record rec;
@@ -353,9 +353,15 @@ _PUBLIC_ void ntdb_add_flag(struct ntdb_context *ntdb, unsigned flag)
 		ntdb->flags |= NTDB_NOLOCK;
 		break;
 	case NTDB_NOMMAP:
+		if (ntdb->file->direct_count) {
+			ntdb_logerr(ntdb, NTDB_ERR_EINVAL, NTDB_LOG_USE_ERROR,
+				    "ntdb_add_flag: Can't get NTDB_NOMMAP from"
+				    " ntdb_parse_record!");
+			return;
+		}
 		ntdb->flags |= NTDB_NOMMAP;
 #ifndef HAVE_INCOHERENT_MMAP
-		ntdb_munmap(ntdb->file);
+		ntdb_munmap(ntdb);
 #endif
 		break;
 	case NTDB_NOSYNC:
