@@ -19,6 +19,7 @@
 ^samba3.smbtorture_s3.plain\(dc\).NTTRANS-FSCTL # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(dc\).SMB2-NEGPROT # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(dc\).BAD-NBT-SESSION # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(dc\).SMB2-SESSION-REAUTH # Fails against the s4 ntvfs server
 ^samba3.nbt.dgram.*netlogon2\(s3dc\)
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3
