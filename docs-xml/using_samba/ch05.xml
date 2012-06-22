@@ -2692,15 +2692,6 @@ mangled map</title>
 </tgroup>
 </table>
 
-
-<para>The <literal>share</literal> <literal>modes</literal> parameter, which enforces the use of these locks, is enabled by default. To disable it, use the following command:</para>
-
-
-<programlisting>[accounting]
-	share modes = no</programlisting>
-
-
-<para>We highly recommend against disabling the default locking mechanism unless you have a justifiable reason for doing so. Most Windows and DOS applications rely on these locking mechanisms in order to work correctly, and will complain bitterly if this functionality is taken away.</para>
 </sect3>
 
 

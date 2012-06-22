@@ -2490,20 +2490,6 @@ compatibility with older-client bugs.</para>
 </refsynopsisdiv>
 </refentry>
 
-<refentry id="appc-refentry-179">
-<refmeta>
-<refmiscinfo class="allowable values">YES, NO</refmiscinfo>
-<refmiscinfo class="default">YES</refmiscinfo>
-</refmeta>
-<refnamediv>
-<refname>share modes = boolean</refname>
-</refnamediv>
-<refsynopsisdiv>
-<para>If set to YES, this option supports Windows-style whole-file (deny mode) locks.</para>
-
-</refsynopsisdiv>
-</refentry>
-
 <refentry id="appc-refentry-180">
 <refmeta>
 <refmiscinfo class="allowable values">YES, NO</refmiscinfo>
