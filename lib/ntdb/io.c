@@ -36,9 +36,32 @@ static void free_old_mmaps(struct ntdb_context *ntdb)
 
 	while ((i = ntdb->file->old_mmaps) != NULL) {
 		ntdb->file->old_mmaps = i->next;
-		munmap(i->map_ptr, i->map_size);
+		if (ntdb->flags & NTDB_INTERNAL) {
+			ntdb->free_fn(i->map_ptr, ntdb->alloc_data);
+		} else {
+			munmap(i->map_ptr, i->map_size);
+		}
 		ntdb->free_fn(i, ntdb->alloc_data);
 	}
+}
+
+static enum NTDB_ERROR save_old_map(struct ntdb_context *ntdb)
+{
+	struct ntdb_old_mmap *old;
+
+	assert(ntdb->file->direct_count);
+
+	old = ntdb->alloc_fn(ntdb->file, sizeof(*old), ntdb->alloc_data);
+	if (!old) {
+		return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
+				   "save_old_map alloc failed");
+	}
+	old->next = ntdb->file->old_mmaps;
+	old->map_ptr = ntdb->file->map_ptr;
+	old->map_size = ntdb->file->map_size;
+	ntdb->file->old_mmaps = old;
+
+	return NTDB_SUCCESS;
 }
 
 enum NTDB_ERROR ntdb_munmap(struct ntdb_context *ntdb)
@@ -53,16 +76,7 @@ enum NTDB_ERROR ntdb_munmap(struct ntdb_context *ntdb)
 
 	/* We can't unmap now if there are accessors. */
 	if (ntdb->file->direct_count) {
-		struct ntdb_old_mmap *old
-			= ntdb->alloc_fn(ntdb, sizeof(*old), ntdb->alloc_data);
-		if (!old) {
-			return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
-					   "ntdb_munmap alloc failed");
-		}
-		old->next = ntdb->file->old_mmaps;
-		old->map_ptr = ntdb->file->map_ptr;
-		old->map_size = ntdb->file->map_size;
-		ntdb->file->old_mmaps = old;
+		return save_old_map(ntdb);
 	} else {
 		munmap(ntdb->file->map_ptr, ntdb->file->map_size);
 		ntdb->file->map_ptr = NULL;
@@ -434,9 +448,26 @@ static enum NTDB_ERROR ntdb_expand_file(struct ntdb_context *ntdb,
 	}
 
 	if (ntdb->flags & NTDB_INTERNAL) {
-		char *new = ntdb->expand_fn(ntdb->file->map_ptr,
-					ntdb->file->map_size + addition,
-					ntdb->alloc_data);
+		char *new;
+
+		/* Can't free it if we have direct accesses. */
+		if (ntdb->file->direct_count) {
+			ecode = save_old_map(ntdb);
+			if (ecode) {
+				return ecode;
+			}
+			new = ntdb->alloc_fn(ntdb->file,
+					     ntdb->file->map_size + addition,
+					     ntdb->alloc_data);
+			if (new) {
+				memcpy(new, ntdb->file->map_ptr,
+				       ntdb->file->map_size);
+			}
+		} else {
+			new = ntdb->expand_fn(ntdb->file->map_ptr,
+					      ntdb->file->map_size + addition,
+					      ntdb->alloc_data);
+		}
 		if (!new) {
 			return ntdb_logerr(ntdb, NTDB_ERR_OOM, NTDB_LOG_ERROR,
 					  "No memory to expand database");
