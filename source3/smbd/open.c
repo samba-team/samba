@@ -1038,10 +1038,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 #endif
 
-	if (!lp_share_modes(SNUM(conn))) {
-		return NT_STATUS_OK;
-	}
-
 	/* Now we check the share modes, after any oplock breaks. */
 	for(i = 0; i < lck->data->num_share_modes; i++) {
 

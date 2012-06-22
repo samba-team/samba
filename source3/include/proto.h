@@ -1298,7 +1298,6 @@ bool lp_dmapi_support(int );
 bool lp_locking(const struct share_params *p );
 int lp_strict_locking(const struct share_params *p );
 bool lp_posix_locking(const struct share_params *p );
-bool lp_share_modes(int );
 bool lp_oplocks(int );
 bool lp_kernel_oplocks(int );
 bool lp_level2_oplocks(int );

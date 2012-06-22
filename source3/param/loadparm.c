@@ -3191,15 +3191,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= enum_bool_auto,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
-	{
-		.label		= "share modes",
-		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bShareModes),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED,
-	},
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR},
 
