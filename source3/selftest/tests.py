@@ -258,7 +258,7 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.ioctl", "raw.lock", "raw.mkdir", "raw.mux", "raw.notify", "raw.open", "raw.oplock"
        "raw.qfileinfo", "raw.qfsinfo", "raw.read", "raw.rename", "raw.search", "raw.seek",
        "raw.sfileinfo.base", "raw.sfileinfo.bug", "raw.streams", "raw.unlink", "raw.write",
-       "raw.samba3hide", "raw.samba3badpath", "raw.sfileinfo.rename",
+       "raw.samba3hide", "raw.samba3badpath", "raw.sfileinfo.rename", "raw.session",
        "raw.samba3caseinsensitive", "raw.samba3posixtimedlock",
        "raw.samba3rootdirfid", "raw.sfileinfo.end-of-file",
        "raw.bench-oplock", "raw.bench-lock", "raw.bench-open", "raw.bench-tcon",
@@ -320,7 +320,7 @@ for t in tests:
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "secshare", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
-    elif t == "smb2.session":
+    elif t == "raw.session" or t == "smb2.session":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k no -U$USERNAME%$PASSWORD', 'ntlm')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k yes -U$USERNAME%$PASSWORD', 'krb5')
