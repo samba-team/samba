@@ -237,6 +237,71 @@ enum NTDB_ERROR ntdb_fetch_bystring(struct ntdb_context *ntdb,
 	return ntdb_fetch(ntdb, key, data);
 }
 
+enum NTDB_ERROR ntdb_fetch_int32(struct ntdb_context *ntdb,
+				 const char *keystr, int32_t *val)
+{
+	NTDB_DATA data;
+	enum NTDB_ERROR err;
+
+	err = ntdb_fetch(ntdb, string_term_ntdb_data(keystr), &data);
+	if (err == NTDB_SUCCESS) {
+		if (data.dsize != sizeof(*val)) {
+			err = NTDB_ERR_CORRUPT;
+		} else {
+			*val = IVAL(data.dptr,0);
+		}
+		talloc_free(data.dptr);
+	}
+	return NTDB_SUCCESS;
+}
+
+enum NTDB_ERROR ntdb_store_int32(struct ntdb_context *ntdb,
+				 const char *keystr, int32_t val)
+{
+	NTDB_DATA data, key;
+	int32_t v_store;
+
+	SIVAL(&v_store, 0, val);
+	data = ntdb_mkdata(&v_store, sizeof(v_store));
+	key = string_term_ntdb_data(keystr);
+
+	return ntdb_store(ntdb, key, data, NTDB_REPLACE);
+}
+
+enum NTDB_ERROR ntdb_add_int32_atomic(struct ntdb_context *ntdb,
+				      const char *keystr,
+				      int32_t *oldval, int32_t addval)
+{
+	int32_t val;
+	enum NTDB_ERROR err;
+
+	err = ntdb_lock_bystring(ntdb, keystr);
+	if (err) {
+		return err;
+	}
+
+	err = ntdb_fetch_int32(ntdb, keystr, &val);
+	if (err) {
+		if (err == NTDB_ERR_NOEXIST) {
+			/* Start with 'old' value */
+			val = *oldval;
+		} else {
+			goto err_out;
+		}
+	} else {
+		/* It worked, set return value (oldval) to tdb data */
+		*oldval = val;
+	}
+
+	/* Increase value and store for next time. */
+	val += addval;
+	err = ntdb_store_int32(ntdb, keystr, val);
+
+  err_out:
+	ntdb_unlock_bystring(ntdb, keystr);
+	return err;
+}
+
 NTSTATUS map_nt_error_from_ntdb(enum NTDB_ERROR err)
 {
 	NTSTATUS result = NT_STATUS_INTERNAL_ERROR;

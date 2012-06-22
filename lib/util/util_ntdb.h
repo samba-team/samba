@@ -96,6 +96,30 @@ enum NTDB_ERROR ntdb_fetch_bystring(struct ntdb_context *ntdb,
 
 
 /****************************************************************************
+ Fetch a int32_t value by a string key.  *val is int32_t in native byte order.
+ ntdb must have been created with ntdb_new() (as it uses talloc_free).
+****************************************************************************/
+enum NTDB_ERROR ntdb_fetch_int32(struct ntdb_context *ntdb,
+				 const char *keystr, int32_t *val);
+
+/****************************************************************************
+ Store a int32_t value by a string key.  val is int32_t in native byte order.
+****************************************************************************/
+enum NTDB_ERROR ntdb_store_int32(struct ntdb_context *ntdb,
+				 const char *keystr, int32_t val);
+
+
+/****************************************************************************
+ Atomic integer add; reads the old value into *oldval (if found), then stores
+ *oldval + addval back for next time.  Uses chainlock to do this atomically.
+
+ Thus the first time this is ever called, oldval will be unchanged.
+****************************************************************************/
+enum NTDB_ERROR ntdb_add_int32_atomic(struct ntdb_context *ntdb,
+				      const char *keystr,
+				      int32_t *oldval, int32_t addval);
+
+/****************************************************************************
  Turn a nul-terminated string into an NTDB_DATA.
 ****************************************************************************/
 static inline NTDB_DATA string_term_ntdb_data(const char *string)
