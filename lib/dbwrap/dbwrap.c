@@ -425,6 +425,16 @@ int dbwrap_transaction_start(struct db_context *db)
 	return db->transaction_start(db);
 }
 
+NTSTATUS dbwrap_transaction_start_nonblock(struct db_context *db)
+{
+	if (db->transaction_start_nonblock) {
+		return db->transaction_start_nonblock(db);
+	} else {
+		return dbwrap_transaction_start(db) == 0 ? NT_STATUS_OK
+			: NT_STATUS_UNSUCCESSFUL;
+	}
+}
+
 int dbwrap_transaction_commit(struct db_context *db)
 {
 	return db->transaction_commit(db);

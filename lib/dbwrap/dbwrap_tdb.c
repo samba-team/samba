@@ -374,6 +374,19 @@ static int db_tdb_transaction_start(struct db_context *db)
 	return tdb_transaction_start(db_ctx->wtdb->tdb) ? -1 : 0;
 }
 
+static NTSTATUS db_tdb_transaction_start_nonblock(struct db_context *db)
+{
+	struct db_tdb_ctx *db_ctx =
+		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
+	int ret;
+
+	ret = tdb_transaction_start_nonblock(db_ctx->wtdb->tdb);
+	if (ret != 0) {
+		return map_nt_error_from_tdb(tdb_error(db_ctx->wtdb->tdb));
+	}
+	return NT_STATUS_OK;
+}
+
 static int db_tdb_transaction_commit(struct db_context *db)
 {
 	struct db_tdb_ctx *db_ctx =
@@ -452,6 +465,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->get_seqnum = db_tdb_get_seqnum;
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	result->transaction_start = db_tdb_transaction_start;
+	result->transaction_start_nonblock = db_tdb_transaction_start_nonblock;
 	result->transaction_commit = db_tdb_transaction_commit;
 	result->transaction_cancel = db_tdb_transaction_cancel;
 	result->exists = db_tdb_exists;

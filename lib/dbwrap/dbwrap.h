@@ -77,6 +77,7 @@ int dbwrap_wipe(struct db_context *db);
 int dbwrap_check(struct db_context *db);
 int dbwrap_get_seqnum(struct db_context *db);
 int dbwrap_transaction_start(struct db_context *db);
+NTSTATUS dbwrap_transaction_start_nonblock(struct db_context *db);
 int dbwrap_transaction_commit(struct db_context *db);
 int dbwrap_transaction_cancel(struct db_context *db);
 void dbwrap_db_id(struct db_context *db, const uint8_t **id, size_t *idlen);

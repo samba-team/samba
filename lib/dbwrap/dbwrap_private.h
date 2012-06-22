@@ -52,6 +52,7 @@ struct db_context {
 			     void *private_data);
 	int (*get_seqnum)(struct db_context *db);
 	int (*transaction_start)(struct db_context *db);
+	NTSTATUS (*transaction_start_nonblock)(struct db_context *db);
 	int (*transaction_commit)(struct db_context *db);
 	int (*transaction_cancel)(struct db_context *db);
 	NTSTATUS (*parse_record)(struct db_context *db, TDB_DATA key,
