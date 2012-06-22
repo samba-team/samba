@@ -82,8 +82,9 @@
     intervention.
 
   - if TDB_NOSYNC is passed to flags in tdb_open then transactions are
-    still available, but no transaction recovery area is used and no
-    fsync/msync calls are made.
+    still available, but no fsync/msync calls are made.  This means we
+    are still proof against a process dying during transaction commit,
+    but not against machine reboot.
 
   - if TDB_ALLOW_NESTING is passed to flags in tdb open, or added using
     tdb_add_flags() transaction nesting is enabled.
@@ -976,13 +977,11 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 		return -1;
 	}
 
-	if (!(tdb->flags & TDB_NOSYNC)) {
-		/* write the recovery data to the end of the file */
-		if (transaction_setup_recovery(tdb, &tdb->transaction->magic_offset) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_prepare_commit: failed to setup recovery data\n"));
-			_tdb_transaction_cancel(tdb);
-			return -1;
-		}
+	/* write the recovery data to the end of the file */
+	if (transaction_setup_recovery(tdb, &tdb->transaction->magic_offset) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_prepare_commit: failed to setup recovery data\n"));
+		_tdb_transaction_cancel(tdb);
+		return -1;
 	}
 
 	tdb->transaction->prepared = true;
