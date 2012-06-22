@@ -131,13 +131,6 @@ static int dbwrap_cache_get_seqnum(struct db_context *db)
 	return dbwrap_get_seqnum(ctx->backing);
 }
 
-static int dbwrap_cache_get_flags(struct db_context *db)
-{
-	struct db_cache_ctx *ctx = talloc_get_type_abort(
-		db->private_data, struct db_cache_ctx);
-	return dbwrap_get_flags(ctx->backing);
-}
-
 static int dbwrap_cache_transaction_start(struct db_context *db)
 {
 	struct db_cache_ctx *ctx = talloc_get_type_abort(
@@ -210,7 +203,6 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	db->traverse = dbwrap_cache_traverse;
 	db->traverse_read = dbwrap_cache_traverse_read;
 	db->get_seqnum = dbwrap_cache_get_seqnum;
-	db->get_flags = dbwrap_cache_get_flags;
 	db->transaction_start = dbwrap_cache_transaction_start;
 	db->transaction_commit = dbwrap_cache_transaction_commit;
 	db->transaction_cancel = dbwrap_cache_transaction_cancel;

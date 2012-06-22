@@ -372,11 +372,6 @@ int dbwrap_get_seqnum(struct db_context *db)
 	return db->get_seqnum(db);
 }
 
-int dbwrap_get_flags(struct db_context *db)
-{
-	return db->get_flags(db);
-}
-
 int dbwrap_transaction_start(struct db_context *db)
 {
 	return db->transaction_start(db);

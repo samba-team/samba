@@ -146,31 +146,16 @@ static int convert_fn(struct db_record *rec, void *private_data)
 static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 {
 	int32 vers;
-	bool bigendianheader;
 	struct convert_fn_state s;
 	NTSTATUS status;
-
-	/* If we are bigendian, tdb is bigendian if NOT converted. */
-	union {
-		uint16 large;
-		unsigned char small[2];
-	} u;
-	u.large = 0x0102;
-	if (u.small[0] == 0x01)
-		bigendianheader = !(dbwrap_get_flags(db) & TDB_CONVERT);
-	else {
-		assert(u.small[0] == 0x02);
-		bigendianheader = (dbwrap_get_flags(db) & TDB_CONVERT);
-	}
-	DEBUG(0, ("Upgrading winbindd_idmap.tdb from an old version\n"));
 
 	status = dbwrap_fetch_int32_bystring(db, "IDMAP_VERSION", &vers);
 	if (!NT_STATUS_IS_OK(status)) {
 		vers = -1;
 	}
 
-	if (((vers == -1) && bigendianheader) || (IREV(vers) == IDMAP_VERSION)) {
-		/* Arrggghh ! Bytereversed or old big-endian - make order independent ! */
+	if (IREV(vers) == IDMAP_VERSION) {
+		/* Arrggghh ! Bytereversed - make order independent ! */
 		/*
 		 * high and low records were created on a
 		 * big endian machine and will need byte-reversing.
