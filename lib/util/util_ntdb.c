@@ -236,3 +236,46 @@ enum NTDB_ERROR ntdb_fetch_bystring(struct ntdb_context *ntdb,
 
 	return ntdb_fetch(ntdb, key, data);
 }
+
+NTSTATUS map_nt_error_from_ntdb(enum NTDB_ERROR err)
+{
+	NTSTATUS result = NT_STATUS_INTERNAL_ERROR;
+
+	switch (err) {
+	case NTDB_SUCCESS:
+		result = NT_STATUS_OK;
+		break;
+	case NTDB_ERR_CORRUPT:
+		result = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		break;
+	case NTDB_ERR_IO:
+		result = NT_STATUS_UNEXPECTED_IO_ERROR;
+		break;
+	case NTDB_ERR_OOM:
+		result = NT_STATUS_NO_MEMORY;
+		break;
+	case NTDB_ERR_EXISTS:
+		result = NT_STATUS_OBJECT_NAME_COLLISION;
+		break;
+
+	case NTDB_ERR_LOCK:
+		/*
+		 * NTDB_ERR_LOCK is very broad, we could for example
+		 * distinguish between fcntl locks and invalid lock
+		 * sequences. So NT_STATUS_FILE_LOCK_CONFLICT is a
+		 * compromise.
+		 */
+		result = NT_STATUS_FILE_LOCK_CONFLICT;
+		break;
+	case NTDB_ERR_NOEXIST:
+		result = NT_STATUS_NOT_FOUND;
+		break;
+	case NTDB_ERR_EINVAL:
+		result = NT_STATUS_INVALID_PARAMETER;
+		break;
+	case NTDB_ERR_RDONLY:
+		result = NT_STATUS_ACCESS_DENIED;
+		break;
+	};
+	return result;
+}

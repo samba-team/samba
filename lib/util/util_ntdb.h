@@ -23,6 +23,7 @@
 #define _____LIB_UTIL_UTIL_NTDB_H__
 #include <ntdb.h>
 #include <talloc.h>
+#include "libcli/util/ntstatus.h"
 
 struct loadparm_context;
 union ntdb_attribute;
@@ -102,4 +103,9 @@ static inline NTDB_DATA string_term_ntdb_data(const char *string)
 	return ntdb_mkdata(string, string ? strlen(string) + 1 : 0);
 }
 
+
+/****************************************************************************
+ Return an NTSTATUS from a NTDB_ERROR
+****************************************************************************/
+NTSTATUS map_nt_error_from_ntdb(enum NTDB_ERROR err);
 #endif /* _____LIB_UTIL_UTIL_NTDB_H__ */
