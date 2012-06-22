@@ -52,7 +52,7 @@ tasks = {
                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
-    "samba3-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba3-ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                       ("autogen", "./autogen.sh", "text/plain"),
                       ("configure", "./configure.developer ${PREFIX} --with-cluster-support --with-ctdb=../ctdb", "text/plain"),
                       ("make basics", "make basics", "text/plain"),
@@ -110,7 +110,7 @@ tasks = {
                       ("install", "make install", "text/plain")],
 
     "ldb" : [
-              ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+              ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
@@ -120,7 +120,7 @@ tasks = {
               ("clean", "make clean", "text/plain") ],
 
     "tdb" : [
-              ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+              ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
               ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
@@ -130,7 +130,7 @@ tasks = {
               ("clean", "make clean", "text/plain") ],
 
     "ntdb" : [
-               ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                ("make", "make", "text/plain"),
                ("install", "make install", "text/plain"),
@@ -140,7 +140,7 @@ tasks = {
                ("clean", "make clean", "text/plain") ],
 
     "talloc" : [
-                 ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                 ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
@@ -150,7 +150,7 @@ tasks = {
                  ("clean", "make clean", "text/plain") ],
 
     "replace" : [
-                  ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                   ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make", "text/plain"),
                   ("install", "make install", "text/plain"),
@@ -160,7 +160,7 @@ tasks = {
                   ("clean", "make clean", "text/plain") ],
 
     "tevent" : [
-                 ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                 ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
@@ -170,7 +170,7 @@ tasks = {
                  ("clean", "make clean", "text/plain") ],
 
     "pidl" : [
-               ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+               ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
                ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
                ("touch", "touch *.yp", "text/plain"),
                ("make", "make", "text/plain"),
