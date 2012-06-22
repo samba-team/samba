@@ -12,7 +12,6 @@
 #include "tap-interface.h"
 #include <stdlib.h>
 #include <stdbool.h>
-#include <err.h>
 #include "logging.h"
 
 int main(int argc, char *argv[])

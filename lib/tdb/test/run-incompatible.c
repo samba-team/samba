@@ -11,7 +11,6 @@
 #include "../common/hash.c"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 
 static unsigned int tdb_dumb_hash(TDB_DATA *key)
 {

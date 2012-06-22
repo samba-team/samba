@@ -11,7 +11,6 @@
 #include "../common/hash.c"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 #include "logging.h"
 
 static int tdb_expand_file_sparse(struct tdb_context *tdb,

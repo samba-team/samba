@@ -15,7 +15,6 @@
 #undef fcntl_with_lockcheck
 #include <stdlib.h>
 #include <stdbool.h>
-#include <err.h>
 #include "external-agent.h"
 #include "logging.h"
 

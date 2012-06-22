@@ -15,7 +15,6 @@
 #include "../common/hash.c"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 #include "logging.h"
 
 #undef fcntl

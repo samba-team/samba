@@ -12,7 +12,6 @@
 #include "../common/summary.c"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 
 int main(int argc, char *argv[])
 {

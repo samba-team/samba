@@ -11,7 +11,6 @@
 #include "../common/hash.c"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 #include "logging.h"
 
 static int check(TDB_DATA key, TDB_DATA data, void *private)

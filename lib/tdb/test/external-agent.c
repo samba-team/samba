@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <err.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -138,7 +137,7 @@ struct agent *prepare_external_agent(void)
 		result = do_operation(name[0], name+1);
 		if (write(response[1], &result, sizeof(result))
 		    != sizeof(result))
-			err(1, "Writing response");
+			abort();
 	}
 	exit(0);
 }

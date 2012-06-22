@@ -39,7 +39,6 @@ static inline int fake_fdatasync(int fd)
 #include "../common/hash.c"
 #include "tap-interface.h"
 #include <stdlib.h>
-#include <err.h>
 #include "logging.h"
 
 static void write_record(struct tdb_context *tdb, size_t extra_len,
