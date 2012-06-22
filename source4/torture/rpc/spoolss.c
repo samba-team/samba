@@ -54,6 +54,7 @@
 #define TORTURE_DRIVER_TIMESTAMPS	"torture_driver_timestamps"
 #define TORTURE_DRIVER_DELETER		"torture_driver_deleter"
 #define TORTURE_DRIVER_DELETERIN	"torture_driver_deleterin"
+#define TORTURE_PRINTER_STATIC1		"print1"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -7747,7 +7748,14 @@ static bool test_print_test_smbd(struct torture_context *tctx,
 	struct cli_credentials *credentials = cmdline_credentials;
 	struct smbcli_options options;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	const char *share = t->info2.printername;
+	/*
+	 * Do not test against the dynamically added printers, printing via
+	 * smbd means that a different spoolss process may handle the
+	 * OpenPrinter request to the one that handled the AddPrinter request.
+	 * This currently leads to an ugly race condition where one process
+	 * sees the new printer and one doesn't.
+	 */
+	const char *share = TORTURE_PRINTER_STATIC1;
 
 	torture_comment(tctx, "Testing smbd job spooling\n");
 	lpcfg_smbcli_options(tctx->lp_ctx, &options);
