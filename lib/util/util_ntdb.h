@@ -27,7 +27,6 @@
 struct loadparm_context;
 union ntdb_attribute;
 
-
 /* You only need this on databases with NTDB_CLEAR_IF_FIRST */
 int ntdb_reopen(struct ntdb_context *ntdb);
 
@@ -59,4 +58,48 @@ struct ntdb_context *ntdb_new(TALLOC_CTX *ctx,
 			      int open_flags, mode_t mode,
 			      union ntdb_attribute *attr,
 			      struct loadparm_context *lp_ctx);
+
+/****************************************************************************
+ Lock a chain by string.
+****************************************************************************/
+enum NTDB_ERROR ntdb_lock_bystring(struct ntdb_context *ntdb,
+				   const char *keyval);
+
+/****************************************************************************
+ Unlock a chain by string.
+****************************************************************************/
+void ntdb_unlock_bystring(struct ntdb_context *ntdb, const char *keyval);
+
+/****************************************************************************
+ Delete an entry using a null terminated string key.
+****************************************************************************/
+enum NTDB_ERROR ntdb_delete_bystring(struct ntdb_context *ntdb,
+				     const char *keystr);
+
+/****************************************************************************
+ Store a buffer by a null terminated string key.  Return 0 on success, -ve
+ on failure.
+****************************************************************************/
+enum NTDB_ERROR ntdb_store_bystring(struct ntdb_context *ntdb,
+				    const char *keystr,
+				    NTDB_DATA data, int nflags);
+
+/****************************************************************************
+ Fetch a buffer using a null terminated string key.  Don't forget to call
+ free() on the result dptr (unless the ntdb is from ntdb_new, in which case
+ it will be a child of ntdb).
+****************************************************************************/
+enum NTDB_ERROR ntdb_fetch_bystring(struct ntdb_context *ntdb,
+				    const char *keystr,
+				    NTDB_DATA *data);
+
+
+/****************************************************************************
+ Turn a nul-terminated string into an NTDB_DATA.
+****************************************************************************/
+static inline NTDB_DATA string_term_ntdb_data(const char *string)
+{
+	return ntdb_mkdata(string, string ? strlen(string) + 1 : 0);
+}
+
 #endif /* _____LIB_UTIL_UTIL_NTDB_H__ */

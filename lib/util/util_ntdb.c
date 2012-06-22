@@ -195,3 +195,44 @@ struct ntdb_context *ntdb_new(TALLOC_CTX *ctx,
 
 	return talloc_steal(ctx, ntdb);
 }
+
+enum NTDB_ERROR ntdb_lock_bystring(struct ntdb_context *ntdb,
+				   const char *keyval)
+{
+	NTDB_DATA key = string_term_ntdb_data(keyval);
+
+	return ntdb_chainlock(ntdb, key);
+}
+
+void ntdb_unlock_bystring(struct ntdb_context *ntdb, const char *keyval)
+{
+	NTDB_DATA key = string_term_ntdb_data(keyval);
+
+	ntdb_chainunlock(ntdb, key);
+}
+
+enum NTDB_ERROR ntdb_delete_bystring(struct ntdb_context *ntdb,
+				     const char *keystr)
+{
+	NTDB_DATA key = string_term_ntdb_data(keystr);
+
+	return ntdb_delete(ntdb, key);
+}
+
+enum NTDB_ERROR ntdb_store_bystring(struct ntdb_context *ntdb,
+				    const char *keystr,
+				    NTDB_DATA data, int nflags)
+{
+	NTDB_DATA key = string_term_ntdb_data(keystr);
+
+	return ntdb_store(ntdb, key, data, nflags);
+}
+
+enum NTDB_ERROR ntdb_fetch_bystring(struct ntdb_context *ntdb,
+				    const char *keystr,
+				    NTDB_DATA *data)
+{
+	NTDB_DATA key = string_term_ntdb_data(keystr);
+
+	return ntdb_fetch(ntdb, key, data);
+}
