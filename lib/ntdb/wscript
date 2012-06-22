@@ -79,6 +79,7 @@ def configure(conf):
                                 'test/api-91-get-stats.c',
                                 'test/api-92-get-set-readonly.c',
                                 'test/api-93-repack.c',
+                                'test/api-95-read-only-during-parse.c',
                                 'test/api-add-remove-flags.c',
                                 'test/api-check-callback.c',
                                 'test/api-firstkey-nextkey.c',

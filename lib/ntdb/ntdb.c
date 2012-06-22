@@ -500,10 +500,23 @@ _PUBLIC_ enum NTDB_ERROR ntdb_parse_record_(struct ntdb_context *ntdb,
 	if (!off) {
 		ecode = NTDB_ERR_NOEXIST;
 	} else {
+		unsigned int old_flags;
 		NTDB_DATA d = ntdb_mkdata(keyp + key.dsize,
 					  rec_data_length(&rec));
 
+		/*
+		 * Make sure they don't try to write db, since they
+		 * have read lock!  They can if they've done
+		 * ntdb_lockall(): if it was ntdb_lockall_read, that'll
+		 * stop them doing a write operation anyway.
+		 */
+		old_flags = ntdb->flags;
+		if (!ntdb->file->allrecord_lock.count &&
+		    !(ntdb->flags & NTDB_NOLOCK)) {
+			ntdb->flags |= NTDB_RDONLY;
+		}
 		ecode = parse(key, d, data);
+		ntdb->flags = old_flags;
 		ntdb_access_release(ntdb, keyp);
 	}
 

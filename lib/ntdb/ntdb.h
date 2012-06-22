@@ -368,9 +368,14 @@ int64_t ntdb_traverse_(struct ntdb_context *ntdb,
  *
  * This avoids a copy for many cases, by handing you a pointer into
  * the memory-mapped database.  It also locks the record to prevent
- * other accesses at the same time.
+ * other accesses at the same time, so it won't change.
  *
- * Do not alter the data handed to parse()!
+ * Within the @parse callback you can perform read operations on the
+ * database, but no write operations: no ntdb_store() or
+ * ntdb_delete(), for example.  The exception is if you call
+ * ntdb_lockall() before ntdb_parse_record().
+ *
+ * Never alter the data handed to parse()!
  */
 #define ntdb_parse_record(ntdb, key, parse, data)			\
 	ntdb_parse_record_((ntdb), (key),				\

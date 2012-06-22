@@ -188,13 +188,13 @@ static enum NTDB_ERROR ntdb_brlock(struct ntdb_context *ntdb,
 {
 	int ret;
 
-	if (ntdb->flags & NTDB_NOLOCK) {
-		return NTDB_SUCCESS;
-	}
-
 	if (rw_type == F_WRLCK && (ntdb->flags & NTDB_RDONLY)) {
 		return ntdb_logerr(ntdb, NTDB_ERR_RDONLY, NTDB_LOG_USE_ERROR,
 				  "Write lock attempted on read-only database");
+	}
+
+	if (ntdb->flags & NTDB_NOLOCK) {
+		return NTDB_SUCCESS;
 	}
 
 	/* A 32 bit system cannot open a 64-bit file, but it could have
@@ -533,8 +533,9 @@ enum NTDB_ERROR ntdb_allrecord_lock(struct ntdb_context *ntdb, int ltype,
 	enum NTDB_ERROR ecode;
 	ntdb_bool_err berr;
 
-	if (ntdb->flags & NTDB_NOLOCK)
+	if (ntdb->flags & NTDB_NOLOCK) {
 		return NTDB_SUCCESS;
+	}
 
 	if (!check_lock_pid(ntdb, "ntdb_allrecord_lock", true)) {
 		return NTDB_ERR_LOCK;

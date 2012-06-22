@@ -170,23 +170,6 @@ Interface differences between TDB and NTDB.
 		                   O_CREAT|O_RDWR, 0600, &hashsize);
 	}
 
-- ntdb does locking on read-only databases (ie. O_RDONLY passed to ntdb_open).
-  tdb did not: use the NTDB_NOLOCK flag if you want to suppress locking.
-
-  Example:
-	#include <tdb.h>
-	#include <ntdb.h>
-
-	struct tdb_context *tdb_example(void)
-	{
-		return tdb_open("example.tdb", 0, TDB_DEFAULT, O_RDONLY, 0);
-	}
-
-	struct ntdb_context *ntdb_example(void)
-	{
-		return ntdb_open("example.ntdb", NTDB_NOLOCK, O_RDONLY, NULL);
-	}
-
 - ntdb's log function is simpler than tdb's log function.  The string
   is already formatted, is not terminated by a '\n', and it takes an
   enum ntdb_log_level not a tdb_debug_level, and which has only three
@@ -302,6 +285,80 @@ Interface differences between TDB and NTDB.
 			}
 			free(data.dptr);
 		}
+	}
+
+- ntdb's ntdb_parse_record() takes a type-checked callback data
+  pointer, not a void * (though a void * pointer still works).  The
+  callback function is allowed to do read operations on the database,
+  or write operations if you first call ntdb_lockall().  TDB's
+  tdb_parse_record() did not allow any database access within the
+  callback, could crash if you tried.
+
+  Example:
+	#include <tdb.h>
+	#include <ntdb.h>
+
+	static int tdb_parser(TDB_DATA key, TDB_DATA data, void *private_data)
+	{
+		TDB_DATA *expect = private_data;
+
+		return data.dsize == expect->dsize
+			&& !memcmp(data.dptr, expect->dptr, data.dsize);
+	}
+
+	void tdb_example(struct tdb_context *tdb, TDB_DATA key, NTDB_DATA d)
+	{
+		switch (tdb_parse_record(tdb, key, tdb_parser, &d)) {
+		case -1:
+			printf("parse failed: %s\n", tdb_errorstr(tdb));
+			break;
+		case 0:
+			printf("data was different!\n");
+			break;
+		case 1:
+			printf("data was same!\n");
+			break;
+		}
+	}
+
+	static int ntdb_parser(TDB_DATA key, TDB_DATA data, TDB_DATA *expect)
+	{
+		return ntdb_deq(data, *expect);
+	}
+
+	void ntdb_example(struct ntdb_context *ntdb, NTDB_DATA key, NTDB_DATA d)
+	{
+		enum NTDB_ERROR e;
+
+		e = tdb_parse_record(tdb, key, tdb_parser, &d);
+		switch (e) {
+		case 0:
+			printf("data was different!\n");
+			break;
+		case 1:
+			printf("data was same!\n");
+			break;
+		default:
+			printf("parse failed: %s\n", ntdb_errorstr(e));
+			break;
+		}
+	}
+
+- ntdb does locking on read-only databases (ie. O_RDONLY passed to ntdb_open).
+  tdb did not: use the NTDB_NOLOCK flag if you want to suppress locking.
+
+  Example:
+	#include <tdb.h>
+	#include <ntdb.h>
+
+	struct tdb_context *tdb_example(void)
+	{
+		return tdb_open("example.tdb", 0, TDB_DEFAULT, O_RDONLY, 0);
+	}
+
+	struct ntdb_context *ntdb_example(void)
+	{
+		return ntdb_open("example.ntdb", NTDB_NOLOCK, O_RDONLY, NULL);
 	}
 
 - Failure inside a transaction (such as a lock function failing) does
