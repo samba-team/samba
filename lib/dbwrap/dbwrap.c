@@ -407,6 +407,11 @@ int dbwrap_wipe(struct db_context *db)
 	return db->wipe(db);
 }
 
+int dbwrap_hash_size(struct db_context *db)
+{
+	return db->hash_size;
+}
+
 int dbwrap_check(struct db_context *db)
 {
 	if (db->check == NULL) {

@@ -507,6 +507,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->lock_order = 0;
 	result->id = db_rbt_id;
 	result->name = "dbwrap rbt";
+	result->hash_size = 0;
 	result->stored_callback = NULL;
 
 	return result;

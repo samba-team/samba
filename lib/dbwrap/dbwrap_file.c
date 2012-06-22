@@ -373,6 +373,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
 	result->traverse_read = db_file_traverse;
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	result->name = name;
+	result->hash_size = 0;
 
 	ctx->locked_record = NULL;
 	if (!(ctx->dirname = talloc_strdup(ctx, name))) {
