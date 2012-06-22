@@ -188,7 +188,6 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="guest ok">yes</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
-	<smbconfoption name="printer admin">root, @ntadmins, @smbprintadm</smbconfoption>
 	</smbconfblock>
 	</example>
 
@@ -232,7 +231,6 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="guest ok">yes</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
-	<smbconfoption name="printer admin">root, @ntadmins, @smbprintadm</smbconfoption>
 
 	<smbconfsection name="[special_printer]"/>
 	<smbconfoption name="comment">A special printer with his own settings</smbconfoption>
@@ -243,7 +241,6 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfoption name="guest ok">no</smbconfoption>
 	<smbconfoption name="writable">no</smbconfoption>
 	<smbconfoption name="printable">yes</smbconfoption>
-	<smbconfoption name="printer admin">kurt</smbconfoption>
 	<smbconfoption name="hosts deny">0.0.0.0</smbconfoption>
 	<smbconfoption name="hosts allow">turbo_xp, 10.160.50.23, 10.160.51.60</smbconfoption>
 	</smbconfblock>
@@ -251,9 +248,8 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 
 	<para>
 	This special share is only for testing purposes. It does not write the print job to a file. It just logs the job parameters
-	known to Samba into the <filename>/tmp/smbprn.log</filename> file and deletes the job-file. Moreover, the
-	<smbconfoption name="printer admin"/> of this share is <quote>kurt</quote> (not the <quote>@ntadmins</quote> group),
-	guest access is not allowed, the share isn't published to the Network Neighborhood (so you need to know it is there), and it
+	known to Samba into the <filename>/tmp/smbprn.log</filename> file and deletes the job-file. Moreover, guest access is not
+	allowed, the share isn't published to the Network Neighborhood (so you need to know it is there), and it
 	allows access from only three hosts. To prevent CUPS from kicking in and taking over the print jobs for that share, we need to set
 	<smbconfoption name="printing">sysv</smbconfoption> and <smbconfoption name="printcap">lpstat</smbconfoption>.
 	</para>

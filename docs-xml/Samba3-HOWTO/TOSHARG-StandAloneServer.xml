@@ -287,7 +287,6 @@ The contents of the &smb.conf; file is shown in <link linkend="AnonPtrSvr">the A
 <smbconfsection name="[printers]"/>
 <smbconfoption name="comment">All Printers</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
-<smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
 <smbconfoption name="use client driver">Yes</smbconfoption>

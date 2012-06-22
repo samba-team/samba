@@ -495,7 +495,6 @@ Added user jackb.
 <smbconfsection name="[printers]"/>
 <smbconfoption name="comment">All Printers</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
-<smbconfoption name="printer admin">root, maryo</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
@@ -729,7 +728,6 @@ smb: \> <userinput>q</userinput>
 <smbconfsection name="[printers]"/>
 <smbconfoption name="comment">All Printers</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
-<smbconfoption name="printer admin">root, maryo</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
@@ -961,7 +959,6 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfsection name="[printers]"/>
 <smbconfoption name="comment">All Printers</smbconfoption>
 <smbconfoption name="path">/var/spool/samba</smbconfoption>
-<smbconfoption name="printer admin">root, maryo</smbconfoption>
 <smbconfoption name="create mask">0600</smbconfoption>
 <smbconfoption name="guest ok">Yes</smbconfoption>
 <smbconfoption name="printable">Yes</smbconfoption>
@@ -971,7 +968,6 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 <smbconfoption name="comment">Printer Drivers Share</smbconfoption>
 <smbconfoption name="path">/var/lib/samba/drivers</smbconfoption>
 <smbconfoption name="write list">maryo, root</smbconfoption>
-<smbconfoption name="printer admin">maryo, root</smbconfoption>
 
 <smbconfcomment>Needed to support domain logons</smbconfcomment>
 <smbconfsection name="[netlogon]"/>

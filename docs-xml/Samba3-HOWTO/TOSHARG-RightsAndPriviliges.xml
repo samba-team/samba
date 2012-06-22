@@ -333,13 +333,9 @@ mailing lists.
 <indexterm><primary>global right</primary></indexterm>
 <indexterm><primary>administrative rights</primary></indexterm>
 <indexterm><primary>printers admin</primary></indexterm>
-		This privilege operates identically to the <smbconfoption name="printer admin"/>
-		option in the &smb.conf; file (see section 5 man page for &smb.conf;)
-		except that it is a global right (not on a per-printer basis). 
-		Eventually the smb.conf option will be deprecated and administrative
-		rights to printers will be controlled exclusively by this right and
-		the security descriptor associated with the printer object in the
-		<filename>ntprinters.tdb</filename> file.
+		Administrative rights to printers are only controlled exclusively
+		by this right and the security descriptor associated with the
+		printer object in the registry.
 		</para></listitem>
 	</varlistentry>
 

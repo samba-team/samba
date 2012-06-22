@@ -350,7 +350,6 @@ In alphabetical order, these are the parameters eliminated from Samba-2.2.x thro
 	<listitem><para>min password length</para></listitem>
 	<listitem><para>nt smb support</para></listitem>
 	<listitem><para>post script</para></listitem>
-	<listitem><para>printer admin</para></listitem>
 	<listitem><para>printer driver</para></listitem>
 	<listitem><para>printer driver file</para></listitem>
 	<listitem><para>printer driver location</para></listitem>

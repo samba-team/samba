@@ -282,7 +282,6 @@ with settings shown in <link linkend="simpleprc">the example above</link>:
         deleteprinter command = 
         show add printer wizard = Yes
         os2 driver map =
-        printer admin =
         min print space = 0
         max print jobs = 1000
         printable = No
@@ -404,7 +403,6 @@ be if you used this minimalistic configuration. Here is what you can expect to f
         deleteprinter command =
         show add printer wizard = Yes
         os2 driver map =
-        printer admin =
         min print space = 0
         max print jobs = 1000
         printable = No
@@ -480,7 +478,6 @@ are set by default. You could use a much leaner &smb.conf; file, or you can use 
 <smbconfoption name="load printers">yes</smbconfoption>
 <smbconfoption name="show add printer wizard">yes</smbconfoption>
 <smbconfoption name="printcap name">/etc/printcap</smbconfoption>
-<smbconfoption name="printer admin">@ntadmin, root</smbconfoption>
 <smbconfoption name="max print jobs">100</smbconfoption>
 <smbconfoption name="lpq cache time">20</smbconfoption>
 <smbconfoption name="use client driver">no</smbconfoption>
@@ -498,7 +495,6 @@ are set by default. You could use a much leaner &smb.conf; file, or you can use 
 <smbconfsection name="[my_printer_name]"/>
 <smbconfoption name="comment">Printer with Restricted Access</smbconfoption>
 <smbconfoption name="path">/var/spool/samba_my_printer</smbconfoption>
-<smbconfoption name="printer admin">kurt</smbconfoption>
 <smbconfoption name="browseable">yes</smbconfoption>
 <smbconfoption name="printable">yes</smbconfoption>
 <smbconfoption name="writable">no</smbconfoption>
@@ -622,21 +618,6 @@ globally set share settings and specify other values).
 		Tells Samba where to look for a list of available printer names. Where CUPS is used, make sure that a printcap
 		file is written. This is controlled by the <constant>Printcap</constant> directive in the
 		<filename>cupsd.conf</filename> file.
-	</para></listitem></varlistentry>
-
-	<varlistentry><term><smbconfoption name="printer admin">@ntadmin </smbconfoption></term>
-		<listitem><para>
-<indexterm><primary>add drivers</primary></indexterm>
-<indexterm><primary>/etc/group</primary></indexterm>
-<indexterm><primary>printer share</primary></indexterm>
-<indexterm><primary>set printer properties</primary></indexterm>
-		Members of the ntadmin group should be able to add drivers and set printer properties
-		(<constant>ntadmin</constant> is only an example name; it needs to be a valid UNIX group name); root is
-		implicitly always a <smbconfoption name="printer admin"/>. The <literal>@</literal> sign precedes group names
-		in the <filename>/etc/group</filename>. A printer admin can do anything to printers via the remote
-		administration interfaces offered by MS-RPC (see <link linkend="cups-msrpc">Printing Developments Since
-		Samba-2.2</link>).  In larger installations, the <smbconfoption name="printer admin"/> parameter is normally a
-		per-share parameter. This permits different groups to administer each printer share.
 	</para></listitem></varlistentry>
 
 	<varlistentry><term><smbconfoption name="lpq cache time">20 </smbconfoption></term>
@@ -786,13 +767,6 @@ finds one, it will connect to this and will not connect to a printer with the sa
 		<listitem><para>
 		Sets the spooling area for this printer to a directory other than the default. It is not
 		necessary to set it differently, but the option is available.
-		</para></listitem>
-	</varlistentry>
-
-	<varlistentry><term><smbconfoption name="printer admin">kurt </smbconfoption></term>
-		<listitem><para>
-		The printer admin definition is different for this explicitly defined printer share from the general
-		<smbconfsection name="[printers]"/> share. It is not a requirement; we did it to show that it is possible.
 		</para></listitem>
 	</varlistentry>
 
@@ -1256,9 +1230,6 @@ site). See <link linkend="prtdollar">[print\$] Example</link>.
 <title>[print$] Example</title>
 <smbconfblock>
 <smbconfsection name="[global]"/>
-<smbconfcomment>members of the ntadmin group should be able to add drivers and set</smbconfcomment>
-<smbconfcomment>printer properties. root is implicitly always a 'printer admin'.</smbconfcomment>
-<smbconfoption name="printer admin">@ntadmin</smbconfoption>
 <smbconfcomment>...</smbconfcomment>
 
 <smbconfsection name="[printers]"/>
@@ -1358,9 +1329,7 @@ The following parameters are frequently needed in this share section:
 		write-access (as an exception to the general public's read-only access), which they need to
 		update files on the share. Normally, you will want to name only administrative-level user
 		account in this setting. Check the file system permissions to make sure these accounts
-		can copy files to the share. If this is a non-root account, then the account should also
-		be mentioned in the global <smbconfoption name="printer admin"/>
-		parameter. See the &smb.conf; man page for more information on configuring file shares.
+		can copy files to the share.
 		</para></listitem>
 	</varlistentry>
 </variablelist>
@@ -1402,10 +1371,6 @@ to support like this:
 	<itemizedlist>
 		<listitem><para>
 		The account used to connect to the Samba host must have a UID of 0 (i.e., a root account).
-		</para></listitem>
-
-		<listitem><para>
-		The account used to connect to the Samba host must be named in the <emphasis>printer admin</emphasis> list.
 		</para></listitem>
 	</itemizedlist>
 
@@ -1495,15 +1460,14 @@ assign a driver to a printer is open. You now have the choice of:
 <para>
 Once the APW is started, the procedure is exactly the same as the one you are familiar with in Windows (we
 assume here that you are familiar with the printer driver installations procedure on Windows NT). Make sure
-your connection is, in fact, set up as a user with <smbconfoption name="printer admin"/>
-privileges (if in doubt, use <command>smbstatus</command> to check for this). If you wish to install
+your connection is, in fact, set up as a user with printer administrator privileges
+(if in doubt, use <command>smbstatus</command> to check for this). If you wish to install
 printer drivers for client operating systems other than <application>Windows NT x86</application>,
 you will need to use the <guilabel>Sharing</guilabel> tab of the printer properties dialog.
 </para>
 
 <para>
-Assuming you have connected with an administrative (or root) account (as named by the
-<smbconfoption name="printer admin"/> parameter), you will also be able to modify
+Assuming you have connected with an administrative (or root) account, you will also be able to modify
 other printer properties such as ACLs and default device settings using this dialog. For the default
 device settings, please consider the advice given further in <link linkend="inst-rpc">Installing
 Print Drivers Using <command>rpcclient</command></link>.
@@ -2104,7 +2068,7 @@ user</emphasis> nobody. In a DOS box type:
 <para><userinput>net use \\<replaceable>SAMBA-SERVER</replaceable>\print$ /user:root</userinput></para>
 
 <para>
-Replace root, if needed, by another valid <smbconfoption name="printer admin"/> user as given in
+Replace root, if needed, by another valid printer administrator user as given in
 the definition. Should you already be connected as a different user, you will get an error message. There
 is no easy way to get rid of that connection, because Windows does not seem to know a concept of logging
 off from a share connection (do not confuse this with logging off from the local workstation; that is
@@ -2204,7 +2168,7 @@ in the following paragraphs.
 </para>
 
 <para>
-Be aware that a valid device mode can only be initiated by a <smbconfoption name="printer admin"/> or root
+Be aware that a valid device mode can only be initiated by a printer administrator or root
 (the reason should be obvious). Device modes can be correctly set only by executing the printer driver program
 itself. Since Samba cannot execute this Win32 platform driver code, it sets this field initially to NULL
 (which is not a valid setting for clients to use). Fortunately, most drivers automatically generate the
@@ -2315,12 +2279,12 @@ command...</guimenuitem> field from the <guimenu>Start</guimenu> menu.
 </sect2>
 
 <sect2>
-<title>Always Make First Client Connection as root or <quote>printer admin</quote></title>
+<title>Always Make First Client Connection as root or printer administrator</title>
 
 <para>
 After you installed the driver on the Samba server (in its <smbconfsection name="[print$]"/> share), you
 should always make sure that your first client installation completes correctly. Make it a habit for yourself
-to build the very first connection from a client as <smbconfoption name="printer admin"/>. This is to make
+to build the very first connection from a client as a printer administrator"/>. This is to make
 sure that:
 </para>
 
@@ -2354,8 +2318,8 @@ To connect as root to a Samba printer, try this command from a Windows 200x/XP D
 <para>
 You will be prompted for <constant>root</constant>'s Samba password; type it, wait a few seconds, click on
 <guibutton>Printing Defaults</guibutton>, and proceed to set the job options that should be used as defaults
-by all clients. Alternatively, instead of root you can name one other member of the <smbconfoption
-name="printer admin"/> from the setting.
+by all clients. Alternatively, instead of root you can give one other member printer adminadministrator
+privileges.
 </para>
 
 <para>
@@ -2458,7 +2422,7 @@ is how I reproduce it in an XP Professional:
 Do you see any difference in the two settings dialogs? I do not either. However, only the last one, which you
 arrived at with steps C.1 through C.6 will permanently save any settings which will then become the defaults
 for new users. If you want all clients to have the same defaults, you need to conduct these steps as
-administrator (<smbconfoption name="printer admin"/>) before a client downloads the driver (the clients can
+administrator before a client downloads the driver (the clients can
 later set their own per-user defaults by following procedures A or B above). Windows 200x/XP allow per-user
 default settings and the ones the administrator gives them before they set up their own. The parents of the
 identical-looking dialogs have a slight difference in their window names; one is called
@@ -2602,7 +2566,7 @@ folder. Also located in this folder is the Windows NT Add Printer Wizard icon. T
 <itemizedlist>
 	<listitem><para>
 	The connected user is able to successfully execute an <command>OpenPrinterEx(\\server)</command> with
-	administrative privileges (i.e., root or <smbconfoption name="printer admin"/>).
+	administrative privileges (i.e., root or a printer administrator).
 	</para>
 
 	<tip><para> Try this from a Windows 200x/XP DOS box command prompt:

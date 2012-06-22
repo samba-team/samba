@@ -90,7 +90,7 @@ echo -e " \n\
 # driver info and related files from a Windows NT print server.
 # It then uploads and installs the drivers to a Samba server. (The
 # Samba server needs to be prepared for this: a valid [print$]
-# share, with write access set for a \"printer admin\".)
+# share, with write access set for a user with SePrintOperatorPrivilege.)
 #
 # The main commands used are \"smbclient\" and \"rpcclient\" combined
 # with \"grep\", \"sed\" and \"awk\". Probably a Perl or Python script
@@ -143,15 +143,15 @@ echo -e " \n\
 # #################################################################
 #
 # ntprinteradmin=Administrator   # any account on the NT host 
-#                                # with \"printer admin\" privileges
-# ntadminpasswd=not4you          # the \"printer admin\" password on 
+#                                # with SePrintOperatorPrivilege privileges
+# ntadminpasswd=not4you          # the printer admin password on
 #                                # the NT print server
 # nthost=windowsntprintserverbox # the netbios name of the NT print 
 #                                # server
 #	
 # smbprinteradmin=knoppix        # an account on the Samba server 
-#                                # with \"printer admin\" privileges
-# smbadminpasswd=2secret4you     # the \"printer admin\" password on 
+#                                # with SePrintOperatorPrivilege privileges
+# smbadminpasswd=2secret4you     # the printer admin password on
 #                                # the Samba server
 # smbhost=knoppix                # the netbios name of the Samba 
 #                                # print server

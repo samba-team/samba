@@ -674,7 +674,6 @@ Join to 'MEGANET2' failed.
 <smbconfoption name="idmap uid">10000-20000</smbconfoption>
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
 <smbconfoption name="winbind trusted domains only">Yes</smbconfoption>
-<smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
 <smbconfsection name="[homes]"/>
@@ -948,7 +947,6 @@ MEGANET2+PIOps:x:10005:
 <smbconfoption name="template primary group">"Domain Users"</smbconfoption>
 <smbconfoption name="template shell">/bin/bash</smbconfoption>
 <smbconfoption name="winbind separator">+</smbconfoption>
-<smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="hosts allow">192.168.2., 192.168.3., 127.</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
@@ -1041,7 +1039,6 @@ Joined domain MEGANET2.
 <smbconfoption name="name resolve order">wins bcast hosts</smbconfoption>
 <smbconfoption name="printcap name">CUPS</smbconfoption>
 <smbconfoption name="wins server">192.168.2.1</smbconfoption>
-<smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="hosts allow">192.168.2., 192.168.3., 127.</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 
@@ -1723,7 +1720,6 @@ data = "\00\00\00\00bp\00\00\06krbtgt\06krbtgt-
 <smbconfoption name="winbind enum users">No</smbconfoption>
 <smbconfoption name="winbind enum groups">No</smbconfoption>
 <smbconfoption name="winbind nested groups">Yes</smbconfoption>
-<smbconfoption name="printer admin">"KPAK\Domain Admins"</smbconfoption>
 </smbconfblock>
 </example>
 

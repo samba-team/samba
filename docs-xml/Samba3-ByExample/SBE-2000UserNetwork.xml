@@ -1093,7 +1093,6 @@ index default               sub
 <smbconfoption name="idmap backend">ldap://massive.abmas.biz</smbconfoption>
 <smbconfoption name="idmap uid">10000-20000</smbconfoption>
 <smbconfoption name="idmap gid">10000-20000</smbconfoption>
-<smbconfoption name="printer admin">root</smbconfoption>
 <smbconfoption name="printing">cups</smbconfoption>
 </smbconfblock>
 </example>

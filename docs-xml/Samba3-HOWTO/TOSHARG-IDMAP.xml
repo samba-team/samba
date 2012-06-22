@@ -595,7 +595,6 @@ Join to domain 'MEGANET2' is not valid
 <smbconfoption name="idmap gid">500-10000000</smbconfoption>
 <smbconfoption name="winbind use default domain">Yes</smbconfoption>
 <smbconfoption name="winbind nested groups">Yes</smbconfoption>
-<smbconfoption name="printer admin">"BUTTERNET\Domain Admins"</smbconfoption>
 </smbconfblock>
 </example>
 
@@ -728,7 +727,6 @@ Join to domain is not valid
 <smbconfoption name="winbind enum users">No</smbconfoption>
 <smbconfoption name="winbind enum groups">No</smbconfoption>
 <smbconfoption name="winbind nested groups">Yes</smbconfoption>
-<smbconfoption name="printer admin">"Domain Admins"</smbconfoption>
 </smbconfblock>
 </example>
 
