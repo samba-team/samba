@@ -573,12 +573,16 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char dname[256];
 	char fname[256];
 	char fname2[256];
+	struct smb2_handle _dh1;
+	struct smb2_handle *dh1 = NULL;
 	struct smb2_handle _h1;
 	struct smb2_handle *h1 = NULL;
 	struct smb2_create io1;
 	bool ret = true;
+	bool ok;
 	union smb_fileinfo qfinfo;
 	union smb_setfileinfo sfinfo;
 	struct cli_credentials *anon_creds = NULL;
@@ -587,15 +591,22 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 				| SECINFO_DACL
 				| SECINFO_PROTECTED_DACL
 				| SECINFO_UNPROTECTED_DACL;
-	struct security_descriptor *sd1, *sd2;
+	struct security_descriptor *f_sd1, *f_sd2;
+	struct security_descriptor *d_sd1 = NULL;
 	struct security_ace ace;
 	struct dom_sid *extra_sid;
 
 	/* Add some random component to the file name. */
-	snprintf(fname, 256, "session_reauth5_%s.dat",
+	snprintf(dname, 256, "session_reauth5_%s.d",
 		 generate_random_str(tctx, 8));
+	snprintf(fname, 256, "%s\\file.dat", dname);
 
-	smb2_util_unlink(tree, fname);
+	ok = smb2_util_setup_dir(tctx, tree, dname);
+	CHECK_VAL(ok, true);
+
+	status = torture_smb2_testdir(tree, dname, &_dh1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	dh1 = &_dh1;
 
 	smb2_oplock_create_share(&io1, fname,
 				 smb2_util_share_access(""),
@@ -619,7 +630,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	sd1 = qfinfo.query_secdesc.out.sd;
+	f_sd1 = qfinfo.query_secdesc.out.sd;
 
 	/* re-authenticate as anonymous */
 
@@ -633,8 +644,7 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	/* try to rename the file: fails */
 
-	snprintf(fname2, 256, "session_reauth5.2_%s.dat",
-		 generate_random_str(tctx, 8));
+	snprintf(fname2, 256, "%s\\file2.dat", dname);
 
 	smb2_util_unlink(tree, fname2);
 
@@ -661,17 +671,17 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	ZERO_STRUCT(ace);
 	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	ace.flags = 0;
-	ace.access_mask = SEC_STD_ALL | SEC_FILE_ALL;
+	ace.access_mask = SEC_RIGHTS_FILE_ALL;
 	ace.trustee = *extra_sid;
 
-	status = security_descriptor_dacl_add(sd1, &ace);
+	status = security_descriptor_dacl_add(f_sd1, &ace);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(sfinfo);
 	sfinfo.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
 	sfinfo.set_secdesc.in.file.handle = _h1;
 	sfinfo.set_secdesc.in.secinfo_flags = secinfo_flags;
-	sfinfo.set_secdesc.in.sd = sd1;
+	sfinfo.set_secdesc.in.sd = f_sd1;
 
 	status = smb2_setinfo_file(tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -699,10 +709,60 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	/* try to rename the file: fails */
 
-	snprintf(fname2, 256, "session_reauth3.2_%s.dat",
-		 generate_random_str(tctx, 8));
+	ZERO_STRUCT(sfinfo);
+	sfinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sfinfo.rename_information.in.file.handle = _h1;
+	sfinfo.rename_information.in.overwrite = true;
+	sfinfo.rename_information.in.new_name = fname2;
 
-	smb2_util_unlink(tree, fname2);
+	status = smb2_setinfo_file(tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+	/* give full access on the parent dir to anonymous */
+
+	ZERO_STRUCT(qfinfo);
+
+	qfinfo.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	qfinfo.query_secdesc.in.file.handle = _dh1;
+	qfinfo.query_secdesc.in.secinfo_flags = secinfo_flags;
+
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	d_sd1 = qfinfo.query_secdesc.out.sd;
+
+	ZERO_STRUCT(ace);
+	ace.type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+	ace.flags = 0;
+	ace.access_mask = SEC_RIGHTS_FILE_ALL;
+	ace.trustee = *extra_sid;
+
+	status = security_descriptor_dacl_add(d_sd1, &ace);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(sfinfo);
+	sfinfo.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	sfinfo.set_secdesc.in.file.handle = _dh1;
+	sfinfo.set_secdesc.in.secinfo_flags = secinfo_flags;
+	sfinfo.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	sfinfo.set_secdesc.in.sd = d_sd1;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(qfinfo);
+
+	qfinfo.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	qfinfo.query_secdesc.in.file.handle = _dh1;
+	qfinfo.query_secdesc.in.secinfo_flags = secinfo_flags;
+
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smb2_util_close(tree, _dh1);
+	dh1 = NULL;
+
+	/* try to rename the file: still fails */
 
 	ZERO_STRUCT(sfinfo);
 	sfinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
@@ -776,14 +836,17 @@ bool test_session_reauth5(struct torture_context *tctx, struct smb2_tree *tree)
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	sd2 = qfinfo.query_secdesc.out.sd;
+	f_sd2 = qfinfo.query_secdesc.out.sd;
 
 done:
+	if (dh1 != NULL) {
+		smb2_util_close(tree, *dh1);
+	}
 	if (h1 != NULL) {
 		smb2_util_close(tree, *h1);
 	}
 
-	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, dname);
 
 	talloc_free(tree);
 
