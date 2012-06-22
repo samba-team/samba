@@ -311,6 +311,7 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 		struct serverid_exists_state state;
 		struct serverid_key key;
 		TDB_DATA tdbkey;
+		NTSTATUS status;
 
 		if (ids[i].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
 			results[i] = true;
@@ -325,7 +326,11 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 
 		state.id = &ids[i];
 		state.exists = false;
-		dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
+		status = dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			results[i] = false;
+			continue;
+		}
 		results[i] = state.exists;
 	}
 	return true;
