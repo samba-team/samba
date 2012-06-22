@@ -3172,6 +3172,11 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 
 	switch (point) {
 	case TEVENT_TRACE_BEFORE_WAIT:
+		/*
+		 * This just removes compiler warning
+		 * without profile support
+		 */
+		conn->smbd_idle_profstamp = 0;
 		START_PROFILE_STAMP(smbd_idle, conn->smbd_idle_profstamp);
 		break;
 	case TEVENT_TRACE_AFTER_WAIT:
