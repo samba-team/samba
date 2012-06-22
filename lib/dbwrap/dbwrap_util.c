@@ -49,6 +49,7 @@ NTSTATUS dbwrap_fetch_int32(struct db_context *db, TDB_DATA key,
 			    int32_t *result)
 {
 	struct dbwrap_fetch_int32_state state;
+	NTSTATUS status;
 
 	if (result == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -56,7 +57,10 @@ NTSTATUS dbwrap_fetch_int32(struct db_context *db, TDB_DATA key,
 
 	state.status = NT_STATUS_INTERNAL_ERROR;
 
-	dbwrap_parse_record(db, key, dbwrap_fetch_int32_parser, &state);
+	status = dbwrap_parse_record(db, key, dbwrap_fetch_int32_parser, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (NT_STATUS_IS_OK(state.status)) {
 		*result = state.result;
