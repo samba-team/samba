@@ -192,7 +192,6 @@
 ^samba3.smb2.streams.attributes
 ^samba3.smb2.getinfo.getinfo
 ^samba3.smb2.setinfo.setinfo
-^samba3.smb2.session.*reconnect
 ^samba3.smb2.session.*reauth5 # some special anonymous checks?
 ^samba3.raw.session.*reauth2 # maybe fix this?
 ^samba3.rpc.spoolss.printer.addprinter.driver_info_winreg # knownfail or flapping?
