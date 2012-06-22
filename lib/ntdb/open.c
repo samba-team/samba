@@ -868,19 +868,19 @@ _PUBLIC_ int ntdb_close(struct ntdb_context *ntdb)
 		ntdb_transaction_cancel(ntdb);
 	}
 
-	if (ntdb->file->map_ptr) {
-		if (ntdb->flags & NTDB_INTERNAL)
-			ntdb->free_fn(ntdb->file->map_ptr, ntdb->alloc_data);
-		else
-			ntdb_munmap(ntdb->file);
-	}
-	if (ntdb->file) {
-		ntdb_lock_cleanup(ntdb);
-		if (--ntdb->file->refcnt == 0) {
-			ret = close(ntdb->file->fd);
-			ntdb->free_fn(ntdb->file->lockrecs, ntdb->alloc_data);
-			ntdb->free_fn(ntdb->file, ntdb->alloc_data);
+	ntdb_lock_cleanup(ntdb);
+	if (--ntdb->file->refcnt == 0) {
+		if (ntdb->file->map_ptr) {
+			if (ntdb->flags & NTDB_INTERNAL) {
+				ntdb->free_fn(ntdb->file->map_ptr,
+					      ntdb->alloc_data);
+			} else {
+				ntdb_munmap(ntdb->file);
+			}
 		}
+		ret = close(ntdb->file->fd);
+		ntdb->free_fn(ntdb->file->lockrecs, ntdb->alloc_data);
+		ntdb->free_fn(ntdb->file, ntdb->alloc_data);
 	}
 
 	/* Remove from tdbs list */

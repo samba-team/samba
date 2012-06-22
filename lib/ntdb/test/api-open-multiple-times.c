@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include "logging.h"
+#include "../private.h"
 
 int main(int argc, char *argv[])
 {
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
 	int flags[] = { NTDB_DEFAULT, NTDB_NOMMAP,
 			NTDB_CONVERT, NTDB_NOMMAP|NTDB_CONVERT };
 
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 28);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 30);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		ntdb = ntdb_open("run-open-multiple-times.ntdb",
 				 flags[i]|MAYBE_NOSYNC,
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
 				  O_RDWR|O_CREAT, 0600, &tap_log_attr);
 		ok1(ntdb_check(ntdb, NULL, NULL) == 0);
 		ok1(ntdb_check(ntdb2, NULL, NULL) == 0);
+		ok1((flags[i] & NTDB_NOMMAP) || ntdb2->file->map_ptr);
 
 		/* Store in one, fetch in the other. */
 		ok1(ntdb_store(ntdb, key, data, NTDB_REPLACE) == 0);
@@ -45,6 +47,7 @@ int main(int argc, char *argv[])
 		/* OK, now close first one, check second still good. */
 		ok1(ntdb_close(ntdb) == 0);
 
+		ok1((flags[i] & NTDB_NOMMAP) || ntdb2->file->map_ptr);
 		ok1(ntdb_store(ntdb2, key, data, NTDB_REPLACE) == 0);
 		ok1(ntdb_fetch(ntdb2, key, &d) == NTDB_SUCCESS);
 		ok1(ntdb_deq(d, data));
