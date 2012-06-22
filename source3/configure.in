@@ -6463,7 +6463,6 @@ SMB_MODULE(idmap_rid, winbindd/idmap_rid.o, "bin/rid.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_autorid, winbindd/idmap_autorid.o, "bin/autorid.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_ad, winbindd/idmap_ad.o, "bin/ad.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_hash, \$(IDMAP_HASH_OBJ), "bin/hash.$SHLIBEXT", IDMAP)
-SMB_MODULE(idmap_adex, \$(IDMAP_ADEX_OBJ), "bin/adex.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP, winbindd/idmap.o)
 
 SMB_MODULE(nss_info_template, winbindd/nss_info_template.o, "bin/template.$SHLIBEXT", NSS_INFO)

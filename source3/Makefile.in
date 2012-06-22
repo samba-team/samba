@@ -1405,14 +1405,6 @@ IDMAP_HASH_OBJ = \
 		winbindd/idmap_hash/idmap_hash.o \
 		winbindd/idmap_hash/mapfile.o
 
-IDMAP_ADEX_OBJ = \
-		winbindd/idmap_adex/idmap_adex.o \
-		winbindd/idmap_adex/cell_util.o \
-		winbindd/idmap_adex/likewise_cell.o \
-		winbindd/idmap_adex/provider_unified.o \
-		winbindd/idmap_adex/gc_util.o \
-		winbindd/idmap_adex/domain_util.o
-
 WINBINDD_OBJ1 = \
 		winbindd/winbindd.o       \
 		winbindd/winbindd_group.o \
@@ -2757,10 +2749,6 @@ bin/hash.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_HASH_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(IDMAP_HASH_OBJ)
 
-bin/adex.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_ADEX_OBJ)
-	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(IDMAP_ADEX_OBJ)
-
 bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o $(IDMAP_RW_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_tdb2.o $(IDMAP_RW_OBJ)
@@ -3117,7 +3105,6 @@ installmodules:: modules installdirs
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) domain.@SHLIBEXT@ trustdomain.@SHLIBEXT@ ntdomain.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(AUTHLIBDIR) builtin.@SHLIBEXT@ guest.@SHLIBEXT@ fixed_challenge.@SHLIBEXT@ name_to_ntstatus.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/ad.@SHLIBEXT@ rfc2307.@SHLIBEXT@ sfu.@SHLIBEXT@ sfu20.@SHLIBEXT@
-	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/adex.@SHLIBEXT@ adex.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(NSSINFOLIBDIR) ../idmap/hash.@SHLIBEXT@ hash.@SHLIBEXT@
 
 installscripts:: installdirs
