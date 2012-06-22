@@ -52,9 +52,6 @@
 		ad
 		(<citerefentry><refentrytitle>idmap_ad</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
 		,
-		adex
-		(<citerefentry><refentrytitle>idmap_adex</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
-		,
 		and nss.
 		(<citerefentry><refentrytitle>idmap_nss</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
 		The corresponding manual pages contain the details, but
@@ -69,8 +66,7 @@
 		mixture of the tdb and rid backend. It creates ranges for
 		each domain encountered and then uses the rid algorithm for each
 		of these automatically configured domains individually.
-		The ad and adex
-		backends both use unix IDs stored in Active Directory via
+		The ad backend usees unix IDs stored in Active Directory via
 		the standard schema extensions. The nss backend reverses
 		the standard winbindd setup and gets the unixids via names
 		from nsswitch which can be useful in an ldap setup.
