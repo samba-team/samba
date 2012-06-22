@@ -27,6 +27,21 @@
 struct loadparm_context;
 union ntdb_attribute;
 
+
+/* You only need this on databases with NTDB_CLEAR_IF_FIRST */
+int ntdb_reopen(struct ntdb_context *ntdb);
+
+/* You only need to do this if you have NTDB_CLEAR_IF_FIRST databases, and
+ * the parent will go away before this child. */
+int ntdb_reopen_all(void);
+
+/*
+ * This is like TDB_CLEAR_IF_FIRST, for use with ntdb_new.
+ *
+ * It's a bad idea for new code.
+ */
+#define NTDB_CLEAR_IF_FIRST 1048576
+
 /***************************************************************
  Open an NTDB using talloc: it will be allocated off the context, and
  all NTDB_DATA.dptr are allocated as children of the ntdb context.

@@ -21,6 +21,81 @@
 #include "includes.h"
 #include "util_ntdb.h"
 #include "lib/param/param.h"
+#include "replace.h"
+#include "system/filesys.h"
+
+/*
+ * This handles NTDB_CLEAR_IF_FIRST.
+ *
+ * It's a bad idea for new code, but S3 uses it quite a bit.
+ */
+static enum NTDB_ERROR clear_if_first(int fd, void *unused)
+{
+	/* We hold a lock offset 4 always, so we can tell if anyone else is. */
+	struct flock fl;
+
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 4; /* ACTIVE_LOCK */
+	fl.l_len = 1;
+
+	if (fcntl(fd, F_SETLK, &fl) == 0) {
+		/* We must be first ones to open it w/ NTDB_CLEAR_IF_FIRST! */
+		if (ftruncate(fd, 0) != 0) {
+			return NTDB_ERR_IO;
+		}
+	}
+	fl.l_type = F_RDLCK;
+	if (fcntl(fd, F_SETLKW, &fl) != 0) {
+		return NTDB_ERR_IO;
+	}
+	return NTDB_SUCCESS;
+}
+
+/* We only need these for the CLEAR_IF_FIRST lock. */
+static int reacquire_cif_lock(struct ntdb_context *ntdb, bool *fail)
+{
+	struct flock fl;
+	union ntdb_attribute cif;
+
+	cif.openhook.base.attr = NTDB_ATTRIBUTE_OPENHOOK;
+	cif.openhook.base.next = NULL;
+
+	if (ntdb_get_attribute(ntdb, &cif) != NTDB_SUCCESS
+	    || cif.openhook.fn != clear_if_first) {
+		return 0;
+	}
+
+	/* We hold a lock offset 4 always, so we can tell if anyone else is. */
+	fl.l_type = F_RDLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = 4; /* ACTIVE_LOCK */
+	fl.l_len = 1;
+	if (fcntl(ntdb_fd(ntdb), F_SETLKW, &fl) != 0) {
+		*fail = true;
+		return -1;
+	}
+	return 0;
+}
+
+/* You only need this on databases with NTDB_CLEAR_IF_FIRST */
+int ntdb_reopen(struct ntdb_context *ntdb)
+{
+	bool unused;
+	return reacquire_cif_lock(ntdb, &unused);
+}
+
+/* You only need to do this if you have NTDB_CLEAR_IF_FIRST databases, and
+ * the parent will go away before this child. */
+int ntdb_reopen_all(void)
+{
+	bool fail = false;
+
+	ntdb_foreach(reacquire_cif_lock, &fail);
+	if (fail)
+		return -1;
+	return 0;
+}
 
 static void *ntdb_talloc(const void *owner, size_t len, void *priv_data)
 {
@@ -74,7 +149,7 @@ struct ntdb_context *ntdb_new(TALLOC_CTX *ctx,
 			      union ntdb_attribute *attr,
 			      struct loadparm_context *lp_ctx)
 {
-	union ntdb_attribute log_attr, alloc_attr;
+	union ntdb_attribute log_attr, alloc_attr, open_attr;
 	struct ntdb_context *ntdb;
 
 	if (lp_ctx && !lpcfg_use_mmap(lp_ctx)) {
@@ -95,6 +170,14 @@ struct ntdb_context *ntdb_new(TALLOC_CTX *ctx,
 	alloc_attr.alloc.alloc = ntdb_talloc;
 	alloc_attr.alloc.expand = ntdb_expand;
 	alloc_attr.alloc.free = ntdb_free;
+
+	if (ntdb_flags & NTDB_CLEAR_IF_FIRST) {
+		log_attr.base.next = &open_attr;
+		open_attr.openhook.base.attr = NTDB_ATTRIBUTE_OPENHOOK;
+		open_attr.openhook.base.next = attr;
+		open_attr.openhook.fn = clear_if_first;
+		ntdb_flags &= ~NTDB_CLEAR_IF_FIRST;
+	}
 
 	ntdb = ntdb_open(name, ntdb_flags, open_flags, mode, &alloc_attr);
 	if (!ntdb) {
