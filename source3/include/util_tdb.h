@@ -26,13 +26,6 @@
 #include "../libcli/util/ntstatus.h" /* for map_nt_error_from_tdb() */
 #include "../../lib/util/util_tdb.h"
 
-int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
-				unsigned int timeout);
-int tdb_lock_bystring_with_timeout(struct tdb_context *tdb, const char *keyval,
-				   int timeout);
-int tdb_read_lock_bystring_with_timeout(TDB_CONTEXT *tdb, const char *keyval,
-					unsigned int timeout);
-
 int tdb_trans_store_bystring(TDB_CONTEXT *tdb, const char *keystr,
 			     TDB_DATA data, int flags);
 int tdb_trans_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf,

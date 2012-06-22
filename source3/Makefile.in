@@ -1567,7 +1567,30 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} \
 
 
 VLP_OBJ = printing/tests/vlp.o \
-	  ../lib/util/util_tdb.o \
+          ../lib/util/util_tdb.o \
+          ../lib/util/signal.o \
+          ../lib/util/debug.o \
+          ../lib/util/util_strlist.o \
+          ../lib/util/fault.o \
+          ../lib/util/become_daemon.o \
+          ../lib/util/substitute.o \
+          lib/util_sec.o \
+          ../lib/util/time.o \
+          ../lib/util/charset/util_str.o \
+          ../lib/util/charset/pull_push.o \
+          ../lib/util/charset/util_unistr_w.o \
+          ../lib/util/charset/codepoints.o \
+          ../lib/util/charset/iconv.o \
+          ../lib/util/charset/weird.o \
+          ../lib/util/charset/convert_string.o \
+          ../lib/util/talloc_stack.o \
+          ../lib/util/smb_threads.o \
+          ../lib/util/xfile.o \
+          ../lib/util/util_file.o \
+          ../lib/util/util.o \
+          ../lib/util/util_str_common.o \
+          ../lib/util/data_blob.o \
+          ../dynconfig/dynconfig.o \
 	  $(LIBSAMBAUTIL_OBJ) \
 	  param/util.o
 
