@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.6.6
-                           May 24, 2012
+                           June 25, 2012
                    =============================
 
 
@@ -8,7 +8,10 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.6 include:
 
-o  
+o  Fix possible memory leaks in the Samba master process (bug #8970).
+o  Fix uninitialized memory read in talloc_free().
+o  Fix joining of XP Pro workstations to 3.6 DCs (bug #8373).
+
 
 Changes since 3.6.5:
 --------------------
@@ -20,14 +23,30 @@ o   Michael Adam <obnox@samba.org>
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 8373: Fix joining of XP Pro workstations to 3.6 DCs.
+    * BUG 8627: Fix crash bug in dns_create_probe when dns_create_update fails.
     * BUG 8723: Add pthread-based aio VFS module.
     * BUG 8784: When calculating the share security mask, take priviliges into
       account for the connecting user.
+    * BUG 8811: sd_has_inheritable_components segfaults on an SD that
+      se_access_check accepts.
     * BUG 8837: Fix crash in smbd when deleting directory and veto files are
       enabled.
     * BUG 8857: Setting traverse rights fails to enable directory traversal when
       acl_xattr in use.
+    * BUG 8882: Broken processing of %U with vfs_full_audit when force user is
+      set.
     * BUG 8897: Make winbind_krb5_locator not only returning one IP address.
+    * BUG 8910: resolve_ads() code can return zero addresses and miss valid
+      DC IP addresses.
+    * BUG 8922: smbclient's tarmode insists on listing excluded directories.
+    * BUG 8953: Winbind can hang as nbt_getdc() has no timeout.
+    * BUG 8957: Typo in pam_winbindd code MUST fix.
+    * BUG 8970: Fix possible memory leaks in the Samba master process.
+    * BUG 8971: cleanup_timeout_fn() is called too often, on exiting when an
+      smbd is idle.
+    * BUG 8972: Directory group write permission bit is set if unix extensions
+      are enabled.
 
 
 o   Christian Ambach <ambi@samba.org>
@@ -39,12 +58,18 @@ o   Christian Ambach <ambi@samba.org>
 o   Andrew Bartlett <abartlet@samba.org>
     * BUG 8599: Only use SamLogonEx when we can get unencrypted session keys.
     * BUG 8727: Fix smbclients with posix large reads.
+    * BUG 8943: Slow but responsive DC can lock up Winbind for > 10 minutes
+      at a time.
 
 
 o   Björn Baumbach <bb@sernet.de>
     * BUG 7564: Fix default name resolve order in the manpage.
     * BUG 8554, 8612, 8748: Add new printers to registry.
     * BUG 8789: Remove whitespace in example samba.ldif.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 8988: Avoid crash with MIT krb5 1.10.0 in gss_get_name_attribute().
 
 
 o   Alejandro Escanero Blanco <aescanero@gmail.com>
@@ -54,6 +79,9 @@ o   Alejandro Escanero Blanco <aescanero@gmail.com>
 o   Ira Cooper <samba@ira.wakeful.net>
     * BUG 8729: Fix getpass regressions on Solaris/Illumos.
     * BUG 8743: Fix configure.developer builds on Solaris.
+    * BUG 8910: Fix bad bugfix for bug #8910.
+    * BUG 8952: Fix negative SID->uid/gid cache handling.
+    * BUG 8995: Use fsp_persistent_id() as persistent_file_id part for SMB2.
 
 
 o   David Disseldorp <ddiss@samba.org>
@@ -65,7 +93,9 @@ o   Olaf Flebbe <o.flebbe@science-computing.de>
 
 
 o   Björn Jacke <bj@sernet.de>
+    * BUG 8732: Fix compile of krb5 locator on Solaris.
     * BUG 8869: Remove outdated netscape ds 5 schema file.
+    * BUG 8978: Remove dependency on automake for 'make everything'.
 
 
 o   Steve Langasek <steve.langasek@ubuntu.com>
@@ -73,38 +103,53 @@ o   Steve Langasek <steve.langasek@ubuntu.com>
 
 
 o   Volker Lendecke <vl@samba.org>
+    * Fix uninitialized memory read in talloc_free().
     * BUG 8567: Fix segfault in dom_sid_compare.
     * BUG 8733: Delete streams on directories (streams_depot).
     * BUG 8760: Add SERVERID_UNIQUE_ID_NOT_TO_VERIFY.
     * BUG 8836: Fix segfaults on "smbcontrol close-share" in aio_fork.
     * BUG 8861: Fix a segfault with debug level 3 on Solaris.
     * BUG 8904: Fix Winbind crash triggered by 'wbinfo --lookup-sids ""'.
+    * BUG 8998: Notify code can miss a ChDir.
 
 
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 8139: Ignore SMBecho errors (the server may not support it).
     * BUG 8527: db_ctdb_traverse fails to traverse records created within the
       current transaction.
+    * BUG 8311: Winzip occasionally can not read files out of an open winzip
+      dialog.
     * BUG 8739: Fill the sids array of the info in
       wbcAuthUserInfo_to_netr_SamInfo3().
     * BUG 8749: Sign non guest sessions in SessionSetup.
+    * BUG 8995: Use fsp_persistent_id() as persistent_file_id part for SMB2.
 
 
 o   Matthieu Patou <mat@matws.net>
     * BUG 8599: Set the can_do_validation6 also for trusted domain.
+    * BUG 8714: Catch with pid filename's change when config file is not
+      smb.conf.
     * BUG 8734: Don't try to do clever thing if the username is not found while
       authenticating through Winbind.
     * BUG 8771: Winbind takes up to 20 minutes to change from DC 1 to DC 2.
+    * BUG 8975: Call dump_core_setup after command line option has been parsed.
 
 
 o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
     * BUG 8826: Prepend '/' to filename argument (docs).
 
 
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8944 and 8567: Don't lookup the system user in pdb.
+
+
 o   Richard Sharpe <realrichardsharpe@gmail.com>
     * BUG 8768: Honor SeTakeOwnershipPrivilege when file opened with SEC_STD_WRITE_OWNER.
     * BUG 8797: Correctly handle DENY ACEs when privileges apply.
     * BUG 8822: Fix building out-of-tree modules.
+    * BUG 8945: vfs_acl_common discards errors from writing to the underlying
+      storage.
+    * BUG 8970: Fix possible memory leaks in the Samba master process.
 
 
 o   Simo Sorce <idra@samba.org>
