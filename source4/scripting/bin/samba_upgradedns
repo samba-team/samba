@@ -421,41 +421,41 @@ if __name__ == '__main__':
     except Exception:
         raise
 
-    # Check if dns-HOSTNAME account exists and create it if required
-    try:
-        dn = 'samAccountName=dns-%s,CN=Principals' % hostname
-        msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
-        dnssecret = msg[0]['secret'][0]
-    except Exception:
-        logger.info("Adding dns-%s account" % hostname)
-
-        try:
-            msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
-                                  expression='(sAMAccountName=dns-%s)' % (hostname),
-                                  attrs=['clearTextPassword'])
-            dn = msg[0].dn
-            ldbs.sam.delete(dn)
-        except Exception:
-            pass
-
-        dnspass = samba.generate_random_password(128, 255)
-        setup_add_ldif(ldbs.sam, setup_path("provision_dns_add_samba.ldif"), {
-                       "DNSDOMAIN": dnsdomain,
-                       "DOMAINDN": domaindn,
-                       "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
-                       "HOSTNAME" : hostname,
-                       "DNSNAME" : dnsname }
-                       )
-
-        secretsdb_setup_dns(ldbs.secrets, names,
-                            paths.private_dir, realm=names.realm,
-                            dnsdomain=names.dnsdomain,
-                            dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
-    else:
-        logger.info("dns-%s account already exists" % hostname)
-
     # Special stuff for DLZ backend
     if opts.dns_backend == "BIND9_DLZ":
+        # Check if dns-HOSTNAME account exists and create it if required
+        try:
+            dn = 'samAccountName=dns-%s,CN=Principals' % hostname
+            msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
+            dnssecret = msg[0]['secret'][0]
+        except Exception:
+            logger.info("Adding dns-%s account" % hostname)
+
+            try:
+                msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
+                                      expression='(sAMAccountName=dns-%s)' % (hostname),
+                                      attrs=['clearTextPassword'])
+                dn = msg[0].dn
+                ldbs.sam.delete(dn)
+            except Exception:
+                pass
+
+            dnspass = samba.generate_random_password(128, 255)
+            setup_add_ldif(ldbs.sam, setup_path("provision_dns_add_samba.ldif"), {
+                    "DNSDOMAIN": dnsdomain,
+                    "DOMAINDN": domaindn,
+                    "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
+                    "HOSTNAME" : hostname,
+                    "DNSNAME" : dnsname }
+                           )
+
+            secretsdb_setup_dns(ldbs.secrets, names,
+                                paths.private_dir, realm=names.realm,
+                                dnsdomain=names.dnsdomain,
+                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+        else:
+            logger.info("dns-%s account already exists" % hostname)
+
         # This forces a re-creation of dns directory and all the files within
         # It's an overkill, but it's easier to re-create a samdb copy, rather
         # than trying to fix a broken copy.
