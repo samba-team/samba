@@ -144,7 +144,8 @@ o   Andreas Schneider <asn@samba.org>
 
 
 o   Richard Sharpe <realrichardsharpe@gmail.com>
-    * BUG 8768: Honor SeTakeOwnershipPrivilege when file opened with SEC_STD_WRITE_OWNER.
+    * BUG 8768: Honor SeTakeOwnershipPrivilege when file opened with
+      SEC_STD_WRITE_OWNER.
     * BUG 8797: Correctly handle DENY ACEs when privileges apply.
     * BUG 8822: Fix building out-of-tree modules.
     * BUG 8945: vfs_acl_common discards errors from writing to the underlying
