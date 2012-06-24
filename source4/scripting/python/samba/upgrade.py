@@ -485,7 +485,7 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False):
+def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False, dns_backend=None):
     """Upgrade from samba3 database to samba4 AD database
 
     :param samba3: samba3 object
@@ -689,9 +689,7 @@ Please fix this account before attempting to upgrade again
             logger.error("   %s" % str(sid))
         raise ProvisioningError("Please remove duplicate sid entries before upgrade.")
 
-    if serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC":
-        dns_backend = "BIND9_DLZ"
-    else:
+    if not (serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC"):
         dns_backend = "NONE"
 
     # Do full provision
