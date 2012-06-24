@@ -28,6 +28,7 @@ from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
 from samba.schema import Schema
 from samba.net import Net
+from samba.provision.sambadns import setup_bind9_dns
 import logging
 import talloc
 import random
@@ -642,7 +643,7 @@ class dc_join(object):
                                  targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
                                  machinepass=ctx.acct_pass, serverrole="domain controller",
                                  lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
-                                 dns_backend="BIND9_DLZ")
+                                 dns_backend=ctx.dns_backend)
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
     def join_replicate(ctx):
@@ -741,6 +742,9 @@ class dc_join(object):
     def join_finalise(ctx):
         '''finalise the join, mark us synchronised and setup secrets db'''
 
+        logger = logging.getLogger("provision")
+        logger.addHandler(logging.StreamHandler(sys.stdout))
+
         print "Sending DsReplicateUpdateRefs for all the partitions"
         for nc in ctx.full_nc_list:
             ctx.send_DsReplicaUpdateRefs(nc)
@@ -767,6 +771,15 @@ class dc_join(object):
                             machinepass=ctx.acct_pass,
                             secure_channel_type=ctx.secure_channel_type,
                             key_version_number=ctx.key_version_number)
+
+        if ctx.dns_backend.startswith("BIND9_"):
+            dnspass = samba.generate_random_password(128, 255)
+
+            setup_bind9_dns(ctx.local_samdb, secrets_ldb, security.dom_sid(ctx.domsid),
+                            ctx.names, ctx.paths, ctx.lp, logger,
+                            dns_backend=ctx.dns_backend,
+                            dnspass=dnspass, os_level=ctx.behavior_version,
+                            targetdir=ctx.targetdir)
 
     def join_setup_trusts(ctx):
         '''provision the local SAM'''

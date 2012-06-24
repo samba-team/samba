@@ -1011,30 +1011,65 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_back
                                 domainguid, names.ntdsguid, dnsadmins_sid)
 
     if dns_backend.startswith("BIND9_"):
-        secretsdb_setup_dns(secretsdb, names,
-                            paths.private_dir, realm=names.realm,
-                            dnsdomain=names.dnsdomain,
-                            dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+        setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_backend,
+                        os_level, site=site, dnspass=dnspass, hostip=hostip, hostip6=hostip6,
+                        targetdir=targetdir)
 
-        create_dns_dir(logger, paths)
+def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger, dns_backend,
+                 os_level, site=None, dnspass=None, hostip=None, hostip6=None,
+                 targetdir=None):
+    """Provision DNS information (assuming BIND9 backend in DC role)
 
-        if dns_backend == "BIND9_FLATFILE":
-            create_zone_file(lp, logger, paths, targetdir, site=site,
-                             dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
-                             hostname=names.hostname, realm=names.realm,
-                             domainguid=domainguid, ntdsguid=names.ntdsguid)
+    :param samdb: LDB object connected to sam.ldb file
+    :param secretsdb: LDB object connected to secrets.ldb file
+    :param domainsid: Domain SID (as dom_sid object)
+    :param names: Names shortcut
+    :param paths: Paths shortcut
+    :param lp: Loadparm object
+    :param logger: Logger object
+    :param dns_backend: Type of DNS backend
+    :param os_level: Functional level (treated as os level)
+    :param site: Site to create hostnames in
+    :param dnspass: Password for bind's DNS account
+    :param hostip: IPv4 address
+    :param hostip6: IPv6 address
+    :param targetdir: Target directory for creating DNS-related files for BIND9
+    """
 
-        if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
-            create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid)
+    if not is_valid_dns_backend(dns_backend) or not dns_backend.startswith("BIND9_"):
+        raise Exception("Invalid dns backend: %r" % dns_backend)
 
-        create_named_conf(paths, realm=names.realm,
-                          dnsdomain=names.dnsdomain, dns_backend=dns_backend)
+    if not is_valid_os_level(os_level):
+        raise Exception("Invalid os level: %r" % os_level)
 
-        create_named_txt(paths.namedtxt,
-                         realm=names.realm, dnsdomain=names.dnsdomain,
-                         dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
-                         private_dir=paths.private_dir,
-                         keytab_name=paths.dns_keytab)
-        logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
-        logger.info("and %s for further documentation required for secure DNS "
-                    "updates", paths.namedtxt)
+    domaindn = names.domaindn
+
+    domainguid = get_domainguid(samdb, domaindn)
+
+    secretsdb_setup_dns(secretsdb, names,
+                        paths.private_dir, realm=names.realm,
+                        dnsdomain=names.dnsdomain,
+                        dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+
+    create_dns_dir(logger, paths)
+
+    if dns_backend == "BIND9_FLATFILE":
+        create_zone_file(lp, logger, paths, targetdir, site=site,
+                         dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
+                         hostname=names.hostname, realm=names.realm,
+                         domainguid=domainguid, ntdsguid=names.ntdsguid)
+
+    if dns_backend == "BIND9_DLZ" and os_level >= DS_DOMAIN_FUNCTION_2003:
+        create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid)
+
+    create_named_conf(paths, realm=names.realm,
+                      dnsdomain=names.dnsdomain, dns_backend=dns_backend)
+
+    create_named_txt(paths.namedtxt,
+                     realm=names.realm, dnsdomain=names.dnsdomain,
+                     dnsname = "%s.%s" % (names.hostname, names.dnsdomain),
+                     private_dir=paths.private_dir,
+                     keytab_name=paths.dns_keytab)
+    logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
+    logger.info("and %s for further documentation required for secure DNS "
+                "updates", paths.namedtxt)
