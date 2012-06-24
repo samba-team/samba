@@ -39,6 +39,7 @@
 ^samba3.raw.samba3checkfsp.samba3checkfsp\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls.generic\(s3dc\) # This fails against smbd
+^samba3.unix.whoami anonymous connection.whoami\(plugin_s4_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules

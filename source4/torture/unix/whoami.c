@@ -297,7 +297,6 @@ static bool test_against_ldap(struct torture_context *torture, struct ldb_contex
 bool torture_unix_whoami(struct torture_context *torture)
 {
 	struct smbcli_state *cli;
-	struct cli_credentials *anon_credentials;
 	struct smb_whoami whoami;
 	bool ret;
 	struct ldb_context *ldb;
@@ -335,26 +334,15 @@ bool torture_unix_whoami(struct torture_context *torture)
 
 	smbcli_tdis(cli);
 
-	torture_comment(torture, "calling SMB_QFS_POSIX_WHOAMI on an anonymous connection\n");
-	anon_credentials = cli_credentials_init_anon(torture);
-
-	cli = connect_to_server(torture, anon_credentials);
-	torture_assert(torture, cli, "calling SMB_QFS_POSIX_WHOAMI on an anonymous connection");
-
-	torture_assert_goto(torture, smb_raw_query_posix_whoami(torture, torture,
-								cli, &whoami, 0xFFFF), ret, fail,
-			    "calling SMB_QFS_POSIX_WHOAMI on an anonymous connection");
-
-	smbcli_tdis(cli);
-
 	/* Check that our anonymous login mapped us to guest on the server, but
 	 * only if the server supports this.
 	 */
 	if (whoami.mapping_mask & SMB_WHOAMI_GUEST) {
+		bool guest = whoami.mapping_flags & SMB_WHOAMI_GUEST;
 		printf("checking whether we were logged in as guest... %s\n",
-			whoami.mapping_flags & SMB_WHOAMI_GUEST ? "YES" : "NO");
-		torture_assert(torture, whoami.mapping_flags & SMB_WHOAMI_GUEST,
-				"anonymous login did not map to guest");
+			guest ? "YES" : "NO");
+		torture_assert(torture, cli_credentials_is_anonymous(cmdline_credentials) == guest,
+			       "login did not credentials map to guest");
 	} else {
 		printf("server does not support SMB_WHOAMI_GUEST flag\n");
 	}
