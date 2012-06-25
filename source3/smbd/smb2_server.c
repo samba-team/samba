@@ -374,7 +374,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 					  bitmap_offset));
 				bitmap_clear(credits_bm, bitmap_offset);
 				sconn->smb2.seqnum_low += 1;
-				bitmap_offset = (bitmap_offset + 1) %
+				bitmap_offset = sconn->smb2.seqnum_low %
 					sconn->smb2.max_credits;
 			}
 		}
