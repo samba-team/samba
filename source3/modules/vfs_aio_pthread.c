@@ -472,7 +472,7 @@ static void aio_pthread_handle_suspend_completion(struct event_context *event_ct
 	}
 
 	/* Jobid completed we weren't waiting for.
-	   We must reshedule this as an immediate event
+	   We must reschedule this as an immediate event
 	   on the main event context. */
 	im = tevent_create_immediate(NULL);
 	if (!im) {

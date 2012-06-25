@@ -1066,7 +1066,7 @@ void schedule_deferred_open_message_smb2(
 
 	/*
 	 * This is subtle. We must null out the callback
-	 * before resheduling, else the first call to
+	 * before rescheduling, else the first call to
 	 * tevent_req_nterror() causes the _receive()
 	 * function to be called, this causing tevent_req_post()
 	 * to crash.
@@ -1124,7 +1124,7 @@ static void smb2_deferred_open_timer(struct event_context *ev,
 
 	/*
 	 * This is subtle. We must null out the callback
-	 * before resheduling, else the first call to
+	 * before rescheduling, else the first call to
 	 * tevent_req_nterror() causes the _receive()
 	 * function to be called, this causing tevent_req_post()
 	 * to crash.

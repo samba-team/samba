@@ -2376,7 +2376,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (file_existed && (flags2&O_TRUNC)) {
 		/*
-		 * We are modifing the file after open - update the stat
+		 * We are modifying the file after open - update the stat
 		 * struct..
 		 */
 		if ((SMB_VFS_FTRUNCATE(fsp, 0) == -1) ||
