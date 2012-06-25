@@ -228,6 +228,14 @@ bool torture_rpc_lsa_lookup(struct torture_context *torture)
 	}
 	b = p->binding_handle;
 
+	if (p->binding->transport != NCACN_NP &&
+	    p->binding->transport != NCALRPC) {
+		torture_comment(torture,
+				"torture_rpc_lsa_lookup is only available "
+				"over NCACN_NP or NCALRPC");
+		return true;
+	}
+
 	ret &= open_policy(torture, b, &handle);
 	if (!ret) return false;
 
@@ -335,6 +343,14 @@ static bool test_LookupSidsReply(struct torture_context *tctx,
 	const char *dom_sid = "S-1-5-21-1111111111-2222222222-3333333333";
 	const char *dom_admin_sid;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	if (p->binding->transport != NCACN_NP &&
+	    p->binding->transport != NCALRPC) {
+		torture_comment(tctx,
+				"test_LookupSidsReply is only available "
+				"over NCACN_NP or NCALRPC");
+		return true;
+	}
 
 	if (!open_policy(tctx, b, &handle)) {
 		return false;

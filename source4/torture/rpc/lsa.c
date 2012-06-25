@@ -3063,7 +3063,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	bool ret = true;
-	struct policy_handle *handle;
+	struct policy_handle *handle = NULL;
 	struct test_join *join = NULL;
 	struct cli_credentials *machine_creds;
 	struct dcerpc_binding_handle *b;
@@ -3073,6 +3073,11 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		return false;
 	}
 	b = p->binding_handle;
+
+	/* Test lsaLookupSids3 and lsaLookupNames4 over tcpip */
+	if (p->binding->transport == NCACN_IP_TCP) {
+		return test_many_LookupSids(p, tctx, handle);
+	}
 
 	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
@@ -3164,6 +3169,13 @@ static bool testcase_LookupNames(struct torture_context *tctx,
 	struct lsa_TransNameArray2 tnames2;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	if (p->binding->transport != NCACN_NP &&
+	    p->binding->transport != NCALRPC) {
+		torture_comment(tctx, "testcase_LookupNames is only available "
+				"over NCACN_NP or NCALRPC");
+		return true;
+	}
+
 	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
 	}
@@ -3248,6 +3260,13 @@ static bool testcase_TrustedDomains(struct torture_context *tctx,
 		talloc_get_type_abort(data, struct lsa_trustdom_state);
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	if (p->binding->transport != NCACN_NP &&
+	    p->binding->transport != NCALRPC) {
+		torture_comment(tctx, "testcase_TrustedDomains is only available "
+				"over NCACN_NP or NCALRPC");
+		return true;
+	}
+
 	torture_comment(tctx, "Testing %d domains\n", state->num_trusts);
 
 	if (!test_OpenPolicy(b, tctx)) {
@@ -3308,6 +3327,13 @@ static bool testcase_Privileges(struct torture_context *tctx,
 	bool ret = true;
 	struct policy_handle *handle;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	if (p->binding->transport != NCACN_NP &&
+	    p->binding->transport != NCALRPC) {
+		torture_comment(tctx, "testcase_Privileges is only available "
+				"over NCACN_NP or NCALRPC");
+		return true;
+	}
 
 	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
