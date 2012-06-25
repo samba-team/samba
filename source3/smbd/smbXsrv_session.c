@@ -626,8 +626,7 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 	TALLOC_FREE(frame);
 }
 
-static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_connection *sconn,
-					     struct smbXsrv_session_global0 *global)
+static NTSTATUS smbXsrv_session_global_store(struct smbXsrv_session_global0 *global)
 {
 	struct smbXsrv_session_globalB global_blob;
 	DATA_BLOB blob = data_blob_null;
@@ -827,8 +826,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 
 	talloc_set_destructor(session, smbXsrv_session_destructor);
 
-	status = smbXsrv_session_global_store(conn,
-					      global);
+	status = smbXsrv_session_global_store(global);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smbXsrv_session_create: "
 			 "global_id (0x%08x) store failed - %s\n",
@@ -883,8 +881,7 @@ NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session)
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	status = smbXsrv_session_global_store(session->connection,
-					      session->global);
+	status = smbXsrv_session_global_store(session->global);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("smbXsrv_session_update: "
 			 "global_id (0x%08x) store failed - %s\n",
