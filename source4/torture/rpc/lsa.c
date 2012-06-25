@@ -503,7 +503,8 @@ static bool test_LookupNames3(struct dcerpc_binding_handle *b,
 static bool test_LookupNames4(struct dcerpc_binding_handle *b,
 			      struct torture_context *tctx,
 			      struct lsa_TransNameArray2 *tnames,
-			      bool check_result)
+			      bool check_result,
+			      bool test_fail) /* check if the tests fails! */
 {
 	struct lsa_LookupNames4 r;
 	struct lsa_TransSidArray3 sids;
@@ -544,6 +545,14 @@ static bool test_LookupNames4(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupNames4_r(b, tctx, &r),
 		"LookupNames4 failed");
 	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			if (test_fail) {
+				torture_comment(tctx, "not considering %s to be an error\n",
+						nt_errstr(r.out.result));
+				return true;
+			}
+		}
 		torture_comment(tctx, "LookupNames4 failed - %s\n",
 				nt_errstr(r.out.result));
 		return false;
@@ -656,7 +665,8 @@ static bool test_LookupSids2(struct dcerpc_binding_handle *b,
 
 static bool test_LookupSids3(struct dcerpc_binding_handle *b,
 			    struct torture_context *tctx,
-			    struct lsa_SidArray *sids)
+			    struct lsa_SidArray *sids,
+			    bool test_fail) /* check if the tests fails! */
 {
 	struct lsa_LookupSids3 r;
 	struct lsa_TransNameArray2 names;
@@ -683,9 +693,11 @@ static bool test_LookupSids3(struct dcerpc_binding_handle *b,
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			torture_comment(tctx, "not considering %s to be an error\n",
-					nt_errstr(r.out.result));
-			return true;
+			if (test_fail) {
+				torture_comment(tctx, "not considering %s to be an error\n",
+						nt_errstr(r.out.result));
+				return true;
+			}
 		}
 		torture_comment(tctx, "LookupSids3 failed - %s - not considered an error\n",
 				nt_errstr(r.out.result));
@@ -749,15 +761,26 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 			return false;
 		}
 	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
-		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY &&
-		   (p->binding->transport == NCACN_IP_TCP || p->binding->transport == NCALRPC)) {
-		struct lsa_TransNameArray2 names;
+		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 
-		if (!test_LookupSids3(b, tctx, &sids)) {
-			return false;
-		}
-		if (!test_LookupNames4(b, tctx, &names, false)) {
-			return false;
+		if (p->binding->transport == NCACN_IP_TCP) {
+			struct lsa_TransNameArray2 names;
+
+			if (!test_LookupSids3(b, tctx, &sids, false)) {
+				return false;
+			}
+			if (!test_LookupNames4(b, tctx, &names, false, false)) {
+				return false;
+			}
+		} else if (p->binding->transport == NCACN_NP) {
+			struct lsa_TransNameArray2 names;
+
+			if (!test_LookupSids3(b, tctx, &sids, true)) {
+				return false;
+			}
+			if (!test_LookupNames4(b, tctx, &names, false, true)) {
+				return false;
+			}
 		}
 	}
 
