@@ -69,8 +69,8 @@ regchecknrepair()
 }
 
 test_simple()
-{
-	local ERRSTR=""
+(
+	ERRSTR=""
 	cp $REGORIG $REG
 
 	regcheck
@@ -78,7 +78,7 @@ test_simple()
 		echo $ERRSTR
 		return 1
 	}
-}
+)
 
 test_damage()
 {
@@ -86,36 +86,36 @@ test_damage()
 }
 
 test_duplicate()
-{
-	local ERRSTR=""
+(
+	ERRSTR=""
 	$DBWRAP_TOOL $REG store 'HKLM/SOFTWARE' hex '02000000534F4654574152450053595354454D00'
 
 	regchecknrepair "Duplicate subkeylist" 1
-}
+)
 
 test_slashes()
-{
-	local ERRSTR=""
+(
+	ERRSTR=""
 	$DBWRAP_TOOL $REG store 'HKLM/SOFTWARE' hex '02000000534F4654574152450053595354454D00'
 
 	regchecknrepair "Unnormal key:" 1
-}
+)
 
 test_uppercase()
-{
-	local ERRSTR=""
+(
+	ERRSTR=""
 	$DBWRAP_TOOL $REG store 'HKLM\Software' hex '02000000534F4654574152450053595354454D00'
 
 	regchecknrepair "Unnormal key:" 1
-}
+)
 
 test_strangeletters()
-{
-	local ERRSTR=""
+(
+	ERRSTR=""
 	$DBWRAP_TOOL $REG store 'HKLM\SOFTWARE' hex '02000000534F4654574FABFABFABFAB354454D00'
 
 	regchecknrepair "Conversion error: Incomplete multibyte sequence" 1
-}
+)
 
 testit "simple" \
 	test_simple || \
