@@ -3418,6 +3418,6 @@ vfs_examples:
 	( \
 	cd ../examples/VFS && \
 	./configure && \
-	make clean && \
-	make \
+	$(MAKE) clean && \
+	$(MAKE) \
 	)
