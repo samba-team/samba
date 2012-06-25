@@ -1436,20 +1436,25 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 						uint32_t data_length)
 {
 	uint16_t needed_charge;
-	uint16_t credit_charge;
+	uint16_t credit_charge = 1;
+	uint16_t max_charge = 1;
 	const uint8_t *inhdr;
 	int i = req->current_idx;
 
-	if (!req->sconn->smb2.supports_multicredit) {
-		if (data_length > 65536) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		return NT_STATUS_OK;
-	}
-
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
-	credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
-	credit_charge = MAX(credit_charge, 1);
+
+	if (req->sconn->smb2.supports_multicredit) {
+		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
+		credit_charge = MAX(credit_charge, 1);
+
+		/*
+		 * TODO: should we limit this here
+		 * to a transport specific value?
+		 *
+		 * TODO: we need tests for this?
+		 */
+		max_charge = UINT16_MAX;
+	}
 
 	needed_charge = (data_length - 1)/ 65536 + 1;
 
@@ -1459,7 +1464,14 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 
 	if (needed_charge > credit_charge) {
 		DEBUG(2, ("CreditCharge too low, given %d, needed %d\n",
-					credit_charge, needed_charge));
+			  credit_charge, needed_charge));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (credit_charge > max_charge) {
+		DEBUG(2, ("CreditCharge too high, given %d, "
+			  "needed %d, allowed %d\n",
+			  credit_charge, needed_charge, max_charge));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
