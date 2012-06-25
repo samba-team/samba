@@ -261,15 +261,18 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	max_limit = 0x10000;
 
 	if (protocol >= PROTOCOL_SMB2_10) {
-		/* largeMTU is only available on port 445 */
-		if (TCP_SMB_PORT ==
-		    tsocket_address_inet_port(req->sconn->local_address))
-		{
+		int p = 0;
 
+		if (tsocket_address_is_inet(req->sconn->local_address, "ip")) {
+			p = tsocket_address_inet_port(req->sconn->local_address);
+		}
+
+		/* largeMTU is not supported over NBT (tcp port 139) */
+		if (p != NBT_SMB_PORT) {
 			capabilities |= SMB2_CAP_LARGE_MTU;
 			req->sconn->smb2.supports_multicredit = true;
 
-			/* SMB2.1 has 1 MB of allowed size */
+			/* SMB >= 2.1 has 1 MB of allowed size */
 			max_limit = 0x100000; /* 1MB */
 		}
 	}
