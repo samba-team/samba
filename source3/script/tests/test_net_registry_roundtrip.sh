@@ -66,9 +66,9 @@ conf_roundtrip_step() {
 LOGDIR_PREFIX="conf_roundtrip"
 
 conf_roundtrip()
-{
-    local DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
-    local LOG=$DIR/log
+(
+    DIR=$(mktemp -d ${PREFIX}/${LOGDIR_PREFIX}_XXXXXX)
+    LOG=$DIR/log
 
     echo conf_roundtrip $1 > $LOG
 
@@ -144,7 +144,7 @@ conf_roundtrip()
 	return 1
     fi
     rm -r $DIR
-}
+)
 
 CONF_FILES=$SERVERCONFFILE
 
