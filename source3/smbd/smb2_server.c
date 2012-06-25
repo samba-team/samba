@@ -1449,12 +1449,7 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 
 	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 	credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
-
-	/* requests larger than 64 KB need credit charge */
-	if (credit_charge == 0 && data_length > 65536) {
-		DEBUG(2, ("Request larger than 64KB w/o creditcharge\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	credit_charge = MAX(credit_charge, 1);
 
 	needed_charge = (data_length - 1)/ 65536 + 1;
 
