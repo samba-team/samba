@@ -694,10 +694,6 @@ static bool test_LookupSids3(struct dcerpc_binding_handle *b,
 
 	torture_comment(tctx, "\n");
 
-	if (!test_LookupNames4(b, tctx, &names, false)) {
-		return false;
-	}
-
 	return true;
 }
 
@@ -755,36 +751,9 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
 		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY &&
 		   (p->binding->transport == NCACN_IP_TCP || p->binding->transport == NCALRPC)) {
-		struct lsa_LookupSids3 r;
-		struct lsa_RefDomainList *domains = NULL;
 		struct lsa_TransNameArray2 names;
 
-		names.count = 0;
-		names.names = NULL;
-
-		torture_comment(tctx, "\nTesting LookupSids3\n");
-
-		r.in.sids = &sids;
-		r.in.names = &names;
-		r.in.level = 1;
-		r.in.count = &count;
-		r.in.lookup_options = 0;
-		r.in.client_revision = 0;
-		r.out.count = &count;
-		r.out.names = &names;
-		r.out.domains = &domains;
-
-		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupSids3_r(b, tctx, &r),
-			"LookupSids3 failed");
-		if (!NT_STATUS_IS_OK(r.out.result)) {
-			if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
-			    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-				torture_comment(tctx, "not considering %s to be an error\n",
-						nt_errstr(r.out.result));
-				return true;
-			}
-			torture_comment(tctx, "LookupSids3 failed - %s\n",
-					nt_errstr(r.out.result));
+		if (!test_LookupSids3(b, tctx, &sids)) {
 			return false;
 		}
 		if (!test_LookupNames4(b, tctx, &names, false)) {
