@@ -44,6 +44,7 @@ struct smbXsrv_session_table {
 		struct db_context *db_ctx;
 		uint32_t lowest_id;
 		uint32_t highest_id;
+		uint32_t max_sessions;
 		uint32_t num_sessions;
 	} local;
 	struct {
@@ -161,12 +162,26 @@ static void smbXsrv_session_close_loop(struct tevent_req *subreq);
 
 static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 					   uint32_t lowest_id,
-					   uint32_t highest_id)
+					   uint32_t highest_id,
+					   uint32_t max_sessions)
 {
 	struct smbXsrv_session_table *table;
 	NTSTATUS status;
 	struct tevent_req *subreq;
 	int ret;
+	uint64_t max_range;
+
+	if (lowest_id > highest_id) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	max_range = highest_id;
+	max_range -= lowest_id;
+	max_range += 1;
+
+	if (max_sessions > max_range) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	table = talloc_zero(conn, struct smbXsrv_session_table);
 	if (table == NULL) {
@@ -180,6 +195,7 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 	}
 	table->local.lowest_id = lowest_id;
 	table->local.highest_id = highest_id;
+	table->local.max_sessions = max_sessions;
 
 	status = smbXsrv_session_global_init();
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1064,7 +1080,6 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 				struct smbXsrv_session **_session)
 {
 	struct smbXsrv_session_table *table = conn->session_table;
-	uint32_t max_sessions = table->local.highest_id - table->local.lowest_id;
 	struct db_record *local_rec = NULL;
 	struct smbXsrv_session *session = NULL;
 	void *ptr = NULL;
@@ -1073,7 +1088,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	struct smbXsrv_channel_global0 *channels = NULL;
 	NTSTATUS status;
 
-	if (table->local.num_sessions >= max_sessions) {
+	if (table->local.num_sessions >= table->local.max_sessions) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
@@ -1470,9 +1485,10 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn)
 {
 	/*
-	 * Allow a range from 1..65534.
+	 * Allow a range from 1..65534 with 65534 values.
 	 */
-	return smbXsrv_session_table_init(conn, 1, UINT16_MAX - 1);
+	return smbXsrv_session_table_init(conn, 1, UINT16_MAX - 1,
+					  UINT16_MAX - 1);
 }
 
 NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
@@ -1488,11 +1504,10 @@ NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
 NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn)
 {
 	/*
-	 * For now use the same range as SMB1.
-	 *
-	 * Allow a range from 1..65534.
+	 * Allow a range from 1..4294967294 with 65534 (same as SMB1) values.
 	 */
-	return smbXsrv_session_table_init(conn, 1, UINT16_MAX - 1);
+	return smbXsrv_session_table_init(conn, 1, UINT32_MAX - 1,
+					  UINT16_MAX - 1);
 }
 
 NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
