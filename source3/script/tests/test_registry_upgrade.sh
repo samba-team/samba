@@ -31,11 +31,11 @@ REGPATH="HKLM\Software\Samba"
 LOGDIR_PREFIX="registry_upgrade"
 
 registry_check()
-{
-    local CHECKNO="$1"
-    local CHECKDIFF="$2"
-    local REGVER=""
-    local ALLOWEDERR="INFO: version =|Check database:|overwrite registry format version 0 with 1|no INFO/version found"
+(
+    CHECKNO="$1"
+    CHECKDIFF="$2"
+    REGVER=""
+    ALLOWEDERR="INFO: version =|Check database:|overwrite registry format version 0 with 1|no INFO/version found"
 
     test "x$CHECKNO" = "x0" && {
         REGVER="--reg-version=1"
@@ -71,7 +71,7 @@ registry_check()
     }
 
     return 0
-}
+)
 
 registry_upgrade()
 {
