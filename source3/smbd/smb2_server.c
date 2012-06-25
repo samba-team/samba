@@ -298,28 +298,81 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	return NT_STATUS_OK;
 }
 
+static bool smb2_validate_sequence_number(struct smbd_server_connection *sconn,
+					  uint64_t message_id, uint64_t seq_id)
+{
+	struct bitmap *credits_bm = sconn->smb2.credits_bitmap;
+	unsigned int offset;
+
+	if (seq_id < sconn->smb2.seqnum_low) {
+		DEBUG(0,("smb2_validate_sequence_number: bad message_id "
+			"%llu (sequence id %llu) (low = %llu, max = %lu)\n",
+			(unsigned long long)message_id,
+			(unsigned long long)seq_id,
+			(unsigned long long)sconn->smb2.seqnum_low,
+			(unsigned long)sconn->smb2.max_credits));
+		return false;
+	}
+
+	if (seq_id > (sconn->smb2.seqnum_low + sconn->smb2.max_credits)) {
+		DEBUG(0,("smb2_validate_sequence_number: bad message_id "
+			"%llu (sequence id %llu) (low = %llu, max = %lu)\n",
+			(unsigned long long)message_id,
+			(unsigned long long)seq_id,
+			(unsigned long long)sconn->smb2.seqnum_low,
+			(unsigned long)sconn->smb2.max_credits));
+		return false;
+	}
+
+	offset = seq_id % sconn->smb2.max_credits;
+
+	if (bitmap_query(credits_bm, offset)) {
+		DEBUG(0,("smb2_validate_sequence_number: duplicate message_id "
+			"%llu (sequence id %llu) (low = %llu, max = %lu) "
+			"(bm offset %u)\n",
+			(unsigned long long)message_id,
+			(unsigned long long)seq_id,
+			(unsigned long long)sconn->smb2.seqnum_low,
+			(unsigned long)sconn->smb2.max_credits,
+			offset));
+		return false;
+	}
+
+	/* Mark the message_ids as seen in the bitmap. */
+	bitmap_set(credits_bm, offset);
+
+	if (seq_id != sconn->smb2.seqnum_low) {
+		return true;
+	}
+
+	/*
+	 * Move the window forward by all the message_id's
+	 * already seen.
+	 */
+	while (bitmap_query(credits_bm, offset)) {
+		DEBUG(10,("smb2_validate_sequence_number: clearing "
+			  "id %llu (position %u) from bitmap\n",
+			  (unsigned long long)(sconn->smb2.seqnum_low),
+			  offset));
+		bitmap_clear(credits_bm, offset);
+
+		sconn->smb2.seqnum_low += 1;
+		offset = sconn->smb2.seqnum_low % sconn->smb2.max_credits;
+	}
+
+	return true;
+}
+
 static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 				const uint8_t *inhdr)
 {
 	uint64_t message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
-	struct bitmap *credits_bm = sconn->smb2.credits_bitmap;
 	uint16_t opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
-	unsigned int bitmap_offset;
+	bool ok;
 
 	if (opcode == SMB2_OP_CANCEL) {
 		/* SMB2_CANCEL requests by definition resend messageids. */
 		return true;
-	}
-
-	if (message_id < sconn->smb2.seqnum_low ||
-			message_id > (sconn->smb2.seqnum_low +
-			(sconn->smb2.max_credits))) {
-		DEBUG(0,("smb2_validate_message_id: bad message_id "
-			"%llu (low = %llu, max = %lu)\n",
-			(unsigned long long)message_id,
-			(unsigned long long)sconn->smb2.seqnum_low,
-			(unsigned long)sconn->smb2.max_credits ));
-		return false;
 	}
 
 	if (sconn->smb2.credits_granted == 0) {
@@ -329,34 +382,20 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	/* client just used a credit. */
-	sconn->smb2.credits_granted -= 1;
+	DEBUG(11, ("smb2_validate_message_id: mid %llu, credits_granted %llu, "
+		   "max_credits %llu, seqnum_low: %llu\n",
+		   (unsigned long long) message_id,
+		   (unsigned long long) sconn->smb2.credits_granted,
+		   (unsigned long long) sconn->smb2.max_credits,
+		   (unsigned long long) sconn->smb2.seqnum_low));
 
-	/* Mark the message_id as seen in the bitmap. */
-	bitmap_offset = message_id % sconn->smb2.max_credits;
-	if (bitmap_query(credits_bm, bitmap_offset)) {
-		DEBUG(0,("smb2_validate_message_id: duplicate message_id "
-			"%llu (bm offset %u)\n",
-			(unsigned long long)message_id,
-			bitmap_offset));
+	ok = smb2_validate_sequence_number(sconn, message_id, message_id);
+	if (!ok) {
 		return false;
 	}
-	bitmap_set(credits_bm, bitmap_offset);
 
-	if (message_id == sconn->smb2.seqnum_low) {
-		/* Move the window forward by all the message_id's
-		   already seen. */
-		while (bitmap_query(credits_bm, bitmap_offset)) {
-			DEBUG(10,("smb2_validate_message_id: clearing "
-				"id %llu (position %u) from bitmap\n",
-				(unsigned long long)(sconn->smb2.seqnum_low),
-				bitmap_offset ));
-			bitmap_clear(credits_bm, bitmap_offset);
-			sconn->smb2.seqnum_low += 1;
-			bitmap_offset = sconn->smb2.seqnum_low %
-				sconn->smb2.max_credits;
-		}
-	}
+	/* substract used credits */
+	sconn->smb2.credits_granted -= 1;
 
 	return true;
 }
