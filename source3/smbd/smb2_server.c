@@ -524,6 +524,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 {
 	const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
 	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
+	uint16_t credit_charge = 1;
 	uint16_t credits_requested;
 	uint32_t out_flags;
 	uint16_t cmd;
@@ -549,12 +550,18 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	current_max_credits = sconn->smb2.max_credits / 16;
 	current_max_credits = MAX(current_max_credits, 1);
 
+	if (sconn->smb2.supports_multicredit) {
+		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
+		credit_charge = MAX(credit_charge, 1);
+	}
+
 	cmd = SVAL(inhdr, SMB2_HDR_OPCODE);
 	credits_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
 	out_flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	out_status = NT_STATUS(IVAL(outhdr, SMB2_HDR_STATUS));
 
 	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
+	SMB_ASSERT(sconn->smb2.max_credits >= credit_charge);
 
 	if (out_flags & SMB2_HDR_FLAG_ASYNC) {
 		/*
@@ -591,7 +598,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 
 		additional_credits = MIN(additional_credits, additional_max);
 
-		credits_granted = 1 + additional_credits;
+		credits_granted = credit_charge + additional_credits;
 	} else if (sconn->smb2.credits_granted == 0) {
 		/*
 		 * Make sure the client has always at least one credit
@@ -628,10 +635,11 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	sconn->smb2.credits_granted += credits_granted;
 	sconn->smb2.seqnum_range += credits_granted;
 
-	DEBUG(10,("smb2_set_operation_credit: requested %u, "
+	DEBUG(10,("smb2_set_operation_credit: requested %u, charge %u, "
 		"granted %u, current possible/max %u/%u, "
 		"total granted/max/low/range %u/%u/%llu/%u\n",
 		(unsigned int)credits_requested,
+		(unsigned int)credit_charge,
 		(unsigned int)credits_granted,
 		(unsigned int)credits_possible,
 		(unsigned int)current_max_credits,
