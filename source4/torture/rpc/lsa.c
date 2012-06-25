@@ -382,6 +382,7 @@ static bool test_LookupNames2(struct dcerpc_binding_handle *b,
 	struct lsa_TransSidArray2 sids;
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_String *names;
+	uint32_t *input_idx;
 	uint32_t count = 0;
 	int i;
 
@@ -389,7 +390,6 @@ static bool test_LookupNames2(struct dcerpc_binding_handle *b,
 
 	sids.count = 0;
 	sids.sids = NULL;
-	uint32_t *input_idx;
 
 	r.in.num_names = 0;
 
@@ -1270,7 +1270,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 	bool ret = true;
 	DATA_BLOB session_key;
 	NTTIME old_mtime, new_mtime;
-	DATA_BLOB blob1, blob2;
+	DATA_BLOB blob1;
 	const char *secret1 = "abcdef12345699qwerty";
 	char *secret2;
  	const char *secret3 = "ABCDEF12345699QWERTY";
@@ -1398,8 +1398,6 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 				blob1.data = r4.out.new_val->buf->data;
 				blob1.length = r4.out.new_val->buf->size;
 
-				blob2 = data_blob_talloc(tctx, NULL, blob1.length);
-
 				secret2 = sess_decrypt_string(tctx,
 							      &blob1, &session_key);
 
@@ -1463,8 +1461,6 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 				blob1.data = r6.out.new_val->buf->data;
 				blob1.length = r6.out.new_val->buf->size;
 
-				blob2 = data_blob_talloc(tctx, NULL, blob1.length);
-
 				secret4 = sess_decrypt_string(tctx,
 							      &blob1, &session_key);
 
@@ -1475,8 +1471,6 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 
 				blob1.data = r6.out.old_val->buf->data;
 				blob1.length = r6.out.old_val->buf->length;
-
-				blob2 = data_blob_talloc(tctx, NULL, blob1.length);
 
 				secret2 = sess_decrypt_string(tctx,
 							      &blob1, &session_key);
@@ -1548,8 +1542,6 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 			} else {
 				blob1.data = r8.out.old_val->buf->data;
 				blob1.length = r8.out.old_val->buf->size;
-
-				blob2 = data_blob_talloc(tctx, NULL, blob1.length);
 
 				secret6 = sess_decrypt_string(tctx,
 							      &blob1, &session_key);
