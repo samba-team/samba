@@ -35,6 +35,7 @@ struct smbXsrv_tcon_table {
 		struct db_context *db_ctx;
 		uint32_t lowest_id;
 		uint32_t highest_id;
+		uint32_t max_tcons;
 		uint32_t num_tcons;
 	} local;
 	struct {
@@ -147,9 +148,23 @@ static NTSTATUS smbXsrv_tcon_local_key_to_id(TDB_DATA key, uint32_t *id)
 static NTSTATUS smbXsrv_tcon_table_init(TALLOC_CTX *mem_ctx,
 					struct smbXsrv_tcon_table *table,
 					uint32_t lowest_id,
-					uint32_t highest_id)
+					uint32_t highest_id,
+					uint32_t max_tcons)
 {
 	NTSTATUS status;
+	uint64_t max_range;
+
+	if (lowest_id > highest_id) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	max_range = highest_id;
+	max_range -= lowest_id;
+	max_range += 1;
+
+	if (max_tcons > max_range) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	ZERO_STRUCTP(table);
 	table->local.db_ctx = db_open_rbt(table);
@@ -158,6 +173,7 @@ static NTSTATUS smbXsrv_tcon_table_init(TALLOC_CTX *mem_ctx,
 	}
 	table->local.lowest_id = lowest_id;
 	table->local.highest_id = highest_id;
+	table->local.max_tcons = max_tcons;
 
 	status = smbXsrv_tcon_global_init();
 	if (!NT_STATUS_IS_OK(status)) {
@@ -685,7 +701,6 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_connection *conn,
 				    NTTIME now,
 				    struct smbXsrv_tcon **_tcon)
 {
-	uint32_t max_tcons = table->local.highest_id - table->local.lowest_id;
 	struct db_record *local_rec = NULL;
 	struct smbXsrv_tcon *tcon = NULL;
 	void *ptr = NULL;
@@ -693,7 +708,7 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_connection *conn,
 	struct smbXsrv_tcon_global0 *global = NULL;
 	NTSTATUS status;
 
-	if (table->local.num_tcons >= max_tcons) {
+	if (table->local.num_tcons >= table->local.max_tcons) {
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
@@ -1055,7 +1070,7 @@ static int smbXsrv_tcon_disconnect_all_callback(struct db_record *local_rec,
 NTSTATUS smb1srv_tcon_table_init(struct smbXsrv_connection *conn)
 {
 	/*
-	 * Allow a range from 1..65534.
+	 * Allow a range from 1..65534 with 65534 values.
 	 */
 	conn->tcon_table = talloc_zero(conn, struct smbXsrv_tcon_table);
 	if (conn->tcon_table == NULL) {
@@ -1063,7 +1078,8 @@ NTSTATUS smb1srv_tcon_table_init(struct smbXsrv_connection *conn)
 	}
 
 	return smbXsrv_tcon_table_init(conn, conn->tcon_table,
-				       1, UINT16_MAX - 1);
+				       1, UINT16_MAX - 1,
+				       UINT16_MAX - 1);
 }
 
 NTSTATUS smb1srv_tcon_create(struct smbXsrv_connection *conn,
@@ -1106,9 +1122,7 @@ NTSTATUS smb1srv_tcon_disconnect_all(struct smbXsrv_connection *conn)
 NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session)
 {
 	/*
-	 * For now use the same range as SMB1.
-	 *
-	 * Allow a range from 1..65534.
+	 * Allow a range from 1..4294967294 with 65534 (same as SMB1) values.
 	 */
 	session->tcon_table = talloc_zero(session, struct smbXsrv_tcon_table);
 	if (session->tcon_table == NULL) {
@@ -1116,7 +1130,8 @@ NTSTATUS smb2srv_tcon_table_init(struct smbXsrv_session *session)
 	}
 
 	return smbXsrv_tcon_table_init(session, session->tcon_table,
-				       1, UINT16_MAX - 1);
+				       1, UINT32_MAX - 1,
+				       UINT16_MAX - 1);
 }
 
 NTSTATUS smb2srv_tcon_create(struct smbXsrv_session *session,
