@@ -1034,12 +1034,8 @@ NTSTATUS _lsa_LookupSids(struct pipes_struct *p,
 	return status;
 }
 
-/***************************************************************************
- _lsa_LookupSids2
- ***************************************************************************/
-
-NTSTATUS _lsa_LookupSids2(struct pipes_struct *p,
-			  struct lsa_LookupSids2 *r)
+static NTSTATUS _lsa_LookupSids_common(struct pipes_struct *p,
+				struct lsa_LookupSids2 *r)
 {
 	NTSTATUS status;
 	struct lsa_info *handle;
@@ -1048,11 +1044,6 @@ NTSTATUS _lsa_LookupSids2(struct pipes_struct *p,
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TranslatedName2 *names = NULL;
 	bool check_policy = true;
-
-	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
-		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	switch (p->opnum) {
 		case NDR_LSA_LOOKUPSIDS3:
@@ -1106,6 +1097,21 @@ NTSTATUS _lsa_LookupSids2(struct pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_LookupSids2
+ ***************************************************************************/
+
+NTSTATUS _lsa_LookupSids2(struct pipes_struct *p,
+			  struct lsa_LookupSids2 *r)
+{
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return _lsa_LookupSids_common(p, r);
+}
+
+/***************************************************************************
  _lsa_LookupSids3
  ***************************************************************************/
 
@@ -1113,6 +1119,11 @@ NTSTATUS _lsa_LookupSids3(struct pipes_struct *p,
 			  struct lsa_LookupSids3 *r)
 {
 	struct lsa_LookupSids2 q;
+
+	if (p->transport != NCACN_IP_TCP) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* No policy handle on this call. Restrict to crypto connections. */
 	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
@@ -1133,7 +1144,7 @@ NTSTATUS _lsa_LookupSids3(struct pipes_struct *p,
 	q.out.names		= r->out.names;
 	q.out.count		= r->out.count;
 
-	return _lsa_LookupSids2(p, &q);
+	return _lsa_LookupSids_common(p, &q);
 }
 
 /***************************************************************************
