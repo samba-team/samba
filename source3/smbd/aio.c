@@ -91,9 +91,6 @@ bool initialize_async_io_handler(void)
 		DEBUG(10, ("Failed to setup RT_SIGNAL_AIO handler\n"));
 		return false;
 	}
-
-	/* tevent supports 100 signal with SA_SIGINFO */
-	aio_pending_size = 100;
 	return true;
 }
 
