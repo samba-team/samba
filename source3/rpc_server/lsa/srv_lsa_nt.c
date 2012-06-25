@@ -1316,12 +1316,8 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 	return status;
 }
 
-/***************************************************************************
- _lsa_LookupNames3
- ***************************************************************************/
-
-NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
-			   struct lsa_LookupNames3 *r)
+static NTSTATUS _lsa_LookupNames_common(struct pipes_struct *p,
+					struct lsa_LookupNames3 *r)
 {
 	NTSTATUS status;
 	struct lsa_info *handle;
@@ -1332,11 +1328,6 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 	uint32 mapped_count = 0;
 	int flags = 0;
 	bool check_policy = true;
-
-	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
-		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	switch (p->opnum) {
 		case NDR_LSA_LOOKUPNAMES4:
@@ -1412,6 +1403,21 @@ done:
 }
 
 /***************************************************************************
+ _lsa_LookupNames3
+ ***************************************************************************/
+
+NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
+			   struct lsa_LookupNames3 *r)
+{
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return _lsa_LookupNames_common(p, r);
+}
+
+/***************************************************************************
  _lsa_LookupNames4
  ***************************************************************************/
 
@@ -1419,6 +1425,11 @@ NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 			   struct lsa_LookupNames4 *r)
 {
 	struct lsa_LookupNames3 q;
+
+	if (p->transport != NCACN_IP_TCP) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* No policy handle on this call. Restrict to crypto connections. */
 	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
@@ -1440,7 +1451,7 @@ NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 	q.out.sids		= r->out.sids;
 	q.out.count		= r->out.count;
 
-	return _lsa_LookupNames3(p, &q);
+	return _lsa_LookupNames_common(p, &q);
 }
 
 /***************************************************************************
