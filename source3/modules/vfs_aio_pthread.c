@@ -69,7 +69,7 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 		errno = ret;
 		return false;
 	}
-	sock_event = tevent_add_fd(server_event_context(),
+	sock_event = tevent_add_fd(handle->conn->sconn->ev_ctx,
 				NULL,
 				pthreadpool_signal_fd(pool),
 				TEVENT_FD_READ,
