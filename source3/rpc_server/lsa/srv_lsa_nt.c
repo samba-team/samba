@@ -436,6 +436,11 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 	uint32 acc_granted;
 	NTSTATUS status;
 
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* Work out max allowed. */
 	map_max_allowed_access(p->session_info->security_token,
 			       p->session_info->unix_token,
@@ -480,6 +485,8 @@ NTSTATUS _lsa_OpenPolicy(struct pipes_struct *p,
 			 struct lsa_OpenPolicy *r)
 {
 	struct lsa_OpenPolicy2 o;
+
+	/* _lsa_OpenPolicy2 will check if this is a NCACN_NP connection */
 
 	o.in.system_name	= NULL; /* should be ignored */
 	o.in.attr		= r->in.attr;
@@ -957,6 +964,11 @@ NTSTATUS _lsa_LookupSids(struct pipes_struct *p,
 	struct lsa_TranslatedName2 *names = NULL;
 	int i;
 
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if ((r->in.level < 1) || (r->in.level > 6)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -1036,6 +1048,11 @@ NTSTATUS _lsa_LookupSids2(struct pipes_struct *p,
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TranslatedName2 *names = NULL;
 	bool check_policy = true;
+
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	switch (p->opnum) {
 		case NDR_LSA_LOOKUPSIDS3:
@@ -1164,6 +1181,11 @@ NTSTATUS _lsa_LookupNames(struct pipes_struct *p,
 	uint32 mapped_count = 0;
 	int flags = 0;
 
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (num_entries >  MAX_LOOKUP_SIDS) {
 		num_entries = MAX_LOOKUP_SIDS;
 		DEBUG(5,("_lsa_LookupNames: truncating name lookup list to %d\n",
@@ -1239,6 +1261,11 @@ NTSTATUS _lsa_LookupNames2(struct pipes_struct *p,
 	struct lsa_TransSidArray *sid_array = NULL;
 	uint32_t i;
 
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	sid_array = talloc_zero(p->mem_ctx, struct lsa_TransSidArray);
 	if (!sid_array) {
 		return NT_STATUS_NO_MEMORY;
@@ -1294,6 +1321,11 @@ NTSTATUS _lsa_LookupNames3(struct pipes_struct *p,
 	uint32 mapped_count = 0;
 	int flags = 0;
 	bool check_policy = true;
+
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	switch (p->opnum) {
 		case NDR_LSA_LOOKUPNAMES4:
@@ -1406,6 +1438,11 @@ NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 
 NTSTATUS _lsa_Close(struct pipes_struct *p, struct lsa_Close *r)
 {
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (!find_policy_by_hnd(p, r->in.handle, NULL)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -2665,6 +2702,11 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 	const char *username, *domname;
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
+
+	if (p->transport != NCACN_NP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	if (r->in.account_name &&
 	   *r->in.account_name) {
