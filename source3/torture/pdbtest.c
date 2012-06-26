@@ -428,14 +428,16 @@ int main(int argc, char **argv)
 	}
 
 	/* Get account information through getsampwnam() */
-	if (NT_STATUS_IS_ERR(pdb->getsampwnam(pdb, in, out->username))) {
-		fprintf(stderr, "Error getting sampw of added user %s.\n",
-				out->username);
+	rv = pdb->getsampwnam(pdb, in, out->username);
+	if (NT_STATUS_IS_ERR(rv)) {
+		fprintf(stderr, "Error getting sampw of added user %s: %s\n",
+			out->username, nt_errstr(rv));
 		if (!NT_STATUS_IS_OK(rv = pdb->delete_sam_account(pdb, out))) {
 			fprintf(stderr, "Error in delete_sam_account %s\n", 
 					get_friendly_nt_error_msg(rv));
 		}
 		TALLOC_FREE(ctx);
+		exit(1);
 	}
 
 	/* Verify integrity */
