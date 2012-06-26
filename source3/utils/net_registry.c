@@ -1303,6 +1303,12 @@ static int net_registry_import(struct net_context *c, int argc,
 
 	SMB_ASSERT(ret == 0);
 
+	if (c->opt_testmode) {
+		d_printf("Testmode: not committing changes.\n");
+		regdb_transaction_cancel();
+		goto done;
+	}
+
 	werr = regdb_transaction_commit();
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("Failed to commit transaction on regdb: %s\n",
