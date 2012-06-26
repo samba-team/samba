@@ -1276,14 +1276,15 @@ static int net_registry_import(struct net_context *c, int argc,
 		d_printf("%s\n%s",
 			 _("Example:"),
 			 _("net registry import file.reg enc=CP1252\n"));
-		goto done;
+		return -1;
 	}
 
 	werr = regdb_open();
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("Failed to open regdb: %s\n", win_errstr(werr));
-		goto done;
+		return -1;
 	}
+
 	werr = regdb_transaction_start();
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("Failed to start transaction on regdb: %s\n",
@@ -1306,8 +1307,8 @@ static int net_registry_import(struct net_context *c, int argc,
 		}
 	}
 
-	regdb_close();
 done:
+	regdb_close();
 	return ret;
 }
 /**@}*/
