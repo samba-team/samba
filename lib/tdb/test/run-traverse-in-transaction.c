@@ -47,8 +47,6 @@ int main(int argc, char *argv[])
 
 	plan_tests(13);
 	agent = prepare_external_agent();
-	if (!agent)
-		err(1, "preparing agent");
 
 	tdb = tdb_open_ex("run-traverse-in-transaction.tdb",
 			  1024, TDB_CLEAR_IF_FIRST, O_CREAT|O_TRUNC|O_RDWR,

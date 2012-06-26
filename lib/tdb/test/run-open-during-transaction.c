@@ -149,8 +149,6 @@ int main(int argc, char *argv[])
 
 	plan_tests(20);
 	agent = prepare_external_agent();
-	if (!agent)
-		err(1, "preparing agent");
 
 	unlock_callback = after_unlock;
 	for (i = 0; i < sizeof(flags)/sizeof(flags[0]); i++) {

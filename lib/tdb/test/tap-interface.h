@@ -22,7 +22,6 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 #include <stdio.h>
-#include <err.h>
 
 #ifndef __location__
 #define __TAP_STRING_LINE1__(s)    #s
@@ -32,9 +31,9 @@
 #endif
 
 #define plan_tests(num)
-#define ok(e, ...) ((e) ? (void)printf(".") : errx(1, __VA_ARGS__))
+#define ok(e, ...) do { if (e) { (void)printf("."); } else { fprintf(stderr, __VA_ARGS__); exit(1); } } while(0)
 #define ok1(e) ok((e), "%s:%s", __location__, #e)
 #define pass(...) printf(".")
-#define fail(...) errx(1, __VA_ARGS__)
+#define fail(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
 #define diag printf
 #define exit_status() 0
