@@ -117,7 +117,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	sconn->smb2.credits_granted = 1;
 	sconn->smb2.max_credits = lp_smb2_max_credits();
 	sconn->smb2.credits_bitmap = bitmap_talloc(sconn,
-			DEFAULT_SMB2_MAX_CREDIT_BITMAP_FACTOR*sconn->smb2.max_credits);
+						   sconn->smb2.max_credits);
 	if (sconn->smb2.credits_bitmap == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -313,7 +313,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 
 	if (message_id < sconn->smb2.seqnum_low ||
 			message_id > (sconn->smb2.seqnum_low +
-			(sconn->smb2.max_credits * DEFAULT_SMB2_MAX_CREDIT_BITMAP_FACTOR))) {
+			(sconn->smb2.max_credits))) {
 		DEBUG(0,("smb2_validate_message_id: bad message_id "
 			"%llu (low = %llu, max = %lu)\n",
 			(unsigned long long)message_id,
@@ -333,8 +333,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 	sconn->smb2.credits_granted -= 1;
 
 	/* Mark the message_id as seen in the bitmap. */
-	bitmap_offset = (unsigned int)(message_id %
-			(uint64_t)(sconn->smb2.max_credits * DEFAULT_SMB2_MAX_CREDIT_BITMAP_FACTOR));
+	bitmap_offset = message_id % sconn->smb2.max_credits;
 	if (bitmap_query(credits_bm, bitmap_offset)) {
 		DEBUG(0,("smb2_validate_message_id: duplicate message_id "
 			"%llu (bm offset %u)\n",
@@ -355,7 +354,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 			bitmap_clear(credits_bm, bitmap_offset);
 			sconn->smb2.seqnum_low += 1;
 			bitmap_offset = (bitmap_offset + 1) %
-				(sconn->smb2.max_credits * DEFAULT_SMB2_MAX_CREDIT_BITMAP_FACTOR);
+				sconn->smb2.max_credits;
 		}
 	}
 
