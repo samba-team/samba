@@ -335,6 +335,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 				     struct ldb_dn *dn,
 				     struct samu *sam)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	int ret = LDB_SUCCESS;
 	const char *pw;
 	struct ldb_message *msg;
@@ -342,7 +343,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	uint32_t dsdb_flags = 0;
 	/* TODO: All fields :-) */
 
-	msg = ldb_msg_new(talloc_tos());
+	msg = ldb_msg_new(frame);
 	if (!msg) {
 		return false;
 	}
@@ -350,11 +351,11 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	msg->dn = dn;
 
 	/* build modify request */
-	ret = ldb_build_mod_req(&req, state->ldb, talloc_tos(), msg, NULL, NULL,
+	ret = ldb_build_mod_req(&req, state->ldb, frame, msg, NULL, NULL,
 				ldb_op_default_callback,
 				NULL);
         if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return ret;
         }
 
@@ -371,6 +372,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	if (need_update(sam, PDB_PLAINTEXT_PW)) {
 		struct ldb_val pw_utf16;
 		if (pw == NULL) {
+			talloc_free(frame);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -476,9 +478,11 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 		uint32_t rid;
 		NTSTATUS status = dom_sid_split_rid(NULL, sid, NULL, &rid);
 		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(frame);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (!dom_sid_in_domain(samdb_domain_sid(state->ldb), sid)) {
+			talloc_free(frame);
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
 		ret |= samdb_msg_add_uint(state->ldb, msg, msg, "primaryGroupID", rid);
@@ -576,10 +580,12 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 
  */
 	if (ret != LDB_SUCCESS) {
+		talloc_free(frame);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (msg->num_elements == 0) {
+		talloc_free(frame);
 		/* Nothing to do, just return success */
 		return LDB_SUCCESS;
 	}
@@ -592,6 +598,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 			 ldb_errstring(state->ldb)));
 	}
 
+	talloc_free(frame);
 	return ret;
 }
 
