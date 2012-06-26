@@ -91,7 +91,8 @@ static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
 bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 			     struct torture_context *tctx,
 			     struct policy_handle **handle,
-			     NTSTATUS expected_status)
+			     NTSTATUS expected_status,
+			     bool test_fail)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -131,11 +132,13 @@ bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			torture_comment(tctx, "not considering %s to be an error\n",
-					nt_errstr(r.out.result));
-			talloc_free(*handle);
-			*handle = NULL;
-			return true;
+			if (test_fail) {
+				torture_comment(tctx, "not considering %s to be an error\n",
+						nt_errstr(r.out.result));
+				talloc_free(*handle);
+				*handle = NULL;
+				return true;
+			}
 		}
 		torture_comment(tctx, "OpenPolicy2 failed - %s\n",
 				nt_errstr(r.out.result));
@@ -150,7 +153,7 @@ bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
 			  struct torture_context *tctx,
 			  struct policy_handle **handle)
 {
-	return test_lsa_OpenPolicy2_ex(b, tctx, handle, NT_STATUS_OK);
+	return test_lsa_OpenPolicy2_ex(b, tctx, handle, NT_STATUS_OK, false);
 }
 
 static bool test_LookupNames(struct dcerpc_binding_handle *b,
@@ -3080,6 +3083,11 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 	/* Test lsaLookupSids3 and lsaLookupNames4 over tcpip */
 	if (p->binding->transport == NCACN_IP_TCP) {
 		if (!test_OpenPolicy(b, tctx, true)) {
+			ret = false;
+		}
+
+		if (!test_lsa_OpenPolicy2_ex(b, tctx, &handle,
+					     NT_STATUS_OK, true)) {
 			ret = false;
 		}
 
