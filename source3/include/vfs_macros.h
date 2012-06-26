@@ -158,6 +158,13 @@
 #define SMB_VFS_NEXT_PREAD(handle, fsp, data, n, off) \
 	smb_vfs_call_pread((handle)->next, (fsp), (data), (n), (off))
 
+#define SMB_VFS_PREAD_SEND(mem_ctx, ev, fsp, data, n, off) \
+	smb_vfs_call_pread_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
+				(fsp), (data), (n), (off))
+#define SMB_VFS_NEXT_PREAD_SEND(mem_ctx, ev, handle, fsp, data, n, off)	\
+	smb_vfs_call_pread_send((handle)->next, (mem_ctx), (ev), (fsp), \
+				(data), (n), (off))
+
 #define SMB_VFS_WRITE(fsp, data, n) \
 	smb_vfs_call_write((fsp)->conn->vfs_handles, (fsp), (data), (n))
 #define SMB_VFS_NEXT_WRITE(handle, fsp, data, n) \

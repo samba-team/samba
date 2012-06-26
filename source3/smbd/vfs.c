@@ -1541,6 +1541,70 @@ ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
 	return handle->fns->pread_fn(handle, fsp, data, n, offset);
 }
 
+struct smb_vfs_call_pread_state {
+	ssize_t (*recv_fn)(struct tevent_req *req, int *err);
+	ssize_t retval;
+};
+
+static void smb_vfs_call_pread_done(struct tevent_req *subreq);
+
+struct tevent_req *smb_vfs_call_pread_send(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct files_struct *fsp,
+					   void *data,
+					   size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_vfs_call_pread_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_vfs_call_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	VFS_FIND(pread_send);
+	state->recv_fn = handle->fns->pread_recv_fn;
+
+	subreq = handle->fns->pread_send_fn(handle, state, ev, fsp, data, n,
+					    offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_vfs_call_pread_done, req);
+	return req;
+}
+
+static void smb_vfs_call_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_vfs_call_pread_state *state = tevent_req_data(
+		req, struct smb_vfs_call_pread_state);
+	int err;
+
+	state->retval = state->recv_fn(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (state->retval == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req, int *perrno)
+{
+	struct smb_vfs_call_pread_state *state = tevent_req_data(
+		req, struct smb_vfs_call_pread_state);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		*perrno = err;
+		return -1;
+	}
+	return state->retval;
+}
+
 ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const void *data,
 			   size_t n)

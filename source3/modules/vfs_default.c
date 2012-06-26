@@ -580,6 +580,49 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	return result;
 }
 
+struct vfswrap_pread_state {
+	ssize_t ret;
+};
+
+static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
+					     TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct files_struct *fsp,
+					     void *data,
+					     size_t n, off_t offset)
+{
+	struct tevent_req *req;
+	struct vfswrap_pread_state *state;
+	int saved_errno;
+
+	req = tevent_req_create(req, &state, struct vfswrap_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	START_PROFILE_BYTES(syscall_pread, n);
+	state->ret = sys_pread(fsp->fh->fd, data, n, offset);
+	saved_errno = errno;
+	END_PROFILE(syscall_pread);
+
+	if (state->ret == -1) {
+		tevent_req_error(req, saved_errno);
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static ssize_t vfswrap_pread_recv(struct tevent_req *req, int *err)
+{
+	struct vfswrap_pread_state *state = tevent_req_data(
+		req, struct vfswrap_pread_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	return state->ret;
+}
+
 static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
 {
 	ssize_t result;
@@ -2255,6 +2298,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.close_fn = vfswrap_close,
 	.read_fn = vfswrap_read,
 	.pread_fn = vfswrap_pread,
+	.pread_send_fn = vfswrap_pread_send,
+	.pread_recv_fn = vfswrap_pread_recv,
 	.write_fn = vfswrap_write,
 	.pwrite_fn = vfswrap_pwrite,
 	.pwrite_send_fn = vfswrap_pwrite_send,
