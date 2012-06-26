@@ -1689,8 +1689,10 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	sam_accountname = talloc_steal(ac,
-				       ldb_msg_find_attr_as_string(tmp_msg, "sAMAccountName", NULL));
+
+	/* We must not steal the original string, it belongs to the caller! */
+	sam_accountname = talloc_strdup(ac, 
+					ldb_msg_find_attr_as_string(tmp_msg, "sAMAccountName", NULL));
 	talloc_free(tmp_msg);
 
 	if (sam_accountname == NULL) {
@@ -1901,8 +1903,12 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		dns_hostname = talloc_steal(ac,
-					    ldb_msg_find_attr_as_string(msg, "dNSHostName", NULL));
+		dns_hostname = talloc_strdup(ac, 
+					     ldb_msg_find_attr_as_string(msg, "dNSHostName", NULL));
+		if (dns_hostname == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+			
 		talloc_free(msg);
 
 		ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn,
