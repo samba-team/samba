@@ -1301,6 +1301,8 @@ static int net_registry_import(struct net_context *c, int argc,
 		goto done;
 	}
 
+	SMB_ASSERT(ret == 0);
+
 	werr = regdb_transaction_commit();
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("Failed to commit transaction on regdb: %s\n",
