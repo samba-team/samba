@@ -1219,9 +1219,9 @@ static bool import_precheck(const char *fname, const char *parse_options)
 	return true;
 }
 
-
-static int net_registry_import(struct net_context *c, int argc,
-			       const char **argv)
+static int import_with_precheck_action(const char *import_fname,
+				       const char *precheck_fname,
+				       const char *parse_options)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct import_ctx import_ctx = {
@@ -1240,6 +1240,21 @@ static int net_registry_import(struct net_context *c, int argc,
 		.setval_type = REGISTRY_VALUE,
 		.data        = &import_ctx
 	};
+	int ret = -1;
+
+	if (import_precheck(precheck_fname, parse_options)) {
+		ret = reg_parse_file(import_fname,
+				     reg_import_adapter(frame, import_callback),
+				     parse_options);
+	}
+
+	talloc_free(frame);
+	return ret;
+}
+
+static int net_registry_import(struct net_context *c, int argc,
+			       const char **argv)
+{
 	const char *parse_options =  (argc > 1) ? argv[1] : NULL;
 	int ret = -1;
 	WERROR werr;
@@ -1266,11 +1281,8 @@ static int net_registry_import(struct net_context *c, int argc,
 		goto done;
 	}
 
-	if (import_precheck(c->opt_precheck, parse_options)) {
-		ret = reg_parse_file(argv[0],
-				     reg_import_adapter(frame, import_callback),
-				     parse_options);
-	}
+	ret = import_with_precheck_action(argv[0], c->opt_precheck,
+					  parse_options);
 
 	if (ret < 0) {
 		d_printf("Transaction canceled!\n");
@@ -1286,7 +1298,6 @@ static int net_registry_import(struct net_context *c, int argc,
 
 	regdb_close();
 done:
-	talloc_free(frame);
 	return ret;
 }
 /**@}*/
