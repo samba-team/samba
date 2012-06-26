@@ -2027,7 +2027,8 @@ bool print_job_get_name(TALLOC_CTX *mem_ctx, const char *sharename, uint32_t job
 		return false;
 	}
 
-	return pjob->jobname;
+	*name = pjob->jobname;
+	return true;
 }
 
 
