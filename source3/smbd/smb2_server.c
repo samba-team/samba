@@ -371,13 +371,6 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		return true;
 	}
 
-	if (sconn->smb2.credits_granted == 0) {
-		DEBUG(0,("smb2_validate_message_id: client used more "
-			 "credits than granted, message_id (%llu)\n",
-			 (unsigned long long)message_id));
-		return false;
-	}
-
 	if (sconn->smb2.supports_multicredit) {
 		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
 		credit_charge = MAX(credit_charge, 1);
@@ -390,6 +383,18 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		   (unsigned long long) credit_charge,
 		   (unsigned long long) sconn->smb2.max_credits,
 		   (unsigned long long) sconn->smb2.seqnum_low));
+
+	if (sconn->smb2.credits_granted < credit_charge) {
+		DEBUG(0, ("smb2_validate_message_id: client used more "
+			  "credits than granted, mid %llu, credits_granted %llu, "
+			  "charge %llu, max_credits %llu, seqnum_low: %llu\n",
+			  (unsigned long long) message_id,
+			  (unsigned long long) sconn->smb2.credits_granted,
+			  (unsigned long long) credit_charge,
+			  (unsigned long long) sconn->smb2.max_credits,
+			  (unsigned long long) sconn->smb2.seqnum_low));
+		return false;
+	}
 
 	/*
 	 * now check the message ids
