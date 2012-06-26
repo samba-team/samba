@@ -375,19 +375,23 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		return true;
 	}
 
-	if (sconn->smb2.credits_granted == 0) {
-		DEBUG(0,("smb2_validate_message_id: client used more "
-			 "credits than granted message_id (%llu)\n",
-			 (unsigned long long)message_id));
-		return false;
-	}
-
 	DEBUG(11, ("smb2_validate_message_id: mid %llu, credits_granted %llu, "
 		   "max_credits %llu, seqnum_low: %llu\n",
 		   (unsigned long long) message_id,
 		   (unsigned long long) sconn->smb2.credits_granted,
 		   (unsigned long long) sconn->smb2.max_credits,
 		   (unsigned long long) sconn->smb2.seqnum_low));
+
+	if (sconn->smb2.credits_granted < 1) {
+		DEBUG(0, ("smb2_validate_message_id: client used more "
+			  "credits than granted, mid %llu, credits_granted %llu, "
+			  "max_credits %llu, seqnum_low: %llu\n",
+			  (unsigned long long) message_id,
+			  (unsigned long long) sconn->smb2.credits_granted,
+			  (unsigned long long) sconn->smb2.max_credits,
+			  (unsigned long long) sconn->smb2.seqnum_low));
+		return false;
+	}
 
 	ok = smb2_validate_sequence_number(sconn, message_id, message_id);
 	if (!ok) {
