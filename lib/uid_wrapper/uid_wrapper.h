@@ -27,6 +27,7 @@ int uwrap_setresuid(uid_t reuid, uid_t euid, uid_t suid);
 uid_t uwrap_geteuid(void);
 int uwrap_setegid(gid_t egid);
 int uwrap_setregid(gid_t rgid, gid_t egid);
+int uwrap_setresgid(gid_t regid, gid_t egid, gid_t sgid);
 uid_t uwrap_getegid(void);
 int uwrap_setgroups(size_t size, const gid_t *list);
 int uwrap_getgroups(int size, gid_t *list);
