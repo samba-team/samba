@@ -121,15 +121,11 @@ echo "Search Options Control Query test returned 0 items"
 failed=`expr $failed + 1`
 fi
 
-wellknown_object_test() {
-	local guid=$1
-	local object=$2
-	local basedns
-	local dn
-	local r
-	local c
-	local n
-	local failed=0
+wellknown_object_test()
+(
+	guid=$1
+	object=$2
+	failed=0
 
 	basedns="<WKGUID=${guid},${BASEDN}> <wkGuId=${guid},${BASEDN}>"
 	for dn in ${basedns}; do
@@ -151,7 +147,7 @@ wellknown_object_test() {
 	done
 
 	return $failed
-}
+)
 
 wellknown_object_test 22B70C67D56E4EFB91E9300FCA3DC1AA ForeignSecurityPrincipals
 st=$?
