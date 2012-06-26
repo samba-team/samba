@@ -128,13 +128,17 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 
 	/* Check logoff time */
 	if (pdb_get_logoff_time(s1) != pdb_get_logoff_time(s2)) {
-		DEBUG(0, ("Logoff time is not written correctly\n"));
+		DEBUG(0, ("Logoff time is not written correctly: %s vs %s \n",
+			  http_timestring(talloc_tos(), pdb_get_logoff_time(s1)),
+			  http_timestring(talloc_tos(), pdb_get_logoff_time(s2))));
 		ret = False;
 	}
 
 	/* Check kickoff time */
 	if (pdb_get_kickoff_time(s1) != pdb_get_kickoff_time(s2)) {
-		DEBUG(0, ("Kickoff time is not written correctly\n"));
+		DEBUG(0, ("Kickoff time is not written correctly: %s vs %s \n",
+			  http_timestring(talloc_tos(), pdb_get_kickoff_time(s1)),
+			  http_timestring(talloc_tos(), pdb_get_kickoff_time(s2))));
 		ret = False;
 	}
 
@@ -146,13 +150,17 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 
 	/* Check password last set time */
 	if (pdb_get_pass_last_set_time(s1) != pdb_get_pass_last_set_time(s2)) {
-		DEBUG(0, ("Password last set time is not written correctly\n"));
+		DEBUG(0, ("Password last set time is not written correctly: %s vs %s \n",
+			  http_timestring(talloc_tos(), pdb_get_pass_last_set_time(s1)),
+			  http_timestring(talloc_tos(), pdb_get_pass_last_set_time(s2))));
 		ret = False;
 	}
 
 	/* Check password can change time */
 	if (pdb_get_pass_can_change_time(s1) != pdb_get_pass_can_change_time(s2)) {
-		DEBUG(0, ("Password can change time is not written correctly\n"));
+		DEBUG(0, ("Password can change time is not written correctly %s vs %s \n",
+			  http_timestring(talloc_tos(), pdb_get_pass_can_change_time(s1)),
+			  http_timestring(talloc_tos(), pdb_get_pass_can_change_time(s2))));
 		ret = False;
 	}
 
