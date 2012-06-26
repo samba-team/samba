@@ -40,7 +40,8 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 }
 
 static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
-			    struct torture_context *tctx)
+			    struct torture_context *tctx,
+			    bool test_fail) /* check if the tests fails! */
 {
 	struct lsa_ObjectAttribute attr;
 	struct policy_handle handle;
@@ -72,9 +73,11 @@ static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			torture_comment(tctx, "not considering %s to be an error\n",
-					nt_errstr(r.out.result));
-			return true;
+			if (test_fail) {
+				torture_comment(tctx, "not considering %s to be an error\n",
+						nt_errstr(r.out.result));
+				return true;
+			}
 		}
 		torture_comment(tctx, "OpenPolicy failed - %s\n",
 				nt_errstr(r.out.result));
@@ -3076,10 +3079,18 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 
 	/* Test lsaLookupSids3 and lsaLookupNames4 over tcpip */
 	if (p->binding->transport == NCACN_IP_TCP) {
-		return test_many_LookupSids(p, tctx, handle);
+		if (!test_OpenPolicy(b, tctx, true)) {
+			ret = false;
+		}
+
+		if (!test_many_LookupSids(p, tctx, handle)) {
+			ret = false;
+		}
+
+		return ret;
 	}
 
-	if (!test_OpenPolicy(b, tctx)) {
+	if (!test_OpenPolicy(b, tctx, false)) {
 		ret = false;
 	}
 
@@ -3176,7 +3187,7 @@ static bool testcase_LookupNames(struct torture_context *tctx,
 		return true;
 	}
 
-	if (!test_OpenPolicy(b, tctx)) {
+	if (!test_OpenPolicy(b, tctx, false)) {
 		ret = false;
 	}
 
@@ -3269,7 +3280,7 @@ static bool testcase_TrustedDomains(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing %d domains\n", state->num_trusts);
 
-	if (!test_OpenPolicy(b, tctx)) {
+	if (!test_OpenPolicy(b, tctx, false)) {
 		ret = false;
 	}
 
@@ -3335,7 +3346,7 @@ static bool testcase_Privileges(struct torture_context *tctx,
 		return true;
 	}
 
-	if (!test_OpenPolicy(b, tctx)) {
+	if (!test_OpenPolicy(b, tctx, false)) {
 		ret = false;
 	}
 
