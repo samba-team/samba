@@ -364,13 +364,13 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 		}
 		bitmap_set(credits_bm, bitmap_offset);
 
-		if (i == sconn->smb2.seqnum_low + 1) {
+		if (i == sconn->smb2.seqnum_low) {
 			/* Move the window forward by all the message_id's
 			   already seen. */
 			while (bitmap_query(credits_bm, bitmap_offset)) {
 				DEBUG(10,("smb2_validate_message_id: clearing "
 					  "id %llu (position %u) from bitmap\n",
-					  (unsigned long long)(sconn->smb2.seqnum_low + 1),
+					  (unsigned long long)(sconn->smb2.seqnum_low),
 					  bitmap_offset));
 				bitmap_clear(credits_bm, bitmap_offset);
 				sconn->smb2.seqnum_low += 1;
