@@ -133,7 +133,7 @@ static bool samu_correct(struct samu *s1, struct samu *s2)
 	}
 
 	/* Check kickoff time */
-	if (pdb_get_kickoff_time(s1) != pdb_get_logoff_time(s2)) {
+	if (pdb_get_kickoff_time(s1) != pdb_get_kickoff_time(s2)) {
 		DEBUG(0, ("Kickoff time is not written correctly\n"));
 		ret = False;
 	}
