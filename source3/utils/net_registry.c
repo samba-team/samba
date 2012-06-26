@@ -1240,6 +1240,7 @@ static int import_with_precheck_action(const char *import_fname,
 		.setval_type = REGISTRY_VALUE,
 		.data        = &import_ctx
 	};
+	struct reg_parse_callback *parse_callback;
 	int ret = -1;
 	bool precheck_ok;
 
@@ -1248,9 +1249,13 @@ static int import_with_precheck_action(const char *import_fname,
 		goto done;
 	}
 
-	ret = reg_parse_file(import_fname,
-			     reg_import_adapter(frame, import_callback),
-			     parse_options);
+	parse_callback = reg_import_adapter(frame, import_callback);
+	if (parse_callback == NULL) {
+		d_printf("talloc failed\n");
+		goto done;
+	}
+
+	ret = reg_parse_file(import_fname, parse_callback, parse_options);
 
 done:
 	talloc_free(frame);
