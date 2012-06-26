@@ -1298,13 +1298,14 @@ static int net_registry_import(struct net_context *c, int argc,
 	if (ret < 0) {
 		d_printf("Transaction canceled!\n");
 		regdb_transaction_cancel();
-	} else {
-		werr = regdb_transaction_commit();
-		if (!W_ERROR_IS_OK(werr)) {
-			d_printf("Failed to commit transaction on regdb: %s\n",
-				 win_errstr(werr));
-			ret = -1;
-		}
+		goto done;
+	}
+
+	werr = regdb_transaction_commit();
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to commit transaction on regdb: %s\n",
+			 win_errstr(werr));
+		ret = -1;
 	}
 
 done:
