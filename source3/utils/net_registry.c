@@ -1241,13 +1241,18 @@ static int import_with_precheck_action(const char *import_fname,
 		.data        = &import_ctx
 	};
 	int ret = -1;
+	bool precheck_ok;
 
-	if (import_precheck(precheck_fname, parse_options)) {
-		ret = reg_parse_file(import_fname,
-				     reg_import_adapter(frame, import_callback),
-				     parse_options);
+	precheck_ok = import_precheck(precheck_fname, parse_options);
+	if (!precheck_ok) {
+		goto done;
 	}
 
+	ret = reg_parse_file(import_fname,
+			     reg_import_adapter(frame, import_callback),
+			     parse_options);
+
+done:
 	talloc_free(frame);
 	return ret;
 }
