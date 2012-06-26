@@ -1126,10 +1126,13 @@ NTSTATUS _lsa_LookupSids3(struct pipes_struct *p,
 	}
 
 	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0,("_lsa_LookupSids3: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
-		return NT_STATUS_INVALID_PARAMETER;
+	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    p->auth.auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		DEBUG(1, ("_lsa_LookupSids3: The client %s is not using "
+			  "a secure connection over netlogon\n",
+			  get_remote_machine_name() ));
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	q.in.handle		= NULL;
@@ -1432,10 +1435,13 @@ NTSTATUS _lsa_LookupNames4(struct pipes_struct *p,
 	}
 
 	/* No policy handle on this call. Restrict to crypto connections. */
-	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0,("_lsa_lookup_names4: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
-		return NT_STATUS_INVALID_PARAMETER;
+	if (p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    p->auth.auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		DEBUG(1, ("_lsa_LookupNames4: The client %s is not using "
+			  "a secure connection over netlogon\n",
+			  get_remote_machine_name()));
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	q.in.handle		= NULL;
