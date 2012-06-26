@@ -517,6 +517,13 @@ struct vfs_fn_pointers {
 	ssize_t (*pread_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, off_t offset);
 	ssize_t (*write_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
 	ssize_t (*pwrite_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, off_t offset);
+	struct tevent_req *(*pwrite_send_fn)(struct vfs_handle_struct *handle,
+					     TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct files_struct *fsp,
+					     const void *data,
+					     size_t n, off_t offset);
+	ssize_t (*pwrite_recv_fn)(struct tevent_req *req, int *err);
 	off_t (*lseek_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset, int whence);
 	ssize_t (*sendfile_fn)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, off_t offset, size_t count);
 	ssize_t (*recvfile_fn)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, off_t offset, size_t count);
@@ -884,6 +891,14 @@ ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
 ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, const void *data,
 			    size_t n, off_t offset);
+struct tevent_req *smb_vfs_call_pwrite_send(struct vfs_handle_struct *handle,
+					    TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct files_struct *fsp,
+					    const void *data,
+					    size_t n, off_t offset);
+ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req, int *perrno);
+
 off_t smb_vfs_call_lseek(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp, off_t offset,
 			     int whence);

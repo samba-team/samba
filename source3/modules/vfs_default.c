@@ -29,6 +29,7 @@
 #include "passdb/lookup_sid.h"
 #include "source3/include/msdfs.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
+#include "lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -626,6 +627,51 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 #endif /* HAVE_PWRITE */
 
 	return result;
+}
+
+struct vfswrap_pwrite_state {
+	ssize_t retval;
+};
+
+static struct tevent_req *vfswrap_pwrite_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct files_struct *fsp, const void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req;
+	struct vfswrap_pwrite_state *state;
+	int saved_errno;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct vfswrap_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	START_PROFILE_BYTES(syscall_pwrite, n);
+	state->retval = sys_pwrite(fsp->fh->fd, data, n, offset);
+	saved_errno = errno;
+	END_PROFILE(syscall_pwrite);
+
+	if (state->retval == -1) {
+		tevent_req_error(req, saved_errno);
+	} else {
+		tevent_req_done(req);
+	}
+	return tevent_req_post(req, ev);
+}
+
+static ssize_t vfswrap_pwrite_recv(struct tevent_req *req, int *perrno)
+{
+	struct vfswrap_pwrite_state *state = tevent_req_data(
+		req, struct vfswrap_pwrite_state);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		*perrno = err;
+		return -1;
+	}
+	return state->retval;
 }
 
 static off_t vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
@@ -2211,6 +2257,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.pread_fn = vfswrap_pread,
 	.write_fn = vfswrap_write,
 	.pwrite_fn = vfswrap_pwrite,
+	.pwrite_send_fn = vfswrap_pwrite_send,
+	.pwrite_recv_fn = vfswrap_pwrite_recv,
 	.lseek_fn = vfswrap_lseek,
 	.sendfile_fn = vfswrap_sendfile,
 	.recvfile_fn = vfswrap_recvfile,

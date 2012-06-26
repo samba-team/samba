@@ -168,6 +168,13 @@
 #define SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, off) \
 	smb_vfs_call_pwrite((handle)->next, (fsp), (data), (n), (off))
 
+#define SMB_VFS_PWRITE_SEND(mem_ctx, ev, fsp, data, n, off) \
+	smb_vfs_call_pwrite_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
+				(fsp), (data), (n), (off))
+#define SMB_VFS_NEXT_PWRITE_SEND(mem_ctx, ev, handle, fsp, data, n, off) \
+	smb_vfs_call_pwrite_send((handle)->next, (mem_ctx), (ev), (fsp), \
+				(data), (n), (off))
+
 #define SMB_VFS_LSEEK(fsp, offset, whence) \
 	smb_vfs_call_lseek((fsp)->conn->vfs_handles, (fsp), (offset), (whence))
 #define SMB_VFS_NEXT_LSEEK(handle, fsp, offset, whence) \
