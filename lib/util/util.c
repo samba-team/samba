@@ -1109,8 +1109,21 @@ void *anonymous_shared_allocate(size_t orig_bufsz)
 	buf = mmap(NULL, bufsz, PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED,
 			-1 /* fd */, 0 /* offset */);
 #else
+{
+	int saved_errno;
+	int fd;
+
+	fd = open("/dev/zero", O_RDWR);
+	if (fd == -1) {
+		return NULL;
+	}
+
 	buf = mmap(NULL, bufsz, PROT_READ|PROT_WRITE, MAP_FILE|MAP_SHARED,
-			open("/dev/zero", O_RDWR), 0 /* offset */);
+		   fd, 0 /* offset */);
+	saved_errno = errno;
+	close(fd);
+	errno = saved_errno;
+}
 #endif
 
 	if (buf == MAP_FAILED) {
