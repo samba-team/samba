@@ -1303,7 +1303,7 @@ static int net_registry_import(struct net_context *c, int argc,
 		if (!W_ERROR_IS_OK(werr)) {
 			d_printf("Failed to commit transaction on regdb: %s\n",
 				 win_errstr(werr));
-			goto done;
+			ret = -1;
 		}
 	}
 
