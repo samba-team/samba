@@ -139,24 +139,13 @@ static NTSTATUS rpcint_dispatch(struct pipes_struct *p,
 	}
 
 	if (p->fault_state) {
-		p->fault_state = false;
-		data_blob_free(&p->out_data.rdata);
-		talloc_free_children(p->mem_ctx);
-		return NT_STATUS_RPC_CALL_FAILED;
-	}
+		NTSTATUS status;
 
-	if (p->bad_handle_fault_state) {
-		p->bad_handle_fault_state = false;
+		status = NT_STATUS(p->fault_state);
+		p->fault_state = 0;
 		data_blob_free(&p->out_data.rdata);
 		talloc_free_children(p->mem_ctx);
-		return NT_STATUS_RPC_SS_CONTEXT_MISMATCH;
-	}
-
-	if (p->rng_fault_state) {
-		p->rng_fault_state = false;
-		data_blob_free(&p->out_data.rdata);
-		talloc_free_children(p->mem_ctx);
-		return NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE;
+		return status;
 	}
 
 	*out_data = p->out_data.rdata;

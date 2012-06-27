@@ -202,7 +202,7 @@ bool create_next_pdu(struct pipes_struct *p)
 	 * the pipe gets closed. JRA.
 	 */
 	if (p->fault_state) {
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
+		setup_fault_pdu(p, NT_STATUS(p->fault_state));
 		return true;
 	}
 
@@ -1395,18 +1395,11 @@ static bool api_rpcTNP(struct pipes_struct *p, struct ncacn_packet *pkt,
 		return False;
 	}
 
-	if (p->bad_handle_fault_state) {
-		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
-		p->bad_handle_fault_state = False;
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_CONTEXT_MISMATCH));
-		return True;
-	}
-
-	if (p->rng_fault_state) {
-		DEBUG(4, ("api_rpcTNP: rng fault return\n"));
-		p->rng_fault_state = False;
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
-		return True;
+	if (p->fault_state) {
+		DEBUG(4,("api_rpcTNP: fault(%d) return.\n", p->fault_state));
+		setup_fault_pdu(p, NT_STATUS(p->fault_state));
+		p->fault_state = 0;
+		return true;
 	}
 
 	if (DEBUGLEVEL >= 50) {
@@ -1461,7 +1454,7 @@ void set_incoming_fault(struct pipes_struct *p)
 	data_blob_free(&p->in_data.data);
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
-	p->fault_state = True;
+	p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 
 	DEBUG(10, ("Setting fault state\n"));
 }

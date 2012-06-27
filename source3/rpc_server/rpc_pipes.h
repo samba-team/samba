@@ -129,22 +129,9 @@ struct pipes_struct {
 	bool pipe_bound;
 
 	/*
-	 * Set to true when we should return fault PDU's for everything.
+	 * Set the DCERPC_FAULT to return.
 	 */
-
-	bool fault_state;
-
-	/*
-	 * Set to true when we should return fault PDU's for a bad handle.
-	 */
-
-	bool bad_handle_fault_state;
-
-	/*
-	 * Set to true when the backend does not support a call.
-	 */
-
-	bool rng_fault_state;
+	int fault_state;
 
 	/*
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's

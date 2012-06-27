@@ -1830,7 +1830,7 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 WERROR _netr_LogonUasLogon(struct pipes_struct *p,
 			   struct netr_LogonUasLogon *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1840,7 +1840,7 @@ WERROR _netr_LogonUasLogon(struct pipes_struct *p,
 WERROR _netr_LogonUasLogoff(struct pipes_struct *p,
 			    struct netr_LogonUasLogoff *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1850,7 +1850,7 @@ WERROR _netr_LogonUasLogoff(struct pipes_struct *p,
 NTSTATUS _netr_DatabaseDeltas(struct pipes_struct *p,
 			      struct netr_DatabaseDeltas *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1860,7 +1860,7 @@ NTSTATUS _netr_DatabaseDeltas(struct pipes_struct *p,
 NTSTATUS _netr_DatabaseSync(struct pipes_struct *p,
 			    struct netr_DatabaseSync *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1870,7 +1870,7 @@ NTSTATUS _netr_DatabaseSync(struct pipes_struct *p,
 NTSTATUS _netr_AccountDeltas(struct pipes_struct *p,
 			     struct netr_AccountDeltas *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -1880,7 +1880,7 @@ NTSTATUS _netr_AccountDeltas(struct pipes_struct *p,
 NTSTATUS _netr_AccountSync(struct pipes_struct *p,
 			   struct netr_AccountSync *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -2021,7 +2021,7 @@ WERROR _netr_GetAnyDCName(struct pipes_struct *p,
 NTSTATUS _netr_DatabaseSync2(struct pipes_struct *p,
 			     struct netr_DatabaseSync2 *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -2031,7 +2031,7 @@ NTSTATUS _netr_DatabaseSync2(struct pipes_struct *p,
 NTSTATUS _netr_DatabaseRedo(struct pipes_struct *p,
 			    struct netr_DatabaseRedo *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -2041,7 +2041,7 @@ NTSTATUS _netr_DatabaseRedo(struct pipes_struct *p,
 WERROR _netr_DsRGetDCName(struct pipes_struct *p,
 			  struct netr_DsRGetDCName *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2080,7 +2080,7 @@ NTSTATUS _netr_LogonGetCapabilities(struct pipes_struct *p,
 WERROR _netr_NETRLOGONSETSERVICEBITS(struct pipes_struct *p,
 				     struct netr_NETRLOGONSETSERVICEBITS *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2090,7 +2090,7 @@ WERROR _netr_NETRLOGONSETSERVICEBITS(struct pipes_struct *p,
 WERROR _netr_LogonGetTrustRid(struct pipes_struct *p,
 			      struct netr_LogonGetTrustRid *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2100,7 +2100,7 @@ WERROR _netr_LogonGetTrustRid(struct pipes_struct *p,
 WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(struct pipes_struct *p,
 					  struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2110,7 +2110,7 @@ WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(struct pipes_struct *p,
 WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(struct pipes_struct *p,
 					  struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2120,7 +2120,7 @@ WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(struct pipes_struct *p,
 WERROR _netr_DsRGetDCNameEx(struct pipes_struct *p,
 			    struct netr_DsRGetDCNameEx *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2130,7 +2130,7 @@ WERROR _netr_DsRGetDCNameEx(struct pipes_struct *p,
 WERROR _netr_DsRGetSiteName(struct pipes_struct *p,
 			    struct netr_DsRGetSiteName *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2140,7 +2140,7 @@ WERROR _netr_DsRGetSiteName(struct pipes_struct *p,
 NTSTATUS _netr_LogonGetDomainInfo(struct pipes_struct *p,
 				  struct netr_LogonGetDomainInfo *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -2150,7 +2150,7 @@ NTSTATUS _netr_LogonGetDomainInfo(struct pipes_struct *p,
 WERROR _netr_ServerPasswordGet(struct pipes_struct *p,
 			       struct netr_ServerPasswordGet *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2160,7 +2160,7 @@ WERROR _netr_ServerPasswordGet(struct pipes_struct *p,
 WERROR _netr_NETRLOGONSENDTOSAM(struct pipes_struct *p,
 				struct netr_NETRLOGONSENDTOSAM *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2170,7 +2170,7 @@ WERROR _netr_NETRLOGONSENDTOSAM(struct pipes_struct *p,
 WERROR _netr_DsRAddressToSitenamesW(struct pipes_struct *p,
 				    struct netr_DsRAddressToSitenamesW *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2180,7 +2180,7 @@ WERROR _netr_DsRAddressToSitenamesW(struct pipes_struct *p,
 WERROR _netr_DsRGetDCNameEx2(struct pipes_struct *p,
 			     struct netr_DsRGetDCNameEx2 *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2190,7 +2190,7 @@ WERROR _netr_DsRGetDCNameEx2(struct pipes_struct *p,
 WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct pipes_struct *p,
 						 struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2200,7 +2200,7 @@ WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct pipes_struct *p,
 WERROR _netr_NetrEnumerateTrustedDomainsEx(struct pipes_struct *p,
 					   struct netr_NetrEnumerateTrustedDomainsEx *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2210,7 +2210,7 @@ WERROR _netr_NetrEnumerateTrustedDomainsEx(struct pipes_struct *p,
 WERROR _netr_DsRAddressToSitenamesExW(struct pipes_struct *p,
 				      struct netr_DsRAddressToSitenamesExW *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2220,7 +2220,7 @@ WERROR _netr_DsRAddressToSitenamesExW(struct pipes_struct *p,
 WERROR _netr_DsrGetDcSiteCoverageW(struct pipes_struct *p,
 				   struct netr_DsrGetDcSiteCoverageW *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2230,7 +2230,7 @@ WERROR _netr_DsrGetDcSiteCoverageW(struct pipes_struct *p,
 WERROR _netr_DsrEnumerateDomainTrusts(struct pipes_struct *p,
 				      struct netr_DsrEnumerateDomainTrusts *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2240,7 +2240,7 @@ WERROR _netr_DsrEnumerateDomainTrusts(struct pipes_struct *p,
 WERROR _netr_DsrDeregisterDNSHostRecords(struct pipes_struct *p,
 					 struct netr_DsrDeregisterDNSHostRecords *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2250,7 +2250,7 @@ WERROR _netr_DsrDeregisterDNSHostRecords(struct pipes_struct *p,
 NTSTATUS _netr_ServerTrustPasswordsGet(struct pipes_struct *p,
 				       struct netr_ServerTrustPasswordsGet *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -2260,7 +2260,7 @@ NTSTATUS _netr_ServerTrustPasswordsGet(struct pipes_struct *p,
 WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 					  struct netr_DsRGetForestTrustInformation *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -2555,7 +2555,7 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 NTSTATUS _netr_Unused47(struct pipes_struct *p,
 			struct netr_Unused47 *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
@@ -2565,6 +2565,6 @@ NTSTATUS _netr_Unused47(struct pipes_struct *p,
 NTSTATUS _netr_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
 						 struct netr_DsrUpdateReadOnlyServerDnsRecords *r)
 {
-	p->rng_fault_state = true;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

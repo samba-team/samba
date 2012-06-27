@@ -761,7 +761,7 @@ WERROR _winreg_SaveKeyEx(struct pipes_struct *p,
 	/* fill in your code here if you think this call should
 	   do anything */
 
-	p->rng_fault_state = True;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -949,7 +949,7 @@ WERROR _winreg_UnLoadKey(struct pipes_struct *p,
 	/* fill in your code here if you think this call should
 	   do anything */
 
-	p->rng_fault_state = True;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -963,7 +963,7 @@ WERROR _winreg_ReplaceKey(struct pipes_struct *p,
 	/* fill in your code here if you think this call should
 	   do anything */
 
-	p->rng_fault_state = True;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -977,7 +977,7 @@ WERROR _winreg_LoadKey(struct pipes_struct *p,
 	/* fill in your code here if you think this call should
 	   do anything */
 
-	p->rng_fault_state = True;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
@@ -1140,6 +1140,6 @@ WERROR _winreg_DeleteKeyEx(struct pipes_struct *p,
 	/* fill in your code here if you think this call should
 	   do anything */
 
-	p->rng_fault_state = True;
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
