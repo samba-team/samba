@@ -1988,10 +1988,34 @@ string.</member>
 
 <refsect3>
   <title>REGISTRY IMPORT <replaceable>file</replaceable><!--
-  --><replaceable>[opt]</replaceable></title>
-
-  <para>Import a registration entries (.reg) <emphasis>file</emphasis>.
-  </para>
+  --><replaceable> [--precheck &lt;check-file&gt;] [opt]</replaceable></title>
+  <para>Import a registration entries (.reg) <emphasis>file</emphasis>.</para>
+  <para>The following options are available:</para>
+  <variablelist>
+    <varlistentry><term>--precheck <replaceable>check-file</replaceable></term>
+    <listitem><para>
+      This is a mechanism to check the existence or non-existence of
+      certain keys or values specified in a precheck file before applying
+      the import file.
+      The import file will only be applied if the precheck succeeds.
+    </para>
+    <para>
+      The check-file follows the normal registry file syntax with the
+      following semantics:
+    </para>
+      <itemizedlist>
+	<listitem><para>&lt;value name&gt;=&lt;value&gt; checks whether the
+	  value exists and has the given value.</para></listitem>
+	<listitem><para>&lt;value name&gt;=- checks whether the value does
+	  not exist.</para></listitem>
+	<listitem><para>[key] checks whether the key exists.</para>
+	</listitem>
+	<listitem><para>[-key] checks whether the key does not exist.</para>
+	</listitem>
+      </itemizedlist>
+    </listitem>
+    </varlistentry>
+  </variablelist>
 </refsect3>
 
 <refsect3>
