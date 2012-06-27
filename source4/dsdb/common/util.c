@@ -3685,7 +3685,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 	}
 
 	if (dsdb_flags & DSDB_PASSWORD_BYPASS_LAST_SET) {
-		ret = ldb_request_add_control(req, DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID, true, NULL);
+		/* 
+		 * This must not be critical, as it will only be
+		 * handled (and need to be handled) if the other
+		 * attributes in the request bring password_hash into
+		 * action
+		 */
+		ret = ldb_request_add_control(req, DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID, false, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
