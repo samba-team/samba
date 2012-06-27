@@ -586,6 +586,10 @@ int rep_strerror_r(int errnum, char *buf, size_t buflen);
 #define UINT64_MAX ((uint64_t)-1)
 #endif
 
+#ifndef INT64_MAX
+#define INT64_MAX 9223372036854775807
+#endif
+
 #ifndef CHAR_BIT
 #define CHAR_BIT 8
 #endif
