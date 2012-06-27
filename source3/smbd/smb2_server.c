@@ -570,11 +570,26 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	}
 
 	/*
-	 *    remove the range we'll already granted to the client
+	 * sequence numbers should not wrap
+	 *
+	 * 1. calculate the possible credits until
+	 *    the sequence numbers start to wrap on 64-bit.
+	 *
+	 * 2. UINT64_MAX is used for Break Notifications.
+	 *
+	 * 2. truncate the possible credits to the maximum
+	 *    credits we want to grant to the client in total.
+	 *
+	 * 3. remove the range we'll already granted to the client
 	 *    this makes sure the client consumes the lowest sequence
 	 *    number, before we can grant additional credits.
 	 */
-	credits_possible = sconn->smb2.max_credits;
+	credits_possible = UINT64_MAX - sconn->smb2.seqnum_low;
+	if (credits_possible > 0) {
+		/* remove UINT64_MAX */
+		credits_possible -= 1;
+	}
+	credits_possible = MIN(credits_possible, sconn->smb2.max_credits);
 	credits_possible -= sconn->smb2.seqnum_range;
 
 	credits_granted = MIN(credits_granted, credits_possible);
