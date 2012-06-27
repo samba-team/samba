@@ -537,28 +537,19 @@ static NTSTATUS dcesrv_lsa_lookup_sid(struct lsa_policy_state *state, TALLOC_CTX
 	return NT_STATUS_OK;
 }
 
-
-/*
-  lsa_LookupSids2
-*/
-NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
-				TALLOC_CTX *mem_ctx,
-				struct lsa_LookupSids2 *r)
+static NTSTATUS dcesrv_lsa_LookupSids_common(struct dcesrv_call_state *dce_call,
+					     TALLOC_CTX *mem_ctx,
+					     struct lsa_policy_state *state,
+					     struct lsa_LookupSids2 *r)
 {
-	struct lsa_policy_state *state;
 	struct lsa_RefDomainList *domains = NULL;
-	uint32_t i;
 	NTSTATUS status = NT_STATUS_OK;
-	struct dcesrv_handle *h;
-
-	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+	uint32_t i;
 
 	if (r->in.level < LSA_LOOKUP_NAMES_ALL ||
 	    r->in.level > LSA_LOOKUP_NAMES_RODC_REFERRAL_TO_FULL_DC) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	state = h->data;
 
 	*r->out.domains = NULL;
 
@@ -641,6 +632,26 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
+/*
+  lsa_LookupSids2
+*/
+NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
+				TALLOC_CTX *mem_ctx,
+				struct lsa_LookupSids2 *r)
+{
+	struct lsa_policy_state *state;
+	struct dcesrv_handle *h;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
+
+	state = h->data;
+
+	return dcesrv_lsa_LookupSids_common(dce_call,
+					    mem_ctx,
+					    state,
+					    r);
+}
+
 
 /*
   lsa_LookupSids3
@@ -652,47 +663,38 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_LookupSids3 *r)
 {
-	struct lsa_LookupSids2 r2;
-	struct lsa_OpenPolicy2 pol;
+	struct lsa_policy_state *policy_state;
+	struct lsa_LookupSids2 q;
 	NTSTATUS status;
-	struct dcesrv_handle *h;
 
-	ZERO_STRUCT(r2);
-	
-	/* No policy handle on the wire, so make one up here */
-	r2.in.handle = talloc(mem_ctx, struct policy_handle);
-	if (!r2.in.handle) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	pol.out.handle = r2.in.handle;
-	pol.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	pol.in.attr = NULL;
-	pol.in.system_name = NULL;
-	status = dcesrv_lsa_OpenPolicy2(dce_call, mem_ctx, &pol);
+	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &policy_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* ensure this handle goes away at the end of this call */
-	DCESRV_PULL_HANDLE(h, r2.in.handle, LSA_HANDLE_POLICY);
-	talloc_steal(mem_ctx, h);
+	ZERO_STRUCT(q);
 
-	r2.in.sids     = r->in.sids;
-	r2.in.names    = r->in.names;
-	r2.in.level    = r->in.level;
-	r2.in.count    = r->in.count;
-	r2.in.lookup_options = r->in.lookup_options;
-	r2.in.client_revision = r->in.client_revision;
-	r2.out.count   = r->out.count;
-	r2.out.names   = r->out.names;
-	r2.out.domains = r->out.domains;
+	q.in.handle   = NULL;
+	q.in.sids     = r->in.sids;
+	q.in.names    = r->in.names;
+	q.in.level    = r->in.level;
+	q.in.count    = r->in.count;
+	q.in.lookup_options = r->in.lookup_options;
+	q.in.client_revision = r->in.client_revision;
+	q.out.count   = r->out.count;
+	q.out.names   = r->out.names;
+	q.out.domains = r->out.domains;
 
-	status = dcesrv_lsa_LookupSids2(dce_call, mem_ctx, &r2);
+	status = dcesrv_lsa_LookupSids_common(dce_call,
+					      mem_ctx,
+					      policy_state,
+					      &q);
 
-	r->out.domains = r2.out.domains;
-	r->out.names   = r2.out.names;
-	r->out.count   = r2.out.count;
+	talloc_free(policy_state);
+
+	r->out.count = q.out.count;
+	r->out.names = q.out.names;
+	r->out.domains = q.out.domains;
 
 	return status;
 }
