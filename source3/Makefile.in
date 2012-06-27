@@ -383,7 +383,8 @@ LIBCLI_SAMR_OBJ = autoconf/librpc/gen_ndr/ndr_samr_c.o \
 
 LIBCLI_NETLOGON_OBJ = autoconf/librpc/gen_ndr/ndr_netlogon_c.o \
 		      rpc_client/cli_netlogon.o \
-		      rpc_client/util_netlogon.o
+		      rpc_client/util_netlogon.o \
+		      rpc_client/init_netlogon.o
 
 LIBCLI_EPMAPPER_OBJ = autoconf/librpc/gen_ndr/ndr_epmapper_c.o
 
@@ -649,6 +650,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 
 LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
 	       rpc_client/cli_pipe.o \
+	       $(LIBCLI_NETLOGON_OBJ) \
 	       librpc/crypto/gse_krb5.o \
 	       librpc/crypto/gse.o \
 	       ../auth/kerberos/gssapi_pac.o \
@@ -802,12 +804,10 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
-		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_SERVER_REGISTER_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
 		 rpc_server/rpc_sock_helper.o \
 		 rpc_server/rpc_service_setup.o \
-		 rpc_client/init_netlogon.o \
 		 rpc_client/init_samr.o
 
 RPC_CLIENT_SCHANNEL_OBJ = rpc_client/cli_pipe_schannel.o
@@ -1131,10 +1131,8 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_LSA_OBJ) \
 	     $(LIBCLI_SAMR_OBJ) \
 	     $(LIBCLI_WINREG_OBJ) \
-	     $(LIBCLI_NETLOGON_OBJ) \
 	     $(LIBCLI_FSRVP_OBJ) \
 	     $(RPC_CLIENT_SCHANNEL_OBJ) \
-	     rpc_client/init_netlogon.o \
 	     rpc_client/init_samr.o
 
 PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
@@ -1243,9 +1241,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(LIBCLI_SRVSVC_OBJ) \
 	   $(LIBCLI_LSA_OBJ) \
 	   $(LIBCLI_SAMR_OBJ) \
-	   $(LIBCLI_NETLOGON_OBJ) \
 	   $(RPC_CLIENT_SCHANNEL_OBJ) \
-	   rpc_client/init_netlogon.o \
 	   rpc_client/init_samr.o \
 	   registry/reg_parse.o registry/reg_format.o \
 	   registry/reg_import.o \
@@ -1522,8 +1518,6 @@ WINBINDD_OBJ = \
 		$(LIBCLI_DSSETUP_OBJ) \
 		$(LIBCLI_LSA_OBJ) \
 		$(LIBCLI_SAMR_OBJ) \
-		$(LIBCLI_NETLOGON_OBJ) \
-		rpc_client/init_netlogon.o \
 		rpc_client/init_samr.o \
 		$(PAM_ERRORS_OBJ)
 
@@ -2327,9 +2321,7 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ0) $(LIBNET_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
-		 $(LIBCLI_NETLOGON_OBJ) \
 		 $(RPC_CLIENT_SCHANNEL_OBJ) \
-		 rpc_client/init_netlogon.o \
 		 rpc_client/init_samr.o
 
 LIBNETAPI_SHARED_TARGET=@LIBNETAPI_SHARED_TARGET@
