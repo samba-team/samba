@@ -673,6 +673,9 @@ struct smbd_server_connection {
 		 * The maximum number of credits we will ever
 		 * grant to the client.
 		 *
+		 * Typically we will only grant 1/16th of
+		 * max_credits.
+		 *
 		 * This is the "server max credits" parameter.
 		 */
 		uint16_t max_credits;
