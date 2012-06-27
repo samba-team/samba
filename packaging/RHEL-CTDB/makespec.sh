@@ -7,7 +7,7 @@
 DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/../..
 SRCDIR=${TOPDIR}/source3
-VERSION_H=${SRCDIR}/include/version.h
+VERSION_H=${SRCDIR}/include/autoconf/version.h
 SPECFILE=${DIRNAME}/samba.spec
 
 ##
