@@ -324,6 +324,11 @@ for t in tests:
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k no -U$USERNAME%$PASSWORD', 'ntlm')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k yes -U$USERNAME%$PASSWORD', 'krb5')
+    elif t == "rpc.lsa":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
+        plansmbtorturetestsuite(t, "s3dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
+        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
+        plansmbtorturetestsuite(t, "plugin_s4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
     else:
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
