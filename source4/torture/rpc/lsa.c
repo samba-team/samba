@@ -766,21 +766,39 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		if (!test_LookupNames(b, tctx, handle, &names)) {
 			return false;
 		}
-	} else if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
+	}
+
+	if (p->binding->transport == NCACN_NP) {
+		struct lsa_TransNameArray2 names;
+
+		names.count = 0;
+		names.names = NULL;
+
+		if (!test_LookupSids3(b, tctx, &sids, true)) {
+			return false;
+		}
+		if (!test_LookupNames4(b, tctx, &names, false, true)) {
+			return false;
+		}
+	} else if (p->binding->transport == NCACN_IP_TCP) {
+		struct lsa_TransNameArray2 names;
+
+		names.count = 0;
+		names.names = NULL;
+
+		if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
 		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
-
-		if (p->binding->transport == NCACN_IP_TCP) {
-			struct lsa_TransNameArray2 names;
-
 			if (!test_LookupSids3(b, tctx, &sids, false)) {
 				return false;
 			}
-			if (!test_LookupNames4(b, tctx, &names, false, false)) {
+			if (!test_LookupNames4(b, tctx, &names, true, false)) {
 				return false;
 			}
-		} else if (p->binding->transport == NCACN_NP) {
-			struct lsa_TransNameArray2 names;
-
+		} else {
+			/*
+			 * If we don't have a secure channel these tests must
+			 * fail with ACCESS_DENIED.
+			 */
 			if (!test_LookupSids3(b, tctx, &sids, true)) {
 				return false;
 			}
