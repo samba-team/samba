@@ -641,14 +641,49 @@ struct smbd_server_connection {
 			bool blocking_lock_unlock_state;
 		} locks;
 		struct smbd_smb2_request *requests;
+		/*
+		 * seqnum_low is the lowest sequence number
+		 * we will accept.
+		 */
 		uint64_t seqnum_low;
-		uint32_t credits_granted;
-		uint32_t max_credits;
+		/*
+		 * seqnum_range is the range of credits we have
+		 * granted from the sequence windows starting
+		 * at seqnum_low.
+		 *
+		 * This gets incremented when new credits are
+		 * granted and gets decremented when the
+		 * lowest sequence number is consumed
+		 * (when seqnum_low gets incremented).
+		 */
+		uint16_t seqnum_range;
+		/*
+		 * credits_grantedThe number of credits we have currently granted
+		 * to the client.
+		 *
+		 * This gets incremented when new credits are
+		 * granted and gets decremented when any credit
+		 * is comsumed.
+		 *
+		 * Note: the decrementing is different compared
+		 *       to seqnum_range.
+		 */
+		uint16_t credits_granted;
+		/*
+		 * The maximum number of credits we will ever
+		 * grant to the client.
+		 *
+		 * This is the "server max credits" parameter.
+		 */
+		uint16_t max_credits;
+		/*
+		 * a bitmap of size max_credits
+		 */
+		struct bitmap *credits_bitmap;
+		bool supports_multicredit;
 		uint32_t max_trans;
 		uint32_t max_read;
 		uint32_t max_write;
-		bool supports_multicredit;
-		struct bitmap *credits_bitmap;
 		bool compound_related_in_progress;
 	} smb2;
 
