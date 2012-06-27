@@ -241,12 +241,6 @@ static NTSTATUS pdb_samba4_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_profile_path(sam, str, PDB_SET);
 	}
 
-	str = ldb_msg_find_attr_as_string(msg, "profilePath",
-					    NULL);
-	if (str != NULL) {
-		pdb_set_profile_path(sam, str, PDB_SET);
-	}
-
 	str = ldb_msg_find_attr_as_string(msg, "comment",
 					    NULL);
 	if (str != NULL) {
