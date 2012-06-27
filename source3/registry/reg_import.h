@@ -194,6 +194,6 @@ struct reg_import_callback {
  *
  * @return a talloc'ed reg_import object, NULL on error
  */
-struct reg_parse_callback* reg_import_adapter(const void* talloc_ctx,
+struct reg_parse_callback* reg_import_adapter(TALLOC_CTX *talloc_ctx,
 					      struct reg_import_callback cb);
 #endif

@@ -231,7 +231,7 @@ static int nop(void* data)
 }
 
 
-struct reg_parse_callback* reg_import_adapter(const void* talloc_ctx,
+struct reg_parse_callback *reg_import_adapter(TALLOC_CTX *talloc_ctx,
 					      struct reg_import_callback cb)
 {
 	struct reg_parse_callback* ret;
