@@ -390,6 +390,8 @@ int main(int argc, char **argv)
 	pdb_set_homedir(out, "\\\\torture\\home", PDB_SET);
 	pdb_set_logon_script(out, "torture_script.cmd", PDB_SET);
 
+	pdb_set_acct_ctrl(out, ACB_NORMAL, PDB_SET);
+
 	pdb_get_account_policy(PDB_POLICY_PASSWORD_HISTORY, &history);
 	if (history * PW_HISTORY_ENTRY_LEN < NT_HASH_LEN) {
 		buf = (uint8 *)TALLOC(ctx, NT_HASH_LEN);
@@ -422,6 +424,12 @@ int main(int argc, char **argv)
 	} else {
 		pdb_set_pass_can_change_time(out, time(NULL)+min_age, PDB_SET);
 	}
+
+	pdb_set_logon_time(out, time(NULL)-3600, PDB_SET);
+
+	pdb_set_logoff_time(out, time(NULL), PDB_SET);
+
+	pdb_set_kickoff_time(out, time(NULL)+3600, PDB_SET);
 
 	/* Create account */
 	if (!NT_STATUS_IS_OK(rv = pdb->add_sam_account(pdb, out))) {
