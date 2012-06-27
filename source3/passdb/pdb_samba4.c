@@ -61,7 +61,7 @@ static bool pdb_samba4_pull_time(struct ldb_message *msg, const char *attr,
 		return false;
 	}
 	tmp = ldb_msg_find_attr_as_uint64(msg, attr, 0);
-	*ptime = uint64s_nt_time_to_unix_abs(&tmp);
+	*ptime = nt_time_to_unix(tmp);
 	return true;
 }
 
