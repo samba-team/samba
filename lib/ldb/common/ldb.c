@@ -776,7 +776,7 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 		ldb_debug_add(ldb, "ldb_trace_request: MODIFY\n");
 		ldb_debug_add(req->handle->ldb, "%s\n", 
 			      ldb_ldif_message_string(req->handle->ldb, tmp_ctx, 
-						      LDB_CHANGETYPE_ADD, 
+						      LDB_CHANGETYPE_MODIFY,
 						      req->op.mod.message));
 		break;
 	case LDB_REQ_REGISTER_CONTROL:
