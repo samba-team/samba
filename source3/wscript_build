@@ -558,7 +558,7 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
                 torture/test_idmap_tdb_common.c
                 torture/t_strappend.c'''
 
-SMBTORTURE_SRC = '''${SMBTORTURE_SRC1} ${LOCKING_SRC} ${FNAME_UTIL_SRC}
+SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}
         torture/wbc_async.c'''
 
 MASKTEST_SRC = '''torture/masktest.c'''
@@ -1400,6 +1400,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  TLDAP
                  RPC_NDR_ECHO
                  WB_REQTRANS
+                 LOCKING
 		 NDR_OPEN_FILES
 		 idmap
                  ''',
