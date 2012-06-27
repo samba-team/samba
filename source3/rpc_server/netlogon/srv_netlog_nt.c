@@ -1001,7 +1001,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		goto out;
 	}
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(10, ("loadparm_init_s3 failed\n"));
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -1106,7 +1106,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
 		}
 	}
 
-	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -1782,7 +1782,7 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
         }
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -2335,7 +2335,7 @@ NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 
 	/* TODO: check server name */
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -2441,7 +2441,7 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	DATA_BLOB session_key;
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return NT_STATUS_INTERNAL_ERROR;

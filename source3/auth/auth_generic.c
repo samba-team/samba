@@ -239,7 +239,7 @@ NTSTATUS auth_generic_prepare(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
+		lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_helpers());
 		if (lp_ctx == NULL) {
 			DEBUG(10, ("loadparm_init_s3 failed\n"));
 			TALLOC_FREE(tmp_ctx);

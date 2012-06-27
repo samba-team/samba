@@ -238,7 +238,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 	}
 	auth_context->generate_session_info_pac = kerberos_fetch_pac;
 
-	lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		status = NT_STATUS_INVALID_SERVER_STATE;
 		DEBUG(10, ("loadparm_init_s3 failed\n"));

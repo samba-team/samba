@@ -1583,7 +1583,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	lp_ctx = loadparm_init_s3(db_path, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(db_path, loadparm_s3_helpers());
 
 	db_ctdb->wtdb = tdb_wrap_open(db_ctdb, db_path, hash_size, tdb_flags,
 				      O_RDWR, 0, lp_ctx);

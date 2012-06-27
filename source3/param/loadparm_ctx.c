@@ -60,7 +60,7 @@ static bool lp_load_for_s4_ctx(const char *filename)
  * All of the s4 loadparm functions should be here eventually, once
  * they are implemented in the s3 loadparm, have the same format (enum
  * values in particular) and defaults. */
-static const struct loadparm_s3_context s3_fns = 
+static const struct loadparm_s3_helpers s3_fns =
 {
 	.get_parametric = lp_parm_const_string_service,
 	.get_parm_struct = lp_get_parameter,
@@ -117,7 +117,7 @@ static const struct loadparm_s3_context s3_fns =
 	.passwordserver = lp_passwordserver
 };
 
-const struct loadparm_s3_context *loadparm_s3_context(void)
+const struct loadparm_s3_helpers *loadparm_s3_helpers(void)
 {
 	return &s3_fns;
 }

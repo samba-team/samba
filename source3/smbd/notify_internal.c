@@ -133,7 +133,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	notify->msg = msg;
 	notify->list = NULL;
 
-	lp_ctx = loadparm_init_s3(notify, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(notify, loadparm_s3_helpers());
 	notify->db_notify = db_open_tdb(
 		notify, lp_ctx, lock_path("notify.tdb"),
 		0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,

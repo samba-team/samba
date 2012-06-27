@@ -1362,7 +1362,7 @@ struct loadparm_context {
 	bool refuse_free;
 	bool global; /* Is this the global context, which may set
 		      * global variables such as debug level etc? */
-	const struct loadparm_s3_context *s3_fns;
+	const struct loadparm_s3_helpers *s3_fns;
 };
 
 
@@ -3469,7 +3469,7 @@ struct loadparm_context *loadparm_init_global(bool load_default)
  * Initialise the global parameter structure.
  */
 struct loadparm_context *loadparm_init_s3(TALLOC_CTX *mem_ctx, 
-					  const struct loadparm_s3_context *s3_fns)
+					  const struct loadparm_s3_helpers *s3_fns)
 {
 	struct loadparm_context *loadparm_context = talloc_zero(mem_ctx, struct loadparm_context);
 	if (!loadparm_context) {

@@ -44,7 +44,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 	struct auth4_context *auth4_context;
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(10, ("loadparm_init_s3 failed\n"));
 		talloc_free(frame);
@@ -109,7 +109,7 @@ static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 	struct cli_credentials *server_credentials;
 	struct server_id *server_id;
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(1, ("loadparm_init_s3 failed\n"));
 		TALLOC_FREE(frame);
@@ -192,7 +192,7 @@ static NTSTATUS make_auth4_context_s4(TALLOC_CTX *mem_ctx,
 	struct imessaging_context *msg_ctx;
 	struct server_id *server_id;
 
-	lp_ctx = loadparm_init_s3(frame, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(frame, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(1, ("loadparm_init_s3 failed\n"));
 		TALLOC_FREE(frame);

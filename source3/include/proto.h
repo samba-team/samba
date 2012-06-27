@@ -1504,7 +1504,7 @@ void _lp_set_server_role(int server_role);
 
 /* The following definitions come from param/loadparm_ctx.c  */
 
-const struct loadparm_s3_context *loadparm_s3_context(void);
+const struct loadparm_s3_helpers *loadparm_s3_helpers(void);
 
 /* The following definitions come from param/loadparm_server_role.c  */
 

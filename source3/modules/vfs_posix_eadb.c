@@ -248,7 +248,7 @@ static bool posix_eadb_init(int snum, struct tdb_wrap **p_db)
 		return false;
 	}
 
-	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 
 	become_root();
 	db = tdb_wrap_open(NULL, eadb, 50000,

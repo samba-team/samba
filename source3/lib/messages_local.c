@@ -104,7 +104,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	lp_ctx = loadparm_init_s3(result, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(result, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -158,7 +158,7 @@ bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx)
 	struct tdb_wrap *db;
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return false;

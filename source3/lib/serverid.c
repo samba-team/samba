@@ -44,7 +44,7 @@ bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 	struct tdb_wrap *db;
 	struct loadparm_context *lp_ctx;
 
-	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		return false;

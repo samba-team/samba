@@ -66,7 +66,7 @@ static int dfs_samba4_connect(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	data->lp_ctx = loadparm_init_s3(data, loadparm_s3_context());
+	data->lp_ctx = loadparm_init_s3(data, loadparm_s3_helpers());
 	if (data->lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		SMB_VFS_NEXT_DISCONNECT(handle);

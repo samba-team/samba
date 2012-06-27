@@ -2283,7 +2283,7 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 		goto nomem;
 	}
 
-	state->lp_ctx = loadparm_init_s3(state, loadparm_s3_context());
+	state->lp_ctx = loadparm_init_s3(state, loadparm_s3_helpers());
 	if (state->lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		goto nomem;

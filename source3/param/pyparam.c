@@ -30,7 +30,7 @@ void initparam(void);
 static PyObject *py_get_context(PyObject *self)
 {
 	PyObject *py_loadparm;
-	const struct loadparm_s3_context *s3_context;
+	const struct loadparm_s3_helpers *s3_context;
 	const struct loadparm_context *s4_context;
 	TALLOC_CTX *mem_ctx;
 
@@ -40,7 +40,7 @@ static PyObject *py_get_context(PyObject *self)
 		return NULL;
 	}
 
-	s3_context = loadparm_s3_context();
+	s3_context = loadparm_s3_helpers();
 
 	s4_context = loadparm_init_s3(mem_ctx, s3_context);
 	if (s4_context == NULL) {

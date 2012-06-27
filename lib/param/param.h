@@ -20,7 +20,7 @@
 #ifndef _PARAM_H /* _PARAM_H */
 #define _PARAM_H 
 
-struct loadparm_s3_context;
+struct loadparm_s3_helpers;
 
 struct parmlist_entry;
 

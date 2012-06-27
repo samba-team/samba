@@ -1365,7 +1365,7 @@ extern void build_options(bool screen);
 	}
 
 	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
-		struct loadparm_context *lp_ctx = loadparm_init_s3(NULL, loadparm_s3_context());
+		struct loadparm_context *lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 		if (!open_schannel_session_store(NULL, lp_ctx)) {
 			DEBUG(0,("ERROR: Samba cannot open schannel store for secured NETLOGON operations.\n"));
 			exit(1);

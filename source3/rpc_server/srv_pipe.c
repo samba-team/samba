@@ -447,7 +447,7 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		return false;
 	}
 
-	lp_ctx = loadparm_init_s3(p, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(p, loadparm_s3_helpers());
 	if (!lp_ctx) {
 		DEBUG(0,("pipe_schannel_auth_bind: loadparm_init_s3() failed!\n"));
 		return false;

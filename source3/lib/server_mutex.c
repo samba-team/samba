@@ -54,7 +54,7 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 		return NULL;
 	}
 
-	lp_ctx = loadparm_init_s3(result, loadparm_s3_context());
+	lp_ctx = loadparm_init_s3(result, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
 		DEBUG(0, ("loadparm_init_s3 failed\n"));
 		talloc_free(result);
