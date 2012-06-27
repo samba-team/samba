@@ -503,11 +503,33 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
 	uint16_t credits_requested;
 	uint32_t out_flags;
+	uint16_t cmd;
+	NTSTATUS out_status;
 	uint16_t credits_granted = 0;
 	uint64_t credits_possible;
+	uint16_t current_max_credits;
 
+	/*
+	 * first we grant only 1/16th of the max range.
+	 *
+	 * Windows also starts with the 1/16th and then grants
+	 * more later. I was only able to trigger higher
+	 * values, when using a verify high credit charge.
+	 *
+	 * TODO: scale up depending one load, free memory
+	 *       or other stuff.
+	 *       Maybe also on the relationship between number
+	 *       of requests and the used sequence number.
+	 *       Which means we would grant more credits
+	 *       for client which use multi credit requests.
+	 */
+	current_max_credits = sconn->smb2.max_credits / 16;
+	current_max_credits = MAX(current_max_credits, 1);
+
+	cmd = SVAL(inhdr, SMB2_HDR_OPCODE);
 	credits_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
 	out_flags = IVAL(outhdr, SMB2_HDR_FLAGS);
+	out_status = NT_STATUS(IVAL(outhdr, SMB2_HDR_STATUS));
 
 	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
 
@@ -519,26 +541,34 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		 */
 		credits_granted = 0;
 	} else if (credits_requested > 0) {
-		uint16_t modified_credits_requested;
-		uint32_t multiplier;
+		uint16_t additional_max = 0;
+		uint16_t additional_credits = credits_requested - 1;
 
-		/*
-		 * Split up max_credits into 1/16ths, and then scale
-		 * the requested credits by how many 16ths have been
-		 * currently granted. Less than 1/16th == grant all
-		 * requested (100%), scale down as more have been
-		 * granted. Never ask for less than 1 as the client
-		 * asked for at least 1. JRA.
-		 */
-
-		multiplier = 16 - (((sconn->smb2.credits_granted * 16) / sconn->smb2.max_credits) % 16);
-
-		modified_credits_requested = (multiplier * credits_requested) / 16;
-		if (modified_credits_requested == 0) {
-			modified_credits_requested = 1;
+		switch (cmd) {
+		case SMB2_OP_NEGPROT:
+			break;
+		case SMB2_OP_SESSSETUP:
+			/*
+			 * Windows 2012 RC1 starts to grant
+			 * additional credits
+			 * with a successful session setup
+			 */
+			if (NT_STATUS_IS_OK(out_status)) {
+				additional_max = 32;
+			}
+			break;
+		default:
+			/*
+			 * We match windows and only grant additional credits
+			 * in chunks of 32.
+			 */
+			additional_max = 32;
+			break;
 		}
 
-		credits_granted = modified_credits_requested;
+		additional_credits = MIN(additional_credits, additional_max);
+
+		credits_granted = 1 + additional_credits;
 	} else if (sconn->smb2.credits_granted == 0) {
 		/*
 		 * Make sure the client has always at least one credit
@@ -566,7 +596,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		/* remove UINT64_MAX */
 		credits_possible -= 1;
 	}
-	credits_possible = MIN(credits_possible, sconn->smb2.max_credits);
+	credits_possible = MIN(credits_possible, current_max_credits);
 	credits_possible -= sconn->smb2.seqnum_range;
 
 	credits_granted = MIN(credits_granted, credits_possible);
@@ -576,11 +606,12 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	sconn->smb2.seqnum_range += credits_granted;
 
 	DEBUG(10,("smb2_set_operation_credit: requested %u, "
-		"granted %u, current possible %u, "
+		"granted %u, current possible/max %u/%u, "
 		"total granted/max/low/range %u/%u/%llu/%u\n",
 		(unsigned int)credits_requested,
 		(unsigned int)credits_granted,
 		(unsigned int)credits_possible,
+		(unsigned int)current_max_credits,
 		(unsigned int)sconn->smb2.credits_granted,
 		(unsigned int)sconn->smb2.max_credits,
 		(unsigned long long)sconn->smb2.seqnum_low,
