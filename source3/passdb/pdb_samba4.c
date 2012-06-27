@@ -516,6 +516,16 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 					pdb_get_kickoff_time(sam));
 	}
 
+	if (need_update(sam, PDB_LOGONTIME)) {
+		ret |= pdb_samba4_add_time(msg, "lastLogon",
+					pdb_get_logon_time(sam));
+	}
+
+	if (need_update(sam, PDB_LOGOFFTIME)) {
+		ret |= pdb_samba4_add_time(msg, "lastLogoff",
+					pdb_get_logoff_time(sam));
+	}
+
 	if (need_update(sam, PDB_USERNAME)) {
 		ret |= ldb_msg_add_string(msg, "samAccountName",
 					  pdb_get_username(sam));
@@ -564,8 +574,6 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	}
 
 	/* Not yet handled here or not meaningful for modifies on a Samba4 backend:
-	PDB_LOGONTIME,
-	PDB_LOGOFFTIME,
 	PDB_BAD_PASSWORD_TIME,
 	PDB_CANCHANGETIME, - these are calculated per policy, not stored
 	PDB_DOMAIN,
