@@ -708,7 +708,12 @@ my @exported_envvars = (
 	"WINBINDD_SOCKET_DIR",
 	"WINBINDD_PRIV_PIPE_DIR",
 	"NMBD_SOCKET_DIR",
-	"LOCAL_PATH"
+	"LOCAL_PATH",
+
+        # nss_wrapper
+        "NSS_WRAPPER_PASSWD",
+        "NSS_WRAPPER_GROUP"
+
 );
 
 $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub { 
