@@ -1487,7 +1487,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 {
 	files_struct *fsp = br_lck->fsp;
 	uint32_t tid = fsp->conn->cnum;
-	int fnum = fsp->fnum;
+	uint64_t fnum = fsp->fnum;
 	unsigned int i;
 	struct lock_struct *locks = br_lck->lock_data;
 	struct server_id pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
