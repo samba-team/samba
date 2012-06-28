@@ -279,7 +279,7 @@ static void send_nt_replies(connection_struct *conn,
 ****************************************************************************/
 
 static void nt_open_pipe(char *fname, connection_struct *conn,
-			 struct smb_request *req, int *ppnum)
+			 struct smb_request *req, uint16_t *ppnum)
 {
 	files_struct *fsp;
 	NTSTATUS status;
@@ -314,7 +314,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 				  struct smb_request *req)
 {
 	char *fname = NULL;
-	int pnum = -1;
+	uint16_t pnum = FNUM_FIELD_INVALID;
 	char *p = NULL;
 	uint32 flags = IVAL(req->vwv+3, 1);
 	TALLOC_CTX *ctx = talloc_tos();
@@ -746,7 +746,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 {
 	char *fname = NULL;
 	char *params = *ppparams;
-	int pnum = -1;
+	uint16_t pnum = FNUM_FIELD_INVALID;
 	char *p = NULL;
 	NTSTATUS status;
 	size_t param_len;
