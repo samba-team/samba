@@ -25,6 +25,7 @@
 #include "system/capability.h"
 #include "system/passwd.h"
 #include "system/filesys.h"
+#include "../lib/util/setid.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -956,7 +957,7 @@ static int sys_broken_setgroups(int setlen, gid_t *gidset)
 	for(i = 0; i < setlen; i++) 
 		group_list[i] = (GID_T) gidset[i]; 
 
-	if(setgroups(setlen, group_list) != 0) {
+	if(samba_setgroups(setlen, group_list) != 0) {
 		int saved_errno = errno;
 		SAFE_FREE(group_list);
 		errno = saved_errno;
@@ -993,7 +994,7 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 
 	/* No group list, just make sure we are setting the efective GID. */
 	if (setlen == 0) {
-		return setgroups(1, &primary_gid);
+		return samba_setgroups(1, &primary_gid);
 	}
 
 	/* If the primary gid is not the first array element, grow the array
@@ -1019,7 +1020,7 @@ static int sys_bsd_setgroups(gid_t primary_gid, int setlen, const gid_t *gidset)
 #if defined(HAVE_BROKEN_GETGROUPS)
 	ret = sys_broken_setgroups(setlen, new_gidset ? new_gidset : gidset);
 #else
-	ret = setgroups(setlen, new_gidset ? new_gidset : gidset);
+	ret = samba_setgroups(setlen, new_gidset ? new_gidset : gidset);
 #endif
 
 	if (new_gidset) {
@@ -1062,7 +1063,7 @@ int sys_setgroups(gid_t UNUSED(primary_gid), int setlen, gid_t *gidset)
 #elif defined(HAVE_BROKEN_GETGROUPS)
 	return sys_broken_setgroups(setlen, gidset);
 #else
-	return setgroups(setlen, gidset);
+	return samba_setgroups(setlen, gidset);
 #endif
 }
 

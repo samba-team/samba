@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "system/passwd.h"
 #include "nsswitch/winbind_client.h"
+#include "../lib/util/setid.h"
 
 #ifndef HAVE_GETGROUPLIST
 
@@ -130,7 +131,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups,
 	   return from getgroups() */
 	save_re_gid();
 	set_effective_gid(gid);
-	setgid(gid);
+	samba_setgid(gid);
 
 	num_gids = getgroups(0, NULL);
 	if (num_gids == -1) {

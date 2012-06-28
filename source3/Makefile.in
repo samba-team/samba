@@ -433,7 +433,8 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   lib/tevent_barrier.o \
 		   ../lib/util/smb_threads.o ../lib/util/util_id.o \
 		   ../lib/util/blocking.o ../lib/util/rfc1738.o \
-		   ../lib/util/select.o ../lib/util/util_pw.o ../lib/util/server_id.o
+		   ../lib/util/select.o ../lib/util/util_pw.o ../lib/util/server_id.o \
+		   ../lib/util/setid.o
 
 CRYPTO_OBJ = ../lib/crypto/crc32.o @CRYPTO_MD5_OBJ@ \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
@@ -1319,7 +1320,7 @@ LOCKTEST_OBJ = torture/locktest.o $(PARAM_OBJ) $(LOCKING_OBJ) $(KRBCLIENT_OBJ) \
 		$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(FNAME_UTIL_OBJ)
 
-NSSTEST_OBJ = ../nsswitch/nsstest.o $(LIBSAMBAUTIL_OBJ)
+NSSTEST_OBJ = ../nsswitch/nsstest.o ../lib/util/setid.o $(LIBSAMBAUTIL_OBJ)
 
 PDBTEST_OBJ = torture/pdbtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
@@ -1602,6 +1603,7 @@ VLP_OBJ = printing/tests/vlp.o \
           ../lib/util/util_str_common.o \
           ../lib/util/data_blob.o \
           ../dynconfig/dynconfig.o \
+	  ../lib/util/setid.o \
 	  $(LIBSAMBAUTIL_OBJ) \
 	  param/util.o
 

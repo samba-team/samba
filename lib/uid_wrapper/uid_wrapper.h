@@ -36,35 +36,35 @@ gid_t uwrap_getgid(void);
 
 #ifdef UID_WRAPPER_REPLACE
 
-#ifdef seteuid
-#undef seteuid
+#ifdef samba_seteuid
+#undef samba_seteuid
 #endif
-#define seteuid	uwrap_seteuid
+#define samba_seteuid	uwrap_seteuid
 
-#ifdef setreuid
-#undef setreuid
+#ifdef samba_setreuid
+#undef samba_setreuid
 #endif
-#define setreuid	uwrap_setreuid
+#define samba_setreuid	uwrap_setreuid
 
-#ifdef setresuid
-#undef setresuid
+#ifdef samba_setresuid
+#undef samba_setresuid
 #endif
-#define setresuid	uwrap_setresuid
+#define samba_setresuid	uwrap_setresuid
 
-#ifdef setegid
-#undef setegid
+#ifdef samba_setegid
+#undef samba_setegid
 #endif
-#define setegid	uwrap_setegid
+#define samba_setegid	uwrap_setegid
 
-#ifdef setregid
-#undef setregid
+#ifdef samba_setregid
+#undef samba_setregid
 #endif
-#define setregid	uwrap_setregid
+#define samba_setregid	uwrap_setregid
 
-#ifdef setresgid
-#undef setresgid
+#ifdef samba_setresgid
+#undef samba_setresgid
 #endif
-#define setresgid	uwrap_setresgid
+#define samba_setresgid	uwrap_setresgid
 
 #ifdef geteuid
 #undef geteuid
@@ -76,10 +76,10 @@ gid_t uwrap_getgid(void);
 #endif
 #define getegid	uwrap_getegid
 
-#ifdef setgroups
-#undef setgroups
+#ifdef samba_setgroups
+#undef samba_setgroups
 #endif
-#define setgroups uwrap_setgroups
+#define samba_setgroups uwrap_setgroups
 
 #ifdef getgroups
 #undef getgroups

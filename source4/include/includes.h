@@ -69,4 +69,7 @@
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 
+/* samba_setXXid functions. */
+#include "../lib/util/setid.h"
+
 #endif /* _INCLUDES_H */

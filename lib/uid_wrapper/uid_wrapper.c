@@ -22,6 +22,7 @@
 #include "replace.h"
 #include "system/passwd.h"
 #include <talloc.h>
+#include "../lib/util/setid.h"
 
 #else /* _SAMBA_BUILD_ */
 
@@ -72,7 +73,7 @@ _PUBLIC_ int uwrap_seteuid(uid_t euid)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return seteuid(euid);
+		return samba_seteuid(euid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (euid == 0) {
@@ -89,7 +90,7 @@ _PUBLIC_ int uwrap_setreuid(uid_t ruid, uid_t euid)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return setreuid(ruid, euid);
+		return samba_setreuid(ruid, euid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (euid == 0) {
@@ -106,7 +107,7 @@ _PUBLIC_ int uwrap_setresuid(uid_t ruid, uid_t euid, uid_t suid)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return setresuid(ruid, euid, suid);
+		return samba_setresuid(ruid, euid, suid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (euid == 0) {
@@ -132,7 +133,7 @@ _PUBLIC_ int uwrap_setegid(gid_t egid)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return setegid(egid);
+		return samba_setegid(egid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (egid == 0) {
@@ -149,7 +150,7 @@ _PUBLIC_ int uwrap_setregid(gid_t rgid, gid_t egid)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return setregid(rgid, egid);
+		return samba_setregid(rgid, egid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (egid == 0) {
@@ -166,7 +167,7 @@ _PUBLIC_ int uwrap_setresgid(gid_t rgid, gid_t egid, gid_t sgid)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return setresgid(rgid, egid, sgid);
+		return samba_setresgid(rgid, egid, sgid);
 	}
 	/* assume for now that the ruid stays as root */
 	if (egid == 0) {
@@ -191,7 +192,7 @@ _PUBLIC_ int uwrap_setgroups(size_t size, const gid_t *list)
 {
 	uwrap_init();
 	if (!uwrap.enabled) {
-		return setgroups(size, list);
+		return samba_setgroups(size, list);
 	}
 
 	talloc_free(uwrap.groups);

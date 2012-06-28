@@ -28,6 +28,7 @@
 #include "libcli/wbclient/wbclient.h"
 #define TEVENT_DEPRECATED
 #include <tevent.h>
+#include "../lib/util/setid.h"
 
 NTSTATUS ntvfs_unixuid_init(void);
 
@@ -73,15 +74,15 @@ static struct security_unix_token *save_unix_security(TALLOC_CTX *mem_ctx)
 */
 static NTSTATUS set_unix_security(struct security_unix_token *sec)
 {
-	seteuid(0);
+	samba_seteuid(0);
 
-	if (setgroups(sec->ngroups, sec->groups) != 0) {
+	if (samba_setgroups(sec->ngroups, sec->groups) != 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	if (setegid(sec->gid) != 0) {
+	if (samba_setegid(sec->gid) != 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	if (seteuid(sec->uid) != 0) {
+	if (samba_seteuid(sec->uid) != 0) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return NT_STATUS_OK;
@@ -115,7 +116,7 @@ static int unixuid_event_nesting_hook(struct tevent_context *ev,
 			return -1;
 		}
 		*(struct security_unix_token **)stack_ptr = sec_ctx;
-		if (seteuid(0) != 0 || setegid(0) != 0) {
+		if (samba_seteuid(0) != 0 || samba_setegid(0) != 0) {
 			DEBUG(0,("%s: Failed to change to root\n", location));
 			return -1;			
 		}

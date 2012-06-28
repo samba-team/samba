@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('samba-util',
                     util_str.c util_str_common.c substitute.c ms_fnmatch.c
                     server_id.c dprintf.c parmlist.c bitmap.c''',
                   deps='DYNCONFIG',
-                  public_deps='talloc execinfo uid_wrapper pthread LIBCRYPTO charset',
+                  public_deps='talloc execinfo uid_wrapper pthread LIBCRYPTO charset util_setid',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,
@@ -62,6 +62,11 @@ bld.SAMBA_LIBRARY('tevent-util',
 	vnum='0.0.1'
 	)
 
+bld.SAMBA_LIBRARY('util_setid',
+	source='setid.c',
+	local_include=False,
+	private_library=True
+	)
 
 bld.SAMBA_SUBSYSTEM('util_ldb',
 		    source='util_ldb.c',

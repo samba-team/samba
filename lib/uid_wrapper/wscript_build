@@ -3,7 +3,7 @@
 
 bld.SAMBA_LIBRARY('uid_wrapper',
                   source='uid_wrapper.c',
-                  deps='talloc',
+                  deps='talloc util_setid',
                   private_library=True,
                   enabled=bld.CONFIG_SET("UID_WRAPPER"),
                   )

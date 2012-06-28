@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/passwd.h"
 #include "../lib/util/unix_privs.h"
+#include "../lib/util/setid.h"
 
 /**
  * @file
@@ -52,7 +53,7 @@ struct saved_state {
 static int privileges_destructor(struct saved_state *s)
 {
 	if (geteuid() != s->uid &&
-	    seteuid(s->uid) != 0) {
+	    samba_seteuid(s->uid) != 0) {
 		smb_panic("Failed to restore privileges");
 	}
 	return 0;
@@ -71,7 +72,7 @@ void *root_privileges(void)
 	if (!s) return NULL;
 	s->uid = geteuid();
 	if (s->uid != 0) {
-		seteuid(0);
+		samba_seteuid(0);
 	}
 	talloc_set_destructor(s, privileges_destructor);
 	return s;

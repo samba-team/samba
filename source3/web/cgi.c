@@ -24,6 +24,7 @@
 #include "intl/lang_tdb.h"
 #include "auth.h"
 #include "secrets.h"
+#include "../lib/util/setid.h"
 
 #define MAX_VARIABLES 10000
 
@@ -328,7 +329,7 @@ static void cgi_web_auth(void)
 
 	C_user = SMB_STRDUP(user);
 
-	if (!setuid(0)) {
+	if (!samba_setuid(0)) {
 		C_pass = secrets_fetch_generic("root", "SWAT");
 		if (C_pass == NULL) {
 			char *tmp_pass = NULL;
@@ -344,7 +345,7 @@ static void cgi_web_auth(void)
 			TALLOC_FREE(tmp_pass);
 		}
 	}
-	setuid(pwd->pw_uid);
+	samba_setuid(pwd->pw_uid);
 	if (geteuid() != pwd->pw_uid || getuid() != pwd->pw_uid) {
 		printf("%sFailed to become user %s - uid=%d/%d<br>%s\n", 
 		       head, user, (int)geteuid(), (int)getuid(), tail);

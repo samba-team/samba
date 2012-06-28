@@ -412,6 +412,9 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/smb_threads.h"
 #include "../lib/util/smb_threads_internal.h"
 
+/* samba_setXXid functions. */
+#include "../lib/util/setid.h"
+
 /***** prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"

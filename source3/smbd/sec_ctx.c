@@ -24,6 +24,7 @@
 #include "libcli/security/security_token.h"
 #include "auth.h"
 #include "smbprofile.h"
+#include "../lib/util/setid.h"
 
 extern struct current_user current_user;
 
@@ -151,7 +152,7 @@ static int get_current_groups(gid_t gid, uint32_t *p_ngroups, gid_t **p_groups)
 	   returned from getgroups() (tridge) */
 	save_re_gid();
 	set_effective_gid(gid);
-	setgid(gid);
+	samba_setgid(gid);
 
 	ngroups = sys_getgroups(0,&grp);
 	if (ngroups <= 0) {

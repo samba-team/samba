@@ -26,8 +26,8 @@ int main (int argc, char **argv)
 {
 	/* Become a non-root user */
 
-	setuid(1);
-	setgid(1);
+	samba_setuid(1);
+	samba_setgid(1);
 
 	/* Try to push a security context.  This should fail with a
 	   smb_assert() error. */
