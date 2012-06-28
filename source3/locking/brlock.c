@@ -46,7 +46,7 @@ static struct db_context *brlock_db;
  Debug info at level 10 for lock struct.
 ****************************************************************************/
 
-static void print_lock_struct(unsigned int i, struct lock_struct *pls)
+static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
 {
 	DEBUG(10,("[%u]: smblctx = %llu, tid = %u, pid = %s, ",
 			i,
