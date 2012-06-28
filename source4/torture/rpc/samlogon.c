@@ -1923,7 +1923,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 				.old_password  = true
 			},
 			{
-				.comment       = "test user (wong workstation): domain\\user",
+				.comment       = "test user (wrong workstation): domain\\user",
 				.domain        = userdomain,
 				.username      = TEST_USER_NAME_WRONG_WKS,
 				.password      = user_password_wrong_wks,
