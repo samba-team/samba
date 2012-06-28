@@ -6261,11 +6261,11 @@ fi
 
 CFLAGS=$CFLAGS_SAVE
 
-# Checks for *BSD bsd_statvfs() function
+# Checks for POSIX ignorant BSD style statvfs() function
 # Start
 AC_CHECK_HEADERS(sys/param.h sys/mount.h)
 
-AC_MSG_CHECKING([bsd_statvfs: checking for statfs() and struct statfs.bsize])
+AC_MSG_CHECKING([checking for posix ignorant *bsd style statfs struct])
 AC_CACHE_VAL(bsdstatvfs_cv_statfs,[
 	     AC_TRY_RUN([
 		#ifdef HAVE_SYS_PARAM_H
@@ -6278,7 +6278,8 @@ AC_CACHE_VAL(bsdstatvfs_cv_statfs,[
 		{
 			struct statfs fsd;
 			fsd.f_bsize = 0;
-			exit (statfs (".", &fsd));
+			fsd.f_iosize = 0;
+			return (statfs (".", &fsd));
 		}],
 		bsdstatvfs_cv_statfs=yes,
 		bsdstatvfs_cv_statfs=no,
@@ -6286,11 +6287,9 @@ AC_CACHE_VAL(bsdstatvfs_cv_statfs,[
 AC_MSG_RESULT($bsdstatvfs_cv_statfs)
 
 if test $bsdstatvfs_cv_statfs = yes; then
-  AC_DEFINE(BSD_STATVFS_BSIZE,1,[Whether statfs exists and struct statfs has bsize property])
+  AC_DEFINE(BSD_STYLE_STATVFS,1,[Whether statfs struct is *bsd style])
 fi
-
-# End
-# Checks for *BSD sys_statvfs() function
+# End of checks POSIX ignorant BSD style statvfs() function
 
 # Checks for the vfs_fileid module
 # Start
