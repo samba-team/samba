@@ -172,22 +172,22 @@ for t in net_tests:
 # FIXME: Integrate these into a single smbtorture test
 
 transport = "ncacn_np"
-for ntlmoptions in [
-    "-k no --option=usespnego=yes",
-    "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no",
-    "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes",
-    "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=no",
-    "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
-    "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no",
-    "-k no --option=usespnego=yes --option=clientntlmv2auth=yes",
-    "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no",
-    "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
-    "-k no --option=usespnego=no --option=clientntlmv2auth=yes",
-    "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes",
-    "-k no --option=usespnego=no"]:
-    name = "rpc.lsa.secrets on %s with with %s" % (transport, ntlmoptions)
-    plansmbtorturetestsuite('rpc.lsa.secrets', "dc", ["%s:$SERVER[]" % (transport), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.%s" % name)
-    plansmbtorturetestsuite('rpc.lsa.secrets', "s3dc", ["%s:$SERVER[]" % (transport), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.%s" % name)
+for env in ["dc", "s3dc"]:
+    for ntlmoptions in [
+        "-k no --option=usespnego=yes",
+        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no",
+        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=yes",
+        "-k no --option=usespnego=yes --option=ntlmssp_client:56bit=no",
+        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
+        "-k no --option=usespnego=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=no",
+        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes",
+        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no",
+        "-k no --option=usespnego=yes --option=clientntlmv2auth=yes --option=ntlmssp_client:128bit=no --option=ntlmssp_client:56bit=yes",
+        "-k no --option=usespnego=no --option=clientntlmv2auth=yes",
+        "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes",
+        "-k no --option=usespnego=no"]:
+        name = "rpc.lsa.secrets on %s with with %s" % (transport, ntlmoptions)
+        plansmbtorturetestsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.%s" % name)
 
 transports = ["ncacn_np", "ncacn_ip_tcp"]
 
