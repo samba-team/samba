@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <signal.h>
 #include <assert.h>
 #include <fcntl.h>
