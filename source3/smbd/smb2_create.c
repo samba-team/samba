@@ -826,6 +826,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	state->out_file_id_volatile = result->fnum;
 	state->out_context_blobs = out_context_blobs;
 
+	DEBUG(10,("smbd_smb2_create_send: %s - %s\n",
+		  fsp_str_dbg(result), fsp_fnum_dbg(result)));
+
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
