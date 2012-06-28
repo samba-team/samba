@@ -13,7 +13,7 @@ main()
 	printf("WARNING: No automated network interface determination\n");
 #endif
 
-#if !(defined(USE_SETEUID) || defined(USE_SETREUID) || defined(USE_SETRESUID) || defined(USE_SETUIDX))
+#if !(defined(USE_SETEUID) || defined(USE_SETREUID) || defined(USE_SETRESUID) || defined(USE_SETUIDX) || defined(USE_LINUX_THREAD_CREDENTIALS))
 	printf("ERROR: no seteuid method available\n");
 	exit(1);
 #endif

@@ -80,7 +80,7 @@ def configure(conf):
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
     conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
-    conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf')
+    conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups syscall sysconf')
     conf.CHECK_FUNCS('atexit grantpt fallocate posix_fallocate')
     conf.CHECK_FUNCS('fseeko setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
@@ -729,6 +729,16 @@ int i; i = PAM_RADIO_TYPE;
             conf.DEFINE('WITH_PAM_MODULES', 1)
 
     seteuid = False
+    if not seteuid:
+        seteuid = conf.CHECK_CODE('''
+                                #define AUTOCONF_TEST 1
+                                #define USE_LINUX_THREAD_CREDENTIALS 1
+                                #include "./lib/util_sec.c"
+                                ''',
+                                'USE_LINUX_THREAD_CREDENTIALS',
+                                addmain=False,
+                                execute=True,
+                                msg="Checking whether we can use Linux thread-specific credentials")
     if not seteuid:
         seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1

@@ -953,7 +953,7 @@ AC_CHECK_FUNCS(setsid glob strpbrk crypt16 getauthuid)
 AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(getgrset)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf)
+AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups syscall sysconf)
 AC_CHECK_FUNCS(atexit grantpt posix_fallocate)
 AC_CHECK_FUNCS(fallocate)
 AC_CHECK_FUNCS(fseeko setluid getpwanam)
@@ -2765,6 +2765,23 @@ AC_CHECK_FUNCS(getpagesize)
 ################################################
 # look for a method of setting the effective uid
 seteuid=no;
+
+case "$host_os" in
+*linux*)
+if test $seteuid = no; then
+AC_CACHE_CHECK([for Linux thread-specific credentials],samba_cv_USE_LINUX_THREAD_CREDENTIALS,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_LINUX_THREAD_CREDENTIALS 1
+#include "confdefs.h"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_LINUX_THREAD_CREDENTIALS=yes,samba_cv_USE_LINUX_THREAD_CREDENTIALS=no,samba_cv_USE_LINUX_THREAD_CREDENTIALS=cross)])
+if test x"$samba_cv_USE_LINUX_THREAD_CREDENTIALS" = x"yes"; then
+    seteuid=yes;AC_DEFINE(USE_SETREUID,1,[Whether we can use Linux thread-specific credentials])
+fi
+fi
+;;
+esac
 
 if test $seteuid = no; then
 AC_CACHE_CHECK([for setreuid],samba_cv_USE_SETREUID,[

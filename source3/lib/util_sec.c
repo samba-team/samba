@@ -134,7 +134,7 @@ static void assert_gid(gid_t rgid, gid_t egid)
 ****************************************************************************/
 void gain_root_privilege(void)
 {	
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresuid(0,0,0);
 #endif
     
@@ -164,7 +164,7 @@ void gain_root_privilege(void)
 ****************************************************************************/
 void gain_root_group_privilege(void)
 {
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresgid(0,0,0);
 #endif
 
@@ -201,7 +201,7 @@ void gain_root_group_privilege(void)
 ****************************************************************************/
 void set_effective_uid(uid_t uid)
 {
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
         /* Set the effective as well as the real uid. */
 	if (samba_setresuid(uid,uid,-1) == -1) {
 		if (errno == EAGAIN) {
@@ -233,7 +233,7 @@ void set_effective_uid(uid_t uid)
 ****************************************************************************/
 void set_effective_gid(gid_t gid)
 {
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresgid(-1,gid,-1);
 #endif
 
@@ -272,7 +272,7 @@ void save_re_uid(void)
 
 void restore_re_uid_fromroot(void)
 {
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresuid(saved_ruid, saved_euid, -1);
 #elif USE_SETREUID
 	samba_setreuid(saved_ruid, -1);
@@ -311,7 +311,7 @@ void save_re_gid(void)
 ****************************************************************************/
 void restore_re_gid(void)
 {
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresgid(saved_rgid, saved_egid, -1);
 #elif USE_SETREUID
 	samba_setregid(saved_rgid, -1);
@@ -339,7 +339,7 @@ int set_re_uid(void)
 {
 	uid_t uid = geteuid();
 
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresuid(geteuid(), -1, -1);
 #endif
 
@@ -378,7 +378,7 @@ void become_user_permanently(uid_t uid, gid_t gid)
 	gain_root_privilege();
 	gain_root_group_privilege();
 
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresgid(gid,gid,gid);
 	samba_setgid(gid);
 	samba_setresuid(uid,uid,uid);
@@ -422,7 +422,7 @@ static int have_syscall(void)
 {
 	errno = 0;
 
-#if USE_SETRESUID
+#if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
 	samba_setresuid(-1,-1,-1);
 #endif
 

@@ -163,7 +163,7 @@ def configure(conf):
 
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
-    conf.CHECK_FUNCS('lstat getpgrp utime utimes seteuid setreuid setresuid setegid')
+    conf.CHECK_FUNCS('lstat getpgrp utime utimes setuid seteuid setreuid setresuid setgid setegid')
     conf.CHECK_FUNCS('setregid setresgid chroot strerror vsyslog setlinebuf mktime')
     conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4')
     conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
@@ -207,7 +207,7 @@ def configure(conf):
     conf.CHECK_FUNCS('if_nametoindex strerror_r')
     conf.CHECK_FUNCS('getdirentries getdents syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
-    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
+    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups syscall setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
 
