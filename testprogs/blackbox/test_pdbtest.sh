@@ -5,7 +5,7 @@
 
 if [ $# -lt 2 ]; then
 cat <<EOF
-Usage: test_pdbtest.sh SERVER PREFIX SMBCLIENT ENV
+Usage: test_pdbtest.sh SERVER PREFIX SMBCLIENT SMB_CONF
 EOF
 exit 1;
 fi
@@ -13,7 +13,7 @@ fi
 SERVER=$1
 PREFIX=$2
 smbclient=$3
-ENV=$4
+SMB_CONF=$4
 shift 4
 failed=0
 
@@ -73,7 +73,7 @@ expect Retype new SMB password:
 send ${NEWUSERPASS}\n
 EOF
 
-testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L pdbtest -c $PREFIX/$ENV/etc/smb.conf || failed=`expr $failed + 1`
+testit "set user password with smbpasswd" $rkpty ./tmpsmbpasswdscript $smbpasswd -L pdbtest -c $SMB_CONF || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' -k no -Updbtest%$NEWUSERPASS $@|| failed=`expr $failed + 1`
