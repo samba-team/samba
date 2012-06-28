@@ -528,7 +528,7 @@ void fsp_free(files_struct *fsp)
 void file_free(struct smb_request *req, files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	int fnum = fsp->fnum;
+	uint64_t fnum = fsp->fnum;
 
 	if (fsp->notify) {
 		struct notify_context *notify_ctx =
@@ -566,8 +566,8 @@ void file_free(struct smb_request *req, files_struct *fsp)
 
 	fsp_free(fsp);
 
-	DEBUG(5,("freed files structure %d (%u used)\n",
-		 fnum, (unsigned int)sconn->num_files));
+	DEBUG(5,("freed files structure %llu (%u used)\n",
+		 (unsigned long long)fnum, (unsigned int)sconn->num_files));
 }
 
 /****************************************************************************
