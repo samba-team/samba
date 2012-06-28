@@ -24,7 +24,6 @@
 #include "smbd/smbd.h"
 
 #if defined(DARWINOS)
-
 #include <sys/attr.h>
 
 static int darwin_fs_capabilities(const char * path)
@@ -74,65 +73,46 @@ static int darwin_fs_capabilities(const char * path)
 
 	return caps;
 }
+#endif /* DARWINOS */
 
-static int darwin_statvfs(const char *path, vfs_statvfs_struct *statbuf)
+#if defined(BSD_STYLE_STATVFS)
+static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
 	struct statfs sbuf;
 	int ret;
 
 	ret = statfs(path, &sbuf);
 	if (ret != 0) {
-		return ret;
-	}
-
-	statbuf->OptimalTransferSize = sbuf.f_iosize;
-	statbuf->BlockSize = sbuf.f_bsize;
-	statbuf->TotalBlocks = sbuf.f_blocks;
-	statbuf->BlocksAvail = sbuf.f_bfree;
-	statbuf->UserBlocksAvail = sbuf.f_bavail;
-	statbuf->TotalFileNodes = sbuf.f_files;
-	statbuf->FreeFileNodes = sbuf.f_ffree;
-	statbuf->FsIdentifier = *(uint64_t *)(&sbuf.f_fsid); /* Ick. */
-	statbuf->FsCapabilities = darwin_fs_capabilities(sbuf.f_mntonname);
-
-	return 0;
-}
-#elif defined(BSD_STYLE_STATVFS)
-static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
-{
-	struct statfs statfs_buf;
-	int result;
-
-	result = statfs(path, &statfs_buf);
-	if (result != 0) {
-		return result;
-	}
-
-	statbuf->OptimalTransferSize = statfs_buf.f_iosize;
-	statbuf->BlockSize = statfs_buf.f_bsize;
-	statbuf->TotalBlocks = statfs_buf.f_blocks;
-	statbuf->BlocksAvail = statfs_buf.f_bfree;
-	statbuf->UserBlocksAvail = statfs_buf.f_bavail;
-	statbuf->TotalFileNodes = statfs_buf.f_files;
-	statbuf->FreeFileNodes = statfs_buf.f_ffree;
-	statbuf->FsIdentifier =
-		(((uint64_t) statfs_buf.f_fsid.val[0] << 32) & 0xffffffff00000000LL) |
-		    (uint64_t) statfs_buf.f_fsid.val[1];
-	/* Try to extrapolate some of the fs flags into the
-	 * capabilities
-	 */
-	statbuf->FsCapabilities =
-	    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+		statbuf->OptimalTransferSize = sbuf.f_iosize;
+		statbuf->BlockSize = sbuf.f_bsize;
+		statbuf->TotalBlocks = sbuf.f_blocks;
+		statbuf->BlocksAvail = sbuf.f_bfree;
+		statbuf->UserBlocksAvail = sbuf.f_bavail;
+		statbuf->TotalFileNodes = sbuf.f_files;
+		statbuf->FreeFileNodes = sbuf.f_ffree;
+		statbuf->FsIdentifier =
+			(((uint64_t) sbuf.f_fsid.val[0] << 32) & 0xffffffff00000000LL) |
+			    (uint64_t) sbuf.f_fsid.val[1];
+#ifdef DARWINOS
+		statbuf->FsCapabilities = darwin_fs_capabilities(sbuf.f_mntonname);
+#else
+		/* Try to extrapolate some of the fs flags into the
+		 * capabilities
+		 */
+		statbuf->FsCapabilities =
+		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 #ifdef MNT_ACLS
-	if (statfs_buf.f_flags & MNT_ACLS)
-		statbuf->FsCapabilities |= FILE_PERSISTENT_ACLS;
+		if (sbuf.f_flags & MNT_ACLS)
+			statbuf->FsCapabilities |= FILE_PERSISTENT_ACLS;
 #endif
-	if (statfs_buf.f_flags & MNT_QUOTA)
-		statbuf->FsCapabilities |= FILE_VOLUME_QUOTAS;
-	if (statfs_buf.f_flags & MNT_RDONLY)
-		statbuf->FsCapabilities |= FILE_READ_ONLY_VOLUME;
+		if (sbuf.f_flags & MNT_QUOTA)
+			statbuf->FsCapabilities |= FILE_VOLUME_QUOTAS;
+		if (sbuf.f_flags & MNT_RDONLY)
+			statbuf->FsCapabilities |= FILE_READ_ONLY_VOLUME;
+#endif
+	}
 
-	return 0;
+	return ret;
 }
 #elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
 static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
@@ -175,9 +155,7 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 */
 int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
-#if defined(DARWINOS)
-	return darwin_statvfs(path, statbuf);
-#elif defined(BSD_STYLE_STATVFS)
+#if defined(BSD_STYLE_STATVFS)
 	return bsd_statvfs(path, statbuf);
 #elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
 	return linux_statvfs(path, statbuf);
