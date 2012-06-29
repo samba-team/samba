@@ -1355,20 +1355,23 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct deferred_open_record *state)
 {
 	struct server_id self = messaging_server_id(req->sconn->msg_ctx);
-	int i;
 
 	/* Paranoia check */
 
-	for (i=0; i<lck->data->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->data->share_modes[i];
+	if (lck) {
+		int i;
 
-		if (is_deferred_open_entry(e) &&
-		    serverid_equal(&self, &e->pid) &&
-		    (e->op_mid == req->mid)) {
-			DEBUG(0, ("Trying to defer an already deferred "
-				"request: mid=%llu, exiting\n",
-				(unsigned long long)req->mid));
-			exit_server("attempt to defer a deferred request");
+		for (i=0; i<lck->data->num_share_modes; i++) {
+			struct share_mode_entry *e = &lck->data->share_modes[i];
+
+			if (is_deferred_open_entry(e) &&
+			    serverid_equal(&self, &e->pid) &&
+			    (e->op_mid == req->mid)) {
+				DEBUG(0, ("Trying to defer an already deferred "
+					"request: mid=%llu, exiting\n",
+					(unsigned long long)req->mid));
+				exit_server("attempt to defer a deferred request");
+			}
 		}
 	}
 
@@ -1384,7 +1387,9 @@ static void defer_open(struct share_mode_lock *lck,
 				       state->id, (char *)state, sizeof(*state))) {
 		exit_server("push_deferred_open_message_smb failed");
 	}
-	add_deferred_open(lck, req->mid, request_time, self, state->id);
+	if (lck) {
+		add_deferred_open(lck, req->mid, request_time, self, state->id);
+	}
 }
 
 
