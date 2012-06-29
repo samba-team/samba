@@ -2777,7 +2777,7 @@ AC_TRY_RUN([
 #include "${srcdir-.}/lib/util_sec.c"],
            samba_cv_USE_LINUX_THREAD_CREDENTIALS=yes,samba_cv_USE_LINUX_THREAD_CREDENTIALS=no,samba_cv_USE_LINUX_THREAD_CREDENTIALS=cross)])
 if test x"$samba_cv_USE_LINUX_THREAD_CREDENTIALS" = x"yes"; then
-    seteuid=yes;AC_DEFINE(USE_SETREUID,1,[Whether we can use Linux thread-specific credentials])
+    seteuid=yes;AC_DEFINE(USE_LINUX_THREAD_CREDENTIALS,1,[Whether we can use Linux thread-specific credentials])
 fi
 fi
 ;;
