@@ -616,6 +616,7 @@ bool open_match_attributes(connection_struct *conn,
 			   mode_t *returned_unx_mode);
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid);
+bool is_deferred_open_async(const void *ptr);
 NTSTATUS open_file_fchmod(connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result);

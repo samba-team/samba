@@ -1685,6 +1685,17 @@ void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 }
 
 /****************************************************************************
+ Return true if this is a state pointer to an asynchronous create.
+****************************************************************************/
+
+bool is_deferred_open_async(const void *ptr)
+{
+	const struct deferred_open_record *state = (const struct deferred_open_record *)ptr;
+
+	return state->async_open;
+}
+
+/****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
 
@@ -1788,18 +1799,18 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (get_deferred_open_message_state(req,
 				&request_time,
 				&ptr)) {
-
-			struct deferred_open_record *state = (struct deferred_open_record *)ptr;
 			/* Remember the absolute time of the original
 			   request with this mid. We'll use it later to
 			   see if this has timed out. */
 
 			/* If it was an async create retry, the file
 			   didn't exist. */
-			if (state->async_open) {
+
+			if (is_deferred_open_async(ptr)) {
 				SET_STAT_INVALID(smb_fname->st);
 				file_existed = false;
 			} else {
+				struct deferred_open_record *state = (struct deferred_open_record *)ptr;
 				/* Remove the deferred open entry under lock. */
 				remove_deferred_open_entry(
 					state->id, req->mid,

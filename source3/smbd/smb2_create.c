@@ -1162,6 +1162,11 @@ static bool smbd_smb2_create_cancel(struct tevent_req *req)
 	smb2req = state->smb2req;
 	mid = get_mid_from_smb2req(smb2req);
 
+	if (is_deferred_open_async(state->private_data.data)) {
+		/* Can't cancel an async create. */
+		return false;
+	}
+
 	remove_deferred_open_entry(state->id, mid,
 				   messaging_server_id(smb2req->sconn->msg_ctx));
 	remove_deferred_open_message_smb2_internal(smb2req, mid);
