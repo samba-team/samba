@@ -1393,7 +1393,7 @@ sub teardown_env($$)
 	my $childpid;
 
 	# This should give it time to write out the gcov data
-	until ($count > 20) {
+	until ($count > 30) {
 	    if (Samba::cleanup_child($pid, "samba") == -1) {
 		last;
 	    }
