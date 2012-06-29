@@ -82,7 +82,7 @@ static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 	int ret;
 
 	ret = statfs(path, &sbuf);
-	if (ret != 0) {
+	if (ret == 0) {
 		statbuf->OptimalTransferSize = sbuf.f_iosize;
 		statbuf->BlockSize = sbuf.f_bsize;
 		statbuf->TotalBlocks = sbuf.f_blocks;
