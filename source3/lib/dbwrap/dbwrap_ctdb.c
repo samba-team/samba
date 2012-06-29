@@ -1025,7 +1025,9 @@ static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
 		return read_only && (hdr->flags & CTDB_REC_RO_HAVE_READONLY);
 	}
 
-	/* If we want write access, noone can have r/o copies. */
+	/*
+	 * If we want write access, no one may have r/o copies.
+	 */
 	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
 #else
 	return (hdr->dmaster == get_my_vnn());
