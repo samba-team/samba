@@ -53,9 +53,14 @@ static void print_record(const char *msg,
 			 const struct connections_data *d)
 {
 	char *idstr = serverid_str(k->pid);
-	d_printf("%s: connection %d (%s) to \"%s\" from %u:%u@%s[%s] %s\n", msg,
-		 k->cnum, idstr, d->servicename, (unsigned)d->uid,
-		 (unsigned)d->gid, d->machine, d->addr, time_to_asc(d->start));
+	d_printf("%s: connection %d (%s) ", msg, k->cnum, idstr);
+	if (d == NULL) {
+		d_printf("<no data>\n");
+	} else {
+		d_printf("to \"%s\" from %u:%u@%s[%s] %s\n", d->servicename,
+			 (unsigned)d->uid, (unsigned)d->gid, d->machine,
+			 d->addr, time_to_asc(d->start));
+	}
 	talloc_free(idstr);
 }
 
