@@ -836,7 +836,7 @@ fi
 # nothing until kernel 2.1.44! very dumb.
 AC_CACHE_CHECK([for real setresuid],samba_cv_have_setresuid,[
     AC_TRY_RUN([#include <errno.h>
-main() { setresuid(1,1,1); setresuid(2,2,2); exit(errno==EPERM?0:1);}],
+main() { setresuid(1,1,1); setresuid(2,2,2); return(errno==EPERM?0:1);}],
 	samba_cv_have_setresuid=yes,samba_cv_have_setresuid=no,samba_cv_have_setresuid=cross)])
 if test x"$samba_cv_have_setresuid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESUID,1,[Whether the system has setresuid])
@@ -847,7 +847,7 @@ fi
 AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
     AC_TRY_RUN([#include <unistd.h>
 #include <errno.h>
-main() { errno = 0; setresgid(1,1,1); exit(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}],
+main() { errno = 0; setresgid(1,1,1); return(errno != 0 ? (errno==EPERM ? 0 : 1) : 0);}],
 	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID,1,[Whether the system has setresgid])
@@ -1139,11 +1139,11 @@ main() {
        int libc_minor = __GLIBC_MINOR__;
 
        if (libc_major < 2)
-              exit(1);
+              return(1);
        if ((libc_major == 2) && (libc_minor <= 3))
-              exit(1);
+              return(1);
 #endif
-       exit(0);
+       return(0);
 }
 ], [samba_cv_linux_getgrouplist_ok=yes],
    [samba_cv_linux_getgrouplist_ok=no],
@@ -1969,7 +1969,7 @@ SMB_LIBRARY(smbsharemodes, 0)
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>
-main() { long long x = 1000000; x *= x; exit(((x/1000000) == 1000000)? 0: 1); }],
+main() { long long x = 1000000; x *= x; return(((x/1000000) == 1000000)? 0: 1); }],
 samba_cv_have_longlong=yes,samba_cv_have_longlong=no,samba_cv_have_longlong=cross)])
 if test x"$samba_cv_have_longlong" = x"yes"; then
     AC_DEFINE(HAVE_LONGLONG,1,[Whether the host supports long long's])
@@ -1992,7 +1992,7 @@ fi
 
 AC_CACHE_CHECK([for 64 bit time_t],samba_cv_SIZEOF_TIME_T,[
 AC_TRY_RUN([#include <time.h>
-main() { exit((sizeof(time_t) == 8) ? 0 : 1); }],
+main() { return((sizeof(time_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_TIME_T=yes,samba_cv_SIZEOF_TIME_T=no,samba_cv_SIZEOF_TIME_T=cross)])
 if test x"$samba_cv_SIZEOF_TIME_T" = x"yes"; then
     AC_DEFINE(SIZEOF_TIME_T,8,[The size of the 'time_t' type])
@@ -2011,11 +2011,11 @@ main() {
 			max_time = 67768036191676799ll;
 			tm = gmtime(&max_time);
 			if (tm) {
-				exit(0);
+				return(0);
 			}
 		}
 	}
-	exit(1);
+	return(1);
 }],
 samba_cv_TIME_T_MAX=yes,samba_cv_TIME_T_MAX=no,samba_cv_TIME_T_MAX=cross)])
 if test x"$samba_cv_TIME_T_MAX" = x"yes"; then
@@ -2034,7 +2034,7 @@ AC_MSG_CHECKING([if large file support can be enabled])
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
-main() { exit((sizeof(off_t) == 8) ? 0 : 1); }],
+main() { return((sizeof(off_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_OFF_T=yes,samba_cv_SIZEOF_OFF_T=no,samba_cv_SIZEOF_OFF_T=cross)])
 if test x"$samba_cv_SIZEOF_OFF_T" = x"no"; then
     AC_MSG_ERROR(["large file support support not available: sizeof(off_t) != 8"])
@@ -2047,7 +2047,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { exit((sizeof(ino_t) == 8) ? 0 : 1); }],
+main() { return((sizeof(ino_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_INO_T=yes,samba_cv_SIZEOF_INO_T=no,samba_cv_SIZEOF_INO_T=cross)])
 if test x"$samba_cv_SIZEOF_INO_T" = x"yes"; then
     AC_DEFINE(SIZEOF_INO_T,8,[The size of the 'ino_t' type])
@@ -2060,7 +2060,7 @@ AC_TRY_RUN([
 #endif
 #include <stdio.h>
 #include <sys/stat.h>
-main() { exit((sizeof(dev_t) == 8) ? 0 : 1); }],
+main() { return((sizeof(dev_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_DEV_T=yes,samba_cv_SIZEOF_DEV_T=no,samba_cv_SIZEOF_DEV_T=cross)])
 if test x"$samba_cv_SIZEOF_DEV_T" = x"yes"; then
     AC_DEFINE(SIZEOF_DEV_T,8,[The size of the 'dev_t' type])
@@ -2127,7 +2127,7 @@ AC_TRY_RUN([#include <sys/types.h>
 #include <dirent.h>
 main() { struct dirent *di; DIR *d = opendir("."); di = readdir(d);
 if (di && di->d_name[-2] == '.' && di->d_name[-1] == 0 &&
-di->d_name[0] == 0) exit(0); exit(1);} ],
+di->d_name[0] == 0) return(0); return(1);} ],
 samba_cv_HAVE_BROKEN_READDIR_NAME=yes,samba_cv_HAVE_BROKEN_READDIR_NAME=no,samba_cv_HAVE_BROKEN_READDIR_NAME=cross)])
 if test x"$samba_cv_HAVE_BROKEN_READDIR_NAME" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_READDIR_NAME,1,[Whether readdir() returns the wrong name offset])
@@ -2136,7 +2136,7 @@ fi
 AC_CACHE_CHECK([for utimbuf],samba_cv_HAVE_UTIMBUF,[
 AC_TRY_COMPILE([#include <sys/types.h>
 #include <utime.h>],
-[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));],
+[struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; return(utime("foo.c",&tbuf));],
 samba_cv_HAVE_UTIMBUF=yes,samba_cv_HAVE_UTIMBUF=no,samba_cv_HAVE_UTIMBUF=cross)])
 if test x"$samba_cv_HAVE_UTIMBUF" = x"yes"; then
     AC_DEFINE(HAVE_UTIMBUF,1,[Whether struct utimbuf is available])
@@ -2297,7 +2297,7 @@ AC_TRY_RUN([
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
-main() { char *s = getcwd(NULL,0); if (s) exit(0); exit(1); }],
+main() { char *s = getcwd(NULL,0); if (s) return(0); return(1); }],
 samba_cv_GETCWD_TAKES_NULL=yes,samba_cv_GETCWD_TAKES_NULL=no,samba_cv_GETCWD_TAKES_NULL=cross)])
 if test x"$samba_cv_GETCWD_TAKES_NULL" = x"yes"; then
     AC_DEFINE(GETCWD_TAKES_NULL,1,[Whether the getcwd function takes NULL as an argument])
@@ -2501,7 +2501,7 @@ AC_TRY_RUN([
 #define F_NOTIFY 1026
 #endif
 main() {
-       	exit(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
+	return(fcntl(open("/tmp", O_RDONLY), F_NOTIFY, 0) == -1 ?  1 : 0);
 }
 ],
 samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=yes,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=no,samba_cv_HAVE_KERNEL_CHANGE_NOTIFY=cross)])
@@ -2605,7 +2605,7 @@ AC_TRY_RUN([
 #define LOCK_READ	64
 #endif
 main() {
-       	exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
+	return(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
 }
 ],
 samba_cv_HAVE_KERNEL_SHARE_MODES=yes,samba_cv_HAVE_KERNEL_SHARE_MODES=no,samba_cv_HAVE_KERNEL_SHARE_MODES=cross)])
@@ -2645,11 +2645,11 @@ main() {
  cap_t cap;
  cap_value_t vals[1];
  if (!(cap = cap_get_proc()))
-   exit(1);
+   return(1);
  vals[0] = CAP_CHOWN;
  cap_set_flag(cap, CAP_INHERITABLE, 1, vals, CAP_CLEAR);
  cap_set_proc(cap);
- exit(0);
+ return(0);
 }],
 		samba_cv_HAVE_POSIX_CAPABILITIES=yes,
 		samba_cv_HAVE_POSIX_CAPABILITIES=no,
@@ -2894,7 +2894,7 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-main() { exit((sizeof(blkcnt_t) == 4) ? 0 : 1); }],
+main() { return((sizeof(blkcnt_t) == 4) ? 0 : 1); }],
 samba_cv_SIZEOF_BLKCNT_T_4=yes,samba_cv_SIZEOF_BLKCNT_T_4=no,samba_cv_SIZEOF_BLKCNT_T_4=cross)])
 if test x"$samba_cv_SIZEOF_BLKCNT_T_4" = x"yes"; then
     AC_DEFINE(SIZEOF_BLKCNT_T_4,1,[The size of the 'blkcnt_t' type])
@@ -2908,7 +2908,7 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-main() { exit((sizeof(blkcnt_t) == 8) ? 0 : 1); }],
+main() { return((sizeof(blkcnt_t) == 8) ? 0 : 1); }],
 samba_cv_SIZEOF_BLKCNT_T_8=yes,samba_cv_SIZEOF_BLKCNT_T_8=no,samba_cv_SIZEOF_BLKCNT_T_8=cross)])
 if test x"$samba_cv_SIZEOF_BLKCNT_T_8" = x"yes"; then
     AC_DEFINE(SIZEOF_BLKCNT_T_8,1,[The size of the 'blkcnt_t' type])
@@ -2968,7 +2968,7 @@ main() {
 	char *newpath;
 	signal(SIGSEGV, exit_on_core);
 	newpath = realpath("/tmp", NULL);
-	exit((newpath != NULL) ? 0 : 1);
+	return((newpath != NULL) ? 0 : 1);
 }
 ],
 samba_cv_REALPATH_TAKES_NULL=yes,samba_cv_REALPATH_TAKES_NULL=no,samba_cv_REALPATH_TAKES_NULL=cross)])
@@ -4905,7 +4905,7 @@ if test $space = no; then
   {
     struct statfs fsd;
     fsd.f_fsize = 0;
-    exit (statfs (".", &fsd, sizeof (struct statfs)));
+    return (statfs (".", &fsd, sizeof (struct statfs)));
   }],
   fu_cv_sys_stat_statfs3_osf1=yes,
   fu_cv_sys_stat_statfs3_osf1=no,
@@ -4936,7 +4936,7 @@ member (AIX, 4.3BSD)])
   {
   struct statfs fsd;
   fsd.f_bsize = 0;
-  exit (statfs (".", &fsd));
+  return (statfs (".", &fsd));
   }],
   fu_cv_sys_stat_statfs2_bsize=yes,
   fu_cv_sys_stat_statfs2_bsize=no,
@@ -4957,7 +4957,7 @@ if test $space = no; then
   main ()
   {
   struct statfs fsd;
-  exit (statfs (".", &fsd, sizeof fsd, 0));
+  return (statfs (".", &fsd, sizeof fsd, 0));
   }],
     fu_cv_sys_stat_statfs4=yes,
     fu_cv_sys_stat_statfs4=no,
@@ -4985,7 +4985,7 @@ member (4.4BSD and NetBSD)])
   {
   struct statfs fsd;
   fsd.f_fsize = 0;
-  exit (statfs (".", &fsd));
+  return (statfs (".", &fsd));
   }],
   fu_cv_sys_stat_statfs2_fsize=yes,
   fu_cv_sys_stat_statfs2_fsize=no,
@@ -5016,7 +5016,7 @@ if test $space = no; then
   struct fs_data fsd;
   /* Ultrix's statfs returns 1 for success,
      0 for not mounted, -1 for failure.  */
-  exit (statfs (".", &fsd) != 1);
+  return (statfs (".", &fsd) != 1);
   }],
   fu_cv_sys_stat_fs_data=yes,
   fu_cv_sys_stat_fs_data=no,
