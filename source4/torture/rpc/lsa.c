@@ -509,8 +509,7 @@ static bool test_LookupNames3(struct dcerpc_binding_handle *b,
 static bool test_LookupNames4(struct dcerpc_binding_handle *b,
 			      struct torture_context *tctx,
 			      struct lsa_TransNameArray2 *tnames,
-			      bool check_result,
-			      bool test_fail) /* check if the tests fails! */
+			      bool check_result)
 {
 	struct lsa_LookupNames4 r;
 	struct lsa_TransSidArray3 sids;
@@ -550,19 +549,10 @@ static bool test_LookupNames4(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupNames4_r(b, tctx, &r),
 		"LookupNames4 failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
-		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			if (test_fail) {
-				torture_comment(tctx, "not considering %s to be an error\n",
-						nt_errstr(r.out.result));
-				return true;
-			}
-		}
-		torture_comment(tctx, "LookupNames4 failed - %s\n",
-				nt_errstr(r.out.result));
-		return false;
-	}
+
+	torture_assert_ntstatus_ok(tctx,
+				   r.out.result,
+				   "LookupNames4 failed");
 
 	if (check_result) {
 		torture_assert_int_equal(tctx, count, sids.count,
@@ -575,6 +565,72 @@ static bool test_LookupNames4(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "\n");
 
 	return true;
+}
+
+static bool test_LookupNames4_fail(struct dcerpc_binding_handle *b,
+				   struct torture_context *tctx)
+{
+	struct lsa_LookupNames4 r;
+	struct lsa_TransSidArray3 sids;
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_String *names;
+	uint32_t count = 0;
+	NTSTATUS status;
+
+	torture_comment(tctx, "\nTesting LookupNames4_fail");
+
+	sids.count = 0;
+	sids.sids = NULL;
+
+	r.in.num_names = 0;
+
+	r.in.num_names = count;
+	r.in.names = names;
+	r.in.sids = &sids;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
+	r.out.count = &count;
+	r.out.sids = &sids;
+	r.out.domains = &domains;
+
+	status = dcerpc_lsa_LookupNames4_r(b, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			torture_comment(tctx,
+					"LookupNames4 correctly returned with "
+					"status: %s\n",
+					nt_errstr(status));
+			return true;
+		}
+
+		torture_assert_ntstatus_equal(tctx,
+					      status,
+					      NT_STATUS_ACCESS_DENIED,
+					      "LookupNames4 return value should "
+					      "be ACCESS_DENIED");
+		return true;
+	}
+
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			torture_comment(tctx,
+					"LookupSids3 correctly returned with "
+					"result: %s\n",
+					nt_errstr(r.out.result));
+			return true;
+		}
+	}
+
+	torture_assert_ntstatus_equal(tctx,
+				      r.out.result,
+				      NT_STATUS_OK,
+				      "LookupNames4 return value should be "
+				      "ACCESS_DENIED");
+
+	return false;
 }
 
 
@@ -822,15 +878,10 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 	}
 
 	if (p->binding->transport == NCACN_NP) {
-		struct lsa_TransNameArray2 names;
-
-		names.count = 0;
-		names.names = NULL;
-
 		if (!test_LookupSids3_fail(b, tctx, &sids)) {
 			return false;
 		}
-		if (!test_LookupNames4(b, tctx, &names, false, true)) {
+		if (!test_LookupNames4_fail(b, tctx)) {
 			return false;
 		}
 	} else if (p->binding->transport == NCACN_IP_TCP) {
@@ -844,7 +895,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 			if (!test_LookupSids3(b, tctx, &sids)) {
 				return false;
 			}
-			if (!test_LookupNames4(b, tctx, &names, true, false)) {
+			if (!test_LookupNames4(b, tctx, &names, true)) {
 				return false;
 			}
 		} else {
@@ -855,7 +906,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 			if (!test_LookupSids3_fail(b, tctx, &sids)) {
 				return false;
 			}
-			if (!test_LookupNames4(b, tctx, &names, false, true)) {
+			if (!test_LookupNames4_fail(b, tctx)) {
 				return false;
 			}
 		}
