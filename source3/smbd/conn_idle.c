@@ -105,6 +105,11 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 
 		next = conn->next;
 
+		if (conn->tcon == NULL) {
+			continue;
+		}
+		tcon = conn->tcon;
+
 		if (close_all) {
 			do_close = true;
 		} else if (strequal(lp_servicename(SNUM(conn)), sharename)) {
