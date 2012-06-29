@@ -5594,8 +5594,8 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 	fi
 	;;
 
-	*hpux*)
-		AC_CACHE_CHECK([for hpux sendfile support],samba_cv_HAVE_SENDFILE,[
+	*hpux*|*osf*)
+		AC_CACHE_CHECK([for osf/hpux sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([\
 #include <sys/socket.h>
 #include <sys/uio.h>],
@@ -5614,7 +5614,7 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 	if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
     		AC_DEFINE(HAVE_SENDFILE,1,[Whether sendfile() is available])
-		AC_DEFINE(HPUX_SENDFILE_API,1,[Whether the hpux sendfile() API is available])
+		AC_DEFINE(HPUX_SENDFILE_API,1,[Whether the osf/hpux sendfile() API is available])
 		AC_DEFINE(WITH_SENDFILE,1,[Whether sendfile() support should be included])
 	else
 		AC_MSG_RESULT(no);
