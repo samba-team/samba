@@ -35,6 +35,7 @@ extern const struct generic_mapping file_generic_mapping;
 
 struct deferred_open_record {
         bool delayed_for_oplocks;
+	bool async_open;
         struct file_id id;
 };
 
@@ -1532,6 +1533,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	   a 1 second delay for share mode conflicts. */
 
 	state.delayed_for_oplocks = True;
+	state.async_open = false;
 	state.id = lck->data->id;
 
 	if (!request_timed_out(request_time, timeout)) {
@@ -2166,6 +2168,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				   a 1 second delay for share mode conflicts. */
 
 				state.delayed_for_oplocks = False;
+				state.async_open = false;
 				state.id = id;
 
 				if ((req != NULL)
@@ -2307,6 +2310,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			struct deferred_open_record state;
 
 			state.delayed_for_oplocks = False;
+			state.async_open = false;
 			state.id = id;
 
 			/* Do it all over again immediately. In the second
