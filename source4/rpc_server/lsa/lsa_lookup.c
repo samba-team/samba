@@ -668,10 +668,15 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_LookupSids3 *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupSids2 q;
 	NTSTATUS status;
+
+	if (transport != NCACN_IP_TCP) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	/*
 	 * We don't have policy handles on this call. So this must be restricted
@@ -886,10 +891,15 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames4 *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupNames3 q;
 	NTSTATUS status;
+
+	if (transport != NCACN_IP_TCP) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	/*
 	 * We don't have policy handles on this call. So this must be restricted
