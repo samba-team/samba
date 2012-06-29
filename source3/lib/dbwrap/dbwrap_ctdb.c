@@ -1006,9 +1006,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 /* Do I own this record? */
 static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 {
-#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	struct ctdb_ltdb_header *hdr;
-#endif
 
 	if (ctdb_data.dptr == NULL)
 		return false;
@@ -1016,8 +1014,9 @@ static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header))
 		return false;
 
-#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	hdr = (struct ctdb_ltdb_header *)ctdb_data.dptr;
+
+#ifdef HAVE_CTDB_WANT_READONLY_DECL
 	if (hdr->dmaster != get_my_vnn()) {
 		/* If we're not dmaster, it must be r/o copy. */
 		return read_only && (hdr->flags & CTDB_REC_RO_HAVE_READONLY);
@@ -1026,7 +1025,7 @@ static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
 	/* If we want write access, noone can have r/o copies. */
 	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
 #else
-	return !read_only;
+	return (hdr->dmaster == get_my_vnn());
 #endif
 }
 
