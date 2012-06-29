@@ -1542,6 +1542,27 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 }
 
 /****************************************************************************
+ Reschedule an open call that went asynchronous.
+****************************************************************************/
+
+static void schedule_async_open(struct timeval request_time,
+				struct smb_request *req)
+{
+	struct deferred_open_record state;
+	struct timeval timeout;
+
+	timeout = timeval_set(20, 0);
+
+	ZERO_STRUCT(state);
+	state.delayed_for_oplocks = false;
+	state.async_open = true;
+
+	if (!request_timed_out(request_time, timeout)) {
+		defer_open(NULL, request_time, timeout, req, &state);
+	}
+}
+
+/****************************************************************************
  Work out what access_mask to use from what the client sent us.
 ****************************************************************************/
 
@@ -1773,10 +1794,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			   request with this mid. We'll use it later to
 			   see if this has timed out. */
 
-			/* Remove the deferred open entry under lock. */
-			remove_deferred_open_entry(
-				state->id, req->mid,
-				messaging_server_id(req->sconn->msg_ctx));
+			/* If it was an async create retry, the file
+			   didn't exist. */
+			if (state->async_open) {
+				SET_STAT_INVALID(smb_fname->st);
+				file_existed = false;
+			} else {
+				/* Remove the deferred open entry under lock. */
+				remove_deferred_open_entry(
+					state->id, req->mid,
+					messaging_server_id(req->sconn->msg_ctx));
+			}
 
 			/* Ensure we don't reprocess this message. */
 			remove_deferred_open_message_smb(req->sconn, req->mid);
@@ -2223,6 +2251,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     open_access_mask);
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
+		if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
+			schedule_async_open(request_time, req);
+		}
 		TALLOC_FREE(lck);
 		return fsp_open;
 	}
