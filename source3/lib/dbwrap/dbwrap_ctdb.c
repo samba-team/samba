@@ -1004,7 +1004,7 @@ static int db_ctdb_record_destr(struct db_record* data)
 }
 
 /* Do I own this record? */
-static bool db_ctdb_own_record(TDB_DATA ctdb_data, bool read_only)
+static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
 {
 	struct ctdb_ltdb_header *hdr;
 
@@ -1098,7 +1098,7 @@ again:
 	 * take the shortcut and just return it.
 	 */
 
-	if (!db_ctdb_own_record(ctdb_data, false)) {
+	if (!db_ctdb_can_use_local_copy(ctdb_data, false)) {
 		SAFE_FREE(ctdb_data.dptr);
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		talloc_set_destructor(result, NULL);
@@ -1222,7 +1222,7 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	 * take the shortcut and just return it.
 	 * we bypass the dmaster check for persistent databases
 	 */
-	if (db_ctdb_own_record(ctdb_data, true)) {
+	if (db_ctdb_can_use_local_copy(ctdb_data, true)) {
 		/* we are the dmaster - avoid the ctdb protocol op */
 
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
