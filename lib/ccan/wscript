@@ -121,19 +121,38 @@ def configure(conf):
     # backtrace could be in libexecinfo or in libc
     conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
 
+def ccan_module(bld, name, deps=''):
+    bld.SAMBA_SUBSYSTEM('ccan-%s' % name,
+                        source=bld.path.ant_glob('%s/*.c' % name),
+                        deps=deps)
+
 def build(bld):
+    # These have actual C files.
+    ccan_module(bld, 'hash', 'ccan-build_assert')
+    ccan_module(bld, 'ilog', 'ccan-compiler');
+    ccan_module(bld, 'read_write_all')
+    ccan_module(bld, 'str', 'ccan-build_assert')
+    ccan_module(bld, 'tally', 'ccan-build_assert ccan-likely')
 
-    for ccan_dir in ["err", "hash", "htable", "ilog", "likely", "list", "read_write_all", "str", "tally", "time"]:
-        bld.SAMBA_SUBSYSTEM('ccan-%s' % ccan_dir,
-                            source=bld.path.ant_glob('%s/*.c' % ccan_dir))
+    # These are headers only.
+    ccan_module(bld, 'array_size', 'ccan-build_assert')
+    ccan_module(bld, 'asearch','ccan-typesafe_cb ccan-array_size')
+    ccan_module(bld, 'build_assert')
+    ccan_module(bld, 'cast', 'ccan-build_assert')
+    ccan_module(bld, 'check_type', 'ccan-build_assert')
+    ccan_module(bld, 'compiler')
+    ccan_module(bld, 'endian')
+    ccan_module(bld, 'likely', 'ccan-str')
+    ccan_module(bld, 'typesafe_cb')
 
+    # Failtest pulls in a lot of stuff, and it's only for unit tests.
     if bld.env.DEVELOPER_MODE:
-        bld.SAMBA_LIBRARY('ccan-failtest',
-                          source=bld.path.ant_glob('failtest/*.c'),
-                          deps='execinfo ccan ccan-htable ccan-list ccan-read_write_all ccan-time',
-                          private_library=True)
-
-    bld.SAMBA_LIBRARY('ccan',
-                      source='',
-                      deps='ccan-err ccan-hash ccan-ilog ccan-likely ccan-tally',
-                      private_library=True)
+        ccan_module(bld, 'container_of', 'ccan-check_type')
+        ccan_module(bld, 'err', 'ccan-compiler')
+        ccan_module(bld, 'htable', 'ccan-compiler')
+        ccan_module(bld, 'list', 'ccan-container_of')
+        ccan_module(bld, 'time')
+        ccan_module(bld, 'tcon')
+        ccan_module(bld, 'tlist', 'ccan-list ccan-tcon')
+        ccan_module(bld, 'failtest',
+                    "ccan-err ccan-hash ccan-htable ccan-list ccan-read_write_all ccan-str ccan-time")

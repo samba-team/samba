@@ -647,7 +647,7 @@ bld.SAMBA3_LIBRARY('netapi',
 bld.SAMBA3_LIBRARY('smbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
                     public_deps='''talloc tdb_compat''',
-                    deps='''ccan''',
+                    deps='''ccan-hash''',
                     public_headers='include/smb_share_modes.h',
                     pc_files='libsmb/smbsharemodes.pc',
                     vnum='0',
@@ -780,7 +780,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source=LIB_UTIL_SRC,
-                   deps='ndr security NDR_SECURITY samba-util util_tdb ccan',
+                   deps='ndr security NDR_SECURITY samba-util util_tdb ccan-hash',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('pidfile',
@@ -803,7 +803,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         param
                         dbwrap
                         samba3-util
-                        ccan
                         errors3''',
                    vars=locals())
 

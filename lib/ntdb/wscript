@@ -139,9 +139,10 @@ def build(bld):
                  summary.c ntdb.c transaction.c traverse.c'''
 
     if not bld.CONFIG_SET('USING_SYSTEM_NTDB'):
+        NTDB_CCAN='ccan-likely ccan-ilog ccan-hash ccan-tally'
         bld.SAMBA_LIBRARY('ntdb',
                           SRC,
-                          deps='replace ccan',
+                          deps='replace ' + NTDB_CCAN ,
                           includes='.',
                           abi_directory='ABI',
                           abi_match='ntdb_*',
@@ -179,7 +180,7 @@ def build(bld):
             # Workaround is to build a private, non-hiding version.
             bld.SAMBA_SUBSYSTEM('ntdb-testing',
                                 SRC,
-                                deps='replace ccan',
+                                deps='replace ' + NTDB_CCAN,
                                 includes='.')
 
             bld.SAMBA_SUBSYSTEM('ntdb-test-helpers',
@@ -190,18 +191,18 @@ def build(bld):
                                 deps='replace')
             bld.SAMBA_SUBSYSTEM('ntdb-api-helpers',
                                 bld.env.NTDB_TEST_API_HELPER_SRC,
-                                deps='replace ntdb-testing')
+                                deps='replace')
 
             for f in bld.env.NTDB_TEST_RUN_SRC:
                 base = os.path.splitext(os.path.basename(f))[0]
                 bld.SAMBA_BINARY('ntdb-' + base, f,
-                                 deps='ccan replace ntdb-test-helpers ntdb-run-helpers ccan-failtest',
+                                 deps=NTDB_CCAN + ' ccan-failtest ntdb-test-helpers ntdb-run-helpers',
                                  install=False)
 
             for f in bld.env.NTDB_TEST_API_SRC:
                 base = os.path.splitext(os.path.basename(f))[0]
                 bld.SAMBA_BINARY('ntdb-' + base, f,
-                                 deps='ccan replace ntdb-test-helpers ntdb-api-helpers',
+                                 deps='ntdb-test-helpers ntdb-api-helpers ntdb-testing',
                                  install=False)
 
         if not bld.CONFIG_SET('USING_SYSTEM_PYNTDB'):

@@ -16,7 +16,7 @@ sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 import wafsamba, samba_dist, Options
 
 samba_dist.DIST_DIRS('''lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
-                        lib/tdb:lib/tdb lib/tdb2:lib/tdb2 lib/tdb:lib/tdb lib/ccan:lib/ccan lib/tevent:lib/tevent lib/popt:lib/popt
+                        lib/tdb:lib/tdb lib/tdb:lib/tdb lib/tevent:lib/tevent lib/popt:lib/popt
                         buildtools:buildtools''')
 
 
@@ -38,9 +38,6 @@ def configure(conf):
     conf.check_tool('python')
     conf.check_python_version((2,4,2))
     conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
-
-    # This make #include <ccan/...> work.
-    conf.ADD_EXTRA_INCLUDES('''#lib''')
 
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
