@@ -40,9 +40,6 @@
 #include <sys/id.h>
 #endif
 
-/* In autoconf/test mode include the definitions of samba_setXXX. */
-#include "../lib/util/setid.c"
-
 #define DEBUG(x, y) printf y
 #define smb_panic(x) exit(1)
 #define bool int

@@ -64,11 +64,42 @@ int samba_setgid(gid_t gid);
 int samba_setuidx(int flags, uid_t uid);
 int samba_setgidx(int flags, gid_t gid);
 int samba_setgroups(size_t setlen, const gid_t *gidset);
-
-#endif
 #endif
 
 #include "../lib/util/setid.h"
+
+#else
+
+/* Inside autoconf test. */
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <errno.h>
+
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
+#endif
+
+/* autoconf tests don't include setid.h */
+int samba_setresuid(uid_t ruid, uid_t euid, uid_t suid);
+int samba_setresgid(gid_t rgid, gid_t egid, gid_t sgid);
+int samba_setreuid(uid_t ruid, uid_t euid);
+int samba_setregid(gid_t rgid, gid_t egid);
+int samba_seteuid(uid_t euid);
+int samba_setegid(gid_t egid);
+int samba_setuid(uid_t uid);
+int samba_setgid(gid_t gid);
+int samba_setuidx(int flags, uid_t uid);
+int samba_setgidx(int flags, gid_t gid);
+int samba_setgroups(size_t setlen, const gid_t *gidset);
+
+#endif
 
 #if defined(USE_LINUX_THREAD_CREDENTIALS)
 #if defined(HAVE_SYSCALL_H)
