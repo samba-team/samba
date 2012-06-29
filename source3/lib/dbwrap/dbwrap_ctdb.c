@@ -1098,11 +1098,7 @@ again:
 	 * take the shortcut and just return it.
 	 */
 
-	if (!db_ctdb_own_record(ctdb_data, false)
-#if 0
-	    || (random() % 2 != 0)
-#endif
-) {
+	if (!db_ctdb_own_record(ctdb_data, false)) {
 		SAFE_FREE(ctdb_data.dptr);
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		talloc_set_destructor(result, NULL);
