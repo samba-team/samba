@@ -1226,8 +1226,9 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	 * we bypass the dmaster check for persistent databases
 	 */
 	if (db_ctdb_can_use_local_copy(ctdb_data, true)) {
-		/* we are the dmaster - avoid the ctdb protocol op */
-
+		/*
+		 * We have a valid local copy - avoid the ctdb protocol op
+		 */
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
 
 		data->dptr = (uint8_t *)talloc_memdup(
