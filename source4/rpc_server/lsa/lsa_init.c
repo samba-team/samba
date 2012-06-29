@@ -154,9 +154,14 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct lsa_OpenPolicy2 *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	NTSTATUS status;
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *handle;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -198,7 +203,12 @@ NTSTATUS dcesrv_lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 NTSTATUS dcesrv_lsa_OpenPolicy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct lsa_OpenPolicy *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct lsa_OpenPolicy2 r2;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	r2.in.system_name = NULL;
 	r2.in.attr = r->in.attr;

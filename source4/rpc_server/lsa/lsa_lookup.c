@@ -639,8 +639,13 @@ NTSTATUS dcesrv_lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_LookupSids2 *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -716,9 +721,14 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupSids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			       struct lsa_LookupSids *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct lsa_LookupSids2 r2;
 	NTSTATUS status;
 	uint32_t i;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	ZERO_STRUCT(r2);
 
@@ -849,8 +859,13 @@ NTSTATUS dcesrv_lsa_LookupNames3(struct dcesrv_call_state *dce_call,
 				 TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames3 *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct lsa_policy_state *policy_state;
 	struct dcesrv_handle *policy_handle;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -926,11 +941,16 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 				 TALLOC_CTX *mem_ctx,
 				 struct lsa_LookupNames2 *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct lsa_policy_state *state;
 	struct dcesrv_handle *h;
 	uint32_t i;
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct lsa_RefDomainList *domains;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	*r->out.domains = NULL;
 
@@ -1016,9 +1036,14 @@ NTSTATUS dcesrv_lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 NTSTATUS dcesrv_lsa_LookupNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_LookupNames *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct lsa_LookupNames2 r2;
 	NTSTATUS status;
 	uint32_t i;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	ZERO_STRUCT(r2);
 

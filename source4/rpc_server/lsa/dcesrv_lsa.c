@@ -144,7 +144,12 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 static NTSTATUS dcesrv_lsa_Close(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			  struct lsa_Close *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	struct dcesrv_handle *h;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	*r->out.handle = *r->in.handle;
 
@@ -3634,11 +3639,16 @@ static NTSTATUS dcesrv_lsa_RetrievePrivateData(struct dcesrv_call_state *dce_cal
 static NTSTATUS dcesrv_lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				struct lsa_GetUserName *r)
 {
+	enum dcerpc_transport_t transport = dce_call->conn->endpoint->ep_description->transport;
 	NTSTATUS status = NT_STATUS_OK;
 	const char *account_name;
 	const char *authority_name;
 	struct lsa_String *_account_name;
 	struct lsa_String *_authority_name = NULL;
+
+	if (transport != NCACN_NP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	/* this is what w2k3 does */
 	r->out.account_name = r->in.account_name;
