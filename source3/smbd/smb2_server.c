@@ -1594,8 +1594,16 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	req->do_signing = false;
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
-		struct smbXsrv_connection *conn = x->connection;
-		DATA_BLOB signing_key = x->global->channels[0].signing_key;
+		struct smbXsrv_connection *conn;
+		DATA_BLOB signing_key;
+
+		if (x == NULL) {
+			return smbd_smb2_request_error(
+				req, NT_STATUS_ACCESS_DENIED);
+		}
+
+		conn = x->connection;
+		signing_key = x->global->channels[0].signing_key;
 
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, session_status);
