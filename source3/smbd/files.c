@@ -126,6 +126,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		 fsp_fnum_dbg(fsp), (unsigned int)sconn->num_files));
 
 	if (req != NULL) {
+		fsp->mid = req->mid;
 		req->chain_fsp = fsp;
 	}
 
