@@ -248,80 +248,74 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 	return count + hdr_len;
 }
 
-#elif defined(FREEBSD_SENDFILE_API)
+#elif defined(FREEBSD_SENDFILE_API) || defined(DARWIN_SENDFILE_API)
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
+ssize_t sys_sendfile(int tofd, int fromfd,
+	    const DATA_BLOB *header, off_t offset, size_t count)
 {
-	size_t total=0;
-	struct sf_hdtr hdr;
-	struct iovec hdtrl;
-	size_t hdr_len = 0;
+	struct sf_hdtr	sf_header = {0};
+	struct iovec	io_header = {0};
 
-	hdr.headers = &hdtrl;
-	hdr.hdr_cnt = 1;
-	hdr.trailers = NULL;
-	hdr.trl_cnt = 0;
+	off_t	nwritten;
+	int	ret;
 
-	/* Set up the header iovec. */
 	if (header) {
-		hdtrl.iov_base = (void *)header->data;
-		hdtrl.iov_len = hdr_len = header->length;
-	} else {
-		hdtrl.iov_base = NULL;
-		hdtrl.iov_len = 0;
+		sf_header.headers = &io_header;
+		sf_header.hdr_cnt = 1;
+		io_header.iov_base = header->data;
+		io_header.iov_len = header->length;
+		sf_header.trailers = NULL;
+		sf_header.trl_cnt = 0;
 	}
 
-	total = count;
-	while (total + hdtrl.iov_len) {
-		off_t nwritten;
-		int ret;
+	while (count != 0) {
 
-		/*
-		 * FreeBSD sendfile returns 0 on success, -1 on error.
-		 * Remember, the tofd and fromfd are reversed..... :-).
-		 * nwritten includes the header data sent.
-		 */
-
-		do {
-			ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
-#if defined(EWOULDBLOCK)
-		} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+		nwritten = count;
+#if defined(DARWIN_SENDFILE_API)
+		/* Darwin recycles nwritten as a value-result parameter, apart from that this
+		   sendfile implementation is quite the same as the FreeBSD one */
+		ret = sendfile(fromfd, tofd, offset, &nwritten, &sf_header, 0);
 #else
-		} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+		ret = sendfile(fromfd, tofd, offset, count, &sf_header, &nwritten, 0);
 #endif
-		if (ret == -1)
+#if defined(EWOULDBLOCK)
+		if (ret == -1 && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+#else
+		if (ret == -1 && errno != EINTR && errno != EAGAIN) {
+#endif
+			/* Send failed, we are toast. */
 			return -1;
+		}
 
-		if (nwritten == 0)
-			return -1; /* I think we're at EOF here... */
+		if (nwritten == 0) {
+			/* EOF of offset is after EOF. */
+			break;
+		}
 
-		/*
-		 * If this was a short (signal interrupted) write we may need
-		 * to subtract it from the header data, or null out the header
-		 * data altogether if we wrote more than hdtrl.iov_len bytes.
-		 * We change nwritten to be the number of file bytes written.
-		 */
-
-		if (hdtrl.iov_base && hdtrl.iov_len) {
-			if (nwritten >= hdtrl.iov_len) {
-				nwritten -= hdtrl.iov_len;
-				hdtrl.iov_base = NULL;
-				hdtrl.iov_len = 0;
+		if (sf_header.hdr_cnt) {
+			if (io_header.iov_len <= nwritten) {
+				/* Entire header was sent. */
+				sf_header.headers = NULL;
+				sf_header.hdr_cnt = 0;
+				nwritten -= io_header.iov_len;
 			} else {
-				hdtrl.iov_base =
-				    (void *)((caddr_t)hdtrl.iov_base + nwritten);
-				hdtrl.iov_len -= nwritten;
+				/* Partial header was sent. */
+				io_header.iov_len -= nwritten;
+				io_header.iov_base =
+				    ((uint8_t *)io_header.iov_base) + nwritten;
 				nwritten = 0;
 			}
 		}
-		total -= nwritten;
+
 		offset += nwritten;
+		count -= nwritten;
 	}
-	return count + hdr_len;
+
+	return nwritten;
 }
 
 #elif defined(AIX_SENDFILE_API)
