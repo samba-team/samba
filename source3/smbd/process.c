@@ -718,15 +718,14 @@ void remove_deferred_open_message_smb(struct smbd_server_connection *sconn,
  schedule it for immediate processing.
 ****************************************************************************/
 
-void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
+bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 					uint64_t mid)
 {
 	struct pending_message_list *pml;
 	int i = 0;
 
 	if (sconn->using_smb2) {
-		schedule_deferred_open_message_smb2(sconn, mid);
-		return;
+		return schedule_deferred_open_message_smb2(sconn, mid);
 	}
 
 	for (pml = sconn->deferred_open_queue; pml; pml = pml->next) {
@@ -768,13 +767,15 @@ void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 			TALLOC_FREE(pml->te);
 			pml->te = te;
 			DLIST_PROMOTE(sconn->deferred_open_queue, pml);
-			return;
+			return true;
 		}
 	}
 
 	DEBUG(10,("schedule_deferred_open_message_smb: failed to "
 		"find message mid %llu\n",
 		(unsigned long long)mid ));
+
+	return false;
 }
 
 /****************************************************************************

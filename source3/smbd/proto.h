@@ -752,7 +752,7 @@ int srv_set_message(char *buf,
                         bool zero);
 void remove_deferred_open_message_smb(struct smbd_server_connection *sconn,
 				      uint64_t mid);
-void schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
+bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 					uint64_t mid);
 bool open_was_deferred(struct smbd_server_connection *sconn, uint64_t mid);
 bool get_deferred_open_message_state(struct smb_request *smbreq,
