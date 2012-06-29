@@ -1004,7 +1004,7 @@ main() {
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('FREEBSD_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
-        elif (host_os.rfind('hpux') > -1):
+        elif (host_os.rfind('hpux') > -1) or (host_os.rfind('osf') > -1):
             conf.CHECK_CODE('''
                             #include <sys/socket.h>
                             #include <sys/uio.h>
@@ -1018,7 +1018,7 @@ main() {
                             nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
                             ''',
                             '_HAVE_SENDFILE',
-                            msg='Checking for hpux sendfile support')
+                            msg='Checking for osf/hpux sendfile support')
             if conf.CONFIG_SET('_HAVE_SENDFILE'):
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('HPUX_SENDFILE_API', '1')
