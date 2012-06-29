@@ -40,8 +40,7 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 }
 
 static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
-			    struct torture_context *tctx,
-			    bool test_fail) /* check if the tests fails! */
+			    struct torture_context *tctx)
 {
 	struct lsa_ObjectAttribute attr;
 	struct policy_handle handle;
@@ -70,21 +69,79 @@ static bool test_OpenPolicy(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenPolicy_r(b, tctx, &r),
 				   "OpenPolicy failed");
+
+	torture_assert_ntstatus_ok(tctx,
+				   r.out.result,
+				   "OpenPolicy failed");
+
+	return true;
+}
+
+static bool test_OpenPolicy_fail(struct dcerpc_binding_handle *b,
+				 struct torture_context *tctx)
+{
+	struct lsa_ObjectAttribute attr;
+	struct policy_handle handle;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy r;
+	uint16_t system_name = '\\';
+	NTSTATUS status;
+
+	torture_comment(tctx, "\nTesting OpenPolicy_fail\n");
+
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	r.in.system_name = &system_name;
+	r.in.attr = &attr;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+
+	status = dcerpc_lsa_OpenPolicy_r(b, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			torture_comment(tctx,
+					"OpenPolicy correctly returned with "
+					"status: %s\n",
+					nt_errstr(status));
+			return true;
+		}
+
+		torture_assert_ntstatus_equal(tctx,
+					      status,
+					      NT_STATUS_ACCESS_DENIED,
+					      "OpenPolicy return value should "
+					      "be ACCESS_DENIED");
+		return true;
+	}
+
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
 		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			if (test_fail) {
-				torture_comment(tctx, "not considering %s to be an error\n",
-						nt_errstr(r.out.result));
-				return true;
-			}
+			torture_comment(tctx,
+					"OpenPolicy correctly returned with "
+					"result: %s\n",
+					nt_errstr(r.out.result));
+			return true;
 		}
-		torture_comment(tctx, "OpenPolicy failed - %s\n",
-				nt_errstr(r.out.result));
-		return false;
 	}
 
-	return true;
+	torture_assert_ntstatus_equal(tctx,
+				      r.out.result,
+				      NT_STATUS_OK,
+				      "OpenPolicy return value should be "
+				      "ACCESS_DENIED");
+
+	return false;
 }
 
 
@@ -573,7 +630,7 @@ static bool test_LookupNames4_fail(struct dcerpc_binding_handle *b,
 	struct lsa_LookupNames4 r;
 	struct lsa_TransSidArray3 sids;
 	struct lsa_RefDomainList *domains = NULL;
-	struct lsa_String *names;
+	struct lsa_String *names = NULL;
 	uint32_t count = 0;
 	NTSTATUS status;
 
@@ -3204,7 +3261,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 
 	/* Test lsaLookupSids3 and lsaLookupNames4 over tcpip */
 	if (p->binding->transport == NCACN_IP_TCP) {
-		if (!test_OpenPolicy(b, tctx, true)) {
+		if (!test_OpenPolicy_fail(b, tctx)) {
 			ret = false;
 		}
 
@@ -3220,7 +3277,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 		return ret;
 	}
 
-	if (!test_OpenPolicy(b, tctx, false)) {
+	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
 	}
 
@@ -3317,7 +3374,7 @@ static bool testcase_LookupNames(struct torture_context *tctx,
 		return true;
 	}
 
-	if (!test_OpenPolicy(b, tctx, false)) {
+	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
 	}
 
@@ -3410,7 +3467,7 @@ static bool testcase_TrustedDomains(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing %d domains\n", state->num_trusts);
 
-	if (!test_OpenPolicy(b, tctx, false)) {
+	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
 	}
 
@@ -3476,7 +3533,7 @@ static bool testcase_Privileges(struct torture_context *tctx,
 		return true;
 	}
 
-	if (!test_OpenPolicy(b, tctx, false)) {
+	if (!test_OpenPolicy(b, tctx)) {
 		ret = false;
 	}
 
