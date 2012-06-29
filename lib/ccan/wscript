@@ -155,4 +155,7 @@ def build(bld):
         ccan_module(bld, 'tcon')
         ccan_module(bld, 'tlist', 'ccan-list ccan-tcon')
         ccan_module(bld, 'failtest',
-                    "ccan-err ccan-hash ccan-htable ccan-list ccan-read_write_all ccan-str ccan-time")
+                    '''
+                    ccan-err ccan-hash ccan-htable ccan-list
+                    ccan-read_write_all ccan-str ccan-time execinfo
+                    ''')
