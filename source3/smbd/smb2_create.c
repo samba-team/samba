@@ -1036,7 +1036,7 @@ static void smbd_smb2_create_request_dispatch_immediate(struct tevent_context *c
 	}
 }
 
-void schedule_deferred_open_message_smb2(
+bool schedule_deferred_open_message_smb2(
 	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct smbd_smb2_create_state *state = NULL;
@@ -1048,18 +1048,18 @@ void schedule_deferred_open_message_smb2(
 		DEBUG(10,("schedule_deferred_open_message_smb2: "
 			"can't find mid %llu\n",
 			(unsigned long long)mid ));
-		return;
+		return false;
 	}
 	if (!smb2req->subreq) {
-		return;
+		return false;
 	}
 	if (!tevent_req_is_in_progress(smb2req->subreq)) {
-		return;
+		return false;
 	}
 	state = tevent_req_data(smb2req->subreq,
 			struct smbd_smb2_create_state);
 	if (!state) {
-		return;
+		return false;
 	}
 
 	/* Ensure we don't have any outstanding timer event. */
@@ -1080,7 +1080,7 @@ void schedule_deferred_open_message_smb2(
 	if (!state->im) {
 		smbd_server_connection_terminate(smb2req->sconn,
 			nt_errstr(NT_STATUS_NO_MEMORY));
-		return;
+		return false;
 	}
 
 	DEBUG(10,("schedule_deferred_open_message_smb2: "
@@ -1091,6 +1091,8 @@ void schedule_deferred_open_message_smb2(
 			smb2req->sconn->ev_ctx,
 			smbd_smb2_create_request_dispatch_immediate,
 			smb2req);
+
+	return true;
 }
 
 /*********************************************************

@@ -310,7 +310,7 @@ bool open_was_deferred_smb2(struct smbd_server_connection *sconn,
 			    uint64_t mid);
 void remove_deferred_open_message_smb2(
 	struct smbd_server_connection *sconn, uint64_t mid);
-void schedule_deferred_open_message_smb2(
+bool schedule_deferred_open_message_smb2(
 	struct smbd_server_connection *sconn, uint64_t mid);
 bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 			struct timeval request_time,
