@@ -671,8 +671,7 @@ static bool test_LookupSids2(struct dcerpc_binding_handle *b,
 
 static bool test_LookupSids3(struct dcerpc_binding_handle *b,
 			    struct torture_context *tctx,
-			    struct lsa_SidArray *sids,
-			    bool test_fail) /* check if the tests fails! */
+			    struct lsa_SidArray *sids)
 {
 	struct lsa_LookupSids3 r;
 	struct lsa_TransNameArray2 names;
@@ -696,23 +695,77 @@ static bool test_LookupSids3(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupSids3_r(b, tctx, &r),
 		"LookupSids3 failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
-		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			if (test_fail) {
-				torture_comment(tctx, "not considering %s to be an error\n",
-						nt_errstr(r.out.result));
-				return true;
-			}
-		}
-		torture_comment(tctx, "LookupSids3 failed - %s - not considered an error\n",
-				nt_errstr(r.out.result));
-		return false;
-	}
+
+	torture_assert_ntstatus_ok(tctx,
+				   r.out.result,
+				   "LookupSids3 failed");
 
 	torture_comment(tctx, "\n");
 
 	return true;
+}
+
+static bool test_LookupSids3_fail(struct dcerpc_binding_handle *b,
+				  struct torture_context *tctx,
+				  struct lsa_SidArray *sids)
+{
+	struct lsa_LookupSids3 r;
+	struct lsa_TransNameArray2 names;
+	struct lsa_RefDomainList *domains = NULL;
+	uint32_t count = sids->num_sids;
+	NTSTATUS status;
+
+	torture_comment(tctx, "\nTesting LookupSids3\n");
+
+	names.count = 0;
+	names.names = NULL;
+
+	r.in.sids = sids;
+	r.in.names = &names;
+	r.in.level = 1;
+	r.in.count = &count;
+	r.in.lookup_options = 0;
+	r.in.client_revision = 0;
+	r.out.domains = &domains;
+	r.out.count = &count;
+	r.out.names = &names;
+
+	status = dcerpc_lsa_LookupSids3_r(b, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			torture_comment(tctx,
+					"LookupSids3 correctly returned with "
+					"status: %s\n",
+					nt_errstr(status));
+			return true;
+		}
+
+		torture_assert_ntstatus_equal(tctx,
+					      status,
+					      NT_STATUS_ACCESS_DENIED,
+					      "LookupSids3 return value should "
+					      "be ACCESS_DENIED");
+		return true;
+	}
+
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			torture_comment(tctx,
+					"LookupNames4 correctly returned with "
+					"result: %s\n",
+					nt_errstr(r.out.result));
+			return true;
+		}
+	}
+
+	torture_assert_ntstatus_equal(tctx,
+				      r.out.result,
+				      NT_STATUS_OK,
+				      "LookupSids3 return value should be "
+				      "ACCESS_DENIED");
+
+	return false;
 }
 
 bool test_many_LookupSids(struct dcerpc_pipe *p,
@@ -774,7 +827,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 		names.count = 0;
 		names.names = NULL;
 
-		if (!test_LookupSids3(b, tctx, &sids, true)) {
+		if (!test_LookupSids3_fail(b, tctx, &sids)) {
 			return false;
 		}
 		if (!test_LookupNames4(b, tctx, &names, false, true)) {
@@ -788,7 +841,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 
 		if (p->conn->security_state.auth_info->auth_type == DCERPC_AUTH_TYPE_SCHANNEL &&
 		   p->conn->security_state.auth_info->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
-			if (!test_LookupSids3(b, tctx, &sids, false)) {
+			if (!test_LookupSids3(b, tctx, &sids)) {
 				return false;
 			}
 			if (!test_LookupNames4(b, tctx, &names, true, false)) {
@@ -799,7 +852,7 @@ bool test_many_LookupSids(struct dcerpc_pipe *p,
 			 * If we don't have a secure channel these tests must
 			 * fail with ACCESS_DENIED.
 			 */
-			if (!test_LookupSids3(b, tctx, &sids, true)) {
+			if (!test_LookupSids3_fail(b, tctx, &sids)) {
 				return false;
 			}
 			if (!test_LookupNames4(b, tctx, &names, false, true)) {
