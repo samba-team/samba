@@ -3269,6 +3269,58 @@ static bool test_GetUserName(struct dcerpc_binding_handle *b,
 	return ret;
 }
 
+static bool test_GetUserName_fail(struct dcerpc_binding_handle *b,
+				  struct torture_context *tctx)
+{
+	struct lsa_GetUserName r;
+	struct lsa_String *account_name_p = NULL;
+	NTSTATUS status;
+
+	torture_comment(tctx, "\nTesting GetUserName_fail\n");
+
+	r.in.system_name	= "\\";
+	r.in.account_name	= &account_name_p;
+	r.in.authority_name	= NULL;
+	r.out.account_name	= &account_name_p;
+
+	status = dcerpc_lsa_GetUserName_r(b, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			torture_comment(tctx,
+					"GetUserName correctly returned with "
+					"status: %s\n",
+					nt_errstr(status));
+			return true;
+		}
+
+		torture_assert_ntstatus_equal(tctx,
+					      status,
+					      NT_STATUS_ACCESS_DENIED,
+					      "GetUserName return value should "
+					      "be ACCESS_DENIED");
+		return true;
+	}
+
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			torture_comment(tctx,
+					"GetUserName correctly returned with "
+					"result: %s\n",
+					nt_errstr(r.out.result));
+			return true;
+		}
+	}
+
+	torture_assert_ntstatus_equal(tctx,
+				      r.out.result,
+				      NT_STATUS_OK,
+				      "GetUserName return value should be "
+				      "ACCESS_DENIED");
+
+	return false;
+}
+
 bool test_lsa_Close(struct dcerpc_binding_handle *b,
 		    struct torture_context *tctx,
 		    struct policy_handle *handle)
@@ -3403,6 +3455,13 @@ bool torture_rpc_lsa_get_user(struct torture_context *tctx)
 		return false;
 	}
 	b = p->binding_handle;
+
+	if (p->binding->transport == NCACN_IP_TCP) {
+		if (!test_GetUserName_fail(b, tctx)) {
+			ret = false;
+		}
+		return ret;
+	}
 
 	if (!test_GetUserName(b, tctx)) {
 		ret = false;
