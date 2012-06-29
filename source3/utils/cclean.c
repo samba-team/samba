@@ -66,7 +66,7 @@ static int read_connections_fn(const struct connections_key *key,
 	struct cclean_ctx *ctx = (struct cclean_ctx *)cclean_ctx;
 	unsigned length = talloc_array_length(ctx->cnums);
 	if (length <= ctx->num) {
-		int n = 2*length;
+		int n = MAX(2*length, 16);
 		void *tmp;
 
 		tmp = talloc_realloc(ctx, ctx->ids, struct server_id, n);
@@ -95,7 +95,7 @@ static int read_connections_fn(const struct connections_key *key,
 	ctx->ids[ctx->num] = key->pid;
 	ctx->cnums[ctx->num] = key->cnum;
 	ctx->names[ctx->num] = talloc_strndup(ctx, key->name, FSTRING_LEN);
-	if (ctx->names[ctx->num]) {
+	if (ctx->names[ctx->num] == NULL) {
 		goto talloc_failed;
 	}
 	ctx->num++;
