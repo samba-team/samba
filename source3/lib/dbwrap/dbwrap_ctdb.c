@@ -1003,7 +1003,10 @@ static int db_ctdb_record_destr(struct db_record* data)
 	return 0;
 }
 
-/* Do I own this record? */
+/**
+ * Check whether we have a valid local copy of the given record,
+ * either for reading or for writing.
+ */
 static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
 {
 	struct ctdb_ltdb_header *hdr;
