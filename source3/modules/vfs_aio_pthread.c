@@ -55,29 +55,34 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
  Ensure thread pool is initialized.
 ***********************************************************************/
 
-static bool init_aio_threadpool(struct vfs_handle_struct *handle)
+static bool init_aio_threadpool(struct event_context *ev_ctx,
+				struct pthreadpool **pp_pool,
+				void (*completion_fn)(struct event_context *,
+						struct fd_event *,
+						uint16,
+						void *))
 {
 	struct fd_event *sock_event = NULL;
 	int ret = 0;
 
-	if (pool) {
+	if (*pp_pool) {
 		return true;
 	}
 
-	ret = pthreadpool_init(aio_pending_size, &pool);
+	ret = pthreadpool_init(aio_pending_size, pp_pool);
 	if (ret) {
 		errno = ret;
 		return false;
 	}
-	sock_event = tevent_add_fd(handle->conn->sconn->ev_ctx,
+	sock_event = tevent_add_fd(ev_ctx,
 				NULL,
-				pthreadpool_signal_fd(pool),
+				pthreadpool_signal_fd(*pp_pool),
 				TEVENT_FD_READ,
-				aio_pthread_handle_completion,
+				completion_fn,
 				NULL);
 	if (sock_event == NULL) {
-		pthreadpool_destroy(pool);
-		pool = NULL;
+		pthreadpool_destroy(*pp_pool);
+		*pp_pool = NULL;
 		return false;
 	}
 
@@ -172,7 +177,9 @@ static int aio_pthread_read(struct vfs_handle_struct *handle,
 	struct aio_private_data *pd = NULL;
 	int ret;
 
-	if (!init_aio_threadpool(handle)) {
+	if (!init_aio_threadpool(handle->conn->sconn->ev_ctx,
+				&pool,
+				aio_pthread_handle_completion)) {
 		return -1;
 	}
 
@@ -209,7 +216,9 @@ static int aio_pthread_write(struct vfs_handle_struct *handle,
 	struct aio_private_data *pd = NULL;
 	int ret;
 
-	if (!init_aio_threadpool(handle)) {
+	if (!init_aio_threadpool(handle->conn->sconn->ev_ctx,
+				&pool,
+				aio_pthread_handle_completion)) {
 		return -1;
 	}
 
