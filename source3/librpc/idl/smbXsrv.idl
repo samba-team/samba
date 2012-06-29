@@ -1,5 +1,6 @@
 #include "idl_types.h"
 
+import "misc.idl";
 import "server_id.idl";
 import "security.idl";
 import "auth.idl";
@@ -267,12 +268,19 @@ interface smbXsrv
 		hyper					open_volatile_id;
 		dom_sid					open_owner;
 		NTTIME					open_time;
+		GUID					create_guid;
+		GUID					client_guid;
+		GUID					app_instance_id;
 		/*
 		 * TODO: for durable/resilient/persistent handles we need more
 		 *       things here. See [MS-SMB2] 3.3.1.10 Per Open
 		 *
 		 * NOTE: this is still version 0, which is not a stable format!
 		 */
+		NTTIME					disconnect_time;
+		uint32					durable_timeout_msec;
+		boolean8				durable;
+		DATA_BLOB				backend_cookie;
 	} smbXsrv_open_global0;
 
 	typedef union {
