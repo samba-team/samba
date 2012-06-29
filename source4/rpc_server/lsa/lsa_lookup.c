@@ -663,9 +663,19 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_LookupSids3 *r)
 {
+	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupSids2 q;
 	NTSTATUS status;
+
+	/*
+	 * We don't have policy handles on this call. So this must be restricted
+	 * to crypto connections only.
+	 */
+	if (auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    auth_info->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
 
 	status = dcesrv_lsa_get_policy_state(dce_call, mem_ctx, &policy_state);
 	if (!NT_STATUS_IS_OK(status)) {
