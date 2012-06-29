@@ -148,8 +148,7 @@ static bool test_OpenPolicy_fail(struct dcerpc_binding_handle *b,
 bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 			     struct torture_context *tctx,
 			     struct policy_handle **handle,
-			     NTSTATUS expected_status,
-			     bool test_fail)
+			     NTSTATUS expected_status)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -186,21 +185,10 @@ bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 	if (!NT_STATUS_IS_OK(expected_status)) {
 		return true;
 	}
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
-		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			if (test_fail) {
-				torture_comment(tctx, "not considering %s to be an error\n",
-						nt_errstr(r.out.result));
-				talloc_free(*handle);
-				*handle = NULL;
-				return true;
-			}
-		}
-		torture_comment(tctx, "OpenPolicy2 failed - %s\n",
-				nt_errstr(r.out.result));
-		return false;
-	}
+
+	torture_assert_ntstatus_ok(tctx,
+				   r.out.result,
+				   "OpenPolicy2 failed");
 
 	return true;
 }
@@ -210,7 +198,73 @@ bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
 			  struct torture_context *tctx,
 			  struct policy_handle **handle)
 {
-	return test_lsa_OpenPolicy2_ex(b, tctx, handle, NT_STATUS_OK, false);
+	return test_lsa_OpenPolicy2_ex(b, tctx, handle, NT_STATUS_OK);
+}
+
+static bool test_OpenPolicy2_fail(struct dcerpc_binding_handle *b,
+				  struct torture_context *tctx)
+{
+	struct lsa_ObjectAttribute attr;
+	struct policy_handle handle;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 r;
+	NTSTATUS status;
+
+	torture_comment(tctx, "\nTesting OpenPolicy2_fail\n");
+
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	r.in.system_name = "\\";
+	r.in.attr = &attr;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+
+	status = dcerpc_lsa_OpenPolicy2_r(b, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+			torture_comment(tctx,
+					"OpenPolicy2 correctly returned with "
+					"status: %s\n",
+					nt_errstr(status));
+			return true;
+		}
+
+		torture_assert_ntstatus_equal(tctx,
+					      status,
+					      NT_STATUS_ACCESS_DENIED,
+					      "OpenPolicy2 return value should "
+					      "be ACCESS_DENIED");
+		return true;
+	}
+
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
+		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+			torture_comment(tctx,
+					"OpenPolicy2 correctly returned with "
+					"result: %s\n",
+					nt_errstr(r.out.result));
+			return true;
+		}
+	}
+
+	torture_assert_ntstatus_equal(tctx,
+				      r.out.result,
+				      NT_STATUS_OK,
+				      "OpenPolicy2 return value should be "
+				      "ACCESS_DENIED");
+
+	return false;
 }
 
 static bool test_LookupNames(struct dcerpc_binding_handle *b,
@@ -3265,8 +3319,7 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 			ret = false;
 		}
 
-		if (!test_lsa_OpenPolicy2_ex(b, tctx, &handle,
-					     NT_STATUS_OK, true)) {
+		if (!test_OpenPolicy2_fail(b, tctx)) {
 			ret = false;
 		}
 
