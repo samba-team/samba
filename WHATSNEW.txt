@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.5.16
-			   , 2012
+			    July 2, 2012
                    ==============================
 
 
@@ -8,13 +8,79 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.16 include:
 
-o 
+o  Fix possible memory leaks in the Samba master process (bug #8970).
+o  Fix uninitialized memory read in talloc_free().
+o  Fix smbd crash with unknown user (bug #8314).
+
 
 Changes since 3.5.15:
 ---------------------
 
-
 o   Jeremy Allison <jra@samba.org>
+    * BUG 8314: Fix smbd crash with unknown user.
+    * BUG 8831: Fix inconsistent (with manpage) command-line switch for "help"
+      in smbtree.
+    * BUG 8882: Fix processing of %U with vfs_full_audit when "force user"
+      is set.
+    * BUG 8897: winbind_krb5_locator only returns one IP address.
+    * BUG 8910: resolve_ads() code can return zero addresses and miss valid DC
+      IP addresses.
+    * BUG 8957: Fix typo in pam_winbindd code.
+    * BUG 8972: Directory group write permission bit is set if unix extensions
+      are enabled.
+    * BUG 8974: Kernel oplocks are broken when uid(file) != uid(process).
+    * BUG 8989: Send correct responses to NT Transact Secondary when no data and
+      no params.
+    * BUG 8994: Fix "winbind normalize names".
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8599: Only use SamLogonEx when we can get unencrypted session keys.
+    * BUG 8943: Slow but responsive DC can lock up winbindd for > 10 minutes
+      at a time.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 7564: Fix default name resolve order in the manpage.
+
+
+o   John Bradshaw <john@johnbradshaw.org>
+    * BUG 7938: Fix typo (overrided -> overridden) in Samba3-HOWTO.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 8552: Correct documentation of "case sensitive".
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8869: Remove outdated netscape ds 5 schema file.
+    * BUG 9011: Fix build on HP-UX.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix uninitialized memory read in talloc_free().
+    * BUG 8338: OS/X can not deal with a 10-vwv read on normal files.
+    * BUG 8998: Notify code can miss a ChDir.
+    * BUG 9000: Fix a Winbind race leading to 100% CPU.
+    * BUG 9003: Fix posix acl on gpfs.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 8975: Make sure that Winbind can coredump.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 7930: Add hint that setting "profile acls = yes" on normal shares can
+      cause trouble.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 8822: Fix building out-of-tree vfs modules.
+    * BUG 8970: Fix possible memory leaks in the Samba master process.
+
+
+o   Simo Sorce <idra@samba.org>
+    * BUG 8915: Fix pam_winbind build against newer iniparser library.
 
 
 ######################################################################
