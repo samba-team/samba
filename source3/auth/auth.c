@@ -81,9 +81,8 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 				 uint8_t chal[8])
 {
-	DATA_BLOB challenge = data_blob_null;
-	const char *challenge_set_by = NULL;
-	auth_methods *auth_method;
+	uchar tmp[8];
+
 
 	if (auth_context->challenge.length) {
 		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
@@ -92,52 +91,11 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 		return NT_STATUS_OK;
 	}
 
-	auth_context->challenge_may_be_modified = False;
+	generate_random_buffer(tmp, sizeof(tmp));
+	auth_context->challenge = data_blob_talloc(auth_context,
+						   tmp, sizeof(tmp));
 
-	for (auth_method = auth_context->auth_method_list; auth_method; auth_method = auth_method->next) {
-		if (auth_method->get_chal == NULL) {
-			DEBUG(5, ("auth_get_challenge: module %s did not want to specify a challenge\n", auth_method->name));
-			continue;
-		}
-
-		DEBUG(5, ("auth_get_challenge: getting challenge from module %s\n", auth_method->name));
-		if (challenge_set_by != NULL) {
-			DEBUG(1, ("auth_get_challenge: CONFIGURATION ERROR: authentication method %s has already specified a challenge.  Challenge by %s ignored.\n", 
-				  challenge_set_by, auth_method->name));
-			continue;
-		}
-
-		challenge = auth_method->get_chal(auth_context, &auth_method->private_data,
-						  auth_context);
-		if (!challenge.length) {
-			DEBUG(3, ("auth_get_challenge: getting challenge from authentication method %s FAILED.\n", 
-				  auth_method->name));
-		} else {
-			DEBUG(5, ("auth_get_challenge: successfully got challenge from module %s\n", auth_method->name));
-			auth_context->challenge = challenge;
-			challenge_set_by = auth_method->name;
-			auth_context->challenge_set_method = auth_method;
-		}
-	}
-
-	if (!challenge_set_by) {
-		uchar tmp[8];
-
-		generate_random_buffer(tmp, sizeof(tmp));
-		auth_context->challenge = data_blob_talloc(auth_context,
-							   tmp, sizeof(tmp));
-
-		challenge_set_by = "random";
-		auth_context->challenge_may_be_modified = True;
-	} 
-
-	DEBUG(5, ("auth_context challenge created by %s\n", challenge_set_by));
-	DEBUG(5, ("challenge is: \n"));
-	dump_data(5, auth_context->challenge.data, auth_context->challenge.length);
-
-	SMB_ASSERT(auth_context->challenge.length == 8);
-
-	auth_context->challenge_set_by=challenge_set_by;
+	auth_context->challenge_set_by = "random";
 
 	memcpy(chal, auth_context->challenge.data, 8);
 	return NT_STATUS_OK;

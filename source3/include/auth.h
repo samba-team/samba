@@ -78,9 +78,6 @@ struct auth_context {
 	/* Who set this up in the first place? */ 
 	const char *challenge_set_by; 
 
-	bool challenge_may_be_modified;
-
-	struct auth_methods *challenge_set_method; 
 	/* What order are the various methods in?   Try to stop it changing under us */ 
 	struct auth_methods *auth_method_list;	
 
@@ -98,14 +95,6 @@ typedef struct auth_methods
 			 TALLOC_CTX *mem_ctx,
 			 const struct auth_usersupplied_info *user_info, 
 			 struct auth_serversupplied_info **server_info);
-
-	/* If you are using this interface, then you are probably
-	 * getting something wrong.  This interface is only for
-	 * security=server, and makes a number of compromises to allow
-	 * that.  It is not compatible with being a PDC.  */
-	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
-			      void **my_private_data, 
-			      TALLOC_CTX *mem_ctx);
 
 	/* Optional methods allowing this module to provide a way to get a gensec context and an auth4_context */
 	prepare_gensec_fn prepare_gensec;

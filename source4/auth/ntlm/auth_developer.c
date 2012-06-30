@@ -133,56 +133,8 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 
 static const struct auth_operations name_to_ntstatus_auth_ops = {
 	.name		= "name_to_ntstatus",
-	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= name_to_ntstatus_want_check,
 	.check_password	= name_to_ntstatus_check_password
-};
-
-/** 
- * Return a 'fixed' challenge instead of a variable one.
- *
- * The idea of this function is to make packet snifs consistant
- * with a fixed challenge, so as to aid debugging.
- *
- * This module is of no value to end-users.
- *
- * This module does not actually authenticate the user, but
- * just pretenteds to need a specified challenge.  
- * This module removes *all* security from the challenge-response system
- *
- * @return NT_STATUS_UNSUCCESSFUL
- **/
-static NTSTATUS fixed_challenge_get_challenge(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8])
-{
-	const char *challenge = "I am a teapot";
-
-	memcpy(chal, challenge, 8);
-
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS fixed_challenge_want_check(struct auth_method_context *ctx,
-			      		   TALLOC_CTX *mem_ctx,
-					   const struct auth_usersupplied_info *user_info)
-{
-	/* don't handle any users */
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS fixed_challenge_check_password(struct auth_method_context *ctx,
-			      		       TALLOC_CTX *mem_ctx,
-					       const struct auth_usersupplied_info *user_info,
-					       struct auth_user_info_dc **_user_info_dc)
-{
-	/* don't handle any users */
-	return NT_STATUS_NO_SUCH_USER;
-}
-
-static const struct auth_operations fixed_challenge_auth_ops = {
-	.name		= "fixed_challenge",
-	.get_challenge	= fixed_challenge_get_challenge,
-	.want_check	= fixed_challenge_want_check,
-	.check_password	= fixed_challenge_check_password
 };
 
 _PUBLIC_ NTSTATUS auth4_developer_init(void)
@@ -192,12 +144,6 @@ _PUBLIC_ NTSTATUS auth4_developer_init(void)
 	ret = auth_register(&name_to_ntstatus_auth_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register 'name_to_ntstatus' auth backend!\n"));
-		return ret;
-	}
-
-	ret = auth_register(&fixed_challenge_auth_ops);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Failed to register 'fixed_challenge' auth backend!\n"));
 		return ret;
 	}
 

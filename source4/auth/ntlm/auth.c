@@ -54,22 +54,12 @@ _PUBLIC_ NTSTATUS auth_context_set_challenge(struct auth4_context *auth_ctx, con
 	return NT_STATUS_OK;
 }
 
-/***************************************************************************
- Set a fixed challenge
-***************************************************************************/
-_PUBLIC_ bool auth_challenge_may_be_modified(struct auth4_context *auth_ctx)
-{
-	return auth_ctx->challenge.may_be_modified;
-}
-
 /****************************************************************************
  Try to get a challenge out of the various authentication modules.
  Returns a const char of length 8 bytes.
 ****************************************************************************/
 _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t chal[8])
 {
-	NTSTATUS nt_status;
-	struct auth_method_context *method;
 
 	if (auth_ctx->challenge.data.length == 8) {
 		DEBUG(5, ("auth_get_challenge: returning previous challenge by module %s (normal)\n", 
@@ -78,29 +68,12 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth4_context *auth_ctx, uint8_t cha
 		return NT_STATUS_OK;
 	}
 
-	for (method = auth_ctx->methods; method; method = method->next) {
-		nt_status = method->ops->get_challenge(method, auth_ctx, chal);
-		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
-			continue;
-		}
-
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-
-		auth_ctx->challenge.data	= data_blob_talloc(auth_ctx, chal, 8);
-		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
-		auth_ctx->challenge.set_by	= method->ops->name;
-
-		break;
-	}
-
 	if (!auth_ctx->challenge.set_by) {
 		generate_random_buffer(chal, 8);
 
 		auth_ctx->challenge.data		= data_blob_talloc(auth_ctx, chal, 8);
 		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
 		auth_ctx->challenge.set_by		= "random";
-
-		auth_ctx->challenge.may_be_modified	= true;
 	}
 
 	DEBUG(10,("auth_get_challenge: challenge set by %s\n",
@@ -574,8 +547,6 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 
 	ctx = talloc_zero(mem_ctx, struct auth4_context);
 	NT_STATUS_HAVE_NO_MEMORY(ctx);
-	ctx->challenge.set_by		= NULL;
-	ctx->challenge.may_be_modified	= false;
 	ctx->challenge.data		= data_blob(NULL, 0);
 	ctx->methods			= NULL;
 	ctx->event_ctx			= ev;
@@ -608,7 +579,6 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->check_ntlm_password = auth_check_password_wrapper;
 	ctx->get_ntlm_challenge = auth_get_challenge;
 	ctx->set_ntlm_challenge = auth_context_set_challenge;
-	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
 	ctx->generate_session_info = auth_generate_session_info_wrapper;
 	ctx->generate_session_info_pac = auth_generate_session_info_pac;
 

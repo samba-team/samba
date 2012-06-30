@@ -64,18 +64,6 @@ NTSTATUS auth3_get_challenge(struct auth4_context *auth4_context,
 }
 
 /**
- * Some authentication methods 'fix' the challenge, so we may not be able to set it
- *
- * @return If the effective challenge used by the auth subsystem may be modified
- */
-bool auth3_may_set_challenge(struct auth4_context *auth4_context)
-{
-	struct auth_context *auth_context = talloc_get_type_abort(auth4_context->private_data,
-								  struct auth_context);
-	return auth_context->challenge_may_be_modified;
-}
-
-/**
  * NTLM2 authentication modifies the effective challenge, 
  * @param challenge The new challenge value
  */

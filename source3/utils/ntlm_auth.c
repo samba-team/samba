@@ -866,24 +866,12 @@ static NTSTATUS ntlm_auth_get_challenge(struct auth4_context *auth_ctx,
 		auth_ctx->challenge.data		= data_blob_talloc(auth_ctx, chal, 8);
 		NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.data.data);
 		auth_ctx->challenge.set_by		= "random";
-
-		auth_ctx->challenge.may_be_modified	= true;
 	}
 
 	DEBUG(10,("auth_get_challenge: challenge set by %s\n",
 		 auth_ctx->challenge.set_by));
 
 	return NT_STATUS_OK;
-}
-
-/**
- * Some authentication methods 'fix' the challenge, so we may not be able to set it
- *
- * @return If the effective challenge used by the auth subsystem may be modified
- */
-static bool ntlm_auth_may_set_challenge(struct auth4_context *auth_ctx)
-{
-	return auth_ctx->challenge.may_be_modified;
 }
 
 /**
@@ -1055,7 +1043,6 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 	auth4_context->generate_session_info_pac = ntlm_auth_generate_session_info_pac;
 	auth4_context->get_ntlm_challenge = ntlm_auth_get_challenge;
 	auth4_context->set_ntlm_challenge = ntlm_auth_set_challenge;
-	auth4_context->challenge_may_be_modified = ntlm_auth_may_set_challenge;
 	if (local_pw) {
 		auth4_context->check_ntlm_password = local_pw_check;
 	} else {

@@ -165,7 +165,6 @@ static struct auth4_context *make_auth4_context_s3(TALLOC_CTX *mem_ctx, struct a
 	auth4_context->generate_session_info = auth3_generate_session_info;
 	auth4_context->get_ntlm_challenge = auth3_get_challenge;
 	auth4_context->set_ntlm_challenge = auth3_set_challenge;
-	auth4_context->challenge_may_be_modified = auth3_may_set_challenge;
 	auth4_context->check_ntlm_password = auth3_check_password;
 	auth4_context->private_data = talloc_steal(auth4_context, auth_context);
 	return auth4_context;

@@ -82,8 +82,6 @@ struct auth4_context {
 		/* Who set this up in the first place? */
 		const char *set_by;
 
-		bool may_be_modified;
-
 		DATA_BLOB data;
 	} challenge;
 
@@ -112,8 +110,6 @@ struct auth4_context {
 					DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	NTSTATUS (*get_ntlm_challenge)(struct auth4_context *auth_ctx, uint8_t chal[8]);
-
-	bool (*challenge_may_be_modified)(struct auth4_context *auth_ctx);
 
 	NTSTATUS (*set_ntlm_challenge)(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 

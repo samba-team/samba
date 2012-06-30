@@ -797,7 +797,6 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 
 static const struct auth_operations unix_ops = {
 	.name		= "unix",
-	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= authunix_want_check,
 	.check_password	= authunix_check_password
 };

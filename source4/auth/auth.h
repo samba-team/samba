@@ -55,13 +55,6 @@ struct smb_krb5_context;
 struct auth_operations {
 	const char *name;
 
-	/* If you are using this interface, then you are probably
-	 * getting something wrong.  This interface is only for
-	 * security=server, and makes a number of compromises to allow
-	 * that.  It is not compatible with being a PDC.  */
-
-	NTSTATUS (*get_challenge)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8]);
-
 	/* Given the user supplied info, check if this backend want to handle the password checking */
 
 	NTSTATUS (*want_check)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,

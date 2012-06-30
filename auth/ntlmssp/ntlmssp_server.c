@@ -131,13 +131,6 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	/* Check if we may set the challenge */
-	if (auth_context->challenge_may_be_modified) {
-		if (!auth_context->challenge_may_be_modified(auth_context)) {
-			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
-		}
-	}
-
 	/* The flags we send back are not just the negotiated flags,
 	 * they are also 'what is in this packet'.  Therfore, we
 	 * operate on 'chal_flags' from here on

@@ -319,14 +319,12 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 
 static const struct auth_operations winbind_ops = {
 	.name		= "winbind",
-	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= winbind_want_check,
 	.check_password	= winbind_check_password
 };
 
 static const struct auth_operations winbind_wbclient_ops = {
 	.name		= "winbind_wbclient",
-	.get_challenge	= auth_get_challenge_not_implemented,
 	.want_check	= winbind_want_check,
 	.check_password	= winbind_check_password_wbclient
 };
