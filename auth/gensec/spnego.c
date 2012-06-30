@@ -713,8 +713,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
  * This is the case, where the client is the first one who sends data
 */
 
-static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec_security, 
-						  struct spnego_state *spnego_state,
+static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_state,
 						  TALLOC_CTX *out_mem_ctx, 
 						  NTSTATUS nt_status,
 						  const DATA_BLOB unwrapped_out,
@@ -812,8 +811,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 								     spnego.negTokenInit.mechToken, 
 								     &unwrapped_out);
 			
-			nt_status = gensec_spnego_server_negTokenTarg(gensec_security,
-								      spnego_state,
+			nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
 								      out_mem_ctx,
 								      nt_status,
 								      unwrapped_out,
@@ -974,8 +972,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			}
 		}
 
-		nt_status = gensec_spnego_server_negTokenTarg(gensec_security,
-							      spnego_state,
+		nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
 							      out_mem_ctx, 
 							      nt_status,
 							      unwrapped_out,
