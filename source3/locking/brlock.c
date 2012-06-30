@@ -1522,6 +1522,131 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 	}
 }
 
+bool brl_mark_disconnected(struct files_struct *fsp)
+{
+	uint32_t tid = fsp->conn->cnum;
+	uint64_t smblctx = fsp->op->global->open_persistent_id;
+	uint64_t fnum = fsp->fnum;
+	unsigned int i;
+	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
+	struct byte_range_lock *br_lck = NULL;
+
+	if (!fsp->op->global->durable) {
+		return false;
+	}
+
+	if (fsp->current_lock_count == 0) {
+		return true;
+	}
+
+	br_lck = brl_get_locks(talloc_tos(), fsp);
+	if (br_lck == NULL) {
+		return false;
+	}
+
+	for (i=0; i < br_lck->num_locks; i++) {
+		struct lock_struct *lock = &br_lck->lock_data[i];
+
+		/*
+		 * as this is a durable handle, we only expect locks
+		 * of the current file handle!
+		 */
+
+		if (lock->context.smblctx != smblctx) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		if (lock->context.tid != tid) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		if (!serverid_equal(&lock->context.pid, &self)) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		if (lock->fnum != fnum) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		server_id_set_disconnected(&lock->context.pid);
+		lock->context.tid = TID_FIELD_INVALID;
+		lock->fnum = FNUM_FIELD_INVALID;
+	}
+
+	br_lck->modified = true;
+	TALLOC_FREE(br_lck);
+	return true;
+}
+
+bool brl_reconnect_disconnected(struct files_struct *fsp)
+{
+	uint32_t tid = fsp->conn->cnum;
+	uint64_t smblctx = fsp->op->global->open_persistent_id;
+	uint64_t fnum = fsp->fnum;
+	unsigned int i;
+	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
+	struct byte_range_lock *br_lck = NULL;
+
+	if (!fsp->op->global->durable) {
+		return false;
+	}
+
+	/* we want to validate ourself */
+	fsp->lockdb_clean = true;
+
+	br_lck = brl_get_locks(talloc_tos(), fsp);
+	if (br_lck == NULL) {
+		return false;
+	}
+
+	if (br_lck->num_locks == 0) {
+		TALLOC_FREE(br_lck);
+		return true;
+	}
+
+	for (i=0; i < br_lck->num_locks; i++) {
+		struct lock_struct *lock = &br_lck->lock_data[i];
+
+		/*
+		 * as this is a durable handle we only expect locks
+		 * of the current file handle!
+		 */
+
+		if (lock->context.smblctx != smblctx) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		if (lock->context.tid != TID_FIELD_INVALID) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		if (!server_id_is_disconnected(&lock->context.pid)) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		if (lock->fnum != FNUM_FIELD_INVALID) {
+			TALLOC_FREE(br_lck);
+			return false;
+		}
+
+		lock->context.pid = self;
+		lock->context.tid = tid;
+		lock->fnum = fnum;
+	}
+
+	fsp->current_lock_count = br_lck->num_locks;
+	br_lck->modified = true;
+	TALLOC_FREE(br_lck);
+	return true;
+}
+
 /****************************************************************************
  Ensure this set of lock entries is valid.
 ****************************************************************************/
