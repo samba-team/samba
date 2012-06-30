@@ -125,8 +125,11 @@ def ccan_module(bld, name, deps=''):
     bld.SAMBA_SUBSYSTEM('ccan-%s' % name,
                         source=bld.path.ant_glob('%s/*.c' % name),
                         deps=deps)
+    bld.env.CCAN_MODS += 'ccan-%s ' % name
 
 def build(bld):
+    bld.env.CCAN_MODS = ""
+
     # These have actual C files.
     ccan_module(bld, 'hash', 'ccan-build_assert')
     ccan_module(bld, 'ilog', 'ccan-compiler');
@@ -159,3 +162,10 @@ def build(bld):
                     ccan-err ccan-hash ccan-htable ccan-list
                     ccan-read_write_all ccan-str ccan-time execinfo
                     ''')
+
+    # This is the complete CCAN collection as one group.
+    bld.SAMBA_LIBRARY('ccan',
+                      source='',
+                      deps=bld.env.CCAN_MODS,
+                      private_library=True,
+                      grouping_library=True)
