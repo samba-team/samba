@@ -729,17 +729,21 @@ int i; i = PAM_RADIO_TYPE;
             conf.DEFINE('WITH_PAM_MODULES', 1)
 
     seteuid = False
-    if not seteuid:
-        seteuid = conf.CHECK_CODE('''
-                                #define AUTOCONF_TEST 1
-                                #define USE_LINUX_THREAD_CREDENTIALS 1
-                                #include "../lib/util/setid.c"
-                                #include "./lib/util_sec.c"
-                                ''',
-                                'USE_LINUX_THREAD_CREDENTIALS',
-                                addmain=False,
-                                execute=True,
-                                msg="Checking whether we can use Linux thread-specific credentials")
+#
+# Disable for now until Linux-64 and Linux-32 specific versions
+# are separated out.
+#
+#    if not seteuid:
+#        seteuid = conf.CHECK_CODE('''
+#                                #define AUTOCONF_TEST 1
+#                                #define USE_LINUX_THREAD_CREDENTIALS 1
+#                                #include "../lib/util/setid.c"
+#                                #include "./lib/util_sec.c"
+#                                ''',
+#                                'USE_LINUX_THREAD_CREDENTIALS',
+#                                addmain=False,
+#                                execute=True,
+#                                msg="Checking whether we can use Linux thread-specific credentials")
     if not seteuid:
         seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1
