@@ -5,28 +5,7 @@
 # changes:
 
 #
-# Steps for BIND 9.7.x ---------------------------------------------------
-#
-
-# 1a. Insert following lines into the options {} section of your named.conf
-#     file:
-tkey-gssapi-credential "DNS/${DNSNAME}";
-tkey-domain "${REALM}";
-
-# 1b. Modify BIND init scripts to pass the location of the keytab file.
-#     Fedora 8 & later provide a variable named KEYTAB_FILE in 
-#     /etc/sysconfig/named for this purpose:
-KEYTAB_FILE="${DNS_KEYTAB_ABS}"
-#     Note that the Fedora scripts translate KEYTAB_FILE behind the scenes 
-#     into a variable named KRB5_KTNAME, which is ultimately passed to the 
-#     BIND daemon.  If your distribution does not provide a variable like 
-#     KEYTAB_FILE to pass a keytab file to the BIND daemon, a workaround is 
-#     to place the following line in BIND's sysconfig file or in the init 
-#     script for BIND:
-export KRB5_KTNAME="${DNS_KEYTAB_ABS}"
-
-#
-# Steps for BIND 9.8.x ---------------------------------------------------
+# Steps for BIND 9.8.x and 9.9.x -----------------------------------------
 #
 
 # 1. Insert following lines into the options {} section of your named.conf 
