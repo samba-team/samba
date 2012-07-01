@@ -840,6 +840,7 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 				const char *dn,
 				NT_USER_TOKEN **token)
 {
+#ifdef HAVE_ADS
 	NT_USER_TOKEN *ad_token = NULL;
 	ADS_STATUS status;
 #if _SAMBA_BUILD_ == 4
@@ -848,9 +849,6 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	NTSTATUS ntstatus;
 #endif
 
-#ifndef HAVE_ADS
-	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-#endif
 	status = ads_get_sid_token(ads, mem_ctx, dn, &ad_token);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -866,4 +864,7 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	}
 #endif
 	return ADS_SUCCESS;
+#else
+	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+#endif
 }
