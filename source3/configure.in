@@ -4707,7 +4707,6 @@ AC_TRY_RUN_STRICT([
 #include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
-    echo "int quotactl(const char *path, int cmd, int id, char *addr) is not reworked for the new sys_quota api"
     samba_cv_SYSQUOTA_FOUND=yes;
     AC_DEFINE(HAVE_QUOTACTL_4B,1,[Whether int quotactl(const char *path, int cmd, int id, char *addr) is available])
     samba_cv_sysquotas_file="lib/sysquotas_4B.c"

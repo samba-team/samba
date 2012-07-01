@@ -43,6 +43,10 @@
 #elif defined(HAVE_QUOTACTL_4B)
 /* int quotactl(const char *path, int cmd, int id, char *addr); */
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
 #ifdef HAVE_SYS_QUOTA_H
 #include <sys/quota.h>
 #else /* *BSD */

@@ -30,8 +30,6 @@
 /*#endif HAVE_QUOTACTL_4A */
 #elif defined(HAVE_QUOTACTL_4B)
 
-#error HAVE_QUOTACTL_4B not implemeted
-
 /*#endif HAVE_QUOTACTL_4B */
 #elif defined(HAVE_QUOTACTL_3)
 

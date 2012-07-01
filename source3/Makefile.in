@@ -951,7 +951,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       rpc_server/lsasd.o \
 	       printing/printspoolss.o printing/spoolssd.o \
 	       lib/sysquotas.o lib/sysquotas_linux.o \
-	       lib/sysquotas_xfs.o lib/sysquotas_4A.o \
+	       lib/sysquotas_xfs.o lib/sysquotas_4A.o lib/sysquotas_4B.o \
 	       lib/sysquotas_nfs.o \
 	       lib/smbd_shim.o \
 	       lib/background.o \
