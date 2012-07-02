@@ -105,6 +105,9 @@ $ git log samba-4.0.0beta2..samba-4.0.0beta3
 
 Some major user-visible changes include:
 
+The failure to start up due to a blocking smbd-fileserver.conf.pid has
+been resolved.
+
 Samba now includes support for version 2.1 of the SMB protocol,
 the SMB2 version of Windows 7 and 2008R2, including dynamic
 reauthentication and support for multi-credit (large MTU).
