@@ -1317,7 +1317,7 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 	int i = req->current_idx;
 	uint32_t in_flags;
 	uint32_t in_tid;
-	struct smbXsrv_tcon0 *tcon;
+	struct smbXsrv_tcon *tcon;
 	NTSTATUS status;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 
