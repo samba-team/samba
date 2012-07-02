@@ -587,6 +587,8 @@ bool cancel_smb2_aio(struct smb_request *smbreq)
 	return true;
 }
 
+static void aio_pread_smb2_done(struct tevent_req *req);
+
 /****************************************************************************
  Set up an aio request from a SMB2 read call.
 *****************************************************************************/
@@ -602,7 +604,7 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
-	int ret;
+	struct tevent_req *req;
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -665,14 +667,16 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
 
-	ret = SMB_VFS_AIO_READ(fsp, a);
-	if (ret == -1) {
-		DEBUG(0,("smb2: aio_read failed. "
-			"Error %s\n", strerror(errno) ));
+	req = SMB_VFS_PREAD_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
+				 preadbuf->data, smb_maxcnt, startpos);
+	if (req == NULL) {
+		DEBUG(0, ("smb2: SMB_VFS_PREAD_SEND failed. "
+			  "Error %s\n", strerror(errno)));
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
+	tevent_req_set_callback(req, aio_pread_smb2_done, aio_ex);
 
 	/* We don't need talloc_move here as both aio_ex and
 	 * smbreq are children of smbreq->smb2req. */
@@ -685,6 +689,58 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		(unsigned int)aio_ex->smbreq->mid ));
 
 	return NT_STATUS_OK;
+}
+
+static void aio_pread_smb2_done(struct tevent_req *req)
+{
+	struct aio_extra *aio_ex = tevent_req_callback_data(
+		req, struct aio_extra);
+	struct tevent_req *subreq = aio_ex->smbreq->smb2req->subreq;
+	files_struct *fsp = aio_ex->fsp;
+	NTSTATUS status;
+	ssize_t nread;
+	int err = 0;
+
+	nread = SMB_VFS_PREAD_RECV(req, &err);
+	TALLOC_FREE(req);
+
+	DEBUG(10, ("pread_recv returned %d, err = %s\n", (int)nread,
+		   (nread == -1) ? strerror(err) : "no error"));
+
+	if (fsp == NULL) {
+		DEBUG( 3, ("aio_pread_smb2_done: file closed whilst "
+			   "aio outstanding (mid[%llu]).\n",
+			   (unsigned long long)aio_ex->smbreq->mid));
+		TALLOC_FREE(aio_ex);
+		return;
+	}
+
+	/* Unlock now we're done. */
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
+	/* Common error or success code processing for async or sync
+	   read returns. */
+
+	status = smb2_read_complete(subreq, nread, err);
+
+	if (nread > 0) {
+		fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		fsp->fh->position_information = fsp->fh->pos;
+	}
+
+	DEBUG(10, ("smb2: scheduled aio_read completed "
+		   "for file %s, offset %.0f, len = %u "
+		   "(errcode = %d, NTSTATUS = %s)\n",
+		   fsp_str_dbg(aio_ex->fsp),
+		   (double)aio_ex->acb.aio_offset,
+		   (unsigned int)nread,
+		   err, nt_errstr(status)));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(subreq, status);
+		return;
+	}
+	tevent_req_done(subreq);
 }
 
 /****************************************************************************
