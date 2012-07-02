@@ -536,7 +536,7 @@ struct user_struct {
 
 	struct auth_session_info *session_info;
 
-	struct smbXsrv_session0 *session;
+	struct smbXsrv_session *session;
 };
 
 struct smbd_server_connection {
