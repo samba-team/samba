@@ -1061,6 +1061,29 @@ main() {
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('FREEBSD_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
+        elif (host_os.rfind('darwin') > -1):
+            conf.CHECK_CODE('''
+                            #include <sys/types.h>
+                            #include <sys/socket.h>
+                            #include <sys/uio.h>
+                            int fromfd, tofd, ret;
+                            off_t offset, nwritten;
+                            struct sf_hdtr hdr;
+                            struct iovec hdtrl;
+                            hdr.headers = &hdtrl;
+                            hdr.hdr_cnt = 1;
+                            hdr.trailers = (void *)0;
+                            hdr.trl_cnt = 0;
+                            hdtrl.iov_base = (void *)0;
+                            hdtrl.iov_len = 0;
+			    ret = sendfile(fromfd, tofd, offset, &nwritten, &hdr, 0);
+                            ''',
+                            '_HAVE_SENDFILE',
+                            msg='Checking for darwin sendfile support')
+            if conf.CONFIG_SET('_HAVE_SENDFILE'):
+                conf.DEFINE('HAVE_SENDFILE', '1')
+                conf.DEFINE('DARWIN_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
         elif (host_os.rfind('hpux') > -1) or (host_os.rfind('osf') > -1):
             conf.CHECK_CODE('''
                             #include <sys/socket.h>
