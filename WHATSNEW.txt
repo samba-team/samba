@@ -1,4 +1,4 @@
-What's new in Samba 4 beta2
+What's new in Samba 4 beta3
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba4 beta2 is not a final Samba release, however we are now making
+Samba4 beta3 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -94,42 +94,17 @@ Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE beta1
+CHANGES SINCE beta2
 =====================
 
-For a list of changes since beta1, please see the git log.
+For a list of changes since beta2, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0beta1..samba-4.0.0beta2
+$ git log samba-4.0.0beta2..samba-4.0.0beta3
 
 Some major user-visible changes include:
 
-The default file server for EXISTING USERS has changed to s3fs.  To
-continue to use ntvfs, you must set in your smb.conf:
-
-    server services = +smb -s3fs
-    dcerpc endpoint servers = +winreg +srvsvc
-
-samba-tool dbcheck will now upgrade older databases that are missing
-GUIDs in the schema partition.  
-
-The 'samba-tool domain samba3upgrade' command is now called
-'samba-tool domain classicupgrade' and now creates users and groups
-with the posixAccount objectClass and uidNumber and gidNumber values.
-
-The new 'idmap_ldb:use rfc2307' parameter allows these values to be
-used instead of the idmap.ldb, where found in the directory.
-
-Work has continued to make Samba more portable to a wide variety of
-Unix-like systems, and to support --without-ad-dc on systems lacking a
-modern MIT krb5.
-
-Less visible, but very importantly, the work has continued in restructuring
-the smbd file server to implement SMB3.
-
-The TDB2 database library has been changed to ntdb, but will not be
-the default db layer for the 4.0 release.  We will continue to use tdb1.
 
 
 KNOWN ISSUES
