@@ -150,27 +150,34 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 {
 	const char *fmt;
 	struct tm snap_tm;
-	fstring gmt;
-	size_t gmt_len;
+	fstring snaptime_string;
+	size_t snaptime_len;
 
-	if (localtime_r(&snapshot, &snap_tm) == 0) {
-		DEBUG(10, ("gmtime_r failed\n"));
-		return NULL;
-	}
 	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
 				   "format", GMT_FORMAT);
 
 	if (lp_parm_bool(SNUM(handle->conn), "shadow", "sscanf", false)) {
-		gmt_len = snprintf(gmt, sizeof(gmt), fmt,
+		snaptime_len = snprintf(snaptime_string, sizeof(snaptime_string), fmt,
 				   (unsigned long)snapshot);
-		if (gmt_len == 0) {
+		if (snaptime_len <= 0) {
 			DEBUG(10, ("snprintf failed\n"));
 			return NULL;
 		}
 	} else {
-		gmt_len = strftime(gmt, sizeof(gmt), fmt,
+		if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime", false)) {
+			if (localtime_r(&snapshot, &snap_tm) == 0) {
+				DEBUG(10, ("gmtime_r failed\n"));
+				return NULL;
+			}
+		} else {
+			if (gmtime_r(&snapshot, &snap_tm) == 0) {
+				DEBUG(10, ("gmtime_r failed\n"));
+				return NULL;
+			}
+		}
+		snaptime_len = strftime(snaptime_string, sizeof(snaptime_string), fmt,
 				   &snap_tm);
-		if (gmt_len == 0) {
+		if (snaptime_len == 0) {
 			DEBUG(10, ("strftime failed\n"));
 			return NULL;
 		}
@@ -179,7 +186,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 			       lp_parm_const_string(
 				       SNUM(handle->conn), "shadow", "snapdir",
 				       ".snapshots"),
-			       gmt);
+			       snaptime_string);
 }
 
 static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
@@ -207,7 +214,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		goto no_snapshot;
 	}
 	tm.tm_isdst = -1;
-	timestamp = mktime(&tm);
+	timestamp = timegm(&tm);
 	if (timestamp == (time_t)-1) {
 		goto no_snapshot;
 	}
