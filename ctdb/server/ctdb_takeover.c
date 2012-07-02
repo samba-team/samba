@@ -819,12 +819,20 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 			ctdb_vnn_unassign_iface(ctdb, vnn);
 			return 0;
 		}
-	}
 
-	iface = ctdb_sys_find_ifname(&pip->addr);
-	if (iface == NULL) {
-		DEBUG(DEBUG_ERR, ("Could not find which interface the ip address is hosted on. can not release it\n"));
-		return 0;
+		iface = ctdb_sys_find_ifname(&pip->addr);
+		if (iface == NULL) {
+			DEBUG(DEBUG_ERR, ("Could not find which interface the ip address is hosted on. can not release it\n"));
+			return 0;
+		}
+	} else {
+		if (vnn->iface == NULL) {
+			DEBUG(DEBUG_DEBUG,("Redundant release of IP %s/%u (ip not held)\n",
+					   ctdb_addr_to_str(&pip->addr),
+					   vnn->public_netmask_bits));
+			return 0;
+		}
+		iface = strdup(ctdb_vnn_iface_string(vnn));
 	}
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
