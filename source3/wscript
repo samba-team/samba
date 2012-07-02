@@ -728,22 +728,71 @@ int i; i = PAM_RADIO_TYPE;
             conf.DEFINE('WITH_PAM', 1)
             conf.DEFINE('WITH_PAM_MODULES', 1)
 
+#
+# Ensure we select the correct set of system calls on Linux.
+#
+    if (host_os.rfind('linux') > -1):
+        conf.CHECK_CODE('''
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <errno.h>
+
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
+#endif
+
+#if defined(HAVE_SYSCALL_H)
+#include <syscall.h>
+#endif
+
+#if defined(HAVE_SYS_SYSCALL_H)
+#include <sys/syscall.h>
+#endif
+
+syscall(SYS_setresuid32, -1, -1, -1);
+syscall(SYS_setresgid32, -1, -1, -1);
+syscall(SYS_setreuid32, -1, -1);
+syscall(SYS_setregid32, -1, -1);
+syscall(SYS_setuid32, -1);
+syscall(SYS_setgid32, -1);
+syscall(SYS_setgroups32, 0, NULL);
+''',
+            'USE_LINUX_32BIT_SYSCALLS',
+            msg="Checking whether Linux should use 32-bit credential calls");
+
     seteuid = False
-#
-# Disable for now until Linux-64 and Linux-32 specific versions
-# are separated out.
-#
-#    if not seteuid:
-#        seteuid = conf.CHECK_CODE('''
-#                                #define AUTOCONF_TEST 1
-#                                #define USE_LINUX_THREAD_CREDENTIALS 1
-#                                #include "../lib/util/setid.c"
-#                                #include "./lib/util_sec.c"
-#                                ''',
-#                                'USE_LINUX_THREAD_CREDENTIALS',
-#                                addmain=False,
-#                                execute=True,
-#                                msg="Checking whether we can use Linux thread-specific credentials")
+
+    if not seteuid:
+	if (conf.CONFIG_SET('USE_LINUX_32BIT_SYSCALLS')):
+	        seteuid = conf.CHECK_CODE('''
+                                #define AUTOCONF_TEST 1
+                                #define USE_LINUX_THREAD_CREDENTIALS 1
+                                #define USE_LINUX_32BIT_SYSCALLS 1
+                                #include "../lib/util/setid.c"
+                                #include "./lib/util_sec.c"
+                                ''',
+                                'USE_LINUX_THREAD_CREDENTIALS',
+                                addmain=False,
+                                execute=True,
+                                msg="Checking whether we can use Linux thread-specific credentials with 32-bit system calls")
+	else:
+	        seteuid = conf.CHECK_CODE('''
+                                #define AUTOCONF_TEST 1
+                                #define USE_LINUX_THREAD_CREDENTIALS 1
+                                #include "../lib/util/setid.c"
+                                #include "./lib/util_sec.c"
+                                ''',
+                                'USE_LINUX_THREAD_CREDENTIALS',
+                                addmain=False,
+                                execute=True,
+                                msg="Checking whether we can use Linux thread-specific credentials")
     if not seteuid:
         seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1

@@ -2766,26 +2766,77 @@ AC_CHECK_FUNCS(getpagesize)
 # look for a method of setting the effective uid
 seteuid=no;
 
-#
-# Disable for now until Linux-64 and Linux-32 specific versions
-# are separated out.
-#
-#case "$host_os" in
-#*linux*)
-#if test $seteuid = no; then
-#AC_CACHE_CHECK([for Linux thread-specific credentials],samba_cv_USE_LINUX_THREAD_CREDENTIALS,[
-#AC_TRY_RUN([
-##define AUTOCONF_TEST 1
-##define USE_LINUX_THREAD_CREDENTIALS 1
-##include "${srcdir-.}/../lib/util/setid.c"
-##include "${srcdir-.}/lib/util_sec.c"],
-#           samba_cv_USE_LINUX_THREAD_CREDENTIALS=yes,samba_cv_USE_LINUX_THREAD_CREDENTIALS=no,samba_cv_USE_LINUX_THREAD_CREDENTIALS=cross)])
-#if test x"$samba_cv_USE_LINUX_THREAD_CREDENTIALS" = x"yes"; then
-#    seteuid=yes;AC_DEFINE(USE_LINUX_THREAD_CREDENTIALS,1,[Whether we can use Linux thread-specific credentials])
-#fi
-#fi
-#;;
-#esac
+################################################
+# Start by checking for 32-bit system call definitions on Linux.
+
+case "$host_os" in
+*linux*)
+AC_CACHE_CHECK([for Linux 32-bit system calls],samba_cv_USE_LINUX_32BIT_SYSCALLS,[
+AC_TRY_COMPILE([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <errno.h>
+
+#ifdef HAVE_SYS_PRIV_H
+#include <sys/priv.h>
+#endif
+#ifdef HAVE_SYS_ID_H
+#include <sys/id.h>
+#endif
+
+#if defined(HAVE_SYSCALL_H)
+#include <syscall.h>
+#endif
+
+#if defined(HAVE_SYS_SYSCALL_H)
+#include <sys/syscall.h>
+#endif
+],
+[
+syscall(SYS_setresuid32, -1, -1, -1);
+syscall(SYS_setresgid32, -1, -1, -1);
+syscall(SYS_setreuid32, -1, -1);
+syscall(SYS_setregid32, -1, -1);
+syscall(SYS_setuid32, -1);
+syscall(SYS_setgid32, -1);
+syscall(SYS_setgroups32, 0, NULL);
+], samba_cv_USE_LINUX_32BIT_SYSCALLS=yes,samba_cv_USE_LINUX_32BIT_SYSCALLS=no,samba_cv_USE_LINUX_32BIT_SYSCALLS=cross)])
+
+if test x"$samba_cv_USE_LINUX_32BIT_SYSCALLS" = x"yes"; then
+    AC_DEFINE(USE_LINUX_32BIT_SYSCALLS,1,[Use Linux 32-bit system calls])
+    AC_CACHE_CHECK([for Linux thread-specific credentials with 32-bit system calls],samba_cv_USE_LINUX_THREAD_CREDENTIALS,[
+    AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_LINUX_THREAD_CREDENTIALS 1
+#define USE_LINUX_32BIT_SYSCALLS 1
+#include "${srcdir-.}/../lib/util/setid.c"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_LINUX_THREAD_CREDENTIALS=yes,samba_cv_USE_LINUX_THREAD_CREDENTIALS=no,samba_cv_USE_LINUX_THREAD_CREDENTIALS=cross)])
+if test x"$samba_cv_USE_LINUX_THREAD_CREDENTIALS" = x"yes"; then
+    seteuid=yes;
+    AC_DEFINE(USE_LINUX_THREAD_CREDENTIALS,1,[Whether we can use Linux thread-specific credentials with 32-bit system calls])
+fi
+fi
+
+if test $seteuid = no; then
+AC_CACHE_CHECK([for Linux thread-specific credentials],samba_cv_USE_LINUX_THREAD_CREDENTIALS,[
+AC_TRY_RUN([
+#define AUTOCONF_TEST 1
+#define USE_LINUX_THREAD_CREDENTIALS 1
+#include "${srcdir-.}/../lib/util/setid.c"
+#include "${srcdir-.}/lib/util_sec.c"],
+           samba_cv_USE_LINUX_THREAD_CREDENTIALS=yes,samba_cv_USE_LINUX_THREAD_CREDENTIALS=no,samba_cv_USE_LINUX_THREAD_CREDENTIALS=cross)])
+if test x"$samba_cv_USE_LINUX_THREAD_CREDENTIALS" = x"yes"; then
+    seteuid=yes;AC_DEFINE(USE_LINUX_THREAD_CREDENTIALS,1,[Whether we can use Linux thread-specific credentials])
+fi
+fi
+
+;;
+esac
 
 if test $seteuid = no; then
 AC_CACHE_CHECK([for setreuid],samba_cv_USE_SETREUID,[
