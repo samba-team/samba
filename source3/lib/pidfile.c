@@ -89,20 +89,26 @@ pid_t pidfile_pid(const char *program_name)
 	
 	pid = (pid_t)ret;
 	if (!process_exists_by_pid(pid)) {
+		DEBUG(10, ("Process with PID=%d does not exist.\n", (int)pid));
 		goto noproc;
 	}
 
 	if (fcntl_lock(fd,F_SETLK,0,1,F_RDLCK)) {
 		/* we could get the lock - it can't be a Samba process */
+		DEBUG(10, ("Process with PID=%d is no Samba process.\n",
+			  (int)pid));
 		goto noproc;
 	}
 
+	DEBUG(10, ("Process with PID=%d is running.\n", (int)pid));
 	SAFE_FREE(pidFile);
 	close(fd);
 	return (pid_t)ret;
 
  noproc:
 	close(fd);
+	DEBUG(10, ("Deleting %s, since %d is no Samba process.\n", pidFile,
+		  (int)pid));
 	unlink(pidFile);
 	SAFE_FREE(pidFile);
 	return 0;
