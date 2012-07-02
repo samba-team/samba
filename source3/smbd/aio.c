@@ -321,6 +321,8 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	TALLOC_FREE(aio_ex);
 }
 
+static void aio_pwrite_smb1_done(struct tevent_req *req);
+
 /****************************************************************************
  Set up an aio request from a SMBwriteX call.
 *****************************************************************************/
@@ -335,7 +337,7 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
-	int ret;
+	struct tevent_req *req;
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -407,14 +409,16 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
 
-	ret = SMB_VFS_AIO_WRITE(fsp, a);
-	if (ret == -1) {
+	req = SMB_VFS_PWRITE_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
+				  data, numtowrite, startpos);
+	if (req == NULL) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
+	tevent_req_set_callback(req, aio_pwrite_smb1_done, aio_ex);
 
 	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
@@ -448,6 +452,112 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		  (unsigned int)aio_ex->smbreq->mid, outstanding_aio_calls ));
 
 	return NT_STATUS_OK;
+}
+
+static void aio_pwrite_smb1_done(struct tevent_req *req)
+{
+	struct aio_extra *aio_ex = tevent_req_callback_data(
+		req, struct aio_extra);
+	files_struct *fsp = aio_ex->fsp;
+	char *outbuf = (char *)aio_ex->outbuf.data;
+	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
+	ssize_t nwritten;
+	int err;
+
+	nwritten = SMB_VFS_PWRITE_RECV(req, &err);
+	TALLOC_FREE(req);
+
+	DEBUG(10, ("pwrite_recv returned %d, err = %s\n", (int)nwritten,
+		   (nwritten == -1) ? strerror(err) : "no error"));
+
+	if (fsp == NULL) {
+		DEBUG( 3, ("aio_pwrite_smb1_done: file closed whilst "
+			   "aio outstanding (mid[%llu]).\n",
+			   (unsigned long long)aio_ex->smbreq->mid));
+		TALLOC_FREE(aio_ex);
+		return;
+	}
+
+	/* Unlock now we're done. */
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
+	if (fsp->aio_write_behind) {
+
+		if (nwritten != numtowrite) {
+			if (nwritten == -1) {
+				DEBUG(5,("handle_aio_write_complete: "
+					 "aio_write_behind failed ! File %s "
+					 "is corrupt ! Error %s\n",
+					 fsp_str_dbg(fsp), strerror(err)));
+			} else {
+				DEBUG(0,("handle_aio_write_complete: "
+					 "aio_write_behind failed ! File %s "
+					 "is corrupt ! Wanted %u bytes but "
+					 "only wrote %d\n", fsp_str_dbg(fsp),
+					 (unsigned int)numtowrite,
+					 (int)nwritten ));
+			}
+		} else {
+			DEBUG(10,("handle_aio_write_complete: "
+				  "aio_write_behind completed for file %s\n",
+				  fsp_str_dbg(fsp)));
+		}
+		/* TODO: should no return success in case of an error !!! */
+		TALLOC_FREE(aio_ex);
+		return;
+	}
+
+	/* We don't need outsize or set_message here as we've already set the
+	   fixed size length when we set up the aio call. */
+
+	if (nwritten == -1) {
+		DEBUG(3, ("handle_aio_write: file %s wanted %u bytes. "
+			  "nwritten == %d. Error = %s\n",
+			  fsp_str_dbg(fsp), (unsigned int)numtowrite,
+			  (int)nwritten, strerror(err)));
+
+		ERROR_NT(map_nt_error_from_unix(err));
+		srv_set_message(outbuf,0,0,true);
+        } else {
+		NTSTATUS status;
+
+		SSVAL(outbuf,smb_vwv2,nwritten);
+		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
+		if (nwritten < (ssize_t)numtowrite) {
+			SCVAL(outbuf,smb_rcls,ERRHRD);
+			SSVAL(outbuf,smb_err,ERRdiskfull);
+		}
+
+		DEBUG(3,("handle_aio_write: %s, num=%d wrote=%d\n",
+			 fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
+		status = sync_file(fsp->conn,fsp, aio_ex->write_through);
+		if (!NT_STATUS_IS_OK(status)) {
+			ERROR_BOTH(map_nt_error_from_unix(errno),
+				   ERRHRD, ERRdiskfull);
+			srv_set_message(outbuf,0,0,true);
+			DEBUG(5, ("handle_aio_write: sync_file for %s "
+				  "returned %s\n",
+				  fsp_str_dbg(fsp), nt_errstr(status)));
+		}
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
+	}
+
+	show_msg(outbuf);
+	if (!srv_send_smb(aio_ex->smbreq->sconn, outbuf,
+			  true, aio_ex->smbreq->seqnum+1,
+			  IS_CONN_ENCRYPTED(fsp->conn),
+			  NULL)) {
+		exit_server_cleanly("handle_aio_write_complete: "
+				    "srv_send_smb failed.");
+	}
+
+	DEBUG(10, ("handle_aio_write_complete: scheduled aio_write completed "
+		   "for file %s, offset %.0f, requested %u, written = %u\n",
+		   fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
+		   (unsigned int)numtowrite, (unsigned int)nwritten));
+
+	TALLOC_FREE(aio_ex);
 }
 
 bool cancel_smb2_aio(struct smb_request *smbreq)
