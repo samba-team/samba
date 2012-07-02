@@ -993,7 +993,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	state->c = talloc_steal(state, c);
 
-	DEBUG(DEBUG_NOTICE,("Forced running of eventscripts with arguments %s\n", indata.dptr));
+	DEBUG(DEBUG_NOTICE,("Running eventscripts with arguments %s\n", indata.dptr));
 
 	ctdb_disable_monitoring(ctdb);
 
