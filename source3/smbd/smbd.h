@@ -24,6 +24,7 @@ struct aio_extra;
 
 #include "smb_acls.h"
 #include "vfs.h"
+#include "librpc/gen_ndr/smbXsrv.h"
 #include "smbd/proto.h"
 #include "locking/proto.h"
 
