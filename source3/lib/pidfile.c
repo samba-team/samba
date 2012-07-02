@@ -146,7 +146,7 @@ void pidfile_create(const char *program_name)
 		smb_panic("asprintf failed");
 	}
 
-	pid = pidfile_pid(name);
+	pid = pidfile_pid(program_name);
 	if (pid != 0) {
 		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
 			 name, pidFile_name, (int)pid));
