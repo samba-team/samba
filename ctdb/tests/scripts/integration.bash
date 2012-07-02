@@ -234,7 +234,7 @@ all_ips_on_node()
     try_command_on_node $node "$CTDB ip -Y -n all | cut -d ':' -f1-3 | sed -e '1d' -e 's@^:@@' -e 's@:@ @g'"
 }
 
-select_test_node_and_ips ()
+_select_test_node_and_ips ()
 {
     all_ips_on_node 0
 
@@ -252,6 +252,24 @@ select_test_node_and_ips ()
 
     echo "Selected node ${test_node} with IPs: ${test_node_ips}."
     test_ip="${test_node_ips%% *}"
+
+    [ -n "$test_node" ] || return 1
+}
+
+select_test_node_and_ips ()
+{
+    local timeout=10
+    while ! _select_test_node_and_ips ; do
+	echo "Unable to find a test node with IPs assigned"
+	if [ $timeout -le 0 ] ; then
+	    echo "BAD: Too many attempts"
+	    return 1
+	fi
+	sleep_for 1
+	timeout=$(($timeout - 1))
+    done
+
+    return 0
 }
 
 #######################################
