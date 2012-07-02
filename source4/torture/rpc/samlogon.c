@@ -165,7 +165,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		}
 		if (!r->out.return_authenticator ||
 		    !netlogon_creds_client_check(samlogon_state->creds, &r->out.return_authenticator->cred)) {
-			d_printf("Credential chaining failed\n");
+			torture_comment(samlogon_state->tctx, "Credential chaining failed\n");
 		}
 		if (!NT_STATUS_IS_OK(r->out.result)) {
 			if (error_string) {
@@ -237,7 +237,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 		}
 		if (!r_flags->out.return_authenticator ||
 		    !netlogon_creds_client_check(samlogon_state->creds, &r_flags->out.return_authenticator->cred)) {
-			d_printf("Credential chaining failed\n");
+			torture_comment(samlogon_state->tctx, "Credential chaining failed\n");
 		}
 		if (!NT_STATUS_IS_OK(r_flags->out.result)) {
 			if (error_string) {
@@ -268,7 +268,7 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 	}
 
 	if (!base) {
-		d_printf("No user info returned from 'successful' SamLogon*() call!\n");
+		torture_comment(samlogon_state->tctx, "No user info returned from 'successful' SamLogon*() call!\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -1458,6 +1458,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	TALLOC_CTX *fn_ctx = talloc_named(mem_ctx, 0, "test_InteractiveLogon function-level context");
+	bool ret = true;
 	struct netr_LogonSamLogonWithFlags r;
 	struct netr_Authenticator a, ra;
 	struct netr_PasswordInfo pinfo;
@@ -1513,24 +1514,31 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	torture_comment(tctx, "Testing netr_LogonSamLogonWithFlags '%s' (Interactive Logon)\n", comment);
 
-	torture_assert_ntstatus_ok(tctx,
+	torture_assert_ntstatus_ok_goto(tctx,
 		dcerpc_netr_LogonSamLogonWithFlags_r(b, fn_ctx, &r),
+		ret, failed,
 		talloc_asprintf(tctx, "%s: netr_LogonSamLogonWithFlags - %s\n",
 			 __location__, nt_errstr(status)));
 
-	if (!r.out.return_authenticator
-	    || !netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
+	if (!r.out.return_authenticator) {
 		talloc_free(fn_ctx);
-		torture_fail(tctx, "Credential chaining failed\n");
+		torture_fail(tctx, "no authenticator returned");
 	}
 
-	talloc_free(fn_ctx);
+	torture_assert_goto(tctx,
+		netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
+		ret, failed,
+		"Credential chaining failed\n");
 
 	torture_assert_ntstatus_equal(tctx, r.out.result, expected_error,
 		talloc_asprintf(tctx, "[%s]\\[%s] netr_LogonSamLogonWithFlags - expected %s got %s\n",
 		       account_domain, account_name, nt_errstr(expected_error), nt_errstr(r.out.result)));
 
-	return true;
+	ret = true;
+ failed:
+	talloc_free(fn_ctx);
+
+	return ret;
 }
 
 /* This sets and resets the "minPwdAge" (in order to allow immediate user
@@ -1701,16 +1709,10 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	tmp_p = torture_join_samr_pipe(user_ctx_wrong_wks);
 	status = dcerpc_samr_SetUserInfo_r(tmp_p->binding_handle, mem_ctx, &s);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(status));
-		ret = false;
-		goto failed;
-	}
-	if (!NT_STATUS_IS_OK(s.out.result)) {
-		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result));
-		ret = false;
-		goto failed;
-	}
+	torture_assert_ntstatus_ok_goto(torture, status, ret, failed,
+		talloc_asprintf(torture, "SetUserInfo (list of workstations) failed - %s\n", nt_errstr(status)));
+	torture_assert_ntstatus_ok_goto(torture, s.out.result, ret, failed,
+		talloc_asprintf(torture, "SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result)));
 
 	user_ctx_wrong_time
 		= torture_create_testuser(torture, TEST_USER_NAME_WRONG_TIME,
@@ -1732,16 +1734,10 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	tmp_p = torture_join_samr_pipe(user_ctx_wrong_time);
 	status = dcerpc_samr_SetUserInfo_r(tmp_p->binding_handle, mem_ctx, &s);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo (logon times and list of workstations) failed - %s\n", nt_errstr(status));
-		ret = false;
-		goto failed;
-	}
-	if (!NT_STATUS_IS_OK(s.out.result)) {
-		printf("SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result));
-		ret = false;
-		goto failed;
-	}
+	torture_assert_ntstatus_ok_goto(torture, status, ret, failed,
+		talloc_asprintf(torture, "SetUserInfo (logon times and list of workstations) failed - %s\n", nt_errstr(status)));
+	torture_assert_ntstatus_ok_goto(torture, s.out.result, ret, failed,
+		talloc_asprintf(torture, "SetUserInfo (list of workstations) failed - %s\n", nt_errstr(s.out.result)));
 
 	status = torture_rpc_binding(torture, &b);
 	if (!NT_STATUS_IS_OK(status)) {
