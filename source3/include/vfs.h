@@ -282,7 +282,7 @@ struct share_params {
 typedef struct connection_struct {
 	struct connection_struct *next, *prev;
 	struct smbd_server_connection *sconn; /* can be NULL */
-	struct smbXsrv_tcon0 *tcon; /* can be NULL */
+	struct smbXsrv_tcon *tcon; /* can be NULL */
 	uint32_t cnum; /* an index passed over the wire */
 	struct share_params *params;
 	bool force_user;
