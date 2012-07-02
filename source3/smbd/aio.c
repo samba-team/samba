@@ -743,6 +743,8 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 	tevent_req_done(subreq);
 }
 
+static void aio_pwrite_smb2_done(struct tevent_req *req);
+
 /****************************************************************************
  Set up an aio request from a SMB2write call.
 *****************************************************************************/
@@ -757,7 +759,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	struct aio_extra *aio_ex = NULL;
 	SMB_STRUCT_AIOCB *a = NULL;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
-	int ret;
+	struct tevent_req *req;
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -816,14 +818,16 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
 
-	ret = SMB_VFS_AIO_WRITE(fsp, a);
-	if (ret == -1) {
-		DEBUG(3,("smb2: aio_write failed. "
-			"Error %s\n", strerror(errno) ));
+	req = SMB_VFS_PWRITE_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
+				  in_data.data, in_data.length, in_offset);
+	if (req == NULL) {
+		DEBUG(3, ("smb2: SMB_VFS_PWRITE_SEND failed. "
+			  "Error %s\n", strerror(errno)));
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
+	tevent_req_set_callback(req, aio_pwrite_smb2_done, aio_ex);
 
 	/* We don't need talloc_move here as both aio_ex and
 	* smbreq are children of smbreq->smb2req. */
@@ -850,6 +854,52 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 		outstanding_aio_calls ));
 
 	return NT_STATUS_OK;
+}
+
+static void aio_pwrite_smb2_done(struct tevent_req *req)
+{
+	struct aio_extra *aio_ex = tevent_req_callback_data(
+		req, struct aio_extra);
+	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
+	struct tevent_req *subreq = aio_ex->smbreq->smb2req->subreq;
+	files_struct *fsp = aio_ex->fsp;
+	NTSTATUS status;
+	ssize_t nwritten;
+	int err = 0;
+
+	nwritten = SMB_VFS_PWRITE_RECV(req, &err);
+	TALLOC_FREE(req);
+
+	DEBUG(10, ("pwrite_recv returned %d, err = %s\n", (int)nwritten,
+		   (nwritten == -1) ? strerror(err) : "no error"));
+
+	if (fsp == NULL) {
+		DEBUG( 3, ("aio_pwrite_smb2_done: file closed whilst "
+			   "aio outstanding (mid[%llu]).\n",
+			   (unsigned long long)aio_ex->smbreq->mid));
+		TALLOC_FREE(aio_ex);
+		return;
+	}
+
+	/* Unlock now we're done. */
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
+        status = smb2_write_complete(subreq, nwritten, err);
+
+	DEBUG(10, ("smb2: scheduled aio_write completed "
+		   "for file %s, offset %.0f, requested %u, "
+		   "written = %u (errcode = %d, NTSTATUS = %s)\n",
+		   fsp_str_dbg(fsp),
+		   (double)aio_ex->acb.aio_offset,
+		   (unsigned int)numtowrite,
+		   (unsigned int)nwritten,
+		   err, nt_errstr(status)));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(subreq, status);
+		return;
+	}
+	tevent_req_done(subreq);
 }
 
 /****************************************************************************
