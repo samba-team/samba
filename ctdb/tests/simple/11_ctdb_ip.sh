@@ -41,7 +41,7 @@ machineout=$(echo "$out" | sed -r \
 	-e 's@[[:alpha:]]+\[@@g' \
 	-e 's@\]@@g')
 
-if [ -n "$CTDB_TEST_REAL_CLUSTER" ]; then
+if [ -z "$TEST_LOCAL_DAEMONS" ]; then
     while read ip pnn ; do
         try_command_on_node $pnn "ip addr show"
         if [ "${out/inet ${ip}\/}" != "$out" ] ; then
