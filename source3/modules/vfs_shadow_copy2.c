@@ -84,6 +84,12 @@
       be compatible with the conversion specifications recognized
       by str[fp]time.  The default value is "@GMT-%Y.%m.%d-%H.%M.%S".
 
+      shadow:sscanf = yes/no (default is no)
+
+      The time is the unsigned long integer (%lu) in the format string
+      rather than a time strptime() can parse.  The result must be a unix time_t
+      time.
+
       shadow:localtime = yes/no (default is no)
 
       This is an optional parameter that indicates whether the
@@ -142,6 +148,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					time_t snapshot)
 {
+	const char *fmt;
 	struct tm snap_tm;
 	fstring gmt;
 	size_t gmt_len;
@@ -150,13 +157,23 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("gmtime_r failed\n"));
 		return NULL;
 	}
-	gmt_len = strftime(gmt, sizeof(gmt),
-			   lp_parm_const_string(SNUM(handle->conn), "shadow",
-						"format", GMT_FORMAT),
-			   &snap_tm);
-	if (gmt_len == 0) {
-		DEBUG(10, ("strftime failed\n"));
-		return NULL;
+	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
+				   "format", GMT_FORMAT);
+
+	if (lp_parm_bool(SNUM(handle->conn), "shadow", "sscanf", false)) {
+		gmt_len = snprintf(gmt, sizeof(gmt), fmt,
+				   (unsigned long)snapshot);
+		if (gmt_len == 0) {
+			DEBUG(10, ("snprintf failed\n"));
+			return NULL;
+		}
+	} else {
+		gmt_len = strftime(gmt, sizeof(gmt), fmt,
+				   &snap_tm);
+		if (gmt_len == 0) {
+			DEBUG(10, ("strftime failed\n"));
+			return NULL;
+		}
 	}
 	return talloc_asprintf(mem_ctx, "/%s/%s",
 			       lp_parm_const_string(
@@ -1002,25 +1019,36 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 {
 	struct tm timestamp;
 	time_t timestamp_t;
+	unsigned long int timestamp_long;
 	const char *fmt;
 
 	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
 				   "format", GMT_FORMAT);
 
 	ZERO_STRUCT(timestamp);
-	if (strptime(name, fmt, &timestamp) == NULL) {
-		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: no match %s: %s\n",
-			   fmt, name));
-		return false;
-	}
-
-	DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n", fmt, name));
-
-	if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime", false)) {
-		timestamp.tm_isdst = -1;
-		timestamp_t = mktime(&timestamp);
+	if (lp_parm_bool(SNUM(handle->conn), "shadow", "sscanf", false)) {
+		if (sscanf(name, fmt, &timestamp_long) != 1) {
+			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: no sscanf match %s: %s\n",
+				   fmt, name));
+			return false;
+		}
+		timestamp_t = timestamp_long;
 		gmtime_r(&timestamp_t, &timestamp);
+	} else {
+		if (strptime(name, fmt, &timestamp) == NULL) {
+			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: no match %s: %s\n",
+				   fmt, name));
+			return false;
+		}
+		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n", fmt, name));
+		
+		if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime", false)) {
+			timestamp.tm_isdst = -1;
+			timestamp_t = mktime(&timestamp);
+			gmtime_r(&timestamp_t, &timestamp);
+		}
 	}
+
 	strftime(gmt, gmt_len, GMT_FORMAT, &timestamp);
 	return true;
 }
