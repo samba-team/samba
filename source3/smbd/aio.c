@@ -148,6 +148,8 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 	return aio_ex;
 }
 
+static void aio_pread_smb1_done(struct tevent_req *req);
+
 /****************************************************************************
  Set up an aio request from a SMBreadX call.
 *****************************************************************************/
@@ -161,7 +163,7 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
-	int ret;
+	struct tevent_req *req;
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -229,14 +231,17 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
 	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
 
-	ret = SMB_VFS_AIO_READ(fsp, a);
-	if (ret == -1) {
+	req = SMB_VFS_PREAD_SEND(aio_ex, fsp->conn->sconn->ev_ctx,
+				 fsp, smb_buf(aio_ex->outbuf.data),
+				 smb_maxcnt, startpos);
+	if (req == NULL) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
 		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
 		TALLOC_FREE(aio_ex);
 		return NT_STATUS_RETRY;
 	}
+	tevent_req_set_callback(req, aio_pread_smb1_done, aio_ex);
 
 	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
@@ -246,6 +251,74 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		  (unsigned int)aio_ex->smbreq->mid ));
 
 	return NT_STATUS_OK;
+}
+
+static void aio_pread_smb1_done(struct tevent_req *req)
+{
+	struct aio_extra *aio_ex = tevent_req_callback_data(
+		req, struct aio_extra);
+	files_struct *fsp = aio_ex->fsp;
+	int outsize;
+	char *outbuf = (char *)aio_ex->outbuf.data;
+	char *data = smb_buf(outbuf);
+	ssize_t nread;
+	int err;
+
+	nread = SMB_VFS_PREAD_RECV(req, &err);
+	TALLOC_FREE(req);
+
+	DEBUG(10, ("pread_recv returned %d, err = %s\n", (int)nread,
+		   (nread == -1) ? strerror(err) : "no error"));
+
+	if (fsp == NULL) {
+		DEBUG( 3, ("aio_pread_smb1_done: file closed whilst "
+			   "aio outstanding (mid[%llu]).\n",
+			   (unsigned long long)aio_ex->smbreq->mid));
+		TALLOC_FREE(aio_ex);
+		return;
+	}
+
+	/* Unlock now we're done. */
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
+	if (nread < 0) {
+		DEBUG( 3, ("handle_aio_read_complete: file %s nread == %d. "
+			   "Error = %s\n", fsp_str_dbg(fsp), (int)nread,
+			   strerror(err)));
+
+		ERROR_NT(map_nt_error_from_unix(err));
+		outsize = srv_set_message(outbuf,0,0,true);
+	} else {
+		outsize = srv_set_message(outbuf, 12, nread, False);
+		SSVAL(outbuf,smb_vwv2, 0xFFFF); /* Remaining - must be * -1. */
+		SSVAL(outbuf,smb_vwv5, nread);
+		SSVAL(outbuf,smb_vwv6, smb_offset(data,outbuf));
+		SSVAL(outbuf,smb_vwv7, ((nread >> 16) & 1));
+		SSVAL(smb_buf(outbuf), -2, nread);
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
+
+		DEBUG( 3, ("handle_aio_read_complete file %s max=%d "
+			   "nread=%d\n", fsp_str_dbg(fsp),
+			   (int)aio_ex->acb.aio_nbytes, (int)nread ) );
+
+	}
+	smb_setlen(outbuf, outsize - 4);
+	show_msg(outbuf);
+	if (!srv_send_smb(aio_ex->smbreq->sconn, outbuf,
+			  true, aio_ex->smbreq->seqnum+1,
+			  IS_CONN_ENCRYPTED(fsp->conn), NULL)) {
+		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
+				    "failed.");
+	}
+
+	DEBUG(10, ("handle_aio_read_complete: scheduled aio_read completed "
+		   "for file %s, offset %.0f, len = %u\n",
+		   fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
+		   (unsigned int)nread));
+
+	TALLOC_FREE(aio_ex);
 }
 
 /****************************************************************************
