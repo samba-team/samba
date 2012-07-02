@@ -122,6 +122,11 @@ of the SMB protocol (formerly known as SMB 2.2) that will be available
 with Windows 8 and Windows Server 2012. Negotiation of SMB3 can be
 activated by setting "max protocol" to "SMB3" in smb.conf.
 
+Thanks to upgrades to our AD DC code, particularly in schema handling,
+Samba can now correctly handle the installation of Microsoft Exchange
+2010.  Other issues prevent run-time operation, but this is a major
+milestone in supporting one of the single mode demanding Active
+Directory applications.
 
 KNOWN ISSUES
 ============
