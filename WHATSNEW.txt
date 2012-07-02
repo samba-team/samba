@@ -114,6 +114,11 @@ be an alias for SMB 2.1. Previously, the default SMB2 version of
 Samba was the original version 2.0 of SMB that was shipped with
 Windows Vista and 2008.
 
+Samba now offers basic experimental support for SMB3, the next version
+of the SMB protocol (formerly known as SMB 2.2) that will be available
+with Windows 8 and Windows Server 2012. Negotiation of SMB3 can be
+activated by setting "max protocol" to "SMB3" in smb.conf.
+
 
 KNOWN ISSUES
 ============
