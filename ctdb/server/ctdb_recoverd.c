@@ -2791,6 +2791,9 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 		need_iface_check = true;
 	}
 
+	talloc_free(rec->ifaces);
+	rec->ifaces = talloc_steal(rec, ifaces);
+
 	if (need_iface_check) {
 		DEBUG(DEBUG_NOTICE, ("The interfaces status has changed on "
 				     "local node %u - force takeover run\n",
@@ -2838,9 +2841,6 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 
 		return 0;
 	}
-
-	talloc_free(rec->ifaces);
-	rec->ifaces = talloc_steal(rec, ifaces);
 
 	/* verify that we have the ip addresses we should have
 	   and we dont have ones we shouldnt have.
