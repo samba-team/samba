@@ -3458,7 +3458,7 @@ static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, false, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
