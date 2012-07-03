@@ -652,6 +652,42 @@ class cmd_dellink(Command):
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
 
+class cmd_listcontainers(Command):
+    """List all linked containers for a GPO"""
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ['gpo']
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str)
+        ]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None,
+                versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
+
+        samdb_connect(self)
+
+        msg = get_gpo_containers(self.samdb, gpo)
+        if len(msg):
+            self.outf.write("Container(s) using GPO %s\n" % gpo)
+            for m in msg:
+                self.outf.write("    DN: %s\n" % m['dn'])
+        else:
+            self.outf.write("No Containers using GPO %s\n" % gpo)
+
+
 class cmd_getinheritance(Command):
     """Get inheritance flag for a container"""
 
@@ -966,6 +1002,7 @@ class cmd_gpo(SuperCommand):
     subcommands["getlink"] = cmd_getlink()
     subcommands["setlink"] = cmd_setlink()
     subcommands["dellink"] = cmd_dellink()
+    subcommands["listcontainers"] = cmd_listcontainers()
     subcommands["getinheritance"] = cmd_getinheritance()
     subcommands["setinheritance"] = cmd_setinheritance()
     subcommands["fetch"] = cmd_fetch()
