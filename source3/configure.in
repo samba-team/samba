@@ -5792,6 +5792,24 @@ if test x"$samba_cv_HAVE_POSIX_FADVISE" = x"yes"; then
 fi
 
 ############################################
+# See if we have the openat syscall.
+
+AC_CACHE_CHECK([for openat],
+		samba_cv_HAVE_OPENAT,[
+    AC_TRY_LINK([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <fcntl.h>],
+    [int fd = openat(AT_FDCWD, ".", O_RDONLY);],
+    samba_cv_HAVE_OPENAT=yes,
+    samba_cv_HAVE_OPENAT=no)])
+
+if test x"$samba_cv_HAVE_OPENAT" = x"yes"; then
+    AC_DEFINE(HAVE_OPENAT,1, [Whether openat is available])
+fi
+
+############################################
 # See if we have the Linux splice syscall.
 
 case "$host_os" in

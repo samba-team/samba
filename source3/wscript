@@ -353,6 +353,11 @@ return acl_get_perm_np(permset_d, perm);
                 headers='unistd.h fcntl.h')
     conf.CHECK_DECLS('readahead', headers='fcntl.h', always=True)
 
+    conf.CHECK_CODE('int fd = openat(AT_FDCWD, ".", O_RDONLY);',
+		'HAVE_OPENAT',
+		msg='Checking for openat',
+		headers='fcntl.h')
+
     if Options.options.with_aio_support:
         conf.CHECK_FUNCS_IN('aio_read', 'aio')
         conf.CHECK_FUNCS_IN('aio_read', 'rt')
