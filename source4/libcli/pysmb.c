@@ -263,6 +263,28 @@ static PyObject *py_smb_rmdir(pytalloc_Object *self, PyObject *args)
 }
 
 /*
+ * Remove a directory and all its contents
+ */
+static PyObject *py_smb_deltree(pytalloc_Object *self, PyObject *args)
+{
+	int status;
+	const char *dirname;
+	struct smb_private_data *spdata;
+
+	if (!PyArg_ParseTuple(args, "s:deltree", &dirname)) {
+		return NULL;
+	}
+
+	spdata = self->ptr;
+	status = smbcli_deltree(spdata->tree, dirname);
+	if (status <= 0) {
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+/*
  * Check existence of a path
  */
 static PyObject *py_smb_chkpath(pytalloc_Object *self, PyObject *args)
@@ -526,6 +548,9 @@ static PyMethodDef py_smb_methods[] = {
 	{ "rmdir", (PyCFunction)py_smb_rmdir, METH_VARARGS,
 		"rmdir(path) -> None\n\n \
 		Delete a directory." },
+	{ "deltree", (PyCFunction)py_smb_deltree, METH_VARARGS,
+		"deltree(path) -> None\n\n \
+		Delete a directory and all its contents." },
 	{ "chkpath", (PyCFunction)py_smb_chkpath, METH_VARARGS,
 		"chkpath(path) -> True or False\n\n \
 		Return true if path exists, false otherwise." },
