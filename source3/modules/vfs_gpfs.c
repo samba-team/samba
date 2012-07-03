@@ -417,8 +417,8 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	struct gpfs_acl *gacl;
 	TALLOC_CTX *mem_ctx  = talloc_tos();
 
-	gacl_len = sizeof(struct gpfs_acl) +
-		(smb_get_naces(smbacl)-1)*sizeof(gpfs_ace_v4_t);
+	gacl_len = offsetof(gpfs_acl_t, ace_v4) + smb_get_naces(smbacl) *
+		sizeof(gpfs_ace_v4_t);
 
 	gacl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, gacl_len);
 	if (gacl == NULL) {
@@ -706,16 +706,11 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 	gpfs_aclLen_t len;
 	struct gpfs_acl *result;
 	int i;
-	union gpfs_ace_union
-	{
-		gpfs_ace_v1_t  ace_v1[1]; /* when GPFS_ACL_VERSION_POSIX */
-		gpfs_ace_v4_t  ace_v4[1]; /* when GPFS_ACL_VERSION_NFS4  */
-	};
 
 	DEBUG(10, ("smb2gpfs_acl: Got ACL with %d entries\n", pacl->count));
 
-	len = sizeof(struct gpfs_acl) - sizeof(union gpfs_ace_union) +
-		(pacl->count)*sizeof(gpfs_ace_v1_t);
+	len = offsetof(gpfs_acl_t, ace_v1) + (pacl->count) *
+		sizeof(gpfs_ace_v1_t);
 
 	result = (struct gpfs_acl *)SMB_MALLOC(len);
 	if (result == NULL) {
