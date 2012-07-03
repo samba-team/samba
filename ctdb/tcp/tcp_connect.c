@@ -281,6 +281,15 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	int sock_size;
 	struct tevent_fd *fde;
 
+	/* If there are no nodes, then it won't be possible to find
+	 * the first one.  Log a failure and short circuit the whole
+	 * process.
+	 */
+	if (ctdb->num_nodes == 0) {
+		DEBUG(DEBUG_CRIT,("No nodes available to attempt bind to - is the nodes file empty?\n"));
+		return -1;
+	}
+
 	/* We only need to serialize this if we dont yet know the node ip */
 	if (!ctdb->node_ip) {
 		/* in order to ensure that we don't get two nodes with the
