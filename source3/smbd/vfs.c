@@ -1226,8 +1226,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			p++;
 			if (strcmp(fname, p)!=0) {
 				DEBUG(2, ("check_reduced_name: Bad access "
-					"attempt: %s is a symlink\n",
-					fname));
+					"attempt: %s is a symlink to %s\n",
+					  fname, p));
 				SAFE_FREE(resolved_name);
 				return NT_STATUS_ACCESS_DENIED;
 			}
