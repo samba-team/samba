@@ -121,7 +121,7 @@ def get_gpo_dn(samdb, gpo):
     '''Construct the DN for gpo'''
 
     dn = samdb.get_default_basedn()
-    dn.add_child(ldb.Dn(samdb, "CN=Policies,DC=System"))
+    dn.add_child(ldb.Dn(samdb, "CN=Policies,CN=System"))
     dn.add_child(ldb.Dn(samdb, "CN=%s" % gpo))
     return dn
 
