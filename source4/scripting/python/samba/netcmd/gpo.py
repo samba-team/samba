@@ -672,10 +672,10 @@ class cmd_getinheritance(Command):
     def run(self, container_dn, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        self.url = dc_url(self.lp, self.creds, H)
 
         samdb_connect(self)
 
@@ -723,13 +723,12 @@ class cmd_setinheritance(Command):
         else:
             raise CommandError("Unknown inheritance state (%s)" % inherit_state)
 
-        self.url = H
         self.lp = sambaopts.get_loadparm()
-
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        samdb_connect(self)
+        self.url = dc_url(self.lp, self.creds, H)
 
+        samdb_connect(self)
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
                                     expression="(objectClass=*)",
@@ -774,8 +773,13 @@ class cmd_fetch(Command):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        dc_hostname = netcmd_finddc(self.lp, self.creds)
-        self.url = dc_url(self.lp, self.creds, H, dc=dc_hostname)
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
         samdb_connect(self)
         try:
@@ -843,9 +847,14 @@ class cmd_create(Command):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
-        self.url = dc_url(self.lp, self.creds, url=H)
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
-        dc_hostname = netcmd_finddc(self.lp, self.creds)
         samdb_connect(self)
 
         msg = get_gpo_info(self.samdb, displayname=displayname)
