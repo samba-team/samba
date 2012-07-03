@@ -839,8 +839,8 @@ accountExpires: %u
         try:
             seq = super(SamDB, self).sequence_number(seq_type)
         except:
-             self.transaction_cancel()
-             raise
+            self.transaction_cancel()
+            raise
         else:
             self.transaction_commit()
         return seq

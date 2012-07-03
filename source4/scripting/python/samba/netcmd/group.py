@@ -96,9 +96,9 @@ Example2 adds a new distribution group to the local server.  The command is run 
             group_type=None, description=None, mail_address=None, notes=None):
 
         if (group_type or "Security") == "Security":
-              gtype = security_group.get(group_scope, GTYPE_SECURITY_GLOBAL_GROUP)
+            gtype = security_group.get(group_scope, GTYPE_SECURITY_GLOBAL_GROUP)
         else:
-              gtype = distribution_group.get(group_scope, GTYPE_DISTRIBUTION_GLOBAL_GROUP)
+            gtype = distribution_group.get(group_scope, GTYPE_DISTRIBUTION_GLOBAL_GROUP)
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
