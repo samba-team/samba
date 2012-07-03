@@ -458,11 +458,11 @@ class cmd_getlink(Command):
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
                                     expression="(objectClass=*)",
-                                    attrs=['gPlink'])[0]
+                                    attrs=['gPLink'])[0]
         except Exception, e:
             raise CommandError("Could not find Container DN %s (%s)" % container_dn, e)
 
-        if 'gPLink' in msg:
+        if msg['gPLink']:
             self.outf.write("GPO(s) linked to DN %s\n" % container_dn)
             gplist = parse_gplink(msg['gPLink'][0])
             for g in gplist:
@@ -523,7 +523,7 @@ class cmd_setlink(Command):
         try:
             msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
                                     expression="(objectClass=*)",
-                                    attrs=['gPlink'])[0]
+                                    attrs=['gPLink'])[0]
         except Exception, e:
             raise CommandError("Could not find container DN %s" % container_dn, e)
 
