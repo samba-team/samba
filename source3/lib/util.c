@@ -2460,3 +2460,33 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 	return True;
 
 }
+
+/*************************************************************************
+ Return a talloced copy of a struct security_unix_token. NULL on fail.
+*************************************************************************/
+
+struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct security_unix_token *tok)
+{
+	struct security_unix_token *cpy;
+
+	cpy = talloc(ctx, struct security_unix_token);
+	if (!cpy) {
+		return NULL;
+	}
+
+	cpy->uid = tok->uid;
+	cpy->gid = tok->gid;
+	cpy->ngroups = tok->ngroups;
+	if (tok->ngroups) {
+		/* Make this a talloc child of cpy. */
+		cpy->groups = (gid_t *)talloc_memdup(
+			cpy, tok->groups, tok->ngroups * sizeof(gid_t));
+		if (!cpy->groups) {
+			TALLOC_FREE(cpy);
+			return NULL;
+		}
+	} else {
+		cpy->groups = NULL;
+	}
+	return cpy;
+}

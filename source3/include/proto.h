@@ -497,6 +497,7 @@ bool map_open_params_to_ntcreate(const char *smb_base_fname,
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options,
 				 uint32_t *pprivate_flags);
+struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct security_unix_token *tok);
 void init_modules(void);
 
 /* The following definitions come from lib/util_builtin.c  */
