@@ -3403,6 +3403,14 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
+	/* If this node is stopped then it is not the recovery master
+	 * so the only remaining action is to potentially to verify
+	 * the local IP allocation below.  This won't accomplish
+	 * anything useful so skip it.
+	 */
+	if (rec->node_flags & NODE_FLAGS_STOPPED) {
+		return;
+	}
 
 	/* verify that we have all ip addresses we should have and we dont
 	 * have addresses we shouldnt have.
