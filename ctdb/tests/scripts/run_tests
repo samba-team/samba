@@ -234,7 +234,8 @@ fi
 
 rm -f "$sf"
 
-echo 
+echo
+
 if $TEST_CLEANUP ; then
     echo "Removing TEST_VAR_DIR=$TEST_VAR_DIR"
     rm -rf "$TEST_VAR_DIR"
