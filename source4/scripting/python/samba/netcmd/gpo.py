@@ -516,8 +516,8 @@ class cmd_setlink(Command):
         try:
             msg = get_gpo_info(self.samdb, gpo=gpo)[0]
         except Exception, e:
-            raise CommandError("GPO %s does not exist" % gpo_dn, e)
-        gpo_dn = get_gpo_dn(self.samdb, gpo)
+            raise CommandError("GPO %s does not exist" % gpo, e)
+        gpo_dn = str(get_gpo_dn(self.samdb, gpo))
 
         # Check if valid Container DN
         try:
@@ -580,7 +580,7 @@ class cmd_dellink(Command):
         Option("-H", help="LDB URL for database or target server", type=str),
         ]
 
-    def run(self, container_dn, gpo_dn, H=None, sambaopts=None, credopts=None,
+    def run(self, container_dn, gpo, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
