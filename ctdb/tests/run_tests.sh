@@ -31,7 +31,7 @@ case "$1" in
 	done
 esac
 
-# If no tests specified them run the defaults.
+# If no tests are specified, then run the defaults.
 [ -n "$1" ] || set -- $tests
 
 "${test_dir}/scripts/run_tests" $opts "$@" || exit 1
