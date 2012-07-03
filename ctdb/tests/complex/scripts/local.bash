@@ -132,6 +132,9 @@ ctdb_test_check_real_cluster ()
     [ -z "$TEST_LOCAL_DAEMONS" ] || \
 	die "ERROR: This test must be run against a real/virtual cluster, not local daemons."
 
+    local h=$(hostname)
+
+    local i
     for i in $(onnode -q all hostname) ; do
 	[ "$h" != "$i" ] || \
 	    die "ERROR: This test must not be run from a cluster node."
