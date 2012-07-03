@@ -992,6 +992,84 @@ class cmd_create(Command):
         self.outf.write("GPO '%s' created as %s\n" % (displayname, gpo))
 
 
+class cmd_del(Command):
+    """Delete GPO"""
+
+    synopsis = "%prog <gpo> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ['gpo']
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str),
+        ]
+
+    def run(self, gpo, H=None, sambaopts=None, credopts=None,
+                versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        # We need to know writable DC to setup SMB connection
+        if H and H.startswith('ldap://'):
+            dc_hostname = H[7:]
+            self.url = H
+        else:
+            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
+
+        samdb_connect(self)
+
+        # Check if valid GPO
+        try:
+            get_gpo_info(self.samdb, gpo=gpo)[0]
+        except Exception:
+            raise CommandError("GPO %s does not exist" % gpo)
+
+        realm = self.lp.get('realm')
+        unc_path = "\\\\%s\\sysvol\\%s\\Policies\\%s" % (realm, realm, gpo)
+
+        # Connect to DC over SMB
+        [dom_name, service, sharepath] = parse_unc(unc_path)
+        try:
+            conn = smb.SMB(dc_hostname, service, lp=self.lp, creds=self.creds)
+        except Exception, e:
+            raise CommandError("Error connecting to '%s' using SMB" % dc_hostname, e)
+
+        self.samdb.transaction_start()
+        try:
+            # Check for existing links
+            msg = get_gpo_containers(self.samdb, gpo)
+
+            if len(msg):
+                self.outf.write("GPO %s is linked to containers\n" % gpo)
+                for m in msg:
+                    del_gpo_link(self.samdb, m['dn'], gpo)
+                    self.outf.write("    Removed link from %s.\n" % m['dn'])
+
+            # Remove LDAP entries
+            gpo_dn = get_gpo_dn(self.samdb, gpo)
+            self.samdb.delete(ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn)))
+            self.samdb.delete(ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn)))
+            self.samdb.delete(gpo_dn)
+
+            # Remove GPO files
+            conn.deltree(sharepath)
+
+        except Exception:
+            self.samdb.transaction_cancel()
+            raise
+        else:
+            self.samdb.transaction_commit()
+
+        self.outf.write("GPO %s deleted.\n" % gpo)
+
+
 class cmd_gpo(SuperCommand):
     """Group Policy Object (GPO) management"""
 
@@ -1007,3 +1085,4 @@ class cmd_gpo(SuperCommand):
     subcommands["setinheritance"] = cmd_setinheritance()
     subcommands["fetch"] = cmd_fetch()
     subcommands["create"] = cmd_create()
+    subcommands["del"] = cmd_del()
