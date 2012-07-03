@@ -165,6 +165,56 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
     return msg
 
 
+def get_gpo_containers(samdb, gpo):
+    '''lists dn of containers for a GPO'''
+
+    search_expr = "(&(objectClass=*)(gPLink=*%s*))" % gpo
+    try:
+        msg = samdb.search(expression=search_expr, attrs=['gPLink'])
+    except Exception, e:
+        raise CommandError("Could not find container(s) with GPO %s" % gpo, e)
+
+    return msg
+
+
+def del_gpo_link(samdb, container_dn, gpo):
+    '''delete GPO link for the container'''
+    # Check if valid Container DN and get existing GPlinks
+    try:
+        msg = samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
+                            expression="(objectClass=*)",
+                            attrs=['gPLink'])[0]
+    except Exception, e:
+        raise CommandError("Container %s does not exist" % container_dn, e)
+
+    found = False
+    gpo_dn = str(get_gpo_dn(samdb, gpo))
+    if 'gPLink' in msg:
+        gplist = parse_gplink(msg['gPLink'][0])
+        for g in gplist:
+            if g['dn'].lower() == gpo_dn.lower():
+                gplist.remove(g)
+                found = True
+                break
+    else:
+        raise CommandError("No GPO(s) linked to this container")
+
+    if not found:
+        raise CommandError("GPO '%s' not linked to this container" % gpo)
+
+    m = ldb.Message()
+    m.dn = container_dn
+    if gplist:
+        gplink_str = encode_gplink(gplist)
+        m['r0'] = ldb.MessageElement(gplink_str, ldb.FLAG_MOD_REPLACE, 'gPLink')
+    else:
+        m['d0'] = ldb.MessageElement(msg['gPLink'][0], ldb.FLAG_MOD_DELETE, 'gPLink')
+    try:
+        samdb.modify(m)
+    except Exception, e:
+        raise CommandError("Error removing GPO from container", e)
+
+
 def parse_unc(unc):
     '''Parse UNC string into a hostname, a service, and a filepath'''
     if unc.startswith('\\\\') and unc.startswith('//'):
