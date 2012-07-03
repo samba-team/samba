@@ -1,7 +1,7 @@
 # implement samba_tool gpo commands
 #
 # Copyright Andrew Tridgell 2010
-# Copyright Amitay Isaacs 2011 <amitay@gmail.com>
+# Copyright Amitay Isaacs 2011-2012 <amitay@gmail.com>
 #
 # based on C implementation by Guenther Deschner and Wilco Baan Hofman
 #
