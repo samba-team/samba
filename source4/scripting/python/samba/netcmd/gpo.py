@@ -624,13 +624,13 @@ class cmd_dellink(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = ['container_dn', 'gpo']
+    takes_args = ['container', 'gpo']
 
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
         ]
 
-    def run(self, container_dn, gpo, H=None, sambaopts=None, credopts=None,
+    def run(self, container, gpo, H=None, sambaopts=None, credopts=None,
                 versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
@@ -642,42 +642,12 @@ class cmd_dellink(Command):
 
         # Check if valid GPO
         try:
-            msg = get_gpo_info(self.sambdb, gpo=gpo)[0]
+            get_gpo_info(self.samdb, gpo=gpo)[0]
         except Exception, e:
-                raise CommandError("GPO %s does not exist" % gpo, e)
-        gpo_dn = get_gpo_dn(self.samdb, gpo)
+            raise CommandError("GPO %s does not exist" % gpo, e)
 
-        # Check if valid Container DN and get existing GPlinks
-        try:
-            msg = self.samdb.search(base=container_dn, scope=ldb.SCOPE_BASE,
-                                    expression="(objectClass=*)",
-                                    attrs=['gPlink'])[0]
-        except Exception, e:
-            raise CommandError("Could not find container DN %s" % dn, e)
-
-        if 'gPLink' in msg:
-            gplist = parse_gplink(msg['gPLink'][0])
-            for g in gplist:
-                if g['dn'].lower() == gpo_dn.lower():
-                    gplist.remove(g)
-                    break
-        else:
-            raise CommandError("Specified GPO is not linked to this container")
-
-        m = ldb.Message()
-        m.dn = ldb.Dn(self.samdb, container_dn)
-
-        if gplist:
-            gplink_str = encode_gplink(gplist)
-            m['new_value'] = ldb.MessageElement(gplink_str, ldb.FLAG_MOD_REPLACE, 'gPLink')
-        else:
-            m['new_value'] = ldb.MessageElement('', ldb.FLAG_MOD_DELETE, 'gPLink')
-
-        try:
-            self.samdb.modify(m)
-        except Exception, e:
-            raise CommandError("Error Removing GPO Link (%s)" % e)
-
+        container_dn = ldb.Dn(self.samdb, container)
+        del_gpo_link(self.samdb, container_dn, gpo)
         self.outf.write("Deleted GPO link.\n")
         cmd_getlink().run(container_dn, H, sambaopts, credopts, versionopts)
 
@@ -921,12 +891,10 @@ class cmd_create(Command):
         self.samdb.transaction_start()
         try:
             # Add cn=<guid>
-            gpo_dn = self.samdb.get_default_basedn()
-            gpo_dn.add_child(ldb.Dn(self.samdb, "CN=Policies,CN=System"))
-            gpo_dn.add_child(ldb.Dn(self.samdb, "CN=%s" % gpo))
+            gpo_dn = get_gpo_dn(self.samdb, gpo)
 
             m = ldb.Message()
-            m.dn = ldb.Dn(self.samdb, gpo_dn.get_linearized())
+            m.dn = gpo_dn
             m['a01'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
             m['a02'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
             m['a03'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
