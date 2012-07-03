@@ -544,6 +544,10 @@ void save_re_gid(void);
 void restore_re_gid(void);
 int set_re_uid(void);
 void become_user_permanently(uid_t uid, gid_t gid);
+int set_thread_credentials_permanently(uid_t uid,
+				gid_t gid,
+				size_t setlen,
+				const gid_t *gidset);
 bool is_setuid_root(void) ;
 
 /* The following definitions come from lib/util_sid.c  */
