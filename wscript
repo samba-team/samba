@@ -247,7 +247,7 @@ def distcheck():
     samba_version.load_version(env=None)
     import Scripting
     d = Scripting.distcheck
-    d(subdir='source4')
+    d()
 
 def wildcard_cmd(cmd):
     '''called on a unknown command'''
