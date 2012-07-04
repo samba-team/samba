@@ -587,7 +587,7 @@ int rep_strerror_r(int errnum, char *buf, size_t buflen);
 #endif
 
 #ifndef INT64_MAX
-#define INT64_MAX 9223372036854775807
+#define INT64_MAX 9223372036854775807LL
 #endif
 
 #ifndef CHAR_BIT
