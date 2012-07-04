@@ -132,6 +132,8 @@ def configure(conf):
     conf.env.disable_ntdb = getattr(Options.options, 'disable_ntdb', False)
     if not Options.options.disable_ntdb:
         conf.RECURSE('lib/ntdb')
+    else:
+        conf.DEFINE('DISABLE_NTDB', 1)
     conf.RECURSE('lib/zlib')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')

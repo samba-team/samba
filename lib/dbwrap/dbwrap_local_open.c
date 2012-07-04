@@ -22,7 +22,9 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_tdb.h"
 #include "tdb.h"
+#ifndef DISABLE_NTDB
 #include "lib/util/util_ntdb.h"
+#endif
 #include "lib/param/param.h"
 #include "system/filesys.h"
 #include "ccan/str/str.h"
