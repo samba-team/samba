@@ -1,8 +1,7 @@
 # Make prototypes from .c files
 # $Id$
 
-##use Getopt::Std;
-require 'getopts.pl';
+use Getopt::Std;
 
 my $comment = 0;
 my $if_0 = 0;
@@ -13,7 +12,7 @@ my $oproto = 1;
 my $private_func_re = "^_";
 my %depfunction = ();
 
-Getopts('x:m:o:p:dqE:R:P:') || die "foo";
+getopts('x:m:o:p:dqE:R:P:') || die "foo";
 
 if($opt_d) {
     $debug = 1;
