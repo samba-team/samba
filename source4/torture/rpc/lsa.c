@@ -875,11 +875,27 @@ static bool test_LookupSids3(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupSids3_r(b, tctx, &r),
 		"LookupSids3 failed");
 
-	torture_assert_ntstatus_ok(tctx,
-				   r.out.result,
-				   "LookupSids3 failed");
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NONE_MAPPED)) {
+			torture_comment(tctx,
+					"LookupSids3 failed: %s - not considered as an error",
+					nt_errstr(r.out.result));
+
+			return true;
+		}
+
+		torture_assert_ntstatus_ok(tctx,
+					   r.out.result,
+					   "LookupSids3 failed");
+
+		return false;
+	}
 
 	torture_comment(tctx, "\n");
+
+	if (!test_LookupNames4(b, tctx, &names, true)) {
+		return false;
+	}
 
 	return true;
 }
