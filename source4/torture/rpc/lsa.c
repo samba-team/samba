@@ -661,9 +661,21 @@ static bool test_LookupNames4(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupNames4_r(b, tctx, &r),
 		"LookupNames4 failed");
 
-	torture_assert_ntstatus_ok(tctx,
-				   r.out.result,
-				   "LookupNames4 failed");
+	if (!NT_STATUS_IS_OK(r.out.result)) {
+		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NONE_MAPPED)) {
+			torture_comment(tctx,
+					"LookupNames4 failed: %s - not considered as an error",
+					nt_errstr(r.out.result));
+
+			return true;
+		}
+
+		torture_assert_ntstatus_ok(tctx,
+					   r.out.result,
+					   "LookupNames4 failed");
+
+		return false;
+	}
 
 	if (check_result) {
 		torture_assert_int_equal(tctx, count, sids.count,
