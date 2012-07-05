@@ -34,7 +34,7 @@ pid_t pidfile_pid(const char *program_name)
 {
 	int fd;
 	char pidstr[20];
-	pid_t pid;
+	pid_t pid = 0;
 	unsigned int ret;
 	char *name;
 	const char *short_configfile;
