@@ -105,11 +105,11 @@ static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 		if (sbuf.f_flags & MNT_ACLS)
 			statbuf->FsCapabilities |= FILE_PERSISTENT_ACLS;
 #endif
+#endif
 		if (sbuf.f_flags & MNT_QUOTA)
 			statbuf->FsCapabilities |= FILE_VOLUME_QUOTAS;
 		if (sbuf.f_flags & MNT_RDONLY)
 			statbuf->FsCapabilities |= FILE_READ_ONLY_VOLUME;
-#endif
 	}
 
 	return ret;
