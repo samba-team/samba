@@ -51,9 +51,7 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 				   struct auth_session_info **session_info)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct PAC_DATA *pac_data = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
-	unsigned int i;
 	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -62,34 +60,13 @@ static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
 	}
 
 	if (pac_blob) {
-		status = kerberos_decode_pac(tmp_ctx,
-				     *pac_blob,
-				     NULL, NULL, NULL, NULL, 0, &pac_data);
+		status = kerberos_pac_logon_info(tmp_ctx, *pac_blob, NULL, NULL,
+						 NULL, NULL, 0, &logon_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-
-		/* get logon name and logon info */
-		for (i = 0; i < pac_data->num_buffers; i++) {
-			struct PAC_BUFFER *data_buf = &pac_data->buffers[i];
-
-			switch (data_buf->type) {
-			case PAC_TYPE_LOGON_INFO:
-				if (!data_buf->info) {
-					break;
-				}
-				logon_info = data_buf->info->logon_info.info;
-				break;
-			default:
-				break;
-			}
-		}
-		if (!logon_info) {
-			DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
-			status = NT_STATUS_NOT_FOUND;
-			goto done;
-		}
 	}
+
 	talloc_set_name_const(logon_info, "struct PAC_LOGON_INFO");
 
 	auth_ctx->private_data = talloc_steal(auth_ctx, logon_info);

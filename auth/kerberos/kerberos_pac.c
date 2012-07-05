@@ -402,4 +402,41 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+				 DATA_BLOB blob,
+				 krb5_context context,
+				 const krb5_keyblock *krbtgt_keyblock,
+				 const krb5_keyblock *service_keyblock,
+				 krb5_const_principal client_principal,
+				 time_t tgs_authtime,
+				 struct PAC_LOGON_INFO **logon_info)
+{
+	NTSTATUS nt_status;
+	struct PAC_DATA *pac_data;
+	int i;
+	nt_status = kerberos_decode_pac(mem_ctx,
+					blob,
+					context,
+					krbtgt_keyblock,
+					service_keyblock,
+					client_principal,
+					tgs_authtime,
+					&pac_data);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	*logon_info = NULL;
+	for (i=0; i < pac_data->num_buffers; i++) {
+		if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
+			continue;
+		}
+		*logon_info = pac_data->buffers[i].info->logon_info.info;
+	}
+	if (!*logon_info) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return NT_STATUS_OK;
+}
+
 #endif

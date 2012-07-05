@@ -26,6 +26,7 @@
 
 struct PAC_SIGNATURE_DATA;
 struct PAC_DATA;
+struct PAC_LOGON_INFO;
 
 krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 				   struct PAC_SIGNATURE_DATA *sig,
@@ -40,6 +41,15 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 			     krb5_const_principal client_principal,
 			     time_t tgs_authtime,
 			     struct PAC_DATA **pac_data_out);
+
+NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+				 DATA_BLOB blob,
+				 krb5_context context,
+				 const krb5_keyblock *krbtgt_keyblock,
+				 const krb5_keyblock *service_keyblock,
+				 krb5_const_principal client_principal,
+				 time_t tgs_authtime,
+				 struct PAC_LOGON_INFO **logon_info);
 
 NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,

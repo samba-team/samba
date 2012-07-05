@@ -716,9 +716,7 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 						    struct auth_session_info **session_info)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct PAC_DATA *pac_data = NULL;
 	struct PAC_LOGON_INFO *logon_info = NULL;
-	unsigned int i;
 	char *unixuser;
 	NTSTATUS status;
 	char *domain = NULL;
@@ -733,34 +731,12 @@ static NTSTATUS ntlm_auth_generate_session_info_pac(struct auth4_context *auth_c
 
 	if (pac_blob) {
 #ifdef HAVE_KRB5
-		status = kerberos_decode_pac(tmp_ctx,
-				     *pac_blob,
-				     NULL, NULL, NULL, NULL, 0, &pac_data);
+		status = kerberos_pac_logon_info(tmp_ctx, *pac_blob, NULL, NULL,
+						 NULL, NULL, 0, &logon_info);
 #else
 		status = NT_STATUS_ACCESS_DENIED;
 #endif
 		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-
-		/* get logon name and logon info */
-		for (i = 0; i < pac_data->num_buffers; i++) {
-			struct PAC_BUFFER *data_buf = &pac_data->buffers[i];
-
-			switch (data_buf->type) {
-			case PAC_TYPE_LOGON_INFO:
-				if (!data_buf->info) {
-					break;
-				}
-				logon_info = data_buf->info->logon_info.info;
-				break;
-			default:
-				break;
-			}
-		}
-		if (!logon_info) {
-			DEBUG(1, ("Invalid PAC data, missing logon info!\n"));
-			status = NT_STATUS_NOT_FOUND;
 			goto done;
 		}
 	}

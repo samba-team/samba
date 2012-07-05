@@ -83,14 +83,6 @@ const krb5_data *krb5_princ_component(krb5_context context, krb5_principal princ
 #endif
 
 /* Samba wrapper function for krb5 functionality. */
-NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
-				 DATA_BLOB blob,
-				 krb5_context context,
-				 const krb5_keyblock *krbtgt_keyblock,
-				 const krb5_keyblock *service_keyblock,
-				 krb5_const_principal client_principal,
-				 time_t tgs_authtime,
-				 struct PAC_LOGON_INFO **logon_info);
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,
