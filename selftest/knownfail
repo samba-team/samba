@@ -60,7 +60,11 @@
 ^samba4.rpc.wkssvc
 ^samba4.rpc.handles.*.lsarpc-shared
 ^samba4.rpc.epmapper
-^samba4.rpc.lsalookup
+^samba4.rpc.lsalookup on ncalrpc
+^samba4.rpc.lsalookup on ncacn_np
+^samba4.rpc.lsalookup with seal,padcheck
+^samba4.rpc.lsalookup with validate
+^samba4.rpc.lsalookup with bigendian
 ^samba4.rpc.cracknames
 ^samba4.rpc.netlogon.*.LogonUasLogon
 ^samba4.rpc.netlogon.*.LogonUasLogoff
