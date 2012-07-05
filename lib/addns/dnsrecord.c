@@ -24,7 +24,7 @@
 #include "dns.h"
 
 DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
-			    uint16 q_type, uint16 q_class,
+			    uint16_t q_type, uint16_t q_class,
 			    struct dns_request **preq )
 {
 	struct dns_request *req = NULL;
@@ -91,8 +91,8 @@ DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 }
 
 DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
-			  uint16 type, uint16 r_class, uint32 ttl,
-			  uint16 data_length, uint8 *data,
+			  uint16_t type, uint16_t r_class, uint32_t ttl,
+			  uint16_t data_length, uint8_t *data,
 			  struct dns_rrec **prec)
 {
 	struct dns_rrec *rec = NULL;
@@ -119,10 +119,10 @@ DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 }
 
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
-			      uint32 ttl, const struct sockaddr_storage *pss,
+			      uint32_t ttl, const struct sockaddr_storage *pss,
 			      struct dns_rrec **prec)
 {
-	uint8 *data;
+	uint8_t *data;
 	DNS_ERROR err;
 	struct in_addr ip;
 
@@ -131,7 +131,7 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 	}
 
 	ip = ((const struct sockaddr_in *)pss)->sin_addr;
-	if (!(data = (uint8 *)talloc_memdup(mem_ctx, (const void *)&ip.s_addr,
+	if (!(data = (uint8_t *)talloc_memdup(mem_ctx, (const void *)&ip.s_addr,
 					    sizeof(ip.s_addr)))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
@@ -147,11 +147,11 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 }
 
 DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
-				 uint32 ttl, const struct sockaddr_storage *pss,
+				 uint32_t ttl, const struct sockaddr_storage *pss,
 				 struct dns_rrec **prec)
 {
 #ifdef HAVE_IPV6
-	uint8 *data;
+	uint8_t *data;
 	DNS_ERROR err;
 	struct in6_addr ip6;
 
@@ -160,7 +160,7 @@ DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
 	}
 
 	ip6 = ((const struct sockaddr_in6 *)pss)->sin6_addr;
-	if (!(data = (uint8 *)talloc_memdup(mem_ctx, (const void *)&ip6.s6_addr,
+	if (!(data = (uint8_t *)talloc_memdup(mem_ctx, (const void *)&ip6.s6_addr,
 					    sizeof(ip6.s6_addr)))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
@@ -201,7 +201,7 @@ DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 }
 
 DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
-					    const char *name, uint32 type,
+					    const char *name, uint32_t type,
 					    struct dns_rrec **prec)
 {
 	return dns_create_rrec(mem_ctx, name, type, DNS_CLASS_NONE, 0,
@@ -209,7 +209,7 @@ DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
 }
 
 DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
-				   uint16 type, uint16 r_class,
+				   uint16_t type, uint16_t r_class,
 				   struct dns_rrec **prec)
 {
 	return dns_create_rrec(mem_ctx, name, type, r_class, 0, 0, NULL, prec);
@@ -217,8 +217,8 @@ DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
 
 DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 const char *algorithm_name, time_t inception,
-				 time_t expiration, uint16 mode, uint16 error,
-				 uint16 key_length, const uint8 *key,
+				 time_t expiration, uint16_t mode, uint16_t error,
+				 uint16_t key_length, const uint8_t *key,
 				 struct dns_rrec **prec)
 {
 	struct dns_buffer *buf = NULL;
@@ -259,7 +259,7 @@ DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 {
 	struct dns_tkey_record *tkey;
 	struct dns_buffer buf;
-	uint32 tmp_inception, tmp_expiration;
+	uint32_t tmp_inception, tmp_expiration;
 	
 	if (!(tkey = talloc(mem_ctx, struct dns_tkey_record))) {
 		return ERROR_DNS_NO_MEMORY;
@@ -280,7 +280,7 @@ DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 	if (!ERR_DNS_IS_OK(buf.error)) goto error;
 
 	if (tkey->key_length) {
-		if (!(tkey->key = talloc_array(tkey, uint8, tkey->key_length))) {
+		if (!(tkey->key = talloc_array(tkey, uint8_t, tkey->key_length))) {
 			buf.error = ERROR_DNS_NO_MEMORY;
 			goto error;
 		}
@@ -304,9 +304,9 @@ DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 
 DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 const char *algorithm_name,
-				 time_t time_signed, uint16 fudge,
-				 uint16 mac_length, const uint8 *mac,
-				 uint16 original_id, uint16 error,
+				 time_t time_signed, uint16_t fudge,
+				 uint16_t mac_length, const uint8_t *mac,
+				 uint16_t original_id, uint16_t error,
 				 struct dns_rrec **prec)
 {
 	struct dns_buffer *buf = NULL;
@@ -344,7 +344,7 @@ DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 }
 
 DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-		       uint16 *num_records, struct dns_rrec ***records)
+		       uint16_t *num_records, struct dns_rrec ***records)
 {
 	struct dns_rrec **new_records;
 
@@ -374,7 +374,7 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 	struct dns_update_request *req = NULL;
 	struct dns_rrec *rec = NULL;
 	DNS_ERROR err;
-	uint16 i;
+	uint16_t i;
 
 	err = dns_create_update(mem_ctx, zone, &req);
 	if (!ERR_DNS_IS_OK(err)) return err;

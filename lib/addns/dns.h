@@ -236,8 +236,8 @@ struct dns_domain_name {
 
 struct dns_question {
 	struct dns_domain_name *name;
-	uint16 q_type;
-	uint16 q_class;
+	uint16_t q_type;
+	uint16_t q_class;
 };
 
 /*
@@ -248,36 +248,36 @@ struct dns_question {
 
 struct dns_zone {
 	struct dns_domain_name *name;
-	uint16 z_type;
-	uint16 z_class;
+	uint16_t z_type;
+	uint16_t z_class;
 };
 
 struct dns_rrec {
 	struct dns_domain_name *name;
-	uint16 type;
-	uint16 r_class;
-	uint32 ttl;
-	uint16 data_length;
-	uint8 *data;
+	uint16_t type;
+	uint16_t r_class;
+	uint32_t ttl;
+	uint16_t data_length;
+	uint8_t *data;
 };
 
 struct dns_tkey_record {
 	struct dns_domain_name *algorithm;
 	time_t inception;
 	time_t expiration;
-	uint16 mode;
-	uint16 error;
-	uint16 key_length;
-	uint8 *key;
+	uint16_t mode;
+	uint16_t error;
+	uint16_t key_length;
+	uint8_t *key;
 };
 
 struct dns_request {
-	uint16 id;
-	uint16 flags;
-	uint16 num_questions;
-	uint16 num_answers;
-	uint16 num_auths;
-	uint16 num_additionals;
+	uint16_t id;
+	uint16_t flags;
+	uint16_t num_questions;
+	uint16_t num_answers;
+	uint16_t num_auths;
+	uint16_t num_additionals;
 	struct dns_question **questions;
 	struct dns_rrec **answers;
 	struct dns_rrec **auths;
@@ -291,12 +291,12 @@ struct dns_request {
  */
 
 struct dns_update_request {
-	uint16 id;
-	uint16 flags;
-	uint16 num_zones;
-	uint16 num_preqs;
-	uint16 num_updates;
-	uint16 num_additionals;
+	uint16_t id;
+	uint16_t flags;
+	uint16_t num_zones;
+	uint16_t num_preqs;
+	uint16_t num_updates;
+	uint16_t num_additionals;
 	struct dns_zone **zones;
 	struct dns_rrec **preqs;
 	struct dns_rrec **updates;
@@ -304,13 +304,13 @@ struct dns_update_request {
 };
 
 struct dns_connection {
-	int32 hType;
+	int32_t hType;
 	int s;
 	struct sockaddr RecvAddr;
 };
 
 struct dns_buffer {
-	uint8 *data;
+	uint8_t *data;
 	size_t size;
 	size_t offset;
 	DNS_ERROR error;
@@ -326,7 +326,7 @@ char *dns_generate_keyname( TALLOC_CTX *mem_ctx );
 /* from dnsrecord.c */
 
 DNS_ERROR dns_create_query( TALLOC_CTX *mem_ctx, const char *name,
-			    uint16 q_type, uint16 q_class,
+			    uint16_t q_type, uint16_t q_class,
 			    struct dns_request **preq );
 DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 			     struct dns_update_request **preq );
@@ -335,42 +335,42 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 			   const struct sockaddr_storage *sslist,
 			   struct dns_update_request **preq);
 DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
-			  uint16 type, uint16 r_class, uint32 ttl,
-			  uint16 data_length, uint8 *data,
+			  uint16_t type, uint16_t r_class, uint32_t ttl,
+			  uint16_t data_length, uint8_t *data,
 			  struct dns_rrec **prec);
 DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-		       uint16 *num_records, struct dns_rrec ***records);
+		       uint16_t *num_records, struct dns_rrec ***records);
 DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 const char *algorithm_name, time_t inception,
-				 time_t expiration, uint16 mode, uint16 error,
-				 uint16 key_length, const uint8 *key,
+				 time_t expiration, uint16_t mode, uint16_t error,
+				 uint16_t key_length, const uint8_t *key,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
 					const struct sockaddr_storage *ip,
 					struct dns_rrec **prec);
 DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
-				   uint16 type, uint16 r_class,
+				   uint16_t type, uint16_t r_class,
 				   struct dns_rrec **prec);
 DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
-					    const char *name, uint32 type,
+					    const char *name, uint32_t type,
 					    struct dns_rrec **prec);
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
-			      uint32 ttl, const struct sockaddr_storage *pss,
+			      uint32_t ttl, const struct sockaddr_storage *pss,
 			      struct dns_rrec **prec);
 DNS_ERROR dns_create_aaaa_record(TALLOC_CTX *mem_ctx, const char *host,
-				 uint32 ttl, const struct sockaddr_storage *pss,
+				 uint32_t ttl, const struct sockaddr_storage *pss,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 				     struct dns_tkey_record **ptkey);
 DNS_ERROR dns_create_tsig_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 const char *algorithm_name,
-				 time_t time_signed, uint16 fudge,
-				 uint16 mac_length, const uint8 *mac,
-				 uint16 original_id, uint16 error,
+				 time_t time_signed, uint16_t fudge,
+				 uint16_t mac_length, const uint8_t *mac,
+				 uint16_t original_id, uint16_t error,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
-		       uint16 *num_records, struct dns_rrec ***records);
+		       uint16_t *num_records, struct dns_rrec ***records);
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
@@ -380,7 +380,7 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 
 /* from dnssock.c */
 
-DNS_ERROR dns_open_connection( const char *nameserver, int32 dwType,
+DNS_ERROR dns_open_connection( const char *nameserver, int32_t dwType,
 		    TALLOC_CTX *mem_ctx,
 		    struct dns_connection **conn );
 DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf);
@@ -397,14 +397,14 @@ DNS_ERROR dns_update_transaction(TALLOC_CTX *mem_ctx,
 /* from dnsmarshall.c */
 
 struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx);
-void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
+void dns_marshall_buffer(struct dns_buffer *buf, const uint8_t *data,
 			 size_t len);
-void dns_marshall_uint16(struct dns_buffer *buf, uint16 val);
-void dns_marshall_uint32(struct dns_buffer *buf, uint32 val);
-void dns_unmarshall_buffer(struct dns_buffer *buf, uint8 *data,
+void dns_marshall_uint16(struct dns_buffer *buf, uint16_t val);
+void dns_marshall_uint32(struct dns_buffer *buf, uint32_t val);
+void dns_unmarshall_buffer(struct dns_buffer *buf, uint8_t *data,
 			   size_t len);
-void dns_unmarshall_uint16(struct dns_buffer *buf, uint16 *val);
-void dns_unmarshall_uint32(struct dns_buffer *buf, uint32 *val);
+void dns_unmarshall_uint16(struct dns_buffer *buf, uint16_t *val);
+void dns_unmarshall_uint32(struct dns_buffer *buf, uint32_t *val);
 void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
 				struct dns_buffer *buf,
 				struct dns_domain_name **pname);
@@ -427,7 +427,7 @@ DNS_ERROR dns_unmarshall_update_request(TALLOC_CTX *mem_ctx,
 					struct dns_update_request **pupreq);
 struct dns_request *dns_update2request(struct dns_update_request *update);
 struct dns_update_request *dns_request2update(struct dns_request *request);
-uint16 dns_response_code(uint16 flags);
+uint16_t dns_response_code(uint16_t flags);
 const char *dns_errstr(DNS_ERROR err);
 
 /* from dnsgss.c */
@@ -444,7 +444,7 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 			  gss_ctx_id_t gss_ctx,
 			  const char *keyname,
 			  const char *algorithmname,
-			  time_t time_signed, uint16 fudge);
+			  time_t time_signed, uint16_t fudge);
 
 #endif	/* HAVE_GSSAPI */
 

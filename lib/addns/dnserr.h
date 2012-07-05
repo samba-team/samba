@@ -36,11 +36,11 @@
 /* Setup the DNS_ERROR typedef.  Technique takes from nt_status.h */
 
 #if defined(HAVE_IMMEDIATE_STRUCTURES)
-typedef struct {uint32 v;} DNS_ERROR;
+typedef struct {uint32_t v;} DNS_ERROR;
 #define ERROR_DNS(x) ((DNS_ERROR) { x })
 #define ERROR_DNS_V(x) ((x).v)
 #else
-typedef uint32 DNS_ERROR;
+typedef uint32_t DNS_ERROR;
 #define ERROR_DNS(x) (x)
 #define ERROR_DNS_V(x) (x)
 #endif

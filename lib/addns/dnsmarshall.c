@@ -39,7 +39,7 @@ struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 	 */
 	result->size = 2;
 
-	if (!(result->data = talloc_array(result, uint8, result->size))) {
+	if (!(result->data = talloc_array(result, uint8_t, result->size))) {
 		TALLOC_FREE(result);
 		return NULL;
 	}
@@ -47,7 +47,7 @@ struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
-void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
+void dns_marshall_buffer(struct dns_buffer *buf, const uint8_t *data,
 			 size_t len)
 {
 	if (!ERR_DNS_IS_OK(buf->error)) return;
@@ -70,7 +70,7 @@ void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
 		
 	if (buf->offset + len > buf->size) {
 		size_t new_size = buf->offset + len;
-		uint8 *new_data;
+		uint8_t *new_data;
 
 		/*
 		 * Don't do too many reallocs, round up to some multiple
@@ -78,7 +78,7 @@ void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
 
 		new_size += (64 - (new_size % 64));
 
-		if (!(new_data = talloc_realloc(buf, buf->data, uint8,
+		if (!(new_data = talloc_realloc(buf, buf->data, uint8_t,
 						      new_size))) {
 			buf->error = ERROR_DNS_NO_MEMORY;
 			return;
@@ -93,19 +93,19 @@ void dns_marshall_buffer(struct dns_buffer *buf, const uint8 *data,
 	return;
 }
 
-void dns_marshall_uint16(struct dns_buffer *buf, uint16 val)
+void dns_marshall_uint16(struct dns_buffer *buf, uint16_t val)
 {
-	uint16 n_val = htons(val);
-	dns_marshall_buffer(buf, (uint8 *)&n_val, sizeof(n_val));
+	uint16_t n_val = htons(val);
+	dns_marshall_buffer(buf, (uint8_t *)&n_val, sizeof(n_val));
 }
 
-void dns_marshall_uint32(struct dns_buffer *buf, uint32 val)
+void dns_marshall_uint32(struct dns_buffer *buf, uint32_t val)
 {
-	uint32 n_val = htonl(val);
-	dns_marshall_buffer(buf, (uint8 *)&n_val, sizeof(n_val));
+	uint32_t n_val = htonl(val);
+	dns_marshall_buffer(buf, (uint8_t *)&n_val, sizeof(n_val));
 }
 
-void dns_unmarshall_buffer(struct dns_buffer *buf, uint8 *data,
+void dns_unmarshall_buffer(struct dns_buffer *buf, uint8_t *data,
 			   size_t len)
 {
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
@@ -121,21 +121,21 @@ void dns_unmarshall_buffer(struct dns_buffer *buf, uint8 *data,
 	return;
 }
 
-void dns_unmarshall_uint16(struct dns_buffer *buf, uint16 *val)
+void dns_unmarshall_uint16(struct dns_buffer *buf, uint16_t *val)
 {
-	uint16 n_val;
+	uint16_t n_val;
 
-	dns_unmarshall_buffer(buf, (uint8 *)&n_val, sizeof(n_val));
+	dns_unmarshall_buffer(buf, (uint8_t *)&n_val, sizeof(n_val));
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
 	*val = ntohs(n_val);
 }
 
-void dns_unmarshall_uint32(struct dns_buffer *buf, uint32 *val)
+void dns_unmarshall_uint32(struct dns_buffer *buf, uint32_t *val)
 {
-	uint32 n_val;
+	uint32_t n_val;
 
-	dns_unmarshall_buffer(buf, (uint8 *)&n_val, sizeof(n_val));
+	dns_unmarshall_buffer(buf, (uint8_t *)&n_val, sizeof(n_val));
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
 	*val = ntohl(n_val);
@@ -152,16 +152,16 @@ void dns_marshall_domain_name(struct dns_buffer *buf,
 	 */
 
 	for (label = name->pLabelList; label != NULL; label = label->next) {
-		uint8 len = label->len;
+		uint8_t len = label->len;
 
-		dns_marshall_buffer(buf, (uint8 *)&len, sizeof(len));
+		dns_marshall_buffer(buf, (uint8_t *)&len, sizeof(len));
 		if (!ERR_DNS_IS_OK(buf->error)) return;
 
-		dns_marshall_buffer(buf, (uint8 *)label->label, len);
+		dns_marshall_buffer(buf, (uint8_t *)label->label, len);
 		if (!ERR_DNS_IS_OK(buf->error)) return;
 	}
 
-	dns_marshall_buffer(buf, (uint8 *)&end_char, 1);
+	dns_marshall_buffer(buf, (uint8_t *)&end_char, 1);
 }
 
 static void dns_unmarshall_label(TALLOC_CTX *mem_ctx,
@@ -170,7 +170,7 @@ static void dns_unmarshall_label(TALLOC_CTX *mem_ctx,
 				 struct dns_domain_label **plabel)
 {
 	struct dns_domain_label *label;
-	uint8 len;
+	uint8_t len;
 
 	if (!ERR_DNS_IS_OK(buf->error)) return;
 
@@ -196,7 +196,7 @@ static void dns_unmarshall_label(TALLOC_CTX *mem_ctx,
 		 * and using the calculated offset.
 		 */
 		struct dns_buffer new_buf;
-		uint8 low;
+		uint8_t low;
 
 		dns_unmarshall_buffer(buf, &low, sizeof(low));
 		if (!ERR_DNS_IS_OK(buf->error)) return;
@@ -228,7 +228,7 @@ static void dns_unmarshall_label(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	dns_unmarshall_buffer(buf, (uint8 *)label->label, len);
+	dns_unmarshall_buffer(buf, (uint8_t *)label->label, len);
 	if (!ERR_DNS_IS_OK(buf->error)) goto error;
 
 	dns_unmarshall_label(label, level+1, buf, &label->next);
@@ -329,7 +329,7 @@ static void dns_unmarshall_rr(TALLOC_CTX *mem_ctx,
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
 	if (r->data_length != 0) {
-		if (!(r->data = talloc_array(r, uint8, r->data_length))) {
+		if (!(r->data = talloc_array(r, uint8_t, r->data_length))) {
 			buf->error = ERROR_DNS_NO_MEMORY;
 			return;
 		}
@@ -346,7 +346,7 @@ DNS_ERROR dns_marshall_request(TALLOC_CTX *mem_ctx,
 			       struct dns_buffer **pbuf)
 {
 	struct dns_buffer *buf;
-	uint16 i;
+	uint16_t i;
 
 	if (!(buf = dns_create_buffer(mem_ctx))) {
 		return ERROR_DNS_NO_MEMORY;
@@ -387,7 +387,7 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 				 struct dns_request **preq)
 {
 	struct dns_request *req;
-	uint16 i;
+	uint16_t i;
 	DNS_ERROR err;
 
 	if (!(req = talloc_zero(mem_ctx, struct dns_request))) {
@@ -524,7 +524,7 @@ DNS_ERROR dns_unmarshall_update_request(TALLOC_CTX *mem_ctx,
 				      (struct dns_request **)(void *)pupreq);
 }
 
-uint16 dns_response_code(uint16 flags)
+uint16_t dns_response_code(uint16_t flags)
 {
 	return flags & 0xF;
 }

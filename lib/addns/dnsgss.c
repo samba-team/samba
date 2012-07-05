@@ -125,7 +125,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			err = dns_create_tkey_record(
 				req, keyname, "gss.microsoft.com", t,
 				t + 86400, DNS_TKEY_MODE_GSSAPI, 0,
-				output_desc.length, (uint8 *)output_desc.value,
+				output_desc.length, (uint8_t *)output_desc.value,
 				&rec );
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
@@ -272,7 +272,7 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 			  gss_ctx_id_t gss_ctx,
 			  const char *keyname,
 			  const char *algorithmname,
-			  time_t time_signed, uint16 fudge)
+			  time_t time_signed, uint16_t fudge)
 {
 	struct dns_buffer *buf;
 	DNS_ERROR err;
@@ -319,7 +319,7 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 	}
 
 	err = dns_create_tsig_record(buf, keyname, algorithmname, time_signed,
-				     fudge, mic.length, (uint8 *)mic.value,
+				     fudge, mic.length, (uint8_t *)mic.value,
 				     req->id, 0, &rec);
 	gss_release_buffer(&minor, &mic);
 	if (!ERR_DNS_IS_OK(err)) goto error;
