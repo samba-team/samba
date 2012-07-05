@@ -129,8 +129,7 @@ case "$1" in
 	# We use epoch and hope the nodes are close enough in clock.
 	# Even numbers mean service is shut down, odd numbers mean
 	# service is started.
-	STATE=`date +"%s"`
-	STATE=`expr "$STATE" "/" "2"`
+	STATE=$(( $(date '+%s') / 2 * 2))
 
 
 	# we must also let some time pass between stopping and restarting the
@@ -189,7 +188,7 @@ case "$1" in
 			rm $CTDB_VARDIR/state/statd/ip/$IP/$CLIENT
 			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
 			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
-			STATE=`expr "$STATE" "+" "1"`
+			STATE=$(($STATE + 1))
 			smnotify --client=$CLIENT --ip=$IP --server=$ip --stateval=$STATE
 			smnotify --client=$CLIENT --ip=$IP --server=$NFS_HOSTNAME --stateval=$STATE
 		done
