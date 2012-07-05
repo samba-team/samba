@@ -573,6 +573,15 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 
 	s->attr.sec_qos = &s->qos;
 
+	if (s->lsa_pipe->binding->transport == NCACN_IP_TCP) {
+		/*
+		 * Skip to creating the actual connection. We can't open a
+		 * policy handle over tcpip.
+		 */
+		continue_epm_map_binding_send(c);
+		return;
+	}
+
 	s->lsa_open_policy.in.attr        = &s->attr;
 	s->lsa_open_policy.in.system_name = talloc_asprintf(c, "\\");
 	if (composite_nomem(s->lsa_open_policy.in.system_name, c)) return;
