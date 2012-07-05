@@ -323,6 +323,10 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert(tctx, test_netlogon_ex_ops(p_netlogon, tctx, credentials, creds),
 		"Failed to process schannel secured NETLOGON EX ops");
 
+	/* we *MUST* use ncacn_np for openpolicy etc. */
+	transport = b->transport;
+	b->transport = NCACN_NP;
+
 	/* Swap the binding details from SAMR to LSARPC */
 	status = dcerpc_epm_map_binding(tctx, b, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "epm map");
@@ -337,6 +341,8 @@ static bool test_schannel(struct torture_context *tctx,
 
 	talloc_free(p_lsa);
 	p_lsa = NULL;
+
+	b->transport = transport;
 
 	/* we *MUST* use ncacn_ip_tcp for lookupsids3/lookupnames4 */
 	transport = b->transport;
