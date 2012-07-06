@@ -453,6 +453,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  ../lib/socket/interfaces.o lib/memcache.o \
 	  lib/talloc_dict.o \
 	  lib/serverid.o \
+	  lib/asys/asys.o \
 	  lib/util_transfer_file.o ../lib/async_req/async_sock.o \
 	  lib/addrchange.o \
 	  $(TDB_LIB_OBJ) \
