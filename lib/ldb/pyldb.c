@@ -529,6 +529,18 @@ static PyObject *py_ldb_dn_add_base(PyLdbDnObject *self, PyObject *args)
 	return ldb_dn_add_base(dn, other)?Py_True:Py_False;
 }
 
+static PyObject *py_ldb_dn_remove_base_components(PyLdbDnObject *self, PyObject *args)
+{
+	struct ldb_dn *dn;
+	int i;
+	if (!PyArg_ParseTuple(args, "i", &i))
+		return NULL;
+
+	dn = pyldb_Dn_AsDn((PyObject *)self);
+
+	return ldb_dn_remove_base_components(dn, i)?Py_True:Py_False;
+}
+
 static PyObject *py_ldb_dn_is_child_of(PyLdbDnObject *self, PyObject *args)
 {
 	PyObject *py_base;
@@ -579,6 +591,9 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "add_base", (PyCFunction)py_ldb_dn_add_base, METH_VARARGS,
 		"S.add_base(dn) -> None\n"
 		"Add a base DN to this DN." },
+	{ "remove_base_components", (PyCFunction)py_ldb_dn_remove_base_components, METH_VARARGS,
+		"S.remove_base_components(int) -> bool\n"
+		"Remove a number of DN components from the base of this DN." },
 	{ "check_special", (PyCFunction)py_ldb_dn_check_special, METH_VARARGS,
 		"S.check_special(name) -> bool\n\n"
 		"Check if name is a special DN name"},
