@@ -47,8 +47,9 @@ class dc_join(object):
     '''perform a DC join'''
 
     def __init__(ctx, server=None, creds=None, lp=None, site=None,
-            netbios_name=None, targetdir=None, domain=None,
-            machinepass=None, use_ntvfs=False, dns_backend=None):
+                 netbios_name=None, targetdir=None, domain=None,
+                 machinepass=None, use_ntvfs=False, dns_backend=None,
+                 promote_existing=False):
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
@@ -59,6 +60,9 @@ class dc_join(object):
             ctx.dns_backend = "NONE"
         else:
             ctx.dns_backend = dns_backend
+
+        ctx.promote_existing = promote_existing
+        ctx.promote_from_dn = None
 
         ctx.nc_list = []
         ctx.full_nc_list = []
@@ -202,6 +206,25 @@ class dc_join(object):
 
         except Exception:
             pass
+
+    def promote_possible(ctx):
+        '''confirm that the account is just a bare NT4 BDC or a member server, so can be safely promoted'''
+        if ctx.subdomain:
+            # This shouldn't happen
+            raise Exception("Can not promote into a subdomain")
+
+        res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
+                               expression='sAMAccountName=%s' % ldb.binary_encode(ctx.samname),
+                               attrs=["msDS-krbTgtLink", "userAccountControl", "serverReferenceBL", "rIDSetReferences"])
+        if len(res) == 0:
+            raise Exception("Could not find domain member account '%s' to promote to a DC, use 'samba-tool domain join' instead'" % ctx.samname)
+        if "msDS-krbTgtLink" in res[0] or "serverReferenceBL" in res[0] or "rIDSetReferences" in res[0]:
+            raise Exception("Account '%s' appears to be an active DC, use 'samba-tool domain join' if you must re-create this account" % ctx.samname)
+        if (int(res[0]["userAccountControl"][0]) & (samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT|samba.dsdb.UF_SERVER_TRUST_ACCOUNT) == 0):
+            raise Exception("Account %s is not a domain member or a bare NT4 BDC, use 'samba-tool domain join' instead'" % ctx.samname)
+        
+        ctx.promote_from_dn = res[0].dn
+
 
     def find_dc(ctx, domain):
         '''find a writeable DC for the given domain'''
@@ -439,13 +462,29 @@ class dc_join(object):
                 "dnshostname" : ctx.dnshostname}
             if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2008:
                 rec['msDS-SupportedEncryptionTypes'] = str(samba.dsdb.ENC_ALL_TYPES)
+            elif ctx.promote_existing:
+                rec['msDS-SupportedEncryptionTypes'] = []
             if ctx.managedby:
                 rec["managedby"] = ctx.managedby
+            elif ctx.promote_existing:
+                rec["managedby"] = []
+
             if ctx.never_reveal_sid:
                 rec["msDS-NeverRevealGroup"] = ctx.never_reveal_sid
+            elif ctx.promote_existing:
+                rec["msDS-NeverRevealGroup"] = []
+                
             if ctx.reveal_sid:
                 rec["msDS-RevealOnDemandGroup"] = ctx.reveal_sid
-            ctx.samdb.add(rec)
+            elif ctx.promote_existing:
+                rec["msDS-RevealOnDemandGroup"] = []
+
+            if ctx.promote_existing:
+                if ctx.promote_from_dn != ctx.acct_dn:
+                    ctx.samdb.rename(ctx.promote_from_dn, ctx.acct_dn)
+                ctx.samdb.modify(ldb.Message.from_dict(ctx.samdb, rec, ldb.FLAG_MOD_REPLACE))
+            else:
+                ctx.samdb.add(rec)
 
         if ctx.krbtgt_dn:
             ctx.add_krbtgt_account()
@@ -490,7 +529,7 @@ class dc_join(object):
             for i in range(len(ctx.SPNs)):
                 ctx.SPNs[i] = ctx.SPNs[i].replace("$NTDSGUID", str(ctx.ntds_guid))
             m["servicePrincipalName"] = ldb.MessageElement(ctx.SPNs,
-                                                           ldb.FLAG_MOD_ADD,
+                                                           ldb.FLAG_MOD_REPLACE,
                                                            "servicePrincipalName")
             ctx.samdb.modify(m)
 
@@ -908,8 +947,11 @@ class dc_join(object):
             ctx.full_nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
             ctx.nc_list += ['DC=ForestDnsZones,%s' % ctx.root_dn]
 
-
-        ctx.cleanup_old_join()
+        if ctx.promote_existing:
+            ctx.promote_possible()
+        else:
+            ctx.cleanup_old_join()
+            
         try:
             ctx.join_add_objects()
             ctx.join_provision()
@@ -927,11 +969,12 @@ class dc_join(object):
 
 def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None, domain_critical_only=False,
-              machinepass=None, use_ntvfs=False, dns_backend=None):
+              machinepass=None, use_ntvfs=False, dns_backend=None,
+              promote_existing=False):
     """join as a RODC"""
 
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs, dns_backend)
+                  machinepass, use_ntvfs, dns_backend, promote_existing)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)
@@ -981,10 +1024,11 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
 def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
             targetdir=None, domain=None, domain_critical_only=False,
-            machinepass=None, use_ntvfs=False, dns_backend=None):
+            machinepass=None, use_ntvfs=False, dns_backend=None,
+            promote_existing=False):
     """join as a DC"""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
-                  machinepass, use_ntvfs, dns_backend)
+                  machinepass, use_ntvfs, dns_backend, promote_existing)
 
     lp.set("workgroup", ctx.domain_name)
     print("workgroup is %s" % ctx.domain_name)

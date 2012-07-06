@@ -126,6 +126,72 @@ class cmd_domain_info(Command):
             raise CommandError("Invalid IP address '" + address + "'!")
 
 
+class cmd_domain_dcpromo(Command):
+    """Promotes an existing domain member or NT4 PDC to an AD DC"""
+
+    synopsis = "%prog <dnsdomain> [DC|RODC] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+        Option("--server", help="DC to join", type=str),
+        Option("--site", help="site to join", type=str),
+        Option("--targetdir", help="where to store provision", type=str),
+        Option("--domain-critical-only",
+               help="only replicate critical domain objects",
+               action="store_true"),
+        Option("--machinepass", type=str, metavar="PASSWORD",
+               help="choose machine password (otherwise random)"),
+        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+               action="store_true"),
+        Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
+               choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+                   "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+                   "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
+               default="BIND9_DLZ")
+       ]
+
+    takes_args = ["domain", "role?"]
+
+    def run(self, domain, role=None, sambaopts=None, credopts=None,
+            versionopts=None, server=None, site=None, targetdir=None,
+            domain_critical_only=False, parent_domain=None, machinepass=None,
+            use_ntvfs=False, dns_backend=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        net = Net(creds, lp, server=credopts.ipaddress)
+
+        if site is None:
+            site = "Default-First-Site-Name"
+
+        netbios_name = lp.get("netbios name")
+
+        if not role is None:
+            role = role.upper()
+
+        if role == "DC":
+            join_DC(server=server, creds=creds, lp=lp, domain=domain,
+                    site=site, netbios_name=netbios_name, targetdir=targetdir,
+                    domain_critical_only=domain_critical_only,
+                    machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend, 
+                    promote_existing=True)
+            return
+        elif role == "RODC":
+            join_RODC(server=server, creds=creds, lp=lp, domain=domain,
+                      site=site, netbios_name=netbios_name, targetdir=targetdir,
+                      domain_critical_only=domain_critical_only,
+                      machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend,
+                      promote_existing=True)
+            return
+        else:
+            raise CommandError("Invalid role '%s' (possible values: DC, RODC)" % role)
+
+
 class cmd_domain_join(Command):
     """Joins domain as either member or backup domain controller"""
 
@@ -953,6 +1019,7 @@ class cmd_domain(SuperCommand):
         subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["info"] = cmd_domain_info()
     subcommands["join"] = cmd_domain_join()
+    subcommands["dcpromo"] = cmd_domain_dcpromo()
     subcommands["level"] = cmd_domain_level()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
     subcommands["classicupgrade"] = cmd_domain_classicupgrade()
