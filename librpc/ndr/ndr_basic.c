@@ -1247,16 +1247,21 @@ _PUBLIC_ void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_
 
 
 /*
-  push a DATA_BLOB onto the wire. 
-*/
+ * Push a DATA_BLOB onto the wire.
+ * 1) When called with LIBNDR_FLAG_ALIGN* alignment flags set, push padding
+ *    bytes _only_. The length is determined by the alignment required and the
+ *    current ndr offset.
+ * 2) When called with the LIBNDR_FLAG_REMAINING flag, push the byte array to
+ *    the ndr buffer.
+ * 3) Otherwise, push a uint32 length _and_ a corresponding byte array to the
+ *    ndr buffer.
+ */
 _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flags, DATA_BLOB blob)
 {
 	if (ndr->flags & LIBNDR_FLAG_REMAINING) {
 		/* nothing to do */
-	} else if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
-		if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
-			blob.length = 0;
-		} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+	} else if (ndr->flags & (LIBNDR_ALIGN_FLAGS & ~LIBNDR_FLAG_NOALIGN)) {
+		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 			blob.length = NDR_ALIGN(ndr, 2);
 		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
 			blob.length = NDR_ALIGN(ndr, 4);
@@ -1273,18 +1278,23 @@ _PUBLIC_ enum ndr_err_code ndr_push_DATA_BLOB(struct ndr_push *ndr, int ndr_flag
 }
 
 /*
-  pull a DATA_BLOB from the wire. 
-*/
+ * Pull a DATA_BLOB from the wire.
+ * 1) when called with LIBNDR_FLAG_ALIGN* alignment flags set, pull padding
+ *    bytes _only_. The length is determined by the alignment required and the
+ *    current ndr offset.
+ * 2) When called with the LIBNDR_FLAG_REMAINING flag, pull all remaining bytes
+ *    from the ndr buffer.
+ * 3) Otherwise, pull a uint32 length _and_ a corresponding byte array from the
+ *    ndr buffer.
+ */
 _PUBLIC_ enum ndr_err_code ndr_pull_DATA_BLOB(struct ndr_pull *ndr, int ndr_flags, DATA_BLOB *blob)
 {
 	uint32_t length = 0;
 
 	if (ndr->flags & LIBNDR_FLAG_REMAINING) {
 		length = ndr->data_size - ndr->offset;
-	} else if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
-		if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
-			length = 0;
-		} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+	} else if (ndr->flags & (LIBNDR_ALIGN_FLAGS & ~LIBNDR_FLAG_NOALIGN)) {
+		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 			length = NDR_ALIGN(ndr, 2);
 		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
 			length = NDR_ALIGN(ndr, 4);
