@@ -5585,6 +5585,10 @@ samba_cv_HAVE_LINUX_KERNEL_AIO=yes,samba_cv_HAVE_LINUX_KERNEL_AIO=no)
         esac
 fi
 
+if test x"$samba_cv_HAVE_AIO" = x"yes"; then
+  default_shared_modules="$default_shared_modules vfs_aio_posix"
+fi
+
 #################################################
 # check for sendfile support
 
@@ -6530,6 +6534,7 @@ SMB_MODULE(vfs_tsmsm, \$(VFS_TSMSM_OBJ), "bin/tsmsm.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aio_fork, \$(VFS_AIO_FORK_OBJ), "bin/aio_fork.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aio_pthread, \$(VFS_AIO_PTHREAD_OBJ), "bin/aio_pthread.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aio_posix, \$(VFS_AIO_POSIX_OBJ), "bin/aio_posix.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aio_linux, \$(VFS_AIO_LINUX_OBJ), "bin/aio_linux.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_preopen, \$(VFS_PREOPEN_OBJ), "bin/preopen.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_syncops, \$(VFS_SYNCOPS_OBJ), "bin/syncops.$SHLIBEXT", VFS)

@@ -1468,6 +1468,7 @@ main() {
 
     if conf.CONFIG_SET('HAVE_AIO') and Options.options.with_pthreadpool:
         default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))
+        default_shared_modules.extend(TO_LIST('vfs_aio_posix'))
 
     if conf.CONFIG_SET('HAVE_AIO') and conf.CONFIG_SET('HAVE_LINUX_KERNEL_AIO'):
         default_shared_modules.extend(TO_LIST('vfs_aio_linux'))

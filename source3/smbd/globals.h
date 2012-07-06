@@ -21,11 +21,8 @@
 #include "system/select.h"
 #include "librpc/gen_ndr/smbXsrv.h"
 
-#if defined(HAVE_AIO)
-struct aio_extra;
 extern int aio_pending_size;
 extern int outstanding_aio_calls;
-#endif
 
 #ifdef USE_DMAPI
 struct smbd_dmapi_context;

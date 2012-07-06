@@ -20,7 +20,6 @@
 #define _SMBD_SMBD_H
 
 struct dptr_struct;
-struct aio_extra;
 
 #include "smb_acls.h"
 #include "librpc/gen_ndr/smbXsrv.h"
