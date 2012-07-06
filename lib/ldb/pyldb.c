@@ -629,7 +629,7 @@ static PyObject *py_ldb_dn_concat(PyLdbDnObject *self, PyObject *py_other)
 	}
 	py_ret->mem_ctx = talloc_new(NULL);
 	py_ret->dn = ldb_dn_copy(py_ret->mem_ctx, dn);
-	ldb_dn_add_child(py_ret->dn, other);
+	ldb_dn_add_base(py_ret->dn, other);
 	return (PyObject *)py_ret;
 }
 

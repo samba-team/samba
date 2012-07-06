@@ -414,7 +414,7 @@ class DnTests(TestCase):
     def test_add(self):
         x = ldb.Dn(self.ldb, "dc=foo24")
         y = ldb.Dn(self.ldb, "bar=bla")
-        self.assertEquals("dc=foo24,bar=bla", str(y + x))
+        self.assertEquals("dc=foo24,bar=bla", str(x + y))
 
     def test_parse_ldif(self):
         msgs = self.ldb.parse_ldif("dn: foo=bar\n")
