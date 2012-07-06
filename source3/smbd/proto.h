@@ -89,6 +89,7 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				DATA_BLOB in_data,
 				bool write_through);
 bool cancel_smb2_aio(struct smb_request *smbreq);
+void aio_fsp_close(files_struct *fsp);
 int wait_for_aio_completion(files_struct *fsp);
 void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex);
 

@@ -26,7 +26,6 @@
 #include "tdb_compat.h"
 
 #if defined(HAVE_AIO)
-struct aio_extra *aio_list_head = NULL;
 struct tevent_signal *aio_signal_event = NULL;
 int aio_pending_size = 100;	/* tevent supports 100 signals SA_SIGINFO */
 int outstanding_aio_calls = 0;

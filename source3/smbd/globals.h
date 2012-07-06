@@ -23,7 +23,6 @@
 
 #if defined(HAVE_AIO)
 struct aio_extra;
-extern struct aio_extra *aio_list_head;
 extern struct tevent_signal *aio_signal_event;
 extern int aio_pending_size;
 extern int outstanding_aio_calls;

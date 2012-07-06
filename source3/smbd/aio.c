@@ -110,7 +110,6 @@ static int handle_aio_smb2_write_complete(struct aio_extra *aio_ex, int errcode)
 
 static int aio_extra_destructor(struct aio_extra *aio_ex)
 {
-	DLIST_REMOVE(aio_list_head, aio_ex);
 	outstanding_aio_calls--;
 	return 0;
 }
@@ -141,11 +140,68 @@ static struct aio_extra *create_aio_extra(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-	DLIST_ADD(aio_list_head, aio_ex);
 	talloc_set_destructor(aio_ex, aio_extra_destructor);
 	aio_ex->fsp = fsp;
 	outstanding_aio_calls++;
 	return aio_ex;
+}
+
+struct aio_req_fsp_link {
+	files_struct *fsp;
+	struct tevent_req *req;
+};
+
+static int aio_del_req_from_fsp(struct aio_req_fsp_link *lnk)
+{
+	unsigned i;
+	files_struct *fsp = lnk->fsp;
+	struct tevent_req *req = lnk->req;
+
+	for (i=0; i<fsp->num_aio_requests; i++) {
+		if (fsp->aio_requests[i] == req) {
+			break;
+		}
+	}
+	if (i == fsp->num_aio_requests) {
+		DEBUG(1, ("req %p not found in fsp %p\n", req, fsp));
+		return 0;
+	}
+	fsp->num_aio_requests -= 1;
+	fsp->aio_requests[i] = fsp->aio_requests[fsp->num_aio_requests];
+	return 0;
+}
+
+static bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
+{
+	size_t array_len;
+	struct aio_req_fsp_link *lnk;
+
+	lnk = talloc(req, struct aio_req_fsp_link);
+	if (lnk == NULL) {
+		return false;
+	}
+
+	array_len = talloc_array_length(fsp->aio_requests);
+	if (array_len <= fsp->num_aio_requests) {
+		struct tevent_req **tmp;
+
+		tmp = talloc_realloc(
+			fsp, fsp->aio_requests, struct tevent_req *,
+			fsp->num_aio_requests+1);
+		if (tmp == NULL) {
+			TALLOC_FREE(lnk);
+			return false;
+		}
+		fsp->aio_requests = tmp;
+	}
+	fsp->aio_requests[fsp->num_aio_requests] = req;
+	fsp->num_aio_requests += 1;
+
+	lnk->fsp = fsp;
+	lnk->req = req;
+	talloc_set_destructor(lnk, aio_del_req_from_fsp);
+
+	return true;
 }
 
 static void aio_pread_smb1_done(struct tevent_req *req);
@@ -242,6 +298,13 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 	tevent_req_set_callback(req, aio_pread_smb1_done, aio_ex);
+
+	if (!aio_add_req_to_fsp(fsp, req)) {
+		DEBUG(1, ("Could not add req to fsp\n"));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_RETRY;
+	}
 
 	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
@@ -420,6 +483,13 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	}
 	tevent_req_set_callback(req, aio_pwrite_smb1_done, aio_ex);
 
+	if (!aio_add_req_to_fsp(fsp, req)) {
+		DEBUG(1, ("Could not add req to fsp\n"));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_RETRY;
+	}
+
 	aio_ex->smbreq = talloc_move(aio_ex, &smbreq);
 
 	/* This should actually be improved to span the write. */
@@ -579,11 +649,12 @@ bool cancel_smb2_aio(struct smb_request *smbreq)
 		return false;
 	}
 
-	ret = SMB_VFS_AIO_CANCEL(aio_ex->fsp, &aio_ex->acb);
-	if (ret != AIO_CANCELED) {
-		return false;
-	}
+	/*
+	 * We let the aio request run. Setting fsp to NULL has the
+	 * effect that the _done routines don't send anything out.
+	 */
 
+	aio_ex->fsp = NULL;
 	return true;
 }
 
@@ -677,6 +748,13 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 	tevent_req_set_callback(req, aio_pread_smb2_done, aio_ex);
+
+	if (!aio_add_req_to_fsp(fsp, req)) {
+		DEBUG(1, ("Could not add req to fsp\n"));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_RETRY;
+	}
 
 	/* We don't need talloc_move here as both aio_ex and
 	 * smbreq are children of smbreq->smb2req. */
@@ -828,6 +906,13 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 	tevent_req_set_callback(req, aio_pwrite_smb2_done, aio_ex);
+
+	if (!aio_add_req_to_fsp(fsp, req)) {
+		DEBUG(1, ("Could not add req to fsp\n"));
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &aio_ex->lock);
+		TALLOC_FREE(aio_ex);
+		return NT_STATUS_RETRY;
+	}
 
 	/* We don't need talloc_move here as both aio_ex and
 	* smbreq are children of smbreq->smb2req. */
@@ -1204,110 +1289,16 @@ void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
 	}
 }
 
-/****************************************************************************
- We're doing write behind and the client closed the file. Wait up to 45
- seconds (my arbitrary choice) for the aio to complete. Return 0 if all writes
- completed, errno to return if not.
-*****************************************************************************/
-
-#define SMB_TIME_FOR_AIO_COMPLETE_WAIT 45
-
-int wait_for_aio_completion(files_struct *fsp)
+void aio_fsp_close(files_struct *fsp)
 {
-	struct aio_extra *aio_ex;
-	const SMB_STRUCT_AIOCB **aiocb_list;
-	int aio_completion_count = 0;
-	time_t start_time = time_mono(NULL);
-	int seconds_left;
+	unsigned i;
 
-	for (seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT;
-	     seconds_left >= 0;) {
-		int err = 0;
-		int i;
-		struct timespec ts;
-
-		aio_completion_count = 0;
-		for( aio_ex = aio_list_head; aio_ex; aio_ex = aio_ex->next) {
-			if (aio_ex->fsp == fsp) {
-				aio_completion_count++;
-			}
-		}
-
-		if (!aio_completion_count) {
-			return 0;
-		}
-
-		DEBUG(3,("wait_for_aio_completion: waiting for %d aio events "
-			 "to complete.\n", aio_completion_count ));
-
-		aiocb_list = SMB_MALLOC_ARRAY(const SMB_STRUCT_AIOCB *,
-					      aio_completion_count);
-		if (!aiocb_list) {
-			return ENOMEM;
-		}
-
-		for( i = 0, aio_ex = aio_list_head;
-		     aio_ex;
-		     aio_ex = aio_ex->next) {
-			if (aio_ex->fsp == fsp) {
-				aiocb_list[i++] = &aio_ex->acb;
-			}
-		}
-
-		/* Now wait up to seconds_left for completion. */
-		ts.tv_sec = seconds_left;
-		ts.tv_nsec = 0;
-
-		DEBUG(10,("wait_for_aio_completion: %d events, doing a wait "
-			  "of %d seconds.\n",
-			  aio_completion_count, seconds_left ));
-
-		err = SMB_VFS_AIO_SUSPEND(fsp, aiocb_list,
-					  aio_completion_count, &ts);
-
-		DEBUG(10,("wait_for_aio_completion: returned err = %d, "
-			  "errno = %s\n", err, strerror(errno) ));
-
-		if (err == -1 && errno == EAGAIN) {
-			DEBUG(0,("wait_for_aio_completion: aio_suspend timed "
-				 "out waiting for %d events after a wait of "
-				 "%d seconds\n", aio_completion_count,
-				 seconds_left));
-			/* Timeout. */
-			SAFE_FREE(aiocb_list);
-			/* We're hosed here - IO may complete
-			   and trample over memory if we free
-			   the aio_ex struct, but if we don't
-			   we leak IO requests. I think smb_panic()
-			   if the right thing to do here. JRA.
-			*/
-			smb_panic("AIO suspend timed out - cannot continue.");
-			return EIO;
-		}
-
-		/* One or more events might have completed - process them if
-		 * so. */
-		for( i = 0; i < aio_completion_count; i++) {
-			aio_ex = (struct aio_extra *)aiocb_list[i]->aio_sigevent.sigev_value.sival_ptr;
-
-			if (!handle_aio_completed(aio_ex, &err)) {
-				continue;
-			}
-			TALLOC_FREE(aio_ex);
-		}
-
-		SAFE_FREE(aiocb_list);
-		seconds_left = SMB_TIME_FOR_AIO_COMPLETE_WAIT
-			- (time_mono(NULL) - start_time);
+	for (i=0; i<fsp->num_aio_requests; i++) {
+		struct tevent_req *req = fsp->aio_requests[i];
+		struct aio_extra *aio_ex = tevent_req_callback_data(
+			req, struct aio_extra);
+		aio_ex->fsp = NULL;
 	}
-
-	/* We timed out - we don't know why. Return ret if already an error,
-	 * else EIO. */
-	DEBUG(10,("wait_for_aio_completion: aio_suspend timed out waiting "
-		  "for %d events\n",
-		  aio_completion_count));
-
-	return EIO;
 }
 
 #else
@@ -1358,6 +1349,11 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				bool write_through)
 {
 	return NT_STATUS_RETRY;
+}
+
+void aio_fsp_close(files_struct *fsp)
+{
+	return;
 }
 
 int wait_for_aio_completion(files_struct *fsp)
