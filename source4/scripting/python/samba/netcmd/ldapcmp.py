@@ -440,6 +440,7 @@ class LDAPObject(object):
                 # Default Naming Context
                 "lastLogon", "lastLogoff", "badPwdCount", "logonCount", "badPasswordTime", "modifiedCount",
                 "operatingSystemVersion","oEMInformation",
+                "ridNextRID", "rIDPreviousAllocationPool",
                 # Configuration Naming Context
                 "repsFrom", "dSCorePropagationData", "msExchServer1HighestUSN",
                 "replUpToDateVector", "repsTo", "whenChanged", "uSNChanged", "uSNCreated",
