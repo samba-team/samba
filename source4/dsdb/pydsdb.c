@@ -963,6 +963,28 @@ static PyObject *py_dsdb_get_nc_root(PyObject *self, PyObject *args)
 	return py_nc_root;
 }
 
+static PyObject *py_dsdb_get_wellknown_dn(PyObject *self, PyObject *args)
+{
+	struct ldb_context *ldb;
+	struct ldb_dn *nc_dn, *wk_dn;
+	char *wkguid;
+	PyObject *py_ldb, *py_nc_dn, *py_wk_dn;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "OOs", &py_ldb, &py_nc_dn, &wkguid))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	PyErr_LDB_DN_OR_RAISE(py_nc_dn, nc_dn);
+
+	ret = dsdb_wellknown_dn(ldb, ldb, nc_dn, wkguid, &wk_dn);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+
+	py_wk_dn = pyldb_Dn_FromDn(wk_dn);
+	talloc_unlink(ldb, wk_dn);
+	return py_wk_dn;
+}
+
 
 /*
   call into samdb_rodc()
@@ -1069,6 +1091,7 @@ static PyMethodDef py_dsdb_methods[] = {
 		NULL },
 	{ "_dsdb_get_partitions_dn", (PyCFunction)py_dsdb_get_partitions_dn, METH_VARARGS, NULL },
 	{ "_dsdb_get_nc_root", (PyCFunction)py_dsdb_get_nc_root, METH_VARARGS, NULL },
+	{ "_dsdb_get_wellknown_dn", (PyCFunction)py_dsdb_get_wellknown_dn, METH_VARARGS, NULL },
 	{ "_dsdb_DsReplicaAttribute", (PyCFunction)py_dsdb_DsReplicaAttribute, METH_VARARGS, NULL },
 	{ "_dsdb_normalise_attributes", (PyCFunction)py_dsdb_normalise_attributes, METH_VARARGS, NULL },
 	{ NULL }
@@ -1249,4 +1272,16 @@ void initdsdb(void)
 	ADD_DSDB_STRING(DSDB_SYNTAX_STRING_DN);
 	ADD_DSDB_STRING(DSDB_SYNTAX_OR_NAME);
 	ADD_DSDB_STRING(DSDB_CONTROL_DBCHECK);
+
+	ADD_DSDB_STRING(DS_GUID_COMPUTERS_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_DELETED_OBJECTS_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_DOMAIN_CONTROLLERS_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_FOREIGNSECURITYPRINCIPALS_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_INFRASTRUCTURE_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_LOSTANDFOUND_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_MICROSOFT_PROGRAM_DATA_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_NTDS_QUOTAS_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_PROGRAM_DATA_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_SYSTEMS_CONTAINER);
+	ADD_DSDB_STRING(DS_GUID_USERS_CONTAINER);
 }

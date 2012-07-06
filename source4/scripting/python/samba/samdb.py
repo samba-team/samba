@@ -744,6 +744,9 @@ accountExpires: %u
     def get_nc_root(self, dn):
         return dsdb._dsdb_get_nc_root(self, dn)
 
+    def get_wellknown_dn(self, nc_root, wkguid):
+        return dsdb._dsdb_get_wellknown_dn(self, nc_root, wkguid)
+
     def set_minPwdAge(self, value):
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())
