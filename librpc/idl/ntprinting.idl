@@ -26,7 +26,7 @@ interface ntprinting
 		uint32 bottom;
 	} ntprinting_form;
 
-	void decode_ntprinting_form(
+	[public] void decode_ntprinting_form(
 		[in] ntprinting_form form
 		);
 
@@ -46,7 +46,7 @@ interface ntprinting
 		[flag(STR_UTF8|STR_NOTERM|NDR_REMAINING)] string_array dependent_files;
 	} ntprinting_driver;
 
-	void decode_ntprinting_driver(
+	[public] void decode_ntprinting_driver(
 		[in] ntprinting_driver driver
 		);
 
@@ -146,7 +146,7 @@ interface ntprinting
 		ntprinting_printer_data printer_data[count];
 	} ntprinting_printer;
 
-	void decode_ntprinting_printer(
+	[public] void decode_ntprinting_printer(
 		[in] ntprinting_printer printer
 		);
 }
