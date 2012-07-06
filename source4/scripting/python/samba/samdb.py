@@ -741,6 +741,9 @@ accountExpires: %u
     def get_partitions_dn(self):
         return dsdb._dsdb_get_partitions_dn(self)
 
+    def get_nc_root(self, dn):
+        return dsdb._dsdb_get_nc_root(self, dn)
+
     def set_minPwdAge(self, value):
         m = ldb.Message()
         m.dn = ldb.Dn(self, self.domain_dn())

@@ -942,6 +942,28 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 }
 
 
+static PyObject *py_dsdb_get_nc_root(PyObject *self, PyObject *args)
+{
+	struct ldb_context *ldb;
+	struct ldb_dn *dn, *nc_root;
+	PyObject *py_ldb, *py_ldb_dn, *py_nc_root;
+	int ret;
+
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_ldb_dn))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	PyErr_LDB_DN_OR_RAISE(py_ldb_dn, dn);
+
+	ret = dsdb_find_nc_root(ldb, ldb, dn, &nc_root);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+
+	py_nc_root = pyldb_Dn_FromDn(nc_root);
+	talloc_unlink(ldb, nc_root);
+	return py_nc_root;
+}
+
+
 /*
   call into samdb_rodc()
  */
@@ -1046,6 +1068,7 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
 	{ "_dsdb_get_partitions_dn", (PyCFunction)py_dsdb_get_partitions_dn, METH_VARARGS, NULL },
+	{ "_dsdb_get_nc_root", (PyCFunction)py_dsdb_get_nc_root, METH_VARARGS, NULL },
 	{ "_dsdb_DsReplicaAttribute", (PyCFunction)py_dsdb_DsReplicaAttribute, METH_VARARGS, NULL },
 	{ "_dsdb_normalise_attributes", (PyCFunction)py_dsdb_normalise_attributes, METH_VARARGS, NULL },
 	{ NULL }
