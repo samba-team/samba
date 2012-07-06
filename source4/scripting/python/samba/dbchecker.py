@@ -50,6 +50,7 @@ class dbcheck(object):
         self.fix_all_orphaned_backlinks = False
         self.fix_rmd_flags = False
         self.seize_fsmo_role = False
+        self.move_to_lost_and_found = False
         self.in_transaction = in_transaction
         self.infrastructure_dn = ldb.Dn(samdb, "CN=Infrastructure," + samdb.domain_dn())
         self.naming_dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
@@ -120,6 +121,23 @@ class dbcheck(object):
         try:
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.modify(m, controls=controls, validate=validate)
+        except Exception, err:
+            self.report("%s : %s" % (msg, err))
+            return False
+        return True
+
+    def do_rename(self, from_dn, to_rdn, to_base, controls, msg):
+        '''perform a modify with optional verbose output'''
+        if self.verbose:
+            self.report("""dn: %s
+changeType: modrdn
+newrdn: %s
+deleteOldRdn: 1
+newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
+        try:
+            to_dn = to_rdn + to_base
+            controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
+            self.samdb.rename(from_dn, to_dn, controls=controls)
         except Exception, err:
             self.report("%s : %s" % (msg, err))
             return False
@@ -332,6 +350,21 @@ class dbcheck(object):
         if self.do_modify(m, [],
                           "Failed to sieze role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName)):
             self.report("Siezed role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
+
+    def err_missing_parent(self, obj):
+        '''handle a missing parent'''
+        self.report("ERROR: parent object not found for %s" % (obj.dn))
+        if not self.confirm_all('Move object %s into LostAndFound?' % (obj.dn), 'move_to_lost_and_found'):
+            self.report('Not moving object %s into LostAndFound' % (obj.dn))
+            return
+
+        nc_root = self.samdb.get_nc_root(obj.dn);
+        lost_and_found = self.samdb.get_wellknown_dn(nc_root, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
+        new_dn = ldb.Dn(self.samdb, str(obj.dn))
+        new_dn.remove_base_components(len(new_dn) - 1)
+        if self.do_rename(obj.dn, new_dn, lost_and_found, ["show_deleted:0", "relax:0"],
+                          "Failed to rename object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found)):
+            self.report("Renamed object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found))
 
     def find_revealed_link(self, dn, attrname, guid):
         '''return a revealed link in an object'''
@@ -591,6 +624,17 @@ class dbcheck(object):
             if "fSMORoleOwner" not in obj:
                 self.err_no_fsmoRoleOwner(obj)
                 error_count += 1
+
+        try:
+            if dn != self.samdb.get_root_basedn():
+                res = self.samdb.search(base=dn.parent(), scope=ldb.SCOPE_BASE,
+                                        controls=["show_recycled:1", "show_deleted:1"])
+        except ldb.LdbError, (enum, estr):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                self.err_missing_parent(obj)
+                error_count += 1
+            else:
+                raise
 
         return error_count
 
