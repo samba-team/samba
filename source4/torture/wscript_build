@@ -33,7 +33,7 @@ bld.RECURSE('libnetapi')
 bld.RECURSE('libsmbclient')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
-	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c ndr/nbt.c ndr/ntlmssp.c ndr/backupkey.c',
+	source='ndr/ndr.c ndr/winreg.c ndr/atsvc.c ndr/lsa.c ndr/epmap.c ndr/dfs.c ndr/netlogon.c ndr/drsuapi.c ndr/spoolss.c ndr/ntprinting.c ndr/samr.c ndr/dfsblob.c ndr/drsblobs.c ndr/nbt.c ndr/ntlmssp.c ndr/backupkey.c',
 	autoproto='ndr/proto.h',
 	deps='torture'
 	)
