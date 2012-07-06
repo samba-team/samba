@@ -966,6 +966,78 @@ sub provision_rpc_proxy($$$)
 	return $ret;
 }
 
+sub provision_promoted_vampire_dc($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+	print "PROVISIONING VAMPIRE DC...";
+
+	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
+	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
+					       "promotedvdc",
+					       "SAMBADOMAIN",
+					       "samba.example.com",
+					       "2008",
+					       $dcvars->{PASSWORD},
+					       $dcvars->{SERVER_IP});
+
+	$ctx->{smb_conf_extra_options} = "
+	max xmit = 32K
+	server max protocol = SMB2
+
+[sysvol]
+	path = $ctx->{statedir}/sysvol
+	read only = yes
+
+[netlogon]
+	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
+	read only = no
+
+";
+
+	my $ret = $self->provision_raw_step1($ctx);
+	unless ($ret) {
+		return undef;
+	}
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} MEMBER --realm=$dcvars->{REALM}";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+	$cmd .= " --machinepass=machine$ret->{password}";
+
+	unless (system($cmd) == 0) {
+		warn("Join failed\n$cmd");
+		return undef;
+	}
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$cmd .= "$samba_tool domain dcpromo $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
+	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+	$cmd .= " --machinepass=machine$ret->{password}";
+
+	unless (system($cmd) == 0) {
+		warn("Join failed\n$cmd");
+		return undef;
+	}
+
+	$ret->{PROMOTED_VAMPIRE_DC_SERVER} = $ret->{SERVER};
+	$ret->{PROMOTED_VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{PROMOTED_VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+
+	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+
+	return $ret;
+}
+
 sub provision_vampire_dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
@@ -1486,6 +1558,11 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{dc});
+	} elsif ($envname eq "promoted_vampire_dc") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_promoted_vampire_dc("$path/promoted_vampire_dc", $self->{vars}->{dc});
 	} elsif ($envname eq "subdom_dc") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1659,7 +1736,59 @@ sub setup_vampire_dc($$$)
 		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
 		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{VAMPIRE_DC_SERVER}";
+		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SERVER}";
+		$cmd .= " $dc_vars->{CONFIGURATION}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		# replicate Configuration NC
+		my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
+		unless(system($cmd_repl) == 0) {
+			warn("Failed to replicate\n$cmd_repl");
+			return undef;
+		}
+		# replicate Default NC
+		$cmd_repl = "$cmd \"$base_dn\"";
+		unless(system($cmd_repl) == 0) {
+			warn("Failed to replicate\n$cmd_repl");
+			return undef;
+		}
+	}
+
+	return $env;
+}
+
+sub setup_promoted_vampire_dc($$$)
+{
+	my ($self, $path, $dc_vars) = @_;
+
+	my $env = $self->provision_promoted_vampire_dc($path, $dc_vars);
+
+	if (defined $env) {
+		$self->check_or_start($env, "single");
+
+		$self->wait_for_start($env);
+
+		$self->{vars}->{promoted_vampire_dc} = $env;
+
+		# force replicated DC to update repsTo/repsFrom
+		# for vampired partitions
+		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+		my $cmd = "";
+		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
+		$cmd .= " $env->{CONFIGURATION}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		unless (system($cmd) == 0) {
+			warn("Failed to exec kcc\n$cmd");
+			return undef;
+		}
+
+		# as 'vampired' dc may add data in its local replica
+		# we need to synchronize data between DCs
+		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
+		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		# replicate Configuration NC
