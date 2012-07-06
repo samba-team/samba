@@ -203,6 +203,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
 	struct ldb_val guid_value;
+	struct ldb_val parent_guid_value;
 	NTTIME whenChanged = 0;
 	time_t whenChanged_t;
 	const char *whenChanged_s;
@@ -375,8 +376,18 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		return ntstatus_to_werror(nt_status);
 	}
 
+	if (in->parent_object_guid) {
+		nt_status = GUID_to_ndr_blob(in->parent_object_guid, msg, &parent_guid_value);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ntstatus_to_werror(nt_status);
+		}
+	} else {
+		parent_guid_value = data_blob_null;
+	}
+
 	out->msg		= msg;
 	out->guid_value		= guid_value;
+	out->parent_guid_value	= parent_guid_value;
 	out->when_changed	= whenChanged_s;
 	out->meta_data		= md;
 	return WERR_OK;

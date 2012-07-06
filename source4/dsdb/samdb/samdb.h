@@ -129,6 +129,7 @@ struct dsdb_control_password_change {
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
 	struct ldb_val guid_value;
+	struct ldb_val parent_guid_value;
 	const char *when_changed;
 	struct replPropertyMetaDataBlob *meta_data;
 };

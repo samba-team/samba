@@ -3671,6 +3671,122 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	return ldb_next_request(ar->module, change_req);
 }
 
+static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request *req,
+							      struct ldb_reply *ares)
+{
+	struct replmd_replicated_request *ar = talloc_get_type(req->context,
+					       struct replmd_replicated_request);
+	int ret;
+
+	if (!ares) {
+		return ldb_module_done(ar->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS &&
+	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		return ldb_module_done(ar->req, ares->controls,
+					ares->response, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+	{
+		struct ldb_message *parent_msg = ares->message;
+		struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
+		struct ldb_dn *parent_dn;
+		int comp_num = ldb_dn_get_comp_num(msg->dn);
+		if (comp_num > 1) {
+			if (!ldb_dn_remove_base_components(msg->dn, comp_num - 1)) {
+				talloc_free(ares);
+				return ldb_module_done(ar->req, NULL, NULL, ldb_module_operr(ar->module));
+			}
+		}
+		if (!ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")
+		    && ldb_msg_check_string_attribute(parent_msg, "isDeleted", "TRUE")) {
+			/* Per MS-DRSR 4.1.10.6.10
+			 * FindBestParentObject we need to move this
+			 * new object under a deleted object to
+			 * lost-and-found */
+			
+			ret = dsdb_wellknown_dn(ldb_module_get_ctx(ar->module), msg,
+						ldb_get_default_basedn(ldb_module_get_ctx(ar->module)),
+						DS_GUID_LOSTANDFOUND_CONTAINER,
+						&parent_dn);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ar->req, NULL, NULL, ldb_module_operr(ar->module));
+			}
+		} else {
+			parent_dn = parent_msg->dn;
+		}
+		if (!ldb_dn_add_base(msg->dn, parent_dn)) {
+			talloc_free(ares);
+			return ldb_module_done(ar->req, NULL, NULL, ldb_module_operr(ar->module));
+		}
+		break;
+	}
+	case LDB_REPLY_REFERRAL:
+		/* we ignore referrals */
+		break;
+
+	case LDB_REPLY_DONE:
+		ret = replmd_replicated_apply_add(ar);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ar->req, NULL, NULL, ret);
+		}
+	}
+
+	talloc_free(ares);
+	return LDB_SUCCESS;
+}
+
+/*
+ * Look for the parent object, so we put the new object in the right place
+ */
+
+static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_request *ar)
+{
+	struct ldb_context *ldb;
+	int ret;
+	char *tmp_str;
+	char *filter;
+	struct ldb_request *search_req;
+	static const char *attrs[] = {"isDeleted", NULL};
+
+	ldb = ldb_module_get_ctx(ar->module);
+
+	if (!ar->objs->objects[ar->index_current].parent_guid_value.data) {
+		return replmd_replicated_apply_add(ar);
+	}
+
+	tmp_str = ldb_binary_encode(ar, ar->objs->objects[ar->index_current].parent_guid_value);
+	if (!tmp_str) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+
+	filter = talloc_asprintf(ar, "(objectGUID=%s)", tmp_str);
+	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	talloc_free(tmp_str);
+
+	ret = ldb_build_search_req(&search_req,
+				   ldb,
+				   ar,
+				   ar->objs->partition_dn,
+				   LDB_SCOPE_SUBTREE,
+				   filter,
+				   attrs,
+				   NULL,
+				   ar,
+				   replmd_replicated_apply_search_for_parent_callback,
+				   ar->req);
+	LDB_REQ_SET_LOCATION(search_req);
+
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
+				      true, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(ar->module, search_req);
+}
+
 /*
   handle renames that come in over DRS replication
  */
@@ -3964,7 +4080,7 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 		if (ar->search_msg != NULL) {
 			ret = replmd_replicated_apply_merge(ar);
 		} else {
-			ret = replmd_replicated_apply_add(ar);
+			ret = replmd_replicated_apply_search_for_parent(ar);
 		}
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ar->req, NULL, NULL, ret);
