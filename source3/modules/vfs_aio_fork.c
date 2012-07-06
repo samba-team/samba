@@ -24,6 +24,7 @@
 #include "system/shmem.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include <aio.h>
 
 #ifndef MAP_FILE
 #define MAP_FILE 0

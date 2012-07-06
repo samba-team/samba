@@ -25,29 +25,17 @@
 
 #if defined(HAVE_AIO)
 
-/* The signal we'll use to signify aio done. */
-#ifndef RT_SIGNAL_AIO
-#define RT_SIGNAL_AIO	(SIGRTMIN+3)
-#endif
-
-#ifndef HAVE_STRUCT_SIGEVENT_SIGEV_VALUE_SIVAL_PTR
-#ifdef HAVE_STRUCT_SIGEVENT_SIGEV_VALUE_SIGVAL_PTR
-#define sival_int	sigval_int
-#define sival_ptr	sigval_ptr
-#endif
-#endif
-
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
 *****************************************************************************/
 
 struct aio_extra {
-	struct aio_extra *next, *prev;
-	SMB_STRUCT_AIOCB acb;
 	files_struct *fsp;
 	struct smb_request *smbreq;
 	DATA_BLOB outbuf;
 	struct lock_struct lock;
+	size_t nbyte;
+	off_t offset;
 	bool write_through;
 };
 
@@ -173,7 +161,6 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     size_t smb_maxcnt)
 {
 	struct aio_extra *aio_ex;
-	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	struct tevent_req *req;
@@ -231,17 +218,8 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
-	a = &aio_ex->acb;
-
-	/* Now set up the aio record for the read call. */
-
-	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = smb_buf(aio_ex->outbuf.data);
-	a->aio_nbytes = smb_maxcnt;
-	a->aio_offset = startpos;
-	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
+	aio_ex->nbyte = smb_maxcnt;
+	aio_ex->offset = startpos;
 
 	req = SMB_VFS_PREAD_SEND(aio_ex, fsp->conn->sconn->ev_ctx,
 				 fsp, smb_buf(aio_ex->outbuf.data),
@@ -315,12 +293,12 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 		SSVAL(outbuf,smb_vwv7, ((nread >> 16) & 1));
 		SSVAL(smb_buf(outbuf), -2, nread);
 
-		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		aio_ex->fsp->fh->pos = aio_ex->offset + nread;
 		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
 
 		DEBUG( 3, ("handle_aio_read_complete file %s max=%d "
 			   "nread=%d\n", fsp_str_dbg(fsp),
-			   (int)aio_ex->acb.aio_nbytes, (int)nread ) );
+			   (int)aio_ex->nbyte, (int)nread ) );
 
 	}
 	smb_setlen(outbuf, outsize - 4);
@@ -334,7 +312,7 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 
 	DEBUG(10, ("handle_aio_read_complete: scheduled aio_read completed "
 		   "for file %s, offset %.0f, len = %u\n",
-		   fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
+		   fsp_str_dbg(fsp), (double)aio_ex->offset,
 		   (unsigned int)nread));
 
 	TALLOC_FREE(aio_ex);
@@ -353,7 +331,6 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 			      size_t numtowrite)
 {
 	struct aio_extra *aio_ex;
-	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	struct tevent_req *req;
@@ -415,17 +392,8 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
-	a = &aio_ex->acb;
-
-	/* Now set up the aio record for the write call. */
-
-	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = discard_const_p(char, data);
-	a->aio_nbytes = numtowrite;
-	a->aio_offset = startpos;
-	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
+	aio_ex->nbyte = numtowrite;
+	aio_ex->offset = startpos;
 
 	req = SMB_VFS_PWRITE_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				  data, numtowrite, startpos);
@@ -485,7 +453,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 		req, struct aio_extra);
 	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = (char *)aio_ex->outbuf.data;
-	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
+	ssize_t numtowrite = aio_ex->nbyte;
 	ssize_t nwritten;
 	int err;
 
@@ -565,7 +533,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 				  fsp_str_dbg(fsp), nt_errstr(status)));
 		}
 
-		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
+		aio_ex->fsp->fh->pos = aio_ex->offset + nwritten;
 	}
 
 	show_msg(outbuf);
@@ -579,7 +547,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 
 	DEBUG(10, ("handle_aio_write_complete: scheduled aio_write completed "
 		   "for file %s, offset %.0f, requested %u, written = %u\n",
-		   fsp_str_dbg(fsp), (double)aio_ex->acb.aio_offset,
+		   fsp_str_dbg(fsp), (double)aio_ex->offset,
 		   (unsigned int)numtowrite, (unsigned int)nwritten));
 
 	TALLOC_FREE(aio_ex);
@@ -627,7 +595,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 				size_t smb_maxcnt)
 {
 	struct aio_extra *aio_ex;
-	SMB_STRUCT_AIOCB *a;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 	struct tevent_req *req;
 
@@ -679,17 +646,8 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
-	a = &aio_ex->acb;
-
-	/* Now set up the aio record for the read call. */
-
-	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = preadbuf->data;
-	a->aio_nbytes = smb_maxcnt;
-	a->aio_offset = startpos;
-	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
+	aio_ex->nbyte = smb_maxcnt;
+	aio_ex->offset = startpos;
 
 	req = SMB_VFS_PREAD_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				 preadbuf->data, smb_maxcnt, startpos);
@@ -755,7 +713,7 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 	status = smb2_read_complete(subreq, nread, err);
 
 	if (nread > 0) {
-		fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		fsp->fh->pos = aio_ex->offset + nread;
 		fsp->fh->position_information = fsp->fh->pos;
 	}
 
@@ -763,7 +721,7 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 		   "for file %s, offset %.0f, len = %u "
 		   "(errcode = %d, NTSTATUS = %s)\n",
 		   fsp_str_dbg(aio_ex->fsp),
-		   (double)aio_ex->acb.aio_offset,
+		   (double)aio_ex->offset,
 		   (unsigned int)nread,
 		   err, nt_errstr(status)));
 
@@ -788,7 +746,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				bool write_through)
 {
 	struct aio_extra *aio_ex = NULL;
-	SMB_STRUCT_AIOCB *a = NULL;
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 	struct tevent_req *req;
 
@@ -836,17 +793,8 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 
-	a = &aio_ex->acb;
-
-	/* Now set up the aio record for the write call. */
-
-	a->aio_fildes = fsp->fh->fd;
-	a->aio_buf = in_data.data;
-	a->aio_nbytes = in_data.length;
-	a->aio_offset = in_offset;
-	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
-	a->aio_sigevent.sigev_value.sival_ptr = aio_ex;
+	aio_ex->nbyte = in_data.length;
+	aio_ex->offset = in_offset;
 
 	req = SMB_VFS_PWRITE_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
 				  in_data.data, in_data.length, in_offset);
@@ -897,7 +845,7 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 {
 	struct aio_extra *aio_ex = tevent_req_callback_data(
 		req, struct aio_extra);
-	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
+	ssize_t numtowrite = aio_ex->nbyte;
 	struct tevent_req *subreq = aio_ex->smbreq->smb2req->subreq;
 	files_struct *fsp = aio_ex->fsp;
 	NTSTATUS status;
@@ -927,7 +875,7 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 		   "for file %s, offset %.0f, requested %u, "
 		   "written = %u (errcode = %d, NTSTATUS = %s)\n",
 		   fsp_str_dbg(fsp),
-		   (double)aio_ex->acb.aio_offset,
+		   (double)aio_ex->offset,
 		   (unsigned int)numtowrite,
 		   (unsigned int)nwritten,
 		   err, nt_errstr(status)));

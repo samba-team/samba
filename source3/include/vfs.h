@@ -451,6 +451,12 @@ enum vfs_fallocate_mode {
 };
 
 /*
+ * forward declaration required here until the posix aio functions
+ * leave the VFS
+ */
+struct aiocb;
+
+/*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
     In particular, if new operations are added to vfs_ops, appropriate constants

@@ -35,6 +35,10 @@
 #include <sys/prctl.h>
 #endif
 
+#if defined(HAVE_AIO_H)
+#include <aio.h>
+#endif
+
 /*
    The idea is that this file will eventually have wrappers around all
    important system calls in samba. The aims are:
