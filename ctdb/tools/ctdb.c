@@ -5783,7 +5783,7 @@ static const struct {
 	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file> [dbname]"},
 	{ "dumpdbbackup",    control_dumpdbbackup,      false,	true,  "dump database backup from a file.", "<file>"},
 	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
-	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
+	{ "recmaster",        control_recmaster,        true,	false, "show the pnn for the recovery master."},
 	{ "scriptstatus",     control_scriptstatus,     true,	false, "show the status of the monitoring scripts (or all scripts)", "[all]"},
 	{ "enablescript",     control_enablescript,  false,	false, "enable an eventscript", "<script>"},
 	{ "disablescript",    control_disablescript,  false,	false, "disable an eventscript", "<script>"},
