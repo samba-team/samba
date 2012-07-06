@@ -922,9 +922,6 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 	struct ldb_context *ldb;
 	struct ldb_dn *dn;
 	PyObject *py_ldb, *ret;
-	PyObject *mod;
-
-	mod = PyImport_ImportModule("ldb");
 
 	if (!PyArg_ParseTuple(args, "O", &py_ldb))
 		return NULL;
