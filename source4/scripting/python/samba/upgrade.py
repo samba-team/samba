@@ -619,14 +619,24 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
 
         user = s3db.getsampwnam(username)
         acct_type = (user.acct_ctrl & (samr.ACB_NORMAL|samr.ACB_WSTRUST|samr.ACB_SVRTRUST|samr.ACB_DOMTRUST))
-        if (acct_type == samr.ACB_NORMAL or acct_type == samr.ACB_WSTRUST or acct_type == samr.ACB_SVRTRUST):
+        if (acct_type == samr.ACB_NORMAL or acct_type == samr.ACB_WSTRUST):
             pass
+
+        elif acct_type == samr.ACB_SVRTRUST:
+            logger.warn("  Demoting BDC account trust for %s, this DC must be elevated to an AD DC using 'samba-tool domain promote'" % username[:-1])
+            user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_SVRTRUST) | samr.ACB_WSTRUST
+
         elif acct_type == samr.ACB_DOMTRUST:
             logger.warn("  Skipping inter-domain trust from domain %s, this trust must be re-created as an AD trust" % username[:-1])
-            continue
+
         elif acct_type == (samr.ACB_NORMAL|samr.ACB_WSTRUST) and username[-1] == '$':
             logger.warn("  Fixing account %s which had both ACB_NORMAL (U) and ACB_WSTRUST (W) set.  Account will be marked as ACB_WSTRUST (W), i.e. as a domain member" % username)
             user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_NORMAL)
+
+        elif acct_type == (samr.ACB_NORMAL|samr.ACB_SVRTRUST) and username[-1] == '$':
+            logger.warn("  Fixing account %s which had both ACB_NORMAL (U) and ACB_SVRTRUST (S) set.  Account will be marked as ACB_WSTRUST (S), i.e. as a domain member" % username)
+            user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_NORMAL)
+
         else:
             raise ProvisioningError("""Failed to upgrade due to invalid account %s, account control flags 0x%08X must have exactly one of
 ACB_NORMAL (N, 0x%08X), ACB_WSTRUST (W 0x%08X), ACB_SVRTRUST (S 0x%08X) or ACB_DOMTRUST (D 0x%08X).
