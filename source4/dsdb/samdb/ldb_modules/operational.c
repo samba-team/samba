@@ -309,9 +309,9 @@ static int construct_parent_guid(struct ldb_module *module,
 
 	/* not NC, so the object should have a parent*/
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		DEBUG(4,(__location__ ": Parent dn for %s does not exist \n",
-			 ldb_dn_get_linearized(msg->dn)));
-		return ldb_operr(ldb_module_get_ctx(module));
+		return ldb_error(ldb_module_get_ctx(module), LDB_ERR_OPERATIONS_ERROR, 
+				 talloc_asprintf(msg, "Parent dn for %s does not exist", 
+						 ldb_dn_get_linearized(msg->dn)));
 	} else if (ret != LDB_SUCCESS) {
 		return ret;
 	}
