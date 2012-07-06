@@ -54,4 +54,6 @@ WERROR reg_setvalue_wrap(struct samba3_registry_key *key, const char *name,
 			 uint32_t type, const DATA_BLOB data);
 WERROR reg_init_wrap(void);
 
+WERROR reg_open_samba3(TALLOC_CTX *mem_ctx, struct registry_context **ctx);
+
 #endif
