@@ -54,6 +54,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int
 				uint32_t ptr = 0;
 				ptr = IVAL(ndr->data, ndr->offset);
 				if (ptr == 0) {
+					ndr->offset = ndr->offset + 4;
 					break;
 				}
 				r->printer_data = talloc_realloc(ndr, r->printer_data, struct ntprinting_printer_data, r->count + 1);
