@@ -3387,7 +3387,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* grap the nodemap from the recovery master to check if it is banned */
+	/* get nodemap from the recovery master to check if it is inactive */
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
 				   mem_ctx, &recmaster_nodemap);
 	if (ret != 0) {
@@ -3397,7 +3397,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
-	if (recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+	if ((recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) &&
+	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
 		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
 		force_election(rec, pnn, nodemap);
 		return;
