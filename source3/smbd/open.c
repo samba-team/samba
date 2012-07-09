@@ -40,6 +40,20 @@ struct deferred_open_record {
 };
 
 /****************************************************************************
+ Check two stats have identical dev and ino fields.
+****************************************************************************/
+
+static bool check_same_dev_ino(const SMB_STRUCT_STAT *sbuf1,
+			const SMB_STRUCT_STAT *sbuf2)
+{
+	if (sbuf1->st_ex_dev != sbuf2->st_ex_dev ||
+			sbuf1->st_ex_ino != sbuf2->st_ex_ino) {
+		return false;
+	}
+	return true;
+}
+
+/****************************************************************************
  If the requester wanted DELETE_ACCESS and was rejected because
  the file ACL didn't include DELETE_ACCESS, see if the parent ACL
  overrides this.
@@ -2745,8 +2759,7 @@ bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
 {
 	if (sbuf1->st_ex_uid != sbuf2->st_ex_uid ||
 			sbuf1->st_ex_gid != sbuf2->st_ex_gid ||
-			sbuf1->st_ex_dev != sbuf2->st_ex_dev ||
-			sbuf1->st_ex_ino != sbuf2->st_ex_ino) {
+			!check_same_dev_ino(sbuf1, sbuf2)) {
 		return false;
 	}
 	return true;
