@@ -318,6 +318,7 @@ void ctdb_unlock_item(struct lock_context *lock_ctx)
 	}
 }
 
+static void ctdb_lock_schedule(struct ctdb_context *ctdb);
 
 /*
  * Destructor to kill the child locking process
@@ -340,6 +341,9 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 		}
 	}
+
+	ctdb_lock_schedule(lock_ctx->ctdb);
+
 	return 0;
 }
 
