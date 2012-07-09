@@ -606,6 +606,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	    (!file_existed && (local_flags & O_CREAT)) ||
 	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
 		const char *wild;
+		int ret;
 
 		/*
 		 * We can't actually truncate here as the file may be locked.
@@ -678,6 +679,18 @@ static NTSTATUS open_file(files_struct *fsp,
 			return status;
 		}
 
+		ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+		if (ret == -1) {
+			/* If we have an fd, this stat should succeed. */
+			DEBUG(0,("Error doing fstat on open file %s "
+				"(%s)\n",
+				smb_fname_str_dbg(smb_fname),
+				strerror(errno) ));
+			status = map_nt_error_from_unix(errno);
+			fd_close(fsp);
+			return status;
+		}
+
 		if ((local_flags & O_CREAT) && !file_existed) {
 			file_created = true;
 		}
@@ -716,28 +729,6 @@ static NTSTATUS open_file(files_struct *fsp,
 	}
 
 	if (!file_existed) {
-		int ret;
-
-		if (fsp->fh->fd == -1) {
-			ret = SMB_VFS_STAT(conn, smb_fname);
-		} else {
-			ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
-			/* If we have an fd, this stat should succeed. */
-			if (ret == -1) {
-				DEBUG(0,("Error doing fstat on open file %s "
-					 "(%s)\n",
-					 smb_fname_str_dbg(smb_fname),
-					 strerror(errno) ));
-			}
-		}
-
-		/* For a non-io open, this stat failing means file not found. JRA */
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			fd_close(fsp);
-			return status;
-		}
-
 		if (file_created) {
 			bool need_re_stat = false;
 			/* Do all inheritance work after we've
@@ -760,6 +751,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 
 			if (need_re_stat) {
+				int ret;
+
 				if (fsp->fh->fd == -1) {
 					ret = SMB_VFS_STAT(conn, smb_fname);
 				} else {
