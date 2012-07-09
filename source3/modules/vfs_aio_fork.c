@@ -480,22 +480,24 @@ static struct files_struct *close_fsp_fd(struct files_struct *fsp,
 	return NULL;
 }
 
-static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
-				 struct aio_child_list *children,
-				 size_t map_size,
-				 struct aio_child **presult)
+static int create_aio_child(struct smbd_server_connection *sconn,
+			    struct aio_child_list *children,
+			    size_t map_size,
+			    struct aio_child **presult)
 {
 	struct aio_child *result;
 	int fdpair[2];
-	NTSTATUS status;
+	int ret;
 
 	fdpair[0] = fdpair[1] = -1;
 
 	result = talloc_zero(children, struct aio_child);
-	NT_STATUS_HAVE_NO_MEMORY(result);
+	if (result == NULL) {
+		return ENOMEM;
+	}
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) == -1) {
-		status = map_nt_error_from_unix(errno);
+		ret = errno;
 		DEBUG(10, ("socketpair() failed: %s\n", strerror(errno)));
 		goto fail;
 	}
@@ -504,14 +506,14 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 
 	result->map = mmap_area_init(result, map_size);
 	if (result->map == NULL) {
-		status = map_nt_error_from_unix(errno);
+		ret = errno;
 		DEBUG(0, ("Could not create mmap area\n"));
 		goto fail;
 	}
 
 	result->pid = fork();
 	if (result->pid == -1) {
-		status = map_nt_error_from_unix(errno);
+		ret = errno;
 		DEBUG(0, ("fork failed: %s\n", strerror(errno)));
 		goto fail;
 	}
@@ -534,7 +536,7 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 					  handle_aio_completion,
 					  result);
 	if (result->sock_event == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+		ret = ENOMEM;
 		DEBUG(0, ("event_add_fd failed\n"));
 		goto fail;
 	}
@@ -546,14 +548,14 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 
 	*presult = result;
 
-	return NT_STATUS_OK;
+	return 0;
 
  fail:
 	if (fdpair[0] != -1) close(fdpair[0]);
 	if (fdpair[1] != -1) close(fdpair[1]);
 	TALLOC_FREE(result);
 
-	return status;
+	return ret;
 }
 
 static NTSTATUS get_idle_child(struct vfs_handle_struct *handle,
@@ -576,14 +578,16 @@ static NTSTATUS get_idle_child(struct vfs_handle_struct *handle,
 	}
 
 	if (child == NULL) {
+		int ret;
+
 		DEBUG(10, ("no idle child found, creating new one\n"));
 
-		status = create_aio_child(handle->conn->sconn, children,
+		ret = create_aio_child(handle->conn->sconn, children,
 					  128*1024, &child);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (ret != 0) {
 			DEBUG(10, ("create_aio_child failed: %s\n",
-				   nt_errstr(status)));
-			return status;
+				   strerror(errno)));
+			return map_nt_error_from_unix(errno);
 		}
 	}
 
