@@ -558,16 +558,15 @@ static int create_aio_child(struct smbd_server_connection *sconn,
 	return ret;
 }
 
-static NTSTATUS get_idle_child(struct vfs_handle_struct *handle,
-			       struct aio_child **pchild)
+static int get_idle_child(struct vfs_handle_struct *handle,
+			  struct aio_child **pchild)
 {
 	struct aio_child_list *children;
 	struct aio_child *child;
-	NTSTATUS status;
 
 	children = init_aio_children(handle);
 	if (children == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return ENOMEM;
 	}
 
 	for (child = children->children; child != NULL; child = child->next) {
@@ -587,14 +586,14 @@ static NTSTATUS get_idle_child(struct vfs_handle_struct *handle,
 		if (ret != 0) {
 			DEBUG(10, ("create_aio_child failed: %s\n",
 				   strerror(errno)));
-			return map_nt_error_from_unix(errno);
+			return ret;
 		}
 	}
 
 	child->dont_delete = true;
 
 	*pchild = child;
-	return NT_STATUS_OK;
+	return 0;
 }
 
 static int aio_fork_read(struct vfs_handle_struct *handle,
@@ -603,7 +602,7 @@ static int aio_fork_read(struct vfs_handle_struct *handle,
 	struct aio_child *child;
 	struct rw_cmd cmd;
 	ssize_t ret;
-	NTSTATUS status;
+	int err;
 
 	if (aiocb->aio_nbytes > 128*1024) {
 		/* TODO: support variable buffers */
@@ -611,9 +610,11 @@ static int aio_fork_read(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_idle_child(handle, &child);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Could not get an idle child\n"));
+	err = get_idle_child(handle, &child);
+	if (err != 0) {
+		DEBUG(10, ("Could not get an idle child: %s\n",
+			   strerror(err)));
+		errno = err;
 		return -1;
 	}
 
@@ -644,7 +645,7 @@ static int aio_fork_write(struct vfs_handle_struct *handle,
 	struct aio_child *child;
 	struct rw_cmd cmd;
 	ssize_t ret;
-	NTSTATUS status;
+	int err;
 
 	if (aiocb->aio_nbytes > 128*1024) {
 		/* TODO: support variable buffers */
@@ -652,9 +653,11 @@ static int aio_fork_write(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	status = get_idle_child(handle, &child);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("Could not get an idle child\n"));
+	err = get_idle_child(handle, &child);
+	if (err != 0) {
+		DEBUG(10, ("Could not get an idle child: %s\n",
+			   strerror(err)));
+		errno = err;
 		return -1;
 	}
 
