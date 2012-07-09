@@ -116,6 +116,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_PREAD_RECV,
 	SMB_VFS_OP_WRITE,
 	SMB_VFS_OP_PWRITE,
+	SMB_VFS_OP_PWRITE_SEND,
+	SMB_VFS_OP_PWRITE_RECV,
 	SMB_VFS_OP_LSEEK,
 	SMB_VFS_OP_SENDFILE,
 	SMB_VFS_OP_RECVFILE,
@@ -1064,6 +1066,77 @@ static ssize_t smb_full_audit_pwrite(vfs_handle_struct *handle, files_struct *fs
 	       fsp_str_do_log(fsp));
 
 	return result;
+}
+
+struct smb_full_audit_pwrite_state {
+	vfs_handle_struct *handle;
+	files_struct *fsp;
+	ssize_t ret;
+	int err;
+};
+
+static void smb_full_audit_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_full_audit_pwrite_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp,
+	const void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_full_audit_pwrite_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_full_audit_pwrite_state);
+	if (req == NULL) {
+		do_log(SMB_VFS_OP_PWRITE_SEND, false, handle, "%s",
+		       fsp_str_do_log(fsp));
+		return NULL;
+	}
+	state->handle = handle;
+	state->fsp = fsp;
+
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		do_log(SMB_VFS_OP_PWRITE_SEND, false, handle, "%s",
+		       fsp_str_do_log(fsp));
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_full_audit_pwrite_done, req);
+
+	do_log(SMB_VFS_OP_PWRITE_SEND, true, handle, "%s",
+	       fsp_str_do_log(fsp));
+	return req;
+}
+
+static void smb_full_audit_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_full_audit_pwrite_state *state = tevent_req_data(
+		req, struct smb_full_audit_pwrite_state);
+
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t smb_full_audit_pwrite_recv(struct tevent_req *req, int *err)
+{
+	struct smb_full_audit_pwrite_state *state = tevent_req_data(
+		req, struct smb_full_audit_pwrite_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		do_log(SMB_VFS_OP_PWRITE_RECV, false, state->handle, "%s",
+		       fsp_str_do_log(state->fsp));
+		return -1;
+	}
+
+	do_log(SMB_VFS_OP_PWRITE_RECV, (state->ret >= 0), state->handle, "%s",
+	       fsp_str_do_log(state->fsp));
+
+	*err = state->err;
+	return state->ret;
 }
 
 static off_t smb_full_audit_lseek(vfs_handle_struct *handle, files_struct *fsp,
@@ -2282,6 +2355,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.pread_recv_fn = smb_full_audit_pread_recv,
 	.write_fn = smb_full_audit_write,
 	.pwrite_fn = smb_full_audit_pwrite,
+	.pwrite_send_fn = smb_full_audit_pwrite_send,
+	.pwrite_recv_fn = smb_full_audit_pwrite_recv,
 	.lseek_fn = smb_full_audit_lseek,
 	.sendfile_fn = smb_full_audit_sendfile,
 	.recvfile_fn = smb_full_audit_recvfile,

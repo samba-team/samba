@@ -257,6 +257,60 @@ static ssize_t skel_pwrite(vfs_handle_struct *handle, files_struct *fsp, const v
 	return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 }
 
+struct skel_pwrite_state {
+	ssize_t ret;
+	int err;
+};
+
+static void skel_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *skel_pwrite_send(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct files_struct *fsp,
+					   const void *data,
+					   size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct skel_pwrite_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct skel_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, skel_pwrite_done, req);
+	return req;
+}
+
+static void skel_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct skel_pwrite_state *state = tevent_req_data(
+		req, struct skel_pwrite_state);
+
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t skel_pwrite_recv(struct tevent_req *req, int *err)
+{
+	struct skel_pwrite_state *state = tevent_req_data(
+		req, struct skel_pwrite_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
+}
+
 static off_t skel_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
 {
 	return SMB_VFS_NEXT_LSEEK(handle, fsp, offset, whence);
@@ -823,6 +877,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.pread_recv_fn = skel_pread_recv,
 	.write_fn = skel_write,
 	.pwrite_fn = skel_pwrite,
+	.pwrite_send_fn = skel_pwrite_send,
+	.pwrite_recv_fn = skel_pwrite_recv,
 	.lseek_fn = skel_lseek,
 	.sendfile_fn = skel_sendfile,
 	.recvfile_fn = skel_recvfile,

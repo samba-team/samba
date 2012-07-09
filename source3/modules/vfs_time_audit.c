@@ -626,6 +626,71 @@ static ssize_t smb_time_audit_pwrite(vfs_handle_struct *handle,
 	return result;
 }
 
+struct smb_time_audit_pwrite_state {
+	struct timespec ts1;
+	ssize_t ret;
+	int err;
+};
+
+static void smb_time_audit_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_time_audit_pwrite_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp,
+	const void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_time_audit_pwrite_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_time_audit_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	clock_gettime_mono(&state->ts1);
+
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_time_audit_pwrite_done, req);
+	return req;
+}
+
+static void smb_time_audit_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_time_audit_pwrite_state *state = tevent_req_data(
+		req, struct smb_time_audit_pwrite_state);
+
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t smb_time_audit_pwrite_recv(struct tevent_req *req, int *err)
+{
+	struct smb_time_audit_pwrite_state *state = tevent_req_data(
+		req, struct smb_time_audit_pwrite_state);
+	struct timespec ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&state->ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("pwrite", timediff);
+	}
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
+}
+
 static off_t smb_time_audit_lseek(vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      off_t offset, int whence)
@@ -2352,6 +2417,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.pread_recv_fn = smb_time_audit_pread_recv,
 	.write_fn = smb_time_audit_write,
 	.pwrite_fn = smb_time_audit_pwrite,
+	.pwrite_send_fn = smb_time_audit_pwrite_send,
+	.pwrite_recv_fn = smb_time_audit_pwrite_recv,
 	.lseek_fn = smb_time_audit_lseek,
 	.sendfile_fn = smb_time_audit_sendfile,
 	.recvfile_fn = smb_time_audit_recvfile,
