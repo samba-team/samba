@@ -66,6 +66,7 @@
 #include "ntioctl.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/bitmap.h"
+#include "lib/util/tevent_unix.h"
 
 static int vfs_full_audit_debug_level = DBGC_VFS;
 
@@ -111,6 +112,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CLOSE,
 	SMB_VFS_OP_READ,
 	SMB_VFS_OP_PREAD,
+	SMB_VFS_OP_PREAD_SEND,
+	SMB_VFS_OP_PREAD_RECV,
 	SMB_VFS_OP_WRITE,
 	SMB_VFS_OP_PWRITE,
 	SMB_VFS_OP_LSEEK,
@@ -247,6 +250,8 @@ static struct {
 	{ SMB_VFS_OP_CLOSE,	"close" },
 	{ SMB_VFS_OP_READ,	"read" },
 	{ SMB_VFS_OP_PREAD,	"pread" },
+	{ SMB_VFS_OP_PREAD_SEND,	"pread_send" },
+	{ SMB_VFS_OP_PREAD_RECV,	"pread_recv" },
 	{ SMB_VFS_OP_WRITE,	"write" },
 	{ SMB_VFS_OP_PWRITE,	"pwrite" },
 	{ SMB_VFS_OP_LSEEK,	"lseek" },
@@ -962,6 +967,76 @@ static ssize_t smb_full_audit_pread(vfs_handle_struct *handle, files_struct *fsp
 	       fsp_str_do_log(fsp));
 
 	return result;
+}
+
+struct smb_full_audit_pread_state {
+	vfs_handle_struct *handle;
+	files_struct *fsp;
+	ssize_t ret;
+	int err;
+};
+
+static void smb_full_audit_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_full_audit_pread_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp,
+	void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_full_audit_pread_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_full_audit_pread_state);
+	if (req == NULL) {
+		do_log(SMB_VFS_OP_PREAD_SEND, false, handle, "%s",
+		       fsp_str_do_log(fsp));
+		return NULL;
+	}
+	state->handle = handle;
+	state->fsp = fsp;
+
+	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		do_log(SMB_VFS_OP_PREAD_SEND, false, handle, "%s",
+		       fsp_str_do_log(fsp));
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_full_audit_pread_done, req);
+
+	do_log(SMB_VFS_OP_PREAD_SEND, true, handle, "%s", fsp_str_do_log(fsp));
+	return req;
+}
+
+static void smb_full_audit_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_full_audit_pread_state *state = tevent_req_data(
+		req, struct smb_full_audit_pread_state);
+
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t smb_full_audit_pread_recv(struct tevent_req *req, int *err)
+{
+	struct smb_full_audit_pread_state *state = tevent_req_data(
+		req, struct smb_full_audit_pread_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		do_log(SMB_VFS_OP_PREAD_RECV, false, state->handle, "%s",
+		       fsp_str_do_log(state->fsp));
+		return -1;
+	}
+
+	do_log(SMB_VFS_OP_PREAD_RECV, (state->ret >= 0), state->handle, "%s",
+	       fsp_str_do_log(state->fsp));
+
+	*err = state->err;
+	return state->ret;
 }
 
 static ssize_t smb_full_audit_write(vfs_handle_struct *handle, files_struct *fsp,
@@ -2203,6 +2278,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.close_fn = smb_full_audit_close,
 	.read_fn = smb_full_audit_read,
 	.pread_fn = smb_full_audit_pread,
+	.pread_send_fn = smb_full_audit_pread_send,
+	.pread_recv_fn = smb_full_audit_pread_recv,
 	.write_fn = smb_full_audit_write,
 	.pwrite_fn = smb_full_audit_pwrite,
 	.lseek_fn = smb_full_audit_lseek,

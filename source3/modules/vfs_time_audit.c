@@ -28,6 +28,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "ntioctl.h"
+#include "lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -517,6 +518,71 @@ static ssize_t smb_time_audit_pread(vfs_handle_struct *handle,
 	}
 
 	return result;
+}
+
+struct smb_time_audit_pread_state {
+	struct timespec ts1;
+	ssize_t ret;
+	int err;
+};
+
+static void smb_time_audit_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_time_audit_pread_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp,
+	void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_time_audit_pread_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_time_audit_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	clock_gettime_mono(&state->ts1);
+
+	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_time_audit_pread_done, req);
+	return req;
+}
+
+static void smb_time_audit_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_time_audit_pread_state *state = tevent_req_data(
+		req, struct smb_time_audit_pread_state);
+
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t smb_time_audit_pread_recv(struct tevent_req *req, int *err)
+{
+	struct smb_time_audit_pread_state *state = tevent_req_data(
+		req, struct smb_time_audit_pread_state);
+	struct timespec ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&state->ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("pread", timediff);
+	}
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
 }
 
 static ssize_t smb_time_audit_write(vfs_handle_struct *handle,
@@ -2282,6 +2348,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.close_fn = smb_time_audit_close,
 	.read_fn = smb_time_audit_read,
 	.pread_fn = smb_time_audit_pread,
+	.pread_send_fn = smb_time_audit_pread_send,
+	.pread_recv_fn = smb_time_audit_pread_recv,
 	.write_fn = smb_time_audit_write,
 	.pwrite_fn = smb_time_audit_pwrite,
 	.lseek_fn = smb_time_audit_lseek,

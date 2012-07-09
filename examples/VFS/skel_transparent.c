@@ -23,6 +23,7 @@
 
 
 #include "../source3/include/includes.h"
+#include "lib/util/tevent_unix.h"
 
 /* PLEASE,PLEASE READ THE VFS MODULES CHAPTER OF THE 
    SAMBA DEVELOPERS GUIDE!!!!!!
@@ -191,6 +192,59 @@ static ssize_t skel_vfs_read(vfs_handle_struct *handle, files_struct *fsp, void 
 static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n, off_t offset)
 {
 	return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+}
+
+struct skel_pread_state {
+	ssize_t ret;
+	int err;
+};
+
+static void skel_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *skel_pread_send(struct vfs_handle_struct *handle,
+					  TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct files_struct *fsp,
+					  void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct skel_pread_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct skel_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, skel_pread_done, req);
+	return req;
+}
+
+static void skel_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct skel_pread_state *state = tevent_req_data(
+		req, struct skel_pread_state);
+
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t skel_pread_recv(struct tevent_req *req, int *err)
+{
+	struct skel_pread_state *state = tevent_req_data(
+		req, struct skel_pread_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
 }
 
 static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
@@ -765,6 +819,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.close_fn = skel_close_fn,
 	.read_fn = skel_vfs_read,
 	.pread_fn = skel_pread,
+	.pread_send_fn = skel_pread_send,
+	.pread_recv_fn = skel_pread_recv,
 	.write_fn = skel_write,
 	.pwrite_fn = skel_pwrite,
 	.lseek_fn = skel_lseek,

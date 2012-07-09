@@ -188,6 +188,21 @@ static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, void *da
 	return -1;
 }
 
+static struct tevent_req *skel_pread_send(struct vfs_handle_struct *handle,
+					  TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct files_struct *fsp,
+					  void *data, size_t n, off_t offset)
+{
+	return NULL;
+}
+
+static ssize_t skel_pread_recv(struct tevent_req *req, int *err)
+{
+	*err = ENOSYS;
+	return -1;
+}
+
 static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
 {
 	errno = ENOSYS;
@@ -805,6 +820,8 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.close_fn = skel_close_fn,
 	.read_fn = skel_vfs_read,
 	.pread_fn = skel_pread,
+	.pread_send_fn = skel_pread_send,
+	.pread_recv_fn = skel_pread_recv,
 	.write_fn = skel_write,
 	.pwrite_fn = skel_pwrite,
 	.lseek_fn = skel_lseek,
