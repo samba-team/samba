@@ -151,10 +151,19 @@ static void bind_auth_next_step(struct composite_context *c)
 	 * it doesn't like that either
 	 */
 
+	state->pipe->inhibit_timeout_processing = true;
+	state->pipe->timed_out = false;
+
 	c->status = gensec_update(sec->generic_state, state,
 				  state->pipe->conn->event_ctx,
 				  sec->auth_info->credentials,
 				  &state->credentials);
+	if (state->pipe->timed_out) {
+		composite_error(c, NT_STATUS_IO_TIMEOUT);
+		return;
+	}
+	state->pipe->inhibit_timeout_processing = false;
+
 	data_blob_free(&sec->auth_info->credentials);
 
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -358,10 +367,18 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	 * it doesn't like that either
 	 */
 
+	state->pipe->inhibit_timeout_processing = true;
+	state->pipe->timed_out = false;
 	c->status = gensec_update(sec->generic_state, state,
 				  p->conn->event_ctx,
 				  sec->auth_info->credentials,
 				  &state->credentials);
+	if (state->pipe->timed_out) {
+		composite_error(c, NT_STATUS_IO_TIMEOUT);
+		return c;
+	}
+	state->pipe->inhibit_timeout_processing = false;
+
 	if (!NT_STATUS_IS_OK(c->status) &&
 	    !NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		composite_error(c, c->status);

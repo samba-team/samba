@@ -716,8 +716,14 @@ static void continue_pipe_auth(struct composite_context *ctx)
 static void dcerpc_connect_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
 					   struct timeval t, void *private_data)
 {
-	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
-	composite_error(c, NT_STATUS_IO_TIMEOUT);
+	struct composite_context *c = talloc_get_type(private_data,
+						      struct composite_context);
+	struct pipe_connect_state *s = talloc_get_type(c->private_data, struct pipe_connect_state);
+	if (!s->pipe->inhibit_timeout_processing) {
+		composite_error(c, NT_STATUS_IO_TIMEOUT);
+	} else {
+		s->pipe->timed_out = true;
+	}
 }
 
 /*
@@ -757,9 +763,12 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	s->credentials  = credentials;
 	s->lp_ctx 	= lp_ctx;
 
-	tevent_add_timer(c->event_ctx, c,
-			timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
-			dcerpc_connect_timeout_handler, c);
+	s->pipe->timed_out = false;
+	s->pipe->inhibit_timeout_processing = false;
+
+	tevent_add_timer(c->event_ctx, s,
+			 timeval_current_ofs(DCERPC_REQUEST_TIMEOUT, 0),
+			 dcerpc_connect_timeout_handler, s);
 	
 	switch (s->binding->transport) {
 	case NCA_UNKNOWN: {
