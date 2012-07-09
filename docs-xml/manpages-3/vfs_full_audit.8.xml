@@ -38,13 +38,6 @@
 	complete set of Samba VFS operations:</para>
 
 	<simplelist>
-        <member>aio_cancel</member>
-        <member>aio_error</member>
-        <member>aio_fsync</member>
-        <member>aio_read</member>
-        <member>aio_return</member>
-        <member>aio_suspend</member>
-        <member>aio_write</member>
         <member>chdir</member>
         <member>chflags</member>
         <member>chmod</member>

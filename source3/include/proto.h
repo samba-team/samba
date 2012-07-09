@@ -310,20 +310,6 @@ uint32 unix_dev_minor(SMB_DEV_T dev);
 #if 0
 int sys_get_number_of_cores(void);
 #endif
-int sys_aio_read(SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_write(SMB_STRUCT_AIOCB *aiocb);
-ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout);
-int sys_aio_read(SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_write(SMB_STRUCT_AIOCB *aiocb);
-ssize_t sys_aio_return(SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_cancel(int fd, SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_error(const SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_fsync(int op, SMB_STRUCT_AIOCB *aiocb);
-int sys_aio_suspend(const SMB_STRUCT_AIOCB * const cblist[], int n, const struct timespec *timeout);
 
 struct stat;
 void init_stat_ex_from_stat (struct stat_ex *dst,

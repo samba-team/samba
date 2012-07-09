@@ -2155,69 +2155,6 @@ static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_stru
 	return fsetxattr(fsp->fh->fd, name, value, size, flags);
 }
 
-static int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int ret;
-	if (!initialize_async_io_handler()) {
-		errno = ENOSYS;
-		return -1;
-	}
-	/*
-	 * aio_read must be done as root, because in the glibc aio
-	 * implementation the helper thread needs to be able to send a signal
-	 * to the main thread, even when it has done a seteuid() to a
-	 * different user.
-	 */
-	become_root();
-	ret = sys_aio_read(aiocb);
-	unbecome_root();
-	return ret;
-}
-
-static int vfswrap_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int ret;
-	if (!initialize_async_io_handler()) {
-		errno = ENOSYS;
-		return -1;
-	}
-	/*
-	 * aio_write must be done as root, because in the glibc aio
-	 * implementation the helper thread needs to be able to send a signal
-	 * to the main thread, even when it has done a seteuid() to a
-	 * different user.
-	 */
-	become_root();
-	ret = sys_aio_write(aiocb);
-	unbecome_root();
-	return ret;
-}
-
-static ssize_t vfswrap_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return sys_aio_return(aiocb);
-}
-
-static int vfswrap_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return sys_aio_cancel(fsp->fh->fd, aiocb);
-}
-
-static int vfswrap_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return sys_aio_error(aiocb);
-}
-
-static int vfswrap_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
-{
-	return sys_aio_fsync(op, aiocb);
-}
-
-static int vfswrap_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout)
-{
-	return sys_aio_suspend(aiocb, n, timeout);
-}
-
 static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
 {
 	return false;
@@ -2393,13 +2330,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fsetxattr_fn = vfswrap_fsetxattr,
 
 	/* aio operations */
-	.aio_read_fn = vfswrap_aio_read,
-	.aio_write_fn = vfswrap_aio_write,
-	.aio_return_fn = vfswrap_aio_return,
-	.aio_cancel_fn = vfswrap_aio_cancel,
-	.aio_error_fn = vfswrap_aio_error,
-	.aio_fsync_fn = vfswrap_aio_fsync,
-	.aio_suspend_fn = vfswrap_aio_suspend,
 	.aio_force_fn = vfswrap_aio_force,
 
 	/* offline operations */

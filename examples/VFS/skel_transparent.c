@@ -788,41 +788,6 @@ static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, c
         return SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value, size, flags);
 }
 
-static int skel_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return SMB_VFS_NEXT_AIO_READ(handle, fsp, aiocb);
-}
-
-static int skel_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return SMB_VFS_NEXT_AIO_WRITE(handle, fsp, aiocb);
-}
-
-static ssize_t skel_aio_return_fn(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
-}
-
-static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, aiocb);
-}
-
-static int skel_aio_error_fn(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	return SMB_VFS_NEXT_AIO_ERROR(handle, fsp, aiocb);
-}
-
-static int skel_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
-{
-	return SMB_VFS_NEXT_AIO_FSYNC(handle, fsp, op, aiocb);
-}
-
-static int skel_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts)
-{
-	return SMB_VFS_NEXT_AIO_SUSPEND(handle, fsp, aiocb, n, ts);
-}
-
 static bool skel_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
 {
         return SMB_VFS_NEXT_AIO_FORCE(handle, fsp);
@@ -968,13 +933,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.fsetxattr_fn = skel_fsetxattr,
 
 	/* aio operations */
-	.aio_read_fn = skel_aio_read,
-	.aio_write_fn = skel_aio_write,
-	.aio_return_fn = skel_aio_return_fn,
-	.aio_cancel_fn = skel_aio_cancel,
-	.aio_error_fn = skel_aio_error_fn,
-	.aio_fsync_fn = skel_aio_fsync,
-	.aio_suspend_fn = skel_aio_suspend,
 	.aio_force_fn = skel_aio_force,
 
 	/* offline operations */

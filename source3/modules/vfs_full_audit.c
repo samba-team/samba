@@ -205,13 +205,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FSETXATTR,
 
 	/* aio operations */
-	SMB_VFS_OP_AIO_READ,
-	SMB_VFS_OP_AIO_WRITE,
-	SMB_VFS_OP_AIO_RETURN,
-	SMB_VFS_OP_AIO_CANCEL,
-	SMB_VFS_OP_AIO_ERROR,
-	SMB_VFS_OP_AIO_FSYNC,
-	SMB_VFS_OP_AIO_SUSPEND,
         SMB_VFS_OP_AIO_FORCE,
 
 	/* offline operations */
@@ -332,13 +325,6 @@ static struct {
 	{ SMB_VFS_OP_FREMOVEXATTR,	"fremovexattr" },
 	{ SMB_VFS_OP_SETXATTR,	"setxattr" },
 	{ SMB_VFS_OP_FSETXATTR,	"fsetxattr" },
-	{ SMB_VFS_OP_AIO_READ,	"aio_read" },
-	{ SMB_VFS_OP_AIO_WRITE,	"aio_write" },
-	{ SMB_VFS_OP_AIO_RETURN,"aio_return" },
-	{ SMB_VFS_OP_AIO_CANCEL,"aio_cancel" },
-	{ SMB_VFS_OP_AIO_ERROR,	"aio_error" },
-	{ SMB_VFS_OP_AIO_FSYNC,	"aio_fsync" },
-	{ SMB_VFS_OP_AIO_SUSPEND,"aio_suspend" },
 	{ SMB_VFS_OP_AIO_FORCE, "aio_force" },
 	{ SMB_VFS_OP_IS_OFFLINE, "is_offline" },
 	{ SMB_VFS_OP_SET_OFFLINE, "set_offline" },
@@ -2212,83 +2198,6 @@ static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_READ(handle, fsp, aiocb);
-	do_log(SMB_VFS_OP_AIO_READ, (result >= 0), handle,
-	       "%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static int smb_full_audit_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_WRITE(handle, fsp, aiocb);
-	do_log(SMB_VFS_OP_AIO_WRITE, (result >= 0), handle,
-	       "%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
-	do_log(SMB_VFS_OP_AIO_RETURN, (result >= 0), handle,
-	       "%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, aiocb);
-	do_log(SMB_VFS_OP_AIO_CANCEL, (result >= 0), handle,
-	       "%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_ERROR(handle, fsp, aiocb);
-	do_log(SMB_VFS_OP_AIO_ERROR, (result >= 0), handle,
-	       "%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_FSYNC(handle, fsp, op, aiocb);
-	do_log(SMB_VFS_OP_AIO_FSYNC, (result >= 0), handle,
-		"%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_AIO_SUSPEND(handle, fsp, aiocb, n, ts);
-	do_log(SMB_VFS_OP_AIO_SUSPEND, (result >= 0), handle,
-		"%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
 static bool smb_full_audit_aio_force(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp)
 {
@@ -2433,13 +2342,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fremovexattr_fn = smb_full_audit_fremovexattr,
 	.setxattr_fn = smb_full_audit_setxattr,
 	.fsetxattr_fn = smb_full_audit_fsetxattr,
-	.aio_read_fn = smb_full_audit_aio_read,
-	.aio_write_fn = smb_full_audit_aio_write,
-	.aio_return_fn = smb_full_audit_aio_return,
-	.aio_cancel_fn = smb_full_audit_aio_cancel,
-	.aio_error_fn = smb_full_audit_aio_error,
-	.aio_fsync_fn = smb_full_audit_aio_fsync,
-	.aio_suspend_fn = smb_full_audit_aio_suspend,
 	.aio_force_fn = smb_full_audit_aio_force,
 	.is_offline_fn = smb_full_audit_is_offline,
 	.set_offline_fn = smb_full_audit_set_offline,

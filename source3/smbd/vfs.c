@@ -2369,60 +2369,6 @@ int smb_vfs_call_fsetxattr(struct vfs_handle_struct *handle,
 	return handle->fns->fsetxattr_fn(handle, fsp, name, value, size, flags);
 }
 
-int smb_vfs_call_aio_read(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	VFS_FIND(aio_read);
-	return handle->fns->aio_read_fn(handle, fsp, aiocb);
-}
-
-int smb_vfs_call_aio_write(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	VFS_FIND(aio_write);
-	return handle->fns->aio_write_fn(handle, fsp, aiocb);
-}
-
-ssize_t smb_vfs_call_aio_return(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				SMB_STRUCT_AIOCB *aiocb)
-{
-	VFS_FIND(aio_return);
-	return handle->fns->aio_return_fn(handle, fsp, aiocb);
-}
-
-int smb_vfs_call_aio_cancel(struct vfs_handle_struct *handle,
-			    struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
-{
-	VFS_FIND(aio_cancel);
-	return handle->fns->aio_cancel_fn(handle, fsp, aiocb);
-}
-
-int smb_vfs_call_aio_error(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp,
-			   SMB_STRUCT_AIOCB *aiocb)
-{
-	VFS_FIND(aio_error);
-	return handle->fns->aio_error_fn(handle, fsp, aiocb);
-}
-
-int smb_vfs_call_aio_fsync(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, int op,
-			   SMB_STRUCT_AIOCB *aiocb)
-{
-	VFS_FIND(aio_fsync);
-	return handle->fns->aio_fsync_fn(handle, fsp, op, aiocb);
-}
-
-int smb_vfs_call_aio_suspend(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp,
-			     const SMB_STRUCT_AIOCB * const aiocb[], int n,
-			     const struct timespec *timeout)
-{
-	VFS_FIND(aio_suspend);
-	return handle->fns->aio_suspend_fn(handle, fsp, aiocb, n, timeout);
-}
-
 bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp)
 {

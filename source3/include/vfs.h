@@ -451,12 +451,6 @@ enum vfs_fallocate_mode {
 };
 
 /*
- * forward declaration required here until the posix aio functions
- * leave the VFS
- */
-struct aiocb;
-
-/*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
     In particular, if new operations are added to vfs_ops, appropriate constants
@@ -709,13 +703,6 @@ struct vfs_fn_pointers {
 	int (*fsetxattr_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
 	/* aio operations */
-	int (*aio_read_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-	int (*aio_write_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-	ssize_t (*aio_return_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-	int (*aio_cancel_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-	int (*aio_error_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-	int (*aio_fsync_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
-	int (*aio_suspend_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
 	bool (*aio_force_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 
 	/* offline operations */
@@ -1147,25 +1134,6 @@ int smb_vfs_call_lsetxattr(struct vfs_handle_struct *handle, const char *path,
 int smb_vfs_call_fsetxattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size, int flags);
-int smb_vfs_call_aio_read(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-int smb_vfs_call_aio_write(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-ssize_t smb_vfs_call_aio_return(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				SMB_STRUCT_AIOCB *aiocb);
-int smb_vfs_call_aio_cancel(struct vfs_handle_struct *handle,
-			    struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-int smb_vfs_call_aio_error(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp,
-			   SMB_STRUCT_AIOCB *aiocb);
-int smb_vfs_call_aio_fsync(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, int op,
-			   SMB_STRUCT_AIOCB *aiocb);
-int smb_vfs_call_aio_suspend(struct vfs_handle_struct *handle,
-			     struct files_struct *fsp,
-			     const SMB_STRUCT_AIOCB * const aiocb[], int n,
-			     const struct timespec *timeout);
 bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp);
 bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,

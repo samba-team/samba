@@ -23,8 +23,6 @@
 #include "smbd/globals.h"
 #include "../lib/util/tevent_ntstatus.h"
 
-#if defined(HAVE_AIO)
-
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
 *****************************************************************************/
@@ -46,11 +44,6 @@ struct aio_extra {
 bool aio_write_through_requested(struct aio_extra *aio_ex)
 {
 	return aio_ex->write_through;
-}
-
-bool initialize_async_io_handler(void)
-{
-	return true;
 }
 
 static int aio_extra_destructor(struct aio_extra *aio_ex)
@@ -891,11 +884,6 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
  Handle any aio completion inline.
 *****************************************************************************/
 
-void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex)
-{
-	return;
-}
-
 void aio_fsp_close(files_struct *fsp)
 {
 	unsigned i;
@@ -907,67 +895,3 @@ void aio_fsp_close(files_struct *fsp)
 		aio_ex->fsp = NULL;
 	}
 }
-
-#else
-
-bool initialize_async_io_handler(void)
-{
-	return false;
-}
-
-NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
-			     struct smb_request *smbreq,
-			     files_struct *fsp, off_t startpos,
-			     size_t smb_maxcnt)
-{
-	return NT_STATUS_RETRY;
-}
-
-NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
-			      struct smb_request *smbreq,
-			      files_struct *fsp, const char *data,
-			      off_t startpos,
-			      size_t numtowrite)
-{
-	return NT_STATUS_RETRY;
-}
-
-bool cancel_smb2_aio(struct smb_request *smbreq)
-{
-	return false;
-}
-
-NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
-                                struct smb_request *smbreq,
-                                files_struct *fsp,
-				TALLOC_CTX *ctx,
-				DATA_BLOB *preadbuf,
-                                off_t startpos,
-                                size_t smb_maxcnt)
-{
-	return NT_STATUS_RETRY;
-}
-
-NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
-				struct smb_request *smbreq,
-				files_struct *fsp,
-				uint64_t in_offset,
-				DATA_BLOB in_data,
-				bool write_through)
-{
-	return NT_STATUS_RETRY;
-}
-
-void aio_fsp_close(files_struct *fsp)
-{
-	return;
-}
-
-int wait_for_aio_completion(files_struct *fsp)
-{
-	return 0;
-}
-
-void smbd_aio_complete_mid(uint64_t mid);
-
-#endif

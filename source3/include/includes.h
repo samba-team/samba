@@ -334,18 +334,6 @@ struct stat_ex {
 
 typedef struct stat_ex SMB_STRUCT_STAT;
 
-/*
- * Type for aiocb structure.
- */
-
-#ifndef SMB_STRUCT_AIOCB
-#  if defined(HAVE_AIO)
-#      define SMB_STRUCT_AIOCB struct aiocb
-#  else
-#    define SMB_STRUCT_AIOCB int /* AIO not being used but we still need the define.... */
-#  endif
-#endif
-
 enum timestamp_set_resolution {
 	TIMESTAMP_SET_SECONDS = 0,
 	TIMESTAMP_SET_MSEC,

@@ -65,7 +65,6 @@ void srv_set_signing(struct smbd_server_connection *conn,
 /* The following definitions come from smbd/aio.c  */
 
 bool aio_write_through_requested(struct aio_extra *aio_ex);
-bool initialize_async_io_handler(void);
 NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
 			     files_struct *fsp, off_t startpos,
@@ -90,8 +89,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 				bool write_through);
 bool cancel_smb2_aio(struct smb_request *smbreq);
 void aio_fsp_close(files_struct *fsp);
-int wait_for_aio_completion(files_struct *fsp);
-void smbd_aio_complete_aio_ex(struct aio_extra *aio_ex);
 
 /* The following definitions come from smbd/blocking.c  */
 

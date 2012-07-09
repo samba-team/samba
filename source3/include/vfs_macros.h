@@ -573,41 +573,6 @@
 #define SMB_VFS_NEXT_FSETXATTR(handle,fsp,name,value,size,flags) \
 	smb_vfs_call_fsetxattr((handle)->next,(fsp),(name),(value),(size),(flags))
 
-#define SMB_VFS_AIO_READ(fsp,aiocb) \
-	smb_vfs_call_aio_read((fsp)->conn->vfs_handles, (fsp), (aiocb))
-#define SMB_VFS_NEXT_AIO_READ(handle,fsp,aiocb) \
-	smb_vfs_call_aio_read((handle)->next,(fsp),(aiocb))
-
-#define SMB_VFS_AIO_WRITE(fsp,aiocb) \
-	smb_vfs_call_aio_write((fsp)->conn->vfs_handles, (fsp), (aiocb))
-#define SMB_VFS_NEXT_AIO_WRITE(handle,fsp,aiocb) \
-	smb_vfs_call_aio_write((handle)->next,(fsp),(aiocb))
-
-#define SMB_VFS_AIO_RETURN(fsp,aiocb) \
-	smb_vfs_call_aio_return((fsp)->conn->vfs_handles, (fsp), (aiocb))
-#define SMB_VFS_NEXT_AIO_RETURN(handle,fsp,aiocb) \
-	smb_vfs_call_aio_return((handle)->next,(fsp),(aiocb))
-
-#define SMB_VFS_AIO_CANCEL(fsp,aiocb) \
-	smb_vfs_call_aio_cancel((fsp)->conn->vfs_handles, (fsp), (aiocb))
-#define SMB_VFS_NEXT_AIO_CANCEL(handle,fsp,aiocb) \
-	smb_vfs_call_aio_cancel((handle)->next,(fsp),(aiocb))
-
-#define SMB_VFS_AIO_ERROR(fsp,aiocb) \
-	smb_vfs_call_aio_error((fsp)->conn->vfs_handles, (fsp),(aiocb))
-#define SMB_VFS_NEXT_AIO_ERROR(handle,fsp,aiocb) \
-	smb_vfs_call_aio_error((handle)->next,(fsp),(aiocb))
-
-#define SMB_VFS_AIO_FSYNC(fsp,op,aiocb) \
-	smb_vfs_call_aio_fsync((fsp)->conn->vfs_handles, (fsp), (op),(aiocb))
-#define SMB_VFS_NEXT_AIO_FSYNC(handle,fsp,op,aiocb) \
-	smb_vfs_call_aio_fsync((handle)->next,(fsp),(op),(aiocb))
-
-#define SMB_VFS_AIO_SUSPEND(fsp,aiocb,n,ts) \
-	smb_vfs_call_aio_suspend((fsp)->conn->vfs_handles, (fsp),(aiocb),(n),(ts))
-#define SMB_VFS_NEXT_AIO_SUSPEND(handle,fsp,aiocb,n,ts) \
-	smb_vfs_call_aio_suspend((handle)->next,(fsp),(aiocb),(n),(ts))
-
 #define SMB_VFS_AIO_FORCE(fsp) \
 	smb_vfs_call_aio_force((fsp)->conn->vfs_handles, (fsp))
 #define SMB_VFS_NEXT_AIO_FORCE(handle,fsp) \
