@@ -8304,7 +8304,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Is it the same dev/inode as was lstated ? */
-	if (lsbuf.st_ex_dev != sbuf.st_ex_dev || lsbuf.st_ex_ino != sbuf.st_ex_ino) {
+	if (!check_same_stat(&lsbuf, &sbuf)) {
 		close(fd);
 		DEBUG(0,("process_usershare_file: fstat of %s is a different file from lstat. "
 			"Symlink spoofing going on ?\n", fname ));
