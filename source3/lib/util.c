@@ -126,6 +126,35 @@ uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf)
 	return sbuf->st_ex_size;
 }
 
+/****************************************************************************
+ Check two stats have identical dev and ino fields.
+****************************************************************************/
+
+bool check_same_dev_ino(const SMB_STRUCT_STAT *sbuf1,
+                        const SMB_STRUCT_STAT *sbuf2)
+{
+	if (sbuf1->st_ex_dev != sbuf2->st_ex_dev ||
+			sbuf1->st_ex_ino != sbuf2->st_ex_ino) {
+		return false;
+	}
+	return true;
+}
+
+/****************************************************************************
+ Check if a stat struct is identical for use.
+****************************************************************************/
+
+bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
+			const SMB_STRUCT_STAT *sbuf2)
+{
+	if (sbuf1->st_ex_uid != sbuf2->st_ex_uid ||
+			sbuf1->st_ex_gid != sbuf2->st_ex_gid ||
+			!check_same_dev_ino(sbuf1, sbuf2)) {
+		return false;
+	}
+	return true;
+}
+
 /*******************************************************************
  Show a smb message structure.
 ********************************************************************/
