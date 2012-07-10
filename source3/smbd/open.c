@@ -2465,7 +2465,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	SMB_ASSERT(lck != NULL);
 
 	/* Delete streams if create_disposition requires it */
-	if (file_existed && clear_ads &&
+	if (!new_file_created && clear_ads &&
 	    !is_ntfs_stream_smb_fname(smb_fname)) {
 		status = delete_all_streams(conn, smb_fname->base_name);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2505,7 +2505,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * If requested, truncate the file.
 	 */
 
-	if (file_existed && (flags2&O_TRUNC)) {
+	if (!new_file_created && (flags2&O_TRUNC)) {
 		/*
 		 * We are modifying the file after open - update the stat
 		 * struct..
@@ -2541,14 +2541,16 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (is_stat_open(open_access_mask)) {
 			fsp->oplock_type = NO_OPLOCK;
 		}
+	}
 
+	if (new_file_created) {
+		info = FILE_WAS_CREATED;
+	} else {
 		if (flags2 & O_TRUNC) {
 			info = FILE_WAS_OVERWRITTEN;
 		} else {
 			info = FILE_WAS_OPENED;
 		}
-	} else {
-		info = FILE_WAS_CREATED;
 	}
 
 	if (pinfo) {
@@ -2590,13 +2592,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->initial_delete_on_close = True;
 	}
 
-	if (info == FILE_WAS_OVERWRITTEN
-	    || info == FILE_WAS_CREATED
-	    || info == FILE_WAS_SUPERSEDED) {
-		new_file_created = True;
-	}
-
-	if (new_file_created) {
+	if (info != FILE_WAS_OPENED) {
 		/* Files should be initially set as archive */
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
@@ -2624,7 +2620,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * selected.
 	 */
 
-	if (!posix_open && !file_existed && !def_acl) {
+	if (!posix_open && new_file_created && !def_acl) {
 
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
