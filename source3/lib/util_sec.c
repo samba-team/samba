@@ -337,7 +337,7 @@ int set_re_uid(void)
 	uid_t uid = geteuid();
 
 #if defined(USE_SETRESUID) || defined(USE_LINUX_THREAD_CREDENTIALS)
-	samba_setresuid(geteuid(), -1, -1);
+	samba_setresuid(uid, uid, -1);
 #endif
 
 #if USE_SETREUID
