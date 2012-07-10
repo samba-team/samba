@@ -1810,6 +1810,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	uint32 open_access_mask = access_mask;
 	NTSTATUS status;
 	char *parent_dir;
+	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 
 	if (conn->printer) {
 		/*
@@ -2347,6 +2348,30 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 		TALLOC_FREE(lck);
 		return fsp_open;
+	}
+
+	if (file_existed && !check_same_dev_ino(&saved_stat, &smb_fname->st)) {
+		/*
+		 * The file did exist, but some other (local or NFS)
+		 * process either renamed/unlinked and re-created the
+		 * file with different dev/ino after we walked the path,
+		 * but before we did the open. We could retry the
+		 * open but it's a rare enough case it's easier to
+		 * just fail the open to prevent creating any problems
+		 * in the open file db having the wrong dev/ino key.
+		 */
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		DEBUG(1,("open_file_ntcreate: file %s - dev/ino mismatch. "
+			"Old (dev=0x%llu, ino =0x%llu). "
+			"New (dev=0x%llu, ino=0x%llu). Failing open "
+			" with NT_STATUS_ACCESS_DENIED.\n",
+			 smb_fname_str_dbg(smb_fname),
+			 (unsigned long long)saved_stat.st_ex_dev,
+			 (unsigned long long)saved_stat.st_ex_ino,
+			 (unsigned long long)smb_fname->st.st_ex_dev,
+			 (unsigned long long)smb_fname->st.st_ex_ino));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!file_existed) {
