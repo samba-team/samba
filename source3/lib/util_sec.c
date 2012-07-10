@@ -411,14 +411,14 @@ void become_user_permanently(uid_t uid, gid_t gid)
 }
 
 /**********************************************************
- Function to set thread specific credentials in an
- irreversible way. Must be thread-safe code.
+ Function to set thread specific credentials. Leave
+ saved-set uid/gid alone.Must be thread-safe code.
 **********************************************************/
 
-int set_thread_credentials_permanently(uid_t uid,
-				gid_t gid,
-				size_t setlen,
-				const gid_t *gidset)
+int set_thread_credentials(uid_t uid,
+			gid_t gid,
+			size_t setlen,
+			const gid_t *gidset)
 {
 #if defined(USE_LINUX_THREAD_CREDENTIALS)
 	/*
@@ -433,22 +433,22 @@ int set_thread_credentials_permanently(uid_t uid,
 		return -1;
 	}
 	/* Set our primary gid. */
-	/* Set rg=gid, eg=gid, sg=gid */
-	if (samba_setresgid(gid, gid, gid) != 0) {
+	/* Set rg=gid, eg=gid */
+	if (samba_setresgid(gid, gid, -1) != 0) {
 		return -1;
 	}
 	/* Set extra groups list. */
 	if (samba_setgroups(setlen, gidset) != 0) {
 		return -1;
 	}
-	/* Become the requested user. No way back after this. */
-	/* Set ru=uid, eu=uid, su=uid */
-	if (samba_setresuid(uid, uid, uid) != 0) {
+	/* Become the requested user. */
+	/* Set ru=uid, eu=uid */
+	if (samba_setresuid(uid, uid, -1) != 0) {
 		return -1;
 	}
 	if (geteuid() != uid || getuid() != uid ||
 			getegid() != gid || getgid() != gid) {
-		smb_panic("set_thread_credentials_permanently failed\n");
+		smb_panic("set_thread_credentials failed\n");
 		return -1;
 	}
 	return 0;
