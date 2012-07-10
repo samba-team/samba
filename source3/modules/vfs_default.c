@@ -1084,7 +1084,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	case FSCTL_IS_VOLUME_DIRTY:
 	{
 		DEBUG(10,("FSCTL_IS_VOLUME_DIRTY: called on %s "
-			  "(but not implemented)\n", fsp_fnum_dbg(fsp)));
+			  "(but remotely not supported)\n", fsp_fnum_dbg(fsp)));
 		/*
 		 * http://msdn.microsoft.com/en-us/library/cc232128%28PROT.10%29.aspx
 		 * says we have to respond with NT_STATUS_INVALID_PARAMETER
