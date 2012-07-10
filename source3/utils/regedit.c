@@ -22,6 +22,8 @@
 #include "lib/util/data_blob.h"
 #include "lib/registry/registry.h"
 #include "regedit.h"
+#include <ncurses.h>
+#include <menu.h>
 
 int main(int argc, char **argv)
 {
@@ -42,6 +44,9 @@ int main(int argc, char **argv)
 	struct registry_key *smbconf;
 	uint32_t n;
 	WERROR rv;
+
+	initscr();
+	endwin();
 
 	frame = talloc_stackframe();
 
