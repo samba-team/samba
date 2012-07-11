@@ -3727,6 +3727,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			fsp->initial_allocation_size = smb_roundup(
 				fsp->conn, (uint64_t)fsp->fsp_name->st.st_ex_size);
 		}
+	} else {
+		fsp->initial_allocation_size = 0;
 	}
 
 	if ((info == FILE_WAS_CREATED) && lp_nt_acl_support(SNUM(conn)) &&
