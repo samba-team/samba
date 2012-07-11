@@ -733,6 +733,8 @@ int i; i = PAM_RADIO_TYPE;
             conf.DEFINE('WITH_PAM', 1)
             conf.DEFINE('WITH_PAM_MODULES', 1)
 
+    seteuid = False
+
 #
 # Ensure we select the correct set of system calls on Linux.
 #
@@ -772,10 +774,7 @@ syscall(SYS_setgroups32, 0, NULL);
             'USE_LINUX_32BIT_SYSCALLS',
             msg="Checking whether Linux should use 32-bit credential calls");
 
-    seteuid = False
-
-    if not seteuid:
-	if (conf.CONFIG_SET('USE_LINUX_32BIT_SYSCALLS')):
+        if (conf.CONFIG_SET('USE_LINUX_32BIT_SYSCALLS')):
 	        seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1
                                 #define USE_LINUX_THREAD_CREDENTIALS 1
@@ -787,7 +786,7 @@ syscall(SYS_setgroups32, 0, NULL);
                                 addmain=False,
                                 execute=True,
                                 msg="Checking whether we can use Linux thread-specific credentials with 32-bit system calls")
-	else:
+        else:
 	        seteuid = conf.CHECK_CODE('''
                                 #define AUTOCONF_TEST 1
                                 #define USE_LINUX_THREAD_CREDENTIALS 1
