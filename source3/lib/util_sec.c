@@ -334,7 +334,7 @@ int set_re_uid(void)
 	uid_t uid = geteuid();
 
 #if USE_SETRESUID
-	setresuid(geteuid(), -1, -1);
+	setresuid(uid, uid, -1);
 #endif
 
 #if USE_SETREUID
