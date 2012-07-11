@@ -84,6 +84,25 @@ struct lock_request {
 
 
 /*
+ * Support samba 3.6.x (and older) versions which do not set db priority.
+ *
+ * By default, all databases are set to priority 1. So only when priority
+ * is set to 1, check for databases that need higher priority.
+ */
+static bool later_db(const char *name)
+{
+	if (strstr(name, "brlock") ||
+	    strstr(name, "g_lock") ||
+	    strstr(name, "notify_onelevel") ||
+	    strstr(name, "serverid") ||
+	    strstr(name, "xattr_tdb")) {
+		return true;
+	}
+
+	return false;
+}
+
+/*
  * lock all databases
  */
 int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority)
@@ -92,6 +111,27 @@ int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 
 	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
 		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (later_db(ctdb_db->db_name)) {
+			continue;
+		}
+		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
+				   ctdb_db->db_name, priority));
+		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+			DEBUG(DEBUG_ERR, ("Failed to lock database %s\n",
+					  ctdb_db->db_name));
+			return -1;
+		}
+	}
+
+	/* If priority != 1, later_db check is not required and can return */
+	if (priority != 1) {
+		return 0;
+	}
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		if (!later_db(ctdb_db->db_name)) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
@@ -179,6 +219,27 @@ int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 
 	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
 		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (later_db(ctdb_db->db_name)) {
+			continue;
+		}
+		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
+		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
+			/* FIXME: Shouldn't we unmark here? */
+			return -1;
+		}
+	}
+
+	/* If priority != 1, later_db check is not required and can return */
+	if (priority != 1) {
+		return 0;
+	}
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		if (!later_db(ctdb_db->db_name)) {
 			continue;
 		}
 		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
