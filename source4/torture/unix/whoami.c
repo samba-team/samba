@@ -253,6 +253,8 @@ static bool smb_raw_query_posix_whoami(void *mem_ctx,
 		torture_assert(torture, whoami->sid_list != NULL,
 				"out of memory");
 
+		torture_comment(torture, "\tSIDs:\n");
+
 		for (i = 0; i < whoami->num_sids; ++i) {
 			if (!whoami_sid_parse(mem_ctx, torture,
 					&tp.out.data, &offset,
@@ -260,6 +262,8 @@ static bool smb_raw_query_posix_whoami(void *mem_ctx,
 				return false;
 			}
 
+			torture_comment(torture, "\t\t%s\n",
+					dom_sid_string(torture, whoami->sid_list[i]));
 		}
 	}
 
