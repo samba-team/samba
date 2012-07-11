@@ -373,6 +373,12 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 	return;
 }
 
+static int ctdb_takeip_destructor(struct ctdb_do_takeip_state *state)
+{
+	state->vnn->update_in_flight = false;
+	return 0;
+}
+
 /*
   take over an ip address
  */
@@ -382,6 +388,14 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 {
 	int ret;
 	struct ctdb_do_takeip_state *state;
+
+	if (vnn->update_in_flight) {
+		DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u rejected "
+				    "update for this IP already in flight\n",
+				    ctdb_addr_to_str(&vnn->public_address),
+				    vnn->public_netmask_bits));
+		return -1;
+	}
 
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
 	if (ret != 0) {
@@ -397,6 +411,9 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 
 	state->c = talloc_steal(ctdb, c);
 	state->vnn   = vnn;
+
+	vnn->update_in_flight = true;
+	talloc_set_destructor(state, ctdb_takeip_destructor);
 
 	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n",
 			    ctdb_addr_to_str(&vnn->public_address),
@@ -480,6 +497,12 @@ static void ctdb_do_updateip_callback(struct ctdb_context *ctdb, int status,
 	return;
 }
 
+static int ctdb_updateip_destructor(struct ctdb_do_updateip_state *state)
+{
+	state->vnn->update_in_flight = false;
+	return 0;
+}
+
 /*
   update (move) an ip address
  */
@@ -491,6 +514,14 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	struct ctdb_do_updateip_state *state;
 	struct ctdb_iface *old = vnn->iface;
 	const char *new_name;
+
+	if (vnn->update_in_flight) {
+		DEBUG(DEBUG_NOTICE,("Update of IP %s/%u rejected "
+				    "update for this IP already in flight\n",
+				    ctdb_addr_to_str(&vnn->public_address),
+				    vnn->public_netmask_bits));
+		return -1;
+	}
 
 	ctdb_vnn_unassign_iface(ctdb, vnn);
 	ret = ctdb_vnn_assign_iface(ctdb, vnn);
@@ -519,6 +550,9 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	state->c = talloc_steal(ctdb, c);
 	state->old = old;
 	state->vnn = vnn;
+
+	vnn->update_in_flight = true;
+	talloc_set_destructor(state, ctdb_updateip_destructor);
 
 	DEBUG(DEBUG_NOTICE,("Update of IP %s/%u from "
 			    "interface %s to %s\n",
@@ -782,6 +816,12 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	talloc_free(state);
 }
 
+static int ctdb_releaseip_destructor(struct takeover_callback_state *state)
+{
+	state->vnn->update_in_flight = false;
+	return 0;
+}
+
 /*
   release an ip address
  */
@@ -809,20 +849,18 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	talloc_free(vnn->takeover_ctx);
 	vnn->takeover_ctx = NULL;
 
+	/* Some ctdb tool commands (e.g. moveip, rebalanceip) send
+	 * lazy multicast to drop an IP from any node that isn't the
+	 * intended new node.  The following causes makes ctdbd ignore
+	 * a release for any address it doesn't host.
+	 */
 	if (ctdb->do_checkpublicip) {
-
 		if (!ctdb_sys_have_ip(&pip->addr)) {
 			DEBUG(DEBUG_DEBUG,("Redundant release of IP %s/%u on interface %s (ip not held)\n",
 				ctdb_addr_to_str(&pip->addr),
 				vnn->public_netmask_bits,
 				ctdb_vnn_iface_string(vnn)));
 			ctdb_vnn_unassign_iface(ctdb, vnn);
-			return 0;
-		}
-
-		iface = ctdb_sys_find_ifname(&pip->addr);
-		if (iface == NULL) {
-			DEBUG(DEBUG_ERR, ("Could not find which interface the ip address is hosted on. can not release it\n"));
 			return 0;
 		}
 	} else {
@@ -832,6 +870,28 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					   vnn->public_netmask_bits));
 			return 0;
 		}
+	}
+
+	/* There is a potential race between take_ip and us because we
+	 * update the VNN via a callback that run when the
+	 * eventscripts have been run.  Avoid the race by allowing one
+	 * update to be in flight at a time.
+	 */
+	if (vnn->update_in_flight) {
+		DEBUG(DEBUG_NOTICE,("Release of IP %s/%u rejected "
+				    "update for this IP already in flight\n",
+				    ctdb_addr_to_str(&vnn->public_address),
+				    vnn->public_netmask_bits));
+		return -1;
+	}
+
+	if (ctdb->do_checkpublicip) {
+		iface = ctdb_sys_find_ifname(&pip->addr);
+		if (iface == NULL) {
+			DEBUG(DEBUG_ERR, ("Could not find which interface the ip address is hosted on. can not release it\n"));
+			return 0;
+		}
+	} else {
 		iface = strdup(ctdb_vnn_iface_string(vnn));
 	}
 
@@ -849,6 +909,9 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	CTDB_NO_MEMORY(ctdb, state->addr);
 	*state->addr = pip->addr;
 	state->vnn   = vnn;
+
+	vnn->update_in_flight = true;
+	talloc_set_destructor(state, ctdb_releaseip_destructor);
 
 	ret = ctdb_event_script_callback(ctdb, 
 					 state, release_ip_callback, state,

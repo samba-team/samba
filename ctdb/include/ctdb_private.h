@@ -213,6 +213,10 @@ struct ctdb_vnn {
 	TALLOC_CTX *takeover_ctx;
 
 	struct ctdb_kill_tcp *killtcp;
+
+	/* Set to true any time an update to this VNN is in flight.
+	   This helps to avoid races. */
+	bool update_in_flight;
 };
 
 /*
