@@ -1170,29 +1170,6 @@ NTSTATUS pdb_lookup_rids(const struct dom_sid *domain_sid,
 	return pdb->lookup_rids(pdb, domain_sid, num_rids, rids, names, attrs);
 }
 
-/* 
- * NOTE: pdb_lookup_names is currently (2007-01-12) not used anywhere 
- *       in the samba code.
- *       Unlike _lsa_lookup_sids and _samr_lookup_rids, which eventually 
- *       also ask pdb_lookup_rids, thus looking up a bunch of rids at a time, 
- *       the pdb_ calls _lsa_lookup_names and _samr_lookup_names come
- *       down to are pdb_getsampwnam and pdb_getgrnam instead of
- *       pdb_lookup_names.
- *       But in principle, it the call belongs to the API and might get
- *       used in this context some day. 
- */
-#if 0
-NTSTATUS pdb_lookup_names(const struct dom_sid *domain_sid,
-			  int num_names,
-			  const char **names,
-			  uint32_t *rids,
-			  enum lsa_SidType *attrs)
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return pdb->lookup_names(pdb, domain_sid, num_names, names, rids, attrs);
-}
-#endif
-
 bool pdb_get_account_policy(enum pdb_policy_type type, uint32_t *value)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
@@ -1858,65 +1835,6 @@ static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 
 	return result;
 }
-
-#if 0
-static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
-					 const struct dom_sid *domain_sid,
-					 int num_names,
-					 const char **names,
-					 uint32_t *rids,
-					 enum lsa_SidType *attrs)
-{
-	int i;
-	NTSTATUS result;
-	bool have_mapped = False;
-	bool have_unmapped = False;
-
-	if (sid_check_is_builtin(domain_sid)) {
-
-		for (i=0; i<num_names; i++) {
-			uint32_t rid;
-
-			if (lookup_builtin_name(names[i], &rid)) {
-				attrs[i] = SID_NAME_ALIAS;
-				rids[i] = rid;
-				DEBUG(5,("lookup_rids: %s:%d\n",
-					 names[i], attrs[i]));
-				have_mapped = True;
-			} else {
-				have_unmapped = True;
-				attrs[i] = SID_NAME_UNKNOWN;
-			}
-		}
-		goto done;
-	}
-
-	/* Should not happen, but better check once too many */
-	if (!sid_check_is_domain(domain_sid)) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	for (i = 0; i < num_names; i++) {
-		if (lookup_global_sam_name(names[i], 0, &rids[i], &attrs[i])) {
-			DEBUG(5,("lookup_names: %s-> %d:%d\n", names[i],
-				 rids[i], attrs[i]));
-			have_mapped = True;
-		} else {
-			have_unmapped = True;
-			attrs[i] = SID_NAME_UNKNOWN;
-		}
-	}
-
- done:
-
-	result = NT_STATUS_NONE_MAPPED;
-
-	if (have_mapped)
-		result = have_unmapped ? STATUS_SOME_UNMAPPED : NT_STATUS_OK;
-
-	return result;
-}
-#endif
 
 static int pdb_search_destructor(struct pdb_search *search)
 {
