@@ -733,6 +733,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex, int errcode)
 		}
 
 		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
+
+		mark_file_modified(aio_ex->fsp);
 	}
 
 	show_msg(outbuf);
@@ -820,6 +822,8 @@ static int handle_aio_smb2_write_complete(struct aio_extra *aio_ex, int errcode)
 		tevent_req_nterror(subreq, status);
 		return errcode;
 	}
+
+	mark_file_modified(fsp);
 
 	tevent_req_done(subreq);
 	return errcode;
