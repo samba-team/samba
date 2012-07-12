@@ -269,6 +269,37 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 	(void)smb_set_file_time(fsp->conn, fsp, fsp->fsp_name, &ft, false);
 }
 
+void mark_file_modified(files_struct *fsp)
+{
+	int dosmode;
+
+	if (fsp->modified) {
+		return;
+	}
+
+	fsp->modified = true;
+
+	if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
+		return;
+	}
+	trigger_write_time_update(fsp);
+
+	if (fsp->posix_open) {
+		return;
+	}
+	if (!(lp_store_dos_attributes(SNUM(fsp->conn)) ||
+	      MAP_ARCHIVE(fsp->conn))) {
+		return;
+	}
+
+	dosmode = dos_mode(fsp->conn, fsp->fsp_name);
+	if (IS_DOS_ARCHIVE(dosmode)) {
+		return;
+	}
+	file_set_dosmode(fsp->conn, fsp->fsp_name,
+			 dosmode | FILE_ATTRIBUTE_ARCHIVE, NULL, false);
+}
+
 /****************************************************************************
  Write to a file.
 ****************************************************************************/
@@ -300,33 +331,19 @@ ssize_t write_file(struct smb_request *req,
 		return -1;
 	}
 
-	if (!fsp->modified) {
-		fsp->modified = True;
+	/*
+	 * If this is the first write and we have an exclusive oplock
+	 * then setup the write cache.
+	 */
 
-		if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) == 0) {
-			trigger_write_time_update(fsp);
-			if (!fsp->posix_open &&
-					(lp_store_dos_attributes(SNUM(fsp->conn)) ||
-					MAP_ARCHIVE(fsp->conn))) {
-				int dosmode = dos_mode(fsp->conn, fsp->fsp_name);
-				if (!IS_DOS_ARCHIVE(dosmode)) {
-					file_set_dosmode(fsp->conn, fsp->fsp_name,
-						 dosmode | FILE_ATTRIBUTE_ARCHIVE, NULL, false);
-				}
-			}
-
-			/*
-			 * If this is the first write and we have an exclusive oplock then setup
-			 * the write cache.
-			 */
-
-			if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !wcp) {
-				setup_write_cache(fsp,
-						 fsp->fsp_name->st.st_ex_size);
-				wcp = fsp->wcp;
-			}
-		}
+	if (!fsp->modified &&
+	    EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) &&
+	    (wcp == NULL)) {
+		setup_write_cache(fsp, fsp->fsp_name->st.st_ex_size);
+		wcp = fsp->wcp;
 	}
+
+	mark_file_modified(fsp);
 
 #ifdef WITH_PROFILE
 	DO_PROFILE_INC(writecache_total_writes);

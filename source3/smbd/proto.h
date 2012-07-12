@@ -320,6 +320,7 @@ void update_write_time_handler(struct event_context *ctx,
                                       void *private_data);
 void trigger_write_time_update(struct files_struct *fsp);
 void trigger_write_time_update_immediate(struct files_struct *fsp);
+void mark_file_modified(files_struct *fsp);
 ssize_t write_file(struct smb_request *req,
 			files_struct *fsp,
 			const char *data,
