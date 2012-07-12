@@ -228,9 +228,12 @@ static bool smb_raw_query_posix_whoami(void *mem_ctx,
 		whoami->gid_list = talloc_array(mem_ctx, uint64_t, whoami->num_gids);
 		torture_assert(torture, whoami->gid_list != NULL, "out of memory");
 
+		torture_comment(torture, "\tGIDs:\n");
+		
 		for (i = 0; i < whoami->num_gids; ++i) {
 			whoami->gid_list[i] = BVAL(tp.out.data.data, offset);
 			offset += 8;
+			torture_comment(torture, "\t\t%u\n", (unsigned int)whoami->gid_list[i]);
 		}
 	}
 
