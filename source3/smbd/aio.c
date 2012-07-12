@@ -467,6 +467,8 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 	/* Unlock now we're done. */
 	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
+	mark_file_modified(fsp);
+
 	if (fsp->aio_write_behind) {
 
 		if (nwritten != numtowrite) {
@@ -699,6 +701,8 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 
 	/* Unlock now we're done. */
 	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
+
+	mark_file_modified(fsp);
 
 	/* Common error or success code processing for async or sync
 	   read returns. */
