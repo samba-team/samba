@@ -277,7 +277,8 @@ static bool smb_raw_query_posix_whoami(void *mem_ctx,
 	return true;
 }
 
-static bool test_against_ldap(struct torture_context *torture, struct ldb_context *ldb, struct smb_whoami *whoami)
+static bool test_against_ldap(struct torture_context *torture, struct ldb_context *ldb, bool is_dc, 
+			      struct smb_whoami *whoami)
 {
 	struct ldb_message *msg;
 	struct ldb_message_element *el;
@@ -288,15 +289,54 @@ static bool test_against_ldap(struct torture_context *torture, struct ldb_contex
 	torture_assert_int_equal(torture, dsdb_search_one(ldb, torture, &msg, NULL, LDB_SCOPE_BASE, attrs, 0, NULL), LDB_SUCCESS, "searching for tokenGroups");
 	el = ldb_msg_find_element(msg, "tokenGroups");
 	torture_assert(torture, el, "obtaining tokenGroups");
-	torture_assert_int_equal(torture, el->num_values, whoami->num_sids, "Number of SIDs from LDAP and number of SIDs from CIFS does not match!");
+	torture_assert(torture, el->num_values > 0, "Number of SIDs from LDAP needs to be more than 0");
+	torture_assert(torture, whoami->num_sids > 0, "Number of SIDs from LDAP needs to be more than 0");
+	
+	if (is_dc) {
+		torture_assert_int_equal(torture, el->num_values, whoami->num_sids, "Number of SIDs from LDAP and number of SIDs from CIFS does not match!");
+		
+		for (i = 0; i < el->num_values; i++) {
+			struct dom_sid *sid = talloc(torture, struct dom_sid);
+			torture_assert(torture, sid != NULL, "talloc failed");
+			
+			torture_assert(torture, sid_blob_parse(el->values[i], sid), "sid parse failed");
+			torture_assert_str_equal(torture, dom_sid_string(sid, sid), dom_sid_string(sid, whoami->sid_list[i]), "SID from LDAP and SID from CIFS does not match!");
+			talloc_free(sid);
+		}
+	} else {
+		unsigned int num_domain_sids_dc = 0, num_domain_sids_member = 0;
+		struct dom_sid *user_sid = talloc(torture, struct dom_sid);
+		struct dom_sid *dom_sid = talloc(torture, struct dom_sid);
+		struct dom_sid *dc_sids = talloc_array(torture, struct dom_sid, el->num_values);
+		struct dom_sid *member_sids = talloc_array(torture, struct dom_sid, whoami->num_sids);
+		torture_assert(torture, user_sid != NULL, "talloc failed");
+		torture_assert(torture, sid_blob_parse(el->values[0], user_sid), "sid parse failed");
+		torture_assert_ntstatus_equal(torture, dom_sid_split_rid(torture, user_sid, &dom_sid, NULL), NT_STATUS_OK, "failed to split domain SID from user SID");
+		for (i = 0; i < el->num_values; i++) {
+			struct dom_sid *sid = talloc(dc_sids, struct dom_sid);
+			torture_assert(torture, sid != NULL, "talloc failed");
+			
+			torture_assert(torture, sid_blob_parse(el->values[i], sid), "sid parse failed");
+			if (dom_sid_in_domain(dom_sid, sid)) {
+				dc_sids[num_domain_sids_dc] = *sid;
+				num_domain_sids_dc++;
+			}
+			talloc_free(sid);
+		}
 
-	for (i = 0; i < el->num_values; i++) {
-		struct dom_sid *sid = talloc(torture, struct dom_sid);
-		torture_assert(torture, sid != NULL, "talloc failed");
+		for (i = 0; i < whoami->num_sids; i++) {
+			if (dom_sid_in_domain(dom_sid, whoami->sid_list[i])) {
+				member_sids[num_domain_sids_member] = *whoami->sid_list[i];
+				num_domain_sids_member++;
+			}
+		}
 
-		torture_assert(torture, sid_blob_parse(el->values[i], sid), "sid parse failed");
-		torture_assert_str_equal(torture, dom_sid_string(sid, sid), dom_sid_string(sid, whoami->sid_list[i]), "SID from LDAP and SID from CIFS does not match!");
-		talloc_free(sid);
+		torture_assert_int_equal(torture, num_domain_sids_dc, num_domain_sids_member, "Number of Domain SIDs from LDAP DC and number of SIDs from CIFS member does not match!");
+		for (i = 0; i < num_domain_sids_dc; i++) {
+			torture_assert_str_equal(torture, dom_sid_string(dc_sids, &dc_sids[i]), dom_sid_string(member_sids, &member_sids[i]), "Domain SID from LDAP DC and SID from CIFS member server does not match!");
+		}
+		talloc_free(dc_sids);
+		talloc_free(member_sids);
 	}
 	return true;
 }
@@ -307,6 +347,7 @@ bool torture_unix_whoami(struct torture_context *torture)
 	struct smb_whoami whoami;
 	bool ret;
 	struct ldb_context *ldb;
+	const char *addc, *host;
 
 	cli = connect_to_server(torture, cmdline_credentials);
 	torture_assert(torture, cli, "connecting to server with authenticated credentials");
@@ -316,13 +357,16 @@ bool torture_unix_whoami(struct torture_context *torture)
 						       cli, &whoami, 0xFFFF), ret, fail,
 			    "calling SMB_QFS_POSIX_WHOAMI on an authenticated connection");
 
-	if (torture_setting_bool(torture, "addc", false)) {
-		ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, talloc_asprintf(torture, "ldap://%s", torture_setting_string(torture, "host", NULL)),
+	addc = torture_setting_string(torture, "addc", NULL);
+	host = torture_setting_string(torture, "host", NULL);
+	
+ 	if (addc) {
+		ldb = ldb_wrap_connect(torture, torture->ev, torture->lp_ctx, talloc_asprintf(torture, "ldap://%s", addc),
 				       NULL, cmdline_credentials, 0);
 		torture_assert(torture, ldb, "ldb connect failed");
 
 		/* We skip this testing if we could not contact the LDAP server */
-		if (!test_against_ldap(torture, ldb, &whoami)) {
+		if (!test_against_ldap(torture, ldb, strcasecmp(addc, host) == 0, &whoami)) {
 			goto fail;
 		}
 	}

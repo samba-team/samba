@@ -305,11 +305,13 @@ for t in tests:
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
     elif t == "unix.whoami":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U%', description='anonymous connection')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:addc=true')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k yes -U$USERNAME%$PASSWORD --option=torture:addc=true', description='kerberos connection')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U% --option=torture:addc=true', description='anonymous connection')
+        for env in ["s3dc", "member"]:
+            plansmbtorturetestsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
+            plansmbtorturetestsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
+        for env in ["plugin_s4_dc", "s3member"]:
+            plansmbtorturetestsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER')
+            plansmbtorturetestsuite(t, env, '//$SERVER/tmp -k yes -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER', description='kerberos connection')
+            plansmbtorturetestsuite(t, env, '//$SERVER/tmpguest -U% --option=torture:addc=$DC_SERVER', description='anonymous connection')
     elif t == "raw.samba3posixtimedlock":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/plugin_s4_dc/share')
