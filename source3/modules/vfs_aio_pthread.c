@@ -27,6 +27,9 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "lib/pthreadpool/pthreadpool.h"
+#ifdef HAVE_LINUX_FALLOC_H
+#include <linux/falloc.h>
+#endif
 
 struct aio_extra;
 static struct pthreadpool *pool;
@@ -635,6 +638,7 @@ struct aio_open_private_data {
 	char *dname;
 	struct smbd_server_connection *sconn;
 	const struct security_unix_token *ux_tok;
+	uint64_t initial_allocation_size;
 	/* Returns. */
 	int ret_fd;
 	int ret_errno;
@@ -769,6 +773,23 @@ static void aio_open_worker(void *private_data)
 	} else {
 		/* Create was successful. */
 		opd->ret_errno = 0;
+
+#if defined(HAVE_LINUX_FALLOCATE)
+		/*
+		 * See if we can set the initial
+		 * allocation size. We don't record
+		 * the return for this as it's an
+		 * optimization - the upper layer
+		 * will also do this for us once
+		 * the open returns.
+		 */
+		if (opd->initial_allocation_size) {
+			(void)fallocate(opd->ret_fd,
+					FALLOC_FL_KEEP_SIZE,
+					0,
+					(off_t)opd->initial_allocation_size);
+		}
+#endif
 	}
 }
 
@@ -810,6 +831,7 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 	opd->mid = fsp->mid;
 	opd->in_progress = true;
 	opd->sconn = fsp->conn->sconn;
+	opd->initial_allocation_size = fsp->initial_allocation_size;
 
 	/* Copy our current credentials. */
 	opd->ux_tok = copy_unix_token(opd, get_current_utok(fsp->conn));
