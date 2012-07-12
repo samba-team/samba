@@ -357,6 +357,19 @@ bool torture_unix_whoami(struct torture_context *torture)
 						       cli, &whoami, 0xFFFF), ret, fail,
 			    "calling SMB_QFS_POSIX_WHOAMI on an authenticated connection");
 
+	/* Check that our anonymous login mapped us to guest on the server, but
+	 * only if the server supports this.
+	 */
+	if (whoami.mapping_mask & SMB_WHOAMI_GUEST) {
+		bool guest = whoami.mapping_flags & SMB_WHOAMI_GUEST;
+		torture_comment(torture, "checking whether we were logged in as guest... %s\n",
+			guest ? "YES" : "NO");
+		torture_assert(torture, cli_credentials_is_anonymous(cmdline_credentials) == guest,
+			       "login did not credentials map to guest");
+	} else {
+		torture_comment(torture, "server does not support SMB_WHOAMI_GUEST flag\n");
+	}
+
 	addc = torture_setting_string(torture, "addc", NULL);
 	host = torture_setting_string(torture, "host", NULL);
 	
@@ -384,19 +397,6 @@ bool torture_unix_whoami(struct torture_context *torture)
 			"invalid SID bytes count");
 
 	smbcli_tdis(cli);
-
-	/* Check that our anonymous login mapped us to guest on the server, but
-	 * only if the server supports this.
-	 */
-	if (whoami.mapping_mask & SMB_WHOAMI_GUEST) {
-		bool guest = whoami.mapping_flags & SMB_WHOAMI_GUEST;
-		printf("checking whether we were logged in as guest... %s\n",
-			guest ? "YES" : "NO");
-		torture_assert(torture, cli_credentials_is_anonymous(cmdline_credentials) == guest,
-			       "login did not credentials map to guest");
-	} else {
-		printf("server does not support SMB_WHOAMI_GUEST flag\n");
-	}
 
 	return true;
 fail:
