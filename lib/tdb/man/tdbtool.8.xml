@@ -201,6 +201,14 @@
 
 		<varlistentry>
 		<term>
+		<option>repack</option>
+		</term>
+		<listitem><para>Repack a database using a temporary file to remove fragmentation.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>
 		<option>quit</option>
 		</term>
 		<listitem><para>Exit <command>tdbtool</command>.
@@ -220,7 +228,7 @@
 
 <refsect1>
 	<title>VERSION</title>
-	<para>This man page is correct for version 3.0.25 of the Samba suite.</para>
+	<para>This man page is correct for version 3.6 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>
