@@ -119,7 +119,7 @@ int main(int argc, const char **argv)
 
 	}
 
-	ev_ctx = s4_event_context_init(NULL);
+	ev_ctx = s4_event_context_init(ctx);
 
 	h1 = open_backend(ctx, pc, ev_ctx, cmdline_lp_ctx, backend1, remote1);
 	if (h1 == NULL)
