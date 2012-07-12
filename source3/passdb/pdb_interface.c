@@ -1805,7 +1805,7 @@ static NTSTATUS pdb_default_lookup_rids(struct pdb_methods *methods,
 	}
 
 	/* Should not happen, but better check once too many */
-	if (!sid_check_is_domain(domain_sid)) {
+	if (!sid_check_is_our_sam(domain_sid)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 

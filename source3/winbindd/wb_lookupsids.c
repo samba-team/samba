@@ -185,7 +185,7 @@ static bool wb_lookupsids_next(struct tevent_req *req,
 
 		d = &state->domains[state->domains_done];
 
-		if (sid_check_is_domain(&d->sid)) {
+		if (sid_check_is_our_sam(&d->sid)) {
 			state->rids.num_rids = d->sids.num_sids;
 			state->rids.rids = talloc_array(state, uint32_t,
 							state->rids.num_rids);

@@ -3727,7 +3727,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		type = SID_NAME_ALIAS;
 	}
 
-	if (sid_check_is_domain(domain_sid)) {
+	if (sid_check_is_our_sam(domain_sid)) {
 		type = SID_NAME_ALIAS;
 	}
 
@@ -4032,7 +4032,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 	}
 
 	if (!sid_check_is_builtin(domain_sid) &&
-	    !sid_check_is_domain(domain_sid)) {
+	    !sid_check_is_our_sam(domain_sid)) {
 		result = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}

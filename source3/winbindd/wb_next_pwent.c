@@ -40,7 +40,7 @@ static struct winbindd_domain *wb_next_find_domain(struct winbindd_domain *domai
 	}
 
 	if ((domain != NULL)
-	    && sid_check_is_domain(&domain->sid)) {
+	    && sid_check_is_our_sam(&domain->sid)) {
 		domain = domain->next;
 	}
 	return domain;
@@ -114,7 +114,7 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 		state->gstate->domain = state->gstate->domain->next;
 
 		if ((state->gstate->domain != NULL)
-		    && sid_check_is_domain(&state->gstate->domain->sid)) {
+		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
 			state->gstate->domain = state->gstate->domain->next;
 		}
 

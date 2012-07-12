@@ -233,7 +233,7 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 		return builtin_dispinfo;
 	}
 
-	if (sid_check_is_domain(psid) || sid_check_is_in_our_domain(psid)) {
+	if (sid_check_is_our_sam(psid) || sid_check_is_in_our_domain(psid)) {
 		/*
 		 * Necessary only once, but it does not really hurt.
 		 */
@@ -484,7 +484,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	if (!sid_check_is_domain(r->in.sid) &&
+	if (!sid_check_is_our_sam(r->in.sid) &&
 	    !sid_check_is_builtin(r->in.sid)) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
@@ -5326,7 +5326,7 @@ NTSTATUS _samr_GetAliasMembership(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!sid_check_is_domain(&dinfo->sid) &&
+	if (!sid_check_is_our_sam(&dinfo->sid) &&
 	    !sid_check_is_builtin(&dinfo->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
@@ -5837,7 +5837,7 @@ NTSTATUS _samr_CreateDomainGroup(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!sid_check_is_domain(&dinfo->sid)) {
+	if (!sid_check_is_our_sam(&dinfo->sid)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -5899,7 +5899,7 @@ NTSTATUS _samr_CreateDomAlias(struct pipes_struct *p,
 		return result;
 	}
 
-	if (!sid_check_is_domain(&dinfo->sid)) {
+	if (!sid_check_is_our_sam(&dinfo->sid)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -6319,7 +6319,7 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 
 	/* this should not be hard-coded like this */
 
-	if (!sid_check_is_domain(&dinfo->sid)) {
+	if (!sid_check_is_our_sam(&dinfo->sid)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

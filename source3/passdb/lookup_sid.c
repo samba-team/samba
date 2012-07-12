@@ -497,7 +497,7 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const struct dom_sid *domain_sid,
 		*types = NULL;
 	}
 
-	if (sid_check_is_domain(domain_sid)) {
+	if (sid_check_is_our_sam(domain_sid)) {
 		NTSTATUS result;
 
 		if (*domain_name == NULL) {
@@ -613,7 +613,7 @@ static bool lookup_as_domain(const struct dom_sid *sid, TALLOC_CTX *mem_ctx,
 	const char *tmp;
 	enum lsa_SidType type;
 
-	if (sid_check_is_domain(sid)) {
+	if (sid_check_is_our_sam(sid)) {
 		*name = talloc_strdup(mem_ctx, get_global_sam_name());
 		return true;
 	}
@@ -710,7 +710,7 @@ static bool check_dom_sid_to_level(const struct dom_sid *sid, int level)
 	case 3:
 	case 4:
 	case 6:
-		ret = sid_check_is_domain(sid);
+		ret = sid_check_is_our_sam(sid);
 		break;
 	case 5:
 		ret = false;

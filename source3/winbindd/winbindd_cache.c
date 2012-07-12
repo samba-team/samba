@@ -124,7 +124,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	}
 
 	if (strequal(domain->name, get_global_sam_name()) &&
-	    sid_check_is_domain(&domain->sid)) {
+	    sid_check_is_our_sam(&domain->sid)) {
 		domain->backend = &sam_passdb_methods;
 		domain->initialized = True;
 	}
@@ -668,7 +668,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 static bool is_my_own_sam_domain(struct winbindd_domain *domain)
 {
 	if (strequal(domain->name, get_global_sam_name()) &&
-	    sid_check_is_domain(&domain->sid)) {
+	    sid_check_is_our_sam(&domain->sid)) {
 		return true;
 	}
 

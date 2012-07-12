@@ -2159,7 +2159,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	char *machine_account = NULL;
 	char *domain_name = NULL;
 
-	if (sid_check_is_domain(&domain->sid)) {
+	if (sid_check_is_our_sam(&domain->sid)) {
 		return open_internal_samr_conn(mem_ctx, domain, cli, sam_handle);
 	}
 

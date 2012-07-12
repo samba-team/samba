@@ -62,7 +62,7 @@ struct tevent_req *wb_next_grent_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if ((state->gstate->domain != NULL)
-		    && sid_check_is_domain(&state->gstate->domain->sid)) {
+		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
 			state->gstate->domain = state->gstate->domain->next;
 		}
 
@@ -125,7 +125,7 @@ static void wb_next_grent_fetch_done(struct tevent_req *subreq)
 		state->gstate->domain = state->gstate->domain->next;
 
 		if ((state->gstate->domain != NULL)
-		    && sid_check_is_domain(&state->gstate->domain->sid)) {
+		    && sid_check_is_our_sam(&state->gstate->domain->sid)) {
 			state->gstate->domain = state->gstate->domain->next;
 		}
 

@@ -229,10 +229,10 @@ void reset_global_sam_sid(void)
 }
 
 /*****************************************************************
- Check if the SID is our domain SID (S-1-5-21-x-y-z).
+ Check if the SID is our sam SID (S-1-5-21-x-y-z).
 *****************************************************************/  
 
-bool sid_check_is_domain(const struct dom_sid *sid)
+bool sid_check_is_our_sam(const struct dom_sid *sid)
 {
 	return dom_sid_equal(sid, get_global_sam_sid());
 }
@@ -247,5 +247,5 @@ bool sid_check_is_in_our_domain(const struct dom_sid *sid)
 
 	sid_copy(&dom_sid, sid);
 	sid_split_rid(&dom_sid, NULL);
-	return sid_check_is_domain(&dom_sid);
+	return sid_check_is_our_sam(&dom_sid);
 }

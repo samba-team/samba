@@ -77,7 +77,7 @@ static bool is_internal_domain(const struct dom_sid *sid)
 	if (sid == NULL)
 		return False;
 
-	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
+	return (sid_check_is_our_sam(sid) || sid_check_is_builtin(sid));
 }
 
 static bool is_in_internal_domain(const struct dom_sid *sid)
