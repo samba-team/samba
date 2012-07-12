@@ -28,7 +28,8 @@
 
 enum reg_backend { REG_UNKNOWN, REG_LOCAL, REG_REMOTE, REG_NULL };
 
-static struct registry_context *open_backend(poptContext pc,
+static struct registry_context *open_backend(TALLOC_CTX *mem_ctx,
+					     poptContext pc,
 					     struct tevent_context *ev_ctx,
 					     struct loadparm_context *lp_ctx,
 					     enum reg_backend backend,
@@ -42,14 +43,14 @@ static struct registry_context *open_backend(poptContext pc,
 		poptPrintUsage(pc, stderr, 0);
 		return NULL;
 	case REG_LOCAL:
-		error = reg_open_samba(NULL, &ctx, ev_ctx, lp_ctx, NULL, cmdline_credentials);
+		error = reg_open_samba(mem_ctx, &ctx, ev_ctx, lp_ctx, NULL, cmdline_credentials);
 		break;
 	case REG_REMOTE:
-		error = reg_open_remote(NULL, &ctx, NULL, cmdline_credentials, lp_ctx,
+		error = reg_open_remote(mem_ctx, &ctx, NULL, cmdline_credentials, lp_ctx,
 					remote_host, ev_ctx);
 		break;
 	case REG_NULL:
-		error = reg_open_local(NULL, &ctx);
+		error = reg_open_local(mem_ctx, &ctx);
 		break;
 	}
 
@@ -120,11 +121,11 @@ int main(int argc, const char **argv)
 
 	ev_ctx = s4_event_context_init(NULL);
 
-	h1 = open_backend(pc, ev_ctx, cmdline_lp_ctx, backend1, remote1);
+	h1 = open_backend(ctx, pc, ev_ctx, cmdline_lp_ctx, backend1, remote1);
 	if (h1 == NULL)
 		return 1;
 
-	h2 = open_backend(pc, ev_ctx, cmdline_lp_ctx, backend2, remote2);
+	h2 = open_backend(ctx, pc, ev_ctx, cmdline_lp_ctx, backend2, remote2);
 	if (h2 == NULL)
 		return 1;
 
