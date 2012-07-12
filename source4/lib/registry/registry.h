@@ -379,7 +379,8 @@ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 /**
  * Open the registry on a remote machine.
  */
-WERROR reg_open_remote(struct registry_context **ctx,
+WERROR reg_open_remote(TALLOC_CTX *mem_ctx,
+		       struct registry_context **ctx,
 		       struct auth_session_info *session_info,
 		       struct cli_credentials *credentials,
 		       struct loadparm_context *lp_ctx,
