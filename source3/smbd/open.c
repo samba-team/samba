@@ -3643,6 +3643,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			fsp->base_fsp = base_fsp;
 		}
 
+		if (allocation_size) {
+			fsp->initial_allocation_size = smb_roundup(fsp->conn,
+							allocation_size);
+		}
+
 		status = open_file_ntcreate(conn,
 					    req,
 					    access_mask,
