@@ -124,6 +124,7 @@ parser.add_option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
                 help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\"")
 parser.add_option("--use-xattrs", type="choice", choices=["yes", "no", "auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto")
 parser.add_option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)")
+parser.add_option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)")
 
 opts = parser.parse_args()[0]
 
@@ -257,7 +258,8 @@ try:
           serverrole=opts.server_role, dom_for_fun_level=dom_for_fun_level,
           backend_type=opts.ldap_backend_type,
           ldapadminpass=opts.ldapadminpass, ol_mmr_urls=opts.ol_mmr_urls,
-          useeadb=eadb, next_rid=opts.next_rid, lp=lp, use_ntvfs=(opts.use_ntvfs))
+          useeadb=eadb, next_rid=opts.next_rid, lp=lp, use_ntvfs=(opts.use_ntvfs),
+          use_rfc2307=(opts.use_rfc2307))
 except ProvisioningError, e:
     print str(e)
     sys.exit(1)

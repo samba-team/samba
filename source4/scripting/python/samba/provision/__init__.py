@@ -1590,6 +1590,27 @@ def sanitize_server_role(role):
     except KeyError:
         raise ValueError(role)
 
+def provision_fake_ypserver(logger, samdb, domaindn, netbiosname, nisdomain, maxuid, maxgid):
+    """Creates AD entries for the fake ypserver
+    needed for being able to manipulate posix attrs via ADUC
+    """
+    samdb.transaction_start()
+    try:
+        logger.info("Setting up fake yp server settings")
+        setup_add_ldif(samdb, setup_path("ypServ30.ldif"), {
+        "DOMAINDN": domaindn,
+        "NETBIOSNAME": netbiosname,
+        "NISDOMAIN": nisdomain,
+         })
+    except Exception:
+        samdb.transaction_cancel()
+        raise
+    else:
+        samdb.transaction_commit()
+    if maxuid != None:
+        pass
+    if maxgid != None:
+        pass
 
 def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
@@ -1605,7 +1626,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         ol_mmr_urls=None, ol_olc=None, slapd_path="/bin/false",
         useeadb=False, am_rodc=False,
         lp=None, use_ntvfs=False,
-        use_rfc2307=False):
+        use_rfc2307=False, maxuid=None, maxgid=None):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -1897,6 +1918,10 @@ def provision(logger, session_info, credentials, smbconf=None,
         result.adminpass = None
 
     result.backend_result = backend_result
+
+    if use_rfc2307:
+        provision_fake_ypserver(logger=logger, samdb=samdb, domaindn=names.domaindn, netbiosname=names.netbiosname,
+                                 nisdomain=(names.domain).lower(), maxuid=maxuid, maxgid=maxgid)
 
     return result
 

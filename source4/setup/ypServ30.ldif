@@ -1,0 +1,507 @@
+dn: CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+schemaVersion: 40
+
+dn: CN=mail,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byaddr,CN=mail,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Aliases
+msSFU30FieldSeparator:: Og==
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30MapFilter: (objectCategory=msSFU30MailAliases)
+
+dn: CN=aliases,CN=mail,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator:: Og==
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30MapFilter: (objectCategory=msSFU30MailAliases)
+
+dn: CN=${NISDOMAIN},CN=mail,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=services,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byname,CN=services,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: CN
+msSFU30FieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: CN
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: CN
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=ipService)
+
+dn: CN=${NISDOMAIN},CN=services,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=bootparams,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bydefaults,CN=bootparams,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: bootParameter
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: bootParameter
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (&(objectCategory=Device)(bootParameter=*))
+
+dn: CN=${NISDOMAIN},CN=bootparams,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=netgroup,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bydefaults,CN=netgroup,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: NisNetgroupTriple
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: NisNetgroupTriple
+msSFU30MapFilter: (objectCategory=NisNetgroup)
+
+dn: CN=byuser,CN=netgroup,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30NetgroupUserAtDomain
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: msSFU30Name
+msSFU30SearchAttributes: MemberNisNetgroup
+msSFU30SearchAttributes: msSFU30NetgroupUserAtDomain
+msSFU30ResultAttributes: MemberNisNetgroup
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=NisNetgroup)
+
+dn: CN=byhost,CN=netgroup,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30NetgroupHostAtDomain
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: msSFU30Name
+msSFU30SearchAttributes: MemberNisNetgroup
+msSFU30SearchAttributes: msSFU30NetgroupHostAtDomain
+msSFU30ResultAttributes: MemberNisNetgroup
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=NisNetgroup)
+
+dn: CN=${NISDOMAIN},CN=netgroup,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=netmasks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byaddr,CN=netmasks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: ipNetworkNumber
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: ipNetmaskNumber
+msSFU30SearchAttributes: ipNetworkNumber
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: ipNetmaskNumber
+msSFU30ResultAttributes: ipNetworkNumber
+msSFU30MapFilter: (&(objectCategory=ipNetwork)(ipNetmaskNumber=*))
+
+dn: CN=${NISDOMAIN},CN=netmasks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=hosts,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byaddr,CN=hosts,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: ipHostNumber
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: msSFU30Name
+msSFU30SearchAttributes: ipHostNumber
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: msSFU30Name
+msSFU30ResultAttributes: ipHostNumber
+msSFU30MapFilter: (objectCategory=Computer)
+
+dn: CN=byname,CN=hosts,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Aliases
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: msSFU30Name
+msSFU30SearchAttributes: ipHostNumber
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: msSFU30Name
+msSFU30ResultAttributes: ipHostNumber
+msSFU30MapFilter: (objectCategory=Computer)
+
+dn: CN=${NISDOMAIN},CN=hosts,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=ethers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byaddr,CN=ethers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: macAddress
+msSFU30FieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Name
+msSFU30SearchAttributes: macAddress
+msSFU30ResultAttributes: msSFU30Name
+msSFU30ResultAttributes: macAddress
+msSFU30MapFilter: (&(objectCategory=Device)(macAddress=*))
+
+dn: CN=byname,CN=ethers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Name
+msSFU30SearchAttributes: macAddress
+msSFU30ResultAttributes: msSFU30Name
+msSFU30ResultAttributes: macAddress
+msSFU30MapFilter: (&(objectCategory=Device)(macAddress=*))
+
+dn: CN=${NISDOMAIN},CN=ethers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=networks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byaddr,CN=networks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: ipNetworkNumber
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: ipNetworkNumber
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: ipNetworkNumber
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=ipNetwork)
+
+dn: CN=byname,CN=networks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Aliases
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: ipNetworkNumber
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: ipNetworkNumber
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=ipNetwork)
+
+dn: CN=${NISDOMAIN},CN=networks,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=protocols,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bynumber,CN=protocols,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: ipProtocolNumber
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: ipProtocolNumber
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: ipProtocolNumber
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=ipProtocol)
+
+dn: CN=byname,CN=protocols,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30IntraFieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: ipProtocolNumber
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: ipProtocolNumber
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=ipProtocol)
+
+dn: CN=${NISDOMAIN},CN=protocols,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=rpc,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bynumber,CN=rpc,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: oncRpcNumber
+msSFU30FieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30Aliases
+msSFU30SearchAttributes: oncRpcNumber
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Aliases
+msSFU30ResultAttributes: oncRpcNumber
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=oncRpc)
+
+dn: CN=${NISDOMAIN},CN=rpc,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=netid,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byname,CN=netid,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator: "        "
+msSFU30SearchAttributes: msSFU30KeyValues
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30KeyValues
+msSFU30MapFilter: (objectCategory=msSFU30NetId)
+
+dn: CN=${NISDOMAIN},CN=netid,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=passwd,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=byuid,CN=passwd,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: uidNumber
+msSFU30FieldSeparator:: Og==
+msSFU30SearchAttributes: loginShell
+msSFU30SearchAttributes: unixHomeDirectory
+msSFU30SearchAttributes: gecos
+msSFU30SearchAttributes: gidNumber
+msSFU30SearchAttributes: uidNumber
+msSFU30SearchAttributes: unixUserPassword
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: loginShell
+msSFU30ResultAttributes: unixHomeDirectory
+msSFU30ResultAttributes: gecos
+msSFU30ResultAttributes: gidNumber
+msSFU30ResultAttributes: uidNumber
+msSFU30ResultAttributes: unixUserPassword
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (uidNumber=*)
+
+dn: CN=byname,CN=passwd,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator:: Og==
+msSFU30SearchAttributes: loginShell
+msSFU30SearchAttributes: unixHomeDirectory
+msSFU30SearchAttributes: gecos
+msSFU30SearchAttributes: gidNumber
+msSFU30SearchAttributes: uidNumber
+msSFU30SearchAttributes: unixUserPassword
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: loginShell
+msSFU30ResultAttributes: unixHomeDirectory
+msSFU30ResultAttributes: gecos
+msSFU30ResultAttributes: gidNumber
+msSFU30ResultAttributes: uidNumber
+msSFU30ResultAttributes: unixUserPassword
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (uidNumber=*)
+
+dn: CN=${NISDOMAIN},CN=passwd,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=shadow,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bydefaults,CN=shadow,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator:: Og==
+msSFU30IntraFieldSeparator:: Og==
+msSFU30SearchAttributes: shadowFlag
+msSFU30SearchAttributes: shadowExpire
+msSFU30SearchAttributes: shadowInactive
+msSFU30SearchAttributes: shadowWarning
+msSFU30SearchAttributes: shadowMax
+msSFU30SearchAttributes: shadowMin
+msSFU30SearchAttributes: shadowLastChange
+msSFU30SearchAttributes: unixUserPassword
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: shadowFlag
+msSFU30ResultAttributes: shadowExpire
+msSFU30ResultAttributes: shadowInactive
+msSFU30ResultAttributes: shadowWarning
+msSFU30ResultAttributes: shadowMax
+msSFU30ResultAttributes: shadowMin
+msSFU30ResultAttributes: shadowLastChange
+msSFU30ResultAttributes: unixUserPassword
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (uidNumber=*)
+
+dn: CN=${NISDOMAIN},CN=shadow,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=group,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bygid,CN=group,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: gidNumber
+msSFU30FieldSeparator:: Og==
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: memberUid
+msSFU30SearchAttributes: gidNumber
+msSFU30SearchAttributes: unixUserPassword
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: memberUid
+msSFU30ResultAttributes: gidNumber
+msSFU30ResultAttributes: unixUserPassword
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (&(objectCategory=group)(gidNumber=*))
+
+dn: CN=byname,CN=group,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator:: Og==
+msSFU30IntraFieldSeparator: ,
+msSFU30SearchAttributes: memberUid
+msSFU30SearchAttributes: gidNumber
+msSFU30SearchAttributes: unixUserPassword
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: memberUid
+msSFU30ResultAttributes: gidNumber
+msSFU30ResultAttributes: unixUserPassword
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (&(objectCategory=group)(gidNumber=*))
+
+dn: CN=${NISDOMAIN},CN=group,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
+
+dn: CN=ypservers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
+dn: CN=bydefaults,CN=ypservers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30NISMapConfig
+msSFU30KeyAttributes: msSFU30Name
+msSFU30FieldSeparator:: IA==
+msSFU30IntraFieldSeparator:: IA==
+msSFU30SearchAttributes: msSFU30Name
+msSFU30ResultAttributes: msSFU30Name
+msSFU30MapFilter: (objectCategory=msSFU30YpServers)
+
+dn: CN=${NISDOMAIN},CN=ypservers,CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: msSFU30DomainInfo
+msSFU30MasterServerName: ${NETBIOSNAME}
+msSFU30OrderNumber: 10000
+msSFU30Domains: ${NISDOMAIN}
