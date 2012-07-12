@@ -1607,7 +1607,7 @@ static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 
 		uid_to_sid(&sid, uids[i]);
 
-		if (!sid_check_is_in_our_domain(&sid)) {
+		if (!sid_check_is_in_our_sam(&sid)) {
 			DEBUG(5, ("Inconsistent SAM -- group member uid not "
 				  "in our domain\n"));
 			continue;

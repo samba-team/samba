@@ -255,7 +255,7 @@ static bool wb_lookupsids_bulk(const struct dom_sid *sid)
 		return false;
 	}
 
-	if (sid_check_is_in_our_domain(sid)) {
+	if (sid_check_is_in_our_sam(sid)) {
 		/*
 		 * Passdb lookup via lookuprids
 		 */

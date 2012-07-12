@@ -233,7 +233,7 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 		return builtin_dispinfo;
 	}
 
-	if (sid_check_is_our_sam(psid) || sid_check_is_in_our_domain(psid)) {
+	if (sid_check_is_our_sam(psid) || sid_check_is_in_our_sam(psid)) {
 		/*
 		 * Necessary only once, but it does not really hurt.
 		 */
@@ -525,7 +525,7 @@ NTSTATUS _samr_GetUserPwInfo(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!sid_check_is_in_our_domain(&uinfo->sid)) {
+	if (!sid_check_is_in_our_sam(&uinfo->sid)) {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
@@ -3010,7 +3010,7 @@ NTSTATUS _samr_QueryUserInfo(struct pipes_struct *p,
 
 	sid_split_rid(&domain_sid, &rid);
 
-	if (!sid_check_is_in_our_domain(&uinfo->sid))
+	if (!sid_check_is_in_our_sam(&uinfo->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
 	DEBUG(5,("_samr_QueryUserInfo: sid:%s\n",
@@ -3183,7 +3183,7 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!sid_check_is_in_our_domain(&uinfo->sid))
+	if (!sid_check_is_in_our_sam(&uinfo->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
         if ( !(sam_pass = samu_new( p->mem_ctx )) ) {
@@ -5455,7 +5455,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&ginfo->sid)));
 
-	if (!sid_check_is_in_our_domain(&ginfo->sid)) {
+	if (!sid_check_is_in_our_sam(&ginfo->sid)) {
 		DEBUG(3, ("sid %s is not in our domain\n",
 			  sid_string_dbg(&ginfo->sid)));
 		return NT_STATUS_NO_SUCH_GROUP;
@@ -5666,7 +5666,7 @@ NTSTATUS _samr_DeleteUser(struct pipes_struct *p,
 		return status;
 	}
 
-	if (!sid_check_is_in_our_domain(&uinfo->sid))
+	if (!sid_check_is_in_our_sam(&uinfo->sid))
 		return NT_STATUS_CANNOT_DELETE;
 
 	/* check if the user exists before trying to delete */
@@ -5792,7 +5792,7 @@ NTSTATUS _samr_DeleteDomAlias(struct pipes_struct *p,
 		return NT_STATUS_SPECIAL_ACCOUNT;
 	}
 
-	if (!sid_check_is_in_our_domain(&ainfo->sid))
+	if (!sid_check_is_in_our_sam(&ainfo->sid))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	DEBUG(10, ("lookup on Local SID\n"));

@@ -313,7 +313,7 @@ static NTSTATUS sam_query_user(struct winbindd_domain *domain,
 	ZERO_STRUCT(dom_pol);
 
 	/* Paranoia check */
-	if (!sid_check_is_in_our_domain(user_sid)) {
+	if (!sid_check_is_in_our_sam(user_sid)) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -684,7 +684,7 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
-	    !sid_check_is_in_our_domain(sid) &&
+	    !sid_check_is_in_our_sam(sid) &&
 	    !sid_check_is_in_unix_users(sid) &&
 	    !sid_check_is_unix_users(sid) &&
 	    !sid_check_is_in_unix_groups(sid) &&

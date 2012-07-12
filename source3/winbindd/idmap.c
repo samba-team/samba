@@ -510,7 +510,7 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
 	maps[1] = NULL;
 
 	if (sid_check_is_in_builtin(id->sid)
-	    || (sid_check_is_in_our_domain(id->sid)))
+	    || (sid_check_is_in_our_sam(id->sid)))
 	{
 		NTSTATUS status;
 

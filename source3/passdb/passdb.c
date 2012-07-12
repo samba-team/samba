@@ -623,7 +623,7 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 		TALLOC_FREE(sam_account);
 
 		if (ret) {
-			if (!sid_check_is_in_our_domain(&user_sid)) {
+			if (!sid_check_is_in_our_sam(&user_sid)) {
 				DEBUG(0, ("User %s with invalid SID %s in passdb\n",
 					  name, sid_string_dbg(&user_sid)));
 				return False;
@@ -654,7 +654,7 @@ bool lookup_global_sam_name(const char *name, int flags, uint32_t *rid,
 	}
 
 	/* BUILTIN groups are looked up elsewhere */
-	if (!sid_check_is_in_our_domain(&map->sid)) {
+	if (!sid_check_is_in_our_sam(&map->sid)) {
 		DEBUG(10, ("Found group %s (%s) not in our domain -- "
 			   "ignoring.", name, sid_string_dbg(&map->sid)));
 		TALLOC_FREE(map);

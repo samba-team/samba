@@ -583,7 +583,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		goto done;
 	}
 
-	if (sid_check_is_in_our_domain(&user_sid)) {
+	if (sid_check_is_in_our_sam(&user_sid)) {
 		bool ret;
 		uint32_t pdb_num_group_sids;
 		/* This is a passdb user, so ask passdb */

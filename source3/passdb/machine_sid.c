@@ -241,7 +241,7 @@ bool sid_check_is_our_sam(const struct dom_sid *sid)
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
 *****************************************************************/  
 
-bool sid_check_is_in_our_domain(const struct dom_sid *sid)
+bool sid_check_is_in_our_sam(const struct dom_sid *sid)
 {
 	struct dom_sid dom_sid;
 

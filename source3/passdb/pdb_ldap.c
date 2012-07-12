@@ -2724,7 +2724,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			if (!string_to_sid(&sid, sidstr))
 				goto done;
 
-			if (!sid_check_is_in_our_domain(&sid)) {
+			if (!sid_check_is_in_our_sam(&sid)) {
 				DEBUG(0, ("Inconsistent SAM -- group member uid not "
 					  "in our domain\n"));
 				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -3075,7 +3075,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		break;
 
 	case SID_NAME_ALIAS:
-		if (!sid_check_is_in_our_domain(&map->sid) 
+		if (!sid_check_is_in_our_sam(&map->sid) 
 			&& !sid_check_is_in_builtin(&map->sid) ) 
 		{
 			DEBUG(3, ("Refusing to map sid %s as an alias, not in our domain\n",
@@ -3487,7 +3487,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		type = SID_NAME_ALIAS;
 	}
 
-	if (sid_check_is_in_our_domain(alias)) {
+	if (sid_check_is_in_our_sam(alias)) {
 		type = SID_NAME_ALIAS;
 	}
 
@@ -3610,7 +3610,7 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 		type = SID_NAME_ALIAS;
 	}
 
-	if (sid_check_is_in_our_domain(alias)) {
+	if (sid_check_is_in_our_sam(alias)) {
 		type = SID_NAME_ALIAS;
 	}
 

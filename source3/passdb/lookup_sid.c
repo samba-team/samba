@@ -1081,7 +1081,7 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 {
 	GROUP_MAP *map;
-	if (sid_check_is_in_our_domain(psid)) {
+	if (sid_check_is_in_our_sam(psid)) {
 		bool ret;
 
 		become_root();

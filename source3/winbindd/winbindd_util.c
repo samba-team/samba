@@ -85,7 +85,7 @@ static bool is_in_internal_domain(const struct dom_sid *sid)
 	if (sid == NULL)
 		return False;
 
-	return (sid_check_is_in_our_domain(sid) || sid_check_is_in_builtin(sid));
+	return (sid_check_is_in_our_sam(sid) || sid_check_is_in_builtin(sid));
 }
 
 
