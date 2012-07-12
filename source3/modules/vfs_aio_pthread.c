@@ -40,6 +40,7 @@ struct aio_private_data {
 	int ret_errno;
 	bool cancelled;
 	bool write_command;
+	bool flush_write;
 };
 
 /* List of outstanding requests we have. */
@@ -114,6 +115,14 @@ static void aio_worker(void *private_data)
 			pd->ret_size = sys_write(pd->aiocb->aio_fildes,
 					(const void *)pd->aiocb->aio_buf,
 					pd->aiocb->aio_nbytes);
+		}
+		if (pd->ret_size != -1 && pd->flush_write) {
+			/*
+			 * Optimization - flush if requested.
+			 * Ignore error as upper layer will
+			 * also do this.
+			 */
+			(void)fsync(pd->aiocb->aio_fildes);
 		}
 	} else {
 		pd->ret_size = sys_pread(pd->aiocb->aio_fildes,
@@ -229,6 +238,12 @@ static int aio_pthread_write(struct vfs_handle_struct *handle,
 	}
 
 	pd->write_command = true;
+	if (lp_strict_sync(SNUM(fsp->conn)) &&
+			(lp_syncalways(SNUM(fsp->conn)) ||
+				aio_write_through_requested(aio_ex))) {
+		pd->flush_write = true;
+	}
+
 
 	ret = pthreadpool_add_job(pool, pd->jobid, aio_worker, (void *)pd);
 	if (ret) {

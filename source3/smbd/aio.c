@@ -53,6 +53,15 @@ struct aio_extra {
 };
 
 /****************************************************************************
+ Accessor function to return write_through state.
+*****************************************************************************/
+
+bool aio_write_through_requested(struct aio_extra *aio_ex)
+{
+	return aio_ex->write_through;
+}
+
+/****************************************************************************
  Initialize the signal handler for aio read/write.
 *****************************************************************************/
 
