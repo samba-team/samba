@@ -347,6 +347,12 @@ struct smbXsrv_connection {
 
 	struct msg_state *msg_state;
 
+	/*
+	 * Link into libasys for asynchronous operations
+	 */
+	struct asys_context *asys_ctx;
+	struct tevent_fd *asys_fde;
+
 	uint64_t smbd_idle_profstamp;
 
 	/*

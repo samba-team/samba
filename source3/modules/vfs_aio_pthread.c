@@ -27,124 +27,9 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "lib/pthreadpool/pthreadpool.h"
-#include "lib/asys/asys.h"
-#include "lib/util/tevent_unix.h"
 #ifdef HAVE_LINUX_FALLOC_H
 #include <linux/falloc.h>
 #endif
-
-static struct asys_context *asys_ctx;
-struct tevent_fd *asys_fde;
-
-struct aio_pthread_state {
-	struct tevent_req *req;
-	ssize_t ret;
-	int err;
-};
-
-static int aio_pthread_state_destructor(struct aio_pthread_state *s)
-{
-	asys_cancel(asys_ctx, s->req);
-	return 0;
-}
-
-static struct tevent_req *aio_pthread_pread_send(
-	struct vfs_handle_struct *handle,
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct files_struct *fsp, void *data, size_t n, off_t offset)
-{
-	struct tevent_req *req;
-	struct aio_pthread_state *state;
-	int ret;
-
-	req = tevent_req_create(mem_ctx, &state, struct aio_pthread_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	state->req = req;
-
-	ret = asys_pread(asys_ctx, fsp->fh->fd, data, n, offset, req);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-	talloc_set_destructor(state, aio_pthread_state_destructor);
-
-	return req;
-}
-
-static struct tevent_req *aio_pthread_pwrite_send(
-	struct vfs_handle_struct *handle,
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct files_struct *fsp, const void *data, size_t n, off_t offset)
-{
-	struct tevent_req *req;
-	struct aio_pthread_state *state;
-	int ret;
-
-	req = tevent_req_create(mem_ctx, &state, struct aio_pthread_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	state->req = req;
-
-	ret = asys_pwrite(asys_ctx, fsp->fh->fd, data, n, offset, req);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return tevent_req_post(req, ev);
-	}
-	talloc_set_destructor(state, aio_pthread_state_destructor);
-
-	return req;
-}
-
-static void aio_pthread_finished(struct tevent_context *ev,
-				 struct tevent_fd *fde,
-				 uint16_t flags, void *p)
-{
-	struct tevent_req *req;
-	struct aio_pthread_state *state;
-	int res;
-	ssize_t ret;
-	int err;
-	void *private_data;
-
-	if ((flags & TEVENT_FD_READ) == 0) {
-		return;
-	}
-
-	res = asys_result(asys_ctx, &ret, &err, &private_data);
-	if (res == ECANCELED) {
-		return;
-	}
-
-	if (res != 0) {
-		DEBUG(1, ("asys_result returned %s\n", strerror(res)));
-		return;
-	}
-
-	req = talloc_get_type_abort(private_data, struct tevent_req);
-	state = tevent_req_data(req, struct aio_pthread_state);
-
-	talloc_set_destructor(state, NULL);
-
-	state->ret = ret;
-	state->err = err;
-	tevent_req_done(req);
-}
-
-static ssize_t aio_pthread_recv(struct tevent_req *req, int *err)
-{
-	struct aio_pthread_state *state = tevent_req_data(
-		req, struct aio_pthread_state);
-
-	if (tevent_req_is_unix_error(req, err)) {
-		return -1;
-	}
-	*err = state->err;
-	return state->ret;
-}
-
 
 #if defined(HAVE_OPENAT) && defined(USE_LINUX_THREAD_CREDENTIALS)
 
@@ -597,55 +482,10 @@ static int aio_pthread_open_fn(vfs_handle_struct *handle,
 }
 #endif
 
-static int aio_pthread_connect(vfs_handle_struct *handle, const char *service,
-			       const char *user)
-{
-	/*********************************************************************
-	 * How many threads to initialize ?
-	 * 100 per process seems insane as a default until you realize that
-	 * (a) Threads terminate after 1 second when idle.
-	 * (b) Throttling is done in SMB2 via the crediting algorithm.
-	 * (c) SMB1 clients are limited to max_mux (50) outstanding
-	 *     requests and Windows clients don't use this anyway.
-	 * Essentially we want this to be unlimited unless smb.conf
-	 * says different.
-	 *********************************************************************/
-	aio_pending_size = lp_parm_int(
-		SNUM(handle->conn), "aio_pthread", "aio num threads", 100);
-
-	if (asys_ctx == NULL) {
-		int ret;
-
-		ret = asys_context_init(&asys_ctx, aio_pending_size);
-		if (ret != 0) {
-			DEBUG(1, ("asys_context_init failed: %s\n",
-				  strerror(ret)));
-			return -1;
-		}
-
-		asys_fde = tevent_add_fd(handle->conn->sconn->ev_ctx, NULL,
-					 asys_signalfd(asys_ctx),
-					 TEVENT_FD_READ, aio_pthread_finished,
-					 NULL);
-		if (asys_fde == NULL) {
-			DEBUG(1, ("tevent_add_fd failed\n"));
-			asys_context_destroy(asys_ctx);
-			asys_ctx = NULL;
-			return -1;
-		}
-	}
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
-}
-
 static struct vfs_fn_pointers vfs_aio_pthread_fns = {
-	.connect_fn = aio_pthread_connect,
 #if defined(HAVE_OPENAT) && defined(USE_LINUX_THREAD_CREDENTIALS)
 	.open_fn = aio_pthread_open_fn,
 #endif
-	.pread_send_fn = aio_pthread_pread_send,
-	.pread_recv_fn = aio_pthread_recv,
-	.pwrite_send_fn = aio_pthread_pwrite_send,
-	.pwrite_recv_fn = aio_pthread_recv,
 };
 
 NTSTATUS vfs_aio_pthread_init(void);

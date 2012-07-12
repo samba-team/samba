@@ -30,6 +30,7 @@
 #include "source3/include/msdfs.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/asys/asys.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -580,49 +581,6 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	return result;
 }
 
-struct vfswrap_pread_state {
-	ssize_t ret;
-};
-
-static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
-					     TALLOC_CTX *mem_ctx,
-					     struct tevent_context *ev,
-					     struct files_struct *fsp,
-					     void *data,
-					     size_t n, off_t offset)
-{
-	struct tevent_req *req;
-	struct vfswrap_pread_state *state;
-	int saved_errno;
-
-	req = tevent_req_create(req, &state, struct vfswrap_pread_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	START_PROFILE_BYTES(syscall_pread, n);
-	state->ret = sys_pread(fsp->fh->fd, data, n, offset);
-	saved_errno = errno;
-	END_PROFILE(syscall_pread);
-
-	if (state->ret == -1) {
-		tevent_req_error(req, saved_errno);
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_done(req);
-	return tevent_req_post(req, ev);
-}
-
-static ssize_t vfswrap_pread_recv(struct tevent_req *req, int *err)
-{
-	struct vfswrap_pread_state *state = tevent_req_data(
-		req, struct vfswrap_pread_state);
-
-	if (tevent_req_is_unix_error(req, err)) {
-		return -1;
-	}
-	return state->ret;
-}
-
 static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
 {
 	ssize_t result;
@@ -672,49 +630,159 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	return result;
 }
 
-struct vfswrap_pwrite_state {
-	ssize_t retval;
+static void vfswrap_asys_finished(struct tevent_context *ev,
+				  struct tevent_fd *fde,
+				  uint16_t flags, void *p);
+
+static bool vfswrap_init_asys_ctx(struct smbXsrv_connection *conn)
+{
+	int ret;
+
+	if (conn->asys_ctx != NULL) {
+		return true;
+	}
+	ret = asys_context_init(&conn->asys_ctx, aio_pending_size);
+	if (ret != 0) {
+		DEBUG(1, ("asys_context_init failed: %s\n", strerror(ret)));
+		return false;
+	}
+	conn->asys_fde = tevent_add_fd(conn->ev_ctx, conn,
+				       asys_signalfd(conn->asys_ctx),
+				       TEVENT_FD_READ,
+				       vfswrap_asys_finished,
+				       conn->asys_ctx);
+	if (conn->asys_fde == NULL) {
+		DEBUG(1, ("tevent_add_fd failed\n"));
+		asys_context_destroy(conn->asys_ctx);
+		conn->asys_ctx = NULL;
+		return false;
+	}
+	return true;
+}
+
+struct vfswrap_asys_state {
+	struct asys_context *asys_ctx;
+	struct tevent_req *req;
+	ssize_t ret;
+	int err;
 };
 
-static struct tevent_req *vfswrap_pwrite_send(
-	struct vfs_handle_struct *handle,
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct files_struct *fsp, const void *data, size_t n, off_t offset)
+static int vfswrap_asys_state_destructor(struct vfswrap_asys_state *s)
+{
+	asys_cancel(s->asys_ctx, s->req);
+	return 0;
+}
+
+static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
+					     TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct files_struct *fsp,
+					     void *data,
+					     size_t n, off_t offset)
 {
 	struct tevent_req *req;
-	struct vfswrap_pwrite_state *state;
-	int saved_errno;
+	struct vfswrap_asys_state *state;
+	int ret;
 
-	req = tevent_req_create(mem_ctx, &state,
-				struct vfswrap_pwrite_state);
+	req = tevent_req_create(mem_ctx, &state, struct vfswrap_asys_state);
 	if (req == NULL) {
 		return NULL;
 	}
-
-	START_PROFILE_BYTES(syscall_pwrite, n);
-	state->retval = sys_pwrite(fsp->fh->fd, data, n, offset);
-	saved_errno = errno;
-	END_PROFILE(syscall_pwrite);
-
-	if (state->retval == -1) {
-		tevent_req_error(req, saved_errno);
-	} else {
-		tevent_req_done(req);
+	if (!vfswrap_init_asys_ctx(handle->conn->sconn->conn)) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
 	}
-	return tevent_req_post(req, ev);
+	state->asys_ctx = handle->conn->sconn->conn->asys_ctx;
+	state->req = req;
+
+	ret = asys_pread(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+	talloc_set_destructor(state, vfswrap_asys_state_destructor);
+
+	return req;
 }
 
-static ssize_t vfswrap_pwrite_recv(struct tevent_req *req, int *perrno)
+static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
+					      TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct files_struct *fsp,
+					      const void *data,
+					      size_t n, off_t offset)
 {
-	struct vfswrap_pwrite_state *state = tevent_req_data(
-		req, struct vfswrap_pwrite_state);
-	int err;
+	struct tevent_req *req;
+	struct vfswrap_asys_state *state;
+	int ret;
 
-	if (tevent_req_is_unix_error(req, &err)) {
-		*perrno = err;
+	req = tevent_req_create(mem_ctx, &state, struct vfswrap_asys_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	if (!vfswrap_init_asys_ctx(handle->conn->sconn->conn)) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
+	state->asys_ctx = handle->conn->sconn->conn->asys_ctx;
+	state->req = req;
+
+	ret = asys_pwrite(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+	talloc_set_destructor(state, vfswrap_asys_state_destructor);
+
+	return req;
+}
+
+static void vfswrap_asys_finished(struct tevent_context *ev,
+					struct tevent_fd *fde,
+					uint16_t flags, void *p)
+{
+	struct asys_context *asys_ctx = (struct asys_context *)p;
+	struct tevent_req *req;
+	struct vfswrap_asys_state *state;
+	int res;
+	ssize_t ret;
+	int err;
+	void *private_data;
+
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
+	}
+
+	res = asys_result(asys_ctx, &ret, &err, &private_data);
+	if (res == ECANCELED) {
+		return;
+	}
+
+	if (res != 0) {
+		DEBUG(1, ("asys_result returned %s\n", strerror(res)));
+		return;
+	}
+
+	req = talloc_get_type_abort(private_data, struct tevent_req);
+	state = tevent_req_data(req, struct vfswrap_asys_state);
+
+	talloc_set_destructor(state, NULL);
+
+	state->ret = ret;
+	state->err = err;
+	tevent_req_done(req);
+}
+
+static ssize_t vfswrap_asys_ssize_t_recv(struct tevent_req *req, int *err)
+{
+	struct vfswrap_asys_state *state = tevent_req_data(
+		req, struct vfswrap_asys_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
 		return -1;
 	}
-	return state->retval;
+	*err = state->err;
+	return state->ret;
 }
 
 static off_t vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
@@ -2236,11 +2304,11 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.read_fn = vfswrap_read,
 	.pread_fn = vfswrap_pread,
 	.pread_send_fn = vfswrap_pread_send,
-	.pread_recv_fn = vfswrap_pread_recv,
+	.pread_recv_fn = vfswrap_asys_ssize_t_recv,
 	.write_fn = vfswrap_write,
 	.pwrite_fn = vfswrap_pwrite,
 	.pwrite_send_fn = vfswrap_pwrite_send,
-	.pwrite_recv_fn = vfswrap_pwrite_recv,
+	.pwrite_recv_fn = vfswrap_asys_ssize_t_recv,
 	.lseek_fn = vfswrap_lseek,
 	.sendfile_fn = vfswrap_sendfile,
 	.recvfile_fn = vfswrap_recvfile,

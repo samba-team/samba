@@ -935,6 +935,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     LIBAFS_SETTOKEN
                     RPC_SERVER
                     NDR_SMBXSRV
+		    LIBASYS
                     ccan-hash
                     ''',
                     private_library=True,
