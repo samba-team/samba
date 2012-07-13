@@ -209,6 +209,61 @@ static ssize_t aio_posix_recv(struct tevent_req *req, int *err)
 	return state->ret;
 }
 
+static struct tevent_req *aio_posix_fsync_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp)
+{
+	struct tevent_req *req;
+	struct aio_posix_state *state;
+	struct aiocb *a;
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state, struct aio_posix_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	a = &state->acb;
+
+	a->aio_fildes = fsp->fh->fd;
+	a->aio_sigevent.sigev_notify = SIGEV_SIGNAL;
+	a->aio_sigevent.sigev_signo  = RT_SIGNAL_AIO;
+	a->aio_sigevent.sigev_value.sival_ptr = req;
+
+	ret = aio_fsync(O_SYNC, a);
+	if (ret == 0) {
+		talloc_set_destructor(state, aio_posix_state_destructor);
+		return req;
+	}
+
+	if (errno == EAGAIN) {
+		/*
+		 * aio overloaded, do the sync fallback
+		 */
+		state->ret = fsync(fsp->fh->fd);
+		if (state->ret == -1) {
+			state->err = errno;
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_error(req, errno);
+	return tevent_req_post(req, ev);
+}
+
+static int aio_posix_int_recv(struct tevent_req *req, int *err)
+{
+	struct aio_posix_state *state = tevent_req_data(
+		req, struct aio_posix_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
+}
+
 static int aio_posix_connect(vfs_handle_struct *handle, const char *service,
 			     const char *user)
 {
@@ -233,6 +288,8 @@ static struct vfs_fn_pointers vfs_aio_posix_fns = {
 	.pread_recv_fn = aio_posix_recv,
 	.pwrite_send_fn = aio_posix_pwrite_send,
 	.pwrite_recv_fn = aio_posix_recv,
+	.fsync_send_fn = aio_posix_fsync_send,
+	.fsync_recv_fn = aio_posix_int_recv,
 };
 
 NTSTATUS vfs_aio_posix_init(void);
