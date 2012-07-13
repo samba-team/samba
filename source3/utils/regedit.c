@@ -109,7 +109,6 @@ int main(int argc, char **argv)
 
 	setup_logging("regedit", DEBUG_DEFAULT_STDERR);
 	lp_set_cmdline("log level", "0");
-	lp_load_global(get_dyn_CONFIGFILE());
 
 	/* process options */
 	auth_info = user_auth_info_init(frame);
@@ -121,6 +120,11 @@ int main(int argc, char **argv)
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		/* TODO */
+	}
+
+	if (!lp_load_global(get_dyn_CONFIGFILE())) {
+		DEBUG(0, ("ERROR loading config file...\n"));
+		exit(1);
 	}
 
 	/* some simple tests */
