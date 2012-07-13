@@ -81,7 +81,8 @@ fail:
 
 enum cmd_type {
 	READ_CMD,
-	WRITE_CMD
+	WRITE_CMD,
+	FSYNC_CMD
 };
 
 static const char *cmd_type_str(enum cmd_type cmd)
@@ -94,6 +95,9 @@ static const char *cmd_type_str(enum cmd_type cmd)
 		break;
 	case WRITE_CMD:
 		result = "WRITE";
+		break;
+	case FSYNC_CMD:
+		result = "FSYNC";
 		break;
 	default:
 		result = "<UNKNOWN>";
@@ -387,6 +391,9 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			ret_struct.size = sys_pwrite(
 				fd, (void *)map->ptr, cmd_struct.n,
 				cmd_struct.offset);
+			break;
+		case FSYNC_CMD:
+			ret_struct.size = fsync(fd);
 			break;
 		default:
 			ret_struct.size = -1;
@@ -782,6 +789,108 @@ static ssize_t aio_fork_pwrite_recv(struct tevent_req *req, int *err)
 	return state->ret;
 }
 
+struct aio_fork_fsync_state {
+	struct aio_child *child;
+	ssize_t ret;
+	int err;
+};
+
+static void aio_fork_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *aio_fork_fsync_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp)
+{
+	struct tevent_req *req, *subreq;
+	struct aio_fork_fsync_state *state;
+	struct rw_cmd cmd;
+	ssize_t written;
+	int err;
+
+	req = tevent_req_create(mem_ctx, &state, struct aio_fork_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	err = get_idle_child(handle, &state->child);
+	if (err != 0) {
+		tevent_req_error(req, err);
+		return tevent_req_post(req, ev);
+	}
+
+	ZERO_STRUCT(cmd);
+	cmd.cmd = FSYNC_CMD;
+
+	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
+		   (int)state->child->pid));
+
+	/*
+	 * Not making this async. We're writing into an empty unix
+	 * domain socket. This should never block.
+	 */
+	written = write_fd(state->child->sockfd, &cmd, sizeof(cmd),
+			   fsp->fh->fd);
+	if (written == -1) {
+		err = errno;
+
+		TALLOC_FREE(state->child);
+
+		DEBUG(10, ("write_fd failed: %s\n", strerror(err)));
+		tevent_req_error(req, err);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = read_packet_send(state, ev, state->child->sockfd,
+				  sizeof(struct rw_ret), NULL, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		TALLOC_FREE(state->child); /* we sent sth down */
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, aio_fork_fsync_done, req);
+	return req;
+}
+
+static void aio_fork_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct aio_fork_fsync_state *state = tevent_req_data(
+		req, struct aio_fork_fsync_state);
+	ssize_t nread;
+	uint8_t *buf;
+	int err;
+	struct rw_ret *retbuf;
+
+	nread = read_packet_recv(subreq, talloc_tos(), &buf, &err);
+	TALLOC_FREE(subreq);
+	if (nread == -1) {
+		TALLOC_FREE(state->child);
+		tevent_req_error(req, err);
+		return;
+	}
+
+	state->child->busy = false;
+
+	retbuf = (struct rw_ret *)buf;
+	state->ret = retbuf->size;
+	state->err = retbuf->ret_errno;
+	tevent_req_done(req);
+}
+
+static int aio_fork_fsync_recv(struct tevent_req *req, int *err)
+{
+	struct aio_fork_fsync_state *state = tevent_req_data(
+		req, struct aio_fork_fsync_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	if (state->ret == -1) {
+		*err = state->err;
+	}
+	return state->ret;
+}
+
 static int aio_fork_connect(vfs_handle_struct *handle, const char *service,
 			    const char *user)
 {
@@ -805,6 +914,8 @@ static struct vfs_fn_pointers vfs_aio_fork_fns = {
 	.pread_recv_fn = aio_fork_pread_recv,
 	.pwrite_send_fn = aio_fork_pwrite_send,
 	.pwrite_recv_fn = aio_fork_pwrite_recv,
+	.fsync_send_fn = aio_fork_fsync_send,
+	.fsync_recv_fn = aio_fork_fsync_recv,
 };
 
 NTSTATUS vfs_aio_fork_init(void);
