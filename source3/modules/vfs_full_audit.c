@@ -123,6 +123,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_RECVFILE,
 	SMB_VFS_OP_RENAME,
 	SMB_VFS_OP_FSYNC,
+	SMB_VFS_OP_FSYNC_SEND,
+	SMB_VFS_OP_FSYNC_RECV,
 	SMB_VFS_OP_STAT,
 	SMB_VFS_OP_FSTAT,
 	SMB_VFS_OP_LSTAT,
@@ -254,6 +256,8 @@ static struct {
 	{ SMB_VFS_OP_RECVFILE,  "recvfile" },
 	{ SMB_VFS_OP_RENAME,	"rename" },
 	{ SMB_VFS_OP_FSYNC,	"fsync" },
+	{ SMB_VFS_OP_FSYNC_SEND,	"fsync_send" },
+	{ SMB_VFS_OP_FSYNC_RECV,	"fsync_recv" },
 	{ SMB_VFS_OP_STAT,	"stat" },
 	{ SMB_VFS_OP_FSTAT,	"fstat" },
 	{ SMB_VFS_OP_LSTAT,	"lstat" },
@@ -1193,6 +1197,74 @@ static int smb_full_audit_fsync(vfs_handle_struct *handle, files_struct *fsp)
 	       fsp_str_do_log(fsp));
 
 	return result;    
+}
+
+struct smb_full_audit_fsync_state {
+	vfs_handle_struct *handle;
+	files_struct *fsp;
+	int ret;
+	int err;
+};
+
+static void smb_full_audit_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_full_audit_fsync_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_full_audit_fsync_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_full_audit_fsync_state);
+	if (req == NULL) {
+		do_log(SMB_VFS_OP_FSYNC_SEND, false, handle, "%s",
+		       fsp_str_do_log(fsp));
+		return NULL;
+	}
+	state->handle = handle;
+	state->fsp = fsp;
+
+	subreq = SMB_VFS_NEXT_FSYNC_SEND(state, ev, handle, fsp);
+	if (tevent_req_nomem(subreq, req)) {
+		do_log(SMB_VFS_OP_FSYNC_SEND, false, handle, "%s",
+		       fsp_str_do_log(fsp));
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_full_audit_fsync_done, req);
+
+	do_log(SMB_VFS_OP_FSYNC_SEND, true, handle, "%s", fsp_str_do_log(fsp));
+	return req;
+}
+
+static void smb_full_audit_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_full_audit_fsync_state *state = tevent_req_data(
+		req, struct smb_full_audit_fsync_state);
+
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static int smb_full_audit_fsync_recv(struct tevent_req *req, int *err)
+{
+	struct smb_full_audit_fsync_state *state = tevent_req_data(
+		req, struct smb_full_audit_fsync_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		do_log(SMB_VFS_OP_FSYNC_RECV, false, state->handle, "%s",
+		       fsp_str_do_log(state->fsp));
+		return -1;
+	}
+
+	do_log(SMB_VFS_OP_FSYNC_RECV, (state->ret >= 0), state->handle, "%s",
+	       fsp_str_do_log(state->fsp));
+
+	*err = state->err;
+	return state->ret;
 }
 
 static int smb_full_audit_stat(vfs_handle_struct *handle,
@@ -2271,6 +2343,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.recvfile_fn = smb_full_audit_recvfile,
 	.rename_fn = smb_full_audit_rename,
 	.fsync_fn = smb_full_audit_fsync,
+	.fsync_send_fn = smb_full_audit_fsync_send,
+	.fsync_recv_fn = smb_full_audit_fsync_recv,
 	.stat_fn = smb_full_audit_stat,
 	.fstat_fn = smb_full_audit_fstat,
 	.lstat_fn = smb_full_audit_lstat,

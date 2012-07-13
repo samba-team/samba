@@ -1725,6 +1725,68 @@ int smb_vfs_call_fsync(struct vfs_handle_struct *handle,
 	return handle->fns->fsync_fn(handle, fsp);
 }
 
+struct smb_vfs_call_fsync_state {
+	int (*recv_fn)(struct tevent_req *req, int *err);
+	int retval;
+};
+
+static void smb_vfs_call_fsync_done(struct tevent_req *subreq);
+
+struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct files_struct *fsp)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_vfs_call_fsync_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_vfs_call_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	VFS_FIND(fsync_send);
+	state->recv_fn = handle->fns->fsync_recv_fn;
+
+	subreq = handle->fns->fsync_send_fn(handle, state, ev, fsp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_vfs_call_fsync_done, req);
+	return req;
+}
+
+static void smb_vfs_call_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_vfs_call_fsync_state *state = tevent_req_data(
+		req, struct smb_vfs_call_fsync_state);
+	int err;
+
+	state->retval = state->recv_fn(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (state->retval == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+int SMB_VFS_FSYNC_RECV(struct tevent_req *req, int *perrno)
+{
+	struct smb_vfs_call_fsync_state *state = tevent_req_data(
+		req, struct smb_vfs_call_fsync_state);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		*perrno = err;
+		return -1;
+	}
+	return state->retval;
+}
+
+
 int smb_vfs_call_stat(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname)
 {

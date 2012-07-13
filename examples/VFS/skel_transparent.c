@@ -338,6 +338,57 @@ static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
 	return SMB_VFS_NEXT_FSYNC(handle, fsp);
 }
 
+struct skel_fsync_state {
+	int ret;
+	int err;
+};
+
+static void skel_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *skel_fsync_send(struct vfs_handle_struct *handle,
+					  TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct files_struct *fsp)
+{
+	struct tevent_req *req, *subreq;
+	struct skel_fsync_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct skel_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	subreq = SMB_VFS_NEXT_FSYNC_SEND(state, ev, handle, fsp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, skel_fsync_done, req);
+	return req;
+}
+
+static void skel_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct skel_fsync_state *state = tevent_req_data(
+		req, struct skel_fsync_state);
+
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static int skel_fsync_recv(struct tevent_req *req, int *err)
+{
+	struct skel_fsync_state *state = tevent_req_data(
+		req, struct skel_fsync_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
+}
+
 static int skel_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
 	return SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -849,6 +900,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.recvfile_fn = skel_recvfile,
 	.rename_fn = skel_rename,
 	.fsync_fn = skel_fsync,
+	.fsync_send_fn = skel_fsync_send,
+	.fsync_recv_fn = skel_fsync_recv,
 	.stat_fn = skel_stat,
 	.fstat_fn = skel_fstat,
 	.lstat_fn = skel_lstat,

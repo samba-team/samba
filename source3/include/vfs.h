@@ -540,6 +540,11 @@ struct vfs_fn_pointers {
 			 const struct smb_filename *smb_fname_src,
 			 const struct smb_filename *smb_fname_dst);
 	int (*fsync_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
+	struct tevent_req *(*fsync_send_fn)(struct vfs_handle_struct *handle,
+					    TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct files_struct *fsp);
+	int (*fsync_recv_fn)(struct tevent_req *req, int *err);
 	int (*stat_fn)(struct vfs_handle_struct *handle, struct smb_filename *smb_fname);
 	int (*fstat_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 	int (*lstat_fn)(struct vfs_handle_struct *handle, struct smb_filename *smb_filename);
@@ -923,6 +928,13 @@ int smb_vfs_call_rename(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname_dst);
 int smb_vfs_call_fsync(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp);
+
+struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct files_struct *fsp);
+int SMB_VFS_FSYNC_RECV(struct tevent_req *req, int *perrno);
+
 int smb_vfs_call_stat(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname);
 int smb_vfs_call_fstat(struct vfs_handle_struct *handle,

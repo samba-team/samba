@@ -263,6 +263,20 @@ static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
 	return -1;
 }
 
+static struct tevent_req *skel_fsync_send(struct vfs_handle_struct *handle,
+					  TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct files_struct *fsp)
+{
+	return NULL;
+}
+
+static int skel_fsync_recv(struct tevent_req *req, int *err)
+{
+	*err = ENOSYS;
+	return -1;
+}
+
 static int skel_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
@@ -805,6 +819,8 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.recvfile_fn = skel_recvfile,
 	.rename_fn = skel_rename,
 	.fsync_fn = skel_fsync,
+	.fsync_send_fn = skel_fsync_send,
+	.fsync_recv_fn = skel_fsync_recv,
 	.stat_fn = skel_stat,
 	.fstat_fn = skel_fstat,
 	.lstat_fn = skel_lstat,

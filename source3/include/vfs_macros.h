@@ -207,6 +207,12 @@
 #define SMB_VFS_NEXT_FSYNC(handle, fsp) \
 	smb_vfs_call_fsync((handle)->next, (fsp))
 
+#define SMB_VFS_FSYNC_SEND(mem_ctx, ev, fsp) \
+	smb_vfs_call_fsync_send((fsp)->conn->vfs_handles, (mem_ctx), (ev), \
+				(fsp))
+#define SMB_VFS_NEXT_FSYNC_SEND(mem_ctx, ev, handle, fsp)		\
+	smb_vfs_call_fsync_send((handle)->next, (mem_ctx), (ev), (fsp))
+
 #define SMB_VFS_STAT(conn, smb_fname) \
 	smb_vfs_call_stat((conn)->vfs_handles, (smb_fname))
 #define SMB_VFS_NEXT_STAT(handle, smb_fname) \

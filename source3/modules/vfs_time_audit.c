@@ -791,6 +791,69 @@ static int smb_time_audit_fsync(vfs_handle_struct *handle, files_struct *fsp)
 	return result;
 }
 
+struct smb_time_audit_fsync_state {
+	struct timespec ts1;
+	int ret;
+	int err;
+};
+
+static void smb_time_audit_fsync_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_time_audit_fsync_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp)
+{
+	struct tevent_req *req, *subreq;
+	struct smb_time_audit_fsync_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb_time_audit_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	clock_gettime_mono(&state->ts1);
+
+	subreq = SMB_VFS_NEXT_FSYNC_SEND(state, ev, handle, fsp);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smb_time_audit_fsync_done, req);
+	return req;
+}
+
+static void smb_time_audit_fsync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb_time_audit_fsync_state *state = tevent_req_data(
+		req, struct smb_time_audit_fsync_state);
+
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static int smb_time_audit_fsync_recv(struct tevent_req *req, int *err)
+{
+	struct smb_time_audit_fsync_state *state = tevent_req_data(
+		req, struct smb_time_audit_fsync_state);
+	struct timespec ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&state->ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("fsync", timediff);
+	}
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+	return state->ret;
+}
+
 static int smb_time_audit_stat(vfs_handle_struct *handle,
 			       struct smb_filename *fname)
 {
@@ -2283,6 +2346,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.recvfile_fn = smb_time_audit_recvfile,
 	.rename_fn = smb_time_audit_rename,
 	.fsync_fn = smb_time_audit_fsync,
+	.fsync_send_fn = smb_time_audit_fsync_send,
+	.fsync_recv_fn = smb_time_audit_fsync_recv,
 	.stat_fn = smb_time_audit_stat,
 	.fstat_fn = smb_time_audit_fstat,
 	.lstat_fn = smb_time_audit_lstat,
