@@ -493,14 +493,6 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	E_md4hash(trust_password, trust_md4_password);
 	SAFE_FREE(trust_password);
 
-#if 0
-	/* Test if machine password is expired and need to be changed */
-	if (time(NULL) > last_change_time + (time_t)lp_machine_password_timeout())
-	{
-		global_machine_password_needs_changing = True;
-	}
-#endif
-
 	/* use get_dc_name() for consistency even through we know that it will be 
 	   a netbios name */
 
