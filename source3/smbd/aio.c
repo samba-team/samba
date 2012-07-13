@@ -22,6 +22,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "../lib/util/tevent_unix.h"
 
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
@@ -311,6 +312,99 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	TALLOC_FREE(aio_ex);
 }
 
+struct pwrite_fsync_state {
+	struct tevent_context *ev;
+	files_struct *fsp;
+	bool write_through;
+	ssize_t nwritten;
+};
+
+static void pwrite_fsync_write_done(struct tevent_req *subreq);
+static void pwrite_fsync_sync_done(struct tevent_req *subreq);
+
+static struct tevent_req *pwrite_fsync_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct files_struct *fsp,
+					    const void *data,
+					    size_t n, off_t offset,
+					    bool write_through)
+{
+	struct tevent_req *req, *subreq;
+	struct pwrite_fsync_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct pwrite_fsync_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->fsp = fsp;
+	state->write_through = write_through;
+
+	subreq = SMB_VFS_PWRITE_SEND(state, ev, fsp, data, n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, pwrite_fsync_write_done, req);
+	return req;
+}
+
+static void pwrite_fsync_write_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct pwrite_fsync_state *state = tevent_req_data(
+		req, struct pwrite_fsync_state);
+	connection_struct *conn = state->fsp->conn;
+	int err;
+	bool do_sync;
+
+	state->nwritten = SMB_VFS_PWRITE_RECV(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (state->nwritten == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+
+	do_sync = (lp_strict_sync(SNUM(conn)) &&
+		   (lp_syncalways(SNUM(conn)) || state->write_through));
+	if (!do_sync) {
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = SMB_VFS_FSYNC_SEND(state, state->ev, state->fsp);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, pwrite_fsync_sync_done, req);
+}
+
+static void pwrite_fsync_sync_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	int ret, err;
+
+	ret = SMB_VFS_FSYNC_RECV(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		tevent_req_error(req, err);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static ssize_t pwrite_fsync_recv(struct tevent_req *req, int *perr)
+{
+	struct pwrite_fsync_state *state = tevent_req_data(
+		req, struct pwrite_fsync_state);
+
+	if (tevent_req_is_unix_error(req, perr)) {
+		return -1;
+	}
+	return state->nwritten;
+}
+
 static void aio_pwrite_smb1_done(struct tevent_req *req);
 
 /****************************************************************************
@@ -388,8 +482,9 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 	aio_ex->nbyte = numtowrite;
 	aio_ex->offset = startpos;
 
-	req = SMB_VFS_PWRITE_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
-				  data, numtowrite, startpos);
+	req = pwrite_fsync_send(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
+				data, numtowrite, startpos,
+				aio_ex->write_through);
 	if (req == NULL) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
@@ -450,7 +545,7 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 	ssize_t nwritten;
 	int err;
 
-	nwritten = SMB_VFS_PWRITE_RECV(req, &err);
+	nwritten = pwrite_fsync_recv(req, &err);
 	TALLOC_FREE(req);
 
 	DEBUG(10, ("pwrite_recv returned %d, err = %s\n", (int)nwritten,
@@ -507,8 +602,6 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 		ERROR_NT(map_nt_error_from_unix(err));
 		srv_set_message(outbuf,0,0,true);
         } else {
-		NTSTATUS status;
-
 		SSVAL(outbuf,smb_vwv2,nwritten);
 		SSVAL(outbuf,smb_vwv4,(nwritten>>16)&1);
 		if (nwritten < (ssize_t)numtowrite) {
@@ -518,15 +611,6 @@ static void aio_pwrite_smb1_done(struct tevent_req *req)
 
 		DEBUG(3,("handle_aio_write: %s, num=%d wrote=%d\n",
 			 fsp_fnum_dbg(fsp), (int)numtowrite, (int)nwritten));
-		status = sync_file(fsp->conn,fsp, aio_ex->write_through);
-		if (!NT_STATUS_IS_OK(status)) {
-			ERROR_BOTH(map_nt_error_from_unix(errno),
-				   ERRHRD, ERRdiskfull);
-			srv_set_message(outbuf,0,0,true);
-			DEBUG(5, ("handle_aio_write: sync_file for %s "
-				  "returned %s\n",
-				  fsp_str_dbg(fsp), nt_errstr(status)));
-		}
 
 		aio_ex->fsp->fh->pos = aio_ex->offset + nwritten;
 	}
@@ -793,8 +877,9 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 	aio_ex->nbyte = in_data.length;
 	aio_ex->offset = in_offset;
 
-	req = SMB_VFS_PWRITE_SEND(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
-				  in_data.data, in_data.length, in_offset);
+	req = pwrite_fsync_send(aio_ex, fsp->conn->sconn->ev_ctx, fsp,
+				in_data.data, in_data.length, in_offset,
+				write_through);
 	if (req == NULL) {
 		DEBUG(3, ("smb2: SMB_VFS_PWRITE_SEND failed. "
 			  "Error %s\n", strerror(errno)));
@@ -849,7 +934,7 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 	ssize_t nwritten;
 	int err = 0;
 
-	nwritten = SMB_VFS_PWRITE_RECV(req, &err);
+	nwritten = pwrite_fsync_recv(req, &err);
 	TALLOC_FREE(req);
 
 	DEBUG(10, ("pwrite_recv returned %d, err = %s\n", (int)nwritten,
@@ -866,7 +951,7 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 	/* Unlock now we're done. */
 	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
-        status = smb2_write_complete(subreq, nwritten, err);
+        status = smb2_write_complete_nosync(subreq, nwritten, err);
 
 	DEBUG(10, ("smb2: scheduled aio_write completed "
 		   "for file %s, offset %.0f, requested %u, "
