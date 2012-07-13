@@ -264,6 +264,8 @@ NTSTATUS smbd_smb2_request_process_read(struct smbd_smb2_request *req);
 NTSTATUS smb2_read_complete(struct tevent_req *req, ssize_t nread, int err);
 NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req);
 NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err);
+NTSTATUS smb2_write_complete_nosync(struct tevent_req *req, ssize_t nwritten,
+				    int err);
 NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req);
 NTSTATUS smbd_smb2_request_process_keepalive(struct smbd_smb2_request *req);

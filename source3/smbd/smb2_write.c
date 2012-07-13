@@ -174,7 +174,9 @@ struct smbd_smb2_write_state {
 
 static void smbd_smb2_write_pipe_done(struct tevent_req *subreq);
 
-NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
+static NTSTATUS smb2_write_complete_internal(struct tevent_req *req,
+					     ssize_t nwritten, int err,
+					     bool do_sync)
 {
 	NTSTATUS status;
 	struct smbd_smb2_write_state *state = tevent_req_data(req,
@@ -209,18 +211,32 @@ NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
 		return NT_STATUS_DISK_FULL;
 	}
 
-	status = sync_file(fsp->conn, fsp, state->write_through);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5,("smb2: sync_file for %s returned %s\n",
-			fsp_str_dbg(fsp),
-			nt_errstr(status)));
-		return status;
+	if (do_sync) {
+		status = sync_file(fsp->conn, fsp, state->write_through);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5,("smb2: sync_file for %s returned %s\n",
+				 fsp_str_dbg(fsp),
+				 nt_errstr(status)));
+			return status;
+		}
 	}
 
 	state->out_count = nwritten;
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS smb2_write_complete(struct tevent_req *req, ssize_t nwritten, int err)
+{
+	return smb2_write_complete_internal(req, nwritten, err, true);
+}
+
+NTSTATUS smb2_write_complete_nosync(struct tevent_req *req, ssize_t nwritten,
+				    int err)
+{
+	return smb2_write_complete_internal(req, nwritten, err, false);
+}
+
 
 static bool smbd_smb2_write_cancel(struct tevent_req *req)
 {
