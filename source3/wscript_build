@@ -422,8 +422,6 @@ SWAT_SRC = '''${SWAT_SRC1}'''
 
 STATUS_SRC = '''utils/status.c utils/status_profile.c smbd/notify_internal.c'''
 
-CCLEAN_SRC = '''utils/cclean.c utils/interact.c'''
-
 SMBCONTROL_SRC = '''utils/smbcontrol.c'''
 
 SMBTREE_SRC = '''utils/smbtree.c'''
@@ -1312,16 +1310,6 @@ bld.SAMBA3_BINARY('smbta-util',
 
 bld.SAMBA3_BINARY('smbstatus',
                  source=STATUS_SRC,
-                 deps='''
-                 talloc
-                 param
-                 popt_samba3
-                 LOCKING
-                 PROFILE''',
-                 vars=locals())
-
-bld.SAMBA3_BINARY('cclean',
-                 source=CCLEAN_SRC,
                  deps='''
                  talloc
                  param
