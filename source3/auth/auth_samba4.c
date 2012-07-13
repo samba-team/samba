@@ -31,6 +31,16 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+/* 
+ * This hook is currently unused, as all NTLM logins go via the hooks
+ * provided by make_auth4_context_s4() below.
+ *
+ * This is only left in case we find a way that it might become useful
+ * in future.  Importantly, this routine returns the information
+ * needed for a NETLOGON SamLogon, not what is needed to establish a
+ * session.
+ */
+
 static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 				      void *my_private_data,
 				      TALLOC_CTX *mem_ctx,
