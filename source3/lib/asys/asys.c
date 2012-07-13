@@ -35,9 +35,14 @@ struct asys_pread_args {
 	off_t offset;
 };
 
+struct asys_fsync_args {
+	int fildes;
+};
+
 union asys_job_args {
 	struct asys_pwrite_args pwrite_args;
 	struct asys_pread_args pread_args;
+	struct asys_fsync_args fsync_args;
 };
 
 struct asys_job {
@@ -227,6 +232,44 @@ static void asys_pread_do(void *private_data)
 	struct asys_pread_args *args = &job->args.pread_args;
 
 	job->ret = pread(args->fildes, args->buf, args->nbyte, args->offset);
+	if (job->ret == -1) {
+		job->err = errno;
+	}
+}
+
+static void asys_fsync_do(void *private_data);
+
+int asys_fsync(struct asys_context *ctx, int fildes, void *private_data)
+{
+	struct asys_job *job;
+	struct asys_fsync_args *args;
+	int jobid;
+	int ret;
+
+	ret = asys_new_job(ctx, &jobid, &job);
+	if (ret != 0) {
+		return ret;
+	}
+	job->private_data = private_data;
+
+	args = &job->args.fsync_args;
+	args->fildes = fildes;
+
+	ret = pthreadpool_add_job(ctx->pool, jobid, asys_fsync_do, job);
+	if (ret != 0) {
+		return ret;
+	}
+	job->busy = 1;
+
+	return 0;
+}
+
+static void asys_fsync_do(void *private_data)
+{
+	struct asys_job *job = (struct asys_job *)private_data;
+	struct asys_fsync_args *args = &job->args.fsync_args;
+
+	job->ret = fsync(args->fildes);
 	if (job->ret == -1) {
 		job->err = errno;
 	}
