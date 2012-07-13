@@ -56,6 +56,7 @@ static bool locks_only;            /* Added by RJS */
 static bool processes_only;
 static bool show_brl;
 static bool numeric_only;
+static bool do_checks = true;
 
 const char *username = NULL;
 
@@ -120,7 +121,7 @@ static void print_share_mode(const struct share_mode_entry *e,
 {
 	static int count;
 
-	if (!is_valid_share_mode_entry(e)) {
+	if (do_checks && !is_valid_share_mode_entry(e)) {
 		return;
 	}
 
@@ -250,7 +251,8 @@ static int traverse_connections(const struct connections_key *key,
 	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
 
-	if (!process_exists(crec->pid) || !Ucrit_checkUid(crec->uid)) {
+	if (do_checks &&
+	    (!process_exists(crec->pid) || !Ucrit_checkUid(crec->uid))) {
 		return 0;
 	}
 
@@ -267,8 +269,9 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 {
 	fstring uid_str, gid_str;
 
-	if (!process_exists(session->pid)
-	    || !Ucrit_checkUid(session->uid)) {
+	if (do_checks &&
+	    (!process_exists(session->pid) ||
+	     !Ucrit_checkUid(session->uid))) {
 		return 0;
 	}
 
@@ -331,6 +334,7 @@ static void print_notify_recs(const char *path,
 		{"profile-rates", 'R', POPT_ARG_NONE, NULL, 'R', "Show call rates" },
 		{"byterange",	'B', POPT_ARG_NONE,	NULL, 'B', "Include byte range locks"},
 		{"numeric",	'n', POPT_ARG_NONE,	NULL, 'n', "Numeric uid/gid"},
+		{"fast",	'f', POPT_ARG_NONE,	NULL, 'f', "Skip checks if processes still exist"},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -384,6 +388,9 @@ static void print_notify_recs(const char *path,
 			break;
 		case 'n':
 			numeric_only = true;
+			break;
+		case 'f':
+			do_checks = false;
 			break;
 		}
 	}
