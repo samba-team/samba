@@ -119,6 +119,7 @@ static void aio_worker(void *private_data)
 					(const void *)pd->aiocb->aio_buf,
 					pd->aiocb->aio_nbytes);
 		}
+#if defined(HAVE_FSYNC)
 		if (pd->ret_size != -1 && pd->flush_write) {
 			/*
 			 * Optimization - flush if requested.
@@ -127,6 +128,7 @@ static void aio_worker(void *private_data)
 			 */
 			(void)fsync(pd->aiocb->aio_fildes);
 		}
+#endif
 	} else {
 		pd->ret_size = sys_pread(pd->aiocb->aio_fildes,
 				(void *)pd->aiocb->aio_buf,
