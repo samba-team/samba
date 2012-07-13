@@ -1623,12 +1623,6 @@ static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain)
 		return NT_STATUS_OK;
 	}
 
-	if (!winbindd_can_contact_domain(domain)) {
-		invalidate_cm_connection(&domain->conn);
-		domain->initialized = True;
-		return NT_STATUS_OK;
-	}
-
 	if (connection_ok(domain)) {
 		if (!domain->initialized) {
 			set_dc_type_and_flags(domain);
