@@ -18,8 +18,10 @@
  */
 
 #include "regedit_treeview.h"
+#include "lib/registry/registry.h"
 
-struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent, const char *name)
+struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
+				const char *name, struct registry_key *key)
 {
 	struct tree_node *node;
 
@@ -33,6 +35,8 @@ struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent, const
 		talloc_free(node);
 		return NULL;
 	}
+
+	node->key = talloc_steal(node, key);
 
 	if (parent) {
 		/* Check if this node is the first descendant of parent. */
@@ -93,6 +97,77 @@ struct tree_node *tree_node_first(struct tree_node *list)
 	}
 
 	return list;
+}
+
+bool tree_node_has_children(struct tree_node *node)
+{
+	const char *classname;
+	uint32_t num_subkeys;
+	uint32_t num_values;
+	NTTIME last_change_time;
+	uint32_t max_subkeynamelen;
+	uint32_t max_valnamelen;
+	uint32_t max_valbufsize;
+	WERROR rv;
+
+	if (node->child_head) {
+		return true;
+	}
+
+	rv = reg_key_get_info(node, node->key, &classname, &num_subkeys,
+			      &num_values, &last_change_time,
+			      &max_subkeynamelen, &max_valnamelen,
+			      &max_valbufsize);
+
+	if (W_ERROR_IS_OK(rv)) {
+		return num_subkeys != 0;
+	}
+
+	return false;
+}
+
+WERROR tree_node_load_children(struct tree_node *node)
+{
+	struct registry_key *key;
+	const char *key_name, *klass;
+	NTTIME modified;
+	uint32_t i;
+	WERROR rv;
+	struct tree_node *new_node, *prev;
+
+	/* does this node already have it's children loaded? */
+	if (node->child_head)
+		return WERR_OK;
+
+	for (prev = NULL, i = 0; ; ++i) {
+		rv = reg_key_get_subkey_by_index(node, node->key, i,
+						 &key_name, &klass,
+						 &modified);
+		if (!W_ERROR_IS_OK(rv)) {
+			if (W_ERROR_EQUAL(rv, WERR_NO_MORE_ITEMS)) {
+				break;
+			}
+
+			return rv;
+		}
+
+		rv = reg_open_key(node, node->key, key_name, &key);
+		if (!W_ERROR_IS_OK(rv)) {
+			return rv;
+		}
+
+		new_node = tree_node_new(node, node, key_name, key);
+		if (new_node == NULL) {
+			return WERR_NOMEM;
+		}
+
+		if (prev) {
+			tree_node_append(prev, new_node);
+		}
+		prev = new_node;
+	}
+
+	return WERR_OK;
 }
 
 void tree_node_free_recursive(struct tree_node *list)
@@ -158,7 +233,7 @@ WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 
 		/* Add a '+' marker to indicate that the item has
 		   descendants. */
-		if (node->child_head) {
+		if (tree_node_has_children(node)) {
 			SMB_ASSERT(node->label == NULL);
 			node->label = talloc_asprintf(node, "+%s", node->name);
 			if (node->label == NULL) {

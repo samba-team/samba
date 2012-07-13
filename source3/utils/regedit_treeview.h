@@ -24,10 +24,13 @@
 #include <ncurses.h>
 #include <menu.h>
 
+struct registry_key;
+
 struct tree_node {
 
 	char *name;
 	char *label;
+	struct registry_key *key;
 
 	struct tree_node *parent;
 	struct tree_node *child_head;
@@ -45,7 +48,7 @@ struct tree_view {
 };
 
 struct tree_node *tree_node_new(TALLOC_CTX *ctx, struct tree_node *parent,
-				const char *name);
+				const char *name, struct registry_key *key);
 void tree_node_append(struct tree_node *left, struct tree_node *right);
 struct tree_node *tree_node_pop(struct tree_node **plist);
 struct tree_node *tree_node_first(struct tree_node *list);
@@ -56,5 +59,7 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 				int begin_y, int begin_x);
 void tree_view_show(struct tree_view *view);
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list);
+bool tree_node_has_children(struct tree_node *node);
+WERROR tree_node_load_children(struct tree_node *node);
 
 #endif

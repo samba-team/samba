@@ -22,8 +22,69 @@
 #include "lib/util/data_blob.h"
 #include "lib/registry/registry.h"
 #include "regedit.h"
+#include "regedit_treeview.h"
 #include <ncurses.h>
 #include <menu.h>
+
+/* test navigating HKLM hierarchy */
+static void display_test_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
+{
+	WINDOW *tree_window;
+	struct tree_view *view;
+	struct tree_node *root, *node;
+	struct registry_key *key;
+	int c;
+	WERROR rv;
+
+	initscr();
+	start_color();
+	cbreak();
+	noecho();
+	keypad(stdscr, TRUE);
+
+	tree_window = newwin(25, 80, 0, 0);
+
+	keypad(tree_window, TRUE);
+
+	rv = reg_get_predefined_key_by_name(ctx, "HKEY_LOCAL_MACHINE", &key);
+	SMB_ASSERT(W_ERROR_IS_OK(rv));
+
+	root = tree_node_new(mem_ctx, NULL, "HKEY_LOCAL_MACHINE", key);
+	SMB_ASSERT(root != NULL);
+
+	view = tree_view_new(mem_ctx, root, tree_window, 15, 40, 3, 0);
+	SMB_ASSERT(root != NULL);
+	refresh();
+	tree_view_show(view);
+
+	while ((c = wgetch(tree_window)) != 'q') {
+		switch (c) {
+		case KEY_DOWN:
+			menu_driver(view->menu, REQ_DOWN_ITEM);
+			break;
+		case KEY_UP:
+			menu_driver(view->menu, REQ_UP_ITEM);
+			break;
+		case KEY_RIGHT:
+			node = item_userptr(current_item(view->menu));
+			if (node && tree_node_has_children(node)) {
+				tree_node_load_children(node);
+				tree_view_update(view, node->child_head);
+			}
+			break;
+		case KEY_LEFT:
+			node = item_userptr(current_item(view->menu));
+			if (node && node->parent) {
+				tree_view_update(view,
+					tree_node_first(node->parent));
+			}
+			break;
+		}
+		tree_view_show(view);
+	}
+
+	endwin();
+}
 
 int main(int argc, char **argv)
 {
@@ -40,13 +101,9 @@ int main(int argc, char **argv)
 	struct user_auth_info *auth_info;
 	TALLOC_CTX *frame;
 	struct registry_context *ctx;
-	struct registry_key *hklm;
-	struct registry_key *smbconf;
-	uint32_t n;
 	WERROR rv;
 
-	initscr();
-	endwin();
+	talloc_enable_leak_report_full();
 
 	frame = talloc_stackframe();
 
@@ -71,28 +128,9 @@ int main(int argc, char **argv)
 	rv = reg_open_samba3(frame, &ctx);
 	SMB_ASSERT(W_ERROR_IS_OK(rv));
 
-	rv = reg_get_predefined_key_by_name(ctx, "HKEY_LOCAL_MACHINE", &hklm);
-	SMB_ASSERT(W_ERROR_IS_OK(rv));
+	display_test_window(frame, ctx);
 
-	printf("contents of hklm/SOFTWARE/Samba/smbconf...\n");
-
-	rv = reg_open_key(ctx, hklm, "SOFTWARE\\Samba\\smbconf", &smbconf);
-	SMB_ASSERT(W_ERROR_IS_OK(rv));
-
-	printf("subkeys...\n");
-
-	for (n = 0; ;++n) {
-		const char *name, *klass;
-		NTTIME modified;
-
-		rv = reg_key_get_subkey_by_index(ctx, smbconf, n, &name,
-						&klass, &modified);
-		if (!W_ERROR_IS_OK(rv)) {
-			break;
-		}
-
-		printf("%u: %s\n", (unsigned)n, name);
-	}
+	//talloc_report_full(frame, stdout);
 
 	TALLOC_FREE(frame);
 
