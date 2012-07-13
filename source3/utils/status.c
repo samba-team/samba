@@ -191,7 +191,7 @@ static void print_brl(struct file_id id,
 			void *private_data)
 {
 	static int count;
-	int i;
+	unsigned int i;
 	static const struct {
 		enum brl_type lock_type;
 		const char *desc;
