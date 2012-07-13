@@ -79,10 +79,33 @@ fail:
 	return NULL;
 }
 
+enum cmd_type {
+	READ_CMD,
+	WRITE_CMD
+};
+
+static const char *cmd_type_str(enum cmd_type cmd)
+{
+	const char *result;
+
+	switch (cmd) {
+	case READ_CMD:
+		result = "READ";
+		break;
+	case WRITE_CMD:
+		result = "WRITE";
+		break;
+	default:
+		result = "<UNKNOWN>";
+		break;
+	}
+	return result;
+}
+
 struct rw_cmd {
 	size_t n;
 	off_t offset;
-	bool read_cmd;
+	enum cmd_type cmd;
 };
 
 struct rw_ret {
@@ -323,7 +346,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 		}
 
 		DEBUG(10, ("aio_child_loop: %s %d bytes at %d from fd %d\n",
-			   cmd_struct.read_cmd ? "read" : "write",
+			   cmd_type_str(cmd_struct.cmd),
 			   (int)cmd_struct.n, (int)cmd_struct.offset, fd));
 
 #ifdef ENABLE_BUILD_FARM_HACKS
@@ -348,7 +371,8 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 
 		ZERO_STRUCT(ret_struct);
 
-		if (cmd_struct.read_cmd) {
+		switch (cmd_struct.cmd) {
+		case READ_CMD:
 			ret_struct.size = sys_pread(
 				fd, (void *)map->ptr, cmd_struct.n,
 				cmd_struct.offset);
@@ -358,11 +382,15 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			ret_struct.size = MAX(1, ret_struct.size * 0.9);
 #endif
 #endif
-		}
-		else {
+			break;
+		case WRITE_CMD:
 			ret_struct.size = sys_pwrite(
 				fd, (void *)map->ptr, cmd_struct.n,
 				cmd_struct.offset);
+			break;
+		default:
+			ret_struct.size = -1;
+			errno = EINVAL;
 		}
 
 		DEBUG(10, ("aio_child_loop: syscall returned %d\n",
@@ -571,7 +599,7 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	ZERO_STRUCT(cmd);
 	cmd.n = n;
 	cmd.offset = offset;
-	cmd.read_cmd = true;
+	cmd.cmd = READ_CMD;
 
 	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
 		   (int)state->child->pid));
@@ -682,7 +710,7 @@ static struct tevent_req *aio_fork_pwrite_send(
 	ZERO_STRUCT(cmd);
 	cmd.n = n;
 	cmd.offset = offset;
-	cmd.read_cmd = false;
+	cmd.cmd = WRITE_CMD;
 
 	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
 		   (int)state->child->pid));
