@@ -41,8 +41,6 @@
 #include "lib/id_cache.h"
 #include "serverid.h"
 
-extern bool global_machine_password_needs_changing;
-
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
 	struct pending_message_list *next, *prev;
@@ -2580,9 +2578,6 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 
 	/* check if we need to reload services */
 	check_reload(sconn, time_mono(NULL));
-
-	/* Change machine password if neccessary. */
-	attempt_machine_password_change();
 
         /*
 	 * Force a log file check.

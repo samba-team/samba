@@ -33,9 +33,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/* Urrrg. global.... */
-bool global_machine_password_needs_changing;
-
 /**
  * Form a key for fetching the domain sid
  *
@@ -342,14 +339,6 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
 
 	if (channel) {
 		*channel = get_default_sec_channel();
-	}
-
-	/* Test if machine password has expired and needs to be changed */
-	if (lp_machine_password_timeout()) {
-		if (pass->mod_time > 0 && time(NULL) > (pass->mod_time +
-				(time_t)lp_machine_password_timeout())) {
-			global_machine_password_needs_changing = True;
-		}
 	}
 
 	SAFE_FREE(pass);
