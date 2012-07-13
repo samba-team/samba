@@ -247,9 +247,9 @@ static void print_brl(struct file_id id,
 	TALLOC_FREE(share_mode);
 }
 
-static int traverse_fn1(const struct connections_key *key,
-			const struct connections_data *crec,
-			void *state)
+static int traverse_connections(const struct connections_key *key,
+				const struct connections_data *crec,
+				void *state)
 {
 	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
@@ -469,7 +469,7 @@ static void print_notify_recs(const char *path,
 		d_printf("\nService      pid     machine       Connected at\n");
 		d_printf("-------------------------------------------------------\n");
 
-		connections_forall_read(traverse_fn1, NULL);
+		connections_forall_read(traverse_connections, NULL);
 
 		d_printf("\n");
 
