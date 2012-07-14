@@ -313,7 +313,7 @@ enum netr_SchannelType get_default_sec_channel(void)
 ************************************************************************/
 
 bool secrets_fetch_trust_account_password_legacy(const char *domain,
-						 uint8 ret_pwd[16],
+						 uint8_t ret_pwd[16],
 						 time_t *pass_last_set_time,
 						 enum netr_SchannelType *channel)
 {
@@ -351,7 +351,7 @@ bool secrets_fetch_trust_account_password_legacy(const char *domain,
  the above secrets_lock_trust_account_password().
 ************************************************************************/
 
-bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
+bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16],
 					  time_t *pass_last_set_time,
 					  enum netr_SchannelType *channel)
 {
@@ -442,8 +442,8 @@ bool secrets_store_machine_password(const char *pass, const char *domain,
 				    enum netr_SchannelType sec_channel)
 {
 	bool ret;
-	uint32 last_change_time;
-	uint32 sec_channel_type;
+	uint32_t last_change_time;
+	uint32_t sec_channel_type;
 
 	if (!secrets_store_prev_machine_password(domain)) {
 		return false;
@@ -487,7 +487,7 @@ char *secrets_fetch_machine_password(const char *domain,
 
 	if (pass_last_set_time) {
 		size_t size;
-		uint32 *last_set_time;
+		uint32_t *last_set_time;
 		last_set_time = (unsigned int *)secrets_fetch(machine_last_change_time_keystr(domain), &size);
 		if (last_set_time) {
 			*pass_last_set_time = IVAL(last_set_time,0);
@@ -499,7 +499,7 @@ char *secrets_fetch_machine_password(const char *domain,
 
 	if (channel) {
 		size_t size;
-		uint32 *channel_type;
+		uint32_t *channel_type;
 		channel_type = (unsigned int *)secrets_fetch(machine_sec_channel_type_keystr(domain), &size);
 		if (channel_type) {
 			*channel = IVAL(channel_type,0);

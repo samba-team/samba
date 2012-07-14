@@ -58,7 +58,7 @@
 /* structure for storing machine account password
    (ie. when samba server is member of a domain */
 struct machine_acct_pass {
-	uint8 hash[16];
+	uint8_t hash[16];
 	time_t mod_time;
 };
 
@@ -69,12 +69,12 @@ struct machine_acct_pass {
 #define SECRETS_AFS_MAXKEYS 8
 
 struct afs_key {
-	uint32 kvno;
+	uint32_t kvno;
 	char key[8];
 };
 
 struct afs_keyfile {
-	uint32 nkeys;
+	uint32_t nkeys;
 	struct afs_key entry[SECRETS_AFS_MAXKEYS];
 };
 
@@ -100,10 +100,10 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
 void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain);
 enum netr_SchannelType get_default_sec_channel(void);
 bool secrets_fetch_trust_account_password_legacy(const char *domain,
-						 uint8 ret_pwd[16],
+						 uint8_t ret_pwd[16],
 						 time_t *pass_last_set_time,
 						 enum netr_SchannelType *channel);
-bool secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
+bool secrets_fetch_trust_account_password(const char *domain, uint8_t ret_pwd[16],
 					  time_t *pass_last_set_time,
 					  enum netr_SchannelType *channel);
 bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
