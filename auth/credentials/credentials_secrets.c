@@ -34,6 +34,11 @@
 #include "param/param.h"
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
+#include "source3/include/secrets.h"
+#include "dbwrap/dbwrap.h"
+#include "dbwrap/dbwrap_open.h"
+#include "lib/util/util_tdb.h"
+
 
 /**
  * Fill in credentials for the machine trust account, from the secrets database.
@@ -197,17 +202,59 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	NTSTATUS status;
 	char *filter;
 	char *error_string;
+	const char *domain;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
 	cred->machine_account_pending = false;
+
+	/* We have to do this, as the fallback in
+	 * cli_credentials_set_secrets is to run as anonymous, so the domain is wiped */
+	domain = cli_credentials_get_domain(cred);
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
-				 cli_credentials_get_domain(cred));
+				 domain);
 	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
 					     SECRETS_PRIMARY_DOMAIN_DN,
 					     filter, &error_string);
+	if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
+	    || NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, status)) {
+		TDB_DATA dbuf;
+		char *secrets_tdb = lpcfg_private_path(cred, lp_ctx, "secrets.tdb");
+		struct db_context *db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb, 0,
+							      TDB_DEFAULT, O_RDWR, 0600,
+							      DBWRAP_LOCK_ORDER_1);
+		if (db_ctx) {
+			char *keystr;
+			char *keystr_upper;
+			keystr = talloc_asprintf(cred, "%s/%s",
+						 SECRETS_MACHINE_PASSWORD,
+						 domain);
+			keystr_upper = strupper_talloc(cred, keystr);
+			TALLOC_FREE(keystr);
+			status = dbwrap_fetch(db_ctx, cred, string_tdb_data(keystr_upper),
+					      &dbuf);
+			
+			if (NT_STATUS_IS_OK(status)) {
+				char *machine_account = talloc_asprintf(cred, "%s$", lpcfg_netbios_name(lp_ctx));
+				cli_credentials_set_password(cred, (const char *)dbuf.dptr, CRED_SPECIFIED);
+				cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
+				cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
+				TALLOC_FREE(machine_account);
+				TALLOC_FREE(dbuf.dptr);
+			} else {
+				error_string = talloc_asprintf(cred, 
+							       "Failed to fetch machine account password from "
+							       "secrets.ldb: %s and failed to fetch %s from %s", 
+							       error_string, keystr_upper, secrets_tdb);
+			}
+			TALLOC_FREE(keystr_upper);
+			TALLOC_FREE(secrets_tdb);
+		}
+	}
+	
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", nt_errstr(status), error_string));
+		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", 
+			  error_string, nt_errstr(status)));
 		talloc_free(error_string);
 	}
 	return status;
