@@ -17,8 +17,8 @@
  * this program; if not, see <http://www.gnu.org/licenses/>.  
  */
 
-#ifndef _SECRETS_H
-#define _SECRETS_H
+#ifndef _SOURCE4_PARAM_SECRETS_H
+#define _SOURCE4_PARAM_SECRETS_H
 
 #define SECRETS_PRIMARY_DOMAIN_DN "cn=Primary Domains"
 #define SECRETS_PRINCIPALS_DN "cn=Principals"
@@ -54,4 +54,4 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 char *keytab_name_from_msg(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct ldb_message *msg);
 
 
-#endif /* _SECRETS_H */
+#endif /* _SOURCE4_PARAM_SECRETS_H */
