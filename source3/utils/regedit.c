@@ -26,15 +26,61 @@
 #include <ncurses.h>
 #include <menu.h>
 
-/* test navigating HKLM hierarchy */
-static void display_test_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
+/* load all available hives */
+static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
+				    struct registry_context *ctx)
+{
+	const char *hives[] = {
+		"HKEY_CLASSES_ROOT",
+		"HKEY_CURRENT_USER",
+		"HKEY_LOCAL_MACHINE",
+		"HKEY_PERFORMANCE_DATA",
+		"HKEY_USERS",
+		"HKEY_CURRENT_CONFIG",
+		"HKEY_DYN_DATA",
+		"HKEY_PERFORMANCE_TEXT",
+		"HKEY_PERFORMANCE_NLSTEXT",
+		NULL
+	};
+	struct tree_node *root, *prev, *node;
+	struct registry_key *key;
+	WERROR rv;
+	size_t i;
+
+	root = NULL;
+	prev = NULL;
+
+	for (i = 0; hives[i] != NULL; ++i) {
+		rv = reg_get_predefined_key_by_name(ctx, hives[i], &key);
+		if (!W_ERROR_IS_OK(rv)) {
+			return root;
+		}
+
+		node = tree_node_new(mem_ctx, NULL, hives[i], key);
+		if (node == NULL) {
+			return NULL;
+		}
+
+		if (root == NULL) {
+			root = node;
+		}
+		if (prev) {
+			tree_node_append(prev, node);
+		}
+		prev = node;
+	}
+
+	return root;
+}
+
+/* test navigating available hives */
+static void display_test_window(TALLOC_CTX *mem_ctx,
+				struct registry_context *ctx)
 {
 	WINDOW *tree_window;
 	struct tree_view *view;
 	struct tree_node *root, *node;
-	struct registry_key *key;
 	int c;
-	WERROR rv;
 
 	initscr();
 	start_color();
@@ -43,17 +89,16 @@ static void display_test_window(TALLOC_CTX *mem_ctx, struct registry_context *ct
 	keypad(stdscr, TRUE);
 
 	tree_window = newwin(25, 80, 0, 0);
+	SMB_ASSERT(tree_window != NULL);
 
 	keypad(tree_window, TRUE);
 
-	rv = reg_get_predefined_key_by_name(ctx, "HKEY_LOCAL_MACHINE", &key);
-	SMB_ASSERT(W_ERROR_IS_OK(rv));
-
-	root = tree_node_new(mem_ctx, NULL, "HKEY_LOCAL_MACHINE", key);
+	root = load_hives(mem_ctx, ctx);
 	SMB_ASSERT(root != NULL);
 
 	view = tree_view_new(mem_ctx, root, tree_window, 15, 40, 3, 0);
-	SMB_ASSERT(root != NULL);
+	SMB_ASSERT(view != NULL);
+
 	refresh();
 	tree_view_show(view);
 
