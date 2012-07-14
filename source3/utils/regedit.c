@@ -77,7 +77,7 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 static void display_test_window(TALLOC_CTX *mem_ctx,
 				struct registry_context *ctx)
 {
-	WINDOW *tree_window;
+	WINDOW *tree_window, *path_label;
 	struct tree_view *view;
 	struct tree_node *root, *node;
 	int c;
@@ -92,6 +92,10 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 	SMB_ASSERT(tree_window != NULL);
 
 	keypad(tree_window, TRUE);
+
+	mvwprintw(tree_window, 0, 0, "Path: ");
+	path_label = derwin(tree_window, 1, 45, 0, 6);
+	wprintw(path_label, "/");
 
 	root = load_hives(mem_ctx, ctx);
 	SMB_ASSERT(root != NULL);
@@ -114,12 +118,14 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 			node = item_userptr(current_item(view->menu));
 			if (node && tree_node_has_children(node)) {
 				tree_node_load_children(node);
+				tree_node_print_path(path_label, node->child_head);
 				tree_view_update(view, node->child_head);
 			}
 			break;
 		case KEY_LEFT:
 			node = item_userptr(current_item(view->menu));
 			if (node && node->parent) {
+				tree_node_print_path(path_label, node->child_head);
 				tree_view_update(view,
 					tree_node_first(node->parent));
 			}
