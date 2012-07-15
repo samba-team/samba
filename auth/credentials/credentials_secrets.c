@@ -93,7 +93,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 				  NULL, 0, "%s", filter);
 
 	if (ldb_ret != LDB_SUCCESS) {
-		*error_string = talloc_asprintf(cred, "Could not find entry to match filter: '%s' base: '%s': %s: %s\n",
+		*error_string = talloc_asprintf(cred, "Could not find entry to match filter: '%s' base: '%s': %s: %s",
 						filter, base ? base : "",
 						ldb_strerror(ldb_ret), ldb_errstring(ldb));
 		/* set anonymous as the fallback, if the machine account won't work */
