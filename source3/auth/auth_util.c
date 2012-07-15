@@ -734,7 +734,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	info3->base.rid = DOMAIN_RID_GUEST;
 
 	/* Primary gid */
-	info3->base.primary_gid = BUILTIN_RID_GUESTS;
+	info3->base.primary_gid = DOMAIN_RID_GUESTS;
 
 	TALLOC_FREE(pwd);
 	return NT_STATUS_OK;
