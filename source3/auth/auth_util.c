@@ -1250,17 +1250,26 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	char *found_username = NULL;
 	const char *nt_domain;
 	const char *nt_username;
+	struct dom_sid user_sid;
+	struct dom_sid group_sid;
 	bool username_was_mapped;
 	struct passwd *pwd;
 	struct auth_serversupplied_info *result;
-	struct dom_sid *group_sid;
-	struct netr_SamInfo3 *i3;
 
 	/* 
 	   Here is where we should check the list of
 	   trusted domains, and verify that the SID 
 	   matches.
 	*/
+
+	if (!sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!sid_compose(&group_sid, info3->base.domain_sid,
+			 info3->base.primary_gid)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	nt_username = talloc_strdup(mem_ctx, info3->base.account_name.string);
 	if (!nt_username) {
@@ -1313,42 +1322,16 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 
 	/* copy in the info3 */
-	result->info3 = i3 = copy_netr_SamInfo3(result, info3);
+	result->info3 = copy_netr_SamInfo3(result, info3);
 	if (result->info3 == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Fill in the unix info we found on the way */
+
 	result->utok.uid = pwd->pw_uid;
 	result->utok.gid = pwd->pw_gid;
-
-	/* We can't just trust that the primary group sid sent us is something
-	 * we can really use. Obtain the useable sid, and store the original
-	 * one as an additional group if it had to be replaced */
-	nt_status = get_primary_group_sid(mem_ctx, found_username,
-					  &pwd, &group_sid);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(result);
-		return nt_status;
-	}
-
-	/* store and check if it is the same we got originally */
-	sid_peek_rid(group_sid, &i3->base.primary_gid);
-	if (i3->base.primary_gid != info3->base.primary_gid) {
-		uint32_t n = i3->base.groups.count;
-		/* not the same, store the original as an additional group */
-		i3->base.groups.rids =
-			talloc_realloc(i3, i3->base.groups.rids,
-					struct samr_RidWithAttribute, n + 1);
-		if (i3->base.groups.rids == NULL) {
-			TALLOC_FREE(result);
-			return NT_STATUS_NO_MEMORY;
-		}
-		i3->base.groups.rids[n].rid = info3->base.primary_gid;
-		i3->base.groups.rids[n].attributes = SE_GROUP_ENABLED;
-		i3->base.groups.count = n + 1;
-	}
 
 	/* ensure we are never given NULL session keys */
 
