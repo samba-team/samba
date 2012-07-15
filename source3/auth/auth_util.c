@@ -843,7 +843,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	info3->base.rid = DOMAIN_RID_GUEST;
 
 	/* Primary gid */
-	info3->base.primary_gid = BUILTIN_RID_GUESTS;
+	info3->base.primary_gid = DOMAIN_RID_GUESTS;
 
 	/* Set as guest */
 	info3->base.user_flags = NETLOGON_GUEST;
