@@ -212,6 +212,40 @@ static struct tevent_req *aio_linux_pwrite_send(
 	return req;
 }
 
+static struct tevent_req *aio_linux_fsync_send(
+	struct vfs_handle_struct *handle, TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev, struct files_struct *fsp)
+{
+	struct tevent_req *req;
+	struct aio_linux_state *state;
+	struct iocb *piocb;
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state, struct aio_linux_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	if (!init_aio_linux(handle)) {
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
+
+	io_prep_fsync(&state->event_iocb, fsp->fh->fd);
+	io_set_eventfd(&state->event_iocb, event_fd);
+	state->event_iocb.data = req;
+
+	piocb = &state->event_iocb;
+
+	ret = io_submit(io_ctx, 1, &piocb);
+	if (ret < 0) {
+		tevent_req_error(req, -ret);
+		return tevent_req_post(req, ev);
+	}
+	num_busy += 1;
+	used = true;
+	return req;
+}
+
 static void aio_linux_done(struct event_context *event_ctx,
 			   struct fd_event *event,
 			   uint16 flags, void *private_data)
@@ -278,6 +312,14 @@ static ssize_t aio_linux_recv(struct tevent_req *req, int *err)
 	return state->ret;
 }
 
+static int aio_linux_int_recv(struct tevent_req *req, int *err)
+{
+	/*
+	 * Use implicit conversion ssize_t->int
+	 */
+	return aio_linux_recv(req, err);
+}
+
 static int aio_linux_connect(vfs_handle_struct *handle, const char *service,
 			       const char *user)
 {
@@ -301,6 +343,8 @@ static struct vfs_fn_pointers vfs_aio_linux_fns = {
 	.pread_recv_fn = aio_linux_recv,
 	.pwrite_send_fn = aio_linux_pwrite_send,
 	.pwrite_recv_fn = aio_linux_recv,
+	.fsync_send_fn = aio_linux_fsync_send,
+	.fsync_recv_fn = aio_linux_int_recv,
 };
 
 NTSTATUS vfs_aio_linux_init(void)
