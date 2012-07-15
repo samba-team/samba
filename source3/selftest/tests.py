@@ -305,6 +305,8 @@ for t in tests:
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
     elif t == "unix.whoami":
+        plansmbtorturetestsuite(t, "member:local", '//$SERVER/tmp --machine-pass', description="machine account")
+        plansmbtorturetestsuite(t, "s3member:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
         for env in ["s3dc", "member"]:
             plansmbtorturetestsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
             plansmbtorturetestsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
