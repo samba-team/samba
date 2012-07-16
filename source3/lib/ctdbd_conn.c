@@ -1055,6 +1055,7 @@ static bool ctdb_collect_vnns(TALLOC_CTX *mem_ctx,
 
 	vnn_indexes = talloc_array(mem_ctx, unsigned, num_pids);
 	if (vnn_indexes == NULL) {
+		DEBUG(1, ("talloc_array failed\n"));
 		goto fail;
 	}
 
@@ -1079,6 +1080,7 @@ static bool ctdb_collect_vnns(TALLOC_CTX *mem_ctx,
 		vnns = talloc_realloc(mem_ctx, vnns, struct ctdb_vnn_list,
 				      num_vnns+1);
 		if (vnns == NULL) {
+			DEBUG(1, ("talloc_realloc failed\n"));
 			goto fail;
 		}
 		vnns[num_vnns].vnn = vnn;
@@ -1091,11 +1093,13 @@ static bool ctdb_collect_vnns(TALLOC_CTX *mem_ctx,
 
 		vnn->srvids = talloc_array(vnns, uint64_t, vnn->num_srvids);
 		if (vnn->srvids == NULL) {
+			DEBUG(1, ("talloc_array failed\n"));
 			goto fail;
 		}
 		vnn->pid_indexes = talloc_array(vnns, unsigned,
 						vnn->num_srvids);
 		if (vnn->pid_indexes == NULL) {
+			DEBUG(1, ("talloc_array failed\n"));
 			goto fail;
 		}
 	}
@@ -1130,6 +1134,7 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 
 	if (!ctdb_collect_vnns(talloc_tos(), pids, num_pids,
 			       &vnns, &num_vnns)) {
+		DEBUG(1, ("ctdb_collect_vnns failed\n"));
 		goto fail;
 	}
 
@@ -1166,16 +1171,16 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 					       data)),
 			data_blob_const(vnn->srvids, req.datalen));
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("ctdb_packet_send failed: %s\n",
-				   nt_errstr(status)));
+			DEBUG(1, ("ctdb_packet_send failed: %s\n",
+				  nt_errstr(status)));
 			goto fail;
 		}
 	}
 
 	status = ctdb_packet_flush(conn->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("ctdb_packet_flush failed: %s\n",
-			   nt_errstr(status)));
+		DEBUG(1, ("ctdb_packet_flush failed: %s\n",
+			  nt_errstr(status)));
 		goto fail;
 	}
 
@@ -1188,13 +1193,14 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 
 		status = ctdb_read_req(conn, 0, talloc_tos(), (void *)&reply);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("ctdb_read_req failed: %s\n",
-				   nt_errstr(status)));
+			DEBUG(1, ("ctdb_read_req failed: %s\n",
+				  nt_errstr(status)));
 			goto fail;
 		}
 
 		if (reply->hdr.operation != CTDB_REPLY_CONTROL) {
-			DEBUG(10, ("Received invalid reply\n"));
+			DEBUG(1, ("Received invalid reply %u\n",
+				  (unsigned)reply->hdr.operation));
 			goto fail;
 		}
 
@@ -1208,8 +1214,8 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			}
 		}
 		if (i == num_vnns) {
-			DEBUG(10, ("Received unknown reqid number %u\n",
-				   (unsigned)reqid));
+			DEBUG(1, ("Received unknown reqid number %u\n",
+				  (unsigned)reqid));
 			goto fail;
 		}
 
@@ -1222,7 +1228,11 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			   (unsigned)reply->datalen));
 
 		if (reply->datalen < ((vnn->num_srvids+7)/8)) {
-			DEBUG(10, ("Received short reply\n"));
+			DEBUG(1, ("Received short reply len %d, status %u,"
+				  "errorlen %u\n",
+				  (unsigned)reply->datalen,
+				  (unsigned)reply->status,
+				  (unsigned)reply->errorlen));
 			goto fail;
 		}
 
