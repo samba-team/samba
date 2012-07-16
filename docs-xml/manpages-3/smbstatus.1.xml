@@ -27,6 +27,7 @@
 		<arg choice="opt">-B</arg>
 		<arg choice="opt">-p</arg>
 		<arg choice="opt">-S</arg>
+		<arg choice="opt">-f</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 		<arg choice="opt">-u &lt;username&gt;</arg>
 	</cmdsynopsis>
@@ -92,6 +93,15 @@
 		<varlistentry>
 		<term>-S|--shares</term>
 		<listitem><para>causes smbstatus to only list shares.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-f|--fast</term>
+		<listitem><para>causes smbstatus to not check if the status data
+		is valid by checking if the processes that the status data refer to all still
+		exist. This speeds up execution on busy systems and clusters but
+		might display stale data of processes that died without cleaning up properly.</para>
 		</listitem>
 		</varlistentry>
 
