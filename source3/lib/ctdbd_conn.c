@@ -1190,6 +1190,7 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 		struct ctdb_reply_control *reply = NULL;
 		struct ctdb_vnn_list *vnn;
 		uint32_t reqid;
+		uint8_t *reply_data;
 
 		status = ctdb_read_req(conn, 0, talloc_tos(), (void *)&reply);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1227,13 +1228,26 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			   (unsigned)vnn->vnn, vnn->num_srvids,
 			   (unsigned)reply->datalen));
 
-		if (reply->datalen < ((vnn->num_srvids+7)/8)) {
-			DEBUG(1, ("Received short reply len %d, status %u,"
+		if (reply->datalen >= ((vnn->num_srvids+7)/8)) {
+			/*
+			 * Got a real reply
+			 */
+			reply_data = reply->data;
+		} else {
+			/*
+			 * Got an error reply
+			 */
+			DEBUG(1, ("Received short reply len %d, status %u, "
 				  "errorlen %u\n",
 				  (unsigned)reply->datalen,
 				  (unsigned)reply->status,
 				  (unsigned)reply->errorlen));
-			goto fail;
+			dump_data(1, reply->data, reply->errorlen);
+
+			/*
+			 * This will trigger everything set to false
+			 */
+			reply_data = NULL;
 		}
 
 		for (i=0; i<vnn->num_srvids; i++) {
@@ -1244,7 +1258,9 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 				results[idx] = true;
 				continue;
 			}
-			results[idx] = ((reply->data[i/8] & (1<<(i%8))) != 0);
+			results[idx] =
+				(reply_data != NULL) &&
+				((reply_data[i/8] & (1<<(i%8))) != 0);
 		}
 
 		TALLOC_FREE(reply);
