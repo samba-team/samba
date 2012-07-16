@@ -33,6 +33,11 @@ class CloseTdbTests(TestCase):
         self.tdb.close()
         self.tdb.close()
 
+        # Check that further operations do not crash python
+        self.assertRaises(RuntimeError, lambda: self.tdb.transaction_start())
+
+        self.assertRaises(RuntimeError, lambda: self.tdb["bar"])
+
 
 class InternalTdbTests(TestCase):
 
