@@ -189,6 +189,8 @@ static PyObject *obj_get(PyTdbObject *self, PyObject *args)
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
+	if (!key.dptr)
+		return NULL;
 
 	return PyString_FromTDB_DATA(tdb_fetch(self->ctx, key));
 }
@@ -202,7 +204,11 @@ static PyObject *obj_append(PyTdbObject *self, PyObject *args)
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
+	if (!key.dptr)
+		return NULL;
 	data = PyString_AsTDB_DATA(py_data);
+	if (!data.dptr)
+		return NULL;
 
 	ret = tdb_append(self->ctx, key, data);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
@@ -222,6 +228,8 @@ static PyObject *obj_nextkey(PyTdbObject *self, PyObject *args)
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
+	if (!key.dptr)
+		return NULL;
 	
 	return PyString_FromTDB_DATA(tdb_nextkey(self->ctx, key));
 }
@@ -235,6 +243,8 @@ static PyObject *obj_delete(PyTdbObject *self, PyObject *args)
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
+	if (!key.dptr)
+		return NULL;
 	ret = tdb_delete(self->ctx, key);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
 	Py_RETURN_NONE;
@@ -249,6 +259,8 @@ static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
+	if (!key.dptr)
+		return NULL;
 	ret = tdb_exists(self->ctx, key);
 	if (ret != TDB_ERR_NOEXIST) {
 		PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
@@ -268,7 +280,11 @@ static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 		return NULL;
 
 	key = PyString_AsTDB_DATA(py_key);
+	if (!key.dptr)
+		return NULL;
 	value = PyString_AsTDB_DATA(py_value);
+	if (!value.dptr)
+		return NULL;
 
 	ret = tdb_store(self->ctx, key, value, flag);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
