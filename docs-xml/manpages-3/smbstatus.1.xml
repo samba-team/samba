@@ -27,6 +27,7 @@
 		<arg choice="opt">-B</arg>
 		<arg choice="opt">-p</arg>
 		<arg choice="opt">-S</arg>
+		<arg choice="opt">-N</arg>
 		<arg choice="opt">-f</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
 		<arg choice="opt">-u &lt;username&gt;</arg>
@@ -93,6 +94,13 @@
 		<varlistentry>
 		<term>-S|--shares</term>
 		<listitem><para>causes smbstatus to only list shares.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-N|--notify</term>
+		<listitem><para>causes smbstatus to display registered file
+		notifications</para>
 		</listitem>
 		</varlistentry>
 
