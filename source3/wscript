@@ -37,7 +37,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('sys-quotas')
     opt.SAMBA3_ADD_OPTION('sendfile-support')
     opt.SAMBA3_ADD_OPTION('utmp')
-    opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable")
+    opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable", default=True)
     opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iconv')
     opt.SAMBA3_ADD_OPTION('acl-support')
