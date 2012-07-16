@@ -1000,7 +1000,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 
 
 	/* read the natgw nodes file into a linked list */
-	natgw_list = getenv("NATGW_NODES");
+	natgw_list = getenv("CTDB_NATGW_NODES");
 	if (natgw_list == NULL) {
 		natgw_list = "/etc/ctdb/natgw_nodes";
 	}
