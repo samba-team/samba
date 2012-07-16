@@ -27,6 +27,8 @@
 #include "lib/async_req/async_sock.h"
 #include "lib/util/tevent_unix.h"
 
+#undef recvmsg
+
 #ifndef MAP_FILE
 #define MAP_FILE 0
 #endif

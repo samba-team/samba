@@ -5542,20 +5542,19 @@ int main() { struct aiocb a; return aio_suspend(&a, 1, NULL); }])],
 		fi
 fi
 
-if test x"$samba_cv_HAVE_AIO" = x"yes"; then
-	if test x"$samba_cv_msghdr_msg_control" = x"yes" -o \
-		x"$samba_cv_msghdr_msg_acctright" = x"yes"; then
-		default_shared_modules="$default_shared_modules vfs_aio_fork"
-	fi
+if test x"$samba_cv_msghdr_msg_control" = x"yes" -o \
+	x"$samba_cv_msghdr_msg_acctright" = x"yes"; then
+	default_shared_modules="$default_shared_modules vfs_aio_fork"
+fi
 
 # Check for Linux kernel aio support.
-	case "$host_os" in
-	*linux*)
-	    AC_CHECK_LIB(aio,io_submit,[AIO_LIBS="$LIBS -laio"])
-	    AC_CACHE_CHECK([for Linux kernel asynchronous io support],samba_cv_HAVE_LINUX_KERNEL_AIO,[
-	    aio_LIBS=$LIBS
-	    LIBS=$AIO_LIBS
-	    AC_TRY_LINK([#include <unistd.h>
+case "$host_os" in
+*linux*)
+    AC_CHECK_LIB(aio,io_submit,[AIO_LIBS="$LIBS -laio"])
+    AC_CACHE_CHECK([for Linux kernel asynchronous io support],samba_cv_HAVE_LINUX_KERNEL_AIO,[
+    aio_LIBS=$LIBS
+    LIBS=$AIO_LIBS
+    AC_TRY_LINK([#include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -5577,13 +5576,11 @@ io_submit(ctx, 1, &ioc);
 io_getevents(ctx, 1, 1, &ioev, &ts);],
 samba_cv_HAVE_LINUX_KERNEL_AIO=yes,samba_cv_HAVE_LINUX_KERNEL_AIO=no)
 		LIBS=$aio_LIBS])
-	    if test x"$samba_cv_HAVE_LINUX_KERNEL_AIO" = x"yes"; then
-		AC_DEFINE(HAVE_AIO, 1, [Using asynchronous io])
-		default_shared_modules="$default_shared_modules vfs_aio_linux"
-	    fi
-            ;;
-        esac
-fi
+    if test x"$samba_cv_HAVE_LINUX_KERNEL_AIO" = x"yes"; then
+	default_shared_modules="$default_shared_modules vfs_aio_linux"
+    fi
+    ;;
+esac
 
 if test x"$samba_cv_HAVE_AIO" = x"yes"; then
   default_shared_modules="$default_shared_modules vfs_aio_posix"

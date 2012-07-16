@@ -374,9 +374,14 @@ return acl_get_perm_np(permset_d, perm);
             conf.CHECK_CODE('struct aiocb a; return aio_error(&a);', 'HAVE_AIO_ERROR', msg='Checking for aio_error', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_cancel(1, &a);', 'HAVE_AIO_CANCEL', msg='Checking for aio_cancel', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_suspend(&a, 1, NULL);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
-	    if host_os.rfind('linux') > -1:
-        	conf.CHECK_FUNCS_IN('io_submit', 'aio')
-		conf.CHECK_CODE('''
+        if not conf.CONFIG_SET('HAVE_AIO'):
+            conf.DEFINE('HAVE_NO_AIO', '1')
+    else:
+        conf.DEFINE('HAVE_NO_AIO', '1')
+
+    if host_os.rfind('linux') > -1:
+	conf.CHECK_FUNCS_IN('io_submit', 'aio')
+	conf.CHECK_CODE('''
 struct io_event ioev;
 struct iocb *ioc;
 io_context_t ctx;
@@ -396,11 +401,6 @@ io_getevents(ctx, 1, 1, &ioev, &ts);
 			msg='Checking for linux kernel asynchronous io support',
 			headers='unistd.h stdlib.h sys/types.h fcntl.h sys/eventfd.h libaio.h',
 			lib='aio')
-
-        if not conf.CONFIG_SET('HAVE_AIO'):
-            conf.DEFINE('HAVE_NO_AIO', '1')
-    else:
-        conf.DEFINE('HAVE_NO_AIO', '1')
 
     conf.CHECK_CODE('''
 struct msghdr msg;
@@ -1463,14 +1463,16 @@ main() {
     if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
         default_shared_modules.extend(TO_LIST('vfs_fileid'))
 
-    if conf.CONFIG_SET('HAVE_AIO') and (conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
+    if (conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
         default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
 
-    if conf.CONFIG_SET('HAVE_AIO') and Options.options.with_pthreadpool:
+    if Options.options.with_pthreadpool:
         default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))
+
+    if conf.CONFIG_SET('HAVE_AIO'):
         default_shared_modules.extend(TO_LIST('vfs_aio_posix'))
 
-    if conf.CONFIG_SET('HAVE_AIO') and conf.CONFIG_SET('HAVE_LINUX_KERNEL_AIO'):
+    if conf.CONFIG_SET('HAVE_LINUX_KERNEL_AIO'):
         default_shared_modules.extend(TO_LIST('vfs_aio_linux'))
 
     if conf.CONFIG_SET('HAVE_LDAP'):
