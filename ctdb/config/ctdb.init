@@ -244,13 +244,9 @@ wait_until_ready () {
 ctdbd=${CTDBD:-/usr/sbin/ctdbd}
 
 drop_all_public_ips() {
-    [ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
-	return
-    }
-
-    cat $CTDB_PUBLIC_ADDRESSES | while read IP IFACE REST; do
-	ip addr del $IP dev $IFACE >/dev/null 2>/dev/null
-    done
+    while read _ip _iface _rest; do
+	ip addr del $_ip dev $_iface >/dev/null 2>&1
+    done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
 }
 
 start() {
