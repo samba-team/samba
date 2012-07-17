@@ -117,7 +117,7 @@ static int talloc_pop(TALLOC_CTX *frame)
 
 static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 {
-	TALLOC_CTX **tmp, *top, *parent;
+	TALLOC_CTX **tmp, *top;
 	struct talloc_stackframe *ts =
 		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 
@@ -135,15 +135,16 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 		ts->talloc_stack_arraysize = ts->talloc_stacksize + 1;
         }
 
-	if (ts->talloc_stacksize == 0) {
-		parent = ts->talloc_stack;
-	} else {
-		parent = ts->talloc_stack[ts->talloc_stacksize-1];
-	}
-
 	if (poolsize) {
-		top = talloc_pool(parent, poolsize);
+		top = talloc_pool(ts->talloc_stack, poolsize);
 	} else {
+		TALLOC_CTX *parent;
+		/* We chain parentage, so if one is a pool we draw from it. */
+		if (ts->talloc_stacksize == 0) {
+			parent = ts->talloc_stack;
+		} else {
+			parent = ts->talloc_stack[ts->talloc_stacksize-1];
+		}
 		top = talloc_new(parent);
 	}
 
