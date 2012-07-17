@@ -848,7 +848,7 @@ static bool test_speed(void)
 			p1 = talloc_size(ctx, loop % 100);
 			p2 = talloc_strdup(p1, "foo bar");
 			p3 = talloc_size(p1, 300);
-			talloc_free_children(ctx);
+			talloc_free(p1);
 		}
 		count += 3 * loop;
 	} while (timeval_elapsed(&tv) < 5.0);
