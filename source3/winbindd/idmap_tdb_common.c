@@ -462,6 +462,7 @@ NTSTATUS idmap_tdb_common_sid_to_unixid(struct idmap_domain * dom,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	if (!dom || !map) {
+		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
