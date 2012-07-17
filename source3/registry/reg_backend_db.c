@@ -1961,7 +1961,8 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 	if (regval_ctr_numvals(values) == 0) {
 		werr = regdb_delete_values(db, key);
 		if (!W_ERROR_IS_OK(werr)) {
-			return werror_to_ntstatus(werr);
+			status = werror_to_ntstatus(werr);
+			goto done;
 		}
 
 		/*
@@ -1969,7 +1970,8 @@ static NTSTATUS regdb_store_values_internal(struct db_context *db,
 		 * from going to disk
 		 */
 		werr = regval_ctr_set_seqnum(values, dbwrap_get_seqnum(db));
-		return werror_to_ntstatus(werr);
+		status = werror_to_ntstatus(werr);
+		goto done;
 	}
 
 	ZERO_STRUCT(data);
