@@ -5557,10 +5557,8 @@ static int do_message_op(struct user_auth_info *a_info)
 	if (tar_type) {
 		if (cmdstr)
 			process_command_string(cmdstr);
-		return do_tar_op(base_directory);
-	}
-
-	if (query_host && *query_host) {
+		rc = do_tar_op(base_directory);
+	} else if (query_host && *query_host) {
 		char *qhost = query_host;
 		char *slash;
 
@@ -5578,15 +5576,11 @@ static int do_message_op(struct user_auth_info *a_info)
 			sscanf(p, "%x", &name_type);
 		}
 
-		return do_host_query(qhost);
-	}
-
-	if (message) {
-		return do_message_op(auth_info);
-	}
-
-	if (process(base_directory)) {
-		return 1;
+		rc = do_host_query(qhost);
+	} else if (message) {
+		rc = do_message_op(auth_info);
+	} else if (process(base_directory)) {
+		rc = 1;
 	}
 
 	TALLOC_FREE(frame);
