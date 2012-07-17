@@ -604,6 +604,13 @@ _PUBLIC_ void *talloc_pool(const void *context, size_t size)
 	}
 
 	pool_tc = (union talloc_pool_chunk *)talloc_chunk_from_ptr(result);
+	if (unlikely(pool_tc->hdr.c.flags & TALLOC_FLAG_POOLMEM)) {
+		/* We don't handle this correctly, so fail. */
+		talloc_log("talloc: cannot allocate pool off another pool %s\n",
+			   talloc_get_name(context));
+		talloc_free(result);
+		return NULL;
+	}
 	pool_tc->hdr.c.flags |= TALLOC_FLAG_POOL;
 	pool_tc->hdr.c.pool = tc_pool_first_chunk(pool_tc);
 
