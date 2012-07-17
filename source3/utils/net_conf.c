@@ -1131,6 +1131,7 @@ static int net_conf_wrap_function(struct net_context *c,
 
 	err = smbconf_init(mem_ctx, &conf_ctx, "registry:");
 	if (!SBC_ERROR_IS_OK(err)) {
+		talloc_free(mem_ctx);
 		return -1;
 	}
 
@@ -1138,6 +1139,7 @@ static int net_conf_wrap_function(struct net_context *c,
 
 	smbconf_shutdown(conf_ctx);
 
+	talloc_free(mem_ctx);
 	return ret;
 }
 
