@@ -973,19 +973,3 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 	}
 	tevent_req_done(subreq);
 }
-
-/****************************************************************************
- Handle any aio completion inline.
-*****************************************************************************/
-
-void aio_fsp_close(files_struct *fsp)
-{
-	unsigned i;
-
-	for (i=0; i<fsp->num_aio_requests; i++) {
-		struct tevent_req *req = fsp->aio_requests[i];
-		struct aio_extra *aio_ex = tevent_req_callback_data(
-			req, struct aio_extra);
-		aio_ex->fsp = NULL;
-	}
-}

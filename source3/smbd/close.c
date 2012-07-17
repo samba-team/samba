@@ -707,7 +707,21 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	NTSTATUS tmp;
 	connection_struct *conn = fsp->conn;
 
-	aio_fsp_close(fsp);
+	if (fsp->num_aio_requests != 0) {
+		char *str;
+		/*
+		 * reply_close and the smb2 close must have taken care of
+		 * this. No other callers of close_file should ever have
+		 * created async I/O.
+		 *
+		 * We need to panic here because if we close() the fd while we
+		 * have outstanding async I/O requests, in the worst case we
+		 * could end up writing to the wrong file.
+		 */
+		DEBUG(0, ("fsp->num_aio_requests=%u\n",
+			  fsp->num_aio_requests));
+		smb_panic("can not close with outstanding aio requests");
+	}
 
 	/*
 	 * If we're flushing on a close we can get a write
