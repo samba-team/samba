@@ -1173,7 +1173,8 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 	/* We can contact the domain if it is our primary domain */
 
 	if (domain->primary) {
-		return true;
+		ret = true;
+		goto done;
 	}
 
 	/* Trust the TDC cache and not the winbindd_domain flags */
@@ -1181,7 +1182,8 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 	if ((tdc = wcache_tdc_fetch_domain(frame, domain->name)) == NULL) {
 		DEBUG(10,("winbindd_can_contact_domain: %s not found in cache\n",
 			  domain->name));
-		return false;
+		ret = false;
+		goto done;
 	}
 
 	/* Can always contact a domain that is in out forest */
