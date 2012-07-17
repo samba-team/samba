@@ -1015,9 +1015,6 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		ctdb_set_error(ctdb, "Failed to load natgw node list '%s'\n", natgw_list);
 		return -1;
 	}
-	while (nlines > 0 && strcmp(lines[nlines-1], "") == 0) {
-		nlines--;
-	}
 	for (i=0;i<nlines;i++) {
 		char *node;
 
