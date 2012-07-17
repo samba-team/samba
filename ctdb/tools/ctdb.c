@@ -836,6 +836,12 @@ static bool is_partially_online(struct ctdb_node_and_flags *node)
 	return ret;
 }
 
+static void control_status_header_machine(void)
+{
+	printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
+	       ":Inactive:PartiallyOnline:ThisNode:\n");
+}
+
 static int control_status_1_machine(int mypnn, struct ctdb_node_and_flags *node)
 {
 	printf(":%d:%s:%d:%d:%d:%d:%d:%d:%d:%c:\n", node->pnn,
@@ -882,8 +888,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if (options.machinereadable) {
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
-		       ":Inactive:PartiallyOnline:ThisNode:\n");
+		control_status_header_machine();
 		for (i=0;i<nodemap->num;i++) {
 			if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 				continue;
@@ -949,8 +954,7 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	if (options.machinereadable) {
-		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:Stopped"
-		       ":Inactive:PartiallyOnline:ThisNode:\n");
+		control_status_header_machine();
 	} else if (pnn_mode == CTDB_BROADCAST_ALL) {
 		printf("Number of nodes:%d\n", (int) talloc_array_length(nodes));
 	}
