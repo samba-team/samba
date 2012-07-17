@@ -37,6 +37,7 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -n          Allow nodes to be specified by name.
     -f          Specify nodes file, overrides CTDB_NODES_FILE.
     -v          Print node address even for a single node.
+    -P          Push given files to nodes instead of running commands.
   <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected"),
                 "rm" (or "recmaster"), "lvs" (or "lvsmaster"),
                 "natgw" (or "natgwlist"); or
@@ -62,6 +63,7 @@ verbose=false
 quiet=false
 prefix=""
 names_ok=false
+push=false
 
 ctdb_base="${CTDB_BASE:-/etc/ctdb}"
 
@@ -72,7 +74,7 @@ parse_options ()
     # options ot onnode.
     local temp
     # Not on the previous line - local returns 0!
-    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqv" -l help -- "$@")
+    temp=$(POSIXLY_CORRECT=1 getopt -n "$prog" -o "cf:hno:pqvP" -l help -- "$@")
 
     [ $? != 0 ] && usage
 
@@ -87,6 +89,7 @@ parse_options ()
 	    -p) parallel=true ; shift ;;
 	    -q) quiet=true ; shift ;;
 	    -v) verbose=true ; shift ;;
+	    -P) push=true ; shift ;;
 	    --) shift ; break ;;
 	    -h|--help|*) usage ;; # Shouldn't happen, so this is reasonable.
 	esac
@@ -305,6 +308,21 @@ get_nodes ()
     done
 }
 
+push()
+{
+    local host="$1"
+    local files="$2"
+
+    local f
+    for f in $files ; do
+        $verbose && echo "Pushing $f"
+        case "$f" in
+	    /*) rsync "$f" "${host}:${f}" ;;
+	    *)  rsync "${PWD}/${f}" "${host}:${PWD}/${f}" ;;
+	esac
+    done
+}
+
 fakessh ()
 {
     CTDB_SOCKET="$1" sh -c "$2" 3>/dev/null
@@ -334,20 +352,25 @@ stderr_filter ()
 
 parse_options "$@"
 
-$current && command="cd $PWD && $command"
-
 ssh_opts=
-if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-    SSH=fakessh
+if $push ; then
+    SSH=push
     EXTRA_SSH_OPTS=""
-else 
-    # Could "2>/dev/null || true" but want to see errors from typos in file.
-    [ -r "${ctdb_base}/onnode.conf" ] && . "${ctdb_base}/onnode.conf"
-    [ -n "$SSH" ] || SSH=ssh
-    if [ "$SSH" = "ssh" ] ; then
-	ssh_opts="-n"
-    else
-	: # rsh? All bets are off!
+else
+    $current && command="cd $PWD && $command"
+
+    if [ -n "$CTDB_NODES_SOCKETS" ] ; then
+	SSH=fakessh
+	EXTRA_SSH_OPTS=""
+    else 
+	# Could "2>/dev/null || true" but want to see errors from typos in file.
+	[ -r "${ctdb_base}/onnode.conf" ] && . "${ctdb_base}/onnode.conf"
+	[ -n "$SSH" ] || SSH=ssh
+	if [ "$SSH" = "ssh" ] ; then
+	    ssh_opts="-n"
+	else
+	    : # rsh? All bets are off!
+	fi
     fi
 fi
 
