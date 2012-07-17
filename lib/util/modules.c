@@ -192,6 +192,7 @@ static NTSTATUS do_smb_load_module(const char *subsystem,
 	}
 
 	if (!init) {
+		TALLOC_FREE(ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -203,7 +204,7 @@ static NTSTATUS do_smb_load_module(const char *subsystem,
 			  module_name, get_friendly_nt_error_msg(status)));
 		dlclose(handle);
 	}
-
+	TALLOC_FREE(ctx);
 	return status;
 }
 
