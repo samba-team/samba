@@ -54,13 +54,6 @@ case "$1" in
 	NATGWMASTER=`ctdb natgwlist | head -1 | sed -e "s/ .*//"`
 	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`
 
-	CTDB_NATGW_PUBLIC_IP_HOST=`echo $CTDB_NATGW_PUBLIC_IP | sed -e "s/\/.*/\/32/"`
-
-	# block all incoming connections to the natgw address
-	iptables -D INPUT -p tcp --syn -d $CTDB_NATGW_PUBLIC_IP_HOST -j REJECT 2>/dev/null 
-	iptables -I INPUT -p tcp --syn -d $CTDB_NATGW_PUBLIC_IP_HOST -j REJECT 2>/dev/null 
-
-
 	if [ "$NATGWMASTER" = "-1" ]; then
 		echo "There is no NATGW master node"
 		exit 1
