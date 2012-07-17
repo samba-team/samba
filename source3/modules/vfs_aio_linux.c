@@ -288,11 +288,9 @@ static void aio_linux_setup_returns(struct io_event *ioev)
 {
 	struct aio_private_data *pd = (struct aio_private_data *)ioev->data;
 
-	/* ioev->res2 contains the -errno if error. */
-	/* ioev->res contains the number of bytes sent/received. */
-	if (ioev->res2) {
+	if (ioev->res < 0) {
 		pd->ret_size = -1;
-		pd->ret_errno = -ioev->res2;
+		pd->ret_errno = -ioev->res;
 	} else {
 		pd->ret_size = ioev->res;
 		pd->ret_errno = 0;
