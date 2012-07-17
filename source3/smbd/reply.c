@@ -4812,10 +4812,6 @@ void reply_exit(struct smb_request *req)
 	return;
 }
 
-/****************************************************************************
- Reply to a close - has to deal with closing a directory opened by NT SMB's.
-****************************************************************************/
-
 void reply_close(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
@@ -4841,21 +4837,13 @@ void reply_close(struct smb_request *req)
 		return;
 	}
 
-	if(fsp->is_directory) {
-		/*
-		 * Special case - close NT SMB directory handle.
-		 */
-		DEBUG(3,("close directory %s\n", fsp_fnum_dbg(fsp)));
-		status = close_file(req, fsp, NORMAL_CLOSE);
-	} else {
-		time_t t;
-		/*
-		 * Close ordinary file.
-		 */
+	DEBUG(3, ("Close %s fd=%d %s (numopen=%d)\n",
+		  fsp->is_directory ? "directory" : "file",
+		  fsp->fh->fd, fsp_fnum_dbg(fsp),
+		  conn->num_files_open));
 
-		DEBUG(3,("close fd=%d %s (numopen=%d)\n",
-			 fsp->fh->fd, fsp_fnum_dbg(fsp),
-			 conn->num_files_open));
+	if (!fsp->is_directory) {
+		time_t t;
 
 		/*
 		 * Take care of any time sent in the close.
@@ -4863,15 +4851,15 @@ void reply_close(struct smb_request *req)
 
 		t = srv_make_unix_date3(req->vwv+1);
 		set_close_write_time(fsp, convert_time_t_to_timespec(t));
+	}
 
-		/*
-		 * close_file() returns the unix errno if an error
-		 * was detected on close - normally this is due to
-		 * a disk full error. If not then it was probably an I/O error.
-		 */
+	/*
+	 * close_file() returns the unix errno if an error was detected on
+	 * close - normally this is due to a disk full error. If not then it
+	 * was probably an I/O error.
+	 */
 
-		status = close_file(req, fsp, NORMAL_CLOSE);
-	}  
+	status = close_file(req, fsp, NORMAL_CLOSE);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
