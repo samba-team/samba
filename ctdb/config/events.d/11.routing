@@ -21,20 +21,19 @@ loadconfig
 
 case "$1" in
     recovered|ipreallocated)
-        cat $CTDB_BASE/static-routes | while read IFACE DEST GW; do
-            ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
-        done
+        while read iface dest gw; do
+            ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
+        done <"${CTDB_BASE}/static-routes"
         ;;
 
     updateip)
 	oiface=$2
 	niface=$3
-	cat $CTDB_BASE/static-routes | egrep "^$niface " | while read IFACE DEST GW; do
-	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
-	done
-	cat $CTDB_BASE/static-routes | egrep "^$oiface " | while read IFACE DEST GW; do
-	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
-	done
+	while read iface dest gw; do
+	    if [ "$niface" = "$iface" -o "$oiface" = "$iface" ] ; then
+		ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
+	    fi
+	done <"${CTDB_BASE}/static-routes"
 	;;
 
     *)
