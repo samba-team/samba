@@ -44,8 +44,10 @@
  * not explicitly freed.
  */
 
-TALLOC_CTX *talloc_stackframe(void);
-TALLOC_CTX *talloc_stackframe_pool(size_t poolsize);
+#define talloc_stackframe() _talloc_stackframe(__location__)
+#define talloc_stackframe_pool(sz) _talloc_stackframe_pool(__location__, (sz))
+TALLOC_CTX *_talloc_stackframe(const char *location);
+TALLOC_CTX *_talloc_stackframe_pool(const char *location, size_t poolsize);
 
 /*
  * Get us the current top of the talloc stack.

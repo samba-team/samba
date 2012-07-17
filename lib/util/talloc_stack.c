@@ -115,7 +115,8 @@ static int talloc_pop(TALLOC_CTX *frame)
  * not explicitly freed.
  */
 
-static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
+static TALLOC_CTX *talloc_stackframe_internal(const char *location,
+					      size_t poolsize)
 {
 	TALLOC_CTX **tmp, *top;
 	struct talloc_stackframe *ts =
@@ -151,7 +152,7 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 	if (top == NULL) {
 		goto fail;
 	}
-
+	talloc_set_name_const(top, location);
 	talloc_set_destructor(top, talloc_pop);
 
 	ts->talloc_stack[ts->talloc_stacksize++] = top;
@@ -162,14 +163,14 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 	return NULL;
 }
 
-TALLOC_CTX *talloc_stackframe(void)
+TALLOC_CTX *_talloc_stackframe(const char *location)
 {
-	return talloc_stackframe_internal(0);
+	return talloc_stackframe_internal(location, 0);
 }
 
-TALLOC_CTX *talloc_stackframe_pool(size_t poolsize)
+TALLOC_CTX *_talloc_stackframe_pool(const char *location, size_t poolsize)
 {
-	return talloc_stackframe_internal(poolsize);
+	return talloc_stackframe_internal(location, poolsize);
 }
 
 /*
