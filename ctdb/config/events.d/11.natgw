@@ -56,7 +56,7 @@ case "$1" in
 	delete_all
 
 	if [ "$mypnn" = "$natgwmaster" ]; then
-		# This is the first node, set it up as the NAT GW
+		# This is the NAT GW
 		echo 1 >/proc/sys/net/ipv4/ip_forward
 		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE
 
@@ -68,12 +68,7 @@ case "$1" in
 		ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
 		ip route add 0.0.0.0/0 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
 	else
-		# This is not the NAT-GW
-		# Assign the public ip to the private interface and make
-		# sure we dont respond to ARPs.
-		# We do this so that the ip address will exist on a
-		# non-loopback interface so that samba may send it along in the
-		# KDC requests.
+		# This is NOT the NAT GW
 		ip route add 0.0.0.0/0 via $natgwip metric 10
 		# Make sure winbindd does not stay bound to this address
 		# if we are no longer natgwmaster
