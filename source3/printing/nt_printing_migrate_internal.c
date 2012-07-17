@@ -196,6 +196,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 
 	if (!drivers_exists && !printers_exists && !forms_exists) {
+		talloc_free(tmp_ctx);
 		return true;
 	}
 
