@@ -702,6 +702,7 @@ done:
 		}
 	}
 	regdb_close();
+	talloc_free(tmp_ctx);
 	return ok;
 }
 
