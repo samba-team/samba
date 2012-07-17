@@ -1001,6 +1001,8 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 	struct natgw_node *natgw_nodes = NULL;
 	struct natgw_node *natgw_node;
 	struct ctdb_node_map *nodemap=NULL;
+	uint32_t mypnn;
+	const char *fmt;
 
 
 	/* read the natgw nodes file into a linked list */
@@ -1066,7 +1068,14 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		}
 
 		i++;
-	}		
+	}
+
+	if (options.machinereadable) {
+		printf(":Node:IP:\n");
+		fmt = ":%d:%s:\n";
+	} else {
+		fmt = "%d %s\n";
+	}
 
 	/* pick a node to be natgwmaster
 	 * we dont allow STOPPED, DELETED, BANNED or UNHEALTHY nodes to become the natgwmaster
@@ -1081,7 +1090,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 			if (!(capabilities&CTDB_CAP_NATGW)) {
 				continue;
 			}
-			printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
+			printf(fmt, nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
 			break;
 		}
 	}
@@ -1097,7 +1106,7 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 				if (!(capabilities&CTDB_CAP_NATGW)) {
 					continue;
 				}
-				printf("%d %s\n", nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
+				printf(fmt, nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
 				break;
 			}
 		}
@@ -1114,29 +1123,36 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 				if (!(capabilities&CTDB_CAP_NATGW)) {
 					continue;
 				}
-				printf("%d %s\n", nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
+				printf(fmt, nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
 				break;
 			}
 		}
 		/* or if we still can not find any */
 		if (i == nodemap->num) {
-			printf("-1 0.0.0.0\n");
+			printf(fmt, -1, "0.0.0.0");
 			ret = 2; /* matches ENOENT */
 		}
 	}
 
 	/* print the pruned list of nodes belonging to this natgw list */
+	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
+		DEBUG(DEBUG_ERR, ("Unable to get PNN from node %u\n", options.pnn));
+		return -1;
+	}
+	if (options.machinereadable) {
+		control_status_header_machine();
+	} else {
+		printf("Number of nodes:%d\n", nodemap->num);
+	}
 	for(i=0;i<nodemap->num;i++){
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
-		printf(":%d:%s:%d:%d:%d:%d:%d\n", nodemap->nodes[i].pnn,
-			ctdb_addr_to_str(&nodemap->nodes[i].addr),
-		       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
-		       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
-		       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
-		       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-		       !!(nodemap->nodes[i].flags&NODE_FLAGS_STOPPED));
+		if (options.machinereadable) {
+			control_status_1_machine(mypnn, &(nodemap->nodes[i]));
+		} else {
+			control_status_1_human(mypnn, &(nodemap->nodes[i]));
+		}
 	}
 
 	return ret;
