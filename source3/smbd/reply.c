@@ -41,6 +41,7 @@
 #include "auth.h"
 #include "smbprofile.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/tevent_wait.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -4812,6 +4813,13 @@ void reply_exit(struct smb_request *req)
 	return;
 }
 
+struct reply_close_state {
+	files_struct *fsp;
+	struct smb_request *smbreq;
+};
+
+static void do_smb1_close(struct tevent_req *req);
+
 void reply_close(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
@@ -4853,6 +4861,39 @@ void reply_close(struct smb_request *req)
 		set_close_write_time(fsp, convert_time_t_to_timespec(t));
 	}
 
+	if (fsp->num_aio_requests != 0) {
+
+		struct reply_close_state *state;
+
+		DEBUG(10, ("closing with aio %u requests pending\n",
+			   fsp->num_aio_requests));
+
+		/*
+		 * We depend on the aio_extra destructor to take care of this
+		 * close request once fsp->num_aio_request drops to 0.
+		 */
+
+		fsp->deferred_close = tevent_wait_send(
+			fsp, fsp->conn->sconn->ev_ctx);
+		if (fsp->deferred_close == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		state = talloc(fsp, struct reply_close_state);
+		if (state == NULL) {
+			TALLOC_FREE(fsp->deferred_close);
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		state->fsp = fsp;
+		state->smbreq = talloc_move(fsp, &req);
+		tevent_req_set_callback(fsp->deferred_close, do_smb1_close,
+					state);
+		END_PROFILE(SMBclose);
+		return;
+	}
+
 	/*
 	 * close_file() returns the unix errno if an error was detected on
 	 * close - normally this is due to a disk full error. If not then it
@@ -4860,7 +4901,7 @@ void reply_close(struct smb_request *req)
 	 */
 
 	status = close_file(req, fsp, NORMAL_CLOSE);
-
+done:
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBclose);
@@ -4870,6 +4911,45 @@ void reply_close(struct smb_request *req)
 	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBclose);
 	return;
+}
+
+static void do_smb1_close(struct tevent_req *req)
+{
+	struct reply_close_state *state = tevent_req_callback_data(
+		req, struct reply_close_state);
+	struct smb_request *smbreq;
+	NTSTATUS status;
+	int ret;
+
+	ret = tevent_wait_recv(req);
+	TALLOC_FREE(req);
+	if (ret != 0) {
+		DEBUG(10, ("tevent_wait_recv returned %s\n",
+			   strerror(ret)));
+		/*
+		 * Continue anyway, this should never happen
+		 */
+	}
+
+	/*
+	 * fsp->smb2_close_request right now is a talloc grandchild of
+	 * fsp. When we close_file(fsp), it would go with it. No chance to
+	 * reply...
+	 */
+	smbreq = talloc_move(talloc_tos(), &state->smbreq);
+
+	status = close_file(smbreq, state->fsp, NORMAL_CLOSE);
+	if (NT_STATUS_IS_OK(status)) {
+		reply_outbuf(smbreq, 0, 0);
+	} else {
+		reply_nterror(smbreq, status);
+	}
+	if (!srv_send_smb(smbreq->sconn, smbreq->outbuf, true,
+			  smbreq->seqnum+1, encrypt, NULL)) {
+		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
+				    "failed.");
+	}
+	TALLOC_FREE(smbreq);
 }
 
 /****************************************************************************

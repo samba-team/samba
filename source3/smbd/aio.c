@@ -23,6 +23,7 @@
 #include "smbd/globals.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
+#include "lib/tevent_wait.h"
 
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.
@@ -107,6 +108,10 @@ static int aio_del_req_from_fsp(struct aio_req_fsp_link *lnk)
 	}
 	fsp->num_aio_requests -= 1;
 	fsp->aio_requests[i] = fsp->aio_requests[fsp->num_aio_requests];
+
+	if (fsp->num_aio_requests == 0) {
+		tevent_wait_done(fsp->deferred_close);
+	}
 	return 0;
 }
 

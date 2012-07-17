@@ -251,6 +251,15 @@ typedef struct files_struct {
 
 	unsigned num_aio_requests;
 	struct tevent_req **aio_requests;
+
+	/*
+	 * If a close request comes in while we still have aio_requests
+	 * around, we need to hold back the close. When all aio_requests are
+	 * done, the aio completion routines need tevent_wait_done() on
+	 * this. A bit ugly, but before we have close_file() fully async
+	 * possibly the simplest approach. Thanks, Jeremy for the idea.
+	 */
+	struct tevent_req *deferred_close;
 } files_struct;
 
 struct vuid_cache_entry {
