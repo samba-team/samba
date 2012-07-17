@@ -23,6 +23,7 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/tevent_wait.h"
 
 static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -255,6 +256,7 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 }
 
 struct smbd_smb2_close_state {
+	struct smbd_smb2_request *smb2req;
 	struct files_struct *in_fsp;
 	uint16_t in_flags;
 	uint16_t out_flags;
@@ -266,6 +268,8 @@ struct smbd_smb2_close_state {
 	uint64_t out_end_of_file;
 	uint32_t out_file_attributes;
 };
+
+static void smbd_smb2_close_do(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -282,8 +286,20 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->smb2req = smb2req;
 	state->in_fsp = in_fsp;
 	state->in_flags = in_flags;
+
+	if (in_fsp->num_aio_requests != 0) {
+
+		in_fsp->deferred_close = tevent_wait_send(in_fsp, ev);
+		if (tevent_req_nomem(in_fsp->deferred_close, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(in_fsp->deferred_close,
+					smbd_smb2_close_do, req);
+		return req;
+	}
 
 	status = smbd_smb2_close(smb2req,
 				 state->in_fsp,
@@ -302,6 +318,42 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
+}
+
+static void smbd_smb2_close_do(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_close_state *state = tevent_req_data(
+		req, struct smbd_smb2_close_state);
+	NTSTATUS status;
+	int ret;
+
+	ret = tevent_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		DEBUG(10, ("tevent_wait_recv returned %s\n",
+			   strerror(ret)));
+		/*
+		 * Continue anyway, this should never happen
+		 */
+	}
+
+	status = smbd_smb2_close(state->smb2req,
+				 state->in_fsp,
+				 state->in_flags,
+				 &state->out_flags,
+				 &state->out_creation_time,
+				 &state->out_last_access_time,
+				 &state->out_last_write_time,
+				 &state->out_change_time,
+				 &state->out_allocation_size,
+				 &state->out_end_of_file,
+				 &state->out_file_attributes);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_close_recv(struct tevent_req *req,
