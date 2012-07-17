@@ -177,6 +177,16 @@
         </listitem>
       </varlistentry>
 
+      <varlistentry><term>-P</term>
+        <listitem>
+          <para>
+            Push files to nodes.  Names of files to push are specified
+            rather than the usual command.  Quoting is fragile/broken
+            - filenames with whitespace in them are not supported.
+	  </para>
+        </listitem>
+      </varlistentry>
+
       <varlistentry><term>-h, --help</term>
         <listitem>
           <para>
