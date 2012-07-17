@@ -370,6 +370,11 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	}
 
 	/* Hash doesn't match, return underlying sd. */
+	DEBUG(10, ("get_nt_acl_internal: blob hash "
+		"does not match for file %s - returning "
+		"file system SD mapping.\n",
+		name ));
+
 	TALLOC_FREE(psd);
 	psd = pdesc_next;
 
