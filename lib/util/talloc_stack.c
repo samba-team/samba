@@ -96,6 +96,17 @@ static int talloc_pop(TALLOC_CTX *frame)
 		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 	int i;
 
+	/* Catch lazy frame-freeing. */
+	if (ts->talloc_stack[ts->talloc_stacksize-1] != frame) {
+		DEBUG(0, ("Freed frame %s, expected %s.\n",
+			  talloc_get_name(frame),
+			  talloc_get_name(ts->talloc_stack
+					  [ts->talloc_stacksize-1])));
+#ifdef DEVELOPER
+		smb_panic("Frame not freed in order.");
+#endif
+	}
+
 	for (i=ts->talloc_stacksize-1; i>0; i--) {
 		if (frame == ts->talloc_stack[i]) {
 			break;
