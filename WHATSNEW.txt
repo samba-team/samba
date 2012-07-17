@@ -1,4 +1,4 @@
-What's new in Samba 4.0 beta3
+What's new in Samba 4.0 beta4
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba 4.0 beta3 is not a final Samba release, however we are now making
+Samba 4.0 beta4 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -94,39 +94,46 @@ Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE beta2
+CHANGES SINCE beta3
 =====================
 
-For a list of changes since beta2, please see the git log.
+For a list of changes since beta3, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0beta2..samba-4.0.0beta3
+$ git log samba-4.0.0beta3..samba-4.0.0beta4
 
 Some major user-visible changes include:
 
-The failure to start up due to a blocking smbd-fileserver.conf.pid has
-been resolved.
+- The issue with beta3 being unable to build with a released version of
+  ldb has been resolved. 
 
-Samba now includes support for version 2.1 of the SMB protocol,
-the SMB2 version of Windows 7 and 2008R2, including dynamic
-reauthentication and support for multi-credit (large MTU).
-Consequently, Samba negotiates SMB 2.1 by default: The value "SMB2"
-for the configuration parameter "max protocol" has been changed to
-be an alias for SMB 2.1. Previously, the default SMB2 version of
-Samba was the original version 2.0 of SMB that was shipped with
-Windows Vista and 2008.
+- A new tool 'samba-tool domain dcpromo' has been added to allow the
+  promotion of existing domain member accounts to a DC without creating
+  a new SID
 
-Samba now offers basic experimental support for SMB3, the next version
-of the SMB protocol (formerly known as SMB 2.2) that will be available
-with Windows 8 and Windows Server 2012. Negotiation of SMB3 can be
-activated by setting "max protocol" to "SMB3" in smb.conf.
+- When provisioning with --use_rfc2307=yes we will populate the
+  subtree CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}. This makes
+  it possible to manipulate the posix attributes via ADUC.
 
-Thanks to upgrades to our AD DC code, particularly in schema handling,
-Samba can now correctly handle the installation of Microsoft Exchange
-2010.  Other issues prevent run-time operation, but this is a major
-milestone in supporting one of the single mode demanding Active
-Directory applications.
+- Improved 'samba-tool gpo' subcommands
+
+- --disable-ntdb now works properly
+
+- Bug 9026 - 3.6.6 upgrade from 3.5.x fails with "Couldn't migrate
+  printers tdb file: NT_STATUS_NO_MEMORY" has been resolved
+
+- Bug 9016 - Connection to outbound trusted domain goes offline has
+  been resolved
+
+Less visible, but important changes under the hood include:
+
+- Continued work to support SMB2 and SMB3
+
+- Correct restrictions and permissions on LSA calls over TCP and via
+  Schannel have been implemented and tested
+
+- Continued work to use async IO to improve file server performance.
 
 KNOWN ISSUES
 ============
@@ -137,9 +144,18 @@ KNOWN ISSUES
   warnings about invalid parameters from the two respective parameter
   parsing engines.
 
+- Modifying of group policies by members of the Domain Administrators
+  group is not possible with the s3fs file server, only with the ntvfs
+  file server.  This is due to the underlying POSIX ACL not being set
+  at provision time.
+
+- For similar reasons, sites with ACLs stored by the ntvfs file server
+  may wish to continue to use that file server implementation, as a
+  posix ACL will similarly not be set in this case.
+
 - Replication of DNS data from one AD server to another may not work.
   The DNS data used by the internal DNS server and bind9_dlz is stored
-  in an application partition in our directory.  The replicaton of
+  in an application partition in our directory.  The replication of
   this partition is not yet reliable.
 
 - Replication may fail on FreeBSD due to getaddrinfo() rejecting names
