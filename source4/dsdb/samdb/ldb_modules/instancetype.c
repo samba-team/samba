@@ -136,10 +136,12 @@ static int instancetype_mod(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(req->op.mod.message, "instanceType");
 	if (el != NULL) {
-		ldb_set_errstring(ldb, "instancetype: the 'instanceType' attribute can never be changed!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
+		/* Except to allow dbcheck to fix things, this must never be modified */
+		if (!ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+			ldb_set_errstring(ldb, "instancetype: the 'instanceType' attribute can never be changed!");
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 	}
-
 	return ldb_next_request(module, req);
 }
 
