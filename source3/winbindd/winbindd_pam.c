@@ -271,6 +271,7 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 
 	if (!group_sid || !group_sid[0]) {
 		/* NO sid supplied, all users may access */
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
