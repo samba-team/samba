@@ -202,6 +202,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	uint32_t i;
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
+	int instanceType;
 	struct ldb_val guid_value;
 	struct ldb_val parent_guid_value;
 	NTTIME whenChanged = 0;
@@ -352,18 +353,24 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	}
 
+	instanceType = ldb_msg_find_attr_as_int(msg, "instanceType", 0);
 	if (dsdb_repl_flags & DSDB_REPL_FLAG_PARTIAL_REPLICA) {
 		/* the instanceType type for partial_replica
 		   replication is sent via DRS with TYPE_WRITE set, but
 		   must be used on the client with TYPE_WRITE removed
 		*/
-		int instanceType = ldb_msg_find_attr_as_int(msg, "instanceType", 0);
 		if (instanceType & INSTANCE_TYPE_WRITE) {
 			instanceType &= ~INSTANCE_TYPE_WRITE;
 			ldb_msg_remove_attr(msg, "instanceType");
 			if (ldb_msg_add_fmt(msg, "instanceType", "%d", instanceType) != LDB_SUCCESS) {
 				return WERR_INTERNAL_ERROR;
 			}
+		}
+	} else {
+		if (!(instanceType & INSTANCE_TYPE_WRITE)) {
+			DEBUG(0, ("Refusing to replicate %s from a read-only repilca into a read-write replica!\n",
+				  ldb_dn_get_linearized(msg->dn)));
+			return WERR_DS_DRA_SOURCE_IS_PARTIAL_REPLICA;
 		}
 	}
 
