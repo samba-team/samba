@@ -247,8 +247,14 @@ WARNING: Failed to delete policy routing rule
   Command "$_cmd" failed:
   $_out
 EOF
-    # This should never fail, so don't redirect output.
-    ip route flush table $_table_id
+    # This should never usually fail, so don't redirect output.
+    # However, it can fail when deleting a rogue IP, since there will
+    # be no routes for that IP.  In this case it should only fail when
+    # the rule deletion above has already failed because the table id
+    # is invalid.  Therefore, go to a little bit of trouble to indent
+    # the failure message so that it is associated with the above
+    # warning message and doesn't look too nasty.
+    ip route flush table $_table_id 2>&1 | sed -e 's@^.@  &@'
 }
 
 ######################################################################
