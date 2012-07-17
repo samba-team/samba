@@ -175,6 +175,7 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 	ret = true;
 
 done:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
