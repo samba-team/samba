@@ -36,14 +36,9 @@ delete_all() {
 
 case "$1" in 
     startup)
-	[ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
-		CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
-	}
-	egrep "^$CTDB_NATGW_PUBLIC_IP[ \t]" $CTDB_PUBLIC_ADDRESSES >/dev/null
-	[ "$?" = "0" ] && {
-		echo ERROR: NATGW configured to use a public address. NATGW must not use a public address.
-		exit 1
-	}
+	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
+	grep -q "^$CTDB_NATGW_PUBLIC_IP[[:space:]]" "${CTDB_PUBLIC_ADDRESSES:-/etc/ctdb/public_addresses}" && \
+	    die "ERROR: NATGW configured to use a public address. NATGW must not use a public address."
 
 	# do not send out arp requests from loopback addresses
 	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
