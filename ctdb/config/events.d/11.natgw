@@ -45,18 +45,17 @@ case "$1" in
 	;;
 
     recovered|updatenatgw|ipreallocated)
-	MYPNN=`ctdb pnn | cut -d: -f2`
-	NATGWMASTER=`ctdb natgwlist | head -1 | sed -e "s/ .*//"`
-	NATGWIP=`ctdb natgwlist | head -1 | sed -e "s/^[^ ]* *//"`
+	mypnn=$(ctdb pnn | cut -d: -f2)
 
-	if [ "$NATGWMASTER" = "-1" ]; then
-		echo "There is no NATGW master node"
-		exit 1
-	fi
+	set -- $(ctdb natgwlist)
+	natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
+	natgwip="$2"
+
+	[ "$natgwmaster" = "-1" ] && die "There is no NATGW master node"
 
 	delete_all
 
-	if [ "$MYPNN" = "$NATGWMASTER" ]; then
+	if [ "$mypnn" = "$natgwmaster" ]; then
 		# This is the first node, set it up as the NAT GW
 		echo 1 >/proc/sys/net/ipv4/ip_forward
 		iptables -A POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE
@@ -75,7 +74,7 @@ case "$1" in
 		# We do this so that the ip address will exist on a
 		# non-loopback interface so that samba may send it along in the
 		# KDC requests.
-		ip route add 0.0.0.0/0 via $NATGWIP metric 10
+		ip route add 0.0.0.0/0 via $natgwip metric 10
 		# Make sure winbindd does not stay bound to this address
 		# if we are no longer natgwmaster
 		smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>/dev/null
