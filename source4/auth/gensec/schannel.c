@@ -77,7 +77,12 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		if (state->creds == NULL) {
 			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
-		state->creds = netlogon_creds_copy(state, state->creds);
+		/*
+		 * We need to create a reference here or we don't get
+		 * updates performed on the credentials if we create a
+		 * copy.
+		 */
+		state->creds = talloc_reference(state, state->creds);
 		if (state->creds == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
