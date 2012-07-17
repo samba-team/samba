@@ -51,11 +51,19 @@ class dbcheck(object):
         self.fix_rmd_flags = False
         self.seize_fsmo_role = False
         self.move_to_lost_and_found = False
+        self.fix_instancetype = False
         self.in_transaction = in_transaction
         self.infrastructure_dn = ldb.Dn(samdb, "CN=Infrastructure," + samdb.domain_dn())
         self.naming_dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
         self.schema_dn = samdb.get_schema_basedn()
         self.rid_dn = ldb.Dn(samdb, "CN=RID Manager$,CN=System," + samdb.domain_dn())
+        self.ntds_dsa = samdb.get_dsServiceName()
+
+        res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs'])
+        if "msDS-hasMasterNCs" in res[0]:
+            self.write_ncs = res[0]["msDS-hasMasterNCs"]
+        else:
+            self.write_ncs = None
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -366,6 +374,20 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to rename object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found)):
             self.report("Renamed object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found))
 
+    def err_wrong_instancetype(self, obj, calculated_instancetype):
+        '''handle a wrong instanceType'''
+        self.report("ERROR: wrong instanceType %s on %s, should be %d" % (obj["instanceType"], obj.dn, calculated_instancetype))
+        if not self.confirm_all('Change instanceType from %s to %d on %s?' % (obj["instanceType"], calculated_instancetype, obj.dn), 'fix_instancetype'):
+            self.report('Not changing instanceType from %s to %d on %s' % (obj["instanceType"], calculated_instancetype, obj.dn))
+            return
+
+        m = ldb.Message()
+        m.dn = obj.dn
+        m['value'] = ldb.MessageElement(str(calculated_instancetype), ldb.FLAG_MOD_REPLACE, 'instanceType')
+        if self.do_modify(m, ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA],
+                          "Failed to correct missing instanceType on %s by setting instanceType=%d" % (obj.dn, calculated_instancetype)):
+            self.report("Corrected instancetype on %s by setting instanceType=%d" % (obj.dn, calculated_instancetype))
+
     def find_revealed_link(self, dn, attrname, guid):
         '''return a revealed link in an object'''
         res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[attrname],
@@ -511,6 +533,24 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         
         return False
 
+    def calculate_instancetype(self, dn):
+        instancetype = 0
+        nc_root = self.samdb.get_nc_root(dn)
+        if dn == nc_root:
+            instancetype |= dsdb.INSTANCE_TYPE_IS_NC_HEAD
+            try:
+                self.samdb.search(base=dn.parent(), scope=ldb.SCOPE_BASE, attrs=[], controls=["show_recycled:1"])
+            except ldb.LdbError, (enum, estr):
+                if enum != ldb.ERR_NO_SUCH_OBJECT:
+                    raise
+            else:
+                instancetype |= dsdb.INSTANCE_TYPE_NC_ABOVE
+
+        if self.write_ncs is not None and str(nc_root) in self.write_ncs:
+            instancetype |= dsdb.INSTANCE_TYPE_WRITE
+
+        return instancetype
+
     def check_object(self, dn, attrs=['*']):
         '''check one object'''
         if self.verbose:
@@ -588,6 +628,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.err_normalise_mismatch(dn, attrname, obj[attrname])
                     error_count += 1
                     break
+
+            if str(attrname).lower() == "instancetype":
+                calculated_instancetype = self.calculate_instancetype(dn)
+                if len(obj["instanceType"]) != 1 or obj["instanceType"][0] != str(calculated_instancetype):
+                    self.err_wrong_instancetype(obj, calculated_instancetype)
 
         show_dn = True
         if got_repl_property_meta_data:
