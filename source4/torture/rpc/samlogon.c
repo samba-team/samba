@@ -1941,6 +1941,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 						   usercreds[ci].parameter_control,
 						   usercreds[ci].expected_interactive_error)) {
 				ret = false;
+				goto failed;
 			}
 
 			if (usercreds[ci].network_login) {
@@ -1954,6 +1955,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 						   usercreds[ci].old_password,
 						   0)) {
 					ret = false;
+					goto failed;
 				}
 			}
 		}
@@ -1965,6 +1967,10 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 		for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
 			/* TODO:  Somehow we lost setting up the different credential flags here! */
 
+			torture_comment(torture,
+					"Testing with flags: 0x%08x\n",
+					credential_flags[i]);
+
 			if (!test_InteractiveLogon(p, mem_ctx, torture, creds,
 						   usercreds[0].comment,
 						   TEST_MACHINE_NAME,
@@ -1974,6 +1980,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 						   usercreds[0].parameter_control,
 						   usercreds[0].expected_interactive_error)) {
 				ret = false;
+				goto failed;
 			}
 
 			if (usercreds[0].network_login) {
@@ -1987,6 +1994,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 						   usercreds[0].old_password,
 						   1)) {
 					ret = false;
+					goto failed;
 				}
 			}
 		}
