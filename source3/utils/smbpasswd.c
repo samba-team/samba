@@ -602,10 +602,10 @@ int main(int argc, char **argv)
 
 	if (local_flags & LOCAL_AM_ROOT) {
 		secrets_init();
-		return process_root(local_flags);
-	} 
-
-	ret = process_nonroot(local_flags);
+		ret = process_root(local_flags);
+	} else {
+		ret = process_nonroot(local_flags);
+	}
 	TALLOC_FREE(frame);
 	return ret;
 }
