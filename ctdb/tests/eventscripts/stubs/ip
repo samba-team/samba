@@ -34,6 +34,39 @@ ip_link_set_down ()
     touch "${FAKE_IP_STATE}/interfaces-down/$3"
 }
 
+# This is incomplete because it doesn't actually look up table ids in
+# /etc/iproute2/rt_tables.  The rules/routes are actually associated
+# with the name instead of the number.  However, we include a variable
+# to fake a bad table id.
+[ -n "$IP_ROUTE_BAD_TABLE_ID" ] || IP_ROUTE_BAD_TABLE_ID=false
+
+ip_check_table ()
+{
+    _cmd="$1"
+
+    [ -n "$_table" ] || not_implemented "ip rule/route without \"table\""
+
+    # Only allow tables names from 13.per_ip_routing.  This is a cheap
+    # way of avoiding implementing the default/main/local tables.
+    case "$_table" in
+	ctdb.*)
+	    if $IP_ROUTE_BAD_TABLE_ID ; then
+		# Ouch.  Simulate inconsistent errors from ip.  :-(
+		case "$_cmd" in
+		    route)
+			echo "Error: argument "${_table}" is wrong: table id value is invalid" >&2
+			
+			;;
+		    *)
+			echo "Error: argument "${_table}" is wrong: invalid table ID" >&2
+		esac
+		exit 255
+	    fi
+	    ;;
+	*) not_implemented "table=${_table} in ${_args}" ;;
+    esac
+}
+
 ######################################################################
 
 ip_addr ()
@@ -288,7 +321,7 @@ ip_rule_common ()
     done
 
     [ -n "$_pre" ]   || not_implemented "ip rule without \"pref\""
-    [ -n "$_table" ] || not_implemented "ip rule without \"table\""
+    ip_check_table "rule"
     # Relax this if more selectors added later...
     [ -n "$_from" ]  || not_implemented "ip rule without \"from\""
 }
@@ -349,18 +382,6 @@ ip_route ()
     esac
 }
 
-ip_route_check_table ()
-{
-    [ -n "$_table" ] || not_implemented "ip rule without \"table\""
-
-    # Only allow tables names from 13.per_ip_routing.  This is a cheap
-    # way of avoiding implementing the default/main/local tables.
-    case "$_table" in
-	ctdb.*) : ;;
-	*) not_implemented "table=${_table} in ${_args}" ;;
-    esac
-}
-
 ip_route_common ()
 {
     _args="$*"
@@ -368,7 +389,7 @@ ip_route_common ()
     [ "$1" = table ] || not_implemented "$1 in \"$_args\""
     _table="$2"
 
-    ip_route_check_table
+    ip_check_table "route"
 }
 
 # Routes are in a file per table in the directory
@@ -413,7 +434,7 @@ ip_route_add ()
 	esac
     done
 
-    ip_route_check_table
+    ip_check_table "route"
     [ -n "$_prefix" ] || not_implemented "ip route without inet prefix in \"$_args\""
     [ -n "$_dev" ] || not_implemented "ip route without \"dev\" in \"$_args\""
 
