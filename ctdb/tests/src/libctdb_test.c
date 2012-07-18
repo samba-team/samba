@@ -313,35 +313,45 @@ static bool current_node_is_connected (struct ctdb_connection *ctdb)
 bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 		     uint32_t destnode, struct ctdb_node_map **nodemap)
 {
+	size_t n;
+
 	if (!current_node_is_connected(ctdb)) {
 		*nodemap = NULL;
 		return false;
 	}
 
-	*nodemap = ctdb->nodemap;
+	n = offsetof(struct ctdb_node_map, nodes) + (ctdb->nodemap->num) * sizeof(struct ctdb_node_and_flags);
+	*nodemap = (struct ctdb_node_map *) malloc(n);
+	memcpy(*nodemap, ctdb->nodemap, n);
+
 	return true;
 }
 
 void ctdb_free_nodemap(struct ctdb_node_map *nodemap)
 {
-	return;
+	free(nodemap);
 }
 
 bool ctdb_getifaces(struct ctdb_connection *ctdb,
 		    uint32_t destnode, struct ctdb_ifaces_list **ifaces)
 {
+	size_t n;
+
 	if (!current_node_is_connected(ctdb)) {
 		*ifaces = NULL;
 		return false;
 	}
 
-	*ifaces = ctdb->ifaces;
+	n = offsetof(struct ctdb_ifaces_list, ifaces) + (ctdb->ifaces->num) * sizeof(struct ctdb_iface_info);
+	*ifaces = (struct ctdb_ifaces_list *) malloc(n);
+	memcpy(*ifaces, ctdb->ifaces, n);
+
 	return true;
 }
 
 void ctdb_free_ifaces(struct ctdb_ifaces_list *ifaces)
 {
-	return;
+	free(ifaces);
 }
 
 bool ctdb_getpnn(struct ctdb_connection *ctdb,
@@ -387,18 +397,27 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
 		    uint32_t destnode, struct ctdb_vnn_map **vnnmap)
 {
+	size_t n;
+
 	if (!current_node_is_connected(ctdb)) {
 		*vnnmap = NULL;
 		return false;
 	}
 
-	*vnnmap = ctdb->vnnmap;
+	*vnnmap = (struct ctdb_vnn_map *) malloc(sizeof(struct ctdb_vnn_map));
+	n = ctdb->vnnmap->size * sizeof(uint32_t);
+	(*vnnmap)->map = malloc(n);
+	memcpy((*vnnmap)->map, ctdb->vnnmap->map, n);
+	(*vnnmap)->generation = ctdb->vnnmap->generation;
+	(*vnnmap)->size = ctdb->vnnmap->size;
+
 	return true;
 }
 
 void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap)
 {
-	return;
+	free(vnnmap->map);
+	free(vnnmap);
 }
 
 bool
