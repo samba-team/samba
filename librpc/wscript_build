@@ -80,6 +80,16 @@ bld.SAMBA_SUBSYSTEM('NDR_DFSBLOBS',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_BKUPBLOBS',
+	source='gen_ndr/ndr_bkupblobs.c',
+	public_deps='ndr'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_FSCC',
+	source='gen_ndr/ndr_fscc.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_POLICYAGENT',
     source='gen_ndr/ndr_policyagent.c',
     public_deps='ndr'

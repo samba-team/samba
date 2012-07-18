@@ -1,6 +1,8 @@
 #include "idl_types.h"
 
 import "misc.idl";
+import "fscc.idl";
+import "bkupblobs.idl";
 
 [
   uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
@@ -12,6 +14,7 @@ import "misc.idl";
 ] 
 interface frsrpc
 {
+
 	/*****************/
 	/* Function 0x00 */
 
@@ -115,7 +118,7 @@ interface frsrpc
 		FRSRPC_CO_LOCATION_DIR_NO_CMD	= 0x0000000e | 0x00000001
 	} frsrpc_CommPktCoCmdLocationCmd;
 
-	typedef struct {
+	[public] typedef struct {
 		uint32 sequence_number;
 		frsrpc_CommPktCoCmdFlags flags;
 		frsrpc_CommPktCoCmdIFlags iflags;
@@ -202,7 +205,7 @@ interface frsrpc
 		frsrpc_CommPktCoRecordExtensionMajor major;
 		[value(0x0002)] uint16 offset_count;
 		[value(0x00000018)] uint32 offset0;
-		[value(0x00000030)] uint32 offset1;/*TODO: is this correct??? */
+		[value(0x00000030)] uint32 offset1;
 		[value(0)] uint32 offset_last;
 		[value(0)] uint32 not_used;
 		frsrpc_CommPktDataExtensionChecksum data_checksum;
@@ -293,7 +296,7 @@ interface frsrpc
 		[case(FRSRPC_COMM_PKT_CHUNK_CO_GUID)][subcontext(4)]
 			GUID co_guid;
 		[case(FRSRPC_COMM_PKT_CHUNK_CO_SEQUENCE_NUMBER)]
-			uint32 co_sequnence_number;
+			uint32 co_sequence_number;
 		[case(FRSRPC_COMM_PKT_CHUNK_REMOTE_CO)][subcontext(4)]
 			frsrpc_CommPktChangeOrderCommand remote_co;
 		[case(FRSRPC_COMM_PKT_CHUNK_CO_EXT_WIN2K)][subcontext(4)]
@@ -387,6 +390,27 @@ interface frsrpc
 		[in,out,unique,subcontext(4),subcontext_size(16)]
 			GUID *parent_guid
 	);
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32 major;
+		uint32 minor;
+		uint32 dataHigh;
+		uint32 dataLow;
+		uint16 compression;
+		uint8 unused[6];
+		fscc_FileNetworkOpenInformation attributes;
+		frsrpc_CommPktChangeOrderCommand command;
+		fscc_FileObjectIdBuffer_2 fileObjId;
+		frsrpc_CommPktCoRecordExtensionWin2k cocExt;
+		GUID compressionGuid;
+		uint32 encDataHigh;
+		uint32 encDataLow;
+		hyper dataSize;
+		uint32 reparseDataPresent;
+		uint32 reparseDataHigh;
+		uint32 reparseDataLow;
+		uint32 padding2;
+	} frsrpc_StageHeader;
 
 	/*****************/
 	/* Function 0x03 */
