@@ -408,10 +408,14 @@ static int attr_handler2(struct oc_context *ac)
 			found = str_list_check(harmless_attrs, attr->lDAPDisplayName);
 		}
 		if (!found) {
-			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' does not exist in the specified objectclasses!",
-					       msg->elements[i].name,
-					       ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			/* we allow this for dbcheck to fix the rest of this broken entry */
+			if (!ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) || 
+			    ac->req->operation == LDB_ADD) {
+				ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' does not exist in the specified objectclasses!",
+						       msg->elements[i].name,
+						       ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
 		}
 	}
 

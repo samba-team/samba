@@ -1391,7 +1391,8 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		struct ldb_message_element *el;
 
 		/*if we are RODC and this is a DRSR update then its ok*/
-		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)
+		    && !ldb_request_get_control(req, DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA)) {
 			unsigned instanceType;
 
 			ret = samdb_rodc(ldb, rodc);

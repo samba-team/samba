@@ -122,6 +122,9 @@ struct dsdb_control_password_change {
 /* passed when we want special behaviour for dbcheck */
 #define DSDB_CONTROL_DBCHECK "1.3.6.1.4.1.7165.4.3.19"
 
+/* passed when dbcheck wants to modify a read only replica (very special case) */
+#define DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA "1.3.6.1.4.1.7165.4.3.19.1"
+
 /* passed when importing plain text password on upgrades */
 #define DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID "1.3.6.1.4.1.7165.4.3.20"
 
