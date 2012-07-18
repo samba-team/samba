@@ -152,7 +152,7 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 {
 	struct tls_context *tls = talloc_get_type(ptr, struct tls_context);
 	NTSTATUS status;
-	size_t nwritten;
+	size_t nwritten, total_nwritten = 0;
 	DATA_BLOB b;
 
 	if (!tls->tls_enabled) {
@@ -162,19 +162,32 @@ static ssize_t tls_push(gnutls_transport_ptr ptr, const void *buf, size_t size)
 	b.data = discard_const(buf);
 	b.length = size;
 
-	status = socket_send(tls->socket, &b, &nwritten);
-	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-		errno = EAGAIN;
-		return -1;
-	}
-	if (!NT_STATUS_IS_OK(status)) {
+	/* Cope with socket_wrapper 1500 byte chunking for PCAP */
+	do {
+		status = socket_send(tls->socket, &b, &nwritten);
+		
+		if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			errno = EAGAIN;
+			return -1;
+		}
+		if (!NT_STATUS_IS_OK(status)) {
+			TEVENT_FD_WRITEABLE(tls->fde);
+			return -1;
+		}
+
+		total_nwritten += nwritten;
+
+		if (size == nwritten) {
+			break;
+		}
+
+		b.data += nwritten;
+		b.length -= nwritten;
+
 		TEVENT_FD_WRITEABLE(tls->fde);
-		return -1;
-	}
-	if (size != nwritten) {
-		TEVENT_FD_WRITEABLE(tls->fde);
-	}
-	return nwritten;
+	} while (b.length);
+
+	return total_nwritten;
 }
 
 /*
