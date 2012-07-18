@@ -621,7 +621,7 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 				       server_messaging_context(),
 				       &conn,
 				       printdollar_snum,
-				       lp_pathname(printdollar_snum),
+				       lp_pathname(talloc_tos(), printdollar_snum),
 				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
@@ -1008,7 +1008,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 				       server_messaging_context(),
 				       &conn,
 				       printdollar_snum,
-				       lp_pathname(printdollar_snum),
+				       lp_pathname(talloc_tos(), printdollar_snum),
 				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
@@ -1206,7 +1206,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		}
 
 		result = winreg_get_printer(mem_ctx, b,
-					    lp_servicename(snum),
+					    lp_servicename(talloc_tos(), snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue; /* skip */
@@ -1544,7 +1544,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 				       server_messaging_context(),
 				       &conn,
 				       printdollar_snum,
-				       lp_pathname(printdollar_snum),
+				       lp_pathname(talloc_tos(), printdollar_snum),
 				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("delete_driver_files: create_conn_struct "
@@ -1728,7 +1728,7 @@ bool print_access_check(const struct auth_session_info *session_info,
 
 	/* Get printer name */
 
-	pname = lp_printername(snum);
+	pname = lp_printername(talloc_tos(), snum);
 
 	if (!pname || !*pname) {
 		errno = EACCES;

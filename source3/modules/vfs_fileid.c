@@ -229,7 +229,7 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 static void fileid_disconnect(struct vfs_handle_struct *handle)
 {
 	DEBUG(10,("fileid_disconnect() connect to service[%s].\n",
-		lp_servicename(SNUM(handle->conn))));
+		  lp_servicename(talloc_tos(), SNUM(handle->conn))));
 
 	SMB_VFS_NEXT_DISCONNECT(handle);
 }

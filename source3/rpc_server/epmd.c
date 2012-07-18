@@ -38,7 +38,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 
 static void epmd_reopen_logs(void)
 {
-	char *lfile = lp_logfile();
+	char *lfile = lp_logfile(talloc_tos());
 	int rc;
 
 	if (lfile == NULL || lfile[0] == '\0') {
@@ -49,7 +49,8 @@ static void epmd_reopen_logs(void)
 		}
 	} else {
 		if (strstr(lfile, DAEMON_NAME) == NULL) {
-			rc = asprintf(&lfile, "%s.%s", lp_logfile(), DAEMON_NAME);
+			rc = asprintf(&lfile, "%s.%s",
+				      lp_logfile(talloc_tos()), DAEMON_NAME);
 			if (rc > 0) {
 				lp_set_logfile(lfile);
 				SAFE_FREE(lfile);

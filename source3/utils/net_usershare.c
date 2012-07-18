@@ -135,7 +135,7 @@ int net_usershare_usage(struct net_context *c, int argc, const char **argv)
 
 static char *get_basepath(TALLOC_CTX *ctx)
 {
-	char *basepath = talloc_strdup(ctx, lp_usershare_path());
+	char *basepath = lp_usershare_path(ctx);
 
 	if (!basepath) {
 		return NULL;
@@ -174,7 +174,7 @@ static int net_usershare_delete(struct net_context *c, int argc, const char **ar
 
 	us_path = talloc_asprintf(talloc_tos(),
 				"%s/%s",
-				lp_usershare_path(),
+				lp_usershare_path(talloc_tos()),
 				sharename);
 	if (!us_path) {
 		TALLOC_FREE(sharename);
@@ -1104,13 +1104,13 @@ int net_usershare(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	dp = opendir(lp_usershare_path());
+	dp = opendir(lp_usershare_path(talloc_tos()));
 	if (!dp) {
 		int err = errno;
 		d_fprintf(stderr,
 			_("net usershare: cannot open usershare directory %s. "
 			  "Error %s\n"),
-			lp_usershare_path(), strerror(err) );
+			lp_usershare_path(talloc_tos()), strerror(err) );
 		if (err == EACCES) {
 			d_fprintf(stderr,
 				_("You do not have permission to create a "

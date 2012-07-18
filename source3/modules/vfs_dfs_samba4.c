@@ -96,7 +96,7 @@ static int dfs_samba4_connect(struct vfs_handle_struct *handle,
 static void dfs_samba4_disconnect(struct vfs_handle_struct *handle)
 {
 	DEBUG(10,("dfs_samba4_disconnect() connect to service[%s].\n",
-		  lp_servicename(SNUM(handle->conn))));
+		  lp_servicename(talloc_tos(), SNUM(handle->conn))));
 
 	SMB_VFS_NEXT_DISCONNECT(handle);
 }

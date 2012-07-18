@@ -73,7 +73,7 @@ static bool set_driver_mapping(const char *from, const char *to)
  */
 WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername)
 {
-	const char *mapfile = lp_os2_driver_map();
+	const char *mapfile = lp_os2_driver_map(talloc_tos());
 	char **lines = NULL;
 	const char *drivername;
 	int numlines = 0;

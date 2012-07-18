@@ -458,11 +458,9 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		fstring name2;
 
 		if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] != '$') {
-			add_script = talloc_strdup(tmp_ctx,
-					lp_adduser_script());
+			add_script = lp_adduser_script(tmp_ctx);
 		} else {
-			add_script = talloc_strdup(tmp_ctx,
-					lp_addmachine_script());
+			add_script = lp_addmachine_script(tmp_ctx);
 		}
 
 		if (!add_script || add_script[0] == '\0') {
@@ -556,7 +554,7 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	}
 
-	del_script = talloc_strdup(talloc_tos(), lp_deluser_script());
+	del_script = lp_deluser_script(talloc_tos());
 	if (!del_script || !*del_script) {
 		return -1;
 	}

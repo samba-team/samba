@@ -369,9 +369,9 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(8,("smbd_smb2_find_send: dirpath=<%s> dontdescend=<%s>, "
 		"in_output_buffer_length = %u\n",
-		fsp->fsp_name->base_name, lp_dontdescend(SNUM(conn)),
+		fsp->fsp_name->base_name, lp_dontdescend(talloc_tos(), SNUM(conn)),
 		(unsigned int)in_output_buffer_length ));
-	if (in_list(fsp->fsp_name->base_name,lp_dontdescend(SNUM(conn)),
+	if (in_list(fsp->fsp_name->base_name,lp_dontdescend(talloc_tos(), SNUM(conn)),
 			conn->case_sensitive)) {
 		dont_descend = true;
 	}

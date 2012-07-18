@@ -136,7 +136,8 @@ bool connections_snum_used(struct smbd_server_connection *unused, int snum)
 {
 	int active;
 
-	active = count_current_connections(lp_servicename(snum), true);
+	active = count_current_connections(lp_servicename(talloc_tos(), snum),
+					   true);
 	if (active > 0) {
 		return true;
 	}
@@ -173,12 +174,12 @@ bool claim_connection(connection_struct *conn, const char *name)
 	crec.cnum = conn->cnum;
 	crec.uid = conn->session_info->unix_token->uid;
 	crec.gid = conn->session_info->unix_token->gid;
-	strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
+	strlcpy(crec.servicename, lp_servicename(rec, SNUM(conn)),
 		sizeof(crec.servicename));
 	crec.start = time(NULL);
 
 	raddr = tsocket_address_inet_addr_string(conn->sconn->remote_address,
-						 talloc_tos());
+						 rec);
 	if (raddr == NULL) {
 		return false;
 	}

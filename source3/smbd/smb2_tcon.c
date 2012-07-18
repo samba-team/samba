@@ -185,7 +185,6 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	connection_struct *compat_conn = NULL;
 	struct user_struct *compat_vuser = req->session->compat;
 	NTSTATUS status;
-	const char *share_name = NULL;
 
 	if (strncmp(share, "\\\\", 2) == 0) {
 		const char *p = strchr(share+2, '\\');
@@ -217,7 +216,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		snum = compat_vuser->homes_snum;
 	} else if ((compat_vuser->homes_snum != -1)
                    && strequal(service,
-			lp_servicename(compat_vuser->homes_snum))) {
+			lp_servicename(talloc_tos(), compat_vuser->homes_snum))) {
 		snum = compat_vuser->homes_snum;
 	} else {
 		snum = find_service(talloc_tos(), service, &service);
@@ -248,8 +247,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return status;
 	}
 
-	share_name = lp_servicename(SNUM(compat_conn));
-	tcon->global->share_name = talloc_strdup(tcon->global, share_name);
+	tcon->global->share_name = lp_servicename(tcon->global,
+						  SNUM(compat_conn));
 	if (tcon->global->share_name == NULL) {
 		conn_free(compat_conn);
 		TALLOC_FREE(tcon);

@@ -397,7 +397,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 		return NULL;
 	}
 	result = talloc_sub_advanced(ctx,
-			lp_servicename(SNUM(conn)),
+			lp_servicename(talloc_tos(), SNUM(conn)),
 			conn->session_info->unix_info->unix_name,
 			conn->connectpath,
 			conn->session_info->unix_token->gid,
@@ -637,7 +637,7 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 	SMB_VFS_NEXT_DISCONNECT(handle);
 
 	do_log(SMB_VFS_OP_DISCONNECT, True, handle,
-	       "%s", lp_servicename(SNUM(handle->conn)));
+	       "%s", lp_servicename(talloc_tos(), SNUM(handle->conn)));
 
 	/* The bitmaps will be disconnected when the private
 	   data is deleted. */

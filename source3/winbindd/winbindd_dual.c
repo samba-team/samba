@@ -455,10 +455,10 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 	if (logprefix && logname) {
 		char *logbase = NULL;
 
-		if (*lp_logfile()) {
+		if (*lp_logfile(talloc_tos())) {
 			char *end = NULL;
 
-			if (asprintf(&logbase, "%s", lp_logfile()) < 0) {
+			if (asprintf(&logbase, "%s", lp_logfile(talloc_tos())) < 0) {
 				smb_panic("Internal error: asprintf failed");
 			}
 

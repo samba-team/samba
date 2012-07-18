@@ -188,7 +188,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 	const char *get_quota_command;
 	char **lines = NULL;
 
-	get_quota_command = lp_get_quota_command();
+	get_quota_command = lp_get_quota_command(talloc_tos());
 	if (get_quota_command && *get_quota_command) {
 		const char *p;
 		char *p2;
@@ -332,7 +332,7 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 {
 	const char *set_quota_command;
 
-	set_quota_command = lp_set_quota_command();
+	set_quota_command = lp_set_quota_command(talloc_tos());
 	if (set_quota_command && *set_quota_command) {
 		char **lines = NULL;
 		char *syscmd = NULL;

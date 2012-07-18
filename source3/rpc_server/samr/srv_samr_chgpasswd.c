@@ -582,12 +582,12 @@ bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 		return false;
 	}
 
-	passwordprogram = talloc_strdup(ctx, lp_passwd_program());
+	passwordprogram = lp_passwd_program(ctx);
 	if (!passwordprogram || !*passwordprogram) {
 		DEBUG(2, ("chgpasswd: Null password program - no password changing\n"));
 		return false;
 	}
-	chatsequence = talloc_strdup(ctx, lp_passwd_chat());
+	chatsequence = lp_passwd_chat(ctx);
 	if (!chatsequence || !*chatsequence) {
 		DEBUG(2, ("chgpasswd: Null chat sequence - no password changing\n"));
 		return false;
@@ -938,12 +938,12 @@ NTSTATUS check_password_complexity(const char *username,
 	char *cmd;
 
 	/* Use external script to check password complexity */
-	if ((lp_check_password_script() == NULL)
-	    || (*(lp_check_password_script()) == '\0')) {
+	if ((lp_check_password_script(tosctx) == NULL)
+	    || (*(lp_check_password_script(tosctx)) == '\0')) {
 		return NT_STATUS_OK;
 	}
 
-	cmd = talloc_string_sub(tosctx, lp_check_password_script(), "%u",
+	cmd = talloc_string_sub(tosctx, lp_check_password_script(tosctx), "%u",
 				username);
 	if (!cmd) {
 		return NT_STATUS_PASSWORD_RESTRICTION;

@@ -991,7 +991,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rename_script = talloc_strdup(new_acct, lp_renameuser_script());
+	rename_script = lp_renameuser_script(new_acct);
 	if (!rename_script) {
 		TALLOC_FREE(new_acct);
 		return NT_STATUS_NO_MEMORY;

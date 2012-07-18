@@ -4371,57 +4371,52 @@ static void init_printer_values(struct loadparm_service *pService)
 	case PRINT_TEST:
 	case PRINT_VLP: {
 		const char *tdbfile;
+		TALLOC_CTX *tmp_ctx = talloc_stackframe();
 		char *tmp;
 
 		tdbfile = talloc_asprintf(
-			talloc_tos(), "tdbfile=%s",
+			tmp_ctx, "tdbfile=%s",
 			lp_parm_const_string(-1, "vlp", "tdbfile",
 					     "/tmp/vlp.tdb"));
 		if (tdbfile == NULL) {
 			tdbfile="tdbfile=/tmp/vlp.tdb";
 		}
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s print %%p %%s",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s print %%p %%s",
 				      tdbfile);
 		string_set(&pService->szPrintcommand,
 			   tmp ? tmp : "vlp print %p %s");
-		TALLOC_FREE(tmp);
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s lpq %%p",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpq %%p",
 				      tdbfile);
 		string_set(&pService->szLpqcommand,
 			   tmp ? tmp : "vlp lpq %p");
-		TALLOC_FREE(tmp);
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s lprm %%p %%j",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lprm %%p %%j",
 				      tdbfile);
 		string_set(&pService->szLprmcommand,
 			   tmp ? tmp : "vlp lprm %p %j");
-		TALLOC_FREE(tmp);
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s lppause %%p %%j",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lppause %%p %%j",
 				      tdbfile);
 		string_set(&pService->szLppausecommand,
 			   tmp ? tmp : "vlp lppause %p %j");
-		TALLOC_FREE(tmp);
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s lpresume %%p %%j",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s lpresume %%p %%j",
 				      tdbfile);
 		string_set(&pService->szLpresumecommand,
 			   tmp ? tmp : "vlp lpresume %p %j");
-		TALLOC_FREE(tmp);
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s queuepause %%p",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s queuepause %%p",
 				      tdbfile);
 		string_set(&pService->szQueuepausecommand,
 			   tmp ? tmp : "vlp queuepause %p");
-		TALLOC_FREE(tmp);
 
-		tmp = talloc_asprintf(talloc_tos(), "vlp %s queueresume %%p",
+		tmp = talloc_asprintf(tmp_ctx, "vlp %s queueresume %%p",
 				      tdbfile);
 		string_set(&pService->szQueueresumecommand,
 			   tmp ? tmp : "vlp queueresume %p");
-		TALLOC_FREE(tmp);
+		TALLOC_FREE(tmp_ctx);
 
 		break;
 	}
@@ -4971,15 +4966,14 @@ static void init_globals(bool reinit_globals)
 }
 
 /*******************************************************************
- Convenience routine to grab string parameters into temporary memory
+ Convenience routine to grab string parameters into talloced memory
  and run standard_sub_basic on them. The buffers can be written to by
  callers without affecting the source string.
 ********************************************************************/
 
-static char *lp_string(const char *s)
+static char *lp_string(TALLOC_CTX *ctx, const char *s)
 {
 	char *ret;
-	TALLOC_CTX *ctx = talloc_tos();
 
 	/* The follow debug is useful for tracking down memory problems
 	   especially if you have an inner loop that is calling a lp_*()
@@ -5015,7 +5009,7 @@ static char *lp_string(const char *s)
 */
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
- char *lp_ ## fn_name(void) {return(lp_string(*(char **)(&Globals.ptr) ? *(char **)(&Globals.ptr) : ""));}
+char *lp_ ## fn_name(TALLOC_CTX *ctx) {return(lp_string((ctx), *(char **)(&Globals.ptr) ? *(char **)(&Globals.ptr) : ""));}
 #define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
  const char *lp_ ## fn_name(void) {return(*(const char **)(&Globals.ptr) ? *(const char **)(&Globals.ptr) : "");}
 #define FN_GLOBAL_LIST(fn_name,ptr) \
@@ -5028,7 +5022,7 @@ static char *lp_string(const char *s)
  int lp_ ## fn_name(void) {return(*(int *)(&Globals.ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- char *lp_ ## fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
+char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
  const char *lp_ ## fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_LIST(fn_name,val) \
@@ -5289,20 +5283,19 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
-/* the returned value is talloced on the talloc_tos() */
-char *lp_parm_talloc_string(int snum, const char *type, const char *option, const char *def)
+char *lp_parm_talloc_string(TALLOC_CTX *ctx, int snum, const char *type, const char *option, const char *def)
 {
 	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
 	if (data == NULL||data->value==NULL) {
 		if (def) {
-			return lp_string(def);
+			return lp_string(ctx, def);
 		} else {
 			return NULL;
 		}
 	}
 
-	return lp_string(data->value);
+	return lp_string(ctx, data->value);
 }
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
@@ -5637,7 +5630,8 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 		return false;
 
 	if (!(*(ServicePtrs[iDefaultService]->szPath))
-	    || strequal(ServicePtrs[iDefaultService]->szPath, lp_pathname(GLOBAL_SECTION_SNUM))) {
+	    || strequal(ServicePtrs[iDefaultService]->szPath,
+			lp_pathname(talloc_tos(), GLOBAL_SECTION_SNUM))) {
 		string_set(&ServicePtrs[i]->szPath, pszHomedir);
 	}
 
@@ -6713,13 +6707,12 @@ static bool handle_realm(struct loadparm_context *unused, int snum, const char *
 {
 	bool ret = true;
 	char *realm = strupper_talloc(talloc_tos(), pszParmValue);
-	char *dnsdomain = strlower_talloc(talloc_tos(), pszParmValue);
+	char *dnsdomain = strlower_talloc(realm, pszParmValue);
 
 	ret &= string_set(&Globals.szRealm, pszParmValue);
 	ret &= string_set(&Globals.szRealm_upper, realm);
 	ret &= string_set(&Globals.szRealm_lower, dnsdomain);
 	TALLOC_FREE(realm);
-	TALLOC_FREE(dnsdomain);
 
 	return ret;
 }
@@ -6912,12 +6905,11 @@ static bool handle_debug_list(struct loadparm_context *unused, int snum, const c
  Handle ldap suffixes - default to ldapsuffix if sub-suffixes are not defined.
 ***************************************************************************/
 
-static const char *append_ldap_suffix( const char *str )
+static const char *append_ldap_suffix(TALLOC_CTX *ctx, const char *str )
 {
 	const char *suffix_string;
 
-
-	suffix_string = talloc_asprintf(talloc_tos(), "%s,%s", str,
+	suffix_string = talloc_asprintf(ctx, "%s,%s", str,
 					Globals.szLdapSuffix );
 	if ( !suffix_string ) {
 		DEBUG(0,("append_ldap_suffix: talloc_asprintf() failed!\n"));
@@ -6927,36 +6919,36 @@ static const char *append_ldap_suffix( const char *str )
 	return suffix_string;
 }
 
-const char *lp_ldap_machine_suffix(void)
+const char *lp_ldap_machine_suffix(TALLOC_CTX *ctx)
 {
 	if (Globals.szLdapMachineSuffix[0])
-		return append_ldap_suffix(Globals.szLdapMachineSuffix);
+		return append_ldap_suffix(ctx, Globals.szLdapMachineSuffix);
 
-	return lp_string(Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.szLdapSuffix);
 }
 
-const char *lp_ldap_user_suffix(void)
+const char *lp_ldap_user_suffix(TALLOC_CTX *ctx)
 {
 	if (Globals.szLdapUserSuffix[0])
-		return append_ldap_suffix(Globals.szLdapUserSuffix);
+		return append_ldap_suffix(ctx, Globals.szLdapUserSuffix);
 
-	return lp_string(Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.szLdapSuffix);
 }
 
-const char *lp_ldap_group_suffix(void)
+const char *lp_ldap_group_suffix(TALLOC_CTX *ctx)
 {
 	if (Globals.szLdapGroupSuffix[0])
-		return append_ldap_suffix(Globals.szLdapGroupSuffix);
+		return append_ldap_suffix(ctx, Globals.szLdapGroupSuffix);
 
-	return lp_string(Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.szLdapSuffix);
 }
 
-const char *lp_ldap_idmap_suffix(void)
+const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
 {
 	if (Globals.szLdapIdmapSuffix[0])
-		return append_ldap_suffix(Globals.szLdapIdmapSuffix);
+		return append_ldap_suffix(ctx, Globals.szLdapIdmapSuffix);
 
-	return lp_string(Globals.szLdapSuffix);
+	return lp_string(ctx, Globals.szLdapSuffix);
 }
 
 /****************************************************************************
@@ -8508,6 +8500,7 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 	int snum_template = -1;
 	const char *usersharepath = Globals.szUsersharePath;
 	int ret = lp_numservices();
+	TALLOC_CTX *tmp_ctx;
 
 	if (max_user_shares == 0 || *usersharepath == '\0') {
 		return lp_numservices();
@@ -8630,18 +8623,25 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 
 	/* Sweep through and delete any non-refreshed usershares that are
 	   not currently in use. */
+	tmp_ctx = talloc_stackframe();
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && (ServicePtrs[iService]->usershare == USERSHARE_PENDING_DELETE)) {
+			char *servname;
+
 			if (snumused && snumused(sconn, iService)) {
 				continue;
 			}
+
+			servname = lp_servicename(tmp_ctx, iService);
+
 			/* Remove from the share ACL db. */
 			DEBUG(10,("load_usershare_shares: Removing deleted usershare %s\n",
-				lp_servicename(iService) ));
-			delete_share_security(lp_servicename(iService));
+				  servname ));
+			delete_share_security(servname);
 			free_service_byindex(iService);
 		}
 	}
+	talloc_free(tmp_ctx);
 
 	return lp_numservices();
 }
@@ -8791,7 +8791,7 @@ static bool lp_load_ex(const char *pszFname,
 	}
 
 	{
-		char *serv = lp_auto_services();
+		char *serv = lp_auto_services(talloc_tos());
 		lp_add_auto_services(serv);
 		TALLOC_FREE(serv);
 	}
@@ -9000,7 +9000,7 @@ int lp_servicenumber(const char *pszServiceName)
 
 		if (!usershare_exists(iService, &last_mod)) {
 			/* Remove the share security tdb entry for it. */
-			delete_share_security(lp_servicename(iService));
+			delete_share_security(lp_servicename(talloc_tos(), iService));
 			/* Remove it from the array. */
 			free_service_byindex(iService);
 			/* Doesn't exist anymore. */
@@ -9029,16 +9029,16 @@ int lp_servicenumber(const char *pszServiceName)
  A useful volume label function. 
 ********************************************************************/
 
-const char *volume_label(int snum)
+const char *volume_label(TALLOC_CTX *ctx, int snum)
 {
 	char *ret;
-	const char *label = lp_volume(snum);
+	const char *label = lp_volume(ctx, snum);
 	if (!*label) {
-		label = lp_servicename(snum);
+		label = lp_servicename(ctx, snum);
 	}
 
 	/* This returns a 33 byte guarenteed null terminated string. */
-	ret = talloc_strndup(talloc_tos(), label, 32);
+	ret = talloc_strndup(ctx, label, 32);
 	if (!ret) {
 		return "";
 	}		
@@ -9143,8 +9143,10 @@ void lp_copy_service(int snum, const char *new_name)
 	do_section(new_name, NULL);
 	if (snum >= 0) {
 		snum = lp_servicenumber(new_name);
-		if (snum >= 0)
-			lp_do_parameter(snum, "copy", lp_servicename(snum));
+		if (snum >= 0) {
+			char *name = lp_servicename(talloc_tos(), snum);
+			lp_do_parameter(snum, "copy", name);
+		}
 	}
 }
 
@@ -9158,11 +9160,12 @@ void lp_set_name_resolve_order(const char *new_order)
 	string_set(&Globals.szNameResolveOrder, new_order);
 }
 
-const char *lp_printername(int snum)
+const char *lp_printername(TALLOC_CTX *ctx, int snum)
 {
-	const char *ret = lp__printername(snum);
-	if (ret == NULL || (ret != NULL && *ret == '\0'))
+	const char *ret = lp__printername(talloc_tos(), snum);
+	if (ret == NULL || *ret == '\0') {
 		ret = lp_const_servicename(snum);
+	}
 
 	return ret;
 }
@@ -9372,7 +9375,7 @@ void widelinks_warning(int snum)
 		DEBUG(0,("Share '%s' has wide links and unix extensions enabled. "
 			"These parameters are incompatible. "
 			"Wide links will be disabled for this share.\n",
-			lp_servicename(snum) ));
+			 lp_servicename(talloc_tos(), snum) ));
 	}
 }
 

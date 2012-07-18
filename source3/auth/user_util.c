@@ -267,11 +267,11 @@ bool user_in_list(TALLOC_CTX *ctx, const char *user,const char **list)
 bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 {
 	XFILE *f;
-	char *mapfile = lp_username_map();
+	char *mapfile = lp_username_map(talloc_tos());
 	char *s;
 	char buf[512];
 	bool mapped_user = False;
-	char *cmd = lp_username_map_script();
+	char *cmd = lp_username_map_script(talloc_tos());
 
 	*p_user_out = NULL;
 

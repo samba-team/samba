@@ -203,7 +203,7 @@ bool user_ok_token(const char *username, const char *domain,
 {
 	if (lp_invalid_users(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
-						lp_servicename(snum),
+						lp_servicename(talloc_tos(), snum),
 						token,
 						lp_invalid_users(snum))) {
 			DEBUG(10, ("User %s in 'invalid users'\n", username));
@@ -213,7 +213,8 @@ bool user_ok_token(const char *username, const char *domain,
 
 	if (lp_valid_users(snum) != NULL) {
 		if (!token_contains_name_in_list(username, domain,
-						 lp_servicename(snum), token,
+						 lp_servicename(talloc_tos(), snum),
+						 token,
 						 lp_valid_users(snum))) {
 			DEBUG(10, ("User %s not in 'valid users'\n",
 				   username));
@@ -223,14 +224,14 @@ bool user_ok_token(const char *username, const char *domain,
 
 	if (lp_onlyuser(snum)) {
 		const char *list[2];
-		list[0] = lp_username(snum);
+		list[0] = lp_username(talloc_tos(), snum);
 		list[1] = NULL;
 		if ((list[0] == NULL) || (*list[0] == '\0')) {
 			DEBUG(0, ("'only user = yes' and no 'username ='\n"));
 			return False;
 		}
 		if (!token_contains_name_in_list(NULL, domain,
-						 lp_servicename(snum),
+						 lp_servicename(talloc_tos(), snum),
 						 token, list)) {
 			DEBUG(10, ("%s != 'username'\n", username));
 			return False;
@@ -238,7 +239,7 @@ bool user_ok_token(const char *username, const char *domain,
 	}
 
 	DEBUG(10, ("user_ok_token: share %s is ok for unix user %s\n",
-		   lp_servicename(snum), username));
+		   lp_servicename(talloc_tos(), snum), username));
 
 	return True;
 }
@@ -267,7 +268,8 @@ bool is_share_read_only_for_token(const char *username,
 
 	if (lp_readlist(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
-						lp_servicename(snum), token,
+						lp_servicename(talloc_tos(), snum),
+						token,
 						lp_readlist(snum))) {
 			result = True;
 		}
@@ -275,14 +277,15 @@ bool is_share_read_only_for_token(const char *username,
 
 	if (lp_writelist(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
-						lp_servicename(snum), token,
+						lp_servicename(talloc_tos(), snum),
+						token,
 						lp_writelist(snum))) {
 			result = False;
 		}
 	}
 
 	DEBUG(10,("is_share_read_only_for_user: share %s is %s for unix user "
-		  "%s\n", lp_servicename(snum),
+		  "%s\n", lp_servicename(talloc_tos(), snum),
 		  result ? "read-only" : "read-write", username));
 
 	return result;

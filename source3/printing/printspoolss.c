@@ -78,7 +78,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	pf->svcname = talloc_strdup(pf, lp_servicename(SNUM(fsp->conn)));
+	pf->svcname = lp_servicename(pf, SNUM(fsp->conn));
 
 	/* the document name is derived from the file name.
 	 * "Remote Downlevel Document" is added in front to
@@ -118,7 +118,8 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	 */
 
 	pf->filename = talloc_asprintf(pf, "%s/%sXXXXXX",
-					lp_pathname(SNUM(fsp->conn)),
+					lp_pathname(talloc_tos(),
+						    SNUM(fsp->conn)),
 					PRINT_SPOOL_PREFIX);
 	if (!pf->filename) {
 		status = NT_STATUS_NO_MEMORY;

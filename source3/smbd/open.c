@@ -2742,7 +2742,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	if(access_mask & ~(conn->share_access)) {
 		DEBUG(5,("mkdir_internal: failing share access "
-			 "%s\n", lp_servicename(SNUM(conn))));
+			 "%s\n", lp_servicename(talloc_tos(), SNUM(conn))));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

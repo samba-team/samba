@@ -374,7 +374,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 				  const char *sharename,
 				  struct messaging_context *msg_ctx)
 {
-	char *cmd = lp_deleteprinter_cmd();
+	char *cmd = lp_deleteprinter_cmd(talloc_tos());
 	char *command = NULL;
 	int ret;
 	bool is_print_op = false;
@@ -2772,7 +2772,7 @@ static void spoolss_notify_share_name(struct messaging_context *msg_ctx,
 				      struct spoolss_PrinterInfo2 *pinfo2,
 				      TALLOC_CTX *mem_ctx)
 {
-	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, lp_servicename(snum));
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, lp_servicename(talloc_tos(), snum));
 }
 
 /*******************************************************************
@@ -2818,7 +2818,7 @@ static void spoolss_notify_comment(struct messaging_context *msg_ctx,
 	const char *p;
 
 	if (*pinfo2->comment == '\0') {
-		p = lp_comment(snum);
+		p = lp_comment(talloc_tos(), snum);
 	} else {
 		p = pinfo2->comment;
 	}
@@ -3385,7 +3385,7 @@ static bool construct_notify_printer_info(struct messaging_context *msg_ctx,
 
 	DEBUG(4,("construct_notify_printer_info: Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
 		(type == PRINTER_NOTIFY_TYPE ? "PRINTER_NOTIFY_TYPE" : "JOB_NOTIFY_TYPE"),
-		option_type->count, lp_servicename(snum)));
+		option_type->count, lp_servicename(talloc_tos(), snum)));
 
 	for(field_num=0; field_num < option_type->count; field_num++) {
 		field = option_type->fields[field_num].field;
@@ -3552,12 +3552,12 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 			result = winreg_get_printer_internal(mem_ctx,
 						    get_session_info_system(),
 						    p->msg_ctx,
-						    lp_servicename(snum),
+						    lp_servicename(talloc_tos(), snum),
 						    &pinfo2);
 			if (!W_ERROR_IS_OK(result)) {
 				DEBUG(4, ("printserver_notify_info: "
 					  "Failed to get printer [%s]\n",
-					  lp_servicename(snum)));
+					  lp_servicename(talloc_tos(), snum)));
 				continue;
 			}
 
@@ -3640,7 +3640,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	result = winreg_get_printer_internal(mem_ctx,
 				    get_session_info_system(),
 				    p->msg_ctx,
-				    lp_servicename(snum), &pinfo2);
+				    lp_servicename(talloc_tos(), snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return WERR_BADFID;
 	}
@@ -3929,7 +3929,7 @@ static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
 	r->flags		= flags;
 
 	if (info2->comment == NULL || info2->comment[0] == '\0') {
-		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
+		r->comment	= lp_comment(mem_ctx, snum);
 	} else {
 		r->comment	= talloc_strdup(mem_ctx, info2->comment); /* saved comment */
 	}
@@ -3979,7 +3979,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	r->sharename		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	r->sharename		= lp_servicename(mem_ctx, snum);
 	W_ERROR_HAVE_NO_MEMORY(r->sharename);
 	r->portname		= talloc_strdup(mem_ctx, info2->portname);
 	W_ERROR_HAVE_NO_MEMORY(r->portname);
@@ -3987,7 +3987,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(r->drivername);
 
 	if (info2->comment[0] == '\0') {
-		r->comment	= talloc_strdup(mem_ctx, lp_comment(snum));
+		r->comment	= lp_comment(mem_ctx, snum);
 	} else {
 		r->comment	= talloc_strdup(mem_ctx, info2->comment);
 	}
@@ -4170,7 +4170,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 
 	if (is_printer_published(mem_ctx, session_info, msg_ctx,
 				 servername,
-				 lp_servicename(snum), &guid, NULL)) {
+				 lp_servicename(talloc_tos(), snum), &guid, NULL)) {
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
 		r->action = DSPRINT_PUBLISH;
 	} else {
@@ -6089,7 +6089,7 @@ static bool check_printer_ok(TALLOC_CTX *mem_ctx,
 
 static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const char *portname, const char *uri)
 {
-	char *cmd = lp_addport_cmd();
+	char *cmd = lp_addport_cmd(talloc_tos());
 	char *command = NULL;
 	int ret;
 	bool is_print_op = false;
@@ -6150,7 +6150,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 			     const char *remote_machine,
 			     struct messaging_context *msg_ctx)
 {
-	char *cmd = lp_addprinter_cmd();
+	char *cmd = lp_addprinter_cmd(talloc_tos());
 	char **qlines;
 	char *command = NULL;
 	int numlines;
@@ -6705,7 +6705,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	/* Call addprinter hook */
 	/* Check changes to see if this is really needed */
 
-	if (*lp_addprinter_cmd() &&
+	if (*lp_addprinter_cmd(talloc_tos()) &&
 			(!strequal(printer->drivername, old_printer->drivername) ||
 			 !strequal(printer->comment, old_printer->comment) ||
 			 !strequal(printer->portname, old_printer->portname) ||
@@ -6785,7 +6785,7 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 	result = winreg_get_printer_internal(p->mem_ctx,
 				    get_session_info_system(),
 				    p->msg_ctx,
-				    lp_servicename(snum),
+				    lp_servicename(talloc_tos(), snum),
 				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return WERR_BADFID;
@@ -6961,7 +6961,7 @@ static WERROR fill_job_info1(TALLOC_CTX *mem_ctx,
 
 	r->job_id		= queue->sysjob;
 
-	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	r->printer_name		= lp_servicename(mem_ctx, snum);
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
 	r->server_name		= talloc_strdup(mem_ctx, pinfo2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->server_name);
@@ -7002,7 +7002,7 @@ static WERROR fill_job_info2(TALLOC_CTX *mem_ctx,
 
 	r->job_id		= queue->sysjob;
 
-	r->printer_name		= talloc_strdup(mem_ctx, lp_servicename(snum));
+	r->printer_name		= lp_servicename(mem_ctx, snum);
 	W_ERROR_HAVE_NO_MEMORY(r->printer_name);
 	r->server_name		= talloc_strdup(mem_ctx, pinfo2->servername);
 	W_ERROR_HAVE_NO_MEMORY(r->server_name);
@@ -7779,7 +7779,7 @@ static WERROR fill_port_2(TALLOC_CTX *mem_ctx,
 
 static WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines)
 {
-	char *cmd = lp_enumports_cmd();
+	char *cmd = lp_enumports_cmd(talloc_tos());
 	char **qlines = NULL;
 	char *command = NULL;
 	int numlines;
@@ -8043,7 +8043,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	/* FIXME!!!  smbd should check to see if the driver is installed before
 	   trying to add a printer like this  --jerry */
 
-	if (*lp_addprinter_cmd() ) {
+	if (*lp_addprinter_cmd(talloc_tos()) ) {
 		char *raddr;
 
 		raddr = tsocket_address_inet_addr_string(p->remote_address,
@@ -9572,7 +9572,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 	}
 
 	result = winreg_get_printer(tmp_ctx, b,
-				    lp_servicename(snum),
+				    lp_servicename(talloc_tos(), snum),
 				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;

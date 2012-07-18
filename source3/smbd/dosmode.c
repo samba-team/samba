@@ -889,7 +889,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 			"on readonly share[%s]\n",
 			smb_fname_str_dbg(fsp->fsp_name),
 			sparse,
-			lp_servicename(SNUM(conn))));
+			lp_servicename(talloc_tos(), SNUM(conn))));
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 

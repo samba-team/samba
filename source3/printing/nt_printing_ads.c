@@ -366,7 +366,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 		}
 
 		result = winreg_get_printer_internal(tmp_ctx, session_info, msg_ctx,
-					    lp_servicename(snum),
+					    lp_servicename(talloc_tos(), snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue;

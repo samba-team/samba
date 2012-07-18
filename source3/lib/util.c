@@ -669,7 +669,7 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 	char *nis_result;     /* yp_match inits this */
 	int nis_result_len;  /* and set this */
 	char *nis_domain;     /* yp_get_default_domain inits this */
-	char *nis_map = (char *)lp_nis_home_map_name();
+	char *nis_map = lp_nis_home_map_name(talloc_tos());
 
 	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
 		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
@@ -899,7 +899,7 @@ void smb_panic_s3(const char *why)
 	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
 #endif
 
-	cmd = lp_panic_action();
+	cmd = lp_panic_action(talloc_tos());
 	if (cmd && *cmd) {
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
 		result = system(cmd);

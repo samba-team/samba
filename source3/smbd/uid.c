@@ -122,7 +122,8 @@ static bool check_user_ok(connection_struct *conn,
 
 	if (!readonly_share &&
 	    !share_access_check(session_info->security_token,
-				lp_servicename(snum), FILE_WRITE_DATA,
+				lp_servicename(talloc_tos(), snum),
+				FILE_WRITE_DATA,
 				NULL)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
@@ -132,7 +133,7 @@ static bool check_user_ok(connection_struct *conn,
 	}
 
 	if (!share_access_check(session_info->security_token,
-				lp_servicename(snum),
+				lp_servicename(talloc_tos(), snum),
 				readonly_share ?
 				FILE_READ_DATA : FILE_WRITE_DATA,
 				NULL)) {
@@ -209,7 +210,7 @@ static bool change_to_user_internal(connection_struct *conn,
 			 "not permitted access to share %s.\n",
 			 session_info->unix_info->sanitized_username,
 			 session_info->unix_info->unix_name,
-			 lp_servicename(snum)));
+			 lp_servicename(talloc_tos(), snum)));
 		return false;
 	}
 
@@ -222,7 +223,7 @@ static bool change_to_user_internal(connection_struct *conn,
 	 * See if we should force group for this service. If so this overrides
 	 * any group set in the force user code.
 	 */
-	if((group_c = *lp_force_group(snum))) {
+	if((group_c = *lp_force_group(talloc_tos(), snum))) {
 
 		SMB_ASSERT(conn->force_group_gid != (gid_t)-1);
 
@@ -299,7 +300,8 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 	if (vuser == NULL) {
 		/* Invalid vuid sent */
 		DEBUG(2,("Invalid vuid %llu used on share %s.\n",
-			 (unsigned long long)vuid, lp_servicename(snum)));
+			 (unsigned long long)vuid, lp_servicename(talloc_tos(),
+								  snum)));
 		return false;
 	}
 
@@ -307,7 +309,8 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 
 	if (!conn->force_user && vuser == NULL) {
 		DEBUG(2,("Invalid vuid used %llu in accessing share %s.\n",
-			 (unsigned long long)vuid, lp_servicename(snum)));
+			 (unsigned long long)vuid,
+			 lp_servicename(talloc_tos(), snum)));
 		return False;
 	}
 

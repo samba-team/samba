@@ -79,7 +79,8 @@ static const char* net_idmap_dbfile(struct net_context *c)
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
 	} else if (strequal(lp_idmap_backend(), "tdb2")) {
-		dbfile = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
+		dbfile = lp_parm_talloc_string(talloc_tos(),
+					       -1, "tdb", "idmap2.tdb", NULL);
 		if (dbfile == NULL) {
 			dbfile = talloc_asprintf(talloc_tos(), "%s/idmap2.tdb",
 						 lp_private_dir());

@@ -190,9 +190,9 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		return ntstatus;
 	}
 
-	if (!smbldap_has_naming_context(ldap_state->smbldap_state->ldap_struct, lp_ldap_suffix())) {
+	if (!smbldap_has_naming_context(ldap_state->smbldap_state->ldap_struct, lp_ldap_suffix(talloc_tos()))) {
 		DEBUG(3,("ldapsam_get_seq_num: DIT not configured to hold %s "
-			 "as top-level namingContext\n", lp_ldap_suffix()));
+			 "as top-level namingContext\n", lp_ldap_suffix(talloc_tos())));
 		return ntstatus;
 	}
 
@@ -215,7 +215,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		attrs[0] = talloc_strdup(mem_ctx, "syncreplCookie");
 		attrs[1] = NULL;
 		suffix = talloc_asprintf(mem_ctx,
-				"cn=syncrepl%d,%s", rid, lp_ldap_suffix());
+				"cn=syncrepl%d,%s", rid, lp_ldap_suffix(talloc_tos()));
 		if (!suffix) {
 			ntstatus = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -227,7 +227,7 @@ static NTSTATUS ldapsam_get_seq_num(struct pdb_methods *my_methods, time_t *seq_
 		attrs[0] = talloc_strdup(mem_ctx, "contextCSN");
 		attrs[1] = NULL;
 		suffix = talloc_asprintf(mem_ctx,
-				"cn=ldapsync,%s", lp_ldap_suffix());
+				"cn=ldapsync,%s", lp_ldap_suffix(talloc_tos()));
 
 		if (!suffix) {
 			ntstatus = NT_STATUS_NO_MEMORY;
@@ -1998,7 +1998,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	oldname = pdb_get_username(old_acct);
 
 	/* rename the posix user */
-	rename_script = talloc_strdup(talloc_tos(), lp_renameuser_script());
+	rename_script = lp_renameuser_script(talloc_tos());
 	if (rename_script == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2219,12 +2219,12 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 			dn = talloc_asprintf(ctx,
 					"uid=%s,%s",
 					escape_username,
-					lp_ldap_machine_suffix());
+					lp_ldap_machine_suffix(talloc_tos()));
 		} else {
 			dn = talloc_asprintf(ctx,
 					"uid=%s,%s",
 					escape_username,
-					lp_ldap_user_suffix());
+					lp_ldap_user_suffix(talloc_tos()));
 		}
 
 		SAFE_FREE(escape_username);
@@ -2291,7 +2291,7 @@ static int ldapsam_search_one_group (struct ldapsam_privates *ldap_state,
 
 	attr_list = get_attr_list(NULL, groupmap_attr_list);
 	rc = smbldap_search(ldap_state->smbldap_state,
-			    lp_ldap_suffix (), scope,
+			    lp_ldap_suffix (talloc_tos()), scope,
 			    filter, attr_list, 0, result);
 	TALLOC_FREE(attr_list);
 
@@ -2623,7 +2623,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		goto done;
 	}
 
-	rc = smbldap_search(conn, lp_ldap_suffix(),
+	rc = smbldap_search(conn, lp_ldap_suffix(talloc_tos()),
 			    LDAP_SCOPE_SUBTREE, filter, id_attrs, 0,
 			    &result);
 
@@ -2691,7 +2691,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 			goto done;
 		}
 
-		rc = smbldap_search(conn, lp_ldap_suffix(),
+		rc = smbldap_search(conn, lp_ldap_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
 				    &result);
 
@@ -2747,7 +2747,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 				 LDAP_OBJ_SAMBASAMACCOUNT,
 				 gidstr);
 
-	rc = smbldap_search(conn, lp_ldap_suffix(),
+	rc = smbldap_search(conn, lp_ldap_suffix(talloc_tos()),
 			    LDAP_SCOPE_SUBTREE, filter, sid_attrs, 0,
 			    &result);
 
@@ -2834,7 +2834,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 			goto done;
 		}
 
-		rc = smbldap_search(conn, lp_ldap_suffix(),
+		rc = smbldap_search(conn, lp_ldap_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
 		if (rc != LDAP_SUCCESS)
@@ -2875,7 +2875,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		goto done;
 	}
 
-	rc = smbldap_search(conn, lp_ldap_suffix(),
+	rc = smbldap_search(conn, lp_ldap_suffix(talloc_tos()),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 
 	if (rc != LDAP_SUCCESS)
@@ -3052,7 +3052,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 		goto done;
 	}
 
-	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(talloc_tos()),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, True, &msg);
 	talloc_autofree_ldapmsg(mem_ctx, msg);
 
@@ -3113,7 +3113,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	dn = talloc_asprintf(mem_ctx, "sambaSid=%s,%s",
 			     sid_string_talloc(mem_ctx, &map->sid),
-			     lp_ldap_group_suffix());
+			     lp_ldap_group_suffix(talloc_tos()));
 	if (dn == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -3334,7 +3334,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 	attr_list = get_attr_list( NULL, groupmap_attr_list );
-	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(talloc_tos()),
 			    LDAP_SCOPE_SUBTREE, filter,
 			    attr_list, 0, &ldap_state->result);
 	TALLOC_FREE(attr_list);
@@ -3343,7 +3343,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods,
 		DEBUG(0, ("ldapsam_setsamgrent: LDAP search failed: %s\n",
 			  ldap_err2string(rc)));
 		DEBUG(3, ("ldapsam_setsamgrent: Query was: %s, %s\n",
-			  lp_ldap_suffix(), filter));
+			  lp_ldap_suffix(talloc_tos()), filter));
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 		TALLOC_FREE(filter);
@@ -3764,7 +3764,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		result = ldap_state->search_cache.result;
 		ldap_state->search_cache.result = NULL;
 	} else {
-		rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(),
+		rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
 		if (rc != LDAP_SUCCESS) {
 			return NT_STATUS_UNSUCCESSFUL;
@@ -4076,7 +4076,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		}
 
 		rc = smbldap_search(ldap_state->smbldap_state,
-				    lp_ldap_user_suffix(),
+				    lp_ldap_user_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
 				    &msg);
 		talloc_autofree_ldapmsg(mem_ctx, msg);
@@ -4144,7 +4144,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 		}
 
 		rc = smbldap_search(ldap_state->smbldap_state,
-				    lp_ldap_suffix(),
+				    lp_ldap_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
 				    &msg);
 		talloc_autofree_ldapmsg(mem_ctx, msg);
@@ -4573,12 +4573,12 @@ static bool ldapsam_search_users(struct pdb_methods *methods,
 	state->connection = ldap_state->smbldap_state;
 
 	if ((acct_flags != 0) && ((acct_flags & ACB_NORMAL) != 0))
-		state->base = lp_ldap_user_suffix();
+		state->base = lp_ldap_user_suffix(talloc_tos());
 	else if ((acct_flags != 0) &&
 		 ((acct_flags & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)) != 0))
-		state->base = lp_ldap_machine_suffix();
+		state->base = lp_ldap_machine_suffix(talloc_tos());
 	else
-		state->base = lp_ldap_suffix();
+		state->base = lp_ldap_suffix(talloc_tos());
 
 	state->acct_flags = acct_flags;
 	state->base = talloc_strdup(search, state->base);
@@ -4746,7 +4746,7 @@ static bool ldapsam_search_grouptype(struct pdb_methods *methods,
 
 	state->connection = ldap_state->smbldap_state;
 
-	state->base = talloc_strdup(search, lp_ldap_suffix());
+	state->base = lp_ldap_suffix(search);
 	state->connection = ldap_state->smbldap_state;
 	state->scope = LDAP_SCOPE_SUBTREE;
 	state->filter =	talloc_asprintf(search, "(&(objectclass=%s)"
@@ -5345,9 +5345,9 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		}
 
 		if (is_machine) {
-			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", escape_name, lp_ldap_machine_suffix ());
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", escape_name, lp_ldap_machine_suffix (talloc_tos()));
 		} else {
-			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", escape_name, lp_ldap_user_suffix ());
+			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s", escape_name, lp_ldap_user_suffix (talloc_tos()));
 		}
 
 		SAFE_FREE(escape_name);
@@ -5610,7 +5610,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", escape_name, lp_ldap_group_suffix());
+		dn = talloc_asprintf(tmp_ctx, "cn=%s,%s", escape_name, lp_ldap_group_suffix(talloc_tos()));
 
 		SAFE_FREE(escape_name);
 

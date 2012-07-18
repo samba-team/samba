@@ -51,7 +51,7 @@ static void msg_deliver(struct msg_state *state)
 	fstring alpha_buf;
 	char *s;
 
-	if (! (*lp_msg_command())) {
+	if (! (*lp_msg_command(frame))) {
 		DEBUG(1,("no messaging command specified\n"));
 		goto done;
 	}
@@ -96,7 +96,7 @@ static void msg_deliver(struct msg_state *state)
 	close(fd);
 
 	/* run the command */
-	s = talloc_strdup(talloc_tos(), lp_msg_command());
+	s = lp_msg_command(frame);
 	if (s == NULL) {
 		goto done;
 	}
@@ -146,7 +146,7 @@ void reply_sends(struct smb_request *req)
 
 	START_PROFILE(SMBsends);
 
-	if (!(*lp_msg_command())) {
+	if (!(*lp_msg_command(talloc_tos()))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsends);
 		return;
@@ -194,7 +194,7 @@ void reply_sendstrt(struct smb_request *req)
 
 	START_PROFILE(SMBsendstrt);
 
-	if (!(*lp_msg_command())) {
+	if (!(*lp_msg_command(talloc_tos()))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendstrt);
 		return;
@@ -244,7 +244,7 @@ void reply_sendtxt(struct smb_request *req)
 
 	START_PROFILE(SMBsendtxt);
 
-	if (! (*lp_msg_command())) {
+	if (! (*lp_msg_command(talloc_tos()))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendtxt);
 		return;
@@ -293,7 +293,7 @@ void reply_sendend(struct smb_request *req)
 {
 	START_PROFILE(SMBsendend);
 
-	if (! (*lp_msg_command())) {
+	if (! (*lp_msg_command(talloc_tos()))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendend);
 		return;

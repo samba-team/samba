@@ -1626,7 +1626,8 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 			   const char *filter, const char **search_attr,
 			   LDAPMessage ** result)
 {
-	return smbldap_search(ldap_state, lp_ldap_suffix(), LDAP_SCOPE_SUBTREE,
+	return smbldap_search(ldap_state, lp_ldap_suffix(talloc_tos()),
+			      LDAP_SCOPE_SUBTREE,
 			      filter, search_attr, 0, result);
 }
 

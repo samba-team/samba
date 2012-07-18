@@ -5501,7 +5501,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	}
 
 	if ( override_logfile )
-		setup_logging( lp_logfile(), DEBUG_FILE );
+		setup_logging( lp_logfile(talloc_tos()), DEBUG_FILE );
 
 	if (!lp_load_client(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",

@@ -160,7 +160,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	}
 
 	DEBUG(10,("set_conn_connectpath: service %s, connectpath = %s\n",
-		lp_servicename(SNUM(conn)), destname ));
+		lp_servicename(talloc_tos(), SNUM(conn)), destname ));
 
 	string_set(&conn->connectpath, destname);
 	SAFE_FREE(destname);
@@ -250,7 +250,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 	if (dev[0] == '?' || !dev[0]) {
 		if (lp_print_ok(snum)) {
 			fstrcpy(dev,"LPT1:");
-		} else if (strequal(lp_fstype(snum), "IPC")) {
+		} else if (strequal(lp_fstype(talloc_tos(), snum), "IPC")) {
 			fstrcpy(dev, "IPC");
 		} else {
 			fstrcpy(dev,"A:");
@@ -263,7 +263,7 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 		if (!strequal(dev, "LPT1:")) {
 			return NT_STATUS_BAD_DEVICE_TYPE;
 		}
-	} else if (strequal(lp_fstype(snum), "IPC")) {
+	} else if (strequal(lp_fstype(talloc_tos(), snum), "IPC")) {
 		if (!strequal(dev, "IPC")) {
 			return NT_STATUS_BAD_DEVICE_TYPE;
 		}
@@ -299,7 +299,7 @@ static NTSTATUS find_forced_group(bool force_user,
 	bool user_must_be_member = False;
 	gid_t gid;
 
-	groupname = talloc_strdup(talloc_tos(), lp_force_group(snum));
+	groupname = lp_force_group(talloc_tos(), snum);
 	if (groupname == NULL) {
 		DEBUG(1, ("talloc_strdup failed\n"));
 		result = NT_STATUS_NO_MEMORY;
@@ -312,7 +312,7 @@ static NTSTATUS find_forced_group(bool force_user,
 	}
 
 	groupname = talloc_string_sub(talloc_tos(), groupname,
-				      "%S", lp_servicename(snum));
+				      "%S", lp_servicename(talloc_tos(), snum));
 	if (groupname == NULL) {
 		DEBUG(1, ("talloc_string_sub failed\n"));
 		result = NT_STATUS_NO_MEMORY;
@@ -395,7 +395,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 		if (!lp_guest_ok(snum)) {
 			DEBUG(2, ("guest user (from session setup) "
 				  "not permitted to access this share "
-				  "(%s)\n", lp_servicename(snum)));
+				  "(%s)\n", lp_servicename(talloc_tos(), snum)));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
@@ -406,7 +406,7 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 				  "permitted to access this share "
 				  "(%s)\n",
 				  session_info->unix_info->unix_name,
-				  lp_servicename(snum)));
+				  lp_servicename(talloc_tos(), snum)));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -429,7 +429,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 {
 	NTSTATUS status;
 
-	if (*lp_force_user(snum)) {
+	if (*lp_force_user(talloc_tos(), snum)) {
 
 		/*
 		 * Replace conn->session_info with a completely faked up one
@@ -441,7 +441,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 		struct auth_session_info *forced_serverinfo;
 		bool guest;
 
-		fuser = talloc_string_sub(conn, lp_force_user(snum), "%S",
+		fuser = talloc_string_sub(conn, lp_force_user(talloc_tos(), snum), "%S",
 					  lp_const_servicename(snum));
 		if (fuser == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -479,7 +479,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 	 * any groupid stored for the connecting user.
 	 */
 
-	if (*lp_force_group(snum)) {
+	if (*lp_force_group(talloc_tos(), snum)) {
 
 		status = find_forced_group(
 			conn->force_user, snum, conn->session_info->unix_info->unix_name,
@@ -511,7 +511,7 @@ static void create_share_access_mask(connection_struct *conn, int snum)
 	const struct security_token *token = conn->session_info->security_token;
 
 	share_access_check(token,
-			lp_servicename(snum),
+			lp_servicename(talloc_tos(), snum),
 			MAXIMUM_ALLOWED_ACCESS,
 			&conn->share_access);
 
@@ -610,13 +610,13 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)),
+					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_pathname(snum));
+					lp_pathname(talloc_tos(), snum));
 		if (!s) {
 			status = NT_STATUS_NO_MEMORY;
 			goto err_root_exit;
@@ -628,7 +628,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 			goto err_root_exit;
 		}
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s,
-			 lp_servicename(snum)));
+			 lp_servicename(talloc_tos(), snum)));
 		TALLOC_FREE(s);
 	}
 
@@ -647,7 +647,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 			DEBUG(0,("make_connection: connection to %s "
 				 "denied due to security "
 				 "descriptor.\n",
-				 lp_servicename(snum)));
+				 lp_servicename(talloc_tos(), snum)));
 			status = NT_STATUS_ACCESS_DENIED;
 			goto err_root_exit;
 		} else {
@@ -658,7 +658,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n",
-			  lp_servicename(snum)));
+			  lp_servicename(talloc_tos(), snum)));
 		status = NT_STATUS_BAD_NETWORK_NAME;
 		goto err_root_exit;
 	}
@@ -673,11 +673,12 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	 */
 
 	if ((lp_max_connections(snum) > 0)
-	    && (count_current_connections(lp_servicename(SNUM(conn)), True) >=
+	    && (count_current_connections(lp_servicename(talloc_tos(), SNUM(conn)), True) >=
 		lp_max_connections(snum))) {
 
 		DEBUG(1, ("Max connections (%d) exceeded for %s\n",
-			  lp_max_connections(snum), lp_servicename(snum)));
+			  lp_max_connections(snum),
+			  lp_servicename(talloc_tos(), snum)));
 		status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		goto err_root_exit;
 	}
@@ -685,7 +686,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	/*
 	 * Get us an entry in the connections db
 	 */
-	if (!claim_connection(conn, lp_servicename(snum))) {
+	if (!claim_connection(conn, lp_servicename(talloc_tos(), snum))) {
 		DEBUG(1, ("Could not store connections entry\n"));
 		status = NT_STATUS_INTERNAL_DB_ERROR;
 		goto err_root_exit;
@@ -695,7 +696,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	/* Invoke VFS make connection hook - this must be the first
 	   filesystem operation that we do. */
 
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
+	if (SMB_VFS_CONNECT(conn, lp_servicename(talloc_tos(), snum),
 			    conn->session_info->unix_info->unix_name) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		status = NT_STATUS_UNSUCCESSFUL;
@@ -736,15 +737,15 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	/* Preexecs are done here as they might make the dir we are to ChDir
 	 * to below */
 	/* execute any "root preexec = " line */
-	if (*lp_rootpreexec(snum)) {
+	if (*lp_rootpreexec(talloc_tos(), snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)),
+					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_rootpreexec(snum));
+					lp_rootpreexec(talloc_tos(), snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -774,15 +775,15 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	 * to below */
 
 	/* execute any "preexec = " line */
-	if (*lp_preexec(snum)) {
+	if (*lp_preexec(talloc_tos(), snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)),
+					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_preexec(snum));
+					lp_preexec(talloc_tos(), snum));
 		ret = smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_preexec_close(snum)) {
@@ -818,7 +819,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		if (!canonicalize_connect_path(conn)) {
 			DEBUG(0, ("canonicalize_connect_path failed "
 			"for service %s, path %s\n",
-				lp_servicename(snum),
+				lp_servicename(talloc_tos(), snum),
 				conn->connectpath));
 			status = NT_STATUS_BAD_NETWORK_NAME;
 			goto err_root_exit;
@@ -827,11 +828,14 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 
 	/* Add veto/hide lists */
 	if (!IS_IPC(conn) && !IS_PRINT(conn)) {
-		set_namearray( &conn->veto_list, lp_veto_files(snum));
-		set_namearray( &conn->hide_list, lp_hide_files(snum));
-		set_namearray( &conn->veto_oplock_list, lp_veto_oplocks(snum));
+		set_namearray( &conn->veto_list,
+			       lp_veto_files(talloc_tos(), snum));
+		set_namearray( &conn->hide_list,
+			       lp_hide_files(talloc_tos(), snum));
+		set_namearray( &conn->veto_oplock_list,
+			       lp_veto_oplocks(talloc_tos(), snum));
 		set_namearray( &conn->aio_write_behind_list,
-				lp_aio_write_behind(snum));
+				lp_aio_write_behind(talloc_tos(), snum));
 	}
 	status = create_synthetic_smb_fname(talloc_tos(), conn->connectpath,
 					    NULL, NULL, &smb_fname_cpath);
@@ -850,11 +854,12 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		if (ret == 0 && !S_ISDIR(smb_fname_cpath->st.st_ex_mode)) {
 			DEBUG(0,("'%s' is not a directory, when connecting to "
 				 "[%s]\n", conn->connectpath,
-				 lp_servicename(snum)));
+				 lp_servicename(talloc_tos(), snum)));
 		} else {
 			DEBUG(0,("'%s' does not exist or permission denied "
 				 "when connecting to [%s] Error was %s\n",
-				 conn->connectpath, lp_servicename(snum),
+				 conn->connectpath,
+				 lp_servicename(talloc_tos(), snum),
 				 strerror(errno) ));
 		}
 		status = NT_STATUS_BAD_NETWORK_NAME;
@@ -882,7 +887,8 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 			 tsocket_address_string(conn->sconn->remote_address,
 						talloc_tos()) );
 		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
-		dbgtext( "connect to service %s ", lp_servicename(snum) );
+		dbgtext( "connect to service %s ",
+			 lp_servicename(talloc_tos(), snum) );
 		dbgtext( "initially as user %s ",
 			 conn->session_info->unix_info->unix_name );
 		dbgtext( "(uid=%d, gid=%d) ", (int)effuid, (int)effgid );
@@ -903,7 +909,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		SMB_VFS_DISCONNECT(conn);
 	}
 	if (claimed_connection) {
-		yield_connection(conn, lp_servicename(snum));
+		yield_connection(conn, lp_servicename(talloc_tos(), snum));
 	}
 	return status;
 }
@@ -921,7 +927,6 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 	NTSTATUS status;
 	NTTIME now = 0;
 	struct connection_struct *conn;
-	const char *share_name;
 
 	status = smb1srv_tcon_create(sconn->conn, now, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -954,8 +959,7 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 		return NULL;
 	}
 
-	share_name = lp_servicename(SNUM(conn));
-	tcon->global->share_name = talloc_strdup(tcon->global, share_name);
+	tcon->global->share_name = lp_servicename(tcon->global, SNUM(conn));
 	if (tcon->global->share_name == NULL) {
 		conn_free(conn);
 		TALLOC_FREE(tcon);
@@ -1075,7 +1079,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 					    dev, status);
 	} else if ((vuser->homes_snum != -1)
 		   && strequal(service_in,
-			       lp_servicename(vuser->homes_snum))) {
+			       lp_servicename(talloc_tos(), vuser->homes_snum))) {
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
 		return make_connection_smb1(sconn,
@@ -1116,10 +1120,10 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 	}
 
 	/* Handle non-Dfs clients attempting connections to msdfs proxy */
-	if (lp_host_msdfs() && (*lp_msdfs_proxy(snum) != '\0'))  {
+	if (lp_host_msdfs() && (*lp_msdfs_proxy(talloc_tos(), snum) != '\0'))  {
 		DEBUG(3, ("refusing connection to dfs proxy share '%s' "
 			  "(pointing to %s)\n", 
-			service, lp_msdfs_proxy(snum)));
+			service, lp_msdfs_proxy(talloc_tos(), snum)));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
@@ -1148,27 +1152,27 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 				 get_remote_machine_name(),
 				 tsocket_address_string(conn->sconn->remote_address,
 							talloc_tos()),
-				 lp_servicename(SNUM(conn))));
+				 lp_servicename(talloc_tos(), SNUM(conn))));
 
 	/* Call VFS disconnect hook */    
 	SMB_VFS_DISCONNECT(conn);
 
-	yield_connection(conn, lp_servicename(SNUM(conn)));
+	yield_connection(conn, lp_servicename(talloc_tos(), SNUM(conn)));
 
 	/* make sure we leave the directory available for unmount */
 	vfs_ChDir(conn, "/");
 
 	/* execute any "postexec = " line */
-	if (*lp_postexec(SNUM(conn)) && 
+	if (*lp_postexec(talloc_tos(), SNUM(conn)) &&
 	    change_to_user(conn, vuid))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)),
+					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_postexec(SNUM(conn)));
+					lp_postexec(talloc_tos(), SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
 		change_to_root_user();
@@ -1176,15 +1180,15 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 
 	change_to_root_user();
 	/* execute any "root postexec = " line */
-	if (*lp_rootpostexec(SNUM(conn)))  {
+	if (*lp_rootpostexec(talloc_tos(), SNUM(conn)))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
-					lp_servicename(SNUM(conn)),
+					lp_servicename(talloc_tos(), SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_rootpostexec(SNUM(conn)));
+					lp_rootpostexec(talloc_tos(), SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
 	}

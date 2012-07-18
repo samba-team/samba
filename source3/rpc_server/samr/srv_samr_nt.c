@@ -545,7 +545,8 @@ NTSTATUS _samr_GetUserPwInfo(struct pipes_struct *p,
 					       &password_properties);
 			unbecome_root();
 
-			if (lp_check_password_script() && *lp_check_password_script()) {
+			if (lp_check_password_script(talloc_tos())
+			    && *lp_check_password_script(talloc_tos())) {
 				password_properties |= DOMAIN_PASSWORD_COMPLEX;
 			}
 
@@ -2050,7 +2051,8 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 		unix_to_nt_time_abs((NTTIME *)&dominfo->max_password_age, u_expire);
 		unix_to_nt_time_abs((NTTIME *)&dominfo->min_password_age, u_min_age);
 
-		if (lp_check_password_script() && *lp_check_password_script()) {
+		if (lp_check_password_script(talloc_tos())
+			&& *lp_check_password_script(talloc_tos())) {
 			dominfo->password_properties |= DOMAIN_PASSWORD_COMPLEX;
 		}
 
@@ -3313,7 +3315,7 @@ static NTSTATUS query_dom_info_1(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time_abs((NTTIME *)&r->max_password_age, u_expire);
 	unix_to_nt_time_abs((NTTIME *)&r->min_password_age, u_min_age);
 
-	if (lp_check_password_script() && *lp_check_password_script()) {
+	if (lp_check_password_script(talloc_tos()) && *lp_check_password_script(talloc_tos())) {
 		r->password_properties |= DOMAIN_PASSWORD_COMPLEX;
 	}
 
@@ -3350,7 +3352,7 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 
 	unbecome_root();
 
-	r->oem_information.string	= lp_serverstring();
+	r->oem_information.string	= lp_serverstring(r);
 	r->domain_name.string		= lp_workgroup();
 	r->primary.string		= lp_netbios_name();
 	r->sequence_num			= seq_num;
@@ -3394,7 +3396,7 @@ static NTSTATUS query_dom_info_3(TALLOC_CTX *mem_ctx,
 static NTSTATUS query_dom_info_4(TALLOC_CTX *mem_ctx,
 				 struct samr_DomOEMInformation *r)
 {
-	r->oem_information.string = lp_serverstring();
+	r->oem_information.string = lp_serverstring(r);
 
 	return NT_STATUS_OK;
 }
@@ -6266,7 +6268,7 @@ NTSTATUS _samr_GetDomPwInfo(struct pipes_struct *p,
 			       &password_properties);
 	unbecome_root();
 
-	if (lp_check_password_script() && *lp_check_password_script()) {
+	if (lp_check_password_script(talloc_tos()) && *lp_check_password_script(talloc_tos())) {
 		password_properties |= DOMAIN_PASSWORD_COMPLEX;
 	}
 

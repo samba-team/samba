@@ -1158,7 +1158,7 @@ extern void build_options(bool screen);
 	gain_root_group_privilege();
 
 	fault_setup();
-	dump_core_setup("smbd", lp_logfile());
+	dump_core_setup("smbd", lp_logfile(talloc_tos()));
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);

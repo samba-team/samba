@@ -121,10 +121,10 @@ static char *get_account_dn(const char *name)
 
 	if (name[strlen(name)-1] == '$') {
 		dn = talloc_asprintf(talloc_tos(), "uid=%s,%s", escape_name,
-				     lp_ldap_machine_suffix());
+				     lp_ldap_machine_suffix(talloc_tos()));
 	} else {
 		dn = talloc_asprintf(talloc_tos(), "uid=%s,%s", escape_name,
-				     lp_ldap_user_suffix());
+				     lp_ldap_user_suffix(talloc_tos()));
 	}
 
 	SAFE_FREE(escape_name);
@@ -1364,11 +1364,11 @@ static NTSTATUS ipasam_create_user(struct pdb_methods *pdb_methods,
 		if (name[strlen(name)-1] == '$') {
 			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s",
 					     escape_username,
-					     lp_ldap_machine_suffix());
+					     lp_ldap_machine_suffix(talloc_tos()));
 		} else {
 			dn = talloc_asprintf(tmp_ctx, "uid=%s,%s",
 					     escape_username,
-					     lp_ldap_user_suffix());
+					     lp_ldap_user_suffix(talloc_tos()));
 		}
 		SAFE_FREE(escape_username);
 		if (!dn) {

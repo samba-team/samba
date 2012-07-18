@@ -46,7 +46,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 	char *fname = NULL;
 	NTSTATUS status;
 
-	if (!*lp_magicscript(SNUM(conn))) {
+	if (!*lp_magicscript(talloc_tos(), SNUM(conn))) {
 		return NT_STATUS_OK;
 	}
 
@@ -62,13 +62,13 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		p++;
 	}
 
-	if (!strequal(lp_magicscript(SNUM(conn)),p)) {
+	if (!strequal(lp_magicscript(talloc_tos(), SNUM(conn)),p)) {
 		status = NT_STATUS_OK;
 		goto out;
 	}
 
-	if (*lp_magicoutput(SNUM(conn))) {
-		magic_output = lp_magicoutput(SNUM(conn));
+	if (*lp_magicoutput(talloc_tos(), SNUM(conn))) {
+		magic_output = lp_magicoutput(talloc_tos(), SNUM(conn));
 	} else {
 		magic_output = talloc_asprintf(ctx,
 				"%s.out",
@@ -906,7 +906,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && *lp_veto_files(SNUM(conn))) {
+	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && *lp_veto_files(talloc_tos(), SNUM(conn))) {
 		/*
 		 * Check to see if the only thing in this directory are
 		 * vetoed files/directories. If so then delete them and

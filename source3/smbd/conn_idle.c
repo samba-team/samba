@@ -112,7 +112,8 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 
 		if (close_all) {
 			do_close = true;
-		} else if (strequal(lp_servicename(SNUM(conn)), sharename)) {
+		} else if (strequal(lp_servicename(talloc_tos(), SNUM(conn)),
+				    sharename)) {
 			DEBUG(1, ("conn_force_tdis: Forcing close of "
 				  "share '%s' (wire_id=0x%08x)\n",
 				  tcon->global->share_name,

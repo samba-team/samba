@@ -838,7 +838,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		}
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
-		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(SNUM(conn));
+		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(ctx, SNUM(conn));
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
 			/* Return permissions. */
@@ -876,7 +876,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 		if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {
 			DEBUG(2,("Serving %s as a Dfs root\n",
-				 lp_servicename(SNUM(conn)) ));
+				 lp_servicename(ctx, SNUM(conn)) ));
 			SSVAL(req->outbuf, smb_vwv2,
 			      SMB_SHARE_IN_DFS | SVAL(req->outbuf, smb_vwv2));
 		}
@@ -973,7 +973,9 @@ void reply_ioctl(struct smb_request *req)
 				    STR_TERMINATE|STR_ASCII);
 			if (conn) {
 				srvstr_push((char *)req->outbuf, req->flags2,
-					    p+18, lp_servicename(SNUM(conn)),
+					    p+18,
+					    lp_servicename(talloc_tos(),
+							   SNUM(conn)),
 					    13, STR_TERMINATE|STR_ASCII);
 			} else {
 				memset(p+18, 0, 13);
@@ -1542,7 +1544,7 @@ void reply_search(struct smb_request *req)
 	if ((dirtype&0x1F) == FILE_ATTRIBUTE_VOLUME) {
 		char buf[DIR_STRUCT_SIZE];
 		memcpy(buf,status,21);
-		if (!make_dir_struct(ctx,buf,"???????????",volume_label(SNUM(conn)),
+		if (!make_dir_struct(ctx,buf,"???????????",volume_label(ctx, SNUM(conn)),
 				0,FILE_ATTRIBUTE_VOLUME,0,!allow_long_path_components)) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
@@ -1568,8 +1570,8 @@ void reply_search(struct smb_request *req)
 			 /DIR_STRUCT_SIZE));
 
 		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-			directory,lp_dontdescend(SNUM(conn))));
-		if (in_list(directory, lp_dontdescend(SNUM(conn)),True)) {
+			 directory,lp_dontdescend(ctx, SNUM(conn))));
+		if (in_list(directory, lp_dontdescend(ctx, SNUM(conn)),True)) {
 			check_descend = True;
 		}
 
@@ -5349,7 +5351,7 @@ void reply_printqueue(struct smb_request *req)
 		TALLOC_CTX *mem_ctx = talloc_tos();
 		NTSTATUS status;
 		WERROR werr;
-		const char *sharename = lp_servicename(SNUM(conn));
+		const char *sharename = lp_servicename(mem_ctx, SNUM(conn));
 		struct rpc_pipe_client *cli = NULL;
 		struct dcerpc_binding_handle *b = NULL;
 		struct policy_handle handle;

@@ -110,13 +110,13 @@ static int CopyExpanded(connection_struct *conn,
 		*p_space_remaining = 0;
 		return 0;
 	}
-	buf = talloc_string_sub(ctx, buf,"%S",lp_servicename(snum));
+	buf = talloc_string_sub(ctx, buf,"%S", lp_servicename(ctx, snum));
 	if (!buf) {
 		*p_space_remaining = 0;
 		return 0;
 	}
 	buf = talloc_sub_advanced(ctx,
-				lp_servicename(SNUM(conn)),
+				  lp_servicename(ctx, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
@@ -162,12 +162,12 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	if (!buf) {
 		return 0;
 	}
-	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(snum));
+	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(ctx, snum));
 	if (!buf) {
 		return 0;
 	}
 	buf = talloc_sub_advanced(ctx,
-				lp_servicename(SNUM(conn)),
+				  lp_servicename(ctx, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
@@ -1906,10 +1906,10 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		len = 0;
 
 		if (uLevel > 0) {
-			len += StrlenExpanded(conn,snum,lp_comment(snum));
+			len += StrlenExpanded(conn,snum,lp_comment(talloc_tos(), snum));
 		}
 		if (uLevel > 1) {
-			len += strlen(lp_pathname(snum)) + 1;
+			len += strlen(lp_pathname(talloc_tos(), snum)) + 1;
 		}
 		if (buflen) {
 			*buflen = struct_len;
@@ -1938,7 +1938,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		baseaddr = p;
 	}
 
-	push_ascii(p,lp_servicename(snum),13, STR_TERMINATE);
+	push_ascii(p,lp_servicename(talloc_tos(), snum),13, STR_TERMINATE);
 
 	if (uLevel > 0) {
 		int type;
@@ -1948,12 +1948,12 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		if (lp_print_ok(snum)) {
 			type = STYPE_PRINTQ;
 		}
-		if (strequal("IPC",lp_fstype(snum))) {
+		if (strequal("IPC",lp_fstype(talloc_tos(),snum))) {
 			type = STYPE_IPC;
 		}
 		SSVAL(p,14,type);		/* device type */
 		SIVAL(p,16,PTR_DIFF(p2,baseaddr));
-		len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
+		len += CopyExpanded(conn,snum,&p2,lp_comment(talloc_tos(),snum),&l2);
 	}
 
 	if (uLevel > 1) {
@@ -1961,7 +1961,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		SSVALS(p,22,-1);		/* max uses */
 		SSVAL(p,24,1); /* current uses */
 		SIVAL(p,26,PTR_DIFF(p2,baseaddr)); /* local pathname */
-		len += CopyAndAdvance(&p2,lp_pathname(snum),&l2);
+		len += CopyAndAdvance(&p2,lp_pathname(talloc_tos(),snum),&l2);
 		memset(p+30,0,SHPWLEN+2); /* passwd (reserved), pad field */
 	}
 
@@ -2101,7 +2101,7 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 		if (!(lp_browseable(i) && lp_snum_ok(i))) {
 			continue;
 		}
-		push_ascii_fstring(servicename_dos, lp_servicename(i));
+		push_ascii_fstring(servicename_dos, lp_servicename(talloc_tos(), i));
 		/* Maximum name length = 13. */
 		if( lp_browseable( i ) && lp_snum_ok( i ) && (strlen(servicename_dos) < 13)) {
 			total++;
@@ -2133,7 +2133,8 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 			continue;
 		}
 
-		push_ascii_fstring(servicename_dos, lp_servicename(i));
+		push_ascii_fstring(servicename_dos,
+				   lp_servicename(talloc_tos(), i));
 		if (lp_browseable(i) && lp_snum_ok(i) && (strlen(servicename_dos) < 13)) {
 			if (fill_share_info( conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata ) < 0) {
 				break;

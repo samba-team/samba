@@ -161,7 +161,7 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 			"resolution of %s "
 			"available on share %s, directory %s\n",
 			*p_ts_res == TIMESTAMP_SET_MSEC ? "msec" : "sec",
-			lp_servicename(conn->params->service),
+			lp_servicename(talloc_tos(), conn->params->service),
 			conn->connectpath ));
 	}
 	TALLOC_FREE(smb_fname_cpath);

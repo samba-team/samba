@@ -95,7 +95,7 @@ void delete_and_reload_printers(struct tevent_context *ev,
 		}
 
 		sname = lp_const_servicename(snum);
-		pname = lp_printername(snum);
+		pname = lp_printername(session_info, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
 		if (!pcap_printername_ok(pname) && lp_autoloaded(snum)) {
@@ -103,7 +103,9 @@ void delete_and_reload_printers(struct tevent_context *ev,
 
 			if (is_printer_published(session_info, session_info,
 						 msg_ctx,
-						 NULL, lp_servicename(snum),
+						 NULL,
+						 lp_servicename(session_info,
+								snum),
 						 NULL, &pinfo2)) {
 				nt_printer_publish(session_info,
 						   session_info,
@@ -140,7 +142,7 @@ bool reload_services(struct smbd_server_connection *sconn,
 	bool ret;
 
 	if (lp_loaded()) {
-		char *fname = lp_configfile();
+		char *fname = lp_configfile(talloc_tos());
 		if (file_exist(fname) &&
 		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);

@@ -213,11 +213,11 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 
 	/* defer to scripts */
 
-	if ( *lp_addgroup_script() ) {
+	if ( *lp_addgroup_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		add_script = talloc_strdup(ctx,
-					lp_addgroup_script());
+					lp_addgroup_script(ctx));
 		if (!add_script) {
 			return -1;
 		}
@@ -269,11 +269,11 @@ int smb_delete_group(const char *unix_group)
 
 	/* defer to scripts */
 
-	if ( *lp_delgroup_script() ) {
+	if ( *lp_delgroup_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		del_script = talloc_strdup(ctx,
-				lp_delgroup_script());
+				lp_delgroup_script(ctx));
 		if (!del_script) {
 			return -1;
 		}
@@ -304,11 +304,11 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 
 	/* defer to scripts */
 
-	if ( *lp_setprimarygroup_script() ) {
+	if ( *lp_setprimarygroup_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		add_script = talloc_strdup(ctx,
-				lp_setprimarygroup_script());
+				lp_setprimarygroup_script(ctx));
 		if (!add_script) {
 			return -1;
 		}
@@ -346,11 +346,11 @@ int smb_add_user_group(const char *unix_group, const char *unix_user)
 
 	/* defer to scripts */
 
-	if ( *lp_addusertogroup_script() ) {
+	if ( *lp_addusertogroup_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		add_script = talloc_strdup(ctx,
-				lp_addusertogroup_script());
+				lp_addusertogroup_script(ctx));
 		if (!add_script) {
 			return -1;
 		}
@@ -386,11 +386,11 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 
 	/* defer to scripts */
 
-	if ( *lp_deluserfromgroup_script() ) {
+	if ( *lp_deluserfromgroup_script(talloc_tos()) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		del_script = talloc_strdup(ctx,
-				lp_deluserfromgroup_script());
+				lp_deluserfromgroup_script(ctx));
 		if (!del_script) {
 			return -1;
 		}

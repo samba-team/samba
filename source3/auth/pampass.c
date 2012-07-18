@@ -299,7 +299,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	if (num_msg <= 0)
 		return PAM_CONV_ERR;
 
-	if ((pw_chat = make_pw_chat(lp_passwd_chat())) == NULL)
+	if ((pw_chat = make_pw_chat(lp_passwd_chat(talloc_tos()))) == NULL)
 		return PAM_CONV_ERR;
 
 	/*

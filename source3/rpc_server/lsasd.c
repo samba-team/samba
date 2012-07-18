@@ -61,7 +61,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 
 static void lsasd_reopen_logs(int child_id)
 {
-	char *lfile = lp_logfile();
+	char *lfile = lp_logfile(talloc_tos());
 	char *extension;
 	int rc;
 
@@ -82,11 +82,11 @@ static void lsasd_reopen_logs(int child_id)
 		if (strstr(lfile, extension) == NULL) {
 			if (child_id) {
 				rc = asprintf(&lfile, "%s.%d",
-						lp_logfile(),
+						lp_logfile(talloc_tos()),
 						child_id);
 			} else {
 				rc = asprintf(&lfile, "%s.%s",
-						lp_logfile(),
+						lp_logfile(talloc_tos()),
 						extension);
 			}
 		}

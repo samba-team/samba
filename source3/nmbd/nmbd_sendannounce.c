@@ -470,11 +470,12 @@ void announce_remote(time_t t)
 
 	last_time = t;
 
-	s = lp_remote_announce();
+	s = lp_remote_announce(talloc_tos());
 	if (!*s)
 		return;
 
-	comment = string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH);
+	comment = string_truncate(lp_serverstring(talloc_tos()),
+				  MAX_SERVER_STRING_LENGTH);
 
 	frame = talloc_stackframe();
 	for (ptr=s; next_token_talloc(frame,&ptr,&s2,NULL); ) {
@@ -540,7 +541,7 @@ void browse_sync_remote(time_t t)
 
 	last_time = t;
 
-	s = lp_remote_browse_sync();
+	s = lp_remote_browse_sync(talloc_tos());
 	if (!*s)
 		return;
 

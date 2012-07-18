@@ -47,7 +47,7 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
 	char *add_script;
 	int ret;
 
-	add_script = talloc_strdup(ctx, lp_adduser_script());
+	add_script = lp_adduser_script(ctx);
 	if (!add_script || !*add_script) {
 		return -1;
 	}
@@ -416,8 +416,8 @@ static NTSTATUS log_nt_token(struct security_token *token)
 	char *group_sidstr;
 	size_t i;
 
-	if ((lp_log_nt_token_command() == NULL) ||
-	    (strlen(lp_log_nt_token_command()) == 0)) {
+	if ((lp_log_nt_token_command(frame) == NULL) ||
+	    (strlen(lp_log_nt_token_command(frame)) == 0)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
@@ -430,7 +430,7 @@ static NTSTATUS log_nt_token(struct security_token *token)
 	}
 
 	command = talloc_string_sub(
-		frame, lp_log_nt_token_command(),
+		frame, lp_log_nt_token_command(frame),
 		"%s", sid_string_talloc(frame, &token->sids[0]));
 	command = talloc_string_sub(frame, command, "%t", group_sidstr);
 

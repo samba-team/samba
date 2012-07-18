@@ -461,7 +461,7 @@ static void get_global_id_and_update(uint64_t *current_id, bool update)
 static void wins_hook(const char *operation, struct name_record *namerec, int ttl)
 {
 	char *command = NULL;
-	char *cmd = lp_wins_hook();
+	char *cmd = lp_wins_hook(talloc_tos());
 	char *p, *namestr;
 	int i;
 	TALLOC_CTX *ctx = talloc_tos();

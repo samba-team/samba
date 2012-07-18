@@ -65,7 +65,7 @@ static bool reload_services_file(const char *lfile)
 	bool ret;
 
 	if (lp_loaded()) {
-		char *fname = lp_configfile();
+		char *fname = lp_configfile(talloc_tos());
 
 		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
@@ -1297,7 +1297,7 @@ int main(int argc, char **argv, char **envp)
  	CatchSignal(SIGUSR2, SIG_IGN);
 
 	fault_setup();
-	dump_core_setup("winbindd", lp_logfile());
+	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
 
 	load_case_tables();
 
@@ -1357,7 +1357,7 @@ int main(int argc, char **argv, char **envp)
 	 * is often not related to the path where winbindd is actually run
 	 * in production.
 	 */
-	dump_core_setup("winbindd", lp_logfile());
+	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
 	if (is_daemon && interactive) {
 		d_fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
@@ -1401,7 +1401,7 @@ int main(int argc, char **argv, char **envp)
 	 * as the log file might have been set in the configuration and cores's
 	 * path is by default basename(lp_logfile()).
 	 */
-	dump_core_setup("winbindd", lp_logfile());
+	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
 
 	/* Initialise messaging system */
 

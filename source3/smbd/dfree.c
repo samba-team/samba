@@ -80,7 +80,7 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_que
 	 * If external disk calculation specified, use it.
 	 */
 
-	dfree_command = lp_dfree_command(SNUM(conn));
+	dfree_command = lp_dfree_command(talloc_tos(), SNUM(conn));
 	if (dfree_command && *dfree_command) {
 		const char *p;
 		char **lines = NULL;

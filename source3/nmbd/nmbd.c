@@ -382,7 +382,7 @@ static bool reload_nmbd_services(bool test)
 	set_remote_machine_name("nmbd", False);
 
 	if ( lp_loaded() ) {
-		char *fname = lp_configfile();
+		char *fname = lp_configfile(talloc_tos());
 		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);
 			test = False;
@@ -843,7 +843,7 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	fault_setup();
-	dump_core_setup("nmbd", lp_logfile());
+	dump_core_setup("nmbd", lp_logfile(talloc_tos()));
 
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't receive them. */

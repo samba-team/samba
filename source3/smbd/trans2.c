@@ -2495,8 +2495,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		directory,lp_dontdescend(SNUM(conn))));
-	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
+		 directory,lp_dontdescend(ctx, SNUM(conn))));
+	if (in_list(directory,lp_dontdescend(ctx, SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;
@@ -2824,8 +2824,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		 directory,lp_dontdescend(SNUM(conn))));
-	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive))
+		 directory,lp_dontdescend(ctx, SNUM(conn))));
+	if (in_list(directory,lp_dontdescend(ctx, SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;
@@ -2943,7 +2943,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16])
 {
-	E_md4hash(lp_servicename(SNUM(conn)),objid);
+	E_md4hash(lp_servicename(talloc_tos(), SNUM(conn)),objid);
 	return objid;
 }
 
@@ -2992,9 +2992,9 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 {
 	char *pdata, *end_data;
 	int data_len = 0, len;
-	const char *vname = volume_label(SNUM(conn));
+	const char *vname = volume_label(talloc_tos(), SNUM(conn));
 	int snum = SNUM(conn);
-	char *fstype = lp_fstype(SNUM(conn));
+	char *fstype = lp_fstype(talloc_tos(), SNUM(conn));
 	uint32 additional_flags = 0;
 	struct smb_filename smb_fname_dot;
 	SMB_STRUCT_STAT st;
@@ -3073,7 +3073,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,0,str_checksum(lp_servicename(snum)) ^ (str_checksum(get_local_machine_name())<<16) );
+			SIVAL(pdata,0,str_checksum(lp_servicename(talloc_tos(), snum)) ^ (str_checksum(get_local_machine_name())<<16) );
 			/*
 			 * Win2k3 and previous mess this up by sending a name length
 			 * one byte short. I believe only older clients (OS/2 Win9x) use
@@ -3139,7 +3139,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,8,str_checksum(lp_servicename(snum)) ^ 
+			SIVAL(pdata,8,str_checksum(lp_servicename(talloc_tos(), snum)) ^
 				(str_checksum(get_local_machine_name())<<16));
 
 			/* Max label len is 32 characters. */
@@ -3150,7 +3150,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			data_len = 18+len;
 
 			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n",
-				(int)strlen(vname),vname, lp_servicename(snum)));
+				(int)strlen(vname),vname,
+				lp_servicename(talloc_tos(), snum)));
 			break;
 
 		case SMB_QUERY_FS_SIZE_INFO:
@@ -3271,20 +3272,20 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			if (get_current_uid(conn) != 0) {
 				DEBUG(0,("set_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
-					 lp_servicename(SNUM(conn)),
+					 lp_servicename(talloc_tos(), SNUM(conn)),
 					 conn->session_info->unix_info->unix_name));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
 			if (vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
-				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(talloc_tos(), SNUM(conn))));
 				return map_nt_error_from_unix(errno);
 			}
 
 			data_len = 48;
 
 			DEBUG(10,("SMB_FS_QUOTA_INFORMATION: for service [%s]\n",
-				  lp_servicename(SNUM(conn))));
+				  lp_servicename(talloc_tos(), SNUM(conn))));
 
 			/* Unknown1 24 NULL bytes*/
 			SBIG_UINT(pdata,0,(uint64_t)0);
@@ -3401,7 +3402,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return NT_STATUS_INVALID_LEVEL;
 #endif /* EOPNOTSUPP */
 			} else {
-				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(talloc_tos(), SNUM(conn))));
 				return NT_STATUS_DOS(ERRSRV, ERRerror);
 			}
 			break;
@@ -3511,7 +3512,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 * Thursby MAC extension... ONLY on NTFS filesystems
 			 * once we do streams then we don't need this
 			 */
-			if (strequal(lp_fstype(SNUM(conn)),"NTFS")) {
+			if (strequal(lp_fstype(talloc_tos(), SNUM(conn)),"NTFS")) {
 				data_len = 88;
 				SIVAL(pdata,84,0x100); /* Don't support mac... */
 				break;
@@ -3594,7 +3595,8 @@ static void call_trans2setfsinfo(connection_struct *conn,
 	char *params = *pparams;
 	uint16 info_level;
 
-	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",lp_servicename(SNUM(conn))));
+	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",
+		  lp_servicename(talloc_tos(), SNUM(conn))));
 
 	/*  */
 	if (total_params < 4) {
@@ -3757,7 +3759,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				/* access check */
 				if ((get_current_uid(conn) != 0) || !CAN_WRITE(conn)) {
 					DEBUG(0,("set_user_quota: access_denied service [%s] user [%s]\n",
-						 lp_servicename(SNUM(conn)),
+						 lp_servicename(talloc_tos(), SNUM(conn)),
 						 conn->session_info->unix_info->unix_name));
 					reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 					return;
@@ -3801,7 +3803,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 
 				/* now set the quotas */
 				if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
-					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(SNUM(conn))));
+					DEBUG(0,("vfs_set_ntquota() failed for service [%s]\n",lp_servicename(talloc_tos(), SNUM(conn))));
 					reply_nterror(req, map_nt_error_from_unix(errno));
 					return;
 				}
@@ -8424,7 +8426,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			    lp_netbios_name(), 15,
 			    STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
 		srvstr_push(pdata, req->flags2, pdata+18,
-			    lp_servicename(SNUM(conn)), 13,
+			    lp_servicename(talloc_tos(), SNUM(conn)), 13,
 			    STR_ASCII|STR_TERMINATE); /* Service name */
 		send_trans2_replies(conn, req, *pparams, 0, *ppdata, 32,
 				    max_data_bytes);

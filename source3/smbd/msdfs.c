@@ -147,9 +147,9 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	}
 
 	/* Is this really our servicename ? */
-	if (conn && !( strequal(servicename, lp_servicename(SNUM(conn)))
+	if (conn && !( strequal(servicename, lp_servicename(talloc_tos(), SNUM(conn)))
 			|| (strequal(servicename, HOMES_NAME)
-			&& strequal(lp_servicename(SNUM(conn)),
+			&& strequal(lp_servicename(talloc_tos(), SNUM(conn)),
 				get_current_username()) )) ) {
 		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
 			servicename));
@@ -249,7 +249,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	connpath = talloc_string_sub(conn,
 				connpath,
 				"%S",
-				lp_servicename(snum));
+				lp_servicename(talloc_tos(), snum));
 	if (!connpath) {
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
@@ -304,7 +304,8 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	 */
 	if (conn->session_info) {
 		share_access_check(conn->session_info->security_token,
-				   lp_servicename(snum), MAXIMUM_ALLOWED_ACCESS,
+				   lp_servicename(talloc_tos(), snum),
+				   MAXIMUM_ALLOWED_ACCESS,
 				   &conn->share_access);
 
 		if ((conn->share_access & FILE_WRITE_DATA) == 0) {
@@ -313,7 +314,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				DEBUG(0,("create_conn_struct: connection to %s "
 					 "denied due to security "
 					 "descriptor.\n",
-					 lp_servicename(snum)));
+					 lp_servicename(talloc_tos(), snum)));
 				conn_free(conn);
 				return NT_STATUS_ACCESS_DENIED;
 			} else {
@@ -333,7 +334,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	/* this must be the first filesystem operation that we do */
-	if (SMB_VFS_CONNECT(conn, lp_servicename(snum), vfs_user) < 0) {
+	if (SMB_VFS_CONNECT(conn, lp_servicename(talloc_tos(), snum), vfs_user) < 0) {
 		DEBUG(0,("VFS connect failed!\n"));
 		conn_free(conn);
 		return NT_STATUS_UNSUCCESSFUL;
@@ -779,9 +780,9 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!( strequal(pdp->servicename, lp_servicename(SNUM(conn)))
+	if (!( strequal(pdp->servicename, lp_servicename(talloc_tos(), SNUM(conn)))
 			|| (strequal(pdp->servicename, HOMES_NAME)
-			&& strequal(lp_servicename(SNUM(conn)),
+			&& strequal(lp_servicename(talloc_tos(), SNUM(conn)),
 				conn->session_info->unix_info->sanitized_username) )) ) {
 
 		/* The given sharename doesn't match this connection. */
@@ -906,7 +907,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(snum) == '\0')) {
+	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(talloc_tos(), snum) == '\0')) {
 		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not "
 			"a dfs root.\n",
 			pdp->servicename, dfs_path));
@@ -926,7 +927,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		char *tmp;
 		struct referral *ref;
 
-		if (*lp_msdfs_proxy(snum) == '\0') {
+		if (*lp_msdfs_proxy(talloc_tos(), snum) == '\0') {
 			TALLOC_FREE(pdp);
 			return self_ref(ctx,
 					dfs_path,
@@ -946,7 +947,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!(tmp = talloc_strdup(ctx, lp_msdfs_proxy(snum)))) {
+		if (!(tmp = talloc_strdup(ctx, lp_msdfs_proxy(talloc_tos(), snum)))) {
 			TALLOC_FREE(pdp);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -983,7 +984,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 				    server_event_context(),
 				    server_messaging_context(),
 				    &conn, snum,
-				    lp_pathname(snum), NULL, &oldpath);
+				    lp_pathname(talloc_tos(), snum), NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1133,7 +1134,7 @@ bool create_junction(TALLOC_CTX *ctx,
 
 	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
 	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
-	jucn->comment = talloc_strdup(ctx, lp_comment(snum));
+	jucn->comment = lp_comment(ctx, snum);
 
 	TALLOC_FREE(pdp);
 	if (!jucn->service_name || !jucn->volume_name || ! jucn->comment) {
@@ -1162,14 +1163,14 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 				    server_event_context(),
 				    server_messaging_context(),
 				    conn_out,
-				    snum, lp_pathname(snum), NULL, oldpath);
+				    snum, lp_pathname(talloc_tos(), snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
 	*pp_path_out = talloc_asprintf(*conn_out,
 			"%s/%s",
-			lp_pathname(snum),
+			lp_pathname(talloc_tos(), snum),
 			jucn->volume_name);
 	if (!*pp_path_out) {
 		vfs_ChDir(*conn_out, *oldpath);
@@ -1309,8 +1310,8 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_pathname(snum);
-	const char *msdfs_proxy = lp_msdfs_proxy(snum);
+	const char *connect_path = lp_pathname(talloc_tos(), snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
 	connection_struct *conn;
 	NTSTATUS status;
 	char *cwd;
@@ -1379,9 +1380,9 @@ static int form_junctions(TALLOC_CTX *ctx,
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_pathname(snum);
-	char *service_name = lp_servicename(snum);
-	const char *msdfs_proxy = lp_msdfs_proxy(snum);
+	const char *connect_path = lp_pathname(talloc_tos(), snum);
+	char *service_name = lp_servicename(talloc_tos(), snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(talloc_tos(), snum);
 	connection_struct *conn;
 	struct referral *ref = NULL;
 	char *cwd;
