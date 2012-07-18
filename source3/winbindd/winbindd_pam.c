@@ -38,6 +38,9 @@
 #include "passdb/machine_sid.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "auth/kerberos/pac_utils.h"
+#include "auth/gensec/gensec.h"
+#include "librpc/crypto/gse_krb5.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -724,12 +727,12 @@ bool check_request_flags(uint32_t flags)
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
-				 struct winbindd_response *resp,
-				 uint32_t request_flags,
-				 struct netr_SamInfo3 *info3,
-				 const char *name_domain,
-				 const char *name_user)
+NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
+			  struct winbindd_response *resp,
+			  uint32_t request_flags,
+			  struct netr_SamInfo3 *info3,
+			  const char *name_domain,
+			  const char *name_user)
 {
 	NTSTATUS result;
 
@@ -2270,3 +2273,116 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 
 	return NT_STATUS_IS_OK(result) ? WINBINDD_OK : WINBINDD_ERROR;
 }
+
+#ifdef HAVE_KRB5
+static NTSTATUS extract_pac_vrfy_sigs(TALLOC_CTX *mem_ctx, DATA_BLOB pac_blob,
+				      struct PAC_LOGON_INFO **logon_info)
+{
+	krb5_context krbctx = NULL;
+	krb5_error_code k5ret;
+	krb5_keytab keytab;
+	krb5_kt_cursor cursor;
+	krb5_keytab_entry entry;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	ZERO_STRUCT(entry);
+	ZERO_STRUCT(cursor);
+
+	k5ret = krb5_init_context(&krbctx);
+	if (k5ret) {
+		DEBUG(1, ("Failed to initialize kerberos context: %s\n",
+			  error_message(k5ret)));
+		status = krb5_to_nt_status(k5ret);
+		goto out;
+	}
+
+	k5ret =  gse_krb5_get_server_keytab(krbctx, &keytab);
+	if (k5ret) {
+		DEBUG(1, ("Failed to get keytab: %s\n",
+			  error_message(k5ret)));
+		status = krb5_to_nt_status(k5ret);
+		goto out_free;
+	}
+
+	k5ret = krb5_kt_start_seq_get(krbctx, keytab, &cursor);
+	if (k5ret) {
+		DEBUG(1, ("Failed to start seq: %s\n",
+			  error_message(k5ret)));
+		status = krb5_to_nt_status(k5ret);
+		goto out_keytab;
+	}
+
+	k5ret = krb5_kt_next_entry(krbctx, keytab, &entry, &cursor);
+	while (k5ret == 0) {
+		status = kerberos_pac_logon_info(mem_ctx, pac_blob,
+						 krbctx, NULL,
+						 KRB5_KT_KEY(&entry), NULL, 0,
+						 logon_info);
+		if (NT_STATUS_IS_OK(status)) {
+			break;
+		}
+		k5ret = smb_krb5_kt_free_entry(krbctx, &entry);
+		k5ret = krb5_kt_next_entry(krbctx, keytab, &entry, &cursor);
+	}
+
+	k5ret = krb5_kt_end_seq_get(krbctx, keytab, &cursor);
+	if (k5ret) {
+		DEBUG(1, ("Failed to end seq: %s\n",
+			  error_message(k5ret)));
+	}
+out_keytab:
+	k5ret = krb5_kt_close(krbctx, keytab);
+	if (k5ret) {
+		DEBUG(1, ("Failed to close keytab: %s\n",
+			  error_message(k5ret)));
+	}
+out_free:
+	krb5_free_context(krbctx);
+out:
+	return status;
+}
+
+NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
+				    struct netr_SamInfo3 **info3)
+{
+	struct winbindd_request *req = state->request;
+	DATA_BLOB pac_blob;
+	struct PAC_LOGON_INFO *logon_info = NULL;
+	NTSTATUS result;
+
+	pac_blob = data_blob_const(req->extra_data.data, req->extra_len);
+	result = extract_pac_vrfy_sigs(state->mem_ctx, pac_blob, &logon_info);
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+		DEBUG(1, ("Error during PAC signature verification: %s\n",
+			  nt_errstr(result)));
+		return result;
+	}
+
+	if (logon_info) {
+		/* Signature verification succeeded, trust the PAC */
+		netsamlogon_cache_store(NULL, &logon_info->info3);
+
+	} else {
+		/* Try without signature verification */
+		result = kerberos_pac_logon_info(state->mem_ctx, pac_blob, NULL,
+						 NULL, NULL, NULL, 0,
+						 &logon_info);
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10, ("Could not extract PAC: %s\n",
+				   nt_errstr(result)));
+			return result;
+		}
+	}
+
+	*info3 = &logon_info->info3;
+
+	return NT_STATUS_OK;
+}
+#else /* HAVE_KRB5 */
+NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
+				    struct netr_SamInfo3 **info3)
+{
+	return NT_STATUS_NO_SUCH_USER;
+}
+#endif /* HAVE_KRB5 */

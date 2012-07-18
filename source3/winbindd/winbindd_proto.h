@@ -353,6 +353,12 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 /* The following definitions come from winbindd/winbindd_pam.c  */
 
 bool check_request_flags(uint32_t flags);
+NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
+			  struct winbindd_response *resp,
+			  uint32_t request_flags,
+			  struct netr_SamInfo3 *info3,
+			  const char *name_domain,
+			  const char *name_user);
 uid_t get_uid_from_request(struct winbindd_request *request);
 struct winbindd_domain *find_auth_domain(uint8_t flags,
 					 const char *domain_name);
@@ -365,6 +371,8 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state) ;
 enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domain *domainSt, struct winbindd_cli_state *state);
+NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
+				    struct netr_SamInfo3 **info3);
 
 /* The following definitions come from winbindd/winbindd_util.c  */
 
