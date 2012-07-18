@@ -65,6 +65,11 @@ bld.SAMBA_SUBSYSTEM('NDR_FRSRPC',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_FRSRPC',
+	source='gen_ndr/ndr_frsrpc_c.c',
+	public_deps='NDR_FRSRPC'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_FRSAPI',
     source='gen_ndr/ndr_frsapi.c',
     public_deps='ndr'
@@ -81,12 +86,17 @@ bld.SAMBA_SUBSYSTEM('NDR_DFSBLOBS',
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_BKUPBLOBS',
-	source='gen_ndr/ndr_bkupblobs.c',
+	source='ndr/ndr_bkupblobs.c gen_ndr/ndr_bkupblobs.c',
 	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_FSCC',
 	source='gen_ndr/ndr_fscc.c',
+	public_deps='ndr'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_FRSBLOBS',
+	source='gen_ndr/ndr_frsblobs.c',
 	public_deps='ndr'
 	)
 
