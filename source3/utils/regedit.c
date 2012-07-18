@@ -23,6 +23,7 @@
 #include "lib/registry/registry.h"
 #include "regedit.h"
 #include "regedit_treeview.h"
+#include "regedit_valuelist.h"
 #include <ncurses.h>
 #include <menu.h>
 
@@ -53,7 +54,7 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 	for (i = 0; hives[i] != NULL; ++i) {
 		rv = reg_get_predefined_key_by_name(ctx, hives[i], &key);
 		if (!W_ERROR_IS_OK(rv)) {
-			return root;
+			continue;
 		}
 
 		node = tree_node_new(mem_ctx, NULL, hives[i], key);
@@ -77,7 +78,8 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 static void display_test_window(TALLOC_CTX *mem_ctx,
 				struct registry_context *ctx)
 {
-	WINDOW *tree_window, *path_label;
+	WINDOW *main_window, *path_label;
+	struct value_list *vl;
 	struct tree_view *view;
 	struct tree_node *root, *node;
 	int c;
@@ -88,31 +90,41 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 	noecho();
 	keypad(stdscr, TRUE);
 
-	tree_window = newwin(25, 80, 0, 0);
-	SMB_ASSERT(tree_window != NULL);
+	main_window = newwin(25, 80, 0, 0);
+	SMB_ASSERT(main_window != NULL);
 
-	keypad(tree_window, TRUE);
+	keypad(main_window, TRUE);
 
-	mvwprintw(tree_window, 0, 0, "Path: ");
-	path_label = derwin(tree_window, 1, 45, 0, 6);
+	mvwprintw(main_window, 0, 0, "Path: ");
+	path_label = derwin(main_window, 1, 65, 0, 6);
 	wprintw(path_label, "/");
 
 	root = load_hives(mem_ctx, ctx);
 	SMB_ASSERT(root != NULL);
 
-	view = tree_view_new(mem_ctx, root, tree_window, 15, 40, 3, 0);
+	mvwprintw(main_window, 2, 0, "Keys");
+	view = tree_view_new(mem_ctx, root, main_window, 15, 24, 3, 0);
 	SMB_ASSERT(view != NULL);
+
+	mvwprintw(main_window, 2, 25, "Values");
+	vl = value_list_new(mem_ctx, main_window, 15, 40, 3, 25);
+	SMB_ASSERT(vl != NULL);
 
 	refresh();
 	tree_view_show(view);
+	value_list_show(vl);
 
-	while ((c = wgetch(tree_window)) != 'q') {
+	while ((c = wgetch(main_window)) != 'q') {
 		switch (c) {
 		case KEY_DOWN:
 			menu_driver(view->menu, REQ_DOWN_ITEM);
+			node = item_userptr(current_item(view->menu));
+			value_list_load(vl, node->key);
 			break;
 		case KEY_UP:
 			menu_driver(view->menu, REQ_UP_ITEM);
+			node = item_userptr(current_item(view->menu));
+			value_list_load(vl, node->key);
 			break;
 		case KEY_RIGHT:
 			node = item_userptr(current_item(view->menu));
@@ -131,7 +143,9 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 			}
 			break;
 		}
+
 		tree_view_show(view);
+		value_list_show(vl);
 	}
 
 	endwin();

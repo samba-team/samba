@@ -1642,7 +1642,7 @@ bld.SAMBA3_PYTHON('pylibsmb',
                   )
 
 bld.SAMBA3_BINARY('regedit',
-                  source='utils/regedit.c utils/regedit_samba3.c utils/regedit_wrap.c utils/regedit_treeview.c',
+                  source='utils/regedit.c utils/regedit_samba3.c utils/regedit_wrap.c utils/regedit_treeview.c utils/regedit_valuelist.c',
                   deps='ncurses menu registry param popt_samba3 smbregistry',
                   enabled=bld.env.build_regedit,
                   vars=locals())
