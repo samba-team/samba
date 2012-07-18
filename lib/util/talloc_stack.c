@@ -188,15 +188,19 @@ TALLOC_CTX *_talloc_stackframe_pool(const char *location, size_t poolsize)
  * Get us the current top of the talloc stack.
  */
 
-TALLOC_CTX *talloc_tos(void)
+TALLOC_CTX *_talloc_tos(const char *location)
 {
 	struct talloc_stackframe *ts =
 		(struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
 
 	if (ts == NULL || ts->talloc_stacksize == 0) {
-		talloc_stackframe();
+		_talloc_stackframe(location);
 		ts = (struct talloc_stackframe *)SMB_THREAD_GET_TLS(global_ts);
-		DEBUG(0, ("no talloc stackframe around, leaking memory\n"));
+		DEBUG(0, ("no talloc stackframe at %s, leaking memory\n",
+			  location));
+#ifdef DEVELOPER
+		smb_panic("No talloc stackframe");
+#endif
 	}
 
 	return ts->talloc_stack[ts->talloc_stacksize-1];

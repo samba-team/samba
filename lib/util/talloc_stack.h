@@ -53,7 +53,8 @@ TALLOC_CTX *_talloc_stackframe_pool(const char *location, size_t poolsize);
  * Get us the current top of the talloc stack.
  */
 
-TALLOC_CTX *talloc_tos(void);
+#define talloc_tos() _talloc_tos(__location__)
+TALLOC_CTX *_talloc_tos(const char *location);
 
 /*
  * return true if a talloc stackframe exists
