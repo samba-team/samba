@@ -162,10 +162,13 @@ NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
+	TALLOC_CTX *frame;
+
 	if (!ctx) {
 		return NET_API_STATUS_SUCCESS;
 	}
 
+	frame = talloc_stackframe();
 	libnetapi_samr_free(ctx);
 
 	libnetapi_shutdown_cm(ctx);
@@ -190,6 +193,7 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 	TALLOC_FREE(ctx);
 
 	gfree_debugsyms();
+	talloc_free(frame);
 
 	return NET_API_STATUS_SUCCESS;
 }
