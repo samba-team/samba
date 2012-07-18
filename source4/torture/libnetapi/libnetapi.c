@@ -31,6 +31,7 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!lp_load(lpcfg_configfile(tctx->lp_ctx), true, false, false, true)) {
 		fprintf(stderr, "error loading %s\n", lpcfg_configfile(tctx->lp_ctx));
@@ -42,6 +43,7 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 
 	status = libnetapi_net_init(&ctx);
 	if (status != 0) {
+		talloc_free(frame);
 		return false;
 	}
 
@@ -52,6 +54,7 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 
 	*ctx_p = ctx;
 
+	talloc_free(frame);
 	return true;
 }
 
