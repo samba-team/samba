@@ -3166,12 +3166,10 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t capabilities;
-	int ret;
 
-	ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), options.pnn, &capabilities);
-	if (ret != 0) {
+	if (!ctdb_getcapabilities(ctdb_connection, options.pnn, &capabilities)) {
 		DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 	
 	if (!options.machinereadable){
@@ -3200,15 +3198,16 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 	int i, ret;
 	int healthy_count = 0;
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
-	if (ret != 0) {
+	if (!ctdb_getnodemap(ctdb_connection, options.pnn, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 
 	capabilities = talloc_array(ctdb, uint32_t, nodemap->num);
 	CTDB_NO_MEMORY(ctdb, capabilities);
 	
+	ret = 0;
+
 	/* collect capabilities for all connected nodes */
 	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
@@ -3218,10 +3217,10 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 			continue;
 		}
 	
-		ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), i, &capabilities[i]);
-		if (ret != 0) {
+		if (!ctdb_getcapabilities(ctdb_connection, i, &capabilities[i])) {
 			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", i));
-			return ret;
+			ret = -1;
+			goto done;
 		}
 
 		if (!(capabilities[i] & CTDB_CAP_LVS)) {
@@ -3255,7 +3254,9 @@ static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
 			ctdb_addr_to_str(&nodemap->nodes[i].addr));
 	}
 
-	return 0;
+done:
+	ctdb_free_nodemap(nodemap);
+	return ret;
 }
 
 /*
@@ -3268,14 +3269,15 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 	int i, ret;
 	int healthy_count = 0;
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
-	if (ret != 0) {
+	if (!ctdb_getnodemap(ctdb_connection, options.pnn, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		return ret;
+		return -1;
 	}
 
 	capabilities = talloc_array(ctdb, uint32_t, nodemap->num);
 	CTDB_NO_MEMORY(ctdb, capabilities);
+
+	ret = -1;
 	
 	/* collect capabilities for all connected nodes */
 	for (i=0; i<nodemap->num; i++) {
@@ -3286,10 +3288,10 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 			continue;
 		}
 	
-		ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), i, &capabilities[i]);
-		if (ret != 0) {
+		if (!ctdb_getcapabilities(ctdb_connection, i, &capabilities[i])) {
 			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", i));
-			return ret;
+			ret = -1;
+			goto done;
 		}
 
 		if (!(capabilities[i] & CTDB_CAP_LVS)) {
@@ -3324,11 +3326,14 @@ static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **a
 		} else {
 			printf("Node %d is LVS master\n", i);
 		}
-		return 0;
+		ret = 0;
+		goto done;
 	}
 
 	printf("There is no LVS master\n");
-	return -1;
+done:
+	ctdb_free_nodemap(nodemap);
+	return ret;
 }
 
 /*
