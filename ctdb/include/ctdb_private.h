@@ -394,14 +394,6 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
-/* The different capabilities of the ctdb daemon. */
-#define CTDB_CAP_RECMASTER		0x00000001
-#define CTDB_CAP_LMASTER		0x00000002
-/* This capability is set if CTDB_LVS_PUBLIC_IP is set */
-#define CTDB_CAP_LVS			0x00000004
-/* This capability is set if NATGW is enabled */
-#define CTDB_CAP_NATGW			0x00000008
-
 #define NUM_DB_PRIORITIES 3
 /* main state of the ctdb daemon */
 struct ctdb_context {

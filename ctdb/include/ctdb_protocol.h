@@ -568,6 +568,17 @@ struct ctdb_node_map {
 #define NODE_FLAGS_NOIPTAKEOVER		0x01000000 /* this node can takeover any new ip addresses, this flag is ONLY valid within the recovery daemon */
 
 
+/*
+ * Node capabilities
+ */
+#define CTDB_CAP_RECMASTER		0x00000001
+#define CTDB_CAP_LMASTER		0x00000002
+/* This capability is set if CTDB_LVS_PUBLIC_IP is set */
+#define CTDB_CAP_LVS			0x00000004
+/* This capability is set if NATGW is enabled */
+#define CTDB_CAP_NATGW			0x00000008
+
+
 struct ctdb_public_ip {
 	uint32_t pnn;
 	ctdb_sock_addr addr;

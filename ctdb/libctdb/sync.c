@@ -338,3 +338,20 @@ bool ctdb_getvnnmap(struct ctdb_connection *ctdb,
 	return ret;
 }
 
+bool ctdb_getcapabilities(struct ctdb_connection *ctdb,
+			  uint32_t destnode, uint32_t *capabilities)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	req = synchronous(ctdb,
+			  ctdb_getcapabilities_send(ctdb, destnode, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getcapabilities_recv(ctdb, req, capabilities);
+		ctdb_request_free(req);
+	}
+	return ret;
+}
+

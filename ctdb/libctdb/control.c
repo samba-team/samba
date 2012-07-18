@@ -33,6 +33,7 @@
 #undef ctdb_getdbseqnum_send
 #undef ctdb_getifaces_send
 #undef ctdb_getvnnmap_send
+#undef ctdb_getcapabilities_send
 
 bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			   struct ctdb_request *req, uint32_t *recmaster)
@@ -511,6 +512,33 @@ struct ctdb_request *ctdb_getvnnmap_send(struct ctdb_connection *ctdb,
 					 void *private_data)
 {
 	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GETVNNMAP,
+					destnode,
+					NULL, 0, callback, private_data);
+}
+
+bool ctdb_getcapabilities_recv(struct ctdb_connection *ctdb,
+			       struct ctdb_request *req, uint32_t *capabilities)
+{
+	struct ctdb_reply_control *reply;
+
+	reply = unpack_reply_control(req, CTDB_CONTROL_GET_CAPABILITIES);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getcapabilities_recv: status -1");
+		return false;
+	}
+	*capabilities = *((uint32_t *)reply->data);
+	return true;
+}
+
+struct ctdb_request *ctdb_getcapabilities_send(struct ctdb_connection *ctdb,
+					       uint32_t destnode,
+					       ctdb_callback_t callback,
+					       void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
 					destnode,
 					NULL, 0, callback, private_data);
 }

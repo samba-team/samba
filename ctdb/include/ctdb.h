@@ -585,6 +585,35 @@ ctdb_check_message_handlers_recv(struct ctdb_connection *ctdb,
 
 
 /**
+ * ctdb_getcapabilities_send - read the capabilities of a node
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getcapabilities_send(struct ctdb_connection *ctdb,
+			  uint32_t destnode,
+			  ctdb_callback_t callback, void *cbdata);
+
+/**
+ * ctdb_getcapabilities_recv - read an ctdb_getcapabilities reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @capabilities: a pointer to the capabilities to fill in
+ *
+ * This returns false if something went wrong, or otherwise fills in
+ * capabilities.
+ */
+bool ctdb_getcapabilities_recv(struct ctdb_connection *ctdb,
+			       struct ctdb_request *handle,
+			       uint32_t *capabilities);
+
+/**
  * ctdb_getdbseqnum_send - read the sequence number off a db
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -950,6 +979,23 @@ ctdb_check_message_handlers(struct ctdb_connection *ctdb,
 			   uint8_t *result);
 
 /**
+ * ctdb_getcapabilities - read the capabilities of a node (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @capabilities: a pointer to the capabilities to fill in
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * Returns true and fills in *capabilities on success.
+ */
+bool ctdb_getcapabilities(struct ctdb_connection *ctdb,
+			  uint32_t destnode,
+			  uint32_t *capabilities);
+
+
+/**
  * ctdb_getdbseqnum - read the seqnum of a database
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -1144,6 +1190,10 @@ void ctdb_free_vnnmap(struct ctdb_vnn_map *vnnmap);
 #define ctdb_getpnn_send(ctdb, destnode, cb, cbdata)			\
 	ctdb_getpnn_send((ctdb), (destnode),				\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getcapabilities_send(ctdb, destnode, cb, cbdata)		\
+	ctdb_getcapabilities_send((ctdb), (destnode),			\
+				  ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #define ctdb_getdbstat_send(ctdb, destnode, db_id, cb, cbdata)		\
 	ctdb_getdbstat_send((ctdb), (destnode), (db_id),		\
