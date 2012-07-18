@@ -733,8 +733,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			      const char *smb_ports)
 {
 	int num_interfaces = iface_count();
-	int i;
-	const char *ports;
+	int i,j;
+	const char **ports;
 	unsigned dns_port = 0;
 
 #ifdef HAVE_ATEXIT
@@ -744,16 +744,11 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	/* Stop zombies */
 	smbd_setup_sig_chld_handler(parent);
 
+	ports = lp_smb_ports();
+
 	/* use a reasonable default set of ports - listing on 445 and 139 */
-	if (!smb_ports) {
-		ports = lp_smb_ports();
-		if (!ports || !*ports) {
-			ports = talloc_strdup(talloc_tos(), SMB_PORTS);
-		} else {
-			ports = talloc_strdup(talloc_tos(), ports);
-		}
-	} else {
-		ports = talloc_strdup(talloc_tos(), smb_ports);
+	if (smb_ports) {
+		ports = (const char **)str_list_make_v3(talloc_tos(), smb_ports, NULL);
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -767,9 +762,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		for(i = 0; i < num_interfaces; i++) {
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
-			char *tok;
-			const char *ptr;
-
 			if (ifss == NULL) {
 				DEBUG(0,("open_sockets_smbd: "
 					"interface %d has NULL IP address !\n",
@@ -777,9 +769,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 				continue;
 			}
 
-			for (ptr=ports;
-			     next_token_talloc(talloc_tos(),&ptr, &tok, " \t,");) {
-				unsigned port = atoi(tok);
+			for (j = 0; ports && ports[j]; j++) {
+				unsigned port = atoi(ports[j]);
 				if (port == 0 || port > 0xffff) {
 					continue;
 				}
@@ -804,8 +795,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
 
-		char *tok;
-		const char *ptr;
 		const char *sock_addr = lp_socket_address();
 		char *sock_tok;
 		const char *sock_ptr;
@@ -821,10 +810,10 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 		for (sock_ptr=sock_addr;
 		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,"); ) {
-			for (ptr=ports; next_token_talloc(talloc_tos(), &ptr, &tok, " \t,"); ) {
+			for (j = 0; ports && ports[j]; j++) {
 				struct sockaddr_storage ss;
 
-				unsigned port = atoi(tok);
+				unsigned port = atoi(ports[j]);
 				if (port == 0 || port > 0xffff) {
 					continue;
 				}

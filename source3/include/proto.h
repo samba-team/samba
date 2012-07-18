@@ -1002,7 +1002,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 
 /* The following definitions come from param/loadparm.c  */
 
-const char *lp_smb_ports(void);
+const char **lp_smb_ports(void);
 const char *lp_dos_charset(void);
 const char *lp_unix_charset(void);
 char *lp_logfile(TALLOC_CTX *ctx);

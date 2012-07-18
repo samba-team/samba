@@ -1533,7 +1533,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "smb ports",
-		.type		= P_STRING,
+		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(smb_ports),
 		.special	= NULL,
@@ -4925,7 +4925,7 @@ static void init_globals(bool reinit_globals)
 	Globals.server_signing = SMB_SIGNING_DEFAULT;
 
 	Globals.bDeferSharingViolations = true;
-	string_set(&Globals.smb_ports, SMB_PORTS);
+	Globals.smb_ports = (const char **)str_list_make_v3(NULL, SMB_PORTS, NULL);
 
 	Globals.bEnablePrivileges = true;
 	Globals.bHostMSDfs        = true;
@@ -5109,7 +5109,6 @@ int lp_cups_encrypt(void)
 
 /* These functions remain in source3/param for now */
 
-FN_GLOBAL_CONST_STRING(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(security, security)
 FN_GLOBAL_INTEGER(usershare_max_shares, iUsershareMaxShares)
 FN_GLOBAL_STRING(configfile, szConfigFile)
