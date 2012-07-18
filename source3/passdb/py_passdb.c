@@ -560,34 +560,21 @@ static int py_samu_set_user_sid(PyObject *obj, PyObject *value, void *closure)
 static PyObject *py_samu_get_group_sid(PyObject *obj, void *closure)
 {
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
-	PyObject *py_group_sid;
 	const struct dom_sid *group_sid;
 	struct dom_sid *copy_group_sid;
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_stackframe();
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
 
 	group_sid = pdb_get_group_sid(sam_acct);
 	if (group_sid == NULL) {
 		Py_RETURN_NONE;
 	}
 
-	copy_group_sid = dom_sid_dup(mem_ctx, group_sid);
+	copy_group_sid = dom_sid_dup(NULL, group_sid);
 	if (copy_group_sid == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	py_group_sid = pytalloc_steal(dom_sid_Type, copy_group_sid);
-
-	talloc_free(mem_ctx);
-
-	return py_group_sid;
+	return pytalloc_steal(dom_sid_Type, copy_group_sid);
 }
 
 static int py_samu_set_group_sid(PyObject *obj, PyObject *value, void *closure)
