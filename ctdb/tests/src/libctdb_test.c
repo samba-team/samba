@@ -523,3 +523,10 @@ void ctdb_free_dbstat(struct ctdb_db_statistics *dbstatistics)
 {
 	free(dbstatistics);
 }
+
+bool ctdb_getcapabilities(struct ctdb_connection *ctdb,
+			  uint32_t destnode, uint32_t *capabilities)
+{
+	*capabilities = CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER|CTDB_CAP_NATGW;
+	return true;
+}
