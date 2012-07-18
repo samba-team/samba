@@ -218,6 +218,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_FALLBACK_AFTER_KRB5	0x00002000
 #define WBFLAG_PAM_CACHED_LOGIN		0x00004000
 #define WBFLAG_PAM_GET_PWD_POLICY	0x00008000
+#define WBFLAG_PAM_AUTH_PAC		0x00010000
 
 /* generic request flags */
 #define WBFLAG_QUERY_ONLY		0x00000020	/* not used */

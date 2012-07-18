@@ -197,40 +197,6 @@ struct wbcDomainInfo {
 #define WBC_DOMINFO_TRUSTTYPE_EXTERNAL   0x00000003
 
 /**
- * @brief Auth User Parameters
- **/
-
-struct wbcAuthUserParams {
-	const char *account_name;
-	const char *domain_name;
-	const char *workstation_name;
-
-	uint32_t flags;
-
-	uint32_t parameter_control;
-
-	enum wbcAuthUserLevel {
-		WBC_AUTH_USER_LEVEL_PLAIN = 1,
-		WBC_AUTH_USER_LEVEL_HASH = 2,
-		WBC_AUTH_USER_LEVEL_RESPONSE = 3
-	} level;
-	union {
-		const char *plaintext;
-		struct {
-			uint8_t nt_hash[16];
-			uint8_t lm_hash[16];
-		} hash;
-		struct {
-			uint8_t challenge[8];
-			uint32_t nt_length;
-			uint8_t *nt_data;
-			uint32_t lm_length;
-			uint8_t *lm_data;
-		} response;
-	} password;
-};
-
-/**
  * @brief Generic Blob
  **/
 
@@ -247,6 +213,42 @@ struct wbcNamedBlob {
 	const char *name;
 	uint32_t flags;
 	struct wbcBlob blob;
+};
+
+/**
+ * @brief Auth User Parameters
+ **/
+
+struct wbcAuthUserParams {
+	const char *account_name;
+	const char *domain_name;
+	const char *workstation_name;
+
+	uint32_t flags;
+
+	uint32_t parameter_control;
+
+	enum wbcAuthUserLevel {
+		WBC_AUTH_USER_LEVEL_PLAIN = 1,
+		WBC_AUTH_USER_LEVEL_HASH = 2,
+		WBC_AUTH_USER_LEVEL_RESPONSE = 3,
+		WBC_AUTH_USER_LEVEL_PAC = 4
+	} level;
+	union {
+		const char *plaintext;
+		struct {
+			uint8_t nt_hash[16];
+			uint8_t lm_hash[16];
+		} hash;
+		struct {
+			uint8_t challenge[8];
+			uint32_t nt_length;
+			uint8_t *nt_data;
+			uint32_t lm_length;
+			uint8_t *lm_data;
+		} response;
+		struct wbcBlob pac;
+	} password;
 };
 
 /**

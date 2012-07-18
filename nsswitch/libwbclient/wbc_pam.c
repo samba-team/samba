@@ -364,7 +364,7 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	if (!params->account_name) {
+	if (params->level != WBC_AUTH_USER_LEVEL_PAC && !params->account_name) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
@@ -491,6 +491,20 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			       request.data.auth_crap.nt_resp_len);
 		}
 		break;
+
+	case WBC_AUTH_USER_LEVEL_PAC:
+		cmd = WINBINDD_PAM_AUTH_CRAP;
+		request.flags = WBFLAG_PAM_AUTH_PAC | WBFLAG_PAM_INFO3_TEXT;
+		request.extra_data.data = malloc(params->password.pac.length);
+		if (request.extra_data.data == NULL) {
+			wbc_status = WBC_ERR_NO_MEMORY;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+		memcpy(request.extra_data.data, params->password.pac.data,
+		       params->password.pac.length);
+		request.extra_len = params->password.pac.length;
+		break;
+
 	default:
 		break;
 	}
