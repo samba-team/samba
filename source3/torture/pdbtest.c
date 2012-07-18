@@ -347,6 +347,8 @@ int main(int argc, char **argv)
 		POPT_TABLEEND
 	};
 
+	ctx = talloc_stackframe();
+
 	load_case_tables();
 
 	pc = poptGetContext("pdbtest", argc, (const char **) argv,
@@ -371,8 +373,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error initializing '%s': %s\n", backend, get_friendly_nt_error_msg(rv));
 		exit(1);
 	}
-
-	ctx = talloc_init("PDBTEST");
 
 	if (!(out = samu_new(ctx))) {
 		fprintf(stderr, "Can't create samu structure.\n");
