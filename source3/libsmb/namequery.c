@@ -2584,10 +2584,9 @@ NTSTATUS internal_resolve_name(const char *name,
 				const char *sitename,
 				struct ip_service **return_iplist,
 				int *return_count,
-				const char *resolve_order)
+				const char **resolve_order)
 {
-	char *tok;
-	const char *ptr;
+	const char *tok;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	TALLOC_CTX *frame = NULL;
@@ -2640,21 +2639,22 @@ NTSTATUS internal_resolve_name(const char *name,
 
 	/* set the name resolution order */
 
-	if (strcmp( resolve_order, "NULL") == 0) {
+	if (resolve_order && strcmp(resolve_order[0], "NULL") == 0) {
 		DEBUG(8,("internal_resolve_name: all lookups disabled\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!resolve_order[0]) {
-		ptr = "host";
-	} else {
-		ptr = resolve_order;
+	if (!resolve_order || !resolve_order[0]) {
+		static const char *host_order[] = { "host", NULL };
+		resolve_order = host_order;
 	}
 
 	/* iterate through the name resolution backends */
 
 	frame = talloc_stackframe();
-	while (next_token_talloc(frame, &ptr, &tok, LIST_SEP)) {
+	for (i=0; resolve_order[i]; i++) {
+		tok = resolve_order[i];
+
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 			status = resolve_hosts(name, name_type, return_iplist,
 					       return_count);
@@ -2963,12 +2963,12 @@ bool get_pdc_ip(const char *domain, struct sockaddr_storage *pss)
 	struct ip_service *ip_list = NULL;
 	int count = 0;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-
+	static const char *ads_order[] = { "ads", NULL };
 	/* Look up #1B name */
 
 	if (lp_security() == SEC_ADS) {
 		status = internal_resolve_name(domain, 0x1b, NULL, &ip_list,
-					       &count, "ads");
+					       &count, ads_order);
 	}
 
 	if (!NT_STATUS_IS_OK(status) || count == 0) {
@@ -3009,7 +3009,7 @@ static NTSTATUS get_dc_list(const char *domain,
 			enum dc_lookup_type lookup_type,
 			bool *ordered)
 {
-	char *resolve_order = NULL;
+	const char **resolve_order = NULL;
 	char *saf_servername = NULL;
 	char *pserver = NULL;
 	const char *p;
@@ -3040,27 +3040,30 @@ static NTSTATUS get_dc_list(const char *domain,
 	   are disabled and ads_only is True, then set the string to
 	   NULL. */
 
-	resolve_order = talloc_strdup(ctx, lp_name_resolve_order());
+	resolve_order = lp_name_resolve_order();
 	if (!resolve_order) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	strlower_m(resolve_order);
 	if (lookup_type == DC_ADS_ONLY)  {
-		if (strstr( resolve_order, "host")) {
-			resolve_order = talloc_strdup(ctx, "ads");
+		if (str_list_check_ci(resolve_order, "host")) {
+			static const char *ads_order[] = { "ads", NULL };
+			resolve_order = ads_order;
 
 			/* DNS SRV lookups used by the ads resolver
 			   are already sorted by priority and weight */
 			*ordered = true;
 		} else {
-                        resolve_order = talloc_strdup(ctx, "NULL");
+			/* this is quite bizarre! */
+			static const char *null_order[] = { "NULL", NULL };
+                        resolve_order = null_order;
 		}
 	} else if (lookup_type == DC_KDC_ONLY) {
+		static const char *kdc_order[] = { "kdc", NULL };
 		/* DNS SRV lookups used by the ads/kdc resolver
 		   are already sorted by priority and weight */
 		*ordered = true;
-		resolve_order = talloc_strdup(ctx, "kdc");
+		resolve_order = kdc_order;
 	}
 	if (!resolve_order) {
 		status = NT_STATUS_NO_MEMORY;
@@ -3281,10 +3284,9 @@ NTSTATUS get_sorted_dc_list( const char *domain,
 	*count = 0;
 
 	DEBUG(8,("get_sorted_dc_list: attempting lookup "
-		"for name %s (sitename %s) using [%s]\n",
+		"for name %s (sitename %s)\n",
 		domain,
-		sitename ? sitename : "NULL",
-		(ads_only ? "ads" : lp_name_resolve_order())));
+		 sitename ? sitename : "NULL"));
 
 	if (ads_only) {
 		lookup_type = DC_ADS_ONLY;

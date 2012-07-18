@@ -1749,7 +1749,7 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "name resolve order",
-		.type		= P_STRING,
+		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNameResolveOrder),
 		.special	= NULL,
@@ -4730,7 +4730,7 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szLogonHome, "\\\\%N\\%U");
 	string_set(&Globals.szLogonPath, "\\\\%N\\%U\\profile");
 
-	string_set(&Globals.szNameResolveOrder, "lmhosts wins host bcast");
+	Globals.szNameResolveOrder = (const char **)str_list_make_v3(NULL, "lmhosts wins host bcast", NULL);
 	string_set(&Globals.szPasswordServer, "*");
 
 	Globals.AlgorithmicRidBase = BASE_RID;
@@ -5109,7 +5109,6 @@ int lp_cups_encrypt(void)
 
 /* These functions remain in source3/param for now */
 
-FN_GLOBAL_CONST_STRING(name_resolve_order, szNameResolveOrder)
 FN_GLOBAL_CONST_STRING(smb_ports, smb_ports)
 FN_GLOBAL_INTEGER(security, security)
 FN_GLOBAL_INTEGER(usershare_max_shares, iUsershareMaxShares)
@@ -9147,16 +9146,6 @@ void lp_copy_service(int snum, const char *new_name)
 			lp_do_parameter(snum, "copy", name);
 		}
 	}
-}
-
-
-/***********************************************************
- Set the global name resolution order (used in smbclient).
-************************************************************/
-
-void lp_set_name_resolve_order(const char *new_order)
-{
-	string_set(&Globals.szNameResolveOrder, new_order);
 }
 
 const char *lp_printername(TALLOC_CTX *ctx, int snum)

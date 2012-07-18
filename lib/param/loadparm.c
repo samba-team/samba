@@ -1526,7 +1526,6 @@ static struct loadparm_context *global_loadparm_context;
 FN_GLOBAL_BOOL(readraw, bReadRaw)
 FN_GLOBAL_BOOL(unicode, bUnicode)
 FN_GLOBAL_BOOL(writeraw, bWriteRaw)
-FN_GLOBAL_LIST(name_resolve_order, szNameResolveOrder)
 FN_GLOBAL_LIST(smb_ports, smb_ports)
 FN_GLOBAL_STRING(cachedir, szCacheDir)
 FN_GLOBAL_STRING(socket_address, szSocketAddress)

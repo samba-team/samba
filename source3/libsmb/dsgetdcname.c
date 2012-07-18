@@ -478,6 +478,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 	int i;
 	struct ip_service_name *dclist = NULL;
 	int count;
+	static const char *resolve_order[] = { "lmhosts", "wins", "bcast", NULL };
 
 	*returned_dclist = NULL;
 	*returned_count = 0;
@@ -492,7 +493,7 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 
 	status = internal_resolve_name(domain_name, name_type, NULL,
 				       &iplist, &count,
-				       "lmhosts wins bcast");
+				       resolve_order);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("discover_dc_netbios: failed to find DC\n"));
 		return status;

@@ -900,7 +900,7 @@ NTSTATUS internal_resolve_name(const char *name,
 				const char *sitename,
 				struct ip_service **return_iplist,
 				int *return_count,
-				const char *resolve_order);
+				const char **resolve_order);
 bool resolve_name(const char *name,
 		struct sockaddr_storage *return_ss,
 		int name_type,
@@ -1034,7 +1034,7 @@ char *lp_auto_services(TALLOC_CTX *ctx);
 char *lp_passwd_program(TALLOC_CTX *ctx);
 char *lp_passwd_chat(TALLOC_CTX *ctx);
 const char *lp_passwordserver(void);
-const char *lp_name_resolve_order(void);
+const char **lp_name_resolve_order(void);
 const char *lp_netbios_scope(void);
 const char *lp_netbios_name(void);
 const char *lp_workgroup(void);
@@ -1472,7 +1472,6 @@ bool lp_preferred_master(void);
 void lp_remove_service(int snum);
 void lp_copy_service(int snum, const char *new_name);
 int lp_default_server_announce(void);
-void lp_set_name_resolve_order(const char *new_order);
 const char *lp_printername(TALLOC_CTX *ctx, int snum);
 void lp_set_logfile(const char *name);
 int lp_maxprintjobs(int snum);

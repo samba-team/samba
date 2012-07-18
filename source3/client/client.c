@@ -5540,7 +5540,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	}
 
 	if(new_name_resolve_order)
-		lp_set_name_resolve_order(new_name_resolve_order);
+		lp_set_cmdline("name resolve order", new_name_resolve_order);
 
 	if (!tar_type && !query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);

@@ -153,7 +153,7 @@ static int process_options(int argc, char **argv, int local_flags)
 			fstrcpy(ldap_secret, optarg);
 			break;
 		case 'R':
-			lp_set_name_resolve_order(optarg);
+			lp_set_cmdline("name resolve order", optarg);
 			break;
 		case 'D':
 			lp_set_cmdline("log level", optarg);
