@@ -11,6 +11,7 @@
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+   Copyright (C) Andrew Bartlett 2011-2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
