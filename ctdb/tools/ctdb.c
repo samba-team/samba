@@ -988,22 +988,59 @@ struct natgw_node {
 	const char *addr;
 };
 
+static int find_natgw(struct ctdb_context *ctdb,
+		       struct ctdb_node_map *nodemap, uint32_t flags,
+		       uint32_t *pnn, const char **ip)
+{
+	int i;
+	uint32_t capabilities;
+
+	for (i=0;i<nodemap->num;i++) {
+		if (!(nodemap->nodes[i].flags & flags)) {
+			if (!ctdb_getcapabilities(ctdb_connection, nodemap->nodes[i].pnn, &capabilities)) {
+				DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", nodemap->nodes[i].pnn));
+				return -1;
+			}
+			if (!(capabilities&CTDB_CAP_NATGW)) {
+				continue;
+			}
+			*pnn = nodemap->nodes[i].pnn;
+			*ip = ctdb_addr_to_str(&nodemap->nodes[i].addr);
+			return 0;
+		}
+	}
+
+	return 2; /* matches ENOENT */
+}
+
 /*
   display the list of nodes belonging to this natgw configuration
  */
 static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	uint32_t capabilities;
 	const char *natgw_list;
 	int nlines;
 	char **lines;
 	struct natgw_node *natgw_nodes = NULL;
 	struct natgw_node *natgw_node;
 	struct ctdb_node_map *nodemap=NULL;
-	uint32_t mypnn;
-	const char *fmt;
+	uint32_t mypnn, pnn;
+	const char *ip;
 
+	/* When we have some nodes that could be the NATGW, make a
+	 * series of attempts to find the first node that doesn't have
+	 * certain status flags set.
+	 */
+	uint32_t exclude_flags[] = {
+		/* Look for a nice healthy node */
+		NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_UNHEALTHY,
+		/* If not found, an UNHEALTHY/BANNED node will do */
+		NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED,
+		/* If not found, a STOPPED node will do */
+		NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED,
+		0,
+	};
 
 	/* read the natgw nodes file into a linked list */
 	natgw_list = getenv("CTDB_NATGW_NODES");
@@ -1036,12 +1073,14 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		natgw_nodes = natgw_node;
 	}
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
-	if (ret != 0) {
+	if (!ctdb_getnodemap(ctdb_connection, CTDB_CURRENT_NODE, &nodemap)) {
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node.\n"));
-		return ret;
+		return -1;
 	}
 
+	/* Trim the nodemap so it only includes connected nodes in the
+	 * current natgw group.
+	 */
 	i=0;
 	while(i<nodemap->num) {
 		for(natgw_node=natgw_nodes;natgw_node;natgw_node=natgw_node->next) {
@@ -1069,72 +1108,37 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 
 	if (options.machinereadable) {
 		printf(":Node:IP:\n");
-		fmt = ":%d:%s:\n";
-	} else {
-		fmt = "%d %s\n";
 	}
 
-	/* pick a node to be natgwmaster
-	 * we dont allow STOPPED, DELETED, BANNED or UNHEALTHY nodes to become the natgwmaster
-	 */
-	for(i=0;i<nodemap->num;i++){
-		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_UNHEALTHY))) {
-			ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, &capabilities);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", nodemap->nodes[i].pnn));
-				return ret;
-			}
-			if (!(capabilities&CTDB_CAP_NATGW)) {
-				continue;
-			}
-			printf(fmt, nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
+	ret = 2; /* matches ENOENT */
+	pnn = -1;
+	ip = "0.0.0.0";
+	for (i = 0; exclude_flags[i] != 0; i++) {
+		ret = find_natgw(ctdb, nodemap,
+				 exclude_flags[i],
+				 &pnn, &ip);
+		if (ret == -1) {
+			goto done;
+		}
+		if (ret == 0) {
 			break;
 		}
 	}
-	/* we couldnt find any healthy node, try unhealthy ones */
-	if (i == nodemap->num) {
-		for(i=0;i<nodemap->num;i++){
-			if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED))) {
-				ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, &capabilities);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", nodemap->nodes[i].pnn));
-					return ret;
-				}
-				if (!(capabilities&CTDB_CAP_NATGW)) {
-					continue;
-				}
-				printf(fmt, nodemap->nodes[i].pnn,ctdb_addr_to_str(&nodemap->nodes[i].addr));
-				break;
-			}
-		}
-	}
-	/* unless all nodes are STOPPED, when we pick one anyway */
-	if (i == nodemap->num) {
-		for(i=0;i<nodemap->num;i++){
-			if (!(nodemap->nodes[i].flags & (NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED))) {
-				ret = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, &capabilities);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", nodemap->nodes[i].pnn));
-					return ret;
-				}
-				if (!(capabilities&CTDB_CAP_NATGW)) {
-					continue;
-				}
-				printf(fmt, nodemap->nodes[i].pnn, ctdb_addr_to_str(&nodemap->nodes[i].addr));
-				break;
-			}
-		}
-		/* or if we still can not find any */
-		if (i == nodemap->num) {
-			printf(fmt, -1, "0.0.0.0");
-			ret = 2; /* matches ENOENT */
-		}
+
+	if (options.machinereadable) {
+		printf(":Node:IP:\n");
+		printf(":%d:%s:\n", pnn, ip);
+	} else {
+		printf("%d %s\n", pnn, ip);
 	}
 
 	/* print the pruned list of nodes belonging to this natgw list */
 	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
-		DEBUG(DEBUG_ERR, ("Unable to get PNN from node %u\n", options.pnn));
-		return -1;
+		DEBUG(DEBUG_NOTICE, ("Unable to get PNN from node %u\n", options.pnn));
+		/* This is actually harmless and will only result in
+		 * the "this node" indication being missing
+		 */
+		mypnn = -1;
 	}
 	if (options.machinereadable) {
 		control_status_header_machine();
@@ -1152,6 +1156,8 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		}
 	}
 
+done:
+	ctdb_free_nodemap(nodemap);
 	return ret;
 }
 
