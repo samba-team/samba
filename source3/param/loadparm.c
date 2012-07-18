@@ -5042,7 +5042,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
 
 static FN_GLOBAL_BOOL(domain_logons, bDomainLogons)
 static FN_GLOBAL_BOOL(_readraw, bReadRaw)
-static FN_GLOBAL_BOOL(time_server, bTimeServer)
 static FN_GLOBAL_BOOL(_writeraw, bWriteRaw)
 static FN_GLOBAL_CONST_STRING(_ctdbd_socket, ctdbdSocket)
 static FN_GLOBAL_INTEGER(_server_role, ServerRole)
