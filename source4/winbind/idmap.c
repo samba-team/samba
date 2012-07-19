@@ -368,9 +368,6 @@ failed:
  *
  * If no mapping exists, a new mapping will be created.
  *
- * \todo Check if SIDs can be resolved if lpcfg_idmap_trusted_only() == true
- * \todo Fix backwards compatibility for Samba3
- *
  * \param idmap_ctx idmap context to use
  * \param mem_ctx talloc context to use
  * \param sid SID to map to an unixid struct
@@ -548,9 +545,6 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		status = NT_STATUS_RETRY;
 		goto failed;
 	}
-
-	/*FIXME: if lpcfg_idmap_trusted_only() == true, check if SID can be
-	 * resolved here. */
 
 	ret = idmap_get_bounds(idmap_ctx, &low, &high);
 	if (ret != LDB_SUCCESS) {

@@ -1248,16 +1248,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "idmap trusted only",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bIdmapTrustedOnly),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-
-	{
 		.label		= "ntp signd socket directory",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -1533,7 +1523,6 @@ static struct loadparm_context *global_loadparm_context;
 #include "lib/param/param_functions.c"
 
 /* These functions remain only in lib/param for now */
-FN_GLOBAL_BOOL(idmap_trusted_only, bIdmapTrustedOnly)
 FN_GLOBAL_BOOL(readraw, bReadRaw)
 FN_GLOBAL_BOOL(unicode, bUnicode)
 FN_GLOBAL_BOOL(writeraw, bWriteRaw)
@@ -3396,7 +3385,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 #endif
 	lpcfg_do_global_parameter(lp_ctx, "template shell", "/bin/false");
 	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
-	lpcfg_do_global_parameter(lp_ctx, "idmap trusted only", "False");
 
 	lpcfg_do_global_parameter(lp_ctx, "client signing", "default");
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "default");
