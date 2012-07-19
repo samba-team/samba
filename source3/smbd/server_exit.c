@@ -44,6 +44,7 @@
 #include "printing.h"
 #include "serverid.h"
 #include "messages.h"
+#include "../lib/util/pidfile.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
@@ -216,7 +217,7 @@ static void exit_server_common(enum server_exit_reason how,
 		DEBUG(3,("Server exit (%s)\n",
 			(reason ? reason : "normal exit")));
 		if (am_parent) {
-			pidfile_unlink_s3("smbd");
+			pidfile_unlink(lp_piddir(), "smbd");
 		}
 		gencache_stabilize();
 	}

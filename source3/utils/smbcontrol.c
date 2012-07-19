@@ -32,6 +32,7 @@
 #include "libsmb/nmblib.h"
 #include "messages.h"
 #include "util_tdb.h"
+#include "../lib/util/pidfile.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>
@@ -1365,7 +1366,7 @@ static struct server_id parse_dest(struct messaging_context *msg,
 
 	/* Look up other destinations in pidfile directory */
 
-	if ((pid = pidfile_pid_s3(dest)) != 0) {
+	if ((pid = pidfile_pid(lp_piddir(), dest)) != 0) {
 		return pid_to_procid(pid);
 	}
 

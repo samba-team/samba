@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "web/swat_proto.h"
 #include "dynconfig/dynconfig.h"
-
+#include "../lib/util/pidfile.h"
 
 /** Startup smbd from web interface. */
 void start_smbd(void)
@@ -86,7 +86,7 @@ void start_winbindd(void)
 /* stop smbd */
 void stop_smbd(void)
 {
-	pid_t pid = pidfile_pid_s3("smbd");
+	pid_t pid = pidfile_pid(lp_piddir(), "smbd");
 
 	if (geteuid() != 0) return;
 
@@ -98,7 +98,7 @@ void stop_smbd(void)
 /* stop nmbd */
 void stop_nmbd(void)
 {
-	pid_t pid = pidfile_pid_s3("nmbd");
+	pid_t pid = pidfile_pid(lp_piddir(), "nmbd");
 
 	if (geteuid() != 0) return;
 
@@ -110,7 +110,7 @@ void stop_nmbd(void)
 /* stop winbindd */
 void stop_winbindd(void)
 {
-	pid_t pid = pidfile_pid_s3("winbindd");
+	pid_t pid = pidfile_pid(lp_piddir(), "winbindd");
 
 	if (geteuid() != 0) return;
 

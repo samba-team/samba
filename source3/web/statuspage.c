@@ -23,6 +23,7 @@
 #include "locking/proto.h"
 #include "librpc/gen_ndr/open_files.h"
 #include "lib/conn_tdb.h"
+#include "../lib/util/pidfile.h"
 
 #define _(x) lang_msg_rotate(talloc_tos(),x)
 
@@ -253,7 +254,7 @@ void status_page(void)
 	TALLOC_CTX *ctx = talloc_stackframe();
 	const char form_name[] = "status";
 
-	smbd_pid = pid_to_procid(pidfile_pid_s3("smbd"));
+	smbd_pid = pid_to_procid(pidfile_pid(lp_piddir(), "smbd"));
 
 	if (!verify_xsrf_token(form_name)) {
 		goto output_page;

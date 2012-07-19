@@ -36,6 +36,7 @@
 #include "serverid.h"
 #include "auth.h"
 #include "messages.h"
+#include "../lib/util/pidfile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -184,7 +185,7 @@ static void terminate(bool is_parent)
 
 	if (is_parent) {
 		serverid_deregister(procid_self());
-		pidfile_unlink_s3("winbindd");
+		pidfile_unlink(lp_piddir(), "winbindd");
 	}
 
 	exit(0);
@@ -1449,7 +1450,7 @@ int main(int argc, char **argv, char **envp)
 	if (!interactive)
 		become_daemon(Fork, no_process_group, log_stdout);
 
-	pidfile_create_s3("winbindd");
+	pidfile_create(lp_piddir(), "winbindd");
 
 #if HAVE_SETPGID
 	/*

@@ -43,6 +43,7 @@
 #include "lib/param/param.h"
 #include "lib/background.h"
 #include "lib/conn_tdb.h"
+#include "../lib/util/pidfile.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -1285,7 +1286,7 @@ extern void build_options(bool screen);
 		mkdir(lp_piddir(), 0755);
 
 	if (is_daemon)
-		pidfile_create_s3("smbd");
+		pidfile_create(lp_piddir(), "smbd");
 
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,

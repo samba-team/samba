@@ -25,6 +25,7 @@
 #include "nmbd/nmbd.h"
 #include "serverid.h"
 #include "messages.h"
+#include "../lib/util/pidfile.h"
 
 int ClientNMB       = -1;
 int ClientDGRAM     = -1;
@@ -70,7 +71,7 @@ static void terminate(struct messaging_context *msg)
 	gencache_stabilize();
 	serverid_deregister(messaging_server_id(msg));
 
-	pidfile_unlink_s3("nmbd");
+	pidfile_unlink(lp_piddir(), "nmbd");
 
 	exit(0);
 }
@@ -942,7 +943,7 @@ static bool open_sockets(bool isdaemon, int port)
 		mkdir(lp_piddir(), 0755);
 	}
 
-	pidfile_create_s3("nmbd");
+	pidfile_create(lp_piddir(), "nmbd");
 
 	status = reinit_after_fork(msg, nmbd_event_context(),
 				   false);
