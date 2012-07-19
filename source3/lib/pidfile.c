@@ -1,50 +1,40 @@
 /* this code is broken - there is a race condition with the unlink (tridge) */
 
-/* 
+/*
    Unix SMB/CIFS implementation.
    pidfile handling
    Copyright (C) Andrew Tridgell 1998
-   
+   Copyright (C) Jeremy Allison 2012
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "../lib/util/pidfile.h"
 
-#ifndef O_NONBLOCK
-#define O_NONBLOCK
-#endif
-
-static char *pidFile_name = NULL;
-
-/* return the pid in a pidfile. return 0 if the process (or pidfile)
-   does not exist */
-pid_t pidfile_pid_s3(const char *program_name)
+/* Malloc a pidfile name. */
+static char *get_pidfile_name(const char *program_name)
 {
-	int fd;
-	char pidstr[20];
-	pid_t pid = 0;
-	unsigned int ret;
-	char *name;
-	const char *short_configfile;
-	char * pidFile;
+	char *name = NULL;
 
 	/* Add a suffix to the program name if this is a process with a
 	 * none default configuration file name. */
 	if (strcmp( CONFIGFILE, get_dyn_CONFIGFILE()) == 0) {
 		name = SMB_STRDUP(program_name);
 	} else {
+		const char *short_configfile;
 		short_configfile = strrchr( get_dyn_CONFIGFILE(), '/');
 		if (short_configfile == NULL) {
 			/* conf file in current directory */
@@ -58,134 +48,34 @@ pid_t pidfile_pid_s3(const char *program_name)
 			smb_panic("asprintf failed");
 		}
 	}
+	return name;
+}
 
-	if (asprintf(&pidFile, "%s/%s.pid", lp_piddir(), name) == -1) {
-		SAFE_FREE(name);
-		return 0;
-	}
+/* return the pid in a pidfile. return 0 if the process (or pidfile)
+   does not exist */
+pid_t pidfile_pid_s3(const char *program_name)
+{
+	pid_t pid = 0;
+	char *name = get_pidfile_name(program_name);
 
+	pid = pidfile_pid(lp_piddir(), name);
 	SAFE_FREE(name);
-
-	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
-	if (fd == -1) {
-		SAFE_FREE(pidFile);
-		return 0;
-	}
-
-	ZERO_ARRAY(pidstr);
-
-	if (read(fd, pidstr, sizeof(pidstr)-1) <= 0) {
-		goto noproc;
-	}
-
-	ret = atoi(pidstr);
-
-	if (ret == 0) {
-		/* Obviously we had some garbage in the pidfile... */
-		DEBUG(1, ("Could not parse contents of pidfile %s\n",
-			  pidFile));
-		goto noproc;
-	}
-	
-	pid = (pid_t)ret;
-	if (!process_exists_by_pid(pid)) {
-		DEBUG(10, ("Process with PID=%d does not exist.\n", (int)pid));
-		goto noproc;
-	}
-
-	if (fcntl_lock(fd,F_SETLK,0,1,F_RDLCK)) {
-		/* we could get the lock - it can't be a Samba process */
-		DEBUG(10, ("Process with PID=%d is no Samba process.\n",
-			  (int)pid));
-		goto noproc;
-	}
-
-	DEBUG(10, ("Process with PID=%d is running.\n", (int)pid));
-	SAFE_FREE(pidFile);
-	close(fd);
-	return (pid_t)ret;
-
- noproc:
-	close(fd);
-	DEBUG(10, ("Deleting %s, since %d is no Samba process.\n", pidFile,
-		  (int)pid));
-	unlink(pidFile);
-	SAFE_FREE(pidFile);
-	return 0;
+	return pid;
 }
 
 /* create a pid file in the pid directory. open it and leave it locked */
 void pidfile_create_s3(const char *program_name)
 {
-	int     fd;
-	char    buf[20];
-	const char    *short_configfile;
-	char *name;
-	pid_t pid;
+	char *name = get_pidfile_name(program_name);
 
-	/* Add a suffix to the program name if this is a process with a
-	 * none default configuration file name. */
-	if (strcmp( CONFIGFILE, get_dyn_CONFIGFILE()) == 0) {
-		name = SMB_STRDUP(program_name);
-	} else {
-		short_configfile = strrchr( get_dyn_CONFIGFILE(), '/');
-		if (short_configfile == NULL) {
-			/* conf file in current directory */
-			short_configfile = get_dyn_CONFIGFILE();
-		} else {
-			/* full/relative path provided */
-			short_configfile++;
-		}
-		if (asprintf(&name, "%s-%s", program_name,
-			     short_configfile) == -1) {
-			smb_panic("asprintf failed");
-		}
-	}
-
-	if (asprintf(&pidFile_name, "%s/%s.pid", lp_piddir(), name) == -1) {
-		smb_panic("asprintf failed");
-	}
-
-	pid = pidfile_pid_s3(program_name);
-	if (pid != 0) {
-		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
-			 name, pidFile_name, (int)pid));
-		exit(1);
-	}
-
-	fd = open(pidFile_name, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL,
-		      0644);
-	if (fd == -1) {
-		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile_name,
-			 strerror(errno)));
-		exit(1);
-	}
-
-	if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False) {
-		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",  
-			 name, pidFile_name, strerror(errno)));
-		exit(1);
-	}
-
-	memset(buf, 0, sizeof(buf));
-	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int)getpid());
-	if (write(fd, buf, strlen(buf)) != (ssize_t)strlen(buf)) {
-		DEBUG(0,("ERROR: can't write to file %s: %s\n", 
-			 pidFile_name, strerror(errno)));
-		exit(1);
-	}
-	/* Leave pid file open & locked for the duration... */
+	pidfile_create(lp_piddir(), name);
 	SAFE_FREE(name);
-
-	/* set the close on exec so that we don't leak the fd */
-	fcntl(fd, F_SETFD, FD_CLOEXEC);
 }
 
-void pidfile_unlink_s3(void)
+/* Remove a pidfile. */
+void pidfile_unlink_s3(const char *program_name)
 {
-	if (pidFile_name == NULL) {
-		return;
-	}
-	unlink(pidFile_name);
-	SAFE_FREE(pidFile_name);
+	char *name = get_pidfile_name(program_name);
+	pidfile_unlink(lp_piddir(), name);
+	SAFE_FREE(name);
 }

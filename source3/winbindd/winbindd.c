@@ -184,7 +184,7 @@ static void terminate(bool is_parent)
 
 	if (is_parent) {
 		serverid_deregister(procid_self());
-		pidfile_unlink_s3();
+		pidfile_unlink_s3("winbindd");
 	}
 
 	exit(0);

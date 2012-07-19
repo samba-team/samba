@@ -70,7 +70,7 @@ static void terminate(struct messaging_context *msg)
 	gencache_stabilize();
 	serverid_deregister(messaging_server_id(msg));
 
-	pidfile_unlink_s3();
+	pidfile_unlink_s3("nmbd");
 
 	exit(0);
 }
