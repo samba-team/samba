@@ -2558,37 +2558,6 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
 skip_credits:
-		hdr_iov = num_iov;
-		iov[num_iov].iov_base = state->smb2.hdr;
-		iov[num_iov].iov_len  = sizeof(state->smb2.hdr);
-		num_iov += 1;
-
-		iov[num_iov].iov_base = discard_const(state->smb2.fixed);
-		iov[num_iov].iov_len  = state->smb2.fixed_len;
-		num_iov += 1;
-
-		if (state->smb2.dyn != NULL) {
-			iov[num_iov].iov_base = discard_const(state->smb2.dyn);
-			iov[num_iov].iov_len  = state->smb2.dyn_len;
-			num_iov += 1;
-		}
-
-		reqlen  = sizeof(state->smb2.hdr);
-		reqlen += state->smb2.fixed_len;
-		reqlen += state->smb2.dyn_len;
-
-		if (i < num_reqs-1) {
-			if ((reqlen % 8) > 0) {
-				uint8_t pad = 8 - (reqlen % 8);
-				iov[num_iov].iov_base = state->smb2.pad;
-				iov[num_iov].iov_len = pad;
-				num_iov += 1;
-				reqlen += pad;
-			}
-			SIVAL(state->smb2.hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
-		}
-		nbt_len += reqlen;
-
 		if (state->session) {
 			bool should_sign = state->session->smb2.should_sign;
 
@@ -2621,6 +2590,37 @@ skip_credits:
 				signing_key = NULL;
 			}
 		}
+
+		hdr_iov = num_iov;
+		iov[num_iov].iov_base = state->smb2.hdr;
+		iov[num_iov].iov_len  = sizeof(state->smb2.hdr);
+		num_iov += 1;
+
+		iov[num_iov].iov_base = discard_const(state->smb2.fixed);
+		iov[num_iov].iov_len  = state->smb2.fixed_len;
+		num_iov += 1;
+
+		if (state->smb2.dyn != NULL) {
+			iov[num_iov].iov_base = discard_const(state->smb2.dyn);
+			iov[num_iov].iov_len  = state->smb2.dyn_len;
+			num_iov += 1;
+		}
+
+		reqlen  = sizeof(state->smb2.hdr);
+		reqlen += state->smb2.fixed_len;
+		reqlen += state->smb2.dyn_len;
+
+		if (i < num_reqs-1) {
+			if ((reqlen % 8) > 0) {
+				uint8_t pad = 8 - (reqlen % 8);
+				iov[num_iov].iov_base = state->smb2.pad;
+				iov[num_iov].iov_len = pad;
+				num_iov += 1;
+				reqlen += pad;
+			}
+			SIVAL(state->smb2.hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
+		}
+		nbt_len += reqlen;
 
 		if (signing_key) {
 			NTSTATUS status;
