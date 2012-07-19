@@ -4892,7 +4892,12 @@ static void init_globals(bool reinit_globals)
 	string_set(&Globals.szCupsServer, "");
 	string_set(&Globals.szIPrintServer, "");
 
+#ifdef CLUSTER_SUPPORT
+	string_set(&Globals.ctdbdSocket, CTDB_PATH);
+#else
 	string_set(&Globals.ctdbdSocket, "");
+#endif
+
 	Globals.szClusterAddresses = NULL;
 	Globals.clustering = false;
 	Globals.ctdb_timeout = 0;
@@ -5043,7 +5048,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
 static FN_GLOBAL_BOOL(domain_logons, bDomainLogons)
 static FN_GLOBAL_BOOL(_readraw, bReadRaw)
 static FN_GLOBAL_BOOL(_writeraw, bWriteRaw)
-static FN_GLOBAL_CONST_STRING(_ctdbd_socket, ctdbdSocket)
 static FN_GLOBAL_INTEGER(_server_role, ServerRole)
 
 /* If lp_statedir() and lp_cachedir() are explicitely set during the
@@ -9404,16 +9408,4 @@ int lp_server_role(void)
 				   lp_security(),
 				   lp_domain_logons(),
 				   lp_domain_master_true_or_auto());
-}
-
-const char *lp_ctdbd_socket(void)
-{
-	const char *result = lp__ctdbd_socket();
-
-#ifdef CLUSTER_SUPPORT
-	if ((result == NULL) || (*result == '\0')) {
-		return CTDB_PATH;
-	}
-#endif
-	return result;
 }
