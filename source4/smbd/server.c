@@ -34,7 +34,7 @@
 #include "libcli/auth/schannel.h"
 #include "smbd/process_model.h"
 #include "param/secrets.h"
-#include "smbd/pidfile.h"
+#include "lib/util/pidfile.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/session.h"

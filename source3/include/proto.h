@@ -160,9 +160,9 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 
 /* The following definitions come from lib/pidfile.c  */
 
-pid_t pidfile_pid(const char *name);
-void pidfile_create(const char *program_name);
-void pidfile_unlink(void);
+pid_t pidfile_pid_s3(const char *name);
+void pidfile_create_s3(const char *program_name);
+void pidfile_unlink_s3(void);
 
 /* The following definitions come from lib/recvfile.c  */
 

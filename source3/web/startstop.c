@@ -86,7 +86,7 @@ void start_winbindd(void)
 /* stop smbd */
 void stop_smbd(void)
 {
-	pid_t pid = pidfile_pid("smbd");
+	pid_t pid = pidfile_pid_s3("smbd");
 
 	if (geteuid() != 0) return;
 
@@ -98,7 +98,7 @@ void stop_smbd(void)
 /* stop nmbd */
 void stop_nmbd(void)
 {
-	pid_t pid = pidfile_pid("nmbd");
+	pid_t pid = pidfile_pid_s3("nmbd");
 
 	if (geteuid() != 0) return;
 
@@ -110,7 +110,7 @@ void stop_nmbd(void)
 /* stop winbindd */
 void stop_winbindd(void)
 {
-	pid_t pid = pidfile_pid("winbindd");
+	pid_t pid = pidfile_pid_s3("winbindd");
 
 	if (geteuid() != 0) return;
 

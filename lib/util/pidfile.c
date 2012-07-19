@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "smbd/pidfile.h"
+#include "lib/util/pidfile.h"
 
 /**
  * @file

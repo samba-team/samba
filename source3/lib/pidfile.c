@@ -30,7 +30,7 @@ static char *pidFile_name = NULL;
 
 /* return the pid in a pidfile. return 0 if the process (or pidfile)
    does not exist */
-pid_t pidfile_pid(const char *program_name)
+pid_t pidfile_pid_s3(const char *program_name)
 {
 	int fd;
 	char pidstr[20];
@@ -115,7 +115,7 @@ pid_t pidfile_pid(const char *program_name)
 }
 
 /* create a pid file in the pid directory. open it and leave it locked */
-void pidfile_create(const char *program_name)
+void pidfile_create_s3(const char *program_name)
 {
 	int     fd;
 	char    buf[20];
@@ -146,7 +146,7 @@ void pidfile_create(const char *program_name)
 		smb_panic("asprintf failed");
 	}
 
-	pid = pidfile_pid(program_name);
+	pid = pidfile_pid_s3(program_name);
 	if (pid != 0) {
 		DEBUG(0,("ERROR: %s is already running. File %s exists and process id %d is running.\n", 
 			 name, pidFile_name, (int)pid));
@@ -181,7 +181,7 @@ void pidfile_create(const char *program_name)
 	fcntl(fd, F_SETFD, FD_CLOEXEC);
 }
 
-void pidfile_unlink(void)
+void pidfile_unlink_s3(void)
 {
 	if (pidFile_name == NULL) {
 		return;

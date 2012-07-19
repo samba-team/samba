@@ -253,7 +253,7 @@ void status_page(void)
 	TALLOC_CTX *ctx = talloc_stackframe();
 	const char form_name[] = "status";
 
-	smbd_pid = pid_to_procid(pidfile_pid("smbd"));
+	smbd_pid = pid_to_procid(pidfile_pid_s3("smbd"));
 
 	if (!verify_xsrf_token(form_name)) {
 		goto output_page;

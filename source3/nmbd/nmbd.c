@@ -70,7 +70,7 @@ static void terminate(struct messaging_context *msg)
 	gencache_stabilize();
 	serverid_deregister(messaging_server_id(msg));
 
-	pidfile_unlink();
+	pidfile_unlink_s3();
 
 	exit(0);
 }
@@ -942,7 +942,7 @@ static bool open_sockets(bool isdaemon, int port)
 		mkdir(lp_piddir(), 0755);
 	}
 
-	pidfile_create("nmbd");
+	pidfile_create_s3("nmbd");
 
 	status = reinit_after_fork(msg, nmbd_event_context(),
 				   false);

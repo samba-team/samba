@@ -184,7 +184,7 @@ static void terminate(bool is_parent)
 
 	if (is_parent) {
 		serverid_deregister(procid_self());
-		pidfile_unlink();
+		pidfile_unlink_s3();
 	}
 
 	exit(0);
@@ -1449,7 +1449,7 @@ int main(int argc, char **argv, char **envp)
 	if (!interactive)
 		become_daemon(Fork, no_process_group, log_stdout);
 
-	pidfile_create("winbindd");
+	pidfile_create_s3("winbindd");
 
 #if HAVE_SETPGID
 	/*
