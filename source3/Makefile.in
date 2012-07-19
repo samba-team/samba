@@ -460,7 +460,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o ../lib/util/charset/convert_string.o \
 	  ../lib/util/charset/pull_push.o \
 	  lib/fstring.o ../lib/util/debug.o ../lib/util/debug_s3.o ../lib/util/fault.o \
-	  lib/interface.o lib/pidfile.o lib/dumpcore.o \
+	  lib/interface.o lib/dumpcore.o \
 	  lib/system.o lib/sendfile.o lib/recvfile.o lib/time.o \
 	  lib/username.o \
 	  ../libds/common/flag_mapping.o \
@@ -1863,13 +1863,6 @@ libsmb/libsmb_thread_posix.o: libsmb/libsmb_thread_posix.c
 		echo "$(COMPILE_CC) $(PTHREAD_CFLAGS)" 1>&2;\
 		$(COMPILE_CC) $(PTHREAD_CFLAGS) >/dev/null 2>&1
 ### End section of object files that require PTHREAD_CFLAGS
-
-lib/pidfile.o: lib/pidfile.c
-	@echo Compiling $*.c
-	@$(COMPILE_CC_PATH) && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE_CC_PATH)" 1>&2;\
-		$(COMPILE_CC_PATH) >/dev/null 2>&1
 
 lib/version.o: lib/version.c include/autoconf/version.h
 	@echo Compiling $*.c

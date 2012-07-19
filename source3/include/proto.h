@@ -158,12 +158,6 @@ char *escape_rdn_val_string_alloc(const char *s);
 int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	       bool is_case_sensitive);
 
-/* The following definitions come from lib/pidfile.c  */
-
-pid_t pidfile_pid_s3(const char *name);
-void pidfile_create_s3(const char *program_name);
-void pidfile_unlink_s3(const char *program_name);
-
 /* The following definitions come from lib/recvfile.c  */
 
 ssize_t sys_recvfile(int fromfd,

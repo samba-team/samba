@@ -785,15 +785,9 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    deps='ndr security NDR_SECURITY samba-util util_tdb ccan-hash',
                    vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('pidfile',
-                     source='lib/pidfile.c',
-                     # only pidfile.c assumes that CONFIGFILE is set
-                     cflags = ['-DCONFIGFILE="%s"' % bld.env['CONFIGFILE']])
-
 bld.SAMBA3_SUBSYSTEM('samba3core',
                    source=LIB_SRC,
                    deps='''
-                        pidfile
                         samba3util
                         LIBTSOCKET
                         NDR_MESSAGING
