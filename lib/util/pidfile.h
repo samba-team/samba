@@ -22,5 +22,6 @@
 
 pid_t pidfile_pid(const char *piddir, const char *name);
 void pidfile_create(const char *piddir, const char *program_name);
+void pidfile_unlink(const char *piddir, const char *program_name);
 
 #endif

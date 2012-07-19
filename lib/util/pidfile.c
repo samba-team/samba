@@ -58,24 +58,32 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 
 	ret = (pid_t)atoi(pidstr);
 	if (ret <= 0) {
+		DEBUG(1, ("Could not parse contents of pidfile %s\n",
+			pidFile));
 		goto noproc;
 	}
 	
 	if (!process_exists_by_pid(ret)) {
+		DEBUG(10, ("Process with PID=%d does not exist.\n", (int)ret));
 		goto noproc;
 	}
 
 	if (fcntl_lock(fd,F_SETLK,0,1,F_RDLCK)) {
 		/* we could get the lock - it can't be a Samba process */
+		DEBUG(10, ("Process with PID=%d is not a Samba process.\n",
+			(int)ret));
 		goto noproc;
 	}
 
 	close(fd);
 	SAFE_FREE(pidFile);
+	DEBUG(10, ("Process with PID=%d is running.\n", (int)ret));
 	return ret;
 
  noproc:
 	close(fd);
+	DEBUG(10, ("Deleting %s, since %d is not a Samba process.\n", pidFile,
+		(int)ret));
 	unlink(pidFile);
 	SAFE_FREE(pidFile);
 	return 0;
@@ -128,4 +136,20 @@ void pidfile_create(const char *piddir, const char *name)
 
 	/* Leave pid file open & locked for the duration... */
 	SAFE_FREE(pidFile);
+}
+
+void pidfile_unlink(const char *piddir, const char *name)
+{
+	int ret;
+	char *pidFile = NULL;
+
+	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
+		DEBUG(0,("ERROR: Out of memory\n"));
+		exit(1);
+	}
+	ret = unlink(pidFile);
+	if (ret == -1) {
+		DEBUG(0,("Failed to delete pidfile %s. Error was %s\n",
+			pidFile, strerror(errno)));
+	}
 }
