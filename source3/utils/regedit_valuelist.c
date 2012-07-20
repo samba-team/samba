@@ -20,26 +20,24 @@
 #include "regedit_valuelist.h"
 #include "lib/registry/registry.h"
 
-static void value_list_free_items(struct value_list *vl)
+static void value_list_free_items(ITEM **items)
 {
 	size_t i;
 	ITEM *item;
 	struct value_item *vitem;
 
-	if (vl->items == NULL) {
+	if (items == NULL) {
 		return;
 	}
 
-	for (i = 0; vl->items[i] != NULL; ++i) {
-		item = vl->items[i];
+	for (i = 0; items[i] != NULL; ++i) {
+		item = items[i];
 		vitem = item_userptr(item);
 		SMB_ASSERT(vitem != NULL);
 		free_item(item);
-		talloc_free(vitem);
 	}
 
-	talloc_free(vl->items);
-	vl->items = NULL;
+	talloc_free(items);
 }
 
 static int value_list_free(struct value_list *vl)
@@ -51,7 +49,7 @@ static int value_list_free(struct value_list *vl)
 	if (vl->empty && vl->empty[0]) {
 		free_item(vl->empty[0]);
 	}
-	value_list_free_items(vl);
+	value_list_free_items(vl->items);
 
 	return 0;
 }
@@ -70,7 +68,7 @@ struct value_list *value_list_new(TALLOC_CTX *ctx, WINDOW *orig, int nlines,
 
 	talloc_set_destructor(vl, value_list_free);
 
-	vl->empty = talloc_zero_array(ctx, ITEM *, 2);
+	vl->empty = talloc_zero_array(vl, ITEM *, 2);
 	if (vl->empty == NULL) {
 		goto fail;
 	}
@@ -130,30 +128,89 @@ void value_list_show(struct value_list *vl)
 	wrefresh(vl->window);
 }
 
+static WERROR append_data_summary(struct value_item *vitem)
+{
+	char *tmp;
+
+/* This is adapted from print_registry_value() in net_registry_util.c */
+
+	switch(vitem->type) {
+	case REG_DWORD: {
+		uint32_t v = 0;
+		if (vitem->data.length >= 4) {
+			v = IVAL(vitem->data.data, 0);
+		}
+		tmp = talloc_asprintf_append(vitem->value_desc, "(0x%x)", v);
+		break;
+	}
+	case REG_SZ:
+	case REG_EXPAND_SZ: {
+		const char *s;
+
+		if (!pull_reg_sz(vitem, &vitem->data, &s)) {
+			break;
+		}
+		tmp = talloc_asprintf_append(vitem->value_desc, "(\"%s\")", s);
+		break;
+	}
+	case REG_MULTI_SZ: {
+		size_t i;
+		const char **a;
+
+		if (!pull_reg_multi_sz(vitem, &vitem->data, &a)) {
+			break;
+		}
+		tmp = vitem->value_desc;
+		for (i = 0; a[i] != NULL; ++i) {
+			tmp = talloc_asprintf_append(tmp, "\"%s\" ", a[i]);
+			if (tmp == NULL) {
+				return WERR_NOMEM;
+			}
+		}
+		break;
+	}
+	case REG_BINARY:
+		tmp = talloc_asprintf_append(vitem->value_desc, "(%d bytes)",
+					     (int)vitem->data.length);
+		break;
+	default:
+		tmp = talloc_asprintf_append(vitem->value_desc,
+					     "(<unprintable>)");
+		break;
+	}
+
+	if (tmp == NULL) {
+		return WERR_NOMEM;
+	}
+
+	vitem->value_desc = tmp;
+
+	return WERR_OK;
+}
+
 WERROR value_list_load(struct value_list *vl, struct registry_key *key)
 {
 	uint32_t n_values;
 	uint32_t idx;
 	struct value_item *vitem;
+	ITEM **new_items;
 	WERROR rv;
 
-	value_list_free_items(vl);
-
 	unpost_menu(vl->menu);
-	set_menu_items(vl->menu, vl->empty);
 
 	n_values = get_num_values(vl, key);
 	if (n_values == 0) {
+		set_menu_items(vl->menu, vl->empty);
 		return WERR_OK;
 	}
 
-	vl->items = talloc_zero_array(vl, ITEM *, n_values + 1);
-	if (vl->items == NULL) {
+	new_items = talloc_zero_array(vl, ITEM *, n_values + 1);
+	if (new_items == NULL) {
 		return WERR_NOMEM;
 	}
 
 	for (idx = 0; idx < n_values; ++idx) {
-		vitem = talloc_zero(vl, struct value_item);
+		vitem = talloc_zero(new_items, struct value_item);
 		if (vitem == NULL) {
 			return WERR_NOMEM;
 		}
@@ -168,15 +225,27 @@ WERROR value_list_load(struct value_list *vl, struct registry_key *key)
 			return rv;
 		}
 
-		/* TODO: format a preview of the data blob and stick it
-		   in the description */
+		vitem->value_desc = talloc_asprintf(vitem, "%-8s",
+			str_regtype(vitem->type));
+		if (vitem->value_desc == NULL) {
+			talloc_free(vitem);
+			return rv;
+		}
 
-		vl->items[idx] = new_item(vitem->value_name,
-					str_regtype(vitem->type));
-		set_item_userptr(vl->items[idx], vitem);
+		rv = append_data_summary(vitem);
+		if (!W_ERROR_IS_OK(rv)) {
+			talloc_free(vitem);
+			return rv;
+		}
+
+		new_items[idx] = new_item(vitem->value_name,
+					  vitem->value_desc);
+		set_item_userptr(new_items[idx], vitem);
 	}
 
-	set_menu_items(vl->menu, vl->items);
+	set_menu_items(vl->menu, new_items);
+	value_list_free_items(vl->items);
+	vl->items = new_items;
 
 	return WERR_OK;
 }

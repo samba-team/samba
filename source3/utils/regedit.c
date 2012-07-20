@@ -132,14 +132,16 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 				tree_node_load_children(node);
 				tree_node_print_path(path_label, node->child_head);
 				tree_view_update(view, node->child_head);
+				value_list_load(vl, node->child_head->key);
 			}
 			break;
 		case KEY_LEFT:
 			node = item_userptr(current_item(view->menu));
 			if (node && node->parent) {
-				tree_node_print_path(path_label, node->child_head);
-				tree_view_update(view,
-					tree_node_first(node->parent));
+				tree_node_print_path(path_label, node->parent);
+				node = tree_node_first(node->parent);
+				tree_view_update(view, node);
+				value_list_load(vl, node->key);
 			}
 			break;
 		}
