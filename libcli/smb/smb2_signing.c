@@ -207,3 +207,135 @@ void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 
 	memcpy(KO, digest, 16);
 }
+
+NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
+				  enum protocol_types protocol,
+				  struct iovec *vector,
+				  int count)
+{
+	uint8_t *tf;
+	uint16_t alg;
+	uint8_t sig[16];
+	int i;
+	size_t a_total;
+	size_t m_total = 0;
+	struct aes_ccm_128_context ctx;
+	uint8_t key[AES_BLOCK_SIZE];
+
+	if (count < 1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (vector[0].iov_len != SMB2_TF_HDR_SIZE) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	tf = (uint8_t *)vector[0].iov_base;
+
+	if (encryption_key.length == 0) {
+		DEBUG(2,("Wrong encryption key length %u for SMB2 signing\n",
+			 (unsigned)encryption_key.length));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	alg = SMB2_ENCRYPTION_AES128_CCM;
+	SSVAL(tf, SMB2_TF_ALGORITHM, alg);
+
+	a_total = SMB2_TF_HDR_SIZE - SMB2_TF_NONCE;
+	for (i=1; i < count; i++) {
+		m_total += vector[i].iov_len;
+	}
+	ZERO_STRUCT(key);
+	memcpy(key, encryption_key.data,
+	       MIN(encryption_key.length, AES_BLOCK_SIZE));
+	aes_ccm_128_init(&ctx, key,
+			 tf + SMB2_TF_NONCE,
+			 a_total, m_total);
+	aes_ccm_128_update(&ctx, tf + SMB2_TF_NONCE, a_total);
+	for (i=1; i < count; i++) {
+		aes_ccm_128_update(&ctx,
+				(const uint8_t *)vector[i].iov_base,
+				vector[i].iov_len);
+	}
+	for (i=1; i < count; i++) {
+		aes_ccm_128_crypt(&ctx,
+				(uint8_t *)vector[i].iov_base,
+				vector[i].iov_len);
+	}
+	aes_ccm_128_digest(&ctx, sig);
+
+	memcpy(tf + SMB2_TF_SIGNATURE, sig, 16);
+
+	DEBUG(5,("encrypt SMB2 message\n"));
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
+				  enum protocol_types protocol,
+				  struct iovec *vector,
+				  int count)
+{
+	uint8_t *tf;
+	uint16_t alg;
+	uint8_t *sig_ptr = NULL;
+	uint8_t sig[16];
+	int i;
+	size_t a_total;
+	size_t m_total = 0;
+	struct aes_ccm_128_context ctx;
+	uint8_t key[AES_BLOCK_SIZE];
+
+	if (count < 1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (vector[0].iov_len != SMB2_TF_HDR_SIZE) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	tf = (uint8_t *)vector[0].iov_base;
+
+	if (decryption_key.length == 0) {
+		DEBUG(2,("Wrong decryption key length %u for SMB2 signing\n",
+			 (unsigned)decryption_key.length));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	alg = SVAL(tf, SMB2_TF_ALGORITHM);
+	if (alg != SMB2_ENCRYPTION_AES128_CCM) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	a_total = SMB2_TF_HDR_SIZE - SMB2_TF_NONCE;
+	for (i=1; i < count; i++) {
+		m_total += vector[i].iov_len;
+	}
+	ZERO_STRUCT(key);
+	memcpy(key, decryption_key.data,
+	       MIN(decryption_key.length, AES_BLOCK_SIZE));
+	aes_ccm_128_init(&ctx, key,
+			 tf + SMB2_TF_NONCE,
+			 a_total, m_total);
+	for (i=1; i < count; i++) {
+		aes_ccm_128_crypt(&ctx,
+				(uint8_t *)vector[i].iov_base,
+				vector[i].iov_len);
+	}
+	aes_ccm_128_update(&ctx, tf + SMB2_TF_NONCE, a_total);
+	for (i=1; i < count; i++) {
+		aes_ccm_128_update(&ctx,
+				( uint8_t *)vector[i].iov_base,
+				vector[i].iov_len);
+	}
+	aes_ccm_128_digest(&ctx, sig);
+
+	sig_ptr = tf + SMB2_TF_SIGNATURE;
+	if (memcmp(sig_ptr, sig, 16) != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(5,("decrypt SMB2 message\n"));
+
+	return NT_STATUS_OK;
+}
