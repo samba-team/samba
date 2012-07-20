@@ -235,10 +235,10 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 						      ldb_get_default_basedn(idmap_ctx->samdb),
 						      LDB_SCOPE_SUBTREE,
 						      sam_attrs, 0,
-						      "(&(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)"
+						      "(&(|(sAMaccountType=%u)(sAMaccountType=%u)(sAMaccountType=%u))"
 						      "(uidNumber=%u)(objectSid=*)"
 						      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
-						      ATYPE_ACCOUNT, unixid->id);
+						      ATYPE_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST, unixid->id);
 			} else {
 				/* If we are not to use the rfc2307 attributes, we just emulate a non-match */
 				ret = LDB_ERR_NO_SUCH_OBJECT;
@@ -437,12 +437,13 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 				      ldb_get_default_basedn(idmap_ctx->samdb),
 				      LDB_SCOPE_SUBTREE, sam_attrs, 0,
 				      "(&(objectSid=%s)"
-				      "(|(sAMaccountType:" LDB_OID_COMPARATOR_AND ":=%u)"
-				      "(sAMaccountType=%u)"
-				      "(sAMaccountType=%u))"
+				      "(|(sAMaccountType=%u)(sAMaccountType=%u)(sAMaccountType=%u)"
+				      "(sAMaccountType=%u)(sAMaccountType=%u))"
 				      "(|(uidNumber=*)(gidNumber=*))"
 				      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
-				      dom_sid_string(tmp_ctx, sid), ATYPE_ACCOUNT, ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
+				      dom_sid_string(tmp_ctx, sid),
+				      ATYPE_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
+				      ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
 	} else {
 		/* If we are not to use the rfc2307 attributes, we just emulate a non-match */
 		ret = LDB_ERR_NO_SUCH_OBJECT;
@@ -455,7 +456,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		goto failed;
 	} else if (ret == LDB_SUCCESS) {
 		uint32_t account_type = ldb_msg_find_attr_as_uint(sam_msg, "sAMaccountType", 0);
-		if (account_type & ATYPE_ACCOUNT) {
+		if ((account_type == ATYPE_ACCOUNT) || (account_type == ATYPE_WORKSTATION_TRUST ) || (account_type == ATYPE_INTERDOMAIN_TRUST )) {
 			const struct ldb_val *v = ldb_msg_find_ldb_val(sam_msg, "uidNumber");
 			if (v) {
 				unixid->type = ID_TYPE_UID;
