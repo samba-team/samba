@@ -2723,25 +2723,21 @@ static void smb2cli_req_writev_done(struct tevent_req *subreq)
 	}
 }
 
-static NTSTATUS smb2cli_inbuf_parse_compound(uint8_t *buf, TALLOC_CTX *mem_ctx,
+static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
+					     uint8_t *buf,
+					     size_t buflen,
+					     TALLOC_CTX *mem_ctx,
 					     struct iovec **piov, int *pnum_iov)
 {
 	struct iovec *iov;
-	int num_iov;
-	size_t buflen;
-	size_t taken;
-	uint8_t *first_hdr;
-
-	num_iov = 0;
+	int num_iov = 0;
+	size_t taken = 0;
+	uint8_t *first_hdr = buf;
 
 	iov = talloc_array(mem_ctx, struct iovec, num_iov);
 	if (iov == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	buflen = smb_len_tcp(buf);
-	taken = 0;
-	first_hdr = buf + NBT_HDR_SIZE;
 
 	while (taken < buflen) {
 		size_t len = buflen - taken;
@@ -2853,8 +2849,12 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	NTSTATUS status;
 	bool defer = true;
 	struct smbXcli_session *last_session = NULL;
+	size_t inbuf_len = smb_len_tcp(inbuf);
 
-	status = smb2cli_inbuf_parse_compound(inbuf, tmp_mem,
+	status = smb2cli_inbuf_parse_compound(conn,
+					      inbuf + NBT_HDR_SIZE,
+					      inbuf_len,
+					      tmp_mem,
 					      &iov, &num_iov);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
