@@ -137,6 +137,11 @@ struct smbXcli_session {
 		DATA_BLOB application_key;
 		DATA_BLOB signing_key;
 		bool should_sign;
+		bool should_encrypt;
+		DATA_BLOB encryption_key;
+		DATA_BLOB decryption_key;
+		uint64_t channel_nonce;
+		uint64_t channel_next;
 		DATA_BLOB channel_signing_key;
 	} smb2;
 };
@@ -4167,6 +4172,40 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 				    session->smb2.signing_key.data);
 	}
 
+	session->smb2.encryption_key = data_blob_dup_talloc(session,
+						session->smb2.signing_key);
+	if (session->smb2.encryption_key.data == NULL) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
+		const DATA_BLOB context = data_blob_string_const_null("ServerIn ");
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    session->smb2.encryption_key.data);
+	}
+
+	session->smb2.decryption_key = data_blob_dup_talloc(session,
+						session->smb2.signing_key);
+	if (session->smb2.decryption_key.data == NULL) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
+		const DATA_BLOB context = data_blob_string_const_null("ServerOut");
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    session->smb2.decryption_key.data);
+	}
+
 	session->smb2.application_key = data_blob_dup_talloc(session,
 						session->smb2.signing_key);
 	if (session->smb2.application_key.data == NULL) {
@@ -4199,6 +4238,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	session->smb2.should_sign = false;
+	session->smb2.should_encrypt = false;
 
 	if (conn->desire_signing) {
 		session->smb2.should_sign = true;
@@ -4207,6 +4247,10 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	if (conn->smb2.server.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
 		session->smb2.should_sign = true;
 	}
+
+	generate_random_buffer((uint8_t *)&session->smb2.channel_nonce,
+			       sizeof(session->smb2.channel_nonce));
+	session->smb2.channel_next = 1;
 
 	return NT_STATUS_OK;
 }
@@ -4219,6 +4263,10 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 	struct smbXcli_session *session2;
 
 	if (session1->smb2.signing_key.length == 0) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (session1->smb2.channel_next == 0) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
@@ -4246,6 +4294,23 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 	}
 
 	session2->smb2.should_sign = session1->smb2.should_sign;
+	session2->smb2.should_encrypt = session1->smb2.should_encrypt;
+
+	session2->smb2.channel_nonce = session1->smb2.channel_nonce;
+	session2->smb2.channel_nonce += session1->smb2.channel_next;
+	session1->smb2.channel_next++;
+
+	session2->smb2.encryption_key = data_blob_dup_talloc(session2,
+						session1->smb2.encryption_key);
+	if (session2->smb2.encryption_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session2->smb2.decryption_key = data_blob_dup_talloc(session2,
+						session1->smb2.decryption_key);
+	if (session2->smb2.decryption_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	talloc_set_destructor(session2, smbXcli_session_destructor);
 	DLIST_ADD_END(conn->sessions, session2, struct smbXcli_session *);
