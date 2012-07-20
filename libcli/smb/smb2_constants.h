@@ -22,6 +22,21 @@
 #ifndef __LIBCLI_SMB2_SMB2_CONSTANTS_H__
 #define __LIBCLI_SMB2_SMB2_CONSTANTS_H__
 
+/* offsets into SMB2_TRANSFORM header elements */
+#define SMB2_TF_PROTOCOL_ID	0x00 /*  4 bytes */
+#define SMB2_TF_SIGNATURE	0x04 /* 16 bytes */
+#define SMB2_TF_NONCE		0x14 /* 16 bytes */
+#define SMB2_TF_MSG_SIZE	0x24 /*  4 bytes */
+#define SMB2_TF_RESERVED	0x28 /*  2 bytes */
+#define SMB2_TF_ALGORITHM	0x2A /*  2 bytes */
+#define SMB2_TF_SESSION_ID	0x2C /*  8 bytes */
+
+#define SMB2_TF_HDR_SIZE	0x34 /* 52 bytes */
+
+#define SMB2_TF_MAGIC 0x424D53FD /* 0xFD 'S' 'M' 'B' */
+
+#define SMB2_ENCRYPTION_AES128_CCM	0x0001
+
 /* offsets into header elements for a sync SMB2 request */
 #define SMB2_HDR_PROTOCOL_ID    0x00
 #define SMB2_HDR_LENGTH		0x04
