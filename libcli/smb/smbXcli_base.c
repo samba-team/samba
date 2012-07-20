@@ -3952,15 +3952,22 @@ static NTSTATUS smbXcli_negprot_dispatch_incoming(struct smbXcli_conn *conn,
 	struct tevent_req *subreq;
 	struct smbXcli_req_state *substate;
 	struct tevent_req *req;
-	uint32_t protocol_magic = IVAL(inbuf, 4);
+	uint32_t protocol_magic;
+	size_t inbuf_len = smb_len_nbt(inbuf);
 
 	if (num_pending != 1) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	if (inbuf_len < 4) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	subreq = conn->pending[0];
 	substate = tevent_req_data(subreq, struct smbXcli_req_state);
 	req = tevent_req_callback_data(subreq, struct tevent_req);
+
+	protocol_magic = IVAL(inbuf, 4);
 
 	switch (protocol_magic) {
 	case SMB_MAGIC:
