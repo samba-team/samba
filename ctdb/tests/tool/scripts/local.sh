@@ -30,7 +30,7 @@ simple_test ()
 	OUT_FILTER='s@^[0-9/]+\ [0-9:\.]+\ \[[\ 0-9]+\]:@DATE\ TIME\ \[PID\]:@'
     fi
 
-    _out=$($test_prog "$@" 2>&1)
+    _out=$($VALGRIND $test_prog "$@" 2>&1)
 
     result_check
 }
