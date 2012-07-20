@@ -4239,6 +4239,12 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	session2->smb2.application_key = data_blob_dup_talloc(session2,
+						session1->smb2.application_key);
+	if (session2->smb2.application_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	session2->smb2.should_sign = session1->smb2.should_sign;
 
 	talloc_set_destructor(session2, smbXcli_session_destructor);
