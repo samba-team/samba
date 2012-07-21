@@ -31,6 +31,8 @@ from samba.samba3 import passdb
 from samba.samba3 import param as s3param
 from samba.dcerpc import lsa, samr, security
 from samba.dcerpc.security import dom_sid
+from samba.credentials import Credentials
+from samba.auth import system_session
 from samba import dsdb
 from samba.ndr import ndr_pack
 from samba import unix2nttime
@@ -84,6 +86,38 @@ def import_sam_policy(samdb, policy, logger):
     except ldb.LdbError, e:
         logger.warn("Could not set account policy, (%s)", str(e))
 
+def add_posix_attrs(logger, samdb, sid, name, nisdomain, xid_type, home=None, shell=None, pgid=None):
+    """Add posix attributes for the user/group
+
+    :param samdb: Samba4 sam.ldb database
+    :param sid: user/group sid
+    :param sid: user/group name
+    :param nisdomain: name of the (fake) NIS domain
+    :param xid_type: type of id (ID_TYPE_UID/ID_TYPE_GID)
+    :param home: user homedir (Unix homepath)
+    :param shell: user shell
+    :param pgid: users primary group id
+    """
+
+    try:
+        m = ldb.Message()
+        m.dn = ldb.Dn(samdb, "<SID=%s>" % str(sid))
+        if xid_type == "ID_TYPE_UID":
+            m['unixHomeDirectory'] = ldb.MessageElement(
+                str(home), ldb.FLAG_MOD_REPLACE, 'unixHomeDirectory')
+            m['loginShell'] = ldb.MessageElement(
+                str(shell), ldb.FLAG_MOD_REPLACE, 'loginShell')
+            m['gidNumber'] = ldb.MessageElement(
+                str(pgid), ldb.FLAG_MOD_REPLACE, 'gidNumber')
+
+        m['msSFU30NisDomain'] = ldb.MessageElement(
+            str(nisdomain), ldb.FLAG_MOD_REPLACE, 'msSFU30NisDomain')
+
+        samdb.modify(m)
+    except ldb.LdbError, e:
+        logger.warn(
+            'Could not add posix attrs for AD entry for sid=%s, (%s)',
+            str(sid), str(e))
 
 def add_ad_posix_idmap_entry(samdb, sid, xid, xid_type, logger):
     """Create idmap entry
@@ -484,6 +518,25 @@ def import_registry(samba4_registry, samba3_regdb):
         for (value_name, (value_type, value_data)) in samba3_regdb.values(key).items():
             key_handle.set_value(value_name, value_type, value_data)
 
+def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
+    """Get posix attributes from a samba3 ldap backend
+    :param ldbs: a list of ldb connection objects
+    :param base_dn: the base_dn of the connection
+    :param user: the user to get the attribute for
+    :param attr: the attribute to be retrieved
+    """
+    try:
+        msg = ldb_object.search(base_dn, scope=ldb.SCOPE_SUBTREE,
+                        expression=("(&(objectClass=posixAccount)(uid=%s))"
+                        % (user)), attrs=[attr])
+    except ldb.LdbError, e:
+        logger.warning("Failed to retrieve attribute %s for user %s, the error is: %s", attr, user, e)
+    else:
+        if msg.count == 1:
+            return msg[0][attr][0]
+        else:
+            logger.warning("LDAP entry for user %s contains more than one %s", user, attr)
+            return None
 
 def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False, dns_backend=None):
     """Upgrade from samba3 database to samba4 AD database
@@ -528,6 +581,16 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=Fa
         machinepass = secrets_db.get_machine_password(netbiosname)
     except KeyError:
         machinepass = None
+
+    if samba3.lp.get("passdb backend").split(":")[0].strip() == "ldapsam":
+        base_dn =  samba3.lp.get("ldap suffix")
+        ldapuser = samba3.lp.get("ldap admin dn")
+        ldappass = (secrets_db.get_ldap_bind_pw(ldapuser)).strip('\x00')
+        ldap = True
+    else:
+        ldapuser = None
+        ldappass = None
+        ldap = False
 
     # We must close the direct pytdb database before the C code loads it
     secrets_db.close()
@@ -672,7 +735,6 @@ Please fix this account before attempting to upgrade again
             logger.warn("Ignoring group memberships of '%s' %s: %s",
                         username, user.user_sid, e)
 
-
     logger.info("Next rid = %d", next_rid)
 
     # Check for same username/groupname
@@ -733,6 +795,46 @@ Please fix this account before attempting to upgrade again
     logger.info("Importing idmap database")
     import_idmap(result.idmap, samba3, logger)
 
+    # Get posix attributes from ldap or the os
+    homes = {}
+    shells = {}
+    pgids = {}
+    if ldap:
+        creds = Credentials()
+        creds.guess(result.lp)
+        creds.set_bind_dn(ldapuser)
+        creds.set_password(ldappass)
+        urls = samba3.lp.get("passdb backend").split(":",1)[1].strip('"')
+        for url in urls.split():
+            try:
+                ldb_object = Ldb(url, session_info=system_session(result.lp), credentials=creds, lp=result.lp)
+            except ldb.LdbError, e:
+                logger.warning("Could not open ldb connection to %s, the error message is: %s", url, e)
+            else:
+                break
+    logger.info("Exporting posix attributes")
+    userlist = s3db.search_users(0)
+    for entry in userlist:
+        username = entry['account_name']
+        if username in uids.keys():
+            if ldap:
+                homes[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "homeDirectory")
+                shells[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "loginShell")
+                pgids[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "gidNumber")
+            else:
+                try:
+                    homes[username] = pwd.getpwnam(username).pw_dir
+                except KeyError:
+                    pass
+                try:
+                    shells[username] = pwd.getpwnam(username).pw_shell
+                except KeyError:
+                    pass
+                try:
+                    pgids[username] = pwd.getpwnam(username).pw_gid
+                except KeyError:
+                    pass
+
     # Set the s3 context for samba4 configuration
     new_lp_ctx = s3param.get_context()
     new_lp_ctx.load(result.lp.configfile)
@@ -750,6 +852,7 @@ Please fix this account before attempting to upgrade again
         if g.gid != -1:
             add_group_from_mapping_entry(result.samdb, g, logger)
             add_ad_posix_idmap_entry(result.samdb, g.sid, g.gid, "ID_TYPE_GID", logger)
+            add_posix_attrs(samdb=result.samdb, sid=g.sid, name=g.nt_name, nisdomain=domainname.lower(), xid_type="ID_TYPE_GID", logger=logger)
 
     # Export users to samba4 backend
     logger.info("Importing users")
@@ -766,6 +869,10 @@ Please fix this account before attempting to upgrade again
         s4_passdb.add_sam_account(userdata[username])
         if username in uids:
             add_ad_posix_idmap_entry(result.samdb, userdata[username].user_sid, uids[username], "ID_TYPE_UID", logger)
+            if (username in homes) and (homes[username] != None) and \
+               (username in shells) and (shells[username] != None) and \
+               (username in pgids) and (pgids[username] != None):
+                add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, name=username, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
 
     logger.info("Adding users to groups")
     for g in grouplist:
