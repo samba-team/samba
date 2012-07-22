@@ -122,7 +122,6 @@ static bool defaults_saved = false;
 	char *szLdapGroupSuffix;					\
 	char *szStateDir;						\
 	char *szCacheDir;						\
-	char *szSocketAddress;						\
 	char *szUsershareTemplateShare;					\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
@@ -5356,21 +5355,6 @@ int lp_min_receive_file_size(void)
 		return 0;
 	}
 	return MIN(Globals.iminreceivefile, BUFFER_SIZE);
-}
-
-/*******************************************************************
- If socket address is an empty character string, it is necessary to 
- define it as "0.0.0.0". 
-********************************************************************/
-
-const char *lp_socket_address(void)
-{
-	char *sock_addr = Globals.szSocketAddress;
-
-	if (sock_addr[0] == '\0'){
-		string_set(&Globals.szSocketAddress, "0.0.0.0");
-	}
-	return  Globals.szSocketAddress;
 }
 
 /*******************************************************************

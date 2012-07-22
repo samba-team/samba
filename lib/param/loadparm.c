@@ -328,7 +328,6 @@ static struct loadparm_context *global_loadparm_context;
 FN_GLOBAL_BOOL(readraw, bReadRaw)
 FN_GLOBAL_BOOL(writeraw, bWriteRaw)
 FN_GLOBAL_STRING(cachedir, szCacheDir)
-FN_GLOBAL_STRING(socket_address, szSocketAddress)
 FN_GLOBAL_STRING(statedir, szStateDir)
 
 /* local prototypes */
