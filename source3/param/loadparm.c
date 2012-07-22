@@ -1595,6 +1595,14 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "unicode",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bUnicode),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
 		.label		= "min receivefile size",
 		.type		= P_BYTES,
 		.p_class	= P_GLOBAL,
@@ -4818,6 +4826,7 @@ static void init_globals(bool reinit_globals)
 #else
 	Globals.bUseMmap = true;
 #endif
+	Globals.bUnicode = true;
 	Globals.bUnixExtensions = true;
 	Globals.bResetOnZeroVC = false;
 	Globals.bLogWriteableFilesOnExit = false;

@@ -274,7 +274,11 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		      req->flags2 | FLAGS2_EXTENDED_SECURITY);
 	}
 
-	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|CAP_UNICODE;
+	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
+
+	if (lp_unicode()) {
+		capabilities |= CAP_UNICODE;
+	}
 
 	if (lp_unix_extensions()) {
 		capabilities |= CAP_UNIX;

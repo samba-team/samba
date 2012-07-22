@@ -191,6 +191,9 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	if (getenv("CLI_FORCE_ASCII")) {
 		force_ascii = true;
 	}
+	if (!lp_unicode()) {
+		force_ascii = true;
+	}
 	if (flags & CLI_FULL_CONNECTION_FORCE_ASCII) {
 		force_ascii = true;
 	}
