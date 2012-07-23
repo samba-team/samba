@@ -4945,7 +4945,7 @@ static void do_smb1_close(struct tevent_req *req)
 		reply_nterror(smbreq, status);
 	}
 	if (!srv_send_smb(smbreq->sconn,
-			smbreq->outbuf,
+			(char *)smbreq->outbuf,
 			true,
 			smbreq->seqnum+1,
 			IS_CONN_ENCRYPTED(smbreq->conn)||smbreq->encrypted,
