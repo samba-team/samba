@@ -1018,7 +1018,7 @@ bool run_smb2_multi_channel(int dummy)
 	cli2->smb2.tid = cli1->smb2.tid;
 
 	status = smb2cli_session_create_channel(cli3,
-						cli2->smb2.session,
+						cli1->smb2.session,
 						cli3->conn,
 						&cli3->smb2.session);
 	if (!NT_STATUS_IS_OK(status)) {
