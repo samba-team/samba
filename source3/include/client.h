@@ -111,6 +111,7 @@ struct cli_state {
 		uint32_t pid;
 		uint32_t tid;
 		struct smbXcli_session *session;
+		struct smbXcli_tcon *tcon;
 
 		/* SMB2 tcon */
 		uint8_t share_type;

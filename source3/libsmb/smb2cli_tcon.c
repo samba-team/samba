@@ -130,6 +130,19 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	cli->smb2.maximal_access	= IVAL(body, 12);
 
 	TALLOC_FREE(subreq);
+
+	cli->smb2.tcon = smbXcli_tcon_create(cli);
+	if (tevent_req_nomem(cli->smb2.tcon, req)) {
+		return;
+	}
+
+	smb2cli_tcon_set_values(cli->smb2.tcon,
+				cli->smb2.tid,
+				cli->smb2.share_type,
+				cli->smb2.share_flags,
+				cli->smb2.share_capabilities,
+				cli->smb2.maximal_access);
+
 	tevent_req_done(req);
 }
 
@@ -229,6 +242,7 @@ static void smb2cli_tdis_done(struct tevent_req *subreq)
 		return;
 	}
 	state->cli->smb2.tid = 0;
+	TALLOC_FREE(state->cli->smb2.tcon);
 	tevent_req_done(req);
 }
 
