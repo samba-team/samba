@@ -1168,7 +1168,7 @@ static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
 
 	DATA_BLOB data 	   = data_blob_const(p->password->data, p->password->length);
 	DATA_BLOB data_old = data_blob_const(p->old_password->data, p->old_password->length);
-	DATA_BLOB session_key_blob = data_blob_const(session_key, sizeof(session_key));
+	DATA_BLOB session_key_blob = data_blob_const(session_key, 16);
 
 	pwd 	= sess_decrypt_string(talloc_tos(), &data, &session_key_blob);
 	pwd_old = sess_decrypt_string(talloc_tos(), &data_old, &session_key_blob);
