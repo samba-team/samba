@@ -146,6 +146,8 @@ struct smbcli_request *smbcli_request_setup_session(struct smbcli_session *sessi
 
 	if (!req) return NULL;
 
+	smb1cli_session_set_id(session->smbXcli, session->vuid);
+
 	req->session = session;
 
 	SSVAL(req->out.hdr, HDR_FLG2, session->flags2);

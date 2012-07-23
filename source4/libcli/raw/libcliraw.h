@@ -156,6 +156,7 @@ struct smbcli_session {
 	
 	/* after a session setup the server provides us with
 	   a vuid identifying the security context */
+	struct smbXcli_session *smbXcli;
 	uint16_t vuid;
 
 	/* default pid for this session */

@@ -55,7 +55,19 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
 	session->options = options;
-	
+
+	/*
+	 * for now session->vuid is still used by the callers, but we call:
+	 * smb1cli_session_set_id(session->smbXcli, session->vuid);
+	 * before using session->smbXcli, in future we should remove
+	 * session->vuid.
+	 */
+	session->smbXcli = smbXcli_session_create(session, transport->conn);
+	if (session->smbXcli == NULL) {
+		talloc_free(session);
+		return NULL;
+	}
+
 	capabilities = transport->negotiate.capabilities;
 
 	flags2 = FLAGS2_LONG_PATH_COMPONENTS | FLAGS2_EXTENDED_ATTRIBUTES;
