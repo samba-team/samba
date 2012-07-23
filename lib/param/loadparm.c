@@ -105,7 +105,7 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
 static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
 
-#include "lib/param/param_enums.c"
+#include "lib/param/param_table.c"
 
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)

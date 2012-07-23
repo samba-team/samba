@@ -324,7 +324,7 @@ static void add_to_file_list(const char *fname, const char *subfname);
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values);
 static void free_param_opts(struct parmlist_entry **popts);
 
-#include "lib/param/param_enums.c"
+#include "lib/param/param_table.c"
 
 static const struct enum_list enum_printing[] = {
 	{PRINT_SYSV, "sysv"},
