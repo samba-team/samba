@@ -229,7 +229,32 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 	}
 
 	if (strcmp(opt_name, SHARE_CI_FILESYSTEM) == 0) {
-		return lpcfg_ci_filesystem(s, lpcfg_default_service(lp_ctx));
+		int case_sensitive = lpcfg_casesensitive(s, lpcfg_default_service(lp_ctx));
+		/*
+		 * Yes, this confusingly named option means Samba acts
+		 * case sensitive, so that the filesystem can act case
+		 * insensitive.
+		 *
+		 */
+		if (case_sensitive == Auto) {
+			/* Auto is for unix extensions and unix
+			 * clients, which we don't support here.
+			 * Samba needs to do the case changing,
+			 * because the filesystem is case
+			 * sensitive  */
+			return false;
+		} else if (case_sensitive) {
+			/* True means that Samba won't do anything to
+			 * change the case of incoming requests.
+			 * Essentially this means we trust the file
+			 * system to be case insensitive */
+			return true;
+		} else {
+			/* False means that Smaba needs to do the case
+			 * changing, because the filesystem is case
+			 * sensitive */
+			return false;
+		}
 	}
 
 	DEBUG(0,("request for unknown share bool option '%s'\n",

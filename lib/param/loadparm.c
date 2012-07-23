@@ -851,14 +851,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-	{
-		.label		= "case insensitive filesystem",
-		.type		= P_BOOL,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bCIFileSystem),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
 
 	{
 		.label		= "max print jobs",
