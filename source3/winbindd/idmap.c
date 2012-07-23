@@ -129,7 +129,7 @@ NTSTATUS smb_register_idmap(int version, const char *name,
 
 	for (entry = backends; entry != NULL; entry = entry->next) {
 		if (strequal(entry->name, name)) {
-			DEBUG(0,("Idmap module %s already registered!\n",
+			DEBUG(5,("Idmap module %s already registered!\n",
 				 name));
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}

@@ -66,7 +66,7 @@ static struct nss_function_entry *nss_get_backend(const char *name )
 	}
 
 	if ( nss_get_backend(name) ) {
-		DEBUG(0,("smb_register_idmap_nss: idmap module %s "
+		DEBUG(5,("smb_register_idmap_nss: idmap module %s "
 			 "already registered!\n", name));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
