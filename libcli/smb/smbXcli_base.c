@@ -2760,6 +2760,58 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 		uint16_t body_size;
 		struct iovec *iov_tmp;
 
+		if (len < 4) {
+			DEBUG(10, ("%d bytes left, expected at least %d\n",
+				   (int)len, 4));
+			goto inval;
+		}
+		if (IVAL(hdr, 0) == SMB2_TF_MAGIC) {
+			struct smbXcli_session *s;
+			uint64_t uid;
+			struct iovec tf_iov[2];
+			NTSTATUS status;
+
+			if (len < SMB2_TF_HDR_SIZE) {
+				DEBUG(10, ("%d bytes left, expected at least %d\n",
+					   (int)len, SMB2_TF_HDR_SIZE));
+				goto inval;
+			}
+			tf = hdr;
+			tf_len = SMB2_TF_HDR_SIZE;
+			taken += tf_len;
+
+			hdr = first_hdr + taken;
+			len = IVAL(tf, SMB2_TF_MSG_SIZE);
+			uid = BVAL(tf, SMB2_TF_SESSION_ID);
+
+			s = conn->sessions;
+			for (; s; s = s->next) {
+				if (s->smb2.session_id != uid) {
+					continue;
+				}
+				break;
+			}
+
+			if (s == NULL) {
+				DEBUG(10, ("unknown session_id %llu\n",
+					   (unsigned long long)uid));
+				goto inval;
+			}
+
+			tf_iov[0].iov_base = (void *)tf;
+			tf_iov[0].iov_len = tf_len;
+			tf_iov[1].iov_base = (void *)hdr;
+			tf_iov[1].iov_len = len;
+
+			status = smb2_signing_decrypt_pdu(s->smb2.decryption_key,
+							  conn->protocol,
+							  tf_iov, 2);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(iov);
+				return status;
+			}
+		}
+
 		/*
 		 * We need the header plus the body length field
 		 */
@@ -2789,6 +2841,9 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 				goto inval;
 			}
 			if (next_command_ofs > full_size) {
+				goto inval;
+			}
+			if (tf && next_command_ofs < len) {
 				goto inval;
 			}
 			full_size = next_command_ofs;
@@ -2948,6 +3003,14 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			    session->smb2.signing_key.length != 0) {
 				should_sign = true;
 			}
+		}
+
+		/*
+		 * If we have a SMB2_TRANSFORM header we already verified
+		 * a signature.
+		 */
+		if (cur[0].iov_len == SMB2_TF_HDR_SIZE) {
+			should_sign = false;
 		}
 
 		if (should_sign) {
