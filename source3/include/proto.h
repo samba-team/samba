@@ -671,8 +671,6 @@ bool strhasupper(const char *s);
 bool strhaslower(const char *s);
 char *StrnCpy(char *dest,const char *src,size_t n);
 bool in_list(const char *s, const char *list, bool casesensitive);
-void string_free(char **s);
-bool string_set(char **dest,const char *src);
 void fstring_sub(char *s,const char *pattern,const char *insert);
 char *realloc_string_sub2(char *string,
 			const char *pattern,

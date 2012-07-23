@@ -466,7 +466,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  ../libds/common/flag_mapping.o \
 	  lib/access.o lib/smbrun.o \
 	  ../lib/util/bitmap.o ../lib/util/dprintf.o $(UTIL_REG_OBJ) \
-	  lib/wins_srv.o lib/string_init.o \
+	  lib/wins_srv.o \
 	  lib/util_str.o ../lib/util/util_str_common.o \
 	  ../lib/util/util_str.o \
 	  ../lib/util/base64.o lib/util_sid.o \
