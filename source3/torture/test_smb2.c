@@ -126,7 +126,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	status = smb2cli_close(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, 0, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
@@ -162,7 +162,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	status = smb2cli_close(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, 0, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
@@ -1385,7 +1385,7 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_close(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tid, 0, fid_persistent, fid_volatile);
+			       cli3->smb2.tcon, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
@@ -1830,7 +1830,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_close(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, 0, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
@@ -1864,14 +1864,14 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_close(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, 0, dir_persistent, dir_volatile);
+			       cli->smb2.tcon, 0, dir_persistent, dir_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_close(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, 0, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;

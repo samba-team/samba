@@ -99,7 +99,8 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 		status = smb2cli_close(cli_nps->cli->conn,
 				       cli_nps->cli->timeout,
 				       cli_nps->cli->smb2.session,
-				       cli_nps->cli->smb2.tid, 0,
+				       cli_nps->cli->smb2.tcon,
+				       0, /* flags */
 				       cli_nps->fid_persistent,
 				       cli_nps->fid_volatile);
 	}
@@ -574,7 +575,7 @@ static void tstream_cli_np_writev_disconnect_now(struct tevent_req *req,
 					    cli_nps->cli->conn,
 					    cli_nps->cli->timeout,
 					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tid,
+					    cli_nps->cli->smb2.tcon,
 					    0, /* flags */
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile);
@@ -1036,7 +1037,7 @@ static void tstream_cli_np_readv_disconnect_now(struct tevent_req *req,
 					    cli_nps->cli->conn,
 					    cli_nps->cli->timeout,
 					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tid,
+					    cli_nps->cli->smb2.tcon,
 					    0, /* flags */
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile);
@@ -1172,7 +1173,7 @@ static struct tevent_req *tstream_cli_np_disconnect_send(TALLOC_CTX *mem_ctx,
 		subreq = smb2cli_close_send(state, ev, cli_nps->cli->conn,
 					    cli_nps->cli->timeout,
 					    cli_nps->cli->smb2.session,
-					    cli_nps->cli->smb2.tid,
+					    cli_nps->cli->smb2.tcon,
 					    0, /* flags */
 					    cli_nps->fid_persistent,
 					    cli_nps->fid_volatile);
