@@ -41,7 +41,7 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 				      struct smbXcli_conn *conn,
 				      uint32_t timeout_msec,
 				      struct smbXcli_session *session,
-				      uint32_t tcon_id,
+				      struct smbXcli_tcon *tcon,
 				      uint64_t in_fid_persistent,
 				      uint64_t in_fid_volatile,
 				      uint32_t in_ctl_code,
@@ -61,6 +61,7 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 	uint32_t output_buffer_offset = 0;
 	uint32_t output_buffer_length = 0;
 	uint32_t pad_length = 0;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_ioctl_state);
@@ -131,6 +132,10 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 	} else {
 		dyn = state->dyn_pad;
 		dyn_len = sizeof(state->dyn_pad);
+	}
+
+	if (tcon) {
+		tcon_id = smb2cli_tcon_current_id(tcon);
 	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_IOCTL,
@@ -281,7 +286,7 @@ NTSTATUS smb2cli_ioctl_recv(struct tevent_req *req,
 NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,
 		       uint32_t timeout_msec,
 		       struct smbXcli_session *session,
-		       uint32_t tcon_id,
+		       struct smbXcli_tcon *tcon,
 		       uint64_t in_fid_persistent,
 		       uint64_t in_fid_volatile,
 		       uint32_t in_ctl_code,
@@ -311,7 +316,7 @@ NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,
 		goto fail;
 	}
 	req = smb2cli_ioctl_send(frame, ev, conn, timeout_msec,
-				 session, tcon_id,
+				 session, tcon,
 				 in_fid_persistent,
 				 in_fid_volatile,
 				 in_ctl_code,
