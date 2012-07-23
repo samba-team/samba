@@ -2427,13 +2427,14 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 			state->smb2.should_sign = true;
 		}
 
-		if (cmd == SMB2_OP_SESSSETUP) {
+		if (cmd == SMB2_OP_SESSSETUP &&
+		    session->smb2.channel_signing_key.length == 0) {
 			state->smb2.should_encrypt = false;
 		}
 
 		if (state->smb2.should_encrypt) {
 			state->smb2.should_sign = false;
-		};
+		}
 	}
 
 	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
@@ -4380,6 +4381,18 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 
 	if (conn->smb2.server.security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) {
 		session->smb2.should_sign = true;
+	}
+
+	if (session->smb2.session_flags & SMB2_SESSION_FLAG_ENCRYPT_DATA) {
+		session->smb2.should_encrypt = true;
+	}
+
+	if (conn->protocol < PROTOCOL_SMB2_24) {
+		session->smb2.should_encrypt = false;
+	}
+
+	if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+		session->smb2.should_encrypt = false;
 	}
 
 	generate_random_buffer((uint8_t *)&session->smb2.channel_nonce,
