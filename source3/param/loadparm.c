@@ -131,7 +131,14 @@ static bool defaults_saved = false;
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
 	int winbindMaxDomainConnections;				\
-	int ismb2_max_credits;
+	int ismb2_max_credits;						\
+	char *tls_keyfile;						\
+	char *tls_certfile;						\
+	char *tls_cafile;						\
+	char *tls_crlfile;						\
+	char *tls_dhpfile;						\
+	char *panic_action;						\
+	int bPreferredMaster;
 
 #include "param/param_global.h"
 
@@ -1595,6 +1602,24 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "client max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cli_maxprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "client min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cli_minprotocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "unicode",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
@@ -1880,6 +1905,62 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "cldap port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cldap_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dgram port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dgram_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "nbt port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(nbt_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "krb5 port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(krb5_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "kpasswd port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(kpasswd_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "web port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(web_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "rpc big endian",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bRpcBigEndian),
+		.special	= NULL,
+		.enum_list	= NULL
 	},
 
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR},
@@ -3487,6 +3568,16 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "ntp signd socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNTPSignDSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+
 #ifdef WITH_UTMP
 	{
 		.label		= "utmp directory",
@@ -3967,15 +4058,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 	{
-		.label		= "multicast dns register",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bMulticastDnsRegister),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
-	},
-	{
 		.label		= "panic action",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -4299,6 +4381,201 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "winbindd socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWinbinddSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "winbindd privileged socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szWinbinddPrivilegedSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "winbind sealed pipes",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWinbindSealedPipes),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+
+	{N_("DNS options"), P_SEP, P_SEPARATOR},
+	{
+		.label		= "allow dns updates",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(allow_dns_updates),
+		.special	= NULL,
+		.enum_list	= enum_dns_update_settings,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "dns forwarder",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dns_forwarder),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "dns recursive queries",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dns_recursive_queries),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dns update command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szDNSUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "nsupdate command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNSUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "rndc command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szRNDCCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "multicast dns register",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bMulticastDnsRegister),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
+	},
+
+	{N_("AD DC options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "samba kcc command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSambaKCCCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "server services",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(server_services),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dcerpc endpoint servers",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dcerpc_ep_servers),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "spn update command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSPNUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "share backend",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szShareBackend),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "ntvfs handler",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(ntvfs_handler),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+
+	{N_("TLS options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "tls enabled",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_enabled),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls keyfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_keyfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls certfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_certfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls cafile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_cafile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls crlfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_crlfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls dh params file",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_dhpfile),
+		.special	= NULL,
+		.enum_list	= NULL
 	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
