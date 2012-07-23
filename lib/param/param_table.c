@@ -3492,7 +3492,7 @@ static struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(szSocketAddress),
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
 	},
 	{
 		.label		= "nmbd bind explicit broadcast",

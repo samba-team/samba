@@ -13,6 +13,7 @@
 
 	<para>By default Samba will accept connections on any
 		address.</para>
+	<para>This parameter is deprecated.  See <smbconfoption name="bind interfaces only">Yes</smbconfoption> and <smbconfoption name="interfaces"></smbconfoption> .</para>
 </description>
 
 <value type="default">0.0.0.0</value>
