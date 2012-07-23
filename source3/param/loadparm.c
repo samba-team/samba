@@ -114,12 +114,12 @@ static bool defaults_saved = false;
 #define LOADPARM_EXTRA_GLOBALS \
 	struct parmlist_entry *param_opt;				\
 	char *szRealm;							\
-	char *szLogLevel;						\
+	char *loglevel;							\
 	int iminreceivefile;						\
 	char *szPrintcapname;						\
 	int CupsEncrypt;						\
 	int  iPreferredMaster;						\
-	int iDomainMaster;						\
+	int domain_master;						\
 	char *szLdapMachineSuffix;					\
 	char *szLdapUserSuffix;						\
 	char *szLdapIdmapSuffix;					\
@@ -478,6 +478,7 @@ static const struct enum_list enum_kerberos_method[] = {
 
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
+
 
 static struct parm_struct parm_table[] = {
 	{N_("Base Options"), P_SEP, P_SEPARATOR},
@@ -1377,7 +1378,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "log level",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szLogLevel),
+		.offset		= GLOBAL_VAR(loglevel),
 		.special	= handle_debug_list,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -1386,7 +1387,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "debuglevel",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szLogLevel),
+		.offset		= GLOBAL_VAR(loglevel),
 		.special	= handle_debug_list,
 		.enum_list	= NULL,
 		.flags		= FLAG_HIDE,
@@ -3071,7 +3072,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "domain master",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(iDomainMaster),
+		.offset		= GLOBAL_VAR(domain_master),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED,
@@ -5055,7 +5056,7 @@ static void init_globals(bool reinit_globals)
 	Globals.syslog = 1;
 	Globals.bSyslogOnly = false;
 	Globals.bTimestampLogs = true;
-	string_set(&Globals.szLogLevel, "0");
+	string_set(&Globals.loglevel, "0");
 	Globals.bDebugPrefixTimestamp = false;
 	Globals.bDebugHiresTimestamp = true;
 	Globals.bDebugPid = false;
@@ -5157,7 +5158,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bMsAddPrinterWizard = true;
 	Globals.os_level = 20;
 	Globals.bLocalMaster = true;
-	Globals.iDomainMaster = Auto;	/* depending on bDomainLogons */
+	Globals.domain_master = Auto;	/* depending on bDomainLogons */
 	Globals.bDomainLogons = false;
 	Globals.bBrowseList = true;
 	Globals.bWINSsupport = false;
@@ -9380,10 +9381,10 @@ int lp_default_server_announce(void)
 
 bool lp_domain_master(void)
 {
-	if (Globals.iDomainMaster == Auto)
+	if (Globals.domain_master == Auto)
 		return (lp_server_role() == ROLE_DOMAIN_PDC);
 
-	return (bool)Globals.iDomainMaster;
+	return (bool)Globals.domain_master;
 }
 
 /***********************************************************
@@ -9392,7 +9393,7 @@ bool lp_domain_master(void)
 
 static bool lp_domain_master_true_or_auto(void)
 {
-	if (Globals.iDomainMaster) /* auto or yes */
+	if (Globals.domain_master) /* auto or yes */
 		return true;
 
 	return false;
