@@ -89,6 +89,24 @@ static bool defaults_saved = false;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
+/* we don't need a special handler for "dos charset" and "unix charset" */
+#define handle_dos_charset NULL
+#define handle_charset NULL
+
+/* these are parameter handlers which are not needed in the
+ * non-source3 code
+ */
+#define handle_netbios_aliases NULL
+#define handle_debug_list NULL
+#define handle_printing NULL
+#define handle_ldap_debug_level NULL
+#define handle_idmap_backend NULL
+#define handle_idmap_uid NULL
+#define handle_idmap_gid NULL
+
+#ifndef N_
+#define N_(x) x
+#endif
 
 /* prototypes for the special type handlers */
 static bool handle_include(struct loadparm_context *lp_ctx, int unused,
