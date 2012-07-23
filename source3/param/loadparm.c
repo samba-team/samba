@@ -593,6 +593,7 @@ static void free_global_parameters(void)
 {
 	free_param_opts(&Globals.param_opt);
 	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
+	TALLOC_FREE(Globals.ctx);
 }
 
 static int map_parameter(const char *pszParmName);
@@ -689,6 +690,8 @@ static void init_globals(bool reinit_globals)
 	 * apply_lp_set_cmdline() call puts these values back in the
 	 * table once the defaults are set */
 	ZERO_STRUCT(Globals);
+
+	Globals.ctx = talloc_new(NULL);
 
 	for (i = 0; parm_table[i].label; i++) {
 		if ((parm_table[i].type == P_STRING ||
