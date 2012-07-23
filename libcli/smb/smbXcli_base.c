@@ -2632,7 +2632,6 @@ skip_credits:
 			}
 			SIVAL(state->smb2.hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
 		}
-		nbt_len += reqlen;
 
 		if (signing_key) {
 			NTSTATUS status;
@@ -2644,6 +2643,8 @@ skip_credits:
 				return status;
 			}
 		}
+
+		nbt_len += reqlen;
 
 		ret = smbXcli_req_set_pending(reqs[i]);
 		if (!ret) {
