@@ -95,8 +95,6 @@ sub print_header($$)
 	$file->("\tbool (*load)(const char *filename);\n");
 	$file->("\tbool (*set_cmdline)(const char *pszParmName, const char *pszParmValue);\n");
 	$file->("\tvoid (*dump)(FILE *f, bool show_defaults, int maxtoprint);\n");
-	$file->("\tint (*server_role)(void);\n");
-	$file->("\tint (*security)(void);\n");
 }
 
 sub print_footer($$) 

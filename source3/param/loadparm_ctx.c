@@ -73,8 +73,10 @@ static const struct loadparm_s3_helpers s3_fns =
 	.set_cmdline = lp_set_cmdline,
 	.dump = lp_dump,
 
-	.server_role = lp_server_role,
-	.security = lp_security,
+	._server_role = lp__server_role,
+	._security = lp__security,
+	._domain_master = lp__domain_master,
+	._domain_logons = lp__domain_logons,
 
 	.winbind_separator = lp_winbind_separator,
 	.template_homedir = lp_template_homedir,

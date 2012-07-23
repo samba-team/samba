@@ -116,7 +116,6 @@ static bool defaults_saved = false;
 	char *szPrintcapname;						\
 	int CupsEncrypt;						\
 	int  iPreferredMaster;						\
-	int domain_master;						\
 	char *szLdapMachineSuffix;					\
 	char *szLdapUserSuffix;						\
 	char *szLdapIdmapSuffix;					\
@@ -5197,7 +5196,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
  char lp_ ## fn_name(const struct share_params *p) {return(LP_SNUM_OK(p->service)? ServicePtrs[(p->service)]->val : sDefault.val);}
 
 
-static FN_GLOBAL_BOOL(domain_logons, bDomainLogons)
 static FN_GLOBAL_BOOL(_readraw, bReadRaw)
 static FN_GLOBAL_BOOL(_writeraw, bWriteRaw)
 
@@ -5264,7 +5262,6 @@ int lp_cups_encrypt(void)
 
 /* These functions remain in source3/param for now */
 
-FN_GLOBAL_INTEGER(security, security)
 FN_GLOBAL_STRING(configfile, szConfigFile)
 
 #include "lib/param/param_functions.c"
@@ -9555,7 +9552,13 @@ bool lp_readraw(void)
 int lp_server_role(void)
 {
 	return lp_find_server_role(lp__server_role(),
-				   lp_security(),
-				   lp_domain_logons(),
+				   lp__security(),
+				   lp__domain_logons(),
 				   lp_domain_master_true_or_auto());
+}
+
+int lp_security(void)
+{
+	return lp_find_security(lp__server_role(),
+				lp__security());
 }

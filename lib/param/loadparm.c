@@ -83,9 +83,6 @@ static bool defaults_saved = false;
 	char *tls_dhpfile;						\
 	char *loglevel;							\
 	char *panic_action;						\
-	int security;							\
-	int domain_master;						\
-	int domain_logons;						\
 	int bPreferredMaster;
 
 #include "lib/param/param_global.h"
@@ -123,7 +120,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "domain logons",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(domain_logons),
+		.offset		= GLOBAL_VAR(bDomainLogons),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto
 	},
@@ -3762,23 +3759,17 @@ struct gensec_settings *lpcfg_gensec_settings(TALLOC_CTX *mem_ctx, struct loadpa
 
 int lpcfg_server_role(struct loadparm_context *lp_ctx)
 {
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->server_role();
-	}
+	int domain_master = lpcfg__domain_master(lp_ctx);
 
-	return lp_find_server_role(lp_ctx->globals->server_role,
-				   lp_ctx->globals->security,
-				   lp_ctx->globals->domain_logons,
-				   (lp_ctx->globals->domain_master == true) ||
-				   (lp_ctx->globals->domain_master == Auto));
+	return lp_find_server_role(lpcfg__server_role(lp_ctx),
+				   lpcfg__security(lp_ctx),
+				   lpcfg__domain_logons(lp_ctx),
+				   (domain_master == true) ||
+				   (domain_master == Auto));
 }
 
 int lpcfg_security(struct loadparm_context *lp_ctx)
 {
-	if (lp_ctx->s3_fns) {
-		return lp_ctx->s3_fns->security();
-	}
-
-	return lp_find_security(lp_ctx->globals->server_role,
-				lp_ctx->globals->security);
+	return lp_find_security(lpcfg__server_role(lp_ctx),
+				lpcfg__security(lp_ctx));
 }
