@@ -567,54 +567,6 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
-		.label		= "tls enabled",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_enabled),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "tls keyfile",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_keyfile),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "tls certfile",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_certfile),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "tls cafile",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_cafile),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "tls crlfile",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_crlfile),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "tls dh params file",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(tls_dhpfile),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
 		.label		= "large readwrite",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
@@ -1322,6 +1274,57 @@ static struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(dns_recursive_queries),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+
+	{N_("TLS options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "tls enabled",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_enabled),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls keyfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_keyfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls certfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_certfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls cafile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_cafile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls crlfile",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_crlfile),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls dh params file",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_dhpfile),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
