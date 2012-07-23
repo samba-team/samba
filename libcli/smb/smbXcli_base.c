@@ -196,7 +196,12 @@ struct smbXcli_req_state {
 		uint8_t hdr[64];
 		uint8_t pad[7];	/* padding space for compounding */
 
-		/* always an array of 3 talloc elements */
+		/*
+		 * always an array of 3 talloc elements
+		 * (without a SMB2_TRANSFORM header!)
+		 *
+		 * HDR, BODY, DYN
+		 */
 		struct iovec *recv_iov;
 
 		uint16_t credit_charge;
@@ -2745,6 +2750,8 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 	}
 
 	while (taken < buflen) {
+		uint8_t *tf = NULL;
+		size_t tf_len = 0;
 		size_t len = buflen - taken;
 		uint8_t *hdr = first_hdr + taken;
 		struct iovec *cur;
@@ -2796,21 +2803,23 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 		}
 
 		iov_tmp = talloc_realloc(mem_ctx, iov, struct iovec,
-					 num_iov + 3);
+					 num_iov + 4);
 		if (iov_tmp == NULL) {
 			TALLOC_FREE(iov);
 			return NT_STATUS_NO_MEMORY;
 		}
 		iov = iov_tmp;
 		cur = &iov[num_iov];
-		num_iov += 3;
+		num_iov += 4;
 
-		cur[0].iov_base = hdr;
-		cur[0].iov_len  = SMB2_HDR_BODY;
-		cur[1].iov_base = hdr + SMB2_HDR_BODY;
-		cur[1].iov_len  = body_size;
-		cur[2].iov_base = hdr + SMB2_HDR_BODY + body_size;
-		cur[2].iov_len  = full_size - (SMB2_HDR_BODY + body_size);
+		cur[0].iov_base = tf;
+		cur[0].iov_len  = tf_len;
+		cur[1].iov_base = hdr;
+		cur[1].iov_len  = SMB2_HDR_BODY;
+		cur[2].iov_base = hdr + SMB2_HDR_BODY;
+		cur[2].iov_len  = body_size;
+		cur[3].iov_base = hdr + SMB2_HDR_BODY + body_size;
+		cur[3].iov_len  = full_size - (SMB2_HDR_BODY + body_size);
 
 		taken += full_size;
 	}
@@ -2865,10 +2874,10 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		return status;
 	}
 
-	for (i=0; i<num_iov; i+=3) {
+	for (i=0; i<num_iov; i+=4) {
 		uint8_t *inbuf_ref = NULL;
 		struct iovec *cur = &iov[i];
-		uint8_t *inhdr = (uint8_t *)cur[0].iov_base;
+		uint8_t *inhdr = (uint8_t *)cur[1].iov_base;
 		uint16_t opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 		uint32_t flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
@@ -3057,7 +3066,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		if (signing_key) {
 			status = smb2_signing_check_pdu(*signing_key,
 							state->conn->protocol,
-							cur, 3);
+							&cur[1], 3);
 			if (!NT_STATUS_IS_OK(status)) {
 				/*
 				 * If the signing check fails, we disconnect
@@ -3073,7 +3082,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		 * There might be more than one response
 		 * we need to defer the notifications
 		 */
-		if ((num_iov == 4) && (talloc_array_length(conn->pending) == 0)) {
+		if ((num_iov == 5) && (talloc_array_length(conn->pending) == 0)) {
 			defer = false;
 		}
 
@@ -3091,9 +3100,9 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		}
 
 		/* copy the related buffers */
-		state->smb2.recv_iov[0] = cur[0];
-		state->smb2.recv_iov[1] = cur[1];
-		state->smb2.recv_iov[2] = cur[2];
+		state->smb2.recv_iov[0] = cur[1];
+		state->smb2.recv_iov[1] = cur[2];
+		state->smb2.recv_iov[2] = cur[3];
 
 		tevent_req_done(req);
 	}
