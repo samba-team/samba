@@ -64,7 +64,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    int *perrno)
 {
 	struct pipes_struct *p;
-	NTSTATUS status;
 	int ret;
 
 	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
