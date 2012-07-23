@@ -220,7 +220,7 @@ static NTSTATUS dcerpc_spoolss_bind(struct dcesrv_call_state *dce_call, const st
 	struct ntptr_context *ntptr;
 
 	status = ntptr_init_context(dce_call->context, dce_call->conn->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
-				    lpcfg_ntptr_providor(dce_call->conn->dce_ctx->lp_ctx), &ntptr);
+				    "simple_ldb", &ntptr);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	dce_call->context->private_data = ntptr;
