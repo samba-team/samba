@@ -271,7 +271,11 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	cli->smb1.pid = (uint16_t)getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
-	cli->smb1.tid = UINT16_MAX;
+	cli->smb1.tcon = smbXcli_tcon_create(cli);
+	if (cli->smb1.tcon == NULL) {
+		goto error;
+	}
+	smb1cli_tcon_set_id(cli->smb1.tcon, UINT16_MAX);
 	cli->smb1.session = smbXcli_session_create(cli, cli->conn);
 	if (cli->smb1.session == NULL) {
 		goto error;
@@ -394,13 +398,13 @@ bool cli_state_has_tcon(struct cli_state *cli)
 
 uint16_t cli_state_get_tid(struct cli_state *cli)
 {
-	return cli->smb1.tid;
+	return smb1cli_tcon_current_id(cli->smb1.tcon);
 }
 
 uint16_t cli_state_set_tid(struct cli_state *cli, uint16_t tid)
 {
-	uint16_t ret = cli->smb1.tid;
-	cli->smb1.tid = tid;
+	uint16_t ret = smb1cli_tcon_current_id(cli->smb1.tcon);
+	smb1cli_tcon_set_id(cli->smb1.tcon, tid);
 	return ret;
 }
 
