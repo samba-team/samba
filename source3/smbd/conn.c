@@ -62,16 +62,15 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 	connection_struct *conn;
 
 	if (!(conn=talloc_zero(NULL, connection_struct)) ||
-	    !(conn->params = talloc(conn, struct share_params))) {
+	    !(conn->params = talloc(conn, struct share_params)) ||
+	    !(conn->connectpath = talloc_strdup(conn, "")) ||
+	    !(conn->origpath = talloc_strdup(conn, ""))) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
 		TALLOC_FREE(conn);
 		return NULL;
 	}
 	conn->sconn = sconn;
 	conn->force_group_gid = (gid_t)-1;
-
-	string_set(&conn->connectpath,"");
-	string_set(&conn->origpath,"");
 
 	DLIST_ADD(sconn->connections, conn);
 	sconn->num_connections++;
@@ -170,9 +169,6 @@ static void conn_free_internal(connection_struct *conn)
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
 	free_namearray(conn->aio_write_behind_list);
-
-	string_free(&conn->connectpath);
-	string_free(&conn->origpath);
 
 	ZERO_STRUCTP(conn);
 	talloc_destroy(conn);

@@ -61,7 +61,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	}
 
 	/* Allocate for strlen + '\0' + possible leading '/' */
-	destname = (char *)SMB_MALLOC(strlen(connectpath) + 2);
+	destname = (char *)talloc_size(conn, strlen(connectpath) + 2);
 	if (!destname) {
 		return false;
 	}
@@ -162,8 +162,8 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	DEBUG(10,("set_conn_connectpath: service %s, connectpath = %s\n",
 		lp_servicename(talloc_tos(), SNUM(conn)), destname ));
 
-	string_set(&conn->connectpath, destname);
-	SAFE_FREE(destname);
+	talloc_free(conn->connectpath);
+	conn->connectpath = destname;
 	return true;
 }
 
@@ -867,7 +867,8 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	}
 	conn->base_share_dev = smb_fname_cpath->st.st_ex_dev;
 
-	string_set(&conn->origpath,conn->connectpath);
+	talloc_free(conn->origpath);
+	conn->origpath = talloc_strdup(conn, conn->connectpath);
 
 	/* Figure out the characteristics of the underlying filesystem. This
 	 * assumes that all the filesystem mounted withing a share path have
