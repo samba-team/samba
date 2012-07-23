@@ -1205,7 +1205,9 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	if (NT_STATUS_IS_OK(status)) {
 		lastts = (time_t *)ldb_get_opaque(samdb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME);
 		if (lastts && !*lastts) {
-			DEBUG(10, ("Schema update now was requested, fullfilling the request ts = %d\n", lastts));
+			DEBUG(10, ("Schema update now was requested, "
+				"fullfilling the request ts = %d\n",
+				(int)*lastts));
 			/*
 			* Just requesting the schema will do the trick
 			* as the delay for reload is experied, we will have a reload
