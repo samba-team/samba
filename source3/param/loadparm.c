@@ -605,7 +605,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "server role",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(ServerRole),
+		.offset		= GLOBAL_VAR(server_role),
 		.special	= NULL,
 		.enum_list	= enum_server_role,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED,
@@ -4747,7 +4747,7 @@ static void init_globals(bool reinit_globals)
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
 	Globals.ConfigBackend = config_backend;
-	Globals.ServerRole = ROLE_AUTO;
+	Globals.server_role = ROLE_AUTO;
 
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
@@ -5057,7 +5057,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK
 static FN_GLOBAL_BOOL(domain_logons, bDomainLogons)
 static FN_GLOBAL_BOOL(_readraw, bReadRaw)
 static FN_GLOBAL_BOOL(_writeraw, bWriteRaw)
-static FN_GLOBAL_INTEGER(_server_role, ServerRole)
 
 /* If lp_statedir() and lp_cachedir() are explicitely set during the
  * build process or in smb.conf, we use that value.  Otherwise they

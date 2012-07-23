@@ -83,7 +83,6 @@ static bool defaults_saved = false;
 	char *tls_dhpfile;						\
 	char *loglevel;							\
 	char *panic_action;						\
-	int server_role;						\
 	int security;							\
 	int domain_master;						\
 	int domain_logons;						\
