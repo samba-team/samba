@@ -193,6 +193,7 @@ struct smbXcli_req_state {
 		const uint8_t *dyn;
 		uint32_t dyn_len;
 
+		uint8_t transform[SMB2_TF_HDR_SIZE];
 		uint8_t hdr[SMB2_HDR_BODY];
 		uint8_t pad[7];	/* padding space for compounding */
 
@@ -207,6 +208,7 @@ struct smbXcli_req_state {
 		uint16_t credit_charge;
 
 		bool should_sign;
+		bool should_encrypt;
 
 		bool signing_skipped;
 		bool notify_async;
@@ -2416,11 +2418,22 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		uid = session->smb2.session_id;
 
 		state->smb2.should_sign = session->smb2.should_sign;
+		state->smb2.should_encrypt = session->smb2.should_encrypt;
+
+		/* TODO: turn on encryption based on the tree connect. */
 
 		if (cmd == SMB2_OP_SESSSETUP &&
 		    session->smb2.signing_key.length != 0) {
 			state->smb2.should_sign = true;
 		}
+
+		if (cmd == SMB2_OP_SESSSETUP) {
+			state->smb2.should_encrypt = false;
+		}
+
+		if (state->smb2.should_encrypt) {
+			state->smb2.should_sign = false;
+		};
 	}
 
 	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
@@ -2436,6 +2449,11 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	state->smb2.fixed_len = fixed_len;
 	state->smb2.dyn = dyn;
 	state->smb2.dyn_len = dyn_len;
+
+	if (state->smb2.should_encrypt) {
+		SIVAL(state->smb2.transform, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
+		SBVAL(state->smb2.transform, SMB2_TF_SESSION_ID, uid);
+	}
 
 	SIVAL(state->smb2.hdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
 	SSVAL(state->smb2.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
@@ -2496,11 +2514,11 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 	/*
 	 * 1 for the nbt length
-	 * per request: HDR, fixed, dyn, padding
+	 * per request: TRANSFORM, HDR, fixed, dyn, padding
 	 * -1 because the last one does not need padding
 	 */
 
-	iov = talloc_array(reqs[0], struct iovec, 1 + 4*num_reqs - 1);
+	iov = talloc_array(reqs[0], struct iovec, 1 + 5*num_reqs - 1);
 	if (iov == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2509,6 +2527,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	nbt_len = 0;
 
 	for (i=0; i<num_reqs; i++) {
+		int tf_iov;
 		int hdr_iov;
 		size_t reqlen;
 		bool ret;
@@ -2518,6 +2537,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		uint16_t credits;
 		uint64_t mid;
 		const DATA_BLOB *signing_key = NULL;
+		const DATA_BLOB *encryption_key = NULL;
 
 		if (!tevent_req_is_in_progress(reqs[i])) {
 			return NT_STATUS_INTERNAL_ERROR;
@@ -2601,6 +2621,17 @@ skip_credits:
 			if (signing_key && signing_key->length == 0) {
 				signing_key = NULL;
 			}
+
+			if (state->smb2.should_encrypt) {
+				encryption_key = &state->session->smb2.encryption_key;
+			}
+		}
+
+		if (encryption_key) {
+			tf_iov = num_iov;
+			iov[num_iov].iov_base = state->smb2.transform;
+			iov[num_iov].iov_len  = sizeof(state->smb2.transform);
+			num_iov += 1;
 		}
 
 		hdr_iov = num_iov;
@@ -2633,7 +2664,48 @@ skip_credits:
 			SIVAL(state->smb2.hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
 		}
 
-		if (signing_key) {
+		if (encryption_key) {
+			NTSTATUS status;
+			uint8_t *buf;
+			int vi;
+
+			SBVAL(state->smb2.transform, SMB2_TF_NONCE, mid);
+			SBVAL(state->smb2.transform, SMB2_TF_NONCE+8,
+			      state->session->smb2.channel_nonce);
+			SBVAL(state->smb2.transform, SMB2_TF_MSG_SIZE,
+			      reqlen);
+
+			buf = talloc_array(iov, uint8_t, reqlen);
+			if (buf == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			reqlen += SMB2_TF_HDR_SIZE;
+
+			/*
+			 * We copy the buffers before encrypting them,
+			 * this is at least currently needed for the
+			 * to keep state->smb2.hdr.
+			 *
+			 * Also the callers may expect there buffers
+			 * to be const.
+			 */
+			for (vi = hdr_iov; vi < num_iov; vi++) {
+				struct iovec *v = &iov[vi];
+				const uint8_t *o = (const uint8_t *)v->iov_base;
+
+				memcpy(buf, o, v->iov_len);
+				v->iov_base = (void *)buf;
+				buf += v->iov_len;
+			}
+
+			status = smb2_signing_encrypt_pdu(*encryption_key,
+						state->session->conn->protocol,
+						&iov[tf_iov], num_iov - tf_iov);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		} else if (signing_key) {
 			NTSTATUS status;
 
 			status = smb2_signing_sign_pdu(*signing_key,
@@ -3070,6 +3142,10 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			 * status to the caller.
 			 */
 			signing_key = NULL;
+		} else if (state->smb2.should_encrypt) {
+			if (cur[0].iov_len != SMB2_TF_HDR_SIZE) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED) ||
