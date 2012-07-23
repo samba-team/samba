@@ -1627,7 +1627,7 @@ bool run_smb2_session_reauth(int dummy)
 	status = smb2cli_query_info(cli->conn,
 				    cli->timeout,
 				    cli->smb2.session,
-				    cli->smb2.tid,
+				    cli->smb2.tcon,
 				    SMB2_GETINFO_SECURITY,
 				    0, /* in_file_info_class */
 				    1024, /* in_max_output_length */
@@ -1647,7 +1647,7 @@ bool run_smb2_session_reauth(int dummy)
 	status = smb2cli_query_info(cli->conn,
 				    cli->timeout,
 				    cli->smb2.session,
-				    cli->smb2.tid,
+				    cli->smb2.tcon,
 				    SMB2_GETINFO_FILE,
 				    in_file_info_class,
 				    1024, /* in_max_output_length */
@@ -1764,7 +1764,7 @@ bool run_smb2_session_reauth(int dummy)
 	status = smb2cli_query_info(cli->conn,
 				    cli->timeout,
 				    cli->smb2.session,
-				    cli->smb2.tid,
+				    cli->smb2.tcon,
 				    SMB2_GETINFO_SECURITY,
 				    0, /* in_file_info_class */
 				    1024, /* in_max_output_length */
@@ -1784,7 +1784,7 @@ bool run_smb2_session_reauth(int dummy)
 	status = smb2cli_query_info(cli->conn,
 				    cli->timeout,
 				    cli->smb2.session,
-				    cli->smb2.tid,
+				    cli->smb2.tcon,
 				    SMB2_GETINFO_FILE,
 				    in_file_info_class,
 				    1024, /* in_max_output_length */
@@ -1823,7 +1823,7 @@ bool run_smb2_session_reauth(int dummy)
 	status = smb2cli_query_info(cli->conn,
 				    cli->timeout,
 				    cli->smb2.session,
-				    cli->smb2.tid,
+				    cli->smb2.tcon,
 				    SMB2_GETINFO_FILE,
 				    in_file_info_class,
 				    1024, /* in_max_output_length */
