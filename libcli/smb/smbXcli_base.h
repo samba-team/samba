@@ -428,14 +428,14 @@ struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 				      struct smbXcli_conn *conn,
 				      uint32_t timeout_msec,
 				      struct smbXcli_session *session,
-				      uint32_t tcon_id,
+				      struct smbXcli_tcon *tcon,
 				      uint64_t fid_persistent,
 				      uint64_t fid_volatile);
 NTSTATUS smb2cli_flush_recv(struct tevent_req *req);
 NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
 		       uint32_t timeout_msec,
 		       struct smbXcli_session *session,
-		       uint32_t tcon_id,
+		       struct smbXcli_tcon *tcon,
 		       uint64_t fid_persistent,
 		       uint64_t fid_volatile);
 

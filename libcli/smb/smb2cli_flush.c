@@ -34,13 +34,14 @@ struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 				       struct smbXcli_conn *conn,
 				       uint32_t timeout_msec,
 				       struct smbXcli_session *session,
-				       uint32_t tcon_id,
+				       struct smbXcli_tcon *tcon,
 				       uint64_t fid_persistent,
 				       uint64_t fid_volatile)
 {
 	struct tevent_req *req, *subreq;
 	struct smb2cli_flush_state *state;
 	uint8_t *fixed;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_flush_state);
@@ -51,6 +52,10 @@ struct tevent_req *smb2cli_flush_send(TALLOC_CTX *mem_ctx,
 	SSVAL(fixed, 0, 24);
 	SBVAL(fixed, 8, fid_persistent);
 	SBVAL(fixed, 16, fid_volatile);
+
+	if (tcon) {
+		tcon_id = smb2cli_tcon_current_id(tcon);
+	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_FLUSH,
 				  0, 0, /* flags */
@@ -96,7 +101,7 @@ NTSTATUS smb2cli_flush_recv(struct tevent_req *req)
 NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
 		       uint32_t timeout_msec,
 		       struct smbXcli_session *session,
-		       uint32_t tcon_id,
+		       struct smbXcli_tcon *tcon,
 		       uint64_t fid_persistent,
 		       uint64_t fid_volatile)
 {
@@ -116,8 +121,9 @@ NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_flush_send(frame, ev, conn, timeout_msec, session,
-				 tcon_id, fid_persistent, fid_volatile);
+	req = smb2cli_flush_send(frame, ev, conn, timeout_msec,
+				 session, tcon,
+				 fid_persistent, fid_volatile);
 	if (req == NULL) {
 		goto fail;
 	}

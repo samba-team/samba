@@ -98,7 +98,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	status = smb2cli_flush(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -348,7 +348,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_flush(cli1->conn, cli1->timeout, cli1->smb2.session,
-			       cli1->smb2.tid, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -510,7 +510,7 @@ bool run_smb2_session_reconnect(int dummy)
 	/* check file operation on the old client */
 
 	status = smb2cli_flush(cli1->conn, cli1->timeout, cli1->smb2.session,
-			       cli1->smb2.tid, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -528,7 +528,7 @@ bool run_smb2_session_reconnect(int dummy)
 	 * while create gives ACCESS_DENIED without signing
 	 */
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tid, fid_persistent, fid_volatile);
+			       cli2->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
 	{
@@ -590,7 +590,7 @@ bool run_smb2_session_reconnect(int dummy)
 	cli2->smb2.tid = cli1->smb2.tid;
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tid, fid_persistent, fid_volatile);
+			       cli2->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
 	{
@@ -672,7 +672,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tid, fid_persistent, fid_volatile);
+			       cli2->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -768,7 +768,7 @@ bool run_smb2_tcon_dependence(int dummy)
 	}
 
 	status = smb2cli_flush(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1181,21 +1181,21 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tid, fid_persistent, fid_volatile);
+			       cli2->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli1->conn, cli1->timeout, cli1->smb2.session,
-			       cli1->smb2.tid, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tid, fid_persistent, fid_volatile);
+			       cli3->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1295,21 +1295,21 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli1->conn, cli1->timeout, cli1->smb2.session,
-			       cli1->smb2.tid, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tid, fid_persistent, fid_volatile);
+			       cli2->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tid, fid_persistent, fid_volatile);
+			       cli3->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1402,21 +1402,21 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tid, fid_persistent, fid_volatile);
+			       cli3->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tid, fid_persistent, fid_volatile);
+			       cli2->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli1->conn, cli1->timeout, cli1->smb2.session,
-			       cli1->smb2.tid, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1605,7 +1605,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_flush(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1755,7 +1755,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_flush(cli->conn, cli->timeout, cli->smb2.session,
-			       cli->smb2.tid, fid_persistent, fid_volatile);
+			       cli->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
