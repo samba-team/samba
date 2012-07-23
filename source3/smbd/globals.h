@@ -444,9 +444,6 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
 
-	TALLOC_CTX *mem_pool;
-	struct smbd_smb2_request **parent;
-
 	struct smbd_server_connection *sconn;
 
 	/* the session the request operates on, maybe NULL */

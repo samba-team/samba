@@ -151,30 +151,9 @@ static void smb2_setup_nbt_length(struct iovec *vector, int count)
 	_smb2_setlen(vector[0].iov_base, len);
 }
 
-static int smbd_smb2_request_parent_destructor(struct smbd_smb2_request **req)
-{
-	if (*req) {
-		(*req)->parent = NULL;
-		(*req)->mem_pool = NULL;
-	}
-
-	return 0;
-}
-
-static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
-{
-	if (req->parent) {
-		*req->parent = NULL;
-		talloc_free(req->mem_pool);
-	}
-
-	return 0;
-}
-
 static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 {
 	TALLOC_CTX *mem_pool;
-	struct smbd_smb2_request **parent;
 	struct smbd_smb2_request *req;
 
 #if 0
@@ -187,26 +166,16 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	parent = talloc(mem_pool, struct smbd_smb2_request *);
-	if (parent == NULL) {
-		talloc_free(mem_pool);
-		return NULL;
-	}
-
-	req = talloc_zero(parent, struct smbd_smb2_request);
+	req = talloc_zero(mem_pool, struct smbd_smb2_request);
 	if (req == NULL) {
 		talloc_free(mem_pool);
 		return NULL;
 	}
-	*parent		= req;
-	req->mem_pool	= mem_pool;
-	req->parent	= parent;
+	talloc_reparent(mem_pool, mem_ctx, req);
+	TALLOC_FREE(mem_pool);
 
 	req->last_session_id = UINT64_MAX;
 	req->last_tid = UINT32_MAX;
-
-	talloc_set_destructor(parent, smbd_smb2_request_parent_destructor);
-	talloc_set_destructor(req, smbd_smb2_request_destructor);
 
 	return req;
 }
@@ -2800,8 +2769,7 @@ static NTSTATUS smbd_smb2_request_read_recv(struct tevent_req *req,
 		return status;
 	}
 
-	talloc_steal(mem_ctx, state->smb2_req->mem_pool);
-	*_smb2_req = state->smb2_req;
+	*_smb2_req = talloc_move(mem_ctx, &state->smb2_req);
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
