@@ -773,7 +773,7 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 					   cli_nps->cli->conn,
 					   cli_nps->cli->timeout,
 					   cli_nps->cli->smb2.session,
-					   cli_nps->cli->smb2.tid,
+					   cli_nps->cli->smb2.tcon,
 					   TSTREAM_CLI_NP_MAX_BUF_SIZE, /* length */
 					   0, /* offset */
 					   cli_nps->fid_persistent,

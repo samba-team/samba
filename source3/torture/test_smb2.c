@@ -105,7 +105,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	status = smb2cli_read(cli->conn, cli->timeout, cli->smb2.session,
-			      cli->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -355,7 +355,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_read(cli1->conn, cli1->timeout, cli1->smb2.session,
-			      cli1->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli1->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -547,7 +547,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
-			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli2->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
@@ -609,7 +609,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
-			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli2->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
@@ -679,7 +679,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
-			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli2->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -710,6 +710,8 @@ bool run_smb2_tcon_dependence(int dummy)
 	const char *hello = "Hello, world\n";
 	uint8_t *result;
 	uint32_t nread;
+	struct smbXcli_tcon *tcon2;
+	uint32_t tcon2_id;
 
 	printf("Starting SMB2-TCON-DEPENDENCE\n");
 
@@ -773,7 +775,7 @@ bool run_smb2_tcon_dependence(int dummy)
 	}
 
 	status = smb2cli_read(cli->conn, cli->timeout, cli->smb2.session,
-			      cli->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -795,10 +797,18 @@ bool run_smb2_tcon_dependence(int dummy)
 
 	/* check behaviour with wrong tid... */
 
-	cli->smb2.tid++;
+	tcon2 = smbXcli_tcon_create(cli);
+	tcon2_id = smb2cli_tcon_current_id(cli->smb2.tcon);
+	tcon2_id++;
+	smb2cli_tcon_set_values(tcon2,
+				tcon2_id,
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0  /* maximal_access */);
 
 	status = smb2cli_read(cli->conn, cli->timeout, cli->smb2.session,
-			      cli->smb2.tid, 0x10000, 0, fid_persistent,
+			      tcon2, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
@@ -806,7 +816,7 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	cli->smb2.tid--;
+	talloc_free(tcon2);
 
 	return true;
 }
@@ -1192,7 +1202,7 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
-			      cli2->smb2.tid, 0x10000, 0, fid_persistent,
+			      cli2->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
