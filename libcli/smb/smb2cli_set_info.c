@@ -35,7 +35,7 @@ struct tevent_req *smb2cli_set_info_send(TALLOC_CTX *mem_ctx,
 					 struct smbXcli_conn *conn,
 					 uint32_t timeout_msec,
 					 struct smbXcli_session *session,
-					 uint32_t tcon_id,
+					 struct smbXcli_tcon *tcon,
 					 uint8_t in_info_type,
 					 uint8_t in_file_info_class,
 					 const DATA_BLOB *in_input_buffer,
@@ -50,6 +50,7 @@ struct tevent_req *smb2cli_set_info_send(TALLOC_CTX *mem_ctx,
 	size_t dyn_len;
 	uint16_t input_buffer_offset = 0;
 	uint32_t input_buffer_length = 0;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_set_info_state);
@@ -80,6 +81,10 @@ struct tevent_req *smb2cli_set_info_send(TALLOC_CTX *mem_ctx,
 	} else {
 		dyn = state->dyn_pad;
 		dyn_len = sizeof(state->dyn_pad);
+	}
+
+	if (tcon) {
+		tcon_id = smb2cli_tcon_current_id(tcon);
 	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_SETINFO,
@@ -135,7 +140,7 @@ NTSTATUS smb2cli_set_info_recv(struct tevent_req *req)
 NTSTATUS smb2cli_set_info(struct smbXcli_conn *conn,
 			  uint32_t timeout_msec,
 			  struct smbXcli_session *session,
-			  uint32_t tcon_id,
+			  struct smbXcli_tcon *tcon,
 			  uint8_t in_info_type,
 			  uint8_t in_file_info_class,
 			  const DATA_BLOB *in_input_buffer,
@@ -161,7 +166,7 @@ NTSTATUS smb2cli_set_info(struct smbXcli_conn *conn,
 	}
 	req = smb2cli_set_info_send(frame, ev,
 				    conn, timeout_msec,
-				    session, tcon_id,
+				    session, tcon,
 				    in_info_type,
 				    in_file_info_class,
 				    in_input_buffer,
