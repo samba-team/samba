@@ -95,7 +95,7 @@ static const char *iprint_server(void)
 {
 	const char *server = lp_iprint_server(talloc_tos());
 
-	if ((lp_iprint_server(server) != NULL) && (strlen(server) > 0)) {
+	if ((server != NULL) && (strlen(server) > 0)) {
 		DEBUG(10, ("iprint server explicitly set to %s\n",
 			   server));
 		return server;
