@@ -1511,6 +1511,7 @@ static void free_service_byindex(int idx)
 	}
 
 	free_service(ServicePtrs[idx]);
+	talloc_free_children(ServicePtrs[idx]);
 }
 
 /***************************************************************************
@@ -1551,7 +1552,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 			return (-1);
 		}
 		ServicePtrs = tsp;
-		ServicePtrs[iNumServices] = SMB_MALLOC_P(struct loadparm_service);
+		ServicePtrs[iNumServices] = talloc(NULL, struct loadparm_service);
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
 			return (-1);
