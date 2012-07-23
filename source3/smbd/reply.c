@@ -4944,8 +4944,12 @@ static void do_smb1_close(struct tevent_req *req)
 	} else {
 		reply_nterror(smbreq, status);
 	}
-	if (!srv_send_smb(smbreq->sconn, smbreq->outbuf, true,
-			  smbreq->seqnum+1, encrypt, NULL)) {
+	if (!srv_send_smb(smbreq->sconn,
+			smbreq->outbuf,
+			true,
+			smbreq->seqnum+1,
+			IS_CONN_ENCRYPTED(smbreq->conn)||smbreq->encrypted,
+			NULL)) {
 		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
 				    "failed.");
 	}
