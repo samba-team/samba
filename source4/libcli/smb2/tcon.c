@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 /*
   initialise a smb2_session structure
@@ -40,6 +41,13 @@ struct smb2_tree *smb2_tree_init(struct smb2_session *session,
 	} else {
 		tree->session = talloc_reference(tree, session);
 	}
+
+	tree->smbXcli = smbXcli_tcon_create(tree);
+	if (tree->smbXcli == NULL) {
+		talloc_free(tree);
+		return NULL;
+	}
+
 	return tree;
 }
 

@@ -108,6 +108,7 @@ struct smb2_tree {
 	struct smb2_session *session;
 	uint32_t tid;
 	uint32_t capabilities;
+	struct smbXcli_tcon *smbXcli;
 };
 
 /*

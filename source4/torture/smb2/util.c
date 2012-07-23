@@ -23,6 +23,7 @@
 #include "libcli/security/security_descriptor.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "../libcli/smb/smbXcli_base.h"
 #include "lib/cmdline/popt_common.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/ndr_security.h"
@@ -296,6 +297,13 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
 
 	tree->tid = tcon.out.tid;
 	tree->capabilities = tcon.out.capabilities;
+
+	smb2cli_tcon_set_values(tree->smbXcli,
+				tcon.out.tid,
+				tcon.out.share_type,
+				tcon.out.flags,
+				tcon.out.capabilities,
+				tcon.out.access_mask);
 
 	*_tree = tree;
 

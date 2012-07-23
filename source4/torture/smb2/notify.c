@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
@@ -1820,6 +1821,15 @@ static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
 	}
 
 	tree1->tid = tcon.smb2.out.tid;
+	tree1->capabilities = tcon.smb2.out.capabilities;
+
+	smb2cli_tcon_set_values(tree1->smbXcli,
+				tcon.smb2.out.tid,
+				tcon.smb2.out.share_type,
+				tcon.smb2.out.flags,
+				tcon.smb2.out.capabilities,
+				tcon.smb2.out.access_mask);
+
 	torture_comment(tctx,"tid1=%d tid2=%d\n", tree->tid, tree1->tid);
 
 	return tree1;
