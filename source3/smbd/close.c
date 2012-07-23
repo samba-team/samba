@@ -708,7 +708,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	connection_struct *conn = fsp->conn;
 
 	if (fsp->num_aio_requests != 0) {
-		char *str;
 		/*
 		 * reply_close and the smb2 close must have taken care of
 		 * this. No other callers of close_file should ever have
