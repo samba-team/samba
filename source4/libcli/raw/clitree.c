@@ -24,6 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #define SETUP_REQUEST_TREE(cmd, wct, buflen) do { \
 	req = smbcli_request_setup(tree, cmd, wct, buflen); \
@@ -49,6 +50,11 @@ _PUBLIC_ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session,
 		tree->session = talloc_reference(tree, session);
 	}
 
+	tree->smbXcli = smbXcli_tcon_create(tree);
+	if (tree->smbXcli == NULL) {
+		talloc_free(tree);
+		return NULL;
+	}
 
 	return tree;
 }

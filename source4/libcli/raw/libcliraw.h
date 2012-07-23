@@ -188,6 +188,7 @@ struct smbcli_tree {
 	/* session layer info */
 	struct smbcli_session *session;
 
+	struct smbXcli_tcon *smbXcli;
 	uint16_t tid;			/* tree id, aka cnum */
 	char *device;
 	char *fs_type;
