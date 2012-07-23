@@ -35,7 +35,7 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 				      struct smbXcli_conn *conn,
 				      uint32_t timeout_msec,
 				      struct smbXcli_session *session,
-				      uint32_t tcon_id,
+				      struct smbXcli_tcon *tcon,
 				      uint32_t length,
 				      uint64_t offset,
 				      uint64_t fid_persistent,
@@ -49,6 +49,7 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 	uint8_t *fixed;
 	const uint8_t *dyn;
 	size_t dyn_len;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_write_state);
@@ -73,6 +74,10 @@ struct tevent_req *smb2cli_write_send(TALLOC_CTX *mem_ctx,
 	} else {
 		dyn = state->dyn_pad;;
 		dyn_len = sizeof(state->dyn_pad);
+	}
+
+	if (tcon) {
+		tcon_id = smb2cli_tcon_current_id(tcon);
 	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_WRITE,
@@ -119,7 +124,7 @@ NTSTATUS smb2cli_write_recv(struct tevent_req *req)
 NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
 		       uint32_t timeout_msec,
 		       struct smbXcli_session *session,
-		       uint32_t tcon_id,
+		       struct smbXcli_tcon *tcon,
 		       uint32_t length,
 		       uint64_t offset,
 		       uint64_t fid_persistent,
@@ -144,8 +149,9 @@ NTSTATUS smb2cli_write(struct smbXcli_conn *conn,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_write_send(frame, ev, conn, timeout_msec, session,
-				 tcon_id, length, offset,
+	req = smb2cli_write_send(frame, ev, conn, timeout_msec,
+				 session, tcon,
+				 length, offset,
 				 fid_persistent, fid_volatile,
 				 remaining_bytes, flags, data);
 	if (req == NULL) {
