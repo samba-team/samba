@@ -174,6 +174,7 @@ struct smbXcli_req_state {
 	struct tevent_context *ev;
 	struct smbXcli_conn *conn;
 	struct smbXcli_session *session; /* maybe NULL */
+	struct smbXcli_tcon *tcon; /* maybe NULL */
 
 	uint8_t length_hdr[4];
 
@@ -1114,7 +1115,6 @@ static bool smb1cli_req_cancel(struct tevent_req *req)
 	uint8_t flags;
 	uint16_t flags2;
 	uint32_t pid;
-	uint16_t tid;
 	uint16_t mid;
 	struct tevent_req *subreq;
 	NTSTATUS status;
@@ -1123,7 +1123,6 @@ static bool smb1cli_req_cancel(struct tevent_req *req)
 	flags2 = SVAL(state->smb1.hdr, HDR_FLG2);
 	pid  = SVAL(state->smb1.hdr, HDR_PID);
 	pid |= SVAL(state->smb1.hdr, HDR_PIDHIGH)<<16;
-	tid = SVAL(state->smb1.hdr, HDR_TID);
 	mid = SVAL(state->smb1.hdr, HDR_MID);
 
 	subreq = smb1cli_req_create(state, state->ev,
@@ -1132,7 +1131,8 @@ static bool smb1cli_req_cancel(struct tevent_req *req)
 				    flags, 0,
 				    flags2, 0,
 				    0, /* timeout */
-				    pid, tid,
+				    pid,
+				    state->tcon,
 				    state->session,
 				    0, NULL, /* vwv */
 				    0, NULL); /* bytes */
@@ -1169,7 +1169,7 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint16_t clear_flags2,
 				      uint32_t timeout_msec,
 				      uint32_t pid,
-				      uint16_t tid,
+				      struct smbXcli_tcon *tcon,
 				      struct smbXcli_session *session,
 				      uint8_t wct, uint16_t *vwv,
 				      int iov_count,
@@ -1180,6 +1180,7 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	uint8_t flags = 0;
 	uint16_t flags2 = 0;
 	uint16_t uid = 0;
+	uint16_t tid = 0;
 
 	if (iov_count > MAX_SMB_IOV) {
 		/*
@@ -1196,9 +1197,14 @@ struct tevent_req *smb1cli_req_create(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->conn = conn;
 	state->session = session;
+	state->tcon = tcon;
 
 	if (session) {
 		uid = session->smb1.session_id;
+	}
+
+	if (tcon) {
+		tid = tcon->smb1.tcon_id;
 	}
 
 	state->smb1.recv_cmd = 0xFF;
@@ -1443,7 +1449,7 @@ struct tevent_req *smb1cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint16_t clear_flags2,
 				    uint32_t timeout_msec,
 				    uint32_t pid,
-				    uint16_t tid,
+				    struct smbXcli_tcon *tcon,
 				    struct smbXcli_session *session,
 				    uint8_t wct, uint16_t *vwv,
 				    uint32_t num_bytes,
@@ -1460,7 +1466,7 @@ struct tevent_req *smb1cli_req_send(TALLOC_CTX *mem_ctx,
 				 additional_flags, clear_flags,
 				 additional_flags2, clear_flags2,
 				 timeout_msec,
-				 pid, tid, session,
+				 pid, tcon, session,
 				 wct, vwv, 1, &iov);
 	if (req == NULL) {
 		return NULL;
