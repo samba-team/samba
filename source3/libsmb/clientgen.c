@@ -383,7 +383,9 @@ uint16_t cli_getpid(struct cli_state *cli)
 
 bool cli_state_has_tcon(struct cli_state *cli)
 {
-	if (cli->smb1.tid == UINT16_MAX) {
+	uint16_t tid = cli_state_get_tid(cli);
+
+	if (tid == UINT16_MAX) {
 		return false;
 	}
 

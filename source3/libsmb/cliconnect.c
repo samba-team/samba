@@ -2469,7 +2469,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
 	}
 
-	cli->smb1.tid = SVAL(inhdr, HDR_TID);
+	cli_state_set_tid(cli, SVAL(inhdr, HDR_TID));
 	tevent_req_done(req);
 }
 
@@ -2541,7 +2541,8 @@ NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	cli->smb1.tid = tid;
+
+	cli_state_set_tid(cli, tid);
 
 	return NT_STATUS_OK;
 }
@@ -2591,7 +2592,7 @@ static void cli_tdis_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	state->cli->smb1.tid = UINT16_MAX;
+	cli_state_set_tid(state->cli, UINT16_MAX);
 	tevent_req_done(req);
 }
 
