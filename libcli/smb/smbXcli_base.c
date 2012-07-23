@@ -206,6 +206,8 @@ struct smbXcli_req_state {
 
 		uint16_t credit_charge;
 
+		bool should_sign;
+
 		bool signing_skipped;
 		bool notify_async;
 		bool got_async;
@@ -2412,6 +2414,13 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 
 	if (session) {
 		uid = session->smb2.session_id;
+
+		state->smb2.should_sign = session->smb2.should_sign;
+
+		if (cmd == SMB2_OP_SESSSETUP &&
+		    session->smb2.signing_key.length != 0) {
+			state->smb2.should_sign = true;
+		}
 	}
 
 	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
@@ -2569,18 +2578,11 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 
 skip_credits:
 		if (state->session) {
-			bool should_sign = state->session->smb2.should_sign;
-
-			if (opcode == SMB2_OP_SESSSETUP &&
-			    state->session->smb2.signing_key.length != 0) {
-				should_sign = true;
-			}
-
 			/*
 			 * We prefer the channel signing key if it is
 			 * already there.
 			 */
-			if (should_sign) {
+			if (state->smb2.should_sign) {
 				signing_key = &state->session->smb2.channel_signing_key;
 			}
 
@@ -2942,7 +2944,6 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		uint32_t new_credits;
 		struct smbXcli_session *session = NULL;
 		const DATA_BLOB *signing_key = NULL;
-		bool should_sign = false;
 
 		new_credits = conn->smb2.cur_credits;
 		new_credits += credits;
@@ -2997,23 +2998,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		}
 		last_session = session;
 
-		if (session) {
-			should_sign = session->smb2.should_sign;
-			if (opcode == SMB2_OP_SESSSETUP &&
-			    session->smb2.signing_key.length != 0) {
-				should_sign = true;
-			}
-		}
-
-		/*
-		 * If we have a SMB2_TRANSFORM header we already verified
-		 * a signature.
-		 */
-		if (cur[0].iov_len == SMB2_TF_HDR_SIZE) {
-			should_sign = false;
-		}
-
-		if (should_sign) {
+		if (state->smb2.should_sign) {
 			if (!(flags & SMB2_HDR_FLAG_SIGNED)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
