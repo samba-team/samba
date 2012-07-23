@@ -175,7 +175,7 @@ struct tevent_req *tstream_cli_np_open_send(TALLOC_CTX *mem_ctx,
 	} else {
 		subreq = smb2cli_create_send(state, ev, cli->conn,
 					     cli->timeout, cli->smb2.session,
-					     cli->smb2.tid,
+					     cli->smb2.tcon,
 					     npipe,
 					     SMB2_OPLOCK_LEVEL_NONE,
 					     SMB2_IMPERSONATION_IMPERSONATION,

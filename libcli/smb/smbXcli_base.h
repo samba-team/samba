@@ -322,7 +322,7 @@ struct tevent_req *smb2cli_create_send(
 	struct smbXcli_conn *conn,
 	uint32_t timeout_msec,
 	struct smbXcli_session *session,
-	uint32_t tcon_id,
+	struct smbXcli_tcon *tcon,
 	const char *filename,
 	uint8_t  oplock_level,		/* SMB2_OPLOCK_LEVEL_* */
 	uint32_t impersonation_level,	/* SMB2_IMPERSONATION_* */
@@ -338,7 +338,7 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,
 			struct smbXcli_session *session,
-			uint32_t tcon_id,
+			struct smbXcli_tcon *tcon,
 			const char *filename,
 			uint8_t  oplock_level,	     /* SMB2_OPLOCK_LEVEL_* */
 			uint32_t impersonation_level, /* SMB2_IMPERSONATION_* */

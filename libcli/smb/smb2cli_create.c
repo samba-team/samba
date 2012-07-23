@@ -49,7 +49,7 @@ struct tevent_req *smb2cli_create_send(
 	struct smbXcli_conn *conn,
 	uint32_t timeout_msec,
 	struct smbXcli_session *session,
-	uint32_t tcon_id,
+	struct smbXcli_tcon *tcon,
 	const char *filename,
 	uint8_t  oplock_level,		/* SMB2_OPLOCK_LEVEL_* */
 	uint32_t impersonation_level,	/* SMB2_IMPERSONATION_* */
@@ -70,6 +70,7 @@ struct tevent_req *smb2cli_create_send(
 	size_t blobs_offset;
 	uint8_t *dyn;
 	size_t dyn_len;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_create_state);
@@ -135,6 +136,10 @@ struct tevent_req *smb2cli_create_send(
 		memcpy(dyn + blobs_offset,
 		       blob.data, blob.length);
 		data_blob_free(&blob);
+	}
+
+	if (tcon) {
+		tcon_id = smb2cli_tcon_current_id(tcon);
 	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_CREATE,
@@ -231,7 +236,7 @@ NTSTATUS smb2cli_create_recv(struct tevent_req *req,
 NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 			uint32_t timeout_msec,
 			struct smbXcli_session *session,
-			uint32_t tcon_id,
+			struct smbXcli_tcon *tcon,
 			const char *filename,
 			uint8_t  oplock_level,	     /* SMB2_OPLOCK_LEVEL_* */
 			uint32_t impersonation_level, /* SMB2_IMPERSONATION_* */
@@ -260,8 +265,9 @@ NTSTATUS smb2cli_create(struct smbXcli_conn *conn,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = smb2cli_create_send(frame, ev, conn, timeout_msec, session,
-				  tcon_id, filename, oplock_level,
+	req = smb2cli_create_send(frame, ev, conn, timeout_msec,
+				  session, tcon,
+				  filename, oplock_level,
 				  impersonation_level, desired_access,
 				  file_attributes, share_access,
 				  create_disposition, create_options,
