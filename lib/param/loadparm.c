@@ -273,34 +273,10 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
 	},
 	{
-		.label		= "ntvfs handler",
-		.type		= P_LIST,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(ntvfs_handler),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
 		.label		= "passdb backend",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(passdb_backend),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "dcerpc endpoint servers",
-		.type		= P_LIST,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(dcerpc_ep_servers),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "server services",
-		.type		= P_LIST,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(server_services),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
@@ -996,14 +972,6 @@ static struct parm_struct parm_table[] = {
 	},
 
 	{
-		.label		= "share backend",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szShareBackend),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
 		.label		= "preload",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -1225,24 +1193,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "spn update command",
-		.type		= P_CMDLIST,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szSPNUpdateCommand),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "samba kcc command",
-		.type		= P_CMDLIST,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szSambaKCCCommand),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
 		.label		= "nsupdate command",
 		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
@@ -1274,6 +1224,59 @@ static struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(dns_recursive_queries),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+
+	{N_("AD DC options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "samba kcc command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSambaKCCCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "server services",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(server_services),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dcerpc endpoint servers",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dcerpc_ep_servers),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "spn update command",
+		.type		= P_CMDLIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szSPNUpdateCommand),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "share backend",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szShareBackend),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "ntvfs handler",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(ntvfs_handler),
 		.special	= NULL,
 		.enum_list	= NULL
 	},
