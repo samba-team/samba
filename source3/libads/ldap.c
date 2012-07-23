@@ -29,6 +29,7 @@
 #include "../libds/common/flags.h"
 #include "smbldap.h"
 #include "../libcli/security/security.h"
+#include "lib/param/loadparm.h"
 
 #ifdef HAVE_LDAP
 

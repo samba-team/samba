@@ -52,6 +52,7 @@
 #include "../lib/util/util_pw.h"
 #include "lib/winbind_util.h"
 #include "librpc/gen_ndr/idmap.h"
+#include "lib/param/loadparm.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

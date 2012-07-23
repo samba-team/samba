@@ -23,6 +23,7 @@
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "../libcli/security/security.h"
 #include "smbd/smbd.h"
+#include "lib/param/loadparm.h"
 
 static uint32_t filter_mode_by_protocol(uint32_t mode)
 {

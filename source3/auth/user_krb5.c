@@ -22,6 +22,7 @@
 #include "librpc/gen_ndr/krb5pac.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "passdb.h"
+#include "lib/param/loadparm.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

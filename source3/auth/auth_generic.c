@@ -31,6 +31,7 @@
 #endif
 #include "librpc/crypto/gse.h"
 #include "auth/credentials/credentials.h"
+#include "lib/param/loadparm.h"
 
 static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 						TALLOC_CTX *mem_ctx,

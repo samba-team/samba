@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/ndr_auth.h"
 #include "../auth/auth_sam_reply.h"
 #include "../librpc/gen_ndr/idmap.h"
+#include "lib/param/loadparm.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

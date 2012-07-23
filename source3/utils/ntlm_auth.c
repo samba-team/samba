@@ -45,6 +45,7 @@
 #include "source3/include/auth.h"
 #include "source3/auth/proto.h"
 #include "nsswitch/libwbclient/wbclient.h"
+#include "lib/param/loadparm.h"
 
 #if HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"

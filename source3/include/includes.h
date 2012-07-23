@@ -404,6 +404,8 @@ typedef char fstring[FSTRING_LEN];
 #include "proto.h"
 #endif
 
+#include "lib/param/loadparm.h"
+
 /* String routines */
 
 #include "srvstr.h"

@@ -36,6 +36,7 @@
 #include "system/select.h"
 #include "messages.h"
 #include "../lib/util/tevent_unix.h"
+#include "lib/param/loadparm.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

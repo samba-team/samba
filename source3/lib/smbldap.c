@@ -26,6 +26,7 @@
 #include "smbldap.h"
 #include "../libcli/security/security.h"
 #include <tevent.h>
+#include "lib/param/loadparm.h"
 
 /* Try not to hit the up or down server forever */
 

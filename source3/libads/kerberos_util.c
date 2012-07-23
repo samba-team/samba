@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smb_krb5.h"
 #include "ads.h"
+#include "lib/param/loadparm.h"
 
 #ifdef HAVE_KRB5
 

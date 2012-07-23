@@ -633,43 +633,11 @@ http://msdn.microsoft.com/en-us/library/cc246334(PROT.13).aspx
 #define NO_SUBSTREAMS		0x2
 #define NO_REPARSETAG		0x4
 
-/* printing types */
-enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
-		     PRINT_QNX,PRINT_PLP,PRINT_LPRNG,PRINT_SOFTQ,
-		     PRINT_CUPS,PRINT_LPRNT,PRINT_LPROS2,PRINT_IPRINT
-#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
-,PRINT_TEST,PRINT_VLP
-#endif /* DEVELOPER */
-};
-
-/* LDAP SSL options */
-enum ldap_ssl_types {LDAP_SSL_OFF, LDAP_SSL_START_TLS};
-
-/* LDAP PASSWD SYNC methods */
-enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PASSWD_SYNC_ONLY};
-
-/*
- * This should be under the HAVE_KRB5 flag but since they're used
- * in lp_kerberos_method(), they ned to be always available
- * If you add any entries to KERBEROS_VERIFY defines, please modify USE.*KEYTAB macros
- * so they remain accurate.
- */
-
-#define KERBEROS_VERIFY_SECRETS 0
-#define KERBEROS_VERIFY_SYSTEM_KEYTAB 1
-#define KERBEROS_VERIFY_DEDICATED_KEYTAB 2
-#define KERBEROS_VERIFY_SECRETS_AND_KEYTAB 3
-
 /* Remote architectures we know about. */
 enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 			RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_VISTA,
 			RA_SAMBA, RA_CIFSFS, RA_WINXP64, RA_OSX};
 
-/* case handling */
-enum case_handling {CASE_LOWER,CASE_UPPER};
-
-/* ACL compatibility */
-enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 /*
  * Global value meaning that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)
@@ -867,32 +835,6 @@ struct node_status_extra {
 	/* There really is more here ... */ 
 };
 
-/*
-   Do you want session setups at user level security with a invalid
-   password to be rejected or allowed in as guest? WinNT rejects them
-   but it can be a pain as it means "net view" needs to use a password
-
-   You have 3 choices in the setting of map_to_guest:
-
-   "NEVER_MAP_TO_GUEST" means session setups with an invalid password
-   are rejected. This is the default.
-
-   "MAP_TO_GUEST_ON_BAD_USER" means session setups with an invalid password
-   are rejected, unless the username does not exist, in which case it
-   is treated as a guest login
-
-   "MAP_TO_GUEST_ON_BAD_PASSWORD" means session setups with an invalid password
-   are treated as a guest login
-
-   Note that map_to_guest only has an effect in user or server
-   level security.
-*/
-
-#define NEVER_MAP_TO_GUEST 		0
-#define MAP_TO_GUEST_ON_BAD_USER 	1
-#define MAP_TO_GUEST_ON_BAD_PASSWORD 	2
-#define MAP_TO_GUEST_ON_BAD_UID 	3
-
 #define SAFE_NETBIOS_CHARS ". -_"
 
 /* The maximum length of a trust account password.
@@ -932,9 +874,6 @@ struct ea_list {
 #define SAMBA_XATTR_DOSSTREAM_PREFIX "user.DosStream."
 /* Prefix for xattrs storing streams. */
 #define SAMBA_XATTR_MARKER "user.SAMBA_STREAMS"
-
-/* map readonly options */
-enum mapreadonly_options {MAP_READONLY_NO, MAP_READONLY_YES, MAP_READONLY_PERMISSIONS};
 
 /* usershare error codes. */
 enum usershare_err {

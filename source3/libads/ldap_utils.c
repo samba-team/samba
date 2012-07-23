@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "ads.h"
+#include "lib/param/loadparm.h"
 
 #ifdef HAVE_LDAP
 

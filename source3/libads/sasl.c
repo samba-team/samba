@@ -24,6 +24,7 @@
 #include "ads.h"
 #include "smb_krb5.h"
 #include "system/gssapi.h"
+#include "lib/param/loadparm.h"
 
 #ifdef HAVE_LDAP
 

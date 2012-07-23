@@ -26,6 +26,7 @@
 #include "smbd/globals.h"
 #include "mangle.h"
 #include "util_tdb.h"
+#include "lib/param/loadparm.h"
 
 /* -------------------------------------------------------------------------- **
  * Other stuff...

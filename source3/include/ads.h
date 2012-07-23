@@ -127,17 +127,6 @@ typedef void **ADS_MODLIST;
 
 #define ADS_PINGS          0x0000FFFF  /* Ping response */
 
-/* ads auth control flags */
-#define ADS_AUTH_DISABLE_KERBEROS 0x0001
-#define ADS_AUTH_NO_BIND          0x0002
-#define ADS_AUTH_ANON_BIND        0x0004
-#define ADS_AUTH_SIMPLE_BIND      0x0008
-#define ADS_AUTH_ALLOW_NTLMSSP    0x0010
-#define ADS_AUTH_SASL_SIGN        0x0020
-#define ADS_AUTH_SASL_SEAL        0x0040
-#define ADS_AUTH_SASL_FORCE       0x0080
-#define ADS_AUTH_USER_CREDS       0x0100
-
 enum ads_extended_dn_flags {
 	ADS_EXTENDED_DN_HEX_STRING	= 0,
 	ADS_EXTENDED_DN_STRING		= 1 /* not supported on win2k */

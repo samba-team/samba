@@ -27,6 +27,7 @@
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "../librpc/gen_ndr/idmap.h"
+#include "lib/param/loadparm.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

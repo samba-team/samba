@@ -56,10 +56,10 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "util_tdb.h"
+#include "lib/param/loadparm.h"
 #include "printing.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
-#include "lib/param/loadparm.h"
 
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
@@ -96,9 +96,6 @@ extern userdom_struct current_user_info;
 
 static bool in_client = false;		/* Not in the client by default */
 static struct smbconf_csn conf_last_csn;
-
-#define CONFIG_BACKEND_FILE 0
-#define CONFIG_BACKEND_REGISTRY 1
 
 static int config_backend = CONFIG_BACKEND_FILE;
 
@@ -325,138 +322,6 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 static void free_param_opts(struct parmlist_entry **popts);
 
 #include "lib/param/param_table.c"
-
-static const struct enum_list enum_printing[] = {
-	{PRINT_SYSV, "sysv"},
-	{PRINT_AIX, "aix"},
-	{PRINT_HPUX, "hpux"},
-	{PRINT_BSD, "bsd"},
-	{PRINT_QNX, "qnx"},
-	{PRINT_PLP, "plp"},
-	{PRINT_LPRNG, "lprng"},
-	{PRINT_CUPS, "cups"},
-	{PRINT_IPRINT, "iprint"},
-	{PRINT_LPRNT, "nt"},
-	{PRINT_LPROS2, "os2"},
-#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
-	{PRINT_TEST, "test"},
-	{PRINT_VLP, "vlp"},
-#endif /* DEVELOPER */
-	{-1, NULL}
-};
-
-static const struct enum_list enum_ldap_sasl_wrapping[] = {
-	{0, "plain"},
-	{ADS_AUTH_SASL_SIGN, "sign"},
-	{ADS_AUTH_SASL_SEAL, "seal"},
-	{-1, NULL}
-};
-
-static const struct enum_list enum_ldap_ssl[] = {
-	{LDAP_SSL_OFF, "no"},
-	{LDAP_SSL_OFF, "off"},
-	{LDAP_SSL_START_TLS, "start tls"},
-	{LDAP_SSL_START_TLS, "start_tls"},
-	{-1, NULL}
-};
-
-/* LDAP Dereferencing Alias types */
-#define SAMBA_LDAP_DEREF_NEVER		0
-#define SAMBA_LDAP_DEREF_SEARCHING	1
-#define SAMBA_LDAP_DEREF_FINDING	2
-#define SAMBA_LDAP_DEREF_ALWAYS		3
-
-static const struct enum_list enum_ldap_deref[] = {
-	{SAMBA_LDAP_DEREF_NEVER, "never"},
-	{SAMBA_LDAP_DEREF_SEARCHING, "searching"},
-	{SAMBA_LDAP_DEREF_FINDING, "finding"},
-	{SAMBA_LDAP_DEREF_ALWAYS, "always"},
-	{-1, "auto"}
-};
-
-static const struct enum_list enum_ldap_passwd_sync[] = {
-	{LDAP_PASSWD_SYNC_OFF, "no"},
-	{LDAP_PASSWD_SYNC_OFF, "off"},
-	{LDAP_PASSWD_SYNC_ON, "yes"},
-	{LDAP_PASSWD_SYNC_ON, "on"},
-	{LDAP_PASSWD_SYNC_ONLY, "only"},
-	{-1, NULL}
-};
-
-static const struct enum_list enum_map_readonly[] = {
-	{MAP_READONLY_NO, "no"},
-	{MAP_READONLY_NO, "false"},
-	{MAP_READONLY_NO, "0"},
-	{MAP_READONLY_YES, "yes"},
-	{MAP_READONLY_YES, "true"},
-	{MAP_READONLY_YES, "1"},
-	{MAP_READONLY_PERMISSIONS, "permissions"},
-	{MAP_READONLY_PERMISSIONS, "perms"},
-	{-1, NULL}
-};
-
-static const struct enum_list enum_case[] = {
-	{CASE_LOWER, "lower"},
-	{CASE_UPPER, "upper"},
-	{-1, NULL}
-};
-
-
-/* ACL compatibility options. */
-static const struct enum_list enum_acl_compat_vals[] = {
-    { ACL_COMPAT_AUTO, "auto" },
-    { ACL_COMPAT_WINNT, "winnt" },
-    { ACL_COMPAT_WIN2K, "win2k" },
-    { -1, NULL}
-};
-
-/* 
-   Do you want session setups at user level security with a invalid
-   password to be rejected or allowed in as guest? WinNT rejects them
-   but it can be a pain as it means "net view" needs to use a password
-
-   You have 3 choices in the setting of map_to_guest:
-
-   "Never" means session setups with an invalid password
-   are rejected. This is the default.
-
-   "Bad User" means session setups with an invalid password
-   are rejected, unless the username does not exist, in which case it
-   is treated as a guest login
-
-   "Bad Password" means session setups with an invalid password
-   are treated as a guest login
-
-   Note that map_to_guest only has an effect in user or server
-   level security.
-*/
-
-static const struct enum_list enum_map_to_guest[] = {
-	{NEVER_MAP_TO_GUEST, "Never"},
-	{MAP_TO_GUEST_ON_BAD_USER, "Bad User"},
-	{MAP_TO_GUEST_ON_BAD_PASSWORD, "Bad Password"},
-        {MAP_TO_GUEST_ON_BAD_UID, "Bad Uid"},
-	{-1, NULL}
-};
-
-/* Config backend options */
-
-static const struct enum_list enum_config_backend[] = {
-	{CONFIG_BACKEND_FILE, "file"},
-	{CONFIG_BACKEND_REGISTRY, "registry"},
-	{-1, NULL}
-};
-
-/* ADS kerberos ticket verification options */
-
-static const struct enum_list enum_kerberos_method[] = {
-	{KERBEROS_VERIFY_SECRETS, "default"},
-	{KERBEROS_VERIFY_SECRETS, "secrets only"},
-	{KERBEROS_VERIFY_SYSTEM_KEYTAB, "system keytab"},
-	{KERBEROS_VERIFY_DEDICATED_KEYTAB, "dedicated keytab"},
-	{KERBEROS_VERIFY_SECRETS_AND_KEYTAB, "secrets and keytab"},
-	{-1, NULL}
-};
 
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *

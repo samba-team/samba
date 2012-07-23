@@ -21,6 +21,7 @@
 #include "smb_krb5.h"
 #include "secrets.h"
 #include "gse_krb5.h"
+#include "lib/param/loadparm.h"
 
 #ifdef HAVE_KRB5
 

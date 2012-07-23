@@ -37,6 +37,7 @@
 #include "krb5_env.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
+#include "lib/param/loadparm.h"
 
 #ifdef HAVE_ADS
 

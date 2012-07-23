@@ -39,6 +39,7 @@
 #include "passdb.h"
 #include "libsmb/libsmb.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/param/loadparm.h"
 
 /****************************************************************
 ****************************************************************/

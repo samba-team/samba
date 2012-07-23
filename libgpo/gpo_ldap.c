@@ -21,6 +21,7 @@
 #include "libgpo/gpo.h"
 #include "auth.h"
 #include "../libcli/security/security.h"
+#include "lib/param/loadparm.h"
 
 /****************************************************************
  parse the raw extension string into a GP_EXT structure

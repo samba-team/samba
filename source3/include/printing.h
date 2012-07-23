@@ -25,6 +25,7 @@
    SAMBA printing subsystem.
 */
 #include "tdb_compat.h"
+#include "lib/param/loadparm.h"
 
 /* Extra fields above "LPQ_PRINTING" are used to map extra NT status codes. */
 
