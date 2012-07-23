@@ -1091,27 +1091,62 @@ static struct parm_struct parm_table[] = {
 	},
 
 	{
+		.label		= "ntp signd socket directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szNTPSignDSocketDirectory),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+
+	{N_("VFS module options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "vfs objects",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szVfsObjects),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
+	},
+	{
+		.label		= "vfs object",
+		.type		= P_LIST,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szVfsObjects),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
+	},
+
+
+	{N_("MSDFS options"), P_SEP, P_SEPARATOR},
+
+	{
 		.label		= "msdfs root",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(bMSDfsRoot),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
+	},
+	{
+		.label		= "msdfs proxy",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szMSDfsProxy),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
 		.label		= "host msdfs",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bHostMSDfs),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "ntp signd socket directory",
-		.type		= P_STRING,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(szNTPSignDSocketDirectory),
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
