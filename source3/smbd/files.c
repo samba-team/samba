@@ -544,6 +544,9 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 	}
 
 	if (req->chain_fsp != NULL) {
+		if (req->chain_fsp->deferred_close) {
+			return NULL;
+		}
 		return req->chain_fsp;
 	}
 
@@ -560,9 +563,15 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 	}
 
 	fsp = op->compat;
-	if (fsp != NULL) {
-		req->chain_fsp = fsp;
+	if (fsp == NULL) {
+		return NULL;
 	}
+
+	if (fsp->deferred_close) {
+		return NULL;
+	}
+
+	req->chain_fsp = fsp;
 	return fsp;
 }
 
@@ -576,6 +585,9 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 	struct files_struct *fsp;
 
 	if (smb2req->compat_chain_fsp != NULL) {
+		if (smb2req->compat_chain_fsp->deferred_close) {
+			return NULL;
+		}
 		return smb2req->compat_chain_fsp;
 	}
 
@@ -610,6 +622,10 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 	}
 
 	if (smb2req->session->compat->vuid != fsp->vuid) {
+		return NULL;
+	}
+
+	if (fsp->deferred_close) {
 		return NULL;
 	}
 
