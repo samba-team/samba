@@ -40,7 +40,7 @@ struct smb1cli_trans_state {
 	uint16_t mid;
 	uint32_t pid;
 	uint16_t tid;
-	uint16_t uid;
+	struct smbXcli_session *session;
 	const char *pipe_name;
 	uint8_t *pipe_name_conv;
 	size_t pipe_name_conv_len;
@@ -415,7 +415,8 @@ struct tevent_req *smb1cli_trans_send(
 	uint8_t additional_flags, uint8_t clear_flags,
 	uint16_t additional_flags2, uint16_t clear_flags2,
 	uint32_t timeout_msec,
-	uint32_t pid, uint16_t tid, uint16_t uid,
+	uint32_t pid, uint16_t tid,
+	struct smbXcli_session *session,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
@@ -470,7 +471,7 @@ struct tevent_req *smb1cli_trans_send(
 	state->rsetup = NULL;
 	state->pid = pid;
 	state->tid = tid;
-	state->uid = uid;
+	state->session = session;
 	ZERO_STRUCT(state->rparam);
 	ZERO_STRUCT(state->rdata);
 
@@ -513,7 +514,8 @@ struct tevent_req *smb1cli_trans_send(
 				    state->additional_flags2,
 				    state->clear_flags2,
 				    state->timeout_msec,
-				    state->pid, state->tid, state->uid,
+				    state->pid, state->tid,
+				    state->session,
 				    wct, state->vwv,
 				    iov_count, state->iov);
 	if (tevent_req_nomem(subreq, req)) {
@@ -644,7 +646,8 @@ static void smb1cli_trans_done(struct tevent_req *subreq)
 					     state->additional_flags2,
 					     state->clear_flags2,
 					     state->timeout_msec,
-					     state->pid, state->tid, state->uid,
+					     state->pid, state->tid,
+					     state->session,
 					     wct, state->vwv,
 					     iov_count, state->iov);
 		if (tevent_req_nomem(subreq2, req)) {
@@ -750,7 +753,8 @@ static void smb1cli_trans_done2(struct tevent_req *subreq2)
 					     state->additional_flags2,
 					     state->clear_flags2,
 					     state->timeout_msec,
-					     state->pid, state->tid, state->uid,
+					     state->pid, state->tid,
+					     state->session,
 					     wct, state->vwv,
 					     iov_count, state->iov);
 		if (tevent_req_nomem(subreq2, req)) {
@@ -840,7 +844,8 @@ NTSTATUS smb1cli_trans(TALLOC_CTX *mem_ctx, struct smbXcli_conn *conn,
 		uint8_t additional_flags, uint8_t clear_flags,
 		uint16_t additional_flags2, uint16_t clear_flags2,
 		uint32_t timeout_msec,
-		uint32_t pid, uint16_t tid, uint16_t uid,
+		uint32_t pid, uint16_t tid,
+		struct smbXcli_session *session,
 		const char *pipe_name, uint16_t fid, uint16_t function,
 		int flags,
 		uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
@@ -874,7 +879,7 @@ NTSTATUS smb1cli_trans(TALLOC_CTX *mem_ctx, struct smbXcli_conn *conn,
 				 additional_flags, clear_flags,
 				 additional_flags2, clear_flags2,
 				 timeout_msec,
-				 pid, tid, uid,
+				 pid, tid, session,
 				 pipe_name, fid, function, flags,
 				 setup, num_setup, max_setup,
 				 param, num_param, max_param,

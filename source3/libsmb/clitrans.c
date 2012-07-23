@@ -61,7 +61,6 @@ struct tevent_req *cli_trans_send(
 	uint8_t clear_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
-	uint16_t uid = 0;
 
 	state = talloc_zero(mem_ctx, struct cli_trans_state);
 	if (state == NULL) {
@@ -85,13 +84,13 @@ struct tevent_req *cli_trans_send(
 		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
 
-	uid = cli_state_get_uid(cli);
 	state->req = smb1cli_trans_send(state, ev,
 					cli->conn, cmd,
 					additional_flags, clear_flags,
 					additional_flags2, clear_flags2,
 					cli->timeout,
-					cli->smb1.pid, cli->smb1.tid, uid,
+					cli->smb1.pid, cli->smb1.tid,
+					cli->smb1.session,
 					pipe_name, fid, function, flags,
 					setup, num_setup, max_setup,
 					param, num_param, max_param,
@@ -168,7 +167,6 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint8_t clear_flags = 0;
 	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
-	uint16_t uid = 0;
 
 	if (cli->case_sensitive) {
 		clear_flags |= FLAG_CASELESS_PATHNAMES;
@@ -181,13 +179,13 @@ NTSTATUS cli_trans(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		additional_flags2 |= FLAGS2_DFS_PATHNAMES;
 	}
 
-	uid = cli_state_get_uid(cli);
 	status = smb1cli_trans(mem_ctx,
 			       cli->conn, trans_cmd,
 			       additional_flags, clear_flags,
 			       additional_flags2, clear_flags2,
 			       cli->timeout,
-			       cli->smb1.pid, cli->smb1.tid, uid,
+			       cli->smb1.pid, cli->smb1.tid,
+			       cli->smb1.session,
 			       pipe_name, fid, function, flags,
 			       setup, num_setup, max_setup,
 			       param, num_param, max_param,
