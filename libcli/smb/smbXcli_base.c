@@ -193,7 +193,7 @@ struct smbXcli_req_state {
 		const uint8_t *dyn;
 		uint32_t dyn_len;
 
-		uint8_t hdr[64];
+		uint8_t hdr[SMB2_HDR_BODY];
 		uint8_t pad[7];	/* padding space for compounding */
 
 		/*
