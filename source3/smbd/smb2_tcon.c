@@ -231,6 +231,14 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
+	if (lp_smb_encrypt(snum) == SMB_SIGNING_REQUIRED) {
+		status = NT_STATUS_ACCESS_DENIED;
+		DEBUG(3,("smbd_smb2_tree_connect: "
+			 "service %s needs encryption - %s\n",
+			 service, nt_errstr(status)));
+		return status;
+	}
+
 	/* create a new tcon as child of the session */
 	status = smb2srv_tcon_create(req->session, now, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
