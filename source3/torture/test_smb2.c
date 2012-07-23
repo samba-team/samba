@@ -152,7 +152,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	status = smb2cli_query_directory(
-		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tid,
+		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
 		1, 0, 0, fid_persistent, fid_volatile, "*", 0xffff,
 		talloc_tos(), &dir_data, &dir_data_length);
 
@@ -1517,7 +1517,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_query_directory(
-		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tid,
+		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
 		1, 0x3, 0, dir_persistent, dir_volatile,
 		"session-reauth.txt", 0xffff,
 		talloc_tos(), &dir_data, &dir_data_length);
@@ -1612,7 +1612,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_query_directory(
-		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tid,
+		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
 		1, 0x3, 0, dir_persistent, dir_volatile,
 		"session-reauth.txt", 0xffff,
 		talloc_tos(), &dir_data, &dir_data_length);
@@ -1864,7 +1864,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = smb2cli_query_directory(
-		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tid,
+		cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
 		1, 0x3, 0, dir_persistent, dir_volatile,
 		"session-reauth.txt", 0xffff,
 		talloc_tos(), &dir_data, &dir_data_length);

@@ -38,7 +38,7 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 						struct smbXcli_conn *conn,
 						uint32_t timeout_msec,
 						struct smbXcli_session *session,
-						uint32_t tcon_id,
+						struct smbXcli_tcon *tcon,
 						uint8_t level,
 						uint8_t flags,
 						uint32_t file_index,
@@ -52,6 +52,7 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 	uint8_t *fixed;
 	uint8_t *dyn;
 	size_t dyn_len;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_query_directory_state);
@@ -85,6 +86,10 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (dyn_len == 0) {
 		dyn = state->dyn_pad;
 		dyn_len = sizeof(state->dyn_pad);
+	}
+
+	if (tcon) {
+		tcon_id = smb2cli_tcon_current_id(tcon);
 	}
 
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_FIND,
@@ -162,7 +167,7 @@ NTSTATUS smb2cli_query_directory_recv(struct tevent_req *req,
 NTSTATUS smb2cli_query_directory(struct smbXcli_conn *conn,
 				 uint32_t timeout_msec,
 				 struct smbXcli_session *session,
-				 uint32_t tcon_id,
+				 struct smbXcli_tcon *tcon,
 				 uint8_t level,
 				 uint8_t flags,
 				 uint32_t file_index,
@@ -191,7 +196,8 @@ NTSTATUS smb2cli_query_directory(struct smbXcli_conn *conn,
 		goto fail;
 	}
 	req = smb2cli_query_directory_send(frame, ev, conn, timeout_msec,
-					   session, tcon_id, level, flags,
+					   session, tcon,
+					   level, flags,
 					   file_index, fid_persistent,
 					   fid_volatile, mask, outbuf_len);
 	if (req == NULL) {
