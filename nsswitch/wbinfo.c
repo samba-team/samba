@@ -519,7 +519,7 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 	}
 
 	if (print_all) {
-		d_printf("%-16s%-24s%-12s%-12s%-5s%-5s\n",
+		d_printf("%-16s%-65s%-12s%-12s%-5s%-5s\n",
 			 "Domain Name", "DNS Domain", "Trust Type",
 			 "Transitive", "In", "Out");
 	}
@@ -533,7 +533,7 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 			continue;
 		}
 
-		d_printf("%-24s", domain_list[i].dns_name);
+		d_printf("%-65s", domain_list[i].dns_name);
 
 		switch(domain_list[i].trust_type) {
 		case WBC_DOMINFO_TRUSTTYPE_NONE:
