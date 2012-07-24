@@ -41,6 +41,7 @@ bool run_smb2_basic(int dummy)
 	uint8_t *dir_data;
 	uint32_t dir_data_length;
 	uint32_t saved_tid = 0;
+	struct smbXcli_tcon *saved_tcon = NULL;
 	uint64_t saved_uid = 0;
 
 	printf("Starting SMB2-BASIC\n");
@@ -169,11 +170,21 @@ bool run_smb2_basic(int dummy)
 	}
 
 	saved_tid = cli->smb2.tid;
+	saved_tcon = cli->smb2.tcon;
+	cli->smb2.tcon = smbXcli_tcon_create(cli);
+	smb2cli_tcon_set_values(cli->smb2.tcon,
+				saved_tid,
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0  /* maximal_access */);
 	status = smb2cli_tdis(cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_tdis returned %s\n", nt_errstr(status));
 		return false;
 	}
+	talloc_free(cli->smb2.tcon);
+	cli->smb2.tcon = saved_tcon;
 	cli->smb2.tid = saved_tid;
 
 	status = smb2cli_tdis(cli);
@@ -1444,6 +1455,7 @@ bool run_smb2_session_reauth(int dummy)
 	struct auth_generic_state *auth_generic_state;
 	struct iovec *recv_iov;
 	uint32_t saved_tid;
+	struct smbXcli_tcon *saved_tcon;
 
 	printf("Starting SMB2-SESSION_REAUTH\n");
 
@@ -1719,11 +1731,21 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	saved_tid = cli->smb2.tid;
+	saved_tcon = cli->smb2.tcon;
+	cli->smb2.tcon = smbXcli_tcon_create(cli);
+	smb2cli_tcon_set_values(cli->smb2.tcon,
+				saved_tid,
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0  /* maximal_access */);
 	status = cli_tree_connect(cli, share, "?????", "", 0);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
 	}
+	talloc_free(cli->smb2.tcon);
+	cli->smb2.tcon = saved_tcon;
 	cli->smb2.tid = saved_tid;
 
 	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
@@ -1888,11 +1910,21 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	saved_tid = cli->smb2.tid;
+	saved_tcon = cli->smb2.tcon;
+	cli->smb2.tcon = smbXcli_tcon_create(cli);
+	smb2cli_tcon_set_values(cli->smb2.tcon,
+				saved_tid,
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0  /* maximal_access */);
 	status = cli_tree_connect(cli, share, "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
 	}
+	talloc_free(cli->smb2.tcon);
+	cli->smb2.tcon = saved_tcon;
 	cli->smb2.tid = saved_tid;
 
 	return true;
