@@ -74,14 +74,82 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 	return root;
 }
 
+static void handle_tree_input(struct tree_view *view, struct value_list *vl,
+			      WINDOW *path, int c)
+{
+	struct tree_node *node;
+
+	switch (c) {
+	case KEY_DOWN:
+		menu_driver(view->menu, REQ_DOWN_ITEM);
+		node = item_userptr(current_item(view->menu));
+		value_list_load(vl, node->key);
+		break;
+	case KEY_UP:
+		menu_driver(view->menu, REQ_UP_ITEM);
+		node = item_userptr(current_item(view->menu));
+		value_list_load(vl, node->key);
+		break;
+	case KEY_ENTER:
+	case KEY_RIGHT:
+		node = item_userptr(current_item(view->menu));
+		if (node && tree_node_has_children(node)) {
+			tree_node_load_children(node);
+			tree_node_print_path(path, node->child_head);
+			tree_view_update(view, node->child_head);
+			value_list_load(vl, node->child_head->key);
+		}
+		break;
+	case KEY_LEFT:
+		node = item_userptr(current_item(view->menu));
+		if (node && node->parent) {
+			tree_node_print_path(path, node->parent);
+			node = tree_node_first(node->parent);
+			tree_view_update(view, node);
+			value_list_load(vl, node->key);
+		}
+		break;
+	}
+}
+
+static void handle_value_input(struct value_list *vl, int c)
+{
+	switch (c) {
+	case KEY_DOWN:
+		menu_driver(vl->menu, REQ_DOWN_ITEM);
+		break;
+	case KEY_UP:
+		menu_driver(vl->menu, REQ_UP_ITEM);
+		break;
+	case KEY_ENTER:
+		break;
+	}
+}
+
+static void print_heading(WINDOW *win, bool selected, const char *str)
+{
+	if (selected) {
+		wattron(win, A_REVERSE);
+	} else {
+		wattroff(win, A_REVERSE);
+	}
+	wmove(win, 0, 0);
+	wclrtoeol(win);
+	waddstr(win, str);
+	wnoutrefresh(win);
+	wrefresh(win);
+}
+
 /* test navigating available hives */
 static void display_test_window(TALLOC_CTX *mem_ctx,
 				struct registry_context *ctx)
 {
 	WINDOW *main_window, *path_label;
+	WINDOW *key_label, *value_label;
 	struct value_list *vl;
 	struct tree_view *view;
-	struct tree_node *root, *node;
+	struct tree_node *root;
+	bool tree_view_input = true;
 	int c;
 
 	initscr();
@@ -102,11 +170,14 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 	root = load_hives(mem_ctx, ctx);
 	SMB_ASSERT(root != NULL);
 
-	mvwprintw(main_window, 2, 0, "Keys");
+	key_label = derwin(main_window, 1, 10, 2, 0);
+	value_label = derwin(main_window, 1, 10, 2, 25);
+
+	print_heading(key_label, true, "Keys");
 	view = tree_view_new(mem_ctx, root, main_window, 15, 24, 3, 0);
 	SMB_ASSERT(view != NULL);
 
-	mvwprintw(main_window, 2, 25, "Values");
+	print_heading(value_label, false, "Values");
 	vl = value_list_new(mem_ctx, main_window, 15, 40, 3, 25);
 	SMB_ASSERT(vl != NULL);
 
@@ -116,34 +187,19 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 
 	while ((c = wgetch(main_window)) != 'q') {
 		switch (c) {
-		case KEY_DOWN:
-			menu_driver(view->menu, REQ_DOWN_ITEM);
-			node = item_userptr(current_item(view->menu));
-			value_list_load(vl, node->key);
+		case '\t':
+			tree_view_input = !tree_view_input;
+			print_heading(key_label, tree_view_input == true,
+				      "Keys");
+			print_heading(value_label, tree_view_input == false,
+				      "Values");
 			break;
-		case KEY_UP:
-			menu_driver(view->menu, REQ_UP_ITEM);
-			node = item_userptr(current_item(view->menu));
-			value_list_load(vl, node->key);
-			break;
-		case KEY_RIGHT:
-			node = item_userptr(current_item(view->menu));
-			if (node && tree_node_has_children(node)) {
-				tree_node_load_children(node);
-				tree_node_print_path(path_label, node->child_head);
-				tree_view_update(view, node->child_head);
-				value_list_load(vl, node->child_head->key);
+		default:
+			if (tree_view_input) {
+				handle_tree_input(view, vl, path_label, c);
+			} else {
+				handle_value_input(vl, c);
 			}
-			break;
-		case KEY_LEFT:
-			node = item_userptr(current_item(view->menu));
-			if (node && node->parent) {
-				tree_node_print_path(path_label, node->parent);
-				node = tree_node_first(node->parent);
-				tree_view_update(view, node);
-				value_list_load(vl, node->key);
-			}
-			break;
 		}
 
 		tree_view_show(view);
