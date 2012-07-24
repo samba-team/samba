@@ -21,6 +21,9 @@
 #ifndef _SMBXCLI_BASE_H_
 #define _SMBXCLI_BASE_H_
 
+#include <sys/uio.h>
+#include "libcli/smb/smb2_create_blob.h"
+
 struct smbXcli_conn;
 struct smbXcli_session;
 struct smbXcli_tcon;
