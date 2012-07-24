@@ -1467,7 +1467,7 @@ static REGF_HBIN* regf_hbin_allocate( REGF_FILE *file, uint32 block_size )
 	if ( !(hbin = TALLOC_ZERO_P( file->mem_ctx, REGF_HBIN )) )
 		return NULL;
 
-	memcpy( hbin->header, "hbin", sizeof(HBIN_HDR_SIZE) );
+	memcpy( hbin->header, "hbin", HBIN_HDR_SIZE);
 
 
 	if (sys_fstat(file->fd, &sbuf, false)) {
