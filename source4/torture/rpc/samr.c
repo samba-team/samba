@@ -771,7 +771,7 @@ static bool test_SetUserPassEx(struct dcerpc_pipe *p, struct torture_context *tc
 	uint8_t confounder[16];
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	struct samr_GetUserPwInfo pwp;
 	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
@@ -856,7 +856,7 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 	bool ret = true;
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	uint8_t confounder[16];
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -1140,7 +1140,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	bool ret = true;
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	uint8_t confounder[16];
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -2458,7 +2458,7 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
 	uint8_t confounder[16];
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 
 	bool ret = true;
 	struct lsa_String server, account;

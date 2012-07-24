@@ -359,7 +359,7 @@ static NTSTATUS ntlmssp_server_preauth(struct ntlmssp_state *ntlmssp_state,
 	*/
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (ntlmssp_state->nt_resp.length == 24 && ntlmssp_state->lm_resp.length == 24) {
-			struct MD5Context md5_session_nonce_ctx;
+			MD5_CTX md5_session_nonce_ctx;
 			state->doing_ntlm2 = true;
 
 			memcpy(state->session_nonce, ntlmssp_state->internal_chal.data, 8);

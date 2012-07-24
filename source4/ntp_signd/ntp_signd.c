@@ -107,7 +107,7 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 	enum ndr_err_code ndr_err;
 	struct ldb_result *res;
 	const char *attrs[] = { "unicodePwd", "userAccountControl", "cn", NULL };
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	struct samr_Password *nt_hash;
 	uint32_t user_account_control;
 	int ret;
