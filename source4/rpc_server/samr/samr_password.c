@@ -544,7 +544,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	DATA_BLOB new_password;
 	DATA_BLOB co_session_key;
 	DATA_BLOB session_key = data_blob(NULL, 0);
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 
 	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {

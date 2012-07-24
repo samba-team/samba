@@ -1351,7 +1351,7 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 	}
 
 	for (i=0; i < ARRAY_SIZE(wdigest); i++) {
-		struct MD5Context md5;
+		MD5_CTX md5;
 		MD5Init(&md5);
 		if (wdigest[i].nt4dom) {
 			MD5Update(&md5, wdigest[i].nt4dom->data, wdigest[i].nt4dom->length);

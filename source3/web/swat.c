@@ -151,7 +151,7 @@ static char *make_parm_name(const char *label)
 void get_xsrf_token(const char *username, const char *pass,
 		    const char *formname, time_t xsrf_time, char token_str[33])
 {
-	struct MD5Context md5_ctx;
+	MD5_CTX md5_ctx;
 	uint8_t token[16];
 	int i;
 

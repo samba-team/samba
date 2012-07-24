@@ -69,7 +69,7 @@ static void netlogon_creds_init_128bit(struct netlogon_creds_CredentialState *cr
 {
 	unsigned char zero[4], tmp[16];
 	HMACMD5Context ctx;
-	struct MD5Context md5;
+	MD5_CTX md5;
 
 	ZERO_STRUCT(creds->session_key);
 

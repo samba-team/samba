@@ -39,7 +39,7 @@ WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	DATA_BLOB confounder;
 	DATA_BLOB enc_buffer;
 
-	struct MD5Context md5;
+	MD5_CTX md5;
 	uint8_t _enc_key[16];
 	DATA_BLOB enc_key;
 
@@ -198,7 +198,7 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	DATA_BLOB rid_crypt_out = data_blob(NULL, 0);
 	DATA_BLOB confounder;
 
-	struct MD5Context md5;
+	MD5_CTX md5;
 	uint8_t _enc_key[16];
 	DATA_BLOB enc_key;
 

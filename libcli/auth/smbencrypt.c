@@ -99,7 +99,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 
 void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_out[16])
 {
-	struct MD5Context tctx;
+	MD5_CTX tctx;
 	MD5Init(&tctx);
 	MD5Update(&tctx, salt, 16);
 	MD5Update(&tctx, nthash, 16);
@@ -623,7 +623,7 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 
 void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_BLOB *psession_key)
 {
-	struct MD5Context tctx;
+	MD5_CTX tctx;
 	unsigned char key_out[16];
 
 	/* Confounder is last 16 bytes. */
@@ -703,7 +703,7 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					struct wkssvc_PasswordBuffer **pwd_buf)
 {
 	uint8_t buffer[516];
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	struct wkssvc_PasswordBuffer *my_pwd_buf = NULL;
 	DATA_BLOB confounded_session_key;
 	int confounder_len = 8;
@@ -741,7 +741,7 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  char **pwd)
 {
 	uint8_t buffer[516];
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	size_t pwd_len;
 
 	DATA_BLOB confounded_session_key;

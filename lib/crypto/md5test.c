@@ -63,7 +63,7 @@ bool torture_local_crypto_md5(struct torture_context *torture)
 	};
 
 	for (i=0; i < ARRAY_SIZE(testarray); i++) {
-		struct MD5Context ctx;
+		MD5_CTX ctx;
 		uint8_t md5[16];
 		int e;
 

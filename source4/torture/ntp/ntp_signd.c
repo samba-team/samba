@@ -78,7 +78,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 	char *unix_address;
 	int sys_errno;
 
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 	uint8_t sig[16];
 	enum ndr_err_code ndr_err;
 	bool ok;

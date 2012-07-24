@@ -103,7 +103,7 @@ bool signing_good(struct smb_signing_context *sign_info,
 void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
 {
 	uint8_t calc_md5_mac[16];
-	struct MD5Context md5_ctx;
+	MD5_CTX md5_ctx;
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
@@ -138,7 +138,7 @@ bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac
 	uint8_t calc_md5_mac[16];
 	uint8_t *server_sent_mac;
 	uint8_t sequence_buf[8];
-	struct MD5Context md5_ctx;
+	MD5_CTX md5_ctx;
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
 	int i;
 	const int sign_range = 0;

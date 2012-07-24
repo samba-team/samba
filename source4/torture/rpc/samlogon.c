@@ -1075,7 +1075,7 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 	uint8_t session_nonce_hash[16];
 	uint8_t client_chall[8];
 
-	struct MD5Context md5_session_nonce_ctx;
+	MD5_CTX md5_session_nonce_ctx;
 	HMACMD5Context hmac_ctx;
 
 	ZERO_STRUCT(user_session_key);

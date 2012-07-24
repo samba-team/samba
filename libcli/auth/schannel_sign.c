@@ -110,7 +110,7 @@ static void netsec_do_sign(struct schannel_state *state,
 {
 	uint8_t packet_digest[16];
 	static const uint8_t zeros[4];
-	struct MD5Context ctx;
+	MD5_CTX ctx;
 
 	MD5Init(&ctx);
 	MD5Update(&ctx, zeros, 4);

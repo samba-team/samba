@@ -774,7 +774,7 @@ static bool join3(struct torture_context *tctx,
 		DATA_BLOB session_key;
 		DATA_BLOB confounded_session_key = data_blob_talloc(
 			mem_ctx, NULL, 16);
-		struct MD5Context ctx;
+		MD5_CTX ctx;
 		uint8_t confounder[16];
 
 		ZERO_STRUCT(u_info);

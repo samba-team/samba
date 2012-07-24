@@ -51,7 +51,7 @@ static void calc_ntlmv2_key(uint8_t subkey[16],
 			    DATA_BLOB session_key,
 			    const char *constant)
 {
-	struct MD5Context ctx3;
+	MD5_CTX ctx3;
 	MD5Init(&ctx3);
 	MD5Update(&ctx3, session_key.data, session_key.length);
 	MD5Update(&ctx3, (const uint8_t *)constant, strlen(constant)+1);
