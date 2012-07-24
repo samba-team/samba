@@ -1135,7 +1135,6 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 						    enum pdb_elements))
 {
 	char *temp = NULL;
-	uint32_t rid;
 
 	if (mods == NULL || sampass == NULL) {
 		DEBUG(0, ("init_ldap_from_sam: NULL parameters found!\n"));
@@ -1548,7 +1547,6 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 {
 	int rc = -1;
 	const char ** attr_list;
-	uint32_t rid;
 
 	switch ( ldap_state->schema_ver ) {
 		case SCHEMAVER_SAMBASAMACCOUNT: {
