@@ -115,8 +115,8 @@ NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 	case RAW_TCON_TCONX:
 		ZERO_STRUCT(parms->tconx.out);
 		parms->tconx.out.tid = SVAL(req->in.hdr, HDR_TID);
-		if (req->in.wct >= 4) {
-			parms->tconx.out.options = SVAL(req->in.vwv, VWV(3));
+		if (req->in.wct >= 3) {
+			parms->tconx.out.options = SVAL(req->in.vwv, VWV(2));
 		}
 
 		/* output is actual service name */
