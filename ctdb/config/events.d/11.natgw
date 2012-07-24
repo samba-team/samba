@@ -66,7 +66,7 @@ case "$1" in
 		iptables -I INPUT -p tcp --syn -d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
 
 		ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
-		ip route add 0.0.0.0/0 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
+		ip route add 0.0.0.0/0 metric 10 via $CTDB_NATGW_DEFAULT_GATEWAY >/dev/null 2>/dev/null
 	else
 		# This is NOT the NAT GW
 		ip route add 0.0.0.0/0 via $natgwip metric 10

@@ -1366,10 +1366,14 @@ CTDB_CAPABILITY_RECMASTER=no
       they need to originate traffic to the external public network.
     </para>
     <para>
-      The NAT-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated
-      interface and the provided default route. The NAT-GW is configured
-      to act as a router and to masquerade all traffic it receives from the
-      internal private network and which is destined to the external network(s).
+      The NAT-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the
+      specified interface and the provided default route.  Given that
+      the NAT-GW mechanism acts as a last resort, its default route is
+      added with a metric of 10 so that it can coexist with other
+      configured static routes.  The NAT-GW is configured to act as a
+      router and to masquerade all traffic it receives from the
+      internal private network and which is destined to the external
+      network(s).
     </para>
     <para>
       All other nodes in the group are configured with a default route of

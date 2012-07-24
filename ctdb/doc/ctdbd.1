@@ -1,13 +1,13 @@
 '\" t
 .\"     Title: ctdbd
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
-.\" Generator: DocBook XSL Stylesheets v1.75.2 <http://docbook.sf.net/>
-.\"      Date: 05/21/2012
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 07/26/2012
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDBD" "1" "05/21/2012" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "07/26/2012" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -763,7 +763,7 @@ This is the list of all nodes that belong to the same NATGW group as this node\&
 .PP
 When the NAT\-GW functionality is used, one of the nodes is elected to act as a NAT router for all the other nodes in the group when they need to originate traffic to the external public network\&.
 .PP
-The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the designated interface and the provided default route\&. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\&.
+The NAT\-GW node is assigned the CTDB_NATGW_PUBLIC_IP to the specified interface and the provided default route\&. Given that the NAT\-GW mechanism acts as a last resort, its default route is added with a metric of 10 so that it can coexist with other configured static routes\&. The NAT\-GW is configured to act as a router and to masquerade all traffic it receives from the internal private network and which is destined to the external network(s)\&.
 .PP
 All other nodes in the group are configured with a default route of metric 10 pointing to the designated NAT GW node\&.
 .PP
