@@ -283,6 +283,8 @@ union smb_tcon {
 		} in;
 		struct {
 			uint16_t options;
+			uint32_t max_access;
+			uint32_t guest_max_access;
 			char *dev_type;
 			char *fs_type;
 			uint16_t tid;

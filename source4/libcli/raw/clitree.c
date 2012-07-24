@@ -118,6 +118,10 @@ NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 		if (req->in.wct >= 3) {
 			parms->tconx.out.options = SVAL(req->in.vwv, VWV(2));
 		}
+		if (req->in.wct >= 7) {
+			parms->tconx.out.max_access = IVAL(req->in.vwv, VWV(3));
+			parms->tconx.out.guest_max_access = IVAL(req->in.vwv, VWV(5));
+		}
 
 		/* output is actual service name */
 		p = req->in.data;
