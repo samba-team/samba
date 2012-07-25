@@ -108,7 +108,6 @@ struct cli_state {
 	} smb1;
 
 	struct {
-		uint32_t pid;
 		struct smbXcli_session *session;
 		struct smbXcli_tcon *tcon;
 	} smb2;

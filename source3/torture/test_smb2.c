@@ -49,7 +49,6 @@ bool run_smb2_basic(int dummy)
 	if (!torture_init_connection(&cli)) {
 		return false;
 	}
-	cli->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli->conn, cli->timeout,
 				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
@@ -228,7 +227,6 @@ bool run_smb2_negprot(int dummy)
 	if (!torture_init_connection(&cli)) {
 		return false;
 	}
-	cli->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli->conn, cli->timeout,
 				 PROTOCOL_CORE, PROTOCOL_LATEST);
@@ -308,7 +306,6 @@ bool run_smb2_session_reconnect(int dummy)
 	if (!torture_init_connection(&cli1)) {
 		return false;
 	}
-	cli1->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
 				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
@@ -390,7 +387,6 @@ bool run_smb2_session_reconnect(int dummy)
 	if (!torture_init_connection(&cli2)) {
 		return false;
 	}
-	cli2->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli2->conn, cli2->timeout,
 				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
@@ -726,7 +722,6 @@ bool run_smb2_tcon_dependence(int dummy)
 	if (!torture_init_connection(&cli)) {
 		return false;
 	}
-	cli->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli->conn, cli->timeout,
 				 PROTOCOL_SMB2_02, PROTOCOL_LATEST);
@@ -853,17 +848,14 @@ bool run_smb2_multi_channel(int dummy)
 	if (!torture_init_connection(&cli1)) {
 		return false;
 	}
-	cli1->smb2.pid = 0xFEFF;
 
 	if (!torture_init_connection(&cli2)) {
 		return false;
 	}
-	cli2->smb2.pid = 0xFEFF;
 
 	if (!torture_init_connection(&cli3)) {
 		return false;
 	}
-	cli3->smb2.pid = 0xFEFF;
 
 	status = smbXcli_negprot(cli1->conn, cli1->timeout,
 				 PROTOCOL_SMB2_22, PROTOCOL_LATEST);
@@ -1455,7 +1447,6 @@ bool run_smb2_session_reauth(int dummy)
 	if (!torture_init_connection(&cli)) {
 		return false;
 	}
-	cli->smb2.pid = 0xFEFF;
 
 	/*
 	 * PROTOCOL_SMB2_22 has a bug in win8pre0
