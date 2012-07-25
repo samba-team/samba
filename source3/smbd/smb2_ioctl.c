@@ -540,7 +540,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		if (!GUID_compare(&in_guid, &conn->smb2.client.guid)) {
+		if (GUID_compare(&in_guid, &conn->smb2.client.guid) != 0) {
 			state->disconnect = true;
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return tevent_req_post(req, ev);
