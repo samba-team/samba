@@ -47,8 +47,8 @@ static bool test_compound_related1(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[2];
-	uint32_t saved_tid = tree->tid;
-	uint64_t saved_uid = smb2cli_session_current_id(tree->session->smbXcli);
+	struct smbXcli_tcon *saved_tcon = tree->smbXcli;
+	struct smbXcli_session *saved_session = tree->session->smbXcli;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 2);
 
@@ -86,7 +86,16 @@ static bool test_compound_related1(struct torture_context *tctx,
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
 
-	tree->tid = 0xFFFFFFFF;
+	tree->smbXcli = smbXcli_tcon_create(tree);
+	smb2cli_tcon_set_values(tree->smbXcli,
+				0xFFFFFFFF, /* tcon_id */
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0 /* maximal_access */);
+
+	tree->session->smbXcli = smbXcli_session_create(tree->session,
+							tree->session->transport->conn);
 	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
@@ -96,8 +105,10 @@ static bool test_compound_related1(struct torture_context *tctx,
 	status = smb2_close_recv(req[1], &cl);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	tree->tid = saved_tid;
-	smb2cli_session_set_id_and_flags(tree->session->smbXcli, saved_uid, 0);
+	TALLOC_FREE(tree->smbXcli);
+	tree->smbXcli = saved_tcon;
+	TALLOC_FREE(tree->session->smbXcli);
+	tree->session->smbXcli = saved_session;
 
 	smb2_util_unlink(tree, fname);
 done:
@@ -114,8 +125,8 @@ static bool test_compound_related2(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[5];
-	uint32_t saved_tid = tree->tid;
-	uint64_t saved_uid = smb2cli_session_current_id(tree->session->smbXcli);
+	struct smbXcli_tcon *saved_tcon = tree->smbXcli;
+	struct smbXcli_session *saved_session = tree->session->smbXcli;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -152,7 +163,17 @@ static bool test_compound_related2(struct torture_context *tctx,
 
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
-	tree->tid = 0xFFFFFFFF;
+
+	tree->smbXcli = smbXcli_tcon_create(tree);
+	smb2cli_tcon_set_values(tree->smbXcli,
+				0xFFFFFFFF, /* tcon_id */
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0 /* maximal_access */);
+
+	tree->session->smbXcli = smbXcli_session_create(tree->session,
+							tree->session->transport->conn);
 	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
@@ -171,8 +192,10 @@ static bool test_compound_related2(struct torture_context *tctx,
 	status = smb2_close_recv(req[4], &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
-	tree->tid = saved_tid;
-	smb2cli_session_set_id_and_flags(tree->session->smbXcli, saved_uid, 0);
+	TALLOC_FREE(tree->smbXcli);
+	tree->smbXcli = saved_tcon;
+	TALLOC_FREE(tree->session->smbXcli);
+	tree->session->smbXcli = saved_session;
 
 	smb2_util_unlink(tree, fname);
 done:
@@ -314,8 +337,8 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	struct smb2_close cl;
 	bool ret = true;
 	struct smb2_request *req[5];
-	uint32_t saved_tid = tree->tid;
-	uint64_t saved_uid = smb2cli_session_current_id(tree->session->smbXcli);
+	struct smbXcli_tcon *saved_tcon = tree->smbXcli;
+	struct smbXcli_session *saved_session = tree->session->smbXcli;
 
 	smb2_transport_credits_ask_num(tree->session->transport, 5);
 
@@ -352,7 +375,17 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 
 	ZERO_STRUCT(cl);
 	cl.in.file.handle = hd;
-	tree->tid = 0xFFFFFFFF;
+
+	tree->smbXcli = smbXcli_tcon_create(tree);
+	smb2cli_tcon_set_values(tree->smbXcli,
+				0xFFFFFFFF, /* tcon_id */
+				0, /* type */
+				0, /* flags */
+				0, /* capabilities */
+				0 /* maximal_access */);
+
+	tree->session->smbXcli = smbXcli_session_create(tree->session,
+							tree->session->transport->conn);
 	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
@@ -374,8 +407,10 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 	status = smb2_close_recv(req[4], &cl);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
-	tree->tid = saved_tid;
-	smb2cli_session_set_id_and_flags(tree->session->smbXcli, saved_uid, 0);
+	TALLOC_FREE(tree->smbXcli);
+	tree->smbXcli = saved_tcon;
+	TALLOC_FREE(tree->session->smbXcli);
+	tree->session->smbXcli = saved_session;
 
 	smb2_util_unlink(tree, fname);
 done:
