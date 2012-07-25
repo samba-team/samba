@@ -115,7 +115,6 @@ struct smb2_tree {
 struct smb2_session {
 	struct smb2_transport *transport;
 	struct gensec_security *gensec;
-	uint32_t pid;
 	struct smbXcli_session *smbXcli;
 };
 

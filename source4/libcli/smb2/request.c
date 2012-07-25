@@ -126,7 +126,6 @@ struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, uint16_t opc
 						     body_dynamic_size);
 	if (req == NULL) return NULL;
 
-	SIVAL(req->out.hdr,  SMB2_HDR_PID, tree->session->pid);
 	req->session = tree->session;
 	req->tree = tree;
 

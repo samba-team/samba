@@ -1250,7 +1250,6 @@ static bool test_errorcode(struct torture_context *torture,
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	/* Demonstrate that the smbpid doesn't matter */
-	tree->session->pid++;
 	lck.in.file.handle	= h;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
@@ -1258,7 +1257,6 @@ static bool test_errorcode(struct torture_context *torture,
 	lck.in.file.handle	= h2;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
-	tree->session->pid--;
 
 	/* Demonstrate that a 0-byte lock inside the locked range still
 	 * gives the same error. */
@@ -2443,12 +2441,10 @@ static bool test_context(struct torture_context *torture,
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	tree->session->pid++;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	tree->session->pid--;
 	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);

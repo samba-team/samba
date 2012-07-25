@@ -51,8 +51,6 @@ struct smb2_session *smb2_session_init(struct smb2_transport *transport,
 		session->transport = talloc_reference(session, transport);
 	}
 
-	session->pid = getpid();
-
 	session->smbXcli = smbXcli_session_create(session, transport->conn);
 	if (session->smbXcli == NULL) {
 		talloc_free(session);
