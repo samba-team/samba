@@ -420,13 +420,15 @@ bool test_persistent_open_oplock(struct torture_context *tctx,
 {
 	char fname[256];
 	bool ret = true;
+	uint32_t share_capabilities;
 	bool share_is_ca = false;
 	struct durable_open_vs_oplock *table;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "persistent_open_oplock_%s.dat", generate_random_str(tctx, 8));
 
-	share_is_ca = tree->capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_ca = share_capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
 
 	if (share_is_ca) {
 		table = persistent_open_oplock_ca_table;
@@ -506,6 +508,7 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 	char fname[256];
 	bool ret = true;
 	uint32_t caps;
+	uint32_t share_capabilities;
 	bool share_is_ca;
 	struct durable_open_vs_lease *table;
 
@@ -517,7 +520,8 @@ bool test_persistent_open_lease(struct torture_context *tctx,
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "persistent_open_lease_%s.dat", generate_random_str(tctx, 8));
 
-	share_is_ca = tree->capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_ca = share_capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
 
 	if (share_is_ca) {
 		table = persistent_open_lease_ca_table;
