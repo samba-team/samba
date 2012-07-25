@@ -1820,9 +1820,6 @@ static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
 		return NULL;
 	}
 
-	tree1->tid = tcon.smb2.out.tid;
-	tree1->capabilities = tcon.smb2.out.capabilities;
-
 	smb2cli_tcon_set_values(tree1->smbXcli,
 				tcon.smb2.out.tid,
 				tcon.smb2.out.share_type,
@@ -1830,7 +1827,9 @@ static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
 				tcon.smb2.out.capabilities,
 				tcon.smb2.out.access_mask);
 
-	torture_comment(tctx,"tid1=%d tid2=%d\n", tree->tid, tree1->tid);
+	torture_comment(tctx,"tid1=%d tid2=%d\n",
+			smb2cli_tcon_current_id(tree->smbXcli),
+			smb2cli_tcon_current_id(tree1->smbXcli));
 
 	return tree1;
 }

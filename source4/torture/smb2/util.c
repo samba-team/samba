@@ -295,9 +295,6 @@ bool torture_smb2_tree_connect(struct torture_context *tctx,
 		return false;
 	}
 
-	tree->tid = tcon.out.tid;
-	tree->capabilities = tcon.out.capabilities;
-
 	smb2cli_tcon_set_values(tree->smbXcli,
 				tcon.out.tid,
 				tcon.out.share_type,

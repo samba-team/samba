@@ -241,9 +241,6 @@ static void smb2_connect_tcon_done(struct smb2_request *smb2req)
 		return;
 	}
 
-	state->tree->tid = state->tcon.out.tid;
-	state->tree->capabilities = state->tcon.out.capabilities;
-
 	smb2cli_tcon_set_values(state->tree->smbXcli,
 				state->tcon.out.tid,
 				state->tcon.out.share_type,
