@@ -85,7 +85,7 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,
-				  0, /* tid */
+				  NULL, /* tcon */
 				  cli->smb2.session,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
@@ -198,7 +198,6 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct smb2cli_tdis_state *state;
-	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_tdis_state);
@@ -208,15 +207,11 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	SSVAL(state->fixed, 0, 4);
 
-	if (cli->smb2.tcon) {
-		tcon_id = smb2cli_tcon_current_id(cli->smb2.tcon);
-	}
-
 	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_TDIS,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,
-				  tcon_id,
+				  cli->smb2.tcon,
 				  cli->smb2.session,
 				  state->fixed, sizeof(state->fixed),
 				  NULL, 0);

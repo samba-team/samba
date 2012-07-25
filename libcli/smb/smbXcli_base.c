@@ -2366,9 +2366,9 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 		struct smbXcli_req_state);
 	uint32_t flags = IVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
 	uint32_t pid = IVAL(state->smb2.hdr, SMB2_HDR_PID);
-	uint32_t tid = IVAL(state->smb2.hdr, SMB2_HDR_TID);
 	uint64_t mid = BVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID);
 	uint64_t aid = BVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID);
+	struct smbXcli_tcon *tcon = state->tcon;
 	struct smbXcli_session *session = state->session;
 	uint8_t *fixed = state->smb2.pad;
 	uint16_t fixed_len = 4;
@@ -2384,7 +2384,7 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 				    SMB2_OP_CANCEL,
 				    flags, 0,
 				    0, /* timeout */
-				    pid, tid, session,
+				    pid, tcon, session,
 				    fixed, fixed_len,
 				    NULL, 0);
 	if (subreq == NULL) {
@@ -2398,7 +2398,6 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 
 	SIVAL(substate->smb2.hdr, SMB2_HDR_FLAGS, flags);
 	SIVAL(substate->smb2.hdr, SMB2_HDR_PID, pid);
-	SIVAL(substate->smb2.hdr, SMB2_HDR_TID, tid);
 	SBVAL(substate->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 	SBVAL(substate->smb2.hdr, SMB2_HDR_ASYNC_ID, aid);
 
@@ -2427,7 +2426,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint32_t clear_flags,
 				      uint32_t timeout_msec,
 				      uint32_t pid,
-				      uint32_t tid,
+				      struct smbXcli_tcon *tcon,
 				      struct smbXcli_session *session,
 				      const uint8_t *fixed,
 				      uint16_t fixed_len,
@@ -2437,6 +2436,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbXcli_req_state *state;
 	uint32_t flags = 0;
+	uint32_t tid = 0;
 	uint64_t uid = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -2448,14 +2448,13 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->conn = conn;
 	state->session = session;
+	state->tcon = tcon;
 
 	if (session) {
 		uid = session->smb2.session_id;
 
 		state->smb2.should_sign = session->smb2.should_sign;
 		state->smb2.should_encrypt = session->smb2.should_encrypt;
-
-		/* TODO: turn on encryption based on the tree connect. */
 
 		if (cmd == SMB2_OP_SESSSETUP &&
 		    session->smb2.signing_key.length != 0) {
@@ -2466,10 +2465,16 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 		    session->smb2.channel_signing_key.length == 0) {
 			state->smb2.should_encrypt = false;
 		}
+	}
 
-		if (state->smb2.should_encrypt) {
-			state->smb2.should_sign = false;
-		}
+	if (tcon) {
+		tid = tcon->smb2.tcon_id;
+
+		/* TODO: turn on encryption based on the tree connect. */
+	}
+
+	if (state->smb2.should_encrypt) {
+		state->smb2.should_sign = false;
 	}
 
 	state->smb2.recv_iov = talloc_zero_array(state, struct iovec, 3);
@@ -2795,7 +2800,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint32_t clear_flags,
 				    uint32_t timeout_msec,
 				    uint32_t pid,
-				    uint32_t tid,
+				    struct smbXcli_tcon *tcon,
 				    struct smbXcli_session *session,
 				    const uint8_t *fixed,
 				    uint16_t fixed_len,
@@ -2808,7 +2813,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 	req = smb2cli_req_create(mem_ctx, ev, conn, cmd,
 				 additional_flags, clear_flags,
 				 timeout_msec,
-				 pid, tid, session,
+				 pid, tcon, session,
 				 fixed, fixed_len, dyn, dyn_len);
 	if (req == NULL) {
 		return NULL;
@@ -3999,7 +4004,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 				state->conn, SMB2_OP_NEGPROT,
 				0, 0, /* flags */
 				state->timeout_msec,
-				0xFEFF, 0, NULL, /* pid, tid, session */
+				0xFEFF, NULL, NULL, /* pid, tcon, session */
 				state->smb2.fixed, sizeof(state->smb2.fixed),
 				state->smb2.dyn, dialect_count*2);
 }

@@ -70,7 +70,6 @@ struct tevent_req *smb2cli_create_send(
 	size_t blobs_offset;
 	uint8_t *dyn;
 	size_t dyn_len;
-	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_create_state);
@@ -138,15 +137,11 @@ struct tevent_req *smb2cli_create_send(
 		data_blob_free(&blob);
 	}
 
-	if (tcon) {
-		tcon_id = smb2cli_tcon_current_id(tcon);
-	}
-
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_CREATE,
 				  0, 0, /* flags */
 				  timeout_msec,
 				  0xFEFF, /* pid */
-				  tcon_id,
+				  tcon,
 				  session,
 				  state->fixed, sizeof(state->fixed),
 				  dyn, dyn_len);
