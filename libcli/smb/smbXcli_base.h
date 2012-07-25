@@ -260,6 +260,7 @@ NTSTATUS smb2cli_session_application_key(struct smbXcli_session *session,
 void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 				      uint64_t session_id,
 				      uint16_t session_flags);
+void smb2cli_session_increment_channel_sequence(struct smbXcli_session *session);
 NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 					 const DATA_BLOB session_key,
 					 const struct iovec *recv_iov);

@@ -139,6 +139,7 @@ struct smb2cli_session {
 	DATA_BLOB decryption_key;
 	uint64_t nonce_high;
 	uint64_t nonce_low;
+	uint16_t channel_sequence;
 };
 
 struct smbXcli_session {
@@ -910,6 +911,8 @@ static bool smbXcli_conn_receive_next(struct smbXcli_conn *conn)
 
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 {
+	struct smbXcli_session *session;
+
 	tevent_queue_stop(conn->outgoing);
 
 	if (conn->read_fd != -1) {
@@ -920,6 +923,18 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 	}
 	conn->read_fd = -1;
 	conn->write_fd = -1;
+
+	session = conn->sessions;
+	if (talloc_array_length(conn->pending) == 0) {
+		/*
+		 * if we do not have pending requests
+		 * there is no need to update the channel_sequence
+		 */
+		session = NULL;
+	}
+	for (; session; session = session->next) {
+		smb2cli_session_increment_channel_sequence(session);
+	}
 
 	/*
 	 * Cancel all pending requests. We do not do a for-loop walking
@@ -2441,6 +2456,8 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	uint32_t flags = 0;
 	uint32_t tid = 0;
 	uint64_t uid = 0;
+	bool use_channel_sequence = false;
+	uint16_t channel_sequence = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbXcli_req_state);
@@ -2453,8 +2470,18 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	state->session = session;
 	state->tcon = tcon;
 
+	if (conn->smb2.server.capabilities & SMB2_CAP_PERSISTENT_HANDLES) {
+		use_channel_sequence = true;
+	} else if (conn->smb2.server.capabilities & SMB2_CAP_MULTI_CHANNEL) {
+		use_channel_sequence = true;
+	}
+
 	if (session) {
 		uid = session->smb2->session_id;
+
+		if (use_channel_sequence) {
+			channel_sequence = session->smb2->channel_sequence;
+		}
 
 		state->smb2.should_sign = session->smb2->should_sign;
 		state->smb2.should_encrypt = session->smb2->should_encrypt;
@@ -2504,6 +2531,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	SIVAL(state->smb2.hdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
 	SSVAL(state->smb2.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
 	SSVAL(state->smb2.hdr, SMB2_HDR_OPCODE,		cmd);
+	SSVAL(state->smb2.hdr, SMB2_HDR_CHANNEL_SEQUENCE, channel_sequence);
 	SIVAL(state->smb2.hdr, SMB2_HDR_FLAGS,		flags);
 	SIVAL(state->smb2.hdr, SMB2_HDR_PID,		0); /* reserved */
 	SIVAL(state->smb2.hdr, SMB2_HDR_TID,		tid);
@@ -4327,6 +4355,11 @@ void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 {
 	session->smb2->session_id = session_id;
 	session->smb2->session_flags = session_flags;
+}
+
+void smb2cli_session_increment_channel_sequence(struct smbXcli_session *session)
+{
+	session->smb2->channel_sequence += 1;
 }
 
 NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
