@@ -43,6 +43,7 @@
 #define SMB2_HDR_CREDIT_CHARGE	0x06
 #define SMB2_HDR_EPOCH		SMB2_HDR_CREDIT_CHARGE /* TODO: remove this */
 #define SMB2_HDR_STATUS		0x08
+#define SMB2_HDR_CHANNEL_SEQUENCE SMB2_HDR_STATUS /* in requests */
 #define SMB2_HDR_OPCODE		0x0c
 #define SMB2_HDR_CREDIT		0x0e
 #define SMB2_HDR_FLAGS		0x10
