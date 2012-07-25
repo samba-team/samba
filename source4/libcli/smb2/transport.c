@@ -315,7 +315,6 @@ static void smb2_transport_break_handler(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct smb2_transport);
 	NTSTATUS status;
-	uint8_t *hdr;
 	uint8_t *body;
 	uint16_t len = 0;
 	bool lease;
@@ -356,7 +355,6 @@ static void smb2_transport_break_handler(struct tevent_req *subreq)
 		transport->break_subreq = subreq;
 	}
 
-	hdr = recv_iov[0].iov_base;
 	body = recv_iov[1].iov_base;
 
 	len = recv_iov[1].iov_len;
