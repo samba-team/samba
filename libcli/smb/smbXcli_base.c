@@ -167,6 +167,7 @@ struct smbXcli_tcon {
 		uint32_t flags;
 		uint32_t capabilities;
 		uint32_t maximal_access;
+		bool should_encrypt;
 	} smb2;
 };
 
@@ -2467,7 +2468,9 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	if (tcon) {
 		tid = tcon->smb2.tcon_id;
 
-		/* TODO: turn on encryption based on the tree connect. */
+		if (tcon->smb2.should_encrypt) {
+			state->smb2.should_encrypt = true;
+		}
 	}
 
 	if (state->smb2.should_encrypt) {
@@ -4636,4 +4639,16 @@ void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
 	tcon->smb2.flags = flags;
 	tcon->smb2.capabilities = capabilities;
 	tcon->smb2.maximal_access = maximal_access;
+
+	tcon->smb2.should_encrypt = false;
+
+	if (session == NULL) {
+		return;
+	}
+
+	tcon->smb2.should_encrypt = session->smb2.should_encrypt;
+
+	if (flags & SMB2_SHAREFLAG_ENCRYPT_DATA) {
+		tcon->smb2.should_encrypt = true;
+	}
 }
