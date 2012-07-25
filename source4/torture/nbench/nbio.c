@@ -314,7 +314,7 @@ next:
 void nbio_shmem(int n, int t_timelimit, int t_warmup)
 {
 	nprocs = n;
-	children = shm_setup(sizeof(*children) * nprocs);
+	children = anonymous_shared_allocate(sizeof(*children) * nprocs);
 	if (!children) {
 		printf("Failed to setup shared memory!\n");
 		nb_exit(1);

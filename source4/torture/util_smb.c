@@ -657,13 +657,13 @@ double torture_create_procs(struct torture_context *tctx,
 
 	signal(SIGCONT, sigcont);
 
-	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*torture_nprocs);
+	child_status = (volatile pid_t *)anonymous_shared_allocate(sizeof(pid_t)*torture_nprocs);
 	if (!child_status) {
 		printf("Failed to setup shared memory\n");
 		return -1;
 	}
 
-	child_status_out = (volatile bool *)shm_setup(sizeof(bool)*torture_nprocs);
+	child_status_out = (volatile bool *)anonymous_shared_allocate(sizeof(bool)*torture_nprocs);
 	if (!child_status_out) {
 		printf("Failed to setup result status shared memory\n");
 		return -1;
