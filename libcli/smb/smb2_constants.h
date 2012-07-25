@@ -121,7 +121,10 @@
 		SMB2_CAP_ENCRYPTION)
 
 
-/* SMB2 session flags */
+/* SMB2 session (request) flags */
+#define SMB2_SESSION_FLAG_BINDING       0x01
+
+/* SMB2 session (response) flags */
 #define SMB2_SESSION_FLAG_IS_GUEST       0x0001
 #define SMB2_SESSION_FLAG_IS_NULL        0x0002
 #define SMB2_SESSION_FLAG_ENCRYPT_DATA   0x0004 /* in dialect >= 0x224 */
