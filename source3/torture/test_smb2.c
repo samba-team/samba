@@ -169,7 +169,7 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	saved_tid = cli->smb2.tid;
+	saved_tid = smb2cli_tcon_current_id(cli->smb2.tcon);
 	saved_tcon = cli->smb2.tcon;
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
@@ -185,7 +185,6 @@ bool run_smb2_basic(int dummy)
 	}
 	talloc_free(cli->smb2.tcon);
 	cli->smb2.tcon = saved_tcon;
-	cli->smb2.tid = saved_tid;
 
 	status = smb2cli_tdis(cli);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED)) {
@@ -598,10 +597,8 @@ bool run_smb2_session_reconnect(int dummy)
 
 	/* the tid seems to be irrelevant at this stage */
 
-	cli2->smb2.tid = cli1->smb2.tid;
-
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
 	{
@@ -610,7 +607,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_write(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tcon, strlen(hello), 0, fid_persistent,
+			       cli1->smb2.tcon, strlen(hello), 0, fid_persistent,
 			       fid_volatile, 0, 0, (const uint8_t *)hello);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_NAME_DELETED))
@@ -620,7 +617,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
-			      cli2->smb2.tcon, 0x10000, 0, fid_persistent,
+			      cli1->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED) &&
@@ -631,7 +628,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
-			cli2->smb2.tcon, "session-reconnect.txt",
+			cli1->smb2.tcon, "session-reconnect.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1036,8 +1033,6 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	cli2->smb2.tid = cli1->smb2.tid;
-
 	status = smb2cli_session_create_channel(cli3,
 						cli1->smb2.session,
 						cli3->conn,
@@ -1164,10 +1159,8 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	cli3->smb2.tid = cli2->smb2.tid;
-
 	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
-			cli2->smb2.tcon, "multi-channel.txt",
+			cli1->smb2.tcon, "multi-channel.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1192,7 +1185,7 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1206,14 +1199,14 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_read(cli2->conn, cli2->timeout, cli2->smb2.session,
-			      cli2->smb2.tcon, 0x10000, 0, fid_persistent,
+			      cli1->smb2.tcon, 0x10000, 0, fid_persistent,
 			      fid_volatile, 2, 0,
 			      talloc_tos(), &result, &nread);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1313,14 +1306,14 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1344,7 +1337,7 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_create(cli2->conn, cli2->timeout, cli2->smb2.session,
-			cli2->smb2.tcon, "multi-channel-invalid.txt",
+			cli1->smb2.tcon, "multi-channel-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1361,7 +1354,7 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_create(cli3->conn, cli3->timeout, cli3->smb2.session,
-			cli3->smb2.tcon, "multi-channel-invalid.txt",
+			cli1->smb2.tcon, "multi-channel-invalid.txt",
 			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
 			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
 			SEC_STD_ALL | SEC_FILE_ALL, /* desired_access, */
@@ -1406,21 +1399,21 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = smb2cli_close(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tcon, 0, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, 0, fid_persistent, fid_volatile);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_close returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli3->conn, cli3->timeout, cli3->smb2.session,
-			       cli3->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
 	}
 
 	status = smb2cli_flush(cli2->conn, cli2->timeout, cli2->smb2.session,
-			       cli2->smb2.tcon, fid_persistent, fid_volatile);
+			       cli1->smb2.tcon, fid_persistent, fid_volatile);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_CLOSED)) {
 		printf("smb2cli_flush returned %s\n", nt_errstr(status));
 		return false;
@@ -1730,7 +1723,7 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	saved_tid = cli->smb2.tid;
+	saved_tid = smb2cli_tcon_current_id(cli->smb2.tcon);
 	saved_tcon = cli->smb2.tcon;
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
@@ -1746,7 +1739,6 @@ bool run_smb2_session_reauth(int dummy)
 	}
 	talloc_free(cli->smb2.tcon);
 	cli->smb2.tcon = saved_tcon;
-	cli->smb2.tid = saved_tid;
 
 	subreq = smb2cli_session_setup_send(talloc_tos(), ev,
 					    cli->conn,
@@ -1909,7 +1901,7 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	saved_tid = cli->smb2.tid;
+	saved_tid = smb2cli_tcon_current_id(cli->smb2.tcon);
 	saved_tcon = cli->smb2.tcon;
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
@@ -1925,7 +1917,6 @@ bool run_smb2_session_reauth(int dummy)
 	}
 	talloc_free(cli->smb2.tcon);
 	cli->smb2.tcon = saved_tcon;
-	cli->smb2.tid = saved_tid;
 
 	return true;
 }

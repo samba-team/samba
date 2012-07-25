@@ -106,6 +106,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	struct iovec *iov;
 	uint8_t *body;
+	uint32_t tcon_id;
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_OK,
@@ -121,7 +122,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 		return;
 	}
 
-	cli->smb2.tid = IVAL(iov[0].iov_base, SMB2_HDR_TID);
+	tcon_id = IVAL(iov[0].iov_base, SMB2_HDR_TID);
 
 	body = (uint8_t *)iov[1].iov_base;
 	cli->smb2.share_type		= CVAL(body, 2);
@@ -137,7 +138,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	}
 
 	smb2cli_tcon_set_values(cli->smb2.tcon,
-				cli->smb2.tid,
+				tcon_id,
 				cli->smb2.share_type,
 				cli->smb2.share_flags,
 				cli->smb2.share_capabilities,
@@ -195,6 +196,7 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct smb2cli_tdis_state *state;
+	uint32_t tcon_id = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2cli_tdis_state);
@@ -204,11 +206,15 @@ struct tevent_req *smb2cli_tdis_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 	SSVAL(state->fixed, 0, 4);
 
+	if (cli->smb2.tcon) {
+		tcon_id = smb2cli_tcon_current_id(cli->smb2.tcon);
+	}
+
 	subreq = smb2cli_req_send(state, ev, cli->conn, SMB2_OP_TDIS,
 				  0, 0, /* flags */
 				  cli->timeout,
 				  cli->smb2.pid,
-				  cli->smb2.tid,
+				  tcon_id,
 				  cli->smb2.session,
 				  state->fixed, sizeof(state->fixed),
 				  NULL, 0);
@@ -241,7 +247,6 @@ static void smb2cli_tdis_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	state->cli->smb2.tid = 0;
 	TALLOC_FREE(state->cli->smb2.tcon);
 	tevent_req_done(req);
 }
