@@ -249,63 +249,6 @@ int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char
 	return fnum;
 }
 
-
-
-/* return a pointer to a anonymous shared memory segment of size "size"
-   which will persist across fork() but will disappear when all processes
-   exit 
-
-   The memory is not zeroed 
-
-   This function uses system5 shared memory. It takes advantage of a property
-   that the memory is not destroyed if it is attached when the id is removed
-   */
-void *shm_setup(int size)
-{
-	int shmid;
-	void *ret;
-
-#ifdef __QNXNTO__
-	shmid = shm_open("private", O_RDWR | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR);
-	if (shmid == -1) {
-		printf("can't get shared memory\n");
-		exit(1);
-	}
-	shm_unlink("private");
-	if (ftruncate(shmid, size) == -1) {
-		printf("can't set shared memory size\n");
-		exit(1);
-	}
-	ret = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shmid, 0);
-	if (ret == MAP_FAILED) {
-		printf("can't map shared memory\n");
-		exit(1);
-	}
-#else
-	shmid = shmget(IPC_PRIVATE, size, SHM_R | SHM_W);
-	if (shmid == -1) {
-		printf("can't get shared memory\n");
-		exit(1);
-	}
-	ret = (void *)shmat(shmid, 0, 0);
-	if (!ret || ret == (void *)-1) {
-		printf("can't attach to shared memory\n");
-		return NULL;
-	}
-	/* the following releases the ipc, but note that this process
-	   and all its children will still have access to the memory, its
-	   just that the shmid is no longer valid for other shm calls. This
-	   means we don't leave behind lots of shm segments after we exit 
-
-	   See Stevens "advanced programming in unix env" for details
-	   */
-	shmctl(shmid, IPC_RMID, 0);
-#endif
-	
-	return ret;
-}
-
-
 /**
   check that a wire string matches the flags specified 
   not 100% accurate, but close enough for testing

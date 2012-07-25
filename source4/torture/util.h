@@ -47,7 +47,6 @@ NTSTATUS create_directory_handle(struct smbcli_tree *tree, const char *dname, in
 */
 _PUBLIC_ int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname);
 int create_complex_dir(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *dname);
-void *shm_setup(int size);
 
 /**
   check that a wire string matches the flags specified 
