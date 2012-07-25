@@ -99,7 +99,6 @@ struct tevent_req *smb2cli_session_setup_send(TALLOC_CTX *mem_ctx,
 				  conn, SMB2_OP_SESSSETUP,
 				  0, 0, /* flags */
 				  timeout_msec,
-				  0xFEFF,
 				  NULL, /* tcon */
 				  session,
 				  state->fixed, sizeof(state->fixed),
@@ -256,7 +255,6 @@ struct tevent_req *smb2cli_logoff_send(TALLOC_CTX *mem_ctx,
 				  conn, SMB2_OP_LOGOFF,
 				  0, 0, /* flags */
 				  timeout_msec,
-				  0xFEFF, /* pid */
 				  NULL, /* tcon */
 				  session,
 				  state->fixed, sizeof(state->fixed),

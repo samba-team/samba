@@ -69,7 +69,6 @@ struct tevent_req *smb2cli_read_send(TALLOC_CTX *mem_ctx,
 	subreq = smb2cli_req_send(state, ev, conn, SMB2_OP_READ,
 				  0, 0, /* flags */
 				  timeout_msec,
-				  0xFEFF, /* pid */
 				  tcon,
 				  session,
 				  state->fixed, sizeof(state->fixed),

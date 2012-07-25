@@ -2365,7 +2365,6 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 		tevent_req_data(req,
 		struct smbXcli_req_state);
 	uint32_t flags = IVAL(state->smb2.hdr, SMB2_HDR_FLAGS);
-	uint32_t pid = IVAL(state->smb2.hdr, SMB2_HDR_PID);
 	uint64_t mid = BVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID);
 	uint64_t aid = BVAL(state->smb2.hdr, SMB2_HDR_ASYNC_ID);
 	struct smbXcli_tcon *tcon = state->tcon;
@@ -2384,7 +2383,7 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 				    SMB2_OP_CANCEL,
 				    flags, 0,
 				    0, /* timeout */
-				    pid, tcon, session,
+				    tcon, session,
 				    fixed, fixed_len,
 				    NULL, 0);
 	if (subreq == NULL) {
@@ -2397,7 +2396,6 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	}
 
 	SIVAL(substate->smb2.hdr, SMB2_HDR_FLAGS, flags);
-	SIVAL(substate->smb2.hdr, SMB2_HDR_PID, pid);
 	SBVAL(substate->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 	SBVAL(substate->smb2.hdr, SMB2_HDR_ASYNC_ID, aid);
 
@@ -2425,7 +2423,6 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 				      uint32_t additional_flags,
 				      uint32_t clear_flags,
 				      uint32_t timeout_msec,
-				      uint32_t pid,
 				      struct smbXcli_tcon *tcon,
 				      struct smbXcli_session *session,
 				      const uint8_t *fixed,
@@ -2500,7 +2497,7 @@ struct tevent_req *smb2cli_req_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->smb2.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
 	SSVAL(state->smb2.hdr, SMB2_HDR_OPCODE,		cmd);
 	SIVAL(state->smb2.hdr, SMB2_HDR_FLAGS,		flags);
-	SIVAL(state->smb2.hdr, SMB2_HDR_PID,		pid);
+	SIVAL(state->smb2.hdr, SMB2_HDR_PID,		0); /* reserved */
 	SIVAL(state->smb2.hdr, SMB2_HDR_TID,		tid);
 	SBVAL(state->smb2.hdr, SMB2_HDR_SESSION_ID,	uid);
 
@@ -2799,7 +2796,6 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 				    uint32_t additional_flags,
 				    uint32_t clear_flags,
 				    uint32_t timeout_msec,
-				    uint32_t pid,
 				    struct smbXcli_tcon *tcon,
 				    struct smbXcli_session *session,
 				    const uint8_t *fixed,
@@ -2813,7 +2809,7 @@ struct tevent_req *smb2cli_req_send(TALLOC_CTX *mem_ctx,
 	req = smb2cli_req_create(mem_ctx, ev, conn, cmd,
 				 additional_flags, clear_flags,
 				 timeout_msec,
-				 pid, tcon, session,
+				 tcon, session,
 				 fixed, fixed_len, dyn, dyn_len);
 	if (req == NULL) {
 		return NULL;
@@ -4004,7 +4000,7 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 				state->conn, SMB2_OP_NEGPROT,
 				0, 0, /* flags */
 				state->timeout_msec,
-				0xFEFF, NULL, NULL, /* pid, tcon, session */
+				NULL, NULL, /* tcon, session */
 				state->smb2.fixed, sizeof(state->smb2.fixed),
 				state->smb2.dyn, dialect_count*2);
 }
