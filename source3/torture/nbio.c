@@ -76,7 +76,7 @@ void nb_alarm(int ignore)
 void nbio_shmem(int n)
 {
 	nprocs = n;
-	children = (struct children *)shm_setup(sizeof(*children) * nprocs);
+	children = (struct children *)anonymous_shared_allocate(sizeof(*children) * nprocs);
 	if (!children) {
 		printf("Failed to setup shared memory!\n");
 		exit(1);

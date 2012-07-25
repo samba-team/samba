@@ -3555,7 +3555,7 @@ static bool run_oplock2(int dummy)
 	size_t nread;
 	NTSTATUS status;
 
-	shared_correct = (volatile bool *)shm_setup(sizeof(bool));
+	shared_correct = (volatile bool *)anonymous_shared_allocate(sizeof(bool));
 	*shared_correct = True;
 
 	use_level_II_oplocks = True;
@@ -8871,13 +8871,13 @@ static double create_procs(bool (*fn)(int), bool *result)
 
 	synccount = 0;
 
-	child_status = (volatile pid_t *)shm_setup(sizeof(pid_t)*torture_nprocs);
+	child_status = (volatile pid_t *)anonymous_shared_allocate(sizeof(pid_t)*torture_nprocs);
 	if (!child_status) {
 		printf("Failed to setup shared memory\n");
 		return -1;
 	}
 
-	child_status_out = (volatile bool *)shm_setup(sizeof(bool)*torture_nprocs);
+	child_status_out = (volatile bool *)anonymous_shared_allocate(sizeof(bool)*torture_nprocs);
 	if (!child_status_out) {
 		printf("Failed to setup result status shared memory\n");
 		return -1;
