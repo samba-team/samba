@@ -509,7 +509,7 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 		in_security_mode = SVAL(in_input.data, 0x14);
 		in_num_dialects = SVAL(in_input.data, 0x16);
 
-		if (in_input.length != (0x18 + in_num_dialects*2)) {
+		if (in_input.length < (0x18 + in_num_dialects*2)) {
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
