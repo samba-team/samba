@@ -107,6 +107,10 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	struct iovec *iov;
 	uint8_t *body;
 	uint32_t tcon_id;
+	uint8_t share_type;
+	uint32_t share_flags;
+	uint32_t share_capabilities;
+	uint32_t maximal_access;
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_OK,
@@ -116,8 +120,8 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(subreq);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -125,12 +129,10 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	tcon_id = IVAL(iov[0].iov_base, SMB2_HDR_TID);
 
 	body = (uint8_t *)iov[1].iov_base;
-	cli->smb2.share_type		= CVAL(body, 2);
-	cli->smb2.share_flags		= IVAL(body, 4);
-	cli->smb2.share_capabilities	= IVAL(body, 8);
-	cli->smb2.maximal_access	= IVAL(body, 12);
-
-	TALLOC_FREE(subreq);
+	share_type		= CVAL(body, 0x02);
+	share_flags		= IVAL(body, 0x04);
+	share_capabilities	= IVAL(body, 0x08);
+	maximal_access		= IVAL(body, 0x0C);
 
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	if (tevent_req_nomem(cli->smb2.tcon, req)) {
@@ -139,10 +141,10 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 
 	smb2cli_tcon_set_values(cli->smb2.tcon,
 				tcon_id,
-				cli->smb2.share_type,
-				cli->smb2.share_flags,
-				cli->smb2.share_capabilities,
-				cli->smb2.maximal_access);
+				share_type,
+				share_flags,
+				share_capabilities,
+				maximal_access);
 
 	tevent_req_done(req);
 }

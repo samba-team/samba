@@ -111,12 +111,6 @@ struct cli_state {
 		uint32_t pid;
 		struct smbXcli_session *session;
 		struct smbXcli_tcon *tcon;
-
-		/* SMB2 tcon */
-		uint8_t share_type;
-		uint32_t share_flags;
-		uint32_t share_capabilities;
-		uint32_t maximal_access;
 	} smb2;
 };
 
