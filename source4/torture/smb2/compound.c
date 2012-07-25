@@ -88,6 +88,7 @@ static bool test_compound_related1(struct torture_context *tctx,
 
 	tree->smbXcli = smbXcli_tcon_create(tree);
 	smb2cli_tcon_set_values(tree->smbXcli,
+				NULL, /* session */
 				0xFFFFFFFF, /* tcon_id */
 				0, /* type */
 				0, /* flags */
@@ -166,6 +167,7 @@ static bool test_compound_related2(struct torture_context *tctx,
 
 	tree->smbXcli = smbXcli_tcon_create(tree);
 	smb2cli_tcon_set_values(tree->smbXcli,
+				NULL, /* session */
 				0xFFFFFFFF, /* tcon_id */
 				0, /* type */
 				0, /* flags */
@@ -378,6 +380,7 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 
 	tree->smbXcli = smbXcli_tcon_create(tree);
 	smb2cli_tcon_set_values(tree->smbXcli,
+				NULL, /* session */
 				0xFFFFFFFF, /* tcon_id */
 				0, /* type */
 				0, /* flags */

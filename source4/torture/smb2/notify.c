@@ -1821,6 +1821,7 @@ static struct smb2_tree *secondary_tcon(struct smb2_tree *tree,
 	}
 
 	smb2cli_tcon_set_values(tree1->smbXcli,
+				tree1->session->smbXcli,
 				tcon.smb2.out.tid,
 				tcon.smb2.out.share_type,
 				tcon.smb2.out.flags,

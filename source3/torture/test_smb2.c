@@ -172,6 +172,7 @@ bool run_smb2_basic(int dummy)
 	saved_tcon = cli->smb2.tcon;
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
+				NULL, /* session */
 				saved_tid,
 				0, /* type */
 				0, /* flags */
@@ -804,6 +805,7 @@ bool run_smb2_tcon_dependence(int dummy)
 	tcon2_id = smb2cli_tcon_current_id(cli->smb2.tcon);
 	tcon2_id++;
 	smb2cli_tcon_set_values(tcon2,
+				NULL, /* session */
 				tcon2_id,
 				0, /* type */
 				0, /* flags */
@@ -1718,6 +1720,7 @@ bool run_smb2_session_reauth(int dummy)
 	saved_tcon = cli->smb2.tcon;
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
+				NULL, /* session */
 				saved_tid,
 				0, /* type */
 				0, /* flags */
@@ -1896,6 +1899,7 @@ bool run_smb2_session_reauth(int dummy)
 	saved_tcon = cli->smb2.tcon;
 	cli->smb2.tcon = smbXcli_tcon_create(cli);
 	smb2cli_tcon_set_values(cli->smb2.tcon,
+				NULL, /* session */
 				saved_tid,
 				0, /* type */
 				0, /* flags */

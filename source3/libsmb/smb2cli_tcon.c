@@ -139,6 +139,7 @@ static void smb2cli_tcon_done(struct tevent_req *subreq)
 	}
 
 	smb2cli_tcon_set_values(cli->smb2.tcon,
+				cli->smb2.session,
 				tcon_id,
 				share_type,
 				share_flags,
