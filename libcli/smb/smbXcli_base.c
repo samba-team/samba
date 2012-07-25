@@ -4617,6 +4617,11 @@ uint32_t smb2cli_tcon_current_id(struct smbXcli_tcon *tcon)
 	return tcon->smb2.tcon_id;
 }
 
+uint32_t smb2cli_tcon_capabilities(struct smbXcli_tcon *tcon)
+{
+	return tcon->smb2.capabilities;
+}
+
 void smb2cli_tcon_set_values(struct smbXcli_tcon *tcon,
 			     uint32_t tcon_id,
 			     uint8_t type,
