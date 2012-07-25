@@ -63,7 +63,6 @@ bool torture_nttrans_scan(int dummy);
 
 /* The following definitions come from torture/torture.c  */
 
-void *shm_setup(int size);
 bool smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
 		      char **hostname, char **sharename);
 bool torture_open_connection(struct cli_state **c, int conn_index);
