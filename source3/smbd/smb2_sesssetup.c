@@ -441,6 +441,19 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	state->in_previous_session_id = in_previous_session_id;
 	state->in_security_buffer = in_security_buffer;
 
+	if (in_flags & SMB2_SESSION_FLAG_BINDING) {
+		if (smb2req->sconn->conn->protocol < PROTOCOL_SMB2_22) {
+			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * We do not support multi channel.
+		 */
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+
 	talloc_set_destructor(state, smbd_smb2_session_setup_state_destructor);
 
 	if (state->in_session_id == 0) {
