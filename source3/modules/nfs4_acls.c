@@ -307,7 +307,9 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 	return 0;
 }
 
-static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
+static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
+	smbacl4_vfs_params *params,
+	SMB4ACL_T *theacl, /* in */
 	struct dom_sid *psid_owner, /* in */
 	struct dom_sid *psid_group, /* in */
 	bool is_directory, /* in */
@@ -417,10 +419,13 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 }
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
-					   uint32 security_info, TALLOC_CTX *mem_ctx,
-	struct security_descriptor **ppdesc, SMB4ACL_T *theacl)
+					   smbacl4_vfs_params *params,
+					   uint32 security_info,
+					   TALLOC_CTX *mem_ctx,
+					   struct security_descriptor **ppdesc,
+					   SMB4ACL_T *theacl)
 {
-	int	good_aces = 0;
+	int good_aces = 0;
 	struct dom_sid sid_owner, sid_group;
 	size_t sd_size = 0;
 	struct security_ace *nt_ace_list = NULL;
@@ -437,7 +442,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
 	gid_to_sid(&sid_group, sbuf->st_ex_gid);
 
-	if (smbacl4_nfs42win(mem_ctx, theacl, &sid_owner, &sid_group,
+	if (smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
 			     S_ISDIR(sbuf->st_ex_mode),
 				&nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
@@ -479,6 +484,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 			      SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
+	smbacl4_vfs_params params;
 
 	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
@@ -486,9 +492,13 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 		return map_nt_error_from_unix(errno);
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, security_info,
-					  mem_ctx, ppdesc,
-					  theacl);
+	/* Special behaviours */
+	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp->conn, &params)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return smb_get_nt_acl_nfs4_common(&sbuf, &params, security_info,
+					  mem_ctx, ppdesc, theacl);
 }
 
 NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
@@ -499,6 +509,7 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 			     SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
+	smbacl4_vfs_params params;
 
 	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n", name));
 
@@ -506,9 +517,13 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, security_info,
-					  mem_ctx, ppdesc,
-					  theacl);
+	/* Special behaviours */
+	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, conn, &params)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return smb_get_nt_acl_nfs4_common(&sbuf, &params, security_info,
+					  mem_ctx, ppdesc, theacl);
 }
 
 static void smbacl4_dump_nfs4acl(int level, SMB4ACL_T *theacl)
@@ -548,7 +563,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 	     aceint=(SMB_ACE4_INT_T *)aceint->next) {
 		SMB_ACE4PROP_T *ace = &aceint->prop;
 
-                DEBUG(10,("ace type:0x%x flags:0x%x aceFlags:0x%x "
+		DEBUG(10,("ace type:0x%x flags:0x%x aceFlags:0x%x "
 			  "new type:0x%x flags:0x%x aceFlags:0x%x\n",
 			  ace->aceType, ace->flags, ace->aceFlags,
 			  aceNew->aceType, aceNew->flags,aceNew->aceFlags));
