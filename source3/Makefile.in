@@ -1195,7 +1195,7 @@ SMBCONFTORT_OBJ = $(SMBCONFTORT_OBJ0) \
 		  $(POPT_LIB_OBJ)
 
 PTHREADPOOLTEST_OBJ = lib/pthreadpool/pthreadpool.o \
-		lib/pthreadpool/tests.o
+		lib/pthreadpool/tests.o $(LIBREPLACE_OBJ)
 
 LIBNET_OBJ = libnet/libnet_join.o \
 	     libnet/libnet_keytab.o \
