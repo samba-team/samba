@@ -134,33 +134,47 @@ static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 
 #include "lib/param/param_table.c"
 
+/* Note: We do not initialise the defaults union - it is not allowed in ANSI C
+ *
+ * The FLAG_HIDE is explicit. Parameters set this way do NOT appear in any edit
+ * screen in SWAT. This is used to exclude parameters as well as to squash all
+ * parameters that have been duplicated by pseudonyms.
+ *
+ * NOTE: To display a parameter in BASIC view set FLAG_BASIC
+ *       Any parameter that does NOT have FLAG_ADVANCED will not disply at all
+ *	 Set FLAG_SHARE and FLAG_PRINT to specifically display parameters in
+ *        respective views.
+ *
+ * NOTE2: Handling of duplicated (synonym) parameters:
+ *	Only the first occurance of a parameter should be enabled by FLAG_BASIC
+ *	and/or FLAG_ADVANCED. All duplicates following the first mention should be
+ *	set to FLAG_HIDE. ie: Make you must place the parameter that has the preferred
+ *	name first, and all synonyms must follow it with the FLAG_HIDE attribute.
+ */
+
 #define GLOBAL_VAR(name) offsetof(struct loadparm_global, name)
 #define LOCAL_VAR(name) offsetof(struct loadparm_service, name)
 
-static struct parm_struct parm_table[] = {
-	{
-		.label		= "server role",
-		.type		= P_ENUM,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(server_role),
-		.special	= NULL,
-		.enum_list	= enum_server_role
-	},
+
+	{N_("Base Options"), P_SEP, P_SEPARATOR},
+
 	{
 		.label		= "dos charset",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(dos_charset),
-		.special	= NULL,
-		.enum_list	= NULL
+		.special	= handle_dos_charset,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED
 	},
 	{
 		.label		= "unix charset",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(unix_charset),
-		.special	= NULL,
-		.enum_list	= NULL
+		.special	= handle_charset,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED
 	},
 	{
 		.label		= "comment",
@@ -221,8 +235,9 @@ static struct parm_struct parm_table[] = {
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNetbiosAliases),
-		.special	= NULL,
-		.enum_list	= NULL
+		.special	= handle_netbios_aliases,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "netbios scope",
@@ -259,6 +274,24 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
+	},
+	{
+		.label		= "config backend",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(ConfigBackend),
+		.special	= NULL,
+		.enum_list	= enum_config_backend,
+		.flags		= FLAG_HIDE|FLAG_ADVANCED|FLAG_META,
+	},
+	{
+		.label		= "server role",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(server_role),
+		.special	= NULL,
+		.enum_list	= enum_server_role,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
 	},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR},
