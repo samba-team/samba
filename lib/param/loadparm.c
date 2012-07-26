@@ -968,7 +968,17 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 
+	{N_("EventLog Options"), P_SEP, P_SEPARATOR},
 
+	{
+		.label		= "eventlog list",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szEventLogs),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
+	},
 
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR},
 
