@@ -1585,6 +1585,7 @@ VLP_OBJ = printing/tests/vlp.o \
           ../lib/util/charset/iconv.o \
           ../lib/util/charset/weird.o \
           ../lib/util/charset/convert_string.o \
+          $(CHARSET_MACOSXFS_OBJ) \
           ../lib/util/talloc_stack.o \
           ../lib/util/smb_threads.o \
           ../lib/util/xfile.o \
