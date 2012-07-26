@@ -642,8 +642,13 @@ void ctdb_lockdown_memory(struct ctdb_context *ctdb)
 		return;
 	}
 
+	/* TODO: Add a command line option to disable memory lockdown.
+	 *       This can be a performance issue on AIX since fork() copies
+	 *       all locked memory pages. 
+	 */
+
 	/* Ignore when running in local daemons mode */
-	if (getpid() != 0) {
+	if (getuid() != 0) {
 		return;
 	}
 
