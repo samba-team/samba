@@ -849,6 +849,19 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 
+
+	{N_("Domain Options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "machine password timeout",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(machine_password_timeout),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
+	},
+
 	{N_("Logon Options"), P_SEP, P_SEPARATOR},
 
 	{
