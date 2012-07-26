@@ -77,6 +77,7 @@ static bool defaults_saved = false;
 	struct parmlist_entry *param_opt;				\
 	char *szRealm;							\
 	char *szConfigFile;						\
+	int iminreceivefile;						\
 	char *szPrintcapname;						\
 	int CupsEncrypt;						\
 	int  iPreferredMaster;						\
@@ -474,61 +475,52 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 
+	{N_("Protocol Options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "allocation roundup size",
+		.type		= P_BYTES,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iallocation_roundup_size),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "aio read size",
+		.type		= P_BYTES,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iAioReadSize),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "aio write size",
+		.type		= P_BYTES,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(iAioWriteSize),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "aio write behind",
+		.type		= P_STRING,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(szAioWriteBehind),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
 	{
 		.label		= "smb ports",
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(smb_ports),
 		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "nbt port",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(nbt_port),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "dgram port",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(dgram_port),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "cldap port",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(cldap_port),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "krb5 port",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(krb5_port),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "kpasswd port",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(kpasswd_port),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
-		.label		= "web port",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(web_port),
-		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "large readwrite",
@@ -590,7 +582,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(cli_maxprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "client min protocol",
@@ -598,7 +591,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(cli_minprotocol),
 		.special	= NULL,
-		.enum_list	= enum_protocol
+		.enum_list	= enum_protocol,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "unicode",
@@ -609,12 +603,22 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 	{
+		.label		= "min receivefile size",
+		.type		= P_BYTES,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(iminreceivefile),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "read raw",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bReadRaw),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "write raw",
@@ -622,7 +626,8 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bWriteRaw),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "disable netbios",
@@ -630,18 +635,108 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bDisableNetbios),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
-
+	{
+		.label		= "reset on zero vc",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bResetOnZeroVC),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "log writeable files on exit",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bLogWriteableFilesOnExit),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "acl compatibility",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(iAclCompat),
+		.special	= NULL,
+		.enum_list	= enum_acl_compat_vals,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
+	{
+		.label		= "defer sharing violations",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDeferSharingViolations),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
+	},
+	{
+		.label		= "ea support",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bEASupport),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
+	{
+		.label		= "nt acl support",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bNTAclSupport),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
+	{
+		.label		= "nt pipe support",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bNTPipeSupport),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 	{
 		.label		= "nt status support",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bNTStatusSupport),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
-
+	{
+		.label		= "profile acls",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bProfileAcls),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE,
+	},
+	{
+		.label		= "map acl inherit",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bMap_acl_inherit),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
+	{
+		.label		= "afs share",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bAfs_Share),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
 	{
 		.label		= "max mux",
 		.type		= P_INTEGER,
@@ -660,14 +755,23 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
-
 	{
 		.label		= "name resolve order",
 		.type		= P_LIST,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(szNameResolveOrder),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_WIZARD,
+	},
+	{
+		.label		= "max ttl",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(max_ttl),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "max wins ttl",
@@ -711,7 +815,17 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bUseSpnego),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
+	},
+	{
+		.label		= "client signing",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(client_signing),
+		.special	= NULL,
+		.enum_list	= enum_smb_signing_vals,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "server signing",
@@ -723,12 +837,97 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "client signing",
+		.label		= "smb encrypt",
+		.type		= P_ENUM,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(ismb_encrypt),
+		.special	= NULL,
+		.enum_list	= enum_smb_signing_vals,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "client use spnego",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bClientUseSpnego),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "client ldap sasl wrapping",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(client_signing),
+		.offset		= GLOBAL_VAR(client_ldap_sasl_wrapping),
 		.special	= NULL,
-		.enum_list	= enum_smb_signing_vals
+		.enum_list	= enum_ldap_sasl_wrapping,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "enable asu support",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bASUSupport),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "svcctl list",
+		.type		= P_LIST,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(szServicesList),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "cldap port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(cldap_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "dgram port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(dgram_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "nbt port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(nbt_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "krb5 port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(krb5_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "kpasswd port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(kpasswd_port),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "web port",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(web_port),
+		.special	= NULL,
+		.enum_list	= NULL
 	},
 	{
 		.label		= "rpc big endian",
