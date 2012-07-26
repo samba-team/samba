@@ -90,6 +90,7 @@ static void handle_tree_input(struct tree_view *view, struct value_list *vl,
 		node = item_userptr(current_item(view->menu));
 		value_list_load(vl, node->key);
 		break;
+	case '\n':
 	case KEY_ENTER:
 	case KEY_RIGHT:
 		node = item_userptr(current_item(view->menu));
