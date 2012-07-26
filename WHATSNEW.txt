@@ -14,6 +14,51 @@ Changes since 3.6.6:
 --------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 8974: Fix kernel oplocks when uid(file) != uid(process).
+    * BUG 8989: Send correct responses to NT Transact Secondary when no data and
+      no params for the Trans2 calls are set.
+    * BUG 9034: Fix typo in set_re_uid() call when USE_SETRESUID selected in
+      configure.
+
+
+o   David Binderman <dcb314@hotmail.com>
+    * BUG 9062: rpcclient: Fix bad call to data_blob_const.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 8719: Printing fails in function cups_job_submit.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 8552: Correct documentation of "case sensitive".
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8996: Fix build without ads support.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9003: Fix posix acl on gpfs.
+    * BUG 9040: Using asynchronous IO with SMB2 can return NT_STATUS_FILE_CLOSED
+      in error instead ofNT_STATUS_FILE_LOCK_CONFLICT.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9002: Don't turn negative cache entries into valid idmappings.
+    * BUG 9022: Make vfs_gpfs less verbose in get/set_xattr functions.
+    * BUG 9057: Fix bugs in SMB2 credit handling code.
+
+
+o   Jiri Popelka <jpopelka@redhat.com>
+    * BUG 9055: Fix build against CUPS 1.6.
+
+
+o   Jura Sasek <jiri.sasek@oracle.com>
+    * BUG 9037: Fix 'net ads join' on T4 (sun4v) systems on Solaris 10.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9052: Fix resolving our own "Domain Local" groups.
 
 
 ######################################################################
