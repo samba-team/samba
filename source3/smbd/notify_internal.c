@@ -560,6 +560,7 @@ static bool notify_pull_remote_blob(TALLOC_CTX *mem_ctx,
 	struct notify_remote_event *ev;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB data;
+	char *p;
 
 	data.data = discard_const_p(uint8_t, blob);
 	data.length = blob_len;
@@ -581,7 +582,8 @@ static bool notify_pull_remote_blob(TALLOC_CTX *mem_ctx,
 	}
 	*paction = ev->action;
 	*pfilter = ev->filter;
-	*path = talloc_move(mem_ctx, (char **)&ev->path);
+	p = discard_const_p(char, ev->path);
+	*path = talloc_move(mem_ctx, &p);
 
 	TALLOC_FREE(ev);
 	return true;
@@ -621,7 +623,7 @@ void notify_trigger(struct notify_context *notify,
 
 		dbwrap_parse_record(
 			notify->db_index,
-			make_tdb_data((uint8_t *)path, path_len),
+			make_tdb_data(discard_const_p(uint8_t, path), path_len),
 			notify_trigger_index_parser, &idx_state);
 
 		if (!idx_state.found_my_vnn) {
@@ -692,7 +694,7 @@ static void notify_trigger_local(struct notify_context *notify,
 
 	status = dbwrap_fetch(
 		notify->db_notify, talloc_tos(),
-		make_tdb_data((uint8_t *)path, path_len), &data);
+		make_tdb_data(discard_const_p(uint8_t, path), path_len), &data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("dbwrap_fetch returned %s\n",
 			   nt_errstr(status)));
