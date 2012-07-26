@@ -909,13 +909,25 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 
+	{N_("WINS Options"), P_SEP, P_SEPARATOR},
+
 	{
 		.label		= "dns proxy",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bWINSdnsProxy),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "wins proxy",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bWINSproxy),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "wins server",
