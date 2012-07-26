@@ -15,7 +15,17 @@ Changes since 3.5.16:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 
+    * BUG 9034: Fix typo in set_re_uid() call when USE_SETRESUID selected in
+      configure.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8996: Fix build without ads support.
+    * BUG 9011: Second part of a fix for bug #9011 (Build on HP-UX broken).
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9022: Make vfs_gpfs less verbose in get/set_xattr functions.
 
 
 ######################################################################
