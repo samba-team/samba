@@ -19,8 +19,8 @@ if test "x$DIFF" = "x" ; then
 	DIFF="comm -23"
 fi
 
-grep "^.define" $NEW_CONFIG | grep -v -f $EXCEPTIONS | sort > waf-config.h
-grep "^.define" $OLD_CONFIG | grep -v -f $EXCEPTIONS | sort > old-config.h
+grep "^.define" $NEW_CONFIG | egrep -v -f $EXCEPTIONS | sort > waf-config.h
+grep "^.define" $OLD_CONFIG | egrep -v -f $EXCEPTIONS | sort > old-config.h
 
 $DIFF old-config.h waf-config.h
 rm -f old-config.h waf-config.h
