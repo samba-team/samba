@@ -108,6 +108,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint32_t max_trans = lp_smb2_max_trans();
 	uint32_t max_read = lp_smb2_max_read();
 	uint32_t max_write = lp_smb2_max_write();
+	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	status = smbd_smb2_request_verify_sizes(req, 0x24);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -323,7 +324,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	SIVAL(outbody.data, 0x1C, max_trans);	/* max transact size */
 	SIVAL(outbody.data, 0x20, max_read);	/* max read size */
 	SIVAL(outbody.data, 0x24, max_write);	/* max write size */
-	SBVAL(outbody.data, 0x28, 0);		/* system time */
+	SBVAL(outbody.data, 0x28, now);		/* system time */
 	SBVAL(outbody.data, 0x30, 0);		/* server start time */
 	SSVAL(outbody.data, 0x38,
 	      security_offset);			/* security buffer offset */
