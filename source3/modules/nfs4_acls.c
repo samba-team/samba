@@ -68,7 +68,7 @@ typedef struct _smbacl4_vfs_params {
  */
 static int smbacl4_get_vfs_params(
 	const char *type_name,
-	files_struct *fsp,
+	struct connection_struct *conn,
 	smbacl4_vfs_params *params
 )
 {
@@ -87,12 +87,12 @@ static int smbacl4_get_vfs_params(
 
 	memset(params, 0, sizeof(smbacl4_vfs_params));
 	params->mode = (enum smbacl4_mode_enum)lp_parm_enum(
-		SNUM(fsp->conn), type_name,
+		SNUM(conn), type_name,
 		"mode", enum_smbacl4_modes, e_simple);
-	params->do_chown = lp_parm_bool(SNUM(fsp->conn), type_name,
+	params->do_chown = lp_parm_bool(SNUM(conn), type_name,
 		"chown", true);
 	params->acedup = (enum smbacl4_acedup_enum)lp_parm_enum(
-		SNUM(fsp->conn), type_name,
+		SNUM(conn), type_name,
 		"acedup", enum_smbacl4_acedups, e_dontcare);
 
 	DEBUG(10, ("mode:%s, do_chown:%s, acedup: %s\n",
@@ -765,7 +765,8 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp, &params)) {
+	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME,
+				   fsp->conn, &params)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
