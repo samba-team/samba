@@ -77,6 +77,7 @@ static bool defaults_saved = false;
 	struct parmlist_entry *param_opt;				\
 	char *szRealm;							\
 	char *szConfigFile;						\
+	int  iPreferredMaster;						\
 	char *szLdapMachineSuffix;					\
 	char *szLdapUserSuffix;						\
 	char *szLdapIdmapSuffix;					\
@@ -91,8 +92,7 @@ static bool defaults_saved = false;
 	char *tls_crlfile;						\
 	char *tls_dhpfile;						\
 	char *loglevel;							\
-	char *panic_action;						\
-	int bPreferredMaster;
+	char *panic_action;						
 
 #include "lib/param/param_global.h"
 
@@ -148,14 +148,6 @@ static struct parm_struct parm_table[] = {
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bDomainLogons),
-		.special	= NULL,
-		.enum_list	= enum_bool_auto
-	},
-	{
-		.label		= "domain master",
-		.type		= P_ENUM,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(domain_master),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto
 	},
@@ -865,11 +857,40 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 
+	{N_("Browse Options"), P_SEP, P_SEPARATOR},
+
+	{
+		.label		= "os level",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(os_level),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
+	},
+	{
+		.label		= "lm announce",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(lm_announce),
+		.special	= NULL,
+		.enum_list	= enum_bool_auto,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "lm interval",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(lm_interval),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 	{
 		.label		= "preferred master",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bPreferredMaster),
+		.offset		= GLOBAL_VAR(iPreferredMaster),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto,
 		.flags		= FLAG_BASIC | FLAG_ADVANCED,
@@ -878,7 +899,7 @@ static struct parm_struct parm_table[] = {
 		.label		= "prefered master",
 		.type		= P_ENUM,
 		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(bPreferredMaster),
+		.offset		= GLOBAL_VAR(iPreferredMaster),
 		.special	= NULL,
 		.enum_list	= enum_bool_auto,
 		.flags		= FLAG_HIDE,
@@ -889,7 +910,26 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(bLocalMaster),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
+	},
+	{
+		.label		= "domain master",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(domain_master),
+		.special	= NULL,
+		.enum_list	= enum_bool_auto,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED,
+	},
+	{
+		.label		= "browse list",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bBrowseList),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "browseable",
@@ -906,7 +946,26 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_LOCAL,
 		.offset		= LOCAL_VAR(bBrowseable),
 		.special	= NULL,
-		.enum_list	= NULL
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
+	},
+	{
+		.label		= "access based share enum",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bAccessBasedShareEnum),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE
+	},
+	{
+		.label		= "enhanced browsing",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(enhanced_browsing),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 
 	{N_("WINS Options"), P_SEP, P_SEPARATOR},
