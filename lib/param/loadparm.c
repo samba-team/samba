@@ -110,7 +110,6 @@ static bool defaults_saved = false;
  * non-source3 code
  */
 #define handle_netbios_aliases NULL
-#define handle_debug_list NULL
 #define handle_printing NULL
 #define handle_ldap_debug_level NULL
 #define handle_idmap_backend NULL
@@ -128,7 +127,7 @@ static bool handle_realm(struct loadparm_context *lp_ctx, int unused,
 			 const char *pszParmValue, char **ptr);
 static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr);
-static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
+static bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
 			      const char *pszParmValue, char **ptr);
 static bool handle_logfile(struct loadparm_context *lp_ctx, int unused,
 			   const char *pszParmValue, char **ptr);
@@ -449,21 +448,43 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL
 	},
 
+	{N_("Logging Options"), P_SEP, P_SEPARATOR},
+
 	{
 		.label		= "log level",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(loglevel),
-		.special	= handle_debuglevel,
-		.enum_list	= NULL
+		.special	= handle_debug_list,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "debuglevel",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(loglevel),
-		.special	= handle_debuglevel,
-		.enum_list	= NULL
+		.special	= handle_debug_list,
+		.enum_list	= NULL,
+		.flags		= FLAG_HIDE,
+	},
+	{
+		.label		= "syslog",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(syslog),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "syslog only",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bSyslogOnly),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
 	},
 	{
 		.label		= "log file",
@@ -471,6 +492,87 @@ static struct parm_struct parm_table[] = {
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(logfile),
 		.special	= handle_logfile,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "max log size",
+		.type		= P_BYTES,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(max_log_size),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "debug timestamp",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bTimestampLogs),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "timestamp logs",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bTimestampLogs),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "debug prefix timestamp",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDebugPrefixTimestamp),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "debug hires timestamp",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDebugHiresTimestamp),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "debug pid",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDebugPid),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "debug uid",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDebugUid),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "debug class",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bDebugClass),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "enable core files",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(bEnableCoreFiles),
+		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
@@ -4601,7 +4703,7 @@ static bool handle_copy(struct loadparm_context *lp_ctx, int unused,
 	return bRetval;
 }
 
-static bool handle_debuglevel(struct loadparm_context *lp_ctx, int unused,
+static bool handle_debug_list(struct loadparm_context *lp_ctx, int unused,
 			const char *pszParmValue, char **ptr)
 {
 
