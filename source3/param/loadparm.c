@@ -790,7 +790,6 @@ static void init_globals(bool reinit_globals)
 	Globals.srv_maxprotocol = PROTOCOL_SMB2_10;
 	Globals.srv_minprotocol = PROTOCOL_LANMAN1;
 	Globals.security = SEC_USER;
-	Globals.paranoid_server_security = true;
 	Globals.bEncryptPasswords = true;
 	Globals.clientSchannel = Auto;
 	Globals.serverSchannel = Auto;

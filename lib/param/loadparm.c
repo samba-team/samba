@@ -2145,7 +2145,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
 	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "NT1");
 	lpcfg_do_global_parameter(lp_ctx, "security", "AUTO");
-	lpcfg_do_global_parameter(lp_ctx, "paranoid server security", "True");
 	lpcfg_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
 	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
 	lpcfg_do_global_parameter(lp_ctx, "WriteRaw", "True");
