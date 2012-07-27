@@ -502,20 +502,10 @@ bool iface_list_same_net(const char *ip1, const char *ip2, const char *netmask)
 /**
    return the list of wildcard interfaces
    this will include the IPv4 0.0.0.0, and may include IPv6 ::
-   it is overridden by the 'socket address' option in smb.conf
 */
 const char **iface_list_wildcard(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	const char **ret;
-	const char *socket_address;
-
-	/* the user may have configured a specific address */
-	socket_address = lpcfg_socket_address(lp_ctx);
-	if (strcmp(socket_address, "") != 0) {
-		ret = (const char **)str_list_make(mem_ctx, socket_address, NULL);
-		return ret;
-	}
-
 	ret = (const char **)str_list_make(mem_ctx, "0.0.0.0", NULL);
 	if (ret == NULL) return NULL;
 

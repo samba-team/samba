@@ -796,18 +796,15 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
 
-		const char *sock_addr = lp_socket_address();
+		const char *sock_addr;
 		char *sock_tok;
 		const char *sock_ptr;
 
-		if (strequal(sock_addr, "0.0.0.0") ||
-		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
-			sock_addr = "::,0.0.0.0";
+		sock_addr = "::,0.0.0.0";
 #else
-			sock_addr = "0.0.0.0";
+		sock_addr = "0.0.0.0";
 #endif
-		}
 
 		for (sock_ptr=sock_addr;
 		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,"); ) {

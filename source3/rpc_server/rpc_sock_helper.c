@@ -98,18 +98,15 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 			}
 		}
 	} else {
-		const char *sock_addr = lp_socket_address();
+		const char *sock_addr;
 		const char *sock_ptr;
 		char *sock_tok;
 
-		if (strequal(sock_addr, "0.0.0.0") ||
-		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
-			sock_addr = "::,0.0.0.0";
+		sock_addr = "::,0.0.0.0";
 #else
-			sock_addr = "0.0.0.0";
+		sock_addr = "0.0.0.0";
 #endif
-		}
 
 		for (sock_ptr = sock_addr;
 		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,");
@@ -217,18 +214,15 @@ NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
 			}
 		}
 	} else {
-		const char *sock_addr = lp_socket_address();
+		const char *sock_addr;
 		const char *sock_ptr;
 		char *sock_tok;
 
-		if (strequal(sock_addr, "0.0.0.0") ||
-		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
-			sock_addr = "::,0.0.0.0";
+		sock_addr = "::,0.0.0.0";
 #else
-			sock_addr = "0.0.0.0";
+		sock_addr = "0.0.0.0";
 #endif
-		}
 
 		for (sock_ptr = sock_addr;
 		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,");
