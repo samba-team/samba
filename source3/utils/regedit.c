@@ -24,8 +24,22 @@
 #include "regedit.h"
 #include "regedit_treeview.h"
 #include "regedit_valuelist.h"
+#include "regedit_dialog.h"
 #include <ncurses.h>
 #include <menu.h>
+#include <panel.h>
+
+struct regedit {
+	WINDOW *main_window;
+	PANEL *main_panel;
+	WINDOW *path_label;
+	WINDOW *key_label;
+	WINDOW *value_label;
+	struct value_list *vl;
+	struct tree_view *keys;
+	bool tree_input;
+	struct dialog *dia;
+};
 
 /* load all available hives */
 static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
@@ -74,59 +88,6 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 	return root;
 }
 
-static void handle_tree_input(struct tree_view *view, struct value_list *vl,
-			      WINDOW *path, int c)
-{
-	struct tree_node *node;
-
-	switch (c) {
-	case KEY_DOWN:
-		menu_driver(view->menu, REQ_DOWN_ITEM);
-		node = item_userptr(current_item(view->menu));
-		value_list_load(vl, node->key);
-		break;
-	case KEY_UP:
-		menu_driver(view->menu, REQ_UP_ITEM);
-		node = item_userptr(current_item(view->menu));
-		value_list_load(vl, node->key);
-		break;
-	case '\n':
-	case KEY_ENTER:
-	case KEY_RIGHT:
-		node = item_userptr(current_item(view->menu));
-		if (node && tree_node_has_children(node)) {
-			tree_node_load_children(node);
-			tree_node_print_path(path, node->child_head);
-			tree_view_update(view, node->child_head);
-			value_list_load(vl, node->child_head->key);
-		}
-		break;
-	case KEY_LEFT:
-		node = item_userptr(current_item(view->menu));
-		if (node && node->parent) {
-			tree_node_print_path(path, node->parent);
-			node = tree_node_first(node->parent);
-			tree_view_update(view, node);
-			value_list_load(vl, node->key);
-		}
-		break;
-	}
-}
-
-static void handle_value_input(struct value_list *vl, int c)
-{
-	switch (c) {
-	case KEY_DOWN:
-		menu_driver(vl->menu, REQ_DOWN_ITEM);
-		break;
-	case KEY_UP:
-		menu_driver(vl->menu, REQ_UP_ITEM);
-		break;
-	case KEY_ENTER:
-		break;
-	}
-}
-
 static void print_heading(WINDOW *win, bool selected, const char *str)
 {
 	if (selected) {
@@ -141,16 +102,153 @@ static void print_heading(WINDOW *win, bool selected, const char *str)
 	wrefresh(win);
 }
 
+static void delete_key_callback(struct dialog *dia, int selection, void *arg)
+{
+	struct regedit *regedit = arg;
+
+	//mvwprintw(regedit->main_window, 1, 0, "Selection: %d", selection);
+
+	if (selection == DIALOG_OK) {
+		/* TODO */
+	}
+
+	talloc_free(regedit->dia);
+	regedit->dia = NULL;
+}
+
+static void delete_value_callback(struct dialog *dia, int selection, void *arg)
+{
+	struct regedit *regedit = arg;
+
+	if (selection == DIALOG_OK) {
+		/* TODO */
+	}
+
+	talloc_free(regedit->dia);
+	regedit->dia = NULL;
+}
+
+static void handle_tree_input(struct regedit *regedit, int c)
+{
+	struct tree_node *node;
+
+	switch (c) {
+	case KEY_DOWN:
+		menu_driver(regedit->keys->menu, REQ_DOWN_ITEM);
+		node = item_userptr(current_item(regedit->keys->menu));
+		value_list_load(regedit->vl, node->key);
+		break;
+	case KEY_UP:
+		menu_driver(regedit->keys->menu, REQ_UP_ITEM);
+		node = item_userptr(current_item(regedit->keys->menu));
+		value_list_load(regedit->vl, node->key);
+		break;
+	case '\n':
+	case KEY_ENTER:
+	case KEY_RIGHT:
+		node = item_userptr(current_item(regedit->keys->menu));
+		if (node && tree_node_has_children(node)) {
+			tree_node_load_children(node);
+			tree_node_print_path(regedit->path_label,
+					     node->child_head);
+			tree_view_update(regedit->keys, node->child_head);
+			value_list_load(regedit->vl, node->child_head->key);
+		}
+		break;
+	case KEY_LEFT:
+		node = item_userptr(current_item(regedit->keys->menu));
+		if (node && node->parent) {
+			tree_node_print_path(regedit->path_label, node->parent);
+			node = tree_node_first(node->parent);
+			tree_view_update(regedit->keys, node);
+			value_list_load(regedit->vl, node->key);
+		}
+		break;
+	case 'd':
+	case 'D':
+		node = item_userptr(current_item(regedit->keys->menu));
+		regedit->dia = dialog_confirm_new(regedit, "Delete Key",
+						  regedit->main_window,
+						  "Really delete key \"%s\"?",
+						  node->name);
+		dialog_set_cb(regedit->dia, delete_key_callback, regedit);
+		break;
+	}
+
+	tree_view_show(regedit->keys);
+	value_list_show(regedit->vl);
+}
+
+static void handle_value_input(struct regedit *regedit, int c)
+{
+	struct value_item *vitem;
+
+	switch (c) {
+	case KEY_DOWN:
+		menu_driver(regedit->vl->menu, REQ_DOWN_ITEM);
+		break;
+	case KEY_UP:
+		menu_driver(regedit->vl->menu, REQ_UP_ITEM);
+		break;
+	case KEY_ENTER:
+		break;
+	case 'd':
+	case 'D':
+		vitem = item_userptr(current_item(regedit->vl->menu));
+		if (vitem) {
+			regedit->dia = dialog_confirm_new(regedit, "Delete Value",
+							  regedit->main_window,
+							  "Really delete value \"%s\"?",
+							  vitem->value_name);
+			dialog_set_cb(regedit->dia, delete_value_callback, regedit);
+		}
+		break;
+	}
+
+	value_list_show(regedit->vl);
+}
+
+static void handle_dialog_input(struct regedit *regedit, int c)
+{
+	switch (c) {
+	case KEY_LEFT:
+		dialog_driver(regedit->dia, DIALOG_LEFT);
+		break;
+	case KEY_RIGHT:
+		dialog_driver(regedit->dia, DIALOG_RIGHT);
+		break;
+	case '\n':
+	case KEY_ENTER:
+		dialog_driver(regedit->dia, DIALOG_ENTER);
+		break;
+	}
+}
+
+static void handle_main_input(struct regedit *regedit, int c)
+{
+	switch (c) {
+	case '\t':
+		regedit->tree_input = !regedit->tree_input;
+		print_heading(regedit->key_label, regedit->tree_input == true,
+			      "Keys");
+		print_heading(regedit->value_label, regedit->tree_input == false,
+			      "Values");
+		break;
+	default:
+		if (regedit->tree_input) {
+			handle_tree_input(regedit, c);
+		} else {
+			handle_value_input(regedit, c);
+		}
+	}
+}
+
 /* test navigating available hives */
 static void display_test_window(TALLOC_CTX *mem_ctx,
 				struct registry_context *ctx)
 {
-	WINDOW *main_window, *path_label;
-	WINDOW *key_label, *value_label;
-	struct value_list *vl;
-	struct tree_view *view;
+	struct regedit *regedit;
 	struct tree_node *root;
-	bool tree_view_input = true;
 	int c;
 
 	initscr();
@@ -159,52 +257,53 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 	noecho();
 	keypad(stdscr, TRUE);
 
-	main_window = newwin(25, 80, 0, 0);
-	SMB_ASSERT(main_window != NULL);
+	regedit = talloc_zero(mem_ctx, struct regedit);
+	SMB_ASSERT(regedit != NULL);
 
-	keypad(main_window, TRUE);
+	regedit->main_window = newwin(25, 80, 0, 0);
+	SMB_ASSERT(regedit->main_window != NULL);
 
-	mvwprintw(main_window, 0, 0, "Path: ");
-	path_label = derwin(main_window, 1, 65, 0, 6);
-	wprintw(path_label, "/");
+	keypad(regedit->main_window, TRUE);
 
-	root = load_hives(mem_ctx, ctx);
+	mvwprintw(regedit->main_window, 0, 0, "Path: ");
+	regedit->path_label = derwin(regedit->main_window, 1, 65, 0, 6);
+	wprintw(regedit->path_label, "/");
+
+	root = load_hives(regedit, ctx);
 	SMB_ASSERT(root != NULL);
 
-	key_label = derwin(main_window, 1, 10, 2, 0);
-	value_label = derwin(main_window, 1, 10, 2, 25);
+	regedit->key_label = derwin(regedit->main_window, 1, 10, 2, 0);
+	regedit->value_label = derwin(regedit->main_window, 1, 10, 2, 25);
 
-	print_heading(key_label, true, "Keys");
-	view = tree_view_new(mem_ctx, root, main_window, 15, 24, 3, 0);
-	SMB_ASSERT(view != NULL);
+	print_heading(regedit->key_label, true, "Keys");
+	regedit->keys = tree_view_new(regedit, root, regedit->main_window,
+				      15, 24, 3, 0);
+	SMB_ASSERT(regedit->keys != NULL);
 
-	print_heading(value_label, false, "Values");
-	vl = value_list_new(mem_ctx, main_window, 15, 40, 3, 25);
-	SMB_ASSERT(vl != NULL);
+	print_heading(regedit->value_label, false, "Values");
+	regedit->vl = value_list_new(regedit, regedit->main_window,
+				     15, 40, 3, 25);
+	SMB_ASSERT(regedit->vl != NULL);
 
-	refresh();
-	tree_view_show(view);
-	value_list_show(vl);
+	regedit->tree_input = true;
 
-	while ((c = wgetch(main_window)) != 'q') {
-		switch (c) {
-		case '\t':
-			tree_view_input = !tree_view_input;
-			print_heading(key_label, tree_view_input == true,
-				      "Keys");
-			print_heading(value_label, tree_view_input == false,
-				      "Values");
-			break;
-		default:
-			if (tree_view_input) {
-				handle_tree_input(view, vl, path_label, c);
-			} else {
-				handle_value_input(vl, c);
-			}
+	tree_view_show(regedit->keys);
+	value_list_show(regedit->vl);
+
+	regedit->main_panel = new_panel(regedit->main_window);
+	SMB_ASSERT(regedit->main_panel != NULL);
+
+	update_panels();
+	doupdate();
+	while ((c = wgetch(regedit->main_window)) != 'q') {
+		if (regedit->dia) {
+			handle_dialog_input(regedit, c);
+		} else {
+			handle_main_input(regedit, c);
 		}
 
-		tree_view_show(view);
-		value_list_show(vl);
+		update_panels();
+		doupdate();
 	}
 
 	endwin();

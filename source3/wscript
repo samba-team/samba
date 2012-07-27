@@ -1718,6 +1718,8 @@ main() {
         ncurses = conf.CHECK_FUNCS_IN('initscr', 'ncurses', headers='ncurses.h')
         menu = conf.CHECK_FUNCS_IN('set_menu_items item_count', 'menu',
                             headers='menu.h')
+        panel = conf.CHECK_FUNCS_IN('new_panel show_panel', 'panel',
+                            headers='panel.h')
         if ncurses and menu:
                 conf.env.build_regedit = True
 
