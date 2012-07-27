@@ -56,7 +56,7 @@ ssize_t swrap_recv(int s, void *buf, size_t len, int flags);
 ssize_t swrap_read(int s, void *buf, size_t len);
 ssize_t swrap_send(int s, const void *buf, size_t len, int flags);
 int swrap_readv(int s, const struct iovec *vector, size_t count);
-int swrap_writev(int s, const struct iovec *vector, size_t count);
+ssize_t swrap_writev(int s, const struct iovec *vector, size_t count);
 int swrap_close(int);
 int swrap_dup(int oldfd);
 int swrap_dup2(int oldfd, int newfd);

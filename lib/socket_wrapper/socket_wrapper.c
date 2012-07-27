@@ -2506,7 +2506,7 @@ int swrap_readv(int s, const struct iovec *vector, size_t count)
 	return ret;
 }
 
-int swrap_writev(int s, const struct iovec *vector, size_t count)
+ssize_t swrap_writev(int s, const struct iovec *vector, size_t count)
 {
 	struct msghdr msg;
 	struct iovec tmp;
