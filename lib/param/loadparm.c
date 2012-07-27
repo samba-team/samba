@@ -327,8 +327,8 @@ static struct loadparm_context *global_loadparm_context;
 /* These functions remain only in lib/param for now */
 FN_GLOBAL_BOOL(readraw, bReadRaw)
 FN_GLOBAL_BOOL(writeraw, bWriteRaw)
-FN_GLOBAL_STRING(cachedir, szCacheDir)
-FN_GLOBAL_STRING(statedir, szStateDir)
+FN_GLOBAL_CONST_STRING(cachedir, szCacheDir)
+FN_GLOBAL_CONST_STRING(statedir, szStateDir)
 
 /* local prototypes */
 static int map_parameter(const char *pszParmName);
