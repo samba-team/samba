@@ -3750,13 +3750,42 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 			 * FindBestParentObject we need to move this
 			 * new object under a deleted object to
 			 * lost-and-found */
+			struct ldb_dn *nc_root;
+
+			ret = dsdb_find_nc_root(ldb_module_get_ctx(ar->module), msg, msg->dn, &nc_root);
+			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+						       "No suitable NC root found for %s.  "
+						       "We need to move this object because parent object %s "
+						       "is deleted, but this object is not.",
+						       ldb_dn_get_linearized(msg->dn),
+						       ldb_dn_get_linearized(parent_msg->dn));
+				return ldb_module_done(ar->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
+			} else if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+						       "Unable to find NC root for %s: %s. "
+						       "We need to move this object because parent object %s "
+						       "is deleted, but this object is not.",
+						       ldb_dn_get_linearized(msg->dn),
+						       ldb_errstring(ldb_module_get_ctx(ar->module)),
+						       ldb_dn_get_linearized(parent_msg->dn));
+				return ldb_module_done(ar->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
+			}
 			
 			ret = dsdb_wellknown_dn(ldb_module_get_ctx(ar->module), msg,
-						ldb_get_default_basedn(ldb_module_get_ctx(ar->module)),
+						nc_root,
 						DS_GUID_LOSTANDFOUND_CONTAINER,
 						&parent_dn);
 			if (ret != LDB_SUCCESS) {
-				return ldb_module_done(ar->req, NULL, NULL, ldb_module_operr(ar->module));
+				ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+						       "Unable to find LostAndFound Container for %s "
+						       "in partition %s: %s. "
+						       "We need to move this object because parent object %s "
+						       "is deleted, but this object is not.",
+						       ldb_dn_get_linearized(msg->dn), ldb_dn_get_linearized(nc_root),
+						       ldb_errstring(ldb_module_get_ctx(ar->module)),
+						       ldb_dn_get_linearized(parent_msg->dn));
+				return ldb_module_done(ar->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
 		} else {
 			parent_dn = parent_msg->dn;
