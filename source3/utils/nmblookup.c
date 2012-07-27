@@ -40,7 +40,7 @@ static bool find_status = false;
 static bool open_sockets(void)
 {
 	struct sockaddr_storage ss;
-	const char *sock_addr = lp_socket_address();
+	const char *sock_addr = lp_nbt_client_socket_address();
 
 	if (!interpret_string_addr(&ss, sock_addr,
 				AI_NUMERICHOST|AI_PASSIVE)) {

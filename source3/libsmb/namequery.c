@@ -216,7 +216,7 @@ char *saf_fetch( const char *domain )
 
 static void set_socket_addr_v4(struct sockaddr_storage *addr)
 {
-	if (!interpret_string_addr(addr, lp_socket_address(),
+	if (!interpret_string_addr(addr, lp_nbt_client_socket_address(),
 				   AI_NUMERICHOST|AI_PASSIVE)) {
 		zero_sockaddr(addr);
 	}
@@ -2071,7 +2071,7 @@ struct tevent_req *resolve_wins_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* the address we will be sending from */
-	if (!interpret_string_addr(&src_ss, lp_socket_address(),
+	if (!interpret_string_addr(&src_ss, lp_nbt_client_socket_address(),
 				AI_NUMERICHOST|AI_PASSIVE)) {
 		zero_sockaddr(&src_ss);
 	}

@@ -1046,7 +1046,7 @@ char *lp_remote_browse_sync(TALLOC_CTX *ctx);
 bool lp_nmbd_bind_explicit_broadcast(void);
 const char **lp_wins_server_list(void);
 const char **lp_interfaces(void);
-const char *lp_socket_address(void);
+const char *lp_nbt_client_socket_address(void);
 char *lp_nis_home_map_name(TALLOC_CTX *ctx);
 const char **lp_netbios_aliases(void);
 const char *lp_passdb_backend(void);

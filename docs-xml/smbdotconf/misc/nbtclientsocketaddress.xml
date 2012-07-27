@@ -1,0 +1,19 @@
+<samba:parameter name="nbt client socket address"
+	         context="G"
+			 type="string"
+		 developer="1"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option allows you to control what address Samba
+	will send NBT client packets from, and process replies using,
+	including in nmbd. </para>
+	<para>Setting this option should never be necessary on usual Samba
+	servers running only one nmbd.</para>
+
+	<para>By default Samba will send UDP packets from the OS default address for the destination, and accept replies on 0.0.0.0.</para>
+	<para>This parameter is deprecated.  See <smbconfoption name="bind interfaces only">Yes</smbconfoption> and <smbconfoption name="interfaces"></smbconfoption> for the previous behaviour of controlling the normal listening sockets.</para>
+</description>
+
+<value type="default">0.0.0.0</value>
+<value type="example">192.168.2.20</value>
+</samba:parameter>

@@ -692,7 +692,7 @@ static void process(struct messaging_context *msg)
 static bool open_sockets(bool isdaemon, int port)
 {
 	struct sockaddr_storage ss;
-	const char *sock_addr = lp_socket_address();
+	const char *sock_addr = lp_nbt_client_socket_address();
 
 	/*
 	 * The sockets opened here will be used to receive broadcast
