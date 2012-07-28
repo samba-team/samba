@@ -366,13 +366,34 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report('Not moving object %s into LostAndFound' % (obj.dn))
             return
 
-        nc_root = self.samdb.get_nc_root(obj.dn);
-        lost_and_found = self.samdb.get_wellknown_dn(nc_root, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
-        new_dn = ldb.Dn(self.samdb, str(obj.dn))
-        new_dn.remove_base_components(len(new_dn) - 1)
-        if self.do_rename(obj.dn, new_dn, lost_and_found, ["show_deleted:0", "relax:0"],
-                          "Failed to rename object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found)):
-            self.report("Renamed object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found))
+        keep_transaction = True
+        self.samdb.transaction_start()
+        try:
+            nc_root = self.samdb.get_nc_root(obj.dn);
+            lost_and_found = self.samdb.get_wellknown_dn(nc_root, dsdb.DS_GUID_LOSTANDFOUND_CONTAINER)
+            new_dn = ldb.Dn(self.samdb, str(obj.dn))
+            new_dn.remove_base_components(len(new_dn) - 1)
+            if self.do_rename(obj.dn, new_dn, lost_and_found, ["show_deleted:0", "relax:0"],
+                              "Failed to rename object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found)):
+                self.report("Renamed object %s into lostAndFound at %s" % (obj.dn, new_dn + lost_and_found))
+
+                m = ldb.Message()
+                m.dn = obj.dn
+                m['lastKnownParent'] = ldb.MessageElement(str(obj.dn.parent()), ldb.FLAG_MOD_REPLACE, 'lastKnownParent')
+                
+                if self.do_modify(m, [], 
+                                  "Failed to set lastKnownParent on lostAndFound object at %s" % (new_dn + lost_and_found)):
+                    self.report("Set lastKnownParent on lostAndFound object at %s" % (new_dn + lost_and_found))
+                    keep_transaction = True
+        except:
+            self.samdb.transaction_cancel()
+            raise
+
+        if keep_transaction:
+            self.samdb.transaction_commit()
+        else:
+            self.samdb.transaction_cancel()
+
 
     def err_wrong_instancetype(self, obj, calculated_instancetype):
         '''handle a wrong instanceType'''
