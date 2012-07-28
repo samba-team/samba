@@ -135,6 +135,9 @@ struct dsdb_extended_replicated_object {
 	struct ldb_val parent_guid_value;
 	const char *when_changed;
 	struct replPropertyMetaDataBlob *meta_data;
+
+	/* Only used for internal processing in repl_meta_data */
+	struct ldb_dn *last_known_parent;
 };
 
 struct dsdb_extended_replicated_objects {

@@ -3326,6 +3326,8 @@ failed:
   callback for conflict DN handling where we have renamed the incoming
   record. After renaming it, we need to ensure the change of name and
   rDN for the incoming record is seen as an originating update by this DC.
+
+  This also handles updating lastKnownParent for entries sent to lostAndFound
  */
 static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
@@ -3343,6 +3345,34 @@ static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_re
 	if (ret != LDB_SUCCESS) {
 		ares->error = ret;
 		return replmd_op_callback(req, ares);
+	}
+
+	if (ar->objs->objects[ar->index_current].last_known_parent) {
+		struct ldb_message *msg = ldb_msg_new(req);
+		if (msg == NULL) {
+			ldb_module_oom(ar->module);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		msg->dn = req->op.add.message->dn;
+
+		ret = ldb_msg_add_steal_string(msg, "lastKnownParent",
+					       ldb_dn_get_extended_linearized(msg, ar->objs->objects[ar->index_current].last_known_parent, 1));
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to add lastKnownParent string to the msg\n"));
+			ldb_module_oom(ar->module);
+			return ret;
+		}
+		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+		ret = dsdb_module_modify(ar->module, msg, DSDB_FLAG_OWN_MODULE, req);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to modify lastKnownParent of lostAndFound DN '%s' - %s",
+				 ldb_dn_get_linearized(msg->dn),
+				 ldb_errstring(ldb_module_get_ctx(ar->module))));
+			return ret;
+		}
+		TALLOC_FREE(msg);
 	}
 
 	return replmd_op_callback(req, ares);
@@ -3581,6 +3611,15 @@ failed:
  */
 static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct replmd_replicated_request *ar =
+		talloc_get_type_abort(req->context, struct replmd_replicated_request);
+
+	if (ar->objs->objects[ar->index_current].last_known_parent) {
+		/* This is like a conflict DN, where we put the object in LostAndFound
+		   see MS-DRSR 4.1.10.6.10 FindBestParentObject */
+		return replmd_op_possible_conflict_callback(req, ares, replmd_op_name_modify_callback);
+	}
+
 	return replmd_op_possible_conflict_callback(req, ares, replmd_op_callback);
 }
 
@@ -3782,6 +3821,8 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 						       ldb_dn_get_linearized(parent_msg->dn));
 				return ldb_module_done(ar->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
+			ar->objs->objects[ar->index_current].last_known_parent
+				= talloc_steal(ar->objs->objects[ar->index_current].msg, parent_msg->dn);
 		} else {
 			parent_dn = parent_msg->dn;
 		}
@@ -4189,6 +4230,8 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 		break;
 
 	case LDB_REPLY_DONE:
+		ar->objs->objects[ar->index_current].last_known_parent = NULL;
+
 		if (ar->search_msg != NULL) {
 			ret = replmd_replicated_apply_merge(ar);
 		} else {
