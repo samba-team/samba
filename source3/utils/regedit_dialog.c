@@ -86,15 +86,40 @@ fail:
 
 }
 
-struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
-				 int ncols, WINDOW *below)
+static void center_dialog_above_window(WINDOW *below, int *nlines, int *ncols,
+				       int *y, int *x)
 {
-	int y, x, maxy, maxx;
+	int maxy, maxx;
+	int centery, centerx;
 
 	getmaxyx(below, maxy, maxx);
 
-	y = maxy / 2 - nlines;
-	x = maxx / 2 - ncols;
+	centery = maxy / 2;
+	centerx = maxx / 2;
+	*y = 0;
+	*x = 0;
+
+	if (*nlines > maxy) {
+		*nlines = maxy;
+	}
+	if (*ncols > maxx) {
+		*ncols = maxx;
+	}
+
+	if (*nlines < centery) {
+		*y = centery - *nlines;
+	}
+	if (*ncols < centerx) {
+		*x = centerx - *ncols;
+	}
+}
+
+struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
+				 int ncols, WINDOW *below)
+{
+	int y, x;
+
+	center_dialog_above_window(below, &nlines, &ncols, &y, &x);
 
 	return dialog_new(ctx, title, nlines, ncols, y, x);
 }
@@ -161,12 +186,9 @@ struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 					const char **choices, int nlines,
 					int ncols, WINDOW *below)
 {
-	int y, x, maxy, maxx;
+	int y, x;
 
-	getmaxyx(below, maxy, maxx);
-
-	y = maxy / 2 - nlines;
-	x = maxx / 2 - ncols;
+	center_dialog_above_window(below, &nlines, &ncols, &y, &x);
 
 	return dialog_choice_new(ctx, title, choices, nlines, ncols, y, x);
 }
