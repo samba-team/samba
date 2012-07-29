@@ -2504,7 +2504,7 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (client_socket_addr(sconn->sock, tmp_addr, sizeof(tmp_addr)) == NULL) {
+	if (print_sockaddr(tmp_addr, sizeof(tmp_addr), &srv) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	addr = talloc_strdup(cconn, tmp_addr);
