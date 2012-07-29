@@ -2491,6 +2491,29 @@ static void release_ip(const char *ip, void *priv)
 	}
 }
 
+static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
+				  struct sockaddr_storage *srv,
+				  struct sockaddr_storage *clnt)
+{
+	struct ctdbd_connection *cconn;
+	char tmp_addr[INET6_ADDRSTRLEN];
+	char *addr;
+
+	cconn = messaging_ctdbd_connection();
+	if (cconn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (client_socket_addr(sconn->sock, tmp_addr, sizeof(tmp_addr)) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	addr = talloc_strdup(cconn, tmp_addr);
+	if (addr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return ctdbd_register_ips(cconn, srv, clnt, release_ip, addr);
+}
+
 static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
 			       struct sockaddr_storage *client)
 {
@@ -3066,33 +3089,6 @@ fail:
 	sconn->smb1.echo_handler.socket_lock_fd = -1;
 	return false;
 }
-
-#if CLUSTER_SUPPORT
-
-static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
-				  struct sockaddr_storage *srv,
-				  struct sockaddr_storage *clnt)
-{
-	struct ctdbd_connection *cconn;
-	char tmp_addr[INET6_ADDRSTRLEN];
-	char *addr;
-
-	cconn = messaging_ctdbd_connection();
-	if (cconn == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (client_socket_addr(sconn->sock, tmp_addr, sizeof(tmp_addr)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	addr = talloc_strdup(cconn, tmp_addr);
-	if (addr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return ctdbd_register_ips(cconn, srv, clnt, release_ip, addr);
-}
-
-#endif
 
 static bool uid_in_use(const struct user_struct *user, uid_t uid)
 {
