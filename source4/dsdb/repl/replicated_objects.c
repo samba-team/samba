@@ -657,7 +657,11 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		if (msg == NULL) {
 			return WERR_NOMEM;
 		}
-		msg->dn = NULL;
+		msg->dn = ldb_dn_new(msg, ldb, "");
+		if (msg->dn == NULL) {
+			talloc_free(msg);
+			return WERR_NOMEM;
+		}
 
 		ret = ldb_msg_add_string(msg, "schemaUpdateNow", "1");
 		if (ret != LDB_SUCCESS) {
