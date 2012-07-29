@@ -654,7 +654,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			dsdb_make_schema_global(ldb, cur_schema);
 		}
 		msg = ldb_msg_new(ldb);
-		if (msg == 0) {
+		if (msg == NULL) {
 			return WERR_NOMEM;
 		}
 		msg->dn = NULL;
