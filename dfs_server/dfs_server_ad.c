@@ -26,6 +26,7 @@
 #include "param/param.h"
 #include "lib/tsocket/tsocket.h"
 #include "dfs_server/dfs_server_ad.h"
+#include "lib/util/util_net.h"
 
 #define MAX_DFS_RESPONSE 56*1024 /* 56 Kb */
 
@@ -816,7 +817,14 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 		 * handle it here.
 		 */
 		return NT_STATUS_NOT_FOUND;
+	}
 
+	if (is_ipaddress(server_name)) {
+		/*
+		 * If it is not domain related do not
+		 * handle it here.
+		 */
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	if ((strcasecmp_m(server_name, netbios_domain) != 0) &&
