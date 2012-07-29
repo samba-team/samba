@@ -3737,13 +3737,8 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 		struct ldb_message *parent_msg = ares->message;
 		struct ldb_message *msg = ar->objs->objects[ar->index_current].msg;
 		struct ldb_dn *parent_dn;
-		int comp_num = ldb_dn_get_comp_num(msg->dn);
-		if (comp_num > 1) {
-			if (!ldb_dn_remove_base_components(msg->dn, comp_num - 1)) {
-				talloc_free(ares);
-				return ldb_module_done(ar->req, NULL, NULL, ldb_module_operr(ar->module));
-			}
-		}
+		int comp_num;
+
 		if (!ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")
 		    && ldb_msg_check_string_attribute(parent_msg, "isDeleted", "TRUE")) {
 			/* Per MS-DRSR 4.1.10.6.10
@@ -3789,6 +3784,14 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 			}
 		} else {
 			parent_dn = parent_msg->dn;
+		}
+
+		comp_num = ldb_dn_get_comp_num(msg->dn);
+		if (comp_num > 1) {
+			if (!ldb_dn_remove_base_components(msg->dn, comp_num - 1)) {
+				talloc_free(ares);
+				return ldb_module_done(ar->req, NULL, NULL, ldb_module_operr(ar->module));
+			}
 		}
 		if (!ldb_dn_add_base(msg->dn, parent_dn)) {
 			talloc_free(ares);
