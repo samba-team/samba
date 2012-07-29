@@ -233,15 +233,15 @@ static NTSTATUS get_dcs_insite(TALLOC_CTX *ctx, struct ldb_context *ldb,
 			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(list->names[list->count], r);
 		} else {
 			char *tmp;
-			const char *acct = ldb_msg_find_attr_as_string(r2->msgs[0], "sAMAccountName", NULL);
-			if (acct == NULL) {
+			const char *aname = ldb_msg_find_attr_as_string(r2->msgs[0], "sAMAccountName", NULL);
+			if (aname == NULL) {
 				DEBUG(2,(__location__ ": sAMAccountName missing on %s\n",
 					 ldb_dn_get_linearized(dn)));
 				talloc_free(r);
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 
-			tmp = talloc_strdup(list->names, acct);
+			tmp = talloc_strdup(list->names, aname);
 			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(tmp, r);
 
 			/* Netbios name is also the sAMAccountName for
