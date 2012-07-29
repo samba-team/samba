@@ -2462,12 +2462,21 @@ static void smbd_server_echo_handler(struct event_context *ev,
 }
 
 #ifdef CLUSTER_SUPPORT
+
+struct smbd_release_ip_state {
+	struct smbd_server_connection *sconn;
+	char addr[INET6_ADDRSTRLEN];
+};
+
 /****************************************************************************
 received when we should release a specific IP
 ****************************************************************************/
 static void release_ip(const char *ip, void *priv)
 {
-	const char *addr = (const char *)priv;
+	struct smbd_release_ip_state *state =
+		talloc_get_type_abort(priv,
+		struct smbd_release_ip_state);
+	const char *addr = state->addr;
 	const char *p = addr;
 
 	if (strncmp("::ffff:", addr, 7) == 0) {
@@ -2478,16 +2487,28 @@ static void release_ip(const char *ip, void *priv)
 		   "our address is %s\n", ip, p));
 
 	if ((strcmp(p, ip) == 0) || ((p != addr) && strcmp(addr, ip) == 0)) {
-		/* we can't afford to do a clean exit - that involves
-		   database writes, which would potentially mean we
-		   are still running after the failover has finished -
-		   we have to get rid of this process ID straight
-		   away */
 		DEBUG(0,("Got release IP message for our IP %s - exiting immediately\n",
 			ip));
-		/* note we must exit with non-zero status so the unclean handler gets
-		   called in the parent, so that the brl database is tickled */
-		_exit(1);
+		/*
+		 * With SMB2 we should do a clean disconnect,
+		 * the previous_session_id in the session setup
+		 * will cleanup the old session, tcons and opens.
+		 *
+		 * A clean disconnect is needed in order to support
+		 * durable handles.
+		 *
+		 * Note: typically this is never triggered
+		 *       as we got a TCP RST (triggered by ctdb event scripts)
+		 *       before we get CTDB_SRVID_RELEASE_IP.
+		 *
+		 * We used to call _exit(1) here, but as this was mostly never
+		 * triggered and has implication on our process model,
+		 * we can just use smbd_server_connection_terminate()
+		 * (also for SMB1).
+		 */
+		smbd_server_connection_terminate(state->sconn,
+						 "CTDB_SRVID_RELEASE_IP");
+		return;
 	}
 }
 
@@ -2495,23 +2516,24 @@ static NTSTATUS smbd_register_ips(struct smbd_server_connection *sconn,
 				  struct sockaddr_storage *srv,
 				  struct sockaddr_storage *clnt)
 {
+	struct smbd_release_ip_state *state;
 	struct ctdbd_connection *cconn;
-	char tmp_addr[INET6_ADDRSTRLEN];
-	char *addr;
 
 	cconn = messaging_ctdbd_connection();
 	if (cconn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (print_sockaddr(tmp_addr, sizeof(tmp_addr), &srv) == NULL) {
+	state = talloc_zero(sconn, struct smbd_release_ip_state);
+	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	addr = talloc_strdup(cconn, tmp_addr);
-	if (addr == NULL) {
+	state->sconn = sconn;
+	if (print_sockaddr(state->addr, sizeof(state->addr), srv) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	return ctdbd_register_ips(cconn, srv, clnt, release_ip, addr);
+
+	return ctdbd_register_ips(cconn, srv, clnt, release_ip, state);
 }
 
 static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
