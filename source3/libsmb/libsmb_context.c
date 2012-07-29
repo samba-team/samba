@@ -123,9 +123,11 @@ SMBC_module_init(void * punused)
 static void
 SMBC_module_terminate(void)
 {
+    TALLOC_CTX *frame = talloc_stackframe();
     secrets_shutdown();
     gfree_all();
     SMBC_initialized = false;
+    TALLOC_FREE(frame);
 }
 
 
@@ -136,6 +138,7 @@ SMBCCTX *
 smbc_new_context(void)
 {
         SMBCCTX *context;
+	TALLOC_CTX *frame = talloc_stackframe();
 
         /* The first call to this function should initialize the module */
         SMB_THREAD_ONCE(&SMBC_initialized, SMBC_module_init, NULL);
@@ -146,6 +149,7 @@ smbc_new_context(void)
          */
         context = SMB_MALLOC_P(SMBCCTX);
         if (!context) {
+		TALLOC_FREE(frame);
                 errno = ENOMEM;
                 return NULL;
         }
@@ -154,6 +158,7 @@ smbc_new_context(void)
 
         context->internal = SMB_MALLOC_P(struct SMBC_internal_data);
         if (!context->internal) {
+		TALLOC_FREE(frame);
                 SAFE_FREE(context);
                 errno = ENOMEM;
                 return NULL;
@@ -221,6 +226,7 @@ smbc_new_context(void)
         smbc_setFunctionListPrintJobs(context, SMBC_list_print_jobs_ctx);
         smbc_setFunctionUnlinkPrintJob(context, SMBC_unlink_print_job_ctx);
 
+	TALLOC_FREE(frame);
         return context;
 }
 
@@ -235,10 +241,13 @@ int
 smbc_free_context(SMBCCTX *context,
                   int shutdown_ctx)
 {
+	TALLOC_CTX *frame;
         if (!context) {
                 errno = EBADF;
                 return 1;
         }
+
+	frame = talloc_stackframe();
 
         if (shutdown_ctx) {
                 SMBCFILE * f;
@@ -278,18 +287,21 @@ smbc_free_context(SMBCCTX *context,
                         DEBUG(1, ("Could not purge all servers, "
                                   "free_context failed.\n"));
                         errno = EBUSY;
+			TALLOC_FREE(frame);
                         return 1;
                 }
                 if (context->internal->servers) {
                         DEBUG(1, ("Active servers in context, "
                                   "free_context failed.\n"));
                         errno = EBUSY;
+			TALLOC_FREE(frame);
                         return 1;
                 }
                 if (context->internal->files) {
                         DEBUG(1, ("Active files in context, "
                                   "free_context failed.\n"));
                         errno = EBUSY;
+			TALLOC_FREE(frame);
                         return 1;
                 }
         }
@@ -325,6 +337,7 @@ smbc_free_context(SMBCCTX *context,
                 smb_panic("error unlocking 'initialized_ctx_count'");
 	}
 
+	TALLOC_FREE(frame);
         return 0;
 }
 
@@ -346,6 +359,8 @@ smbc_option_set(SMBCCTX *context,
                 void *v;
                 const char *s;
         } option_value;
+
+	TALLOC_CTX *frame = talloc_stackframe();
 
         va_start(ap, option_name);
 
@@ -413,6 +428,7 @@ smbc_option_set(SMBCCTX *context,
         }
 
         va_end(ap);
+	TALLOC_FREE(frame);
 }
 
 
