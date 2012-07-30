@@ -10,5 +10,5 @@
 </description>
 
 <value type="default">${prefix}/var/locks</value>
-<value type="example">pid directory = /var/run/</value>
+<value type="example">/var/run/</value>
 </samba:parameter>
