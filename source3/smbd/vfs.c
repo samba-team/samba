@@ -1086,6 +1086,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(priv_paths);
 	}
+	TALLOC_FREE(dir_name);
 	return status;
 }
 
