@@ -26,7 +26,12 @@
 #include "includes.h"
 #include "lib/tevent/tevent.h"
 #include "system/filesys.h"
+#include "system/select.h"
 #include "torture/torture.h"
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#include <assert.h>
+#endif
 
 static int fde_count;
 
@@ -146,6 +151,140 @@ static bool test_event_context(struct torture_context *test,
 	return true;
 }
 
+#ifdef HAVE_PTHREAD
+
+static pthread_mutex_t threaded_mutex = PTHREAD_MUTEX_INITIALIZER;
+static bool do_shutdown = false;
+
+static void test_event_threaded_lock(void)
+{
+	int ret;
+	ret = pthread_mutex_lock(&threaded_mutex);
+	assert(ret == 0);
+}
+
+static void test_event_threaded_unlock(void)
+{
+	int ret;
+	ret = pthread_mutex_unlock(&threaded_mutex);
+	assert(ret == 0);
+}
+
+static void test_event_threaded_trace(enum tevent_trace_point point,
+				      void *private_data)
+{
+	switch (point) {
+	case TEVENT_TRACE_BEFORE_WAIT:
+		test_event_threaded_unlock();
+		break;
+	case TEVENT_TRACE_AFTER_WAIT:
+		test_event_threaded_lock();
+		break;
+	}
+}
+
+static void test_event_threaded_timer(struct tevent_context *ev,
+				      struct tevent_timer *te,
+				      struct timeval current_time,
+				      void *private_data)
+{
+	return;
+}
+
+static void *test_event_poll_thread(void *private_data)
+{
+	struct tevent_context *ev = (struct tevent_context *)private_data;
+
+	test_event_threaded_lock();
+
+	while (true) {
+		int ret;
+		ret = tevent_loop_once(ev);
+		assert(ret == 0);
+		if (do_shutdown) {
+			test_event_threaded_unlock();
+			return NULL;
+		}
+	}
+
+}
+
+static void test_event_threaded_read_handler(struct tevent_context *ev,
+					     struct tevent_fd *fde,
+					     uint16_t flags,
+					     void *private_data)
+{
+	int *pfd = (int *)private_data;
+	char c;
+	ssize_t nread;
+
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
+	}
+
+	do {
+		nread = read(*pfd, &c, 1);
+	} while ((nread == -1) && (errno == EINTR));
+
+	assert(nread == 1);
+}
+
+static bool test_event_context_threaded(struct torture_context *test,
+					const void *test_data)
+{
+	struct tevent_context *ev;
+	struct tevent_timer *te;
+	struct tevent_fd *fde;
+	pthread_t poll_thread;
+	int fds[2];
+	int ret;
+	char c = 0;
+
+	ev = tevent_context_init_byname(test, "poll_mt");
+	torture_assert(test, ev != NULL, "poll_mt not supported");
+
+	tevent_set_trace_callback(ev, test_event_threaded_trace, NULL);
+
+	te = tevent_add_timer(ev, ev, timeval_current_ofs(5, 0),
+			      test_event_threaded_timer, NULL);
+	torture_assert(test, te != NULL, "Could not add timer");
+
+	ret = pthread_create(&poll_thread, NULL, test_event_poll_thread, ev);
+	torture_assert(test, ret == 0, "Could not create poll thread");
+
+	ret = pipe(fds);
+	torture_assert(test, ret == 0, "Could not create pipe");
+
+	poll(NULL, 0, 100);
+
+	test_event_threaded_lock();
+
+	fde = tevent_add_fd(ev, ev, fds[0], TEVENT_FD_READ,
+			    test_event_threaded_read_handler, &fds[0]);
+	torture_assert(test, fde != NULL, "Could not add fd event");
+
+	test_event_threaded_unlock();
+
+	poll(NULL, 0, 100);
+
+	write(fds[1], &c, 1);
+
+	poll(NULL, 0, 100);
+
+	test_event_threaded_lock();
+	do_shutdown = true;
+	test_event_threaded_unlock();
+
+	write(fds[1], &c, 1);
+
+	ret = pthread_join(poll_thread, NULL);
+	torture_assert(test, ret == 0, "pthread_join failed");
+
+	return true;
+}
+
+#endif
+
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "event");
@@ -157,6 +296,12 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 					       test_event_context,
 					       (const void *)list[i]);
 	}
+
+#ifdef HAVE_PTHREAD
+	torture_suite_add_simple_tcase_const(suite, "poll_mt_threaded",
+					     test_event_context_threaded,
+					     NULL);
+#endif
 
 	return suite;
 }
