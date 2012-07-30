@@ -23,5 +23,5 @@
 	</para>
 
 </description>
-<value type="example">dfree cache time = 60</value>
+<value type="example">60</value>
 </samba:parameter>
