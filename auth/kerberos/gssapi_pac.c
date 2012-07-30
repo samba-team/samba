@@ -266,7 +266,7 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_OK;
 		}
-		p = set->elements[1].value + gse_sesskeytype_oid.length;
+		p = (uint8_t *)set->elements[1].value + gse_sesskeytype_oid.length;
 		diflen = set->elements[1].length - gse_sesskeytype_oid.length;
 		if (diflen <= 0) {
 			gss_maj = gss_release_buffer_set(&gss_min, &set);
