@@ -53,9 +53,9 @@
 
 struct ctdbd_connection {
 	struct messaging_context *msg_ctx;
-	uint32 reqid;
-	uint32 our_vnn;
-	uint64 rand_srvid;
+	uint32_t reqid;
+	uint32_t our_vnn;
+	uint64_t rand_srvid;
 	struct ctdb_packet_context *pkt;
 	struct fd_event *fde;
 
@@ -73,8 +73,8 @@ static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
 }
 
 static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
-			      uint32_t vnn, uint32 opcode, 
-			      uint64_t srvid, uint32_t flags, TDB_DATA data, 
+			      uint32_t vnn, uint32_t opcode,
+			      uint64_t srvid, uint32_t flags, TDB_DATA data,
 			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			      int *cstatus);
 
@@ -120,7 +120,7 @@ NTSTATUS register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid)
 /*
  * get our vnn from the cluster
  */
-static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32 *vnn)
+static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 {
 	int32_t cstatus=-1;
 	NTSTATUS status;
@@ -187,7 +187,7 @@ fail:
 	return ret;
 }
 
-uint32 ctdbd_vnn(const struct ctdbd_connection *conn)
+uint32_t ctdbd_vnn(const struct ctdbd_connection *conn)
 {
 	return conn->our_vnn;
 }
@@ -240,13 +240,13 @@ static bool ctdb_req_complete(const uint8_t *buf, size_t available,
 			      size_t *length,
 			      void *private_data)
 {
-	uint32 msglen;
+	uint32_t msglen;
 
 	if (available < sizeof(msglen)) {
 		return False;
 	}
 
-	msglen = *((const uint32 *)buf);
+	msglen = *((const uint32_t *)buf);
 
 	DEBUG(11, ("msglen = %d\n", msglen));
 
@@ -371,7 +371,7 @@ static NTSTATUS ctdb_packet_fd_read_sync(struct ctdb_packet_context *ctx)
  * messages that might come in between.
  */
 
-static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
+static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			      TALLOC_CTX *mem_ctx, void *result)
 {
 	struct ctdb_req_header *hdr;
@@ -740,7 +740,7 @@ NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
  */
 
 NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
-			      uint32 dst_vnn, uint64 dst_srvid,
+			      uint32_t dst_vnn, uint64_t dst_srvid,
 			      struct messaging_rec *msg)
 {
 	DATA_BLOB blob;
@@ -764,7 +764,7 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 }
 
 NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32 dst_vnn, uint64 dst_srvid,
+				   uint32_t dst_vnn, uint64_t dst_srvid,
 				   const uint8_t *buf, size_t buflen)
 {
 	struct ctdb_req_message r;
@@ -806,9 +806,9 @@ NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
  * send/recv a generic ctdb control message
  */
 static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
-			      uint32_t vnn, uint32 opcode, 
-			      uint64_t srvid, uint32_t flags, 
-			      TDB_DATA data, 
+			      uint32_t vnn, uint32_t opcode,
+			      uint64_t srvid, uint32_t flags,
+			      TDB_DATA data,
 			      TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			      int *cstatus)
 {
@@ -904,7 +904,7 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 /*
  * see if a remote process exists
  */
-bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn, pid_t pid)
+bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn, pid_t pid)
 {
 	struct server_id id;
 	bool result;
@@ -1328,7 +1328,7 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 /*
  * force the migration of a record to this node
  */
-NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
+NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
 		       TDB_DATA key)
 {
 	struct ctdb_req_call req;
@@ -1390,7 +1390,7 @@ NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
 /*
  * remotely fetch a record (read-only)
  */
-NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
+NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32_t db_id,
 		     TDB_DATA key, TALLOC_CTX *mem_ctx, TDB_DATA *data,
 		     bool local_copy)
 {
@@ -1536,7 +1536,7 @@ static NTSTATUS ctdb_traverse_handler(uint8_t *buf, size_t length,
   everything in-line.
 */
 
-NTSTATUS ctdbd_traverse(uint32 db_id,
+NTSTATUS ctdbd_traverse(uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 			void *private_data)
@@ -1745,8 +1745,8 @@ NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn)
 /*
   call a control on the local node
  */
-NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32 opcode, 
-			     uint64_t srvid, uint32_t flags, TDB_DATA data, 
+NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
+			     uint64_t srvid, uint32_t flags, TDB_DATA data,
 			     TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			     int *cstatus)
 {
@@ -1800,7 +1800,7 @@ NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 #else
 
 NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32 dst_vnn, uint64 dst_srvid,
+				   uint32_t dst_vnn, uint64_t dst_srvid,
 				   const uint8_t *buf, size_t buflen)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;

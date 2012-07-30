@@ -29,7 +29,7 @@ struct messaging_rec;
 NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 				    struct ctdbd_connection **pconn);
 
-uint32 ctdbd_vnn(const struct ctdbd_connection *conn);
+uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 
 NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 				struct messaging_context *msg_ctx);
@@ -38,13 +38,13 @@ struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn);
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 
 NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
-			      uint32 dst_vnn, uint64 dst_srvid,
+			      uint32_t dst_vnn, uint64_t dst_srvid,
 			      struct messaging_rec *msg);
 NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
-				   uint32 dst_vnn, uint64 dst_srvid,
+				   uint32_t dst_vnn, uint64_t dst_srvid,
 				   const uint8_t *buf, size_t buflen);
 
-bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32 vnn,
+bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid);
 bool ctdb_processes_exist(struct ctdbd_connection *conn,
 			  const struct server_id *pids, int num_pids,
@@ -59,14 +59,14 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
 			 uint32_t *db_id, int tdb_flags);
 
-NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32 db_id,
+NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
 		       TDB_DATA key);
 
-NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32 db_id,
+NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32_t db_id,
 		     TDB_DATA key, TALLOC_CTX *mem_ctx, TDB_DATA *data,
 		     bool local_copy);
 
-NTSTATUS ctdbd_traverse(uint32 db_id,
+NTSTATUS ctdbd_traverse(uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 			void *private_data);
@@ -80,8 +80,8 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 
 NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn);
 
-NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32 opcode, 
-			     uint64_t srvid, uint32_t flags, TDB_DATA data, 
+NTSTATUS ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
+			     uint64_t srvid, uint32_t flags, TDB_DATA data,
 			     TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
 			     int *cstatus);
 NTSTATUS ctdb_watch_us(struct ctdbd_connection *conn);
