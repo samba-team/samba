@@ -27,7 +27,7 @@ static enum NTDB_ERROR check(NTDB_DATA key,
 	int val;
 
 	if (key.dsize != sizeof(val)) {
-		diag("Wrong key size: %u\n", key.dsize);
+		diag("Wrong key size: %zu\n", key.dsize);
 		return NTDB_ERR_CORRUPT;
 	}
 
