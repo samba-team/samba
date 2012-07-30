@@ -577,6 +577,7 @@ dos_attr_query(SMBCCTX *context,
                          &inode)) {
                 errno = SMBC_errno(context, srv->cli);
                 DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
+		TALLOC_FREE(ret);
                 return NULL;
         }
 
