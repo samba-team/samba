@@ -841,6 +841,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 
 	ref->alternate_path = talloc_strdup(ctx, dfs_path);
 	if (!ref->alternate_path) {
+		TALLOC_FREE(ref);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ref->proximity = 0;
