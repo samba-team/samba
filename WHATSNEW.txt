@@ -8,7 +8,9 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.7 include:
 
-o  
+o  Fix resolving our own "Domain Local" groups (bug #9052).
+o  Fix migrating printers while upgrading from 3.5.x (bug #9026).
+
 
 Changes since 3.6.6:
 --------------------
@@ -25,8 +27,13 @@ o   David Binderman <dcb314@hotmail.com>
     * BUG 9062: rpcclient: Fix bad call to data_blob_const.
 
 
+o   Günther Deschner <gd@samba.org>
+    * BUG 9026: Fix migrating printers while upgrading from 3.5.x.
+
+
 o   David Disseldorp <ddiss@samba.org>
     * BUG 8719: Printing fails in function cups_job_submit.
+    * BUG 9026: Fix migrating printers while upgrading from 3.5.x.
 
 
 o   Olaf Flebbe <o.flebbe@science-computing.de>
