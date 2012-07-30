@@ -1189,6 +1189,7 @@ static bool tdbsam_search_next_entry(struct pdb_search *search,
 	}
 
 	if (state->current == state->num_rids) {
+		TALLOC_FREE(user);
 		return false;
 	}
 
