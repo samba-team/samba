@@ -25,6 +25,7 @@ import os
 
 sys.path.insert(0, "bin/python")
 import samba
+from samba import dsdb
 samba.ensure_external_module("testtools", "testtools")
 samba.ensure_external_module("subunit", "subunit/python")
 
@@ -82,6 +83,13 @@ class DrsBaseTestCase(samba.tests.BlackboxTestCase):
         res = sam_ldb.search(base=wkdn,
                              scope=SCOPE_BASE,
                              controls=["show_deleted:1"])
+        self.assertEquals(len(res), 1)
+        return str(res[0]["dn"])
+
+    def _lost_and_found_dn(self, sam_ldb, nc):
+        wkdn = "<WKGUID=%s,%s>" % (dsdb.DS_GUID_LOSTANDFOUND_CONTAINER, nc)
+        res = sam_ldb.search(base=wkdn,
+                             scope=SCOPE_BASE)
         self.assertEquals(len(res), 1)
         return str(res[0]["dn"])
 
