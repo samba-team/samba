@@ -214,9 +214,9 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 				   "PrepareShadowCopySet failed");
 	torture_assert_int_equal(tctx, r_scset_prep.out.result, 0,
 				 "failed PrepareShadowCopySet response");
-	torture_comment(tctx, "%s: prepare completed in %lu secs\n",
+	torture_comment(tctx, "%s: prepare completed in %llu secs\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
-			(uint64_t)(time_mono(NULL) - start_time));
+			(unsigned long long)(time_mono(NULL) - start_time));
 
 	start_time = time_mono(NULL);
 	ZERO_STRUCT(r_scset_commit);
@@ -227,9 +227,9 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 				   "CommitShadowCopySet failed");
 	torture_assert_int_equal(tctx, r_scset_commit.out.result, 0,
 				 "failed CommitShadowCopySet response");
-	torture_comment(tctx, "%s: commit completed in %lu secs\n",
+	torture_comment(tctx, "%s: commit completed in %llu secs\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
-			(uint64_t)(time_mono(NULL) - start_time));
+			(unsigned long long)(time_mono(NULL) - start_time));
 
 	start_time = time_mono(NULL);
 	ZERO_STRUCT(r_scset_expose);
@@ -240,9 +240,9 @@ static bool test_fsrvp_sc_create(struct torture_context *tctx,
 				   "ExposeShadowCopySet failed");
 	torture_assert_int_equal(tctx, r_scset_expose.out.result, 0,
 				 "failed ExposeShadowCopySet response");
-	torture_comment(tctx, "%s: expose completed in %lu secs\n",
+	torture_comment(tctx, "%s: expose completed in %llu secs\n",
 			GUID_string(tmp_ctx, r_scset_start.out.pShadowCopySetId),
-			(uint64_t)(time_mono(NULL) - start_time));
+			(unsigned long long)(time_mono(NULL) - start_time));
 
 	ZERO_STRUCT(r_sharemap_get);
 	r_sharemap_get.in.ShadowCopyId = *r_scset_add.out.pShadowCopyId;
