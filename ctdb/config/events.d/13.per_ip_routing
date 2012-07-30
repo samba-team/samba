@@ -14,6 +14,15 @@ table_id_prefix="ctdb."
 [ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -lt "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null || \
     die "error: CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$CTDB_PER_IP_ROUTING_TABLE_ID_LOW] and/or CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH] improperly configured"
 
+have_link_local_config ()
+{
+    [ "$CTDB_PER_IP_ROUTING_CONF" = "__auto_link_local__" ]
+}
+
+if ! have_link_local_config && [ ! -r "$CTDB_PER_IP_ROUTING_CONF" ] ; then
+    die "error: CTDB_PER_IP_ROUTING_CONF=$CTDB_PER_IP_ROUTING_CONF file not found"
+fi
+
 ######################################################################
 
 ipv4_is_valid_addr()
@@ -170,7 +179,7 @@ get_config_for_ip ()
 {
     _ip="$1"
 
-    if [ "$CTDB_PER_IP_ROUTING_CONF" = "__auto_link_local__" ] ; then
+    if have_link_local_config ; then
 	# When parsing public_addresses also split on '/'.  This means
 	# that we get the maskbits as item #2 without further parsing.
 	while IFS="/$IFS" read _i _maskbits _x ; do
@@ -273,7 +282,7 @@ add_missing_routes ()
 		add_routing_for_ip "$_iface" "$_ip"
 	    fi
 	done
-    }
+    } || exit $?
 }
 
 ######################################################################
