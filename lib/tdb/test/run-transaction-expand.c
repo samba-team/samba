@@ -80,8 +80,8 @@ int main(int argc, char *argv[])
 
 	tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, &off);
 	tdb_read(tdb, off, &rec, sizeof(rec), DOCONV());
-	diag("TDB size = %zu, recovery = %u-%u",
-	     (size_t)tdb->map_size, off, off + sizeof(rec) + rec.rec_len);
+	diag("TDB size = %zu, recovery = %llu-%llu",
+	     (size_t)tdb->map_size, (unsigned long long)off, (unsigned long long)(off + sizeof(rec) + rec.rec_len));
 
 	/* We should only be about 5 times larger than largest record. */
 	ok1(tdb->map_size < 6 * i * getpagesize());
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
 
 	tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, &off);
 	tdb_read(tdb, off, &rec, sizeof(rec), DOCONV());
-	diag("TDB size = %zu, recovery = %u-%u",
-	     (size_t)tdb->map_size, off, off + sizeof(rec) + rec.rec_len);
+	diag("TDB size = %zu, recovery = %llu-%llu",
+	     (size_t)tdb->map_size, (unsigned long long)off, (unsigned long long)(off + sizeof(rec) + rec.rec_len));
 
 	/* We should only be about 4 times larger than largest record. */
 	ok1(tdb->map_size < 5 * i * getpagesize());
