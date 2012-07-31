@@ -1,4 +1,4 @@
-What's new in Samba 4.0 beta4
+What's new in Samba 4.0 beta5
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba 4.0 beta4 is not a final Samba release, however we are now making
+Samba 4.0 beta5 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -94,55 +94,61 @@ Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE beta3
+CHANGES SINCE beta4
 =====================
 
-For a list of changes since beta3, please see the git log.
+For a list of changes since beta4, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0beta3..samba-4.0.0beta4
+$ git log samba-4.0.0beta4..samba-4.0.0beta5
 
 Some major user-visible changes include:
 
-- The issue with beta3 being unable to build with a released version of
+- The issue with beta4 being unable to build with a released version of
   ldb has been resolved. 
 
-- A new tool 'samba-tool domain dcpromo' has been added to allow the
-  promotion of existing domain member accounts to a DC without creating
-  a new SID
+- The two parameter tables for our two smb.conf parsing engines have
+  been merged.  This removes the ugly (but harmless) "unknown
+  parameter xxx" warnings, particularly from the smbd child process.
 
-- When provisioning with --use_rfc2307=yes we will populate the
-  subtree CN=ypServ30,CN=RpcServices,CN=System,${DOMAINDN}. This makes
-  it possible to manipulate the posix attributes via ADUC.
+- Major issues have been fixed in conflict and missing/deleted parent
+  handling in or DRS replication engine.
 
-- Improved 'samba-tool gpo' subcommands
+- Safety improvements to prevent corruption of read-write replicas
+  by manual replication from a read-only replica.
 
-- --disable-ntdb now works properly
+- Improvements to dbcheck to correct incorrect instanceType values from
+  the above and to relocate objects with missing parents.
 
-- Bug 9026 - 3.6.6 upgrade from 3.5.x fails with "Couldn't migrate
-  printers tdb file: NT_STATUS_NO_MEMORY" has been resolved
+- smbd no longer places all accounts in the 'Domain Users' of the AD
+  domain to which it is joined
 
-- Bug 9016 - Connection to outbound trusted domain goes offline has
-  been resolved
+- AES support in NETLOGON Schannel
+
+- DCE/RPC timeout handling no longer crashes
+
+- "socket address" is now "nbt client socket address" as it only
+  controls the binding of the NetBIOS client, not other protocols.
+  See 'bind interfaces only = yes'.  This parameter is also now depricated.
+
+- nmbd now always binds to it's broadcast sockets explicitly, rather
+  than just relying on the socket address above.
 
 Less visible, but important changes under the hood include:
 
 - Continued work to support SMB2 and SMB3
 
-- Correct restrictions and permissions on LSA calls over TCP and via
-  Schannel have been implemented and tested
-
 - Continued work to use async IO to improve file server performance.
+
+- Patches to ensure that talloc_tos() and talloc_stackframe() are
+  always used correctly.
 
 KNOWN ISSUES
 ============
 
 - This release makes the s3fs file server the default, as this is the
   file server combination we will use for the Samba 4.0 release.
-  Users should still expect some rough edges: in particular, there are
-  warnings about invalid parameters from the two respective parameter
-  parsing engines.
 
 - Modifying of group policies by members of the Domain Administrators
   group is not possible with the s3fs file server, only with the ntvfs
