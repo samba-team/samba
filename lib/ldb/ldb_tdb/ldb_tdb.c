@@ -973,9 +973,12 @@ static int ltdb_modify(struct ltdb_context *ctx)
 static int ltdb_rename(struct ltdb_context *ctx)
 {
 	struct ldb_module *module = ctx->module;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_request *req = ctx->req;
 	struct ldb_message *msg;
 	int ret = LDB_SUCCESS;
+	TDB_DATA tdb_key, tdb_key_old;
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
@@ -988,13 +991,44 @@ static int ltdb_rename(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* in case any attribute of the message was indexed, we need
-	   to fetch the old record */
+	/* we need to fetch the old record to re-add under the new name */
 	ret = ltdb_search_dn1(module, req->op.rename.olddn, msg);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
 		return ret;
 	}
+
+	/* We need to, before changing the DB, check if the new DN
+	 * exists, so we can return this error to the caller with an
+	 * unmodified DB */
+	tdb_key = ltdb_key(module, req->op.rename.newdn);
+	if (!tdb_key.dptr) {
+		talloc_free(msg);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	tdb_key_old = ltdb_key(module, req->op.rename.olddn);
+	if (!tdb_key_old.dptr) {
+		talloc_free(msg);
+		talloc_free(tdb_key.dptr);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* Only declare a conflict if the new DN already exists, and it isn't a case change on the old DN */
+	if (tdb_key_old.dsize != tdb_key.dsize || memcmp(tdb_key.dptr, tdb_key_old.dptr, tdb_key.dsize) != 0) {
+		if (tdb_exists(ltdb->tdb, tdb_key)) {
+			talloc_free(tdb_key_old.dptr);
+			talloc_free(tdb_key.dptr);
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "Entry %s already exists",
+					       ldb_dn_get_linearized(msg->dn));
+			/* finding the new record already in the DB is an error */
+			talloc_free(msg);
+			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+		}
+	}
+	talloc_free(tdb_key_old.dptr);
+	talloc_free(tdb_key.dptr);
 
 	/* Always delete first then add, to avoid conflicts with
 	 * unique indexes. We rely on the transaction to make this
@@ -1002,11 +1036,13 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 */
 	ret = ltdb_delete_internal(module, msg->dn);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		return ret;
 	}
 
 	msg->dn = ldb_dn_copy(msg, req->op.rename.newdn);
 	if (msg->dn == NULL) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1015,6 +1051,8 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	 * maybe not the most efficient way
 	 */
 	ret = ltdb_add_internal(module, msg, false);
+
+	talloc_free(msg);
 
 	return ret;
 }
