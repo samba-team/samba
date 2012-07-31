@@ -421,6 +421,78 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		*out_share_flags |= SMB2_SHAREFLAG_ENCRYPT_DATA;
 	}
 
+	/*
+	 * For disk shares we can change the client
+	 * behavior on a cluster...
+	 */
+	if (*out_share_type == SMB2_SHARE_TYPE_DISK) {
+		bool persistent = false; /* persistent handles not implemented yet */
+		bool cluster = lp_clustering();
+		bool asymmetric = false; /* shares are symmetric by default */
+		bool announce;
+
+		/*
+		 * In a ctdb cluster shares are continuously available,
+		 * but windows clients mix this with the global persistent
+		 * handles support.
+		 *
+		 * Persistent handles are requested if
+		 * SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is present
+		 * even without SMB2_CAP_PERSISTENT_HANDLES.
+		 *
+		 * And SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY is
+		 * required for SMB2_SHARE_CAP_CLUSTER to have
+		 * an effect.
+		 *
+		 * So we better don't announce this by default
+		 * until we support persistent handles.
+		 */
+		announce = lp_parm_bool(SNUM(tcon->compat),
+					"smb3 share cap",
+					"CONTINUOUS AVAILABILITY",
+					persistent);
+		if (announce) {
+			*out_capabilities |= SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
+		}
+
+		/*
+		 * ctdb clusters are always scale out...
+		 */
+		announce = lp_parm_bool(SNUM(tcon->compat),
+					"smb3 share cap",
+					"SCALE OUT",
+					cluster);
+		if (announce) {
+			*out_capabilities |= SMB2_SHARE_CAP_SCALEOUT;
+		}
+
+		/*
+		 * We support the witness service when ctdb is active
+		 */
+		announce = lp_parm_bool(SNUM(tcon->compat),
+					"smb3 share cap",
+					"CLUSTER",
+					cluster);
+		if (announce) {
+			*out_capabilities |= SMB2_SHARE_CAP_CLUSTER;
+		}
+
+		/*
+		 * Shares in a ctdb cluster are symmetric by design.
+		 *
+		 * But it might be useful to let the client use
+		 * an isolated transport and witness registration for the
+		 * specific share.
+		 */
+		announce = lp_parm_bool(SNUM(tcon->compat),
+					"smb3 share cap",
+					"ASYMMETRIC",
+					asymmetric);
+		if (announce) {
+			*out_capabilities |= SMB2_SHARE_CAP_ASYMMETRIC;
+		}
+	}
+
 	*out_maximal_access = tcon->compat->share_access;
 
 	*out_tree_id = tcon->global->tcon_wire_id;
