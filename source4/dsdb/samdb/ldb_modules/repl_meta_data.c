@@ -3410,17 +3410,20 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 	struct replPropertyMetaData1 *rmd_name, *omd_name;
 	struct ldb_message *msg;
 
+	req->callback = callback;
+
 	if (ares->error != LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		/* call the normal callback for everything except
 		   conflicts */
-		return callback(req, ares);
+		return ldb_module_done(req, ares->controls, ares->response, ares->error);
 	}
 
 	ret = samdb_rodc(ldb_module_get_ctx(ar->module), &rodc);
 	if (ret != LDB_SUCCESS) {
-		return ret;
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), "Failed to determine if we are an RODC when attempting to form conflict DN: %s", ldb_errstring(ldb_module_get_ctx(ar->module)));
+		return ldb_module_done(req, ares->controls, ares->response, LDB_ERR_OPERATIONS_ERROR);
 	}
- 	/*
+	/*
 	 * we have a conflict, and need to decide if we will keep the
 	 * new record or the old record
 	 */
@@ -3435,7 +3438,7 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 		conflict_dn = req->op.rename.newdn;
 		break;
 	default:
-		return ldb_module_operr(ar->module);
+		return ldb_module_done(req, ares->controls, ares->response, ldb_module_operr(ar->module));
 	}
 
 	if (rodc) {
@@ -3589,8 +3592,6 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 			goto failed;
 		}
 
-		req->callback = callback;
-
 		return ldb_next_request(ar->module, req);
 	}
 
@@ -3599,7 +3600,7 @@ failed:
 	 * will stop with an error, but there is not much else we can
 	 * do
 	 */
-	return callback(req, ares);
+	return ldb_module_done(req, ares->controls, ares->response, ares->error);
 }
 
 /*
