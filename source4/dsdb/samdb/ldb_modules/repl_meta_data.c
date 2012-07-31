@@ -3894,8 +3894,10 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
 				   ar->req);
 	LDB_REQ_SET_LOCATION(search_req);
 
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
-				      true, NULL);
+	ret = dsdb_request_add_controls(search_req, 
+					DSDB_SEARCH_SHOW_RECYCLED|
+					DSDB_SEARCH_SHOW_DELETED|
+					DSDB_SEARCH_SHOW_EXTENDED_DN);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
