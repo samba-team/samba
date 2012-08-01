@@ -2332,6 +2332,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	}
 
 	tcon_flags |= TCONX_FLAG_EXTENDED_RESPONSE;
+	tcon_flags |= TCONX_FLAG_EXTENDED_SIGNATURES;
 
 	SCVAL(vwv+0, 0, 0xFF);
 	SCVAL(vwv+0, 1, 0);
@@ -2480,6 +2481,10 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 
 	if (optional_support & SMB_SHARE_IN_DFS) {
 		cli->dfsroot = true;
+	}
+
+	if (optional_support & SMB_EXTENDED_SIGNATURES) {
+		smb1cli_session_protect_session_key(cli->smb1.session);
 	}
 
 	cli_state_set_tid(cli, SVAL(inhdr, HDR_TID));
