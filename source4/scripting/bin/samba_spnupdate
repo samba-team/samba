@@ -130,11 +130,12 @@ res = samdb.search(base=samdb.get_config_basedn(),
 
 basedn = str(samdb.get_default_basedn())
 if len(res) == 1:
-    for e in res[0]["msDS-hasMasterNCs"]:
-        if str(e) == "DC=DomainDnsZones,%s" % basedn:
-            has_domain_dns = True
-        if str(e) == "DC=ForestDnsZones,%s" % basedn:
-            has_forest_dns = True
+    if "msDS-hasMasterNCs" in res[0]:
+        for e in res[0]["msDS-hasMasterNCs"]:
+            if str(e) == "DC=DomainDnsZones,%s" % basedn:
+                has_domain_dns = True
+            if str(e) == "DC=ForestDnsZones,%s" % basedn:
+                has_forest_dns = True
 
 
 # build the spn list
