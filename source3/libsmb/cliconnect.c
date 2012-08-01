@@ -2431,6 +2431,7 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	uint32_t num_bytes;
 	uint8_t *bytes;
 	NTSTATUS status;
+	uint16_t optional_support = 0;
 
 	status = cli_smb_recv(subreq, state, &in, 0, &wct, &vwv,
 			      &num_bytes, &bytes);
@@ -2474,7 +2475,11 @@ static void cli_tcon_andx_done(struct tevent_req *subreq)
 	cli->dfsroot = false;
 
 	if ((wct > 2) && (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_LANMAN2)) {
-		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
+		optional_support = SVAL(vwv+2, 0);
+	}
+
+	if (optional_support & SMB_SHARE_IN_DFS) {
+		cli->dfsroot = true;
 	}
 
 	cli_state_set_tid(cli, SVAL(inhdr, HDR_TID));
