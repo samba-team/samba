@@ -1092,8 +1092,16 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 		return;
 	}
 	if (state->session_key.data) {
+		struct smbXcli_session *session = state->cli->smb1.session;
+
 		/* Have plaintext orginal */
 		cli_set_session_key(cli, state->session_key);
+
+		status = smb1cli_session_set_session_key(session,
+				state->session_key);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	}
 	tevent_req_done(req);
 }
@@ -1528,6 +1536,14 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 			return;
 		}
 	} else {
+		struct smbXcli_session *session = state->cli->smb1.session;
+
+		status = smb1cli_session_set_session_key(session,
+							 state->session_key_krb5);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+
 		if (smb1cli_conn_activate_signing(state->cli->conn, state->session_key_krb5,
 					   data_blob_null)
 		    && !smb1cli_conn_check_signing(state->cli->conn, inbuf, 1)) {
@@ -1739,6 +1755,14 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 				return;
 			}
 		} else {
+			struct smbXcli_session *session = state->cli->smb1.session;
+
+			status = smb1cli_session_set_session_key(session,
+					state->ntlmssp_state->session_key);
+			if (tevent_req_nterror(req, status)) {
+				return;
+			}
+
 			if (smb1cli_conn_activate_signing(
 				    state->cli->conn, state->ntlmssp_state->session_key,
 				    data_blob_null)
