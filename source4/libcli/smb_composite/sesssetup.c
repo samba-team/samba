@@ -208,7 +208,13 @@ static void request_handler(struct smbcli_request *req)
 							      null_data_blob);
 			}
 			set_user_session_key(session, &session_key);
+
+			c->status = smb1cli_session_set_session_key(session->smbXcli,
+								    session_key);
 			data_blob_free(&session_key);
+			if (!NT_STATUS_IS_OK(c->status)) {
+				break;
+			}
 		}
 
 		if (state->setup.spnego.in.secblob.length) {
@@ -346,7 +352,12 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 					      state->setup.nt1.in.password2);
 		set_user_session_key(session, &session_key);
 
+		nt_status = smb1cli_session_set_session_key(session->smbXcli,
+							    session_key);
 		data_blob_free(&session_key);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
 	}
 
 	return (*req)->status;
@@ -405,8 +416,13 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 							      NULL, &session_key);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 		set_user_session_key(session, &session_key);
-		
+
+		nt_status = smb1cli_session_set_session_key(session->smbXcli,
+							    session_key);
 		data_blob_free(&session_key);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
 	} else if (session->options.plaintext_auth) {
 		state->setup.old.in.password = data_blob_talloc(state, password, strlen(password));
 	} else {
