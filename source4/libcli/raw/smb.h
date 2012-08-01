@@ -219,10 +219,6 @@
 #define NT_TRANSACT_RENAME                5
 #define NT_TRANSACT_QUERY_SECURITY_DESC   6
 
-/* this is used on a TConX. I'm not sure the name is very helpful though */
-#define SMB_SUPPORT_SEARCH_BITS        0x0001
-#define SMB_SHARE_IN_DFS               0x0002
-
 /* Named pipe write mode flags. Used in writeX calls. */
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8

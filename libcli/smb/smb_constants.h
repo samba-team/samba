@@ -262,6 +262,19 @@ enum csc_policy {
 	CSC_POLICY_DISABLE=3
 };
 
+/* TCONX Flag (smb_vwv2). [MS-SMB] 2.2.4.7.1 */
+#define TCONX_FLAG_DISCONNECT_TID       0x0001
+#define TCONX_FLAG_EXTENDED_SIGNATURES  0x0004
+#define TCONX_FLAG_EXTENDED_RESPONSE	0x0008
+
+/* this is used on a TConX. [MS-SMB] 2.2.4.7.2 */
+#define SMB_SUPPORT_SEARCH_BITS        0x0001
+#define SMB_SHARE_IN_DFS               0x0002
+#define SMB_CSC_MASK                   0x000C
+#define SMB_CSC_POLICY_SHIFT           2
+#define SMB_UNIQUE_FILE_NAME           0x0010
+#define SMB_EXTENDED_SIGNATURES        0x0020
+
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
 #define FLAGS2_LONG_PATH_COMPONENTS    0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES     0x0002

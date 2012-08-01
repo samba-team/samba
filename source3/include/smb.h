@@ -399,10 +399,6 @@ Offset  Data			length.
 #define smb_ntcreate_ImpersonationLevel (smb_vwv0 + 43)
 #define smb_ntcreate_SecurityFlags (smb_vwv0 + 47)
 
-/* this is used on a TConX. I'm not sure the name is very helpful though */
-#define SMB_SUPPORT_SEARCH_BITS        0x0001
-#define SMB_SHARE_IN_DFS               0x0002
-
 /* Named pipe write mode flags. Used in writeX calls. */
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
@@ -620,11 +616,6 @@ char *strdup(char *s);
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
 #define BROWSER_CONSTANT	0xaa55
-
-/* TCONX Flag (smb_vwv2). */
-#define TCONX_FLAG_EXTENDED_RESPONSE	0x8
-#define TCONX_FLAG_EXTENDED_SIGNATURES  0x4
-#define SMB_EXTENDED_SIGNATURES		0x20
 
 /* File Status Flags. See:
 
