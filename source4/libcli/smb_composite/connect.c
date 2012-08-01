@@ -163,7 +163,6 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 		 * have been given a uid in the NTLMSSP_CHALLENGE reply. This
 		 * would lead to an invalid uid in the anonymous fallback */
 		state->session->vuid = 0;
-		data_blob_free(&state->session->user_session_key);
 		talloc_free(state->session->gensec);
 		state->session->gensec = NULL;
 

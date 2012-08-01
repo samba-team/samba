@@ -166,8 +166,6 @@ struct smbcli_session {
 	   the user to control these for torture testing */
 	uint16_t flags2;
 
-	DATA_BLOB user_session_key;
-
 	/* the spnego context if we use extented security */
 	struct gensec_security *gensec;
 
