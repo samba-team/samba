@@ -4294,6 +4294,36 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	return session;
 }
 
+NTSTATUS smbXcli_session_application_key(struct smbXcli_session *session,
+					 TALLOC_CTX *mem_ctx,
+					 DATA_BLOB *key)
+{
+	const DATA_BLOB *application_key;
+
+	*key = data_blob_null;
+
+	if (session->conn == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (session->conn->protocol >= PROTOCOL_SMB2_02) {
+		application_key = &session->smb2->application_key;
+	} else {
+		application_key = &session->smb1.application_key;
+	}
+
+	if (application_key->length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*key = data_blob_dup_talloc(mem_ctx, *application_key);
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 uint16_t smb1cli_session_current_id(struct smbXcli_session *session)
 {
 	return session->smb1.session_id;
