@@ -5776,6 +5776,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	union samr_UserInfo info;
 	unsigned int orig_timeout;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
+	DATA_BLOB session_key = data_blob_null;
 
 	if (argc != 2) {
 		d_printf("%s\n%s",
@@ -5796,6 +5797,13 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	strupper_m(acct_name);
 
 	init_lsa_String(&lsa_acct_name, acct_name);
+
+	status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Error getting session_key of SAM pipe. Error was %s\n",
+			nt_errstr(status)));
+		goto done;
+	}
 
 	/* Get samr policy handle */
 	status = dcerpc_samr_Connect2(b, mem_ctx,
@@ -5867,7 +5875,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		ZERO_STRUCT(info.info23);
 
 		init_samr_CryptPassword(argv[1],
-					&cli->user_session_key,
+					&session_key,
 					&crypt_pwd);
 
 		info.info23.info.fields_present = SAMR_FIELD_ACCT_FLAGS |
@@ -5894,6 +5902,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 
  done:
 	SAFE_FREE(acct_name);
+	data_blob_clear_free(&session_key);
 	return status;
 }
 

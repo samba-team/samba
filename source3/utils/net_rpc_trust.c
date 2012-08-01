@@ -196,7 +196,8 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 				     struct cli_state **cli,
 				     struct rpc_pipe_client **pipe_hnd,
 				     struct policy_handle *pol_hnd,
-				     struct dom_data *dom_data)
+				     struct dom_data *dom_data,
+				     DATA_BLOB *session_key)
 {
 	NTSTATUS status;
 	NTSTATUS result;
@@ -241,6 +242,13 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("get_domain_info failed with error [%s].\n",
 			  nt_errstr(status)));
+		return status;
+	}
+
+	status = cli_get_session_key(mem_ctx, *pipe_hnd, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Error getting session_key of LSA pipe. Error was %s\n",
+			nt_errstr(status)));
 		return status;
 	}
 
@@ -412,6 +420,7 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	int success = -1;
 	struct cli_state *cli[2] = {NULL, NULL};
 	struct rpc_pipe_client *pipe_hnd[2] = {NULL, NULL};
+	DATA_BLOB session_key[2];
 	struct policy_handle pol_hnd[2];
 	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
 	DATA_BLOB auth_blob;
@@ -420,6 +429,8 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	struct net_context *other_net_ctx = NULL;
 	struct dom_data dom_data[2];
 	void (*usage)(void);
+
+	ZERO_STRUCT(session_key);
 
 	switch (op) {
 		case TRUST_CREATE:
@@ -480,7 +491,7 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	}
 
 	status = connect_and_get_info(mem_ctx, net_ctx, &cli[0], &pipe_hnd[0],
-				      &pol_hnd[0], &dom_data[0]);
+				      &pol_hnd[0], &dom_data[0], &session_key[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("connect_and_get_info failed with error [%s]\n",
 			  nt_errstr(status)));
@@ -490,7 +501,8 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	if (other_net_ctx != NULL) {
 		status = connect_and_get_info(mem_ctx, other_net_ctx,
 					      &cli[1], &pipe_hnd[1],
-					      &pol_hnd[1], &dom_data[1]);
+					      &pol_hnd[1], &dom_data[1],
+					      &session_key[1]);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("connect_and_get_info failed with error [%s]\n",
 				  nt_errstr(status)));
@@ -534,7 +546,7 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 
 		arcfour_crypt_blob(authinfo.auth_blob.data,
 				   authinfo.auth_blob.size,
-				   &cli[0]->user_session_key);
+				   &session_key[0]);
 
 		status = create_trust(mem_ctx, pipe_hnd[0]->binding_handle,
 				      &pol_hnd[0],
@@ -561,7 +573,7 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 
 			arcfour_crypt_blob(authinfo.auth_blob.data,
 					   authinfo.auth_blob.size,
-					   &cli[1]->user_session_key);
+					   &session_key[1]);
 
 			status = create_trust(mem_ctx,
 					      pipe_hnd[1]->binding_handle,
@@ -617,6 +629,8 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 	success = 0;
 
 done:
+	data_blob_clear_free(&session_key[0]);
+	data_blob_clear_free(&session_key[1]);
 	cli_shutdown(cli[0]);
 	cli_shutdown(cli[1]);
 	talloc_destroy(mem_ctx);

@@ -186,6 +186,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Password stuff */
 
+	DATA_BLOB session_key = data_blob_null;
 	char *clear_trust_password = NULL;
 	struct samr_CryptPassword crypt_pwd;
 	uchar md4_trust_password[16];
@@ -288,6 +289,13 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	}
 
 	b = pipe_hnd->binding_handle;
+
+	status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Error getting session_key of SAM pipe. Error was %s\n",
+			nt_errstr(status)));
+		goto done;
+	}
 
 	CHECK_DCERPC_ERR(dcerpc_samr_Connect2(b, mem_ctx,
 					      pipe_hnd->desthost,
@@ -396,7 +404,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	/* Set password on machine account */
 
 	init_samr_CryptPassword(clear_trust_password,
-				&cli->user_session_key,
+				&session_key,
 				&crypt_pwd);
 
 	set_info.info24.password = crypt_pwd;
@@ -532,6 +540,7 @@ done:
 	cli_shutdown(cli);
 
 	TALLOC_FREE(clear_trust_password);
+	data_blob_clear_free(&session_key);
 
 	return retval;
 }
