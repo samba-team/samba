@@ -2862,9 +2862,22 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 
 	auth->user_name = talloc_strdup(auth, cli->user_name);
 	auth->domain = talloc_strdup(auth, cli->domain);
-	auth->user_session_key = data_blob_talloc(auth,
-		cli->user_session_key.data,
-		cli->user_session_key.length);
+
+	if (transport == NCACN_NP) {
+		struct smbXcli_session *session;
+
+		if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+			session = cli->smb2.session;
+		} else {
+			session = cli->smb1.session;
+		}
+
+		status = smbXcli_session_application_key(session, auth,
+						&auth->user_session_key);
+		if (!NT_STATUS_IS_OK(status)) {
+			auth->user_session_key = data_blob_null;
+		}
+	}
 
 	if ((auth->user_name == NULL) || (auth->domain == NULL)) {
 		TALLOC_FREE(result);
