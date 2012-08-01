@@ -72,18 +72,6 @@ static NTSTATUS smb_bytes_talloc_string(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/**
- * Set the user session key for a connection
- * @param cli The cli structure to add it too
- * @param session_key The session key used.  (A copy of this is taken for the cli struct)
- *
- */
-
-static void cli_set_session_key (struct cli_state *cli, const DATA_BLOB session_key) 
-{
-	cli->user_session_key = data_blob(session_key.data, session_key.length);
-}
-
 /****************************************************************************
  Do an old lanman2 style session setup.
 ****************************************************************************/
@@ -1094,9 +1082,6 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 	if (state->session_key.data) {
 		struct smbXcli_session *session = state->cli->smb1.session;
 
-		/* Have plaintext orginal */
-		cli_set_session_key(cli, state->session_key);
-
 		status = smb1cli_session_set_session_key(session,
 				state->session_key);
 		if (tevent_req_nterror(req, status)) {
@@ -1525,8 +1510,6 @@ static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
 		return;
 	}
 
-	cli_set_session_key(state->cli, state->session_key_krb5);
-
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		struct smbXcli_session *session = state->cli->smb2.session;
 		status = smb2cli_session_set_session_key(session,
@@ -1727,8 +1710,6 @@ static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
 				return;
 			}
 		}
-		cli_set_session_key(
-			state->cli, state->ntlmssp_state->session_key);
 
 		if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 			struct smbXcli_session *session = state->cli->smb2.session;

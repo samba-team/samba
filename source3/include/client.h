@@ -77,10 +77,6 @@ struct cli_state {
 	bool dfsroot;
 	bool backup_intent;
 
-	/* the session key for this CLI, outside
-	   any per-pipe authenticaion */
-	DATA_BLOB user_session_key;
-
 	/* The list of pipes currently open on this connection. */
 	struct rpc_pipe_client *pipe_list;
 

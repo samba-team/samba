@@ -325,8 +325,6 @@ static void _cli_shutdown(struct cli_state *cli)
 	if (cli_state_has_tcon(cli)) {
 		cli_tdis(cli);
 	}
-        
-	data_blob_free(&cli->user_session_key);
 
 	smbXcli_conn_disconnect(cli->conn, NT_STATUS_OK);
 
