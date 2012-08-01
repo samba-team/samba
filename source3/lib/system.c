@@ -1159,6 +1159,7 @@ int sys_popen(const char *command)
 	int pipe_fds[2];
 	popen_list *entry = NULL;
 	char **argl = NULL;
+	int ret;
 
 	if (pipe(pipe_fds) < 0)
 		return -1;
@@ -1213,7 +1214,11 @@ int sys_popen(const char *command)
 		for (p = popen_chain; p; p = p->next)
 			close(p->fd);
 
-		execv(argl[0], argl);
+		ret = execv(argl[0], argl);
+		if (ret == -1) {
+			DEBUG(0, ("sys_popen: ERROR executing dfree command "
+				  "'%s': %s\n", command, strerror(errno)));
+		}
 		_exit (127);
 	}
 
