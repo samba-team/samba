@@ -4400,24 +4400,6 @@ uint16_t smb2cli_session_get_flags(struct smbXcli_session *session)
 	return session->smb2->session_flags;
 }
 
-NTSTATUS smb2cli_session_application_key(struct smbXcli_session *session,
-					 TALLOC_CTX *mem_ctx,
-					 DATA_BLOB *key)
-{
-	*key = data_blob_null;
-
-	if (session->smb2->application_key.length == 0) {
-		return NT_STATUS_NO_USER_SESSION_KEY;
-	}
-
-	*key = data_blob_dup_talloc(mem_ctx, session->smb2->application_key);
-	if (key->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	return NT_STATUS_OK;
-}
-
 void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 				      uint64_t session_id,
 				      uint16_t session_flags)
