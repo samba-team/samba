@@ -4303,7 +4303,6 @@ void smb1cli_session_set_id(struct smbXcli_session *session,
 			    uint16_t session_id)
 {
 	session->smb1.session_id = session_id;
-	data_blob_clear_free(&session->smb1.application_key);
 }
 
 NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
@@ -4317,7 +4316,12 @@ NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (session->smb1.application_key.length != 0) {
-		return NT_STATUS_INVALID_PARAMETER_MIX;
+		/*
+		 * TODO: do not allow this...
+		 *
+		 * return NT_STATUS_INVALID_PARAMETER_MIX;
+		 */
+		data_blob_clear_free(&session->smb1.application_key);
 	}
 
 	if (_session_key.length == 0) {
