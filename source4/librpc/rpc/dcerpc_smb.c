@@ -32,6 +32,7 @@
 struct smb_private {
 	uint16_t fnum;
 	struct smbcli_tree *tree;
+	DATA_BLOB session_key;
 	const char *server_name;
 	bool dead;
 };
@@ -429,11 +430,13 @@ static NTSTATUS smb_session_key(struct dcecli_connection *c, DATA_BLOB *session_
 	struct smb_private *smb = (struct smb_private *)c->transport.private_data;
 
 	if (smb == NULL) return NT_STATUS_CONNECTION_DISCONNECTED;
-	if (smb->tree->session->user_session_key.data) {
-		*session_key = smb->tree->session->user_session_key;
-		return NT_STATUS_OK;
+
+	if (smb->session_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
-	return NT_STATUS_NO_USER_SESSION_KEY;
+
+	*session_key = smb->session_key;
+	return NT_STATUS_OK;
 }
 
 struct pipe_open_smb_state {
@@ -554,6 +557,14 @@ static void pipe_open_recv(struct smbcli_request *req)
 		smbXcli_conn_remote_name(state->tree->session->transport->conn));
 	if (composite_nomem(smb->server_name, ctx)) return;
 	smb->dead	= false;
+
+	ctx->status = smbXcli_session_application_key(state->tree->session->smbXcli,
+						      smb, &smb->session_key);
+	if (NT_STATUS_EQUAL(ctx->status, NT_STATUS_NO_USER_SESSION_KEY)) {
+		smb->session_key = data_blob_null;
+		ctx->status = NT_STATUS_OK;
+	}
+	if (!composite_is_ok(ctx)) return;
 
 	c->transport.private_data = smb;
 
