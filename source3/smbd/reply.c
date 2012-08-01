@@ -840,6 +840,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(ctx, SNUM(conn));
+		uint16_t optional_support = 0;
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
 			/* Return permissions. */
@@ -872,15 +873,17 @@ void reply_tcon_and_X(struct smb_request *req)
 
 		/* what does setting this bit do? It is set by NT4 and
 		   may affect the ability to autorun mounted cdroms */
-		SSVAL(req->outbuf, smb_vwv2, SMB_SUPPORT_SEARCH_BITS|
-		      (lp_csc_policy(SNUM(conn)) << 2));
+		optional_support |= SMB_SUPPORT_SEARCH_BITS;
+		optional_support |=
+			(lp_csc_policy(SNUM(conn)) << SMB_CSC_POLICY_SHIFT);
 
 		if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {
 			DEBUG(2,("Serving %s as a Dfs root\n",
 				 lp_servicename(ctx, SNUM(conn)) ));
-			SSVAL(req->outbuf, smb_vwv2,
-			      SMB_SHARE_IN_DFS | SVAL(req->outbuf, smb_vwv2));
+			optional_support |= SMB_SHARE_IN_DFS;
 		}
+
+		SSVAL(req->outbuf, smb_vwv2, optional_support);
 	}
 
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
