@@ -511,7 +511,7 @@ static void pipe_open_recv(struct smb2_request *req)
 	if (composite_nomem(smb->server_name, ctx)) return;
 	smb->dead	= false;
 
-	ctx->status = smb2cli_session_application_key(tree->session->smbXcli,
+	ctx->status = smbXcli_session_application_key(tree->session->smbXcli,
 						      smb, &smb->session_key);
 	if (NT_STATUS_EQUAL(ctx->status, NT_STATUS_NO_USER_SESSION_KEY)) {
 		smb->session_key = data_blob_null;
