@@ -736,7 +736,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	tcon_flags = SVAL(req->vwv+2, 0);
 
 	/* we might have to close an old one */
-	if ((tcon_flags & 0x1) && conn) {
+	if ((tcon_flags & TCONX_FLAG_DISCONNECT_TID) && conn) {
 		struct smbXsrv_tcon *tcon;
 		NTSTATUS status;
 
