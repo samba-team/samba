@@ -45,7 +45,7 @@ struct pipe_auth_data {
 	/* Only the client code uses these 3 for now */
 	char *domain;
 	char *user_name;
-	DATA_BLOB user_session_key;
+	DATA_BLOB transport_session_key;
 };
 
 /* The following definitions come from librpc/rpc/dcerpc_helpers.c  */

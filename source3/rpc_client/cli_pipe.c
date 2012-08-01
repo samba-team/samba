@@ -2873,9 +2873,9 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 		}
 
 		status = smbXcli_session_application_key(session, auth,
-						&auth->user_session_key);
+						&auth->transport_session_key);
 		if (!NT_STATUS_IS_OK(status)) {
-			auth->user_session_key = data_blob_null;
+			auth->transport_session_key = data_blob_null;
 		}
 	}
 
@@ -3147,8 +3147,8 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 		break;
 	case DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM:
 	case DCERPC_AUTH_TYPE_NONE:
-		sk = data_blob_const(a->user_session_key.data,
-				     a->user_session_key.length);
+		sk = data_blob_const(a->transport_session_key.data,
+				     a->transport_session_key.length);
 		make_dup = true;
 		break;
 	default:
