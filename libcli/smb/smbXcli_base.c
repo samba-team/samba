@@ -149,6 +149,7 @@ struct smbXcli_session {
 	struct {
 		uint16_t session_id;
 		DATA_BLOB application_key;
+		bool protected_key;
 	} smb1;
 
 	struct smb2cli_session *smb2;
@@ -4360,6 +4361,7 @@ NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
 		 * return NT_STATUS_INVALID_PARAMETER_MIX;
 		 */
 		data_blob_clear_free(&session->smb1.application_key);
+		session->smb1.protected_key = false;
 	}
 
 	if (_session_key.length == 0) {
@@ -4377,6 +4379,28 @@ NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
 	if (session->smb1.application_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	session->smb1.protected_key = false;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb1cli_session_protect_session_key(struct smbXcli_session *session)
+{
+	if (session->smb1.protected_key) {
+		/* already protected */
+		return NT_STATUS_OK;
+	}
+
+	if (session->smb1.application_key.length != 16) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	smb_key_derivation(session->smb1.application_key.data,
+			   session->smb1.application_key.length,
+			   session->smb1.application_key.data);
+
+	session->smb1.protected_key = true;
 
 	return NT_STATUS_OK;
 }
