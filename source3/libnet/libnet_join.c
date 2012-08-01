@@ -853,6 +853,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	union samr_UserInfo user_info;
 	struct dcerpc_binding_handle *b = NULL;
 
+	DATA_BLOB session_key = data_blob_null;
 	struct samr_CryptPassword crypt_pwd;
 	struct samr_CryptPasswordEx crypt_pwd_ex;
 
@@ -887,6 +888,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	b = pipe_hnd->binding_handle;
+
+	status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Error getting session_key of SAM pipe. Error was %s\n",
+			nt_errstr(status)));
+		goto done;
+	}
 
 	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
@@ -1064,7 +1072,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	/* Set password on machine account - first try level 26 */
 
 	init_samr_CryptPasswordEx(r->in.machine_password,
-				  &cli->user_session_key,
+				  &session_key,
 				  &crypt_pwd_ex);
 
 	user_info.info26.password = crypt_pwd_ex;
@@ -1081,7 +1089,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		/* retry with level 24 */
 
 		init_samr_CryptPassword(r->in.machine_password,
-					&cli->user_session_key,
+					&session_key,
 					&crypt_pwd);
 
 		user_info.info24.password = crypt_pwd;
@@ -1124,6 +1132,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	if (!pipe_hnd) {
 		return status;
 	}
+
+	data_blob_clear_free(&session_key);
 
 	if (is_valid_policy_hnd(&sam_pol)) {
 		dcerpc_samr_Close(b, mem_ctx, &sam_pol, &result);
