@@ -2255,6 +2255,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	char *tmp = NULL;
 	uint8_t *bytes;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
+	uint16_t tcon_flags = 0;
 
 	*psmbreq = NULL;
 
@@ -2330,10 +2331,12 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	tcon_flags |= TCONX_FLAG_EXTENDED_RESPONSE;
+
 	SCVAL(vwv+0, 0, 0xFF);
 	SCVAL(vwv+0, 1, 0);
 	SSVAL(vwv+1, 0, 0);
-	SSVAL(vwv+2, 0, TCONX_FLAG_EXTENDED_RESPONSE);
+	SSVAL(vwv+2, 0, tcon_flags);
 	SSVAL(vwv+3, 0, passlen);
 
 	if (passlen && pass) {
