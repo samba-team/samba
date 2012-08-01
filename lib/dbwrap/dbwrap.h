@@ -30,6 +30,7 @@ enum dbwrap_lock_order {
 	DBWRAP_LOCK_ORDER_2 = 2,
 	DBWRAP_LOCK_ORDER_3 = 3
 };
+#define DBWRAP_LOCK_ORDER_MAX DBWRAP_LOCK_ORDER_3
 
 /* The following definitions come from lib/dbwrap.c  */
 

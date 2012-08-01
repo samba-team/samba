@@ -123,30 +123,49 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 }
 
 struct dbwrap_lock_order_state {
-	uint8_t *plock_order_mask;
-	uint8_t bitmask;
+	struct db_context **locked_dbs;
+	struct db_context *db;
 };
+
+static void debug_lock_order(int level, struct db_context *dbs[])
+{
+	int i;
+	DEBUG(level, ("lock order: "));
+	for (i=0; i<DBWRAP_LOCK_ORDER_MAX; i++) {
+		DEBUGADD(level, (" %d:%s", i + 1, dbs[i] ? dbs[i]->name : "<none>"));
+	}
+	DEBUGADD(level, ("\n"));
+}
 
 static int dbwrap_lock_order_state_destructor(
 	struct dbwrap_lock_order_state *s)
 {
-	*s->plock_order_mask &= ~s->bitmask;
+	int idx = s->db->lock_order - 1;
+
+	DEBUG(5, ("release lock order %d for %s\n",
+		  (int)s->db->lock_order, s->db->name));
+
+	if (s->locked_dbs[idx] != s->db) {
+		DEBUG(0, ("locked db at lock order %d is %s, expected %s\n",
+			  idx + 1, s->locked_dbs[idx]->name, s->db->name));
+		debug_lock_order(0, s->locked_dbs);
+		smb_panic("inconsistent lock_order\n");
+	}
+
+	s->locked_dbs[idx] = NULL;
+
+	debug_lock_order(10, s->locked_dbs);
+
 	return 0;
 }
+
 
 static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 	struct db_context *db, TALLOC_CTX *mem_ctx)
 {
-	/*
-	 * Store the lock_order of currently locked records as bits in
-	 * "lock_order_mask". We only use levels 1,2,3 right now, so a
-	 * single uint8_t is enough.
-	 */
-	static uint8_t lock_order_mask;
-
-	struct dbwrap_lock_order_state *state;
-	uint8_t idx;
-	int used;
+	int idx;
+	static struct db_context *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
+	struct dbwrap_lock_order_state *state = NULL;
 
 	if (db->lock_order == 0) {
 		/*
@@ -154,24 +173,28 @@ static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 		 * real locking. Return state nevertheless to avoid
 		 * special cases.
 		 */
-		return talloc(mem_ctx, struct dbwrap_lock_order_state);
+		return talloc_zero(mem_ctx, struct dbwrap_lock_order_state);
 	}
 
-	/*
-	 * We fill bits from the high bits, to be able to use
-	 * "ffs(lock_order_mask)"
-	 */
-	idx = sizeof(lock_order_mask)*8 - db->lock_order;
-
-	used = ffs(lock_order_mask);
-
-	DEBUG(5, ("used=%d, lock_order=%d, idx=%d\n", used,
-		  (int)db->lock_order, (int)idx));
-
-	if ((used != 0) && (used-1 <= idx)) {
-		DEBUG(0, ("Lock order violation: Trying %d, order_mask=%x\n",
-			  (int)db->lock_order, (int)lock_order_mask));
+	if (db->lock_order > DBWRAP_LOCK_ORDER_MAX) {
+		DEBUG(0,("Invalid lock order %d of %s\n",
+			 (int)db->lock_order, db->name));
+		smb_panic("invalid lock_order\n");
 		return NULL;
+	}
+
+	DEBUG(5, ("check lock order %d for %s\n",
+		  (int)db->lock_order, db->name));
+
+
+	for (idx=db->lock_order - 1; idx < DBWRAP_LOCK_ORDER_MAX; idx++) {
+		if (locked_dbs[idx] != NULL) {
+			DEBUG(0, ("Lock order violation: Trying %s at %d while %s at %d is locked\n",
+				  db->name, (int)db->lock_order, locked_dbs[idx]->name, idx + 1));
+			debug_lock_order(0, locked_dbs);
+			smb_panic("invalid lock_order");
+			return NULL;
+		}
 	}
 
 	state = talloc(mem_ctx, struct dbwrap_lock_order_state);
@@ -179,11 +202,13 @@ static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 		DEBUG(1, ("talloc failed\n"));
 		return NULL;
 	}
-	state->bitmask = 1 << idx;
-	state->plock_order_mask = &lock_order_mask;
-
+	state->db = db;
+	state->locked_dbs = locked_dbs;
 	talloc_set_destructor(state, dbwrap_lock_order_state_destructor);
-	lock_order_mask |= state->bitmask;
+
+	locked_dbs[db->lock_order - 1] = db;
+
+	debug_lock_order(10, locked_dbs);
 
 	return state;
 }
