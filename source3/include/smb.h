@@ -623,6 +623,8 @@ char *strdup(char *s);
 
 /* TCONX Flag (smb_vwv2). */
 #define TCONX_FLAG_EXTENDED_RESPONSE	0x8
+#define TCONX_FLAG_EXTENDED_SIGNATURES  0x4
+#define SMB_EXTENDED_SIGNATURES		0x20
 
 /* File Status Flags. See:
 
