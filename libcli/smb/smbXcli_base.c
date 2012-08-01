@@ -148,6 +148,7 @@ struct smbXcli_session {
 
 	struct {
 		uint16_t session_id;
+		DATA_BLOB application_key;
 	} smb1;
 
 	struct smb2cli_session *smb2;
@@ -4302,6 +4303,39 @@ void smb1cli_session_set_id(struct smbXcli_session *session,
 			    uint16_t session_id)
 {
 	session->smb1.session_id = session_id;
+}
+
+NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
+					 const DATA_BLOB _session_key)
+{
+	struct smbXcli_conn *conn = session->conn;
+	uint8_t session_key[16];
+
+	if (conn == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (session->smb1.application_key.length != 0) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
+
+	if (_session_key.length == 0) {
+		return NT_STATUS_OK;
+	}
+
+	ZERO_STRUCT(session_key);
+	memcpy(session_key, _session_key.data,
+	       MIN(_session_key.length, sizeof(session_key)));
+
+	session->smb1.application_key = data_blob_talloc(session,
+							 session_key,
+							 sizeof(session_key));
+	ZERO_STRUCT(session_key);
+	if (session->smb1.application_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
 }
 
 uint8_t smb2cli_session_security_mode(struct smbXcli_session *session)
