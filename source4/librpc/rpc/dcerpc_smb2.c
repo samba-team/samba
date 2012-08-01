@@ -390,6 +390,8 @@ static NTSTATUS smb2_session_key(struct dcecli_connection *c, DATA_BLOB *session
 	struct smb2_private *smb = talloc_get_type(c->transport.private_data,
 						   struct smb2_private);
 
+	if (smb == NULL) return NT_STATUS_CONNECTION_DISCONNECTED;
+
 	if (smb->session_key.length == 0) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
