@@ -353,7 +353,11 @@ int main(int argc, char **argv)
 	/* some simple tests */
 
 	rv = reg_open_samba3(frame, &ctx);
-	SMB_ASSERT(W_ERROR_IS_OK(rv));
+	if (!W_ERROR_IS_OK(rv)) {
+		TALLOC_FREE(frame);
+
+		return 1;
+	}
 
 	display_test_window(frame, ctx);
 
