@@ -1368,8 +1368,8 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 	}
 
 	PyDict_SetItemString(py_domain_info, "name", PyString_FromString(domain_info->name));
-	PyDict_SetItemString(py_domain_info, "dns_domain", PyString_FromString(domain_info->name));
-	PyDict_SetItemString(py_domain_info, "dns_forest", PyString_FromString(domain_info->name));
+	PyDict_SetItemString(py_domain_info, "dns_domain", PyString_FromString(domain_info->dns_domain));
+	PyDict_SetItemString(py_domain_info, "dns_forest", PyString_FromString(domain_info->dns_forest));
 	PyDict_SetItemString(py_domain_info, "dom_sid", pytalloc_steal(dom_sid_Type, sid));
 	PyDict_SetItemString(py_domain_info, "guid", pytalloc_steal(guid_Type, guid));
 
