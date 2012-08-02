@@ -23,6 +23,7 @@ import os
 import samba.xattr_native, samba.xattr_tdb, samba.posix_eadb
 from samba.dcerpc import security, xattr
 from samba.ndr import ndr_pack, ndr_unpack
+from samba.samba3 import smbd
 
 class XattrBackendError(Exception):
     """A generic xattr backend error."""
@@ -55,44 +56,51 @@ def checkset_backend(lp, backend, eadbfile):
 
 
 def getntacl(lp, file, backend=None, eadbfile=None):
-    (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
-    if dbname is not None:
-        try:
-            attribute = backend_obj.wrap_getxattr(dbname, file,
-                xattr.XATTR_NTACL_NAME)
-        except Exception:
-            # FIXME: Don't catch all exceptions, just those related to opening 
-            # xattrdb
-            print "Fail to open %s" % dbname
+    if use_ntvfs:
+        (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
+        if dbname is not None:
+            try:
+                attribute = backend_obj.wrap_getxattr(dbname, file,
+                                                      xattr.XATTR_NTACL_NAME)
+            except Exception:
+                # FIXME: Don't catch all exceptions, just those related to opening 
+                # xattrdb
+                print "Fail to open %s" % dbname
+                attribute = samba.xattr_native.wrap_getxattr(file,
+                                                             xattr.XATTR_NTACL_NAME)
+        else:
             attribute = samba.xattr_native.wrap_getxattr(file,
-                xattr.XATTR_NTACL_NAME)
+                                                         xattr.XATTR_NTACL_NAME)
+            ntacl = ndr_unpack(xattr.NTACL, attribute)
+            return ntacl
     else:
-        attribute = samba.xattr_native.wrap_getxattr(file,
-            xattr.XATTR_NTACL_NAME)
-    ntacl = ndr_unpack(xattr.NTACL, attribute)
-    return ntacl
+        return smbd.get_nt_acl(file)
 
 
-def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
-    (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
-    ntacl = xattr.NTACL()
-    ntacl.version = 1
+def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True):
     sid = security.dom_sid(domsid)
     sd = security.descriptor.from_sddl(sddl, sid)
-    ntacl.info = sd
-    if dbname is not None:
-        try:
-            backend_obj.wrap_setxattr(dbname,
-                file, xattr.XATTR_NTACL_NAME, ndr_pack(ntacl))
-        except Exception:
-            # FIXME: Don't catch all exceptions, just those related to opening 
-            # xattrdb
-            print "Fail to open %s" % dbname
-            samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME, 
-                ndr_pack(ntacl))
+
+    if use_ntvfs:
+        (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
+        ntacl = xattr.NTACL()
+        ntacl.version = 1
+        ntacl.info = sd
+        if dbname is not None:
+            try:
+                backend_obj.wrap_setxattr(dbname,
+                                          file, xattr.XATTR_NTACL_NAME, ndr_pack(ntacl))
+            except Exception:
+                # FIXME: Don't catch all exceptions, just those related to opening 
+                # xattrdb
+                print "Fail to open %s" % dbname
+                samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME, 
+                                                 ndr_pack(ntacl))
+        else:
+            samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
+                                             ndr_pack(ntacl))
     else:
-        samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
-                ndr_pack(ntacl))
+        smbd.set_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL, sd)
 
 
 def ldapmask2filemask(ldm):

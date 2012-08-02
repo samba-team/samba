@@ -534,6 +534,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
 	push (@provision_options, "--function-level=\"$ctx->{functional_level}\"");
 	push (@provision_options, "--dns-backend=BIND9_DLZ");
+
 	if ($use_ntvfs) {
 	    push (@provision_options, "--use-ntvfs");
 	}
@@ -1205,7 +1206,7 @@ sub provision_fl2000dc($$)
 				   "samba2000.example.com",
 				   "2000",
 				   "locDCpass5",
-				   undef, "", 1);
+				   undef, "", "", 1);
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");

@@ -44,7 +44,8 @@ import ldb
 
 from samba.auth import system_session, admin_session
 import samba
-from samba.samba3 import smbd
+from samba.samba3 import smbd, passdb
+from samba.samba3 import param as s3param
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
 from samba import (
     Ldb,
@@ -1359,16 +1360,16 @@ SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 
 
-def set_dir_acl(path, acl, lp, domsid):
-    setntacl(lp, path, acl, domsid)
+def set_dir_acl(path, acl, lp, domsid, use_ntvfs):
+    setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs)
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
-            setntacl(lp, os.path.join(root, name), acl, domsid)
+            setntacl(lp, os.path.join(root, name), acl, domsid, use_ntvfs=use_ntvfs)
         for name in dirs:
-            setntacl(lp, os.path.join(root, name), acl, domsid)
+            setntacl(lp, os.path.join(root, name), acl, domsid, use_ntvfs=use_ntvfs)
 
 
-def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
+def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs):
     """Set ACL on the sysvol/<dnsname>/Policies folder and the policy
     folders beneath.
 
@@ -1382,7 +1383,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
 
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-    setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid))
+    setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid), use_ntvfs=use_ntvfs)
 
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
                         attrs=["cn", "nTSecurityDescriptor"],
@@ -1393,11 +1394,11 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp):
                          str(policy["nTSecurityDescriptor"])).as_sddl()
         policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         set_dir_acl(policy_path, dsacl2fsacl(acl, str(domainsid)), lp,
-                    str(domainsid))
+                    str(domainsid), use_ntvfs)
 
 
-def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
-    lp):
+def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain, domaindn,
+    lp, use_ntvfs):
     """Set the ACL for the sysvol share and the subfolders
 
     :param samdb: An LDB object on the SAM db
@@ -1409,27 +1410,49 @@ def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     :param domaindn: The DN of the domain (ie. DC=...)
     """
 
+    if not use_ntvfs:
+        # This will ensure that the smbd code we are running when setting ACLs is initialised with the smb.conf
+        s3conf = s3param.get_context()
+        s3conf.load(lp.configfile)
+        # ensure we are using the right samba4 passdb backend, no matter what
+        s3conf.set("passdb backend", "samba4:%s" % samdb.url)
+        # ensure that we init the samba4 backend, so the domain sid is marked in secrets.tdb
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+
+        # now ensure everything matches correctly, to avoid wierd issues
+        if passdb.get_global_sam_sid() != domainsid:
+            raise ProvisioningError('SID as seen by smbd [%s] does not match SID as seen by the provision script [%s]!' % (passdb.get_global_sam_sid(), domainsid))
+
+        domain_info = s4_passdb.domain_info()
+        if domain_info["dom_sid"] != domainsid:
+            raise ProvisioningError('SID as seen by pdb_samba4 [%s] does not match SID as seen by the provision script [%s]!' % (domain_info["dom_sid"], domainsid))
+
+        if domain_info["dns_domain"].upper() != dnsdomain.upper():
+            raise ProvisioningError('Realm as seen by pdb_samba4 [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
+
+
     try:
-        os.chown(sysvol, -1, gid)
+        if use_ntvfs:
+            os.chown(sysvol, -1, gid)
     except OSError:
         canchown = False
     else:
         canchown = True
 
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
-    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid))
+    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs)
     for root, dirs, files in os.walk(sysvol, topdown=False):
         for name in files:
-            if canchown:
+            if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid))
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs)
         for name in dirs:
-            if canchown:
+            if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid))
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs)
 
     # Set acls on Policy folder and policies folders
-    set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp)
+    set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs)
 
 
 def interface_ips_v4(lp):
@@ -1460,7 +1483,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    invocationid=None, machinepass=None, ntdsguid=None,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
-                   am_rodc=False, lp=None):
+                   am_rodc=False, lp=None, use_ntvfs=False):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
     # "How Core Group Policy Works"
@@ -1492,12 +1515,13 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                        next_rid=next_rid, dc_rid=dc_rid)
 
     if serverrole == "active directory domain controller":
+
         # Set up group policies (domain policy and domain controller
         # policy)
         create_default_gpo(paths.sysvol, names.dnsdomain, policyguid,
                            policyguid_dc)
-        setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.wheel_gid,
-                     domainsid, names.dnsdomain, names.domaindn, lp)
+        setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid, paths.wheel_gid,
+                     domainsid, names.dnsdomain, names.domaindn, lp, use_ntvfs)
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
                             realm=names.realm, dnsdomain=names.dnsdomain,
@@ -1719,6 +1743,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     paths.bind_gid = bind_gid
+    paths.root_uid = root_uid;
     paths.wheel_gid = wheel_gid
 
     if hostip is None:
@@ -1761,6 +1786,9 @@ def provision(logger, session_info, credentials, smbconf=None,
         os.makedirs(paths.sysvol, 0775)
 
     if not use_ntvfs and serverrole == "active directory domain controller":
+        s3conf = s3param.get_context()
+        s3conf.load(lp.configfile)
+
         if paths.sysvol is None:
             raise MissingShareError("sysvol", paths.smbconf)
 
@@ -1776,6 +1804,10 @@ def provision(logger, session_info, credentials, smbconf=None,
                 smbd.set_simple_acl(file.name, root_uid, wheel_gid)
             except Exception:
                 raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  Try the mounting the filesystem with the 'acl' option.")
+            try:
+                smbd.chown(file.name, root_uid, wheel_gid)
+            except Exception:
+                raise ProvisioningError("Unable to chown a file on your filesystem.  You may not be running provision as root.  ")
         finally:
             file.close()
 
@@ -1871,7 +1903,7 @@ def provision(logger, session_info, credentials, smbconf=None,
                     ntdsguid=ntdsguid, dns_backend=dns_backend,
                     dnspass=dnspass, serverrole=serverrole,
                     dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-                    lp=lp)
+                    lp=lp, use_ntvfs=use_ntvfs)
 
         create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,
