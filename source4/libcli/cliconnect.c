@@ -26,6 +26,7 @@
 #include "libcli/raw/raw_proto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "libcli/smb/smbXcli_base.h"
 
 /*
   wrapper around smbcli_sock_connect()
@@ -125,6 +126,7 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 	/* setup a tree connect */
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
+	tcon.tconx.in.flags |= TCONX_FLAG_EXTENDED_SIGNATURES;
 	if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		tcon.tconx.in.password = data_blob(NULL, 0);
 	} else if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
@@ -142,6 +144,10 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 	status = smb_raw_tcon(cli->tree, mem_ctx, &tcon);
 
 	cli->tree->tid = tcon.tconx.out.tid;
+
+	if (tcon.tconx.out.options & SMB_EXTENDED_SIGNATURES) {
+		smb1cli_session_protect_session_key(cli->tree->session->smbXcli);
+	}
 
 	talloc_free(mem_ctx);
 

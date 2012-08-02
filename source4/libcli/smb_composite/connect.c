@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "lib/util/util_net.h"
+#include "libcli/smb/smbXcli_base.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_SOCKET, 
@@ -71,6 +72,10 @@ static NTSTATUS connect_tcon(struct composite_context *c,
 
 	status = smb_raw_tcon_recv(state->req, c, state->io_tcon);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (state->io_tcon->tconx.out.options & SMB_EXTENDED_SIGNATURES) {
+		smb1cli_session_protect_session_key(io->out.tree->session->smbXcli);
+	}
 
 	io->out.tree->tid = state->io_tcon->tconx.out.tid;
 	if (state->io_tcon->tconx.out.dev_type) {
@@ -196,6 +201,7 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	/* connect to a share using a tree connect */
 	state->io_tcon->generic.level = RAW_TCON_TCONX;
 	state->io_tcon->tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
+	state->io_tcon->tconx.in.flags |= TCONX_FLAG_EXTENDED_SIGNATURES;
 	state->io_tcon->tconx.in.password = data_blob(NULL, 0);	
 	
 	state->io_tcon->tconx.in.path = talloc_asprintf(state->io_tcon, 
