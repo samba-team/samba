@@ -373,7 +373,17 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			action = 1;
 		}
 
+		/*
+		 * Keep the application key
+		 */
+		data_blob_clear_free(&session_info->session_key);
+		session_info->session_key =
+			session->global->auth_session_info->session_key;
+		talloc_steal(session_info, session_info->session_key.data);
+		TALLOC_FREE(session->global->auth_session_info);
+
 		session->compat->session_info = session_info;
+
 		session->compat->vuid = session->global->session_wire_id;
 
 		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
@@ -386,8 +396,8 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				      session_info->info->domain_name);
 
 		session->status = NT_STATUS_OK;
-		TALLOC_FREE(session->global->auth_session_info);
-		session->global->auth_session_info = session_info;
+		session->global->auth_session_info = talloc_move(session->global,
+								 &session_info);
 		session->global->auth_session_info_seqnum += 1;
 		session->global->channels[0].auth_session_info_seqnum =
 			session->global->auth_session_info_seqnum;
