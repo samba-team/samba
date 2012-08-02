@@ -1,6 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
-   SMB NT Security Descriptor / Unix permission conversion.
+   Set NT and POSIX ACLs and other VFS operations from Python 
+   
+   Copyrigyt (C) Andrew Bartlett 2012
    Copyright (C) Jeremy Allison 1994-2009.
    Copyright (C) Andreas Gruenbacher 2002.
    Copyright (C) Simo Sorce <idra@samba.org> 2009.
