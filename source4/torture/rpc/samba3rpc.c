@@ -1727,7 +1727,7 @@ static NTSTATUS secondary_tcon(struct torture_context *tctx,
 	}
 
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = sharename;
 	tcon.tconx.in.device = "?????";

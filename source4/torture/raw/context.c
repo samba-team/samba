@@ -292,7 +292,7 @@ static bool test_tree(struct torture_context *tctx, struct smbcli_state *cli)
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";	
@@ -412,7 +412,7 @@ static bool test_tree_ulogoff(struct torture_context *tctx, struct smbcli_state 
 	torture_comment(tctx, "create a tree context on the with vuid1\n");
 	tree = smbcli_tree_init(session1, tctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";
@@ -765,7 +765,7 @@ static bool test_pid_2tcon(struct torture_context *tctx,
 	tree = smbcli_tree_init(cli->session, tctx, false);
 
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";	

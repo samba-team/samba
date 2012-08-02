@@ -807,7 +807,7 @@ static bool test_async(struct torture_context *tctx,
 	host  = torture_setting_string(tctx, "host", NULL);
 	tree = smbcli_tree_init(session, tctx, false);
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = talloc_asprintf(tctx, "\\\\%s\\%s", host, share);
 	tcon.tconx.in.device = "A:";

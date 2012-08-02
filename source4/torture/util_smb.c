@@ -868,7 +868,7 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 	}
 
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 
 	/* Ignore share mode security here */
 	tcon.tconx.in.password = data_blob(NULL, 0);
