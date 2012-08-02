@@ -305,6 +305,29 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+/*
+  set a simple ACL on a file, as a test
+ */
+static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
+{
+	char *fname;
+	int security_info_sent;
+	PyObject *py_sd;
+	struct security_descriptor *sd;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+
+	if (!PyArg_ParseTuple(args, "si", &fname, &security_info_sent))
+		return NULL;
+	
+	sd = get_nt_acl_no_snum(tmp_ctx, fname);
+
+	py_sd = py_return_ndr_struct("samba.dcerpc.security", "security_descriptor", sd, sd);
+
+	talloc_free(tmp_ctx);
+
+	return py_sd;
+}
+
 static PyMethodDef py_smbd_methods[] = {
 	{ "have_posix_acls",
 		(PyCFunction)py_smbd_have_posix_acls, METH_VARARGS,
@@ -314,6 +337,9 @@ static PyMethodDef py_smbd_methods[] = {
 		NULL },
 	{ "set_nt_acl",
 		(PyCFunction)py_smbd_set_nt_acl, METH_VARARGS,
+		NULL },
+	{ "get_nt_acl",
+		(PyCFunction)py_smbd_get_nt_acl, METH_VARARGS,
 		NULL },
 	{ NULL }
 };
