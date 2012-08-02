@@ -110,7 +110,7 @@ static NTSTATUS connect_session_setup_anon(struct composite_context *c,
 
 	/* connect to a share using a tree connect */
 	state->io_tcon->generic.level = RAW_TCON_TCONX;
-	state->io_tcon->tconx.in.flags = 0;
+	state->io_tcon->tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	state->io_tcon->tconx.in.password = data_blob(NULL, 0);	
 	
 	state->io_tcon->tconx.in.path = talloc_asprintf(state->io_tcon, 
@@ -195,7 +195,7 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 
 	/* connect to a share using a tree connect */
 	state->io_tcon->generic.level = RAW_TCON_TCONX;
-	state->io_tcon->tconx.in.flags = 0;
+	state->io_tcon->tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	state->io_tcon->tconx.in.password = data_blob(NULL, 0);	
 	
 	state->io_tcon->tconx.in.path = talloc_asprintf(state->io_tcon, 

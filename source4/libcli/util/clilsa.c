@@ -68,7 +68,7 @@ static NTSTATUS smblsa_connect(struct smbcli_state *cli)
 
 	/* connect to IPC$ */
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = "ipc$";
 	tcon.tconx.in.device = "IPC";	

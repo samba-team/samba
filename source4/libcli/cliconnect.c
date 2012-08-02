@@ -124,7 +124,7 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 
 	/* setup a tree connect */
 	tcon.generic.level = RAW_TCON_TCONX;
-	tcon.tconx.in.flags = 0;
+	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
 	if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		tcon.tconx.in.password = data_blob(NULL, 0);
 	} else if (cli->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
