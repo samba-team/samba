@@ -90,7 +90,7 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	}
 
 	if (!(conn->params = talloc(conn, struct share_params))) {
-		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
+		DEBUG(0,("set_nt_acl_no_snum: talloc() failed!\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
