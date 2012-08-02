@@ -203,6 +203,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
 	int instanceType;
+	struct ldb_message_element *instanceType_e = NULL;
 	struct ldb_val guid_value;
 	struct ldb_val parent_guid_value;
 	NTTIME whenChanged = 0;
@@ -289,6 +290,13 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			continue;
 		}
 
+		if (a->attid == DRSUAPI_ATTID_instanceType) {
+			if (instanceType_e != NULL) {
+				return WERR_FOOBAR;
+			}
+			instanceType_e = e;
+		}
+
 		for (j=0; j<a->value_ctr.num_values; j++) {
 			status = drsuapi_decrypt_attribute(a->value_ctr.values[j].blob, gensec_skey, rid, a);
 			W_ERROR_NOT_OK_RETURN(status);
@@ -353,6 +361,10 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	}
 
+	if (instanceType_e == NULL) {
+		return WERR_FOOBAR;
+	}
+
 	instanceType = ldb_msg_find_attr_as_int(msg, "instanceType", 0);
 	if (dsdb_repl_flags & DSDB_REPL_FLAG_PARTIAL_REPLICA) {
 		/* the instanceType type for partial_replica
@@ -361,7 +373,16 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		*/
 		if (instanceType & INSTANCE_TYPE_WRITE) {
 			instanceType &= ~INSTANCE_TYPE_WRITE;
-			ldb_msg_remove_attr(msg, "instanceType");
+			/*
+			 * Make sure we do not change the order
+			 * of msg->elements!
+			 *
+			 * That's why we use
+			 * instanceType_e->num_values = 0
+			 * instead of
+			 * ldb_msg_remove_attr(msg, "instanceType");
+			 */
+			instanceType_e->num_values = 0;
 			if (ldb_msg_add_fmt(msg, "instanceType", "%d", instanceType) != LDB_SUCCESS) {
 				return WERR_INTERNAL_ERROR;
 			}
