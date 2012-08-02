@@ -1585,7 +1585,7 @@ bld.SAMBA3_BINARY('vlp',
 
 bld.SAMBA3_PYTHON('pysmbd',
                   source='smbd/pysmbd.c',
-                  deps='smbd_base',
+                  deps='smbd_base pyrpc_util',
                   realname='samba/samba3/smbd.so'
                   )
 
