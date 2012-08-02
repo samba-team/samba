@@ -47,6 +47,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "../source3/libsmb/smb2cli.h"
+#include "libcli/smb/smbXcli_base.h"
 
 /*
  * This tests a RPC call using an invalid vuid
@@ -1728,6 +1729,7 @@ static NTSTATUS secondary_tcon(struct torture_context *tctx,
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
+	tcon.tconx.in.flags |= TCONX_FLAG_EXTENDED_SIGNATURES;
 	tcon.tconx.in.password = data_blob(NULL, 0);
 	tcon.tconx.in.path = sharename;
 	tcon.tconx.in.device = "?????";
@@ -1741,6 +1743,11 @@ static NTSTATUS secondary_tcon(struct torture_context *tctx,
 	}
 
 	result->tid = tcon.tconx.out.tid;
+
+	if (tcon.tconx.out.options & SMB_EXTENDED_SIGNATURES) {
+		smb1cli_session_protect_session_key(result->session->smbXcli);
+	}
+
 	result = talloc_steal(mem_ctx, result);
 	talloc_set_destructor(result, destroy_tree);
 	talloc_free(tmp_ctx);

@@ -35,7 +35,7 @@
 #include "libcli/security/security.h"
 #include "libcli/util/clilsa.h"
 #include "torture/util.h"
-
+#include "libcli/smb/smbXcli_base.h"
 
 /**
   setup a directory ready for a test
@@ -869,6 +869,7 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = TCONX_FLAG_EXTENDED_RESPONSE;
+	tcon.tconx.in.flags |= TCONX_FLAG_EXTENDED_SIGNATURES;
 
 	/* Ignore share mode security here */
 	tcon.tconx.in.password = data_blob(NULL, 0);
@@ -882,6 +883,11 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 	}
 
 	result->tid = tcon.tconx.out.tid;
+
+	if (tcon.tconx.out.options & SMB_EXTENDED_SIGNATURES) {
+		smb1cli_session_protect_session_key(result->session->smbXcli);
+	}
+
 	*res = talloc_steal(mem_ctx, result);
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
