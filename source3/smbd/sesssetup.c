@@ -905,6 +905,61 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
+	if (session_info->session_key.length > 0) {
+		uint8_t session_key[16];
+
+		/*
+		 * Note: the SMB1 signing key is not truncated to 16 byte!
+		 */
+		session->global->signing_key =
+			data_blob_dup_talloc(session->global,
+					     session_info->session_key);
+		if (session->global->signing_key.data == NULL) {
+			data_blob_free(&nt_resp);
+			data_blob_free(&lm_resp);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
+
+		/*
+		 * The application key is truncated/padded to 16 bytes
+		 */
+		ZERO_STRUCT(session_key);
+		memcpy(session_key, session->global->signing_key.data,
+		       MIN(session->global->signing_key.length,
+			   sizeof(session_key)));
+		session->global->application_key =
+			data_blob_talloc(session->global,
+					 session_key,
+					 sizeof(session_key));
+		ZERO_STRUCT(session_key);
+		if (session->global->application_key.data == NULL) {
+			data_blob_free(&nt_resp);
+			data_blob_free(&lm_resp);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
+
+		/*
+		 * Place the application key into the session_info
+		 */
+		data_blob_clear_free(&session_info->session_key);
+		session_info->session_key = data_blob_dup_talloc(session_info,
+						session->global->application_key);
+		if (session_info->session_key.data == NULL) {
+			data_blob_free(&nt_resp);
+			data_blob_free(&lm_resp);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
+	}
+
 	session->compat = talloc_zero(session, struct user_struct);
 	if (session->compat == NULL) {
 		data_blob_free(&nt_resp);
@@ -938,13 +993,16 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (srv_is_signing_negotiated(sconn) && action == 0) {
+	if (srv_is_signing_negotiated(sconn) &&
+	    action == 0 &&
+	    session->global->signing_key.length > 0)
+	{
 		/*
 		 * Try and turn on server signing on the first non-guest
 		 * sessionsetup.
 		 */
 		srv_set_signing(sconn,
-			session_info->session_key,
+			session->global->signing_key,
 			nt_resp.data ? nt_resp : lm_resp);
 	}
 
