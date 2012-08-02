@@ -6,10 +6,6 @@
 
 This is the latest stable release of Samba 3.5.
 
-Major enhancements in Samba 3.5.17 include:
-
-o  
-
 
 Changes since 3.5.16:
 ---------------------
