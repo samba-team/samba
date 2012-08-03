@@ -276,7 +276,8 @@ flush_rules_and_routes ()
 
 # Add any missing routes.  Some might have gone missing if, for
 # example, all IPs on the network were removed (possibly if the
-# primary was removed).
+# primary was removed).  If $1 is "force" then (re-)add all the
+# routes.
 add_missing_routes ()
 {
     ctdb ip -v -Y | {
@@ -292,7 +293,8 @@ add_missing_routes ()
 	    [ -n "$_iface" ] || continue
 	    
 	    _table_id="${table_id_prefix}${_ip}"
-	    if [ -z "$(ip route show table $_table_id 2>/dev/null)" ]  ; then
+	    if [ -z "$(ip route show table $_table_id 2>/dev/null)" -o \
+		"$1" = "force" ]  ; then
 		add_routing_for_ip "$_iface" "$_ip"
 	    fi
 	done
@@ -326,7 +328,20 @@ remove_bogus_routes ()
 
 ######################################################################
 
+service_reconfigure ()
+{
+    add_missing_routes "force"
+    remove_bogus_routes
+
+    # flush our route cache
+    set_proc sys/net/ipv4/route/flush 1
+}
+
+######################################################################
+
 ctdb_check_args "$@"
+
+ctdb_service_check_reconfigure
 
 case "$1" in
     startup)
