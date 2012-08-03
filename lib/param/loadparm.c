@@ -66,7 +66,6 @@
 #include "lib/param/s3_param.h"
 #include "lib/util/bitmap.h"
 #include "libcli/smb/smb_constants.h"
-#include "source4/dns_server/dns_update.h"
 
 #define standard_sub_basic talloc_strdup
 

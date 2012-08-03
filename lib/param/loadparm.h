@@ -176,6 +176,9 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 #define ADS_AUTH_SASL_FORCE       0x0080
 #define ADS_AUTH_USER_CREDS       0x0100
 
+/* DNS update settings */
+enum dns_update_settings {DNS_UPDATE_OFF, DNS_UPDATE_ON, DNS_UPDATE_SIGNED};
+
 /* LDAP SSL options */
 enum ldap_ssl_types {LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 

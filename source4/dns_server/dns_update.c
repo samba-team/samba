@@ -26,11 +26,11 @@
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include <ldb.h>
 #include "param/param.h"
+#include "param/loadparm.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "smbd/service_task.h"
 #include "dns_server/dns_server.h"
-#include "dns_server/dns_update.h"
 
 static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,

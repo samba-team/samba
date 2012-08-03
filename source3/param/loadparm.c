@@ -68,7 +68,6 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "../lib/util/bitmap.h"
-#include "../source4/dns_server/dns_update.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
