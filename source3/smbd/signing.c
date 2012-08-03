@@ -32,29 +32,35 @@ bool srv_check_sign_mac(struct smbd_server_connection *conn,
 			const char *inbuf, uint32_t *seqnum,
 			bool trusted_channel)
 {
+	const uint8_t *inhdr;
+	size_t len;
+
 	/* Check if it's a non-session message. */
 	if(CVAL(inbuf,0)) {
 		return true;
 	}
 
+	len = smb_len(inbuf);
+	inhdr = (const uint8_t *)inbuf + NBT_HDR_SIZE;
+
 	if (trusted_channel) {
 		NTSTATUS status;
 
-		if (smb_len(inbuf) < (smb_ss_field + 8 - 4)) {
+		if (len < (HDR_SS_FIELD + 8)) {
 			DEBUG(1,("smb_signing_check_pdu: Can't check signature "
 				 "on short packet! smb_len = %u\n",
-				 smb_len(inbuf)));
+				 (unsigned)len));
 			return false;
 		}
 
-		status = NT_STATUS(IVAL(inbuf, smb_ss_field + 4));
+		status = NT_STATUS(IVAL(inhdr, HDR_SS_FIELD + 4));
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1,("smb_signing_check_pdu: trusted channel passed %s\n",
 				 nt_errstr(status)));
 			return false;
 		}
 
-		*seqnum = IVAL(inbuf, smb_ss_field);
+		*seqnum = IVAL(inhdr, HDR_SS_FIELD);
 		return true;
 	}
 
