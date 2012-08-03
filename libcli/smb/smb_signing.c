@@ -140,10 +140,11 @@ static bool smb_signing_good(struct smb_signing_state *si,
 }
 
 static void smb_signing_md5(const DATA_BLOB *mac_key,
-			    const uint8_t *buf, uint32_t seq_number,
+			    const uint8_t *hdr, size_t len,
+			    uint32_t seq_number,
 			    uint8_t calc_md5_mac[16])
 {
-	const size_t offset_end_of_sig = (NBT_HDR_SIZE + HDR_SS_FIELD + 8);
+	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
 	uint8_t sequence_buf[8];
 	struct MD5Context md5_ctx;
 
@@ -170,14 +171,14 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 	MD5Update(&md5_ctx, mac_key->data, mac_key->length);
 
 	/* copy in the first bit of the SMB header */
-	MD5Update(&md5_ctx, buf + NBT_HDR_SIZE, HDR_SS_FIELD);
+	MD5Update(&md5_ctx, hdr, HDR_SS_FIELD);
 
 	/* copy in the sequence number, instead of the signature */
 	MD5Update(&md5_ctx, sequence_buf, sizeof(sequence_buf));
 
 	/* copy in the rest of the packet in, skipping the signature */
-	MD5Update(&md5_ctx, buf + offset_end_of_sig, 
-		  smb_len_nbt(buf) - (offset_end_of_sig - 4));
+	MD5Update(&md5_ctx, hdr + offset_end_of_sig,
+		  len - (offset_end_of_sig));
 
 	/* calculate the MD5 sig */
 	MD5Final(calc_md5_mac, &md5_ctx);
@@ -220,6 +221,8 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 	uint8_t calc_md5_mac[16];
 	uint8_t com;
 	uint8_t flags;
+	uint8_t *outhdr = outbuf + NBT_HDR_SIZE;
+	size_t len = smb_len_nbt(outbuf);
 
 	if (si->mac_key.length == 0) {
 		if (!si->negotiated) {
@@ -228,18 +231,18 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 	}
 
 	/* JRA Paranioa test - we should be able to get rid of this... */
-	if (smb_len_nbt(outbuf) < (HDR_SS_FIELD + 8)) {
+	if (len < (HDR_SS_FIELD + 8)) {
 		DEBUG(1,("smb_signing_sign_pdu: Logic error. "
 			 "Can't check signature on short packet! smb_len = %u\n",
-			 smb_len_nbt(outbuf)));
+			 (unsigned)len));
 		abort();
 	}
 
-	com = SVAL(outbuf,NBT_HDR_SIZE+HDR_COM);
-	flags = SVAL(outbuf,NBT_HDR_SIZE+HDR_FLG);
+	com = SVAL(outhdr, HDR_COM);
+	flags = SVAL(outhdr, HDR_FLG);
 
 	if (!(flags & FLAG_REPLY)) {
-		uint16_t flags2 = SVAL(outbuf,NBT_HDR_SIZE+HDR_FLG2);
+		uint16_t flags2 = SVAL(outhdr, HDR_FLG2);
 		/*
 		 * If this is a request, specify what is
 		 * supported or required by the client
@@ -250,7 +253,7 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 		if (si->negotiated && si->mandatory) {
 			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED;
 		}
-		SSVAL(outbuf, NBT_HDR_SIZE+HDR_FLG2, flags2);
+		SSVAL(outhdr, HDR_FLG2, flags2);
 	}
 
 	if (si->mac_key.length == 0) {
@@ -262,16 +265,16 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 			memset(calc_md5_mac, 0, 8);
 		}
 	} else {
-		smb_signing_md5(&si->mac_key, outbuf,
+		smb_signing_md5(&si->mac_key, outhdr, len,
 				seqnum, calc_md5_mac);
 	}
 
 	DEBUG(10, ("smb_signing_sign_pdu: sent SMB signature of\n"));
 	dump_data(10, calc_md5_mac, 8);
 
-	memcpy(&outbuf[NBT_HDR_SIZE+HDR_SS_FIELD], calc_md5_mac, 8);
+	memcpy(&outhdr[HDR_SS_FIELD], calc_md5_mac, 8);
 
-/*	outbuf[NBT_HDR_SIZE+HDR_SS_FIELD+2]=0;
+/*	outhdr[HDR_SS_FIELD+2]=0;
 	Uncomment this to test if the remote server actually verifies signatures...*/
 }
 
@@ -281,22 +284,24 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 	bool good;
 	uint8_t calc_md5_mac[16];
 	const uint8_t *reply_sent_mac;
+	const uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
+	size_t len = smb_len_nbt(inbuf);
 
 	if (si->mac_key.length == 0) {
 		return true;
 	}
 
-	if (smb_len_nbt(inbuf) < (HDR_SS_FIELD + 8)) {
+	if (len < (HDR_SS_FIELD + 8)) {
 		DEBUG(1,("smb_signing_check_pdu: Can't check signature "
 			 "on short packet! smb_len = %u\n",
-			 smb_len_nbt(inbuf)));
+			 (unsigned)len));
 		return false;
 	}
 
-	smb_signing_md5(&si->mac_key, inbuf,
+	smb_signing_md5(&si->mac_key, inhdr, len,
 			seqnum, calc_md5_mac);
 
-	reply_sent_mac = &inbuf[NBT_HDR_SIZE+HDR_SS_FIELD];
+	reply_sent_mac = &inhdr[HDR_SS_FIELD];
 	good = (memcmp(reply_sent_mac, calc_md5_mac, 8) == 0);
 
 	if (!good) {
@@ -310,7 +315,7 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 		dump_data(5, reply_sent_mac, 8);
 
 		for (i = -sign_range; i < sign_range; i++) {
-			smb_signing_md5(&si->mac_key, inbuf,
+			smb_signing_md5(&si->mac_key, inhdr, len,
 					seqnum+i, calc_md5_mac);
 			if (memcmp(reply_sent_mac, calc_md5_mac, 8) == 0) {
 				DEBUG(0,("smb_signing_check_pdu: "
