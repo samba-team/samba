@@ -269,7 +269,7 @@ def set_options(opt):
 
     fhs_help  = "Use FHS-compliant paths (default no)\n"
     fhs_help += "You should consider using this together with:\n"
-    fhs_help += "--prefix=/usr --sysconfdir=/etc --locatestatedir=/var"
+    fhs_help += "--prefix=/usr --sysconfdir=/etc --localstatedir=/var"
     opt_group.add_option('--enable-fhs', help=fhs_help,
                    action="store_true", dest='ENABLE_FHS', default=False)
 
