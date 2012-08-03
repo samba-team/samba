@@ -66,7 +66,7 @@ bool srv_check_sign_mac(struct smbd_server_connection *conn,
 
 	*seqnum = smb_signing_next_seqnum(conn->smb1.signing_state, false);
 	return smb_signing_check_pdu(conn->smb1.signing_state,
-				     (const uint8_t *)inbuf,
+				     inhdr, len,
 				     *seqnum);
 }
 
@@ -77,12 +77,18 @@ bool srv_check_sign_mac(struct smbd_server_connection *conn,
 void srv_calculate_sign_mac(struct smbd_server_connection *conn,
 			    char *outbuf, uint32_t seqnum)
 {
+	uint8_t *outhdr;
+	size_t len;
+
 	/* Check if it's a non-session message. */
 	if(CVAL(outbuf,0)) {
 		return;
 	}
 
-	smb_signing_sign_pdu(conn->smb1.signing_state, (uint8_t *)outbuf, seqnum);
+	len = smb_len(outbuf);
+	outhdr = (uint8_t *)outbuf + NBT_HDR_SIZE;
+
+	smb_signing_sign_pdu(conn->smb1.signing_state, outhdr, len, seqnum);
 }
 
 

@@ -216,13 +216,12 @@ void smb_signing_cancel_reply(struct smb_signing_state *si, bool oneway)
 }
 
 void smb_signing_sign_pdu(struct smb_signing_state *si,
-			  uint8_t *outbuf, uint32_t seqnum)
+			  uint8_t *outhdr, size_t len,
+			  uint32_t seqnum)
 {
 	uint8_t calc_md5_mac[16];
 	uint8_t com;
 	uint8_t flags;
-	uint8_t *outhdr = outbuf + NBT_HDR_SIZE;
-	size_t len = smb_len_nbt(outbuf);
 
 	if (si->mac_key.length == 0) {
 		if (!si->negotiated) {
@@ -279,13 +278,12 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 }
 
 bool smb_signing_check_pdu(struct smb_signing_state *si,
-			   const uint8_t *inbuf, uint32_t seqnum)
+			   const uint8_t *inhdr, size_t len,
+			   uint32_t seqnum)
 {
 	bool good;
 	uint8_t calc_md5_mac[16];
 	const uint8_t *reply_sent_mac;
-	const uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
-	size_t len = smb_len_nbt(inbuf);
 
 	if (si->mac_key.length == 0) {
 		return true;

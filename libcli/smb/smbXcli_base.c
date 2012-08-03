@@ -633,7 +633,10 @@ bool smb1cli_conn_activate_signing(struct smbXcli_conn *conn,
 bool smb1cli_conn_check_signing(struct smbXcli_conn *conn,
 				const uint8_t *buf, uint32_t seqnum)
 {
-	return smb_signing_check_pdu(conn->smb1.signing, buf, seqnum);
+	const uint8_t *hdr = buf + NBT_HDR_SIZE;
+	size_t len = smb_len_nbt(buf);
+
+	return smb_signing_check_pdu(conn->smb1.signing, hdr, len, seqnum);
 }
 
 bool smb1cli_conn_signing_is_active(struct smbXcli_conn *conn)
@@ -1339,15 +1342,17 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 
 	frame = talloc_stackframe();
 
-	buf = smbXcli_iov_concat(frame, iov, iov_count);
+	buf = smbXcli_iov_concat(frame, &iov[1], iov_count - 1);
 	if (buf == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	*seqnum = smb_signing_next_seqnum(conn->smb1.signing,
 					  one_way_seqnum);
-	smb_signing_sign_pdu(conn->smb1.signing, buf, *seqnum);
-	memcpy(iov[1].iov_base, buf+4, iov[1].iov_len);
+	smb_signing_sign_pdu(conn->smb1.signing,
+			     buf, talloc_get_size(buf),
+			     *seqnum);
+	memcpy(iov[1].iov_base, buf, iov[1].iov_len);
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
@@ -1776,7 +1781,8 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	uint8_t cmd;
 	uint16_t mid;
 	bool oplock_break;
-	const uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
+	uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
+	size_t len = smb_len_nbt(inbuf);
 	struct iovec *iov = NULL;
 	int num_iov = 0;
 	struct tevent_req **chain = NULL;
@@ -1804,8 +1810,8 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			}
 		}
 
-		state->smb1.recv_iov[0].iov_base = (void *)(inbuf + NBT_HDR_SIZE);
-		state->smb1.recv_iov[0].iov_len = smb_len_nbt(inbuf);
+		state->smb1.recv_iov[0].iov_base = (void *)(inhdr);
+		state->smb1.recv_iov[0].iov_len = len;
 		ZERO_STRUCT(state->smb1.recv_iov[1]);
 		ZERO_STRUCT(state->smb1.recv_iov[2]);
 
@@ -1852,6 +1858,8 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 				   nt_errstr(status)));
 			return status;
 		}
+		inhdr = inbuf + NBT_HDR_SIZE;
+		len = smb_len_nbt(inbuf);
 	}
 
 	mid = SVAL(inhdr, HDR_MID);
@@ -1873,7 +1881,7 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		/*
 		 * Paranoia checks that this is really an oplock break request.
 		 */
-		oplock_break = (smb_len_nbt(inbuf) == 51); /* hdr + 8 words */
+		oplock_break = (len == 51); /* hdr + 8 words */
 		oplock_break &= ((CVAL(inhdr, HDR_FLG) & FLAG_REPLY) == 0);
 		oplock_break &= (CVAL(inhdr, HDR_COM) == SMBlockingX);
 		oplock_break &= (SVAL(inhdr, HDR_VWV+VWV(6)) == 0);
@@ -1890,7 +1898,7 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 
 	if (!oplock_break /* oplock breaks are not signed */
 	    && !smb_signing_check_pdu(conn->smb1.signing,
-				      inbuf, state->smb1.seqnum+1)) {
+				      inhdr, len, state->smb1.seqnum+1)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
