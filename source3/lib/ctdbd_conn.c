@@ -760,7 +760,7 @@ NTSTATUS ctdbd_messaging_send(struct ctdbd_connection *conn,
 	status = ctdbd_messaging_send_blob(conn, dst_vnn, dst_srvid,
 					   blob.data, blob.length);
 	TALLOC_FREE(blob.data);
-	return NT_STATUS_OK;
+	return status;
 }
 
 NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
