@@ -788,6 +788,32 @@ class dc_join(object):
         for nc in ctx.full_nc_list:
             ctx.send_DsReplicaUpdateRefs(nc)
 
+        if ctx.RODC:
+            print "Setting RODC invocationId"
+            ctx.local_samdb.set_invocation_id(str(ctx.invocation_id))
+            ctx.local_samdb.set_opaque_integer("domainFunctionality",
+                                               ctx.behavior_version)
+            m = ldb.Message()
+            m.dn = ldb.Dn(ctx.local_samdb, "%s" % ctx.ntds_dn)
+            m["invocationId"] = ldb.MessageElement(ndr_pack(ctx.invocation_id),
+                                                   ldb.FLAG_MOD_REPLACE,
+                                                   "invocationId")
+            ctx.local_samdb.modify(m)
+
+            # Note: as RODC the invocationId is only stored
+            # on the RODC itself, the other DCs never see it.
+            #
+            # Thats is why we fix up the replPropertyMetaData stamp
+            # for the 'invocationId' attribute, we need to change
+            # the 'version' to '0', this is what windows 2008r2 does as RODC
+            #
+            # This means if the object on a RWDC ever gets a invocationId
+            # attribute, it will have version '1' (or higher), which will
+            # will overwrite the RODC local value.
+            ctx.local_samdb.set_attribute_replmetadata_version(m.dn,
+                                                               "invocationId",
+                                                               0)
+
         print "Setting isSynchronized and dsServiceName"
         m = ldb.Message()
         m.dn = ldb.Dn(ctx.local_samdb, '@ROOTDSE')
