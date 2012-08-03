@@ -811,6 +811,44 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	return True;
 }
 
+bool mark_share_mode_disconnected(struct share_mode_lock *lck,
+				  struct files_struct *fsp)
+{
+	struct share_mode_entry entry, *e;
+
+	if (lck->data->num_share_modes != 1) {
+		return false;
+	}
+
+	if (fsp->op == NULL) {
+		return false;
+	}
+	if (!fsp->op->global->durable) {
+		return false;
+	}
+
+	/* Don't care about the pid owner being correct here - just a search. */
+	fill_share_mode_entry(&entry, fsp, (uid_t)-1, 0, NO_OPLOCK);
+
+	e = find_share_mode_entry(lck->data, &entry);
+	if (e == NULL) {
+		return false;
+	}
+
+	DEBUG(10, ("Marking share mode entry disconnected for durable handle\n"));
+
+	server_id_set_disconnected(&e->pid);
+
+	/*
+	 * On reopen the caller needs to check that
+	 * the client comes with the correct handle.
+	 */
+	e->share_file_id = fsp->op->global->open_persistent_id;
+
+	lck->data->modified = true;
+	return true;
+}
+
 void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 			     struct server_id pid)
 {

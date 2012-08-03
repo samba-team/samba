@@ -175,6 +175,8 @@ void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
 		       struct timeval request_time,
 		       struct server_id pid, struct file_id id);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
+bool mark_share_mode_disconnected(struct share_mode_lock *lck,
+				  struct files_struct *fsp);
 void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 			     struct server_id pid);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
