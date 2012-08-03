@@ -721,7 +721,10 @@ void reply_tcon_and_X(struct smb_request *req)
 	int passlen;
 	char *path = NULL;
 	const char *p, *q;
-	uint16 tcon_flags;
+	uint16_t tcon_flags;
+	struct smbXsrv_session *session = NULL;
+	NTTIME now = timeval_to_nttime(&req->request_time);
+	bool session_key_updated = false;
 	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBtconX);
@@ -812,11 +815,92 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	DEBUG(4,("Client requested device type [%s] for share [%s]\n", client_devicetype, service));
 
+	nt_status = smb1srv_session_lookup(req->sconn->conn,
+					   req->vuid, now, &session);
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_USER_SESSION_DELETED)) {
+		reply_force_doserror(req, ERRSRV, ERRbaduid);
+		END_PROFILE(SMBtconX);
+		return;
+	}
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		reply_nterror(req, nt_status);
+		END_PROFILE(SMBtconX);
+		return;
+	}
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		END_PROFILE(SMBtconX);
+		return;
+	}
+
+	if (session->global->auth_session_info == NULL) {
+		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+		END_PROFILE(SMBtconX);
+		return;
+	}
+
+	/*
+	 * If there is no application key defined yet
+	 * we create one.
+	 *
+	 * This means we setup the application key on the
+	 * first tcon that happens via the given session.
+	 *
+	 * Once the application key is defined, it does not
+	 * change any more.
+	 */
+	if (session->global->application_key.length == 0 &&
+	    session->global->signing_key.length > 0)
+	{
+		struct smbXsrv_session *x = session;
+		struct auth_session_info *session_info =
+			session->global->auth_session_info;
+		uint8_t session_key[16];
+
+		ZERO_STRUCT(session_key);
+		memcpy(session_key, x->global->signing_key.data,
+		       MIN(x->global->signing_key.length, sizeof(session_key)));
+
+		/*
+		 * The application key is truncated/padded to 16 bytes
+		 */
+		x->global->application_key = data_blob_talloc(x->global,
+							     session_key,
+							     sizeof(session_key));
+		ZERO_STRUCT(session_key);
+		if (x->global->application_key.data == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBtconX);
+			return;
+		}
+
+		/*
+		 * Place the application key into the session_info
+		 */
+		data_blob_clear_free(&session_info->session_key);
+		session_info->session_key = data_blob_dup_talloc(session_info,
+						x->global->application_key);
+		if (session_info->session_key.data == NULL) {
+			data_blob_clear_free(&x->global->application_key);
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBtconX);
+			return;
+		}
+		session_key_updated = true;
+	}
+
 	conn = make_connection(sconn, service, client_devicetype,
 			       req->vuid, &nt_status);
 	req->conn =conn;
 
 	if (!conn) {
+		if (session_key_updated) {
+			struct smbXsrv_session *x = session;
+			struct auth_session_info *session_info =
+				session->global->auth_session_info;
+			data_blob_clear_free(&x->global->application_key);
+			data_blob_clear_free(&session_info->session_key);
+		}
 		reply_nterror(req, nt_status);
 		END_PROFILE(SMBtconX);
 		return;

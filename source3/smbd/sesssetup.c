@@ -301,38 +301,10 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			}
 
 			/*
-			 * The application key is truncated/padded to 16 bytes
-			 */
-			ZERO_STRUCT(session_key);
-			memcpy(session_key, x->global->signing_key.data,
-			       MIN(x->global->signing_key.length,
-				   sizeof(session_key)));
-			x->global->application_key =
-				data_blob_talloc(x->global,
-						 session_key,
-						 sizeof(session_key));
-			ZERO_STRUCT(session_key);
-			if (x->global->application_key.data == NULL) {
-				data_blob_free(&out_blob);
-				TALLOC_FREE(session);
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-
-			/*
-			 * Place the application key into the session_info
+			 * clear the session key
+			 * the first tcon will add setup the application key
 			 */
 			data_blob_clear_free(&session_info->session_key);
-			session_info->session_key =
-				data_blob_dup_talloc(session_info,
-						     x->global->application_key);
-			if (session_info->session_key.data == NULL) {
-				data_blob_clear_free(&x->global->application_key);
-				data_blob_free(&out_blob);
-				TALLOC_FREE(session);
-				reply_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
 		}
 
 		session->compat = talloc_zero(session, struct user_struct);
