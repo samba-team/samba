@@ -151,9 +151,16 @@ void file_close_conn(connection_struct *conn)
 
 	for (fsp=conn->sconn->files; fsp; fsp=next) {
 		next = fsp->next;
-		if (fsp->conn == conn) {
-			close_file(NULL, fsp, SHUTDOWN_CLOSE);
+		if (fsp->conn != conn) {
+			continue;
 		}
+		if (fsp->op != NULL && fsp->op->global->durable) {
+			/*
+			 * A tree disconnect closes a durable handle
+			 */
+			fsp->op->global->durable = false;
+		}
+		close_file(NULL, fsp, SHUTDOWN_CLOSE);
 	}
 }
 
