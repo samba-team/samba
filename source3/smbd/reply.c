@@ -42,6 +42,7 @@
 #include "smbprofile.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/tevent_wait.h"
+#include "libcli/smb/smb_signing.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -725,6 +726,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	struct smbXsrv_session *session = NULL;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	bool session_key_updated = false;
+	uint16_t optional_support = 0;
 	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBtconX);
@@ -874,6 +876,13 @@ void reply_tcon_and_X(struct smb_request *req)
 			return;
 		}
 
+		if (tcon_flags & TCONX_FLAG_EXTENDED_SIGNATURES) {
+			smb_key_derivation(x->global->application_key.data,
+					   x->global->application_key.length,
+					   x->global->application_key.data);
+			optional_support |= SMB_EXTENDED_SIGNATURES;
+		}
+
 		/*
 		 * Place the application key into the session_info
 		 */
@@ -924,7 +933,6 @@ void reply_tcon_and_X(struct smb_request *req)
 	} else {
 		/* NT sets the fstype of IPC$ to the null string */
 		const char *fstype = IS_IPC(conn) ? "" : lp_fstype(ctx, SNUM(conn));
-		uint16_t optional_support = 0;
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_RESPONSE) {
 			/* Return permissions. */
