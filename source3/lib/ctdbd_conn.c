@@ -1237,12 +1237,12 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 			/*
 			 * Got an error reply
 			 */
-			DEBUG(1, ("Received short reply len %d, status %u, "
+			DEBUG(5, ("Received short reply len %d, status %u, "
 				  "errorlen %u\n",
 				  (unsigned)reply->datalen,
 				  (unsigned)reply->status,
 				  (unsigned)reply->errorlen));
-			dump_data(1, reply->data, reply->errorlen);
+			dump_data(5, reply->data, reply->errorlen);
 
 			/*
 			 * This will trigger everything set to false
