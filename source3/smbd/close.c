@@ -706,6 +706,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS tmp;
 	connection_struct *conn = fsp->conn;
+	bool is_durable = false;
 
 	if (fsp->num_aio_requests != 0) {
 
@@ -751,6 +752,49 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	tmp = close_filestruct(fsp);
 	status = ntstatus_keeperror(status, tmp);
+
+	if (NT_STATUS_IS_OK(status) && fsp->op != NULL) {
+		is_durable = fsp->op->global->durable;
+	}
+
+	if (close_type != SHUTDOWN_CLOSE) {
+		is_durable = false;
+	}
+
+	if (is_durable) {
+		DATA_BLOB new_cookie = data_blob_null;
+
+		tmp = SMB_VFS_DURABLE_DISCONNECT(fsp,
+					fsp->op->global->backend_cookie,
+					fsp->op,
+					&new_cookie);
+		if (NT_STATUS_IS_OK(tmp)) {
+			data_blob_free(&fsp->op->global->backend_cookie);
+			fsp->op->global->backend_cookie = new_cookie;
+
+			tmp = smbXsrv_open_update(fsp->op);
+		}
+		if (!NT_STATUS_IS_OK(tmp)) {
+			is_durable = false;
+		}
+	}
+
+	if (is_durable) {
+		/*
+		 * This is the case where we successfully disconnected
+		 * a durable handle and closed the underlying file.
+		 * In all other cases, we proceed with a genuine close.
+		 */
+		file_free(req, fsp);
+		return NT_STATUS_OK;
+	}
+
+	if (fsp->op != NULL) {
+		/*
+		 * Make sure the handle is not marked as durable anymore
+		 */
+		fsp->op->global->durable = false;
+	}
 
 	if (fsp->print_file) {
 		/* FIXME: return spool errors */
