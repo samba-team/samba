@@ -819,6 +819,8 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	char *admin_account = NULL;
 	WERROR werr;
 	struct security_token *token = p->session_info->security_token;
+	NTSTATUS status;
+	DATA_BLOB session_key;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -841,9 +843,18 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 		return WERR_NOT_SUPPORTED;
 	}
 
+	status = session_extract_session_key(p->session_info,
+					     &session_key,
+					     KEY_USE_16BYTES);
+	if(!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("_wkssvc_NetrJoinDomain2: no session key %s\n",
+			nt_errstr(status)));
+		return WERR_NO_USER_SESSION_KEY;
+	}
+
 	werr = decode_wkssvc_join_password_buffer(
 		p->mem_ctx, r->in.encrypted_password,
-		&p->session_info->session_key, &cleartext_pwd);
+		&session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -896,6 +907,8 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	char *admin_account = NULL;
 	WERROR werr;
 	struct security_token *token = p->session_info->security_token;
+	NTSTATUS status;
+	DATA_BLOB session_key;
 
 	if (!r->in.account || !r->in.encrypted_password) {
 		return WERR_INVALID_PARAM;
@@ -909,9 +922,18 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
+	status = session_extract_session_key(p->session_info,
+					     &session_key,
+					     KEY_USE_16BYTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("_wkssvc_NetrUnjoinDomain2: no session key %s\n",
+			nt_errstr(status)));
+		return WERR_NO_USER_SESSION_KEY;
+	}
+
 	werr = decode_wkssvc_join_password_buffer(
 		p->mem_ctx, r->in.encrypted_password,
-		&p->session_info->session_key, &cleartext_pwd);
+		&session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
