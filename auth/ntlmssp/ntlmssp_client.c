@@ -96,7 +96,7 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 
 	if (DEBUGLEVEL >= 10) {
 		struct NEGOTIATE_MESSAGE *negotiate = talloc(
-			talloc_tos(), struct NEGOTIATE_MESSAGE);
+			ntlmssp_state, struct NEGOTIATE_MESSAGE);
 		if (negotiate != NULL) {
 			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
 				out, negotiate, negotiate);
