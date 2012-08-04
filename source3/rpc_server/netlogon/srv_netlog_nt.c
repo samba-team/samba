@@ -1142,8 +1142,16 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	struct samr_UserInfo18 info18;
 	DATA_BLOB in,out;
 	int rc;
+	DATA_BLOB session_key;
 
 	ZERO_STRUCT(user_handle);
+
+	status = session_extract_session_key(session_info,
+					     &session_key,
+					     KEY_USE_16BYTES);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 
 	rc = tsocket_address_inet_from_strings(mem_ctx,
 					       "ip",
@@ -1210,7 +1218,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	in = data_blob_const(nt_hash->hash, 16);
 	out = data_blob_talloc_zero(mem_ctx, 16);
-	sess_crypt_blob(&out, &in, &session_info->session_key, true);
+	sess_crypt_blob(&out, &in, &session_key, true);
 	memcpy(info18.nt_pwd.hash, out.data, out.length);
 
 	info18.nt_pwd_active = true;
