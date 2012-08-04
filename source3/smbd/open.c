@@ -29,6 +29,7 @@
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/open_files.h"
 #include "auth.h"
+#include "serverid.h"
 #include "messages.h"
 
 extern const struct generic_mapping file_generic_mapping;
@@ -917,6 +918,14 @@ static bool share_conflict(struct share_mode_entry *entry,
 		  (unsigned int)entry->share_access,
 		  (unsigned int)entry->private_options));
 
+	if (server_id_is_disconnected(&entry->pid)) {
+		/*
+		 * note: cleanup should have been done by
+		 * delay_for_batch_oplocks()
+		 */
+		return false;
+	}
+
 	DEBUG(10,("share_conflict: access_mask = 0x%x, share_access = 0x%x\n",
 		  (unsigned int)access_mask, (unsigned int)share_access));
 
@@ -1298,6 +1307,19 @@ static bool delay_for_batch_oplocks(files_struct *fsp,
 		return false;
 	}
 
+	if (server_id_is_disconnected(&batch_entry->pid)) {
+		/*
+		 * TODO: clean up.
+		 * This could be achieved by sending a break message
+		 * to ourselves. Special considerations for files
+		 * with delete_on_close flag set!
+		 *
+		 * For now we keep it simple and do not
+		 * allow delete on close for durable handles.
+		 */
+		return false;
+	}
+
 	/* Found a batch oplock */
 	send_break_message(fsp, batch_entry, mid, oplock_request);
 	return true;
@@ -1314,6 +1336,15 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 		return false;
 	}
 	if (ex_entry == NULL) {
+		return false;
+	}
+
+	if (server_id_is_disconnected(&ex_entry->pid)) {
+		/*
+		 * since only durable handles can get disconnected,
+		 * and we can only get durable handles with batch oplocks,
+		 * this should actually never be reached...
+		 */
 		return false;
 	}
 
