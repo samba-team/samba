@@ -43,7 +43,6 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint16_t in_path_offset;
 	uint16_t in_path_length;
 	DATA_BLOB in_path_buffer;
@@ -57,20 +56,20 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_path_offset = SVAL(inbody, 0x04);
 	in_path_length = SVAL(inbody, 0x06);
 
-	if (in_path_offset != (SMB2_HDR_BODY + req->in.vector[i+1].iov_len)) {
+	if (in_path_offset != (SMB2_HDR_BODY + SMBD_SMB2_IN_BODY_LEN(req))) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (in_path_length > req->in.vector[i+2].iov_len) {
+	if (in_path_length > SMBD_SMB2_IN_DYN_LEN(req)) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_path_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+	in_path_buffer.data = SMBD_SMB2_IN_DYN_PTR(req);
 	in_path_buffer.length = in_path_length;
 
 	ok = convert_string_talloc(req, CH_UTF16, CH_UNIX,
@@ -107,7 +106,6 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
 	struct smbd_smb2_request *req =
 		tevent_req_callback_data(subreq,
 		struct smbd_smb2_request);
-	int i = req->current_idx;
 	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	uint8_t out_share_type = 0;
@@ -135,7 +133,7 @@ static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
 		return;
 	}
 
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x10);
 	if (outbody.data == NULL) {
