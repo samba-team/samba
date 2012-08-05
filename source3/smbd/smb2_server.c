@@ -285,15 +285,16 @@ inval:
 }
 
 static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
-					 const uint8_t *inbuf, size_t size,
+					 uint8_t *inbuf, size_t size,
 					 struct smbd_smb2_request **_req)
 {
 	struct smbd_smb2_request *req;
 	uint32_t protocol_version;
 	const uint8_t *inhdr = NULL;
-	off_t ofs = 0;
 	uint16_t cmd;
 	uint32_t next_command_ofs;
+	NTSTATUS status;
+	NTTIME now;
 
 	if (size < (4 + SMB2_HDR_BODY + 2)) {
 		DEBUG(0,("Invalid SMB2 packet length count %ld\n", (long)size));
@@ -331,35 +332,21 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 
 	talloc_steal(req, inbuf);
 
-	req->in.vector = talloc_array(req, struct iovec, 4);
-	if (req->in.vector == NULL) {
-		TALLOC_FREE(req);
-		return NT_STATUS_NO_MEMORY;
-	}
-	req->in.vector_count = 4;
-
 	memcpy(req->in.nbt_hdr, inbuf, 4);
 
-	ofs = 0;
-	req->in.vector[0].iov_base	= discard_const_p(void, req->in.nbt_hdr);
-	req->in.vector[0].iov_len	= 4;
-	ofs += req->in.vector[0].iov_len;
+	req->request_time = timeval_current();
+	now = timeval_to_nttime(&req->request_time);
 
-	req->in.vector[1].iov_base	= discard_const_p(void, (inbuf + ofs));
-	req->in.vector[1].iov_len	= SMB2_HDR_BODY;
-	ofs += req->in.vector[1].iov_len;
-
-	req->in.vector[2].iov_base	= discard_const_p(void, (inbuf + ofs));
-	req->in.vector[2].iov_len	= SVAL(inbuf, ofs) & 0xFFFE;
-	ofs += req->in.vector[2].iov_len;
-
-	if (ofs > size) {
-		return NT_STATUS_INVALID_PARAMETER;
+	status = smbd_smb2_inbuf_parse_compound(sconn->conn,
+						now,
+						inbuf + NBT_HDR_SIZE,
+						size - NBT_HDR_SIZE,
+						req, &req->in.vector,
+						&req->in.vector_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(req);
+		return status;
 	}
-
-	req->in.vector[3].iov_base	= discard_const_p(void, (inbuf + ofs));
-	req->in.vector[3].iov_len	= size - ofs;
-	ofs += req->in.vector[3].iov_len;
 
 	req->current_idx = 1;
 
