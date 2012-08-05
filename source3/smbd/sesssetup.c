@@ -285,7 +285,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		if (session_info->session_key.length > 0) {
 			struct smbXsrv_session *x = session;
-			uint8_t session_key[16];
 
 			/*
 			 * Note: the SMB1 signing key is not truncated to 16 byte!
