@@ -49,7 +49,6 @@ NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint16_t in_flags;
 	uint32_t in_output_buffer_length;
 	uint64_t in_file_id_persistent;
@@ -62,7 +61,7 @@ NTSTATUS smbd_smb2_request_process_notify(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_flags		= SVAL(inbody, 0x02);
 	in_output_buffer_length	= IVAL(inbody, 0x04);
@@ -107,7 +106,6 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
-	int i = req->current_idx;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint16_t out_output_buffer_offset;
@@ -118,7 +116,7 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 	if (req->cancelled) {
 		struct smbd_smb2_notify_state *state = tevent_req_data(subreq,
 					       struct smbd_smb2_notify_state);
-		const uint8_t *inhdr = (const uint8_t *)req->in.vector[i].iov_base;
+		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 
 		DEBUG(10,("smbd_smb2_request_notify_done: cancelled mid %llu\n",
