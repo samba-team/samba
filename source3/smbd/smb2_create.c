@@ -101,7 +101,6 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 {
 	const uint8_t *inbody;
 	const struct iovec *indyniov;
-	int i = smb2req->current_idx;
 	uint8_t in_oplock_level;
 	uint32_t in_impersonation_level;
 	uint32_t in_desired_access;
@@ -131,7 +130,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(smb2req, status);
 	}
-	inbody = (const uint8_t *)smb2req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(smb2req);
 
 	in_oplock_level		= CVAL(inbody, 0x03);
 	in_impersonation_level	= IVAL(inbody, 0x04);
@@ -153,7 +152,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 	 *       overlap
 	 */
 
-	dyn_offset = SMB2_HDR_BODY + smb2req->in.vector[i+1].iov_len;
+	dyn_offset = SMB2_HDR_BODY + SMBD_SMB2_IN_BODY_LEN(smb2req);
 
 	if (in_name_offset == 0 && in_name_length == 0) {
 		/* This is ok */
@@ -164,7 +163,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 		name_offset = in_name_offset - dyn_offset;
 	}
 
-	indyniov = &smb2req->in.vector[i+2];
+	indyniov = SMBD_SMB2_IN_DYN_IOV(smb2req);
 
 	if (name_offset > indyniov->iov_len) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
@@ -258,7 +257,7 @@ NTSTATUS smbd_smb2_request_process_create(struct smbd_smb2_request *smb2req)
 
 static uint64_t get_mid_from_smb2req(struct smbd_smb2_request *smb2req)
 {
-	uint8_t *reqhdr = (uint8_t *)smb2req->out.vector[smb2req->current_idx].iov_base;
+	uint8_t *reqhdr = SMBD_SMB2_OUT_HDR_PTR(smb2req);
 	return BVAL(reqhdr, SMB2_HDR_MESSAGE_ID);
 }
 
