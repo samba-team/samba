@@ -2917,7 +2917,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 }
 
 void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
-			     const uint8_t *inbuf, size_t size)
+			     uint8_t *inbuf, size_t size)
 {
 	NTSTATUS status;
 	struct smbd_smb2_request *req = NULL;
