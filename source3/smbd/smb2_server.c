@@ -332,8 +332,6 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 
 	talloc_steal(req, inbuf);
 
-	memcpy(req->in.nbt_hdr, inbuf, 4);
-
 	req->request_time = timeval_current();
 	now = timeval_to_nttime(&req->request_time);
 
@@ -739,8 +737,6 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	struct iovec *vector;
 	int count;
 	int idx;
-
-	req->request_time = timeval_current();
 
 	count = req->in.vector_count;
 	vector = talloc_zero_array(req, struct iovec, count);
@@ -2491,9 +2487,15 @@ static void smbd_smb2_oplock_break_writev_done(struct tevent_req *subreq)
 }
 
 struct smbd_smb2_request_read_state {
-	size_t missing;
-	bool asked_for_header;
+	struct tevent_context *ev;
+	struct smbd_server_connection *sconn;
 	struct smbd_smb2_request *smb2_req;
+	struct {
+		uint8_t nbt[NBT_HDR_SIZE];
+		bool done;
+	} hdr;
+	size_t pktlen;
+	uint8_t *pktbuf;
 };
 
 static int smbd_smb2_request_next_vector(struct tstream_context *stream,
@@ -2516,8 +2518,8 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->missing = 0;
-	state->asked_for_header = false;
+	state->ev = ev;
+	state->sconn = sconn;
 
 	state->smb2_req = smbd_smb2_request_allocate(state);
 	if (tevent_req_nomem(state->smb2_req, req)) {
@@ -2525,10 +2527,12 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 	}
 	state->smb2_req->sconn = sconn;
 
-	subreq = tstream_readv_pdu_queue_send(state, ev, sconn->smb2.stream,
-					      sconn->smb2.recv_queue,
-					      smbd_smb2_request_next_vector,
-					      state);
+	subreq = tstream_readv_pdu_queue_send(state->smb2_req,
+					state->ev,
+					state->sconn->smb2.stream,
+					state->sconn->smb2.recv_queue,
+					smbd_smb2_request_next_vector,
+					state);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2546,273 +2550,58 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 	struct smbd_smb2_request_read_state *state =
 		talloc_get_type_abort(private_data,
 		struct smbd_smb2_request_read_state);
-	struct smbd_smb2_request *req = state->smb2_req;
 	struct iovec *vector;
-	int idx = req->in.vector_count;
-	size_t len = 0;
-	uint8_t *buf = NULL;
 
-	if (req->in.vector_count == 0) {
-		/*
-		 * first we need to get the NBT header
-		 */
-		req->in.vector = talloc_array(req, struct iovec,
-					      req->in.vector_count + 1);
-		if (req->in.vector == NULL) {
-			return -1;
-		}
-		req->in.vector_count += 1;
-
-		req->in.vector[idx].iov_base	= (void *)req->in.nbt_hdr;
-		req->in.vector[idx].iov_len	= 4;
-
-		vector = talloc_array(mem_ctx, struct iovec, 1);
-		if (vector == NULL) {
-			return -1;
-		}
-
-		vector[0] = req->in.vector[idx];
-
-		*_vector = vector;
-		*_count = 1;
-		return 0;
-	}
-
-	if (req->in.vector_count == 1) {
-		/*
-		 * Now we analyze the NBT header
-		 */
-		state->missing = smb2_len(req->in.vector[0].iov_base);
-
-		if (state->missing == 0) {
-			/* if there're no remaining bytes, we're done */
-			*_vector = NULL;
-			*_count = 0;
-			return 0;
-		}
-
-		req->in.vector = talloc_realloc(req, req->in.vector,
-						struct iovec,
-						req->in.vector_count + 1);
-		if (req->in.vector == NULL) {
-			return -1;
-		}
-		req->in.vector_count += 1;
-
-		if (CVAL(req->in.vector[0].iov_base, 0) != 0) {
-			/*
-			 * it's a special NBT message,
-			 * so get all remaining bytes
-			 */
-			len = state->missing;
-		} else if (state->missing < (SMB2_HDR_BODY + 2)) {
-			/*
-			 * it's an invalid message, just read what we can get
-			 * and let the caller handle the error
-			 */
-			len = state->missing;
-		} else {
-			/*
-			 * We assume it's a SMB2 request,
-			 * and we first get the header and the
-			 * first 2 bytes (the struct size) of the body
-			 */
-			len = SMB2_HDR_BODY + 2;
-
-			state->asked_for_header = true;
-		}
-
-		state->missing -= len;
-
-		buf = talloc_array(req->in.vector, uint8_t, len);
-		if (buf == NULL) {
-			return -1;
-		}
-
-		req->in.vector[idx].iov_base	= (void *)buf;
-		req->in.vector[idx].iov_len	= len;
-
-		vector = talloc_array(mem_ctx, struct iovec, 1);
-		if (vector == NULL) {
-			return -1;
-		}
-
-		vector[0] = req->in.vector[idx];
-
-		*_vector = vector;
-		*_count = 1;
-		return 0;
-	}
-
-	if (state->missing == 0) {
+	if (state->pktlen > 0) {
 		/* if there're no remaining bytes, we're done */
 		*_vector = NULL;
 		*_count = 0;
 		return 0;
 	}
 
-	if (state->asked_for_header) {
-		const uint8_t *hdr;
-		size_t full_size;
-		size_t next_command_ofs;
-		size_t body_size;
-		uint8_t *body;
-		size_t dyn_size;
-		uint8_t *dyn;
-		bool invalid = false;
-
-		state->asked_for_header = false;
-
+	if (!state->hdr.done) {
 		/*
-		 * We got the SMB2 header and the first 2 bytes
-		 * of the body. We fix the size to just the header
-		 * and manually copy the 2 first bytes to the body section
+		 * first we need to get the NBT header
 		 */
-		req->in.vector[idx-1].iov_len = SMB2_HDR_BODY;
-		hdr = (const uint8_t *)req->in.vector[idx-1].iov_base;
-
-		/* allocate vectors for body and dynamic areas */
-		req->in.vector = talloc_realloc(req, req->in.vector,
-						struct iovec,
-						req->in.vector_count + 2);
-		if (req->in.vector == NULL) {
-			return -1;
-		}
-		req->in.vector_count += 2;
-
-		full_size = state->missing + SMB2_HDR_BODY + 2;
-		next_command_ofs = IVAL(hdr, SMB2_HDR_NEXT_COMMAND);
-		body_size = SVAL(hdr, SMB2_HDR_BODY);
-
-		if (next_command_ofs != 0) {
-			if (next_command_ofs < (SMB2_HDR_BODY + 2)) {
-				/*
-				 * this is invalid, just return a zero
-				 * body and let the caller deal with the error
-				 */
-				invalid = true;
-			} else if (next_command_ofs > full_size) {
-				/*
-				 * this is invalid, just return a zero
-				 * body and let the caller deal with the error
-				 */
-				invalid = true;
-			} else {
-				full_size = next_command_ofs;
-			}
-		}
-
-		if (!invalid) {
-			if (body_size < 2) {
-				/*
-				 * this is invalid, just return a zero
-				 * body and let the caller deal with the error
-				 */
-				invalid = true;
-			}
-
-			/*
-			 * Mask out the lowest bit, the "dynamic" part
-			 * of body_size.
-			 */
-			body_size &= ~1;
-
-			if (body_size > (full_size - SMB2_HDR_BODY)) {
-				/*
-				 * this is invalid, just return a zero
-				 * body and let the caller deal with the error
-				 */
-				invalid = true;
-			}
-		}
-
-		if (invalid) {
-			/* the caller should check this */
-			body_size = 2;
-		}
-
-		dyn_size = full_size - (SMB2_HDR_BODY + body_size);
-
-		state->missing -= (body_size - 2) + dyn_size;
-
-		body = talloc_array(req->in.vector, uint8_t, body_size);
-		if (body == NULL) {
-			return -1;
-		}
-
-		dyn = talloc_array(req->in.vector, uint8_t, dyn_size);
-		if (dyn == NULL) {
-			return -1;
-		}
-
-		req->in.vector[idx].iov_base	= (void *)body;
-		req->in.vector[idx].iov_len	= body_size;
-		req->in.vector[idx+1].iov_base	= (void *)dyn;
-		req->in.vector[idx+1].iov_len	= dyn_size;
-
-		vector = talloc_array(mem_ctx, struct iovec, 2);
+		vector = talloc_array(mem_ctx, struct iovec, 1);
 		if (vector == NULL) {
 			return -1;
 		}
 
-		/*
-		 * the first 2 bytes of the body were already fetched
-		 * together with the header
-		 */
-		memcpy(body, hdr + SMB2_HDR_BODY, 2);
-		vector[0].iov_base = body + 2;
-		vector[0].iov_len = body_size - 2;
-
-		vector[1] = req->in.vector[idx+1];
+		vector[0].iov_base = (void *)state->hdr.nbt;
+		vector[0].iov_len = NBT_HDR_SIZE;
 
 		*_vector = vector;
-		*_count = 2;
+		*_count = 1;
+
+		state->hdr.done = true;
 		return 0;
 	}
 
 	/*
-	 * when we endup here, we're looking for a new SMB2 request
-	 * next. And we ask for its header and the first 2 bytes of
-	 * the body (like we did for the first SMB2 request).
+	 * Now we analyze the NBT header
 	 */
+	state->pktlen = smb2_len(state->hdr.nbt);
 
-	req->in.vector = talloc_realloc(req, req->in.vector,
-					struct iovec,
-					req->in.vector_count + 1);
-	if (req->in.vector == NULL) {
+	if (state->pktlen == 0) {
+		/* if there're no remaining bytes, we're done */
+		*_vector = NULL;
+		*_count = 0;
+		return 0;
+	}
+
+	state->pktbuf = talloc_array(state->smb2_req, uint8_t, state->pktlen);
+	if (state->pktbuf == NULL) {
 		return -1;
 	}
-	req->in.vector_count += 1;
-
-	/*
-	 * We assume it's a SMB2 request,
-	 * and we first get the header and the
-	 * first 2 bytes (the struct size) of the body
-	 */
-	len = SMB2_HDR_BODY + 2;
-
-	if (len > state->missing) {
-		/* let the caller handle the error */
-		len = state->missing;
-	}
-
-	state->missing -= len;
-	state->asked_for_header = true;
-
-	buf = talloc_array(req->in.vector, uint8_t, len);
-	if (buf == NULL) {
-		return -1;
-	}
-
-	req->in.vector[idx].iov_base	= (void *)buf;
-	req->in.vector[idx].iov_len	= len;
 
 	vector = talloc_array(mem_ctx, struct iovec, 1);
 	if (vector == NULL) {
 		return -1;
 	}
 
-	vector[0] = req->in.vector[idx];
+	vector[0].iov_base = (void *)state->pktbuf;
+	vector[0].iov_len = state->pktlen;
 
 	*_vector = vector;
 	*_count = 1;
@@ -2824,16 +2613,58 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
+	struct smbd_smb2_request_read_state *state =
+		tevent_req_data(req,
+		struct smbd_smb2_request_read_state);
 	int ret;
 	int sys_errno;
 	NTSTATUS status;
+	NTTIME now;
 
 	ret = tstream_readv_pdu_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(sys_errno);
 		tevent_req_nterror(req, status);
 		return;
 	}
+
+	if (state->hdr.nbt[0] != 0x00) {
+		DEBUG(1,("smbd_smb2_request_read_done: ignore NBT[0x%02X] msg\n",
+			 state->hdr.nbt[0]));
+
+		ZERO_STRUCT(state->hdr);
+		TALLOC_FREE(state->pktbuf);
+		state->pktlen = 0;
+
+		subreq = tstream_readv_pdu_queue_send(state->smb2_req,
+						state->ev,
+						state->sconn->smb2.stream,
+						state->sconn->smb2.recv_queue,
+						smbd_smb2_request_next_vector,
+						state);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, smbd_smb2_request_read_done, req);
+		return;
+	}
+
+	state->smb2_req->request_time = timeval_current();
+	now = timeval_to_nttime(&state->smb2_req->request_time);
+
+	status = smbd_smb2_inbuf_parse_compound(state->smb2_req->sconn->conn,
+						now,
+						state->pktbuf,
+						state->pktlen,
+						state->smb2_req,
+						&state->smb2_req->in.vector,
+						&state->smb2_req->in.vector_count);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->smb2_req->current_idx = 1;
 
 	tevent_req_done(req);
 }
@@ -2967,15 +2798,6 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
-	if (req->in.nbt_hdr[0] != 0x00) {
-		DEBUG(1,("smbd_smb2_request_incoming: ignore NBT[0x%02X] msg\n",
-			 req->in.nbt_hdr[0]));
-		TALLOC_FREE(req);
-		goto next;
-	}
-
-	req->current_idx = 1;
-
 	DEBUG(10,("smbd_smb2_request_incoming: idx[%d] of %d vectors\n",
 		 req->current_idx, req->in.vector_count));
 
@@ -2997,7 +2819,6 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
-next:
 	status = smbd_smb2_request_next_incoming(sconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));

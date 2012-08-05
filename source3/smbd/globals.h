@@ -493,10 +493,8 @@ struct smbd_smb2_request {
 #define SMBD_SMB2_OUT_DYN_LEN(req)   (SMBD_SMB2_OUT_DYN_IOV(req)->iov_len)
 
 	struct {
-		/* the NBT header is not allocated */
-		uint8_t nbt_hdr[4];
 		/*
-		 * vector[0] NBT
+		 * vector[0] TRANSPORT HEADER
 		 * .
 		 * vector[1] SMB2
 		 * vector[2] fixed body
@@ -518,7 +516,7 @@ struct smbd_smb2_request {
 		/* the NBT header is not allocated */
 		uint8_t nbt_hdr[4];
 		/*
-		 * vector[0] NBT
+		 * vector[0] TRANSPORT HEADER
 		 * .
 		 * vector[1] SMB2
 		 * vector[2] fixed body
