@@ -45,7 +45,6 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint16_t in_flags;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
@@ -57,7 +56,7 @@ NTSTATUS smbd_smb2_request_process_close(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_flags		= SVAL(inbody, 0x02);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
