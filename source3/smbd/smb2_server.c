@@ -180,6 +180,110 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 	return req;
 }
 
+static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
+					       NTTIME now,
+					       uint8_t *buf,
+					       size_t buflen,
+					       TALLOC_CTX *mem_ctx,
+					       struct iovec **piov,
+					       int *pnum_iov)
+{
+	struct iovec *iov;
+	int num_iov = 1;
+	size_t taken = 0;
+	uint8_t *first_hdr = buf;
+
+	/*
+	 * Note: index '0' is reserved for the transport protocol
+	 */
+	iov = talloc_zero_array(mem_ctx, struct iovec, num_iov);
+	if (iov == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	while (taken < buflen) {
+		size_t len = buflen - taken;
+		uint8_t *hdr = first_hdr + taken;
+		struct iovec *cur;
+		size_t full_size;
+		size_t next_command_ofs;
+		uint16_t body_size;
+		struct iovec *iov_tmp;
+
+		/*
+		 * We need the header plus the body length field
+		 */
+
+		if (len < SMB2_HDR_BODY + 2) {
+			DEBUG(10, ("%d bytes left, expected at least %d\n",
+				   (int)len, SMB2_HDR_BODY));
+			goto inval;
+		}
+		if (IVAL(hdr, 0) != SMB2_MAGIC) {
+			DEBUG(10, ("Got non-SMB2 PDU: %x\n",
+				   IVAL(hdr, 0)));
+			goto inval;
+		}
+		if (SVAL(hdr, 4) != SMB2_HDR_BODY) {
+			DEBUG(10, ("Got HDR len %d, expected %d\n",
+				   SVAL(hdr, 4), SMB2_HDR_BODY));
+			goto inval;
+		}
+
+		full_size = len;
+		next_command_ofs = IVAL(hdr, SMB2_HDR_NEXT_COMMAND);
+		body_size = SVAL(hdr, SMB2_HDR_BODY);
+
+		if (next_command_ofs != 0) {
+			if (next_command_ofs < (SMB2_HDR_BODY + 2)) {
+				goto inval;
+			}
+			if (next_command_ofs > full_size) {
+				goto inval;
+			}
+			full_size = next_command_ofs;
+		}
+		if (body_size < 2) {
+			goto inval;
+		}
+		body_size &= 0xfffe;
+
+		if (body_size > (full_size - SMB2_HDR_BODY)) {
+			/*
+			 * let the caller handle the error
+			 */
+			body_size = full_size - SMB2_HDR_BODY;
+		}
+
+		iov_tmp = talloc_realloc(mem_ctx, iov, struct iovec,
+					 num_iov + 3);
+		if (iov_tmp == NULL) {
+			TALLOC_FREE(iov);
+			return NT_STATUS_NO_MEMORY;
+		}
+		iov = iov_tmp;
+		cur = &iov[num_iov];
+		num_iov += 3;
+
+		cur[0].iov_base = hdr;
+		cur[0].iov_len  = SMB2_HDR_BODY;
+		cur[1].iov_base = hdr + SMB2_HDR_BODY;
+		cur[1].iov_len  = body_size;
+		cur[2].iov_base = hdr + SMB2_HDR_BODY + body_size;
+		cur[2].iov_len  = full_size - (SMB2_HDR_BODY + body_size);
+
+		taken += full_size;
+	}
+
+	*piov = iov;
+	*pnum_iov = num_iov;
+	return NT_STATUS_OK;
+
+inval:
+	TALLOC_FREE(iov);
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
 static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 					 const uint8_t *inbuf, size_t size,
 					 struct smbd_smb2_request **_req)
