@@ -35,7 +35,6 @@ NTSTATUS smbd_smb2_request_process_flush(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
 	struct files_struct *in_fsp;
@@ -45,7 +44,7 @@ NTSTATUS smbd_smb2_request_process_flush(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
