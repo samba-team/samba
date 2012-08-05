@@ -43,7 +43,6 @@ NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint8_t in_file_info_class;
 	uint8_t in_flags;
 	uint32_t in_file_index;
@@ -63,7 +62,7 @@ NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_file_info_class		= CVAL(inbody, 0x02);
 	in_flags			= CVAL(inbody, 0x03);
@@ -77,11 +76,11 @@ NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req)
 	if (in_file_name_offset == 0 && in_file_name_length == 0) {
 		/* This is ok */
 	} else if (in_file_name_offset !=
-		   (SMB2_HDR_BODY + req->in.vector[i+1].iov_len)) {
+		   (SMB2_HDR_BODY + SMBD_SMB2_IN_BODY_LEN(req))) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (in_file_name_length > req->in.vector[i+2].iov_len) {
+	if (in_file_name_length > SMBD_SMB2_IN_DYN_LEN(req)) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -96,7 +95,7 @@ NTSTATUS smbd_smb2_request_process_find(struct smbd_smb2_request *req)
 	/* Take into account the output header. */
 	in_output_buffer_length -= 8;
 
-	in_file_name_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+	in_file_name_buffer.data = SMBD_SMB2_IN_DYN_PTR(req);
 	in_file_name_buffer.length = in_file_name_length;
 
 	ok = convert_string_talloc(req, CH_UTF16, CH_UNIX,
