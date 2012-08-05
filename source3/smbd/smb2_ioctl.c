@@ -45,7 +45,6 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint32_t min_buffer_offset;
 	uint32_t max_buffer_offset;
 	uint32_t min_output_offset;
@@ -74,7 +73,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_ctl_code		= IVAL(inbody, 0x04);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
@@ -87,8 +86,8 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	in_max_output_length	= IVAL(inbody, 0x2C);
 	in_flags		= IVAL(inbody, 0x30);
 
-	min_buffer_offset = SMB2_HDR_BODY + req->in.vector[i+1].iov_len;
-	max_buffer_offset = min_buffer_offset + req->in.vector[i+2].iov_len;
+	min_buffer_offset = SMB2_HDR_BODY + SMBD_SMB2_IN_BODY_LEN(req);
+	max_buffer_offset = min_buffer_offset + SMBD_SMB2_IN_DYN_LEN(req);
 	min_output_offset = min_buffer_offset;
 
 	/*
@@ -114,7 +113,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 		allowed_length_in = max_buffer_offset - in_input_offset;
 
 		tmp_ofs = in_input_offset - min_buffer_offset;
-		in_input_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+		in_input_buffer.data = SMBD_SMB2_IN_DYN_PTR(req);
 		in_input_buffer.data += tmp_ofs;
 		in_input_buffer.length = in_input_length;
 		min_output_offset += tmp_ofs;
@@ -151,7 +150,7 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 		}
 
 		tmp_ofs = in_output_offset - min_buffer_offset;
-		in_output_buffer.data = (uint8_t *)req->in.vector[i+2].iov_base;
+		in_output_buffer.data = SMBD_SMB2_IN_DYN_PTR(req);
 		in_output_buffer.data += tmp_ofs;
 		in_output_buffer.length = in_output_length;
 	}
@@ -234,7 +233,6 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	uint32_t in_ctl_code;
@@ -279,7 +277,7 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	out_input_offset = SMB2_HDR_BODY + 0x30;
 	out_output_offset = SMB2_HDR_BODY + 0x30;
 
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_ctl_code		= IVAL(inbody, 0x04);
 	in_file_id_persistent	= BVAL(inbody, 0x08);
