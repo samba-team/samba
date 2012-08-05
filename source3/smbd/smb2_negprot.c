@@ -85,7 +85,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	NTSTATUS status;
 	const uint8_t *inbody;
 	const uint8_t *indyn = NULL;
-	int i = req->current_idx;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
 	DATA_BLOB negprot_spnego_blob;
@@ -114,7 +113,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	dialect_count = SVAL(inbody, 0x02);
 
@@ -132,10 +131,10 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	expected_dyn_size = dialect_count * 2;
-	if (req->in.vector[i+2].iov_len < expected_dyn_size) {
+	if (SMBD_SMB2_IN_DYN_LEN(req) < expected_dyn_size) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
-	indyn = (const uint8_t *)req->in.vector[i+2].iov_base;
+	indyn = SMBD_SMB2_IN_DYN_PTR(req);
 
 	for (c=0; protocol == PROTOCOL_NONE && c < dialect_count; c++) {
 		if (lp_srv_maxprotocol() < PROTOCOL_SMB3_00) {
