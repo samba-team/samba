@@ -474,6 +474,24 @@ struct smbd_smb2_request {
 	 */
 	struct tevent_req *subreq;
 
+#define SMBD_SMB2_IN_HDR_IOV(req)    (&req->in.vector[req->current_idx+0])
+#define SMBD_SMB2_IN_HDR_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_HDR_IOV(req)->iov_base)
+#define SMBD_SMB2_IN_BODY_IOV(req)   (&req->in.vector[req->current_idx+1])
+#define SMBD_SMB2_IN_BODY_PTR(req)   (uint8_t *)(SMBD_SMB2_IN_BODY_IOV(req)->iov_base)
+#define SMBD_SMB2_IN_BODY_LEN(req)   (SMBD_SMB2_IN_BODY_IOV(req)->iov_len)
+#define SMBD_SMB2_IN_DYN_IOV(req)    (&req->in.vector[req->current_idx+2])
+#define SMBD_SMB2_IN_DYN_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_DYN_IOV(req)->iov_base)
+#define SMBD_SMB2_IN_DYN_LEN(req)    (SMBD_SMB2_IN_DYN_IOV(req)->iov_len)
+
+#define SMBD_SMB2_OUT_HDR_IOV(req)   (&req->out.vector[req->current_idx+0])
+#define SMBD_SMB2_OUT_HDR_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_HDR_IOV(req)->iov_base)
+#define SMBD_SMB2_OUT_BODY_IOV(req)  (&req->out.vector[req->current_idx+1])
+#define SMBD_SMB2_OUT_BODY_PTR(req)  (uint8_t *)(SMBD_SMB2_OUT_BODY_IOV(req)->iov_base)
+#define SMBD_SMB2_OUT_BODY_LEN(req)  (SMBD_SMB2_OUT_BODY_IOV(req)->iov_len)
+#define SMBD_SMB2_OUT_DYN_IOV(req)   (&req->out.vector[req->current_idx+2])
+#define SMBD_SMB2_OUT_DYN_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_DYN_IOV(req)->iov_base)
+#define SMBD_SMB2_OUT_DYN_LEN(req)   (SMBD_SMB2_OUT_DYN_IOV(req)->iov_len)
+
 	struct {
 		/* the NBT header is not allocated */
 		uint8_t nbt_hdr[4];
