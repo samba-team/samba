@@ -29,7 +29,6 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
 					       struct files_struct *in_fsp,
-					       uint32_t in_smbpid,
 					       DATA_BLOB in_data,
 					       uint64_t in_offset,
 					       uint32_t in_flags);
@@ -40,10 +39,8 @@ static void smbd_smb2_request_write_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
-	const uint8_t *inhdr;
 	const uint8_t *inbody;
 	int i = req->current_idx;
-	uint32_t in_smbpid;
 	uint16_t in_data_offset;
 	uint32_t in_data_length;
 	DATA_BLOB in_data_buffer;
@@ -58,10 +55,7 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
-
-	in_smbpid = IVAL(inhdr, SMB2_HDR_PID);
 
 	in_data_offset		= SVAL(inbody, 0x02);
 	in_data_length		= IVAL(inbody, 0x04);
@@ -101,7 +95,6 @@ NTSTATUS smbd_smb2_request_process_write(struct smbd_smb2_request *req)
 
 	subreq = smbd_smb2_write_send(req, req->sconn->ev_ctx,
 				      req, in_fsp,
-				      in_smbpid,
 				      in_data_buffer,
 				      in_offset,
 				      in_flags);
@@ -253,7 +246,6 @@ static struct tevent_req *smbd_smb2_write_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
 					       struct files_struct *fsp,
-					       uint32_t in_smbpid,
 					       DATA_BLOB in_data,
 					       uint64_t in_offset,
 					       uint32_t in_flags)
