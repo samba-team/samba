@@ -1106,8 +1106,8 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	TALLOC_FREE(req->async_te);
 
 	/* Ensure our final reply matches the interim one. */
-	inhdr = (const uint8_t *)req->in.vector[1].iov_base;
-	outhdr = (uint8_t *)req->out.vector[1].iov_base;
+	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
+	outhdr = (uint8_t *)req->out.vector[i].iov_base;
 	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	message_id = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
 
