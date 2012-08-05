@@ -38,7 +38,6 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 {
 	NTSTATUS status;
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint8_t in_oplock_level;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
@@ -49,7 +48,7 @@ NTSTATUS smbd_smb2_request_process_break(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_oplock_level		= CVAL(inbody, 0x02);
 
@@ -83,7 +82,6 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
 					struct smbd_smb2_request);
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
 	uint8_t out_oplock_level = 0;
@@ -103,7 +101,7 @@ static void smbd_smb2_request_oplock_break_done(struct tevent_req *subreq)
 		return;
 	}
 
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_file_id_persistent	= BVAL(inbody, 0x08);
 	in_file_id_volatile	= BVAL(inbody, 0x10);
