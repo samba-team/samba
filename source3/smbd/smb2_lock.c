@@ -47,7 +47,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
 						 struct files_struct *in_fsp,
-						 uint32_t in_smbpid,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks);
 static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req);
@@ -55,10 +54,8 @@ static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req);
 static void smbd_smb2_request_lock_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 {
-	const uint8_t *inhdr;
 	const uint8_t *inbody;
 	const int i = req->current_idx;
-	uint32_t in_smbpid;
 	uint16_t in_lock_count;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
@@ -73,10 +70,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
 	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
-
-	in_smbpid			= IVAL(inhdr, SMB2_HDR_PID);
 
 	in_lock_count			= CVAL(inbody, 0x02);
 	/* 0x04 - 4 bytes reserved */
@@ -123,7 +117,6 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 
 	subreq = smbd_smb2_lock_send(req, req->sconn->ev_ctx,
 				     req, in_fsp,
-				     in_smbpid,
 				     in_lock_count,
 				     in_locks);
 	if (subreq == NULL) {
@@ -206,7 +199,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
 						 struct files_struct *fsp,
-						 uint32_t in_smbpid,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks)
 {
