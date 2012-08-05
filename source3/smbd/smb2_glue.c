@@ -26,10 +26,7 @@
 struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 {
 	struct smb_request *smbreq;
-	const uint8_t *inhdr;
-	int i = req->current_idx;
-
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	smbreq = talloc_zero(req, struct smb_request);
 	if (smbreq == NULL) {
