@@ -49,7 +49,6 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 {
 	const uint8_t *inhdr;
 	const uint8_t *inbody;
-	int i = smb2req->current_idx;
 	uint64_t in_session_id;
 	uint8_t in_flags;
 	uint8_t in_security_mode;
@@ -64,8 +63,8 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(smb2req, status);
 	}
-	inhdr = (const uint8_t *)smb2req->in.vector[i+0].iov_base;
-	inbody = (const uint8_t *)smb2req->in.vector[i+1].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
+	inbody = SMBD_SMB2_IN_BODY_PTR(smb2req);
 
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
@@ -77,15 +76,15 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	in_security_length = SVAL(inbody, 0x0E);
 	in_previous_session_id = BVAL(inbody, 0x10);
 
-	if (in_security_offset != (SMB2_HDR_BODY + smb2req->in.vector[i+1].iov_len)) {
+	if (in_security_offset != (SMB2_HDR_BODY + SMBD_SMB2_IN_BODY_LEN(smb2req))) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (in_security_length > smb2req->in.vector[i+2].iov_len) {
+	if (in_security_length > SMBD_SMB2_IN_DYN_LEN(smb2req)) {
 		return smbd_smb2_request_error(smb2req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	in_security_buffer.data = (uint8_t *)smb2req->in.vector[i+2].iov_base;
+	in_security_buffer.data = SMBD_SMB2_IN_DYN_PTR(smb2req);
 	in_security_buffer.length = in_security_length;
 
 	subreq = smbd_smb2_session_setup_send(smb2req,
@@ -109,7 +108,6 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 	struct smbd_smb2_request *smb2req =
 		tevent_req_callback_data(subreq,
 		struct smbd_smb2_request);
-	int i = smb2req->current_idx;
 	uint8_t *outhdr;
 	DATA_BLOB outbody;
 	DATA_BLOB outdyn;
@@ -140,7 +138,7 @@ static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
 
 	out_security_offset = SMB2_HDR_BODY + 0x08;
 
-	outhdr = (uint8_t *)smb2req->out.vector[i].iov_base;
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(smb2req);
 
 	outbody = data_blob_talloc(smb2req->out.vector, NULL, 0x08);
 	if (outbody.data == NULL) {
