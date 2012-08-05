@@ -1093,7 +1093,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		talloc_get_type_abort(private_data,
 		struct smbd_smb2_request);
 	struct smbd_smb2_request_pending_state *state = NULL;
-	int i = req->current_idx;
 	uint8_t *outhdr = NULL;
 	const uint8_t *inhdr = NULL;
 	uint8_t *hdr = NULL;
@@ -1106,8 +1105,8 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	TALLOC_FREE(req->async_te);
 
 	/* Ensure our final reply matches the interim one. */
-	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	message_id = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
 
@@ -1176,7 +1175,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	   the credits now, and zero credits on the final
 	   response. */
 	smb2_set_operation_credit(req->sconn,
-			&req->in.vector[i],
+			SMBD_SMB2_IN_HDR_IOV(req),
 			&state->vector[1]);
 
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
@@ -1218,13 +1217,12 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	struct smbd_server_connection *sconn = req->sconn;
 	struct smbd_smb2_request *cur;
 	const uint8_t *inhdr;
-	int i = req->current_idx;
 	uint32_t flags;
 	uint64_t search_message_id;
 	uint64_t search_async_id;
 	uint64_t found_id;
 
-	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 	search_message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
@@ -1242,9 +1240,7 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 		uint64_t message_id;
 		uint64_t async_id;
 
-		i = cur->current_idx;
-
-		outhdr = (const uint8_t *)cur->out.vector[i].iov_base;
+		outhdr = SMBD_SMB2_OUT_HDR_PTR(cur);
 
 		message_id = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
 		async_id = BVAL(outhdr, SMB2_HDR_PID);
@@ -1263,7 +1259,7 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 	}
 
 	if (cur && cur->subreq) {
-		inhdr = (const uint8_t *)cur->in.vector[i].iov_base;
+		inhdr = SMBD_SMB2_IN_HDR_PTR(cur);
 		DEBUG(10,("smbd_smb2_request_process_cancel: attempting to "
 			"cancel opcode[%s] mid %llu\n",
 			smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
@@ -1283,7 +1279,6 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
-	int i = req->current_idx;
 	uint32_t in_flags;
 	uint32_t in_tid;
 	struct smbXsrv_tcon *tcon;
@@ -1292,7 +1287,7 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 
 	req->tcon = NULL;
 
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 	in_tid = IVAL(inhdr, SMB2_HDR_TID);
@@ -1329,7 +1324,6 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
-	int i = req->current_idx;
 	uint32_t in_flags;
 	uint16_t in_opcode;
 	uint64_t in_session_id;
@@ -1341,7 +1335,7 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	req->session = NULL;
 	req->tcon = NULL;
 
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
 	in_opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
@@ -1407,9 +1401,8 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 	uint16_t needed_charge;
 	uint16_t credit_charge = 1;
 	const uint8_t *inhdr;
-	int i = req->current_idx;
 
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	if (req->sconn->smb2.supports_multicredit) {
 		credit_charge = SVAL(inhdr, SMB2_HDR_CREDIT_CHARGE);
@@ -1489,7 +1482,6 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
 	const uint8_t *inhdr;
-	int i = req->current_idx;
 	uint16_t opcode;
 	uint32_t flags;
 	uint64_t mid;
@@ -1500,7 +1492,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	struct smbXsrv_session *x = NULL;
 	bool signing_required = false;
 
-	inhdr = (const uint8_t *)req->in.vector[i].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	/* TODO: verify more things */
 
@@ -1581,7 +1573,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		req->do_signing = true;
 		status = smb2_signing_check_pdu(signing_key,
 						conn->protocol,
-						&req->in.vector[i], 3);
+						SMBD_SMB2_IN_HDR_IOV(req), 3);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
@@ -2280,7 +2272,7 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 {
 	DATA_BLOB body;
 	int i = req->current_idx;
-	uint8_t *outhdr = (uint8_t *)req->out.vector[i].iov_base;
+	uint8_t *outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 
 	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] |%s| at %s\n",
 		  i, nt_errstr(status), info ? " +info" : "",
