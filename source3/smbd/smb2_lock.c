@@ -55,7 +55,6 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq);
 NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
-	const int i = req->current_idx;
 	uint16_t in_lock_count;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
@@ -70,7 +69,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	if (!NT_STATUS_IS_OK(status)) {
 		return smbd_smb2_request_error(req, status);
 	}
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_lock_count			= CVAL(inbody, 0x02);
 	/* 0x04 - 4 bytes reserved */
@@ -81,7 +80,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
-	if (((in_lock_count - 1) * 0x18) > req->in.vector[i+2].iov_len) {
+	if (((in_lock_count - 1) * 0x18) > SMBD_SMB2_IN_DYN_LEN(req)) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
@@ -99,7 +98,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	in_locks[l].flags	= IVAL(lock_buffer, 0x10);
 	/* 0x14 - 4 reserved bytes */
 
-	lock_buffer = (const uint8_t *)req->in.vector[i+2].iov_base;
+	lock_buffer = SMBD_SMB2_IN_DYN_PTR(req);
 
 	for (l=1; l < in_lock_count; l++) {
 		in_locks[l].offset	= BVAL(lock_buffer, 0x00);
@@ -136,8 +135,7 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 	NTSTATUS error; /* transport error */
 
 	if (smb2req->cancelled) {
-		const uint8_t *inhdr = (const uint8_t *)
-			smb2req->in.vector[smb2req->current_idx].iov_base;
+		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
 		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 		struct smbd_smb2_lock_state *state;
 
@@ -451,7 +449,7 @@ struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *s
 	if (!tevent_req_is_in_progress(smb2req->subreq)) {
 		return NULL;
 	}
-	inhdr = (const uint8_t *)smb2req->in.vector[smb2req->current_idx].iov_base;
+	inhdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
 	if (SVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_LOCK) {
 		return NULL;
 	}
@@ -811,7 +809,7 @@ void process_blocking_lock_queue_smb2(
 			continue;
 		}
 
-		inhdr = (const uint8_t *)smb2req->in.vector[smb2req->current_idx].iov_base;
+		inhdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
 		if (SVAL(inhdr, SMB2_HDR_OPCODE) == SMB2_OP_LOCK) {
 			reprocess_blocked_smb2_lock(smb2req, tv_curr);
 		}
@@ -834,7 +832,6 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 	for (smb2req = sconn->smb2.requests; smb2req; smb2req = nextreq) {
 		struct smbd_smb2_lock_state *state = NULL;
 		files_struct *fsp_curr = NULL;
-		int i = smb2req->current_idx;
 		struct blocking_lock_record *blr = NULL;
 		const uint8_t *inhdr;
 
@@ -849,7 +846,7 @@ void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
 			continue;
 		}
 
-		inhdr = (const uint8_t *)smb2req->in.vector[i].iov_base;
+		inhdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
 		if (SVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_LOCK) {
 			/* Not a lock call. */
 			continue;
