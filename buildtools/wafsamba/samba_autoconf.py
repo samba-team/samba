@@ -437,10 +437,10 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
 
 
 @conf
-def CHECK_CFLAGS(conf, cflags):
+def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
     '''check if the given cflags are accepted by the compiler
     '''
-    return conf.check(fragment='int main(void) { return 0; }\n',
+    return conf.check(fragment=fragment,
                       execute=0,
                       type='nolink',
                       ccflags=cflags,
@@ -622,10 +622,25 @@ def SAMBA_CONFIG_H(conf, path=None):
 
     if Options.options.developer:
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
-        conf.ADD_CFLAGS('-Wall -g -Wshadow -Werror=strict-prototypes -Wstrict-prototypes -Werror=pointer-arith -Wpointer-arith -Wcast-align -Werror=write-strings -Wwrite-strings -Werror-implicit-function-declaration -Werror=format -Wformat=2 -Wno-format-y2k -Wmissing-prototypes -fno-common -Werror=address',
+        conf.ADD_CFLAGS('-Wall -g -Wshadow -Werror=strict-prototypes -Wstrict-prototypes -Werror=pointer-arith -Wpointer-arith -Wcast-align -Werror=write-strings -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k -Wmissing-prototypes -fno-common -Werror=address',
                         testflags=True)
         conf.ADD_CFLAGS('-Wcast-qual', testflags=True)
         conf.env.DEVELOPER_MODE = True
+
+        # This check is because for ldb_search(), a NULL format string
+        # is not an error, but some compilers complain about that.
+        if CHECK_CFLAGS(conf, "-Werror=format", '''
+int testformat(char *format, ...) __attribute__ ((format (__printf__, 1, 2)));
+
+int main(void) {
+        testformat(0);
+        return 0;
+}
+
+'''):
+            if not 'EXTRA_CFLAGS' in conf.env:
+                conf.env['EXTRA_CFLAGS'] = []
+            conf.env['EXTRA_CFLAGS'].extend(TO_LIST("-Werror=format"))
 
     if Options.options.picky_developer:
         conf.ADD_CFLAGS('-Werror', testflags=True)
