@@ -16,8 +16,9 @@ if conf.env.NCURSES_CONFIG:
                package="", uselib_store="NCURSES")
     conf.env.build_regedit = True
 
-conf.CHECK_HEADERS('ncurses.h menu.h panel.h', lib='ncurses')
+conf.CHECK_HEADERS('ncurses.h menu.h panel.h form.h', lib='ncurses')
 
 conf.CHECK_FUNCS_IN('initscr', 'ncurses')
 conf.CHECK_FUNCS_IN('set_menu_items item_count', 'menu')
 conf.CHECK_FUNCS_IN('new_panel show_panel', 'panel')
+conf.CHECK_FUNCS_IN('new_field new_form', 'form')
