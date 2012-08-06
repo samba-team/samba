@@ -131,6 +131,21 @@ const char *smb2_opcode_name(uint16_t opcode)
 	return smbd_smb2_table[opcode].name;
 }
 
+static const struct smbd_smb2_dispatch_table *smbd_smb2_call(uint16_t opcode)
+{
+	const struct smbd_smb2_dispatch_table *ret = NULL;
+
+	if (opcode >= ARRAY_SIZE(smbd_smb2_table)) {
+		return NULL;
+	}
+
+	ret = &smbd_smb2_table[opcode];
+
+	SMB_ASSERT(ret->opcode == opcode);
+
+	return ret;
+}
+
 static void print_req_vectors(struct smbd_smb2_request *req)
 {
 	int i;
@@ -1638,6 +1653,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
 	struct smbXsrv_connection *conn = req->sconn->conn;
+	const struct smbd_smb2_dispatch_table *call = NULL;
 	const uint8_t *inhdr;
 	uint16_t opcode;
 	uint32_t flags;
@@ -1678,6 +1694,11 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			/* drop the connection */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+	}
+
+	call = smbd_smb2_call(opcode);
+	if (call == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
 	allowed_flags = SMB2_HDR_FLAG_CHAINED |
