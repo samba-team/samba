@@ -38,7 +38,7 @@
 		return NULL; \
 	}
 
-#define PyErr_WERROR_IS_ERR_RAISE(status) \
+#define PyErr_WERROR_NOT_OK_RAISE(status) \
 	if (!W_ERROR_IS_OK(status)) { \
 		PyErr_SetWERROR(status); \
 		return NULL; \

@@ -591,7 +591,7 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 	}
 
 	werr = a->syntax->ldb_to_drsuapi(&syntax_ctx, a, el, attr, attr);
-	PyErr_WERROR_IS_ERR_RAISE(werr);
+	PyErr_WERROR_NOT_OK_RAISE(werr);
 
 	ret = py_return_ndr_struct("samba.dcerpc.drsuapi", "DsReplicaAttribute", attr, attr);
 
@@ -702,11 +702,11 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 	}
 
 	werr = a->syntax->ldb_to_drsuapi(&syntax_ctx, a, el, attr, attr);
-	PyErr_WERROR_IS_ERR_RAISE(werr);
+	PyErr_WERROR_NOT_OK_RAISE(werr);
 
 	/* now convert back again */
 	werr = a->syntax->drsuapi_to_ldb(&syntax_ctx, a, attr, el, el);
-	PyErr_WERROR_IS_ERR_RAISE(werr);
+	PyErr_WERROR_NOT_OK_RAISE(werr);
 
 	ret = py_return_ndr_struct("ldb", "MessageElement", el, el);
 
@@ -860,7 +860,7 @@ static PyObject *py_dsdb_set_schema_from_ldif(PyObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	result = dsdb_set_schema_from_ldif(ldb, pf, df, dn);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE;
 }
@@ -911,7 +911,7 @@ static PyObject *py_dsdb_write_prefixes_from_schema_to_ldb(PyObject *self, PyObj
 	}
 
 	result = dsdb_write_prefixes_from_schema_to_ldb(NULL, ldb, schema);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE;
 }

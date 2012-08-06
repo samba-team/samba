@@ -49,7 +49,7 @@ static PyObject *py_get_predefined_key_by_name(PyObject *self, PyObject *args)
 		return NULL;
 
 	result = reg_get_predefined_key_by_name(ctx, name, &key);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	return pytalloc_steal(&PyRegistryKey, key);
 }
@@ -64,7 +64,7 @@ static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
 		return NULL;
 
 	result = reg_key_del_abs(ctx, path);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE;
 }
@@ -80,7 +80,7 @@ static PyObject *py_get_predefined_key(PyObject *self, PyObject *args)
 		return NULL;
 
 	result = reg_get_predefined_key(ctx, hkey, &key);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	return pytalloc_steal(&PyRegistryKey, key);
 }
@@ -94,7 +94,7 @@ static PyObject *py_diff_apply(PyObject *self, PyObject *args)
 		return NULL;
 
 	result = reg_diff_apply(ctx, filename);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE; 
 }
@@ -127,7 +127,7 @@ static PyObject *py_mount_hive(PyObject *self, PyObject *args)
 	SMB_ASSERT(ctx != NULL);
 
 	result = reg_mount_hive(ctx, PyHiveKey_AsHiveKey(py_hivekey), hkey, elements);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE;
 }
@@ -137,7 +137,7 @@ static PyObject *registry_new(PyTypeObject *type, PyObject *args, PyObject *kwar
 	WERROR result;
 	struct registry_context *ctx;
 	result = reg_open_local(NULL, &ctx);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 	return pytalloc_steal(&PyRegistry, ctx);
 }
 
@@ -175,7 +175,7 @@ static PyObject *py_hive_key_del(PyObject *self, PyObject *args)
 
 	result = hive_key_del(NULL, key, name);
 
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE; 
 }
@@ -186,7 +186,7 @@ static PyObject *py_hive_key_flush(PyObject *self)
 	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
 	result = hive_key_flush(key);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE;
 }
@@ -202,7 +202,7 @@ static PyObject *py_hive_key_del_value(PyObject *self, PyObject *args)
 
 	result = hive_key_del_value(NULL, key, name);
 
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE; 
 }
@@ -226,7 +226,7 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 	else
 		result = hive_key_del_value(NULL, key, name);
 
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	Py_RETURN_NONE; 
 }
@@ -291,7 +291,7 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 	                       tevent_context_init(NULL),
 	                       lp_ctx, &hive_key);
 	talloc_free(mem_ctx);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	return pytalloc_steal(&PyHiveKey, hive_key);
 }
@@ -403,7 +403,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	result = reg_open_ldb_file(NULL, location, session_info, credentials,
 				   s4_event_context_init(NULL), lp_ctx, &key);
 	talloc_free(mem_ctx);
-	PyErr_WERROR_IS_ERR_RAISE(result);
+	PyErr_WERROR_NOT_OK_RAISE(result);
 
 	return pytalloc_steal(&PyHiveKey, key);
 }
