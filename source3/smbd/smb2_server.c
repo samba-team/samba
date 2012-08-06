@@ -1799,11 +1799,15 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	}
 
-	switch (opcode) {
-	case SMB2_OP_NEGPROT:
+	if (call->as_root) {
 		/* This call needs to be run as root */
 		change_to_root_user();
+	} else {
+		SMB_ASSERT(call->need_tcon);
+	}
 
+	switch (opcode) {
+	case SMB2_OP_NEGPROT:
 		{
 			START_PROFILE(smb2_negprot);
 			return_value = smbd_smb2_request_process_negprot(req);
@@ -1812,9 +1816,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_SESSSETUP:
-		/* This call needs to be run as root */
-		change_to_root_user();
-
 		{
 			START_PROFILE(smb2_sesssetup);
 			return_value = smbd_smb2_request_process_sesssetup(req);
@@ -1823,9 +1824,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_LOGOFF:
-		/* This call needs to be run as root */
-		change_to_root_user();
-
 		{
 			START_PROFILE(smb2_logoff);
 			return_value = smbd_smb2_request_process_logoff(req);
@@ -1834,15 +1832,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_TCON:
-		/*
-		 * This call needs to be run as root.
-		 *
-		 * smbd_smb2_request_process_tcon()
-		 * calls make_connection_snum(), which will call
-		 * change_to_user(), when needed.
-		 */
-		change_to_root_user();
-
 		{
 			START_PROFILE(smb2_tcon);
 			return_value = smbd_smb2_request_process_tcon(req);
@@ -1851,9 +1840,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_TDIS:
-		/* This call needs to be run as root */
-		change_to_root_user();
-
 		{
 			START_PROFILE(smb2_tdis);
 			return_value = smbd_smb2_request_process_tdis(req);
@@ -1918,13 +1904,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_CANCEL:
-		/*
-		 * This call needs to be run as root
-		 *
-		 * That is what we also do in the SMB1 case.
-		 */
-		change_to_root_user();
-
 		{
 			START_PROFILE(smb2_cancel);
 			return_value = smbd_smb2_request_process_cancel(req);
@@ -1933,9 +1912,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_KEEPALIVE:
-		/* This call needs to be run as root */
-		change_to_root_user();
-
 		{
 			START_PROFILE(smb2_keepalive);
 			return_value = smbd_smb2_request_process_keepalive(req);
