@@ -37,22 +37,35 @@ static const struct smbd_smb2_dispatch_table {
 	const char *name;
 	bool need_session;
 	bool need_tcon;
+	bool as_root;
 } smbd_smb2_table[] = {
 #define _OP(o) .opcode = o, .name = #o
 	{
 		_OP(SMB2_OP_NEGPROT),
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_SESSSETUP),
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_LOGOFF),
 		.need_session = true,
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_TCON),
 		.need_session = true,
+		/*
+		 * This call needs to be run as root.
+		 *
+		 * smbd_smb2_request_process_tcon()
+		 * calls make_connection_snum(), which will call
+		 * change_to_user(), when needed.
+		 */
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_TDIS),
 		.need_session = true,
 		.need_tcon = true,
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_CREATE),
 		.need_session = true,
@@ -83,8 +96,10 @@ static const struct smbd_smb2_dispatch_table {
 		.need_tcon = true,
 	},{
 		_OP(SMB2_OP_CANCEL),
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_KEEPALIVE),
+		.as_root = true,
 	},{
 		_OP(SMB2_OP_FIND),
 		.need_session = true,
