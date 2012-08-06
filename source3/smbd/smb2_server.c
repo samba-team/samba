@@ -35,6 +35,7 @@
 static const struct smbd_smb2_dispatch_table {
 	uint16_t opcode;
 	const char *name;
+	bool need_session;
 } smbd_smb2_table[] = {
 #define _OP(o) .opcode = o, .name = #o
 	{
@@ -43,38 +44,53 @@ static const struct smbd_smb2_dispatch_table {
 		_OP(SMB2_OP_SESSSETUP),
 	},{
 		_OP(SMB2_OP_LOGOFF),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_TCON),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_TDIS),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_CREATE),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_CLOSE),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_FLUSH),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_READ),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_WRITE),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_LOCK),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_IOCTL),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_CANCEL),
 	},{
 		_OP(SMB2_OP_KEEPALIVE),
 	},{
 		_OP(SMB2_OP_FIND),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_NOTIFY),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_GETINFO),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_SETINFO),
+		.need_session = true,
 	},{
 		_OP(SMB2_OP_BREAK),
+		.need_session = true,
 	}
 };
 
