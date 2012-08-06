@@ -1778,6 +1778,12 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		req->sconn->smb2.compound_related_in_progress = true;
 	}
 
+	if (call->need_session) {
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
+		}
+	}
+
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
 		/* This call needs to be run as root */
@@ -1802,11 +1808,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_LOGOFF:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
-
 		/* This call needs to be run as root */
 		change_to_root_user();
 
@@ -1818,11 +1819,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_TCON:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
-
 		/*
 		 * This call needs to be run as root.
 		 *
@@ -1840,10 +1836,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_TDIS:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -1867,10 +1859,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_CREATE:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -1891,10 +1879,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_CLOSE:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -1915,10 +1899,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_FLUSH:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -1939,10 +1919,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_READ:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -1963,10 +1939,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_WRITE:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -1987,14 +1959,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_LOCK:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			/* Too ugly to live ? JRA. */
-			if (NT_STATUS_EQUAL(session_status,NT_STATUS_USER_SESSION_DELETED)) {
-				session_status = NT_STATUS_FILE_CLOSED;
-			}
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -2019,10 +1983,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_IOCTL:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -2069,10 +2029,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_FIND:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -2093,10 +2049,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_NOTIFY:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -2117,10 +2069,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_GETINFO:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -2141,10 +2089,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_SETINFO:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
@@ -2165,10 +2109,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_BREAK:
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return_value = smbd_smb2_request_error(req, session_status);
-			break;
-		}
 		/*
 		 * This call needs to be run as user.
 		 *
