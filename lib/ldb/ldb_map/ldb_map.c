@@ -1015,7 +1015,7 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(ldb, data, &res, dn, LDB_SCOPE_BASE, attrs, "(|(objectClass=*)(dn=*))");
+	ret = ldb_search(ldb, data, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
 	talloc_free(dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
