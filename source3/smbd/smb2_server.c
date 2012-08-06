@@ -1784,6 +1784,21 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	}
 
+	if (call->need_tcon) {
+		SMB_ASSERT(call->need_session);
+
+		/*
+		 * This call needs to be run as user.
+		 *
+		 * smbd_smb2_request_check_tcon()
+		 * calls change_to_user() on success.
+		 */
+		status = smbd_smb2_request_check_tcon(req);
+		if (!NT_STATUS_IS_OK(status)) {
+			return smbd_smb2_request_error(req, status);
+		}
+	}
+
 	switch (opcode) {
 	case SMB2_OP_NEGPROT:
 		/* This call needs to be run as root */
@@ -1836,20 +1851,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_TDIS:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
 		/* This call needs to be run as root */
 		change_to_root_user();
-
 
 		{
 			START_PROFILE(smb2_tdis);
@@ -1859,18 +1862,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_CREATE:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_create);
 			return_value = smbd_smb2_request_process_create(req);
@@ -1879,18 +1870,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_CLOSE:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_close);
 			return_value = smbd_smb2_request_process_close(req);
@@ -1899,18 +1878,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_FLUSH:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_flush);
 			return_value = smbd_smb2_request_process_flush(req);
@@ -1919,18 +1886,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_READ:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_read);
 			return_value = smbd_smb2_request_process_read(req);
@@ -1939,18 +1894,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_WRITE:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_write);
 			return_value = smbd_smb2_request_process_write(req);
@@ -1959,22 +1902,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_LOCK:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			/* Too ugly to live ? JRA. */
-			if (NT_STATUS_EQUAL(status,NT_STATUS_NETWORK_NAME_DELETED)) {
-				status = NT_STATUS_FILE_CLOSED;
-			}
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_lock);
 			return_value = smbd_smb2_request_process_lock(req);
@@ -1983,18 +1910,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_IOCTL:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_ioctl);
 			return_value = smbd_smb2_request_process_ioctl(req);
@@ -2029,18 +1944,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_FIND:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_find);
 			return_value = smbd_smb2_request_process_find(req);
@@ -2049,18 +1952,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_NOTIFY:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_notify);
 			return_value = smbd_smb2_request_process_notify(req);
@@ -2069,18 +1960,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_GETINFO:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_getinfo);
 			return_value = smbd_smb2_request_process_getinfo(req);
@@ -2089,18 +1968,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_SETINFO:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_setinfo);
 			return_value = smbd_smb2_request_process_setinfo(req);
@@ -2109,18 +1976,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		break;
 
 	case SMB2_OP_BREAK:
-		/*
-		 * This call needs to be run as user.
-		 *
-		 * smbd_smb2_request_check_tcon()
-		 * calls change_to_user() on success.
-		 */
-		status = smbd_smb2_request_check_tcon(req);
-		if (!NT_STATUS_IS_OK(status)) {
-			return_value = smbd_smb2_request_error(req, status);
-			break;
-		}
-
 		{
 			START_PROFILE(smb2_break);
 			return_value = smbd_smb2_request_process_break(req);
