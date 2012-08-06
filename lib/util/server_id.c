@@ -43,7 +43,9 @@ bool server_id_equal(const struct server_id *p1, const struct server_id *p2)
 
 char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
 {
-	if (id->vnn == NONCLUSTER_VNN && id->task_id == 0) {
+	if (server_id_is_disconnected(id)) {
+		return talloc_strdup(mem_ctx, "disconnected");
+	} else if (id->vnn == NONCLUSTER_VNN && id->task_id == 0) {
 		return talloc_asprintf(mem_ctx,
 				       "%llu",
 				       (unsigned long long)id->pid);
@@ -95,9 +97,42 @@ struct server_id server_id_from_string(uint32_t local_vnn,
 	} else if (sscanf(pid_string, "%llu", &pid) == 1) {
 		result.vnn = local_vnn;
 		result.pid = pid;
+	} else if (strcmp(pid_string, "disconnected") ==0) {
+		server_id_set_disconnected(&result);
 	} else {
 		result.vnn = NONCLUSTER_VNN;
 		result.pid = UINT64_MAX;
 	}
 	return result;
+}
+
+/**
+ * Set the serverid to the special value that represents a disconnected
+ * client for (e.g.) durable handles.
+ */
+void server_id_set_disconnected(struct server_id *id)
+{
+	SMB_ASSERT(id != NULL);
+
+	id->pid = UINT64_MAX;
+	id->task_id = UINT32_MAX;
+	id->vnn = NONCLUSTER_VNN;
+	id->unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
+
+	return;
+}
+
+/**
+ * check whether a serverid is the special placeholder for
+ * a disconnected client
+ */
+bool server_id_is_disconnected(const struct server_id *id)
+{
+	struct server_id dis;
+
+	SMB_ASSERT(id != NULL);
+
+	server_id_set_disconnected(&dis);
+
+	return server_id_equal(id, &dis);
 }

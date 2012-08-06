@@ -904,4 +904,16 @@ char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id);
 struct server_id server_id_from_string(uint32_t local_vnn,
 				       const char *pid_string);
 
+/**
+ * Set the serverid to the special value that represents a disconnected
+ * client for (e.g.) durable handles.
+ */
+void server_id_set_disconnected(struct server_id *id);
+
+/**
+ * check whether a serverid is the special placeholder for
+ * a disconnected client
+ */
+bool server_id_is_disconnected(const struct server_id *id);
+
 #endif /* _SAMBA_UTIL_H_ */
