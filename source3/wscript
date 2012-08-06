@@ -21,9 +21,6 @@ def set_options(opt):
     opt.add_option('--with-shared-modules',
                    help=("Comma-separated list of names of modules to build shared"),
                    action="store", dest='shared_modules', default=None)
-    opt.add_option('--enable-selftest',
-                  help=("enable options necessary for selftest"),
-                  action="store_true", dest='enable_selftest', default=False)
 
     opt.SAMBA3_ADD_OPTION('winbind')
     opt.SAMBA3_ADD_OPTION('swat')
