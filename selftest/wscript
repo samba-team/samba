@@ -77,6 +77,10 @@ def configure(conf):
         conf.ADD_LDFLAGS('-lgcov', testflags=True)
         conf.ADD_CFLAGS('--coverage')
 
+    if Options.options.enable_selftest or Options.options.developer:
+        conf.DEFINE('ENABLE_SELFTEST', 1)
+
+
 def cmd_testonly(opt):
     '''run tests without doing a build first'''
     env = LOAD_ENVIRONMENT()

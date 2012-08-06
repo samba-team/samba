@@ -190,7 +190,7 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_IPRINT, "iprint"},
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
-#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST) || defined(ENABLE_BUILD_FARM_HACKS)
 	{PRINT_TEST, "test"},
 	{PRINT_VLP, "vlp"},
 #endif /* DEVELOPER */

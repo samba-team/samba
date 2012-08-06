@@ -397,7 +397,7 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->szPrintcommand, "lp -r -P%p %s");
 			break;
 
-#if defined(DEVELOPER) || defined(ENABLE_BUILD_FARM_HACKS)
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST) || defined(ENABLE_BUILD_FARM_HACKS)
 
 	case PRINT_TEST:
 	case PRINT_VLP: {
