@@ -38,6 +38,12 @@
 		return NULL; \
 	}
 
+#define PyErr_NTSTATUS_NOT_OK_RAISE(status) \
+	if (!NT_STATUS_IS_OK(status)) { \
+		PyErr_SetNTSTATUS(status); \
+		return NULL; \
+	}
+
 #define PyErr_WERROR_NOT_OK_RAISE(status) \
 	if (!W_ERROR_IS_OK(status)) { \
 		PyErr_SetWERROR(status); \
