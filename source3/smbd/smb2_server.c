@@ -32,34 +32,58 @@
 
 #define OUTVEC_ALLOC_SIZE (SMB2_HDR_BODY + 9)
 
-static const char *smb2_names[] = {
-	"SMB2_NEGPROT",
-	"SMB2_SESSSETUP",
-	"SMB2_LOGOFF",
-	"SMB2_TCON",
-	"SMB2_TDIS",
-	"SMB2_CREATE",
-	"SMB2_CLOSE",
-	"SMB2_FLUSH",
-	"SMB2_READ",
-	"SMB2_WRITE",
-	"SMB2_LOCK",
-	"SMB2_IOCTL",
-	"SMB2_CANCEL",
-	"SMB2_KEEPALIVE",
-	"SMB2_FIND",
-	"SMB2_NOTIFY",
-	"SMB2_GETINFO",
-	"SMB2_SETINFO",
-	"SMB2_BREAK"
+static const struct smbd_smb2_dispatch_table {
+	uint16_t opcode;
+	const char *name;
+} smbd_smb2_table[] = {
+#define _OP(o) .opcode = o, .name = #o
+	{
+		_OP(SMB2_OP_NEGPROT),
+	},{
+		_OP(SMB2_OP_SESSSETUP),
+	},{
+		_OP(SMB2_OP_LOGOFF),
+	},{
+		_OP(SMB2_OP_TCON),
+	},{
+		_OP(SMB2_OP_TDIS),
+	},{
+		_OP(SMB2_OP_CREATE),
+	},{
+		_OP(SMB2_OP_CLOSE),
+	},{
+		_OP(SMB2_OP_FLUSH),
+	},{
+		_OP(SMB2_OP_READ),
+	},{
+		_OP(SMB2_OP_WRITE),
+	},{
+		_OP(SMB2_OP_LOCK),
+	},{
+		_OP(SMB2_OP_IOCTL),
+	},{
+		_OP(SMB2_OP_CANCEL),
+	},{
+		_OP(SMB2_OP_KEEPALIVE),
+	},{
+		_OP(SMB2_OP_FIND),
+	},{
+		_OP(SMB2_OP_NOTIFY),
+	},{
+		_OP(SMB2_OP_GETINFO),
+	},{
+		_OP(SMB2_OP_SETINFO),
+	},{
+		_OP(SMB2_OP_BREAK),
+	}
 };
 
 const char *smb2_opcode_name(uint16_t opcode)
 {
-	if (opcode > 0x12) {
+	if (opcode >= ARRAY_SIZE(smbd_smb2_table)) {
 		return "Bad SMB2 opcode";
 	}
-	return smb2_names[opcode];
+	return smbd_smb2_table[opcode].name;
 }
 
 static void print_req_vectors(struct smbd_smb2_request *req)
