@@ -1505,6 +1505,31 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 				NULL, struct gpfs_config_data,
 				return -1);
 
+	if (config->leases) {
+		/*
+		 * GPFS lease code is based on kernel oplock code
+		 * so make sure it is turned on
+		 */
+		if (!lp_kernel_oplocks(SNUM(handle->conn))) {
+			DEBUG(5, ("Enabling kernel oplocks for "
+				  "gpfs:leases to work\n"));
+			lp_do_parameter(SNUM(handle->conn), "kernel oplocks",
+					"true");
+		}
+
+		/*
+		 * as the kernel does not properly support Level II oplocks
+		 * and GPFS leases code is based on kernel infrastructure, we
+		 * need to turn off Level II oplocks if gpfs:leases is enabled
+		 */
+		if (lp_level2_oplocks(SNUM(handle->conn))) {
+			DEBUG(5, ("gpfs:leases are enabled, disabling "
+				  "Level II oplocks\n"));
+			lp_do_parameter(SNUM(handle->conn), "level2 oplocks",
+					"false");
+		}
+	}
+
 	return 0;
 }
 
