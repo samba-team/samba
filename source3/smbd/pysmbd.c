@@ -129,9 +129,9 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	flags = O_RDONLY;
 #endif
 
-	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, 00400);
+	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, O_RDWR, 00400);
 	if (fsp->fh->fd == -1 && errno == EISDIR) {
-		fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, O_RDWR, 00400);
+		fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, 00400);
 	}
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
