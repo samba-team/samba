@@ -1979,7 +1979,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct tevent_req *subreq;
-	int i = req->current_idx;
+	struct iovec *outhdr = SMBD_SMB2_OUT_HDR_IOV(req);
+	struct iovec *outdyn = SMBD_SMB2_OUT_DYN_IOV(req);
 
 	req->subreq = NULL;
 	TALLOC_FREE(req->async_te);
@@ -2024,7 +2025,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 		status = smb2_signing_sign_pdu(signing_key,
 					       conn->protocol,
-					       &req->out.vector[i],
+					       outhdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2038,8 +2039,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	/* I am a sick, sick man... :-). Sendfile hack ... JRA. */
 	if (req->out.vector_count == 4 &&
-			req->out.vector[3].iov_base == NULL &&
-			req->out.vector[3].iov_len != 0) {
+	    outdyn->iov_base == NULL && outdyn->iov_len != 0) {
 		/* Dynamic part is NULL. Chop it off,
 		   We're going to send it via sendfile. */
 		req->out.vector_count -= 1;
