@@ -1225,28 +1225,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		/* Reset the new in size. */
 		smb2_setup_nbt_length(req->in.vector, req->in.vector_count);
 
-		/* Now recreate the out.vectors. */
-		outvec = talloc_zero_array(req, struct iovec, 4);
-		if (!outvec) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		/* 0 is always boilerplate and must
-		 * be of size 4 for the length field. */
-
-		outvec[0].iov_base = req->out.nbt_hdr;
-		outvec[0].iov_len = 4;
-		SIVAL(req->out.nbt_hdr, 0, 0);
-
-		if (!dup_smb2_vec3(outvec, &outvec[1], &req->out.vector[i])) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		TALLOC_FREE(req->out.vector);
-
-		req->out.vector = outvec;
-
-		req->out.vector_count = 4;
+		/* Re-arrange the out.vectors. */
+		memmove(&req->out.vector[req->current_idx],
+		        &req->out.vector[i],
+			sizeof(req->out.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
+		req->out.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
 
 		outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 		flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
