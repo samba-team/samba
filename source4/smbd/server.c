@@ -225,7 +225,10 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 			      cluster_id(0, SAMBA_PARENT_TASKID), event_ctx, false);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
-	irpc_add_name(msg, "samba");
+	status = irpc_add_name(msg, "samba");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = IRPC_REGISTER(msg, irpc, SAMBA_TERMINATE,
 			       samba_terminate, NULL);
