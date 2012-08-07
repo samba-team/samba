@@ -55,8 +55,8 @@ def checkset_backend(lp, backend, eadbfile):
         raise XattrBackendError("Invalid xattr backend choice %s"%backend)
 
 
-def getntacl(lp, file, backend=None, eadbfile=None):
-    if use_ntvfs:
+def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True):
+    if direct_db_access:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
         if dbname is not None:
             try:
@@ -71,8 +71,13 @@ def getntacl(lp, file, backend=None, eadbfile=None):
         else:
             attribute = samba.xattr_native.wrap_getxattr(file,
                                                          xattr.XATTR_NTACL_NAME)
-            ntacl = ndr_unpack(xattr.NTACL, attribute)
-            return ntacl
+        ntacl = ndr_unpack(xattr.NTACL, attribute)
+        if ntacl.version == 1:
+            return ntacl.info
+        elif ntacl.version == 2:
+            return ntacl.info.sd
+        elif ntacl.version == 3:
+            return ntacl.info.sd
     else:
         return smbd.get_nt_acl(file)
 
