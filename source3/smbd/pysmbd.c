@@ -101,7 +101,7 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 
 	smbd_vfs_init(conn);
 
-	fsp = talloc(frame, struct files_struct);
+	fsp = talloc_zero(frame, struct files_struct);
 	if (fsp == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
