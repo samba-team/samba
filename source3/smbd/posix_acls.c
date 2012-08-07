@@ -41,12 +41,6 @@ extern const struct generic_mapping file_generic_mapping;
 enum ace_owner {UID_ACE, GID_ACE, WORLD_ACE};
 enum ace_attribute {ALLOW_ACE, DENY_ACE}; /* Used for incoming NT ACLS. */
 
-typedef union posix_id {
-		uid_t uid;
-		gid_t gid;
-		int world;
-} posix_id;
-
 typedef struct canon_ace {
 	struct canon_ace *next, *prev;
 	SMB_ACL_TAG_T type;
@@ -54,7 +48,7 @@ typedef struct canon_ace {
 	struct dom_sid trustee;
 	enum ace_owner owner_type;
 	enum ace_attribute attr;
-	posix_id unix_ug;
+	struct unixid unix_ug;
 	uint8_t ace_flags; /* From windows ACE entry. */
 } canon_ace;
 
@@ -123,7 +117,7 @@ struct pai_entry {
 	struct pai_entry *next, *prev;
 	uint8_t ace_flags;
 	enum ace_owner owner_type;
-	posix_id unix_ug;
+	struct unixid unix_ug;
 };
 
 struct pai_val {
@@ -142,11 +136,11 @@ static uint32_t get_pai_entry_val(struct pai_entry *paie)
 {
 	switch (paie->owner_type) {
 		case UID_ACE:
-			DEBUG(10,("get_pai_entry_val: uid = %u\n", (unsigned int)paie->unix_ug.uid ));
-			return (uint32_t)paie->unix_ug.uid;
+			DEBUG(10,("get_pai_entry_val: uid = %u\n", (unsigned int)paie->unix_ug.id ));
+			return (uint32_t)paie->unix_ug.id;
 		case GID_ACE:
-			DEBUG(10,("get_pai_entry_val: gid = %u\n", (unsigned int)paie->unix_ug.gid ));
-			return (uint32_t)paie->unix_ug.gid;
+			DEBUG(10,("get_pai_entry_val: gid = %u\n", (unsigned int)paie->unix_ug.id ));
+			return (uint32_t)paie->unix_ug.id;
 		case WORLD_ACE:
 		default:
 			DEBUG(10,("get_pai_entry_val: world ace\n"));
@@ -162,11 +156,11 @@ static uint32_t get_entry_val(canon_ace *ace_entry)
 {
 	switch (ace_entry->owner_type) {
 		case UID_ACE:
-			DEBUG(10,("get_entry_val: uid = %u\n", (unsigned int)ace_entry->unix_ug.uid ));
-			return (uint32_t)ace_entry->unix_ug.uid;
+			DEBUG(10,("get_entry_val: uid = %u\n", (unsigned int)ace_entry->unix_ug.id ));
+			return (uint32_t)ace_entry->unix_ug.id;
 		case GID_ACE:
-			DEBUG(10,("get_entry_val: gid = %u\n", (unsigned int)ace_entry->unix_ug.gid ));
-			return (uint32_t)ace_entry->unix_ug.gid;
+			DEBUG(10,("get_entry_val: gid = %u\n", (unsigned int)ace_entry->unix_ug.id ));
+			return (uint32_t)ace_entry->unix_ug.id;
 		case WORLD_ACE:
 		default:
 			DEBUG(10,("get_entry_val: world ace\n"));
@@ -410,17 +404,20 @@ static bool get_pai_owner_type(struct pai_entry *paie, const char *entry_offset)
 	paie->owner_type = (enum ace_owner)CVAL(entry_offset,0);
 	switch( paie->owner_type) {
 		case UID_ACE:
-			paie->unix_ug.uid = (uid_t)IVAL(entry_offset,1);
+			paie->unix_ug.type = ID_TYPE_UID;
+			paie->unix_ug.id = (uid_t)IVAL(entry_offset,1);
 			DEBUG(10,("get_pai_owner_type: uid = %u\n",
-				(unsigned int)paie->unix_ug.uid ));
+				(unsigned int)paie->unix_ug.id ));
 			break;
 		case GID_ACE:
-			paie->unix_ug.gid = (gid_t)IVAL(entry_offset,1);
+			paie->unix_ug.type = ID_TYPE_GID;
+			paie->unix_ug.id = (gid_t)IVAL(entry_offset,1);
 			DEBUG(10,("get_pai_owner_type: gid = %u\n",
-				(unsigned int)paie->unix_ug.gid ));
+				(unsigned int)paie->unix_ug.id ));
 			break;
 		case WORLD_ACE:
-			paie->unix_ug.world = -1;
+			paie->unix_ug.type = ID_TYPE_NOT_SPECIFIED;
+			paie->unix_ug.id = -1;
 			DEBUG(10,("get_pai_owner_type: world ace\n"));
 			break;
 		default:
@@ -804,11 +801,11 @@ static void print_canon_ace(canon_ace *pace, int num)
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
 	dbgtext( "SID = %s ", sid_string_dbg(&pace->trustee));
 	if (pace->owner_type == UID_ACE) {
-		const char *u_name = uidtoname(pace->unix_ug.uid);
-		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.uid, u_name );
+		const char *u_name = uidtoname(pace->unix_ug.id);
+		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.id, u_name );
 	} else if (pace->owner_type == GID_ACE) {
-		char *g_name = gidtoname(pace->unix_ug.gid);
-		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.gid, g_name );
+		char *g_name = gidtoname(pace->unix_ug.id);
+		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.id, g_name );
 	} else
 		dbgtext( "other ");
 	switch (pace->type) {
@@ -1319,17 +1316,17 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 	 * if it's the current user, we already have the unix token
 	 * and don't need to do the complex user_in_group_sid() call
 	 */
-	if (uid_ace->unix_ug.uid == get_current_uid(conn)) {
+	if (uid_ace->unix_ug.id == get_current_uid(conn)) {
 		const struct security_unix_token *curr_utok = NULL;
 		size_t i;
 
-		if (group_ace->unix_ug.gid == get_current_gid(conn)) {
+		if (group_ace->unix_ug.id == get_current_gid(conn)) {
 			return True;
 		}
 
 		curr_utok = get_current_utok(conn);
 		for (i=0; i < curr_utok->ngroups; i++) {
-			if (group_ace->unix_ug.gid == curr_utok->groups[i]) {
+			if (group_ace->unix_ug.id == curr_utok->groups[i]) {
 				return True;
 			}
 		}
@@ -1405,7 +1402,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		ZERO_STRUCTP(pace);
 		pace->type = SMB_ACL_USER_OBJ;
 		pace->owner_type = UID_ACE;
-		pace->unix_ug.uid = pst->st_ex_uid;
+		pace->unix_ug.type = ID_TYPE_UID;
+		pace->unix_ug.id = pst->st_ex_uid;
 		pace->trustee = *pfile_owner_sid;
 		pace->attr = ALLOW_ACE;
 		/* Start with existing permissions, principle of least
@@ -1422,7 +1420,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 			for (pace_iter = *pp_ace; pace_iter; pace_iter = pace_iter->next) {
 				if (pace_iter->type == SMB_ACL_USER &&
-						pace_iter->unix_ug.uid == pace->unix_ug.uid) {
+						pace_iter->unix_ug.id == pace->unix_ug.id) {
 					pace->perms |= pace_iter->perms;
 				} else if (pace_iter->type == SMB_ACL_GROUP_OBJ || pace_iter->type == SMB_ACL_GROUP) {
 					if (dom_sid_equal(&pace->trustee, &pace_iter->trustee)) {
@@ -1457,7 +1455,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		ZERO_STRUCTP(pace);
 		pace->type = SMB_ACL_GROUP_OBJ;
 		pace->owner_type = GID_ACE;
-		pace->unix_ug.gid = pst->st_ex_gid;
+		pace->unix_ug.type = ID_TYPE_GID;
+		pace->unix_ug.id = pst->st_ex_gid;
 		pace->trustee = *pfile_grp_sid;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
@@ -1484,7 +1483,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 		ZERO_STRUCTP(pace);
 		pace->type = SMB_ACL_OTHER;
 		pace->owner_type = WORLD_ACE;
-		pace->unix_ug.world = -1;
+		pace->unix_ug.type = ID_TYPE_NOT_SPECIFIED;
+		pace->unix_ug.id = -1;
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
 		if (setting_acl) {
@@ -1511,11 +1511,11 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 
 		for (pace = *pp_ace; pace; pace = pace->next) {
 			if (pace->type == SMB_ACL_USER &&
-					pace->unix_ug.uid == pace_user->unix_ug.uid) {
+					pace->unix_ug.id == pace_user->unix_ug.id) {
 				/* Already got one. */
 				got_duplicate_user = true;
 			} else if (pace->type == SMB_ACL_GROUP &&
-					pace->unix_ug.gid == pace_user->unix_ug.gid) {
+					pace->unix_ug.id == pace_user->unix_ug.id) {
 				/* Already got one. */
 				got_duplicate_group = true;
 			} else if ((pace->type == SMB_ACL_GROUP)
@@ -1546,7 +1546,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			ZERO_STRUCTP(pace);
 			pace->type = SMB_ACL_GROUP;;
 			pace->owner_type = GID_ACE;
-			pace->unix_ug.gid = pace_group->unix_ug.gid;
+			pace->unix_ug.type = ID_TYPE_GID;
+			pace->unix_ug.id = pace_group->unix_ug.id;
 			pace->trustee = pace_group->trustee;
 			pace->attr = pace_group->attr;
 			pace->perms = pace_group->perms;
@@ -1569,7 +1570,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			ZERO_STRUCTP(pace);
 			pace->type = SMB_ACL_USER;;
 			pace->owner_type = UID_ACE;
-			pace->unix_ug.uid = pace_user->unix_ug.uid;
+			pace->unix_ug.type = ID_TYPE_UID;
+			pace->unix_ug.id = pace_user->unix_ug.id;
 			pace->trustee = pace_user->trustee;
 			pace->attr = pace_user->attr;
 			pace->perms = pace_user->perms;
@@ -1589,7 +1591,8 @@ static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace
 			ZERO_STRUCTP(pace);
 			pace->type = SMB_ACL_GROUP;;
 			pace->owner_type = GID_ACE;
-			pace->unix_ug.gid = pace_group->unix_ug.gid;
+			pace->unix_ug.type = ID_TYPE_GID;
+			pace->unix_ug.id = pace_group->unix_ug.id;
 			pace->trustee = pace_group->trustee;
 			pace->attr = pace_group->attr;
 			pace->perms = pace_group->perms;
@@ -1946,11 +1949,13 @@ static bool create_canon_ace_lists(files_struct *fsp,
 
 		if( dom_sid_equal(&current_ace->trustee, &global_sid_World)) {
 			current_ace->owner_type = WORLD_ACE;
-			current_ace->unix_ug.world = -1;
+			current_ace->unix_ug.type = ID_TYPE_NOT_SPECIFIED;
+			current_ace->unix_ug.id = -1;
 			current_ace->type = SMB_ACL_OTHER;
 		} else if (dom_sid_equal(&current_ace->trustee, &global_sid_Creator_Owner)) {
 			current_ace->owner_type = UID_ACE;
-			current_ace->unix_ug.uid = pst->st_ex_uid;
+			current_ace->unix_ug.type = ID_TYPE_UID;
+			current_ace->unix_ug.id = pst->st_ex_uid;
 			current_ace->type = SMB_ACL_USER_OBJ;
 
 			/*
@@ -1963,7 +1968,8 @@ static bool create_canon_ace_lists(files_struct *fsp,
 
 		} else if (dom_sid_equal(&current_ace->trustee, &global_sid_Creator_Group)) {
 			current_ace->owner_type = GID_ACE;
-			current_ace->unix_ug.gid = pst->st_ex_gid;
+			current_ace->unix_ug.type = ID_TYPE_GID;
+			current_ace->unix_ug.id = pst->st_ex_gid;
 			current_ace->type = SMB_ACL_GROUP_OBJ;
 
 			/*
@@ -1994,7 +2000,8 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				 * entries in for groups otherwise */
 				if (unixid.id == pst->st_ex_uid) {
 					current_ace->owner_type = UID_ACE;
-					current_ace->unix_ug.uid = unixid.id;
+					current_ace->unix_ug.type = ID_TYPE_UID;
+					current_ace->unix_ug.id = unixid.id;
 					current_ace->type = SMB_ACL_USER_OBJ;
 
 					/* Add the user object to the posix ACL,
@@ -2029,11 +2036,12 @@ static bool create_canon_ace_lists(files_struct *fsp,
 
 				sid_copy(&current_ace->trustee, &psa->trustee);
 
-				current_ace->unix_ug.gid = unixid.id;
+				current_ace->unix_ug.type = ID_TYPE_GID;
+				current_ace->unix_ug.id = unixid.id;
 				current_ace->owner_type = GID_ACE;
 				/* If it's the primary group, this is a
 				   group_obj, not a group. */
-				if (current_ace->unix_ug.gid == pst->st_ex_gid) {
+				if (current_ace->unix_ug.id == pst->st_ex_gid) {
 					current_ace->type = SMB_ACL_GROUP_OBJ;
 				} else {
 					current_ace->type = SMB_ACL_GROUP;
@@ -2041,20 +2049,22 @@ static bool create_canon_ace_lists(files_struct *fsp,
 
 			} else if (unixid.type == ID_TYPE_UID) {
 				current_ace->owner_type = UID_ACE;
-				current_ace->unix_ug.uid = unixid.id;
+				current_ace->unix_ug.type = ID_TYPE_UID;
+				current_ace->unix_ug.id = unixid.id;
 				/* If it's the owning user, this is a user_obj,
 				   not a user. */
-				if (current_ace->unix_ug.uid == pst->st_ex_uid) {
+				if (current_ace->unix_ug.id == pst->st_ex_uid) {
 					current_ace->type = SMB_ACL_USER_OBJ;
 				} else {
 					current_ace->type = SMB_ACL_USER;
 				}
 			} else if (unixid.type == ID_TYPE_GID) {
-				current_ace->unix_ug.gid = unixid.id;
+				current_ace->unix_ug.type = ID_TYPE_GID;
+				current_ace->unix_ug.id = unixid.id;
 				current_ace->owner_type = GID_ACE;
 				/* If it's the primary group, this is a
 				   group_obj, not a group. */
-				if (current_ace->unix_ug.gid == pst->st_ex_gid) {
+				if (current_ace->unix_ug.id == pst->st_ex_gid) {
 					current_ace->type = SMB_ACL_GROUP_OBJ;
 				} else {
 					current_ace->type = SMB_ACL_GROUP;
@@ -2625,7 +2635,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		struct dom_sid sid;
-		posix_id unix_ug;
+		struct unixid unix_ug;
 		enum ace_owner owner_type;
 
 		entry_id = SMB_ACL_NEXT_ENTRY;
@@ -2642,7 +2652,8 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 			case SMB_ACL_USER_OBJ:
 				/* Get the SID from the owner. */
 				sid_copy(&sid, powner);
-				unix_ug.uid = psbuf->st_ex_uid;
+				unix_ug.type = ID_TYPE_UID;
+				unix_ug.id = psbuf->st_ex_uid;
 				owner_type = UID_ACE;
 				break;
 			case SMB_ACL_USER:
@@ -2653,7 +2664,8 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 						continue;
 					}
 					uid_to_sid( &sid, *puid);
-					unix_ug.uid = *puid;
+					unix_ug.type = ID_TYPE_UID;
+					unix_ug.id = *puid;
 					owner_type = UID_ACE;
 					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)puid,tagtype);
 					break;
@@ -2661,7 +2673,8 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 			case SMB_ACL_GROUP_OBJ:
 				/* Get the SID from the owning group. */
 				sid_copy(&sid, pgroup);
-				unix_ug.gid = psbuf->st_ex_gid;
+				unix_ug.type = ID_TYPE_GID;
+				unix_ug.id = psbuf->st_ex_gid;
 				owner_type = GID_ACE;
 				break;
 			case SMB_ACL_GROUP:
@@ -2672,7 +2685,8 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 						continue;
 					}
 					gid_to_sid( &sid, *pgid);
-					unix_ug.gid = *pgid;
+					unix_ug.type = ID_TYPE_GID;
+					unix_ug.id = *pgid;
 					owner_type = GID_ACE;
 					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)pgid,tagtype);
 					break;
@@ -2683,7 +2697,8 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 			case SMB_ACL_OTHER:
 				/* Use the Everyone SID */
 				sid = global_sid_World;
-				unix_ug.world = -1;
+				unix_ug.type = ID_TYPE_NOT_SPECIFIED;
+				unix_ug.id = -1;
 				owner_type = WORLD_ACE;
 				break;
 			default:
@@ -2911,7 +2926,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 		 */
 
 		if ((p_ace->type == SMB_ACL_USER) || (p_ace->type == SMB_ACL_GROUP)) {
-			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&p_ace->unix_ug.uid) == -1) {
+			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&p_ace->unix_ug.id) == -1) {
 				DEBUG(0,("set_canon_ace_list: Failed to set qualifier on entry %d. (%s)\n",
 					i, strerror(errno) ));
 				goto fail;
@@ -3070,12 +3085,12 @@ static bool set_canon_ace_list(files_struct *fsp,
  Find a particular canon_ace entry.
 ****************************************************************************/
 
-static struct canon_ace *canon_ace_entry_for(struct canon_ace *list, SMB_ACL_TAG_T type, posix_id *id)
+static struct canon_ace *canon_ace_entry_for(struct canon_ace *list, SMB_ACL_TAG_T type, struct unixid *id)
 {
 	while (list) {
 		if (list->type == type && ((type != SMB_ACL_USER && type != SMB_ACL_GROUP) ||
-				(type == SMB_ACL_USER  && id && id->uid == list->unix_ug.uid) ||
-				(type == SMB_ACL_GROUP && id && id->gid == list->unix_ug.gid)))
+				(type == SMB_ACL_USER  && id && id->id == list->unix_ug.id) ||
+				(type == SMB_ACL_GROUP && id && id->id == list->unix_ug.id)))
 			break;
 		list = list->next;
 	}
