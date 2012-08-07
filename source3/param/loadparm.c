@@ -1495,10 +1495,6 @@ static void free_param_opts(struct parmlist_entry **popts)
 {
 	struct parmlist_entry *opt, *next_opt;
 
-	if (popts == NULL) {
-		return;
-	}
-
 	if (*popts != NULL) {
 		DEBUG(5, ("Freeing parametrics:\n"));
 	}
