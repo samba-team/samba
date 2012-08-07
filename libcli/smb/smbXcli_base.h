@@ -21,14 +21,13 @@
 #ifndef _SMBXCLI_BASE_H_
 #define _SMBXCLI_BASE_H_
 
-#include <sys/uio.h>
-#include "libcli/smb/smb2_create_blob.h"
-
 struct smbXcli_conn;
 struct smbXcli_session;
 struct smbXcli_tcon;
 struct smb_trans_enc_state;
 struct GUID;
+struct iovec;
+struct smb2_create_blobs;
 
 struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 					 int fd,
