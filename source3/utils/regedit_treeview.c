@@ -262,7 +262,6 @@ fail:
 void tree_view_show(struct tree_view *view)
 {
 	post_menu(view->menu);
-	//wrefresh(view->window);
 }
 
 static int tree_view_free(struct tree_view *view)

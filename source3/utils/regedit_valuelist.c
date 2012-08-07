@@ -125,7 +125,6 @@ static uint32_t get_num_values(TALLOC_CTX *ctx, const struct registry_key *key)
 void value_list_show(struct value_list *vl)
 {
 	post_menu(vl->menu);
-	//wrefresh(vl->window);
 }
 
 static WERROR append_data_summary(struct value_item *vitem)
