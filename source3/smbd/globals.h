@@ -474,21 +474,37 @@ struct smbd_smb2_request {
 	 */
 	struct tevent_req *subreq;
 
-#define SMBD_SMB2_IN_HDR_IOV(req)    (&req->in.vector[req->current_idx+0])
+#define SMBD_SMB2_HDR_IOV_OFS 0
+#define SMBD_SMB2_BODY_IOV_OFS 1
+#define SMBD_SMB2_DYN_IOV_OFS 2
+
+#define SMBD_SMB2_NUM_IOV_PER_REQ 3
+
+#define SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,ofs) \
+	(&req->dir.vector[(idx)+(ofs)])
+
+#define SMBD_SMB2_IDX_HDR_IOV(req,dir,idx) \
+	SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,SMBD_SMB2_HDR_IOV_OFS)
+#define SMBD_SMB2_IDX_BODY_IOV(req,dir,idx) \
+	SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,SMBD_SMB2_BODY_IOV_OFS)
+#define SMBD_SMB2_IDX_DYN_IOV(req,dir,idx) \
+	SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,SMBD_SMB2_DYN_IOV_OFS)
+
+#define SMBD_SMB2_IN_HDR_IOV(req)    SMBD_SMB2_IDX_HDR_IOV(req,in,req->current_idx)
 #define SMBD_SMB2_IN_HDR_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_HDR_IOV(req)->iov_base)
-#define SMBD_SMB2_IN_BODY_IOV(req)   (&req->in.vector[req->current_idx+1])
+#define SMBD_SMB2_IN_BODY_IOV(req)   SMBD_SMB2_IDX_BODY_IOV(req,in,req->current_idx)
 #define SMBD_SMB2_IN_BODY_PTR(req)   (uint8_t *)(SMBD_SMB2_IN_BODY_IOV(req)->iov_base)
 #define SMBD_SMB2_IN_BODY_LEN(req)   (SMBD_SMB2_IN_BODY_IOV(req)->iov_len)
-#define SMBD_SMB2_IN_DYN_IOV(req)    (&req->in.vector[req->current_idx+2])
+#define SMBD_SMB2_IN_DYN_IOV(req)    SMBD_SMB2_IDX_DYN_IOV(req,in,req->current_idx)
 #define SMBD_SMB2_IN_DYN_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_DYN_IOV(req)->iov_base)
 #define SMBD_SMB2_IN_DYN_LEN(req)    (SMBD_SMB2_IN_DYN_IOV(req)->iov_len)
 
-#define SMBD_SMB2_OUT_HDR_IOV(req)   (&req->out.vector[req->current_idx+0])
+#define SMBD_SMB2_OUT_HDR_IOV(req)   SMBD_SMB2_IDX_HDR_IOV(req,out,req->current_idx)
 #define SMBD_SMB2_OUT_HDR_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_HDR_IOV(req)->iov_base)
-#define SMBD_SMB2_OUT_BODY_IOV(req)  (&req->out.vector[req->current_idx+1])
+#define SMBD_SMB2_OUT_BODY_IOV(req)  SMBD_SMB2_IDX_BODY_IOV(req,out,req->current_idx)
 #define SMBD_SMB2_OUT_BODY_PTR(req)  (uint8_t *)(SMBD_SMB2_OUT_BODY_IOV(req)->iov_base)
 #define SMBD_SMB2_OUT_BODY_LEN(req)  (SMBD_SMB2_OUT_BODY_IOV(req)->iov_len)
-#define SMBD_SMB2_OUT_DYN_IOV(req)   (&req->out.vector[req->current_idx+2])
+#define SMBD_SMB2_OUT_DYN_IOV(req)   SMBD_SMB2_IDX_DYN_IOV(req,out,req->current_idx)
 #define SMBD_SMB2_OUT_DYN_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_DYN_IOV(req)->iov_base)
 #define SMBD_SMB2_OUT_DYN_LEN(req)   (SMBD_SMB2_OUT_DYN_IOV(req)->iov_len)
 
