@@ -32,8 +32,6 @@ class NtaclsTests(TestCase):
         path = os.environ['SELFTEST_PREFIX']
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl = xattr.NTACL()
-        ntacl.version = 1
         open(tempf, 'w').write("empty")
         lp.set("posix:eadb",os.path.join(path,"eadbtest.tdb"))
         setntacl(lp, tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467")
@@ -46,8 +44,6 @@ class NtaclsTests(TestCase):
         path = os.environ['SELFTEST_PREFIX']
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl = xattr.NTACL()
-        ntacl.version = 1
         open(tempf, 'w').write("empty")
         lp.set("posix:eadb",os.path.join(path,"eadbtest.tdb"))
         setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467")
@@ -62,8 +58,6 @@ class NtaclsTests(TestCase):
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         path = os.environ['SELFTEST_PREFIX']
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl = xattr.NTACL()
-        ntacl.version = 1
         open(tempf, 'w').write("empty")
         setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467","tdb",os.path.join(path,"eadbtest.tdb"))
         facl=getntacl(lp,tempf,"tdb",os.path.join(path,"eadbtest.tdb"))
@@ -77,8 +71,6 @@ class NtaclsTests(TestCase):
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         path = os.environ['SELFTEST_PREFIX']
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl = xattr.NTACL()
-        ntacl.version = 1
         open(tempf, 'w').write("empty")
         self.assertRaises(XattrBackendError, setntacl, lp, tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467","ttdb", os.path.join(path,"eadbtest.tdb"))
 
@@ -90,8 +82,6 @@ class NtaclsTests(TestCase):
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         path = os.environ['SELFTEST_PREFIX']
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        ntacl = xattr.NTACL()
-        ntacl.version = 1
         open(tempf, 'w').write("empty")
         lp.set("posix:eadb", os.path.join(path,"eadbtest.tdb"))
         self.assertRaises(Exception, setntacl, lp, tempf ,acl,
