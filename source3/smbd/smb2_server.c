@@ -1188,10 +1188,9 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		print_req_vectors(req);
 	}
 
-	if (req->out.vector_count > 4) {
-		struct iovec *outvec = NULL;
-
-		/* This is a compound reply. We
+	if (req->out.vector_count >= (2*SMBD_SMB2_NUM_IOV_PER_REQ)) {
+		/*
+		 * This is a compound reply. We
 		 * must do an interim response
 		 * followed by the async response
 		 * to match W2K8R2.
