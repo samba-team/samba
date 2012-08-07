@@ -2038,7 +2038,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	/* I am a sick, sick man... :-). Sendfile hack ... JRA. */
-	if (req->out.vector_count == 4 &&
+	if (req->out.vector_count < (2*SMBD_SMB2_NUM_IOV_PER_REQ) &&
 	    outdyn->iov_base == NULL && outdyn->iov_len != 0) {
 		/* Dynamic part is NULL. Chop it off,
 		   We're going to send it via sendfile. */
