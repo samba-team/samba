@@ -997,8 +997,9 @@ static void mh_seekdir(vfs_handle_struct *handle,
 		long offset)
 {
 	DEBUG(MH_INFO_DEBUG, ("Entering and leaving mh_seekdir\n"));
-	return SMB_VFS_NEXT_SEEKDIR(handle,
+	SMB_VFS_NEXT_SEEKDIR(handle,
 			((mh_dirinfo_struct*)dirp)->dirstream, offset);
+	return;
 }
 
 /*
@@ -1021,8 +1022,9 @@ static void mh_rewinddir(vfs_handle_struct *handle,
 		DIR *dirp)
 {
 	DEBUG(MH_INFO_DEBUG, ("Entering and leaving mh_rewinddir\n"));
-	return SMB_VFS_NEXT_REWINDDIR(handle,
+	SMB_VFS_NEXT_REWINDDIR(handle,
 			((mh_dirinfo_struct*)dirp)->dirstream);
+	return;
 }
 
 /*
@@ -1120,8 +1122,9 @@ static void mh_init_search_op(vfs_handle_struct *handle,
 		DIR *dirp)
 {
 	DEBUG(MH_INFO_DEBUG, ("Entering and leaving mh_init_search_op\n"));
-	return SMB_VFS_NEXT_INIT_SEARCH_OP(handle,
+	SMB_VFS_NEXT_INIT_SEARCH_OP(handle,
 			((mh_dirinfo_struct*)dirp)->dirstream);
+	return;
 }
 
 /*
