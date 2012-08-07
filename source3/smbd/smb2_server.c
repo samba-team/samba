@@ -1247,7 +1247,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		req->current_idx = 1;
 		req->out.vector_count = 4;
 
-		outhdr = (uint8_t *)req->out.vector[1].iov_base;
+		outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 		flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
 		SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
 	}
