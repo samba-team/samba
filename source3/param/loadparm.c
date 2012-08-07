@@ -2254,10 +2254,6 @@ static void set_param_opt(struct parmlist_entry **opt_list,
 	struct parmlist_entry *new_opt, *opt;
 	bool not_added;
 
-	if (opt_list == NULL) {
-		return;
-	}
-
 	opt = *opt_list;
 	not_added = true;
 
