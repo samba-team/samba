@@ -1214,14 +1214,16 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		req->compound_related = false;
 		req->sconn->smb2.compound_related_in_progress = false;
 
+		req->current_idx = 1;
+
 		/* Re-arrange the in.vectors. */
-		req->in.vector[1] = req->in.vector[i];
-		req->in.vector[2] = req->in.vector[i+1];
-		req->in.vector[3] = req->in.vector[i+2];
-		req->in.vector_count = 4;
+		memmove(&req->in.vector[req->current_idx],
+		        &req->in.vector[i],
+			sizeof(req->in.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
+		req->in.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
 
 		/* Reset the new in size. */
-		smb2_setup_nbt_length(req->in.vector, 4);
+		smb2_setup_nbt_length(req->in.vector, req->in.vector_count);
 
 		/* Now recreate the out.vectors. */
 		outvec = talloc_zero_array(req, struct iovec, 4);
@@ -1244,7 +1246,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 		req->out.vector = outvec;
 
-		req->current_idx = 1;
 		req->out.vector_count = 4;
 
 		outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
