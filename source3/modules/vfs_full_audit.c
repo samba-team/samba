@@ -558,8 +558,6 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 	TALLOC_FREE(audit_pre);
 	TALLOC_FREE(op_msg);
 	TALLOC_FREE(tmp_do_log_ctx);
-
-	return;
 }
 
 /**
@@ -638,8 +636,6 @@ static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 
 	/* The bitmaps will be disconnected when the private
 	   data is deleted. */
-
-	return;
 }
 
 static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
@@ -770,7 +766,6 @@ static void smb_full_audit_seekdir(vfs_handle_struct *handle,
 	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
 
 	do_log(SMB_VFS_OP_SEEKDIR, True, handle, "");
-	return;
 }
 
 static long smb_full_audit_telldir(vfs_handle_struct *handle,
@@ -791,7 +786,6 @@ static void smb_full_audit_rewinddir(vfs_handle_struct *handle,
 	SMB_VFS_NEXT_REWINDDIR(handle, dirp);
 
 	do_log(SMB_VFS_OP_REWINDDIR, True, handle, "");
-	return;
 }
 
 static int smb_full_audit_mkdir(vfs_handle_struct *handle,
@@ -836,7 +830,6 @@ static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
 	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
 
 	do_log(SMB_VFS_OP_INIT_SEARCH_OP, True, handle, "");
-	return;
 }
 
 static int smb_full_audit_open(vfs_handle_struct *handle,
@@ -1748,8 +1741,6 @@ static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_STRICT_UNLOCK, true, handle,
 	    "%s:%llu-%llu:%d", fsp_str_do_log(fsp), plock->start,
 	    plock->size);
-
-	return;
 }
 
 static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
