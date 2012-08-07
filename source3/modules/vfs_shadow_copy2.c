@@ -1065,8 +1065,6 @@ static void shadow_copy2_sort_data(vfs_handle_struct *handle,
 			       shadow_copy2_data->num_volumes,
 			       cmpfunc);
 	}
-
-	return;
 }
 
 static int shadow_copy2_get_shadow_copy_data(
