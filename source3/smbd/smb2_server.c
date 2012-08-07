@@ -292,6 +292,9 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 		size_t full_size;
 		size_t next_command_ofs;
 		uint16_t body_size;
+		uint8_t *body = NULL;
+		uint32_t dyn_size;
+		uint8_t *dyn = NULL;
 		struct iovec *iov_tmp;
 
 		/*
@@ -338,6 +341,9 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 			 */
 			body_size = full_size - SMB2_HDR_BODY;
 		}
+		body = hdr + SMB2_HDR_BODY;
+		dyn = body + body_size;
+		dyn_size = full_size - (SMB2_HDR_BODY + body_size);
 
 		iov_tmp = talloc_realloc(mem_ctx, iov, struct iovec,
 					 num_iov + SMBD_SMB2_NUM_IOV_PER_REQ);
@@ -349,12 +355,12 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 		cur = &iov[num_iov];
 		num_iov += SMBD_SMB2_NUM_IOV_PER_REQ;
 
-		cur[0].iov_base = hdr;
-		cur[0].iov_len  = SMB2_HDR_BODY;
-		cur[1].iov_base = hdr + SMB2_HDR_BODY;
-		cur[1].iov_len  = body_size;
-		cur[2].iov_base = hdr + SMB2_HDR_BODY + body_size;
-		cur[2].iov_len  = full_size - (SMB2_HDR_BODY + body_size);
+		cur[SMBD_SMB2_HDR_IOV_OFS].iov_base  = hdr;
+		cur[SMBD_SMB2_HDR_IOV_OFS].iov_len   = SMB2_HDR_BODY;
+		cur[SMBD_SMB2_BODY_IOV_OFS].iov_base = body;
+		cur[SMBD_SMB2_BODY_IOV_OFS].iov_len  = body_size;
+		cur[SMBD_SMB2_DYN_IOV_OFS].iov_base  = dyn;
+		cur[SMBD_SMB2_DYN_IOV_OFS].iov_len   = dyn_size;
 
 		taken += full_size;
 	}
@@ -837,7 +843,8 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	SIVAL(req->out.nbt_hdr, 0, 0);
 
 	for (idx=1; idx < count; idx += SMBD_SMB2_NUM_IOV_PER_REQ) {
-		const uint8_t *inhdr = NULL;
+		struct iovec *inhdr_v = SMBD_SMB2_IDX_HDR_IOV(req,in,idx);
+		const uint8_t *inhdr = (const uint8_t *)inhdr_v->iov_base;
 		uint8_t *outhdr = NULL;
 		uint8_t *outbody = NULL;
 		uint32_t next_command_ofs = 0;
@@ -849,8 +856,6 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 			next_command_ofs = SMB2_HDR_BODY + 9;
 		}
 
-		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
-
 		outhdr = talloc_zero_array(vector, uint8_t,
 				      OUTVEC_ALLOC_SIZE);
 		if (outhdr == NULL) {
@@ -859,14 +864,14 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 
 		outbody = outhdr + SMB2_HDR_BODY;
 
-		current[0].iov_base	= (void *)outhdr;
-		current[0].iov_len	= SMB2_HDR_BODY;
+		current[SMBD_SMB2_HDR_IOV_OFS].iov_base  = (void *)outhdr;
+		current[SMBD_SMB2_HDR_IOV_OFS].iov_len   = SMB2_HDR_BODY;
 
-		current[1].iov_base	= (void *)outbody;
-		current[1].iov_len	= 8;
+		current[SMBD_SMB2_BODY_IOV_OFS].iov_base = (void *)outbody;
+		current[SMBD_SMB2_BODY_IOV_OFS].iov_len  = 8;
 
-		current[2].iov_base	= NULL;
-		current[2].iov_len	= 0;
+		current[SMBD_SMB2_DYN_IOV_OFS].iov_base  = NULL;
+		current[SMBD_SMB2_DYN_IOV_OFS].iov_len   = 0;
 
 		/* setup the SMB2 header */
 		SIVAL(outhdr, SMB2_HDR_PROTOCOL_ID,	SMB2_MAGIC);
