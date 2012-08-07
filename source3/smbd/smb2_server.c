@@ -235,6 +235,12 @@ static void smb2_setup_nbt_length(struct iovec *vector, int count)
 	_smb2_setlen(vector[0].iov_base, len);
 }
 
+static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
+{
+	data_blob_clear_free(&req->last_key);
+	return 0;
+}
+
 static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 {
 	TALLOC_CTX *mem_pool;
@@ -260,6 +266,8 @@ static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 
 	req->last_session_id = UINT64_MAX;
 	req->last_tid = UINT32_MAX;
+
+	talloc_set_destructor(req, smbd_smb2_request_destructor);
 
 	return req;
 }
@@ -1044,9 +1052,11 @@ static void smbd_smb2_request_writev_done(struct tevent_req *subreq);
 
 static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request *req)
 {
-	int i = 0;
+	struct smbXsrv_connection *conn = req->sconn->conn;
+	struct iovec *outhdr_v = NULL;
 	uint8_t *outhdr = NULL;
 	struct smbd_smb2_request *nreq = NULL;
+	NTSTATUS status;
 
 	/* Create a new smb2 request we'll use
 	   for the interim return. */
@@ -1063,29 +1073,29 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 		nreq->out.vector_count);
 
 	/* Step back to the previous reply. */
-	i = nreq->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
-	outhdr = (uint8_t *)nreq->out.vector[i].iov_base;
+	nreq->current_idx -= SMBD_SMB2_NUM_IOV_PER_REQ;
+	outhdr_v = SMBD_SMB2_OUT_HDR_IOV(nreq);
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(nreq);
 	/* And end the chain. */
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
 
 	/* Calculate outgoing credits */
 	smb2_calculate_credits(req, nreq);
 
-	/* Re-sign if needed. */
-	if (nreq->do_signing) {
-		NTSTATUS status;
-		struct smbXsrv_session *x = nreq->session;
-		struct smbXsrv_connection *conn = x->connection;
-		DATA_BLOB signing_key = x->global->channels[0].signing_key;
-
-		status = smb2_signing_sign_pdu(signing_key,
+	/*
+	 * As we have changed the header (SMB2_HDR_NEXT_COMMAND),
+	 * we need to sign here with the last signing key we remembered
+	 */
+	if (req->last_key.length > 0) {
+		status = smb2_signing_sign_pdu(req->last_key,
 					       conn->protocol,
-					       &nreq->out.vector[i],
+					       outhdr_v,
 					       SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 	}
+
 	if (DEBUGLEVEL >= 10) {
 		dbgtext("smb2_send_async_interim_response: nreq->current_idx = %u\n",
 			(unsigned int)nreq->current_idx );
@@ -1235,6 +1245,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
 		SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
 	}
+	data_blob_clear_free(&req->last_key);
 
 	defer_endtime = timeval_current_ofs_usec(defer_time);
 	req->async_te = tevent_add_timer(req->sconn->ev_ctx,
@@ -1962,12 +1973,21 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *conn = req->sconn->conn;
 	struct tevent_req *subreq;
 	struct iovec *outhdr = SMBD_SMB2_OUT_HDR_IOV(req);
 	struct iovec *outdyn = SMBD_SMB2_OUT_DYN_IOV(req);
+	struct iovec *lasthdr = NULL;
 
 	req->subreq = NULL;
 	TALLOC_FREE(req->async_te);
+
+	if ((req->current_idx > SMBD_SMB2_NUM_IOV_PER_REQ) &&
+	    (req->last_key.length > 0)) {
+		int last_idx = req->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
+
+		lasthdr = SMBD_SMB2_IDX_HDR_IOV(req,out,last_idx);
+	}
 
 	req->current_idx += SMBD_SMB2_NUM_IOV_PER_REQ;
 
@@ -1984,6 +2004,25 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		if (!im) {
 			return NT_STATUS_NO_MEMORY;
 		}
+
+		data_blob_clear_free(&req->last_key);
+
+		if (req->do_signing) {
+			struct smbXsrv_session *x = req->session;
+			DATA_BLOB signing_key = x->global->channels[0].signing_key;
+
+			/*
+			 * we need to remember the signing key
+			 * and defer the signing until
+			 * we are sure that we do not change
+			 * the header again.
+			 */
+			req->last_key = data_blob_dup_talloc(req, signing_key);
+			if (req->last_key.data == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
 		tevent_schedule_immediate(im,
 					req->sconn->ev_ctx,
 					smbd_smb2_request_dispatch_immediate,
@@ -2001,10 +2040,30 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	   is a final reply for an async operation). */
 	smb2_calculate_credits(req, req);
 
+	/*
+	 * As we are sure the header of the last request in the
+	 * compound chain will not change, we can to sign here
+	 * with the last signing key we remembered.
+	 */
+	if (lasthdr != NULL) {
+		NTSTATUS status;
+
+		status = smb2_signing_sign_pdu(req->last_key,
+					       conn->protocol,
+					       lasthdr,
+					       SMBD_SMB2_NUM_IOV_PER_REQ);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+	data_blob_clear_free(&req->last_key);
+
+	/*
+	 * now check if we need to sign the current response
+	 */
 	if (req->do_signing) {
 		NTSTATUS status;
 		struct smbXsrv_session *x = req->session;
-		struct smbXsrv_connection *conn = x->connection;
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
 		status = smb2_signing_sign_pdu(signing_key,

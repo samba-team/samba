@@ -460,6 +460,12 @@ struct smbd_smb2_request {
 	bool cancelled;
 	bool compound_related;
 
+	/*
+	 * the signing/encryption key for the last
+	 * request/response of a compound chain
+	 */
+	DATA_BLOB last_key;
+
 	struct timeval request_time;
 
 	/* fake smb1 request. */
