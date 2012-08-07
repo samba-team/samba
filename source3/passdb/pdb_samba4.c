@@ -2058,67 +2058,26 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 		m->private_data, struct pdb_samba4_state);
 	struct id_map id_map;
 	struct id_map *id_maps[2];
-	const char *attrs[] = { "objectClass", NULL };
-	struct ldb_message *msg;
-	struct ldb_dn *dn;
 	NTSTATUS status;
-	int rc;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	if (!tmp_ctx) {
 		return false;
 	}
 
 	ZERO_STRUCT(id_map);
+	id_map.sid = sid;
+	id_maps[0] = &id_map;
+	id_maps[1] = NULL;
 
-	dn = ldb_dn_new_fmt(tmp_ctx, state->ldb, "<SID=%s>", dom_sid_string(tmp_ctx, sid));
-	if (!dn || !ldb_dn_validate(dn)) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-	rc = dsdb_search_one(state->ldb, tmp_ctx, &msg, dn, LDB_SCOPE_BASE, attrs, 0, NULL);
-	if (rc == LDB_ERR_NO_SUCH_OBJECT) {
-		DEBUG(5, (__location__ "SID to Unix ID lookup failed because SID %s could not be found in the samdb\n", dom_sid_string(tmp_ctx, sid)));
-		talloc_free(tmp_ctx);
-		return false;
-	}
-	if (samdb_find_attribute(state->ldb, msg, "objectClass", "group")) {
-		id->type = ID_TYPE_GID;
-
-		ZERO_STRUCT(id_map);
-		id_map.sid = sid;
-		id_maps[0] = &id_map;
-		id_maps[1] = NULL;
-		
-		status = idmap_sids_to_xids(state->idmap_ctx, tmp_ctx, id_maps);
-		talloc_free(tmp_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
-			id->id = id_map.xid.id;
-			return true;
-		}
-		return false;
-	} else if (samdb_find_attribute(state->ldb, msg, "objectClass", "user")) {
-		id->type = ID_TYPE_UID;
-		ZERO_STRUCT(id_map);
-		id_map.sid = sid;
-		id_maps[0] = &id_map;
-		id_maps[1] = NULL;
-		
-		status = idmap_sids_to_xids(state->idmap_ctx, tmp_ctx, id_maps);
-		talloc_free(tmp_ctx);
-		if (!NT_STATUS_IS_OK(status)) {
-			return false;
-		}
-		if (id_map.xid.type == ID_TYPE_UID || id_map.xid.type == ID_TYPE_BOTH) {
-			id->id = id_map.xid.id;
-			return true;
-		}
-		return false;
-	}
-	DEBUG(5, (__location__ "SID to Unix ID lookup failed because SID %s was found, but was not a user or group\n", dom_sid_string(tmp_ctx, sid)));
+	status = idmap_sids_to_xids(state->idmap_ctx, tmp_ctx, id_maps);
 	talloc_free(tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+	if (id_map.xid.type != ID_TYPE_NOT_SPECIFIED) {
+		*id = id_map.xid;
+		return true;
+	}
 	return false;
 }
 
