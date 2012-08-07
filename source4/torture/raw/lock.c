@@ -773,8 +773,19 @@ static bool test_async(struct torture_context *tctx,
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
 
+	{
+		/*
+		 * Make the test block on the second lock
+		 * request. This is to regression-test 64c0367.
+		 */
+		uint64_t tmp = lock[1].offset;
+		lock[1].offset = lock[0].offset;
+		lock[0].offset = tmp;
+	}
+
 	t = time_mono(NULL);
 	io.lockx.in.timeout = 10000;
+	io.lockx.in.lock_cnt = 2;
 	req = smb_raw_lock_send(cli->tree, &io);
 	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed lock (%s)\n", __location__));
@@ -790,6 +801,15 @@ static bool test_async(struct torture_context *tctx,
 
 	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
 		       "lock cancel by close was not immediate (%s)\n", __location__));
+
+	{
+		/*
+		 * Undo the change for 64c0367
+		 */
+		uint64_t tmp = lock[1].offset;
+		lock[1].offset = lock[0].offset;
+		lock[0].offset = tmp;
+	}
 
 	torture_comment(tctx, "create a new sessions\n");
 	session = smbcli_session_init(cli->transport, tctx, false, options);
