@@ -340,14 +340,14 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *conn,
 		}
 
 		iov_tmp = talloc_realloc(mem_ctx, iov, struct iovec,
-					 num_iov + 3);
+					 num_iov + SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (iov_tmp == NULL) {
 			TALLOC_FREE(iov);
 			return NT_STATUS_NO_MEMORY;
 		}
 		iov = iov_tmp;
 		cur = &iov[num_iov];
-		num_iov += 3;
+		num_iov += SMBD_SMB2_NUM_IOV_PER_REQ;
 
 		cur[0].iov_base = hdr;
 		cur[0].iov_len  = SMB2_HDR_BODY;
@@ -584,12 +584,12 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 
 	count = req->in.vector_count;
 
-	if (count < 4) {
+	if (count < 1 + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/* It's not a SMB2 request */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	for (idx=1; idx < count; idx += 3) {
+	for (idx=1; idx < count; idx += SMBD_SMB2_NUM_IOV_PER_REQ) {
 		const uint8_t *inhdr = NULL;
 		uint32_t flags;
 
@@ -799,7 +799,7 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 
 	count = outreq->out.vector_count;
 
-	for (idx=1; idx < count; idx += 3) {
+	for (idx=1; idx < count; idx += SMBD_SMB2_NUM_IOV_PER_REQ) {
 		uint8_t *outhdr = (uint8_t *)outreq->out.vector[idx].iov_base;
 		smb2_set_operation_credit(outreq->sconn,
 			&inreq->in.vector[idx],
@@ -808,7 +808,7 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 		   just granted. */
 		total_credits += SVAL(outhdr, SMB2_HDR_CREDIT);
 		/* Set to zero in all but the last reply. */
-		if (idx + 3 < count) {
+		if (idx + SMBD_SMB2_NUM_IOV_PER_REQ < count) {
 			SSVAL(outhdr, SMB2_HDR_CREDIT, 0);
 		} else {
 			SSVAL(outhdr, SMB2_HDR_CREDIT, total_credits);
@@ -832,14 +832,14 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	vector[0].iov_len	= 4;
 	SIVAL(req->out.nbt_hdr, 0, 0);
 
-	for (idx=1; idx < count; idx += 3) {
+	for (idx=1; idx < count; idx += SMBD_SMB2_NUM_IOV_PER_REQ) {
 		const uint8_t *inhdr = NULL;
 		uint8_t *outhdr = NULL;
 		uint8_t *outbody = NULL;
 		uint32_t next_command_ofs = 0;
 		struct iovec *current = &vector[idx];
 
-		if ((idx + 3) < count) {
+		if ((idx + SMBD_SMB2_NUM_IOV_PER_REQ) < count) {
 			/* we have a next command -
 			 * setup for the error case. */
 			next_command_ofs = SMB2_HDR_BODY + 9;
@@ -1013,7 +1013,7 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 	memcpy(newreq->out.nbt_hdr, req->out.nbt_hdr, 4);
 
 	/* Setup the vectors identically to the ones in req. */
-	for (i = 1; i < count; i += 3) {
+	for (i = 1; i < count; i += SMBD_SMB2_NUM_IOV_PER_REQ) {
 		if (!dup_smb2_vec3(outvec, &outvec[i], &req->out.vector[i])) {
 			break;
 		}
@@ -1046,15 +1046,15 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Lose the last 3 out vectors. They're the
+	/* Lose the last X out vectors. They're the
 	   ones we'll be using for the async reply. */
-	nreq->out.vector_count -= 3;
+	nreq->out.vector_count -= SMBD_SMB2_NUM_IOV_PER_REQ;
 
 	smb2_setup_nbt_length(nreq->out.vector,
 		nreq->out.vector_count);
 
 	/* Step back to the previous reply. */
-	i = nreq->current_idx - 3;
+	i = nreq->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
 	outhdr = (uint8_t *)nreq->out.vector[i].iov_base;
 	/* And end the chain. */
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
@@ -1071,7 +1071,8 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 
 		status = smb2_signing_sign_pdu(signing_key,
 					       conn->protocol,
-					       &nreq->out.vector[i], 3);
+					       &nreq->out.vector[i],
+					       SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -1161,7 +1162,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
-	if (req->in.vector_count > i + 3) {
+	if (req->in.vector_count > i + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/*
 		 * We're trying to go async in a compound
 		 * request chain. This is not allowed.
@@ -1749,7 +1750,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		req->do_signing = true;
 		status = smb2_signing_check_pdu(signing_key,
 						conn->protocol,
-						SMBD_SMB2_IN_HDR_IOV(req), 3);
+						SMBD_SMB2_IN_HDR_IOV(req),
+						SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
@@ -1974,7 +1976,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	req->subreq = NULL;
 	TALLOC_FREE(req->async_te);
 
-	req->current_idx += 3;
+	req->current_idx += SMBD_SMB2_NUM_IOV_PER_REQ;
 
 	if (req->current_idx < req->out.vector_count) {
 		/*
@@ -2014,7 +2016,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 		status = smb2_signing_sign_pdu(signing_key,
 					       conn->protocol,
-					       &req->out.vector[i], 3);
+					       &req->out.vector[i],
+					       SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
