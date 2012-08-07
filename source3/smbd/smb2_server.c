@@ -38,6 +38,8 @@ static const struct smbd_smb2_dispatch_table {
 	bool need_session;
 	bool need_tcon;
 	bool as_root;
+	uint16_t fileid_ofs;
+	bool allow_invalid_fileid;
 } smbd_smb2_table[] = {
 #define _OP(o) .opcode = o, .name = #o
 	{
@@ -74,26 +76,33 @@ static const struct smbd_smb2_dispatch_table {
 		_OP(SMB2_OP_CLOSE),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x08,
 	},{
 		_OP(SMB2_OP_FLUSH),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x08,
 	},{
 		_OP(SMB2_OP_READ),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x10,
 	},{
 		_OP(SMB2_OP_WRITE),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x10,
 	},{
 		_OP(SMB2_OP_LOCK),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x08,
 	},{
 		_OP(SMB2_OP_IOCTL),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x08,
+		.allow_invalid_fileid = true,
 	},{
 		_OP(SMB2_OP_CANCEL),
 		.as_root = true,
@@ -104,22 +113,32 @@ static const struct smbd_smb2_dispatch_table {
 		_OP(SMB2_OP_FIND),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x08,
 	},{
 		_OP(SMB2_OP_NOTIFY),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x08,
 	},{
 		_OP(SMB2_OP_GETINFO),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x18,
 	},{
 		_OP(SMB2_OP_SETINFO),
 		.need_session = true,
 		.need_tcon = true,
+		.fileid_ofs = 0x10,
 	},{
 		_OP(SMB2_OP_BREAK),
 		.need_session = true,
 		.need_tcon = true,
+		/*
+		 * we do not set
+		 * .fileid_ofs here
+		 * as LEASE breaks does not
+		 * have a file id
+		 */
 	}
 };
 
@@ -1827,7 +1846,44 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	}
 
+	if (call->fileid_ofs != 0) {
+		size_t needed = call->fileid_ofs + 16;
+		const uint8_t *body = SMBD_SMB2_IN_BODY_PTR(req);
+		size_t body_size = SMBD_SMB2_IN_BODY_LEN(req);
+		uint64_t file_id_persistent;
+		uint64_t file_id_volatile;
+		struct files_struct *fsp;
+
+		SMB_ASSERT(call->need_tcon);
+
+		if (needed > body_size) {
+			return smbd_smb2_request_error(req,
+					NT_STATUS_INVALID_PARAMETER);
+		}
+
+		file_id_persistent	= BVAL(body, call->fileid_ofs + 0);
+		file_id_volatile	= BVAL(body, call->fileid_ofs + 8);
+
+		fsp = file_fsp_smb2(req, file_id_persistent, file_id_volatile);
+		if (fsp == NULL) {
+			if (!call->allow_invalid_fileid) {
+				return smbd_smb2_request_error(req,
+						NT_STATUS_FILE_CLOSED);
+			}
+
+			if (file_id_persistent != UINT64_MAX) {
+				return smbd_smb2_request_error(req,
+						NT_STATUS_FILE_CLOSED);
+			}
+			if (file_id_volatile != UINT64_MAX) {
+				return smbd_smb2_request_error(req,
+						NT_STATUS_FILE_CLOSED);
+			}
+		}
+	}
+
 	if (call->as_root) {
+		SMB_ASSERT(call->fileid_ofs == 0);
 		/* This call needs to be run as root */
 		change_to_root_user();
 	} else {
