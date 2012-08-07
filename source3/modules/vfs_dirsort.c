@@ -41,8 +41,6 @@ static void free_dirsort_privates(void **datap) {
 	SAFE_FREE(data->directory_list);
 	SAFE_FREE(data);
 	*datap = NULL;
-
-	return;
 }
 
 static bool open_and_sort_dir (vfs_handle_struct *handle)
