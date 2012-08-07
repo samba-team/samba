@@ -1568,6 +1568,7 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
+	struct smbXsrv_connection *conn = req->sconn->conn;
 	const uint8_t *inhdr;
 	uint16_t opcode;
 	uint32_t flags;
@@ -1590,7 +1591,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		smb2_opcode_name(opcode),
 		(unsigned long long)mid));
 
-	if (get_Protocol() >= PROTOCOL_SMB2_02) {
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
 		/*
 		 * once the protocol is negotiated
 		 * SMB2_OP_NEGPROT is not allowed anymore
@@ -1642,7 +1643,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	req->do_signing = false;
 	if (flags & SMB2_HDR_FLAG_SIGNED) {
-		struct smbXsrv_connection *conn;
 		DATA_BLOB signing_key;
 
 		if (x == NULL) {
@@ -1650,7 +1650,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 				req, NT_STATUS_ACCESS_DENIED);
 		}
 
-		conn = x->connection;
 		signing_key = x->global->channels[0].signing_key;
 
 		if (!NT_STATUS_IS_OK(session_status)) {
