@@ -299,7 +299,7 @@ static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTAT
  obtained first.
 *****************************************************************************/
 
-static void reply_lockingX_error(struct blocking_lock_record *blr, NTSTATUS status)
+static void undo_locks_obtained(struct blocking_lock_record *blr)
 {
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(blr->req->vwv+6, 0);
@@ -343,8 +343,6 @@ static void reply_lockingX_error(struct blocking_lock_record *blr, NTSTATUS stat
 			offset,
 			WINDOWS_LOCK);
 	}
-
-	generic_blocking_lock_error(blr, status);
 }
 
 /****************************************************************************
@@ -357,8 +355,17 @@ static void blocking_lock_reply_error(struct blocking_lock_record *blr, NTSTATUS
 
 	switch(blr->req->cmd) {
 	case SMBlockingX:
-		reply_lockingX_error(blr, status);
-		break;
+		/*
+		 * This code can be called during the rundown of a
+		 * file after it was already closed. In that case,
+		 * blr->fsp==NULL and we do not need to undo any
+		 * locks, they are already gone.
+		 */
+		if (blr->fsp != NULL) {
+			undo_locks_obtained(blr);
+		}
+		generic_blocking_lock_error(blr, status);
+                break;
 	case SMBtrans2:
 	case SMBtranss2:
 		reply_nterror(blr->req, status);
