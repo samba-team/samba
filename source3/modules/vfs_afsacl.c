@@ -217,8 +217,6 @@ static void add_afs_ace(struct afs_acl *acl,
 	DEBUG(10, ("add_afs_ace: Added %s entry for %s with rights %d\n",
 		   ace->positive?"positive":"negative",
 		   ace->name, ace->rights));
-
-	return;
 }
 
 /* AFS ACLs in string form are a long string of fields delimited with \n.
@@ -395,8 +393,6 @@ static void afs_to_nt_dir_rights(uint32 afs_rights, uint32 *nt_rights,
 		/* Only lookup right */
 		*flag = SEC_ACE_FLAG_CONTAINER_INHERIT;
 	}
-
-	return;
 }
 
 #define AFS_FILE_RIGHTS (PRSFS_READ|PRSFS_WRITE|PRSFS_LOCK)
@@ -422,7 +418,6 @@ static void split_afs_acl(struct afs_acl *acl,
 				    ace->rights & AFS_DIR_RIGHTS);
 		}
 	}
-	return;
 }
 
 static bool same_principal(struct afs_ace *x, struct afs_ace *y)
