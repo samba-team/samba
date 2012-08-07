@@ -802,10 +802,12 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 	count = outreq->out.vector_count;
 
 	for (idx=1; idx < count; idx += SMBD_SMB2_NUM_IOV_PER_REQ) {
-		uint8_t *outhdr = (uint8_t *)outreq->out.vector[idx].iov_base;
-		smb2_set_operation_credit(outreq->sconn,
-			&inreq->in.vector[idx],
-			&outreq->out.vector[idx]);
+		struct iovec *inhdr_v = SMBD_SMB2_IDX_HDR_IOV(inreq,in,idx);
+		struct iovec *outhdr_v = SMBD_SMB2_IDX_HDR_IOV(outreq,out,idx);
+		uint8_t *outhdr = (uint8_t *)outhdr_v->iov_base;
+
+		smb2_set_operation_credit(outreq->sconn, inhdr_v, outhdr_v);
+
 		/* To match Windows, count up what we
 		   just granted. */
 		total_credits += SVAL(outhdr, SMB2_HDR_CREDIT);
