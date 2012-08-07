@@ -254,14 +254,20 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 	char *fname;
 	int uid, gid;
 	SMB_ACL_T acl;
+	TALLOC_CTX *frame;
 
 	if (!PyArg_ParseTuple(args, "sii", &fname, &uid, &gid))
 		return NULL;
 
 	acl = make_simple_acl(uid, gid);
 
+	frame = talloc_stackframe();
+
 	status = set_sys_acl_no_snum(fname, SMB_ACL_TYPE_ACCESS, acl);
 	sys_acl_free_acl(acl);
+
+	TALLOC_FREE(frame);
+
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
