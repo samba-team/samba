@@ -34,6 +34,7 @@
 #include "vfs_gpfs.h"
 #include "system/filesys.h"
 #include "auth.h"
+#include "lib/util/tevent_unix.h"
 
 struct gpfs_config_data {
 	bool sharemodes;
@@ -1691,6 +1692,189 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 }
 
+static ssize_t vfs_gpfs_pread(vfs_handle_struct *handle, files_struct *fsp,
+			      void *data, size_t n, off_t offset)
+{
+	ssize_t ret;
+
+	ret = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+
+	DEBUG(10, ("vfs_private = %x\n",
+		   (unsigned int)fsp->fsp_name->st.vfs_private));
+
+	if ((ret != -1) &&
+	    ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0)) {
+		fsp->fsp_name->st.vfs_private &= ~GPFS_WINATTR_OFFLINE;
+		notify_fname(handle->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
+	}
+
+	return ret;
+}
+
+struct vfs_gpfs_pread_state {
+	struct files_struct *fsp;
+	ssize_t ret;
+	int err;
+};
+
+static void vfs_gpfs_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *vfs_gpfs_pread_send(struct vfs_handle_struct *handle,
+					      TALLOC_CTX *mem_ctx,
+					      struct tevent_context *ev,
+					      struct files_struct *fsp,
+					      void *data, size_t n,
+					      off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct vfs_gpfs_pread_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct vfs_gpfs_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->fsp = fsp;
+	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, vfs_gpfs_pread_done, req);
+	return req;
+}
+
+static void vfs_gpfs_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct vfs_gpfs_pread_state *state = tevent_req_data(
+		req, struct vfs_gpfs_pread_state);
+
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t vfs_gpfs_pread_recv(struct tevent_req *req, int *err)
+{
+	struct vfs_gpfs_pread_state *state = tevent_req_data(
+		req, struct vfs_gpfs_pread_state);
+	struct files_struct *fsp = state->fsp;
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+
+	DEBUG(10, ("vfs_private = %x\n",
+		   (unsigned int)fsp->fsp_name->st.vfs_private));
+
+	if ((state->ret != -1) &&
+	    ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0)) {
+		fsp->fsp_name->st.vfs_private &= ~GPFS_WINATTR_OFFLINE;
+		DEBUG(10, ("sending notify\n"));
+		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
+	}
+
+	return state->ret;
+}
+
+static ssize_t vfs_gpfs_pwrite(vfs_handle_struct *handle, files_struct *fsp,
+			       const void *data, size_t n, off_t offset)
+{
+	ssize_t ret;
+
+	ret = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+
+	DEBUG(10, ("vfs_private = %x\n",
+		   (unsigned int)fsp->fsp_name->st.vfs_private));
+
+	if ((ret != -1) &&
+	    ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0)) {
+		fsp->fsp_name->st.vfs_private &= ~GPFS_WINATTR_OFFLINE;
+		notify_fname(handle->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
+	}
+
+	return ret;
+}
+
+struct vfs_gpfs_pwrite_state {
+	struct files_struct *fsp;
+	ssize_t ret;
+	int err;
+};
+
+static void vfs_gpfs_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *vfs_gpfs_pwrite_send(
+	struct vfs_handle_struct *handle,
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct files_struct *fsp,
+	const void *data, size_t n,
+	off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct vfs_gpfs_pwrite_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct vfs_gpfs_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->fsp = fsp;
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, vfs_gpfs_pwrite_done, req);
+	return req;
+}
+
+static void vfs_gpfs_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct vfs_gpfs_pwrite_state *state = tevent_req_data(
+		req, struct vfs_gpfs_pwrite_state);
+
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t vfs_gpfs_pwrite_recv(struct tevent_req *req, int *err)
+{
+	struct vfs_gpfs_pwrite_state *state = tevent_req_data(
+		req, struct vfs_gpfs_pwrite_state);
+	struct files_struct *fsp = state->fsp;
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	*err = state->err;
+
+	DEBUG(10, ("vfs_private = %x\n",
+		   (unsigned int)fsp->fsp_name->st.vfs_private));
+
+	if ((state->ret != -1) &&
+	    ((fsp->fsp_name->st.vfs_private & GPFS_WINATTR_OFFLINE) != 0)) {
+		fsp->fsp_name->st.vfs_private &= ~GPFS_WINATTR_OFFLINE;
+		DEBUG(10, ("sending notify\n"));
+		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
+	}
+
+	return state->ret;
+}
+
 
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.connect_fn = vfs_gpfs_connect,
@@ -1721,6 +1905,12 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.sendfile_fn = vfs_gpfs_sendfile,
 	.fallocate_fn = vfs_gpfs_fallocate,
 	.open_fn = vfs_gpfs_open,
+	.pread_fn = vfs_gpfs_pread,
+	.pread_send_fn = vfs_gpfs_pread_send,
+	.pread_recv_fn = vfs_gpfs_pread_recv,
+	.pwrite_fn = vfs_gpfs_pwrite,
+	.pwrite_send_fn = vfs_gpfs_pwrite_send,
+	.pwrite_recv_fn = vfs_gpfs_pwrite_recv,
 	.ftruncate_fn = vfs_gpfs_ftruncate
 };
 
