@@ -919,7 +919,7 @@ void create_file_sids(const SMB_STRUCT_STAT *psbuf, struct dom_sid *powner_sid, 
 }
 
 /****************************************************************************
- Merge aces with a common sid - if both are allow or deny, OR the permissions together and
+ Merge aces with a common UID or GID - if both are allow or deny, OR the permissions together and
  delete the second one. If the first is deny, mask the permissions off and delete the allow
  if the permissions become zero, delete the deny if the permissions are non zero.
 ****************************************************************************/
@@ -955,11 +955,11 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 			 */
 
 			if (!dir_acl) {
-				can_merge = (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+				can_merge = (curr_ace->unix_ug.id == curr_ace_outer->unix_ug.id &&
 					     curr_ace->owner_type == curr_ace_outer->owner_type &&
 					     (curr_ace->attr == curr_ace_outer->attr));
 			} else {
-				can_merge = (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+				can_merge = (curr_ace->unix_ug.id == curr_ace_outer->unix_ug.id &&
 					     curr_ace->owner_type == curr_ace_outer->owner_type &&
 					     (curr_ace->type == curr_ace_outer->type) &&
 					     (curr_ace->attr == curr_ace_outer->attr));
@@ -1009,7 +1009,7 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 			 * we've put on the ACL, we know the deny must be the first one.
 			 */
 
-			if (dom_sid_equal(&curr_ace->trustee, &curr_ace_outer->trustee) &&
+			if (curr_ace->unix_ug.id == curr_ace_outer->unix_ug.id &&
 			    (curr_ace->owner_type == curr_ace_outer->owner_type) &&
 			    (curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
 
