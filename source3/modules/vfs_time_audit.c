@@ -77,8 +77,6 @@ static void smb_time_audit_disconnect(vfs_handle_struct *handle)
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("disconnect", timediff);
 	}
-
-	return;
 }
 
 static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
@@ -279,7 +277,6 @@ static void smb_time_audit_seekdir(vfs_handle_struct *handle,
 		smb_time_audit_log("seekdir", timediff);
 	}
 
-	return;
 }
 
 static long smb_time_audit_telldir(vfs_handle_struct *handle,
@@ -316,7 +313,6 @@ static void smb_time_audit_rewinddir(vfs_handle_struct *handle,
 		smb_time_audit_log("rewinddir", timediff);
 	}
 
-	return;
 }
 
 static int smb_time_audit_mkdir(vfs_handle_struct *handle,
@@ -390,7 +386,6 @@ static void smb_time_audit_init_search_op(vfs_handle_struct *handle,
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("init_search_op", timediff);
 	}
-	return;
 }
 
 static int smb_time_audit_open(vfs_handle_struct *handle,
@@ -1558,8 +1553,6 @@ static void smb_time_audit_strict_unlock(struct vfs_handle_struct *handle,
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("strict_unlock", timediff);
 	}
-
-	return;
 }
 
 static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
