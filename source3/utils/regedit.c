@@ -38,7 +38,6 @@ struct regedit {
 	struct value_list *vl;
 	struct tree_view *keys;
 	bool tree_input;
-	struct dialog *dia;
 };
 
 /* load all available hives */
@@ -102,32 +101,6 @@ static void print_heading(WINDOW *win, bool selected, const char *str)
 	wrefresh(win);
 }
 
-static void delete_key_callback(struct dialog *dia, int selection, void *arg)
-{
-	struct regedit *regedit = arg;
-
-	//mvwprintw(regedit->main_window, 1, 0, "Selection: %d", selection);
-
-	if (selection == DIALOG_OK) {
-		/* TODO */
-	}
-
-	talloc_free(regedit->dia);
-	regedit->dia = NULL;
-}
-
-static void delete_value_callback(struct dialog *dia, int selection, void *arg)
-{
-	struct regedit *regedit = arg;
-
-	if (selection == DIALOG_OK) {
-		/* TODO */
-	}
-
-	talloc_free(regedit->dia);
-	regedit->dia = NULL;
-}
-
 static void handle_tree_input(struct regedit *regedit, int c)
 {
 	struct tree_node *node;
@@ -165,14 +138,20 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		}
 		break;
 	case 'd':
-	case 'D':
+	case 'D': {
+		struct dialog *dia;
+		int sel;
+
 		node = item_userptr(current_item(regedit->keys->menu));
-		regedit->dia = dialog_confirm_new(regedit, "Delete Key",
-						  regedit->main_window,
-						  "Really delete key \"%s\"?",
-						  node->name);
-		dialog_set_cb(regedit->dia, delete_key_callback, regedit);
+		dia = dialog_confirm_new(regedit, "Delete Key",
+					 regedit->main_window,
+					 "Really delete key \"%s\"?",
+					 node->name);
+		sel = dialog_modal_loop(dia);
+		mvwprintw(regedit->main_window, 1, 0, "Sel: %d", sel);
+		/* TODO */
 		break;
+	}
 	}
 
 	tree_view_show(regedit->keys);
@@ -190,38 +169,33 @@ static void handle_value_input(struct regedit *regedit, int c)
 	case KEY_UP:
 		menu_driver(regedit->vl->menu, REQ_UP_ITEM);
 		break;
+	case '\n':
 	case KEY_ENTER:
+		vitem = item_userptr(current_item(regedit->vl->menu));
+		if (vitem) {
+			struct tree_node *node;
+			node = item_userptr(current_item(regedit->keys->menu));
+			dialog_edit_value(regedit, node->key, vitem, regedit->main_window);
+		}
 		break;
 	case 'd':
 	case 'D':
 		vitem = item_userptr(current_item(regedit->vl->menu));
 		if (vitem) {
-			regedit->dia = dialog_confirm_new(regedit, "Delete Value",
-							  regedit->main_window,
-							  "Really delete value \"%s\"?",
-							  vitem->value_name);
-			dialog_set_cb(regedit->dia, delete_value_callback, regedit);
+			struct dialog *dia;
+			int sel;
+
+			dia = dialog_confirm_new(regedit, "Delete Value",
+						 regedit->main_window,
+						 "Really delete value \"%s\"?",
+						 vitem->value_name);
+			sel = dialog_modal_loop(dia);
+			mvwprintw(regedit->main_window, 1, 0, "Sel: %d", sel);
 		}
 		break;
 	}
 
 	value_list_show(regedit->vl);
-}
-
-static void handle_dialog_input(struct regedit *regedit, int c)
-{
-	switch (c) {
-	case KEY_LEFT:
-		dialog_driver(regedit->dia, DIALOG_LEFT);
-		break;
-	case KEY_RIGHT:
-		dialog_driver(regedit->dia, DIALOG_RIGHT);
-		break;
-	case '\n':
-	case KEY_ENTER:
-		dialog_driver(regedit->dia, DIALOG_ENTER);
-		break;
-	}
 }
 
 static void handle_main_input(struct regedit *regedit, int c)
@@ -296,12 +270,7 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 	update_panels();
 	doupdate();
 	while ((c = wgetch(regedit->main_window)) != 'q') {
-		if (regedit->dia) {
-			handle_dialog_input(regedit, c);
-		} else {
-			handle_main_input(regedit, c);
-		}
-
+		handle_main_input(regedit, c);
 		update_panels();
 		doupdate();
 	}

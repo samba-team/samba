@@ -24,10 +24,6 @@
 #include <panel.h>
 #include <menu.h>
 
-struct dialog;
-
-typedef void (*dialogfn)(struct dialog *, int, void *);
-
 struct dialog {
 	WINDOW *window;
 	WINDOW *sub_window;
@@ -35,8 +31,6 @@ struct dialog {
 	PANEL *panel;
 	MENU *choices;
 	ITEM **choice_items;
-	dialogfn dialogcb;
-	void *dialogarg;
 };
 
 struct dialog *dialog_new(TALLOC_CTX *ctx, const char *title, int nlines,
@@ -56,19 +50,15 @@ struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 struct dialog *dialog_confirm_new(TALLOC_CTX *ctx, const char *title,
 				  WINDOW *below, const char *msg, ...);
 
-void dialog_set_cb(struct dialog *dia, dialogfn fn, void *arg);
-
-enum dialog_op {
-	DIALOG_LEFT,
-	DIALOG_RIGHT,
-	DIALOG_ENTER
-};
-
 enum dialog_selection {
 	DIALOG_OK = 0,
 	DIALOG_CANCEL = 1
 };
 
-void dialog_driver(struct dialog *dia, enum dialog_op op);
+int dialog_modal_loop(struct dialog *dia);
 
+struct registry_key;
+struct value_item;
+
+int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, const struct value_item *vitem, WINDOW *below);
 #endif
