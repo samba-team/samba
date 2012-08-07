@@ -590,18 +590,20 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 	}
 
 	for (idx=1; idx < count; idx += SMBD_SMB2_NUM_IOV_PER_REQ) {
+		struct iovec *hdr = SMBD_SMB2_IDX_HDR_IOV(req,in,idx);
+		struct iovec *body = SMBD_SMB2_IDX_BODY_IOV(req,in,idx);
 		const uint8_t *inhdr = NULL;
 		uint32_t flags;
 
-		if (req->in.vector[idx].iov_len != SMB2_HDR_BODY) {
+		if (hdr->iov_len != SMB2_HDR_BODY) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (req->in.vector[idx+1].iov_len < 2) {
+		if (body->iov_len < 2) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
+		inhdr = (const uint8_t *)hdr->iov_base;
 
 		/* Check the SMB2 header */
 		if (IVAL(inhdr, SMB2_HDR_PROTOCOL_ID) != SMB2_MAGIC) {
