@@ -175,6 +175,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       uint32_t *out_maximal_access,
 				       uint32_t *out_tree_id)
 {
+	struct smbXsrv_connection *conn = req->sconn->conn;
 	const char *share = in_path;
 	char *service = NULL;
 	int snum = -1;
@@ -183,6 +184,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	connection_struct *compat_conn = NULL;
 	struct user_struct *compat_vuser = req->session->compat;
 	NTSTATUS status;
+	bool encryption_required = req->session->global->encryption_required;
+	bool guest_session = false;
 
 	if (strncmp(share, "\\\\", 2) == 0) {
 		const char *p = strchr(share+2, '\\');
@@ -230,11 +233,26 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	}
 
 	if (lp_smb_encrypt(snum) == SMB_SIGNING_REQUIRED) {
-		status = NT_STATUS_ACCESS_DENIED;
-		DEBUG(3,("smbd_smb2_tree_connect: "
-			 "service %s needs encryption - %s\n",
-			 service, nt_errstr(status)));
-		return status;
+		encryption_required = true;
+	}
+
+	if (security_session_user_level(compat_vuser->session_info, NULL) < SECURITY_USER) {
+		guest_session = true;
+	}
+
+	if (guest_session && encryption_required) {
+		DEBUG(1,("reject guest as encryption is required for service %s\n",
+			 service));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+		if (encryption_required) {
+			DEBUG(1,("reject tcon with dialect[0x%04X] "
+				 "as encryption is required for service %s\n",
+				 conn->smb2.server.dialect, service));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	/* create a new tcon as child of the session */
@@ -242,6 +260,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	tcon->global->encryption_required = encryption_required;
 
 	compat_conn = make_connection_smb2(req->sconn,
 					tcon, snum,
@@ -307,6 +327,10 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	if (lp_hideunreadable(SNUM(tcon->compat)) ||
 	    lp_hideunwriteable_files(SNUM(tcon->compat))) {
 		*out_share_flags |= SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM;
+	}
+
+	if (encryption_required) {
+		*out_share_flags |= SMB2_SHAREFLAG_ENCRYPT_DATA;
 	}
 
 	*out_maximal_access = tcon->compat->share_access;
