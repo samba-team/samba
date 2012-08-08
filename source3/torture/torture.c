@@ -4288,8 +4288,9 @@ static bool run_deletetest(int dummy)
 		printf("[10] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
 		correct = False;
-	} else
-		printf("tenth delete on close test succeeded.\n");
+	}
+
+	printf("tenth delete on close test succeeded.\n");
 
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
