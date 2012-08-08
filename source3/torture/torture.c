@@ -3968,7 +3968,7 @@ static bool run_deletetest(int dummy)
 			     FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			     FILE_OPEN, 0, 0, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("[3] open  - 2 of %s failed (%s)\n", fname, nt_errstr(status));
+		printf("[3] open  - 3 of %s failed (%s)\n", fname, nt_errstr(status));
 		correct = False;
 		goto fail;
 	}
