@@ -2179,12 +2179,13 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 				   const char *location)
 {
 	uint8_t *outhdr;
-	int i = req->current_idx;
+	struct iovec *outbody_v;
+	struct iovec *outdyn_v;
 	uint32_t next_command_ofs;
 
 	DEBUG(10,("smbd_smb2_request_done_ex: "
 		  "idx[%d] status[%s] body[%u] dyn[%s:%u] at %s\n",
-		  i, nt_errstr(status), (unsigned int)body.length,
+		  req->current_idx, nt_errstr(status), (unsigned int)body.length,
 		  dyn ? "yes": "no",
 		  (unsigned int)(dyn ? dyn->length : 0),
 		  location));
@@ -2197,32 +2198,34 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
+	outbody_v = SMBD_SMB2_OUT_BODY_IOV(req);
+	outdyn_v = SMBD_SMB2_OUT_DYN_IOV(req);
 
 	next_command_ofs = IVAL(outhdr, SMB2_HDR_NEXT_COMMAND);
 	SIVAL(outhdr, SMB2_HDR_STATUS, NT_STATUS_V(status));
 
-	req->out.vector[i+1].iov_base = (void *)body.data;
-	req->out.vector[i+1].iov_len = body.length;
+	outbody_v->iov_base = (void *)body.data;
+	outbody_v->iov_len = body.length;
 
 	if (dyn) {
-		req->out.vector[i+2].iov_base	= (void *)dyn->data;
-		req->out.vector[i+2].iov_len	= dyn->length;
+		outdyn_v->iov_base = (void *)dyn->data;
+		outdyn_v->iov_len = dyn->length;
 	} else {
-		req->out.vector[i+2].iov_base = NULL;
-		req->out.vector[i+2].iov_len = 0;
+		outdyn_v->iov_base = NULL;
+		outdyn_v->iov_len = 0;
 	}
 
 	/* see if we need to recalculate the offset to the next response */
 	if (next_command_ofs > 0) {
 		next_command_ofs  = SMB2_HDR_BODY;
-		next_command_ofs += req->out.vector[i+1].iov_len;
-		next_command_ofs += req->out.vector[i+2].iov_len;
+		next_command_ofs += SMBD_SMB2_OUT_BODY_LEN(req);
+		next_command_ofs += SMBD_SMB2_OUT_DYN_LEN(req);
 	}
 
 	if ((next_command_ofs % 8) != 0) {
 		size_t pad_size = 8 - (next_command_ofs % 8);
-		if (req->out.vector[i+2].iov_len == 0) {
+		if (SMBD_SMB2_OUT_DYN_LEN(req) == 0) {
 			/*
 			 * if the dyn buffer is empty
 			 * we can use it to add padding
@@ -2236,8 +2239,8 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 						NT_STATUS_NO_MEMORY);
 			}
 
-			req->out.vector[i+2].iov_base = (void *)pad;
-			req->out.vector[i+2].iov_len = pad_size;
+			outdyn_v->iov_base = (void *)pad;
+			outdyn_v->iov_len = pad_size;
 		} else {
 			/*
 			 * For now we copy the dynamic buffer
@@ -2248,8 +2251,8 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 			size_t new_size;
 			uint8_t *new_dyn;
 
-			old_size = req->out.vector[i+2].iov_len;
-			old_dyn = (uint8_t *)req->out.vector[i+2].iov_base;
+			old_size = SMBD_SMB2_OUT_DYN_LEN(req);
+			old_dyn = SMBD_SMB2_OUT_DYN_PTR(req);
 
 			new_size = old_size + pad_size;
 			new_dyn = talloc_zero_array(req->out.vector,
@@ -2262,8 +2265,8 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 			memcpy(new_dyn, old_dyn, old_size);
 			memset(new_dyn + old_size, 0, pad_size);
 
-			req->out.vector[i+2].iov_base = (void *)new_dyn;
-			req->out.vector[i+2].iov_len = new_size;
+			outdyn_v->iov_base = (void *)new_dyn;
+			outdyn_v->iov_len = new_size;
 		}
 		next_command_ofs += pad_size;
 	}
