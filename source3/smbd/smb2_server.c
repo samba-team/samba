@@ -1742,21 +1742,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		}
 	}
 
-	call = smbd_smb2_call(opcode);
-	if (call == NULL) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
-	}
-
-	allowed_flags = SMB2_HDR_FLAG_CHAINED |
-			SMB2_HDR_FLAG_SIGNED |
-			SMB2_HDR_FLAG_DFS;
-	if (opcode == SMB2_OP_CANCEL) {
-		allowed_flags |= SMB2_HDR_FLAG_ASYNC;
-	}
-	if ((flags & ~allowed_flags) != 0) {
-		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
-	}
-
 	/*
 	 * Check if the client provided a valid session id,
 	 * if so smbd_smb2_request_check_session() calls
@@ -1775,6 +1760,21 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		    x->global->channels[0].signing_key.length) {
 			signing_required = true;
 		}
+	}
+
+	call = smbd_smb2_call(opcode);
+	if (call == NULL) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
+	}
+
+	allowed_flags = SMB2_HDR_FLAG_CHAINED |
+			SMB2_HDR_FLAG_SIGNED |
+			SMB2_HDR_FLAG_DFS;
+	if (opcode == SMB2_OP_CANCEL) {
+		allowed_flags |= SMB2_HDR_FLAG_ASYNC;
+	}
+	if ((flags & ~allowed_flags) != 0) {
+		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
 	req->do_signing = false;
