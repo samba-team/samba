@@ -4060,8 +4060,7 @@ static bool run_deletetest(int dummy)
 		printf("[4] open  - 3 of %s succeeded ! Should have failed.\n", fname );
 		correct = False;
 		goto fail;
-	} else
-		printf("fourth delete on close test succeeded.\n");
+	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4069,6 +4068,8 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
+
+	printf("fourth delete on close test succeeded.\n");
 
 	/* Test 5 ... */
 	cli_setatr(cli1, fname, 0, 0);
