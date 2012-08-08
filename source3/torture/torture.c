@@ -4297,6 +4297,8 @@ static bool run_deletetest(int dummy)
 
 	printf("tenth delete on close test succeeded.\n");
 
+	/* Test 11 ... */
+
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
