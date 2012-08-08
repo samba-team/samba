@@ -463,10 +463,11 @@ _PUBLIC_ void strlower_m(char *s)
  Convert a string to lower case.
 **/
 
-void strlower_m(char *s)
+bool strlower_m(char *s)
 {
 	size_t len;
 	int errno_save;
+	bool ret = false;
 
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
@@ -479,18 +480,21 @@ void strlower_m(char *s)
 	}
 
 	if (!*s)
-		return;
+		return true;
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
 	len = strlen(s) + 1;
 	errno_save = errno;
 	errno = 0;
-	unix_strlower(s,len,s,len);
+	ret = unix_strlower(s,len,s,len);
 	/* Catch mb conversion errors that may not terminate. */
-	if (errno)
+	if (errno) {
 		s[len-1] = '\0';
+		ret = false;
+	}
 	errno = errno_save;
+	return ret;
 }
 
 static bool unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)

@@ -701,7 +701,7 @@ char *strchr_m(const char *src, char c);
 char *strrchr_m(const char *s, char c);
 char *strnrchr_m(const char *s, char c, unsigned int n);
 char *strstr_m(const char *src, const char *findstr);
-void strlower_m(char *s);
+bool strlower_m(char *s);
 bool strupper_m(char *s);
 size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
