@@ -4160,7 +4160,7 @@ static bool run_deletetest(int dummy)
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("[7] close - 2 failed (%s)\n", nt_errstr(status));
+		printf("[7] close - 1 failed (%s)\n", nt_errstr(status));
 		correct = False;
 		goto fail;
 	}
