@@ -4246,8 +4246,12 @@ static bool run_deletetest(int dummy)
 		printf("eighth delete on close test succeeded.\n");
 
 	/* This should fail - we need to set DELETE_ACCESS. */
-	if (NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0,FILE_READ_DATA|FILE_WRITE_DATA,
-				   FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE, FILE_OVERWRITE_IF, FILE_DELETE_ON_CLOSE, 0, &fnum1))) {
+	status = cli_ntcreate(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_NONE,
+			      FILE_OVERWRITE_IF,
+			      FILE_DELETE_ON_CLOSE, 0, &fnum1);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[9] open of %s succeeded should have failed!\n", fname);
 		correct = False;
 		goto fail;
