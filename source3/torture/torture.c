@@ -4007,8 +4007,9 @@ static bool run_deletetest(int dummy)
 		cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 		correct = False;
 		goto fail;
-	} else
-		printf("third delete on close test succeeded.\n");
+	}
+
+	printf("third delete on close test succeeded.\n");
 
 	/* Test 4 ... */
 	cli_setatr(cli1, fname, 0, 0);
