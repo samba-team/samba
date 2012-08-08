@@ -4279,7 +4279,8 @@ static bool run_deletetest(int dummy)
 	}
 
 	/* This should fail.. */
-	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[10] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
 		correct = False;
