@@ -180,6 +180,15 @@ static void handle_value_input(struct regedit *regedit, int c)
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
+	case 'n':
+	case 'N': {
+		int new_type;
+
+		if (dialog_select_type(regedit, &new_type, regedit->main_window) == DIALOG_OK) {
+			mvwprintw(regedit->main_window, 1, 0, "Item: %s (%d)", str_regtype(new_type), new_type);
+		}
+		break;
+	}
 	case 'd':
 	case 'D':
 		vitem = item_userptr(current_item(regedit->vl->menu));

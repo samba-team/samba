@@ -422,7 +422,10 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 	const char *buf = field_buffer(edit->field[1], 0);
 	char *name = string_trim(edit, field_buffer(edit->field[0], 0));
 
-	if (!buf || !field_status(edit->field[1])) {
+	if (!buf) {
+		return WERR_OK;
+	}
+	if (!field_status(edit->field[1])) {
 		return WERR_OK;
 	}
 
@@ -637,4 +640,114 @@ finish:
 	talloc_free(edit);
 
 	return rv;
+}
+
+int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below)
+{
+	struct dialog *dia;
+	const char *choices[] = {
+		"OK",
+		"Cancel",
+		NULL
+	};
+	const char *reg_types[] = {
+		"REG_DWORD",
+		"REG_SZ",
+		"REG_EXPAND_SZ",
+		"REG_MULTI_SZ",
+	};
+#define NTYPES (sizeof(reg_types) / sizeof(const char*))
+	ITEM **item;
+	MENU *list;
+	WINDOW *type_win;
+	int sel = -1;
+	size_t i;
+
+	dia = dialog_choice_center_new(ctx, "New Value", choices, 10, 20,
+				       below);
+	if (dia == NULL) {
+		return -1;
+	}
+
+	mvwprintw(dia->sub_window, 0, 0, "Choose type:");
+	type_win = derwin(dia->sub_window, 6, 18, 1, 0);
+	if (type_win == NULL) {
+		goto finish;
+	}
+
+	item = talloc_zero_array(dia, ITEM *, NTYPES + 1);
+	if (item == NULL) {
+		goto finish;
+	}
+
+	for (i = 0; i < NTYPES; ++i) {
+		int t = regtype_by_string(reg_types[i]);
+
+		item[i] = new_item(reg_types[i], reg_types[i]);
+		if (item[i] == NULL) {
+			goto finish;
+		}
+		set_item_userptr(item[i], (void*)(uintptr_t)t);
+	}
+
+	list = new_menu(item);
+	if (list == NULL) {
+		goto finish;
+	}
+
+	set_menu_format(list, 7, 1);
+	set_menu_win(list, dia->sub_window);
+	set_menu_sub(list, type_win);
+	menu_opts_off(list, O_SHOWDESC);
+	set_menu_mark(list, "* ");
+	post_menu(list);
+
+	keypad(dia->window, true);
+	update_panels();
+	doupdate();
+
+	while (sel == -1) {
+		ITEM *it;
+		int c = wgetch(dia->window);
+
+		switch (c) {
+		case KEY_UP:
+			menu_driver(list, REQ_UP_ITEM);
+			break;
+		case KEY_DOWN:
+			menu_driver(list, REQ_DOWN_ITEM);
+			break;
+		case KEY_LEFT:
+			menu_driver(dia->choices, REQ_LEFT_ITEM);
+			break;
+		case KEY_RIGHT:
+			menu_driver(dia->choices, REQ_RIGHT_ITEM);
+			break;
+		case '\n':
+		case KEY_ENTER:
+			it = current_item(list);
+			*type = (int)(uintptr_t)item_userptr(it);
+			it = current_item(dia->choices);
+			sel = (int)(uintptr_t)item_userptr(it);
+			break;
+		}
+	}
+
+finish:
+	if (list) {
+		unpost_menu(list);
+		free_menu(list);
+	}
+	if (item) {
+		ITEM **it;
+		for (it = item; *it; ++it) {
+			free_item(*it);
+		}
+	}
+	if (type_win) {
+		delwin(type_win);
+	}
+	talloc_free(dia);
+
+	return sel;
 }
