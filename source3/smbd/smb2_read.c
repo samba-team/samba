@@ -275,14 +275,14 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	*/
 
 	if (!lp__use_sendfile(SNUM(fsp->conn)) ||
-			smb2req->do_signing ||
-			smb2req->in.vector_count != 4 ||
-			(fsp->base_fsp != NULL) ||
-			(fsp->wcp != NULL) ||
-			(!S_ISREG(fsp->fsp_name->st.st_ex_mode)) ||
-			(state->in_offset >= fsp->fsp_name->st.st_ex_size) ||
-			(fsp->fsp_name->st.st_ex_size < state->in_offset +
-				state->in_length)) {
+	    smb2req->do_signing ||
+	    smb2req->in.vector_count != 4 ||
+	    (fsp->base_fsp != NULL) ||
+	    (fsp->wcp != NULL) ||
+	    (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) ||
+	    (state->in_offset >= fsp->fsp_name->st.st_ex_size) ||
+	    (fsp->fsp_name->st.st_ex_size < state->in_offset + state->in_length))
+	{
 		return NT_STATUS_RETRY;
 	}
 
