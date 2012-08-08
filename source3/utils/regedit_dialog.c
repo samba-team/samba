@@ -315,6 +315,22 @@ struct edit_dialog {
 	enum input_section section;
 };
 
+static int edit_dialog_free(struct edit_dialog *edit)
+{
+	if (edit->input) {
+		unpost_form(edit->input);
+	}
+	if (edit->field[0]) {
+		free_field(edit->field[0]);
+	}
+	if (edit->field[1]) {
+		free_field(edit->field[1]);
+	}
+	delwin(edit->input_win);
+
+	return 0;
+}
+
 static WERROR fill_value_buffer(struct edit_dialog *edit,
 			        const struct value_item *vitem)
 {
@@ -372,9 +388,92 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 	return WERR_OK;
 }
 
-static void set_value(struct edit_dialog *edit, struct registry_key *key,
-		      const struct value_item *vitem)
+static char *string_trim_n(TALLOC_CTX *ctx, const char *buf, size_t n)
 {
+	char *str;
+
+	str = talloc_strndup(ctx, buf, n);
+
+	if (str) {
+		trim_string(str, " ", " ");
+	}
+
+	return str;
+}
+
+static char *string_trim(TALLOC_CTX *ctx, const char *buf)
+{
+	char *str;
+
+	str = talloc_strdup(ctx, buf);
+
+	if (str) {
+		trim_string(str, " ", " ");
+	}
+
+	return str;
+}
+
+static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
+			uint32_t type)
+{
+	WERROR rv;
+	DATA_BLOB blob;
+	const char *buf = field_buffer(edit->field[1], 0);
+	char *name = string_trim(edit, field_buffer(edit->field[0], 0));
+
+	if (!buf || !field_status(edit->field[1])) {
+		return WERR_OK;
+	}
+
+	switch (type) {
+	case REG_DWORD: {
+		uint32_t val;
+		int base = 10;
+
+		if (buf[0] == '0' && tolower(buf[1]) == 'x') {
+			base = 16;
+		}
+
+		val = strtoul(buf, NULL, base);
+		blob = data_blob_talloc(edit, NULL, sizeof(val));
+		SIVAL(blob.data, 0, val);
+		rv = WERR_OK;
+		break;
+	}
+	case REG_SZ:
+	case REG_EXPAND_SZ: {
+		char *str = string_trim(edit, buf);
+		if (!str || !push_reg_sz(edit, &blob, str)) {
+			rv = WERR_NOMEM;
+		}
+		break;
+	}
+	case REG_MULTI_SZ: {
+		int rows, cols, max;
+		const char **arr;
+		size_t i;
+
+		dynamic_field_info(edit->field[1], &rows, &cols, &max);
+
+		arr = talloc_zero_array(edit, const char *, rows + 1);
+		if (arr == NULL) {
+			return WERR_NOMEM;
+		}
+		for (i = 0; *buf; ++i, buf += cols) {
+			SMB_ASSERT(i < rows);
+			arr[i] = string_trim_n(edit, buf, cols);
+		}
+		if (!push_reg_multi_sz(edit, &blob, arr)) {
+			rv = WERR_NOMEM;
+		}
+		break;
+	}
+	}
+
+	rv = reg_val_set(key, name, type, blob);
+
+	return rv;
 }
 
 static void section_down(struct edit_dialog *edit)
@@ -421,7 +520,7 @@ static void section_up(struct edit_dialog *edit)
 	}
 }
 
-int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
+WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
 		      const struct value_item *vitem, WINDOW *below)
 {
 	struct edit_dialog *edit;
@@ -432,15 +531,16 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	};
 	char *title;
 	int nlines, ncols, val_rows;
-	int rv = -1;
+	WERROR rv = WERR_NOMEM;
+	int selection;
 
 	edit = talloc_zero(ctx, struct edit_dialog);
 	if (edit == NULL) {
-		return -1;
+		return rv;
 	}
+	talloc_set_destructor(edit, edit_dialog_free);
 
-	title = talloc_asprintf(ctx, "Edit %s value", str_regtype(vitem->type));
-	talloc_free(title);
+	title = talloc_asprintf(edit, "Edit %s value", str_regtype(vitem->type));
 	if (title == NULL) {
 		goto finish;
 	}
@@ -450,13 +550,18 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 		nlines += 4;
 	}
 	ncols = 50;
-	edit->dia = dialog_choice_center_new(ctx, title, choices, nlines, ncols, below);
+	edit->dia = dialog_choice_center_new(edit, title, choices, nlines,
+					     ncols, below);
+	talloc_free(title);
 	if (edit->dia == NULL) {
 		goto finish;
 	}
 
 	/* name */
 	edit->field[0] = new_field(1, ncols - 4, 1, 1, 0, 0);
+	if (edit->field[0] == NULL) {
+		goto finish;
+	}
 
 	/* data */
 	val_rows = 1;
@@ -464,7 +569,9 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 		val_rows += 4;
 	}
 	edit->field[1] = new_field(val_rows, ncols - 4, 4, 1, 0, 0);
-
+	if (edit->field[1] == NULL) {
+		goto finish;
+	}
 	set_field_back(edit->field[0], A_REVERSE);
 	set_field_back(edit->field[1], A_REVERSE);
 	field_opts_off(edit->field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
@@ -477,9 +584,15 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	}
 
 	edit->input = new_form(edit->field);
+	if (edit->input == NULL) {
+		goto finish;
+	}
 	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
 
 	edit->input_win = derwin(edit->dia->sub_window, nlines - 3, ncols - 3, 0, 0);
+	if (edit->input_win == NULL) {
+		goto finish;
+	}
 
 	set_form_win(edit->input, edit->dia->sub_window);
 	set_form_sub(edit->input, edit->input_win);
@@ -506,8 +619,8 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 		if (edit->section == IN_NAME || edit->section == IN_DATA) {
 			handle_form_input(edit->input, c);
 		} else {
-			rv = handle_menu_input(edit->dia->choices, c);
-			if (rv != -1) {
+			selection = handle_menu_input(edit->dia->choices, c);
+			if (selection != -1) {
 				goto finish;
 			}
 		}
@@ -517,12 +630,11 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	}
 
 finish:
-	if (edit->dia) {
-		talloc_free(edit->dia);
+	if (selection == DIALOG_OK) {
+		rv = set_value(edit, key, type);
 	}
-	if (rv == DIALOG_OK) {
-		//set_value
-	}
+
+	talloc_free(edit);
 
 	return rv;
 }

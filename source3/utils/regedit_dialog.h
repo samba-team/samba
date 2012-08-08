@@ -60,5 +60,7 @@ int dialog_modal_loop(struct dialog *dia);
 struct registry_key;
 struct value_item;
 
-int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, const struct value_item *vitem, WINDOW *below);
+WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
+		         const struct value_item *vitem, WINDOW *below);
+
 #endif

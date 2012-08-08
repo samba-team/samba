@@ -175,7 +175,9 @@ static void handle_value_input(struct regedit *regedit, int c)
 		if (vitem) {
 			struct tree_node *node;
 			node = item_userptr(current_item(regedit->keys->menu));
-			dialog_edit_value(regedit, node->key, vitem, regedit->main_window);
+			dialog_edit_value(regedit, node->key, vitem->type,
+					  vitem, regedit->main_window);
+			value_list_load(regedit->vl, node->key);
 		}
 		break;
 	case 'd':
