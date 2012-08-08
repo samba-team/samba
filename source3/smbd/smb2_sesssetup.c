@@ -243,6 +243,42 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 				    x->global->signing_key.data);
 	}
 
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
+		const DATA_BLOB context = data_blob_string_const_null("ServerIn ");
+
+		x->global->decryption_key = data_blob_talloc(x->global,
+							     session_key,
+							     sizeof(session_key));
+		if (x->global->decryption_key.data == NULL) {
+			ZERO_STRUCT(session_key);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    x->global->decryption_key.data);
+	}
+
+	if (conn->protocol >= PROTOCOL_SMB2_24) {
+		const DATA_BLOB label = data_blob_string_const_null("SMB2AESCCM");
+		const DATA_BLOB context = data_blob_string_const_null("ServerOut");
+
+		x->global->encryption_key = data_blob_talloc(x->global,
+							     session_key,
+							     sizeof(session_key));
+		if (x->global->encryption_key.data == NULL) {
+			ZERO_STRUCT(session_key);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		smb2_key_derivation(session_key, sizeof(session_key),
+				    label.data, label.length,
+				    context.data, context.length,
+				    x->global->encryption_key.data);
+	}
+
 	x->global->application_key = data_blob_dup_talloc(x->global,
 						x->global->signing_key);
 	if (x->global->application_key.data == NULL) {
