@@ -3928,10 +3928,10 @@ static bool run_deletetest(int dummy)
 		status = cli_close(cli1, fnum1);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("[2] close failed (%s)\n", nt_errstr(status));
-			correct = False;
-			goto fail;
 		}
 		cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		correct = False;
+		goto fail;
 	} else
 		printf("second delete on close test succeeded.\n");
 
