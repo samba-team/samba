@@ -254,6 +254,14 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		capabilities |= SMB2_CAP_DFS;
 	}
 
+	if ((protocol >= PROTOCOL_SMB2_24) &&
+	    (lp_smb_encrypt(-1) != SMB_SIGNING_OFF))
+	{
+		if (in_capabilities & SMB2_CAP_ENCRYPTION) {
+			capabilities |= SMB2_CAP_ENCRYPTION;
+		}
+	}
+
 	/*
 	 * 0x10000 (65536) is the maximum allowed message size
 	 * for SMB 2.0
