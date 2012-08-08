@@ -485,7 +485,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 static void get_domain_master_name_node_status_fail(struct subnet_record *subrec,
                        struct response_record *rrec)
 {
-	if( DEBUGLVL( 0 ) ) {
+	if( DEBUGLVL( 2 ) ) {
 		dbgtext( "get_domain_master_name_node_status_fail:\n" );
 		dbgtext( "Doing a node status request to the domain master browser " );
 		dbgtext( "at IP %s failed.\n", inet_ntoa(rrec->packet->ip) );
