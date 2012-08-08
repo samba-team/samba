@@ -934,68 +934,78 @@ static bool dup_smb2_vec3(TALLOC_CTX *ctx,
 			struct iovec *outvec,
 			const struct iovec *srcvec)
 {
-	/* vec[0] is always boilerplate and must
-	 * be allocated with size OUTVEC_ALLOC_SIZE. */
+	const uint8_t *srchdr;
+	size_t srchdr_len;
+	const uint8_t *srcbody;
+	size_t srcbody_len;
+	const uint8_t *expected_srcbody;
+	const uint8_t *srcdyn;
+	size_t srcdyn_len;
+	const uint8_t *expected_srcdyn;
+	uint8_t *dsthdr;
+	uint8_t *dstbody;
+	uint8_t *dstdyn;
 
-	outvec[0].iov_base = talloc_memdup(ctx,
-				srcvec[0].iov_base,
-				OUTVEC_ALLOC_SIZE);
-	if (!outvec[0].iov_base) {
+	srchdr  = (const uint8_t *)srcvec[SMBD_SMB2_HDR_IOV_OFS].iov_base;
+	srchdr_len = srcvec[SMBD_SMB2_HDR_IOV_OFS].iov_len;
+	srcbody = (const uint8_t *)srcvec[SMBD_SMB2_BODY_IOV_OFS].iov_base;
+	srcbody_len = srcvec[SMBD_SMB2_BODY_IOV_OFS].iov_len;
+	expected_srcbody = srchdr + SMB2_HDR_BODY;
+	srcdyn  = (const uint8_t *)srcvec[SMBD_SMB2_DYN_IOV_OFS].iov_base;
+	srcdyn_len = srcvec[SMBD_SMB2_DYN_IOV_OFS].iov_len;
+	expected_srcdyn = srcbody + 8;
+
+	if (srchdr_len != SMB2_HDR_BODY) {
 		return false;
 	}
-	outvec[0].iov_len = SMB2_HDR_BODY;
+
+	/* vec[SMBD_SMB2_HDR_IOV_OFS] is always boilerplate and must
+	 * be allocated with size OUTVEC_ALLOC_SIZE. */
+
+	dsthdr = talloc_memdup(ctx, srchdr, OUTVEC_ALLOC_SIZE);
+	if (dsthdr == NULL) {
+		return false;
+	}
+	outvec[SMBD_SMB2_HDR_IOV_OFS].iov_base = (void *)dsthdr;
+	outvec[SMBD_SMB2_HDR_IOV_OFS].iov_len = SMB2_HDR_BODY;
 
 	/*
-	 * If this is a "standard" vec[1] of length 8,
-	 * pointing to srcvec[0].iov_base + SMB2_HDR_BODY,
+	 * If this is a "standard" vec[SMBD_SMB2_BOFY_IOV_OFS] of length 8,
+	 * pointing to srcvec[SMBD_SMB2_HDR_IOV_OFS].iov_base + SMB2_HDR_BODY,
 	 * then duplicate this. Else use talloc_memdup().
 	 */
 
-	if (srcvec[1].iov_len == 8 &&
-			srcvec[1].iov_base ==
-				((uint8_t *)srcvec[0].iov_base) +
-					SMB2_HDR_BODY) {
-		outvec[1].iov_base = ((uint8_t *)outvec[0].iov_base) +
-					SMB2_HDR_BODY;
-		outvec[1].iov_len = 8;
+	if ((srcbody == expected_srcbody) && (srcbody_len == 8)) {
+		dstbody = dsthdr + SMB2_HDR_BODY;
 	} else {
-		outvec[1].iov_base = talloc_memdup(ctx,
-				srcvec[1].iov_base,
-				srcvec[1].iov_len);
-		if (!outvec[1].iov_base) {
+		dstbody = talloc_memdup(ctx, srcbody, srcbody_len);
+		if (dstbody == NULL) {
 			return false;
 		}
-		outvec[1].iov_len = srcvec[1].iov_len;
 	}
+	outvec[SMBD_SMB2_BODY_IOV_OFS].iov_base = (void *)dstbody;
+	outvec[SMBD_SMB2_BODY_IOV_OFS].iov_len = srcbody_len;
 
 	/*
-	 * If this is a "standard" vec[2] of length 1,
-	 * pointing to srcvec[0].iov_base + (OUTVEC_ALLOC_SIZE - 1)
+	 * If this is a "standard" vec[SMBD_SMB2_DYN_IOV_OFS] of length 1,
+	 * pointing to
+	 * srcvec[SMBD_SMB2_HDR_IOV_OFS].iov_base + 8
 	 * then duplicate this. Else use talloc_memdup().
 	 */
 
-	if (srcvec[2].iov_base &&
-			srcvec[2].iov_len) {
-		if (srcvec[2].iov_base ==
-				((uint8_t *)srcvec[0].iov_base) +
-					(OUTVEC_ALLOC_SIZE - 1) &&
-				srcvec[2].iov_len == 1) {
-			/* Common SMB2 error packet case. */
-			outvec[2].iov_base = ((uint8_t *)outvec[0].iov_base) +
-				(OUTVEC_ALLOC_SIZE - 1);
-		} else {
-			outvec[2].iov_base = talloc_memdup(ctx,
-					srcvec[2].iov_base,
-					srcvec[2].iov_len);
-			if (!outvec[2].iov_base) {
-				return false;
-			}
-		}
-		outvec[2].iov_len = srcvec[2].iov_len;
+	if ((srcdyn == expected_srcdyn) && (srcdyn_len == 1)) {
+		dstdyn = dsthdr + SMB2_HDR_BODY + 8;
+	} else if (srcdyn == NULL) {
+		dstdyn = NULL;
 	} else {
-		outvec[2].iov_base = NULL;
-		outvec[2].iov_len = 0;
+		dstdyn = talloc_memdup(ctx, srcdyn, srcdyn_len);
+		if (dstdyn == NULL) {
+			return false;
+		}
 	}
+	outvec[SMBD_SMB2_DYN_IOV_OFS].iov_base = (void *)dstdyn;
+	outvec[SMBD_SMB2_DYN_IOV_OFS].iov_len = srcdyn_len;
+
 	return true;
 }
 
