@@ -1609,27 +1609,33 @@ NTSTATUS smbd_smb2_request_verify_creditcharge(struct smbd_smb2_request *req,
 NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 					size_t expected_body_size)
 {
+	struct iovec *inhdr_v;
 	const uint8_t *inhdr;
 	uint16_t opcode;
 	const uint8_t *inbody;
-	int i = req->current_idx;
 	size_t body_size;
 	size_t min_dyn_size = expected_body_size & 0x00000001;
+	int max_idx = req->in.vector_count - SMBD_SMB2_NUM_IOV_PER_REQ;
 
 	/*
 	 * The following should be checked already.
 	 */
-	if ((i+2) > req->in.vector_count) {
+	if (req->in.vector_count < SMBD_SMB2_NUM_IOV_PER_REQ) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (req->in.vector[i+0].iov_len != SMB2_HDR_BODY) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	if (req->in.vector[i+1].iov_len < 2) {
+	if (req->current_idx > max_idx) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	inhdr = (const uint8_t *)req->in.vector[i+0].iov_base;
+	inhdr_v = SMBD_SMB2_IN_HDR_IOV(req);
+	if (inhdr_v->iov_len != SMB2_HDR_BODY) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (SMBD_SMB2_IN_BODY_LEN(req) < 2) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 	opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 
 	switch (opcode) {
@@ -1644,14 +1650,14 @@ NTSTATUS smbd_smb2_request_verify_sizes(struct smbd_smb2_request *req,
 	 * where the last byte might be in the
 	 * dynamic section..
 	 */
-	if (req->in.vector[i+1].iov_len != (expected_body_size & 0xFFFFFFFE)) {
+	if (SMBD_SMB2_IN_BODY_LEN(req) != (expected_body_size & 0xFFFFFFFE)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	if (req->in.vector[i+2].iov_len < min_dyn_size) {
+	if (SMBD_SMB2_IN_DYN_LEN(req) < min_dyn_size) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	inbody = (const uint8_t *)req->in.vector[i+1].iov_base;
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	body_size = SVAL(inbody, 0x00);
 	if (body_size != expected_body_size) {
