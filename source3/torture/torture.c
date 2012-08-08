@@ -4250,6 +4250,8 @@ static bool run_deletetest(int dummy)
 
 	printf("eighth delete on close test succeeded.\n");
 
+	/* Test 9 ... */
+
 	/* This should fail - we need to set DELETE_ACCESS. */
 	status = cli_ntcreate(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
 			      FILE_ATTRIBUTE_NORMAL,
