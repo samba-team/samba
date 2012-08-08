@@ -1042,6 +1042,7 @@ static struct smbd_smb2_request *dup_smb2_req(const struct smbd_smb2_request *re
 
 	newreq->sconn = req->sconn;
 	newreq->session = req->session;
+	newreq->do_encryption = req->do_encryption;
 	newreq->do_signing = req->do_signing;
 	newreq->current_idx = req->current_idx;
 
