@@ -4168,7 +4168,7 @@ static bool run_deletetest(int dummy)
 	/* This next open should succeed - we reset the flag. */
 	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("[5] open of %s failed (%s)\n", fname, nt_errstr(status));
+		printf("[7] open of %s failed (%s)\n", fname, nt_errstr(status));
 		correct = False;
 		goto fail;
 	}
