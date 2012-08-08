@@ -194,6 +194,8 @@ WERROR value_list_load(struct value_list *vl, struct registry_key *key)
 	struct value_item *vitem;
 	ITEM **new_items;
 	WERROR rv;
+	static const char *empty_name = "(empty)";
+	const char *name;
 
 	unpost_menu(vl->menu);
 
@@ -237,8 +239,17 @@ WERROR value_list_load(struct value_list *vl, struct registry_key *key)
 			return rv;
 		}
 
-		new_items[idx] = new_item(vitem->value_name,
-					  vitem->value_desc);
+		/* ncurses won't accept empty strings in menu items */
+		name = vitem->value_name;
+		if (name[0] == '\0') {
+			name = empty_name;
+		}
+		new_items[idx] = new_item(name, vitem->value_desc);
+		if (new_items[idx] == NULL) {
+			talloc_free(vitem);
+			return WERR_NOMEM;
+		}
+
 		set_item_userptr(new_items[idx], vitem);
 	}
 
