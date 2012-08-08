@@ -4182,7 +4182,7 @@ static bool run_deletetest(int dummy)
 
 	printf("seventh delete on close test succeeded.\n");
 
-	/* Test 7 ... */
+	/* Test 8 ... */
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
