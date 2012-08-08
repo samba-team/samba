@@ -415,6 +415,8 @@ static bool unix_strlower(const char *src, size_t srclen, char *dest, size_t des
 				   (void **)(void *)&buffer, &size))
 	{
 		smb_panic("failed to create UCS2 buffer");
+		/* NOTREACHED. Yet. */
+		return false;
 	}
 	if (!strlower_w(buffer) && (dest == src)) {
 		TALLOC_FREE(buffer);
