@@ -139,15 +139,14 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		break;
 	case 'd':
 	case 'D': {
-		struct dialog *dia;
 		int sel;
 
 		node = item_userptr(current_item(regedit->keys->menu));
-		dia = dialog_confirm_new(regedit, "Delete Key",
-					 regedit->main_window,
-					 "Really delete key \"%s\"?",
-					 node->name);
-		sel = dialog_modal_loop(dia);
+		sel = dialog_notice(regedit, DIA_CONFIRM,
+				    "Delete Key",
+				     regedit->main_window,
+				     "Really delete key \"%s\"?",
+				     node->name);
 		mvwprintw(regedit->main_window, 1, 0, "Sel: %d", sel);
 		/* TODO */
 		break;
@@ -200,14 +199,13 @@ static void handle_value_input(struct regedit *regedit, int c)
 	case 'D':
 		vitem = item_userptr(current_item(regedit->vl->menu));
 		if (vitem) {
-			struct dialog *dia;
 			int sel;
 
-			dia = dialog_confirm_new(regedit, "Delete Value",
-						 regedit->main_window,
-						 "Really delete value \"%s\"?",
-						 vitem->value_name);
-			sel = dialog_modal_loop(dia);
+			sel = dialog_notice(regedit, DIA_CONFIRM,
+					    "Delete Value",
+					     regedit->main_window,
+					     "Really delete value \"%s\"?",
+					     vitem->value_name);
 			if (sel == DIALOG_OK) {
 				ITEM *it = current_item(regedit->keys->menu);
 				struct tree_node *node = item_userptr(it);

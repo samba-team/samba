@@ -47,15 +47,19 @@ struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 					const char **choices, int nlines,
 					int ncols, WINDOW *below);
 
-struct dialog *dialog_confirm_new(TALLOC_CTX *ctx, const char *title,
-				  WINDOW *below, const char *msg, ...);
+enum dialog_type {
+	DIA_ALERT,
+	DIA_CONFIRM
+};
 
 enum dialog_selection {
 	DIALOG_OK = 0,
 	DIALOG_CANCEL = 1
 };
 
-int dialog_modal_loop(struct dialog *dia);
+int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
+		  const char *title, WINDOW *below,
+		  const char *msg, ...);
 
 struct registry_key;
 struct value_item;

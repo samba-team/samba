@@ -197,39 +197,6 @@ struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 	return dialog_choice_new(ctx, title, choices, nlines, ncols, y, x);
 }
 
-struct dialog *dialog_confirm_new(TALLOC_CTX *ctx, const char *title,
-				  WINDOW *below, const char *msg, ...)
-{
-	va_list ap;
-	struct dialog *dia;
-	char *str;
-	const char *choices[] = {
-		"Ok",
-		"Cancel",
-		NULL
-	};
-	int width;
-
-	va_start(ap, msg);
-	str = talloc_vasprintf(ctx, msg, ap);
-	va_end(ap);
-	if (str == NULL) {
-		return NULL;
-	}
-
-	width = strlen(str) + 2;
-
-	dia = dialog_choice_center_new(ctx, title, choices, 5, width, below);
-	if (dia == NULL) {
-		return NULL;
-	}
-
-	waddstr(dia->sub_window, str);
-	talloc_free(str);
-
-	return dia;
-}
-
 static int handle_menu_input(MENU *menu, int c)
 {
 	ITEM *item;
@@ -250,7 +217,7 @@ static int handle_menu_input(MENU *menu, int c)
 	return -1;
 }
 
-int dialog_modal_loop(struct dialog *dia)
+static int modal_loop(struct dialog *dia)
 {
 	int c;
 	int selection = -1;
@@ -269,6 +236,43 @@ int dialog_modal_loop(struct dialog *dia)
 	talloc_free(dia);
 
 	return selection;
+}
+
+int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
+		  const char *title, WINDOW *below,
+		  const char *msg, ...)
+{
+	va_list ap;
+	struct dialog *dia;
+	char *str;
+	const char *choices[] = {
+		"Ok",
+		"Cancel",
+		NULL
+	};
+	int width;
+
+	va_start(ap, msg);
+	str = talloc_vasprintf(ctx, msg, ap);
+	va_end(ap);
+	if (str == NULL) {
+		return -1;
+	}
+
+	width = strlen(str) + 2;
+
+	if (type == DIA_ALERT) {
+		choices[1] = NULL;
+	}
+	dia = dialog_choice_center_new(ctx, title, choices, 5, width, below);
+	if (dia == NULL) {
+		return -1;
+	}
+
+	waddstr(dia->sub_window, str);
+	talloc_free(str);
+
+	return modal_loop(dia);
 }
 
 static void handle_form_input(FORM *frm, int c)
@@ -348,8 +352,6 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 		}
 		set_field_buffer(edit->field[1], 0, tmp);
 		talloc_free(tmp);
-		set_field_type(edit->field[1], TYPE_REGEXP,
-			       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
 		break;
 	}
 	case REG_SZ:
@@ -414,8 +416,20 @@ static char *string_trim(TALLOC_CTX *ctx, const char *buf)
 	return str;
 }
 
+static bool value_exists(TALLOC_CTX *ctx, const struct registry_key *key,
+			 const char *name)
+{
+	uint32_t type;
+	DATA_BLOB blob;
+	WERROR rv;
+
+	rv = reg_key_get_value_by_name(ctx, key, name, &type, &blob);
+
+	return W_ERROR_IS_OK(rv);
+}
+
 static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
-			uint32_t type)
+			uint32_t type, bool new_value)
 {
 	WERROR rv;
 	DATA_BLOB blob;
@@ -425,8 +439,11 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 	if (!buf) {
 		return WERR_OK;
 	}
-	if (!field_status(edit->field[1])) {
+	if (!new_value && !field_status(edit->field[1])) {
 		return WERR_OK;
+	}
+	if (new_value && value_exists(edit, key, name)) {
+		return WERR_FILE_EXISTS;
 	}
 
 	switch (type) {
@@ -543,13 +560,13 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 	talloc_set_destructor(edit, edit_dialog_free);
 
-	title = talloc_asprintf(edit, "Edit %s value", str_regtype(vitem->type));
+	title = talloc_asprintf(edit, "Edit %s value", str_regtype(type));
 	if (title == NULL) {
 		goto finish;
 	}
 
 	nlines = 9;
-	if (vitem->type == REG_MULTI_SZ) {
+	if (type == REG_MULTI_SZ) {
 		nlines += 4;
 	}
 	ncols = 50;
@@ -568,7 +585,7 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 
 	/* data */
 	val_rows = 1;
-	if (vitem->type == REG_MULTI_SZ) {
+	if (type == REG_MULTI_SZ) {
 		val_rows += 4;
 	}
 	edit->field[1] = new_field(val_rows, ncols - 4, 4, 1, 0, 0);
@@ -579,6 +596,10 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	set_field_back(edit->field[1], A_REVERSE);
 	field_opts_off(edit->field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
 	field_opts_off(edit->field[1], O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
+	if (type == REG_DWORD) {
+		set_field_type(edit->field[1], TYPE_REGEXP,
+			       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
+	}
 
 	if (vitem) {
 		set_field_buffer(edit->field[0], 0, vitem->value_name);
@@ -592,7 +613,8 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
 
-	edit->input_win = derwin(edit->dia->sub_window, nlines - 3, ncols - 3, 0, 0);
+	edit->input_win = derwin(edit->dia->sub_window, nlines - 3, ncols - 3,
+				 0, 0);
 	if (edit->input_win == NULL) {
 		goto finish;
 	}
@@ -623,7 +645,18 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 			handle_form_input(edit->input, c);
 		} else {
 			selection = handle_menu_input(edit->dia->choices, c);
-			if (selection != -1) {
+			if (selection == DIALOG_OK) {
+				rv = set_value(edit, key, type, vitem == NULL);
+				if (W_ERROR_EQUAL(rv, WERR_FILE_EXISTS)) {
+					dialog_notice(edit, DIA_ALERT,
+						      "Value exists", below,
+						      "Value name already exists.");
+					selection = -1;
+				} else {
+					goto finish;
+				}
+			} else if (selection == DIALOG_CANCEL) {
+				rv = WERR_OK;
 				goto finish;
 			}
 		}
@@ -633,10 +666,6 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 
 finish:
-	if (selection == DIALOG_OK) {
-		rv = set_value(edit, key, type);
-	}
-
 	talloc_free(edit);
 
 	return rv;
