@@ -4266,6 +4266,8 @@ static bool run_deletetest(int dummy)
 
 	printf("ninth delete on close test succeeded.\n");
 
+	/* Test 10 ... */
+
 	status = cli_ntcreate(cli1, fname, 0,
 			     FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
 			     FILE_ATTRIBUTE_NORMAL, FILE_SHARE_NONE,
