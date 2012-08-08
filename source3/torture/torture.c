@@ -3994,7 +3994,8 @@ static bool run_deletetest(int dummy)
 
 	/* This should fail - file should no longer be there. */
 
-	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1))) {
+	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[3] open of %s succeeded should have been deleted on close !\n", fname);
 		status = cli_close(cli1, fnum1);
 		if (!NT_STATUS_IS_OK(status)) {
