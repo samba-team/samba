@@ -1232,9 +1232,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 			sizeof(req->in.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
 		req->in.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
 
-		/* Reset the new in size. */
-		smb2_setup_nbt_length(req->in.vector, req->in.vector_count);
-
 		/* Re-arrange the out.vectors. */
 		memmove(&req->out.vector[req->current_idx],
 		        &req->out.vector[i],
