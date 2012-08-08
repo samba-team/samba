@@ -3950,8 +3950,11 @@ static bool run_deletetest(int dummy)
 	/* This should fail with a sharing violation - open for delete is only compatible
 	   with SHARE_DELETE. */
 
-	if (NT_STATUS_IS_OK(cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
-			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0, 0, &fnum2))) {
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OPEN, 0, 0, &fnum2);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[3] open  - 2 of %s succeeded - should have failed.\n", fname);
 		correct = False;
 		goto fail;
