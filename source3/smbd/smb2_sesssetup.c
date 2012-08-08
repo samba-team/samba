@@ -190,6 +190,10 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->global->signing_required = true;
 	}
 
+	if (lp_smb_encrypt(-1) == SMB_SIGNING_REQUIRED) {
+		x->global->encryption_required = true;
+	}
+
 	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 		/* we map anonymous to guest internally */
 		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
@@ -197,6 +201,24 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		/* force no signing */
 		x->global->signing_required = false;
 		guest = true;
+	}
+
+	if (guest && x->global->encryption_required) {
+		DEBUG(1,("reject guest session as encryption is required\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!(conn->smb2.server.capabilities & SMB2_CAP_ENCRYPTION)) {
+		if (x->global->encryption_required) {
+			DEBUG(1,("reject session with dialect[0x%04X] "
+				 "as encryption is required\n",
+				 conn->smb2.server.dialect));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (x->global->encryption_required) {
+		*out_session_flags |= SMB2_SESSION_FLAG_ENCRYPT_DATA;
 	}
 
 	ZERO_STRUCT(session_key);
