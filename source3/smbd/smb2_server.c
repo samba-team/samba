@@ -1167,7 +1167,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 					 uint32_t defer_time)
 {
 	NTSTATUS status;
-	int i = req->current_idx;
+	int idx = req->current_idx;
 	struct timeval defer_endtime;
 	uint8_t *outhdr = NULL;
 	uint32_t flags;
@@ -1191,7 +1191,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
-	if (req->in.vector_count > i + SMBD_SMB2_NUM_IOV_PER_REQ) {
+	if (req->in.vector_count > idx + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/*
 		 * We're trying to go async in a compound
 		 * request chain. This is not allowed.
@@ -1238,13 +1238,13 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 		/* Re-arrange the in.vectors. */
 		memmove(&req->in.vector[req->current_idx],
-		        &req->in.vector[i],
+		        &req->in.vector[idx],
 			sizeof(req->in.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
 		req->in.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
 
 		/* Re-arrange the out.vectors. */
 		memmove(&req->out.vector[req->current_idx],
-		        &req->out.vector[i],
+		        &req->out.vector[idx],
 			sizeof(req->out.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
 		req->out.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
 
