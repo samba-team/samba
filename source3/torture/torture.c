@@ -4245,8 +4245,9 @@ static bool run_deletetest(int dummy)
 		printf("[8] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
 		correct = False;
-	} else
-		printf("eighth delete on close test succeeded.\n");
+	}
+
+	printf("eighth delete on close test succeeded.\n");
 
 	/* This should fail - we need to set DELETE_ACCESS. */
 	status = cli_ntcreate(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
