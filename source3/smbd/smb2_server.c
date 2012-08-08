@@ -1123,8 +1123,8 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 
 struct smbd_smb2_request_pending_state {
         struct smbd_server_connection *sconn;
-        uint8_t buf[4 + SMB2_HDR_BODY + 0x08 + 1];
-        struct iovec vector[3];
+        uint8_t buf[NBT_HDR_SIZE + SMB2_HDR_BODY + 0x08 + 1];
+        struct iovec vector[1 + SMBD_SMB2_NUM_IOV_PER_REQ];
 };
 
 static void smbd_smb2_request_pending_writev_done(struct tevent_req *subreq)
@@ -1269,6 +1269,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	const uint8_t *inhdr = NULL;
 	uint8_t *hdr = NULL;
 	uint8_t *body = NULL;
+	uint8_t *dyn = NULL;
 	uint32_t flags = 0;
 	uint64_t message_id = 0;
 	uint64_t async_id = 0;
@@ -1306,19 +1307,13 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	}
 	state->sconn = req->sconn;
 
-	state->vector[0].iov_base = (void *)state->buf;
-	state->vector[0].iov_len = 4;
 
-	state->vector[1].iov_base = state->buf + 4;
-	state->vector[1].iov_len = SMB2_HDR_BODY;
+	hdr = state->buf + NBT_HDR_SIZE;
+	body = hdr + SMB2_HDR_BODY;
+	dyn = body + 8;
 
-	state->vector[2].iov_base = state->buf + 4 + SMB2_HDR_BODY;
-	state->vector[2].iov_len = 9;
 
-	smb2_setup_nbt_length(state->vector, 3);
 
-	hdr = (uint8_t *)state->vector[1].iov_base;
-	body = (uint8_t *)state->vector[2].iov_base;
 
 	SIVAL(hdr, SMB2_HDR_PROTOCOL_ID, SMB2_MAGIC);
 	SSVAL(hdr, SMB2_HDR_LENGTH, SMB2_HDR_BODY);
@@ -1341,14 +1336,28 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	SCVAL(body, 0x03, 0);
 	SIVAL(body, 0x04, 0);
 	/* Match W2K8R2... */
-	SCVAL(body, 0x08, 0x21);
+	SCVAL(dyn,  0x00, 0x21);
+
+	state->vector[0].iov_base = (void *)state->buf;
+	state->vector[0].iov_len = NBT_HDR_SIZE;
+
+	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_base  = hdr;
+	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_len   = SMB2_HDR_BODY;
+
+	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_base = body;
+	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_len  = 8;
+
+	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_base  = dyn;
+	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_len   = 1;
+
+	smb2_setup_nbt_length(state->vector, 1 + SMBD_SMB2_NUM_IOV_PER_REQ);
 
 	/* Ensure we correctly go through crediting. Grant
 	   the credits now, and zero credits on the final
 	   response. */
 	smb2_set_operation_credit(req->sconn,
 			SMBD_SMB2_IN_HDR_IOV(req),
-			&state->vector[1]);
+			&state->vector[1+SMBD_SMB2_HDR_IOV_OFS]);
 
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 
@@ -1359,8 +1368,9 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		DATA_BLOB signing_key = x->global->channels[0].signing_key;
 
 		status = smb2_signing_sign_pdu(signing_key,
-					       conn->protocol,
-					       &state->vector[1], 2);
+					conn->protocol,
+					&state->vector[1+SMBD_SMB2_HDR_IOV_OFS],
+					SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			smbd_server_connection_terminate(req->sconn,
 						nt_errstr(status));
@@ -1373,7 +1383,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 					state->sconn->smb2.stream,
 					state->sconn->smb2.send_queue,
 					state->vector,
-					3);
+					ARRAY_SIZE(state->vector));
 	if (subreq == NULL) {
 		smbd_server_connection_terminate(state->sconn,
 						 nt_errstr(NT_STATUS_NO_MEMORY));
