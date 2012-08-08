@@ -499,7 +499,7 @@ static bool unix_strupper(const char *src, size_t srclen, char *dest, size_t des
 	bool ret;
 
 	if (!push_ucs2_talloc(talloc_tos(), &buffer, src, &size)) {
-		return (size_t)-1;
+		return false;
 	}
 
 	if (!strupper_w(buffer) && (dest == src)) {
