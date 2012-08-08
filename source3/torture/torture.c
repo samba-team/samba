@@ -4215,7 +4215,8 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
+	status = cli_nt_delete_on_close(cli1, fnum1, true);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("[8] setting delete_on_close on file failed !\n");
 		correct = False;
 		goto fail;
