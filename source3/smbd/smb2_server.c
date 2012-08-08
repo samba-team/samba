@@ -1977,7 +1977,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	struct tevent_req *subreq;
 	struct iovec *outhdr = SMBD_SMB2_OUT_HDR_IOV(req);
 	struct iovec *outdyn = SMBD_SMB2_OUT_DYN_IOV(req);
-	struct iovec *lasthdr = NULL;
 
 	req->subreq = NULL;
 	TALLOC_FREE(req->async_te);
@@ -1985,9 +1984,24 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	if ((req->current_idx > SMBD_SMB2_NUM_IOV_PER_REQ) &&
 	    (req->last_key.length > 0)) {
 		int last_idx = req->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
+		struct iovec *lasthdr = SMBD_SMB2_IDX_HDR_IOV(req,out,last_idx);
+		NTSTATUS status;
 
-		lasthdr = SMBD_SMB2_IDX_HDR_IOV(req,out,last_idx);
+		/*
+		 * As we are sure the header of the last request in the
+		 * compound chain will not change, we can to sign here
+		 * with the last signing key we remembered.
+		 */
+
+		status = smb2_signing_sign_pdu(req->last_key,
+					       conn->protocol,
+					       lasthdr,
+					       SMBD_SMB2_NUM_IOV_PER_REQ);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
+	data_blob_clear_free(&req->last_key);
 
 	req->current_idx += SMBD_SMB2_NUM_IOV_PER_REQ;
 
@@ -2004,8 +2018,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		if (!im) {
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		data_blob_clear_free(&req->last_key);
 
 		if (req->do_signing) {
 			struct smbXsrv_session *x = req->session;
@@ -2039,24 +2051,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	/* Set credit for these operations (zero credits if this
 	   is a final reply for an async operation). */
 	smb2_calculate_credits(req, req);
-
-	/*
-	 * As we are sure the header of the last request in the
-	 * compound chain will not change, we can to sign here
-	 * with the last signing key we remembered.
-	 */
-	if (lasthdr != NULL) {
-		NTSTATUS status;
-
-		status = smb2_signing_sign_pdu(req->last_key,
-					       conn->protocol,
-					       lasthdr,
-					       SMBD_SMB2_NUM_IOV_PER_REQ);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-	data_blob_clear_free(&req->last_key);
 
 	/*
 	 * now check if we need to sign the current response
