@@ -307,7 +307,16 @@ enum input_section {
 	IN_MENU
 };
 
-static void fill_value_buffer(TALLOC_CTX *ctx, FIELD *fld, const struct value_item *vitem)
+struct edit_dialog {
+	struct dialog *dia;
+	WINDOW *input_win;
+	FORM *input;
+	FIELD *field[MAX_FIELDS];
+	enum input_section section;
+};
+
+static WERROR fill_value_buffer(struct edit_dialog *edit,
+			        const struct value_item *vitem)
 {
 	char *tmp;
 
@@ -317,115 +326,187 @@ static void fill_value_buffer(TALLOC_CTX *ctx, FIELD *fld, const struct value_it
 		if (vitem->data.length >= 4) {
 			v = IVAL(vitem->data.data, 0);
 		}
-		tmp = talloc_asprintf(ctx, "0x%x", v);
-		set_field_buffer(fld, 0, tmp);
+		tmp = talloc_asprintf(edit, "0x%x", v);
+		if (tmp == NULL) {
+			return WERR_NOMEM;
+		}
+		set_field_buffer(edit->field[1], 0, tmp);
 		talloc_free(tmp);
+		set_field_type(edit->field[1], TYPE_REGEXP,
+			       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
 		break;
 	}
 	case REG_SZ:
 	case REG_EXPAND_SZ: {
 		const char *s;
 
-		if (!pull_reg_sz(ctx, &vitem->data, &s)) {
-			break;
+		if (!pull_reg_sz(edit, &vitem->data, &s)) {
+			return WERR_NOMEM;
 		}
-		set_field_buffer(fld, 0, s);
+		set_field_buffer(edit->field[1], 0, s);
 		break;
 	}
+	case REG_MULTI_SZ: {
+		const char **p, **a;
+		char *buf = NULL;
 
+		if (!pull_reg_multi_sz(edit, &vitem->data, &a)) {
+			return WERR_NOMEM;
+		}
+		for (p = a; *p != NULL; ++p) {
+			if (buf == NULL) {
+				buf = talloc_asprintf(edit, "%s\n", *p);
+			} else {
+				buf = talloc_asprintf_append(buf, "%s\n", *p);
+			}
+			if (buf == NULL) {
+				return WERR_NOMEM;
+			}
+		}
+		set_field_buffer(edit->field[1], 0, buf);
+		talloc_free(buf);
+	}
+
+	}
+
+	return WERR_OK;
+}
+
+static void set_value(struct edit_dialog *edit, struct registry_key *key,
+		      const struct value_item *vitem)
+{
+}
+
+static void section_down(struct edit_dialog *edit)
+{
+	switch (edit->section) {
+	case IN_NAME:
+		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
+			edit->section = IN_DATA;
+			set_current_field(edit->input, edit->field[1]);
+		}
+		break;
+	case IN_DATA:
+		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
+			edit->section = IN_MENU;
+			menu_driver(edit->dia->choices, REQ_FIRST_ITEM);
+		}
+		break;
+	case IN_MENU:
+		edit->section = IN_NAME;
+		set_current_field(edit->input, edit->field[0]);
+		break;
 	}
 }
 
-static void set_value(TALLOC_CTX *ctx, FIELD *fld, struct registry_key *key,
-		      const struct value_item *vitem)
+static void section_up(struct edit_dialog *edit)
 {
+	switch (edit->section) {
+	case IN_NAME:
+		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
+			edit->section = IN_MENU;
+			menu_driver(edit->dia->choices, REQ_FIRST_ITEM);
+		}
+		break;
+	case IN_DATA:
+		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
+			edit->section = IN_NAME;
+			set_current_field(edit->input, edit->field[0]);
+		}
+		break;
+	case IN_MENU:
+		edit->section = IN_DATA;
+		set_current_field(edit->input, edit->field[1]);
+		break;
+	}
 }
 
 int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 		      const struct value_item *vitem, WINDOW *below)
 {
-	struct dialog *dia;
+	struct edit_dialog *edit;
 	const char *choices[] = {
 		"Ok",
 		"Cancel",
 		NULL
 	};
 	char *title;
-	int nlines, ncols;
+	int nlines, ncols, val_rows;
 	int rv = -1;
-	WINDOW *input_win;
-	FORM *input;
-	FIELD *field[MAX_FIELDS];
-	enum input_section section;
 
-	title = talloc_asprintf(ctx, "Edit %s value", str_regtype(vitem->type));
-	if (title == NULL) {
+	edit = talloc_zero(ctx, struct edit_dialog);
+	if (edit == NULL) {
 		return -1;
 	}
 
-	nlines = 15;
-	ncols = 50;
-	dia = dialog_choice_center_new(ctx, title, choices, nlines, ncols, below);
-	if (dia == NULL) {
+	title = talloc_asprintf(ctx, "Edit %s value", str_regtype(vitem->type));
+	talloc_free(title);
+	if (title == NULL) {
 		goto finish;
 	}
 
-	memset(field, '\0', sizeof(*field) * MAX_FIELDS);
-	field[0] = new_field(1, ncols - 4, 1, 1, 0, 0);
-	field[1] = new_field(1, ncols - 4, 4, 1, 0, 0);
-
-	set_field_back(field[0], A_UNDERLINE);
-	set_field_back(field[1], A_UNDERLINE);
-	field_opts_off(field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
-	field_opts_off(field[1], O_BLANK | O_AUTOSKIP | O_STATIC);
-
-	if (vitem) {
-		set_field_buffer(field[0], 0, vitem->value_name);
-		field_opts_off(field[0], O_EDIT);
-		fill_value_buffer(dia, field[1], vitem);
+	nlines = 9;
+	if (vitem->type == REG_MULTI_SZ) {
+		nlines += 4;
+	}
+	ncols = 50;
+	edit->dia = dialog_choice_center_new(ctx, title, choices, nlines, ncols, below);
+	if (edit->dia == NULL) {
+		goto finish;
 	}
 
-	input = new_form(field);
-	form_opts_off(input, O_NL_OVERLOAD | O_BS_OVERLOAD);
+	/* name */
+	edit->field[0] = new_field(1, ncols - 4, 1, 1, 0, 0);
 
-	input_win = derwin(dia->sub_window, nlines - 3, ncols - 3, 0, 0);
+	/* data */
+	val_rows = 1;
+	if (vitem->type == REG_MULTI_SZ) {
+		val_rows += 4;
+	}
+	edit->field[1] = new_field(val_rows, ncols - 4, 4, 1, 0, 0);
 
-	set_form_win(input, dia->sub_window);
-	set_form_sub(input, input_win);
-	post_form(input);
-	mvwprintw(dia->sub_window, 0, 0, "Name");
-	mvwprintw(dia->sub_window, 3, 0, "Data");
+	set_field_back(edit->field[0], A_REVERSE);
+	set_field_back(edit->field[1], A_REVERSE);
+	field_opts_off(edit->field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
+	field_opts_off(edit->field[1], O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
 
-	keypad(dia->window, true);
+	if (vitem) {
+		set_field_buffer(edit->field[0], 0, vitem->value_name);
+		field_opts_off(edit->field[0], O_EDIT);
+		fill_value_buffer(edit, vitem);
+	}
+
+	edit->input = new_form(edit->field);
+	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
+
+	edit->input_win = derwin(edit->dia->sub_window, nlines - 3, ncols - 3, 0, 0);
+
+	set_form_win(edit->input, edit->dia->sub_window);
+	set_form_sub(edit->input, edit->input_win);
+	post_form(edit->input);
+	mvwprintw(edit->dia->sub_window, 0, 0, "Name");
+	mvwprintw(edit->dia->sub_window, 3, 0, "Data");
+
+	keypad(edit->dia->window, true);
 	update_panels();
 	doupdate();
 
-	section = IN_NAME;
+	edit->section = IN_NAME;
 
 	while (1) {
-		int c = wgetch(dia->window);
+		int c = wgetch(edit->dia->window);
 		if (c == '\t') {
-			switch (section) {
-			case IN_NAME:
-				section = IN_DATA;
-				set_current_field(input, field[1]);
-				break;
-			case IN_DATA:
-				section = IN_MENU;
-				menu_driver(dia->choices, REQ_FIRST_ITEM);
-				break;
-			case IN_MENU:
-				section = IN_NAME;
-				set_current_field(input, field[0]);
-				break;
-			}
+			section_down(edit);
+			continue;
+		} else if (c == KEY_BTAB) {
+			section_up(edit);
 			continue;
 		}
 
-		if (section == IN_NAME || section == IN_DATA) {
-			handle_form_input(input, c);
+		if (edit->section == IN_NAME || edit->section == IN_DATA) {
+			handle_form_input(edit->input, c);
 		} else {
-			rv = handle_menu_input(dia->choices, c);
+			rv = handle_menu_input(edit->dia->choices, c);
 			if (rv != -1) {
 				goto finish;
 			}
@@ -436,11 +517,8 @@ int dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	}
 
 finish:
-	if (title) {
-		talloc_free(title);
-	}
-	if (dia) {
-		talloc_free(dia);
+	if (edit->dia) {
+		talloc_free(edit->dia);
 	}
 	if (rv == DIALOG_OK) {
 		//set_value
