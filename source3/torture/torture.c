@@ -3885,7 +3885,8 @@ static bool run_deletetest(int dummy)
 		goto fail;
 	}
 
-	if (NT_STATUS_IS_OK(cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1))) {
+	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[1] open of %s succeeded (should fail)\n", fname);
 		correct = False;
 		goto fail;
