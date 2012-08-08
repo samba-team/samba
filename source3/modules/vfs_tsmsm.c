@@ -114,16 +114,19 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 	tsmname = (handle->param ? handle->param : "tsmsm");
 	
 	/* Get 'hsm script' and 'dmapi attribute' parameters to tsmd context */
-	tsmd->hsmscript = lp_parm_talloc_string(SNUM(handle->conn), tsmname,
-						"hsm script", NULL);
+	tsmd->hsmscript = lp_parm_talloc_string(
+		tsmd, SNUM(handle->conn), tsmname,
+		"hsm script", NULL);
 	talloc_steal(tsmd, tsmd->hsmscript);
 	
-	tsmd->attrib_name = lp_parm_talloc_string(SNUM(handle->conn), tsmname, 
-						  "dmapi attribute", DM_ATTRIB_OBJECT);
+	tsmd->attrib_name = lp_parm_talloc_string(
+		tsmd, SNUM(handle->conn), tsmname,
+		"dmapi attribute", DM_ATTRIB_OBJECT);
 	talloc_steal(tsmd, tsmd->attrib_name);
 	
-	tsmd->attrib_value = lp_parm_talloc_string(SNUM(handle->conn), "tsmsm", 
-						   "dmapi value", NULL);
+	tsmd->attrib_value = lp_parm_talloc_string(
+		tsmd, SNUM(handle->conn), tsmname,
+		"dmapi value", NULL);
 	talloc_steal(tsmd, tsmd->attrib_value);
 	
 	/* retrieve 'online ratio'. In case of error default to FILE_IS_ONLINE_RATIO */
