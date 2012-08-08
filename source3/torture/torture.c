@@ -4333,15 +4333,13 @@ static bool run_deletetest(int dummy)
 		cli_close(cli1, fnum1);
 		goto fail;
 		correct = False;
-	} else {
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(status));
-			goto fail;
-			correct = False;
-		} else {
-			printf("eleventh delete on close test succeeded.\n");
-		}
+	} else if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(status));
+		goto fail;
+		correct = False;
 	}
+
+	printf("eleventh delete on close test succeeded.\n");
 
 	printf("finished delete test\n");
 
