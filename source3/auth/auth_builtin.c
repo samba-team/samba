@@ -97,7 +97,9 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 	fstrcpy(user, user_info->client.account_name);
 
 	if (strnequal("NT_STATUS", user, strlen("NT_STATUS"))) {
-		strupper_m(user);
+		if (!strupper_m(user)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		return nt_status_string_to_code(user);
 	}
 

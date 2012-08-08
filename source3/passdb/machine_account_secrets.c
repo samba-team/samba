@@ -148,7 +148,9 @@ bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 #endif
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
-	strupper_m(key);
+	if (!strupper_m(key)) {
+		return false;
+	}
 	return secrets_store(key, guid, sizeof(struct GUID));
 }
 
@@ -160,7 +162,9 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	struct GUID new_guid;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
-	strupper_m(key);
+	if (!strupper_m(key)) {
+		return false;
+	}
 	dyn_guid = (struct GUID *)secrets_fetch(key, &size);
 
 	if (!dyn_guid) {

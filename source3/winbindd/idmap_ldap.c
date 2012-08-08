@@ -50,7 +50,12 @@ static char *idmap_fetch_secret(const char *backend,
 	if (r < 0)
 		return NULL;
 
-	strupper_m(tmp); /* make sure the key is case insensitive */
+	/* make sure the key is case insensitive */
+	if (!strupper_m(tmp)) {
+		SAFE_FREE(tmp);
+		return NULL;
+	}
+
 	ret = secrets_fetch_generic(tmp, identity);
 
 	SAFE_FREE(tmp);

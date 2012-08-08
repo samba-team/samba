@@ -128,7 +128,10 @@ static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Try as uppercase, if username wasn't originally uppercase */
-	strupper_m(user2);
+	if (!strupper_m(user2)) {
+		goto done;
+	}
+
 	if(strcmp(user, user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",
 			 user2));

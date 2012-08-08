@@ -561,7 +561,9 @@ static bool upgrade_v2_to_v3_check_subkeylist(struct db_context *db,
 	};
 	bool success = false;
 	char *path = talloc_asprintf(talloc_tos(), "%s\\%s", key, subkey);
-	strupper_m(path);
+	if (!strupper_m(path)) {
+		goto done;
+	}
 
 	if (!dbwrap_exists(db, string_term_tdb_data(path))) {
 		NTSTATUS status;

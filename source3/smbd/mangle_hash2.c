@@ -291,7 +291,7 @@ static unsigned int mangle_hash(const char *key, unsigned int length)
 	length = MIN(length,sizeof(fstring)-1);
 	strncpy(str, key, length);
 	str[length] = 0;
-	strupper_m(str);
+	(void)strupper_m(str);
 
 	/* the length of a multi-byte string can change after a strupper_m */
 	length = strlen(str);

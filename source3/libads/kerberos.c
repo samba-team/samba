@@ -861,7 +861,9 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		fname, realm, domain ));
 
 	realm_upper = talloc_strdup(fname, realm);
-	strupper_m(realm_upper);
+	if (!strupper_m(realm_upper)) {
+		goto done;
+	}
 
 	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss, kdc_name);
 	if (!kdc_ip_string) {

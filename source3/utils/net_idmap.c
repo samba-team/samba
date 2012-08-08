@@ -492,7 +492,11 @@ static bool idmap_store_secret(const char *backend,
 
 	if (r < 0) return false;
 
-	strupper_m(tmp); /* make sure the key is case insensitive */
+	/* make sure the key is case insensitive */
+	if (!strupper_m(tmp)) {
+		free(tmp);
+		return false;
+	}
 	ret = secrets_store_generic(tmp, identity, secret);
 
 	free(tmp);

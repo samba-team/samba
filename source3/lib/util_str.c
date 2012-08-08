@@ -58,7 +58,7 @@ bool strnequal(const char *s1,const char *s2,size_t n)
 void strnorm(char *s, int case_default)
 {
 	if (case_default == CASE_UPPER)
-		strupper_m(s);
+		(void)strupper_m(s); /* FIXME - return a bool here. */
 	else
 		strlower_m(s);
 }
@@ -575,7 +575,6 @@ bool strupper_m(char *s)
 	/* Catch mb conversion errors that may not terminate. */
 	if (errno) {
 		s[len-1] = '\0';
-		ret = false;
 	}
 	errno = errno_save;
 	return ret;
@@ -989,7 +988,11 @@ int asprintf_strupper_m(char **strp, const char *fmt, ...)
 	if (ret == -1)
 		return -1;
 
-	strupper_m(result);
+	if (!strupper_m(result)) {
+		SAFE_FREE(result);
+		return -1;
+	}
+
 	*strp = result;
 	return ret;
 }
@@ -1006,7 +1009,10 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...)
 	if (ret == NULL) {
 		return NULL;
 	}
-	strupper_m(ret);
+	if (!strupper_m(ret)) {
+		TALLOC_FREE(ret);
+		return NULL;
+	}
 	return ret;
 }
 

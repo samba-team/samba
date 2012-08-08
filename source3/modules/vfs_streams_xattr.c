@@ -119,7 +119,9 @@ static NTSTATUS streams_xattr_get_name(TALLOC_CTX *ctx,
 		}
 	} else {
 		/* Normalize the stream type to upercase. */
-		strupper_m(strrchr_m(*xattr_name, ':') + 1);
+		if (!strupper_m(strrchr_m(*xattr_name, ':') + 1)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	DEBUG(10, ("xattr_name: %s, stream_name: %s\n", *xattr_name,

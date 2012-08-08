@@ -120,7 +120,10 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	p++;
 
 	unstrcpy(myname, lp_netbios_name());
-	strupper_m(myname);
+	if (!strupper_m(myname)) {
+		DEBUG(2,("strupper_m %s failed\n", myname));
+		return;
+	}
 	myname[15]='\0';
 	/* The call below does CH_UNIX -> CH_DOS conversion. JRA */
 	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);

@@ -8273,7 +8273,7 @@ static NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 		/*
 		 * upper-case the type field
 		 */
-		strupper_m(strchr_m(stream, ':')+1);
+		(void)strupper_m(strchr_m(stream, ':')+1);
 	}
 
  done:

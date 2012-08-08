@@ -61,7 +61,10 @@ size_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 		if (!tmpbuf) {
 			smb_panic("malloc fail");
 		}
-		strupper_m(tmpbuf);
+		if (!strupper_m(tmpbuf)) {
+			SAFE_FREE(tmpbuf);
+			return (size_t)-1;
+		}
 		src = tmpbuf;
 	}
 

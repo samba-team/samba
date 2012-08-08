@@ -109,8 +109,14 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
 
 	unstrcpy( browc->lmb_name, browser_name);
 	unstrcpy( browc->work_group, work_name);
-	strupper_m( browc->lmb_name );
-	strupper_m( browc->work_group );
+	if (!strupper_m( browc->lmb_name )) {
+		SAFE_FREE(browc);
+		return NULL;
+	}
+	if (!strupper_m( browc->work_group )) {
+		SAFE_FREE(browc);
+		return NULL;
+	}
   
 	browc->ip = ip;
  

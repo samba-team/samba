@@ -946,7 +946,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	centry_put_uint32(centry, type);
 	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
-	strupper_m(uname);
+	(void)strupper_m(uname);
 	centry_end(centry, "NS/%s/%s", domain_name, uname);
 	DEBUG(10,("wcache_save_name_to_sid: %s\\%s -> %s (%s)\n", domain_name,
 		  uname, sid_string_dbg(sid), nt_errstr(status)));
@@ -1064,7 +1064,7 @@ static void wcache_save_username_alias(struct winbindd_domain *domain,
 	centry_put_string( centry, alias );
 
 	fstrcpy(uname, name);
-	strupper_m(uname);
+	(void)strupper_m(uname);
 	centry_end(centry, "NSS/NA/%s", uname);
 
 	DEBUG(10,("wcache_save_username_alias: %s -> %s\n", name, alias ));
@@ -1085,7 +1085,7 @@ static void wcache_save_alias_username(struct winbindd_domain *domain,
 	centry_put_string( centry, name );
 
 	fstrcpy(uname, alias);
-	strupper_m(uname);
+	(void)strupper_m(uname);
 	centry_end(centry, "NSS/AN/%s", uname);
 
 	DEBUG(10,("wcache_save_alias_username: %s -> %s\n", alias, name ));
@@ -1113,7 +1113,10 @@ NTSTATUS resolve_username_to_alias( TALLOC_CTX *mem_ctx,
 
 	if ( (upper_name = SMB_STRDUP(name)) == NULL )
 		return NT_STATUS_NO_MEMORY;
-	strupper_m(upper_name);
+	if (!strupper_m(upper_name)) {
+		SAFE_FREE(name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	centry = wcache_fetch(cache, domain, "NSS/NA/%s", upper_name);
 
@@ -1188,7 +1191,10 @@ NTSTATUS resolve_alias_to_username( TALLOC_CTX *mem_ctx,
 
 	if ( (upper_name = SMB_STRDUP(alias)) == NULL )
 		return NT_STATUS_NO_MEMORY;
-	strupper_m(upper_name);
+	if (!strupper_m(upper_name)) {
+		SAFE_FREE(alias);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	centry = wcache_fetch(cache, domain, "NSS/AN/%s", upper_name);
 
@@ -1859,7 +1865,9 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 
 		/* Only save the reverse mapping if this was not a UPN */
 		if (!strchr(name, '@')) {
-			strupper_m(discard_const_p(char, domain_name));
+			if (!strupper_m(discard_const_p(char, domain_name))) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 			strlower_m(discard_const_p(char, name));
 			wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
 		}

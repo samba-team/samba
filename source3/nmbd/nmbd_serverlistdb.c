@@ -119,7 +119,11 @@ workgroup %s. This is a bug.\n", name, work->work_group));
  
 	fstrcpy(servrec->serv.name,name);
 	fstrcpy(servrec->serv.comment,comment);
-	strupper_m(servrec->serv.name);
+	if (!strupper_m(servrec->serv.name)) {
+		DEBUG(2,("strupper_m %s failed\n", servrec->serv.name));
+		SAFE_FREE(servrec);
+		return NULL;
+	}
 	servrec->serv.type  = servertype;
 
 	update_server_ttl(servrec, ttl);

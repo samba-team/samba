@@ -582,7 +582,9 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 	parse_domain_user(user, name_domain, name_user);
 
 	realm = domain->alt_name;
-	strupper_m(realm);
+	if (!strupper_m(realm)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	principal_s = talloc_asprintf(mem_ctx, "%s@%s", name_user, realm);
 	if (principal_s == NULL) {
@@ -938,7 +940,9 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			}
 
 			realm = domain->alt_name;
-			strupper_m(realm);
+			if (!strupper_m(realm)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
 
 			principal_s = talloc_asprintf(state->mem_ctx, "%s@%s", name_user, realm);
 			if (principal_s == NULL) {

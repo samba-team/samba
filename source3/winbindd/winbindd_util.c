@@ -877,9 +877,7 @@ bool parse_domain_user(const char *domuser, fstring domain, fstring user)
 		domain[PTR_DIFF(p, domuser)] = 0;
 	}
 
-	strupper_m(domain);
-
-	return True;
+	return strupper_m(domain);
 }
 
 bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,

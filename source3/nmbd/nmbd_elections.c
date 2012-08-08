@@ -51,7 +51,10 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
 	SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
 	p += 13;
 	unstrcpy(srv_name, server_name);
-	strupper_m(srv_name);
+	if (!strupper_m(srv_name)) {
+		DEBUG(2,("strupper_m failed for %s\n", srv_name));
+		return;
+	}
 	/* The following call does UNIX -> DOS charset conversion. */
 	push_ascii(p, srv_name, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 	p = skip_string(outbuf,sizeof(outbuf),p);

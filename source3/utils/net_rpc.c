@@ -4750,7 +4750,11 @@ static bool get_user_tokens(struct net_context *c, int *num_tokens,
 		} else {
 			*p++ = '\0';
 			fstrcpy(domain, users[i]);
-			strupper_m(domain);
+			if (!strupper_m(domain)) {
+				DEBUG(1, ("strupper_m %s failed\n", domain));
+				wbcFreeMemory(users);
+				return false;
+			}
 			fstrcpy(user, p);
 		}
 
@@ -5794,7 +5798,10 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	strupper_m(acct_name);
+	if (!strupper_m(acct_name)) {
+		SAFE_FREE(acct_name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
@@ -5978,7 +5985,10 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	if (acct_name == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	strupper_m(acct_name);
+	if (!strupper_m(acct_name)) {
+		TALLOC_FREE(acct_name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* Get samr policy handle */
 	status = dcerpc_samr_Connect2(b, mem_ctx,
@@ -6224,13 +6234,20 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	}
 
 	domain_name = smb_xstrdup(argv[0]);
-	strupper_m(domain_name);
+	if (!strupper_m(domain_name)) {
+		SAFE_FREE(domain_name);
+		return -1;
+	}
 
 	/* account name used at first is our domain's name with '$' */
 	if (asprintf(&acct_name, "%s$", lp_workgroup()) == -1) {
 		return -1;
 	}
-	strupper_m(acct_name);
+	if (!strupper_m(acct_name)) {
+		SAFE_FREE(domain_name);
+		SAFE_FREE(acct_name);
+		return -1;
+	}
 
 	/*
 	 * opt_workgroup will be used by connection functions further,
@@ -6402,7 +6419,10 @@ static int rpc_trustdom_revoke(struct net_context *c, int argc,
 
 	/* generate upper cased domain name */
 	domain_name = smb_xstrdup(argv[0]);
-	strupper_m(domain_name);
+	if (!strupper_m(domain_name)) {
+		SAFE_FREE(domain_name);
+		return -1;
+	}
 
 	/* delete password of the trust */
 	if (!pdb_del_trusteddom_pw(domain_name)) {
@@ -6971,7 +6991,11 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 				str[ascii_dom_name_len - 1] = '\0';
 
 			/* set opt_* variables to remote domain */
-			strupper_m(str);
+			if (!strupper_m(str)) {
+				cli_shutdown(cli);
+				talloc_destroy(mem_ctx);
+				return -1;
+			}
 			c->opt_workgroup = talloc_strdup(mem_ctx, str);
 			c->opt_target_workgroup = c->opt_workgroup;
 

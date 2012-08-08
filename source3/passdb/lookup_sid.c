@@ -339,7 +339,10 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(tmp_ctx);
 			return false;
 		}
-		strupper_m(tmp_dom);
+		if (!strupper_m(tmp_dom)) {
+			TALLOC_FREE(tmp_ctx);
+			return false;
+		}
 		*ret_domain = tmp_dom;
 	}
 

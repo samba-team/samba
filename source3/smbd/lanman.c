@@ -4004,7 +4004,9 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* host name */
 	strlcpy(p2,get_local_machine_name(),PTR_DIFF(endp,p2));
-	strupper_m(p2);
+	if (!strupper_m(p2)) {
+		return false;
+	}
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
@@ -4021,7 +4023,9 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
 
 	SIVAL(p,0,PTR_DIFF(p2,*rdata)); /* login domain */
 	strlcpy(p2,lp_workgroup(),PTR_DIFF(endp,p2));
-	strupper_m(p2);
+	if (!strupper_m(p2)) {
+		return false;
+	}
 	p2 = skip_string(*rdata,*rdata_len,p2);
 	if (!p2) {
 		return False;
@@ -4691,7 +4695,9 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 			fstring mypath;
 			fstrcpy(mypath,"\\\\");
 			fstrcat(mypath,get_local_machine_name());
-			strupper_m(mypath);
+			if (!strupper_m(mypath)) {
+				return false;
+			}
 			PACKS(&desc,"z",mypath); /* computer */
 		}
 
@@ -5082,7 +5088,7 @@ static void fill_printdest_info(struct spoolss_PrinterInfo2 *info2, int uLevel,
 
 	strncpy(buf, info2->printername, sizeof(buf)-1);
 	buf[sizeof(buf)-1] = 0;
-	strupper_m(buf);
+	(void)strupper_m(buf);
 
 	if (uLevel <= 1) {
 		PACKS(desc,"B9",buf);	/* szName */

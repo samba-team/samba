@@ -419,7 +419,10 @@ static bool read_info(struct check_ctx *ctx, const char *key, TDB_DATA val)
 static bool is_all_upper(const char *str) {
 	bool ret;
 	char *tmp = talloc_strdup(talloc_tos(), str);
-	strupper_m(tmp);
+	if (!strupper_m(tmp)) {
+		talloc_free(tmp);
+		return false;
+	}
 	ret = (strcmp(tmp, str) == 0);
 	talloc_free(tmp);
 	return ret;
@@ -698,7 +701,10 @@ static bool normalize_path_internal(char* path, char sep) {
 	}
 	*optr = '\0';
 
-	strupper_m(path);
+	if (!strupper_m(path)) {
+		talloc_free(discard_const(orig));
+		return false;
+	}
 	changed = (strcmp(orig, path) != 0);
 	talloc_free(discard_const(orig));
 	return changed;

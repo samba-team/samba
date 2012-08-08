@@ -136,7 +136,10 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 			*cp++ = '\0';
 			SAFE_FREE(my_ads->auth.realm);
 			my_ads->auth.realm = smb_xstrdup(cp);
-			strupper_m(my_ads->auth.realm);
+			if (!strupper_m(my_ads->auth.realm)) {
+				ads_destroy(&my_ads);
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
 		}
 	}
 
@@ -381,7 +384,9 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	if (!spn) {
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
-	strupper_m(spn);
+	if (!strupper_m(spn)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
 	spn_array[0] = spn;
 
 	if (!name_to_fqdn(my_fqdn, r->in.machine_name)

@@ -63,8 +63,7 @@ static bool set_my_netbios_names(const char *name, int i)
 	smb_my_netbios_names[i] = SMB_STRDUP(name);
 	if (!smb_my_netbios_names[i])
 		return False;
-	strupper_m(smb_my_netbios_names[i]);
-	return True;
+	return strupper_m(smb_my_netbios_names[i]);
 }
 
 /***********************************************************************

@@ -572,7 +572,10 @@ static void send_backup_list_response(struct subnet_record *subrec,
 	/* We always return at least one name - our own. */
 	count = 1;
 	unstrcpy(myname, lp_netbios_name());
-	strupper_m(myname);
+	if (!strupper_m(myname)) {
+		DEBUG(4,("strupper_m %s failed\n", myname));
+		return;
+	}
 	myname[15]='\0';
 	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 

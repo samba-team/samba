@@ -1876,12 +1876,16 @@ bool cli_NetWkstaUserLogoff(struct cli_state *cli, const char *user, const char 
 	PUTDWORD(p, 0); /* Null pointer */
 	PUTDWORD(p, 0); /* Null pointer */
 	strlcpy(upperbuf, user, sizeof(upperbuf));
-	strupper_m(upperbuf);
+	if (!strupper_m(upperbuf)) {
+		return false;
+	}
 	tmp = upperbuf;
 	PUTSTRINGF(p, tmp, RAP_USERNAME_LEN);
 	p++; /* strange format, but ok */
 	strlcpy(upperbuf, workstation, sizeof(upperbuf));
-	strupper_m(upperbuf);
+	if (!strupper_m(upperbuf)) {
+		return false;
+	}
 	tmp = upperbuf;
 	PUTSTRINGF(p, tmp, RAP_MACHNAME_LEN);
 	PUTWORD(p, CLI_BUFFER_SIZE);

@@ -564,7 +564,10 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 
 	/* upper case the sAMAccountName to make it easier for apps to
 	   know what case to use in the keytab file */
-	strupper_m(sam_account_name);
+	if (!strupper_m(sam_account_name)) {
+		ret = -1;
+		goto done;
+	}
 
 	ret = ads_keytab_add_entry(ads, sam_account_name);
 	if (ret != 0) {

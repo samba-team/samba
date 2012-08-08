@@ -44,7 +44,7 @@ void set_samba_nb_type(void)
  Convert a NetBIOS name to upper case.
 ***************************************************************************/
 
-static void upcase_name( struct nmb_name *target, const struct nmb_name *source )
+static bool upcase_name( struct nmb_name *target, const struct nmb_name *source )
 {
 	int i;
 	unstring targ;
@@ -55,11 +55,15 @@ static void upcase_name( struct nmb_name *target, const struct nmb_name *source 
 	}
 
 	pull_ascii_nstring(targ, sizeof(targ), target->name);
-	strupper_m( targ );
+	if (!strupper_m( targ )) {
+		return false;
+	}
 	push_ascii_nstring( target->name, targ);
 
 	pull_ascii(scope, target->scope, 64, -1, STR_TERMINATE);
-	strupper_m( scope );
+	if (!strupper_m( scope )) {
+		return false;
+	}
 	push_ascii(target->scope, scope, 64, STR_TERMINATE);
 
 	/* fudge... We're using a byte-by-byte compare, so we must be sure that
@@ -72,6 +76,7 @@ static void upcase_name( struct nmb_name *target, const struct nmb_name *source 
 	for( i = strlen( target->scope ); i < sizeof( target->scope ); i++ ) {
 		target->scope[i] = '\0';
 	}
+	return true;
 }
 
 /**************************************************************************
@@ -104,7 +109,9 @@ struct name_record *find_name_on_subnet(struct subnet_record *subrec,
 	struct nmb_name uc_name;
 	struct name_record *name_ret;
 
-	upcase_name( &uc_name, nmbname );
+	if (!upcase_name( &uc_name, nmbname )) {
+		return NULL;
+	}
 	
 	if (subrec == wins_server_subnet) {
 		return find_name_on_wins_subnet(&uc_name, self_only);
@@ -216,7 +223,11 @@ bool add_name_to_subnet( struct subnet_record *subrec,
 	namerec->subnet = subrec;
 
 	make_nmb_name(&namerec->name, name, type);
-	upcase_name(&namerec->name, NULL );
+	if (!upcase_name(&namerec->name, NULL )) {
+		SAFE_FREE(namerec->data.ip);
+		SAFE_FREE(namerec);
+		return False;
+	}
 
 	/* Enter the name as active. */
 	namerec->data.nb_flags = nb_flags | NB_ACTIVE;

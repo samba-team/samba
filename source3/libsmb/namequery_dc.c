@@ -137,7 +137,10 @@ static bool ads_dc_name(const char *domain,
 	SAFE_FREE(sitename);
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
-	strupper_m(srv_name);
+	if (!strupper_m(srv_name)) {
+		ads_destroy(&ads);
+		return false;
+	}
 #ifdef HAVE_ADS
 	*dc_ss = ads->ldap.ss;
 #else

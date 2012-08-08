@@ -106,7 +106,10 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 	SIVAL(p,1,announce_interval*1000); /* Milliseconds - despite the spec. */
 
 	strlcpy(upper_server_name, server_name ? server_name : "", sizeof(upper_server_name));
-	strupper_m(upper_server_name);
+	if (!strupper_m(upper_server_name)) {
+		DEBUG(2,("strupper_m %s failed\n", upper_server_name));
+		return;
+	}
 	push_string_check(p+5, upper_server_name, 16, STR_ASCII|STR_TERMINATE);
 
 	SCVAL(p,21,SAMBA_MAJOR_NBT_ANNOUNCE_VERSION); /* Major version. */
@@ -568,7 +571,10 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 	p++;
 
 	unstrcpy(myname, lp_netbios_name());
-	strupper_m(myname);
+	if (!strupper_m(myname)) {
+		DEBUG(2,("strupper_m %s failed\n", myname));
+		return;
+	}
 	myname[15]='\0';
 	push_ascii(p, myname, sizeof(outbuf)-PTR_DIFF(p,outbuf)-1, STR_TERMINATE);
 

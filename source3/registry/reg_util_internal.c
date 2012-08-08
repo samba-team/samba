@@ -113,7 +113,10 @@ char *normalize_reg_path(TALLOC_CTX *ctx, const char *keyname )
 		p = strrchr(nkeyname, '\\');
 	}
 
-	strupper_m(nkeyname);
+	if (!strupper_m(nkeyname)) {
+		TALLOC_FREE(nkeyname);
+		return NULL;
+	}
 
 	return nkeyname;
 }

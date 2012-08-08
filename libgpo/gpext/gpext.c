@@ -440,7 +440,9 @@ static WERROR gp_extension_store_reg_entry(TALLOC_CTX *mem_ctx,
 	subkeyname = GUID_string2(mem_ctx, &entry->guid);
 	W_ERROR_HAVE_NO_MEMORY(subkeyname);
 
-	strupper_m(discard_const_p(char, subkeyname));
+	if (!strupper_m(discard_const_p(char, subkeyname))) {
+		return WERR_INVALID_PARAM;
+	}
 
 	werr = gp_store_reg_subkey(mem_ctx,
 				   subkeyname,

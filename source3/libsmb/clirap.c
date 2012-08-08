@@ -117,13 +117,17 @@ bool cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 	SSVAL(p,0,1);
 	p += 2;
 	strlcpy(p,user,sizeof(param)-PTR_DIFF(p,param));
-	strupper_m(p);
+	if (!strupper_m(p)) {
+		return false;
+	}
 	p += 21;
 	p++;
 	p += 15;
 	p++;
 	strlcpy(p, workstation,sizeof(param)-PTR_DIFF(p,param));
-	strupper_m(p);
+	if (!strupper_m(p)) {
+		return false;
+	}
 	p += 16;
 	SSVAL(p, 0, CLI_BUFFER_SIZE);
 	p += 2;

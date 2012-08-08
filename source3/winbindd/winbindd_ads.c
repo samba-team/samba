@@ -99,7 +99,10 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 			return NULL;
 		}
 		ads->auth.realm = SMB_STRDUP( ads->server.realm );
-		strupper_m( ads->auth.realm );
+		if (!strupper_m( ads->auth.realm )) {
+			ads_destroy( &ads );
+			return NULL;
+		}
 	}
 	else {
 		struct winbindd_domain *our_domain = domain;
@@ -114,7 +117,10 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 		if ( our_domain->alt_name[0] != '\0' ) {
 			ads->auth.realm = SMB_STRDUP( our_domain->alt_name );
-			strupper_m( ads->auth.realm );
+			if (!strupper_m( ads->auth.realm )) {
+				ads_destroy( &ads );
+				return NULL;
+			}
 		}
 		else
 			ads->auth.realm = SMB_STRDUP( lp_realm() );

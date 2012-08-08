@@ -653,7 +653,12 @@ static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 		}
 
 		strlower_m(server);
-		strupper_m(server_realm);
+		if (!strupper_m(server_realm)) {
+			SAFE_FREE(server);
+			SAFE_FREE(server_realm);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
 		if (asprintf(&princ, "ldap/%s@%s", server, server_realm) == -1) {
 			SAFE_FREE(server);
 			SAFE_FREE(server_realm);
@@ -679,7 +684,11 @@ static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 		}
 
 		strlower_m(server);
-		strupper_m(server_realm);
+		if (!strupper_m(server_realm)) {
+			SAFE_FREE(server);
+			SAFE_FREE(server_realm);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
 		if (asprintf(&princ, "ldap/%s@%s", server, server_realm) == -1) {
 			SAFE_FREE(server);
 			SAFE_FREE(server_realm);

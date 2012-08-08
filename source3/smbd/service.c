@@ -257,7 +257,10 @@ static NTSTATUS share_sanity_checks(const struct tsocket_address *remote_address
 		}
 	}
 
-	strupper_m(dev);
+	if (!strupper_m(dev)) {
+		DEBUG(2,("strupper_m %s failed\n", dev));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (lp_print_ok(snum)) {
 		if (!strequal(dev, "LPT1:")) {

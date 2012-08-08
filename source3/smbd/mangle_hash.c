@@ -630,7 +630,10 @@ static bool to_8_3(char magic_char, const char *in, char out[13], int default_ca
 	} else
 		csum = str_checksum(s);
 
-	strupper_m( s );
+	if (!strupper_m( s )) {
+		SAFE_FREE(s);
+		return false;
+	}
 
 	if( p ) {
 		if( p == s )

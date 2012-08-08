@@ -287,7 +287,10 @@ retry:
 		*cp++ = '\0';
 		SAFE_FREE(ads->auth.realm);
 		ads->auth.realm = smb_xstrdup(cp);
-		strupper_m(ads->auth.realm);
+		if (!strupper_m(ads->auth.realm)) {
+			ads_destroy(&ads);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
        }
 
 	status = ads_connect(ads);
@@ -1371,7 +1374,10 @@ static void _net_ads_join_dns_updates(TALLOC_CTX *ctx, struct libnet_JoinCtx *r)
 		goto done;
 	}
 
-	strupper_m(ads_dns->auth.realm);
+	if (!strupper_m(ads_dns->auth.realm)) {
+		d_fprintf(stderr, _("strupper_m %s failed\n"), ads_dns->auth.realm);
+		goto done;
+	}
 
 	ret = ads_kinit_password(ads_dns);
 	if (ret != 0) {

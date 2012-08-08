@@ -345,7 +345,10 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 		}
 	} else {
 		/* Normalize the stream type to upercase. */
-		strupper_m(strrchr_m(stream_fname, ':') + 1);
+		if (!strupper_m(strrchr_m(stream_fname, ':') + 1)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
 	}
 
 	DEBUG(10, ("stream filename = %s\n", stream_fname));

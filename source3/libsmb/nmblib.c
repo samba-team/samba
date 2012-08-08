@@ -933,7 +933,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 	fstring unix_name;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	fstrcpy(unix_name, name);
-	strupper_m(unix_name);
+	(void)strupper_m(unix_name);
 	push_ascii(n->name, unix_name, sizeof(n->name), STR_TERMINATE);
 	n->name_type = (unsigned int)type & 0xFF;
 	push_ascii(n->scope,  lp_netbios_scope(), 64, STR_TERMINATE);
@@ -1277,7 +1277,9 @@ char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type)
 		nstring buf_dos;
 
 		pull_ascii_fstring(buf_unix, In);
-		strupper_m(buf_unix);
+		if (!strupper_m(buf_unix)) {
+			return NULL;
+		}
 
 		push_ascii_nstring(buf_dos, buf_unix);
 		put_name(buf, buf_dos, ' ', name_type);

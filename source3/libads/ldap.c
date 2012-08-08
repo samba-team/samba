@@ -298,7 +298,11 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 	ads->config.flags	       = cldap_reply.server_type;
 	ads->config.ldap_server_name   = SMB_STRDUP(cldap_reply.pdc_dns_name);
 	ads->config.realm              = SMB_STRDUP(cldap_reply.dns_domain);
-	strupper_m(ads->config.realm);
+	if (!strupper_m(ads->config.realm)) {
+		ret = false;
+		goto out;
+	}
+
 	ads->config.bind_path          = ads_build_dn(ads->config.realm);
 	if (*cldap_reply.server_site) {
 		ads->config.server_site_name =
@@ -1945,7 +1949,11 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-	strupper_m(psp1);
+	if (!strupper_m(psp1)) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
+	}
+
 	strlower_m(&psp1[strlen(spn)]);
 	servicePrincipalName[0] = psp1;
 
@@ -1959,7 +1967,11 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
-	strupper_m(psp2);
+	if (!strupper_m(psp2)) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
+	}
+
 	strlower_m(&psp2[strlen(spn)]);
 	servicePrincipalName[1] = psp2;
 

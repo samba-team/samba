@@ -347,7 +347,10 @@ subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 			unstring name;
 
 			pull_ascii_nstring(name, sizeof(name), namerec->name.name);
-			strupper_m(name);
+			if (!strupper_m(name)) {
+				DEBUG(2,("strupper_m %s failed\n", name));
+				return;
+			}
 			if (!strequal(name,"*") &&
 					!strequal(name,"__SAMBA__") &&
 					(name_type < 0x1b || name_type >= 0x20 || 

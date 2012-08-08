@@ -217,7 +217,7 @@ static TDB_DATA name_to_key(const struct nmb_name *nmbname)
 	memset(keydata, '\0', sizeof(keydata));
 
 	pull_ascii_nstring(keydata, sizeof(unstring), nmbname->name);
-	strupper_m(keydata);
+	(void)strupper_m(keydata);
 	keydata[sizeof(unstring)] = nmbname->name_type;
 	key.dptr = (uint8 *)keydata;
 	key.dsize = sizeof(keydata);
