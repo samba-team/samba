@@ -1480,7 +1480,9 @@ bld.SAMBA3_BINARY('pdbtest',
                  deps='''
                  talloc
                  pdb
-                 popt_samba3''',
+                 popt_samba3
+                 AUTH_COMMON
+                 auth''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('vfstest',
