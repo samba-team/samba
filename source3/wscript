@@ -1507,7 +1507,7 @@ main() {
         default_static_modules.extend(TO_LIST('charset_macosxfs'))
 
     if conf.CONFIG_SET('HAVE_GPFS'):
-        default_shared_modules.extend(TO_LIST('vfs_gpfs vfs_gpfs_hsm_notify'))
+	default_shared_modules.extend(TO_LIST('vfs_gpfs'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')

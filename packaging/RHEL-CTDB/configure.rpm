@@ -51,7 +51,7 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm,vfs_gpfs_hsm_notify \
+	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm \
 	--with-syslog \
 	--with-utmp \
 	--with-cluster-support \
