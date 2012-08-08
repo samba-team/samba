@@ -46,6 +46,8 @@
 ^samba3.raw.samba3checkfsp.samba3checkfsp\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls.generic\(s3dc\) # This fails against smbd
+^samba3.base.delete.deltest16a
+^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(plugin_s4_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
 ^samba3.unix.whoami anonymous connection.whoami\(s3member\) # smbd maps anonymous logins to domain guest in the local domain, not SID_NT_ANONYMOUS
 # these show that we still have some differences between our system
@@ -54,7 +56,11 @@
 ^samba.vfstest.acl.vfstest\(s3dc:local\) #until we get the fake_acls module into selftest
 ^samba4.local.convert_string_handle.system.iconv.gd_ascii
 ^samba4.local.convert_string_handle.system.iconv.gd_iso8859_cp850
-^samba4..*base.delete.*.deltest17
+^samba4..*base.delete.*.deltest17\(
+^samba4..*base.delete.*.deltest17b
+^samba4..*base.delete.*.deltest17c
+^samba4..*base.delete.*.deltest17e
+^samba4..*base.delete.*.deltest17f
 ^samba4..*base.delete.*.deltest20a
 ^samba4..*base.delete.*.deltest20b
 ^samba4.raw.session.reauth

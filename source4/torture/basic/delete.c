@@ -883,6 +883,95 @@ static bool deltest16(struct torture_context *tctx, struct smbcli_state *cli1, s
 	return correct;
 }
 
+/* Test 16 ... */
+static bool deltest16a(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool correct = true;
+
+	del_clean_area(cli1, cli2);
+
+	/* Test 16. */
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      0, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* And close - just to create the file. */
+	smbcli_close(cli1->tree, fnum1);
+
+	/* Firstly create with all access, but delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	torture_assert (tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, -1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, -1, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		      fname, smbcli_errstr(cli1->tree)));
+
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, -1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, -1, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	correct &= check_delete_on_close(tctx, cli2, fnum2, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli2, -1, fname, false, __location__);
+
+	smbcli_close(cli2->tree, fnum2);
+
+	/* And the file should be deleted ! */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	return correct;
+}
+
 /* Test 17 ... */
 static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
@@ -961,6 +1050,532 @@ static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, s
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
 	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open of %s failed (should succeed) - %s",
 		       fname, smbcli_errstr(cli1->tree)));
+
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	return correct;
+}
+
+/* Test 17a - like 17, but the delete on close handle is closed last */
+static bool deltest17a(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool correct = true;
+
+	del_clean_area(cli1, cli2);
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      0, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* And close - just to create the file. */
+	smbcli_close(cli1->tree, fnum1);
+
+	/* Next open with all access, but add delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum2);
+
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	/*
+	 * The file is still there:
+	 * The second open seems to have removed the initial
+	 * delete on close flag from the first handle
+	 */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 3 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	return correct;
+}
+
+/* Test 17b - like 17a, but the initial delete on close is set on the second handle */
+static bool deltest17b(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool correct = true;
+
+	del_clean_area(cli1, cli2);
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      0, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* And close - just to create the file. */
+	smbcli_close(cli1->tree, fnum1);
+
+	/* Next open with all access, but add delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum2);
+
+	/* Make sure the file has been deleted */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 3 of %s succeeded (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	return correct;
+}
+
+/* Test 17c - like 17, but the initial delete on close is set on the second handle */
+static bool deltest17c(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool correct = true;
+
+	del_clean_area(cli1, cli2);
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      0, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* And close - just to create the file. */
+	smbcli_close(cli1->tree, fnum1);
+
+	/* Next open with all access, but add delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum2);
+
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, true, __location__);
+
+	fnum2 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum2 == -1, talloc_asprintf(tctx, "open - 3 of %s succeeded (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_DELETE_PENDING);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	/* Make sure the file has been deleted */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 4 of %s succeeded (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	return correct;
+}
+
+/* Test 17d - like 17a, but the first delete-on-close opener creates the file */
+static bool deltest17d(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	bool correct = true;
+
+	del_clean_area(cli1, cli2);
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+
+	/* Create the file with delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum2);
+
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	/*
+	 * The file is still there:
+	 * The second open seems to have removed the initial
+	 * delete on close flag from the first handle
+	 */
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 3 of %s succeed (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	return correct;
+}
+
+static bool deltest17e(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	int fnum3 = -1;
+	bool correct = true;
+
+	del_clean_area(cli1, cli2);
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum3 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      0, 0);
+	torture_assert(tctx, fnum3 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* Next open with all access, but add delete on close. */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      0, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 3 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	/*
+	 * closing the handle that has delete_on_close set
+	 * inherits the flag to the global context
+	 */
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, true, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, true, __location__);
+
+	smbcli_close(cli1->tree, fnum2);
+
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, true, __location__);
+
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 4 of %s succeeded (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_DELETE_PENDING);
+
+	smbcli_close(cli1->tree, fnum3);
+
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 5 of %s succeeded (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	return correct;
+}
+
+static bool deltest17f(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	int fnum1 = -1;
+	int fnum2 = -1;
+	int fnum3 = -1;
+	bool correct = true;
+	NTSTATUS status;
+
+	del_clean_area(cli1, cli2);
+
+	/* Ensure the file doesn't already exist. */
+	smbcli_close(cli1->tree, fnum1);
+	smbcli_close(cli1->tree, fnum2);
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Firstly open and create with all access */
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_CREATE,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* The delete on close bit is *not* reported as being set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+
+	/* Next open with all access, but add delete on close. */
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_ALL,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+
+	/* Now try opening again for read-only. */
+	fnum3 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SEC_RIGHTS_FILE_READ|
+				      SEC_STD_DELETE,
+				      FILE_ATTRIBUTE_NORMAL,
+				      NTCREATEX_SHARE_ACCESS_READ|
+				      NTCREATEX_SHARE_ACCESS_WRITE|
+				      NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN,
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+
+	/* Should work. */
+	torture_assert(tctx, fnum3 != -1, talloc_asprintf(tctx, "open - 3 of %s failed (%s)",
+		       fname, smbcli_errstr(cli1->tree)));
+
+	/* still not reported as being set on either */
+	correct &= check_delete_on_close(tctx, cli1, fnum1, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum1);
+
+	/*
+	 * closing the handle that has delete_on_close set
+	 * inherits the flag to the global context
+	 */
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, true, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, true, __location__);
+
+
+	status = smbcli_nt_delete_on_close(cli1->tree, fnum2, false);
+	torture_assert_ntstatus_ok(tctx, status,
+					"clearing delete_on_close on file failed !");
+
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, false, __location__);
+
+	smbcli_close(cli1->tree, fnum2);
+
+	correct &= check_delete_on_close(tctx, cli1, fnum3, fname, true, __location__);
+
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 4 of %s succeeded (should fail)",
+		       fname));
+
+	CHECK_STATUS(cli1, NT_STATUS_DELETE_PENDING);
+
+	smbcli_close(cli1->tree, fnum3);
+
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open - 5 of %s succeeded (should fail)",
+		       fname));
 
 	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
@@ -1607,7 +2222,14 @@ struct torture_suite *torture_test_delete(void)
 	torture_suite_add_2smb_test(suite, "deltest14", deltest14);
 	torture_suite_add_2smb_test(suite, "deltest15", deltest15);
 	torture_suite_add_2smb_test(suite, "deltest16", deltest16);
+	torture_suite_add_2smb_test(suite, "deltest16a", deltest16a);
 	torture_suite_add_2smb_test(suite, "deltest17", deltest17);
+	torture_suite_add_2smb_test(suite, "deltest17a", deltest17a);
+	torture_suite_add_2smb_test(suite, "deltest17b", deltest17b);
+	torture_suite_add_2smb_test(suite, "deltest17c", deltest17c);
+	torture_suite_add_2smb_test(suite, "deltest17d", deltest17d);
+	torture_suite_add_2smb_test(suite, "deltest17e", deltest17e);
+	torture_suite_add_2smb_test(suite, "deltest17f", deltest17f);
 	torture_suite_add_2smb_test(suite, "deltest18", deltest18);
 	torture_suite_add_2smb_test(suite, "deltest19", deltest19);
 	torture_suite_add_2smb_test(suite, "deltest20", deltest20);
