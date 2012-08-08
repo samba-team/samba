@@ -188,7 +188,7 @@ for env in ["dc", "s3dc"]:
         "-k no --option=usespnego=no"]:
         name = "rpc.lsa.secrets on %s with with %s" % (transport, ntlmoptions)
         plansmbtorturetestsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.%s" % name)
-    plantestsuite("samba4.blackbox.pdbtest", "%s:local" % env, [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", smbclient, '$SMB_CONF_PATH', configuration])
+    plantestsuite("samba.blackbox.pdbtest", "%s:local" % env, [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", smbclient, '$SMB_CONF_PATH', configuration])
 
 transports = ["ncacn_np", "ncacn_ip_tcp"]
 
