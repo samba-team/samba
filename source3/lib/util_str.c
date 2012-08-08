@@ -418,7 +418,7 @@ static bool unix_strlower(const char *src, size_t srclen, char *dest, size_t des
 	}
 	if (!strlower_w(buffer) && (dest == src)) {
 		TALLOC_FREE(buffer);
-		return srclen;
+		return true;
 	}
 	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
 	TALLOC_FREE(buffer);
@@ -502,7 +502,7 @@ static bool unix_strupper(const char *src, size_t srclen, char *dest, size_t des
 
 	if (!strupper_w(buffer) && (dest == src)) {
 		TALLOC_FREE(buffer);
-		return srclen;
+		return true;
 	}
 
 	ret = convert_string(CH_UTF16LE, CH_UNIX, buffer, size, dest, destlen, &size);
