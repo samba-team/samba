@@ -1587,7 +1587,7 @@ struct brl_forall_cb {
  on each lock.
 ****************************************************************************/
 
-static int traverse_fn(struct db_record *rec, void *state)
+static int brl_traverse_fn(struct db_record *rec, void *state)
 {
 	struct brl_forall_cb *cb = (struct brl_forall_cb *)state;
 	struct lock_struct *locks;
@@ -1666,7 +1666,7 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 	}
 	cb.fn = fn;
 	cb.private_data = private_data;
-	status = dbwrap_traverse(brlock_db, traverse_fn, &cb, &count);
+	status = dbwrap_traverse(brlock_db, brl_traverse_fn, &cb, &count);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
