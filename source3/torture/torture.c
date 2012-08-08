@@ -4113,7 +4113,8 @@ static bool run_deletetest(int dummy)
 
 	/* This should fail - only allowed on NT opens with DELETE access. */
 
-	if (NT_STATUS_IS_OK(cli_nt_delete_on_close(cli1, fnum1, true))) {
+	status = cli_nt_delete_on_close(cli1, fnum1, true);
+	if (NT_STATUS_IS_OK(status)) {
 		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
 		correct = False;
 		goto fail;
