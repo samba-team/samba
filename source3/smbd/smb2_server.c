@@ -1184,7 +1184,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
-	outhdr = (uint8_t *)req->out.vector[i].iov_base;
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	if (flags & SMB2_HDR_FLAG_ASYNC) {
 		/* We're already async. */
