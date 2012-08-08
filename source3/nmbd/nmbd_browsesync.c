@@ -471,7 +471,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 				break;
 			}
 		}
-	} else if( DEBUGLVL( 0 ) ) {
+	} else if( DEBUGLVL( 1 ) ) {
 		dbgtext( "get_domain_master_name_node_status_success:\n" );
 		dbgtext( "Failed to find a WORKGROUP<0x1b> name in reply from IP " );
 		dbgtext( "%s.\n", inet_ntoa(from_ip) );
