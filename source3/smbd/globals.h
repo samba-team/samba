@@ -462,7 +462,12 @@ struct smbd_smb2_request {
 	bool compound_related;
 
 	/*
-	 * the signing/encryption key for the last
+	 * the encryption key for the whole
+	 * compound chain
+	 */
+	DATA_BLOB first_key;
+	/*
+	 * the signing key for the last
 	 * request/response of a compound chain
 	 */
 	DATA_BLOB last_key;
@@ -481,15 +486,18 @@ struct smbd_smb2_request {
 	 */
 	struct tevent_req *subreq;
 
-#define SMBD_SMB2_HDR_IOV_OFS 0
-#define SMBD_SMB2_BODY_IOV_OFS 1
-#define SMBD_SMB2_DYN_IOV_OFS 2
+#define SMBD_SMB2_TF_IOV_OFS 0
+#define SMBD_SMB2_HDR_IOV_OFS 1
+#define SMBD_SMB2_BODY_IOV_OFS 2
+#define SMBD_SMB2_DYN_IOV_OFS 3
 
-#define SMBD_SMB2_NUM_IOV_PER_REQ 3
+#define SMBD_SMB2_NUM_IOV_PER_REQ 4
 
 #define SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,ofs) \
 	(&req->dir.vector[(idx)+(ofs)])
 
+#define SMBD_SMB2_IDX_TF_IOV(req,dir,idx) \
+	SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,SMBD_SMB2_TF_IOV_OFS)
 #define SMBD_SMB2_IDX_HDR_IOV(req,dir,idx) \
 	SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,SMBD_SMB2_HDR_IOV_OFS)
 #define SMBD_SMB2_IDX_BODY_IOV(req,dir,idx) \
@@ -497,6 +505,8 @@ struct smbd_smb2_request {
 #define SMBD_SMB2_IDX_DYN_IOV(req,dir,idx) \
 	SMBD_SMB2_IOV_IDX_OFS(req,dir,idx,SMBD_SMB2_DYN_IOV_OFS)
 
+#define SMBD_SMB2_IN_TF_IOV(req)    SMBD_SMB2_IDX_TF_IOV(req,in,req->current_idx)
+#define SMBD_SMB2_IN_TF_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_TF_IOV(req)->iov_base)
 #define SMBD_SMB2_IN_HDR_IOV(req)    SMBD_SMB2_IDX_HDR_IOV(req,in,req->current_idx)
 #define SMBD_SMB2_IN_HDR_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_HDR_IOV(req)->iov_base)
 #define SMBD_SMB2_IN_BODY_IOV(req)   SMBD_SMB2_IDX_BODY_IOV(req,in,req->current_idx)
@@ -506,6 +516,8 @@ struct smbd_smb2_request {
 #define SMBD_SMB2_IN_DYN_PTR(req)    (uint8_t *)(SMBD_SMB2_IN_DYN_IOV(req)->iov_base)
 #define SMBD_SMB2_IN_DYN_LEN(req)    (SMBD_SMB2_IN_DYN_IOV(req)->iov_len)
 
+#define SMBD_SMB2_OUT_TF_IOV(req)   SMBD_SMB2_IDX_TF_IOV(req,out,req->current_idx)
+#define SMBD_SMB2_OUT_TF_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_TF_IOV(req)->iov_base)
 #define SMBD_SMB2_OUT_HDR_IOV(req)   SMBD_SMB2_IDX_HDR_IOV(req,out,req->current_idx)
 #define SMBD_SMB2_OUT_HDR_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_HDR_IOV(req)->iov_base)
 #define SMBD_SMB2_OUT_BODY_IOV(req)  SMBD_SMB2_IDX_BODY_IOV(req,out,req->current_idx)
@@ -517,17 +529,19 @@ struct smbd_smb2_request {
 
 	struct {
 		/*
-		 * vector[0] TRANSPORT HEADER
+		 * vector[0] TRANSPORT HEADER (empty)
 		 * .
-		 * vector[1] SMB2
-		 * vector[2] fixed body
-		 * vector[3] dynamic body
+		 * vector[1] SMB2_TRANSFORM (optional)
+		 * vector[2] SMB2
+		 * vector[3] fixed body
+		 * vector[4] dynamic body
 		 * .
 		 * .
 		 * .
-		 * vector[4] SMB2
-		 * vector[5] fixed body
-		 * vector[6] dynamic body
+		 * vector[5] SMB2_TRANSFORM (optional)
+		 * vector[6] SMB2
+		 * vector[7] fixed body
+		 * vector[8] dynamic body
 		 * .
 		 * .
 		 * .
@@ -541,15 +555,17 @@ struct smbd_smb2_request {
 		/*
 		 * vector[0] TRANSPORT HEADER
 		 * .
-		 * vector[1] SMB2
-		 * vector[2] fixed body
-		 * vector[3] dynamic body
+		 * vector[1] SMB2_TRANSFORM (optional)
+		 * vector[2] SMB2
+		 * vector[3] fixed body
+		 * vector[4] dynamic body
 		 * .
 		 * .
 		 * .
-		 * vector[4] SMB2
-		 * vector[5] fixed body
-		 * vector[6] dynamic body
+		 * vector[5] SMB2_TRANSFORM (empty)
+		 * vector[6] SMB2
+		 * vector[7] fixed body
+		 * vector[8] dynamic body
 		 * .
 		 * .
 		 * .
