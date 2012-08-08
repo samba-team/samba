@@ -3932,8 +3932,9 @@ static bool run_deletetest(int dummy)
 		cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 		correct = False;
 		goto fail;
-	} else
-		printf("second delete on close test succeeded.\n");
+	}
+
+	printf("second delete on close test succeeded.\n");
 
 	/* Test 3 - ... */
 	cli_setatr(cli1, fname, 0, 0);
