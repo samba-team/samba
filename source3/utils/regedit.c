@@ -183,9 +183,16 @@ static void handle_value_input(struct regedit *regedit, int c)
 	case 'n':
 	case 'N': {
 		int new_type;
+		int sel;
 
-		if (dialog_select_type(regedit, &new_type, regedit->main_window) == DIALOG_OK) {
-			mvwprintw(regedit->main_window, 1, 0, "Item: %s (%d)", str_regtype(new_type), new_type);
+		sel = dialog_select_type(regedit, &new_type,
+					 regedit->main_window);
+		if (sel == DIALOG_OK) {
+			struct tree_node *node;
+			node = item_userptr(current_item(regedit->keys->menu));
+			dialog_edit_value(regedit, node->key, new_type, NULL,
+					  regedit->main_window);
+			value_list_load(regedit->vl, node->key);
 		}
 		break;
 	}
@@ -201,7 +208,15 @@ static void handle_value_input(struct regedit *regedit, int c)
 						 "Really delete value \"%s\"?",
 						 vitem->value_name);
 			sel = dialog_modal_loop(dia);
-			mvwprintw(regedit->main_window, 1, 0, "Sel: %d", sel);
+			if (sel == DIALOG_OK) {
+				ITEM *it = current_item(regedit->keys->menu);
+				struct tree_node *node = item_userptr(it);
+				reg_del_value(regedit, node->key,
+					      vitem->value_name);
+				value_list_load(regedit->vl, node->key);
+			}
+
+
 		}
 		break;
 	}
