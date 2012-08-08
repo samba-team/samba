@@ -2764,9 +2764,6 @@ skip_credits:
 				state->session->smb2->nonce_low += 1;
 			}
 
-			SBVAL(state->smb2.transform, SMB2_TF_MSG_SIZE,
-			      reqlen);
-
 			buf = talloc_array(iov, uint8_t, reqlen);
 			if (buf == NULL) {
 				return NT_STATUS_NO_MEMORY;
