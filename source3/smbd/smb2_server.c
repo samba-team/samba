@@ -2292,11 +2292,10 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 				    const char *location)
 {
 	DATA_BLOB body;
-	int i = req->current_idx;
 	uint8_t *outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 
 	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] |%s| at %s\n",
-		  i, nt_errstr(status), info ? " +info" : "",
+		  req->current_idx, nt_errstr(status), info ? " +info" : "",
 		  location));
 
 	body.data = outhdr + SMB2_HDR_BODY;
