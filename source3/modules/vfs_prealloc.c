@@ -139,7 +139,9 @@ static int prealloc_open(vfs_handle_struct* handle,
 	if (dot && *++dot) {
 		if (strlen(dot) < sizeof(fext)) {
 			strncpy(fext, dot, sizeof(fext));
-			strnorm(fext, CASE_LOWER);
+			if (!strnorm(fext, CASE_LOWER)) {
+				goto normal_open;
+			}
 		}
 	}
 

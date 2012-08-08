@@ -55,12 +55,13 @@ bool strnequal(const char *s1,const char *s2,size_t n)
  Convert a string to "normal" form.
 **/
 
-void strnorm(char *s, int case_default)
+bool strnorm(char *s, int case_default)
 {
 	if (case_default == CASE_UPPER)
-		(void)strupper_m(s); /* FIXME - return a bool here. */
+		return strupper_m(s);
 	else
 		strlower_m(s);
+	return true; /* FIXME - return strlower_m value later. */
 }
 
 /**
