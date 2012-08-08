@@ -28,10 +28,10 @@
 #include "torture/raw/proto.h"
 #include "torture/basic/proto.h"
 
-static bool check_delete_on_close(struct torture_context *tctx, 
-								  struct smbcli_state *cli, int fnum,
-								  const char *fname, bool expect_it, 
-								  const char *where)
+static bool check_delete_on_close(struct torture_context *tctx,
+				  struct smbcli_state *cli, int fnum,
+				  const char *fname, bool expect_it,
+				  const char *where)
 {
 	union smb_search_data data;
 	NTSTATUS status;
