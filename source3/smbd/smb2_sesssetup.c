@@ -208,7 +208,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 						  sizeof(session_key));
 	if (x->global->signing_key.data == NULL) {
 		ZERO_STRUCT(session_key);
-		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -226,7 +225,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 						x->global->signing_key);
 	if (x->global->application_key.data == NULL) {
 		ZERO_STRUCT(session_key);
-		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -244,7 +242,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	x->global->channels[0].signing_key = data_blob_dup_talloc(x->global->channels,
 						x->global->signing_key);
 	if (x->global->channels[0].signing_key.data == NULL) {
-		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -252,13 +249,11 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	session_info->session_key = data_blob_dup_talloc(session_info,
 						x->global->application_key);
 	if (session_info->session_key.data == NULL) {
-		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	session->compat = talloc_zero(session, struct user_struct);
 	if (session->compat == NULL) {
-		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
 	session->compat->session = session;
@@ -278,7 +273,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%llu\n",
 			(unsigned long long)session->compat->vuid));
-		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -300,7 +294,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
 			  (unsigned long long)session->compat->vuid,
 			  nt_errstr(status)));
-		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -334,7 +327,6 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	session_info->session_key = data_blob_dup_talloc(session_info,
 						x->global->application_key);
 	if (session_info->session_key.data == NULL) {
-		TALLOC_FREE(session);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -363,7 +355,6 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
 			  (unsigned long long)session->compat->vuid,
 			  nt_errstr(status)));
-		TALLOC_FREE(session);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
