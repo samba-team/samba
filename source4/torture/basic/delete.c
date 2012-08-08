@@ -941,7 +941,7 @@ static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, s
 				      0, 0);
 	
 	/* Should work. */
-	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
+	torture_assert(tctx, fnum2 != -1, talloc_asprintf(tctx, "open - 2 of %s failed (%s)",
 		       fname, smbcli_errstr(cli1->tree)));
 
 	/* still not reported as being set on either */
