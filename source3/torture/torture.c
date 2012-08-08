@@ -3853,7 +3853,7 @@ static bool run_deletetest(int dummy)
 	const char *fname = "\\delete.file";
 	uint16_t fnum1 = (uint16_t)-1;
 	uint16_t fnum2 = (uint16_t)-1;
-	bool correct = True;
+	bool correct = false;
 	NTSTATUS status;
 
 	printf("starting delete test\n");
@@ -3874,21 +3874,18 @@ static bool run_deletetest(int dummy)
 			      FILE_DELETE_ON_CLOSE, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[1] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[1] close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE, &fnum1);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[1] open of %s succeeded (should fail)\n", fname);
-		correct = False;
 		goto fail;
 	}
 
@@ -3904,21 +3901,18 @@ static bool run_deletetest(int dummy)
 			      FILE_OVERWRITE_IF, 0, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[2] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[2] setting delete_on_close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[2] close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -3930,7 +3924,6 @@ static bool run_deletetest(int dummy)
 			printf("[2] close failed (%s)\n", nt_errstr(status));
 		}
 		cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-		correct = False;
 		goto fail;
 	}
 
@@ -3946,7 +3939,6 @@ static bool run_deletetest(int dummy)
 			      FILE_OVERWRITE_IF, 0, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[3] open - 1 of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -3959,7 +3951,6 @@ static bool run_deletetest(int dummy)
 			      FILE_OPEN, 0, 0, &fnum2);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[3] open  - 2 of %s succeeded - should have failed.\n", fname);
-		correct = False;
 		goto fail;
 	}
 
@@ -3970,28 +3961,24 @@ static bool run_deletetest(int dummy)
 			     FILE_OPEN, 0, 0, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[3] open  - 3 of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[3] setting delete_on_close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[3] close 1 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[3] close 2 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4005,7 +3992,6 @@ static bool run_deletetest(int dummy)
 			printf("[3] close failed (%s)\n", nt_errstr(status));
 		}
 		cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
-		correct = False;
 		goto fail;
 	}
 
@@ -4022,7 +4008,6 @@ static bool run_deletetest(int dummy)
 			      FILE_OVERWRITE_IF, 0, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[4] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4033,21 +4018,18 @@ static bool run_deletetest(int dummy)
 			     FILE_OPEN, 0, 0, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[4] open  - 2 of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[4] close - 1 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[4] setting delete_on_close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4058,14 +4040,12 @@ static bool run_deletetest(int dummy)
 			      FILE_OPEN, 0, 0, &fnum2);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[4] open  - 3 of %s succeeded ! Should have failed.\n", fname );
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[4] close - 2 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4078,7 +4058,6 @@ static bool run_deletetest(int dummy)
 	status = cli_openx(cli1, fname, O_RDWR|O_CREAT, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[5] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4087,14 +4066,12 @@ static bool run_deletetest(int dummy)
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[5] setting delete_on_close on OpenX file succeeded - should fail !\n");
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[5] close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4111,7 +4088,6 @@ static bool run_deletetest(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[6] open of %s failed (%s)\n", fname,
 		       nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4120,14 +4096,12 @@ static bool run_deletetest(int dummy)
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[6] close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4143,28 +4117,24 @@ static bool run_deletetest(int dummy)
 			      0, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[7] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[7] setting delete_on_close on file failed !\n");
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_nt_delete_on_close(cli1, fnum1, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[7] unsetting delete_on_close on file failed !\n");
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[7] close - 1 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4172,14 +4142,12 @@ static bool run_deletetest(int dummy)
 	status = cli_openx(cli1, fname, O_RDONLY, DENY_NONE, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[7] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[7] close - 2 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4191,7 +4159,6 @@ static bool run_deletetest(int dummy)
 
 	if (!torture_open_connection(&cli2, 1)) {
 		printf("[8] failed to open second connection.\n");
-		correct = False;
 		goto fail;
 	}
 
@@ -4204,7 +4171,6 @@ static bool run_deletetest(int dummy)
 			     FILE_OVERWRITE_IF, 0, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[8] open 1 of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4215,28 +4181,24 @@ static bool run_deletetest(int dummy)
 			     FILE_OPEN, 0, 0, &fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[8] open 2 of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_nt_delete_on_close(cli1, fnum1, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[8] setting delete_on_close on file failed !\n");
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[8] close - 1 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli2, fnum2);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[8] close - 2 failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4245,7 +4207,6 @@ static bool run_deletetest(int dummy)
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[8] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
-		correct = False;
 	}
 
 	printf("eighth delete on close test succeeded.\n");
@@ -4260,7 +4221,6 @@ static bool run_deletetest(int dummy)
 			      FILE_DELETE_ON_CLOSE, 0, &fnum1);
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[9] open of %s succeeded should have failed!\n", fname);
-		correct = False;
 		goto fail;
 	}
 
@@ -4275,7 +4235,6 @@ static bool run_deletetest(int dummy)
 			     0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[10] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4283,7 +4242,6 @@ static bool run_deletetest(int dummy)
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[10] close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4292,7 +4250,6 @@ static bool run_deletetest(int dummy)
 	if (NT_STATUS_IS_OK(status)) {
 		printf("[10] open of %s succeeded should have been deleted on close !\n", fname);
 		goto fail;
-		correct = False;
 	}
 
 	printf("tenth delete on close test succeeded.\n");
@@ -4311,14 +4268,12 @@ static bool run_deletetest(int dummy)
 			      FILE_OVERWRITE_IF, 0, 0, &fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[11] open of %s failed (%s)\n", fname, nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
 	status = cli_close(cli1, fnum1);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("[11] close failed (%s)\n", nt_errstr(status));
-		correct = False;
 		goto fail;
 	}
 
@@ -4332,16 +4287,16 @@ static bool run_deletetest(int dummy)
 		printf("[11] open of %s succeeded should have been denied with ACCESS_DENIED!\n", fname);
 		cli_close(cli1, fnum1);
 		goto fail;
-		correct = False;
 	} else if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(status));
 		goto fail;
-		correct = False;
 	}
 
 	printf("eleventh delete on close test succeeded.\n");
 
 	printf("finished delete test\n");
+
+	correct = true;
 
   fail:
 	/* FIXME: This will crash if we aborted before cli2 got
