@@ -4291,6 +4291,104 @@ static bool run_deletetest(int dummy)
 
 	printf("eleventh delete on close test succeeded.\n");
 
+	/*
+	 * Test 12
+	 * like test 4 but with initial delete on close
+	 */
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	status = cli_ntcreate(cli1, fname, 0,
+	                      FILE_READ_DATA|FILE_WRITE_DATA|DELETE_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OVERWRITE_IF,
+			      FILE_DELETE_ON_CLOSE, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] open 1 of %s failed (%s)\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			      FILE_OPEN, 0, 0, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] open 2 of %s failed(%s).\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli1, fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] close 1 failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_nt_delete_on_close(cli1, fnum1, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] setting delete_on_close failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	/* This should fail - no more opens once delete on close set. */
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			      FILE_OPEN, 0, 0, &fnum2);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("[12] open 3 of %s succeeded - should fail).\n", fname);
+		goto fail;
+	}
+
+	status = cli_nt_delete_on_close(cli1, fnum1, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] unsetting delete_on_close failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			      FILE_OPEN, 0, 0, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] open 4 of %s failed (%s)\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli1, fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] close 2 failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[12] close 3 failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	/*
+	 * setting delete on close on the handle does
+	 * not unset the initial delete on close...
+	 */
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_READ_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			      FILE_OPEN, 0, 0, &fnum2);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("[12] open 5 of %s succeeded - should fail).\n", fname);
+		goto fail;
+	} else if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		printf("ntcreate returned %s, expected "
+		       "NT_STATUS_OBJECT_NAME_NOT_FOUND\n",
+		       nt_errstr(status));
+		goto fail;
+	}
+
+	printf("twelfth delete on close test succeeded.\n");
+
+
 	printf("finished delete test\n");
 
 	correct = true;
