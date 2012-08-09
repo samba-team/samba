@@ -1154,14 +1154,6 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	struct dsdb_partition *p;
 	int ret;
 
-	p = find_partition(data, NULL, req);
-	if (p != NULL) {
-		/* the caller specified what partition they want the
-		 * sequence number operation on - just pass it on
-		 */
-		return ldb_next_request(p->module, req);
-	}
-
 	seq = talloc_get_type_abort(req->op.extended.data, struct ldb_seqnum_request);
 	switch (seq->type) {
 	case LDB_SEQ_NEXT:
@@ -1172,6 +1164,26 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		break;
 
 	case LDB_SEQ_HIGHEST_SEQ:
+
+		/* 
+		 * We can only query per-partition the individual
+		 * partition sequence number, so we don't need to run
+		 * this reload for every query of the next global seq
+		 * number 
+		 */
+		ret = partition_reload_if_required(module, data, req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		
+		p = find_partition(data, NULL, req);
+		if (p != NULL) {
+			/* the caller specified what partition they want the
+			 * sequence number operation on - just pass it on
+			 */
+			return ldb_next_request(p->module, req);
+		}
+
 		ret = partition_metadata_sequence_number(module, &seq_number);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1220,12 +1232,6 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 		DEBUG(10, ("Incrementing the sequence_number after schema_update_now\n"));
 		ret = partition_metadata_inc_schema_sequence(module);
 		return ldb_module_done(req, NULL, NULL, ret);
-	}
-
-	/* see if we are still up-to-date */
-	ret = partition_reload_if_required(module, data, req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
 	}
 	
 	if (strcmp(req->op.extended.oid, LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
