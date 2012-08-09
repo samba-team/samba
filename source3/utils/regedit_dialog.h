@@ -61,6 +61,9 @@ int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
 		  const char *title, WINDOW *below,
 		  const char *msg, ...);
 
+int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
+		 WINDOW *below, const char *msg, ...);
+
 struct registry_key;
 struct value_item;
 

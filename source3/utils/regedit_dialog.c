@@ -25,6 +25,32 @@
 #include <stdarg.h>
 #include <form.h>
 
+static char *string_trim_n(TALLOC_CTX *ctx, const char *buf, size_t n)
+{
+	char *str;
+
+	str = talloc_strndup(ctx, buf, n);
+
+	if (str) {
+		trim_string(str, " ", " ");
+	}
+
+	return str;
+}
+
+static char *string_trim(TALLOC_CTX *ctx, const char *buf)
+{
+	char *str;
+
+	str = talloc_strdup(ctx, buf);
+
+	if (str) {
+		trim_string(str, " ", " ");
+	}
+
+	return str;
+}
+
 static int dialog_free(struct dialog *dia)
 {
 	if (dia->window) {
@@ -217,64 +243,6 @@ static int handle_menu_input(MENU *menu, int c)
 	return -1;
 }
 
-static int modal_loop(struct dialog *dia)
-{
-	int c;
-	int selection = -1;
-
-	keypad(dia->window, true);
-	update_panels();
-	doupdate();
-
-	while (selection == -1) {
-		c = wgetch(dia->window);
-		selection = handle_menu_input(dia->choices, c);
-		update_panels();
-		doupdate();
-	}
-
-	talloc_free(dia);
-
-	return selection;
-}
-
-int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
-		  const char *title, WINDOW *below,
-		  const char *msg, ...)
-{
-	va_list ap;
-	struct dialog *dia;
-	char *str;
-	const char *choices[] = {
-		"Ok",
-		"Cancel",
-		NULL
-	};
-	int width;
-
-	va_start(ap, msg);
-	str = talloc_vasprintf(ctx, msg, ap);
-	va_end(ap);
-	if (str == NULL) {
-		return -1;
-	}
-
-	width = strlen(str) + 2;
-
-	if (type == DIA_ALERT) {
-		choices[1] = NULL;
-	}
-	dia = dialog_choice_center_new(ctx, title, choices, 5, width, below);
-	if (dia == NULL) {
-		return -1;
-	}
-
-	waddstr(dia->sub_window, str);
-	talloc_free(str);
-
-	return modal_loop(dia);
-}
-
 static void handle_form_input(FORM *frm, int c)
 {
 	switch (c) {
@@ -301,6 +269,174 @@ static void handle_form_input(FORM *frm, int c)
 		form_driver(frm, c);
 		break;
 	}
+}
+
+static int modal_loop(struct dialog *dia)
+{
+	int c;
+	int selection = -1;
+
+	keypad(dia->window, true);
+	update_panels();
+	doupdate();
+
+	while (selection == -1) {
+		c = wgetch(dia->window);
+		selection = handle_menu_input(dia->choices, c);
+		update_panels();
+		doupdate();
+	}
+
+	talloc_free(dia);
+
+	return selection;
+}
+
+static struct dialog *dialog_msg_new(TALLOC_CTX *ctx, const char *title,
+				     const char **choices, WINDOW *below,
+				     int nlines, const char *msg, va_list ap)
+{
+	struct dialog *dia;
+	char *str;
+	int width;
+#define MIN_WIDTH 20
+
+	str = talloc_vasprintf(ctx, msg, ap);
+	if (str == NULL) {
+		return NULL;
+	}
+
+	width = strlen(str) + 2;
+	if (width < MIN_WIDTH) {
+		width = MIN_WIDTH;
+	}
+	dia = dialog_choice_center_new(ctx, title, choices, nlines, width, below);
+	if (dia == NULL) {
+		return NULL;
+	}
+
+	waddstr(dia->sub_window, str);
+	talloc_free(str);
+
+	return dia;
+}
+
+int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
+		 WINDOW *below, const char *msg, ...)
+{
+	va_list ap;
+	struct dialog *dia;
+	const char *choices[] = {
+		"Ok",
+		"Cancel",
+		NULL
+	};
+	FIELD *field[2] = {0};
+	FORM *input;
+	WINDOW *input_win;
+	int y, x;
+	int rv = -1;
+	bool input_section = true;
+
+	va_start(ap, msg);
+	dia = dialog_msg_new(ctx, title, choices, below, 7, msg, ap);
+	va_end(ap);
+	if (dia == NULL) {
+		return -1;
+	}
+
+	getmaxyx(dia->sub_window, y, x);
+	input_win = derwin(dia->sub_window, 1, x - 2, 2, 1);
+	if (input_win == NULL) {
+		goto finish;
+	}
+	field[0] = new_field(1, x - 2, 0, 0, 0, 0);
+	if (field[0] == NULL) {
+		goto finish;
+	}
+
+	field_opts_off(field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
+	set_field_back(field[0], A_REVERSE);
+
+	input = new_form(field);
+	form_opts_off(input, O_NL_OVERLOAD | O_BS_OVERLOAD);
+	set_form_win(input, dia->sub_window);
+	set_form_sub(input, input_win);
+	set_current_field(input, field[0]);
+	post_form(input);
+	*output = NULL;
+
+	keypad(dia->window, true);
+	update_panels();
+	doupdate();
+
+	while (rv == -1) {
+		int c = wgetch(dia->window);
+
+		if (c == '\t' || c == KEY_BTAB) {
+			if (input_section) {
+				if (form_driver(input,REQ_VALIDATION) == E_OK) {
+					input_section = false;
+					menu_driver(dia->choices, REQ_FIRST_ITEM);
+				}
+			} else {
+				input_section = true;
+				set_current_field(input, field[0]);
+			}
+			continue;
+		}
+
+		if (input_section) {
+			handle_form_input(input, c);
+		} else {
+			rv = handle_menu_input(dia->choices, c);
+			if (rv == DIALOG_OK) {
+				const char *buf = field_buffer(field[0], 0);
+				*output = string_trim(ctx, buf);
+			}
+		}
+	}
+
+finish:
+	if (input) {
+		unpost_form(input);
+		free_form(input);
+	}
+	if (field[0]) {
+		free_field(field[0]);
+	}
+	if (input_win) {
+		delwin(input_win);
+	}
+	talloc_free(dia);
+
+	return rv;
+}
+
+int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
+		  const char *title, WINDOW *below,
+		  const char *msg, ...)
+{
+	va_list ap;
+	struct dialog *dia;
+	const char *choices[] = {
+		"Ok",
+		"Cancel",
+		NULL
+	};
+
+	if (type == DIA_ALERT) {
+		choices[1] = NULL;
+	}
+
+	va_start(ap, msg);
+	dia = dialog_msg_new(ctx, title, choices, below, 5, msg, ap);
+	va_end(ap);
+	if (dia == NULL) {
+		return -1;
+	}
+
+	return modal_loop(dia);
 }
 
 #define MAX_FIELDS 8
@@ -388,32 +524,6 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 	}
 
 	return WERR_OK;
-}
-
-static char *string_trim_n(TALLOC_CTX *ctx, const char *buf, size_t n)
-{
-	char *str;
-
-	str = talloc_strndup(ctx, buf, n);
-
-	if (str) {
-		trim_string(str, " ", " ");
-	}
-
-	return str;
-}
-
-static char *string_trim(TALLOC_CTX *ctx, const char *buf)
-{
-	char *str;
-
-	str = talloc_strdup(ctx, buf);
-
-	if (str) {
-		trim_string(str, " ", " ");
-	}
-
-	return str;
 }
 
 static bool value_exists(TALLOC_CTX *ctx, const struct registry_key *key,
