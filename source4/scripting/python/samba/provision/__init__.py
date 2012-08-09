@@ -1121,7 +1121,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     logger.info("Pre-loading the Samba 4 and AD schema")
 
     # Load the schema from the one we computed earlier
-    samdb.set_schema(schema, write_attributes=False)
+    samdb.set_schema(schema, write_indices_and_attributes=False)
 
     # Set the NTDS settings DN manually - in order to have it already around
     # before the provisioned tree exists and we connect
@@ -1133,8 +1133,8 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
     # But we have to give it one more kick to have it use the schema
     # during provision - it needs, now that it is connected, to write
-    # the schema @INDEX records to the database.
-    samdb.set_schema(schema, write_attributes=True)
+    # the schema @ATTRIBUTES and @INDEXLIST records to the database.
+    samdb.set_schema(schema, write_indices_and_attributes=True)
 
     return samdb
 

@@ -608,11 +608,11 @@ accountExpires: %u
     def load_partition_usn(self, base_dn):
         return dsdb._dsdb_load_partition_usn(self, base_dn)
 
-    def set_schema(self, schema, write_attributes=True):
-        self.set_schema_from_ldb(schema.ldb, write_attributes=write_attributes)
+    def set_schema(self, schema, write_indices_and_attributes=True):
+        self.set_schema_from_ldb(schema.ldb, write_indices_and_attributes=write_indices_and_attributes)
 
-    def set_schema_from_ldb(self, ldb_conn, write_attributes=True):
-        dsdb._dsdb_set_schema_from_ldb(self, ldb_conn, write_attributes)
+    def set_schema_from_ldb(self, ldb_conn, write_indices_and_attributes=True):
+        dsdb._dsdb_set_schema_from_ldb(self, ldb_conn, write_indices_and_attributes)
 
     def dsdb_DsReplicaAttribute(self, ldb, ldap_display_name, ldif_elements):
         '''convert a list of attribute values to a DRSUAPI DsReplicaAttribute'''

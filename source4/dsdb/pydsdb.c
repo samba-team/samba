@@ -873,9 +873,9 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 	struct ldb_context *from_ldb;
 	struct dsdb_schema *schema;
 	int ret;
-	char write_attributes = true;
+	char write_indices_and_attributes = true;
 	if (!PyArg_ParseTuple(args, "OO|b",
-			      &py_ldb, &py_from_ldb, &write_attributes))
+			      &py_ldb, &py_from_ldb, &write_indices_and_attributes))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
@@ -888,7 +888,7 @@ static PyObject *py_dsdb_set_schema_from_ldb(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ret = dsdb_reference_schema(ldb, schema, write_attributes);
+	ret = dsdb_reference_schema(ldb, schema, write_indices_and_attributes);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
 
 	Py_RETURN_NONE;
