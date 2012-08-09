@@ -4259,8 +4259,7 @@ static bool run_deletetest(int dummy)
 	cli_setatr(cli1, fname, 0, 0);
 	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 
-	/* What error do we get when attempting to open a read-only file with
-	   delete access ? */
+	/* Can we open a read-only file with delete access? */
 
 	/* Create a readonly file. */
 	status = cli_ntcreate(cli1, fname, 0, FILE_READ_DATA|FILE_WRITE_DATA,
@@ -4282,15 +4281,13 @@ static bool run_deletetest(int dummy)
 			     FILE_READ_ATTRIBUTES|DELETE_ACCESS,
 			     0,
 			     FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-			     FILE_OVERWRITE_IF, 0, 0, &fnum1);
-	if (NT_STATUS_IS_OK(status)) {
-		printf("[11] open of %s succeeded should have been denied with ACCESS_DENIED!\n", fname);
-		cli_close(cli1, fnum1);
-		goto fail;
-	} else if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("[11] open of %s should have been denied with ACCESS_DENIED! Got error %s\n", fname, nt_errstr(status));
+			     FILE_OPEN, 0, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("[11] open of %s failed: %s\n", fname, nt_errstr(status));
 		goto fail;
 	}
+
+	cli_close(cli1, fnum1);
 
 	printf("eleventh delete on close test succeeded.\n");
 
