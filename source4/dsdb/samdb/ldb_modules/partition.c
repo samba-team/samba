@@ -985,7 +985,7 @@ static int partition_del_trans(struct ldb_module *module)
 }
 
 int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem_ctx, 
-				      enum ldb_sequence_type type, uint64_t *seq_number,
+				      uint64_t *seq_number,
 				      struct ldb_request *parent)
 {
 	int ret;
@@ -997,7 +997,7 @@ int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem
 	if (tseq == NULL) {
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
-	tseq->type = type;
+	tseq->type = LDB_SEQ_HIGHEST_SEQ;
 	
 	ret = dsdb_module_extended(module, tseq, &res,
 				   LDB_EXTENDED_SEQUENCE_NUMBER,
@@ -1035,7 +1035,7 @@ int partition_sequence_number_from_partitions(struct ldb_module *module,
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 
-	ret = partition_primary_sequence_number(module, module, LDB_SEQ_HIGHEST_SEQ, &seq_number, NULL);
+	ret = partition_primary_sequence_number(module, module, &seq_number, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -397,7 +397,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		return ldb_oom(ldb);
 	}
 
-	ret = partition_primary_sequence_number(module, mem_ctx, LDB_SEQ_HIGHEST_SEQ, &seq, parent);
+	ret = partition_primary_sequence_number(module, mem_ctx, &seq, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return ret;
