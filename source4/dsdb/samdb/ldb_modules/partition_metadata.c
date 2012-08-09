@@ -260,68 +260,13 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
  */
 static int partition_metadata_set_sequence_number(struct ldb_module *module)
 {
-	struct partition_private_data *data;
-	struct ldb_result *res;
-	struct ldb_request *req;
-	struct ldb_seqnum_request *seq;
-	struct ldb_seqnum_result *seqr;
-	struct ldb_extended *ext;
-	TALLOC_CTX *tmp_ctx;
 	int ret;
 	uint64_t seq_number;
 
-	data = talloc_get_type_abort(ldb_module_get_private(module),
-				    struct partition_private_data);
-	if (!data || !data->metadata) {
-		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
-					"partition_metadata: metadata not initialized");
-	}
-
-	tmp_ctx = talloc_new(data->metadata);
-	if (tmp_ctx == NULL) {
-		return ldb_module_oom(module);
-	}
-
-	res = talloc_zero(tmp_ctx, struct ldb_result);
-	if (res == NULL) {
-		talloc_free(tmp_ctx);
-		return ldb_module_oom(module);
-	}
-
-	seq = talloc_zero(tmp_ctx, struct ldb_seqnum_request);
-	if (seq == NULL) {
-		talloc_free(tmp_ctx);
-		return ldb_module_oom(module);
-	}
-	seq->type = LDB_SEQ_HIGHEST_SEQ;
-
-	/* Build an extended request, so it can be passed to each partition in
-	   partition_sequence_number_from_partitions() */
-	ret = ldb_build_extended_req(&req,
-				     ldb_module_get_ctx(module),
-				     tmp_ctx,
-				     LDB_EXTENDED_SEQUENCE_NUMBER,
-				     seq,
-				     NULL,
-				     res,
-				     ldb_extended_default_callback,
-				     NULL);
-	LDB_REQ_SET_LOCATION(req);
+	ret = partition_sequence_number_from_partitions(module, &seq_number);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
 		return ret;
 	}
-
-	ret = partition_sequence_number_from_partitions(module, req, &ext);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	seqr = talloc_get_type_abort(ext->data, struct ldb_seqnum_result);
-	seq_number = seqr->seq_num;
-
-	talloc_free(tmp_ctx);
 
 	return partition_metadata_set_uint64(module, LDB_METADATA_SEQ_NUM, seq_number, true);
 }
