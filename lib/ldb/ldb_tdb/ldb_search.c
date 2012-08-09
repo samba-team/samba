@@ -212,7 +212,8 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	TDB_DATA tdb_key, tdb_data;
+	TDB_DATA tdb_key;
+	int exists;
 
 	if (ldb_dn_is_null(dn)) {
 		return LDB_ERR_NO_SUCH_OBJECT;
@@ -224,14 +225,13 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
+	exists = tdb_exists(ltdb->tdb, tdb_key);
 	talloc_free(tdb_key.dptr);
-	if (!tdb_data.dptr) {
-		return LDB_ERR_NO_SUCH_OBJECT;
+		
+	if (exists) {
+		return LDB_SUCCESS;
 	}
-	
-	free(tdb_data.dptr);
-	return LDB_SUCCESS;
+	return LDB_ERR_NO_SUCH_OBJECT;
 }
 
 /*
