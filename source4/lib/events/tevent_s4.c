@@ -46,10 +46,12 @@ static void ev_wrap_debug(void *context, enum tevent_debug_level level,
 		break;
 
 	};
-	vasprintf(&s, fmt, ap);
-	if (!s) return;
-	DEBUG(samba_level, ("tevent: %s", s));
-	free(s);
+	if (CHECK_DEBUGLVL(samba_level)) {
+		vasprintf(&s, fmt, ap);
+		if (!s) return;
+		DEBUG(samba_level, ("tevent: %s", s));
+		free(s);
+	}
 }
 
 /*
