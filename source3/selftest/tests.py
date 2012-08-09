@@ -355,6 +355,9 @@ for t in tests:
         plansmbtorturetestsuite(t, "s3dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
         plansmbtorturetestsuite(t, "plugin_s4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
+    elif t == "smb2.durable-open" or t == "smb2.durable-v2-open":
+        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
+        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
     else:
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')

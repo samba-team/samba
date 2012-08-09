@@ -981,6 +981,11 @@ sub provision($$$$$$)
 [hideunwrite]
 	copy = tmp
 	hide unwriteable files = yes
+[durable]
+	copy = tmp
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
 [print1]
 	copy = tmp
 	printable = yes

@@ -1419,6 +1419,12 @@ sub provision_plugin_s4_dc($$)
 	copy = tmp
 	hide unreadable = yes
 
+[durable]
+	copy = tmp
+	kernel share modes = no
+	kernel oplocks = no
+	posix locking = no
+
 [print\$]
 	copy = tmp
 
