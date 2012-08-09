@@ -1086,7 +1086,10 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	}
 
 	if (lowercase) {
-		strlower_m(lname);
+		if (!strlower_m(lname)) {
+			d_printf("strlower_m %s failed\n", lname);
+			return 1;
+		}
 	}
 
 	status = cli_resolve_path(ctx, "", auth_info, cli, rname, &targetcli,
@@ -1296,7 +1299,9 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 
 	string_replace(finfo->name,'\\','/');
 	if (lowercase) {
-		strlower_m(finfo->name);
+		if (!strlower_m(finfo->name)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	if (!directory_exist(finfo->name) &&

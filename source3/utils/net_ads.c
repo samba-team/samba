@@ -1256,7 +1256,9 @@ static NTSTATUS net_update_dns_ext(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
 	} else {
 		name_to_fqdn( machine_name, lp_netbios_name() );
 	}
-	strlower_m( machine_name );
+	if (!strlower_m( machine_name )) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (num_addrs == 0 || iplist == NULL) {
 		/*
@@ -2192,7 +2194,11 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 	}
 
 	fstrcpy(my_name, lp_netbios_name());
-	strlower_m(my_name);
+	if (!strlower_m(my_name)) {
+		ads_destroy(&ads);
+		return -1;
+	}
+
 	if (asprintf(&host_principal, "%s$@%s", my_name, ads->config.realm) == -1) {
 		ads_destroy(&ads);
 		return -1;

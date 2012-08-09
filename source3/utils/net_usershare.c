@@ -523,7 +523,9 @@ static int net_usershare_info(struct net_context *c, int argc, const char **argv
 			return net_usershare_info_usage(c, argc, argv);
 	}
 
-	strlower_m(wcard);
+	if (!strlower_m(wcard)) {
+		return -1;
+	}
 
 	ctx = talloc_init("share_info");
 	ret = get_share_list(ctx, wcard, only_ours);
@@ -1036,7 +1038,9 @@ static int net_usershare_list(struct net_context *c, int argc,
 			return net_usershare_list_usage(c, argc, argv);
 	}
 
-	strlower_m(wcard);
+	if (!strlower_m(wcard)) {
+		return -1;
+	}
 
 	ctx = talloc_init("share_list");
 	ret = get_share_list(ctx, wcard, only_ours);

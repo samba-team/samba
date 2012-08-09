@@ -370,7 +370,11 @@ static int process_root(int local_flags)
 		if (local_flags & LOCAL_ADD_USER) {
 		        SAFE_FREE(new_passwd);
 			new_passwd = smb_xstrdup(user_name);
-			strlower_m(new_passwd);
+			if (!strlower_m(new_passwd)) {
+				fprintf(stderr, "strlower_m %s failed\n",
+					new_passwd);
+				exit(1);
+			}
 		}
 
 		/*

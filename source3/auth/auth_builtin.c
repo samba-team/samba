@@ -103,7 +103,9 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 		return nt_status_string_to_code(user);
 	}
 
-	strlower_m(user);
+	if (!strlower_m(user)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	error_num = strtoul(user, NULL, 16);
 
 	DEBUG(5,("check_name_to_ntstatus_security: Error for user %s was %lx\n", user, error_num));

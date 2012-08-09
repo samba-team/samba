@@ -259,7 +259,9 @@ bool afs_login(connection_struct *conn)
 
 	/* The pts command always generates completely lower-case user
 	 * names. */
-	strlower_m(afs_username);
+	if (!strlower_m(afs_username)) {
+		return false;
+	}
 
 	cell = strchr(afs_username, '@');
 

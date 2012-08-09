@@ -804,7 +804,9 @@ static bool nt_to_afs_acl(const char *filename,
 				if (tmp == NULL) {
 					return false;
 				}
-				strlower_m(tmp);
+				if (!strlower_m(tmp)) {
+					return false;
+				}
 				name = tmp;
 			}
 

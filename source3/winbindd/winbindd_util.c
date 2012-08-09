@@ -931,7 +931,7 @@ void fill_domain_username(fstring name, const char *domain, const char *user, bo
 	fstring tmp_user;
 
 	fstrcpy(tmp_user, user);
-	strlower_m(tmp_user);
+	(void)strlower_m(tmp_user);
 
 	if (can_assume && assume_domain(domain)) {
 		strlcpy(name, tmp_user, sizeof(fstring));
@@ -954,7 +954,10 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
 	char *tmp_user, *name;
 
 	tmp_user = talloc_strdup(mem_ctx, user);
-	strlower_m(tmp_user);
+	if (!strlower_m(tmp_user)) {
+		TALLOC_FREE(tmp_user);
+		return NULL;
+	}
 
 	if (can_assume && assume_domain(domain)) {
 		name = tmp_user;

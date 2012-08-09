@@ -1098,7 +1098,11 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 		return NULL;
 	}
 
-	strlower_m(service);
+	if (!strlower_m(service)) {
+		DEBUG(2, ("strlower_m %s failed\n", service));
+		*status = NT_STATUS_INVALID_PARAMETER;
+		return NULL;
+	}
 
 	snum = find_service(talloc_tos(), service, &service);
 	if (!service) {

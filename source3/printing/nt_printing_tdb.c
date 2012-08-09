@@ -54,7 +54,7 @@ static TDB_DATA make_printer_tdbkey(TALLOC_CTX *ctx, const char *sharename )
 	TDB_DATA key;
 
 	fstrcpy(share, sharename);
-	strlower_m(share);
+	(void)strlower_m(share);
 
 	keystr = talloc_asprintf(ctx, "%s%s", PRINTERS_PREFIX, share);
 	key = string_term_tdb_data(keystr ? keystr : "");
@@ -74,7 +74,7 @@ static TDB_DATA make_printers_secdesc_tdbkey(TALLOC_CTX *ctx,
 	TDB_DATA key;
 
 	fstrcpy(share, sharename );
-	strlower_m(share);
+	(void)strlower_m(share);
 
 	keystr = talloc_asprintf(ctx, "%s%s", SECDESC_PREFIX, share);
 	key = string_term_tdb_data(keystr ? keystr : "");

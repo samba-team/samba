@@ -108,7 +108,11 @@ char *ads_build_domain(const char *dn)
 		return NULL;		
 	}	
 
-	strlower_m( dnsdomain );	
+	if (!strlower_m( dnsdomain )) {
+		SAFE_FREE(dnsdomain);
+		return NULL;
+	}
+
 	all_string_sub( dnsdomain, "dc=", "", 0);
 	all_string_sub( dnsdomain, ",", ".", 0 );
 

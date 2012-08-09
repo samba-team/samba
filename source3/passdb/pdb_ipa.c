@@ -787,7 +787,9 @@ static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pd
 	if (info->dns_domain == NULL) {
 		goto fail;
 	}
-	strlower_m(info->dns_domain);
+	if (!strlower_m(info->dns_domain)) {
+		goto fail;
+	}
 	info->dns_forest = talloc_strdup(info, info->dns_domain);
 
 	/* we expect a domain SID to have 4 sub IDs */

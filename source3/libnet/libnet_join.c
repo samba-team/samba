@@ -395,7 +395,9 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 			     r->out.dns_domain_name);
 	}
 
-	strlower_m(my_fqdn);
+	if (!strlower_m(my_fqdn)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
 
 	if (!strequal(my_fqdn, r->in.machine_name)) {
 		spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
@@ -817,7 +819,9 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 
 	/* according to WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED */
 	fstrcpy(trust_passwd, r->in.admin_password);
-	strlower_m(trust_passwd);
+	if (!strlower_m(trust_passwd)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/*
 	 * Machine names can be 15 characters, but the max length on
@@ -934,7 +938,10 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	/* Create domain user */
 
 	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
-	strlower_m(acct_name);
+	if (!strlower_m(acct_name)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
@@ -1367,7 +1374,10 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	/* Create domain user */
 
 	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
-	strlower_m(acct_name);
+	if (!strlower_m(acct_name)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 

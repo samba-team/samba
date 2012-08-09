@@ -96,7 +96,10 @@ static krb5_error_code get_host_principal(krb5_context krbctx,
 		return -1;
 	}
 
-	strlower_m(host_princ_s);
+	if (!strlower_m(host_princ_s)) {
+		SAFE_FREE(host_princ_s);
+		return -1;
+	}
 	ret = smb_krb5_parse_name(krbctx, host_princ_s, host_princ);
 	if (ret) {
 		DEBUG(1, (__location__ ": smb_krb5_parse_name(%s) "

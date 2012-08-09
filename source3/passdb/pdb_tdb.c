@@ -572,7 +572,9 @@ static NTSTATUS tdbsam_getsampwnam (struct pdb_methods *my_methods,
 
 	/* Data is stored in all lower-case */
 	fstrcpy(name, sname);
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* set search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
@@ -668,7 +670,9 @@ static bool tdb_delete_samacct_only( struct samu *sam_pass )
 	NTSTATUS status;
 
 	fstrcpy(name, pdb_get_username(sam_pass));
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		return false;
+	}
 
   	/* set the search key */
 
@@ -712,7 +716,9 @@ static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 	}
 
 	fstrcpy(name, pdb_get_username(sam_pass));
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
   	/* set the search key */
 
@@ -785,7 +791,9 @@ static bool tdb_update_samacct_only( struct samu* newpwd, int flag )
 	data.dptr = buf;
 
 	fstrcpy(name, pdb_get_username(newpwd));
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		goto done;
+	}
 
 	DEBUG(5, ("Storing %saccount %s with RID %d\n",
 		  flag == TDB_INSERT ? "(new) " : "", name,
@@ -823,7 +831,9 @@ static bool tdb_update_ridrec_only( struct samu* newpwd, int flag )
 	NTSTATUS status;
 
 	fstrcpy(name, pdb_get_username(newpwd));
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		return false;
+	}
 
 	/* setup RID data */
 	data = string_term_tdb_data(name);
@@ -1032,10 +1042,14 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	   so that we lower case the posix name but preserve the case in passdb */
 
 	fstrcpy( oldname_lower, pdb_get_username(old_acct) );
-	strlower_m( oldname_lower );
+	if (!strlower_m( oldname_lower )) {
+		goto cancel;
+	}
 
 	fstrcpy( newname_lower, newname );
-	strlower_m( newname_lower );
+	if (!strlower_m( newname_lower )) {
+		goto cancel;
+	}
 
 	rename_script = talloc_string_sub2(new_acct,
 				rename_script,

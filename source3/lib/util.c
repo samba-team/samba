@@ -1892,8 +1892,14 @@ bool unix_wild_match(const char *pattern, const char *string)
 		TALLOC_FREE(ctx);
 		return false;
 	}
-	strlower_m(p2);
-	strlower_m(s2);
+	if (!strlower_m(p2)) {
+		TALLOC_FREE(ctx);
+		return false;
+	}
+	if (!strlower_m(s2)) {
+		TALLOC_FREE(ctx);
+		return false;
+	}
 
 	/* Remove any *? and ** from the pattern as they are meaningless */
 	for(p = p2; *p; p++) {

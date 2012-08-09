@@ -66,7 +66,10 @@ bool set_local_machine_name(const char *local_name, bool perm)
 	/* alpha_strcpy includes the space for the terminating nul. */
 	alpha_strcpy(local_machine,tmp_local_machine,
 			SAFE_NETBIOS_CHARS,len+1);
-	strlower_m(local_machine);
+	if (!strlower_m(local_machine)) {
+		TALLOC_FREE(tmp_local_machine);
+		return false;
+	}
 	TALLOC_FREE(tmp_local_machine);
 
 	already_perm = perm;
@@ -118,7 +121,10 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 	/* alpha_strcpy includes the space for the terminating nul. */
 	alpha_strcpy(remote_machine,tmp_remote_machine,
 			SAFE_NETBIOS_CHARS,len+1);
-	strlower_m(remote_machine);
+	if (!strlower_m(remote_machine)) {
+		TALLOC_FREE(tmp_remote_machine);
+		return false;
+	}
 	TALLOC_FREE(tmp_remote_machine);
 
 	already_perm = perm;
@@ -153,7 +159,10 @@ void sub_set_smb_name(const char *name)
 		return;
 	}
 	trim_char(tmp, ' ', ' ');
-	strlower_m(tmp);
+	if (!strlower_m(tmp)) {
+		TALLOC_FREE(tmp);
+		return;
+	}
 
 	len = strlen(tmp);
 

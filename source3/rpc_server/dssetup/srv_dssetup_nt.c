@@ -78,7 +78,9 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 		if (!dnsdomain) {
 			return WERR_NOMEM;
 		}
-		strlower_m(dnsdomain);
+		if (!strlower_m(dnsdomain)) {
+			return WERR_INVALID_PARAM;
+		}
 		basic->dns_domain = dnsdomain;
 
 		/* FIXME!! We really should fill in the correct forest

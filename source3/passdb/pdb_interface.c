@@ -472,7 +472,9 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		/* lowercase the username before creating the Unix account for 
 		   compatibility with previous Samba releases */
 		fstrcpy( name2, name );
-		strlower_m( name2 );
+		if (!strlower_m( name2 )) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		add_script = talloc_all_string_sub(tmp_ctx,
 					add_script,
 					"%u",
@@ -598,7 +600,9 @@ static NTSTATUS pdb_default_delete_user(struct pdb_methods *methods,
 	   external scripts */
 
 	fstrcpy( username, pdb_get_username(sam_acct) );
-	strlower_m( username );
+	if (!strlower_m( username )) {
+		return status;
+	}
 
 	smb_delete_user( username );
 

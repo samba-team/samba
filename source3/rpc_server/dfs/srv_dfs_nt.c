@@ -138,7 +138,9 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		if (!altpath) {
 			return WERR_NOMEM;
 		}
-		strlower_m(altpath);
+		if (!strlower_m(altpath)) {
+			return WERR_INVALID_PARAM;
+		}
 		DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
 	}

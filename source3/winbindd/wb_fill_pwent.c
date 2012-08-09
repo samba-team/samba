@@ -111,7 +111,10 @@ static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
 	/* Username */
 
 	fstrcpy(user_name, state->info->acct_name);
-	strlower_m(user_name);
+	if (!strlower_m(user_name)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
 	status = normalize_name_map(state, domain, user_name, &mapped_name);
 
 	/* Basic removal of whitespace */

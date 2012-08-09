@@ -164,7 +164,9 @@ bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
 	if (!lowercase_user) {
 		return false;
 	}
-	strlower_m(lowercase_user);
+	if (!strlower_m(lowercase_user)) {
+		return false;
+	}
 
 	if (strcmp(user,lowercase_user) == 0) {
 		/* user name was already lower case! */

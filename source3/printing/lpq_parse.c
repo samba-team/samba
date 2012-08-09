@@ -1117,7 +1117,9 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 			printer status line: 
 			handle them so that most severe condition is shown */
 		int i;
-		strlower_m(line);
+		if (!strlower_m(line)) {
+			return false;
+		}
       
 		switch (status->status) {
 			case LPSTAT_OK:

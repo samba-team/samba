@@ -356,7 +356,7 @@ char* kerberos_standard_des_salt( void )
 	fstring salt;
 
 	fstr_sprintf( salt, "host/%s.%s@", lp_netbios_name(), lp_realm() );
-	strlower_m( salt );
+	(void)strlower_m( salt );
 	fstrcat( salt, lp_realm() );
 
 	return SMB_STRDUP( salt );

@@ -269,12 +269,12 @@ static NTSTATUS listfn(const char *mnt, struct file_info *f, const char *s,
 
 
 	fstrcpy(state->short_name, f->short_name ? f->short_name : "");
-	strlower_m(state->short_name);
+	(void)strlower_m(state->short_name);
 	*state->pp_long_name = SMB_STRDUP(f->name);
 	if (!*state->pp_long_name) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	strlower_m(*state->pp_long_name);
+	(void)strlower_m(*state->pp_long_name);
 	return NT_STATUS_OK;
 }
 

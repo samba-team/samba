@@ -867,7 +867,9 @@ NTSTATUS pass_check(const struct passwd *pass,
 
 	/* try all lowercase if it's currently all uppercase */
 	if (strhasupper(pass2)) {
-		strlower_m(pass2);
+		if (!strlower_m(pass2)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		nt_status = password_check(pass2, (const void *)rhost);
 		if (NT_STATUS_IS_OK(nt_status)) {
 			return (nt_status);
@@ -880,7 +882,9 @@ NTSTATUS pass_check(const struct passwd *pass,
 	}
 
 	/* last chance - all combinations of up to level chars upper! */
-	strlower_m(pass2);
+	if (!strlower_m(pass2)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	nt_status = string_combinations(pass2, password_check, level,
 					(const void *)rhost);

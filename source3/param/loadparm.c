@@ -1653,7 +1653,10 @@ char *canonicalize_servicename(TALLOC_CTX *ctx, const char *src)
 	result = talloc_strdup(ctx, src);
 	SMB_ASSERT(result != NULL);
 
-	strlower_m(result);
+	if (!strlower_m(result)) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
 	return result;
 }
 

@@ -217,7 +217,9 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	strlower_m(afsname);
+	if (!strlower_m(afsname)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	DEBUG(10, ("Generating token for user %s\n", afsname));
 

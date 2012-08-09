@@ -652,7 +652,12 @@ static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 
-		strlower_m(server);
+		if (!strlower_m(server)) {
+			SAFE_FREE(server);
+			SAFE_FREE(server_realm);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
 		if (!strupper_m(server_realm)) {
 			SAFE_FREE(server);
 			SAFE_FREE(server_realm);
@@ -683,7 +688,12 @@ static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 			return ADS_ERROR(LDAP_NO_MEMORY);
 		}
 
-		strlower_m(server);
+		if (!strlower_m(server)) {
+			SAFE_FREE(server);
+			SAFE_FREE(server_realm);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
 		if (!strupper_m(server_realm)) {
 			SAFE_FREE(server);
 			SAFE_FREE(server_realm);

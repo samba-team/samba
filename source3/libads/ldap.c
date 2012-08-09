@@ -1954,7 +1954,10 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		goto out;
 	}
 
-	strlower_m(&psp1[strlen(spn)]);
+	if (!strlower_m(&psp1[strlen(spn)])) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
+	}
 	servicePrincipalName[0] = psp1;
 
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
@@ -1972,7 +1975,10 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		goto out;
 	}
 
-	strlower_m(&psp2[strlen(spn)]);
+	if (!strlower_m(&psp2[strlen(spn)])) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto out;
+	}
 	servicePrincipalName[1] = psp2;
 
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
@@ -3468,7 +3474,10 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 
 	/* hostname must be lowercase */
 	host = SMB_STRDUP(hostname);
-	strlower_m(host);
+	if (!strlower_m(host)) {
+		SAFE_FREE(host);
+		return ADS_ERROR_SYSTEM(EINVAL);
+	}
 
 	status = ads_find_machine_acct(ads, &res, host);
 	if (!ADS_ERR_OK(status)) {

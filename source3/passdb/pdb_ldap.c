@@ -2015,9 +2015,14 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	   posix name but preserve the case in passdb */
 
 	fstrcpy( oldname_lower, oldname );
-	strlower_m( oldname_lower );
+	if (!strlower_m( oldname_lower )) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	fstrcpy( newname_lower, newname );
-	strlower_m( newname_lower );
+	if (!strlower_m( newname_lower )) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	rename_script = realloc_string_sub2(rename_script,
 					"%unew",
 					newname_lower,

@@ -202,7 +202,10 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	strlower_m(service);
+	if (!strlower_m(service)) {
+		DEBUG(2, ("strlower_m %s failed\n", service));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* TODO: do more things... */
 	if (strequal(service,HOMES_NAME)) {

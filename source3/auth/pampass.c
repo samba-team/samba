@@ -249,7 +249,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 
 		special_char_sub(prompt);
 		fstrcpy(t->prompt, prompt);
-		strlower_m(t->prompt);
+		(void)strlower_m(t->prompt);
 		trim_char(t->prompt, ' ', ' ');
 
 		if (!next_token_talloc(frame, &p, &reply, NULL)) {
@@ -262,7 +262,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 
 		special_char_sub(reply);
 		fstrcpy(t->reply, reply);
-		strlower_m(t->reply);
+		(void)strlower_m(t->reply);
 		trim_char(t->reply, ' ', ' ');
 
 	}

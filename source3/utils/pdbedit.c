@@ -655,7 +655,11 @@ static int set_machine_info(const char *machinename,
 		return -1;
 	}
 
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		fprintf(stderr, "strlower_m %s failed\n", name);
+		TALLOC_FREE(sam_pwent);
+		return -1;
+	}
 
 	ret = pdb_getsampwnam(sam_pwent, name);
 	if (!ret) {
@@ -853,7 +857,10 @@ static int new_machine(const char *machinename, char *machine_sid)
 		return -1;
 	}
 
-	strlower_m(name);
+	if (!strlower_m(name)) {
+		fprintf(stderr, "strlower_m %s failed\n", name);
+		return -1;
+	}
 
 	flags = LOCAL_ADD_USER | LOCAL_TRUST_ACCOUNT | LOCAL_SET_PASSWORD;
 

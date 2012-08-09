@@ -60,8 +60,7 @@ bool strnorm(char *s, int case_default)
 	if (case_default == CASE_UPPER)
 		return strupper_m(s);
 	else
-		strlower_m(s);
-	return true; /* FIXME - return strlower_m value later. */
+		return strlower_m(s);
 }
 
 /**
@@ -491,7 +490,6 @@ bool strlower_m(char *s)
 	/* Catch mb conversion errors that may not terminate. */
 	if (errno) {
 		s[len-1] = '\0';
-		ret = false;
 	}
 	errno = errno_save;
 	return ret;
@@ -1033,7 +1031,10 @@ char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...)
 	if (ret == NULL) {
 		return NULL;
 	}
-	strlower_m(ret);
+	if (!strlower_m(ret)) {
+		TALLOC_FREE(ret);
+		return NULL;
+	}
 	return ret;
 }
 

@@ -321,7 +321,10 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	strlower_m(acct_name);
+	if (!strlower_m(acct_name)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
+	}
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 

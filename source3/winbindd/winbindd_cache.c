@@ -1868,7 +1868,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			if (!strupper_m(discard_const_p(char, domain_name))) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			strlower_m(discard_const_p(char, name));
+			(void)strlower_m(discard_const_p(char, name));
 			wcache_save_sid_to_name(domain, status, sid, domain_name, name, *type);
 		}
 	}
