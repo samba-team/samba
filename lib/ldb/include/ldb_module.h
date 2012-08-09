@@ -83,6 +83,7 @@ void ldb_debug_set(struct ldb_context *ldb, enum ldb_debug_level level,
 		   const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
 void ldb_debug_add(struct ldb_context *ldb, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
 void ldb_debug_end(struct ldb_context *ldb, enum ldb_debug_level level);
+void ldb_vdebug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3, 0);
 
 #define ldb_error(ldb, ecode, reason) ldb_error_at(ldb, ecode, reason, __FILE__, __LINE__)
 #define ldb_module_error(module, ecode, reason) ldb_error_at(ldb_module_get_ctx(module), ecode, reason, __FILE__, __LINE__)

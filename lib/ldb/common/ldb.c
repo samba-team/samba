@@ -60,7 +60,6 @@ static void ldb_tevent_debug(void *context, enum tevent_debug_level level,
 {
 	struct ldb_context *ldb = talloc_get_type(context, struct ldb_context);
 	enum ldb_debug_level ldb_level = LDB_DEBUG_FATAL;
-	char *s = NULL;
 
 	switch (level) {
 	case TEVENT_DEBUG_FATAL:
@@ -77,10 +76,10 @@ static void ldb_tevent_debug(void *context, enum tevent_debug_level level,
 		break;
 	};
 
-	vasprintf(&s, fmt, ap);
-	if (!s) return;
-	ldb_debug(ldb, ldb_level, "tevent: %s", s);
-	free(s);
+	/* There isn't a tevent: prefix here because to add it means
+	 * actually printing the string, and most of the time we don't
+	 * want to show it */
+	ldb_vdebug(ldb, ldb_level, fmt, ap);
 }
 
 /*

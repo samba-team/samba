@@ -79,11 +79,10 @@ int ldb_set_debug_stderr(struct ldb_context *ldb)
 }
 
 /*
-  log a message
+  log a message (va_list helper for ldb_tevent_debug)
 */
-void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...)
+void ldb_vdebug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, va_list ap)
 {
-	va_list ap;
 	if (ldb->debug_ops.debug == NULL) {
 		if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
 			ldb_set_debug(ldb, ldb_debug_stderr_all, ldb);
@@ -91,8 +90,17 @@ void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *
 			ldb_set_debug_stderr(ldb);
 		}
 	}
-	va_start(ap, fmt);
 	ldb->debug_ops.debug(ldb->debug_ops.context, level, fmt, ap);
+}
+
+/*
+  log a message
+*/
+void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	ldb_vdebug(ldb, level, fmt, ap);
 	va_end(ap);
 }
 
