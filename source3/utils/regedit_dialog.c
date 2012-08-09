@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "regedit_dialog.h"
 #include "regedit_valuelist.h"
+#include "regedit_hexedit.h"
 #include "util_reg.h"
 #include "lib/registry/registry.h"
 #include <stdarg.h>
@@ -452,6 +453,7 @@ struct edit_dialog {
 	WINDOW *input_win;
 	FORM *input;
 	FIELD *field[MAX_FIELDS];
+	struct hexedit *buf;
 	enum input_section section;
 };
 
@@ -520,7 +522,9 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 		set_field_buffer(edit->field[1], 0, buf);
 		talloc_free(buf);
 	}
-
+	case REG_BINARY:
+		/* initialized upon dialog creation */
+		break;
 	}
 
 	return WERR_OK;
@@ -543,13 +547,9 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 {
 	WERROR rv;
 	DATA_BLOB blob;
-	const char *buf = field_buffer(edit->field[1], 0);
 	char *name = string_trim(edit, field_buffer(edit->field[0], 0));
 
-	if (!buf) {
-		return WERR_OK;
-	}
-	if (!new_value && !field_status(edit->field[1])) {
+	if (!new_value && !edit->buf && !field_status(edit->field[1])) {
 		return WERR_OK;
 	}
 	if (new_value && value_exists(edit, key, name)) {
@@ -560,6 +560,7 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 	case REG_DWORD: {
 		uint32_t val;
 		int base = 10;
+		const char *buf = field_buffer(edit->field[1], 0);
 
 		if (buf[0] == '0' && tolower(buf[1]) == 'x') {
 			base = 16;
@@ -573,7 +574,9 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 	}
 	case REG_SZ:
 	case REG_EXPAND_SZ: {
+		const char *buf = field_buffer(edit->field[1], 0);
 		char *str = string_trim(edit, buf);
+
 		if (!str || !push_reg_sz(edit, &blob, str)) {
 			rv = WERR_NOMEM;
 		}
@@ -583,6 +586,7 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 		int rows, cols, max;
 		const char **arr;
 		size_t i;
+		const char *buf = field_buffer(edit->field[1], 0);
 
 		dynamic_field_info(edit->field[1], &rows, &cols, &max);
 
@@ -599,6 +603,10 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 		}
 		break;
 	}
+	case REG_BINARY:
+		blob = data_blob_talloc(edit, NULL, edit->buf->len);
+		memcpy(blob.data, edit->buf->data, edit->buf->len);
+		break;
 	}
 
 	rv = reg_val_set(key, name, type, blob);
@@ -612,11 +620,16 @@ static void section_down(struct edit_dialog *edit)
 	case IN_NAME:
 		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_DATA;
-			set_current_field(edit->input, edit->field[1]);
+			if (edit->buf) {
+				hexedit_set_cursor(edit->buf);
+			} else {
+				set_current_field(edit->input, edit->field[1]);
+			}
 		}
 		break;
 	case IN_DATA:
-		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
+		if (edit->buf ||
+		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_MENU;
 			menu_driver(edit->dia->choices, REQ_FIRST_ITEM);
 		}
@@ -638,16 +651,44 @@ static void section_up(struct edit_dialog *edit)
 		}
 		break;
 	case IN_DATA:
-		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
+		if (edit->buf ||
+		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_NAME;
 			set_current_field(edit->input, edit->field[0]);
 		}
 		break;
 	case IN_MENU:
 		edit->section = IN_DATA;
-		set_current_field(edit->input, edit->field[1]);
+		if (edit->buf) {
+			hexedit_set_cursor(edit->buf);
+		} else {
+			set_current_field(edit->input, edit->field[1]);
+		}
 		break;
 	}
+}
+
+static void handle_hexedit_input(struct hexedit *buf, int c)
+{
+	switch (c) {
+	case KEY_UP:
+		hexedit_driver(buf, HE_CURSOR_UP);
+		break;
+	case KEY_DOWN:
+		hexedit_driver(buf, HE_CURSOR_DOWN);
+		break;
+	case KEY_LEFT:
+		hexedit_driver(buf, HE_CURSOR_LEFT);
+		break;
+	case KEY_RIGHT:
+		hexedit_driver(buf, HE_CURSOR_RIGHT);
+		break;
+	default:
+		hexedit_driver(buf, c);
+		break;
+	}
+
+	hexedit_set_cursor(buf);
 }
 
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
@@ -657,8 +698,10 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	const char *choices[] = {
 		"Ok",
 		"Cancel",
+		"Resize",
 		NULL
 	};
+#define DIALOG_RESIZE 2
 	char *title;
 	int nlines, ncols, val_rows;
 	WERROR rv = WERR_NOMEM;
@@ -678,6 +721,12 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	nlines = 9;
 	if (type == REG_MULTI_SZ) {
 		nlines += 4;
+	} else if (type == REG_BINARY) {
+		nlines += 10;
+	}
+	/* don't include a resize button */
+	if (type != REG_BINARY) {
+		choices[2] = NULL;
 	}
 	ncols = 50;
 	edit->dia = dialog_choice_center_new(edit, title, choices, nlines,
@@ -694,21 +743,49 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 
 	/* data */
-	val_rows = 1;
-	if (type == REG_MULTI_SZ) {
-		val_rows += 4;
+	if (type == REG_BINARY) {
+		size_t len = 8;
+		const void *buf = NULL;
+
+		if (vitem) {
+			len = vitem->data.length;
+			buf = vitem->data.data;
+		}
+		edit->buf = hexedit_new(edit, edit->dia->sub_window, 10,
+					5, 0, buf, len);
+		if (edit->buf == NULL) {
+			goto finish;
+		}
+		hexedit_refresh(edit->buf);
+		hexedit_set_cursor(edit->buf);
+		edit->input_win = derwin(edit->dia->sub_window, 2,
+					 ncols - 3, 0, 0);
+
+	} else {
+		val_rows = 1;
+		if (type == REG_MULTI_SZ) {
+			val_rows += 4;
+		}
+		edit->field[1] = new_field(val_rows, ncols - 4, 4, 1, 0, 0);
+		if (edit->field[1] == NULL) {
+			goto finish;
+		}
+		edit->input_win = derwin(edit->dia->sub_window, nlines - 3,
+					 ncols - 3, 0, 0);
 	}
-	edit->field[1] = new_field(val_rows, ncols - 4, 4, 1, 0, 0);
-	if (edit->field[1] == NULL) {
+	if (edit->input_win == NULL) {
 		goto finish;
 	}
+
 	set_field_back(edit->field[0], A_REVERSE);
-	set_field_back(edit->field[1], A_REVERSE);
 	field_opts_off(edit->field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
-	field_opts_off(edit->field[1], O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
-	if (type == REG_DWORD) {
-		set_field_type(edit->field[1], TYPE_REGEXP,
-			       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
+	if (edit->field[1]) {
+		set_field_back(edit->field[1], A_REVERSE);
+		field_opts_off(edit->field[1], O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
+		if (type == REG_DWORD) {
+			set_field_type(edit->field[1], TYPE_REGEXP,
+				       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
+		}
 	}
 
 	if (vitem) {
@@ -723,11 +800,6 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
 
-	edit->input_win = derwin(edit->dia->sub_window, nlines - 3, ncols - 3,
-				 0, 0);
-	if (edit->input_win == NULL) {
-		goto finish;
-	}
 
 	set_form_win(edit->input, edit->dia->sub_window);
 	set_form_sub(edit->input, edit->input_win);
@@ -751,8 +823,14 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 			continue;
 		}
 
-		if (edit->section == IN_NAME || edit->section == IN_DATA) {
+		if (edit->section == IN_NAME) {
 			handle_form_input(edit->input, c);
+		} else if (edit->section == IN_DATA) {
+			if (edit->buf) {
+				handle_hexedit_input(edit->buf, c);
+			} else {
+				handle_form_input(edit->input, c);
+			}
 		} else {
 			selection = handle_menu_input(edit->dia->choices, c);
 			if (selection == DIALOG_OK) {
@@ -764,6 +842,18 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 					selection = -1;
 				} else {
 					goto finish;
+				}
+			} else if (selection == DIALOG_RESIZE) {
+				char *n;
+				size_t newlen = 0;
+
+				dialog_input(edit, &n, "Resize buffer", below,
+					     "Enter new size");
+				if (n) {
+					newlen = strtoul(n, NULL, 10);
+					hexedit_resize_buffer(edit->buf, newlen);
+					hexedit_refresh(edit->buf);
+					talloc_free(n);
 				}
 			} else if (selection == DIALOG_CANCEL) {
 				rv = WERR_OK;
@@ -794,6 +884,7 @@ int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below)
 		"REG_SZ",
 		"REG_EXPAND_SZ",
 		"REG_MULTI_SZ",
+		"REG_BINARY",
 	};
 #define NTYPES (sizeof(reg_types) / sizeof(const char*))
 	ITEM **item;
