@@ -22,7 +22,7 @@
 #include "librpc/gen_ndr/ndr_wbint_c.h"
 
 struct winbindd_ping_dc_state {
-	uint8_t dummy;
+	NTSTATUS result;
 };
 
 static void winbindd_ping_dc_done(struct tevent_req *subreq);
@@ -78,6 +78,7 @@ static void winbindd_ping_dc_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 
 	status = dcerpc_wbint_PingDc_recv(subreq, state, &result);
+	state->result = result;
 	if (any_nt_status_not_ok(status, result, &status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -88,5 +89,12 @@ static void winbindd_ping_dc_done(struct tevent_req *subreq)
 NTSTATUS winbindd_ping_dc_recv(struct tevent_req *req,
 			       struct winbindd_response *presp)
 {
+	struct winbindd_ping_dc_state *state = tevent_req_data(
+		req, struct winbindd_ping_dc_state);
+
+	if (!NT_STATUS_IS_OK(state->result)) {
+		set_auth_errors(presp, state->result);
+	}
+
 	return tevent_req_simple_recv_ntstatus(req);
 }
