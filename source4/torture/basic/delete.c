@@ -362,9 +362,10 @@ static bool deltest6(struct torture_context *tctx, struct smbcli_state *cli1, st
 		"setting delete_on_close on file with no delete access succeeded - should fail !");
 
 	torture_assert_ntstatus_ok(tctx, 
-							   smbcli_close(cli1->tree, fnum1),
-		talloc_asprintf(tctx, "close - 2 failed (%s)", 
-		       smbcli_errstr(cli1->tree)));
+				   smbcli_close(cli1->tree, fnum1),
+				   talloc_asprintf(tctx,
+						   "close - 2 failed (%s)",
+						    smbcli_errstr(cli1->tree)));
 
 	return true;
 }
