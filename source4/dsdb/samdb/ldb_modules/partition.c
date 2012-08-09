@@ -549,12 +549,6 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	bool domain_scope = false, phantom_root = false;
 
-	/* see if we are still up-to-date */
-	ret = partition_reload_if_required(module, data, req);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
 	p = find_partition(data, NULL, req);
 	if (p != NULL) {
 		/* the caller specified what partition they want the
@@ -1129,11 +1123,6 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		 * this reload for every query of the next global seq
 		 * number 
 		 */
-		ret = partition_reload_if_required(module, data, req);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		
 		p = find_partition(data, NULL, req);
 		if (p != NULL) {
 			/* the caller specified what partition they want the
