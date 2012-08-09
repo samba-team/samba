@@ -434,11 +434,13 @@ static void s3_event_debug(void *context, enum tevent_debug_level level,
 		break;
 
 	};
-	if (vasprintf(&s, fmt, ap) == -1) {
-		return;
+	if (CHECK_DEBUGLVL(samba_level)) {
+		if (vasprintf(&s, fmt, ap) == -1) {
+			return;
+		}
+		DEBUG(samba_level, ("s3_event: %s", s));
+		free(s);
 	}
-	DEBUG(samba_level, ("s3_event: %s", s));
-	free(s);
 }
 
 struct tevent_context *s3_tevent_context_init(TALLOC_CTX *mem_ctx)
