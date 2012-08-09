@@ -41,7 +41,7 @@ struct hexedit {
 };
 
 struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
-			    int y, int x, size_t sz);
+			    int y, int x, const void *data, size_t sz);
 void hexedit_set_cursor(struct hexedit *buf);
 void hexedit_refresh(struct hexedit *buf);
 void hexedit_driver(struct hexedit *buf, int c);

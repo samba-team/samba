@@ -23,7 +23,7 @@ static int hexedit_free(struct hexedit *buf)
 }
 
 struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
-			    int y, int x, size_t sz)
+			    int y, int x, const void *data, size_t sz)
 {
 	struct hexedit *buf;
 
@@ -37,6 +37,10 @@ struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
 	buf->data = talloc_zero_array(buf, uint8_t, sz);
 	if (buf->data == NULL) {
 		goto fail;
+	}
+
+	if (data) {
+		memcpy(buf->data, data, sz);
 	}
 
 	buf->len = sz;
