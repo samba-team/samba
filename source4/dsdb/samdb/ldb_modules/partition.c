@@ -1035,7 +1035,7 @@ int partition_sequence_number_from_partitions(struct ldb_module *module,
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 
-	ret = partition_primary_sequence_number(module, module, &seq_number, NULL);
+	ret = partition_primary_sequence_number(module, data, &seq_number, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
