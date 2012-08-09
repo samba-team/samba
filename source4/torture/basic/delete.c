@@ -878,6 +878,8 @@ static bool deltest16(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open of %s succeeded (should fail)", 
 		       fname));
 
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
 	return correct;
 }
 
