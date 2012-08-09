@@ -234,6 +234,26 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 	return LDB_ERR_NO_SUCH_OBJECT;
 }
 
+struct ltdb_parse_data_unpack_ctx {
+	struct ldb_message *msg;
+	struct ldb_module *module;
+};
+
+static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
+				  void *private_data)
+{
+	struct ltdb_parse_data_unpack_ctx *ctx = private_data;
+
+	int ret = ltdb_unpack_data(ctx->module, &data, ctx->msg);
+	if (ret == -1) {
+		struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %*.*s\n",
+			  (int)key.dsize, (int)key.dsize, key.dptr);
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+	return ret;
+}
+
 /*
   search the database for a single simple dn, returning all attributes
   in a single message
@@ -246,9 +266,11 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
-	TDB_DATA tdb_key, tdb_data;
-
-	memset(msg, 0, sizeof(*msg));
+	TDB_DATA tdb_key;
+	struct ltdb_parse_data_unpack_ctx ctx = {
+		.msg = msg,
+		.module = module
+	};
 
 	/* form the key */
 	tdb_key = ltdb_key(module, dn);
@@ -256,24 +278,24 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tdb_data = tdb_fetch(ltdb->tdb, tdb_key);
-	talloc_free(tdb_key.dptr);
-	if (!tdb_data.dptr) {
-		return LDB_ERR_NO_SUCH_OBJECT;
-	}
-	
+	memset(msg, 0, sizeof(*msg));
+
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = ltdb_unpack_data(module, &tdb_data, msg);
-	free(tdb_data.dptr);
+	ret = tdb_parse_record(ltdb->tdb, tdb_key, 
+			       ltdb_parse_data_unpack, &ctx); 
+	talloc_free(tdb_key.dptr);
+	
 	if (ret == -1) {
-		struct ldb_context *ldb = ldb_module_get_ctx(module);
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
-			  ldb_dn_get_linearized(msg->dn));
-		return LDB_ERR_OPERATIONS_ERROR;		
+		if (tdb_error(ltdb->tdb) == TDB_ERR_NOEXIST) {
+			return LDB_ERR_NO_SUCH_OBJECT;
+		}
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-
+	
 	if (!msg->dn) {
 		msg->dn = ldb_dn_copy(msg, dn);
 	}
