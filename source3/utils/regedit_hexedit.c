@@ -71,8 +71,10 @@ void hexedit_set_cursor(struct hexedit *buf)
 	werase(buf->status_line);
 	wprintw(buf->status_line, "Len:%lu Off:%lu Val:0x%X", buf->len,
 		buf->cursor_offset, buf->data[buf->cursor_offset]);
-	wrefresh(buf->status_line);
 	wmove(buf->win, buf->cursor_y, buf->cursor_x);
+	wcursyncup(buf->win);
+	wsyncup(buf->win);
+	untouchwin(buf->win);
 }
 
 void hexedit_refresh(struct hexedit *buf)
