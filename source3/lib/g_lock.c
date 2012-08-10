@@ -227,6 +227,12 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+	if (!tevent_req_set_endtime(
+		    subreq, state->ev,
+		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
+	}
 	tevent_req_set_callback(subreq, g_lock_lock_retry, req);
 	return req;
 }
@@ -243,6 +249,18 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 
 	status = dbwrap_record_watch_recv(subreq, talloc_tos(), &rec);
 	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		rec = dbwrap_fetch_locked(
+			state->ctx->db, talloc_tos(),
+			string_term_tdb_data(state->name));
+		if (rec == NULL) {
+			status = map_nt_error_from_unix(errno);
+		} else {
+			status = NT_STATUS_OK;
+		}
+	}
+
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
@@ -261,6 +279,12 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 					  state->ctx->msg);
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	if (!tevent_req_set_endtime(
+		    subreq, state->ev,
+		    timeval_current_ofs(5 + sys_random() % 5, 0))) {
+		tevent_req_oom(req);
 		return;
 	}
 	tevent_req_set_callback(subreq, g_lock_lock_retry, req);
