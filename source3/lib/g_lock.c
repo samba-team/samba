@@ -259,6 +259,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	}
 	subreq = dbwrap_record_watch_send(state, state->ev, rec,
 					  state->ctx->msg);
+	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
