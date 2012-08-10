@@ -1101,7 +1101,7 @@ static char *lp_string(TALLOC_CTX *ctx, const char *s)
 #define FN_GLOBAL_STRING(fn_name,ptr) \
 char *lp_ ## fn_name(TALLOC_CTX *ctx) {return(lp_string((ctx), *(char **)(&Globals.ptr) ? *(char **)(&Globals.ptr) : ""));}
 #define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
- const char *lp_ ## fn_name(void) {return(*(const char **)(&Globals.ptr) ? *(const char **)(&Globals.ptr) : "");}
+ const char *lp_ ## fn_name(void) {return(*(const char * const *)(&Globals.ptr) ? *(const char * const *)(&Globals.ptr) : "");}
 #define FN_GLOBAL_LIST(fn_name,ptr) \
  const char **lp_ ## fn_name(void) {return(*(const char ***)(&Globals.ptr));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
