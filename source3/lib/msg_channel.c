@@ -196,7 +196,7 @@ static void msg_channel_init_got_msg(struct messaging_context *msg,
 		return;
 	}
 
-	im = tevent_create_immediate(s->ev);
+	im = tevent_create_immediate(s);
 	if (im == NULL) {
 		goto fail;
 	}
