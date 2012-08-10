@@ -101,6 +101,61 @@ static void print_heading(WINDOW *win, bool selected, const char *str)
 	wrefresh(win);
 }
 
+static void add_reg_key(struct regedit *regedit, struct tree_node *node,
+			bool subkey)
+{
+	char *name;
+	const char *msg;
+
+	if (!subkey && !node->parent) {
+		return;
+	}
+
+	msg = "Enter name of new key";
+	if (subkey) {
+		msg = "Enter name of new subkey";
+	}
+	dialog_input(regedit, &name, "New Key", regedit->main_window, msg);
+	if (name) {
+		WERROR rv;
+		struct registry_key *new_key;
+		struct tree_node *new_node;
+		struct tree_node *list;
+		struct tree_node *parent;
+
+		if (subkey) {
+			parent = node;
+			list = node->child_head;
+		} else {
+			parent = node->parent;
+			list = tree_node_first(node);
+			SMB_ASSERT(list != NULL);
+		}
+		rv = reg_key_add_name(regedit, parent->key, name,
+				      NULL, NULL, &new_key);
+		if (W_ERROR_IS_OK(rv)) {
+			/* The list of subkeys may not be present in
+			   cache yet, so if not, don't bother allocating
+			   a new node for the key. */
+			if (list) {
+				new_node = tree_node_new(parent, parent,
+							 name, new_key);
+				SMB_ASSERT(new_node);
+				tree_node_append_last(list, new_node);
+			}
+
+			list = tree_node_first(node);
+			tree_view_clear(regedit->keys);
+			tree_view_update(regedit->keys, list);
+		} else {
+			dialog_notice(regedit, DIA_ALERT, "New Key",
+				      regedit->main_window,
+				      "Failed to create key.");
+		}
+		talloc_free(name);
+	}
+}
+
 static void handle_tree_input(struct regedit *regedit, int c)
 {
 	struct tree_node *node;
@@ -138,40 +193,15 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		}
 		break;
 	case 'n':
-	case 'N': {
-		char *name;
-
+	case 'N':
 		node = item_userptr(current_item(regedit->keys->menu));
-		if (!node->parent) {
-			break;
-		}
-		dialog_input(regedit, &name, "New Key", regedit->main_window,
-			     "Enter name of new key");
-		if (name) {
-			WERROR rv;
-			struct registry_key *new_key;
-			struct tree_node *new_node;
-			struct tree_node *list = tree_node_first(node);
-
-			rv = reg_key_add_name(regedit, node->parent->key, name,
-					      NULL, NULL, &new_key);
-			if (W_ERROR_IS_OK(rv)) {
-				new_node = tree_node_new(node->parent,
-							 node->parent,
-							 name, new_key);
-				SMB_ASSERT(new_node);
-				tree_node_append_last(list, new_node);
-				tree_view_clear(regedit->keys);
-				tree_view_update(regedit->keys, list);
-			} else {
-				dialog_notice(regedit, DIA_ALERT, "New Key",
-					      regedit->main_window,
-					      "Failed to create key.");
-			}
-			talloc_free(name);
-		}
+		add_reg_key(regedit, node, false);
 		break;
-	}
+	case 's':
+	case 'S':
+		node = item_userptr(current_item(regedit->keys->menu));
+		add_reg_key(regedit, node, true);
+		break;
 	case 'd':
 	case 'D': {
 		int sel;
@@ -198,6 +228,8 @@ static void handle_tree_input(struct regedit *regedit, int c)
 				node = parent->child_head;
 				if (node == NULL) {
 					node = tree_node_first(parent);
+					tree_node_print_path(regedit->path_label,
+							     node);
 				}
 				tree_view_update(regedit->keys, node);
 				value_list_load(regedit->vl, node->key);
