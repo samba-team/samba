@@ -40,6 +40,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "lib/util/tevent_unix.h"
 
 #ifndef USE_DMAPI
 #error "This module requires DMAPI support!"
@@ -285,19 +286,127 @@ static bool tsmsm_aio_force(struct vfs_handle_struct *handle, struct files_struc
 	return false;
 }
 
-static ssize_t tsmsm_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, 
-				SMB_STRUCT_AIOCB *aiocb)
-{
-	ssize_t result;
+struct tsmsm_pread_state {
+	struct files_struct *fsp;
+	ssize_t ret;
+	int err;
+};
 
-	result = SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
-	if(result >= 0) {
-		notify_fname(handle->conn, NOTIFY_ACTION_MODIFIED,
+static void tsmsm_pread_done(struct tevent_req *subreq);
+
+static struct tevent_req *tsmsm_pread_send(struct vfs_handle_struct *handle,
+					   TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct files_struct *fsp,
+					   void *data, size_t n, off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct tsmsm_pread_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct tsmsm_pread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->fsp = fsp;
+	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
+					 n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tsmsm_pread_done, req);
+	return req;
+}
+
+static void tsmsm_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct tsmsm_pread_state *state = tevent_req_data(
+		req, struct tsmsm_pread_state);
+
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t tsmsm_pread_recv(struct tevent_req *req, int *err)
+{
+	struct tsmsm_pread_state *state = tevent_req_data(
+		req, struct tsmsm_pread_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	if (state->ret >= 0) {
+		struct files_struct *fsp = state->fsp;
+		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name->base_name);
 	}
+	*err = state->err;
+	return state->ret;
+}
 
-	return result;
+struct tsmsm_pwrite_state {
+	struct files_struct *fsp;
+	ssize_t ret;
+	int err;
+};
+
+static void tsmsm_pwrite_done(struct tevent_req *subreq);
+
+static struct tevent_req *tsmsm_pwrite_send(struct vfs_handle_struct *handle,
+					    TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct files_struct *fsp,
+					    const void *data, size_t n,
+					    off_t offset)
+{
+	struct tevent_req *req, *subreq;
+	struct tsmsm_pwrite_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct tsmsm_pwrite_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->fsp = fsp;
+	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
+					  n, offset);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tsmsm_pwrite_done, req);
+	return req;
+}
+
+static void tsmsm_pwrite_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct tsmsm_pwrite_state *state = tevent_req_data(
+		req, struct tsmsm_pwrite_state);
+
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static ssize_t tsmsm_pwrite_recv(struct tevent_req *req, int *err)
+{
+	struct tsmsm_pwrite_state *state = tevent_req_data(
+		req, struct tsmsm_pwrite_state);
+
+	if (tevent_req_is_unix_error(req, err)) {
+		return -1;
+	}
+	if (state->ret >= 0) {
+		struct files_struct *fsp = state->fsp;
+		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
+	}
+	*err = state->err;
+	return state->ret;
 }
 
 static ssize_t tsmsm_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, const DATA_BLOB *hdr,
@@ -397,9 +506,12 @@ static struct vfs_fn_pointers tsmsm_fns = {
 	.connect_fn = tsmsm_connect,
 	.fs_capabilities_fn = tsmsm_fs_capabilities,
 	.aio_force_fn = tsmsm_aio_force,
-	.aio_return_fn = tsmsm_aio_return,
 	.pread_fn = tsmsm_pread,
+	.pread_send_fn = tsmsm_pread_send,
+	.pread_recv_fn = tsmsm_pread_recv,
 	.pwrite_fn = tsmsm_pwrite,
+	.pwrite_send_fn = tsmsm_pwrite_send,
+	.pwrite_recv_fn = tsmsm_pwrite_recv,
 	.sendfile_fn = tsmsm_sendfile,
 	.is_offline_fn = tsmsm_is_offline,
 	.set_offline_fn = tsmsm_set_offline,
