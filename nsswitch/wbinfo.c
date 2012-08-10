@@ -831,16 +831,19 @@ static bool wbinfo_ping_dc(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcAuthErrorInfo *error = NULL;
+	char *dcname = NULL;
 
-	wbc_status = wbcPingDc(NULL, &error);
+	wbc_status = wbcPingDc2(NULL, &error, &dcname);
 
-	d_printf("checking the NETLOGON dc connection %s\n",
+	d_printf("checking the NETLOGON dc connection to \"%s\" %s\n",
+		 dcname ? dcname : "",
 		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
 		d_fprintf(stderr, "error code was %s (0x%x)\n",
 			  error->nt_string, error->nt_status);
 		wbcFreeMemory(error);
+		return false;
 	}
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "failed to call wbcPingDc: %s\n",
@@ -2371,7 +2374,6 @@ int main(int argc, char **argv, char **envp)
 			break;
 		case 'P':
 			if (!wbinfo_ping_dc()) {
-				d_fprintf(stderr, "Could not ping our DC\n");
 				goto done;
 			}
 			break;
