@@ -7,13 +7,13 @@
 #include "tap-interface.h"
 #include "lock-tracking.h"
 
-struct lock {
-	struct lock *next;
+struct testlock {
+	struct testlock *next;
 	unsigned int off;
 	unsigned int len;
 	int type;
 };
-static struct lock *locks;
+static struct testlock *testlocks;
 int locking_errors = 0;
 bool suppress_lockcheck = false;
 bool nonblocking_locks;
@@ -52,10 +52,10 @@ int fcntl_with_lockcheck(int fd, int cmd, ... /* arg */ )
 	}
 
 	if (fl->l_type == F_UNLCK) {
-		struct lock **l;
-		struct lock *old = NULL;
+		struct testlock **l;
+		struct testlock *old = NULL;
 
-		for (l = &locks; *l; l = &(*l)->next) {
+		for (l = &testlocks; *l; l = &(*l)->next) {
 			if ((*l)->off == fl->l_start
 			    && (*l)->len == fl->l_len) {
 				if (ret == 0) {
@@ -72,13 +72,13 @@ int fcntl_with_lockcheck(int fd, int cmd, ... /* arg */ )
 			locking_errors++;
 		}
 	} else {
-		struct lock *new, *i;
+		struct testlock *new, *i;
 		unsigned int fl_end = fl->l_start + fl->l_len;
 		if (fl->l_len == 0)
 			fl_end = (unsigned int)-1;
 
 		/* Check for overlaps: we shouldn't do this. */
-		for (i = locks; i; i = i->next) {
+		for (i = testlocks; i; i = i->next) {
 			unsigned int i_end = i->off + i->len;
 			if (i->len == 0)
 				i_end = (unsigned int)-1;
@@ -110,7 +110,7 @@ int fcntl_with_lockcheck(int fd, int cmd, ... /* arg */ )
 				goto done;
 			}
 			if (!suppress_lockcheck) {
-				diag("%s lock %u@%u overlaps %u@%u",
+				diag("%s testlock %u@%u overlaps %u@%u",
 				     fl->l_type == F_WRLCK ? "write" : "read",
 				     (int)fl->l_len, (int)fl->l_start,
 				     i->len, (int)i->off);
@@ -123,8 +123,8 @@ int fcntl_with_lockcheck(int fd, int cmd, ... /* arg */ )
 			new->off = fl->l_start;
 			new->len = fl->l_len;
 			new->type = fl->l_type;
-			new->next = locks;
-			locks = new;
+			new->next = testlocks;
+			testlocks = new;
 		}
 	}
 done:
@@ -136,10 +136,10 @@ done:
 unsigned int forget_locking(void)
 {
 	unsigned int num = 0;
-	while (locks) {
-		struct lock *next = locks->next;
-		free(locks);
-		locks = next;
+	while (testlocks) {
+		struct testlock *next = testlocks->next;
+		free(testlocks);
+		testlocks = next;
 		num++;
 	}
 	return num;
