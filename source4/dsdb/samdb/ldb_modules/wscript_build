@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('dsdb-module',
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c schema_util.c',
 	autoproto='util_proto.h',
-	deps='ldb ndr samdb-common security'
+	deps='ldb ndr samdb-common samba-security'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',

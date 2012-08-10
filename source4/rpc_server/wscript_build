@@ -105,7 +105,7 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	autoproto='lsa/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_lsa_init',
-	deps='samdb DCERPC_COMMON ndr-standard LIBCLI_AUTH NDR_DSSETUP com_err security UTIL_LSARPC'
+	deps='samdb DCERPC_COMMON ndr-standard LIBCLI_AUTH NDR_DSSETUP com_err samba-security UTIL_LSARPC'
 	)
 
 
@@ -131,7 +131,7 @@ bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_drsuapi_init',
-	deps='samdb DCERPC_COMMON NDR_DRSUAPI security'
+	deps='samdb DCERPC_COMMON NDR_DRSUAPI samba-security'
 	)
 
 

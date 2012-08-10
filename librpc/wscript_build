@@ -234,7 +234,7 @@ bld.SAMBA_SUBSYSTEM('NDR_LSA',
 
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
     source='gen_ndr/ndr_security.c ndr/ndr_sec_helper.c',
-    deps='ndr security',
+    deps='ndr samba-security',
     public_headers='gen_ndr/security.h',
     header_path='gen_ndr'
     )

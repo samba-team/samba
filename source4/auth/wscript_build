@@ -38,7 +38,7 @@ bld.SAMBA_SUBSYSTEM('auth_system_session',
 bld.SAMBA_SUBSYSTEM('auth4_sam',
 	source='sam.c',
 	autoproto='auth_sam.h',
-	public_deps='samdb security ldb tevent',
+	public_deps='samdb samba-security ldb tevent',
 	deps=''
 	)
 

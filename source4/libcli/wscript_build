@@ -13,7 +13,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
 	source='util/clilsa.c',
 	autoproto='util/clilsa.h',
 	public_deps='RPC_NDR_LSA dcerpc',
-	deps='security'
+	deps='samba-security'
 	)
 
 
@@ -76,7 +76,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB',
 	source='clireadwrite.c cliconnect.c clifile.c clilist.c clitrans2.c climessage.c clideltree.c',
 	public_headers='libcli.h:smb_cli.h',
-	public_deps='smbclient-raw errors LIBCLI_AUTH LIBCLI_SMB_COMPOSITE cli-nbt security LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
+	public_deps='smbclient-raw errors LIBCLI_AUTH LIBCLI_SMB_COMPOSITE cli-nbt samba-security LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
 	)
 
 
@@ -84,7 +84,7 @@ bld.SAMBA_LIBRARY('smbclient-raw',
 	source='raw/rawfile.c raw/smb_signing.c raw/clisocket.c raw/clitransport.c raw/clisession.c raw/clitree.c raw/clierror.c raw/rawrequest.c raw/rawreadwrite.c raw/rawsearch.c raw/rawsetfileinfo.c raw/raweas.c raw/rawtrans.c raw/clioplock.c raw/rawnegotiate.c raw/rawfsinfo.c raw/rawfileinfo.c raw/rawnotify.c raw/rawioctl.c raw/rawacl.c raw/rawdate.c raw/rawlpq.c raw/rawshadow.c',
 	autoproto='raw/raw_proto.h',
 	public_deps='samba_socket LIBPACKET LIBCRYPTO',
-	deps='cli_composite LIBCLI_RESOLVE security ndr samba-util errors charset talloc LIBCLI_SMB_COMPOSITE tevent cli_smb_common',
+	deps='cli_composite LIBCLI_RESOLVE samba-security ndr samba-util errors charset talloc LIBCLI_SMB_COMPOSITE tevent cli_smb_common',
 	public_headers='raw/request.h:smb_request.h raw/signing.h:smb_raw_signing.h raw/libcliraw.h:smb_cliraw.h raw/interfaces.h:smb_raw_interfaces.h raw/smb.h:smb_raw.h raw/trans2.h:smb_raw_trans2.h',
 	private_library=False,
 	pc_files='raw/smbclient-raw.pc',

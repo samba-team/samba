@@ -749,7 +749,7 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
 bld.SAMBA3_LIBRARY('smbregistry',
                    source=REG_BASE_SRC,
                    deps='''smbd_shim tdb-wrap3 NDR_SECURITY util_tdb talloc
-                   replace util_reg samba-util security
+                   replace util_reg samba-util samba-security
                    errors3 dbwrap samba3-util''',
                    allow_undefined_symbols=True,
                    private_library=True)
@@ -782,7 +782,7 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
                    source=LIB_UTIL_SRC,
-                   deps='ndr security NDR_SECURITY samba-util util_tdb ccan-hash',
+                   deps='ndr samba-security NDR_SECURITY samba-util util_tdb ccan-hash',
                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
