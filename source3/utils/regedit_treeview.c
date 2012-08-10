@@ -59,6 +59,11 @@ void tree_node_append(struct tree_node *left, struct tree_node *right)
 	right->previous = left;
 }
 
+void tree_node_append_last(struct tree_node *list, struct tree_node *node)
+{
+	tree_node_append(tree_node_last(list), node);
+}
+
 struct tree_node *tree_node_pop(struct tree_node **plist)
 {
 	struct tree_node *node;
@@ -78,7 +83,9 @@ struct tree_node *tree_node_pop(struct tree_node **plist)
 	if (node->next) {
 		node->next->previous = node->previous;
 	}
-
+	if (node->parent && node->parent->child_head == node) {
+		node->parent->child_head = node->next;
+	}
 	node->next = NULL;
 	node->previous = NULL;
 
@@ -94,6 +101,15 @@ struct tree_node *tree_node_first(struct tree_node *list)
 
 	while (list && list->previous) {
 		list = list->previous;
+	}
+
+	return list;
+}
+
+struct tree_node *tree_node_last(struct tree_node *list)
+{
+	while (list && list->next) {
+		list = list->next;
 	}
 
 	return list;
@@ -210,6 +226,14 @@ static void tree_view_free_current_items(ITEM **items)
 	talloc_free(items);
 }
 
+void tree_view_clear(struct tree_view *view)
+{
+	unpost_menu(view->menu);
+	set_menu_items(view->menu, view->empty);
+	tree_view_free_current_items(view->current_items);
+	view->current_items = NULL;
+}
+
 WERROR tree_view_update(struct tree_view *view, struct tree_node *list)
 {
 	ITEM **items;
@@ -270,6 +294,9 @@ static int tree_view_free(struct tree_view *view)
 		unpost_menu(view->menu);
 		free_menu(view->menu);
 	}
+	if (view->empty[0]) {
+		free_item(view->empty[0]);
+	}
 	tree_view_free_current_items(view->current_items);
 	tree_node_free_recursive(view->root);
 
@@ -281,7 +308,7 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 				int begin_y, int begin_x)
 {
 	struct tree_view *view;
-	static const char *dummy = "1234";
+	static const char *dummy = "(empty)";
 
 	view = talloc_zero(ctx, struct tree_view);
 	if (view == NULL) {
@@ -290,21 +317,18 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 
 	talloc_set_destructor(view, tree_view_free);
 
-	view->current_items = talloc_zero_array(ctx, ITEM *, 2);
-	if (view->current_items == NULL) {
+	view->empty[0] = new_item(dummy, dummy);
+	if (view->empty[0] == NULL) {
 		goto fail;
 	}
-
-	view->current_items[0] = new_item(dummy, dummy);
-	if (view->current_items[0] == NULL) {
-		goto fail;
-	}
-
 	view->window = orig;
 	view->sub_window = derwin(orig, nlines, ncols, begin_y, begin_x);
+	if (view->sub_window == NULL) {
+		goto fail;
+	}
 	view->root = root;
 
-	view->menu = new_menu(view->current_items);
+	view->menu = new_menu(view->empty);
 	if (view->menu == NULL) {
 		goto fail;
 	}

@@ -137,18 +137,76 @@ static void handle_tree_input(struct regedit *regedit, int c)
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
+	case 'n':
+	case 'N': {
+		char *name;
+
+		node = item_userptr(current_item(regedit->keys->menu));
+		if (!node->parent) {
+			break;
+		}
+		dialog_input(regedit, &name, "New Key", regedit->main_window,
+			     "Enter name of new key");
+		if (name) {
+			WERROR rv;
+			struct registry_key *new_key;
+			struct tree_node *new_node;
+			struct tree_node *list = tree_node_first(node);
+
+			rv = reg_key_add_name(regedit, node->parent->key, name,
+					      NULL, NULL, &new_key);
+			if (W_ERROR_IS_OK(rv)) {
+				new_node = tree_node_new(node->parent,
+							 node->parent,
+							 name, new_key);
+				SMB_ASSERT(new_node);
+				tree_node_append_last(list, new_node);
+				tree_view_clear(regedit->keys);
+				tree_view_update(regedit->keys, list);
+			} else {
+				dialog_notice(regedit, DIA_ALERT, "New Key",
+					      regedit->main_window,
+					      "Failed to create key.");
+			}
+			talloc_free(name);
+		}
+		break;
+	}
 	case 'd':
 	case 'D': {
 		int sel;
 
 		node = item_userptr(current_item(regedit->keys->menu));
+		if (!node->parent) {
+			break;
+		}
 		sel = dialog_notice(regedit, DIA_CONFIRM,
 				    "Delete Key",
 				     regedit->main_window,
 				     "Really delete key \"%s\"?",
 				     node->name);
-		mvwprintw(regedit->main_window, 1, 0, "Sel: %d", sel);
-		/* TODO */
+		if (sel == DIALOG_OK) {
+			WERROR rv;
+			struct tree_node *pop;
+			struct tree_node *parent = node->parent;
+
+			rv = reg_key_del(node, parent->key, node->name);
+			if (W_ERROR_IS_OK(rv)) {
+				tree_view_clear(regedit->keys);
+				pop = tree_node_pop(&node);
+				tree_node_free_recursive(pop);
+				node = parent->child_head;
+				if (node == NULL) {
+					node = tree_node_first(parent);
+				}
+				tree_view_update(regedit->keys, node);
+				value_list_load(regedit->vl, node->key);
+			} else {
+				dialog_notice(regedit, DIA_ALERT, "Delete Key",
+					      regedit->main_window,
+					      "Failed to delete key.");
+			}
+		}
 		break;
 	}
 	}
