@@ -2,11 +2,23 @@
 
 
 def build(bld):
+    bld.SAMBA_LIBRARY('smb_transport',
+        source='''
+            read_smb.c
+        ''',
+        deps='errors LIBASYNC_REQ',
+        public_deps='talloc tevent samba-util',
+        private_library=True,
+        public_headers='''
+            read_smb.h
+        ''',
+        )
+
     bld.SAMBA_LIBRARY('cli_smb_common',
 	source='''
 		smb_signing.c smb_seal.c
 		smb2_create_blob.c smb2_signing.c
-		util.c read_smb.c
+		util.c
 		smbXcli_base.c
 		smb1cli_trans.c
 		smb2cli_session.c
@@ -20,14 +32,14 @@ def build(bld):
 		smb2cli_query_directory.c
 		smb2cli_ioctl.c
 	''',
-	deps='LIBCRYPTO errors gensec krb5samba LIBASYNC_REQ',
+	deps='LIBCRYPTO errors gensec krb5samba smb_transport',
 	public_deps='talloc samba-util',
 	private_library=True,
 	public_headers='''
 		smb_common.h smb2_constants.h smb_constants.h
 		smb_signing.h smb_seal.h
 		smb2_create_blob.h smb2_signing.h
-		smb_util.h read_smb.h
+		smb_util.h
 		smb_unix_ext.h
 	''',
 	)
