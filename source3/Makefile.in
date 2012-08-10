@@ -3018,7 +3018,7 @@ bin/dbwrap_tool: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 install-dbwrap_tool:: bin/dbwrap_tool
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
 
-bin/dbwrap_torture: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/dbwrap_torture: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB) $(POPT_LIBS)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DBWRAP_TORTURE_OBJ)\
 		$(LDFLAGS) $(DYNEXP) $(LIBS) \
