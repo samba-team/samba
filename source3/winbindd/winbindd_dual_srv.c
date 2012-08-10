@@ -714,6 +714,11 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	b = netlogon_pipe->binding_handle;
 
 	fstr_sprintf(logon_server, "\\\\%s", domain->dcname);
+	*r->out.dcname = talloc_strdup(p->mem_ctx, domain->dcname);
+	if (r->out.dcname == NULL) {
+		DEBUG(2, ("Could not allocate memory\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * This provokes a WERR_NOT_SUPPORTED error message. This is

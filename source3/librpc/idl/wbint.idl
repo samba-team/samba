@@ -177,5 +177,6 @@ interface wbint
 	);
 
     NTSTATUS wbint_PingDc(
+	[out,string,charset(UTF8)] char **dcname
 	);
 }
