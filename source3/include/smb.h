@@ -154,12 +154,6 @@ struct sys_notify_context {
 /* Include VFS stuff */
 
 #include "smb_acls.h"
-/*
- * smbXsrv.h: currently needed for vfs.h, as long as
- * the smbXsrv structures are still referenced as a
- * backling from files_struct and connection_struct.
- */
-#include "librpc/gen_ndr/smbXsrv.h"
 #include "vfs.h"
 
 struct current_user {
