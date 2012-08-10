@@ -612,6 +612,16 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
  */
 wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error)
 {
+	return wbcPingDc2(domain, error, NULL);
+}
+
+/*
+ * Trigger a no-op NETLOGON call. Lightweight version of
+ * wbcCheckTrustCredentials, optionally return attempted DC
+ */
+wbcErr wbcPingDc2(const char *domain, struct wbcAuthErrorInfo **error,
+		  char **dcname)
+{
 	struct winbindd_request request;
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -633,6 +643,17 @@ wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error)
 	wbc_status = wbcRequestResponse(WINBINDD_PING_DC,
 					&request,
 					&response);
+
+	if (dcname && response.extra_data.data) {
+		size_t len;
+
+		len = response.length - sizeof(struct winbindd_response);
+		*dcname = wbcAllocateMemory(1, len, NULL);
+		BAIL_ON_PTR_ERROR(*dcname, wbc_status);
+
+		strlcpy(*dcname, response.extra_data.data, len);
+	}
+
 	if (response.data.auth.nt_status != 0) {
 		if (error) {
 			wbc_status = wbc_create_error_info(&response,

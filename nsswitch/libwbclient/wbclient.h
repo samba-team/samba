@@ -69,9 +69,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.7: Added wbcSidToStringBuf()
  *  0.8: Added wbcSidsToUnixIds() and wbcLookupSids()
  *  0.9: Added support for WBC_ID_TYPE_BOTH
+ *  0.10: Added wbcPingDc2()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 9
+#define WBCLIENT_MINOR_VERSION 10
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -1326,6 +1327,21 @@ wbcErr wbcChangeTrustCredentials(const char *domain,
  * @return #wbcErr
  **/
 wbcErr wbcPingDc(const char *domain, struct wbcAuthErrorInfo **error);
+
+/**
+ * @brief Trigger a no-op call through the NETLOGON pipe. Low-cost
+ *        version of wbcCheckTrustCredentials
+ *
+ * @param *domain      The name of the domain, only NULL for the default domain is
+ *                     supported yet. Other values than NULL will result in
+ *                     WBC_ERR_NOT_IMPLEMENTED.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ * @param dcname       DC that was attempted to ping
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcPingDc2(const char *domain, struct wbcAuthErrorInfo **error,
+		  char **dcname);
 
 /**********************************************************
  * Helper functions
