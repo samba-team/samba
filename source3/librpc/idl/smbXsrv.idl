@@ -4,42 +4,6 @@ import "server_id.idl";
 import "security.idl";
 import "auth.idl";
 
-/*
- * The main server code should just work with
- * 'struct smbXsrv_session' and never use
- * smbXsrv_session0, smbXsrv_sessionU
- * and smbXsrv_sessionB directly.
- *
- * If we need to change the smbXsrv_session,
- * we can just point it to smbXsrv_session1
- * and could implement transparent mapping.
- */
-cpp_quote("#define smbXsrv_session smbXsrv_session0")
-
-/*
- * The main server code should just work with
- * 'struct smbXsrv_tcon' and never use
- * smbXsrv_tcon0, smbXsrv_tconU
- * and smbXsrv_tconB directly.
- *
- * If we need to change the smbXsrv_tcon,
- * we can just point it to smbXsrv_tcon1
- * and could implement transparent mapping.
- */
-cpp_quote("#define smbXsrv_tcon smbXsrv_tcon0")
-
-/*
- * The main server code should just work with
- * 'struct smbXsrv_open' and never use
- * smbXsrv_open0, smbXsrv_openU
- * and smbXsrv_openB directly.
- *
- * If we need to change the smbXsrv_open,
- * we can just point it to smbXsrv_open1
- * and could implement transparent mapping.
- */
-cpp_quote("#define smbXsrv_open smbXsrv_open0")
-
 [
 	uuid("07408340-ae31-11e1-97dc-539f7fddc06f"),
 	version(0.0),
@@ -161,6 +125,18 @@ interface smbXsrv
 		[in] smbXsrv_session_globalB blob
 		);
 
+	/*
+	 * The main server code should just work with
+	 * 'struct smbXsrv_session' and never use
+	 * smbXsrv_session0, smbXsrv_sessionU
+	 * and smbXsrv_sessionB directly.
+	 *
+	 * If we need to change the smbXsrv_session,
+	 * we can just rename smbXsrv_session
+	 * to smbXsrv_session0 and add a new
+	 * smbXsrv_session for version 1
+	 * and could implement transparent mapping.
+	 */
 	typedef struct {
 		[ignore] smbXsrv_session_table		*table;
 		[ignore] db_record 			*db_rec;
@@ -172,10 +148,10 @@ interface smbXsrv
 		[ignore] gensec_security		*gensec;
 		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
-	} smbXsrv_session0;
+	} smbXsrv_session;
 
 	typedef union {
-		[case(0)] smbXsrv_session0		*info0;
+		[case(0)] smbXsrv_session		*info0;
 		[default] hyper				*dummy;
 	} smbXsrv_sessionU;
 
@@ -242,6 +218,18 @@ interface smbXsrv
 		[in] smbXsrv_tcon_globalB blob
 		);
 
+	/*
+	 * The main server code should just work with
+	 * 'struct smbXsrv_tcon' and never use
+	 * smbXsrv_tcon0, smbXsrv_tconU
+	 * and smbXsrv_tconB directly.
+	 *
+	 * If we need to change the smbXsrv_tcon,
+	 * we can just rename smbXsrv_tcon
+	 * to smbXsrv_tcon0 and add a new
+	 * smbXsrv_tcon for version 1
+	 * and could implement transparent mapping.
+	 */
 	typedef struct {
 		[ignore] smbXsrv_tcon_table		*table;
 		[ignore] db_record 			*db_rec;
@@ -250,10 +238,10 @@ interface smbXsrv
 		NTSTATUS				status;
 		NTTIME					idle_time;
 		[ignore] connection_struct		*compat;
-	} smbXsrv_tcon0;
+	} smbXsrv_tcon;
 
 	typedef union {
-		[case(0)] smbXsrv_tcon0			*info0;
+		[case(0)] smbXsrv_tcon			*info0;
 		[default] hyper				*dummy;
 	} smbXsrv_tconU;
 
@@ -301,6 +289,18 @@ interface smbXsrv
 		[in] smbXsrv_open_globalB blob
 		);
 
+	/*
+	 * The main server code should just work with
+	 * 'struct smbXsrv_open' and never use
+	 * smbXsrv_open0, smbXsrv_openU
+	 * and smbXsrv_openB directly.
+	 *
+	 * If we need to change the smbXsrv_open,
+	 * we can just rename smbXsrv_open
+	 * to smbXsrv_open0 and add a new
+	 * smbXsrv_open for version 1
+	 * and could implement transparent mapping.
+	 */
 	typedef struct {
 		[ignore] smbXsrv_open_table		*table;
 		[ignore] db_record 			*db_rec;
@@ -309,10 +309,10 @@ interface smbXsrv
 		NTSTATUS				status;
 		NTTIME					idle_time;
 		[ignore] files_struct			*compat;
-	} smbXsrv_open0;
+	} smbXsrv_open;
 
 	typedef union {
-		[case(0)] smbXsrv_open0			*info0;
+		[case(0)] smbXsrv_open			*info0;
 		[default] hyper				*dummy;
 	} smbXsrv_openU;
 
