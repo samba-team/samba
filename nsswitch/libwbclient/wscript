@@ -27,6 +27,7 @@ def build(bld):
 #
 #    Logs.info("\tSelected embedded libwbclient build")
 
+    abi_match = 'wbc*'
     bld.SAMBA_LIBRARY('wbclient',
                       source='''
                              wbc_guid.c
@@ -39,4 +40,6 @@ def build(bld):
                       deps='winbind-client',
                       pc_files='wbclient.pc',
                       public_headers='wbclient.h',
+                      abi_directory='ABI',
+                      abi_match=abi_match,
                       vnum=VERSION)
