@@ -44,7 +44,7 @@ static void msg_channel_init_got_msg(struct messaging_context *msg,
 static void msg_channel_trigger(struct tevent_context *ev,
 				struct tevent_immediate *im,
 				void *priv);
-static int msg_channel_init_destructor(struct msg_channel *s);
+static int msg_channel_destructor(struct msg_channel *s);
 
 struct tevent_req *msg_channel_init_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
@@ -105,11 +105,11 @@ static void msg_channel_init_got_ctdb(struct tevent_req *subreq)
 		tevent_req_error(req, map_errno_from_nt_status(status));
 		return;
 	}
-	talloc_set_destructor(s, msg_channel_init_destructor);
+	talloc_set_destructor(s, msg_channel_destructor);
 	tevent_req_done(req);
 }
 
-static int msg_channel_init_destructor(struct msg_channel *s)
+static int msg_channel_destructor(struct msg_channel *s)
 {
 	messaging_deregister(s->msg, s->msg_type, s);
 	return 0;
