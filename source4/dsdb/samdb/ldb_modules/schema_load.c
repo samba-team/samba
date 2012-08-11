@@ -188,30 +188,6 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 		return schema;
 	}
 
-	res = talloc_zero(schema, struct ldb_result);
-	if (res == NULL) {
-		return NULL;
-	}
-	tseq = talloc_zero(res, struct ldb_seqnum_request);
-	if (tseq == NULL) {
-		talloc_free(res);
-		return NULL;
-	}
-	tseq->type = LDB_SEQ_HIGHEST_SEQ;
-	
-	ret = ldb_build_extended_req(&treq, ldb_module_get_ctx(module), res,
-				     LDB_EXTENDED_SEQUENCE_NUMBER,
-				     tseq,
-				     NULL,
-				     res,
-				     ldb_extended_default_callback,
-				     NULL);
-	LDB_REQ_SET_LOCATION(treq);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
-		return NULL;
-	}
-
 	/*
 	 * We update right now the last refresh timestamp so that if
 	 * the schema partition hasn't change we don't keep on retrying.
@@ -230,42 +206,6 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	}
 	schema->last_refresh = ts;
 
-	ctrl = talloc(treq, struct dsdb_control_current_partition);
-	if (!ctrl) {
-		talloc_free(res);
-		return NULL;
-	}
-	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
-	ctrl->dn = schema->base_dn;
-	
-	ret = ldb_request_add_control(treq,
-				      DSDB_CONTROL_CURRENT_PARTITION_OID,
-				      false, ctrl);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
-		return NULL;
-	}
-	
-	ret = ldb_next_request(module, treq);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
-		return NULL;
-	}
-	ret = ldb_wait(treq->handle, LDB_WAIT_ALL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(res);
-		return NULL;
-	}
-	tseqr = talloc_get_type(res->extended->data,
-				struct ldb_seqnum_result);
-	if (tseqr->seq_num == schema->reload_seq_number) {
-		talloc_free(res);
-		return schema;
-	}
-
-	schema->reload_seq_number = tseqr->seq_num;
-	talloc_free(res);
-		
 	ret = dsdb_module_load_partition_usn(module, schema->base_dn, &current_usn, NULL, NULL);
 	if (ret != LDB_SUCCESS || current_usn == schema->loaded_usn) {
 		return schema;

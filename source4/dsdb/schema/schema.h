@@ -252,12 +252,6 @@ struct dsdb_schema {
 	 * requested to reload the schema (either due through DRS or via the schemaUpdateNow).
 	 */
 	uint64_t metadata_usn;
-	/* an 'opaque' sequence number that corresponds to the highest USN of the schema
-	 * partition it used in the reload to check if a reload
-	 * should really be performed. As the schema is periodically reloaded this
-	 * is still needed in order to avoid costly complete schema reload.
-	 */
-	uint64_t reload_seq_number;
 
 	/* Should the syntax handlers in this case handle all incoming OIDs automatically, assigning them as an OID if no text name is known? */
 	bool relax_OID_conversions;
