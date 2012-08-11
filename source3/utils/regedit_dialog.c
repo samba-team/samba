@@ -138,10 +138,10 @@ static void center_dialog_above_window(WINDOW *below, int *nlines, int *ncols,
 	}
 
 	if (*nlines < centery) {
-		*y = centery - *nlines;
+		*y = centery - *nlines / 2;
 	}
 	if (*ncols < centerx) {
-		*x = centerx - *ncols;
+		*x = centerx - *ncols / 2;
 	}
 }
 

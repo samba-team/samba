@@ -297,6 +297,12 @@ static int tree_view_free(struct tree_view *view)
 	if (view->empty[0]) {
 		free_item(view->empty[0]);
 	}
+	if (view->panel) {
+		del_panel(view->panel);
+	}
+	if (view->window) {
+		delwin(view->window);
+	}
 	tree_view_free_current_items(view->current_items);
 	tree_node_free_recursive(view->root);
 
@@ -304,8 +310,8 @@ static int tree_view_free(struct tree_view *view)
 }
 
 struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
-				WINDOW *orig, int nlines, int ncols,
-				int begin_y, int begin_x)
+				int nlines, int ncols, int begin_y,
+				int begin_x)
 {
 	struct tree_view *view;
 	static const char *dummy = "(empty)";
@@ -321,9 +327,12 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 	if (view->empty[0] == NULL) {
 		goto fail;
 	}
-	view->window = orig;
-	view->sub_window = derwin(orig, nlines, ncols, begin_y, begin_x);
-	if (view->sub_window == NULL) {
+	view->window = newwin(nlines, ncols, begin_y, begin_x);
+	if (view->window == NULL) {
+		goto fail;
+	}
+	view->panel = new_panel(view->window);
+	if (view->panel == NULL) {
 		goto fail;
 	}
 	view->root = root;
@@ -334,7 +343,6 @@ struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 	}
 	set_menu_format(view->menu, nlines, 1);
 	set_menu_win(view->menu, view->window);
-	set_menu_sub(view->menu, view->sub_window);
 	menu_opts_off(view->menu, O_SHOWDESC);
 	set_menu_mark(view->menu, "* ");
 
@@ -346,6 +354,21 @@ fail:
 	talloc_free(view);
 
 	return NULL;
+}
+
+void tree_view_resize(struct tree_view *view, int nlines, int ncols,
+			     int begin_y, int begin_x)
+{
+	WINDOW *nwin;
+
+	unpost_menu(view->menu);
+	nwin = newwin(nlines, ncols, begin_y, begin_x);
+	replace_panel(view->panel, nwin);
+	delwin(view->window);
+	view->window = nwin;
+	set_menu_format(view->menu, nlines, 1);
+	set_menu_win(view->menu, view->window);
+	post_menu(view->menu);
 }
 
 static void print_path_recursive(WINDOW *label, struct tree_node *node)

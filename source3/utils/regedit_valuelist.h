@@ -23,6 +23,7 @@
 #include "includes.h"
 #include <ncurses.h>
 #include <menu.h>
+#include <panel.h>
 
 struct registry_key;
 
@@ -35,15 +36,17 @@ struct value_item {
 
 struct value_list {
 	WINDOW *window;
-	WINDOW *sub_window;
+	PANEL *panel;
 	MENU *menu;
 	ITEM **items;
 	ITEM **empty;
 }
 ;
-struct value_list *value_list_new(TALLOC_CTX *ctx, WINDOW *orig, int nlines,
-				  int ncols, int begin_y, int begin_x);
+struct value_list *value_list_new(TALLOC_CTX *ctx, int nlines, int ncols,
+				  int begin_y, int begin_x);
 void value_list_show(struct value_list *vl);
 WERROR value_list_load(struct value_list *vl, struct registry_key *key);
+void value_list_resize(struct value_list *vl, int nlines, int ncols,
+		       int begin_y, int begin_x);
 
 #endif

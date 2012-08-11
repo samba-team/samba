@@ -29,12 +29,19 @@
 #include <menu.h>
 #include <panel.h>
 
+#define KEY_START_X 	0
+#define KEY_START_Y 	3
+#define KEY_WIDTH 	(COLS / 4)
+#define KEY_HEIGHT	(LINES - KEY_START_Y)
+#define VAL_START_X 	KEY_WIDTH
+#define VAL_START_Y 	3
+#define VAL_WIDTH 	(COLS - KEY_WIDTH)
+#define VAL_HEIGHT	(LINES - VAL_START_Y)
+#define HEADING_START_Y	KEY_START_Y - 1
+
 struct regedit {
 	WINDOW *main_window;
-	PANEL *main_panel;
 	WINDOW *path_label;
-	WINDOW *key_label;
-	WINDOW *value_label;
 	struct value_list *vl;
 	struct tree_view *keys;
 	bool tree_input;
@@ -87,18 +94,26 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 	return root;
 }
 
-static void print_heading(WINDOW *win, bool selected, const char *str)
+static void print_heading(struct regedit *regedit)
 {
-	if (selected) {
-		wattron(win, A_REVERSE);
+	move(HEADING_START_Y, 0);
+	clrtoeol();
+
+	if (regedit->tree_input) {
+		attron(A_REVERSE);
 	} else {
-		wattroff(win, A_REVERSE);
+		attroff(A_REVERSE);
 	}
-	wmove(win, 0, 0);
-	wclrtoeol(win);
-	waddstr(win, str);
-	wnoutrefresh(win);
-	wrefresh(win);
+	mvprintw(HEADING_START_Y, KEY_START_X, "Key");
+	attroff(A_REVERSE);
+
+	if (!regedit->tree_input) {
+		attron(A_REVERSE);
+	} else {
+		attroff(A_REVERSE);
+	}
+	mvprintw(HEADING_START_Y, VAL_START_X, "Value");
+	attroff(A_REVERSE);
 }
 
 static void add_reg_key(struct regedit *regedit, struct tree_node *node,
@@ -303,8 +318,6 @@ static void handle_value_input(struct regedit *regedit, int c)
 					      vitem->value_name);
 				value_list_load(regedit->vl, node->key);
 			}
-
-
 		}
 		break;
 	}
@@ -317,10 +330,7 @@ static void handle_main_input(struct regedit *regedit, int c)
 	switch (c) {
 	case '\t':
 		regedit->tree_input = !regedit->tree_input;
-		print_heading(regedit->key_label, regedit->tree_input == true,
-			      "Keys");
-		print_heading(regedit->value_label, regedit->tree_input == false,
-			      "Values");
+		print_heading(regedit);
 		break;
 	default:
 		if (regedit->tree_input) {
@@ -343,47 +353,44 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 	start_color();
 	cbreak();
 	noecho();
-	keypad(stdscr, TRUE);
 
 	regedit = talloc_zero(mem_ctx, struct regedit);
 	SMB_ASSERT(regedit != NULL);
 
-	regedit->main_window = newwin(25, 80, 0, 0);
-	SMB_ASSERT(regedit->main_window != NULL);
-
+	regedit->main_window = stdscr;
 	keypad(regedit->main_window, TRUE);
 
 	mvwprintw(regedit->main_window, 0, 0, "Path: ");
-	regedit->path_label = derwin(regedit->main_window, 1, 65, 0, 6);
+	regedit->path_label = derwin(regedit->main_window, 1, COLS - 6, 0, 6);
 	wprintw(regedit->path_label, "/");
 
 	root = load_hives(regedit, ctx);
 	SMB_ASSERT(root != NULL);
 
-	regedit->key_label = derwin(regedit->main_window, 1, 10, 2, 0);
-	regedit->value_label = derwin(regedit->main_window, 1, 10, 2, 25);
-
-	print_heading(regedit->key_label, true, "Keys");
-	regedit->keys = tree_view_new(regedit, root, regedit->main_window,
-				      15, 24, 3, 0);
+	regedit->keys = tree_view_new(regedit, root, KEY_HEIGHT, KEY_WIDTH,
+				      KEY_START_Y, KEY_START_X);
 	SMB_ASSERT(regedit->keys != NULL);
 
-	print_heading(regedit->value_label, false, "Values");
-	regedit->vl = value_list_new(regedit, regedit->main_window,
-				     15, 40, 3, 25);
+	regedit->vl = value_list_new(regedit, VAL_HEIGHT, VAL_WIDTH,
+				     VAL_START_Y, VAL_START_X);
 	SMB_ASSERT(regedit->vl != NULL);
 
 	regedit->tree_input = true;
+	print_heading(regedit);
 
 	tree_view_show(regedit->keys);
 	value_list_show(regedit->vl);
 
-	regedit->main_panel = new_panel(regedit->main_window);
-	SMB_ASSERT(regedit->main_panel != NULL);
-
 	update_panels();
 	doupdate();
 	while ((c = wgetch(regedit->main_window)) != 'q') {
+		if (c == KEY_RESIZE) {
+			tree_view_resize(regedit->keys, KEY_HEIGHT, KEY_WIDTH,
+					 KEY_START_Y, KEY_START_X);
+			value_list_resize(regedit->vl, VAL_HEIGHT, VAL_WIDTH,
+					  VAL_START_Y, VAL_START_X);
+			print_heading(regedit);
+		}
 		handle_main_input(regedit, c);
 		update_panels();
 		doupdate();

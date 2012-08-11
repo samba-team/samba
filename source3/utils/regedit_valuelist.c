@@ -49,13 +49,19 @@ static int value_list_free(struct value_list *vl)
 	if (vl->empty && vl->empty[0]) {
 		free_item(vl->empty[0]);
 	}
+	if (vl->panel) {
+		del_panel(vl->panel);
+	}
+	if (vl->window) {
+		delwin(vl->window);
+	}
 	value_list_free_items(vl->items);
 
 	return 0;
 }
 
-struct value_list *value_list_new(TALLOC_CTX *ctx, WINDOW *orig, int nlines,
-				  int ncols, int begin_y, int begin_x)
+struct value_list *value_list_new(TALLOC_CTX *ctx, int nlines, int ncols,
+				  int begin_y, int begin_x)
 {
 	static const char *empty = "(no values)";
 	static const char *empty_desc = "";
@@ -77,8 +83,14 @@ struct value_list *value_list_new(TALLOC_CTX *ctx, WINDOW *orig, int nlines,
 		goto fail;
 	}
 
-	vl->window = orig;
-	vl->sub_window = derwin(orig, nlines, ncols, begin_y, begin_x);
+	vl->window = newwin(nlines, ncols, begin_y, begin_x);
+	if (vl->window == NULL) {
+		goto fail;
+	}
+	vl->panel = new_panel(vl->window);
+	if (vl->panel == NULL) {
+		goto fail;
+	}
 
 	vl->menu = new_menu(vl->empty);
 	if (vl->menu == NULL) {
@@ -87,7 +99,7 @@ struct value_list *value_list_new(TALLOC_CTX *ctx, WINDOW *orig, int nlines,
 
 	set_menu_format(vl->menu, nlines, 1);
 	set_menu_win(vl->menu, vl->window);
-	set_menu_sub(vl->menu, vl->sub_window);
+
 	menu_opts_on(vl->menu, O_SHOWDESC);
 	set_menu_mark(vl->menu, "* ");
 
@@ -97,6 +109,21 @@ fail:
 	talloc_free(vl);
 
 	return NULL;
+}
+
+void value_list_resize(struct value_list *vl, int nlines, int ncols,
+		       int begin_y, int begin_x)
+{
+	WINDOW *nwin;
+
+	unpost_menu(vl->menu);
+	nwin = newwin(nlines, ncols, begin_y, begin_x);
+	replace_panel(vl->panel, nwin);
+	delwin(vl->window);
+	vl->window = nwin;
+	set_menu_format(vl->menu, nlines, 1);
+	set_menu_win(vl->menu, vl->window);
+	post_menu(vl->menu);
 }
 
 static uint32_t get_num_values(TALLOC_CTX *ctx, const struct registry_key *key)
