@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "regedit.h"
 #include "regedit_dialog.h"
 #include "regedit_valuelist.h"
 #include "regedit_hexedit.h"
@@ -117,42 +118,81 @@ fail:
 
 }
 
-static void center_dialog_above_window(WINDOW *below, int *nlines, int *ncols,
+static void center_dialog_above_window(int *nlines, int *ncols,
 				       int *y, int *x)
 {
-	int maxy, maxx;
 	int centery, centerx;
 
-	getmaxyx(below, maxy, maxx);
-
-	centery = maxy / 2;
-	centerx = maxx / 2;
+	centery = LINES / 2;
+	centerx = COLS / 2;
 	*y = 0;
 	*x = 0;
 
-	if (*nlines > maxy) {
-		*nlines = maxy;
+	if (*nlines > LINES) {
+		*nlines = LINES;
 	}
-	if (*ncols > maxx) {
-		*ncols = maxx;
+	if (*ncols > COLS) {
+		*ncols = COLS;
 	}
 
-	if (*nlines < centery) {
+	if (*nlines/2 < centery) {
 		*y = centery - *nlines / 2;
 	}
-	if (*ncols < centerx) {
+	if (*ncols/2 < centerx) {
 		*x = centerx - *ncols / 2;
 	}
 }
 
-struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
-				 int ncols, WINDOW *below)
+static int dialog_getch(struct dialog *dia)
 {
+	int c;
+
+	c = regedit_getch();
+
+	if (c == KEY_RESIZE) {
+		int nlines, ncols, y, x;
+
+		getmaxyx(dia->window, nlines, ncols);
+		getbegyx(dia->window, y, x);
+		if (dia->centered) {
+			center_dialog_above_window(&nlines, &ncols, &y, &x);
+		} else {
+			if (nlines + y > LINES) {
+				if (nlines > LINES) {
+					y = 0;
+				} else {
+					y = LINES - nlines;
+				}
+			}
+			if (ncols + x > COLS) {
+				if (ncols > COLS) {
+					x = 0;
+				} else {
+					x = COLS - ncols;
+				}
+			}
+		}
+		move_panel(dia->panel, y, x);
+		doupdate();
+	}
+
+	return c;
+}
+
+struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
+				 int ncols)
+{
+	struct dialog *dia;
 	int y, x;
 
-	center_dialog_above_window(below, &nlines, &ncols, &y, &x);
+	center_dialog_above_window(&nlines, &ncols, &y, &x);
 
-	return dialog_new(ctx, title, nlines, ncols, y, x);
+	dia = dialog_new(ctx, title, nlines, ncols, y, x);
+	if (dia) {
+		dia->centered = true;
+	}
+
+	return dia;
 }
 
 struct dialog *dialog_choice_new(TALLOC_CTX *ctx, const char *title,
@@ -215,13 +255,18 @@ fail:
 
 struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 					const char **choices, int nlines,
-					int ncols, WINDOW *below)
+					int ncols)
 {
 	int y, x;
+	struct dialog *dia;
+	center_dialog_above_window(&nlines, &ncols, &y, &x);
 
-	center_dialog_above_window(below, &nlines, &ncols, &y, &x);
+	dia = dialog_choice_new(ctx, title, choices, nlines, ncols, y, x);
+	if (dia) {
+		dia->centered = true;
+	}
 
-	return dialog_choice_new(ctx, title, choices, nlines, ncols, y, x);
+	return dia;
 }
 
 static int handle_menu_input(MENU *menu, int c)
@@ -277,12 +322,11 @@ static int modal_loop(struct dialog *dia)
 	int c;
 	int selection = -1;
 
-	keypad(dia->window, true);
 	update_panels();
 	doupdate();
 
 	while (selection == -1) {
-		c = wgetch(dia->window);
+		c = dialog_getch(dia);
 		selection = handle_menu_input(dia->choices, c);
 		update_panels();
 		doupdate();
@@ -294,8 +338,8 @@ static int modal_loop(struct dialog *dia)
 }
 
 static struct dialog *dialog_msg_new(TALLOC_CTX *ctx, const char *title,
-				     const char **choices, WINDOW *below,
-				     int nlines, const char *msg, va_list ap)
+				     const char **choices, int nlines,
+				     const char *msg, va_list ap)
 {
 	struct dialog *dia;
 	char *str;
@@ -311,7 +355,7 @@ static struct dialog *dialog_msg_new(TALLOC_CTX *ctx, const char *title,
 	if (width < MIN_WIDTH) {
 		width = MIN_WIDTH;
 	}
-	dia = dialog_choice_center_new(ctx, title, choices, nlines, width, below);
+	dia = dialog_choice_center_new(ctx, title, choices, nlines, width);
 	if (dia == NULL) {
 		return NULL;
 	}
@@ -323,7 +367,7 @@ static struct dialog *dialog_msg_new(TALLOC_CTX *ctx, const char *title,
 }
 
 int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
-		 WINDOW *below, const char *msg, ...)
+		 const char *msg, ...)
 {
 	va_list ap;
 	struct dialog *dia;
@@ -340,7 +384,7 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 	bool input_section = true;
 
 	va_start(ap, msg);
-	dia = dialog_msg_new(ctx, title, choices, below, 7, msg, ap);
+	dia = dialog_msg_new(ctx, title, choices, 7, msg, ap);
 	va_end(ap);
 	if (dia == NULL) {
 		return -1;
@@ -367,12 +411,11 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 	post_form(input);
 	*output = NULL;
 
-	keypad(dia->window, true);
 	update_panels();
 	doupdate();
 
 	while (rv == -1) {
-		int c = wgetch(dia->window);
+		int c = dialog_getch(dia);
 
 		if (c == '\t' || c == KEY_BTAB) {
 			if (input_section) {
@@ -384,10 +427,7 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 				input_section = true;
 				set_current_field(input, field[0]);
 			}
-			continue;
-		}
-
-		if (input_section) {
+		} else if (input_section) {
 			handle_form_input(input, c);
 		} else {
 			rv = handle_menu_input(dia->choices, c);
@@ -396,6 +436,8 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 				*output = string_trim(ctx, buf);
 			}
 		}
+		update_panels();
+		doupdate();
 	}
 
 finish:
@@ -415,8 +457,7 @@ finish:
 }
 
 int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
-		  const char *title, WINDOW *below,
-		  const char *msg, ...)
+		  const char *title, const char *msg, ...)
 {
 	va_list ap;
 	struct dialog *dia;
@@ -431,7 +472,7 @@ int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
 	}
 
 	va_start(ap, msg);
-	dia = dialog_msg_new(ctx, title, choices, below, 5, msg, ap);
+	dia = dialog_msg_new(ctx, title, choices, 5, msg, ap);
 	va_end(ap);
 	if (dia == NULL) {
 		return -1;
@@ -639,6 +680,8 @@ static void section_down(struct edit_dialog *edit)
 		set_current_field(edit->input, edit->field[0]);
 		break;
 	}
+	update_panels();
+	doupdate();
 }
 
 static void section_up(struct edit_dialog *edit)
@@ -666,6 +709,8 @@ static void section_up(struct edit_dialog *edit)
 		}
 		break;
 	}
+	update_panels();
+	doupdate();
 }
 
 static void handle_hexedit_input(struct hexedit *buf, int c)
@@ -692,7 +737,7 @@ static void handle_hexedit_input(struct hexedit *buf, int c)
 }
 
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
-		      const struct value_item *vitem, WINDOW *below)
+		      const struct value_item *vitem)
 {
 	struct edit_dialog *edit;
 	const char *choices[] = {
@@ -730,7 +775,7 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 	ncols = 50;
 	edit->dia = dialog_choice_center_new(edit, title, choices, nlines,
-					     ncols, below);
+					     ncols);
 	talloc_free(title);
 	if (edit->dia == NULL) {
 		goto finish;
@@ -807,14 +852,13 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	mvwprintw(edit->dia->sub_window, 0, 0, "Name");
 	mvwprintw(edit->dia->sub_window, 3, 0, "Data");
 
-	keypad(edit->dia->window, true);
 	update_panels();
 	doupdate();
 
 	edit->section = IN_NAME;
 
 	while (1) {
-		int c = wgetch(edit->dia->window);
+		int c = dialog_getch(edit->dia);
 		if (c == '\t') {
 			section_down(edit);
 			continue;
@@ -837,7 +881,7 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 				rv = set_value(edit, key, type, vitem == NULL);
 				if (W_ERROR_EQUAL(rv, WERR_FILE_EXISTS)) {
 					dialog_notice(edit, DIA_ALERT,
-						      "Value exists", below,
+						      "Value exists",
 						      "Value name already exists.");
 					selection = -1;
 				} else {
@@ -847,7 +891,7 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 				char *n;
 				size_t newlen = 0;
 
-				dialog_input(edit, &n, "Resize buffer", below,
+				dialog_input(edit, &n, "Resize buffer",
 					     "Enter new size");
 				if (n) {
 					newlen = strtoul(n, NULL, 10);
@@ -871,7 +915,7 @@ finish:
 	return rv;
 }
 
-int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below)
+int dialog_select_type(TALLOC_CTX *ctx, int *type)
 {
 	struct dialog *dia;
 	const char *choices[] = {
@@ -893,8 +937,7 @@ int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below)
 	int sel = -1;
 	size_t i;
 
-	dia = dialog_choice_center_new(ctx, "New Value", choices, 10, 20,
-				       below);
+	dia = dialog_choice_center_new(ctx, "New Value", choices, 10, 20);
 	if (dia == NULL) {
 		return -1;
 	}
@@ -932,13 +975,12 @@ int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below)
 	set_menu_mark(list, "* ");
 	post_menu(list);
 
-	keypad(dia->window, true);
 	update_panels();
 	doupdate();
 
 	while (sel == -1) {
 		ITEM *it;
-		int c = wgetch(dia->window);
+		int c = dialog_getch(dia);
 
 		switch (c) {
 		case KEY_UP:
@@ -961,6 +1003,9 @@ int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below)
 			sel = (int)(uintptr_t)item_userptr(it);
 			break;
 		}
+
+		update_panels();
+		doupdate();
 	}
 
 finish:

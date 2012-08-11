@@ -56,4 +56,6 @@ WERROR reg_init_wrap(void);
 
 WERROR reg_open_samba3(TALLOC_CTX *mem_ctx, struct registry_context **ctx);
 
+int regedit_getch(void);
+
 #endif

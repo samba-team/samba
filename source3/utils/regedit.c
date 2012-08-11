@@ -47,6 +47,8 @@ struct regedit {
 	bool tree_input;
 };
 
+static struct regedit *regedit_main = NULL;
+
 /* load all available hives */
 static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 				    struct registry_context *ctx)
@@ -130,7 +132,7 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 	if (subkey) {
 		msg = "Enter name of new subkey";
 	}
-	dialog_input(regedit, &name, "New Key", regedit->main_window, msg);
+	dialog_input(regedit, &name, "New Key", msg);
 	if (name) {
 		WERROR rv;
 		struct registry_key *new_key;
@@ -164,7 +166,6 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			tree_view_update(regedit->keys, list);
 		} else {
 			dialog_notice(regedit, DIA_ALERT, "New Key",
-				      regedit->main_window,
 				      "Failed to create key.");
 		}
 		talloc_free(name);
@@ -227,7 +228,6 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		}
 		sel = dialog_notice(regedit, DIA_CONFIRM,
 				    "Delete Key",
-				     regedit->main_window,
 				     "Really delete key \"%s\"?",
 				     node->name);
 		if (sel == DIALOG_OK) {
@@ -250,7 +250,6 @@ static void handle_tree_input(struct regedit *regedit, int c)
 				value_list_load(regedit->vl, node->key);
 			} else {
 				dialog_notice(regedit, DIA_ALERT, "Delete Key",
-					      regedit->main_window,
 					      "Failed to delete key.");
 			}
 		}
@@ -280,7 +279,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 			struct tree_node *node;
 			node = item_userptr(current_item(regedit->keys->menu));
 			dialog_edit_value(regedit, node->key, vitem->type,
-					  vitem, regedit->main_window);
+					  vitem);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
@@ -289,13 +288,11 @@ static void handle_value_input(struct regedit *regedit, int c)
 		int new_type;
 		int sel;
 
-		sel = dialog_select_type(regedit, &new_type,
-					 regedit->main_window);
+		sel = dialog_select_type(regedit, &new_type);
 		if (sel == DIALOG_OK) {
 			struct tree_node *node;
 			node = item_userptr(current_item(regedit->keys->menu));
-			dialog_edit_value(regedit, node->key, new_type, NULL,
-					  regedit->main_window);
+			dialog_edit_value(regedit, node->key, new_type, NULL);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
@@ -308,7 +305,6 @@ static void handle_value_input(struct regedit *regedit, int c)
 
 			sel = dialog_notice(regedit, DIA_CONFIRM,
 					    "Delete Value",
-					     regedit->main_window,
 					     "Really delete value \"%s\"?",
 					     vitem->value_name);
 			if (sel == DIALOG_OK) {
@@ -341,9 +337,26 @@ static void handle_main_input(struct regedit *regedit, int c)
 	}
 }
 
-/* test navigating available hives */
-static void display_test_window(TALLOC_CTX *mem_ctx,
-				struct registry_context *ctx)
+int regedit_getch(void)
+{
+	int c;
+
+	SMB_ASSERT(regedit_main);
+
+	c = getch();
+
+	if (c == KEY_RESIZE) {
+		tree_view_resize(regedit_main->keys, KEY_HEIGHT, KEY_WIDTH,
+				 KEY_START_Y, KEY_START_X);
+		value_list_resize(regedit_main->vl, VAL_HEIGHT, VAL_WIDTH,
+				  VAL_START_Y, VAL_START_X);
+		print_heading(regedit_main);
+	}
+
+	return c;
+}
+
+static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 {
 	struct regedit *regedit;
 	struct tree_node *root;
@@ -356,6 +369,7 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 
 	regedit = talloc_zero(mem_ctx, struct regedit);
 	SMB_ASSERT(regedit != NULL);
+	regedit_main = regedit;
 
 	regedit->main_window = stdscr;
 	keypad(regedit->main_window, TRUE);
@@ -383,13 +397,10 @@ static void display_test_window(TALLOC_CTX *mem_ctx,
 
 	update_panels();
 	doupdate();
-	while ((c = wgetch(regedit->main_window)) != 'q') {
-		if (c == KEY_RESIZE) {
-			tree_view_resize(regedit->keys, KEY_HEIGHT, KEY_WIDTH,
-					 KEY_START_Y, KEY_START_X);
-			value_list_resize(regedit->vl, VAL_HEIGHT, VAL_WIDTH,
-					  VAL_START_Y, VAL_START_X);
-			print_heading(regedit);
+	while (1) {
+		c = regedit_getch();
+		if (c == 'q' || c == 'Q') {
+			break;
 		}
 		handle_main_input(regedit, c);
 		update_panels();
@@ -449,7 +460,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	display_test_window(frame, ctx);
+	display_window(frame, ctx);
 
 	//talloc_report_full(frame, stdout);
 

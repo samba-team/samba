@@ -31,13 +31,14 @@ struct dialog {
 	PANEL *panel;
 	MENU *choices;
 	ITEM **choice_items;
+	bool centered;
 };
 
 struct dialog *dialog_new(TALLOC_CTX *ctx, const char *title, int nlines,
 			  int ncols, int y, int x);
 
 struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
-				 int ncols, WINDOW *below);
+				 int ncols);
 
 struct dialog *dialog_choice_new(TALLOC_CTX *ctx, const char *title,
 				 const char **choices, int nlines, int ncols,
@@ -45,7 +46,7 @@ struct dialog *dialog_choice_new(TALLOC_CTX *ctx, const char *title,
 
 struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 					const char **choices, int nlines,
-					int ncols, WINDOW *below);
+					int ncols);
 
 enum dialog_type {
 	DIA_ALERT,
@@ -58,18 +59,17 @@ enum dialog_selection {
 };
 
 int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
-		  const char *title, WINDOW *below,
-		  const char *msg, ...);
+		  const char *title, const char *msg, ...);
 
 int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
-		 WINDOW *below, const char *msg, ...);
+		 const char *msg, ...);
 
 struct registry_key;
 struct value_item;
 
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
-		         const struct value_item *vitem, WINDOW *below);
+		         const struct value_item *vitem);
 
-int dialog_select_type(TALLOC_CTX *ctx, int *type, WINDOW *below);
+int dialog_select_type(TALLOC_CTX *ctx, int *type);
 
 #endif
