@@ -320,7 +320,9 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 		goto failed;
 	}
 
-	/* Ensure this module won't go away before the callback */
+	/* Ensure this module won't go away before the callback.  This
+	 * causes every schema to have the LDB that originally loaded
+	 * the first schema as a talloc child. */
 	if (talloc_reference(*schema, ldb) == NULL) {
 		ldb_oom(ldb);
 		ret = LDB_ERR_OPERATIONS_ERROR;
