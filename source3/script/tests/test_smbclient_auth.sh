@@ -4,7 +4,7 @@
 
 if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD SMBCLIENT <smbclient arguments>
+Usage: test_smbclient_auth.sh SERVER SERVER_IP USERNAME PASSWORD SMBCLIENT <smbclient arguments>
 EOF
 exit 1;
 fi
