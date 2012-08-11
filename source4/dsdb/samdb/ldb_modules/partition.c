@@ -1061,14 +1061,6 @@ int partition_sequence_number_from_partitions(struct ldb_module *module,
 		if (ret != LDB_SUCCESS) {
 			talloc_free(res);
 			return ret;
-			}
-		
-		ret = ldb_request_add_control(treq,
-					      DSDB_CONTROL_CURRENT_PARTITION_OID,
-					      false, data->partitions[i]->ctrl);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(res);
-			return ret;
 		}
 		
 		ret = partition_request(data->partitions[i]->module, treq);
@@ -1116,21 +1108,6 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 		break;
 
 	case LDB_SEQ_HIGHEST_SEQ:
-
-		/* 
-		 * We can only query per-partition the individual
-		 * partition sequence number, so we don't need to run
-		 * this reload for every query of the next global seq
-		 * number 
-		 */
-		p = find_partition(data, NULL, req);
-		if (p != NULL) {
-			/* the caller specified what partition they want the
-			 * sequence number operation on - just pass it on
-			 */
-			return ldb_next_request(p->module, req);
-		}
-
 		ret = partition_metadata_sequence_number(module, &seq_number);
 		if (ret != LDB_SUCCESS) {
 			return ret;
