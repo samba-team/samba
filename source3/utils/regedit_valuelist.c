@@ -253,7 +253,7 @@ WERROR value_list_load(struct value_list *vl, struct registry_key *key)
 			return rv;
 		}
 
-		vitem->value_desc = talloc_asprintf(vitem, "%-8s",
+		vitem->value_desc = talloc_asprintf(vitem, "%-14s",
 			str_regtype(vitem->type));
 		if (vitem->value_desc == NULL) {
 			talloc_free(vitem);
