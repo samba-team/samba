@@ -837,8 +837,10 @@ static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status = NT_STATUS_OK;
 
-	if (strequal(finfo->name,"..") || strequal(finfo->name,"."))
-		return NT_STATUS_OK;
+	if (strequal(finfo->name,"..") || strequal(finfo->name,".")) {
+		status = NT_STATUS_OK;
+		goto cleanup;
+	}
 
 	/* Is it on the exclude list ? */
 	if (!tar_excl && clipn) {
@@ -851,7 +853,8 @@ static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 				client_get_cur_dir(),
 				finfo->name);
 		if (!exclaim) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto cleanup;
 		}
 
 		DEBUG(5, ("...tar_re_search: %d\n", tar_re_search));
@@ -860,7 +863,8 @@ static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 				(tar_re_search && mask_match_list(exclaim, cliplist, clipn, True))) {
 			DEBUG(3,("Skipping file %s\n", exclaim));
 			TALLOC_FREE(exclaim);
-			return NT_STATUS_OK;
+			status = NT_STATUS_OK;
+			goto cleanup;
 		}
 		TALLOC_FREE(exclaim);
 	}
@@ -872,7 +876,8 @@ static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 
 		saved_curdir = talloc_strdup(ctx, client_get_cur_dir());
 		if (!saved_curdir) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto cleanup;
 		}
 
 		DEBUG(5, ("strlen(cur_dir)=%d, \
@@ -885,7 +890,8 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 				client_get_cur_dir(),
 				finfo->name);
 		if (!new_cd) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto cleanup;
 		}
 		client_set_cur_dir(new_cd);
 
@@ -904,7 +910,8 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 				"%s*",
 				client_get_cur_dir());
 		if (!mtar_mask) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto cleanup;
 		}
 		DEBUG(5, ("Doing list with mtar_mask: %s\n", mtar_mask));
 		do_list(mtar_mask, attribute, do_tar, False, True);
@@ -918,11 +925,15 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 					client_get_cur_dir(),
 					finfo->name);
 		if (!rname) {
-			return NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
+			goto cleanup;
 		}
 		status = do_atar(rname,finfo->name,finfo);
 		TALLOC_FREE(rname);
 	}
+
+  cleanup:
+	TALLOC_FREE(ctx);
 	return status;
 }
 
