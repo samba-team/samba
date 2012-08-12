@@ -229,7 +229,7 @@ static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type)
 
  done:
         if (errno != 0) {
-                SAFE_FREE(result);
+                TALLOC_FREE(result);
         }
         return result;
 }

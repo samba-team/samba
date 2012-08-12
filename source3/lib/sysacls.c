@@ -258,15 +258,7 @@ SMB_ACL_T sys_acl_init(int count)
 		return NULL;
 	}
 
-	/*
-	 * note that since the definition of the structure pointed
-	 * to by the SMB_ACL_T includes the first element of the
-	 * acl[] array, this actually allocates an ACL with room
-	 * for (count+1) entries
-	 */
-	if ((a = (struct smb_acl_t *)SMB_MALLOC(
-		     sizeof(struct smb_acl_t) +
-		     count * sizeof(struct smb_acl_entry))) == NULL) {
+	if ((a = talloc(NULL, struct smb_acl_t)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -274,6 +266,13 @@ SMB_ACL_T sys_acl_init(int count)
 	a->size = count + 1;
 	a->count = 0;
 	a->next = -1;
+
+	a->acl = talloc_array(a, struct smb_acl_entry, count+1);
+	if (!a->acl) {
+		TALLOC_FREE(a);
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	return a;
 }
@@ -357,7 +356,7 @@ int sys_acl_free_text(char *text)
 
 int sys_acl_free_acl(SMB_ACL_T acl_d) 
 {
-	SAFE_FREE(acl_d);
+	TALLOC_FREE(acl_d);
 	return 0;
 }
 

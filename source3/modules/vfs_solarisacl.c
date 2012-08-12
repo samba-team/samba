@@ -323,7 +323,7 @@ int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
  done:
 	DEBUG(10, ("solarisacl_sys_acl_delete_def_file %s.\n",
 		   ((ret != 0) ? "failed" : "succeeded" )));
-	SAFE_FREE(smb_acl);
+	TALLOC_FREE(smb_acl);
 	return ret;
 }
 
@@ -440,11 +440,8 @@ static SMB_ACL_T solaris_acl_to_smb_acl(SOLARIS_ACL_T solaris_acl, int count,
 		if (!_IS_OF_TYPE(solaris_acl[i], type)) {
 			continue;
 		}
-		result = SMB_REALLOC(result, 
-				     sizeof(struct smb_acl_t) +
-				     (sizeof(struct smb_acl_entry) *
-				      (result->count + 1)));
-		if (result == NULL) {
+		result->acl = talloc_realloc(result, result->acl, struct smb_acl_entry, result->count + 1);
+		if (result->acl == NULL) {
 			DEBUG(10, ("error reallocating memory for SMB_ACL\n"));
 			goto fail;
 		}
@@ -469,7 +466,7 @@ static SMB_ACL_T solaris_acl_to_smb_acl(SOLARIS_ACL_T solaris_acl, int count,
 	goto done;
 	
  fail:
-	SAFE_FREE(result);
+	TALLOC_FREE(result);
  done:
 	DEBUG(10, ("solaris_acl_to_smb_acl %s\n",
 		   ((result == NULL) ? "failed" : "succeeded")));

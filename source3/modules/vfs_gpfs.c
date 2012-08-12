@@ -594,7 +594,7 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl)
 			DEBUG(10, ("Got invalid ace_type: %d\n",
 				   g_ace->ace_type));
 			errno = EINVAL;
-			SAFE_FREE(result);
+			TALLOC_FREE(result);
 			return NULL;
 		}
 
@@ -648,7 +648,7 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
  done:
 
 	if (errno != 0) {
-		SAFE_FREE(result);
+		TALLOC_FREE(result);
 	}
 	return result;	
 }

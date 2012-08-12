@@ -214,28 +214,27 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 
 static struct smb_acl_t *smb_acl_to_internal(acl_t acl)
 {
-	struct smb_acl_t *result = SMB_MALLOC_P(struct smb_acl_t);
+	struct smb_acl_t *result = sys_acl_init(0);
 	int entry_id = ACL_FIRST_ENTRY;
 	acl_entry_t e;
 	if (result == NULL) {
 		return NULL;
 	}
-	ZERO_STRUCTP(result);
 	while (acl_get_entry(acl, entry_id, &e) == 1) {
 
 		entry_id = ACL_NEXT_ENTRY;
 
-		result = (struct smb_acl_t *)SMB_REALLOC(
-			result, sizeof(struct smb_acl_t) +
-			(sizeof(struct smb_acl_entry) * (result->count+1)));
-		if (result == NULL) {
-			DEBUG(0, ("SMB_REALLOC failed\n"));
+		result->acl = talloc_realloc(result, result->acl, 
+					     struct smb_acl_entry, result->count+1);
+		if (result->acl == NULL) {
+			TALLOC_FREE(result);
+			DEBUG(0, ("talloc_realloc failed\n"));
 			errno = ENOMEM;
 			return NULL;
 		}
 
 		if (!smb_ace_to_internal(e, &result->acl[result->count])) {
-			SAFE_FREE(result);
+			TALLOC_FREE(result);
 			return NULL;
 		}
 

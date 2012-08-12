@@ -54,7 +54,7 @@ typedef struct smb_acl_t {
 	int	size;
 	int	count;
 	int	next;
-	struct smb_acl_entry acl[1];
+	struct smb_acl_entry *acl;
 } *SMB_ACL_T;
 
 typedef struct smb_acl_entry 	*SMB_ACL_ENTRY_T;

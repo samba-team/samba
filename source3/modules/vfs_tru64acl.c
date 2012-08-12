@@ -160,28 +160,27 @@ static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl)
 
 	DEBUG(10, ("Hi! This is tru64_acl_to_smb_acl.\n"));
 	
-	if ((result = SMB_MALLOC_P(struct smb_acl_t)) == NULL) {
-		DEBUG(0, ("SMB_MALLOC_P failed in tru64_acl_to_smb_acl\n"));
+	if ((result = sys_acl_init(0)) == NULL) {
+		DEBUG(0, ("sys_acl_init() failed in tru64_acl_to_smb_acl\n"));
 		errno = ENOMEM;
 		goto fail;
 	}
-	ZERO_STRUCTP(result);
 	if (acl_first_entry((struct acl *)tru64_acl) != 0) {
 		DEBUG(10, ("acl_first_entry failed: %s\n", strerror(errno)));
 		goto fail;
 	}
 	while ((entry = acl_get_entry((struct acl *)tru64_acl)) != NULL) {
-		result = SMB_REALLOC(result, sizeof(struct smb_acl_t) +
-					(sizeof(struct smb_acl_entry) * 
-					 (result->count + 1)));
-		if (result == NULL) {
-			DEBUG(0, ("SMB_REALLOC failed in tru64_acl_to_smb_acl\n"));
+		result->acl = talloc_realloc(result, result->acl, struct smb_acl_entry, 
+					     result->count + 1);
+		if (result->acl == NULL) {
+			TALLOC_FREE(result);
+			DEBUG(0, ("talloc_realloc failed in tru64_acl_to_smb_acl\n"));
 			errno = ENOMEM;
 			goto fail;
 		}
 		/* XYZ */
 		if (!tru64_ace_to_smb_ace(entry, &result->acl[result->count])) {
-			SAFE_FREE(result);
+			TALLOC_FREE(result);
 			goto fail;
 		}
 		result->count += 1;
@@ -189,9 +188,7 @@ static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl)
 	return result;
 
 fail:
-	if (result != NULL) {
-		SAFE_FREE(result);
-	}
+	TALLOC_FREE(result);
 	DEBUG(1, ("tru64_acl_to_smb_acl failed!\n"));
 	return NULL;
 }

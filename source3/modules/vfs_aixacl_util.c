@@ -27,14 +27,13 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 	struct acl_entry *acl_entry;
 	struct ace_id *idp;
 	
-	struct smb_acl_t *result = SMB_MALLOC_P(struct smb_acl_t);
+	struct smb_acl_t *result = sys_acl_init(0);
 	struct smb_acl_entry *ace;
 	int i;
 	
 	if (result == NULL) {
 		return NULL;
 	}
-	ZERO_STRUCTP(result);
 	
 	/* Point to the first acl entry in the acl */
 	acl_entry =  file_acl->acl_ext;
@@ -64,11 +63,9 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 			idp = acl_entry->ace_id;
 			DEBUG(10,("idp->id_data is %d\n",idp->id_data[0]));
 			
-			result = SMB_REALLOC(result, sizeof(struct smb_acl_t) +
-				     (sizeof(struct smb_acl_entry) *
-				      (result->count+1)));
+			result->acl = talloc_realloc(result, result->acl, result->count+1);
 			if (result == NULL) {
-				DEBUG(0, ("SMB_REALLOC failed\n"));
+				DEBUG(0, ("talloc_realloc failed\n"));
 				errno = ENOMEM;
 				return NULL;
 			}
@@ -117,7 +114,7 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 				break;
 			default:
 				DEBUG(0, ("unknown ace->type\n"));
-			 	SAFE_FREE(result);
+			 	TALLOC_FREE(result);
 				return(0);
 			}
 		
@@ -141,15 +138,14 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 	for( i = 1; i < 4; i++) {
 		DEBUG(10,("i is %d\n",i));
 
-			result = SMB_REALLOC(result, sizeof(struct smb_acl_t) +
-				     (sizeof(struct smb_acl_entry) *
-				      (result->count+1)));
-			if (result == NULL) {
-				DEBUG(0, ("SMB_REALLOC failed\n"));
-				errno = ENOMEM;
-				DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
-				return NULL;
-			}
+		result->acl = talloc_realloc(result, result->acl, result->count+1);
+		if (result->acl == NULL) {
+			TALLOC_FREE(result);
+			DEBUG(0, ("talloc_realloc failed\n"));
+			errno = ENOMEM;
+			DEBUG(0,("Error in AIX sys_acl_get_file is %d\n",errno));
+			return NULL;
+		}
 			
 		ace = &result->acl[result->count];
 		
