@@ -385,14 +385,9 @@ void tree_node_print_path(WINDOW *label, struct tree_node *node)
 	if (node == NULL)
 		return;
 
-	wmove(label, 0, 0);
-	wclrtoeol(label);
+	werase(label);
 	wprintw(label, "/");
-	wmove(label, 0, 1);
 
 	if (node->parent)
 		print_path_recursive(label, node->parent);
-
-	wnoutrefresh(label);
-	wrefresh(label);
 }

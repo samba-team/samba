@@ -32,12 +32,18 @@
 #define KEY_START_X 	0
 #define KEY_START_Y 	3
 #define KEY_WIDTH 	(COLS / 4)
-#define KEY_HEIGHT	(LINES - KEY_START_Y)
+#define KEY_HEIGHT	(LINES - KEY_START_Y - 1)
 #define VAL_START_X 	KEY_WIDTH
 #define VAL_START_Y 	3
 #define VAL_WIDTH 	(COLS - KEY_WIDTH)
-#define VAL_HEIGHT	(LINES - VAL_START_Y)
-#define HEADING_START_Y	KEY_START_Y - 1
+#define VAL_HEIGHT	(LINES - VAL_START_Y - 1)
+#define HEADING_START_Y	(KEY_START_Y - 1)
+#define INFO_START_Y	(LINES - 1)
+#define INFO_WIDTH	(LINES)
+#define PATH_START_Y 	0
+#define PATH_START_X 	6
+#define PATH_MAX_Y	(COLS-1)
+#define PATH_WIDTH_MAX	1024
 
 struct regedit {
 	WINDOW *main_window;
@@ -48,6 +54,17 @@ struct regedit {
 };
 
 static struct regedit *regedit_main = NULL;
+
+static void show_path(struct regedit *regedit)
+{
+	prefresh(regedit->path_label, 0, 0, PATH_START_Y, PATH_START_X,
+		 PATH_START_Y, PATH_MAX_Y);
+}
+
+static void print_path(struct regedit *regedit, struct tree_node *node)
+{
+	tree_node_print_path(regedit->path_label, node);
+}
 
 /* load all available hives */
 static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
@@ -193,8 +210,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 		node = item_userptr(current_item(regedit->keys->menu));
 		if (node && tree_node_has_children(node)) {
 			tree_node_load_children(node);
-			tree_node_print_path(regedit->path_label,
-					     node->child_head);
+			print_path(regedit, node->child_head);
 			tree_view_update(regedit->keys, node->child_head);
 			value_list_load(regedit->vl, node->child_head->key);
 		}
@@ -202,7 +218,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 	case KEY_LEFT:
 		node = item_userptr(current_item(regedit->keys->menu));
 		if (node && node->parent) {
-			tree_node_print_path(regedit->path_label, node->parent);
+			print_path(regedit, node->parent);
 			node = tree_node_first(node->parent);
 			tree_view_update(regedit->keys, node);
 			value_list_load(regedit->vl, node->key);
@@ -243,8 +259,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 				node = parent->child_head;
 				if (node == NULL) {
 					node = tree_node_first(parent);
-					tree_node_print_path(regedit->path_label,
-							     node);
+					print_path(regedit, node);
 				}
 				tree_view_update(regedit->keys, node);
 				value_list_load(regedit->vl, node->key);
@@ -344,7 +359,6 @@ int regedit_getch(void)
 	SMB_ASSERT(regedit_main);
 
 	c = getch();
-
 	if (c == KEY_RESIZE) {
 		tree_view_resize(regedit_main->keys, KEY_HEIGHT, KEY_WIDTH,
 				 KEY_START_Y, KEY_START_X);
@@ -375,7 +389,8 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	keypad(regedit->main_window, TRUE);
 
 	mvwprintw(regedit->main_window, 0, 0, "Path: ");
-	regedit->path_label = derwin(regedit->main_window, 1, COLS - 6, 0, 6);
+	regedit->path_label = newpad(1, PATH_WIDTH_MAX);
+	SMB_ASSERT(regedit->path_label);
 	wprintw(regedit->path_label, "/");
 
 	root = load_hives(regedit, ctx);
@@ -397,6 +412,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 
 	update_panels();
 	doupdate();
+	show_path(regedit_main);
 	while (1) {
 		c = regedit_getch();
 		if (c == 'q' || c == 'Q') {
@@ -405,6 +421,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 		handle_main_input(regedit, c);
 		update_panels();
 		doupdate();
+		show_path(regedit_main);
 	}
 
 	endwin();
