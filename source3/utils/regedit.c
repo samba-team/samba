@@ -67,13 +67,14 @@ static void show_path(struct regedit *regedit)
 		mvprintw(PATH_START_Y, start_win, "...");
 		start_win += 3;
 	}
-	prefresh(regedit->path_label, 0, start_pad, PATH_START_Y, start_win,
-		 PATH_START_Y, PATH_MAX_Y);
+	copywin(regedit->path_label, regedit->main_window, 0, start_pad,
+		PATH_START_Y, start_win, PATH_START_Y, PATH_MAX_Y, false);
 }
 
 static void print_path(struct regedit *regedit, struct tree_node *node)
 {
 	regedit->path_len = tree_node_print_path(regedit->path_label, node);
+	show_path(regedit);
 }
 
 /* load all available hives */
@@ -375,6 +376,7 @@ int regedit_getch(void)
 		value_list_resize(regedit_main->vl, VAL_HEIGHT, VAL_WIDTH,
 				  VAL_START_Y, VAL_START_X);
 		print_heading(regedit_main);
+		show_path(regedit_main);
 	}
 
 	return c;
@@ -402,6 +404,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	regedit->path_label = newpad(1, PATH_WIDTH_MAX);
 	SMB_ASSERT(regedit->path_label);
 	wprintw(regedit->path_label, "/");
+	show_path(regedit_main);
 
 	root = load_hives(regedit, ctx);
 	SMB_ASSERT(root != NULL);
@@ -422,7 +425,6 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 
 	update_panels();
 	doupdate();
-	show_path(regedit_main);
 	while (1) {
 		c = regedit_getch();
 		if (c == 'q' || c == 'Q') {
@@ -431,7 +433,6 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 		handle_main_input(regedit, c);
 		update_panels();
 		doupdate();
-		show_path(regedit_main);
 	}
 
 	endwin();
