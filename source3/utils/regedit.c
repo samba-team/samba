@@ -42,12 +42,14 @@
 #define INFO_WIDTH	(LINES)
 #define PATH_START_Y 	0
 #define PATH_START_X 	6
-#define PATH_MAX_Y	(COLS-1)
+#define PATH_MAX_Y	(COLS - 1)
+#define PATH_WIDTH	(COLS - 6)
 #define PATH_WIDTH_MAX	1024
 
 struct regedit {
 	WINDOW *main_window;
 	WINDOW *path_label;
+	size_t path_len;
 	struct value_list *vl;
 	struct tree_view *keys;
 	bool tree_input;
@@ -57,13 +59,21 @@ static struct regedit *regedit_main = NULL;
 
 static void show_path(struct regedit *regedit)
 {
-	prefresh(regedit->path_label, 0, 0, PATH_START_Y, PATH_START_X,
+	int start_pad = 0;
+	int start_win = PATH_START_X;
+
+	if (PATH_START_X + regedit->path_len > COLS) {
+		start_pad = 3 + PATH_START_X + regedit->path_len - COLS;
+		mvprintw(PATH_START_Y, start_win, "...");
+		start_win += 3;
+	}
+	prefresh(regedit->path_label, 0, start_pad, PATH_START_Y, start_win,
 		 PATH_START_Y, PATH_MAX_Y);
 }
 
 static void print_path(struct regedit *regedit, struct tree_node *node)
 {
-	tree_node_print_path(regedit->path_label, node);
+	regedit->path_len = tree_node_print_path(regedit->path_label, node);
 }
 
 /* load all available hives */

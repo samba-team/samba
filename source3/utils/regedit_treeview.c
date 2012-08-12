@@ -371,23 +371,28 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 	post_menu(view->menu);
 }
 
-static void print_path_recursive(WINDOW *label, struct tree_node *node)
+static void print_path_recursive(WINDOW *label, struct tree_node *node, size_t *len)
 {
 	if (node->parent)
-		print_path_recursive(label, node->parent);
+		print_path_recursive(label, node->parent, len);
 
 	wprintw(label, "%s/", node->name);
+	*len += 1 + strlen(node->name);
 }
 
 /* print the path of node to label */
-void tree_node_print_path(WINDOW *label, struct tree_node *node)
+size_t tree_node_print_path(WINDOW *label, struct tree_node *node)
 {
+	size_t len = 1;
+
 	if (node == NULL)
-		return;
+		return 0;
 
 	werase(label);
 	wprintw(label, "/");
 
 	if (node->parent)
-		print_path_recursive(label, node->parent);
+		print_path_recursive(label, node->parent, &len);
+
+	return len;
 }

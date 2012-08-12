@@ -57,7 +57,7 @@ struct tree_node *tree_node_first(struct tree_node *list);
 struct tree_node *tree_node_last(struct tree_node *list);
 void tree_node_append_last(struct tree_node *list, struct tree_node *node);
 void tree_node_free_recursive(struct tree_node *list);
-void tree_node_print_path(WINDOW *label, struct tree_node *node);
+size_t tree_node_print_path(WINDOW *label, struct tree_node *node);
 struct tree_view *tree_view_new(TALLOC_CTX *ctx, struct tree_node *root,
 				int nlines, int ncols,
 				int begin_y, int begin_x);
