@@ -669,13 +669,29 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns, struct loadparm_c
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	num_interfaces = iface_list_count(ifaces);
+	if (ifaces != NULL) {
+		num_interfaces = iface_list_count(ifaces);
 
-	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
+		for (i=0; i<num_interfaces; i++) {
+			const char *address = talloc_strdup(tmp_ctx,
+							    iface_list_n_ip(ifaces, i));
 
-		status = dns_add_socket(dns, model_ops, "dns", address, DNS_SERVICE_PORT);
-		NT_STATUS_NOT_OK_RETURN(status);
+			status = dns_add_socket(dns, model_ops, "dns", address,
+						DNS_SERVICE_PORT);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+	} else {
+		const char **wcard;
+		wcard = iface_list_wildcard(tmp_ctx, lp_ctx);
+		if (wcard == NULL) {
+			DEBUG(0, ("No wildcard address available\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		for (i = 0; wcard[i] != NULL; i++) {
+			status = dns_add_socket(dns, model_ops, "dns", wcard[i],
+						DNS_SERVICE_PORT);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
 	}
 
 	talloc_free(tmp_ctx);
@@ -729,7 +745,7 @@ static void dns_task_init(struct task_server *task)
 {
 	struct dns_server *dns;
 	NTSTATUS status;
-	struct interface *ifaces;
+	struct interface *ifaces = NULL;
 	int ret;
 	struct ldb_result *res;
 	static const char * const attrs[] = { "name", NULL};
@@ -747,11 +763,13 @@ static void dns_task_init(struct task_server *task)
 		break;
 	}
 
-	load_interface_list(task, task->lp_ctx, &ifaces);
+	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
+		load_interface_list(task, task->lp_ctx, &ifaces);
 
-	if (iface_list_count(ifaces) == 0) {
-		task_server_terminate(task, "dns: no network interfaces configured", false);
-		return;
+		if (iface_list_count(ifaces) == 0) {
+			task_server_terminate(task, "dns: no network interfaces configured", false);
+			return;
+		}
 	}
 
 	task_server_set_title(task, "task[dns]");
