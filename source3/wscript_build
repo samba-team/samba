@@ -932,6 +932,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     NDR_SMBXSRV
 		    LIBASYS
                     ccan-hash
+                    NDR_SMB_ACL
                     ''',
                     private_library=True,
                     vars=locals())

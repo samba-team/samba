@@ -20,50 +20,19 @@
 #ifndef _SMB_ACLS_H
 #define _SMB_ACLS_H
 
+#include "librpc/gen_ndr/smb_acl.h"
+
 struct vfs_handle_struct;
 struct files_struct;
 
 typedef int			SMB_ACL_TYPE_T;
 typedef mode_t			*SMB_ACL_PERMSET_T;
 typedef mode_t			SMB_ACL_PERM_T;
-#define SMB_ACL_READ 				4
-#define SMB_ACL_WRITE 				2
-#define SMB_ACL_EXECUTE				1
-
-/* Types of ACLs. */
-enum smb_acl_tag_t {
-	SMB_ACL_TAG_INVALID=0,
-	SMB_ACL_USER=1,
-	SMB_ACL_USER_OBJ,
-	SMB_ACL_GROUP,
-	SMB_ACL_GROUP_OBJ,
-	SMB_ACL_OTHER,
-	SMB_ACL_MASK
-};
 
 typedef enum smb_acl_tag_t SMB_ACL_TAG_T;
-
-struct smb_acl_entry {
-	enum smb_acl_tag_t a_type;
-	SMB_ACL_PERM_T a_perm;
-	uid_t uid;
-	gid_t gid;
-};
-
-typedef struct smb_acl_t {
-	int	size;
-	int	count;
-	int	next;
-	struct smb_acl_entry *acl;
-} *SMB_ACL_T;
+typedef struct smb_acl_t *SMB_ACL_T;
 
 typedef struct smb_acl_entry 	*SMB_ACL_ENTRY_T;
-
-#define SMB_ACL_FIRST_ENTRY			0
-#define SMB_ACL_NEXT_ENTRY			1
-
-#define SMB_ACL_TYPE_ACCESS			0
-#define SMB_ACL_TYPE_DEFAULT		1
 
 /* The following definitions come from lib/sysacls.c  */
 

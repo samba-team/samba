@@ -239,6 +239,11 @@ bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
     header_path='gen_ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_SMB_ACL',
+    source='gen_ndr/ndr_smb_acl.c',
+    deps='ndr',
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_SVCCTL',
     source='gen_ndr/ndr_svcctl.c ndr/ndr_svcctl.c',
     public_deps='ndr NDR_SECURITY'
