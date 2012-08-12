@@ -328,6 +328,12 @@ bool smbd_vfs_init(connection_struct *conn)
 
 	/* Normal share - initialise with disk access functions */
 	vfs_init_default(conn);
+
+	/* No need to load vfs modules for printer connections */
+	if (conn->printer) {
+		return True;
+	}
+
 	vfs_objects = lp_vfs_objects(SNUM(conn));
 
 	/* Override VFS functions if 'vfs object' was not specified*/
