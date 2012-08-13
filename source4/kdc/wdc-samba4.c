@@ -187,14 +187,15 @@ static char *get_netbios_name(TALLOC_CTX *mem_ctx, HostAddresses *addrs)
 		}
 	}
 
-	if (nb_name == NULL) {
+	if ((nb_name == NULL) || (nb_name[0] == '\0')) {
 		return NULL;
 	}
 
 	/* Strip space padding */
-	i = strlen(nb_name) - 1;
-	while (i > 0 && nb_name[i] == ' ') {
-		nb_name[i] = '\0';
+	for (len = strlen(nb_name) - 1;
+	     (len > 0) && (nb_name[len] == ' ');
+	     --len) {
+		nb_name[len] = '\0';
 	}
 
 	return nb_name;
