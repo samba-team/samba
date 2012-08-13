@@ -50,7 +50,6 @@ int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
 int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
 int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_free_text(char *text);
-int sys_acl_free_acl(SMB_ACL_T acl_d) ;
 int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype);
 int sys_acl_valid(SMB_ACL_T acl_d);
 SMB_ACL_T sys_acl_get_file(struct vfs_handle_struct *handle,

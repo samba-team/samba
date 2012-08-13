@@ -164,82 +164,82 @@ static SMB_ACL_T make_simple_acl(uid_t uid, gid_t gid)
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_USER_OBJ) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_permset(entry, &mode) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP_OBJ) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_permset(entry, &mode) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_OTHER) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_permset(entry, &mode0) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_qualifier(entry, &gid) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_permset(entry, &mode) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_tag_type(entry, SMB_ACL_MASK) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 
 	if (sys_acl_set_permset(entry, &mode0) != 0) {
-		sys_acl_free_acl(acl);
+		TALLOC_FREE(acl);
 		return NULL;
 	}
 	return acl;
@@ -264,7 +264,7 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 	frame = talloc_stackframe();
 
 	status = set_sys_acl_no_snum(fname, SMB_ACL_TYPE_ACCESS, acl);
-	sys_acl_free_acl(acl);
+	TALLOC_FREE(acl);
 
 	TALLOC_FREE(frame);
 

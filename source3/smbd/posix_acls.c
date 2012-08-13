@@ -3075,7 +3075,7 @@ static bool set_canon_ace_list(files_struct *fsp,
   fail:
 
 	if (the_acl != NULL) {
-		sys_acl_free_acl(the_acl);
+		TALLOC_FREE(the_acl);
 	}
 
 	return ret;
@@ -3108,7 +3108,7 @@ SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl)
 	if (!the_acl)
 		return NULL;
 	if (sys_acl_get_entry(the_acl, SMB_ACL_FIRST_ENTRY, &entry) != 1) {
-		sys_acl_free_acl(the_acl);
+		TALLOC_FREE(the_acl);
 		return NULL;
 	}
 	return the_acl;
@@ -3557,10 +3557,10 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
  done:
 
 	if (posix_acl) {
-		sys_acl_free_acl(posix_acl);
+		TALLOC_FREE(posix_acl);
 	}
 	if (def_acl) {
-		sys_acl_free_acl(def_acl);
+		TALLOC_FREE(def_acl);
 	}
 	free_canon_ace_list(file_ace);
 	free_canon_ace_list(dir_ace);
@@ -4298,7 +4298,7 @@ int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode
 			}
 		}
 	}
-	sys_acl_free_acl(posix_acl);
+	TALLOC_FREE(posix_acl);
 	return result;
 }
 
@@ -4390,7 +4390,7 @@ static int copy_access_posix_acl(connection_struct *conn, const char *from, cons
 
  done:
 
-	sys_acl_free_acl(posix_acl);
+	TALLOC_FREE(posix_acl);
 	return ret;
 }
 
@@ -4420,7 +4420,7 @@ static bool directory_has_default_posix_acl(connection_struct *conn, const char 
 	}
 
 	if (def_acl) {
-	        sys_acl_free_acl(def_acl);
+	        TALLOC_FREE(def_acl);
 	}
         return has_acl;
 }
@@ -4460,7 +4460,7 @@ int fchmod_acl(files_struct *fsp, mode_t mode)
 
   done:
 
-	sys_acl_free_acl(posix_acl);
+	TALLOC_FREE(posix_acl);
 	return ret;
 }
 
@@ -4611,7 +4611,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
  fail:
 
 	if (the_acl != NULL) {
-		sys_acl_free_acl(the_acl);
+		TALLOC_FREE(the_acl);
 	}
 	return NULL;
 }
@@ -4655,12 +4655,12 @@ bool set_unix_posix_default_acl(connection_struct *conn, const char *fname, cons
 	if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_DEFAULT, def_acl) == -1) {
 		DEBUG(5,("set_unix_posix_default_acl: acl_set_file failed on directory %s (%s)\n",
 			fname, strerror(errno) ));
-	        sys_acl_free_acl(def_acl);
+	        TALLOC_FREE(def_acl);
 		return False;
 	}
 
 	DEBUG(10,("set_unix_posix_default_acl: set default acl for file %s\n", fname ));
-	sys_acl_free_acl(def_acl);
+	TALLOC_FREE(def_acl);
 	return True;
 }
 
@@ -4794,10 +4794,10 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
  done:
 
 	if (file_acl) {
-		sys_acl_free_acl(file_acl);
+		TALLOC_FREE(file_acl);
 	}
 	if (new_file_acl) {
-		sys_acl_free_acl(new_file_acl);
+		TALLOC_FREE(new_file_acl);
 	}
 	return ret;
 }
@@ -4826,20 +4826,20 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 		if (SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl) == -1) {
 			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
-		        sys_acl_free_acl(file_acl);
+		        TALLOC_FREE(file_acl);
 			return False;
 		}
 	} else {
 		if (SMB_VFS_SYS_ACL_SET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS, file_acl) == -1) {
 			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
-		        sys_acl_free_acl(file_acl);
+		        TALLOC_FREE(file_acl);
 			return False;
 		}
 	}
 
 	DEBUG(10,("set_unix_posix_acl: set acl for file %s\n", fname ));
-	sys_acl_free_acl(file_acl);
+	TALLOC_FREE(file_acl);
 	return True;
 }
 
