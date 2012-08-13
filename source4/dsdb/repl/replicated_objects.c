@@ -258,7 +258,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	msg->num_elements	= in->object.attribute_ctr.num_attributes;
 	msg->elements		= talloc_array(msg, struct ldb_message_element,
-					       msg->num_elements);
+					       msg->num_elements + 1); /* +1 because of the RDN attribute */
 	W_ERROR_HAVE_NO_MEMORY(msg->elements);
 
 	md = talloc(mem_ctx, struct replPropertyMetaDataBlob);
