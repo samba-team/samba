@@ -2914,7 +2914,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 		 * First tell the entry what type of ACE this is.
 		 */
 
-		if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, the_entry, p_ace->type) == -1) {
+		if (sys_acl_set_tag_type(the_entry, p_ace->type) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to set tag type on entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -2970,7 +2970,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 			goto fail;
 		}
 
-		if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, mask_entry, SMB_ACL_MASK) == -1) {
+		if (sys_acl_set_tag_type(mask_entry, SMB_ACL_MASK) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to set tag type on mask entry. (%s)\n",strerror(errno) ));
 			goto fail;
 		}
@@ -4558,7 +4558,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 			goto fail;
 		}
 
-		if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, the_entry, tag_type) == -1) {
+		if (sys_acl_set_tag_type(the_entry, tag_type) == -1) {
 			DEBUG(0,("create_posix_acl_from_wire: Failed to set tagtype on entry %u. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -4695,7 +4695,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 			fname, strerror(errno) ));
 		goto done;
 	}
-	if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, user_ent, SMB_ACL_USER_OBJ) == -1) {
+	if (sys_acl_set_tag_type(user_ent, SMB_ACL_USER_OBJ) == -1) {
 		DEBUG(5,("remove_posix_acl: Failed to set user entry for file %s. (%s)\n",
 			fname, strerror(errno) ));
 		goto done;
@@ -4706,7 +4706,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 			fname, strerror(errno) ));
 		goto done;
 	}
-	if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, group_ent, SMB_ACL_GROUP_OBJ) == -1) {
+	if (sys_acl_set_tag_type(group_ent, SMB_ACL_GROUP_OBJ) == -1) {
 		DEBUG(5,("remove_posix_acl: Failed to set group entry for file %s. (%s)\n",
 			fname, strerror(errno) ));
 		goto done;
@@ -4717,7 +4717,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 			fname, strerror(errno) ));
 		goto done;
 	}
-	if (SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, other_ent, SMB_ACL_OTHER) == -1) {
+	if (sys_acl_set_tag_type(other_ent, SMB_ACL_OTHER) == -1) {
 		DEBUG(5,("remove_posix_acl: Failed to set other entry for file %s. (%s)\n",
 			fname, strerror(errno) ));
 		goto done;
