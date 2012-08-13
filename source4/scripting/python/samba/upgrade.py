@@ -56,30 +56,37 @@ def import_sam_policy(samdb, policy, logger):
 
     m = ldb.Message()
     m.dn = samdb.get_default_basedn()
-    m['a01'] = ldb.MessageElement(str(policy['min password length']),
-        ldb.FLAG_MOD_REPLACE, 'minPwdLength')
-    m['a02'] = ldb.MessageElement(str(policy['password history']),
-        ldb.FLAG_MOD_REPLACE, 'pwdHistoryLength')
 
-    min_pw_age_unix = policy['minimum password age']
-    min_pw_age_nt = int(-min_pw_age_unix * (1e7))
-    m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE,
-        'minPwdAge')
+    if 'min password length' in policy:
+        m['a01'] = ldb.MessageElement(str(policy['min password length']),
+            ldb.FLAG_MOD_REPLACE, 'minPwdLength')
 
-    max_pw_age_unix = policy['maximum password age']
-    if max_pw_age_unix == -1 or max_pw_age_unix == 0:
-        max_pw_age_nt = -0x8000000000000000
-    else:
-        max_pw_age_nt = int(-max_pw_age_unix * (1e7))
+    if 'password history' in policy:
+        m['a02'] = ldb.MessageElement(str(policy['password history']),
+            ldb.FLAG_MOD_REPLACE, 'pwdHistoryLength')
 
-    m['a04'] = ldb.MessageElement(str(max_pw_age_nt), ldb.FLAG_MOD_REPLACE,
-                                  'maxPwdAge')
+    if 'minimum password age' in policy:
+        min_pw_age_unix = policy['minimum password age']
+        min_pw_age_nt = int(-min_pw_age_unix * (1e7))
+        m['a03'] = ldb.MessageElement(str(min_pw_age_nt), ldb.FLAG_MOD_REPLACE,
+            'minPwdAge')
 
-    lockout_duration_mins = policy['lockout duration']
-    lockout_duration_nt = unix2nttime(lockout_duration_mins * 60)
+    if 'maximum password age' in policy:
+        max_pw_age_unix = policy['maximum password age']
+        if max_pw_age_unix == -1 or max_pw_age_unix == 0:
+            max_pw_age_nt = -0x8000000000000000
+        else:
+            max_pw_age_nt = int(-max_pw_age_unix * (1e7))
 
-    m['a05'] = ldb.MessageElement(str(lockout_duration_nt),
-        ldb.FLAG_MOD_REPLACE, 'lockoutDuration')
+        m['a04'] = ldb.MessageElement(str(max_pw_age_nt), ldb.FLAG_MOD_REPLACE,
+                                      'maxPwdAge')
+
+    if 'lockout duration' in policy:
+        lockout_duration_mins = policy['lockout duration']
+        lockout_duration_nt = unix2nttime(lockout_duration_mins * 60)
+
+        m['a05'] = ldb.MessageElement(str(lockout_duration_nt),
+            ldb.FLAG_MOD_REPLACE, 'lockoutDuration')
 
     try:
         samdb.modify(m)
