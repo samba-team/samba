@@ -4914,10 +4914,10 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 						(unsigned int)((num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE +
 							SMB_POSIX_ACL_HEADER_SIZE) ));
 					if (file_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+						sys_acl_free_acl(file_acl);
 					}
 					if (def_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
+						sys_acl_free_acl(def_acl);
 					}
 					return NT_STATUS_BUFFER_TOO_SMALL;
 				}
@@ -4927,28 +4927,28 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				SSVAL(pdata,4,num_def_acls);
 				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE, psbuf, file_acl)) {
 					if (file_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+						sys_acl_free_acl(file_acl);
 					}
 					if (def_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
+						sys_acl_free_acl(def_acl);
 					}
 					return NT_STATUS_INTERNAL_ERROR;
 				}
 				if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), psbuf, def_acl)) {
 					if (file_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+						sys_acl_free_acl(file_acl);
 					}
 					if (def_acl) {
-						SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
+						sys_acl_free_acl(def_acl);
 					}
 					return NT_STATUS_INTERNAL_ERROR;
 				}
 
 				if (file_acl) {
-					SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);
+					sys_acl_free_acl(file_acl);
 				}
 				if (def_acl) {
-					SMB_VFS_SYS_ACL_FREE_ACL(conn, def_acl);
+					sys_acl_free_acl(def_acl);
 				}
 				data_size = (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
 				break;
