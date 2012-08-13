@@ -3893,7 +3893,7 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 				break;
 			case SMB_ACL_USER:
 				{
-					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					uid_t *puid = (uid_t *)sys_acl_get_qualifier(entry);
 					if (!puid) {
 						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
 						return False;
@@ -3913,7 +3913,7 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 				break;
 			case SMB_ACL_GROUP:
 				{
-					gid_t *pgid= (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					gid_t *pgid= (gid_t *)sys_acl_get_qualifier(entry);
 					if (!pgid) {
 						DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_QUALIFIER failed.\n"));
 						return False;

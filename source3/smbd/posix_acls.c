@@ -2658,7 +2658,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 				break;
 			case SMB_ACL_USER:
 				{
-					uid_t *puid = (uid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					uid_t *puid = (uid_t *)sys_acl_get_qualifier(entry);
 					if (puid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get uid.\n"));
 						continue;
@@ -2679,7 +2679,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 				break;
 			case SMB_ACL_GROUP:
 				{
-					gid_t *pgid = (gid_t *)SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry);
+					gid_t *pgid = (gid_t *)sys_acl_get_qualifier(entry);
 					if (pgid == NULL) {
 						DEBUG(0,("canonicalise_acl: Failed to get gid.\n"));
 						continue;
