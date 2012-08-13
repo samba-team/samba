@@ -3878,9 +3878,9 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 			return False;
 		}
 
-		perms |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ) ? SMB_POSIX_ACL_READ : 0);
-		perms |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE) ? SMB_POSIX_ACL_WRITE : 0);
-		perms |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_EXECUTE) ? SMB_POSIX_ACL_EXECUTE : 0);
+		perms |= (sys_acl_get_perm(permset, SMB_ACL_READ) ? SMB_POSIX_ACL_READ : 0);
+		perms |= (sys_acl_get_perm(permset, SMB_ACL_WRITE) ? SMB_POSIX_ACL_WRITE : 0);
+		perms |= (sys_acl_get_perm(permset, SMB_ACL_EXECUTE) ? SMB_POSIX_ACL_EXECUTE : 0);
 
 		SCVAL(pdata,1,perms);
 

@@ -859,9 +859,9 @@ static mode_t convert_permset_to_mode_t(connection_struct *conn, SMB_ACL_PERMSET
 {
 	mode_t ret = 0;
 
-	ret |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ) ? S_IRUSR : 0);
-	ret |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE) ? S_IWUSR : 0);
-	ret |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_EXECUTE) ? S_IXUSR : 0);
+	ret |= (sys_acl_get_perm(permset, SMB_ACL_READ) ? S_IRUSR : 0);
+	ret |= (sys_acl_get_perm(permset, SMB_ACL_WRITE) ? S_IWUSR : 0);
+	ret |= (sys_acl_get_perm(permset, SMB_ACL_EXECUTE) ? S_IXUSR : 0);
 
 	return ret;
 }
@@ -4290,9 +4290,9 @@ int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode
 				break;
 			} else {
 				*mode &= ~(S_IRGRP|S_IWGRP|S_IXGRP);
-				*mode |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_READ) ? S_IRGRP : 0);
-				*mode |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_WRITE) ? S_IWGRP : 0);
-				*mode |= (SMB_VFS_SYS_ACL_GET_PERM(conn, permset, SMB_ACL_EXECUTE) ? S_IXGRP : 0);
+				*mode |= (sys_acl_get_perm(permset, SMB_ACL_READ) ? S_IRGRP : 0);
+				*mode |= (sys_acl_get_perm(permset, SMB_ACL_WRITE) ? S_IWGRP : 0);
+				*mode |= (sys_acl_get_perm(permset, SMB_ACL_EXECUTE) ? S_IXGRP : 0);
 				result = 0;
 				break;
 			}
