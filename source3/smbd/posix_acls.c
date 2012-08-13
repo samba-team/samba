@@ -855,7 +855,7 @@ static void print_canon_ace_list(const char *name, canon_ace *ace_list)
  Map POSIX ACL perms to canon_ace permissions (a mode_t containing only S_(R|W|X)USR bits).
 ****************************************************************************/
 
-static mode_t convert_permset_to_mode_t(connection_struct *conn, SMB_ACL_PERMSET_T permset)
+static mode_t convert_permset_to_mode_t(SMB_ACL_PERMSET_T permset)
 {
 	mode_t ret = 0;
 
@@ -2692,7 +2692,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 					break;
 				}
 			case SMB_ACL_MASK:
-				acl_mask = convert_permset_to_mode_t(conn, permset);
+				acl_mask = convert_permset_to_mode_t(permset);
 				continue; /* Don't count the mask as an entry. */
 			case SMB_ACL_OTHER:
 				/* Use the Everyone SID */
@@ -2715,7 +2715,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 
 		ZERO_STRUCTP(ace);
 		ace->type = tagtype;
-		ace->perms = convert_permset_to_mode_t(conn, permset);
+		ace->perms = convert_permset_to_mode_t(permset);
 		ace->attr = ALLOW_ACE;
 		ace->trustee = sid;
 		ace->unix_ug = unix_ug;
