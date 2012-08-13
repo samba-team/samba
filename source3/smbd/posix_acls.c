@@ -2641,7 +2641,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
 		/* Is this a MASK entry ? */
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1)
+		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
 			continue;
 
 		if (sys_acl_get_permset(entry, &permset) == -1)
@@ -4282,7 +4282,7 @@ int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode
 
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) ==-1)
+		if (sys_acl_get_tag_type(entry, &tagtype) ==-1)
 			break;
 
 		if (tagtype == SMB_ACL_GROUP_OBJ) {
@@ -4320,7 +4320,7 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1)
+		if (sys_acl_get_tag_type(entry, &tagtype) == -1)
 			return -1;
 
 		if (sys_acl_get_permset(entry, &permset) == -1)
@@ -4744,7 +4744,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
+		if (sys_acl_get_tag_type(entry, &tagtype) == -1) {
 			DEBUG(5,("remove_posix_acl: failed to get tagtype from ACL on file %s (%s).\n",
 				fname, strerror(errno) ));
 			goto done;

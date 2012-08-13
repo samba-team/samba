@@ -3868,7 +3868,7 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 			entry_id = SMB_ACL_NEXT_ENTRY;
 		}
 
-		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1) {
+		if (sys_acl_get_tag_type(entry, &tagtype) == -1) {
 			DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_TAG_TYPE failed.\n"));
 			return False;
 		}
