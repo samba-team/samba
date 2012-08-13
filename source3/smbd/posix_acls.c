@@ -2631,7 +2631,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 	SMB_ACL_ENTRY_T entry;
 	size_t ace_count;
 
-	while ( posix_acl && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1)) {
+	while ( posix_acl && (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1)) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		struct dom_sid sid;
@@ -3107,7 +3107,7 @@ SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl)
 
 	if (!the_acl)
 		return NULL;
-	if (SMB_VFS_SYS_ACL_GET_ENTRY(conn, the_acl, SMB_ACL_FIRST_ENTRY, &entry) != 1) {
+	if (sys_acl_get_entry(the_acl, SMB_ACL_FIRST_ENTRY, &entry) != 1) {
 		SMB_VFS_SYS_ACL_FREE_ACL(conn, the_acl);
 		return NULL;
 	}
@@ -4276,7 +4276,7 @@ int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode
 	if (posix_acl == (SMB_ACL_T)NULL)
 		return -1;
 
-	while (SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
+	while (sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 
@@ -4313,7 +4313,7 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 	SMB_ACL_ENTRY_T entry;
 	int num_entries = 0;
 
-	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, posix_acl, entry_id, &entry) == 1) {
+	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 		mode_t perms;
@@ -4415,7 +4415,7 @@ static bool directory_has_default_posix_acl(connection_struct *conn, const char 
 	bool has_acl = False;
 	SMB_ACL_ENTRY_T entry;
 
-	if (def_acl != NULL && (SMB_VFS_SYS_ACL_GET_ENTRY(conn, def_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
+	if (def_acl != NULL && (sys_acl_get_entry(def_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1)) {
 		has_acl = True;
 	}
 
@@ -4738,7 +4738,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 		goto done;
 	}
 
-	while ( SMB_VFS_SYS_ACL_GET_ENTRY(conn, file_acl, entry_id, &entry) == 1) {
+	while ( sys_acl_get_entry(file_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
 		SMB_ACL_PERMSET_T permset;
 
