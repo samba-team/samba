@@ -2211,39 +2211,6 @@ int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
 	return handle->fns->fchmod_acl_fn(handle, fsp, mode);
 }
 
-int smb_vfs_call_sys_acl_get_entry(struct vfs_handle_struct *handle,
-				   SMB_ACL_T theacl, int entry_id,
-				   SMB_ACL_ENTRY_T *entry_p)
-{
-	VFS_FIND(sys_acl_get_entry);
-	return handle->fns->sys_acl_get_entry_fn(handle, theacl, entry_id,
-						 entry_p);
-}
-
-int smb_vfs_call_sys_acl_get_tag_type(struct vfs_handle_struct *handle,
-				      SMB_ACL_ENTRY_T entry_d,
-				      SMB_ACL_TAG_T *tag_type_p)
-{
-	VFS_FIND(sys_acl_get_tag_type);
-	return handle->fns->sys_acl_get_tag_type_fn(handle, entry_d, 
-						    tag_type_p);
-}
-
-int smb_vfs_call_sys_acl_get_permset(struct vfs_handle_struct *handle,
-				     SMB_ACL_ENTRY_T entry_d,
-				     SMB_ACL_PERMSET_T *permset_p)
-{
-	VFS_FIND(sys_acl_get_permset);
-	return handle->fns->sys_acl_get_permset_fn(handle, entry_d, permset_p);
-}
-
-void * smb_vfs_call_sys_acl_get_qualifier(struct vfs_handle_struct *handle,
-					  SMB_ACL_ENTRY_T entry_d)
-{
-	VFS_FIND(sys_acl_get_qualifier);
-	return handle->fns->sys_acl_get_qualifier_fn(handle, entry_d);
-}
-
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
 					const char *path_p,
 					SMB_ACL_TYPE_T type)
@@ -2257,72 +2224,6 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 {
 	VFS_FIND(sys_acl_get_fd);
 	return handle->fns->sys_acl_get_fd_fn(handle, fsp);
-}
-
-int smb_vfs_call_sys_acl_clear_perms(struct vfs_handle_struct *handle,
-				     SMB_ACL_PERMSET_T permset)
-{
-	VFS_FIND(sys_acl_clear_perms);
-	return handle->fns->sys_acl_clear_perms_fn(handle, permset);
-}
-
-int smb_vfs_call_sys_acl_add_perm(struct vfs_handle_struct *handle,
-				  SMB_ACL_PERMSET_T permset,
-				  SMB_ACL_PERM_T perm)
-{
-	VFS_FIND(sys_acl_add_perm);
-	return handle->fns->sys_acl_add_perm_fn(handle, permset, perm);
-}
-
-char * smb_vfs_call_sys_acl_to_text(struct vfs_handle_struct *handle,
-				    SMB_ACL_T theacl, ssize_t *plen)
-{
-	VFS_FIND(sys_acl_to_text);
-	return handle->fns->sys_acl_to_text_fn(handle, theacl, plen);
-}
-
-SMB_ACL_T smb_vfs_call_sys_acl_init(struct vfs_handle_struct *handle,
-				    int count)
-{
-	VFS_FIND(sys_acl_init);
-	return handle->fns->sys_acl_init_fn(handle, count);
-}
-
-int smb_vfs_call_sys_acl_create_entry(struct vfs_handle_struct *handle,
-				      SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
-{
-	VFS_FIND(sys_acl_create_entry);
-	return handle->fns->sys_acl_create_entry_fn(handle, pacl, pentry);
-}
-
-int smb_vfs_call_sys_acl_set_tag_type(struct vfs_handle_struct *handle,
-				      SMB_ACL_ENTRY_T entry,
-				      SMB_ACL_TAG_T tagtype)
-{
-	VFS_FIND(sys_acl_set_tag_type);
-	return handle->fns->sys_acl_set_tag_type_fn(handle, entry, tagtype);
-}
-
-int smb_vfs_call_sys_acl_set_qualifier(struct vfs_handle_struct *handle,
-				       SMB_ACL_ENTRY_T entry, void *qual)
-{
-	VFS_FIND(sys_acl_set_qualifier);
-	return handle->fns->sys_acl_set_qualifier_fn(handle, entry, qual);
-}
-
-int smb_vfs_call_sys_acl_set_permset(struct vfs_handle_struct *handle,
-				     SMB_ACL_ENTRY_T entry,
-				     SMB_ACL_PERMSET_T permset)
-{
-	VFS_FIND(sys_acl_set_permset);
-	return handle->fns->sys_acl_set_permset_fn(handle, entry, permset);
-}
-
-int smb_vfs_call_sys_acl_valid(struct vfs_handle_struct *handle,
-			       SMB_ACL_T theacl)
-{
-	VFS_FIND(sys_acl_valid);
-	return handle->fns->sys_acl_valid_fn(handle, theacl);
 }
 
 int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
@@ -2345,36 +2246,6 @@ int smb_vfs_call_sys_acl_delete_def_file(struct vfs_handle_struct *handle,
 {
 	VFS_FIND(sys_acl_delete_def_file);
 	return handle->fns->sys_acl_delete_def_file_fn(handle, path);
-}
-
-int smb_vfs_call_sys_acl_get_perm(struct vfs_handle_struct *handle,
-				  SMB_ACL_PERMSET_T permset,
-				  SMB_ACL_PERM_T perm)
-{
-	VFS_FIND(sys_acl_get_perm);
-	return handle->fns->sys_acl_get_perm_fn(handle, permset, perm);
-}
-
-int smb_vfs_call_sys_acl_free_text(struct vfs_handle_struct *handle,
-				   char *text)
-{
-	VFS_FIND(sys_acl_free_text);
-	return handle->fns->sys_acl_free_text_fn(handle, text);
-}
-
-int smb_vfs_call_sys_acl_free_acl(struct vfs_handle_struct *handle,
-				  SMB_ACL_T posix_acl)
-{
-	VFS_FIND(sys_acl_free_acl);
-	return handle->fns->sys_acl_free_acl_fn(handle, posix_acl);
-}
-
-int smb_vfs_call_sys_acl_free_qualifier(struct vfs_handle_struct *handle,
-					void *qualifier, SMB_ACL_TAG_T tagtype)
-{
-	VFS_FIND(sys_acl_free_qualifier);
-	return handle->fns->sys_acl_free_qualifier_fn(handle, qualifier, 
-						      tagtype);
 }
 
 ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,

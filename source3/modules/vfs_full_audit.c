@@ -173,28 +173,11 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CHMOD_ACL,
 	SMB_VFS_OP_FCHMOD_ACL,
 
-	SMB_VFS_OP_SYS_ACL_GET_ENTRY,
-	SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE,
-	SMB_VFS_OP_SYS_ACL_GET_PERMSET,
-	SMB_VFS_OP_SYS_ACL_GET_QUALIFIER,
 	SMB_VFS_OP_SYS_ACL_GET_FILE,
 	SMB_VFS_OP_SYS_ACL_GET_FD,
-	SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,
-	SMB_VFS_OP_SYS_ACL_ADD_PERM,
-	SMB_VFS_OP_SYS_ACL_TO_TEXT,
-	SMB_VFS_OP_SYS_ACL_INIT,
-	SMB_VFS_OP_SYS_ACL_CREATE_ENTRY,
-	SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE,
-	SMB_VFS_OP_SYS_ACL_SET_QUALIFIER,
-	SMB_VFS_OP_SYS_ACL_SET_PERMSET,
-	SMB_VFS_OP_SYS_ACL_VALID,
 	SMB_VFS_OP_SYS_ACL_SET_FILE,
 	SMB_VFS_OP_SYS_ACL_SET_FD,
 	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
-	SMB_VFS_OP_SYS_ACL_GET_PERM,
-	SMB_VFS_OP_SYS_ACL_FREE_TEXT,
-	SMB_VFS_OP_SYS_ACL_FREE_ACL,
-	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,
 
 	/* EA operations. */
 	SMB_VFS_OP_GETXATTR,
@@ -299,28 +282,11 @@ static struct {
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
 	{ SMB_VFS_OP_CHMOD_ACL,	"chmod_acl" },
 	{ SMB_VFS_OP_FCHMOD_ACL,	"fchmod_acl" },
-	{ SMB_VFS_OP_SYS_ACL_GET_ENTRY,	"sys_acl_get_entry" },
-	{ SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE,	"sys_acl_get_tag_type" },
-	{ SMB_VFS_OP_SYS_ACL_GET_PERMSET,	"sys_acl_get_permset" },
-	{ SMB_VFS_OP_SYS_ACL_GET_QUALIFIER,	"sys_acl_get_qualifier" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FILE,	"sys_acl_get_file" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FD,	"sys_acl_get_fd" },
-	{ SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,	"sys_acl_clear_perms" },
-	{ SMB_VFS_OP_SYS_ACL_ADD_PERM,	"sys_acl_add_perm" },
-	{ SMB_VFS_OP_SYS_ACL_TO_TEXT,	"sys_acl_to_text" },
-	{ SMB_VFS_OP_SYS_ACL_INIT,	"sys_acl_init" },
-	{ SMB_VFS_OP_SYS_ACL_CREATE_ENTRY,	"sys_acl_create_entry" },
-	{ SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE,	"sys_acl_set_tag_type" },
-	{ SMB_VFS_OP_SYS_ACL_SET_QUALIFIER,	"sys_acl_set_qualifier" },
-	{ SMB_VFS_OP_SYS_ACL_SET_PERMSET,	"sys_acl_set_permset" },
-	{ SMB_VFS_OP_SYS_ACL_VALID,	"sys_acl_valid" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FILE,	"sys_acl_set_file" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
 	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	"sys_acl_delete_def_file" },
-	{ SMB_VFS_OP_SYS_ACL_GET_PERM,	"sys_acl_get_perm" },
-	{ SMB_VFS_OP_SYS_ACL_FREE_TEXT,	"sys_acl_free_text" },
-	{ SMB_VFS_OP_SYS_ACL_FREE_ACL,	"sys_acl_free_acl" },
-	{ SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	"sys_acl_free_qualifier" },
 	{ SMB_VFS_OP_GETXATTR,	"getxattr" },
 	{ SMB_VFS_OP_FGETXATTR,	"fgetxattr" },
 	{ SMB_VFS_OP_LISTXATTR,	"listxattr" },
@@ -1828,68 +1794,6 @@ static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fs
 	return result;
 }
 
-static int smb_full_audit_sys_acl_get_entry(vfs_handle_struct *handle,
-
-				   SMB_ACL_T theacl, int entry_id,
-				   SMB_ACL_ENTRY_T *entry_p)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_GET_ENTRY(handle, theacl, entry_id,
-						entry_p);
-
-	do_log(SMB_VFS_OP_SYS_ACL_GET_ENTRY, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_get_tag_type(vfs_handle_struct *handle,
-
-				      SMB_ACL_ENTRY_T entry_d,
-				      SMB_ACL_TAG_T *tag_type_p)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_GET_TAG_TYPE(handle, entry_d,
-						   tag_type_p);
-
-	do_log(SMB_VFS_OP_SYS_ACL_GET_TAG_TYPE, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_get_permset(vfs_handle_struct *handle,
-
-				     SMB_ACL_ENTRY_T entry_d,
-				     SMB_ACL_PERMSET_T *permset_p)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_GET_PERMSET(handle, entry_d,
-						  permset_p);
-
-	do_log(SMB_VFS_OP_SYS_ACL_GET_PERMSET, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static void * smb_full_audit_sys_acl_get_qualifier(vfs_handle_struct *handle,
-
-					  SMB_ACL_ENTRY_T entry_d)
-{
-	void *result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_GET_QUALIFIER(handle, entry_d);
-
-	do_log(SMB_VFS_OP_SYS_ACL_GET_QUALIFIER, (result != NULL), handle,
-	       "");
-
-	return result;
-}
-
 static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 					const char *path_p,
 					SMB_ACL_TYPE_T type)
@@ -1913,137 +1817,6 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FD, (result != NULL), handle,
 	       "%s", fsp_str_do_log(fsp));
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
-
-				     SMB_ACL_PERMSET_T permset)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_CLEAR_PERMS(handle, permset);
-
-	do_log(SMB_VFS_OP_SYS_ACL_CLEAR_PERMS, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_add_perm(vfs_handle_struct *handle,
-
-				  SMB_ACL_PERMSET_T permset,
-				  SMB_ACL_PERM_T perm)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_ADD_PERM(handle, permset, perm);
-
-	do_log(SMB_VFS_OP_SYS_ACL_ADD_PERM, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static char * smb_full_audit_sys_acl_to_text(vfs_handle_struct *handle,
-				    SMB_ACL_T theacl,
-				    ssize_t *plen)
-{
-	char * result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_TO_TEXT(handle, theacl, plen);
-
-	do_log(SMB_VFS_OP_SYS_ACL_TO_TEXT, (result != NULL), handle,
-	       "");
-
-	return result;
-}
-
-static SMB_ACL_T smb_full_audit_sys_acl_init(vfs_handle_struct *handle,
-
-				    int count)
-{
-	SMB_ACL_T result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_INIT(handle, count);
-
-	do_log(SMB_VFS_OP_SYS_ACL_INIT, (result != NULL), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_create_entry(vfs_handle_struct *handle,
-				      SMB_ACL_T *pacl,
-				      SMB_ACL_ENTRY_T *pentry)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_CREATE_ENTRY(handle, pacl, pentry);
-
-	do_log(SMB_VFS_OP_SYS_ACL_CREATE_ENTRY, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_set_tag_type(vfs_handle_struct *handle,
-
-				      SMB_ACL_ENTRY_T entry,
-				      SMB_ACL_TAG_T tagtype)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_SET_TAG_TYPE(handle, entry,
-						   tagtype);
-
-	do_log(SMB_VFS_OP_SYS_ACL_SET_TAG_TYPE, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_set_qualifier(vfs_handle_struct *handle,
-
-				       SMB_ACL_ENTRY_T entry,
-				       void *qual)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_SET_QUALIFIER(handle, entry, qual);
-
-	do_log(SMB_VFS_OP_SYS_ACL_SET_QUALIFIER, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_set_permset(vfs_handle_struct *handle,
-
-				     SMB_ACL_ENTRY_T entry,
-				     SMB_ACL_PERMSET_T permset)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_SET_PERMSET(handle, entry, permset);
-
-	do_log(SMB_VFS_OP_SYS_ACL_SET_PERMSET, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_valid(vfs_handle_struct *handle,
-
-			       SMB_ACL_T theacl )
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_VALID(handle, theacl);
-
-	do_log(SMB_VFS_OP_SYS_ACL_VALID, (result >= 0), handle,
-	       "");
 
 	return result;
 }
@@ -2087,64 +1860,6 @@ static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE, (result >= 0), handle,
 	       "%s", path);
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_get_perm(vfs_handle_struct *handle,
-
-				  SMB_ACL_PERMSET_T permset,
-				  SMB_ACL_PERM_T perm)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_GET_PERM(handle, permset, perm);
-
-	do_log(SMB_VFS_OP_SYS_ACL_GET_PERM, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_free_text(vfs_handle_struct *handle,
-
-				   char *text)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_FREE_TEXT(handle, text);
-
-	do_log(SMB_VFS_OP_SYS_ACL_FREE_TEXT, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_free_acl(vfs_handle_struct *handle,
-
-				  SMB_ACL_T posix_acl)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_FREE_ACL(handle, posix_acl);
-
-	do_log(SMB_VFS_OP_SYS_ACL_FREE_ACL, (result >= 0), handle,
-	       "");
-
-	return result;
-}
-
-static int smb_full_audit_sys_acl_free_qualifier(vfs_handle_struct *handle,
-					void *qualifier,
-					SMB_ACL_TAG_T tagtype)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYS_ACL_FREE_QUALIFIER(handle, qualifier,
-						     tagtype);
-
-	do_log(SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER, (result >= 0), handle,
-	       "");
 
 	return result;
 }
@@ -2377,28 +2092,11 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,
 	.chmod_acl_fn = smb_full_audit_chmod_acl,
 	.fchmod_acl_fn = smb_full_audit_fchmod_acl,
-	.sys_acl_get_entry_fn = smb_full_audit_sys_acl_get_entry,
-	.sys_acl_get_tag_type_fn = smb_full_audit_sys_acl_get_tag_type,
-	.sys_acl_get_permset_fn = smb_full_audit_sys_acl_get_permset,
-	.sys_acl_get_qualifier_fn = smb_full_audit_sys_acl_get_qualifier,
 	.sys_acl_get_file_fn = smb_full_audit_sys_acl_get_file,
 	.sys_acl_get_fd_fn = smb_full_audit_sys_acl_get_fd,
-	.sys_acl_clear_perms_fn = smb_full_audit_sys_acl_clear_perms,
-	.sys_acl_add_perm_fn = smb_full_audit_sys_acl_add_perm,
-	.sys_acl_to_text_fn = smb_full_audit_sys_acl_to_text,
-	.sys_acl_init_fn = smb_full_audit_sys_acl_init,
-	.sys_acl_create_entry_fn = smb_full_audit_sys_acl_create_entry,
-	.sys_acl_set_tag_type_fn = smb_full_audit_sys_acl_set_tag_type,
-	.sys_acl_set_qualifier_fn = smb_full_audit_sys_acl_set_qualifier,
-	.sys_acl_set_permset_fn = smb_full_audit_sys_acl_set_permset,
-	.sys_acl_valid_fn = smb_full_audit_sys_acl_valid,
 	.sys_acl_set_file_fn = smb_full_audit_sys_acl_set_file,
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = smb_full_audit_sys_acl_delete_def_file,
-	.sys_acl_get_perm_fn = smb_full_audit_sys_acl_get_perm,
-	.sys_acl_free_text_fn = smb_full_audit_sys_acl_free_text,
-	.sys_acl_free_acl_fn = smb_full_audit_sys_acl_free_acl,
-	.sys_acl_free_qualifier_fn = smb_full_audit_sys_acl_free_qualifier,
 	.getxattr_fn = smb_full_audit_getxattr,
 	.fgetxattr_fn = smb_full_audit_fgetxattr,
 	.listxattr_fn = smb_full_audit_listxattr,

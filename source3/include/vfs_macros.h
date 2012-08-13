@@ -429,26 +429,6 @@
 #define SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode) \
 	smb_vfs_call_fchmod_acl((handle)->next, (fsp), (mode))
 
-#define SMB_VFS_SYS_ACL_GET_ENTRY(conn, theacl, entry_id, entry_p) \
-	smb_vfs_call_sys_acl_get_entry((conn)->vfs_handles, (theacl), (entry_id), (entry_p))
-#define SMB_VFS_NEXT_SYS_ACL_GET_ENTRY(handle, theacl, entry_id, entry_p) \
-	smb_vfs_call_sys_acl_get_entry((handle)->next, (theacl), (entry_id), (entry_p))
-
-#define SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry_d, tag_type_p) \
-	smb_vfs_call_sys_acl_get_tag_type((conn)->vfs_handles, (entry_d), (tag_type_p))
-#define SMB_VFS_NEXT_SYS_ACL_GET_TAG_TYPE(handle, entry_d, tag_type_p) \
-	smb_vfs_call_sys_acl_get_tag_type((handle)->next, (entry_d), (tag_type_p))
-
-#define SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry_d, permset_p) \
-	smb_vfs_call_sys_acl_get_permset((conn)->vfs_handles, (entry_d), (permset_p))
-#define SMB_VFS_NEXT_SYS_ACL_GET_PERMSET(handle, entry_d, permset_p) \
-	smb_vfs_call_sys_acl_get_permset((handle)->next, (entry_d), (permset_p))
-
-#define SMB_VFS_SYS_ACL_GET_QUALIFIER(conn, entry_d) \
-	smb_vfs_call_sys_acl_get_qualifier((conn)->vfs_handles, (entry_d))
-#define SMB_VFS_NEXT_SYS_ACL_GET_QUALIFIER(handle, entry_d) \
-	smb_vfs_call_sys_acl_get_qualifier((handle)->next, (entry_d))
-
 #define SMB_VFS_SYS_ACL_GET_FILE(conn, path_p, type) \
 	smb_vfs_call_sys_acl_get_file((conn)->vfs_handles, (path_p), (type))
 #define SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type) \
@@ -458,51 +438,6 @@
 	smb_vfs_call_sys_acl_get_fd((fsp)->conn->vfs_handles, (fsp))
 #define SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp) \
 	smb_vfs_call_sys_acl_get_fd((handle)->next, (fsp))
-
-#define SMB_VFS_SYS_ACL_CLEAR_PERMS(conn, permset) \
-	smb_vfs_call_sys_acl_clear_perms((conn)->vfs_handles, (permset))
-#define SMB_VFS_NEXT_SYS_ACL_CLEAR_PERMS(handle, permset) \
-	smb_vfs_call_sys_acl_clear_perms((handle)->next, (permset))
-
-#define SMB_VFS_SYS_ACL_ADD_PERM(conn, permset, perm) \
-	smb_vfs_call_sys_acl_add_perm((conn)->vfs_handles, (permset), (perm))
-#define SMB_VFS_NEXT_SYS_ACL_ADD_PERM(handle, permset, perm) \
-	smb_vfs_call_sys_acl_add_perm((handle)->next, (permset), (perm))
-
-#define SMB_VFS_SYS_ACL_TO_TEXT(conn, theacl, plen) \
-	smb_vfs_call_sys_acl_to_text((conn)->vfs_handles, (theacl), (plen))
-#define SMB_VFS_NEXT_SYS_ACL_TO_TEXT(handle, theacl, plen) \
-	smb_vfs_call_sys_acl_to_text((handle)->next, (theacl), (plen))
-
-#define SMB_VFS_SYS_ACL_INIT(conn, count) \
-	smb_vfs_call_sys_acl_init((conn)->vfs_handles, (count))
-#define SMB_VFS_NEXT_SYS_ACL_INIT(handle, count) \
-	smb_vfs_call_sys_acl_init((handle)->next, (count))
-
-#define SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, pacl, pentry) \
-	smb_vfs_call_sys_acl_create_entry((conn)->vfs_handles, (pacl), (pentry))
-#define SMB_VFS_NEXT_SYS_ACL_CREATE_ENTRY(handle, pacl, pentry) \
-	smb_vfs_call_sys_acl_create_entry((handle)->next, (pacl), (pentry))
-
-#define SMB_VFS_SYS_ACL_SET_TAG_TYPE(conn, entry, tagtype) \
-	smb_vfs_call_sys_acl_set_tag_type((conn)->vfs_handles, (entry), (tagtype))
-#define SMB_VFS_NEXT_SYS_ACL_SET_TAG_TYPE(handle, entry, tagtype) \
-	smb_vfs_call_sys_acl_set_tag_type((handle)->next, (entry), (tagtype))
-
-#define SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, entry, qual) \
-	smb_vfs_call_sys_acl_set_qualifier((conn)->vfs_handles, (entry), (qual))
-#define SMB_VFS_NEXT_SYS_ACL_SET_QUALIFIER(handle, entry, qual) \
-	smb_vfs_call_sys_acl_set_qualifier((handle)->next, (entry), (qual))
-
-#define SMB_VFS_SYS_ACL_SET_PERMSET(conn, entry, permset) \
-	smb_vfs_call_sys_acl_set_permset((conn)->vfs_handles, (entry), (permset))
-#define SMB_VFS_NEXT_SYS_ACL_SET_PERMSET(handle, entry, permset) \
-	smb_vfs_call_sys_acl_set_permset((handle)->next, (entry), (permset))
-
-#define SMB_VFS_SYS_ACL_VALID(conn, theacl) \
-	smb_vfs_call_sys_acl_valid((conn)->vfs_handles, (theacl))
-#define SMB_VFS_NEXT_SYS_ACL_VALID(handle, theacl) \
-	smb_vfs_call_sys_acl_valid((handle)->next, (theacl))
 
 #define SMB_VFS_SYS_ACL_SET_FILE(conn, name, acltype, theacl) \
 	smb_vfs_call_sys_acl_set_file((conn)->vfs_handles, (name), (acltype), (theacl))
@@ -518,26 +453,6 @@
 	smb_vfs_call_sys_acl_delete_def_file((conn)->vfs_handles, (path))
 #define SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path) \
 	smb_vfs_call_sys_acl_delete_def_file((handle)->next, (path))
-
-#define SMB_VFS_SYS_ACL_GET_PERM(conn, permset, perm) \
-	smb_vfs_call_sys_acl_get_perm((conn)->vfs_handles, (permset), (perm))
-#define SMB_VFS_NEXT_SYS_ACL_GET_PERM(handle, permset, perm) \
-	smb_vfs_call_sys_acl_get_perm((handle)->next, (permset), (perm))
-
-#define SMB_VFS_SYS_ACL_FREE_TEXT(conn, text) \
-	smb_vfs_call_sys_acl_free_text((conn)->vfs_handles, (text))
-#define SMB_VFS_NEXT_SYS_ACL_FREE_TEXT(handle, text) \
-	smb_vfs_call_sys_acl_free_text((handle)->next, (text))
-
-#define SMB_VFS_SYS_ACL_FREE_ACL(conn, posix_acl) \
-	smb_vfs_call_sys_acl_free_acl((conn)->vfs_handles, (posix_acl))
-#define SMB_VFS_NEXT_SYS_ACL_FREE_ACL(handle, posix_acl) \
-	smb_vfs_call_sys_acl_free_acl((handle)->next, (posix_acl))
-
-#define SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, qualifier, tagtype) \
-	smb_vfs_call_sys_acl_free_qualifier((conn)->vfs_handles, (qualifier), (tagtype))
-#define SMB_VFS_NEXT_SYS_ACL_FREE_QUALIFIER(handle, qualifier, tagtype) \
-	smb_vfs_call_sys_acl_free_qualifier((handle)->next, (qualifier), (tagtype))
 
 #define SMB_VFS_GETXATTR(conn,path,name,value,size) \
 	smb_vfs_call_getxattr((conn)->vfs_handles,(path),(name),(value),(size))

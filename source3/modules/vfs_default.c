@@ -2111,26 +2111,6 @@ static int vfswrap_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode
 #endif
 }
 
-static int vfswrap_sys_acl_get_entry(vfs_handle_struct *handle,  SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
-{
-	return sys_acl_get_entry(theacl, entry_id, entry_p);
-}
-
-static int vfswrap_sys_acl_get_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
-{
-	return sys_acl_get_tag_type(entry_d, tag_type_p);
-}
-
-static int vfswrap_sys_acl_get_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
-{
-	return sys_acl_get_permset(entry_d, permset_p);
-}
-
-static void * vfswrap_sys_acl_get_qualifier(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry_d)
-{
-	return sys_acl_get_qualifier(entry_d);
-}
-
 static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type)
 {
 	return sys_acl_get_file(handle, path_p, type);
@@ -2139,51 +2119,6 @@ static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,  const char
 static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
 	return sys_acl_get_fd(handle, fsp);
-}
-
-static int vfswrap_sys_acl_clear_perms(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset)
-{
-	return sys_acl_clear_perms(permset);
-}
-
-static int vfswrap_sys_acl_add_perm(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
-{
-	return sys_acl_add_perm(permset, perm);
-}
-
-static char * vfswrap_sys_acl_to_text(vfs_handle_struct *handle,  SMB_ACL_T theacl, ssize_t *plen)
-{
-	return sys_acl_to_text(theacl, plen);
-}
-
-static SMB_ACL_T vfswrap_sys_acl_init(vfs_handle_struct *handle,  int count)
-{
-	return sys_acl_init(count);
-}
-
-static int vfswrap_sys_acl_create_entry(vfs_handle_struct *handle,  SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
-{
-	return sys_acl_create_entry(pacl, pentry);
-}
-
-static int vfswrap_sys_acl_set_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
-{
-	return sys_acl_set_tag_type(entry, tagtype);
-}
-
-static int vfswrap_sys_acl_set_qualifier(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, void *qual)
-{
-	return sys_acl_set_qualifier(entry, qual);
-}
-
-static int vfswrap_sys_acl_set_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
-{
-	return sys_acl_set_permset(entry, permset);
-}
-
-static int vfswrap_sys_acl_valid(vfs_handle_struct *handle,  SMB_ACL_T theacl )
-{
-	return sys_acl_valid(theacl );
 }
 
 static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
@@ -2199,26 +2134,6 @@ static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, 
 static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
 {
 	return sys_acl_delete_def_file(handle, path);
-}
-
-static int vfswrap_sys_acl_get_perm(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
-{
-	return sys_acl_get_perm(permset, perm);
-}
-
-static int vfswrap_sys_acl_free_text(vfs_handle_struct *handle,  char *text)
-{
-	return sys_acl_free_text(text);
-}
-
-static int vfswrap_sys_acl_free_acl(vfs_handle_struct *handle,  SMB_ACL_T posix_acl)
-{
-	return sys_acl_free_acl(posix_acl);
-}
-
-static int vfswrap_sys_acl_free_qualifier(vfs_handle_struct *handle,  void *qualifier, SMB_ACL_TAG_T tagtype)
-{
-	return sys_acl_free_qualifier(qualifier, tagtype);
 }
 
 /****************************************************************
@@ -2408,28 +2323,11 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.chmod_acl_fn = vfswrap_chmod_acl,
 	.fchmod_acl_fn = vfswrap_fchmod_acl,
 
-	.sys_acl_get_entry_fn = vfswrap_sys_acl_get_entry,
-	.sys_acl_get_tag_type_fn = vfswrap_sys_acl_get_tag_type,
-	.sys_acl_get_permset_fn = vfswrap_sys_acl_get_permset,
-	.sys_acl_get_qualifier_fn = vfswrap_sys_acl_get_qualifier,
 	.sys_acl_get_file_fn = vfswrap_sys_acl_get_file,
 	.sys_acl_get_fd_fn = vfswrap_sys_acl_get_fd,
-	.sys_acl_clear_perms_fn = vfswrap_sys_acl_clear_perms,
-	.sys_acl_add_perm_fn = vfswrap_sys_acl_add_perm,
-	.sys_acl_to_text_fn = vfswrap_sys_acl_to_text,
-	.sys_acl_init_fn = vfswrap_sys_acl_init,
-	.sys_acl_create_entry_fn = vfswrap_sys_acl_create_entry,
-	.sys_acl_set_tag_type_fn = vfswrap_sys_acl_set_tag_type,
-	.sys_acl_set_qualifier_fn = vfswrap_sys_acl_set_qualifier,
-	.sys_acl_set_permset_fn = vfswrap_sys_acl_set_permset,
-	.sys_acl_valid_fn = vfswrap_sys_acl_valid,
 	.sys_acl_set_file_fn = vfswrap_sys_acl_set_file,
 	.sys_acl_set_fd_fn = vfswrap_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = vfswrap_sys_acl_delete_def_file,
-	.sys_acl_get_perm_fn = vfswrap_sys_acl_get_perm,
-	.sys_acl_free_text_fn = vfswrap_sys_acl_free_text,
-	.sys_acl_free_acl_fn = vfswrap_sys_acl_free_acl,
-	.sys_acl_free_qualifier_fn = vfswrap_sys_acl_free_qualifier,
 
 	/* EA operations. */
 	.getxattr_fn = vfswrap_getxattr,
