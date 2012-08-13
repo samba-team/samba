@@ -354,11 +354,6 @@ int sys_acl_free_text(char *text)
 	return 0;
 }
 
-int sys_acl_free_qualifier(void *qual, SMB_ACL_TAG_T tagtype)
-{
-	return 0;
-}
-
 int sys_acl_valid(SMB_ACL_T acl_d)
 {
 	errno = EINVAL;

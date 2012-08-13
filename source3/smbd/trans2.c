@@ -3899,7 +3899,6 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 						return False;
 					}
 					own_grp = (unsigned int)*puid;
-					sys_acl_free_qualifier((void*)puid,tagtype);
 					SCVAL(pdata,0,SMB_POSIX_ACL_USER);
 					SIVAL(pdata,2,own_grp);
 					SIVAL(pdata,6,0);
@@ -3919,7 +3918,6 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 						return False;
 					}
 					own_grp = (unsigned int)*pgid;
-					sys_acl_free_qualifier((void *)pgid,tagtype);
 					SCVAL(pdata,0,SMB_POSIX_ACL_GROUP);
 					SIVAL(pdata,2,own_grp);
 					SIVAL(pdata,6,0);
