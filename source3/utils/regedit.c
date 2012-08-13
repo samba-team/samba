@@ -38,8 +38,9 @@
 #define VAL_WIDTH 	(COLS - KEY_WIDTH)
 #define VAL_HEIGHT	(LINES - VAL_START_Y - 1)
 #define HEADING_START_Y	(KEY_START_Y - 1)
-#define INFO_START_Y	(LINES - 1)
-#define INFO_WIDTH	(LINES)
+#define HELP_START_Y	(LINES - 1)
+#define HELP_START_X	0
+#define HELP_WIDTH	(LINES)
 #define PATH_START_Y 	0
 #define PATH_START_X 	6
 #define PATH_MAX_Y	(COLS - 1)
@@ -124,6 +125,34 @@ static struct tree_node *load_hives(TALLOC_CTX *mem_ctx,
 	return root;
 }
 
+static void print_help(struct regedit *regedit)
+{
+	const char *khelp = "[n] New Key [s] New Subkey [d] Del Key "
+			    "[LEFT] Ascend [RIGHT] Descend";
+	const char *vhelp = "[n] New Value [d] Del Value [ENTER] Edit";
+	const char *msg = "KEYS";
+	const char *help = khelp;
+	int i, pad;
+
+	if (!regedit->tree_input) {
+		msg = "VALUES";
+		help = vhelp;
+	}
+
+	move(HELP_START_Y, HELP_START_X);
+	clrtoeol();
+	attron(A_REVERSE | A_BOLD);
+	move(HELP_START_Y, HELP_START_X);
+	addstr(msg);
+	attroff(A_BOLD);
+	pad = COLS - strlen(msg) - strlen(help);
+	for (i = 0; i < pad; ++i) {
+		addch(' ');
+	}
+	addstr(help);
+	attroff(A_REVERSE);
+}
+
 static void print_heading(struct regedit *regedit)
 {
 	move(HEADING_START_Y, 0);
@@ -144,6 +173,8 @@ static void print_heading(struct regedit *regedit)
 	}
 	mvprintw(HEADING_START_Y, VAL_START_X, "Value");
 	attroff(A_REVERSE);
+
+	print_help(regedit);
 }
 
 static void add_reg_key(struct regedit *regedit, struct tree_node *node,
