@@ -891,7 +891,7 @@ static mode_t unix_perms_to_acl_perms(mode_t mode, int r_mask, int w_mask, int x
 
 static int map_acl_perms_to_permset(connection_struct *conn, mode_t mode, SMB_ACL_PERMSET_T *p_permset)
 {
-	if (SMB_VFS_SYS_ACL_CLEAR_PERMS(conn, *p_permset) ==  -1)
+	if (sys_acl_clear_perms(*p_permset) ==  -1)
 		return -1;
 	if (mode & S_IRUSR) {
 		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_READ) == -1)
@@ -4474,7 +4474,7 @@ static bool unix_ex_wire_to_permset(connection_struct *conn, unsigned char wire_
 		return False;
 	}
 
-	if (SMB_VFS_SYS_ACL_CLEAR_PERMS(conn, *p_permset) ==  -1) {
+	if (sys_acl_clear_perms(*p_permset) ==  -1) {
 		return False;
 	}
 
