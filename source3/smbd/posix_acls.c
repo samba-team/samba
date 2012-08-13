@@ -2888,7 +2888,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 		 * Get the entry for this ACE.
 		 */
 
-		if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &the_acl, &the_entry) == -1) {
+		if (sys_acl_create_entry(&the_acl, &the_entry) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -2965,7 +2965,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 	}
 
 	if (needs_mask && !got_mask_entry) {
-		if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &the_acl, &mask_entry) == -1) {
+		if (sys_acl_create_entry(&the_acl, &mask_entry) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to create mask entry. (%s)\n", strerror(errno) ));
 			goto fail;
 		}
@@ -4546,7 +4546,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 		SMB_ACL_PERMSET_T the_permset;
 		SMB_ACL_TAG_T tag_type;
 
-		if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &the_acl, &the_entry) == -1) {
+		if (sys_acl_create_entry(&the_acl, &the_entry) == -1) {
 			DEBUG(0,("create_posix_acl_from_wire: Failed to create entry %u. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -4690,7 +4690,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 	}
 
 	/* Now create the u/g/w entries. */
-	if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &new_file_acl, &user_ent) == -1) {
+	if (sys_acl_create_entry(&new_file_acl, &user_ent) == -1) {
 		DEBUG(5,("remove_posix_acl: Failed to create user entry for file %s. (%s)\n",
 			fname, strerror(errno) ));
 		goto done;
@@ -4701,7 +4701,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 		goto done;
 	}
 
-	if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &new_file_acl, &group_ent) == -1) {
+	if (sys_acl_create_entry(&new_file_acl, &group_ent) == -1) {
 		DEBUG(5,("remove_posix_acl: Failed to create group entry for file %s. (%s)\n",
 			fname, strerror(errno) ));
 		goto done;
@@ -4712,7 +4712,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 		goto done;
 	}
 
-	if (SMB_VFS_SYS_ACL_CREATE_ENTRY(conn, &new_file_acl, &other_ent) == -1) {
+	if (sys_acl_create_entry(&new_file_acl, &other_ent) == -1) {
 		DEBUG(5,("remove_posix_acl: Failed to create other entry for file %s. (%s)\n",
 			fname, strerror(errno) ));
 		goto done;
