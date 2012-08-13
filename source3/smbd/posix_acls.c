@@ -894,15 +894,15 @@ static int map_acl_perms_to_permset(connection_struct *conn, mode_t mode, SMB_AC
 	if (sys_acl_clear_perms(*p_permset) ==  -1)
 		return -1;
 	if (mode & S_IRUSR) {
-		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_READ) == -1)
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_READ) == -1)
 			return -1;
 	}
 	if (mode & S_IWUSR) {
-		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_WRITE) == -1)
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_WRITE) == -1)
 			return -1;
 	}
 	if (mode & S_IXUSR) {
-		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_EXECUTE) == -1)
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_EXECUTE) == -1)
 			return -1;
 	}
 	return 0;
@@ -4479,17 +4479,17 @@ static bool unix_ex_wire_to_permset(connection_struct *conn, unsigned char wire_
 	}
 
 	if (wire_perm & SMB_POSIX_ACL_READ) {
-		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_READ) == -1) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_READ) == -1) {
 			return False;
 		}
 	}
 	if (wire_perm & SMB_POSIX_ACL_WRITE) {
-		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_WRITE) == -1) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_WRITE) == -1) {
 			return False;
 		}
 	}
 	if (wire_perm & SMB_POSIX_ACL_EXECUTE) {
-		if (SMB_VFS_SYS_ACL_ADD_PERM(conn, *p_permset, SMB_ACL_EXECUTE) == -1) {
+		if (sys_acl_add_perm(*p_permset, SMB_ACL_EXECUTE) == -1) {
 			return False;
 		}
 	}
