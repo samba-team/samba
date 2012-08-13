@@ -2953,7 +2953,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 		 * ..and apply them to the entry.
 		 */
 
-		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, the_entry, the_permset) == -1) {
+		if (sys_acl_set_permset(the_entry, the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to add permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -2985,7 +2985,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 			goto fail;
 		}
 
-		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, mask_entry, mask_permset) == -1) {
+		if (sys_acl_set_permset(mask_entry, mask_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to add mask permset. (%s)\n", strerror(errno) ));
 			goto fail;
 		}
@@ -4354,7 +4354,7 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 		if (map_acl_perms_to_permset(conn, perms, &permset) == -1)
 			return -1;
 
-		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, entry, permset) == -1)
+		if (sys_acl_set_permset(entry, permset) == -1)
 			return -1;
 	}
 
@@ -4579,7 +4579,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 		}
 
 		/* Now apply to the new ACL entry. */
-		if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, the_entry, the_permset) == -1) {
+		if (sys_acl_set_permset(the_entry, the_permset) == -1) {
 			DEBUG(0,("create_posix_acl_from_wire: Failed to add permset on entry %u. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -4757,17 +4757,17 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 		}
 
 		if (tagtype == SMB_ACL_USER_OBJ) {
-			if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, user_ent, permset) == -1) {
+			if (sys_acl_set_permset(user_ent, permset) == -1) {
 				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
 					fname, strerror(errno) ));
 			}
 		} else if (tagtype == SMB_ACL_GROUP_OBJ) {
-			if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, group_ent, permset) == -1) {
+			if (sys_acl_set_permset(group_ent, permset) == -1) {
 				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
 					fname, strerror(errno) ));
 			}
 		} else if (tagtype == SMB_ACL_OTHER) {
-			if (SMB_VFS_SYS_ACL_SET_PERMSET(conn, other_ent, permset) == -1) {
+			if (sys_acl_set_permset(other_ent, permset) == -1) {
 				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
 					fname, strerror(errno) ));
 			}
