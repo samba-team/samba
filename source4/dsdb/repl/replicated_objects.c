@@ -372,7 +372,6 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		   must be used on the client with TYPE_WRITE removed
 		*/
 		if (instanceType & INSTANCE_TYPE_WRITE) {
-			instanceType &= ~INSTANCE_TYPE_WRITE;
 			/*
 			 * Make sure we do not change the order
 			 * of msg->elements!
@@ -382,7 +381,18 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			 * instead of
 			 * ldb_msg_remove_attr(msg, "instanceType");
 			 */
+			struct ldb_message_element *e;
+
+			e = ldb_msg_find_element(msg, "instanceType");
+			if (e != instanceType_e) {
+				DEBUG(0,("instanceType_e[%p] changed to e[%p]\n",
+					 instanceType_e, e));
+				return WERR_FOOBAR;
+			}
+
 			instanceType_e->num_values = 0;
+
+			instanceType &= ~INSTANCE_TYPE_WRITE;
 			if (ldb_msg_add_fmt(msg, "instanceType", "%d", instanceType) != LDB_SUCCESS) {
 				return WERR_INTERNAL_ERROR;
 			}
