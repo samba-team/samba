@@ -3873,7 +3873,7 @@ static bool marshall_posix_acl(connection_struct *conn, char *pdata, SMB_STRUCT_
 			return False;
 		}
 
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+		if (sys_acl_get_permset(entry, &permset) == -1) {
 			DEBUG(0,("marshall_posix_acl: SMB_VFS_SYS_ACL_GET_PERMSET failed.\n"));
 			return False;
 		}

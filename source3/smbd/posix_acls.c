@@ -2644,7 +2644,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1)
 			continue;
 
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1)
+		if (sys_acl_get_permset(entry, &permset) == -1)
 			continue;
 
 		/* Decide which SID to use based on the ACL type. */
@@ -2937,7 +2937,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 		 * Convert the mode_t perms in the canon_ace to a POSIX permset.
 		 */
 
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, the_entry, &the_permset) == -1) {
+		if (sys_acl_get_permset(the_entry, &the_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to get permset on entry %d. (%s)\n",
 				i, strerror(errno) ));
 			goto fail;
@@ -2975,7 +2975,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 			goto fail;
 		}
 
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, mask_entry, &mask_permset) == -1) {
+		if (sys_acl_get_permset(mask_entry, &mask_permset) == -1) {
 			DEBUG(0,("set_canon_ace_list: Failed to get mask permset. (%s)\n", strerror(errno) ));
 			goto fail;
 		}
@@ -4286,7 +4286,7 @@ int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode
 			break;
 
 		if (tagtype == SMB_ACL_GROUP_OBJ) {
-			if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+			if (sys_acl_get_permset(entry, &permset) == -1) {
 				break;
 			} else {
 				*mode &= ~(S_IRGRP|S_IWGRP|S_IXGRP);
@@ -4323,7 +4323,7 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 		if (SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry, &tagtype) == -1)
 			return -1;
 
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1)
+		if (sys_acl_get_permset(entry, &permset) == -1)
 			return -1;
 
 		num_entries++;
@@ -4565,7 +4565,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 		}
 
 		/* Get the permset pointer from the new ACL entry. */
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, the_entry, &the_permset) == -1) {
+		if (sys_acl_get_permset(the_entry, &the_permset) == -1) {
 			DEBUG(0,("create_posix_acl_from_wire: Failed to get permset on entry %u. (%s)\n",
                                 i, strerror(errno) ));
                         goto fail;
@@ -4750,7 +4750,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 			goto done;
 		}
 
-		if (SMB_VFS_SYS_ACL_GET_PERMSET(conn, entry, &permset) == -1) {
+		if (sys_acl_get_permset(entry, &permset) == -1) {
 			DEBUG(5,("remove_posix_acl: failed to get permset from ACL on file %s (%s).\n",
 				fname, strerror(errno) ));
 			goto done;
