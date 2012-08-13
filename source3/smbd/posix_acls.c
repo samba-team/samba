@@ -2926,7 +2926,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 		 */
 
 		if ((p_ace->type == SMB_ACL_USER) || (p_ace->type == SMB_ACL_GROUP)) {
-			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&p_ace->unix_ug.id) == -1) {
+			if (sys_acl_set_qualifier(the_entry,(void *)&p_ace->unix_ug.id) == -1) {
 				DEBUG(0,("set_canon_ace_list: Failed to set qualifier on entry %d. (%s)\n",
 					i, strerror(errno) ));
 				goto fail;
@@ -4588,7 +4588,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 		if (tag_type == SMB_ACL_USER) {
 			uint32 uidval = IVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
 			uid_t uid = (uid_t)uidval;
-			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&uid) == -1) {
+			if (sys_acl_set_qualifier(the_entry,(void *)&uid) == -1) {
 				DEBUG(0,("create_posix_acl_from_wire: Failed to set uid %u on entry %u. (%s)\n",
 					(unsigned int)uid, i, strerror(errno) ));
 				goto fail;
@@ -4598,7 +4598,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_
 		if (tag_type == SMB_ACL_GROUP) {
 			uint32 gidval = IVAL(pdata,(i*SMB_POSIX_ACL_ENTRY_SIZE)+2);
 			gid_t gid = (uid_t)gidval;
-			if (SMB_VFS_SYS_ACL_SET_QUALIFIER(conn, the_entry,(void *)&gid) == -1) {
+			if (sys_acl_set_qualifier(the_entry,(void *)&gid) == -1) {
 				DEBUG(0,("create_posix_acl_from_wire: Failed to set gid %u on entry %u. (%s)\n",
 					(unsigned int)gid, i, strerror(errno) ));
 				goto fail;
