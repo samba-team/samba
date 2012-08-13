@@ -1,4 +1,4 @@
-What's new in Samba 4.0 beta5
+What's new in Samba 4.0 beta6
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba 4.0 beta5 is not a final Samba release, however we are now making
+Samba 4.0 beta6 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release, of which this is a preview.
 Be aware the this release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -94,46 +94,29 @@ Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE beta4
+CHANGES SINCE beta5
 =====================
 
-For a list of changes since beta4, please see the git log.
+For a list of changes since beta5, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0beta4..samba-4.0.0beta5
+$ git log samba-4.0.0beta5..samba-4.0.0beta6
 
 Some major user-visible changes include:
 
-- The issue with beta4 being unable to build with a released version of
-  ldb has been resolved. 
+- Provision is now faster, as we now correctly use the database
+  indicies during the provision
 
-- The two parameter tables for our two smb.conf parsing engines have
-  been merged.  This removes the ugly (but harmless) "unknown
-  parameter xxx" warnings, particularly from the smbd child process.
+- Support for handling of Extended Signatures (Session Key Protection)
 
-- Major issues have been fixed in conflict and missing/deleted parent
-  handling in or DRS replication engine.
+- A (unverified at this time) fix for expanding memory use in our
+  AD DRS replication server.
 
-- Safety improvements to prevent corruption of read-write replicas
-  by manual replication from a read-only replica.
+- A fix for supporting the userWorkstations restriction in the KDC
 
-- Improvements to dbcheck to correct incorrect instanceType values from
-  the above and to relocate objects with missing parents.
-
-- smbd no longer places all accounts in the 'Domain Users' of the AD
-  domain to which it is joined
-
-- AES support in NETLOGON Schannel
-
-- DCE/RPC timeout handling no longer crashes
-
-- "socket address" is now "nbt client socket address" as it only
-  controls the binding of the NetBIOS client, not other protocols.
-  See 'bind interfaces only = yes'.  This parameter is also now depricated.
-
-- nmbd now always binds to it's broadcast sockets explicitly, rather
-  than just relying on the socket address above.
+- Support for upgrading classic domains that may not have all the
+  default domain policies set.
 
 Less visible, but important changes under the hood include:
 
@@ -143,6 +126,8 @@ Less visible, but important changes under the hood include:
 
 - Patches to ensure that talloc_tos() and talloc_stackframe() are
   always used correctly.
+
+- Preparation for correctly setting POSIX ACLs during provision.
 
 KNOWN ISSUES
 ============
@@ -165,7 +150,7 @@ KNOWN ISSUES
   this partition is not yet reliable.
 
 - Replication may fail on FreeBSD due to getaddrinfo() rejecting names
-  containing _.  A workaround will be in the next beta.
+  containing _.  A workaround will be in a future next beta.
 
 - upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
