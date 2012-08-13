@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "vfs_aixacl_util.h"
 
 SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 {

@@ -20,9 +20,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
-
-extern SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl);
-extern struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+#include "vfs_aixacl_util.h"
 
 SMB_ACL_T aixacl_sys_acl_get_file(vfs_handle_struct *handle,
 				    const char *path_p,
