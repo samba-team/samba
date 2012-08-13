@@ -481,7 +481,57 @@ int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
 	return modal_loop(dia);
 }
 
-#define MAX_FIELDS 8
+#define EDIT_WIDTH		50
+#define EDIT_INTERNAL_WIDTH	(EDIT_WIDTH - 2)
+#define EDIT_INPUT_WIDTH	(EDIT_INTERNAL_WIDTH - 2)
+
+#define EDIT_NAME_LABEL_Y	0
+#define EDIT_NAME_LABEL_X	0
+#define EDIT_NAME_LABEL_WIDTH	EDIT_INTERNAL_WIDTH
+#define EDIT_NAME_LABEL_HEIGHT	1
+#define EDIT_NAME_INPUT_Y	1
+#define EDIT_NAME_INPUT_X	1
+#define EDIT_NAME_INPUT_WIDTH	EDIT_INPUT_WIDTH
+#define EDIT_NAME_INPUT_HEIGHT	1
+
+#define EDIT_DATA_LABEL_Y	3
+#define EDIT_DATA_LABEL_X	0
+#define EDIT_DATA_LABEL_WIDTH	EDIT_INTERNAL_WIDTH
+#define EDIT_DATA_LABEL_HEIGHT	1
+#define EDIT_DATA_INPUT_Y	4
+#define EDIT_DATA_INPUT_X	1
+#define EDIT_DATA_INPUT_WIDTH	EDIT_INPUT_WIDTH
+#define EDIT_DATA_HEIGHT_ONELINE	1
+#define EDIT_DATA_HEIGHT_MULTILINE	5
+#define EDIT_DATA_HEIGHT_BUF		10
+
+#define EDIT_FORM_WIN_Y			0
+#define EDIT_FORM_WIN_X			0
+#define EDIT_FORM_WIN_HEIGHT_ONELINE	\
+	(EDIT_NAME_LABEL_HEIGHT + EDIT_NAME_INPUT_HEIGHT + 1 + \
+	 EDIT_DATA_LABEL_HEIGHT + EDIT_DATA_HEIGHT_ONELINE)
+
+#define EDIT_FORM_WIN_HEIGHT_MULTILINE	\
+	(EDIT_NAME_LABEL_HEIGHT + EDIT_NAME_INPUT_HEIGHT + 1 + \
+	 EDIT_DATA_LABEL_HEIGHT + EDIT_DATA_HEIGHT_MULTILINE)
+
+#define EDIT_FORM_WIN_HEIGHT_BUF	\
+	(EDIT_NAME_LABEL_HEIGHT + EDIT_NAME_INPUT_HEIGHT + 1 + \
+	 EDIT_DATA_LABEL_HEIGHT)
+
+#define EDIT_FORM_WIN_WIDTH		EDIT_INTERNAL_WIDTH
+
+#define EDIT_PAD		5
+#define EDIT_HEIGHT_ONELINE	(EDIT_FORM_WIN_HEIGHT_ONELINE + EDIT_PAD)
+
+#define EDIT_HEIGHT_MULTILINE	(EDIT_FORM_WIN_HEIGHT_MULTILINE + EDIT_PAD)
+
+#define EDIT_HEIGHT_BUF		\
+	(EDIT_FORM_WIN_HEIGHT_BUF + EDIT_DATA_HEIGHT_BUF + EDIT_PAD)
+
+#define MAX_FIELDS 5
+#define FLD_NAME 1
+#define FLD_DATA 3
 
 enum input_section {
 	IN_NAME,
@@ -500,14 +550,14 @@ struct edit_dialog {
 
 static int edit_dialog_free(struct edit_dialog *edit)
 {
+	FIELD **f;
+
 	if (edit->input) {
 		unpost_form(edit->input);
+		free_form(edit->input);
 	}
-	if (edit->field[0]) {
-		free_field(edit->field[0]);
-	}
-	if (edit->field[1]) {
-		free_field(edit->field[1]);
+	for (f = edit->field; *f; ++f) {
+		free_field(*f);
 	}
 	delwin(edit->input_win);
 
@@ -529,7 +579,7 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 		if (tmp == NULL) {
 			return WERR_NOMEM;
 		}
-		set_field_buffer(edit->field[1], 0, tmp);
+		set_field_buffer(edit->field[FLD_DATA], 0, tmp);
 		talloc_free(tmp);
 		break;
 	}
@@ -540,7 +590,7 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 		if (!pull_reg_sz(edit, &vitem->data, &s)) {
 			return WERR_NOMEM;
 		}
-		set_field_buffer(edit->field[1], 0, s);
+		set_field_buffer(edit->field[FLD_DATA], 0, s);
 		break;
 	}
 	case REG_MULTI_SZ: {
@@ -560,7 +610,7 @@ static WERROR fill_value_buffer(struct edit_dialog *edit,
 				return WERR_NOMEM;
 			}
 		}
-		set_field_buffer(edit->field[1], 0, buf);
+		set_field_buffer(edit->field[FLD_DATA], 0, buf);
 		talloc_free(buf);
 	}
 	case REG_BINARY:
@@ -588,9 +638,9 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 {
 	WERROR rv;
 	DATA_BLOB blob;
-	char *name = string_trim(edit, field_buffer(edit->field[0], 0));
+	char *name = string_trim(edit, field_buffer(edit->field[FLD_NAME], 0));
 
-	if (!new_value && !edit->buf && !field_status(edit->field[1])) {
+	if (!new_value && !edit->buf && !field_status(edit->field[FLD_DATA])) {
 		return WERR_OK;
 	}
 	if (new_value && value_exists(edit, key, name)) {
@@ -601,7 +651,7 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 	case REG_DWORD: {
 		uint32_t val;
 		int base = 10;
-		const char *buf = field_buffer(edit->field[1], 0);
+		const char *buf = field_buffer(edit->field[FLD_DATA], 0);
 
 		if (buf[0] == '0' && tolower(buf[1]) == 'x') {
 			base = 16;
@@ -615,7 +665,7 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 	}
 	case REG_SZ:
 	case REG_EXPAND_SZ: {
-		const char *buf = field_buffer(edit->field[1], 0);
+		const char *buf = field_buffer(edit->field[FLD_DATA], 0);
 		char *str = string_trim(edit, buf);
 
 		if (!str || !push_reg_sz(edit, &blob, str)) {
@@ -627,9 +677,9 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 		int rows, cols, max;
 		const char **arr;
 		size_t i;
-		const char *buf = field_buffer(edit->field[1], 0);
+		const char *buf = field_buffer(edit->field[FLD_DATA], 0);
 
-		dynamic_field_info(edit->field[1], &rows, &cols, &max);
+		dynamic_field_info(edit->field[FLD_DATA], &rows, &cols, &max);
 
 		arr = talloc_zero_array(edit, const char *, rows + 1);
 		if (arr == NULL) {
@@ -664,7 +714,8 @@ static void section_down(struct edit_dialog *edit)
 			if (edit->buf) {
 				hexedit_set_cursor(edit->buf);
 			} else {
-				set_current_field(edit->input, edit->field[1]);
+				set_current_field(edit->input,
+						  edit->field[FLD_DATA]);
 			}
 		}
 		break;
@@ -677,7 +728,7 @@ static void section_down(struct edit_dialog *edit)
 		break;
 	case IN_MENU:
 		edit->section = IN_NAME;
-		set_current_field(edit->input, edit->field[0]);
+		set_current_field(edit->input, edit->field[FLD_NAME]);
 		break;
 	}
 	update_panels();
@@ -697,7 +748,7 @@ static void section_up(struct edit_dialog *edit)
 		if (edit->buf ||
 		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_NAME;
-			set_current_field(edit->input, edit->field[0]);
+			set_current_field(edit->input, edit->field[FLD_NAME]);
 		}
 		break;
 	case IN_MENU:
@@ -705,7 +756,7 @@ static void section_up(struct edit_dialog *edit)
 		if (edit->buf) {
 			hexedit_set_cursor(edit->buf);
 		} else {
-			set_current_field(edit->input, edit->field[1]);
+			set_current_field(edit->input, edit->field[FLD_DATA]);
 		}
 		break;
 	}
@@ -736,19 +787,157 @@ static void handle_hexedit_input(struct hexedit *buf, int c)
 	hexedit_set_cursor(buf);
 }
 
-WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
-		      const struct value_item *vitem)
+static WERROR edit_init_dialog(struct edit_dialog *edit, uint32_t type)
 {
-	struct edit_dialog *edit;
+	char *title;
+	int diaheight = -1;
+	int winheight = -1;
 	const char *choices[] = {
 		"Ok",
 		"Cancel",
 		"Resize",
 		NULL
 	};
+
+	switch (type) {
+	case REG_MULTI_SZ:
+		diaheight = EDIT_HEIGHT_MULTILINE;
+		winheight = EDIT_FORM_WIN_HEIGHT_MULTILINE;
+		choices[2] = NULL;
+		break;
+	case REG_BINARY:
+		diaheight = EDIT_HEIGHT_BUF;
+		winheight = EDIT_FORM_WIN_HEIGHT_BUF;
+		break;
+	default:
+		diaheight = EDIT_HEIGHT_ONELINE;
+		winheight = EDIT_FORM_WIN_HEIGHT_ONELINE;
+		choices[2] = NULL;
+		break;
+	}
+
+	title = talloc_asprintf(edit, "Edit %s value", str_regtype(type));
+	if (title == NULL) {
+		return WERR_NOMEM;
+	}
+	edit->dia = dialog_choice_center_new(edit, title, choices, diaheight,
+					     EDIT_WIDTH);
+	talloc_free(title);
+	if (edit->dia == NULL) {
+		return WERR_NOMEM;
+	}
+	edit->input_win = derwin(edit->dia->sub_window, winheight,
+				 EDIT_FORM_WIN_WIDTH,
+				 EDIT_FORM_WIN_Y, EDIT_FORM_WIN_X);
+	if (edit->input_win == NULL) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
+			     const struct value_item *vitem)
+{
+
+	edit->field[0] = new_field(EDIT_NAME_LABEL_HEIGHT,
+				   EDIT_NAME_LABEL_WIDTH,
+				   EDIT_NAME_LABEL_Y,
+				   EDIT_NAME_LABEL_X, 0, 0);
+	if (edit->field[0] == NULL) {
+		return WERR_NOMEM;
+	}
+	set_field_buffer(edit->field[0], 0, "Name");
+	field_opts_off(edit->field[0], O_EDIT);
+
+	edit->field[FLD_NAME] = new_field(EDIT_NAME_INPUT_HEIGHT,
+					  EDIT_NAME_INPUT_WIDTH,
+					  EDIT_NAME_INPUT_Y,
+					  EDIT_NAME_INPUT_X, 0, 0);
+	if (edit->field[FLD_NAME] == NULL) {
+		return WERR_NOMEM;
+	}
+
+	edit->field[2] = new_field(EDIT_DATA_LABEL_HEIGHT,
+				   EDIT_DATA_LABEL_WIDTH,
+				   EDIT_DATA_LABEL_Y,
+				   EDIT_DATA_LABEL_X, 0, 0);
+	if (edit->field[2] == NULL) {
+		return WERR_NOMEM;
+	}
+	set_field_buffer(edit->field[2], 0, "Data");
+	field_opts_off(edit->field[2], O_EDIT);
+
+	if (type == REG_BINARY) {
+		size_t len = 8;
+		const void *buf = NULL;
+
+		if (vitem) {
+			len = vitem->data.length;
+			buf = vitem->data.data;
+		}
+		edit->buf = hexedit_new(edit, edit->dia->sub_window,
+					EDIT_DATA_HEIGHT_BUF,
+					EDIT_DATA_INPUT_Y,
+					EDIT_DATA_INPUT_X,
+					buf, len);
+		if (edit->buf == NULL) {
+			return WERR_NOMEM;
+		}
+		hexedit_refresh(edit->buf);
+		hexedit_set_cursor(edit->buf);
+	} else {
+		int val_rows = EDIT_DATA_HEIGHT_ONELINE;
+
+		if (type == REG_MULTI_SZ) {
+			val_rows = EDIT_DATA_HEIGHT_MULTILINE;
+		}
+		edit->field[FLD_DATA] = new_field(val_rows,
+						  EDIT_DATA_INPUT_WIDTH,
+						  EDIT_DATA_INPUT_Y,
+						  EDIT_DATA_INPUT_X, 0, 0);
+		if (edit->field[FLD_DATA] == NULL) {
+			return WERR_NOMEM;
+		}
+	}
+
+	set_field_back(edit->field[FLD_NAME], A_REVERSE);
+	field_opts_off(edit->field[FLD_NAME], O_BLANK | O_AUTOSKIP | O_STATIC);
+	if (edit->field[FLD_DATA]) {
+		set_field_back(edit->field[FLD_DATA], A_REVERSE);
+		field_opts_off(edit->field[FLD_DATA],
+			       O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
+		if (type == REG_DWORD) {
+			set_field_type(edit->field[FLD_DATA], TYPE_REGEXP,
+				       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
+		}
+	}
+
+	if (vitem) {
+		set_field_buffer(edit->field[FLD_NAME], 0, vitem->value_name);
+		field_opts_off(edit->field[FLD_NAME], O_EDIT);
+		fill_value_buffer(edit, vitem);
+	}
+
+	edit->input = new_form(edit->field);
+	if (edit->input == NULL) {
+		return WERR_NOMEM;
+	}
+	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
+
+	set_form_win(edit->input, edit->dia->sub_window);
+	set_form_sub(edit->input, edit->input_win);
+	set_current_field(edit->input, edit->field[FLD_NAME]);
+	post_form(edit->input);
+
+	return WERR_OK;
+}
+
+WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
+		      const struct value_item *vitem)
+{
+	struct edit_dialog *edit;
 #define DIALOG_RESIZE 2
-	char *title;
-	int nlines, ncols, val_rows;
 	WERROR rv = WERR_NOMEM;
 	int selection;
 
@@ -758,99 +947,14 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t typ
 	}
 	talloc_set_destructor(edit, edit_dialog_free);
 
-	title = talloc_asprintf(edit, "Edit %s value", str_regtype(type));
-	if (title == NULL) {
+	rv = edit_init_dialog(edit, type);
+	if (!W_ERROR_IS_OK(rv)) {
 		goto finish;
 	}
-
-	nlines = 9;
-	if (type == REG_MULTI_SZ) {
-		nlines += 4;
-	} else if (type == REG_BINARY) {
-		nlines += 10;
-	}
-	/* don't include a resize button */
-	if (type != REG_BINARY) {
-		choices[2] = NULL;
-	}
-	ncols = 50;
-	edit->dia = dialog_choice_center_new(edit, title, choices, nlines,
-					     ncols);
-	talloc_free(title);
-	if (edit->dia == NULL) {
+	rv = edit_init_form(edit, type, vitem);
+	if (!W_ERROR_IS_OK(rv)) {
 		goto finish;
 	}
-
-	/* name */
-	edit->field[0] = new_field(1, ncols - 4, 1, 1, 0, 0);
-	if (edit->field[0] == NULL) {
-		goto finish;
-	}
-
-	/* data */
-	if (type == REG_BINARY) {
-		size_t len = 8;
-		const void *buf = NULL;
-
-		if (vitem) {
-			len = vitem->data.length;
-			buf = vitem->data.data;
-		}
-		edit->buf = hexedit_new(edit, edit->dia->sub_window, 10,
-					5, 0, buf, len);
-		if (edit->buf == NULL) {
-			goto finish;
-		}
-		hexedit_refresh(edit->buf);
-		hexedit_set_cursor(edit->buf);
-		edit->input_win = derwin(edit->dia->sub_window, 2,
-					 ncols - 3, 0, 0);
-
-	} else {
-		val_rows = 1;
-		if (type == REG_MULTI_SZ) {
-			val_rows += 4;
-		}
-		edit->field[1] = new_field(val_rows, ncols - 4, 4, 1, 0, 0);
-		if (edit->field[1] == NULL) {
-			goto finish;
-		}
-		edit->input_win = derwin(edit->dia->sub_window, nlines - 3,
-					 ncols - 3, 0, 0);
-	}
-	if (edit->input_win == NULL) {
-		goto finish;
-	}
-
-	set_field_back(edit->field[0], A_REVERSE);
-	field_opts_off(edit->field[0], O_BLANK | O_AUTOSKIP | O_STATIC);
-	if (edit->field[1]) {
-		set_field_back(edit->field[1], A_REVERSE);
-		field_opts_off(edit->field[1], O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
-		if (type == REG_DWORD) {
-			set_field_type(edit->field[1], TYPE_REGEXP,
-				       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
-		}
-	}
-
-	if (vitem) {
-		set_field_buffer(edit->field[0], 0, vitem->value_name);
-		field_opts_off(edit->field[0], O_EDIT);
-		fill_value_buffer(edit, vitem);
-	}
-
-	edit->input = new_form(edit->field);
-	if (edit->input == NULL) {
-		goto finish;
-	}
-	form_opts_off(edit->input, O_NL_OVERLOAD | O_BS_OVERLOAD);
-
-
-	set_form_win(edit->input, edit->dia->sub_window);
-	set_form_sub(edit->input, edit->input_win);
-	post_form(edit->input);
-	mvwprintw(edit->dia->sub_window, 0, 0, "Name");
-	mvwprintw(edit->dia->sub_window, 3, 0, "Data");
 
 	update_panels();
 	doupdate();
