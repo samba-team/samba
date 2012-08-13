@@ -2667,7 +2667,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 					unix_ug.type = ID_TYPE_UID;
 					unix_ug.id = *puid;
 					owner_type = UID_ACE;
-					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)puid,tagtype);
+					sys_acl_free_qualifier((void *)puid,tagtype);
 					break;
 				}
 			case SMB_ACL_GROUP_OBJ:
@@ -2688,7 +2688,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 					unix_ug.type = ID_TYPE_GID;
 					unix_ug.id = *pgid;
 					owner_type = GID_ACE;
-					SMB_VFS_SYS_ACL_FREE_QUALIFIER(conn, (void *)pgid,tagtype);
+					sys_acl_free_qualifier((void *)pgid,tagtype);
 					break;
 				}
 			case SMB_ACL_MASK:
