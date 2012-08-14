@@ -2953,6 +2953,9 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 	int num_iov = 0;
 	size_t taken = 0;
 	uint8_t *first_hdr = buf;
+	size_t verified_buflen = 0;
+	uint8_t *tf = NULL;
+	size_t tf_len = 0;
 
 	iov = talloc_array(mem_ctx, struct iovec, num_iov);
 	if (iov == NULL) {
@@ -2960,8 +2963,6 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 	}
 
 	while (taken < buflen) {
-		uint8_t *tf = NULL;
-		size_t tf_len = 0;
 		size_t len = buflen - taken;
 		uint8_t *hdr = first_hdr + taken;
 		struct iovec *cur;
@@ -2969,6 +2970,13 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 		size_t next_command_ofs;
 		uint16_t body_size;
 		struct iovec *iov_tmp;
+
+		if (verified_buflen > taken) {
+			len = verified_buflen - taken;
+		} else {
+			tf = NULL;
+			tf_len = 0;
+		}
 
 		if (len < 4) {
 			DEBUG(10, ("%d bytes left, expected at least %d\n",
@@ -3020,6 +3028,8 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 				TALLOC_FREE(iov);
 				return status;
 			}
+
+			verified_buflen = taken + len;
 		}
 
 		/*
@@ -3051,9 +3061,6 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 				goto inval;
 			}
 			if (next_command_ofs > full_size) {
-				goto inval;
-			}
-			if (tf && next_command_ofs < len) {
 				goto inval;
 			}
 			full_size = next_command_ofs;
