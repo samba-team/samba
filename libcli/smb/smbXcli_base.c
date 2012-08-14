@@ -243,6 +243,7 @@ struct smbXcli_req_state {
 
 		bool should_sign;
 		bool should_encrypt;
+		uint64_t encryption_session_id;
 
 		bool signing_skipped;
 		bool notify_async;
@@ -2601,14 +2602,17 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	struct tevent_req *subreq;
 	struct iovec *iov;
 	int i, num_iov, nbt_len;
+	int tf_iov = -1;
+	const DATA_BLOB *encryption_key = NULL;
+	uint64_t encryption_session_id = 0;
 
 	/*
-	 * 1 for the nbt length
-	 * per request: TRANSFORM, HDR, fixed, dyn, padding
+	 * 1 for the nbt length, optional TRANSFORM
+	 * per request: HDR, fixed, dyn, padding
 	 * -1 because the last one does not need padding
 	 */
 
-	iov = talloc_array(reqs[0], struct iovec, 1 + 5*num_reqs - 1);
+	iov = talloc_array(reqs[0], struct iovec, 1 + 1 + 4*num_reqs - 1);
 	if (iov == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2616,8 +2620,65 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	num_iov = 1;
 	nbt_len = 0;
 
+	/*
+	 * the session of the first request that requires encryption
+	 * specifies the encryption key.
+	 */
 	for (i=0; i<num_reqs; i++) {
-		int tf_iov;
+		if (!tevent_req_is_in_progress(reqs[i])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		state = tevent_req_data(reqs[i], struct smbXcli_req_state);
+
+		if (!smbXcli_conn_is_connected(state->conn)) {
+			return NT_STATUS_CONNECTION_DISCONNECTED;
+		}
+
+		if ((state->conn->protocol != PROTOCOL_NONE) &&
+		    (state->conn->protocol < PROTOCOL_SMB2_02)) {
+			return NT_STATUS_REVISION_MISMATCH;
+		}
+
+		if (state->session == NULL) {
+			continue;
+		}
+
+		if (!state->smb2.should_encrypt) {
+			continue;
+		}
+
+		encryption_key = &state->session->smb2->encryption_key;
+		if (encryption_key->length == 0) {
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		}
+
+		encryption_session_id = state->session->smb2->session_id;
+
+		tf_iov = num_iov;
+		iov[num_iov].iov_base = state->smb2.transform;
+		iov[num_iov].iov_len  = sizeof(state->smb2.transform);
+		num_iov += 1;
+
+		SBVAL(state->smb2.transform, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
+		SBVAL(state->smb2.transform, SMB2_TF_NONCE,
+		      state->session->smb2->nonce_low);
+		SBVAL(state->smb2.transform, SMB2_TF_NONCE+8,
+		      state->session->smb2->nonce_high);
+		SBVAL(state->smb2.transform, SMB2_TF_SESSION_ID,
+		      encryption_session_id);
+
+		state->session->smb2->nonce_low += 1;
+		if (state->session->smb2->nonce_low == 0) {
+			state->session->smb2->nonce_high += 1;
+			state->session->smb2->nonce_low += 1;
+		}
+
+		nbt_len += SMB2_TF_HDR_SIZE;
+		break;
+	}
+
+	for (i=0; i<num_reqs; i++) {
 		int hdr_iov;
 		size_t reqlen;
 		bool ret;
@@ -2627,7 +2688,6 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		uint16_t credits;
 		uint64_t mid;
 		const DATA_BLOB *signing_key = NULL;
-		const DATA_BLOB *encryption_key = NULL;
 
 		if (!tevent_req_is_in_progress(reqs[i])) {
 			return NT_STATUS_INTERNAL_ERROR;
@@ -2687,7 +2747,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		SBVAL(state->smb2.hdr, SMB2_HDR_MESSAGE_ID, mid);
 
 skip_credits:
-		if (state->session) {
+		if (state->session && encryption_key == NULL) {
 			/*
 			 * We prefer the channel signing key if it is
 			 * already there.
@@ -2711,17 +2771,6 @@ skip_credits:
 			if (signing_key && signing_key->length == 0) {
 				signing_key = NULL;
 			}
-
-			if (state->smb2.should_encrypt) {
-				encryption_key = &state->session->smb2->encryption_key;
-			}
-		}
-
-		if (encryption_key) {
-			tf_iov = num_iov;
-			iov[num_iov].iov_base = state->smb2.transform;
-			iov[num_iov].iov_len  = sizeof(state->smb2.transform);
-			num_iov += 1;
 		}
 
 		hdr_iov = num_iov;
@@ -2754,53 +2803,9 @@ skip_credits:
 			SIVAL(state->smb2.hdr, SMB2_HDR_NEXT_COMMAND, reqlen);
 		}
 
-		if (encryption_key) {
-			NTSTATUS status;
-			uint8_t *buf;
-			int vi;
+		state->smb2.encryption_session_id = encryption_session_id;
 
-			SBVAL(state->smb2.transform, SMB2_TF_NONCE,
-			      state->session->smb2->nonce_low);
-			SBVAL(state->smb2.transform, SMB2_TF_NONCE+8,
-			      state->session->smb2->nonce_high);
-
-			state->session->smb2->nonce_low += 1;
-			if (state->session->smb2->nonce_low == 0) {
-				state->session->smb2->nonce_high += 1;
-				state->session->smb2->nonce_low += 1;
-			}
-
-			buf = talloc_array(iov, uint8_t, reqlen);
-			if (buf == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			reqlen += SMB2_TF_HDR_SIZE;
-
-			/*
-			 * We copy the buffers before encrypting them,
-			 * this is at least currently needed for the
-			 * to keep state->smb2.hdr.
-			 *
-			 * Also the callers may expect there buffers
-			 * to be const.
-			 */
-			for (vi = hdr_iov; vi < num_iov; vi++) {
-				struct iovec *v = &iov[vi];
-				const uint8_t *o = (const uint8_t *)v->iov_base;
-
-				memcpy(buf, o, v->iov_len);
-				v->iov_base = (void *)buf;
-				buf += v->iov_len;
-			}
-
-			status = smb2_signing_encrypt_pdu(*encryption_key,
-						state->session->conn->protocol,
-						&iov[tf_iov], num_iov - tf_iov);
-			if (!NT_STATUS_IS_OK(status)) {
-				return status;
-			}
-		} else if (signing_key) {
+		if (signing_key != NULL) {
 			NTSTATUS status;
 
 			status = smb2_signing_sign_pdu(*signing_key,
@@ -2823,6 +2828,42 @@ skip_credits:
 	_smb_setlen_tcp(state->length_hdr, nbt_len);
 	iov[0].iov_base = state->length_hdr;
 	iov[0].iov_len  = sizeof(state->length_hdr);
+
+	if (encryption_key != NULL) {
+		NTSTATUS status;
+		size_t buflen = nbt_len - SMB2_TF_HDR_SIZE;
+		uint8_t *buf;
+		int vi;
+
+		buf = talloc_array(iov, uint8_t, buflen);
+		if (buf == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/*
+		 * We copy the buffers before encrypting them,
+		 * this is at least currently needed for the
+		 * to keep state->smb2.hdr.
+		 *
+		 * Also the callers may expect there buffers
+		 * to be const.
+		 */
+		for (vi = tf_iov + 1; vi < num_iov; vi++) {
+			struct iovec *v = &iov[vi];
+			const uint8_t *o = (const uint8_t *)v->iov_base;
+
+			memcpy(buf, o, v->iov_len);
+			v->iov_base = (void *)buf;
+			buf += v->iov_len;
+		}
+
+		status = smb2_signing_encrypt_pdu(*encryption_key,
+					state->conn->protocol,
+					&iov[tf_iov], num_iov - tf_iov);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	if (state->conn->dispatch_incoming == NULL) {
 		state->conn->dispatch_incoming = smb2cli_conn_dispatch_incoming;
