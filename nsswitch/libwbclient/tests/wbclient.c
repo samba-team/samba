@@ -63,6 +63,19 @@ static bool test_wbc_pingdc(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_wbc_pingdc2(struct torture_context *tctx)
+{
+	char *name = NULL;
+
+	torture_assert_wbc_equal(tctx, wbcPingDc2("random_string", NULL, &name),
+				 WBC_ERR_NOT_IMPLEMENTED, "%s",
+				 "wbcPingDc2 failed");
+	torture_assert_wbc_ok(tctx, wbcPingDc2(NULL, NULL, &name), "%s",
+			      "wbcPingDc2 failed");
+
+	return true;
+}
+
 static bool test_wbc_library_details(struct torture_context *tctx)
 {
 	struct wbcLibraryDetails *details;
@@ -688,6 +701,7 @@ struct torture_suite *torture_wbclient(void)
 
 	torture_suite_add_simple_test(suite, "wbcPing", test_wbc_ping);
 	torture_suite_add_simple_test(suite, "wbcPingDc", test_wbc_pingdc);
+	torture_suite_add_simple_test(suite, "wbcPingDc2", test_wbc_pingdc);
 	torture_suite_add_simple_test(suite, "wbcLibraryDetails", test_wbc_library_details);
 	torture_suite_add_simple_test(suite, "wbcInterfaceDetails", test_wbc_interface_details);
 	torture_suite_add_simple_test(suite, "wbcSidTypeString", test_wbc_sidtypestring);
