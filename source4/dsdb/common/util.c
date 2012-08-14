@@ -1613,6 +1613,31 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 }
 
 /*
+  find if a DN (must have GUID component!) is our ntdsDsa
+ */
+int samdb_dn_is_our_ntdsa(struct ldb_context *ldb, struct ldb_dn *dn, bool *is_ntdsa)
+{
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct GUID dn_guid;
+	const struct GUID *our_ntds_guid;
+	status = dsdb_get_extended_dn_guid(dn, &dn_guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	our_ntds_guid = samdb_ntds_objectGUID(ldb);
+	if (!our_ntds_guid) {
+		DEBUG(0, ("Failed to find our NTDS Settings GUID for comparison with %s - %s\n", ldb_dn_get_linearized(dn), ldb_errstring(ldb)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*is_ntdsa = GUID_equal(&dn_guid, our_ntds_guid);
+	return LDB_SUCCESS;
+}
+
+/*
   find a 'reference' DN that points at another object and indicate if it is our ntdsDsa
  */
 int samdb_reference_dn_is_our_ntdsa(struct ldb_context *ldb, struct ldb_dn *base,
