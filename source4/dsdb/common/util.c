@@ -1590,6 +1590,8 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 
 	ret = dsdb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_ONE_ONLY, NULL);
 	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Cannot find DN %s to get attribute %s for reference dn: %s",
+				       ldb_dn_get_linearized(base), attribute, ldb_errstring(ldb));
 		return ret;
 	}
 

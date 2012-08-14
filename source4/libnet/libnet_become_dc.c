@@ -1047,11 +1047,17 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 				DS_GUID_INFRASTRUCTURE_CONTAINER,
 				&basedn);
 	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to get well known DN for DS_GUID_INFRASTRUCTURE_CONTAINER on %s: %s\n", 
+			 ldb_dn_get_linearized(ldb_get_default_basedn(s->ldap1.ldb)), 
+			 ldb_errstring(s->ldap1.ldb)));
 		return NT_STATUS_LDAP(ret);
 	}
 
 	ret = samdb_reference_dn(s->ldap1.ldb, s, basedn, "fSMORoleOwner", &ntds_dn);
 	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to get reference DN from fsmoRoleOwner on %s: %s\n", 
+			 ldb_dn_get_linearized(basedn), 
+			 ldb_errstring(s->ldap1.ldb)));
 		talloc_free(basedn);
 		return NT_STATUS_LDAP(ret);
 	}
@@ -1068,6 +1074,9 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	ret = ldb_search(s->ldap1.ldb, s, &r, server_dn, LDB_SCOPE_BASE,
 			 dns_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to get server DN %s: %s\n", 
+			 ldb_dn_get_linearized(server_dn), 
+			 ldb_errstring(s->ldap1.ldb)));
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
 		talloc_free(r);
@@ -1083,6 +1092,9 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	ret = ldb_search(s->ldap1.ldb, s, &r, ntds_dn, LDB_SCOPE_BASE,
 			 guid_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
+		DEBUG(0,("Failed to get NTDS Settings DN %s: %s\n", 
+			 ldb_dn_get_linearized(ntds_dn), 
+			 ldb_errstring(s->ldap1.ldb)));
 		return NT_STATUS_LDAP(ret);
 	} else if (r->count != 1) {
 		talloc_free(r);
