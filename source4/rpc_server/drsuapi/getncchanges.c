@@ -684,12 +684,12 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 				     struct drsuapi_DsGetNCChangesRequest10 *req10,
 				     struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
-	struct ldb_dn *rid_manager_dn, *fsmo_role_dn, *req_dn;
+	struct ldb_dn *rid_manager_dn, *req_dn;
 	int ret;
 	struct ldb_context *ldb = b_state->sam_ctx;
 	struct ldb_result *ext_res;
-	struct ldb_dn *base_dn;
 	struct dsdb_fsmo_extended_op *exop;
+	bool is_us;
 
 	/*
 	  steps:
@@ -715,15 +715,14 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	}
 
 	/* find the DN of the RID Manager */
-	ret = samdb_reference_dn(ldb, mem_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn);
+	ret = samdb_reference_dn_is_our_ntdsa(ldb, rid_manager_dn, "fSMORoleOwner", &is_us);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s\n",
-			 ldb_errstring(ldb)));
+		DEBUG(0,("Failed to find fSMORoleOwner in RID Manager object\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, mem_ctx), fsmo_role_dn) != 0) {
+	if (!is_us) {
 		/* we're not the RID Manager - go away */
 		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
@@ -768,8 +767,6 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	}
 
 	talloc_free(ext_res);
-
-	base_dn = ldb_get_default_basedn(ldb);
 
 	DEBUG(2,("Allocated RID pool for server %s\n",
 		 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
@@ -1034,11 +1031,12 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 					 struct drsuapi_DsGetNCChangesRequest10 *req10,
 					 struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
-	struct ldb_dn *fsmo_role_dn, *req_dn, *ntds_dn;
+	struct ldb_dn *req_dn, *ntds_dn;
 	int ret;
 	unsigned int i;
 	struct ldb_context *ldb = b_state->sam_ctx;
 	struct ldb_message *msg;
+	bool is_us;
 
 	/*
 	  steps:
@@ -1056,17 +1054,17 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	}
 
 	/* retrieve the current role owner */
-	ret = samdb_reference_dn(ldb, mem_ctx, req_dn, "fSMORoleOwner", &fsmo_role_dn);
+	/* find the DN of the RID Manager */
+	ret = samdb_reference_dn_is_our_ntdsa(ldb, req_dn, "fSMORoleOwner", &is_us);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in context - %s\n",
-			 ldb_errstring(ldb)));
+		DEBUG(0,("Failed to find fSMORoleOwner in RID Manager object\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, mem_ctx), fsmo_role_dn) != 0) {
-		/* we're not the current owner - go away */
-		DEBUG(0,(__location__ ": FSMO transfer request when not owner\n"));
+	if (!is_us) {
+		/* we're not the RID Manager - go away */
+		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_OK;
 	}
