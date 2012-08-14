@@ -180,8 +180,12 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 	}
 
 	if (res->count == 0) {
-		DEBUG(5, ("Failed to find SID %s in SAM for NTP signing\n",
+		DEBUG(2, ("Failed to find SID %s in SAM for NTP signing\n",
 			  dom_sid_string(mem_ctx, sid)));
+		return signing_failure(ntp_signd_conn,
+				       mem_ctx,
+				       output,
+				       sign_request.packet_id);
 	} else if (res->count != 1) {
 		DEBUG(1, ("Found SID %s %u times in SAM for NTP signing\n",
 			  dom_sid_string(mem_ctx, sid), res->count));
