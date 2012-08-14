@@ -170,10 +170,13 @@ class cmd_drs_showrepl(Command):
 
         self.message("==== KCC CONNECTION OBJECTS ====\n")
         for c in conn:
+            c_rdn, sep, c_server_dn = c['fromServer'][0].partition(',')
+            c_server_res = self.samdb.search(base=c_server_dn, scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
+            c_server_dns = c_server_res[0]["dnsHostName"][0]
             self.message("Connection --")
             self.message("\tConnection name: %s" % c['name'][0])
             self.message("\tEnabled        : %s" % attr_default(c, 'enabledConnection', 'TRUE'))
-            self.message("\tServer DNS name : %s" % server_dns)
+            self.message("\tServer DNS name : %s" % c_server_dns)
             self.message("\tServer DN name  : %s" % c['fromServer'][0])
             self.message("\t\tTransportType: RPC")
             self.message("\t\toptions: 0x%08X" % int(attr_default(c, 'options', 0)))
