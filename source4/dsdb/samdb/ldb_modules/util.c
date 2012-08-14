@@ -691,14 +691,15 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct GUID op_featur
 	struct ldb_message_element *el;
 	struct ldb_dn *feature_dn;
 
-	feature_dn = samdb_ntds_settings_dn(ldb_module_get_ctx(module));
+	tmp_ctx = talloc_new(ldb);
+
+	feature_dn = samdb_ntds_settings_dn(ldb_module_get_ctx(module), tmp_ctx);
 	if (feature_dn == NULL) {
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
 	*feature_enabled = false;
-
-	tmp_ctx = talloc_new(ldb);
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, feature_dn, attrs, DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret != LDB_SUCCESS) {

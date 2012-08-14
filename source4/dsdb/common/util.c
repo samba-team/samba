@@ -1241,7 +1241,7 @@ failed:
 /*
   work out the ntds settings dn for the current open ldb
 */
-struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
+struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
 	TALLOC_CTX *tmp_ctx;
 	const char *root_attrs[] = { "dsServiceName", NULL };
@@ -1252,10 +1252,10 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	/* see if we have a cached copy */
 	settings_dn = (struct ldb_dn *)ldb_get_opaque(ldb, "forced.ntds_settings_dn");
 	if (settings_dn) {
-		return settings_dn;
+		return talloc_reference(mem_ctx, settings_dn);
 	}
 
-	tmp_ctx = talloc_new(ldb);
+	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		goto failed;
 	}
@@ -1277,7 +1277,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	 * we could not handle server renames at runtime. Only
 	 * provision sets up forced.ntds_settings_dn */
 
-	talloc_steal(ldb, settings_dn);
+	talloc_steal(mem_ctx, settings_dn);
 	talloc_free(tmp_ctx);
 
 	return settings_dn;
@@ -1310,7 +1310,7 @@ const struct GUID *samdb_ntds_invocation_id(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb, tmp_ctx), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
 		goto failed;
 	}
@@ -1403,7 +1403,7 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb, tmp_ctx), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret) {
 		goto failed;
 	}
@@ -1478,7 +1478,15 @@ failed:
 */
 struct ldb_dn *samdb_server_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 {
-	return ldb_dn_get_parent(mem_ctx, samdb_ntds_settings_dn(ldb));
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct ldb_dn *dn;
+	if (!tmp_ctx) {
+		return NULL;
+	}
+	dn = ldb_dn_get_parent(mem_ctx, samdb_ntds_settings_dn(ldb, tmp_ctx));
+	talloc_free(tmp_ctx);
+	return dn;
+	
 }
 
 /*
@@ -1798,7 +1806,7 @@ bool samdb_is_pdc(struct ldb_context *ldb)
 		goto failed;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), pdc) == 0) {
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), pdc) == 0) {
 		is_pdc = true;
 	} else {
 		is_pdc = false;
@@ -2981,7 +2989,7 @@ int samdb_ntds_options(struct ldb_context *ldb, uint32_t *options)
 		goto failed;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb, tmp_ctx), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
@@ -3008,7 +3016,7 @@ const char* samdb_ntds_object_category(TALLOC_CTX *tmp_ctx, struct ldb_context *
 	int ret;
 	struct ldb_result *res;
 
-	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, attrs, NULL);
+	ret = ldb_search(ldb, tmp_ctx, &res, samdb_ntds_settings_dn(ldb, tmp_ctx), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}

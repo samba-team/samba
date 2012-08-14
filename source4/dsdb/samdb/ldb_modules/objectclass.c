@@ -1298,7 +1298,7 @@ static int objectclass_do_delete(struct oc_context *ac)
 	}
 
 	/* DC's ntDSDSA object */
-	if (ldb_dn_compare(ac->req->op.del.dn, samdb_ntds_settings_dn(ldb)) == 0) {
+	if (ldb_dn_compare(ac->req->op.del.dn, samdb_ntds_settings_dn(ldb, ac)) == 0) {
 		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's the DC's ntDSDSA object!",
 				       ldb_dn_get_linearized(ac->req->op.del.dn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;

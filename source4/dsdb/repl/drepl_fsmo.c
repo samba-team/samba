@@ -77,8 +77,9 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 	enum drepl_role_master role = r->in.role;
 	struct fsmo_role_state *fsmo;
 
-	ntds_dn = samdb_ntds_settings_dn(service->samdb);
+	ntds_dn = samdb_ntds_settings_dn(service->samdb, tmp_ctx);
 	if (!ntds_dn) {
+		talloc_free(tmp_ctx);
 		r->out.result = WERR_DS_DRA_INTERNAL_ERROR;
 		return NT_STATUS_OK;
 	}
@@ -86,6 +87,7 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 	werr = dsdb_get_fsmo_role_info(tmp_ctx, service->samdb, role,
 				       &fsmo_role_dn, &role_owner_dn);
 	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(tmp_ctx);
 		r->out.result = werr;
 		return NT_STATUS_OK;
 	}
@@ -106,6 +108,7 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 		DEBUG(2,("Unknown role %u in role transfer\n",
 			 (unsigned)role));
 		r->out.result = WERR_DS_DRA_INTERNAL_ERROR;
+		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
@@ -115,6 +118,7 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 			 ldb_dn_get_linearized(fsmo_role_dn),
 			 ldb_dn_get_linearized(role_owner_dn)));
 		r->out.result = WERR_OK;
+		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
@@ -134,11 +138,13 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 					 fsmo);
 	if (!W_ERROR_IS_OK(werr)) {
 		r->out.result = werr;
+		talloc_free(tmp_ctx);
 		return NT_STATUS_OK;
 	}
 
 	/* mark this message to be answered later */
 	msg->defer_reply = true;
 	dreplsrv_run_pending_ops(service);
+	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }

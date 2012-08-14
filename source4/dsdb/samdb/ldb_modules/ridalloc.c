@@ -407,7 +407,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 		return ret;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), fsmo_role_dn) != 0) {
 		ridalloc_poke_rid_manager(module);
 		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);
@@ -448,7 +448,7 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool, 
 		return ret;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), fsmo_role_dn) != 0) {
 		ridalloc_poke_rid_manager(module);
 		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);

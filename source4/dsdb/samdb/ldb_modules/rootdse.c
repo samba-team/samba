@@ -197,7 +197,7 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 		return LDB_SUCCESS;
 	}
 
-	*master = (ldb_dn_compare(owner_dn, samdb_ntds_settings_dn(ldb_module_get_ctx(module))) == 0);
+	*master = (ldb_dn_compare(owner_dn, samdb_ntds_settings_dn(ldb_module_get_ctx(module), tmp_ctx)) == 0);
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
@@ -1073,7 +1073,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	}
 
 	tmp_ctx = talloc_new(mem_ctx);
-	ntds_settings_dn = samdb_ntds_settings_dn(ldb);
+	ntds_settings_dn = samdb_ntds_settings_dn(ldb, tmp_ctx);
 	if (!ntds_settings_dn) {
 		talloc_free(tmp_ctx);
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "Failed to find NTDS settings DN");

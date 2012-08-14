@@ -723,7 +723,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, mem_ctx), fsmo_role_dn) != 0) {
 		/* we're not the RID Manager - go away */
 		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
@@ -1064,7 +1064,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) != 0) {
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, mem_ctx), fsmo_role_dn) != 0) {
 		/* we're not the current owner - go away */
 		DEBUG(0,(__location__ ": FSMO transfer request when not owner\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;

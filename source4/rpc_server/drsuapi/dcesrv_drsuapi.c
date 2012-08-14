@@ -124,7 +124,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	/*
 	 * lookup the local servers Replication Epoch
 	 */
-	ntds_dn = samdb_ntds_settings_dn(b_state->sam_ctx);
+	ntds_dn = samdb_ntds_settings_dn(b_state->sam_ctx, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(ntds_dn);
 
 	ret = ldb_search(b_state->sam_ctx, mem_ctx, &ntds_res,

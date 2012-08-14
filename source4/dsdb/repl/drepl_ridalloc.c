@@ -95,7 +95,7 @@ static int drepl_ridalloc_pool_exhausted(struct ldb_context *ldb,
 	*exhausted = false;
 	*_alloc_pool = UINT64_MAX;
 
-	server_dn = ldb_dn_get_parent(tmp_ctx, samdb_ntds_settings_dn(ldb));
+	server_dn = ldb_dn_get_parent(tmp_ctx, samdb_ntds_settings_dn(ldb, tmp_ctx));
 	if (!server_dn) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
@@ -208,7 +208,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), fsmo_role_dn) == 0) {
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), fsmo_role_dn) == 0) {
 		/* we are the RID Manager - no need to do a
 		   DRSUAPI_EXOP_FSMO_RID_ALLOC */
 		talloc_free(tmp_ctx);

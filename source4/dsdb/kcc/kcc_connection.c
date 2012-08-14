@@ -51,7 +51,7 @@ static int kccsrv_add_connection(struct kccsrv_service *s,
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
-	new_dn = samdb_ntds_settings_dn(s->samdb);
+	new_dn = samdb_ntds_settings_dn(s->samdb, tmp_ctx);
 	if (!new_dn) {
 		DEBUG(0, ("failed to find NTDS settings\n"));
 		ret = LDB_ERR_OPERATIONS_ERROR;
@@ -198,7 +198,7 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 		return NULL;
 	}
 
-	base_dn = samdb_ntds_settings_dn(s->samdb);
+	base_dn = samdb_ntds_settings_dn(s->samdb, tmp_ctx);
 	if (!base_dn) {
 		DEBUG(0, ("failed to find our own NTDS settings DN\n"));
 		talloc_free(tmp_ctx);

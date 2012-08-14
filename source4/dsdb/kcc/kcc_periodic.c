@@ -392,7 +392,7 @@ static int kccsrv_gc_update(struct kccsrv_service *s, struct ldb_result *res)
 	}
 
 	/* get a list of what NCs we are already replicating */
-	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res2, samdb_ntds_settings_dn(s->samdb), attrs2, 0);
+	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res2, samdb_ntds_settings_dn(s->samdb, tmp_ctx), attrs2, 0);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1,("Failed to get our NC list attributes for GC update - %s\n", ldb_errstring(s->samdb)));
 		talloc_free(tmp_ctx);

@@ -52,7 +52,7 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	tmp_ctx = talloc_new(s);
 	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-	ntds_dn = samdb_ntds_settings_dn(s->samdb);
+	ntds_dn = samdb_ntds_settings_dn(s->samdb, tmp_ctx);
 	if (!ntds_dn) {
 		DEBUG(1,(__location__ ": Unable to find ntds_dn: %s\n", ldb_errstring(s->samdb)));
 		talloc_free(tmp_ctx);

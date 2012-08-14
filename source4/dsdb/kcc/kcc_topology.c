@@ -1007,7 +1007,7 @@ static NTSTATUS kcctpl_bridgehead_dc_failed(struct ldb_context *ldb,
 	tmp_ctx = talloc_new(ldb);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	settings_dn = samdb_ntds_settings_dn(ldb);
+	settings_dn = samdb_ntds_settings_dn(ldb, tmp_ctx);
 	if (!settings_dn) {
 		DEBUG(1, (__location__ ": failed to find our own NTDS Settings "
 			  "DN\n"));
