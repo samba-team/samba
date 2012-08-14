@@ -184,32 +184,41 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 	struct ldb_result *res;
 	const char *attrs[] = { "objectGUID", "fromServer", NULL };
 	struct kcc_connection_list *list;
-
+	TALLOC_CTX *tmp_ctx;
 	kcctpl_test(s);
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		DEBUG(0, ("failed to talloc\n"));
+		return NULL;
+	}
 
 	base_dn = samdb_ntds_settings_dn(s->samdb);
 	if (!base_dn) {
 		DEBUG(0, ("failed to find our own NTDS settings DN\n"));
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
-	ret = ldb_search(s->samdb, mem_ctx, &res, base_dn, LDB_SCOPE_ONELEVEL,
+	ret = ldb_search(s->samdb, tmp_ctx, &res, base_dn, LDB_SCOPE_ONELEVEL,
 			 attrs, "objectClass=nTDSConnection");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, ("failed nTDSConnection search: %s\n",
 			  ldb_strerror(ret)));
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
-	list = talloc(mem_ctx, struct kcc_connection_list);
+	list = talloc(tmp_ctx, struct kcc_connection_list);
 	if (!list) {
 		DEBUG(0, ("out of memory"));
 		return NULL;
 	}
-	list->servers = talloc_array(mem_ctx, struct kcc_connection,
+	list->servers = talloc_array(list, struct kcc_connection,
 				     res->count);
 	if (!list->servers) {
 		DEBUG(0, ("out of memory"));
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 	list->count = 0;
@@ -233,5 +242,7 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 		list->count++;
 	}
 	DEBUG(4, ("found %d existing nTDSConnection objects\n", list->count));
+	talloc_steal(mem_ctx, list);
+	talloc_free(tmp_ctx);
 	return list;
 }
