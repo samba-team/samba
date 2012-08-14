@@ -2255,14 +2255,14 @@ struct ldb_dn *samdb_dns_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *binary_encoded;
-	const char **split_realm;
+	const char * const *split_realm;
 	struct ldb_dn *dn;
 
 	if (!tmp_ctx) {
 		return NULL;
 	}
 
-	split_realm = (const char **)str_list_make(tmp_ctx, dns_domain, ".");
+	split_realm = (const char * const *)str_list_make(tmp_ctx, dns_domain, ".");
 	if (!split_realm) {
 		talloc_free(tmp_ctx);
 		return NULL;
@@ -3039,11 +3039,11 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
 
 	/* "tolower()" and "toupper()" should also work properly on 0x00 */
 	tokens[0][0] = tolower(tokens[0][0]);
-	for (i = 1; i < str_list_length((const char **)tokens); i++)
+	for (i = 1; i < str_list_length((const char * const *)tokens); i++)
 		tokens[i][0] = toupper(tokens[i][0]);
 
 	ret = talloc_strdup(mem_ctx, tokens[0]);
-	for (i = 1; i < str_list_length((const char **)tokens); i++)
+	for (i = 1; i < str_list_length((const char * const *)tokens); i++)
 		ret = talloc_asprintf_append_buffer(ret, "%s", tokens[i]);
 
 	talloc_free(tokens);
