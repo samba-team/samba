@@ -1089,6 +1089,7 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 
 	talloc_free(r);
 
+	ldb_dn_remove_extended_components(ntds_dn);
 	ret = ldb_search(s->ldap1.ldb, s, &r, ntds_dn, LDB_SCOPE_BASE,
 			 guid_attrs, "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
