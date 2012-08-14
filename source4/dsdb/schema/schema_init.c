@@ -843,9 +843,16 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	struct loadparm_context *lp_ctx = NULL;
 	int ret;
 
-	schema = dsdb_new_schema(mem_ctx);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		dsdb_oom(error_string, mem_ctx);
+		return ldb_operr(ldb);
+	}
+
+	schema = dsdb_new_schema(tmp_ctx);
 	if (!schema) {
 		dsdb_oom(error_string, mem_ctx);
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
 
@@ -856,6 +863,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		*error_string = talloc_asprintf(mem_ctx, 
 						"schema_fsmo_init: no prefixMap attribute found");
 		DEBUG(0,(__location__ ": %s\n", *error_string));
+		talloc_free(tmp_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	info_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
@@ -866,6 +874,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			                                "schema_fsmo_init: dsdb_schema_info_blob_new() failed - %s",
 			                                win_errstr(status));
 			DEBUG(0,(__location__ ": %s\n", *error_string));
+			talloc_free(tmp_ctx);
 			return ldb_operr(ldb);
 		}
 		info_val = &info_val_default;
@@ -877,11 +886,13 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 			      "schema_fsmo_init: failed to load oid mappings: %s",
 			      win_errstr(status));
 		DEBUG(0,(__location__ ": %s\n", *error_string));
+		talloc_free(tmp_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	ret = dsdb_load_ldb_results_into_schema(mem_ctx, ldb, schema, attrs_class_res, error_string);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -907,6 +918,7 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 		  (schema->fsmo.we_are_master?"yes":"no"),
 		  (schema->fsmo.update_allowed?"yes":"no")));
 
-	*schema_out = schema;
+	*schema_out = talloc_steal(mem_ctx, schema);
+	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
