@@ -75,12 +75,17 @@ bool secrets_mark_domain_protected(const char *domain)
 bool secrets_clear_domain_protection(const char *domain)
 {
 	bool ret;
-
-	ret = secrets_delete(protect_ids_keystr(domain));
-	if (!ret) {
-		DEBUG(0, ("Failed to remove Domain IDs protection\n"));
+	void *protection = secrets_fetch(protect_ids_keystr(domain), NULL);
+	
+	if (protection) {
+		SAFE_FREE(protection);
+		ret = secrets_delete(protect_ids_keystr(domain));
+		if (!ret) {
+			DEBUG(0, ("Failed to remove Domain IDs protection\n"));
+		}
+		return ret;
 	}
-	return ret;
+	return true;
 }
 
 bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
