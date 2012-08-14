@@ -3159,6 +3159,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		uint32_t new_credits;
 		struct smbXcli_session *session = NULL;
 		const DATA_BLOB *signing_key = NULL;
+		bool was_encrypted = false;
 
 		new_credits = conn->smb2.cur_credits;
 		new_credits += credits;
@@ -3276,6 +3277,26 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			}
 		}
 
+		if (cur[0].iov_len == SMB2_TF_HDR_SIZE) {
+			const uint8_t *tf = (const uint8_t *)cur[0].iov_base;
+			uint64_t uid = BVAL(tf, SMB2_TF_SESSION_ID);
+
+			/*
+			 * If the response was encrypted in a SMB2_TRANSFORM
+			 * pdu, which belongs to the correct session,
+			 * we do not need to do signing checks
+			 *
+			 * It could be the session the response belongs to
+			 * or the session that was used to encrypt the
+			 * SMB2_TRANSFORM request.
+			 */
+			if ((session && session->smb2->session_id == uid) ||
+			    (state->smb2.encryption_session_id == uid)) {
+				signing_key = NULL;
+				was_encrypted = true;
+			}
+		}
+
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 			/*
 			 * if the server returns NT_STATUS_USER_SESSION_DELETED
@@ -3283,9 +3304,24 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			 * propagate the NT_STATUS_USER_SESSION_DELETED
 			 * status to the caller.
 			 */
+			state->smb2.signing_skipped = true;
 			signing_key = NULL;
-		} else if (state->smb2.should_encrypt) {
-			if (cur[0].iov_len != SMB2_TF_HDR_SIZE) {
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			/*
+			 * if the server returns
+			 * NT_STATUS_INVALID_PARAMETER
+			 * the response might not be encrypted.
+			 */
+			if (state->smb2.should_encrypt && !was_encrypted) {
+				state->smb2.signing_skipped = true;
+				signing_key = NULL;
+			}
+		}
+
+		if (state->smb2.should_encrypt && !was_encrypted) {
+			if (!state->smb2.signing_skipped) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
 		}
