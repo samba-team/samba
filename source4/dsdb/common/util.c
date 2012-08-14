@@ -1816,50 +1816,19 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 */
 bool samdb_is_pdc(struct ldb_context *ldb)
 {
-	const char *dom_attrs[] = { "fSMORoleOwner", NULL };
 	int ret;
-	struct ldb_result *dom_res;
-	TALLOC_CTX *tmp_ctx;
 	bool is_pdc;
-	struct ldb_dn *pdc;
 
-	tmp_ctx = talloc_new(ldb);
-	if (tmp_ctx == NULL) {
-		DEBUG(1, ("talloc_new failed in samdb_is_pdc"));
+	ret = samdb_reference_dn_is_our_ntdsa(ldb, ldb_get_default_basedn(ldb), "fsmoRoleOwner", 
+					      &is_pdc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1,("Failed to find if we are the PDC for this ldb: Searching for fSMORoleOwner in %s failed: %s\n", 
+			 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)), 
+			 ldb_errstring(ldb)));
 		return false;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &dom_res, ldb_get_default_basedn(ldb), LDB_SCOPE_BASE, dom_attrs, NULL);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Searching for fSMORoleOwner in %s failed: %s\n", 
-			 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)), 
-			 ldb_errstring(ldb)));
-		goto failed;
-	}
-	if (dom_res->count != 1) {
-		goto failed;
-	}
-
-	pdc = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, dom_res->msgs[0],
-				      "fSMORoleOwner");
-	if (pdc == NULL) {
-		goto failed;
-	}
-
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), pdc) == 0) {
-		is_pdc = true;
-	} else {
-		is_pdc = false;
-	}
-
-	talloc_free(tmp_ctx);
-
 	return is_pdc;
-
-failed:
-	DEBUG(1,("Failed to find if we are the PDC for this ldb\n"));
-	talloc_free(tmp_ctx);
-	return false;
 }
 
 /*
