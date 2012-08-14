@@ -388,6 +388,8 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	struct ldb_dn *rid_manager_dn, *fsmo_role_dn;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct GUID fsmo_role_guid, *our_ntds_guid;
+	NTSTATUS status;
 
 	/* work out who is the RID Manager */
 	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn, parent);
@@ -407,7 +409,19 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 		return ret;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), fsmo_role_dn) != 0) {
+	status = dsdb_get_extended_dn_guid(fsmo_role_dn, &fsmo_role_guid, "GUID");
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
+
+	our_ntds_guid = samdb_ntds_objectGUID(ldb_module_get_ctx(module));
+	if (!our_ntds_guid) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
+
+	if (!GUID_equal(&fsmo_role_guid, our_ntds_guid)) {
 		ridalloc_poke_rid_manager(module);
 		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);
@@ -429,6 +443,7 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool, 
 	struct ldb_dn *rid_manager_dn, *fsmo_role_dn;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	bool is_us;
 
 	/* work out who is the RID Manager */
 	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn, parent);
@@ -448,7 +463,15 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool, 
 		return ret;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), fsmo_role_dn) != 0) {
+	ret = samdb_dn_is_our_ntdsa(ldb, fsmo_role_dn, &is_us);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to confirm if our ntdsDsa is %s: %s",
+				       ldb_dn_get_linearized(fsmo_role_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	
+	if (!is_us) {
 		ridalloc_poke_rid_manager(module);
 		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
 		talloc_free(tmp_ctx);

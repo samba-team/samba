@@ -168,6 +168,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	WERROR werr;
 	int ret;
 	uint64_t alloc_pool;
+	bool is_us;
 
 	if (service->am_rodc) {
 		talloc_free(tmp_ctx);
@@ -208,7 +209,15 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb, tmp_ctx), fsmo_role_dn) == 0) {
+	ret = samdb_dn_is_our_ntdsa(ldb, fsmo_role_dn, &is_us);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to find detrmine if %s is our ntdsDsa object - %s\n",
+			 ldb_dn_get_linearized(fsmo_role_dn), ldb_errstring(ldb)));
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+
+	if (is_us) {
 		/* we are the RID Manager - no need to do a
 		   DRSUAPI_EXOP_FSMO_RID_ALLOC */
 		talloc_free(tmp_ctx);

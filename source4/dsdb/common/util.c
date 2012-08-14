@@ -1658,21 +1658,10 @@ int samdb_reference_dn_is_our_ntdsa(struct ldb_context *ldb, struct ldb_dn *base
 		return ret;
 	}
 
-	status = dsdb_get_extended_dn_guid(referenced_dn, &referenced_guid, "GUID");
+	ret = samdb_dn_is_our_ntdsa(ldb, referenced_dn, is_ntdsa);
+	
 	talloc_free(tmp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-
-	our_ntds_guid = samdb_ntds_objectGUID(ldb);
-	if (!our_ntds_guid) {
-		DEBUG(0, ("Failed to find our NTDS Settings GUID for comparison with %s on %s - %s\n", attribute, ldb_dn_get_linearized(base), ldb_errstring(ldb)));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	*is_ntdsa = GUID_equal(&referenced_guid, our_ntds_guid);
-	return LDB_SUCCESS;
+	return ret;
 }
 
 /*

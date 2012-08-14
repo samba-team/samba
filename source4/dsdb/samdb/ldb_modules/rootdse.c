@@ -183,7 +183,7 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 	struct ldb_dn *owner_dn;
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res,
-				    dn, attrs, DSDB_FLAG_NEXT_MODULE, parent);
+				    dn, attrs, DSDB_FLAG_NEXT_MODULE|DSDB_SEARCH_SHOW_EXTENDED_DN, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -197,7 +197,14 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 		return LDB_SUCCESS;
 	}
 
-	*master = (ldb_dn_compare(owner_dn, samdb_ntds_settings_dn(ldb_module_get_ctx(module), tmp_ctx)) == 0);
+	ret = samdb_dn_is_our_ntdsa(ldb_module_get_ctx(module), dn, master);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to confirm if our ntdsDsa is %s: %s",
+				       ldb_dn_get_linearized(owner_dn), ldb_errstring(ldb_module_get_ctx(module)));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
