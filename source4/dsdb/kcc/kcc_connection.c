@@ -46,6 +46,11 @@ static int kccsrv_add_connection(struct kccsrv_service *s,
 	bool ok;
 
 	tmp_ctx = talloc_new(s);
+	if (!tmp_ctx) {
+		DEBUG(0, ("failed to talloc\n"));
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
 	new_dn = samdb_ntds_settings_dn(s->samdb);
 	if (!new_dn) {
 		DEBUG(0, ("failed to find NTDS settings\n"));
