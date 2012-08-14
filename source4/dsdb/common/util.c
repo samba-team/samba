@@ -1252,7 +1252,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb, TALLOC_CTX *mem_c
 	/* see if we have a cached copy */
 	settings_dn = (struct ldb_dn *)ldb_get_opaque(ldb, "forced.ntds_settings_dn");
 	if (settings_dn) {
-		return talloc_reference(mem_ctx, settings_dn);
+		return ldb_dn_copy(mem_ctx, settings_dn);
 	}
 
 	tmp_ctx = talloc_new(mem_ctx);
