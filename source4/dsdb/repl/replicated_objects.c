@@ -762,7 +762,8 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_transaction_commit(ldb);
 		} else {
-			DEBUG(0, ("Schema update now failed: %s\n", ldb_errstring(ret)));
+			DEBUG(0, ("Schema update now failed: %s\n",
+				  ldb_errstring(ldb)));
 			ldb_transaction_cancel(ldb);
 		}
 
