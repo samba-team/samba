@@ -1588,7 +1588,7 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 	attrs[0] = attribute;
 	attrs[1] = NULL;
 
-	ret = dsdb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_ONE_ONLY, NULL);
+	ret = dsdb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_ONE_ONLY|DSDB_SEARCH_SHOW_EXTENDED_DN, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Cannot find DN %s to get attribute %s for reference dn: %s",
 				       ldb_dn_get_linearized(base), attribute, ldb_errstring(ldb));
@@ -1609,6 +1609,44 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 	}
 
 	talloc_free(res);
+	return LDB_SUCCESS;
+}
+
+/*
+  find a 'reference' DN that points at another object and indicate if it is our ntdsDsa
+ */
+int samdb_reference_dn_is_our_ntdsa(struct ldb_context *ldb, struct ldb_dn *base,
+				    const char *attribute, bool *is_ntdsa)
+{
+	int ret;
+	struct ldb_dn *referenced_dn;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	struct GUID referenced_guid;
+	const struct GUID *our_ntds_guid;
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = samdb_reference_dn(ldb, tmp_ctx, base, attribute, &referenced_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, ("Failed to find object %s for attribute %s - %s\n", ldb_dn_get_linearized(base), attribute, ldb_errstring(ldb)));
+		return ret;
+	}
+
+	status = dsdb_get_extended_dn_guid(referenced_dn, &referenced_guid, "GUID");
+	talloc_free(tmp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+
+	our_ntds_guid = samdb_ntds_objectGUID(ldb);
+	if (!our_ntds_guid) {
+		DEBUG(0, ("Failed to find our NTDS Settings GUID for comparison with %s on %s - %s\n", attribute, ldb_dn_get_linearized(base), ldb_errstring(ldb)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	*is_ntdsa = GUID_equal(&referenced_guid, our_ntds_guid);
 	return LDB_SUCCESS;
 }
 
