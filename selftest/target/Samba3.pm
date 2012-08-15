@@ -905,7 +905,7 @@ sub provision($$$$$$)
 	store dos attributes = yes
 	create mask = 755
 	dos filemode = yes
-	vfs objects = $vfs_modulesdir_abs/acl_xattr.so $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
+	vfs objects = $vfs_modulesdir_abs/acl_xattr.so $vfs_modulesdir_abs/fake_acls.so $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
 
 	printing = vlp
 	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s

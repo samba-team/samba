@@ -1365,7 +1365,7 @@ sub provision_plugin_s4_dc($$)
 	create mask = 755
 	dos filemode = yes
 
-        vfs objects = acl_xattr xattr_tdb streams_depot
+        vfs objects = acl_xattr fake_acls xattr_tdb streams_depot
 
         dcerpc endpoint servers = -winreg -srvsvc
 

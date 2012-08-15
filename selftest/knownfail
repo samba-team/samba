@@ -43,7 +43,6 @@
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2,bigendian\]
 ^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
-^samba3.raw.samba3checkfsp.samba3checkfsp\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls.generic\(s3dc\) # This fails against smbd
 ^samba3.base.delete.deltest16a
@@ -53,7 +52,6 @@
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules
-^samba.vfstest.acl.vfstest\(s3dc:local\) #until we get the fake_acls module into selftest
 ^samba4.local.convert_string_handle.system.iconv.gd_ascii
 ^samba4.local.convert_string_handle.system.iconv.gd_iso8859_cp850
 ^samba4..*base.delete.*.deltest17\(
@@ -222,11 +220,7 @@
 # but in the interests of ensuring we do not regress, we run the tests
 # and list the current failures here.
 #
-^samba3.raw.acls.create_file\(plugin_s4_dc\)
-^samba3.raw.acls.create_dir\(plugin_s4_dc\)
 ^samba3.raw.acls.generic\(plugin_s4_dc\)
-^samba3.smb2.create.aclfile\(plugin_s4_dc\)
-^samba3.smb2.create.acldir\(plugin_s4_dc\)
 ^samba3.rpc.eventlog.eventlog.GetLogIntormation\(plugin_s4_dc\)
 ^samba3.rpc.eventlog.eventlog.FlushEventLog\(plugin_s4_dc\)
 ^samba3.rpc.eventlog.eventlog.ReportEventLog\(plugin_s4_dc\)
