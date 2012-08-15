@@ -46,8 +46,8 @@ struct cclean_ctx {
 
 static char *serverid_str(const struct server_id id)
 {
-	return talloc_asprintf(talloc_tos(), "pid %u, vnn %u, uid %lu",
-			       (unsigned)id.pid, (unsigned)id.vnn, id.unique_id);
+	return talloc_asprintf(talloc_tos(), "pid %u, vnn %u, uid %llu",
+			       (unsigned)id.pid, (unsigned)id.vnn, (unsigned long long)id.unique_id);
 }
 
 static void print_record(const char *msg,
