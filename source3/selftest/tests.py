@@ -33,6 +33,7 @@ net = binpath('net')
 smbtorture3 = binpath('smbtorture3')
 ntlm_auth = binpath('ntlm_auth3')
 dbwrap_tool = binpath('dbwrap_tool')
+vfstest = binpath('vfstest')
 
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
                    "--basedir=$SELFTEST_TMPDIR",
@@ -153,6 +154,8 @@ tests=["--ping", "--separator",
        "--authenticate=$DOMAIN\\\\$DC_USERNAME%$DC_PASSWORD",
        "--allocate-uid",
        "--allocate-gid"]
+
+plantestsuite("samba.vfstest.stream_depot", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/stream-depot/run.sh"), binpath("vfstest"), "$PREFIX", configuration])
 
 for options in ["--option=clientusespnego=no", " --option=clientntlmv2auth=no --option=clientlanmanauth=yes --max-protocol=LANMAN2", ""]:
     env = "s3dc"
