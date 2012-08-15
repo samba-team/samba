@@ -303,6 +303,7 @@
 ^samba3.winbind.struct.info\(plugin_s4_dc\)
 ^samba3.winbind.struct.show_sequence\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcPingDc\(plugin_s4_dc\)
+^samba3.winbind.wbclient.wbcPingDc2\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcListTrusts\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcLookupDomainController\(plugin_s4_dc\)
 ^samba3.winbind.wbclient.wbcLookupDomainControllerEx\(plugin_s4_dc\)
