@@ -648,7 +648,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 		}
 
 		flags = IVAL(inhdr, SMB2_HDR_FLAGS);
-		if (idx == 1) {
+		if (idx < SMBD_SMB2_NUM_IOV_PER_REQ) {
 			/*
 			 * the 1st request should never have the
 			 * SMB2_HDR_FLAG_CHAINED flag set
@@ -657,7 +657,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 				req->next_status = NT_STATUS_INVALID_PARAMETER;
 				return NT_STATUS_OK;
 			}
-		} else if (idx == 4) {
+		} else if (idx < 2*SMBD_SMB2_NUM_IOV_PER_REQ) {
 			/*
 			 * the 2nd request triggers related vs. unrelated
 			 * compounded requests
@@ -665,7 +665,7 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 			if (flags & SMB2_HDR_FLAG_CHAINED) {
 				req->compound_related = true;
 			}
-		} else if (idx > 4) {
+		} else {
 #if 0
 			/*
 			 * It seems the this tests are wrong
