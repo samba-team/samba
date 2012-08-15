@@ -76,7 +76,7 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, TALLOC_FREE(frame); return -1);
 
-	if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+	if (SMB_VFS_NEXT_FSTAT(handle, fsp, &sbuf) == -1) {
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -128,7 +128,7 @@ static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+	if (SMB_VFS_NEXT_FSTAT(handle, fsp, &sbuf) == -1) {
 		return -1;
 	}
 
@@ -165,7 +165,7 @@ static ssize_t xattr_tdb_flistxattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+	if (SMB_VFS_NEXT_FSTAT(handle, fsp, &sbuf) == -1) {
 		return -1;
 	}
 
@@ -201,7 +201,7 @@ static int xattr_tdb_fremovexattr(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+	if (SMB_VFS_NEXT_FSTAT(handle, fsp, &sbuf) == -1) {
 		return -1;
 	}
 
@@ -272,9 +272,9 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 	}
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_tmp);
 	} else {
-		ret = SMB_VFS_STAT(handle->conn, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_tmp);
 	}
 	if (ret == -1) {
 		goto out;

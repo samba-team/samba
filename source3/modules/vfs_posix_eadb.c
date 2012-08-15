@@ -293,9 +293,9 @@ static int posix_eadb_unlink(vfs_handle_struct *handle,
 	}
 
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_tmp);
 	} else {
-		ret = SMB_VFS_STAT(handle->conn, smb_fname_tmp);
+		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_tmp);
 	}
 	if (ret == -1) {
 		goto out;
