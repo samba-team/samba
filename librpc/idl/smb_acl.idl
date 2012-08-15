@@ -48,7 +48,7 @@ interface smb_acl
 		gid_t gid;
 	} smb_acl_entry;
 	
-	typedef struct {
+	[public] typedef struct {
 		int	size;
 		int	count;
 		int	next;

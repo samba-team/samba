@@ -5,6 +5,7 @@ VFS_AUDIT_SRC = '''vfs_audit.c'''
 VFS_EXTD_AUDIT_SRC = '''vfs_extd_audit.c'''
 VFS_FULL_AUDIT_SRC = '''vfs_full_audit.c'''
 VFS_FAKE_PERMS_SRC = '''vfs_fake_perms.c'''
+VFS_FAKE_ACLS_SRC = '''vfs_fake_acls.c'''
 VFS_RECYCLE_SRC = '''vfs_recycle.c'''
 VFS_NETATALK_SRC = '''vfs_netatalk.c'''
 VFS_DEFAULT_QUOTA_SRC = '''vfs_default_quota.c'''
@@ -103,6 +104,14 @@ bld.SAMBA3_MODULE('vfs_fake_perms',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_fake_perms'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_fake_perms'))
+
+bld.SAMBA3_MODULE('vfs_fake_acls',
+                 subsystem='vfs',
+                 source=VFS_FAKE_ACLS_SRC,
+                 deps='acl attr samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_fake_acls'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_fake_acls'))
 
 bld.SAMBA3_MODULE('vfs_recycle',
                  subsystem='vfs',
