@@ -2422,6 +2422,12 @@ static bool smb2cli_req_cancel(struct tevent_req *req)
 	}
 	substate = tevent_req_data(subreq, struct smbXcli_req_state);
 
+	/*
+	 * clear everything but the SMB2_HDR_FLAG_ASYNC flag
+	 * e.g. if SMB2_HDR_FLAG_CHAINED is set we get INVALID_PARAMETER back
+	 */
+	flags &= SMB2_HDR_FLAG_ASYNC;
+
 	if (flags & SMB2_HDR_FLAG_ASYNC) {
 		mid = 0;
 	}
