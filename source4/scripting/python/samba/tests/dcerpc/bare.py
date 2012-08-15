@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Tests for samba.dcerpc.bare."""
+"""Tests for samba.tests.dcerpc.bare."""
 
 from samba.dcerpc import ClientConnection
 import samba.tests
