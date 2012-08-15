@@ -50,6 +50,7 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 
 	xattr_size = xattr_tdb_getattr(db, frame, &id, name, &blob);
 	if (xattr_size < 0) {
+		errno = ENOATTR;
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -85,6 +86,7 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 
 	xattr_size = xattr_tdb_getattr(db, frame, &id, name, &blob);
 	if (xattr_size < 0) {
+		errno = ENOATTR;
 		TALLOC_FREE(frame);
 		return -1;
 	}

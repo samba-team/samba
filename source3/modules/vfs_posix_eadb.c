@@ -52,6 +52,11 @@ static ssize_t posix_eadb_getattr(struct tdb_wrap *db_ctx,
 
 	status = pull_xattr_blob_tdb_raw(db_ctx, talloc_tos(), name, fname, fd, size, &blob);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		errno = ENOATTR;
+		return -1;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("posix_eadb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
