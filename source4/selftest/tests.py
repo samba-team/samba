@@ -297,6 +297,8 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
 # DNS tests
 planpythontestsuite("dc", "samba.tests.dns")
 
+planpythontestsuite("s3dc", "samba.tests.libsmb_samba_internal");
+
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
 # the API. These mainly test that the various command-line options of commands
