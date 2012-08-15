@@ -74,7 +74,7 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 	DATA_BLOB blob;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, TALLOC_FREE(frame); return -1);
 
 	if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 		TALLOC_FREE(frame);
