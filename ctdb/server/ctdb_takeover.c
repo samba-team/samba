@@ -645,13 +645,13 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	}
 
 	if (vnn->iface) {
-		if (vnn->iface->link_up) {
-			/* only move when the rebalance gains something */
-			if (vnn->iface->references > (best_iface->references + 1)) {
+		if (vnn->iface != best_iface) {
+			if (!vnn->iface->link_up) {
 				do_updateip = true;
+			} else if (vnn->iface->references > (best_iface->references + 1)) {
+				/* only move when the rebalance gains something */
+					do_updateip = true;
 			}
-		} else if (vnn->iface != best_iface) {
-			do_updateip = true;
 		}
 	}
 
