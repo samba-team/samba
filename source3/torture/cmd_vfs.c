@@ -318,14 +318,13 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		}
 	}
 
-	fsp = SMB_MALLOC_P(struct files_struct);
+	fsp = talloc_zero(vfs, struct files_struct);
 	if (fsp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	fsp->fh = talloc_zero(fsp, struct fd_handle);
 	if (fsp->fh == NULL) {
-		SAFE_FREE(fsp->fsp_name);
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 	fsp->conn = vfs->conn;
@@ -333,7 +332,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	status = create_synthetic_smb_fname_split(NULL, argv[1], NULL,
 						  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		return status;
 	}
 
@@ -342,8 +341,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
-		SAFE_FREE(fsp->fh);
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -363,8 +361,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		SMB_VFS_CLOSE(fsp);
-		SAFE_FREE(fsp->fh);
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		TALLOC_FREE(smb_fname);
 		return status;
 	}
@@ -448,9 +445,7 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	else
 		printf("close: ok\n");
 
-	TALLOC_FREE(vfs->files[fd]->fsp_name);
-	SAFE_FREE(vfs->files[fd]->fh);
-	SAFE_FREE(vfs->files[fd]);
+	TALLOC_FREE(vfs->files[fd]);
 	vfs->files[fd] = NULL;
 	return NT_STATUS_OK;
 }

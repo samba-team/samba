@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
 {
 	char *cmdstr = NULL;
 	struct cmd_set	**cmd_set;
-	struct vfs_state vfs = { 0, };
+	struct vfs_state *vfs;
 	int i;
 	char *filename = NULL;
 	char cwd[MAXPATHLEN];
@@ -501,21 +501,22 @@ int main(int argc, char *argv[])
 	init_guest_info();
 	locking_init();
 	serverid_parent_init(NULL);
-	vfs.conn = talloc_zero(NULL, connection_struct);
-	vfs.conn->share_access = FILE_GENERIC_ALL;
-	vfs.conn->params = talloc_zero(vfs.conn, struct share_params);
-	vfs.conn->sconn = talloc_zero(NULL, struct smbd_server_connection);
-	vfs.conn->sconn->msg_ctx = messaging_init(vfs.conn->sconn, ev);
-	vfs.conn->sconn->ev_ctx = ev;
-	serverid_register(messaging_server_id(vfs.conn->sconn->msg_ctx), 0);
-	make_session_info_guest(NULL, &vfs.conn->session_info);
-	file_init(vfs.conn->sconn);
-	set_conn_connectpath(vfs.conn, getcwd(cwd, sizeof(cwd)));
+	vfs = talloc_zero(NULL, struct vfs_state);
+	vfs->conn = talloc_zero(vfs, connection_struct);
+	vfs->conn->share_access = FILE_GENERIC_ALL;
+	vfs->conn->params = talloc_zero(vfs->conn, struct share_params);
+	vfs->conn->sconn = talloc_zero(NULL, struct smbd_server_connection);
+	vfs->conn->sconn->msg_ctx = messaging_init(vfs->conn->sconn, ev);
+	vfs->conn->sconn->ev_ctx = ev;
+	serverid_register(messaging_server_id(vfs->conn->sconn->msg_ctx), 0);
+	make_session_info_guest(NULL, &vfs->conn->session_info);
+	file_init(vfs->conn->sconn);
+	set_conn_connectpath(vfs->conn, getcwd(cwd, sizeof(cwd)));
 	for (i=0; i < 1024; i++)
-		vfs.files[i] = NULL;
+		vfs->files[i] = NULL;
 
 	/* some advanced initialization stuff */
-	smbd_vfs_init(vfs.conn);
+	smbd_vfs_init(vfs->conn);
 
 	if (!posix_locking_init(false)) {
 		return 1;
@@ -523,7 +524,7 @@ int main(int argc, char *argv[])
 
 	/* Do we have a file input? */
 	if (filename && filename[0]) {
-		process_file(&vfs, filename);
+		process_file(vfs, filename);
 		return 0;
 	}
 
@@ -533,7 +534,7 @@ int main(int argc, char *argv[])
 		char    *p = cmdstr;
 
 		while((cmd=next_command(frame, &p)) != NULL) {
-			status = process_cmd(&vfs, cmd);
+			status = process_cmd(vfs, cmd);
 		}
 
 		TALLOC_FREE(cmd);
@@ -552,12 +553,12 @@ int main(int argc, char *argv[])
 		}
 
 		if (line[0] != '\n') {
-			status = process_cmd(&vfs, line);
+			status = process_cmd(vfs, line);
 		}
 		SAFE_FREE(line);
 	}
 
-	TALLOC_FREE(vfs.conn);
+	TALLOC_FREE(vfs);
 	TALLOC_FREE(frame);
 	return NT_STATUS_IS_OK(status) ? 0 : 1;
 }
