@@ -1789,8 +1789,14 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 		signing_key = x->global->channels[0].signing_key;
 
+		/*
+		 * If we have a signing key, we should
+		 * sign the response
+		 */
+		if (signing_key.length > 0) {
+			req->do_signing = true;
+		}
 
-		req->do_signing = true;
 		status = smb2_signing_check_pdu(signing_key,
 						conn->protocol,
 						SMBD_SMB2_IN_HDR_IOV(req),
@@ -1799,12 +1805,23 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			return smbd_smb2_request_error(req, status);
 		}
 
+		/*
+		 * Now that we know the request was correctly signed
+		 * we have to sign the response too.
+		 */
+		req->do_signing = true;
+
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, session_status);
 		}
 	} else if (opcode == SMB2_OP_CANCEL) {
 		/* Cancel requests are allowed to skip the signing */
 	} else if (signing_required) {
+		/*
+		 * If signing is required we try to sign
+		 * a possible error response
+		 */
+		req->do_signing = true;
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
 
