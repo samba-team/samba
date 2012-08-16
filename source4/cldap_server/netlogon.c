@@ -221,10 +221,8 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	} else {
 		user_known = true;
 	}
-		
-	server_type      = 
-		DS_SERVER_DS | DS_SERVER_TIMESERV |
-		DS_SERVER_GOOD_TIMESERV;
+
+	server_type = DS_SERVER_DS;
 
 	if (samdb_is_pdc(sam_ctx)) {
 		server_type |= DS_SERVER_PDC;
@@ -240,6 +238,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	if (str_list_check(services, "kdc")) {
 		server_type |= DS_SERVER_KDC;
+	}
+
+	if (str_list_check(services, "ntp_signd")) {
+		server_type | DS_SERVER_TIMESERV | DS_SERVER_GOOD_TIMESERV;
 	}
 
 	if (samdb_rodc(sam_ctx, &am_rodc) == LDB_SUCCESS && !am_rodc) {
