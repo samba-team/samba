@@ -73,7 +73,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	const char *pdc_ip;
 	struct ldb_dn *domain_dn = NULL;
 	struct interface *ifaces;
-	bool user_known, am_rodc;
+	bool user_known = false, am_rodc = false;
 	NTSTATUS status;
 
 	/* the domain parameter could have an optional trailing "." */
@@ -230,10 +230,6 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= DS_SERVER_PDC;
 	}
 
-	if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008) {
-		server_type |= DS_SERVER_FULL_SECRET_DOMAIN_6;
-	}
-
 	if (samdb_is_gc(sam_ctx)) {
 		server_type |= DS_SERVER_GC;
 	}
@@ -248,6 +244,14 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	if (samdb_rodc(sam_ctx, &am_rodc) == LDB_SUCCESS && !am_rodc) {
 		server_type |= DS_SERVER_WRITABLE;
+	}
+
+	if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008) {
+		if (server_type & DS_SERVER_WRITABLE) {
+			server_type |= DS_SERVER_FULL_SECRET_DOMAIN_6;
+		} else {
+			server_type |= DS_SERVER_SELECT_SECRET_DOMAIN_6;
+		}
 	}
 
 	if (version & (NETLOGON_NT_VERSION_5EX|NETLOGON_NT_VERSION_5EX_WITH_IP)) {
