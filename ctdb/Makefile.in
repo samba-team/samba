@@ -341,6 +341,7 @@ install: all $(PMDA_INSTALL)
 	${INSTALLCMD} -m 755 config/events.d/40.vsftpd $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 644 config/events.d/40.fs_use $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/41.httpd $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 755 config/events.d/49.winbind $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/50.samba $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/60.nfs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/60.ganesha $(DESTDIR)$(etcdir)/ctdb/events.d

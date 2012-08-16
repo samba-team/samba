@@ -9,18 +9,15 @@ case $CTDB_INIT_STYLE in
 	suse)
 		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smb}
 		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmb}
-		CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
 		;;
 	debian)
 		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-samba}
 		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
-		CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
 		;;
 	*)
-		# should not happen, but for now use redhat style as default:
+		# Use redhat style as default:
 		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smb}
 		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
-		CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
 		;;
 esac
 
@@ -32,89 +29,40 @@ ctdb_setup_service_state_dir
 
 service_start ()
 {
-	# If set then we force-start the relevant service.
-	_service_name="$1"
+    # make sure samba is not already started
+    service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
+    if [ -n "$CTDB_SERVICE_NMB" ] ; then
+	service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
+    fi
+    killall -0 -q smbd && {
+	sleep 1
+	# make absolutely sure samba is dead
+	killall -q -9 smbd
+    }
+    killall -0 -q nmbd && {
+	sleep 1
+	# make absolutely sure samba is dead
+	killall -q -9 nmbd
+    }
 
-	# make sure samba is not already started
-	if [ "$_service_name" = "samba" ] || \
-	    is_ctdb_managed_service "samba" ; then
-		service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
-		if [ -n "$CTDB_SERVICE_NMB" ] ; then
-		    service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
-		fi
-		killall -0 -q smbd && {
-		    sleep 1
-		    # make absolutely sure samba is dead
-		    killall -q -9 smbd
-		}
+    # start Samba service. Start it reniced, as under very heavy load
+    # the number of smbd processes will mean that it leaves few cycles
+    # for anything else
+    net serverid wipe
 
-		killall -0 -q nmbd && {
-		    sleep 1
-		    # make absolutely sure samba is dead
-		    killall -q -9 nmbd
-		}
-	fi
+    if [ -n "$CTDB_SERVICE_NMB" ] ; then
+	nice_service "$CTDB_SERVICE_NMB" start || die "Failed to start nmbd"
+    fi
 
-	# make sure winbind is not already started
-	if [ "$_service_name" = "winbind" ] || \
-	    check_ctdb_manages_winbind ; then
-		service "$CTDB_SERVICE_WINBIND" stop > /dev/null 2>&1
-		killall -0 -q winbindd && {
-		    sleep 1
-          	    # make absolutely sure winbindd is dead
-		    killall -q -9 winbindd
-		}
-
-	fi
-
-	# start the winbind service
-	if [ "$_service_name" = "winbind" ] || \
-	    check_ctdb_manages_winbind ; then
-		service "$CTDB_SERVICE_WINBIND" start || {
-		    echo failed to start winbind
-		    exit 1
-		}
-	fi
-
-	# start Samba service. Start it reniced, as under very heavy load 
-	# the number of smbd processes will mean that it leaves few cycles for
-	# anything else
-	if [ "$_service_name" = "samba" ] || \
-	    is_ctdb_managed_service "samba" ; then
-		net serverid wipe
-
-		if [ -n "$CTDB_SERVICE_NMB" ] ; then
-		    nice_service "$CTDB_SERVICE_NMB" start || {
-			echo failed to start nmbd
-			exit 1
-		    }
-		fi
-		nice_service "$CTDB_SERVICE_SMB" start || {
-			echo failed to start samba
-			exit 1
-		}
-	fi
+    nice_service "$CTDB_SERVICE_SMB" start || die "Failed to start samba"
 }
 
 service_stop ()
 {
-	# If set then we force-stop the relevant service.
-	_service_name="$1"
-
-	# shutdown Samba when ctdb goes down
-	if [ "$_service_name" = "samba" ] || \
-	    is_ctdb_managed_service "samba" ; then
-		service "$CTDB_SERVICE_SMB" stop
-		if [ -n "$CTDB_SERVICE_NMB" ] ; then
-		    service "$CTDB_SERVICE_NMB" stop
-		fi
-	fi
-
-	# stop the winbind service
-	if [ "$_service_name" = "winbind" ] || \
-	    check_ctdb_manages_winbind ; then
-		service "$CTDB_SERVICE_WINBIND" stop
-	fi
+    service "$CTDB_SERVICE_SMB" stop
+    if [ -n "$CTDB_SERVICE_NMB" ] ; then
+	service "$CTDB_SERVICE_NMB" stop
+    fi
 }
 
 service_reconfigure ()
@@ -148,7 +96,7 @@ testparm_background_update() {
     # otherwise do a background update
     (
 	tmpfile="${smbconf_cache}.$$"
-	testparm -s > $tmpfile 2> /dev/null &
+	testparm -v -s > $tmpfile 2> /dev/null &
 	# remember the pid of the teamparm process
 	pid="$!"
 	# give it 10 seconds to run
@@ -195,30 +143,7 @@ testparm_cat() {
     [ -f $smbconf_cache ] || {
 	testparm_foreground_update
     }
-    testparm -s "$smbconf_cache" "$@" 2>/dev/null
-}
-
-# function to see if ctdb manages winbind - this overrides with extra
-# logic if $CTDB_MANAGES_WINBIND is not set or null.
-check_ctdb_manages_winbind() {
-    if is_ctdb_managed_service "winbind" ; then
-	return 0
-    elif [ -n "$CTDB_MANAGES_WINBIND" ] ; then
-	# If this variable is set we want to respect it.  We return
-	# false here because we know it is not set to "yes" - if it
-	# were then the 1st "if" above would have succeeded.
-	return 1
-    else
-	_secmode=`testparm_cat --parameter-name=security`
-	case "$_secmode" in
-	    ADS|DOMAIN)
-		return 0
-		;;
-	    *)
-		return 1
-		;;
-	esac
-    fi
+    testparm -v -s "$smbconf_cache" "$@" 2>/dev/null
 }
 
 list_samba_shares ()
@@ -241,9 +166,10 @@ periodic_cleanup() {
 ###########################
 
 ctdb_start_stop_service
-ctdb_start_stop_service "winbind"
 
-is_ctdb_managed_service || is_ctdb_managed_service "winbind" || exit 0
+is_ctdb_managed_service || exit 0
+
+ctdb_service_check_reconfigure
 
 ###########################
 
@@ -269,46 +195,29 @@ case "$1" in
 		touch "$periodic_cleanup_file"
 	}
 
-	is_ctdb_managed_service "samba" && {
-		[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" = "yes" ] || {
-			testparm_background_update
+	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] ; then
+	    testparm_background_update
 
-			testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-			    testparm_foreground_update
-			    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
-				echo "ERROR: testparm shows smb.conf is not clean"
-				exit 1
-			    }
-			}
+	    testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && {
+		testparm_foreground_update
+		testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && \
+		    die "ERROR: testparm shows smb.conf is not clean"
+	    }
 			
-			list_samba_shares |
-			ctdb_check_directories_probe || {
-			    testparm_foreground_update
-			    list_samba_shares |
-			    ctdb_check_directories
-			} || exit $?
-		}
+	    list_samba_shares | ctdb_check_directories_probe || {
+		testparm_foreground_update
+		list_samba_shares |
+		ctdb_check_directories
+	    } || exit $?
+	fi
 
-		smb_ports="$CTDB_SAMBA_CHECK_PORTS"
-		[ -z "$smb_ports" ] && {
-			smb_ports=`testparm_cat --parameter-name="smb ports"`
-		}
-		ctdb_check_tcp_ports $smb_ports || exit $?
-	}
-
-	# check winbind is OK
-	check_ctdb_manages_winbind && {
-		ctdb_check_command "winbind" "wbinfo -p"
-	}
+	smb_ports="$CTDB_SAMBA_CHECK_PORTS"
+	if [ -z "$smb_ports" ] ; then
+	    smb_ports=`testparm_cat --parameter-name="smb ports"`
+	fi
+	ctdb_check_tcp_ports $smb_ports || exit $?
 	;;
 
-     takeip|releaseip)
-	iface=$2
-	ip=$3
-	maskbits=$4
-
-	smbcontrol winbindd ip-dropped $ip >/dev/null 2>/dev/null
-	;;
     *)
 	ctdb_standard_event_handler "$@"
 	;;

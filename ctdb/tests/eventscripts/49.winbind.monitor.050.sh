@@ -4,14 +4,14 @@
 
 define_test "auto-start, simple"
 
-setup_samba "down"
+setup_winbind "down"
 
 export CTDB_SERVICE_AUTOSTARTSTOP="yes"
-export CTDB_MANAGED_SERVICES="foo samba winbind bar"
+export CTDB_MANAGED_SERVICES="foo winbind bar"
 
 ok <<EOF
-Starting service "samba" - now managed
-Starting smb: OK
+Starting service "winbind" - now managed
+Starting winbind: OK
 EOF
 
 simple_test

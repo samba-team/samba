@@ -374,7 +374,7 @@ setup_ctdb_policy_routing ()
 
 ######################################################################
 
-# Samba fakery
+# Samba/winbind fakery
 
 setup_samba ()
 {
@@ -384,16 +384,15 @@ setup_samba ()
 
 	debug "Marking Samba services as up, listening and managed by CTDB"
         # Get into known state.
-	for i in "samba" "winbind" ; do
-	    eventscript_call ctdb_service_managed "$i"
-	done
+	eventscript_call ctdb_service_managed "samba"
+
         # All possible service names for all known distros.
-	for i in "smb" "nmb" "winbind" "samba" ; do
+	for i in "smb" "nmb" "samba" ; do
 	    service "$i" force-started
 	done
 
 	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
-	export CTDB_MANAGED_SERVICES="foo samba winbind bar"
+	export CTDB_MANAGED_SERVICES="foo samba bar"
 
 	export FAKE_TCP_LISTEN="0.0.0.0:445 0.0.0.0:139"
 	export FAKE_WBINFO_FAIL="no"
@@ -405,18 +404,16 @@ setup_samba ()
     else
 	debug "Marking Samba services as down, not listening and not managed by CTDB"
         # Get into known state.
-	for i in "samba" "winbind" ; do
-	    eventscript_call ctdb_service_unmanaged "$i"
-	done
+	eventscript_call ctdb_service_unmanaged "samba"
+
         # All possible service names for all known distros.
-	for i in "smb" "nmb" "winbind" "samba" ; do
+	for i in "smb" "nmb" "samba" ; do
 	    service "$i" force-stopped
 	done
 
 	export CTDB_SAMBA_SKIP_SHARE_CHECK="no"
 	export CTDB_MANAGED_SERVICES="foo bar"
 	unset CTDB_MANAGES_SAMBA
-	unset CTDB_MANAGES_WINBIND
 
 	export FAKE_TCP_LISTEN=""
 	export FAKE_WBINFO_FAIL="yes"
@@ -425,6 +422,36 @@ setup_samba ()
     # This is ugly but if this file isn't removed before each test
     # then configuration changes between tests don't stick.
     rm -f "$CTDB_VARDIR/state/samba/smb.conf.cache"
+}
+
+setup_winbind ()
+{
+    setup_ctdb
+
+    if [ "$1" != "down" ] ; then
+
+	debug "Marking Winbind service as up and managed by CTDB"
+        # Get into known state.
+	eventscript_call ctdb_service_managed "winbind"
+
+	service "winbind" force-started
+
+	export CTDB_MANAGED_SERVICES="foo winbind bar"
+
+	export FAKE_WBINFO_FAIL="no"
+
+    else
+	debug "Marking Winbind service as down and not managed by CTDB"
+        # Get into known state.
+	eventscript_call ctdb_service_unmanaged "winbind"
+
+	service "winbind" force-stopped
+
+	export CTDB_MANAGED_SERVICES="foo bar"
+	unset CTDB_MANAGES_WINBIND
+
+	export FAKE_WBINFO_FAIL="yes"
+    fi
 }
 
 wbinfo_down ()

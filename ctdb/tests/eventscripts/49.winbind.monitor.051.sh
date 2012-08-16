@@ -4,15 +4,15 @@
 
 define_test "auto-stop, simple"
 
-setup_samba
+setup_winbind
 
 export CTDB_SERVICE_AUTOSTARTSTOP="yes"
 export CTDB_MANAGED_SERVICES="foo"
-unset CTDB_MANAGES_SAMBA
+unset CTDB_MANAGES_WINBIND
 
 ok <<EOF
-Stopping service "samba" - no longer managed
-Stopping smb: OK
+Stopping service "winbind" - no longer managed
+Stopping winbind: OK
 EOF
 
 simple_test

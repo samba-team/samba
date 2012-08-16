@@ -4,7 +4,7 @@
 
 define_test "winbind down"
 
-setup_samba
+setup_winbind
 wbinfo_down
 
 required_result 1 "ERROR: winbind - wbinfo -p returned error"

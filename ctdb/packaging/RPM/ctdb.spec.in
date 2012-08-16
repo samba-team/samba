@@ -139,6 +139,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/40.fs_use
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
 %{_sysconfdir}/ctdb/events.d/41.httpd
+%{_sysconfdir}/ctdb/events.d/49.winbind
 %{_sysconfdir}/ctdb/events.d/50.samba
 %{_sysconfdir}/ctdb/events.d/60.nfs
 %{_sysconfdir}/ctdb/events.d/60.ganesha
