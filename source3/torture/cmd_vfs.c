@@ -25,6 +25,8 @@
 #include "system/filesys.h"
 #include "vfstest.h"
 #include "../lib/util/util_pw.h"
+#include "libcli/security/security.h"
+#include "passdb/machine_sid.h"
 
 static const char *null_string = "";
 
@@ -864,6 +866,55 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 }
 
 
+static NTSTATUS cmd_chmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	mode_t mode;
+	if (argc != 3) {
+		printf("Usage: chmod_acl <path> <mode>\n");
+		return NT_STATUS_OK;
+	}
+
+	mode = atoi(argv[2]);
+	if (SMB_VFS_CHMOD_ACL(vfs->conn, argv[1], mode) == -1) {
+		printf("chmod_acl: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("chmod_acl: ok\n");
+	return NT_STATUS_OK;
+}
+
+
+static NTSTATUS cmd_fchmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	int fd;
+	mode_t mode;
+	if (argc != 3) {
+		printf("Usage: fchmod_acl <fd> <mode>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	mode = atoi(argv[2]);
+	if (fd < 0 || fd >= 1024) {
+		printf("fchmod_acl: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("fchmod_acl: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	if (SMB_VFS_FCHMOD_ACL(vfs->files[fd], mode) == -1) {
+		printf("fchmod_acl: error=%d (%s)\n", errno, strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	printf("fchmod_acl: ok\n");
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	uid_t uid;
@@ -1301,6 +1352,251 @@ static NTSTATUS cmd_removexattr(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_fget_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+				int argc, const char **argv)
+{
+	int fd;
+	NTSTATUS status;
+	struct security_descriptor *sd;
+
+	if (argc != 2) {
+		printf("Usage: fget_nt_acl <fd>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	if (fd < 0 || fd >= 1024) {
+		printf("fget_nt_acl: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("fget_nt_acl: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	status = SMB_VFS_FGET_NT_ACL(vfs->files[fd], SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL, &sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("fget_nt_acl returned (%s)\n", nt_errstr(status));
+		return status;
+	}
+	printf("%s\n", sddl_encode(talloc_tos(), sd, get_global_sam_sid()));
+	TALLOC_FREE(sd);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+			       int argc, const char **argv)
+{
+	NTSTATUS status;
+	struct security_descriptor *sd;
+
+	if (argc != 2) {
+		printf("Usage: get_nt_acl <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	status = SMB_VFS_GET_NT_ACL(vfs->conn, argv[1], SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL, &sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("get_nt_acl returned (%s)\n", nt_errstr(status));
+		return status;
+	}
+	printf("%s\n", sddl_encode(talloc_tos(), sd, get_global_sam_sid()));
+	TALLOC_FREE(sd);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_fset_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+				int argc, const char **argv)
+{
+	int fd;
+	NTSTATUS status;
+	struct security_descriptor *sd;
+
+	if (argc != 3) {
+		printf("Usage: fset_nt_acl <fd> <sddl>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	if (fd < 0 || fd >= 1024) {
+		printf("fset_nt_acl: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("fset_nt_acl: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	sd = sddl_decode(talloc_tos(), argv[2], get_global_sam_sid());
+	if (!sd) {
+		printf("sddl_decode failed to parse %s as SDDL\n", argv[2]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = SMB_VFS_FSET_NT_ACL(vfs->files[fd], SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("fset_nt_acl returned (%s)\n", nt_errstr(status));
+		return status;
+	}
+	TALLOC_FREE(sd);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	int flags;
+	int ret;
+	mode_t mode;
+	files_struct *fsp;
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status;
+	struct security_descriptor *sd = NULL;
+
+	if (argc != 3) {
+		printf("Usage: set_nt_acl <file> <sddl>\n");
+		return NT_STATUS_OK;
+	}
+
+	mode = 00400;
+
+	flags = O_RDWR;
+
+	fsp = SMB_MALLOC_P(struct files_struct);
+	if (fsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	if (fsp->fh == NULL) {
+		SAFE_FREE(fsp->fsp_name);
+		SAFE_FREE(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
+	fsp->conn = vfs->conn;
+
+	status = create_synthetic_smb_fname_split(NULL, argv[1], NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		SAFE_FREE(fsp);
+		return status;
+	}
+
+	fsp->fsp_name = smb_fname;
+
+	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
+	if (fsp->fh->fd == -1) {
+		printf("open: error=%d (%s)\n", errno, strerror(errno));
+		SAFE_FREE(fsp->fh);
+		SAFE_FREE(fsp);
+		TALLOC_FREE(smb_fname);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	sd = sddl_decode(talloc_tos(), argv[2], get_global_sam_sid());
+	if (!sd) {
+		printf("sddl_decode failed to parse %s as SDDL\n", argv[2]);
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	status = SMB_VFS_FSET_NT_ACL(fsp, SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("fset_nt_acl returned (%s)\n", nt_errstr(status));
+		goto out;
+	}
+out:
+	TALLOC_FREE(sd);
+
+	ret = SMB_VFS_CLOSE(fsp);
+	if (ret == -1 )
+		printf("close: error=%d (%s)\n", errno, strerror(errno));
+
+	TALLOC_FREE(fsp->fsp_name);
+	SAFE_FREE(fsp->fh);
+	SAFE_FREE(fsp);
+
+	return status;
+}
+
+
+
+static NTSTATUS cmd_sys_acl_get_fd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+				   int argc, const char **argv)
+{
+	int fd;
+	NTSTATUS status;
+	SMB_ACL_T acl;
+	char *acl_text;
+
+	if (argc != 2) {
+		printf("Usage: sys_acl_get_fd <fd>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	if (fd < 0 || fd >= 1024) {
+		printf("sys_acl_get_fd: error=%d (file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("sys_acl_get_fd: error=%d (invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	acl = SMB_VFS_SYS_ACL_GET_FD(vfs->files[fd]);
+	if (!acl) {
+		printf("sys_acl_get_fd failed (%s)\n", strerror(errno));
+		return status;
+	}
+	acl_text = sys_acl_to_text(acl, NULL);
+	printf("%s", acl_text);
+	TALLOC_FREE(acl);
+	SAFE_FREE(acl_text);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_sys_acl_get_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+				     int argc, const char **argv)
+{
+	NTSTATUS status;
+	SMB_ACL_T acl;
+	char *acl_text;
+	int type;
+	if (argc != 3) {
+		printf("Usage: sys_acl_get_file <path> <type>\n");
+		return NT_STATUS_OK;
+	}
+
+	type = atoi(argv[2]);
+	acl = SMB_VFS_SYS_ACL_GET_FILE(vfs->conn, argv[1], type);
+	if (!acl) {
+		printf("sys_acl_get_file failed (%s)\n", strerror(errno));
+		return status;
+	}
+	acl_text = sys_acl_to_text(acl, NULL);
+	printf("%s", acl_text);
+	TALLOC_FREE(acl);
+	SAFE_FREE(acl_text);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	int ret;
+
+	if (argc != 2) {
+		printf("Usage: sys_acl_delete_def_file <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(vfs->conn, argv[1]);
+	if (ret == -1) {
+		printf("sys_acl_delete_def_file failed (%s)\n", strerror(errno));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return NT_STATUS_OK;
+}
+
 struct cmd_set vfs_commands[] = {
 
 	{ "VFS Commands" },
@@ -1349,6 +1645,21 @@ struct cmd_set vfs_commands[] = {
 	  "setxattr <path> <name> <value> [<flags>]" },
 	{ "removexattr", cmd_removexattr, "VFS removexattr()",
 	  "removexattr <path> <name>\n" },
+	{ "fget_nt_acl", cmd_fget_nt_acl, "VFS fget_nt_acl()", 
+	  "fget_nt_acl <fd>\n" },
+	{ "get_nt_acl", cmd_get_nt_acl, "VFS get_nt_acl()", 
+	  "get_nt_acl <path>\n" },
+	{ "fset_nt_acl", cmd_fset_nt_acl, "VFS fset_nt_acl()", 
+	  "fset_nt_acl <fd>\n" },
+	{ "set_nt_acl", cmd_set_nt_acl, "VFS open() and fset_nt_acl()", 
+	  "set_nt_acl <file>\n" },
+	{ "fchmod_acl",   cmd_fchmod_acl,   "VFS fchmod_acl()",    "fchmod_acl <fd> <mode>" },
+	{ "chmod_acl",   cmd_chmod_acl,   "VFS chmod_acl()",    "chmod_acl <path> <mode>" },
+	{ "sys_acl_get_file", cmd_sys_acl_get_file, "VFS sys_acl_get_file()", "sys_acl_get_file <path>" },
+	{ "sys_acl_get_fd", cmd_sys_acl_get_fd, "VFS sys_acl_get_fd()", "sys_acl_get_fd <fd>" },
+	{ "sys_acl_delete_def_file", cmd_sys_acl_delete_def_file, "VFS sys_acl_delete_def_file()", "sys_acl_delete_def_file <path>" },
+
+
 	{ "test_chain", cmd_test_chain, "test chain code",
 	  "test_chain" },
 	{ NULL }
