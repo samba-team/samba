@@ -1789,9 +1789,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 		signing_key = x->global->channels[0].signing_key;
 
-		if (!NT_STATUS_IS_OK(session_status)) {
-			return smbd_smb2_request_error(req, session_status);
-		}
 
 		req->do_signing = true;
 		status = smb2_signing_check_pdu(signing_key,
@@ -1800,6 +1797,10 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 						SMBD_SMB2_NUM_IOV_PER_REQ);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
+		}
+
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, session_status);
 		}
 	} else if (opcode == SMB2_OP_CANCEL) {
 		/* Cancel requests are allowed to skip the signing */
