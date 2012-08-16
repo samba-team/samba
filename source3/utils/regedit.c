@@ -141,16 +141,15 @@ static void print_help(struct regedit *regedit)
 
 	move(HELP_START_Y, HELP_START_X);
 	clrtoeol();
-	attron(A_REVERSE | A_BOLD);
-	move(HELP_START_Y, HELP_START_X);
-	addstr(msg);
-	attroff(A_BOLD);
+	attron(A_REVERSE);
+	mvaddstr(HELP_START_Y, HELP_START_X, help);
 	pad = COLS - strlen(msg) - strlen(help);
 	for (i = 0; i < pad; ++i) {
 		addch(' ');
 	}
-	addstr(help);
-	attroff(A_REVERSE);
+	attron(A_BOLD);
+	addstr(msg);
+	attroff(A_REVERSE | A_BOLD);
 }
 
 static void print_heading(struct regedit *regedit)
