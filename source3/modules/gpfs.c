@@ -253,8 +253,11 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 	arg.fsn.structType = GPFS_FCNTL_GET_FILESETNAME;
 
 	fd = open(pathname, O_RDONLY);
-	if (fd == -1)
+	if (fd == -1) {
+		DEBUG(1, ("Could not open %s: %s\n",
+			  pathname, strerror(errno)));
 		return fd;
+	}
 
 	err = gpfs_fcntl_fn(fd, &arg);
 	errno_fcntl = errno;
@@ -262,11 +265,18 @@ int get_gpfs_fset_id(const char *pathname, int *fset_id)
 
 	if (err) {
 		errno = errno_fcntl;
+		DEBUG(1, ("GPFS_FCNTL_GET_FILESETNAME for %s failed: %s\n",
+			  pathname, strerror(errno)));
 		return err;
 	}
 
-	return gpfs_getfilesetid_fn(discard_const_p(char, pathname),
-				    arg.fsn.buffer, fset_id);
+	err = gpfs_getfilesetid_fn(discard_const_p(char, pathname),
+				   arg.fsn.buffer, fset_id);
+	if (err) {
+		DEBUG(1, ("gpfs_getfilesetid for %s failed: %s\n",
+			  pathname, strerror(errno)));
+	}
+	return err;
 }
 
 void smbd_gpfs_lib_init()

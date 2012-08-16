@@ -1541,10 +1541,30 @@ static int vfs_gpfs_get_quotas(const char *path, uid_t uid, gid_t gid,
 			       struct gpfs_quotaInfo *qi_fset)
 {
 	int err;
+	char *dir_path;
+	bool b;
 
-	err = get_gpfs_fset_id(path, fset_id);
+	/*
+	 * We want to always use the directory to get the fileset id,
+	 * because files might have a share mode. We also do not want
+	 * to get the parent directory when there is already a
+	 * directory to avoid stepping in a different fileset.  The
+	 * path passed here is currently either "." or a filename, so
+	 * this is ok. The proper solution would be having a way to
+	 * query the fileset id without opening the file.
+	 */
+	b = parent_dirname(talloc_tos(), path, &dir_path, NULL);
+	if (!b) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	DEBUG(10, ("path %s, directory %s\n", path, dir_path));
+
+	err = get_gpfs_fset_id(dir_path, fset_id);
 	if (err) {
-		DEBUG(0, ("Get fset id failed, errno %d.\n", errno));
+		DEBUG(0, ("Get fset id failed path %s, dir %s, errno %d.\n",
+			  path, dir_path, errno));
 		return err;
 	}
 
