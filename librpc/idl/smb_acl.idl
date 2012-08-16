@@ -52,7 +52,7 @@ interface smb_acl
 		int	size;
 		int	count;
 		int	next;
-		smb_acl_entry *acl;
+		[size_is(count)] smb_acl_entry acl[*];
 	} smb_acl_t;
 	
 	const int SMB_ACL_FIRST_ENTRY		= 0;
