@@ -242,6 +242,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
+	int ret;
 
 	mode = 00400;
 
@@ -346,6 +347,39 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+	if (ret == -1) {
+		/* If we have an fd, this stat should succeed. */
+		DEBUG(0,("Error doing fstat on open file %s "
+			 "(%s)\n",
+			 smb_fname_str_dbg(smb_fname),
+			 strerror(errno) ));
+		status = map_nt_error_from_unix(errno);
+	} else if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		errno = EISDIR;
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		SMB_VFS_CLOSE(fsp);
+		SAFE_FREE(fsp->fh);
+		SAFE_FREE(fsp);
+		TALLOC_FREE(smb_fname);
+		return status;
+	}
+
+	fsp->file_id = vfs_file_id_from_sbuf(vfs->conn, &smb_fname->st);
+	fsp->vuid = UID_FIELD_INVALID;
+	fsp->file_pid = 0;
+	fsp->can_lock = True;
+	fsp->can_read = True;
+	fsp->can_write =
+		CAN_WRITE(vfs->conn);
+	fsp->print_file = NULL;
+	fsp->modified = False;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->is_directory = False;
 
 	vfs->files[fsp->fh->fd] = fsp;
 	printf("open: fd=%d\n", fsp->fh->fd);
