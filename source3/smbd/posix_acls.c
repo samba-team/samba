@@ -2844,17 +2844,8 @@ static bool set_canon_ace_list(files_struct *fsp,
 #endif
 
 	if (the_acl == NULL) {
-
-		if (!no_acl_syscall_error(errno)) {
-			/*
-			 * Only print this error message if we have some kind of ACL
-			 * support that's not working. Otherwise we would always get this.
-			 */
-			DEBUG(0,("set_canon_ace_list: Unable to init %s ACL. (%s)\n",
-				default_ace ? "default" : "file", strerror(errno) ));
-		}
-		*pacl_set_support = False;
-		goto fail;
+		DEBUG(0, ("sys_acl_init failed to allocate an ACL\n"));
+		return false;
 	}
 
 	if( DEBUGLVL( 10 )) {
