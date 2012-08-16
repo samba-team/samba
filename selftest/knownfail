@@ -46,6 +46,7 @@
 # these show that we still have some differences between our system
 # with our internal iconv because it passes except when we bypass our
 # internal iconv modules
+^samba.vfstest.acl.vfstest\(s3dc:local\) #until we get the fake_acls module into selftest
 ^samba4.local.convert_string_handle.system.iconv.gd_ascii
 ^samba4.local.convert_string_handle.system.iconv.gd_iso8859_cp850
 ^samba4..*base.delete.*.deltest17

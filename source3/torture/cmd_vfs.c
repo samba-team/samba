@@ -1461,14 +1461,13 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 
 	flags = O_RDWR;
 
-	fsp = SMB_MALLOC_P(struct files_struct);
+	fsp = talloc_zero(vfs, struct files_struct);
 	if (fsp == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	fsp->fh = talloc_zero(fsp, struct fd_handle);
 	if (fsp->fh == NULL) {
-		SAFE_FREE(fsp->fsp_name);
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
 	}
 	fsp->conn = vfs->conn;
@@ -1476,7 +1475,7 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	status = create_synthetic_smb_fname_split(NULL, argv[1], NULL,
 						  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		return status;
 	}
 
@@ -1485,11 +1484,39 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
-		SAFE_FREE(fsp->fh);
-		SAFE_FREE(fsp);
+		TALLOC_FREE(fsp);
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+	if (ret == -1) {
+		/* If we have an fd, this stat should succeed. */
+		DEBUG(0,("Error doing fstat on open file %s "
+			 "(%s)\n",
+			 smb_fname_str_dbg(smb_fname),
+			 strerror(errno) ));
+		status = map_nt_error_from_unix(errno);
+	} else if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		errno = EISDIR;
+		status = NT_STATUS_FILE_IS_A_DIRECTORY;
+	}
+	
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	fsp->file_id = vfs_file_id_from_sbuf(vfs->conn, &smb_fname->st);
+	fsp->vuid = UID_FIELD_INVALID;
+	fsp->file_pid = 0;
+	fsp->can_lock = True;
+	fsp->can_read = True;
+	fsp->can_write = True;
+	fsp->print_file = NULL;
+	fsp->modified = False;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->is_directory = False;
+
 
 	sd = sddl_decode(talloc_tos(), argv[2], get_global_sam_sid());
 	if (!sd) {
@@ -1510,9 +1537,7 @@ out:
 	if (ret == -1 )
 		printf("close: error=%d (%s)\n", errno, strerror(errno));
 
-	TALLOC_FREE(fsp->fsp_name);
-	SAFE_FREE(fsp->fh);
-	SAFE_FREE(fsp);
+	TALLOC_FREE(fsp);
 
 	return status;
 }
