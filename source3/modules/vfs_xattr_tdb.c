@@ -27,26 +27,51 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+static int xattr_tdb_get_file_id(struct vfs_handle_struct *handle,
+				const char *path, struct file_id *id)
+{
+	int ret;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status = create_synthetic_smb_fname_split(frame, path, NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		TALLOC_FREE(frame); 
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+
+	if (ret == -1) {
+		TALLOC_FREE(frame); 
+		return -1;
+	}
+
+	*id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &smb_fname->st);
+	TALLOC_FREE(frame);
+	return 0;
+}
+
 static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 				  const char *path, const char *name,
 				  void *value, size_t size)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
 	ssize_t xattr_size;
+	int ret;
 	DATA_BLOB blob;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
 				TALLOC_FREE(frame); return -1);
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+	ret = xattr_tdb_get_file_id(handle, path, &id);
+	if (ret == -1) {
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	xattr_size = xattr_tdb_getattr(db, frame, &id, name, &blob);
 	if (xattr_size < 0) {
@@ -82,7 +107,7 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sbuf);
 
 	xattr_size = xattr_tdb_getattr(db, frame, &id, name, &blob);
 	if (xattr_size < 0) {
@@ -104,17 +129,16 @@ static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
 			      const char *path, const char *name,
 			      const void *value, size_t size, int flags)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+	ret = xattr_tdb_get_file_id(handle, path, &id);
+	if (ret == -1) {
 		return -1;
 	}
-
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
@@ -134,7 +158,7 @@ static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sbuf);
 
 	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
@@ -142,17 +166,16 @@ static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
 static ssize_t xattr_tdb_listxattr(struct vfs_handle_struct *handle,
 				   const char *path, char *list, size_t size)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
+	ret = xattr_tdb_get_file_id(handle, path, &id);
+	if (ret == -1) {
 		return -1;
 	}
-
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_listattr(db, &id, list, size);
 }
@@ -171,7 +194,7 @@ static ssize_t xattr_tdb_flistxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sbuf);
 
 	return xattr_tdb_listattr(db, &id, list, size);
 }
@@ -179,18 +202,21 @@ static ssize_t xattr_tdb_flistxattr(struct vfs_handle_struct *handle,
 static int xattr_tdb_removexattr(struct vfs_handle_struct *handle,
 				 const char *path, const char *name)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
+	int ret;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (vfs_stat_smb_fname(handle->conn, path, &sbuf) == -1) {
-		return -1;
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, TALLOC_FREE(frame); return -1);
+
+	ret = xattr_tdb_get_file_id(handle, path, &id);
+	if (ret == -1) {
+		return ret;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
-
+	TALLOC_FREE(frame); 
+	
 	return xattr_tdb_removeattr(db, &id, name);
 }
 
@@ -207,7 +233,7 @@ static int xattr_tdb_fremovexattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sbuf);
 
 	return xattr_tdb_removeattr(db, &id, name);
 }
@@ -297,7 +323,7 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &smb_fname_tmp->st);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &smb_fname_tmp->st);
 
 	xattr_tdb_remove_all_attrs(db, &id);
 
@@ -328,7 +354,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
+	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sbuf);
 
 	xattr_tdb_remove_all_attrs(db, &id);
 
