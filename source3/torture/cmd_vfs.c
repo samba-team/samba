@@ -1459,8 +1459,6 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 
 	mode = 00400;
 
-	flags = O_RDWR;
-
 	fsp = talloc_zero(vfs, struct files_struct);
 	if (fsp == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1481,7 +1479,17 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 
 	fsp->fsp_name = smb_fname;
 
-	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
+#ifdef O_DIRECTORY
+	flags = O_RDONLY|O_DIRECTORY;
+#else
+	/* POSIX allows us to open a directory with O_RDONLY. */
+	flags = O_RDONLY;
+#endif
+
+	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, O_RDWR, mode);
+	if (fsp->fh->fd == -1 && errno == EISDIR) {
+		fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, smb_fname, fsp, flags, mode);
+	}
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(fsp);
@@ -1497,9 +1505,6 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 			 smb_fname_str_dbg(smb_fname),
 			 strerror(errno) ));
 		status = map_nt_error_from_unix(errno);
-	} else if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-		errno = EISDIR;
-		status = NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 	
 	if (!NT_STATUS_IS_OK(status)) {
