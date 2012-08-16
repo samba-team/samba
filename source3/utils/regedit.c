@@ -32,15 +32,18 @@
 #define KEY_START_X 	0
 #define KEY_START_Y 	3
 #define KEY_WIDTH 	(COLS / 4)
-#define KEY_HEIGHT	(LINES - KEY_START_Y - 1)
+#define KEY_HEIGHT	(LINES - KEY_START_Y - 2)
 #define VAL_START_X 	KEY_WIDTH
 #define VAL_START_Y 	3
 #define VAL_WIDTH 	(COLS - KEY_WIDTH)
-#define VAL_HEIGHT	(LINES - VAL_START_Y - 1)
+#define VAL_HEIGHT	(LINES - VAL_START_Y - 2)
 #define HEADING_START_Y	(KEY_START_Y - 1)
-#define HELP_START_Y	(LINES - 1)
-#define HELP_START_X	0
-#define HELP_WIDTH	(LINES)
+#define HELP1_START_Y	(LINES - 2)
+#define HELP1_START_X	0
+#define HELP1_WIDTH	(LINES)
+#define HELP2_START_Y	(LINES - 1)
+#define HELP2_START_X	0
+#define HELP2_WIDTH	(LINES)
 #define PATH_START_Y 	0
 #define PATH_START_X 	6
 #define PATH_MAX_Y	(COLS - 1)
@@ -132,6 +135,8 @@ static void print_help(struct regedit *regedit)
 	const char *vhelp = "[n] New Value [d] Del Value [ENTER] Edit";
 	const char *msg = "KEYS";
 	const char *help = khelp;
+	const char *genhelp = "[TAB] Switch sections [q] Quit regedit "
+			      "[UP] List up [DOWN] List down";
 	int i, pad;
 
 	if (!regedit->tree_input) {
@@ -139,10 +144,10 @@ static void print_help(struct regedit *regedit)
 		help = vhelp;
 	}
 
-	move(HELP_START_Y, HELP_START_X);
+	move(HELP1_START_Y, HELP1_START_X);
 	clrtoeol();
 	attron(A_REVERSE);
-	mvaddstr(HELP_START_Y, HELP_START_X, help);
+	mvaddstr(HELP1_START_Y, HELP1_START_X, help);
 	pad = COLS - strlen(msg) - strlen(help);
 	for (i = 0; i < pad; ++i) {
 		addch(' ');
@@ -150,6 +155,10 @@ static void print_help(struct regedit *regedit)
 	attron(A_BOLD);
 	addstr(msg);
 	attroff(A_REVERSE | A_BOLD);
+
+	move(HELP2_START_Y, HELP2_START_X);
+	clrtoeol();
+	mvaddstr(HELP2_START_Y, HELP2_START_X, genhelp);
 }
 
 static void print_heading(struct regedit *regedit)
