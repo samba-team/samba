@@ -42,7 +42,7 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *type_na
 	if (mod == NULL) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to import %s to check type %s",
 			module, type_name);
-		return NULL;
+		return false;
 	}
 
 	type = (PyTypeObject *)PyObject_GetAttrString(mod, type_name);
@@ -50,7 +50,7 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *type_na
 	if (type == NULL) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to find type %s in module %s",
 			module, type_name);
-		return NULL;
+		return false;
 	}
 
 	ret = PyObject_TypeCheck(obj, type);
