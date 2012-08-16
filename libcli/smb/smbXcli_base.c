@@ -1608,13 +1608,27 @@ static NTSTATUS smb1cli_inbuf_parse_chain(uint8_t *buf, TALLOC_CTX *mem_ctx,
 	uint8_t *hdr;
 	uint8_t cmd;
 	uint32_t wct_ofs;
+	NTSTATUS status;
+	size_t min_size = MIN_SMB_SIZE;
 
 	buflen = smb_len_nbt(buf);
 	taken = 0;
 
 	hdr = buf + NBT_HDR_SIZE;
 
-	if (buflen < MIN_SMB_SIZE) {
+	status = smb1cli_pull_raw_error(hdr);
+	if (NT_STATUS_IS_ERR(status)) {
+		/*
+		 * This is an ugly hack to support OS/2
+		 * which skips the byte_count in the DATA block
+		 * on some error responses.
+		 *
+		 * See bug #9096
+		 */
+		min_size -= sizeof(uint16_t);
+	}
+
+	if (buflen < min_size) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
@@ -1655,9 +1669,9 @@ static NTSTATUS smb1cli_inbuf_parse_chain(uint8_t *buf, TALLOC_CTX *mem_ctx,
 		size_t needed;
 
 		/*
-		 * we need at least WCT and BCC
+		 * we need at least WCT
 		 */
-		needed = sizeof(uint8_t) + sizeof(uint16_t);
+		needed = sizeof(uint8_t);
 		if (len < needed) {
 			DEBUG(10, ("%s: %d bytes left, expected at least %d\n",
 				   __location__, (int)len, (int)needed));
@@ -1669,6 +1683,46 @@ static NTSTATUS smb1cli_inbuf_parse_chain(uint8_t *buf, TALLOC_CTX *mem_ctx,
 		 */
 		wct = CVAL(hdr, wct_ofs);
 		needed += wct * sizeof(uint16_t);
+		if (len < needed) {
+			DEBUG(10, ("%s: %d bytes left, expected at least %d\n",
+				   __location__, (int)len, (int)needed));
+			goto inval;
+		}
+
+		if ((num_iov == 1) &&
+		    (len == needed) &&
+		    NT_STATUS_IS_ERR(status))
+		{
+			/*
+			 * This is an ugly hack to support OS/2
+			 * which skips the byte_count in the DATA block
+			 * on some error responses.
+			 *
+			 * See bug #9096
+			 */
+			iov_tmp = talloc_realloc(mem_ctx, iov, struct iovec,
+						 num_iov + 2);
+			if (iov_tmp == NULL) {
+				TALLOC_FREE(iov);
+				return NT_STATUS_NO_MEMORY;
+			}
+			iov = iov_tmp;
+			cur = &iov[num_iov];
+			num_iov += 2;
+
+			cur[0].iov_len = 0;
+			cur[0].iov_base = hdr + (wct_ofs + sizeof(uint8_t));
+			cur[1].iov_len = 0;
+			cur[1].iov_base = cur[0].iov_base;
+
+			taken += needed;
+			break;
+		}
+
+		/*
+		 * we need at least BCC
+		 */
+		needed += sizeof(uint16_t);
 		if (len < needed) {
 			DEBUG(10, ("%s: %d bytes left, expected at least %d\n",
 				   __location__, (int)len, (int)needed));
