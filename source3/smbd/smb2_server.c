@@ -165,7 +165,7 @@ static const struct smbd_smb2_dispatch_table *smbd_smb2_call(uint16_t opcode)
 	return ret;
 }
 
-static void print_req_vectors(struct smbd_smb2_request *req)
+static void print_req_vectors(const struct smbd_smb2_request *req)
 {
 	int i;
 
