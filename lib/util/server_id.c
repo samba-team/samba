@@ -60,3 +60,39 @@ char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
 				       (unsigned)id->task_id);
 	}
 }
+
+struct server_id server_id_from_string(uint32_t local_vnn,
+				       const char *pid_string)
+{
+	struct server_id result;
+	unsigned long long pid;
+	unsigned int vnn, task_id = 0;
+
+	ZERO_STRUCT(result);
+
+	/*
+	 * We accept various forms with 1, 2 or 3 component forms
+	 * because the server_id_str() can print different forms, and
+	 * we want backwards compatibility for scripts that may call
+	 * smbclient.
+	 */
+	if (sscanf(pid_string, "%u:%llu.%u", &vnn, &pid, &task_id) == 3) {
+		result.vnn = vnn;
+		result.pid = pid;
+		result.task_id = task_id;
+	} else if (sscanf(pid_string, "%u:%llu", &vnn, &pid) == 2) {
+		result.vnn = vnn;
+		result.pid = pid;
+	} else if (sscanf(pid_string, "%llu.%u", &pid, &task_id) == 2) {
+		result.vnn = local_vnn;
+		result.pid = pid;
+		result.task_id = task_id;
+	} else if (sscanf(pid_string, "%llu", &pid) == 1) {
+		result.vnn = local_vnn;
+		result.pid = pid;
+	} else {
+		result.vnn = NONCLUSTER_VNN;
+		result.pid = UINT64_MAX;
+	}
+	return result;
+}
