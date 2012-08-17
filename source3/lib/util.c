@@ -2106,36 +2106,7 @@ bool procid_is_me(const struct server_id *pid)
 
 struct server_id interpret_pid(const char *pid_string)
 {
-	struct server_id result;
-	unsigned long long pid;
-	unsigned int vnn, task_id = 0;
-
-	ZERO_STRUCT(result);
-
-	/* We accept various forms with 1, 2 or 3 component forms
-	 * because the server_id_str() can print different forms, and
-	 * we want backwards compatibility for scripts that may call
-	 * smbclient. */
-	if (sscanf(pid_string, "%u:%llu.%u", &vnn, &pid, &task_id) == 3) {
-		result.vnn = vnn;
-		result.pid = pid;
-		result.task_id = task_id;
-	} else if (sscanf(pid_string, "%u:%llu", &vnn, &pid) == 2) {
-		result.vnn = vnn;
-		result.pid = pid;
-		result.task_id = 0;
-	} else if (sscanf(pid_string, "%llu.%u", &pid, &task_id) == 2) {
-		result.vnn = get_my_vnn();
-		result.pid = pid;
-		result.task_id = task_id;
-	} else if (sscanf(pid_string, "%llu", &pid) == 1) {
-		result.vnn = get_my_vnn();
-		result.pid = pid;
-	} else {
-		result.vnn = NONCLUSTER_VNN;
-		result.pid = (uint64_t)-1;
-	}
-	return result;
+	return server_id_from_string(get_my_vnn(), pid_string);
 }
 
 char *procid_str_static(const struct server_id *pid)
