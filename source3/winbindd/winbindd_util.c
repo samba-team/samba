@@ -1166,12 +1166,18 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Skip Domain local groups outside our domain.
-	   We'll get these from the getsidaliases() RPC call. */
+	/*
+	 * Before bug #7843 the "Domain Local" groups were added with a
+	 * lookupuseraliases call, but this isn't done anymore for our domain
+	 * so we need to resolve resource groups here.
+	 *
+	 * When to use Resource Groups:
+	 * http://technet.microsoft.com/en-us/library/cc753670%28v=WS.10%29.aspx
+	*/
 	status = sid_array_from_info3(mem_ctx, info3,
 				      user_sids,
 				      &num_groups,
-				      false, true);
+				      false);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(info3);
