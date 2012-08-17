@@ -458,24 +458,3 @@ uint64_t serverid_get_random_unique_id(void)
 
 	return unique_id;
 }
-
-bool serverid_equal(const struct server_id *p1, const struct server_id *p2)
-{
-	if (p1->pid != p2->pid) {
-		return false;
-	}
-
-	if (p1->task_id != p2->task_id) {
-		return false;
-	}
-
-	if (p1->vnn != p2->vnn) {
-		return false;
-	}
-
-	if (p1->unique_id != p2->unique_id) {
-		return false;
-	}
-
-	return true;
-}
