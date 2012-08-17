@@ -629,7 +629,7 @@ def SAMBA_CONFIG_H(conf, path=None):
 
         # This check is because for ldb_search(), a NULL format string
         # is not an error, but some compilers complain about that.
-        if CHECK_CFLAGS(conf, "-Werror=format", '''
+        if CHECK_CFLAGS(conf, ["-Werror=format", "-Wformat=2"], '''
 int testformat(char *format, ...) __attribute__ ((format (__printf__, 1, 2)));
 
 int main(void) {
