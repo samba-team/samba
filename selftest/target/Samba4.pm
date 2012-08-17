@@ -1385,6 +1385,10 @@ sub provision_plugin_s4_dc($$)
 
 	my $extra_smbconf_shares = "
 
+[tmpenc]
+	copy = tmp
+	smb encrypt = required
+
 [tmpcase]
 	copy = tmp
 	case sensitive = yes

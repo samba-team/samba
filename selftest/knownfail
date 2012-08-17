@@ -21,6 +21,11 @@
 ^samba3.smbtorture_s3.plain\(dc\).BAD-NBT-SESSION # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(dc\).SMB2-SESSION-REAUTH # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(dc\).SMB2-SESSION-RECONNECT # Fails against the s4 ntvfs server
+ ^samba3.smbtorture_s3.crypt_server\(s3dc\).SMB2-SESSION-REAUTH # expected to give ACCESS_DENIED SMB2.1 doesn't have encryption
+^samba3.smbtorture_s3.crypt_server\(s3dc\).SMB2-SESSION-RECONNECT # expected to give CONNECTION_DISCONNECTED, we need to fix the test
+^samba3.smb2.session enc.reconnect # expected to give CONNECTION_DISCONNECTED, we need to fix the test
+^samba3.raw.session enc # expected to give ACCESS_DENIED as SMB1 encryption isn't used
+^samba3.smbtorture_s3.crypt_server # expected to give ACCESS_DENIED as SMB1 encryption isn't used
 ^samba3.nbt.dgram.*netlogon2\(s3dc\)
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3

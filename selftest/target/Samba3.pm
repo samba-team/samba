@@ -939,6 +939,10 @@ sub provision($$$$$$)
 [tmp]
 	path = $shrdir
         comment = smb username is [%U]
+[tmpenc]
+	path = $shrdir
+	comment = encrypt smb username is [%U]
+	smb encrypt = required
 [tmpguest]
 	path = $shrdir
         guest ok = yes
