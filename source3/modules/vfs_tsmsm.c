@@ -290,6 +290,7 @@ struct tsmsm_pread_state {
 	struct files_struct *fsp;
 	ssize_t ret;
 	int err;
+	bool was_offline;
 };
 
 static void tsmsm_pread_done(struct tevent_req *subreq);
@@ -308,6 +309,7 @@ static struct tevent_req *tsmsm_pread_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 	state->fsp = fsp;
+	state->was_offline = tsmsm_aio_force(handle, fsp);
 	subreq = SMB_VFS_NEXT_PREAD_SEND(state, ev, handle, fsp, data,
 					 n, offset);
 	if (tevent_req_nomem(subreq, req)) {
@@ -337,7 +339,7 @@ static ssize_t tsmsm_pread_recv(struct tevent_req *req, int *err)
 	if (tevent_req_is_unix_error(req, err)) {
 		return -1;
 	}
-	if (state->ret >= 0) {
+	if (state->ret >= 0 && state->was_offline) {
 		struct files_struct *fsp = state->fsp;
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
@@ -351,6 +353,7 @@ struct tsmsm_pwrite_state {
 	struct files_struct *fsp;
 	ssize_t ret;
 	int err;
+	bool was_offline;
 };
 
 static void tsmsm_pwrite_done(struct tevent_req *subreq);
@@ -370,6 +373,7 @@ static struct tevent_req *tsmsm_pwrite_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 	state->fsp = fsp;
+	state->was_offline = tsmsm_aio_force(handle, fsp);
 	subreq = SMB_VFS_NEXT_PWRITE_SEND(state, ev, handle, fsp, data,
 					  n, offset);
 	if (tevent_req_nomem(subreq, req)) {
@@ -399,7 +403,7 @@ static ssize_t tsmsm_pwrite_recv(struct tevent_req *req, int *err)
 	if (tevent_req_is_unix_error(req, err)) {
 		return -1;
 	}
-	if (state->ret >= 0) {
+	if (state->ret >= 0 && state->was_offline) {
 		struct files_struct *fsp = state->fsp;
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
