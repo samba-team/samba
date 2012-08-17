@@ -426,6 +426,7 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 			} else {
 				input_section = true;
 				set_current_field(input, field[0]);
+				pos_form_cursor(input);
 			}
 		} else if (input_section) {
 			handle_form_input(input, c);
@@ -716,6 +717,7 @@ static void section_down(struct edit_dialog *edit)
 			} else {
 				set_current_field(edit->input,
 						  edit->field[FLD_DATA]);
+				pos_form_cursor(edit->input);
 			}
 		}
 		break;
@@ -729,6 +731,7 @@ static void section_down(struct edit_dialog *edit)
 	case IN_MENU:
 		edit->section = IN_NAME;
 		set_current_field(edit->input, edit->field[FLD_NAME]);
+		pos_form_cursor(edit->input);
 		break;
 	}
 	update_panels();
@@ -749,6 +752,7 @@ static void section_up(struct edit_dialog *edit)
 		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_NAME;
 			set_current_field(edit->input, edit->field[FLD_NAME]);
+			pos_form_cursor(edit->input);
 		}
 		break;
 	case IN_MENU:
@@ -757,6 +761,7 @@ static void section_up(struct edit_dialog *edit)
 			hexedit_set_cursor(edit->buf);
 		} else {
 			set_current_field(edit->input, edit->field[FLD_DATA]);
+			pos_form_cursor(edit->input);
 		}
 		break;
 	}
