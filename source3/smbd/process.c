@@ -1492,7 +1492,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 		if (req->encrypted) {
 			conn->encrypted_tid = true;
 			/* encrypted required from now on. */
-			conn->encrypt_level = Required;
+			conn->encrypt_level = SMB_SIGNING_REQUIRED;
 		} else if (ENCRYPTION_REQUIRED(conn)) {
 			if (req->cmd != SMBtrans2 && req->cmd != SMBtranss2) {
 				exit_server_cleanly("encryption required "

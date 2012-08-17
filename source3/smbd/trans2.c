@@ -3340,14 +3340,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			}
 
 			switch (conn->encrypt_level) {
-			case 0:
+			case SMB_SIGNING_OFF:
 				encrypt_caps = 0;
 				break;
-			case 1:
-			case Auto:
+			case SMB_SIGNING_IF_REQUIRED:
+			case SMB_SIGNING_DEFAULT:
 				encrypt_caps = CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP;
 				break;
-			case Required:
+			case SMB_SIGNING_REQUIRED:
 				encrypt_caps = CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP|
 						CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP;
 				large_write = false;
@@ -3695,7 +3695,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 					return;
 				}
 
-				if (lp_smb_encrypt(SNUM(conn)) == false) {
+				if (lp_smb_encrypt(SNUM(conn)) == SMB_SIGNING_OFF) {
 					reply_nterror(
 						req,
 						NT_STATUS_NOT_SUPPORTED);

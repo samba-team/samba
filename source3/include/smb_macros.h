@@ -139,7 +139,7 @@
 #define smb_len_large(buf) smb_len_tcp(buf)
 #define _smb_setlen_large(buf, len) _smb_setlen_tcp(buf, len)
 
-#define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == Required) : false)
+#define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == SMB_SIGNING_REQUIRED) : false)
 #define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
 
 /****************************************************************************
