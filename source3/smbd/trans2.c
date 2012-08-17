@@ -3553,8 +3553,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 			DEBUG(0,("call_trans2qfsinfo: encryption required "
 				"and info level 0x%x sent.\n",
 				(unsigned int)info_level));
-			exit_server_cleanly("encryption required "
-				"on connection");
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
 	}
@@ -3624,8 +3623,7 @@ static void call_trans2setfsinfo(connection_struct *conn,
 			DEBUG(0,("call_trans2setfsinfo: encryption required "
 				"and info level 0x%x sent.\n",
 				(unsigned int)info_level));
-			exit_server_cleanly("encryption required "
-				"on connection");
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
 	}

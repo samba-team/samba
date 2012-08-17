@@ -1495,8 +1495,12 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req)
 			conn->encrypt_level = SMB_SIGNING_REQUIRED;
 		} else if (ENCRYPTION_REQUIRED(conn)) {
 			if (req->cmd != SMBtrans2 && req->cmd != SMBtranss2) {
-				exit_server_cleanly("encryption required "
-					"on connection");
+				DEBUG(1,("service[%s] requires encryption"
+					"%s ACCESS_DENIED. mid=%llu\n",
+					lp_servicename(talloc_tos(), SNUM(conn)),
+					smb_fn_name(type),
+					(unsigned long long)req->mid));
+				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 				return conn;
 			}
 		}
