@@ -1260,7 +1260,7 @@ CTDB_CAPABILITY_RECMASTER=no
 
     <refsect2><title>Configuration</title>
     <para>
-      NAT-GW is configured in /etc/sysconfigctdb by setting the following
+      NAT-GW is configured in /etc/sysconfig/ctdb by setting the following
       variables:
     </para>
     <screen format="linespecific">
