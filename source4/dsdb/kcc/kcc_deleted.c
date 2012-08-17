@@ -83,30 +83,35 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 		struct ldb_result *res;
 		const char *attrs[] = { "whenChanged", NULL };
 		unsigned int i;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		if (!tmp_ctx) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-		ret = dsdb_get_deleted_objects_dn(s->samdb, mem_ctx, part->dn, &do_dn);
+		ret = dsdb_get_deleted_objects_dn(s->samdb, tmp_ctx, part->dn, &do_dn);
 		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(tmp_ctx);
 			/* some partitions have no Deleted Objects
 			   container */
 			continue;
 		}
 
 		if (!do_fs && ldb_dn_compare(ldb_get_config_basedn(s->samdb), part->dn)) {
-			ret = dsdb_search(s->samdb, do_dn, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
+			ret = dsdb_search(s->samdb, tmp_ctx, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
 					DSDB_SEARCH_SHOW_RECYCLED, NULL);
 		} else {
 			if (do_fs) {
 				DEBUG(1, ("Doing a full scan on %s and looking for deleted object\n",
 						ldb_dn_get_linearized(part->dn)));
 			}
-			ret = dsdb_search(s->samdb, part->dn, &res, part->dn, LDB_SCOPE_SUBTREE, attrs,
+			ret = dsdb_search(s->samdb, tmp_ctx, &res, part->dn, LDB_SCOPE_SUBTREE, attrs,
 					DSDB_SEARCH_SHOW_RECYCLED, "(isDeleted=TRUE)");
 		}
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",
-				 ldb_dn_get_linearized(do_dn)));
-			talloc_free(do_dn);
+				 ldb_dn_get_linearized(do_dn)));	
+			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
 
@@ -134,7 +139,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			}
 		}
 
-		talloc_free(do_dn);
+		TALLOC_FREE(tmp_ctx);
 	}
 
 	return NT_STATUS_OK;
