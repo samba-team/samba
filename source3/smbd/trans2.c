@@ -8506,9 +8506,9 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 		SSVAL((discard_const_p(uint8_t, req->inbuf)),smb_flg2,req->flags2);
 	}
 
-	if (conn->encrypt_level == Required && !req->encrypted) {
+	if (ENCRYPTION_REQUIRED(conn) && !req->encrypted) {
 		if (state->call != TRANSACT2_QFSINFO &&
-				state->call != TRANSACT2_SETFSINFO) {
+		    state->call != TRANSACT2_SETFSINFO) {
 			DEBUG(0,("handle_trans2: encryption required "
 				"with call 0x%x\n",
 				(unsigned int)state->call));
