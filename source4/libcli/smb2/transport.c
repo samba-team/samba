@@ -234,6 +234,7 @@ void smb2_transport_send(struct smb2_request *req)
 	status = smb2cli_req_compound_submit(reqs, num_reqs);
 
 	TALLOC_FREE(transport->compound.reqs);
+	transport->compound.related = false;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		req->status = status;
