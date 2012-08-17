@@ -3041,6 +3041,7 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 			struct smbXcli_session *s;
 			uint64_t uid;
 			struct iovec tf_iov[2];
+			size_t enc_len;
 			NTSTATUS status;
 
 			if (len < SMB2_TF_HDR_SIZE) {
@@ -3053,8 +3054,15 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 			taken += tf_len;
 
 			hdr = first_hdr + taken;
-			len = IVAL(tf, SMB2_TF_MSG_SIZE);
+			enc_len = IVAL(tf, SMB2_TF_MSG_SIZE);
 			uid = BVAL(tf, SMB2_TF_SESSION_ID);
+
+			if (len < SMB2_TF_HDR_SIZE + enc_len) {
+				DEBUG(10, ("%d bytes left, expected at least %d\n",
+					   (int)len,
+					   (int)(SMB2_TF_HDR_SIZE + enc_len)));
+				goto inval;
+			}
 
 			s = conn->sessions;
 			for (; s; s = s->next) {
@@ -3073,7 +3081,7 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 			tf_iov[0].iov_base = (void *)tf;
 			tf_iov[0].iov_len = tf_len;
 			tf_iov[1].iov_base = (void *)hdr;
-			tf_iov[1].iov_len = len;
+			tf_iov[1].iov_len = enc_len;
 
 			status = smb2_signing_decrypt_pdu(s->smb2->decryption_key,
 							  conn->protocol,
@@ -3083,7 +3091,8 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 				return status;
 			}
 
-			verified_buflen = taken + len;
+			verified_buflen = taken + enc_len;
+			len = enc_len;
 		}
 
 		/*
