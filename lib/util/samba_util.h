@@ -899,6 +899,7 @@ char *data_path(TALLOC_CTX *mem_ctx, const char *name);
 const char *shlib_ext(void);
 
 struct server_id;
+bool server_id_equal(const struct server_id *p1, const struct server_id *p2);
 char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id);
 
 #endif /* _SAMBA_UTIL_H_ */
