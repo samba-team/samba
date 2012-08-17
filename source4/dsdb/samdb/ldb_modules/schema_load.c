@@ -131,8 +131,10 @@ static int schema_metadata_get_uint64(struct ldb_module *module,
 	if (!tdb_data.dptr) {
 		if (tdb_error(tdb) == TDB_ERR_NOEXIST) {
 			*value = default_value;
+			talloc_free(tmp_ctx);
 			return LDB_SUCCESS;
 		} else {
+			talloc_free(tmp_ctx);
 			return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 						tdb_errorstr_compat(tdb));
 		}
