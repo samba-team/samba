@@ -708,18 +708,40 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	connection_struct *conn = fsp->conn;
 
 	if (fsp->num_aio_requests != 0) {
+
+		if (close_type != SHUTDOWN_CLOSE) {
+			/*
+			 * reply_close and the smb2 close must have
+			 * taken care of this. No other callers of
+			 * close_file should ever have created async
+			 * I/O.
+			 *
+			 * We need to panic here because if we close()
+			 * the fd while we have outstanding async I/O
+			 * requests, in the worst case we could end up
+			 * writing to the wrong file.
+			 */
+			DEBUG(0, ("fsp->num_aio_requests=%u\n",
+				  fsp->num_aio_requests));
+			smb_panic("can not close with outstanding aio "
+				  "requests");
+		}
+
 		/*
-		 * reply_close and the smb2 close must have taken care of
-		 * this. No other callers of close_file should ever have
-		 * created async I/O.
-		 *
-		 * We need to panic here because if we close() the fd while we
-		 * have outstanding async I/O requests, in the worst case we
-		 * could end up writing to the wrong file.
+		 * For shutdown close, just drop the async requests
+		 * including a potential close request pending for
+		 * this fsp. Drop the close request first, the
+		 * destructor for the aio_requests would execute it.
 		 */
-		DEBUG(0, ("fsp->num_aio_requests=%u\n",
-			  fsp->num_aio_requests));
-		smb_panic("can not close with outstanding aio requests");
+		TALLOC_FREE(fsp->deferred_close);
+
+		while (fsp->num_aio_requests != 0) {
+			/*
+			 * The destructor of the req will remove
+			 * itself from the fsp
+			 */
+			TALLOC_FREE(fsp->aio_requests[0]);
+		}
 	}
 
 	/*
