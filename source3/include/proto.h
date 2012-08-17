@@ -1361,8 +1361,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      DOM_SID **user_sids,
 			      size_t *num_user_sids,
-			      bool include_user_group_rid,
-			      bool skip_ressource_groups);
+			      bool include_user_group_rid);
 
 /* The following definitions come from lib/util_sock.c  */
 

@@ -1826,7 +1826,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	nt_status = sid_array_from_info3(result, info3,
 					 &result->sids,
 					 &result->num_sids,
-					 false, false);
+					 false);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(result);
 		return nt_status;

@@ -684,8 +684,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      DOM_SID **user_sids,
 			      size_t *num_user_sids,
-			      bool include_user_group_rid,
-			      bool skip_ressource_groups)
+			      bool include_user_group_rid)
 {
 	NTSTATUS status;
 	DOM_SID sid;
@@ -738,19 +737,14 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* Copy 'other' sids.  We need to do sid filtering here to
- 	   prevent possible elevation of privileges.  See:
-
-           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
-         */
+	/* SID filtering should only be handled by the domain controller on a
+	   trust by trust basis, and is counter-indicated for forests. Since
+	   native AD return all Domain Local groups as other SIDs, then this
+	   must not filter them when parsing INFO3 responses such that the
+	   list is identical to the tokenGroups LDAP query.
+	 */
 
 	for (i = 0; i < info3->sidcount; i++) {
-
-		if (skip_ressource_groups &&
-		    (info3->sids[i].attributes & SE_GROUP_RESOURCE)) {
-			continue;
-		}
-
 		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 				      &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
