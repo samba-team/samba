@@ -52,6 +52,11 @@ char *server_id_str(TALLOC_CTX *mem_ctx, const struct server_id *id)
 				       "%llu.%u",
 				       (unsigned long long)id->pid,
 				       (unsigned)id->task_id);
+	} else if (id->task_id == 0) {
+		return talloc_asprintf(mem_ctx,
+				       "%u:%llu",
+				       (unsigned)id->vnn,
+				       (unsigned long long)id->pid);
 	} else {
 		return talloc_asprintf(mem_ctx,
 				       "%u:%llu.%u",
