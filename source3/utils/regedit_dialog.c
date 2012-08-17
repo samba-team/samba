@@ -269,14 +269,42 @@ struct dialog *dialog_choice_center_new(TALLOC_CTX *ctx, const char *title,
 	return dia;
 }
 
+static bool current_item_is_first(MENU *menu)
+{
+	const ITEM *it = current_item(menu);
+
+	return item_index(it) == 0;
+}
+
+static bool current_item_is_last(MENU *menu)
+{
+	const ITEM *it = current_item(menu);
+
+	return item_index(it) == item_count(menu) - 1;
+}
+
 static int handle_menu_input(MENU *menu, int c)
 {
 	ITEM *item;
 
 	switch (c) {
+	case KEY_BTAB:
+		if (current_item_is_first(menu)) {
+			menu_driver(menu, REQ_LAST_ITEM);
+		} else {
+			menu_driver(menu, REQ_LEFT_ITEM);
+		}
+		break;
 	case KEY_LEFT:
 		menu_driver(menu, REQ_LEFT_ITEM);
 		break;
+	case '\t':
+		if (current_item_is_last(menu)) {
+			menu_driver(menu, REQ_FIRST_ITEM);
+			break;
+		} else {
+			menu_driver(menu, REQ_RIGHT_ITEM);
+		}
 	case KEY_RIGHT:
 		menu_driver(menu, REQ_RIGHT_ITEM);
 		break;
@@ -421,12 +449,26 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 			if (input_section) {
 				if (form_driver(input,REQ_VALIDATION) == E_OK) {
 					input_section = false;
-					menu_driver(dia->choices, REQ_FIRST_ITEM);
+					if (c == '\t') {
+						menu_driver(dia->choices,
+							    REQ_FIRST_ITEM);
+					} else {
+						menu_driver(dia->choices,
+							    REQ_LAST_ITEM);
+					}
+					pos_menu_cursor(dia->choices);
 				}
 			} else {
-				input_section = true;
-				set_current_field(input, field[0]);
-				pos_form_cursor(input);
+				if ((c == '\t' &&
+				     current_item_is_last(dia->choices)) ||
+				    (c == KEY_BTAB &&
+				     current_item_is_first(dia->choices))) {
+					input_section = true;
+					set_current_field(input, field[0]);
+					pos_form_cursor(input);
+				} else {
+					handle_menu_input(dia->choices, c);
+				}
 			}
 		} else if (input_section) {
 			handle_form_input(input, c);
@@ -726,12 +768,17 @@ static void section_down(struct edit_dialog *edit)
 		    form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_MENU;
 			menu_driver(edit->dia->choices, REQ_FIRST_ITEM);
+			pos_menu_cursor(edit->dia->choices);
 		}
 		break;
 	case IN_MENU:
-		edit->section = IN_NAME;
-		set_current_field(edit->input, edit->field[FLD_NAME]);
-		pos_form_cursor(edit->input);
+		if (current_item_is_last(edit->dia->choices)) {
+			edit->section = IN_NAME;
+			set_current_field(edit->input, edit->field[FLD_NAME]);
+			pos_form_cursor(edit->input);
+		} else {
+			menu_driver(edit->dia->choices, REQ_RIGHT_ITEM);
+		}
 		break;
 	}
 	update_panels();
@@ -744,7 +791,8 @@ static void section_up(struct edit_dialog *edit)
 	case IN_NAME:
 		if (form_driver(edit->input, REQ_VALIDATION) == E_OK) {
 			edit->section = IN_MENU;
-			menu_driver(edit->dia->choices, REQ_FIRST_ITEM);
+			menu_driver(edit->dia->choices, REQ_LAST_ITEM);
+			pos_menu_cursor(edit->dia->choices);
 		}
 		break;
 	case IN_DATA:
@@ -756,12 +804,16 @@ static void section_up(struct edit_dialog *edit)
 		}
 		break;
 	case IN_MENU:
-		edit->section = IN_DATA;
-		if (edit->buf) {
-			hexedit_set_cursor(edit->buf);
+		if (current_item_is_first(edit->dia->choices)) {
+			edit->section = IN_DATA;
+			if (edit->buf) {
+				hexedit_set_cursor(edit->buf);
+			} else {
+				set_current_field(edit->input, edit->field[FLD_DATA]);
+				pos_form_cursor(edit->input);
+			}
 		} else {
-			set_current_field(edit->input, edit->field[FLD_DATA]);
-			pos_form_cursor(edit->input);
+			menu_driver(edit->dia->choices, REQ_LEFT_ITEM);
 		}
 		break;
 	}
