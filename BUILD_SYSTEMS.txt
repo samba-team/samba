@@ -27,11 +27,10 @@ Kerberos library, provided the version is recent enough (otherwise we
 will use our internal version of Heimdal).  Please note that builds
 with MIT krb5 support will not have AD DC features.
 
-By the time of the first release candidate, we will finish renaming
-the binaries that we ship so that where we provide a tool under a name
-that was used in Samba 3.x, it continues to behave in the same way it
-always has.  This will ensure that our change in build system does not
-impact on our user's ability to use Samba as they always have.
+Where we provide a tool under a name that was used in Samba 3.x, it
+continues to behave in the same way it always has.  This will ensure
+that our change in build system does not impact on our user's ability
+to use Samba as they always have.
 
 For developers, this build system backs a comprehensive 'make test',
 which provides code coverage of around 48% of our code by line:
