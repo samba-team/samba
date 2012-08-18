@@ -269,6 +269,7 @@ also accepted as dictionary entries here
             string+="#define SAMBA_VERSION_VENDOR_SUFFIX " + self.VENDOR_SUFFIX + "\n"
             if self.VENDOR_PATCH is not None:
                 string+="#define SAMBA_VERSION_VENDOR_PATCH " + self.VENDOR_PATCH + "\n"
+                string+='#define SAMBA_VERSION_VENDOR_PATCH_STRING "' + self.VENDOR_PATCH + '"\n'
 
         if self.RELEASE_NICKNAME is not None:
             string+="#define SAMBA_VERSION_RELEASE_NICKNAME " + self.RELEASE_NICKNAME + "\n"

@@ -19,17 +19,9 @@ to upgrade existing Samba 3.x releases to) and the AD domain
 controller work previously known as 'samba4'.
 
 Samba 4.0 is subjected to an awesome battery of tests on an automated
-basis, we have found Samba 4.0 to be very stable in it's behavior.
+basis, we have found Samba 4.0 to be very stable in it's behaviour.
 However, we still recommend against upgrading production servers from
 Samba 3.x release to Samba 4.0 beta at this stage.
-
-In particular note that the new default configuration 's3fs' may have
-different stability characteristics compared with our previous default
-file server.  We are making this release so that we can find and fix
-any of these issues that arise in the real world.  New AD DC
-installations can provision or join with --use-ntvfs to obtain the
-previous default file server.  See below how to continue using ntvfs
-in an existing installation.
 
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
 beta releases, you should backup all configuration and data.
@@ -63,8 +55,7 @@ issue.
 
 Samba 4.0 beta ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
-default.  For pure file server work, the binaries users would expect
-from that series (nmbd, winbindd, smbpasswd) continue to be available.
+default.
 
 Samba 4.0 also ships with the 'NTVFS' file server.  This file server
 is what was used in all previous alpha releases of Samba 4.0, and is
@@ -74,9 +65,11 @@ installations that have deployed it as part of an AD DC, but also as a
 running example of the NT-FSA architecture we expect to move smbd to in
 the longer term.  
 
-As mentioned above, this change to the default file server may cause
-instability, as we learn about the real-world interactions between
-these two key components. 
+For pure file server work, the binaries users would expect from that
+series (nmbd, winbindd, smbpasswd) continue to be available.  When
+running an AD DC, you only need to run 'samba' (not
+nmbd/smbd/winbind), as the required services are co-ordinated by this
+master binary.
 
 As DNS is an integral part of Active Directory, we also provide a DNS
 solution, using the BIND DLZ mechanism in versions 9.8 and 9.9.
@@ -87,7 +80,9 @@ minimal internal DNS server from within the Samba process, for easier
 complete (pending addition of secure DNS update support).
 
 To provide accurate timestamps to Windows clients, we integrate with
-the NTP project to provide secured NTP replies. 
+the NTP project to provide secured NTP replies.  To use you need to
+start ntpd and configure it with the 'restrict ... ms-sntp' and
+ntpsigndsocket options.
 
 Finally, a new scripting interface has been added to Samba 4, allowing
 Python programs to interface to Samba's internals, and many tools and
@@ -106,7 +101,7 @@ $ git log samba-4.0.0beta5..samba-4.0.0beta6
 Some major user-visible changes include:
 
 - Provision is now faster, as we now correctly use the database
-  indicies during the provision
+  indices during the provision
 
 - Support for handling of Extended Signatures (Session Key Protection)
 
@@ -138,7 +133,9 @@ KNOWN ISSUES
 - Modifying of group policies by members of the Domain Administrators
   group is not possible with the s3fs file server, only with the ntvfs
   file server.  This is due to the underlying POSIX ACL not being set
-  at provision time.
+  at provision time.  Recursivly giving 'domain administrators' write
+  access to the contents of the sysvol share using a windows client
+  will fix this in the interim.
 
 - For similar reasons, sites with ACLs stored by the ntvfs file server
   may wish to continue to use that file server implementation, as a
@@ -165,8 +162,9 @@ KNOWN ISSUES
   use the 'samba' binary (provided for the AD server) on a member
   server.
 
-- There is no NetBIOS browsing support (network neighbourhood) in the
-  'samba' binary (use nmbd and smbd instead)
+- There is no NetBIOS browsing support (network neighbourhood)
+  available for the AD domain controller.  (Support in nmbd and smbd
+  for classic domains and member/standalone servers is unchanged).
 
 - Clock Synchronisation is critical.  Many 'wrong password' errors are
   actually due to Kerberos objecting to a clock skew between client
