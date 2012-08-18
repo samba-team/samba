@@ -6,7 +6,7 @@ blddir = 'bin'
 APPNAME='samba'
 VERSION=None
 
-import sys, os
+import sys, os, tempfile
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
 
@@ -245,15 +245,18 @@ def dist():
 
     if sambaversion.IS_SNAPSHOT:
         # write .distversion file and add to tar
-        f = '.distversion'
-        distversionf = open(f, 'w')
+        distversionf = tempfile.NamedTemporaryFile(mode='w', prefix='.distversion',dir=blddir)
         for field in sambaversion.vcs_fields:
             distveroption = field + '=' + str(sambaversion.vcs_fields[field])
             distversionf.write(distveroption + '\n')
-        distversionf.close()
-        samba_dist.DIST_FILES('.distversion')
+        distversionf.flush()
+        samba_dist.DIST_FILES('%s:.distversion' % distversionf.name)
 
-    samba_dist.dist()
+        samba_dist.dist()
+        distversionf.close()
+    else:
+        samba_dist.dist()
+
 
 def distcheck():
     '''test that distribution tarball builds and installs'''
