@@ -857,6 +857,7 @@ VFS_AUDIT_OBJ = modules/vfs_audit.o
 VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
 VFS_FULL_AUDIT_OBJ = modules/vfs_full_audit.o
 VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
+VFS_FAKE_ACLS_OBJ = modules/vfs_fake_acls.o autoconf/librpc/gen_ndr/ndr_smb_acl.o
 VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 VFS_DEFAULT_QUOTA_OBJ = modules/vfs_default_quota.o
@@ -2751,6 +2752,10 @@ bin/netatalk.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NETATALK_OBJ)
 bin/fake_perms.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FAKE_PERMS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_FAKE_PERMS_OBJ)
+
+bin/fake_acls.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FAKE_ACLS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_FAKE_ACLS_OBJ)
 
 bin/default_quota.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_DEFAULT_QUOTA_OBJ)
 	@echo "Building plugin $@"
