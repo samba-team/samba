@@ -490,16 +490,24 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp, const char *fname)
+static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp, const struct smb_filename *smb_fname)
 {
 	size_t total_ea_len = 0;
-	TALLOC_CTX *mem_ctx = NULL;
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	char *fname;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return 0;
 	}
-	mem_ctx = talloc_tos();
+	mem_ctx = talloc_stackframe();
+	status = get_full_smb_filename(mem_ctx, smb_fname, &fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(mem_ctx);
+		return 0;
+	}
 	(void)get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+	TALLOC_FREE(mem_ctx);
 	return total_ea_len;
 }
 
@@ -1207,7 +1215,7 @@ static void call_trans2open(connection_struct *conn,
 	SSVAL(params,24,0); /* Padding. */
 	if (flags & 8) {
 		uint32 ea_size = estimate_ea_size(conn, fsp,
-						  fsp->fsp_name->base_name);
+						  smb_fname);
 		SIVAL(params, 26, ea_size);
 	} else {
 		SIVAL(params, 26, 0);
@@ -1654,7 +1662,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SSVAL(p,20,mode);
 		{
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
-								smb_fname->base_name);
+								smb_fname);
 			SIVAL(p,22,ea_size); /* Extended attributes */
 		}
 		p += 27;
@@ -1757,7 +1765,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		q = p; p += 4; /* q is placeholder for name length. */
 		{
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
-								smb_fname->base_name);
+								smb_fname);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 			p += 4;
 		}
@@ -1859,7 +1867,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		q = p; p += 4; /* q is placeholder for name length. */
 		{
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
-								smb_fname->base_name);
+								smb_fname);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 			p +=4;
 		}
@@ -1934,7 +1942,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		q = p; p += 4; /* q is placeholder for name length. */
 		{
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
-								smb_fname->base_name);
+								smb_fname);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 			p +=4;
 		}
@@ -1980,7 +1988,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		q = p; p += 4; /* q is placeholder for name length */
 		{
 			unsigned int ea_size = estimate_ea_size(conn, NULL,
-								smb_fname->base_name);
+								smb_fname);
 			SIVAL(p,0,ea_size); /* Extended attributes */
 			p +=4;
 		}
@@ -4408,7 +4416,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			unsigned int ea_size =
 			    estimate_ea_size(conn, fsp,
-					     smb_fname->base_name);
+					     smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EA_SIZE\n"));
 			data_size = 26;
 			srv_put_dos_date2(pdata,0,create_time);
@@ -4548,7 +4556,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_FILE_EA_INFO:
 		{
 			unsigned int ea_size =
-			    estimate_ea_size(conn, fsp,	smb_fname->base_name);
+			    estimate_ea_size(conn, fsp,	smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_EA_INFORMATION\n"));
 			data_size = 4;
 			SIVAL(pdata,0,ea_size);
@@ -4610,7 +4618,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			int len;
 			unsigned int ea_size =
-			    estimate_ea_size(conn, fsp, smb_fname->base_name);
+			    estimate_ea_size(conn, fsp, smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALL_INFORMATION\n"));
 			put_long_date_timespec(conn->ts_res,pdata,create_time_ts);
 			put_long_date_timespec(conn->ts_res,pdata+8,atime_ts);
