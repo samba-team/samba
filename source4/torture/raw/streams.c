@@ -695,10 +695,12 @@ static bool test_stream_names(struct torture_context *tctx,
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
@@ -708,6 +710,22 @@ static bool test_stream_names(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
+
+	torture_comment(tctx, "Adding two EAs to base file\n");
+	ZERO_STRUCT(sinfo);
+	sinfo.generic.level = RAW_SFILEINFO_EA_SET;
+	sinfo.generic.in.file.fnum = fnum1;
+	sinfo.ea_set.in.num_eas = 2;
+	sinfo.ea_set.in.eas = talloc_array(tctx, struct ea_struct, 2);
+	sinfo.ea_set.in.eas[0].flags = 0;
+	sinfo.ea_set.in.eas[0].name.s = "EAONE";
+	sinfo.ea_set.in.eas[0].value = data_blob_string_const("VALUE1");
+	sinfo.ea_set.in.eas[1].flags = 0;
+	sinfo.ea_set.in.eas[1].name.s = "SECONDEA";
+	sinfo.ea_set.in.eas[1].value = data_blob_string_const("ValueTwo");
+
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/*
 	 * Make sure the create time of the streams are different from the
@@ -1688,13 +1706,7 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	if (finfo.basic_info.out.attrib != FILE_ATTRIBUTE_ARCHIVE) {
-		printf("(%s) Incorrect attrib %x - should be %x\n", \
-		       __location__, (unsigned int)finfo.basic_info.out.attrib,
-			(unsigned int)FILE_ATTRIBUTE_ARCHIVE);
-		ret = false;
-		goto done;
-	}
+	torture_assert_int_equal_goto(tctx, finfo.all_info.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED, FILE_ATTRIBUTE_ARCHIVE, ret, done, "attrib incorrect");
 
 	/* Now open the stream name. */
 
@@ -1725,12 +1737,7 @@ static bool test_stream_attributes(struct torture_context *tctx,
         sfinfo.generic.level = RAW_SFILEINFO_BASIC_INFORMATION;
         sfinfo.generic.in.file.fnum = fnum;
         status = smb_raw_setfileinfo(cli->tree, &sfinfo);
-        if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) { 
-                printf("(%s) %s - %s (should be %s)\n", __location__, "SETATTR", 
-                        nt_errstr(status), nt_errstr(NT_STATUS_OK));
-                ret = false;
-		goto done;
-        }
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret, done, "smb_raw_setfileinfo failed");
 
 	smbcli_close(cli->tree, fnum);
 	fnum = -1;
@@ -1739,27 +1746,11 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
 	finfo.generic.in.file.path = fname;
 	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("(%s) %s pathinfo - %s\n", __location__, "SETATTRE", nt_errstr(status));
-		ret = false;
-		goto done;
-	}
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OK, ret, done, "smb_raw_pathinfo failed");
 
-	if (finfo.all_info.out.attrib != FILE_ATTRIBUTE_READONLY) {
-		printf("(%s) attrib incorrect. Was 0x%x, should be 0x%x\n",
-			__location__,
-			(unsigned int)finfo.all_info.out.attrib,
-			(unsigned int)FILE_ATTRIBUTE_READONLY);
-		ret = false;
-		goto done;
-	}
+	torture_assert_int_equal_goto(tctx, finfo.all_info.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED, FILE_ATTRIBUTE_READONLY, ret, done, "attrib incorrect");
 
-	if (nt_time_to_unix(finfo.all_info.out.write_time) != basetime) {
-		printf("(%s) time incorrect.\n",
-			__location__);
-		ret = false;
-		goto done;
-	}
+	torture_assert_int_equal_goto(tctx, nt_time_to_unix(finfo.all_info.out.write_time), basetime, ret, done, "time incorrect");
 
  done:
 
