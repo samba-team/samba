@@ -501,12 +501,14 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 		return 0;
 	}
 	mem_ctx = talloc_stackframe();
-	status = get_full_smb_filename(mem_ctx, smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(mem_ctx);
-		return 0;
+
+	/* If this is a stream fsp, then we need to instead find the
+	 * estimated ea len from the main file, not the stream
+	 * (streams cannot have EAs) */
+	if (is_ntfs_stream_smb_fname(smb_fname)) {
+		fsp = NULL;
 	}
-	(void)get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+	(void)get_ea_list_from_file(mem_ctx, conn, fsp, smb_fname->base_name, &total_ea_len);
 	TALLOC_FREE(mem_ctx);
 	return total_ea_len;
 }
@@ -4650,7 +4652,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			int len;
 			unsigned int ea_size =
-			    estimate_ea_size(conn, fsp, smb_fname->base_name);
+			    estimate_ea_size(conn, fsp, smb_fname);
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB2_FILE_ALL_INFORMATION\n"));
 			put_long_date_timespec(conn->ts_res,pdata+0x00,create_time_ts);
 			put_long_date_timespec(conn->ts_res,pdata+0x08,atime_ts);
