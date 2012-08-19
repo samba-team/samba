@@ -737,10 +737,12 @@ static bool test_stream_names(struct torture_context *tctx,
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
-	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
 	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
@@ -750,6 +752,19 @@ static bool test_stream_names(struct torture_context *tctx,
 	status = smb_raw_open(cli->tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum1 = io.ntcreatex.out.file.fnum;
+
+	torture_comment(tctx, "Adding one EAs to first stream file\n");
+	ZERO_STRUCT(sinfo);
+	sinfo.generic.level = RAW_SFILEINFO_EA_SET;
+	sinfo.generic.in.file.fnum = fnum1;
+	sinfo.ea_set.in.num_eas = 1;
+	sinfo.ea_set.in.eas = talloc_array(tctx, struct ea_struct, 1);
+	sinfo.ea_set.in.eas[0].flags = 0;
+	sinfo.ea_set.in.eas[0].name.s = "STREAMEA";
+	sinfo.ea_set.in.eas[0].value = data_blob_string_const("EA_VALUE1");
+
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	/*
 	 * A different stream does not give a sharing violation
