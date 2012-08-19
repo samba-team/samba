@@ -312,8 +312,8 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
  Return a linked list of the total EA's. Plus the total size
 ****************************************************************************/
 
-static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
-					const char *fname, size_t *pea_total_len)
+static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
+				      const char *fname, size_t *pea_total_len, struct ea_list **ea_list)
 {
 	/* Get a list of all xattrs. Max namesize is 64k. */
 	size_t i, num_names;
@@ -323,15 +323,16 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 	*pea_total_len = 0;
 
-	if (!lp_ea_support(SNUM(conn))) {
-		return NULL;
-	}
-
 	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
 					&names, &num_names);
 
-	if (!NT_STATUS_IS_OK(status) || (num_names == 0)) {
-		return NULL;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (num_names == 0) {
+		*ea_list = NULL;
+		return NT_STATUS_OK;
 	}
 
 	for (i=0; i<num_names; i++) {
@@ -344,13 +345,15 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 
 		listp = talloc(mem_ctx, struct ea_list);
 		if (listp == NULL) {
-			return NULL;
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!NT_STATUS_IS_OK(get_ea_value(mem_ctx, conn, fsp,
-						  fname, names[i],
-						  &listp->ea))) {
-			return NULL;
+		status = get_ea_value(mem_ctx, conn, fsp,
+				      fname, names[i],
+				      &listp->ea);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		push_ascii_fstring(dos_ea_name, listp->ea.name);
@@ -374,7 +377,25 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 	DEBUG(10, ("get_ea_list_from_file: total_len = %u\n",
 		   (unsigned int)*pea_total_len));
 
-	return ea_list_head;
+	*ea_list = ea_list_head;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
+				      const struct smb_filename *smb_fname, size_t *pea_total_len, struct ea_list **ea_list)
+{
+	*pea_total_len = 0;
+	*ea_list = NULL;
+
+	if (!lp_ea_support(SNUM(conn))) {
+		return NT_STATUS_OK;
+	}
+
+	if (is_ntfs_stream_smb_fname(smb_fname)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return get_ea_list_from_file_path(mem_ctx, conn, fsp, smb_fname->base_name, pea_total_len, ea_list);
 }
 
 /****************************************************************************
@@ -494,8 +515,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 {
 	size_t total_ea_len = 0;
 	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-	char *fname;
+	struct ea_list *ea_list;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return 0;
@@ -504,11 +524,12 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 
 	/* If this is a stream fsp, then we need to instead find the
 	 * estimated ea len from the main file, not the stream
-	 * (streams cannot have EAs) */
+	 * (streams cannot have EAs), but the estimate isn't just 0 in
+	 * this case! */
 	if (is_ntfs_stream_smb_fname(smb_fname)) {
 		fsp = NULL;
 	}
-	(void)get_ea_list_from_file(mem_ctx, conn, fsp, smb_fname->base_name, &total_ea_len);
+	(void)get_ea_list_from_file_path(mem_ctx, conn, fsp, smb_fname->base_name, &total_ea_len, &ea_list);
 	TALLOC_FREE(mem_ctx);
 	return total_ea_len;
 }
@@ -521,7 +542,11 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
 {
 	size_t total_ea_len;
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	struct ea_list *ea_list = get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+	struct ea_list *ea_list;
+	NTSTATUS status = get_ea_list_from_file_path(mem_ctx, conn, fsp, fname, &total_ea_len, &ea_list);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
 
 	for (; ea_list; ea_list = ea_list->next) {
 		if (strequal(&unix_ea_name[5], ea_list->ea.name)) {
@@ -552,7 +577,11 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return status;
 	}
 
-	/* For now setting EAs on streams isn't supported. */
+	/* Setting EAs on streams isn't supported. */
+	if (is_ntfs_stream_smb_fname(smb_fname)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	fname = smb_fname->base_name;
 
 	for (;ea_list; ea_list = ea_list->next) {
@@ -1694,6 +1723,7 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	{
 		struct ea_list *file_list = NULL;
 		size_t ea_len = 0;
+		NTSTATUS status;
 
 		DEBUG(10,("smbd_marshall_dir_entry: SMB_FIND_EA_LIST\n"));
 		if (!name_list) {
@@ -1711,9 +1741,12 @@ static bool smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		SSVAL(p,20,mode);
 		p += 22; /* p now points to the EA area. */
 
-		file_list = get_ea_list_from_file(ctx, conn, NULL,
-						  smb_fname->base_name,
-						  &ea_len);
+		status = get_ea_list_from_file(ctx, conn, NULL,
+					       smb_fname,
+					       &ea_len, &file_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			file_list = NULL;
+		}
 		name_list = ea_list_union(name_list, file_list, &ea_len);
 
 		/* We need to determine if this entry will fit in the space available. */
@@ -4445,13 +4478,16 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			size_t total_ea_len = 0;
 			struct ea_list *ea_file_list = NULL;
-
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_EAS_FROM_LIST\n"));
 
-			ea_file_list =
+			status =
 			    get_ea_list_from_file(mem_ctx, conn, fsp,
-						  smb_fname->base_name,
-						  &total_ea_len);
+						  smb_fname,
+						  &total_ea_len, &ea_file_list);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
 			ea_list = ea_list_union(ea_list, ea_file_list, &total_ea_len);
 
 			if (!ea_list || (total_ea_len > data_size)) {
@@ -4468,12 +4504,15 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			/* We have data_size bytes to put EA's into. */
 			size_t total_ea_len = 0;
-
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_INFO_QUERY_ALL_EAS\n"));
 
-			ea_list = get_ea_list_from_file(mem_ctx, conn, fsp,
-							smb_fname->base_name,
-							&total_ea_len);
+			status = get_ea_list_from_file(mem_ctx, conn, fsp,
+							smb_fname,
+							&total_ea_len, &ea_list);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+
 			if (!ea_list || (total_ea_len > data_size)) {
 				data_size = 4;
 				SIVAL(pdata,0,4);   /* EA List Length must be set to 4 if no EA's. */
@@ -4497,10 +4536,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 			/*TODO: add filtering and index handling */
 
-			ea_file_list =
-			    get_ea_list_from_file(mem_ctx, conn, fsp,
-						  smb_fname->base_name,
-						  &total_ea_len);
+			status  =
+				get_ea_list_from_file(mem_ctx, conn, fsp,
+						  smb_fname,
+						  &total_ea_len, &ea_file_list);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			if (!ea_file_list) {
 				return NT_STATUS_NO_EAS_ON_FILE;
 			}
