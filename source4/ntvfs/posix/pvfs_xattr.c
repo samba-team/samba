@@ -284,6 +284,12 @@ NTSTATUS pvfs_doseas_load(struct pvfs_state *pvfs, struct pvfs_filename *name, i
 {
 	NTSTATUS status;
 	ZERO_STRUCTP(eas);
+
+	if (name->stream_name) {
+		/* We don't support EAs on streams */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (!(pvfs->flags & PVFS_FLAG_XATTR_ENABLE)) {
 		return NT_STATUS_OK;
 	}
