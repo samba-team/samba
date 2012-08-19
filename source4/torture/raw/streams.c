@@ -646,6 +646,7 @@ static bool test_stream_names(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	union smb_open io;
+	union smb_fileinfo info;
 	union smb_fileinfo finfo;
 	union smb_fileinfo stinfo;
 	union smb_setfileinfo sinfo;
@@ -764,6 +765,16 @@ static bool test_stream_names(struct torture_context *tctx,
 	sinfo.ea_set.in.eas[0].value = data_blob_string_const("EA_VALUE1");
 
 	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	status = torture_check_ea(cli, sname1, "STREAMEA", "EA_VALUE1");
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	ZERO_STRUCT(info);
+	info.generic.level = RAW_FILEINFO_ALL_EAS;
+	info.all_eas.in.file.path = sname1;
+
+	status = smb_raw_pathinfo(cli->tree, tctx, &info);
 	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
 
 	/*
