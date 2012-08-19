@@ -37,8 +37,8 @@ struct dialog {
 struct dialog *dialog_new(TALLOC_CTX *ctx, const char *title, int nlines,
 			  int ncols, int y, int x);
 
-struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
-				 int ncols);
+struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title,
+				 int nlines, int ncols);
 
 struct dialog *dialog_choice_new(TALLOC_CTX *ctx, const char *title,
 				 const char **choices, int nlines, int ncols,
@@ -67,8 +67,8 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 struct registry_key;
 struct value_item;
 
-WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
-		         const struct value_item *vitem);
+WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
+			 uint32_t type, const struct value_item *vitem);
 
 int dialog_select_type(TALLOC_CTX *ctx, int *type);
 

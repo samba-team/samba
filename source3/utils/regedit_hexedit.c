@@ -70,7 +70,8 @@ struct hexedit *hexedit_new(TALLOC_CTX *ctx, WINDOW *parent, int nlines,
 	}
 	buf->cursor_x = HEX_COL1;
 
-	buf->status_line = derwin(buf->win, 1, LINE_WIDTH, max_rows(buf->win), 0);
+	buf->status_line = derwin(buf->win, 1, LINE_WIDTH, max_rows(buf->win),
+				  0);
 	if (buf->status_line == NULL) {
 		goto fail;
 	}
@@ -113,7 +114,9 @@ void hexedit_refresh(struct hexedit *buf)
 		end = buf->len;
 	}
 
-	for (off = buf->offset, lineno = 0; off < end; off += BYTES_PER_LINE, ++lineno) {
+	for (off = buf->offset, lineno = 0;
+	     off < end;
+	     off += BYTES_PER_LINE, ++lineno) {
 		uint8_t *line = buf->data + off;
 		size_t i, endline;
 
@@ -150,7 +153,8 @@ void hexedit_refresh(struct hexedit *buf)
 
 static void calc_cursor_offset(struct hexedit *buf)
 {
-	buf->cursor_offset = buf->offset + buf->cursor_y * BYTES_PER_LINE + buf->cursor_line_offset;
+	buf->cursor_offset = buf->offset + buf->cursor_y * BYTES_PER_LINE +
+				buf->cursor_line_offset;
 }
 
 static int offset_to_hex_col(size_t pos)
@@ -341,7 +345,8 @@ static void do_edit(struct hexedit *buf, int c)
 		if (!isprint(c)) {
 			c = '.';
 		}
-		mvwaddch(buf->win, buf->cursor_y, ASCII_COL + buf->cursor_line_offset, c);
+		mvwaddch(buf->win, buf->cursor_y,
+			 ASCII_COL + buf->cursor_line_offset, c);
 		cursor_right(buf);
 	} else {
 		if (!isxdigit(c)) {
@@ -365,7 +370,8 @@ static void do_edit(struct hexedit *buf, int c)
 		if (!isprint(c)) {
 			c = '.';
 		}
-		mvwaddch(buf->win, buf->cursor_y, ASCII_COL + buf->cursor_line_offset, c);
+		mvwaddch(buf->win, buf->cursor_y,
+			 ASCII_COL + buf->cursor_line_offset, c);
 
 		if (buf->cursor_x + 1 != HEX_COL2_END) {
 			cursor_right(buf);

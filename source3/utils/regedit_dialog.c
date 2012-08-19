@@ -179,8 +179,8 @@ static int dialog_getch(struct dialog *dia)
 	return c;
 }
 
-struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title, int nlines,
-				 int ncols)
+struct dialog *dialog_center_new(TALLOC_CTX *ctx, const char *title,
+				 int nlines, int ncols)
 {
 	struct dialog *dia;
 	int y, x;
@@ -447,7 +447,8 @@ int dialog_input(TALLOC_CTX *ctx, char **output, const char *title,
 
 		if (c == '\t' || c == KEY_BTAB) {
 			if (input_section) {
-				if (form_driver(input,REQ_VALIDATION) == E_OK) {
+				int valid = form_driver(input, REQ_VALIDATION);
+				if (valid == E_OK) {
 					input_section = false;
 					if (c == '\t') {
 						menu_driver(dia->choices,
@@ -809,7 +810,8 @@ static void section_up(struct edit_dialog *edit)
 			if (edit->buf) {
 				hexedit_set_cursor(edit->buf);
 			} else {
-				set_current_field(edit->input, edit->field[FLD_DATA]);
+				set_current_field(edit->input,
+						  edit->field[FLD_DATA]);
 				pos_form_cursor(edit->input);
 			}
 		} else {
@@ -990,8 +992,8 @@ static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
 	return WERR_OK;
 }
 
-WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key, uint32_t type,
-		      const struct value_item *vitem)
+WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
+			 uint32_t type, const struct value_item *vitem)
 {
 	struct edit_dialog *edit;
 #define DIALOG_RESIZE 2

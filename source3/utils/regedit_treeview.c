@@ -371,7 +371,8 @@ void tree_view_resize(struct tree_view *view, int nlines, int ncols,
 	post_menu(view->menu);
 }
 
-static void print_path_recursive(WINDOW *label, struct tree_node *node, size_t *len)
+static void print_path_recursive(WINDOW *label, struct tree_node *node,
+				 size_t *len)
 {
 	if (node->parent)
 		print_path_recursive(label, node->parent, len);
