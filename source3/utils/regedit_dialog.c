@@ -577,6 +577,8 @@ int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
 #define FLD_NAME 1
 #define FLD_DATA 3
 
+#define DIALOG_RESIZE 2
+
 enum input_section {
 	IN_NAME,
 	IN_DATA,
@@ -590,6 +592,7 @@ struct edit_dialog {
 	FIELD *field[MAX_FIELDS];
 	struct hexedit *buf;
 	enum input_section section;
+	bool closing;
 };
 
 static int edit_dialog_free(struct edit_dialog *edit)
@@ -782,8 +785,6 @@ static void section_down(struct edit_dialog *edit)
 		}
 		break;
 	}
-	update_panels();
-	doupdate();
 }
 
 static void section_up(struct edit_dialog *edit)
@@ -819,8 +820,6 @@ static void section_up(struct edit_dialog *edit)
 		}
 		break;
 	}
-	update_panels();
-	doupdate();
 }
 
 static void handle_hexedit_input(struct hexedit *buf, int c)
@@ -992,13 +991,59 @@ static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
 	return WERR_OK;
 }
 
+static WERROR handle_editor_input(struct edit_dialog *edit,
+				  struct registry_key *key,
+				  uint32_t type,
+				  const struct value_item *vitem, int c)
+{
+	WERROR rv = WERR_OK;
+	int selection;
+
+	if (edit->section == IN_NAME) {
+		handle_form_input(edit->input, c);
+	} else if (edit->section == IN_DATA) {
+		if (edit->buf) {
+			handle_hexedit_input(edit->buf, c);
+		} else {
+			handle_form_input(edit->input, c);
+		}
+	} else {
+		selection = handle_menu_input(edit->dia->choices, c);
+		if (selection == DIALOG_OK) {
+			rv = set_value(edit, key, type, vitem == NULL);
+			if (W_ERROR_EQUAL(rv, WERR_FILE_EXISTS)) {
+				dialog_notice(edit, DIA_ALERT,
+					      "Value exists",
+					      "Value name already exists.");
+				selection = -1;
+			} else {
+				edit->closing = true;
+			}
+		} else if (selection == DIALOG_RESIZE) {
+			char *n;
+			size_t newlen = 0;
+
+			dialog_input(edit, &n, "Resize buffer",
+				     "Enter new size");
+			if (n) {
+				newlen = strtoul(n, NULL, 10);
+				hexedit_resize_buffer(edit->buf, newlen);
+				hexedit_refresh(edit->buf);
+				talloc_free(n);
+			}
+		} else if (selection == DIALOG_CANCEL) {
+			edit->closing = true;
+		}
+	}
+
+	return rv;
+}
+
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 			 uint32_t type, const struct value_item *vitem)
 {
 	struct edit_dialog *edit;
-#define DIALOG_RESIZE 2
 	WERROR rv = WERR_NOMEM;
-	int selection;
 
 	edit = talloc_zero(ctx, struct edit_dialog);
 	if (edit == NULL) {
@@ -1019,58 +1064,22 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	doupdate();
 
 	edit->section = IN_NAME;
+	edit->closing = false;
 
-	while (1) {
+	do {
 		int c = dialog_getch(edit->dia);
+
 		if (c == '\t') {
 			section_down(edit);
-			continue;
 		} else if (c == KEY_BTAB) {
 			section_up(edit);
-			continue;
-		}
-
-		if (edit->section == IN_NAME) {
-			handle_form_input(edit->input, c);
-		} else if (edit->section == IN_DATA) {
-			if (edit->buf) {
-				handle_hexedit_input(edit->buf, c);
-			} else {
-				handle_form_input(edit->input, c);
-			}
 		} else {
-			selection = handle_menu_input(edit->dia->choices, c);
-			if (selection == DIALOG_OK) {
-				rv = set_value(edit, key, type, vitem == NULL);
-				if (W_ERROR_EQUAL(rv, WERR_FILE_EXISTS)) {
-					dialog_notice(edit, DIA_ALERT,
-						      "Value exists",
-						      "Value name already exists.");
-					selection = -1;
-				} else {
-					goto finish;
-				}
-			} else if (selection == DIALOG_RESIZE) {
-				char *n;
-				size_t newlen = 0;
-
-				dialog_input(edit, &n, "Resize buffer",
-					     "Enter new size");
-				if (n) {
-					newlen = strtoul(n, NULL, 10);
-					hexedit_resize_buffer(edit->buf, newlen);
-					hexedit_refresh(edit->buf);
-					talloc_free(n);
-				}
-			} else if (selection == DIALOG_CANCEL) {
-				rv = WERR_OK;
-				goto finish;
-			}
+			rv = handle_editor_input(edit, key, type, vitem, c);
 		}
 
 		update_panels();
 		doupdate();
-	}
+	} while (!edit->closing);
 
 finish:
 	talloc_free(edit);
