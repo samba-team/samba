@@ -132,7 +132,8 @@ static void print_help(struct regedit *regedit)
 {
 	const char *khelp = "[n] New Key [s] New Subkey [d] Del Key "
 			    "[LEFT] Ascend [RIGHT] Descend";
-	const char *vhelp = "[n] New Value [d] Del Value [ENTER] Edit";
+	const char *vhelp = "[n] New Value [d] Del Value [ENTER] Edit "
+			    "[b] Edit binary";
 	const char *msg = "KEYS";
 	const char *help = khelp;
 	const char *genhelp = "[TAB] Switch sections [q] Quit regedit "
@@ -335,6 +336,7 @@ static void handle_tree_input(struct regedit *regedit, int c)
 static void handle_value_input(struct regedit *regedit, int c)
 {
 	struct value_item *vitem;
+	bool binmode = false;
 
 	switch (c) {
 	case KEY_DOWN:
@@ -343,6 +345,10 @@ static void handle_value_input(struct regedit *regedit, int c)
 	case KEY_UP:
 		menu_driver(regedit->vl->menu, REQ_UP_ITEM);
 		break;
+	case 'b':
+	case 'B':
+		binmode = true;
+		/* Falthrough... */
 	case '\n':
 	case KEY_ENTER:
 		vitem = item_userptr(current_item(regedit->vl->menu));
@@ -350,7 +356,7 @@ static void handle_value_input(struct regedit *regedit, int c)
 			struct tree_node *node;
 			node = item_userptr(current_item(regedit->keys->menu));
 			dialog_edit_value(regedit, node->key, vitem->type,
-					  vitem);
+					  vitem, binmode);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;
@@ -363,7 +369,8 @@ static void handle_value_input(struct regedit *regedit, int c)
 		if (sel == DIALOG_OK) {
 			struct tree_node *node;
 			node = item_userptr(current_item(regedit->keys->menu));
-			dialog_edit_value(regedit, node->key, new_type, NULL);
+			dialog_edit_value(regedit, node->key, new_type, NULL,
+					  false);
 			value_list_load(regedit->vl, node->key);
 		}
 		break;

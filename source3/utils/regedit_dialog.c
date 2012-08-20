@@ -593,6 +593,7 @@ struct edit_dialog {
 	struct hexedit *buf;
 	enum input_section section;
 	bool closing;
+	uint32_t mode;
 };
 
 static int edit_dialog_free(struct edit_dialog *edit)
@@ -694,7 +695,7 @@ static WERROR set_value(struct edit_dialog *edit, struct registry_key *key,
 		return WERR_FILE_EXISTS;
 	}
 
-	switch (type) {
+	switch (edit->mode) {
 	case REG_DWORD: {
 		uint32_t val;
 		int base = 10;
@@ -857,7 +858,7 @@ static WERROR edit_init_dialog(struct edit_dialog *edit, uint32_t type)
 		NULL
 	};
 
-	switch (type) {
+	switch (edit->mode) {
 	case REG_MULTI_SZ:
 		diaheight = EDIT_HEIGHT_MULTILINE;
 		winheight = EDIT_FORM_WIN_HEIGHT_MULTILINE;
@@ -894,7 +895,7 @@ static WERROR edit_init_dialog(struct edit_dialog *edit, uint32_t type)
 	return WERR_OK;
 }
 
-static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
+static WERROR edit_init_form(struct edit_dialog *edit,
 			     const struct value_item *vitem)
 {
 
@@ -926,7 +927,7 @@ static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
 	set_field_buffer(edit->field[2], 0, "Data");
 	field_opts_off(edit->field[2], O_EDIT);
 
-	if (type == REG_BINARY) {
+	if (edit->mode == REG_BINARY) {
 		size_t len = 8;
 		const void *buf = NULL;
 
@@ -947,7 +948,7 @@ static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
 	} else {
 		int val_rows = EDIT_DATA_HEIGHT_ONELINE;
 
-		if (type == REG_MULTI_SZ) {
+		if (edit->mode == REG_MULTI_SZ) {
 			val_rows = EDIT_DATA_HEIGHT_MULTILINE;
 		}
 		edit->field[FLD_DATA] = new_field(val_rows,
@@ -965,7 +966,7 @@ static WERROR edit_init_form(struct edit_dialog *edit, uint32_t type,
 		set_field_back(edit->field[FLD_DATA], A_REVERSE);
 		field_opts_off(edit->field[FLD_DATA],
 			       O_BLANK | O_AUTOSKIP | O_STATIC | O_WRAP);
-		if (type == REG_DWORD) {
+		if (edit->mode == REG_DWORD) {
 			set_field_type(edit->field[FLD_DATA], TYPE_REGEXP,
 				       "^ *([0-9]+|0[xX][0-9a-fA-F]+) *$");
 		}
@@ -1042,7 +1043,8 @@ static WERROR handle_editor_input(struct edit_dialog *edit,
 }
 
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
-			 uint32_t type, const struct value_item *vitem)
+			 uint32_t type, const struct value_item *vitem,
+			 bool force_binary)
 {
 	struct edit_dialog *edit;
 	WERROR rv = WERR_NOMEM;
@@ -1053,11 +1055,16 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	}
 	talloc_set_destructor(edit, edit_dialog_free);
 
+	edit->mode = type;
+	if (force_binary) {
+		edit->mode = REG_BINARY;
+	}
+
 	rv = edit_init_dialog(edit, type);
 	if (!W_ERROR_IS_OK(rv)) {
 		goto finish;
 	}
-	rv = edit_init_form(edit, type, vitem);
+	rv = edit_init_form(edit, vitem);
 	if (!W_ERROR_IS_OK(rv)) {
 		goto finish;
 	}

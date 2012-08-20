@@ -68,7 +68,8 @@ struct registry_key;
 struct value_item;
 
 WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
-			 uint32_t type, const struct value_item *vitem);
+			 uint32_t type, const struct value_item *vitem,
+			 bool force_binary);
 
 int dialog_select_type(TALLOC_CTX *ctx, int *type);
 
