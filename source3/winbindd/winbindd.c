@@ -872,7 +872,8 @@ static bool remove_idle_client(void)
 	int nidle = 0;
 
 	for (state = winbindd_client_list(); state; state = state->next) {
-		if (state->response == NULL &&
+		if (state->request == NULL &&
+		    state->response == NULL &&
 		    !state->pwent_state && !state->grent_state) {
 			nidle++;
 			if (!last_access || state->last_access < last_access) {
