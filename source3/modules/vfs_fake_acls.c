@@ -139,6 +139,38 @@ static int fake_acls_stat(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int fake_acls_lstat(vfs_handle_struct *handle,
+			   struct smb_filename *smb_fname)
+{
+	int ret = -1;
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+	if (ret == 0) {
+		TALLOC_CTX *frame = talloc_stackframe();
+		char *path;
+		NTSTATUS status;
+		status = get_full_smb_filename(frame, smb_fname, &path);
+		if (!NT_STATUS_IS_OK(status)) {
+			errno = map_errno_from_nt_status(status);
+			TALLOC_FREE(frame);
+			return -1;
+		}
+
+		/* This isn't quite right (calling getxattr not
+		 * lgetxattr), but for the test purposes of this
+		 * module (fake NT ACLs from windows clients), it is
+		 * close enough.  We removed the l*xattr functions
+		 * because linux doesn't support using them, but we
+		 * could fake them in xattr_tdb if we really wanted
+		 * to.  We ignore errors because the link might not point anywhere */
+		fake_acls_uid(handle, path, &smb_fname->st.st_ex_uid);
+		fake_acls_gid(handle, path, &smb_fname->st.st_ex_gid);
+		TALLOC_FREE(frame);
+	}
+
+	return ret;
+}
+
 static int fake_acls_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	int ret = -1;
@@ -361,6 +393,35 @@ static int fake_acls_chown(vfs_handle_struct *handle,  const char *path, uid_t u
 	return 0;
 }
 
+static int fake_acls_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
+{
+	int ret;
+	uint8_t id_buf[4];
+	if (uid != -1) {
+		/* This isn't quite right (calling setxattr not
+		 * lsetxattr), but for the test purposes of this
+		 * module (fake NT ACLs from windows clients), it is
+		 * close enough.  We removed the l*xattr functions
+		 * because linux doesn't support using them, but we
+		 * could fake them in xattr_tdb if we really wanted
+		 * to.
+		 */
+		SIVAL(id_buf, 0, uid);
+		ret = SMB_VFS_NEXT_SETXATTR(handle, path, FAKE_UID, id_buf, sizeof(id_buf), 0);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+	if (gid != -1) {
+		SIVAL(id_buf, 0, gid);
+		ret = SMB_VFS_NEXT_SETXATTR(handle, path, FAKE_GID, id_buf, sizeof(id_buf), 0);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+	return 0;
+}
+
 static int fake_acls_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int ret;
@@ -385,6 +446,7 @@ static int fake_acls_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t 
 
 static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.stat_fn = fake_acls_stat,
+	.lstat_fn = fake_acls_lstat,
 	.fstat_fn = fake_acls_fstat,
 	.sys_acl_get_file_fn = fake_acls_sys_acl_get_file,
 	.sys_acl_get_fd_fn = fake_acls_sys_acl_get_fd,
@@ -392,6 +454,7 @@ static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.sys_acl_set_fd_fn = fake_acls_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = fake_acls_sys_acl_delete_def_file,
 	.chown_fn = fake_acls_chown,
+	.lchown_fn = fake_acls_lchown,
 	.fchown_fn = fake_acls_fchown,
 	
 };
