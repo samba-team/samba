@@ -566,6 +566,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 	state->cmd_name = "unknown request";
 	state->recv_fn = NULL;
+	state->last_access = time(NULL);
 
 	/* Process command */
 
