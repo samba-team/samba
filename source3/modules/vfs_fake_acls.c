@@ -30,10 +30,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-#define FAKE_UID "FAKE.uid"
-#define FAKE_GID "FAKE.gid"
-#define FAKE_ACL_ACCESS_XATTR "FAKE.access_acl"
-#define FAKE_ACL_DEFAULT_XATTR "FAKE.default_acl"
+#define FAKE_UID "system.fake_uid"
+#define FAKE_GID "system.fake_gid"
+#define FAKE_ACL_ACCESS_XATTR "system.fake_access_acl"
+#define FAKE_ACL_DEFAULT_XATTR "system.fake_default_acl"
 
 static int fake_acls_uid(vfs_handle_struct *handle,
 			 const char *path,
