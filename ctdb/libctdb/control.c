@@ -48,6 +48,7 @@ bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 		DEBUG(ctdb, LOG_ERR, "ctdb_getrecmaster_recv: status -1");
 		return false;
 	}
+	/* Note: data is stashed in status - see ctdb_control_dispatch() */
 	*recmaster = reply->status;
 	return true;
 }
@@ -75,6 +76,7 @@ bool ctdb_getrecmode_recv(struct ctdb_connection *ctdb,
 		DEBUG(ctdb, LOG_ERR, "ctdb_getrecmode_recv: status -1");
 		return false;
 	}
+	/* Note: data is stashed in status - see ctdb_control_dispatch() */
 	*recmode = reply->status;
 	return true;
 }
@@ -102,6 +104,7 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 		DEBUG(ctdb, LOG_ERR, "ctdb_getpnn_recv: status -1");
 		return false;
 	}
+	/* Note: data is stashed in status - see ctdb_control_dispatch() */
 	*pnn = reply->status;
 	return true;
 }
