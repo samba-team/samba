@@ -6019,6 +6019,7 @@ int main(int argc, const char *argv[])
 
 	ctdb_disconnect(ctdb_connection);
 	talloc_free(ctdb);
+	talloc_free(ev);
 	(void)poptFreeContext(pc);
 
 	return ret;
