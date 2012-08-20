@@ -890,7 +890,8 @@ static void remove_client(struct winbindd_cli_state *state)
 /* Is a client idle? */
 
 static bool client_is_idle(struct winbindd_cli_state *state) {
-  return (state->response == NULL &&
+  return (state->request == NULL &&
+	  state->response == NULL &&
 	  !state->pwent_state && !state->grent_state);
 }
 
