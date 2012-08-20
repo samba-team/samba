@@ -25,6 +25,7 @@
 #include "system/select.h"
 #include "source4/libcli/util/pyerrors.h"
 #include "auth/credentials/pycredentials.h"
+#include "trans2.h"
 
 static PyTypeObject *get_pytype(const char *module, const char *type)
 {
@@ -626,6 +627,74 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 	return Py_None;
 }
 
+static PyObject *py_cli_list(struct py_cli_state *self,
+			     PyObject *args,
+			     PyObject *kwds)
+{
+	char *mask;
+	unsigned attribute =
+		FILE_ATTRIBUTE_DIRECTORY |
+		FILE_ATTRIBUTE_SYSTEM |
+		FILE_ATTRIBUTE_HIDDEN;
+	unsigned info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+	struct tevent_req *req;
+	NTSTATUS status;
+	struct file_info *finfos;
+	size_t i, num_finfos;
+	PyObject *result;
+
+	const char *kwlist[] = {
+		"mask", "attribute", "info_level", NULL
+	};
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kwds, "s|II", (char **)kwlist,
+		    &mask, &attribute, &info_level)) {
+		return NULL;
+	}
+
+	req = cli_list_send(NULL, self->ev, self->cli, mask, attribute,
+			    info_level);
+	if (!py_tevent_req_wait_exc(self->ev, req)) {
+		return NULL;
+	}
+	status = cli_list_recv(req, NULL, &finfos, &num_finfos);
+	TALLOC_FREE(req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	result = Py_BuildValue("[]");
+	if (result == NULL) {
+		return NULL;
+	}
+
+	for (i=0; i<num_finfos; i++) {
+		struct file_info *finfo = &finfos[i];
+		PyObject *file;
+		int ret;
+
+		file = Py_BuildValue(
+			"{s:s,s:i}",
+			"name", finfo->name,
+			"mode", (int)finfo->mode);
+		if (file == NULL) {
+			Py_XDECREF(result);
+			return NULL;
+		}
+
+		ret = PyList_Append(result, file);
+		if (ret == -1) {
+			Py_XDECREF(result);
+			return NULL;
+		}
+	}
+
+	return result;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "create", (PyCFunction)py_cli_create, METH_VARARGS|METH_KEYWORDS,
 	  "Open a file" },
@@ -641,6 +710,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "delete_on_close", (PyCFunction)py_cli_delete_on_close,
 	  METH_VARARGS|METH_KEYWORDS,
 	  "Set/Reset the delete on close flag" },
+	{ "readdir", (PyCFunction)py_cli_list,
+	  METH_VARARGS|METH_KEYWORDS,
+	  "List a directory" },
 	{ NULL, NULL, 0, NULL }
 };
 
