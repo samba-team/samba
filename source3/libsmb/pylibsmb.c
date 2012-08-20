@@ -577,9 +577,9 @@ static PyObject *py_cli_ftruncate(struct py_cli_state *self, PyObject *args,
 		return NULL;
 	}
 	status = cli_ftruncate_recv(req);
+	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
@@ -609,9 +609,9 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 		return NULL;
 	}
 	status = cli_nt_delete_on_close_recv(req);
+	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(req);
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
