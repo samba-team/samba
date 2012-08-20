@@ -1056,7 +1056,7 @@ WERROR dialog_edit_value(TALLOC_CTX *ctx, struct registry_key *key,
 	talloc_set_destructor(edit, edit_dialog_free);
 
 	edit->mode = type;
-	if (force_binary) {
+	if (force_binary || (vitem && vitem->unprintable)) {
 		edit->mode = REG_BINARY;
 	}
 

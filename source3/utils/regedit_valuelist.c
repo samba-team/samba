@@ -154,6 +154,19 @@ void value_list_show(struct value_list *vl)
 	post_menu(vl->menu);
 }
 
+static bool string_is_printable(const char *s)
+{
+	const char *p;
+
+	for (p = s; *p; ++p) {
+		if (!isprint(*p)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static WERROR append_data_summary(struct value_item *vitem)
 {
 	char *tmp;
@@ -176,7 +189,14 @@ static WERROR append_data_summary(struct value_item *vitem)
 		if (!pull_reg_sz(vitem, &vitem->data, &s)) {
 			break;
 		}
-		tmp = talloc_asprintf_append(vitem->value_desc, "(\"%s\")", s);
+		vitem->unprintable = !string_is_printable(s);
+		if (vitem->unprintable) {
+			tmp = talloc_asprintf_append(vitem->value_desc,
+						     "(unprintable)");
+		} else {
+			tmp = talloc_asprintf_append(vitem->value_desc,
+						     "(\"%s\")", s);
+		}
 		break;
 	}
 	case REG_MULTI_SZ: {
@@ -188,7 +208,14 @@ static WERROR append_data_summary(struct value_item *vitem)
 		}
 		tmp = vitem->value_desc;
 		for (i = 0; a[i] != NULL; ++i) {
-			tmp = talloc_asprintf_append(tmp, "\"%s\" ", a[i]);
+			if (!string_is_printable(a[i])) {
+				tmp = talloc_asprintf_append(tmp,
+							     "(unprintable)");
+				vitem->unprintable = true;
+			} else {
+				tmp = talloc_asprintf_append(tmp, "\"%s\" ",
+							     a[i]);
+			}
 			if (tmp == NULL) {
 				return WERR_NOMEM;
 			}

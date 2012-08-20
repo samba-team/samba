@@ -32,6 +32,7 @@ struct value_item {
 	DATA_BLOB data;
 	const char *value_name;
 	char *value_desc;
+	bool unprintable;
 };
 
 struct value_list {
