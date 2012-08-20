@@ -185,6 +185,14 @@ static void print_heading(struct regedit *regedit)
 	print_help(regedit);
 }
 
+static void load_values(struct regedit *regedit)
+{
+	struct tree_node *node;
+
+	node = item_userptr(current_item(regedit->keys->menu));
+	value_list_load(regedit->vl, node->key);
+}
+
 static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 			bool subkey)
 {
@@ -246,13 +254,11 @@ static void handle_tree_input(struct regedit *regedit, int c)
 	switch (c) {
 	case KEY_DOWN:
 		menu_driver(regedit->keys->menu, REQ_DOWN_ITEM);
-		node = item_userptr(current_item(regedit->keys->menu));
-		value_list_load(regedit->vl, node->key);
+		load_values(regedit);
 		break;
 	case KEY_UP:
 		menu_driver(regedit->keys->menu, REQ_UP_ITEM);
-		node = item_userptr(current_item(regedit->keys->menu));
-		value_list_load(regedit->vl, node->key);
+		load_values(regedit);
 		break;
 	case '\n':
 	case KEY_ENTER:
@@ -460,6 +466,8 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 	print_heading(regedit);
 
 	tree_view_show(regedit->keys);
+	menu_driver(regedit->keys->menu, REQ_FIRST_ITEM);
+	load_values(regedit);
 	value_list_show(regedit->vl);
 
 	update_panels();
