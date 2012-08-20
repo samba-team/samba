@@ -1027,8 +1027,10 @@ static WERROR handle_editor_input(struct edit_dialog *edit,
 				     "Enter new size");
 			if (n) {
 				newlen = strtoul(n, NULL, 10);
+				edit->section = IN_DATA;
 				hexedit_resize_buffer(edit->buf, newlen);
 				hexedit_refresh(edit->buf);
+				hexedit_set_cursor(edit->buf);
 				talloc_free(n);
 			}
 		} else if (selection == DIALOG_CANCEL) {

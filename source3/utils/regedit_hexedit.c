@@ -93,8 +93,12 @@ static size_t bytes_per_screen(WINDOW *win)
 void hexedit_set_cursor(struct hexedit *buf)
 {
 	werase(buf->status_line);
-	wprintw(buf->status_line, "Len:%lu Off:%lu Val:0x%X", buf->len,
-		buf->cursor_offset, buf->data[buf->cursor_offset]);
+	if (buf->len) {
+		wprintw(buf->status_line, "Len:%lu Off:%lu Val:0x%X", buf->len,
+			buf->cursor_offset, buf->data[buf->cursor_offset]);
+	} else {
+		wprintw(buf->status_line, "Len:%lu (empty)", buf->len);
+	}
 	wmove(buf->win, buf->cursor_y, buf->cursor_x);
 	wcursyncup(buf->win);
 	wsyncup(buf->win);
@@ -108,6 +112,10 @@ void hexedit_refresh(struct hexedit *buf)
 	size_t off;
 
 	werase(buf->win);
+	if (buf->len == 0) {
+		mvwprintw(buf->win, 0, 0, "%08X", 0);
+		return;
+	}
 
 	end = buf->offset + bytes_per_screen(buf->win);
 	if (end > buf->len) {
@@ -294,6 +302,9 @@ static void cursor_right(struct hexedit *buf)
 {
 	int new_x = buf->cursor_x + 1;
 
+	if (buf->len == 0) {
+		return;
+	}
 	if (new_x == ASCII_COL_END) {
 		return;
 	}
@@ -334,6 +345,10 @@ static void cursor_right(struct hexedit *buf)
 static void do_edit(struct hexedit *buf, int c)
 {
 	uint8_t *byte;
+
+	if (buf->len == 0) {
+		return;
+	}
 
 	byte = buf->data + buf->cursor_offset;
 
