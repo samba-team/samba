@@ -4,7 +4,7 @@ AS_HELP_STRING([--enable-socket-wrapper], [Turn on socket wrapper library (defau
 DEFAULT_TEST_OPTIONS=
 HAVE_SOCKET_WRAPPER=no
 
-if eval "test x$developer = xyes"; then
+if eval "test x$developer = xyes -o x$selftest = xyes"; then
 	enable_socket_wrapper=yes
 fi
     

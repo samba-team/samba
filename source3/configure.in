@@ -476,7 +476,7 @@ if test "x$developer" = xyes; then
    default_shared_modules="$default_shared_modules perfcount_test"
 fi
 
-if test x"$RUN_FROM_BUILD_FARM" = x"yes" -o "x$developer" = xyes; then
+if test x"$selftest" = x"yes" -o "x$developer" = xyes; then
    default_shared_modules="$default_shared_modules vfs_fake_acls"
 fi
 
@@ -6602,10 +6602,10 @@ fi
 #################################################
 # If run from the build farm, enable NASTY hacks
 #################################################
-AC_MSG_CHECKING(whether to enable build farm hacks)
-if test x"$RUN_FROM_BUILD_FARM" = x"yes"; then
+AC_MSG_CHECKING(whether to enable features for selftest)
+if test x"$selftest" = x"yes"; then
 	AC_MSG_RESULT(yes)
-	AC_DEFINE(ENABLE_BUILD_FARM_HACKS, 1, [Defined if running in the build farm])
+	AC_DEFINE(ENABLE_SELFTEST, 1, [Support features needed for selftest])
 else
 	AC_MSG_RESULT(no)
 fi

@@ -3,7 +3,7 @@ AS_HELP_STRING([--enable-nss-wrapper], [Turn on nss wrapper library (default=no)
 
 HAVE_NSS_WRAPPER=no
 
-if eval "test x$developer = xyes"; then
+if eval "test x$developer = xyes -o x$selftest = xyes"; then
 	enable_nss_wrapper=yes
 fi
 

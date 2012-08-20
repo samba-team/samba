@@ -57,9 +57,6 @@ def set_options(opt):
                    action='store_true', dest='without_ad_dc', default=False)
 
     gr = opt.option_group('developer options')
-    gr.add_option('--enable-build-farm',
-                   help='enable special build farm options',
-                   action='store_true', dest='BUILD_FARM')
 
     opt.add_option('--disable-ntdb',
                    help=("disable ntdb"),
@@ -80,9 +77,6 @@ def configure(conf):
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
         conf.env.DEVELOPER = True
-
-    # this enables smbtorture.static for s3 in the build farm
-    conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
 
     conf.ADD_EXTRA_INCLUDES('#include/public #source4 #lib #source4/lib #source4/include #include #lib/replace')
 

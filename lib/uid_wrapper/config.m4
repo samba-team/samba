@@ -3,7 +3,7 @@ AS_HELP_STRING([--enable-uid-wrapper], [Turn on uid wrapper library (default=no)
 
 HAVE_UID_WRAPPER=no
 
-if eval "test x$developer = xyes"; then
+if eval "test x$developer = xyes -o x$selftest = xyes"; then
 	enable_uid_wrapper=yes
 fi
 

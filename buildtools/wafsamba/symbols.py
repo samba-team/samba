@@ -647,7 +647,7 @@ def SYMBOL_CHECK(bld):
 Build.BuildContext.SYMBOL_CHECK = SYMBOL_CHECK
 
 def DUP_SYMBOL_CHECK(bld):
-    if Options.options.DUP_SYMBOLCHECK and bld.env.DEVELOPER and not bld.env.BUILD_FARM:
+    if Options.options.DUP_SYMBOLCHECK and bld.env.DEVELOPER:
         '''check for duplicate symbols'''
         bld.SET_BUILD_GROUP('syslibcheck')
         task = bld(rule=symbols_dupcheck_fatal, always=True, name='symbol duplicate checking')

@@ -355,10 +355,10 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			   cmd_type_str(cmd_struct.cmd),
 			   (int)cmd_struct.n, (int)cmd_struct.offset, fd));
 
-#ifdef ENABLE_BUILD_FARM_HACKS
+#ifdef DEVELOPER
 		{
 			/*
-			 * In the build farm, we want erratic behaviour for
+			 * For developer testing, we want erratic behaviour for
 			 * async I/O times
 			 */
 			uint8_t randval;
@@ -384,7 +384,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 				cmd_struct.offset);
 #if 0
 /* This breaks "make test" when run with aio_fork module. */
-#ifdef ENABLE_BUILD_FARM_HACKS
+#ifdef DEVELOPER
 			ret_struct.size = MAX(1, ret_struct.size * 0.9);
 #endif
 #endif

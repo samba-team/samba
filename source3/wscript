@@ -1014,9 +1014,6 @@ main() {
                     msg='Checking for ftruncate extend',
                     addmain=False,
                     execute=True)
-    if os.getenv('RUN_FROM_BUILD_FARM'):
-        Logs.info("enabling buildfarm hacks")
-        conf.DEFINE('ENABLE_BUILD_FARM_HACKS', '1')
 
     if Options.options.with_sendfile_support:
         if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('k*bsd*-gnu') > -1) or (host_os.rfind('kopensolaris*-gnu') > -1):
