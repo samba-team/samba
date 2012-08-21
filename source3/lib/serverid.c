@@ -282,11 +282,12 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 		TDB_DATA tdbkey;
 		NTSTATUS status;
 
-		if (ids[i].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-			results[i] = true;
+		if (!results[i]) {
 			continue;
 		}
-		if (!results[i]) {
+
+		if (ids[i].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+			results[i] = true;
 			continue;
 		}
 
