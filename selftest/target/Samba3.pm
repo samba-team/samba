@@ -344,10 +344,18 @@ sub setup_secshare($$)
 
 	print "PROVISIONING server with security=share...";
 
+	my $prefix_abs = abs_path($path);
+
 	my $secshare_options = "
 	security = share
 	lanman auth = yes
 	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
+
+[vfs_aio_fork]
+	path = $prefix_abs/share
+        vfs objects = $vfs_modulesdir_abs/aio_fork.so
+        read only = no
+        vfs_aio_fork:erratic_testing_mode=yes
 ";
 
 	my $vars = $self->provision($path,
