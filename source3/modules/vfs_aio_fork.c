@@ -33,6 +33,10 @@
 #define MAP_FILE 0
 #endif
 
+struct aio_fork_config {
+	bool erratic_testing_mode;
+};
+
 struct mmap_area {
 	size_t size;
 	volatile void *ptr;
@@ -112,6 +116,7 @@ struct rw_cmd {
 	size_t n;
 	off_t offset;
 	enum cmd_type cmd;
+	bool erratic_testing_mode;
 };
 
 struct rw_ret {
@@ -355,8 +360,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			   cmd_type_str(cmd_struct.cmd),
 			   (int)cmd_struct.n, (int)cmd_struct.offset, fd));
 
-#ifdef DEVELOPER
-		{
+		if (cmd_struct.erratic_testing_mode) {
 			/*
 			 * For developer testing, we want erratic behaviour for
 			 * async I/O times
@@ -372,8 +376,6 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			DEBUG(10, ("delaying for %u msecs\n", msecs));
 			smb_msleep(msecs);
 		}
-#endif
-
 
 		ZERO_STRUCT(ret_struct);
 
@@ -587,6 +589,10 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	struct rw_cmd cmd;
 	ssize_t written;
 	int err;
+	struct aio_fork_config *config;
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct aio_fork_config,
+				return -1);
 
 	req = tevent_req_create(mem_ctx, &state, struct aio_fork_pread_state);
 	if (req == NULL) {
@@ -609,6 +615,7 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	cmd.n = n;
 	cmd.offset = offset;
 	cmd.cmd = READ_CMD;
+	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
 	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
 		   (int)state->child->pid));
@@ -698,6 +705,10 @@ static struct tevent_req *aio_fork_pwrite_send(
 	struct rw_cmd cmd;
 	ssize_t written;
 	int err;
+	struct aio_fork_config *config;
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct aio_fork_config,
+				return NULL);
 
 	req = tevent_req_create(mem_ctx, &state, struct aio_fork_pwrite_state);
 	if (req == NULL) {
@@ -720,6 +731,7 @@ static struct tevent_req *aio_fork_pwrite_send(
 	cmd.n = n;
 	cmd.offset = offset;
 	cmd.cmd = WRITE_CMD;
+	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
 	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
 		   (int)state->child->pid));
@@ -808,6 +820,10 @@ static struct tevent_req *aio_fork_fsync_send(
 	struct rw_cmd cmd;
 	ssize_t written;
 	int err;
+	struct aio_fork_config *config;
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct aio_fork_config,
+				return -1);
 
 	req = tevent_req_create(mem_ctx, &state, struct aio_fork_fsync_state);
 	if (req == NULL) {
@@ -822,6 +838,7 @@ static struct tevent_req *aio_fork_fsync_send(
 
 	ZERO_STRUCT(cmd);
 	cmd.cmd = FSYNC_CMD;
+	cmd.erratic_testing_mode = config->erratic_testing_mode;
 
 	DEBUG(10, ("sending fd %d to child %d\n", fsp->fh->fd,
 		   (int)state->child->pid));
@@ -896,6 +913,28 @@ static int aio_fork_fsync_recv(struct tevent_req *req, int *err)
 static int aio_fork_connect(vfs_handle_struct *handle, const char *service,
 			    const char *user)
 {
+	int ret;
+	struct aio_fork_config *config;
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+
+	if (ret < 0) {
+		return ret;
+	}
+
+	config = talloc_zero(handle->conn, struct aio_fork_config);
+	if (!config) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
+		DEBUG(0, ("talloc_zero() failed\n"));
+		return -1;
+	}
+
+	config->erratic_testing_mode = lp_parm_bool(SNUM(handle->conn), "vfs_aio_fork",
+						    "erratic_testing_mode", false);
+	
+	SMB_VFS_HANDLE_SET_DATA(handle, config,
+				NULL, struct aio_fork_config,
+				return -1);
+
 	/*********************************************************************
 	 * How many threads to initialize ?
 	 * 100 per process seems insane as a default until you realize that
@@ -907,7 +946,7 @@ static int aio_fork_connect(vfs_handle_struct *handle, const char *service,
 	 * says different.
 	 *********************************************************************/
 	aio_pending_size = 100;
-	return SMB_VFS_NEXT_CONNECT(handle, service, user);
+	return 0;
 }
 
 static struct vfs_fn_pointers vfs_aio_fork_fns = {
