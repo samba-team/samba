@@ -420,11 +420,11 @@ Wfz/8alZ5aMezCQzXJyIaJsCLeKABosSwHcpAFmxlQ==
 EOF
 }
 
-sub provision_raw_prepare($$$$$$$$$)
+sub provision_raw_prepare($$$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $password, $kdc_ipv4) = @_;
+	    $password, $kdc_ipv4, $use_ntvfs) = @_;
 	my $ctx;
 	my $netbiosname = uc($hostname);
 
@@ -534,7 +534,9 @@ sub provision_raw_prepare($$$$$$$$$)
 	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
 	push (@provision_options, "--function-level=\"$ctx->{functional_level}\"");
 	push (@provision_options, "--dns-backend=BIND9_DLZ");
-	push (@provision_options, "--use-ntvfs");
+	if ($use_ntvfs) {
+	    push (@provision_options, "--use-ntvfs");
+	}
 
 	@{$ctx->{provision_options}} = @provision_options;
 
@@ -698,16 +700,16 @@ sub provision_raw_step2($$$)
 	return $ret;
 }
 
-sub provision($$$$$$$$)
+sub provision($$$$$$$$$)
 {
 	my ($self, $prefix, $server_role, $hostname,
 	    $domain, $realm, $functional_level,
-	    $password, $kdc_ipv4, $extra_smbconf_options, $extra_smbconf_shares) = @_;
+	    $password, $kdc_ipv4, $extra_smbconf_options, $extra_smbconf_shares, $use_ntvfs) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $hostname,
 					       $domain, $realm, $functional_level,
-					       $password, $kdc_ipv4);
+					       $password, $kdc_ipv4, $use_ntvfs);
 
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
@@ -841,7 +843,7 @@ sub provision_member($$$)
 				   "2008",
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
-				   "", "");
+				   "", "", 1);
 	unless ($ret) {
 		return undef;
 	}
@@ -906,7 +908,7 @@ sub provision_rpc_proxy($$$)
 				   "2008",
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
-				   $extra_smbconf_options, "");
+				   $extra_smbconf_options, "", 1);
 
 	unless ($ret) {
 		return undef;
@@ -978,7 +980,7 @@ sub provision_promoted_vampire_dc($$$)
 					       "samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       $dcvars->{SERVER_IP});
+					       $dcvars->{SERVER_IP}, 1);
 
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
@@ -1050,7 +1052,7 @@ sub provision_vampire_dc($$$)
 					       "samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       $dcvars->{SERVER_IP});
+					       $dcvars->{SERVER_IP}, 1);
 
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
@@ -1109,7 +1111,7 @@ sub provision_subdom_dc($$$)
 					       "sub.samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       undef);
+					       undef, 1);
 
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
@@ -1174,7 +1176,7 @@ allow dns updates = True";
 				   "samba.example.com",
 				   "2008",
 				   "locDCpass1",
-				   undef, $extra_conf_options, "");
+				   undef, $extra_conf_options, "", 1);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1203,7 +1205,7 @@ sub provision_fl2000dc($$)
 				   "samba2000.example.com",
 				   "2000",
 				   "locDCpass5",
-				   undef, "");
+				   undef, "", 1);
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1225,7 +1227,7 @@ sub provision_fl2003dc($$)
 				   "samba2003.example.com",
 				   "2003",
 				   "locDCpass6",
-				   undef, "", "");
+				   undef, "", "", 1);
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1247,7 +1249,7 @@ sub provision_fl2008r2dc($$)
 				   "samba2008R2.example.com",
 				   "2008_R2",
 				   "locDCpass7",
-				   undef, "", "");
+				   undef, "", "", 1);
 
 	unless ($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1270,7 +1272,7 @@ sub provision_rodc($$$)
 					       "samba.example.com",
 					       "2008",
 					       $dcvars->{PASSWORD},
-					       $dcvars->{SERVER_IP});
+					       $dcvars->{SERVER_IP}, 1);
 	unless ($ctx) {
 		return undef;
 	}
@@ -1411,7 +1413,7 @@ sub provision_plugin_s4_dc($$)
 				   "2008",
 				   "locDCpass1",
 				   undef, $extra_smbconf_options,
-                                   $extra_smbconf_shares);
+                                   $extra_smbconf_shares, 0);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
@@ -1440,7 +1442,7 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
-				   undef);
+				   undef, 1);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
