@@ -384,6 +384,89 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 	return py_sd;
 }
 
+/*
+  set the posix (or similar) ACL on a file
+ */
+static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args)
+{
+	NTSTATUS status;
+	char *fname;
+	PyObject *py_acl;
+	struct smb_acl_t *acl;
+	int acl_type;
+
+	if (!PyArg_ParseTuple(args, "siO", &fname, &acl_type, &py_acl))
+		return NULL;
+
+	if (!py_check_dcerpc_type(py_acl, "samba.dcerpc.smb_acl", "sys_acl_t")) {
+		return NULL;
+	}
+
+	acl = pytalloc_get_type(py_acl, struct smb_acl_t);
+
+	status = set_sys_acl_no_snum(fname, acl_type, acl);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+/*
+  Return the posix (or similar) ACL on a file
+ */
+static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args)
+{
+	char *fname;
+	PyObject *py_acl;
+	struct smb_acl_t *acl;
+	int acl_type;
+	TALLOC_CTX *frame = talloc_stackframe();
+	connection_struct *conn;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (!PyArg_ParseTuple(args, "si", &fname, &acl_type)) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	conn = talloc_zero(frame, connection_struct);
+	if (conn == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		PyErr_NoMemory();
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	if (!(conn->params = talloc(conn, struct share_params))) {
+		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
+		PyErr_NoMemory();
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	conn->params->service = -1;
+
+	set_conn_connectpath(conn, "/");
+
+	smbd_vfs_init(conn);
+
+	acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, acl_type);
+	if (!acl) {
+		TALLOC_FREE(frame);
+		status = map_nt_error_from_unix_common(errno);
+		DEBUG(0,("sys_acl_get_file returned NULL: %s\n", strerror(errno)));
+		PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	}
+
+	talloc_steal(frame, acl);
+	conn_free(conn);
+
+	py_acl = py_return_ndr_struct("samba.dcerpc.smb_acl", "sys_acl_t", acl, acl);
+
+	TALLOC_FREE(frame);
+
+	return py_acl;
+}
+
 static PyMethodDef py_smbd_methods[] = {
 	{ "have_posix_acls",
 		(PyCFunction)py_smbd_have_posix_acls, METH_VARARGS,
@@ -396,6 +479,12 @@ static PyMethodDef py_smbd_methods[] = {
 		NULL },
 	{ "get_nt_acl",
 		(PyCFunction)py_smbd_get_nt_acl, METH_VARARGS,
+		NULL },
+	{ "get_sys_acl",
+		(PyCFunction)py_smbd_get_sys_acl, METH_VARARGS,
+		NULL },
+	{ "set_sys_acl",
+		(PyCFunction)py_smbd_set_sys_acl, METH_VARARGS,
 		NULL },
 	{ "chown",
 		(PyCFunction)py_smbd_chown, METH_VARARGS,
