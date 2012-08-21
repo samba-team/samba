@@ -398,7 +398,7 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "siO", &fname, &acl_type, &py_acl))
 		return NULL;
 
-	if (!py_check_dcerpc_type(py_acl, "samba.dcerpc.smb_acl", "sys_acl_t")) {
+	if (!py_check_dcerpc_type(py_acl, "samba.dcerpc.smb_acl", "t")) {
 		return NULL;
 	}
 
@@ -460,7 +460,7 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args)
 	talloc_steal(frame, acl);
 	conn_free(conn);
 
-	py_acl = py_return_ndr_struct("samba.dcerpc.smb_acl", "sys_acl_t", acl, acl);
+	py_acl = py_return_ndr_struct("samba.dcerpc.smb_acl", "t", acl, acl);
 
 	TALLOC_FREE(frame);
 
