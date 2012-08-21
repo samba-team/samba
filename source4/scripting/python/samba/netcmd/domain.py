@@ -911,6 +911,8 @@ class cmd_domain_classicupgrade(Command):
         Option("--verbose", help="Be verbose", action="store_true"),
         Option("--use-xattrs", type="choice", choices=["yes","no","auto"], metavar="[yes|no|auto]",
                    help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
+        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+               action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
@@ -924,7 +926,7 @@ class cmd_domain_classicupgrade(Command):
 
     def run(self, smbconf=None, targetdir=None, dbdir=None, testparm=None, 
             quiet=False, verbose=False, use_xattrs=None, sambaopts=None, versionopts=None,
-            dns_backend=None):
+            dns_backend=None, use_ntvfs=False):
 
         if not os.path.exists(smbconf):
             raise CommandError("File %s does not exist" % smbconf)
@@ -1008,7 +1010,7 @@ class cmd_domain_classicupgrade(Command):
     
         logger.info("Provisioning")
         upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session(), 
-                            useeadb=eadb, dns_backend=dns_backend)
+                            useeadb=eadb, dns_backend=dns_backend, use_ntvfs=use_ntvfs)
 
 class cmd_domain(SuperCommand):
     """Domain management"""

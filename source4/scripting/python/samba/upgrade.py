@@ -545,7 +545,8 @@ def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
             logger.warning("LDAP entry for user %s contains more than one %s", user, attr)
             return None
 
-def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False, dns_backend=None):
+def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False, dns_backend=None,
+                        use_ntvfs=False):
     """Upgrade from samba3 database to samba4 AD database
 
     :param samba3: samba3 object
@@ -779,7 +780,8 @@ Please fix this account before attempting to upgrade again
                        dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
                        hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
-                       useeadb=useeadb, dns_backend=dns_backend, use_rfc2307=True)
+                       useeadb=useeadb, dns_backend=dns_backend, use_rfc2307=True,
+                       use_ntvfs=use_ntvfs)
     result.report_logger(logger)
 
     # Import WINS database
