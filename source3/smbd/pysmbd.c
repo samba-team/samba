@@ -274,6 +274,56 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 }
 
 /*
+  chown a file
+ */
+static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
+{
+	connection_struct *conn;
+	NTSTATUS status = NT_STATUS_OK;
+	int ret;
+
+	char *fname;
+	int uid, gid;
+	TALLOC_CTX *frame;
+
+	if (!PyArg_ParseTuple(args, "sii", &fname, &uid, &gid))
+		return NULL;
+
+	frame = talloc_stackframe();
+
+	conn = talloc_zero(frame, connection_struct);
+	if (conn == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!(conn->params = talloc(conn, struct share_params))) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	conn->params->service = -1;
+
+	set_conn_connectpath(conn, "/");
+
+	smbd_vfs_init(conn);
+
+	ret = SMB_VFS_CHOWN( conn, fname, uid, gid);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(ret);
+		DEBUG(0,("chwon returned failure: %s\n", strerror(ret)));
+	}
+
+	conn_free(conn);
+
+	TALLOC_FREE(frame);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+/*
   check if we have ACL support
  */
 static PyObject *py_smbd_have_posix_acls(PyObject *self, PyObject *args)
@@ -346,6 +396,9 @@ static PyMethodDef py_smbd_methods[] = {
 		NULL },
 	{ "get_nt_acl",
 		(PyCFunction)py_smbd_get_nt_acl, METH_VARARGS,
+		NULL },
+	{ "chown",
+		(PyCFunction)py_smbd_chown, METH_VARARGS,
 		NULL },
 	{ NULL }
 };
