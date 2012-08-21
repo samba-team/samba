@@ -1084,20 +1084,16 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 {
 	GROUP_MAP *map;
-	if (sid_check_is_in_our_sam(psid)) {
-		bool ret;
-
-		become_root();
-		ret = pdb_sid_to_id(psid, id);
-		unbecome_root();
-
-		if (ret) {
-			goto done;
-		}
-
-		/* This was ours, but it was not mapped.  Fail */
+	bool ret;
+	
+	become_root();
+	ret = pdb_sid_to_id(psid, id);
+	unbecome_root();
+	
+	if (ret) {
+		goto done;
 	}
-
+	
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
 		bool ret;

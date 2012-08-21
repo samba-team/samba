@@ -4938,6 +4938,11 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	TALLOC_CTX *mem_ctx;
 
+	if (!sid_check_is_in_our_sam(sid)) {
+		/* Not our SID */
+		return False;
+	}
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
