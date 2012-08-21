@@ -19,7 +19,7 @@
 """Tests for the Samba3 NT -> posix ACL layer"""
 
 from samba.ntacls import setntacl, getntacl, XattrBackendError
-from samba.dcerpc import xattr, security, smb_acl
+from samba.dcerpc import xattr, security, smb_acl, idmap
 from samba.param import LoadParm
 from samba.tests import TestCase, TestSkipped
 from samba import provision
@@ -27,6 +27,15 @@ import random
 import os
 from samba.samba3 import smbd, passdb
 from samba.samba3 import param as s3param
+
+# To print a posix ACL use:
+#        for entry in posix_acl.acl:
+#            print "a_type: %d" % entry.a_type
+#            print "a_perm: %o" % entry.a_perm
+#            print "uid: %d" % entry.uid
+#            print "gid: %d" % entry.gid
+            
+
 
 class PosixAclMappingTests(TestCase):
 
@@ -112,9 +121,79 @@ class PosixAclMappingTests(TestCase):
         self.assertEquals(facl.as_sddl(domsid),acl)
         posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
+        LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+        BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
+        SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
+        SY_sid = security.dom_sid(security.SID_NT_SYSTEM)
+        AU_sid = security.dom_sid(security.SID_NT_AUTHENTICATED_USERS)
+
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+
+        # These assertions correct for current plugin_s4_dc selftest
+        # configuration.  When other environments have a broad range of
+        # groups mapped via passdb, we can relax some of these checks
+        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        self.assertEquals(LA_type, idmap.ID_TYPE_UID)
+        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        self.assertEquals(BA_type, idmap.ID_TYPE_GID)
+        (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
+        (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
+        self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
+        (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
+        self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
+
+        self.assertEquals(posix_acl.count, 9)
+
+        self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[0].a_perm, 7)
+        self.assertEquals(posix_acl.acl[0].gid, BA_gid)
+        self.assertEquals(posix_acl.acl[0].uid, -1)
+
+        self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[1].a_perm, 6)
+        self.assertEquals(posix_acl.acl[1].uid, LA_uid)
+        self.assertEquals(posix_acl.acl[1].gid, -1)
+
+        self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
+        self.assertEquals(posix_acl.acl[2].a_perm, 0)
+        self.assertEquals(posix_acl.acl[2].uid, -1)
+        self.assertEquals(posix_acl.acl[2].gid, -1)
+
+        self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
+        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        self.assertEquals(posix_acl.acl[3].uid, -1)
+        self.assertEquals(posix_acl.acl[3].gid, -1)
+
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[4].a_perm, 7)
+        self.assertEquals(posix_acl.acl[4].uid, -1)
+        self.assertEquals(posix_acl.acl[4].gid, -1)
+
+        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[5].a_perm, 5)
+        self.assertEquals(posix_acl.acl[5].gid, SO_gid)
+        self.assertEquals(posix_acl.acl[5].uid, -1)
+
+        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[6].a_perm, 7)
+        self.assertEquals(posix_acl.acl[6].gid, SY_gid)
+        self.assertEquals(posix_acl.acl[6].uid, -1)
+
+        self.assertEquals(posix_acl.acl[7].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[7].a_perm, 5)
+        self.assertEquals(posix_acl.acl[7].gid, AU_gid)
+        self.assertEquals(posix_acl.acl[7].uid, -1)
+
+        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[8].a_perm, 7)
+        self.assertEquals(posix_acl.acl[8].uid, -1)
+        self.assertEquals(posix_acl.acl[8].gid, -1)
+
+
 # check that it matches:
 # user::rwx
-# user:root:rwx
+# user:root:rwx (selftest user actually)
 # group::rwx
 # group:wheel:rwx
 # group:3000000:r-x
@@ -122,6 +201,199 @@ class PosixAclMappingTests(TestCase):
 # group:3000002:r-x
 # mask::rwx
 # other::---
+
+#
+# This is in this order in the NDR smb_acl (not re-orderded for display)
+# a_type: GROUP
+# a_perm: 7
+# uid: -1
+# gid: 10
+# a_type: USER
+# a_perm: 6
+# uid: 0 (selftest user actually)
+# gid: -1
+# a_type: OTHER
+# a_perm: 0
+# uid: -1
+# gid: -1
+# a_type: USER_OBJ
+# a_perm: 6
+# uid: -1
+# gid: -1
+# a_type: GROUP_OBJ
+# a_perm: 7
+# uid: -1
+# gid: -1
+# a_type: GROUP
+# a_perm: 5
+# uid: -1
+# gid: 3000020
+# a_type: GROUP
+# a_perm: 7
+# uid: -1
+# gid: 3000000
+# a_type: GROUP
+# a_perm: 5
+# uid: -1
+# gid: 3000001
+# a_type: MASK
+# a_perm: 7
+# uid: -1
+# gid: -1
+
+#
+
+        os.unlink(tempf)
+
+    def test_setntacl_policies_check_getposixacl(self):
+        random.seed()
+        lp = LoadParm()
+        s3conf = s3param.get_context()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = provision.POLICIES_ACL
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        domsid = passdb.get_global_sam_sid()
+        setntacl(lp,tempf,acl,str(domsid), use_ntvfs=False)
+        facl = getntacl(lp,tempf)
+        self.assertEquals(facl.as_sddl(domsid),acl)
+        posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+
+        LA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_ADMINISTRATOR))
+        BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
+        SO_sid = security.dom_sid(security.SID_BUILTIN_SERVER_OPERATORS)
+        SY_sid = security.dom_sid(security.SID_NT_SYSTEM)
+        AU_sid = security.dom_sid(security.SID_NT_AUTHENTICATED_USERS)
+        PA_sid = security.dom_sid(str(domsid)+"-"+str(security.DOMAIN_RID_POLICY_ADMINS))
+
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+
+        # These assertions correct for current plugin_s4_dc selftest
+        # configuration.  When other environments have a broad range of
+        # groups mapped via passdb, we can relax some of these checks
+        (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
+        self.assertEquals(LA_type, idmap.ID_TYPE_UID)
+        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        self.assertEquals(BA_type, idmap.ID_TYPE_GID)
+        (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
+        self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
+        (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
+        self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
+        (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
+        self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
+        (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
+        self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
+
+        self.assertEquals(posix_acl.count, 10)
+
+        self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[0].a_perm, 7)
+        self.assertEquals(posix_acl.acl[0].gid, BA_gid)
+        self.assertEquals(posix_acl.acl[0].uid, -1)
+
+        self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_USER)
+        self.assertEquals(posix_acl.acl[1].a_perm, 6)
+        self.assertEquals(posix_acl.acl[1].uid, LA_uid)
+        self.assertEquals(posix_acl.acl[1].gid, -1)
+
+        self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
+        self.assertEquals(posix_acl.acl[2].a_perm, 0)
+        self.assertEquals(posix_acl.acl[2].uid, -1)
+        self.assertEquals(posix_acl.acl[2].gid, -1)
+
+        self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
+        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        self.assertEquals(posix_acl.acl[3].uid, -1)
+        self.assertEquals(posix_acl.acl[3].gid, -1)
+
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[4].a_perm, 7)
+        self.assertEquals(posix_acl.acl[4].uid, -1)
+        self.assertEquals(posix_acl.acl[4].gid, -1)
+
+        self.assertEquals(posix_acl.acl[5].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[5].a_perm, 5)
+        self.assertEquals(posix_acl.acl[5].gid, SO_gid)
+        self.assertEquals(posix_acl.acl[5].uid, -1)
+
+        self.assertEquals(posix_acl.acl[6].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[6].a_perm, 7)
+        self.assertEquals(posix_acl.acl[6].gid, SY_gid)
+        self.assertEquals(posix_acl.acl[6].uid, -1)
+
+        self.assertEquals(posix_acl.acl[7].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[7].a_perm, 5)
+        self.assertEquals(posix_acl.acl[7].gid, AU_gid)
+        self.assertEquals(posix_acl.acl[7].uid, -1)
+
+        self.assertEquals(posix_acl.acl[8].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[8].a_perm, 7)
+        self.assertEquals(posix_acl.acl[8].gid, PA_gid)
+        self.assertEquals(posix_acl.acl[8].uid, -1)
+
+        self.assertEquals(posix_acl.acl[9].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[9].a_perm, 7)
+        self.assertEquals(posix_acl.acl[9].uid, -1)
+        self.assertEquals(posix_acl.acl[9].gid, -1)
+
+
+# check that it matches:
+# user::rwx
+# user:root:rwx (selftest user actually)
+# group::rwx
+# group:wheel:rwx
+# group:3000000:r-x
+# group:3000001:rwx
+# group:3000002:r-x
+# group:3000003:rwx
+# mask::rwx
+# other::---
+
+#
+# This is in this order in the NDR smb_acl (not re-orderded for display)
+# a_type: GROUP
+# a_perm: 7
+# uid: -1
+# gid: 10
+# a_type: USER
+# a_perm: 6
+# uid: 0 (selftest user actually)
+# gid: -1
+# a_type: OTHER
+# a_perm: 0
+# uid: -1
+# gid: -1
+# a_type: USER_OBJ
+# a_perm: 6
+# uid: -1
+# gid: -1
+# a_type: GROUP_OBJ
+# a_perm: 7
+# uid: -1
+# gid: -1
+# a_type: GROUP
+# a_perm: 5
+# uid: -1
+# gid: 3000020
+# a_type: GROUP
+# a_perm: 7
+# uid: -1
+# gid: 3000000
+# a_type: GROUP
+# a_perm: 5
+# uid: -1
+# gid: 3000001
+# a_type: GROUP
+# a_perm: 7
+# uid: -1
+# gid: 3000003
+# a_type: MASK
+# a_perm: 7
+# uid: -1
+# gid: -1
+
+#
 
         os.unlink(tempf)
 
