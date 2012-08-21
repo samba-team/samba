@@ -490,6 +490,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			    const char *ccname,
 			    const char *service,
 			    const char *username,
+			    const char *pass,
 			    const char *realm,
 			    uid_t uid,
 			    time_t create_time,
@@ -591,7 +592,21 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			}
 
 			DEBUG(10,("add_ccache_to_list: added krb5_ticket handler\n"));
+
 		}
+
+		/*
+		 * If we're set up to renew our krb5 tickets, we must
+		 * cache the credentials in memory for the ticket
+		 * renew function (or increase the reference count
+		 * if we're logging in more than once). Fix inspired
+		 * by patch from Ian Gordon <ian.gordon@strath.ac.uk>
+		 * for bugid #9098.
+		 */
+
+		ntret = winbindd_add_memory_creds(username, uid, pass);
+		DEBUG(10, ("winbindd_add_memory_creds returned: %s\n",
+			nt_errstr(ntret)));
 
 		return NT_STATUS_OK;
 	}
@@ -674,6 +689,20 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	DEBUG(10,("add_ccache_to_list: "
 		"added ccache [%s] for user [%s] to the list\n",
 		ccname, username));
+
+	if (entry->event) {
+		/*
+		 * If we're set up to renew our krb5 tickets, we must
+		 * cache the credentials in memory for the ticket
+		 * renew function. Fix inspired by patch from
+		 * Ian Gordon <ian.gordon@strath.ac.uk> for
+		 * bugid #9098.
+		 */
+
+		ntret = winbindd_add_memory_creds(username, uid, pass);
+		DEBUG(10, ("winbindd_add_memory_creds returned: %s\n",
+			nt_errstr(ntret)));
+	}
 
 	return NT_STATUS_OK;
 
