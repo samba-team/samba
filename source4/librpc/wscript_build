@@ -352,6 +352,12 @@ bld.SAMBA_PYTHON('python_dnsserver',
 	realname='samba/dcerpc/dnsserver.so'
 	)
 
+bld.SAMBA_PYTHON('python_dcerpc_smb_acl',
+	source='../../librpc/gen_ndr/py_smb_acl.c',
+	deps='pytalloc-util pyrpc_util',
+	realname='samba/dcerpc/smb_acl.so'
+	)
+
 bld.SAMBA_SCRIPT('python_dcerpc_init',
                  pattern='rpc/dcerpc.py',
                  installdir='python/samba/dcerpc',
