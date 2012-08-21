@@ -35,6 +35,7 @@ struct provision_settings {
 	const char *ntds_dn_str;
 	const char *machine_password;
 	const char *targetdir;
+	bool use_ntvfs;
 };
 
 /* FIXME: Rename this to hostconfig ? */

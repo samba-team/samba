@@ -167,6 +167,8 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	
 	PyDict_SetItemString(parameters, "debuglevel", PyInt_FromLong(DEBUGLEVEL));
 
+	PyDict_SetItemString(parameters, "use_ntvfs", PyInt_FromLong(settings->use_ntvfs));
+
 	py_result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
 	Py_DECREF(parameters);

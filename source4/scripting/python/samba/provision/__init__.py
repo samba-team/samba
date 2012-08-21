@@ -1938,7 +1938,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
         dns_backend=None, root=None, nobody=None, users=None, wheel=None,
         backup=None, serverrole=None, ldap_backend=None,
-        ldap_backend_type=None, sitename=None, debuglevel=1):
+        ldap_backend_type=None, sitename=None, debuglevel=1, use_ntvfs=False):
 
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
@@ -1949,7 +1949,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         configdn=configdn, serverdn=serverdn, domain=domain,
         hostname=hostname, hostip=None, domainsid=domainsid,
         machinepass=machinepass, serverrole="active directory domain controller",
-        sitename=sitename, dns_backend=dns_backend, dnspass=dnspass)
+        sitename=sitename, dns_backend=dns_backend, dnspass=dnspass, use_ntvfs=use_ntvfs)
     res.lp.set("debuglevel", str(debuglevel))
     return res
 

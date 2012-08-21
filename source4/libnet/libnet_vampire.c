@@ -162,7 +162,7 @@ NTSTATUS libnet_vampire_cb_prepare_db(void *private_data,
 	settings.server_dn_str = p->dest_dsa->server_dn_str;
 	settings.machine_password = generate_random_password(s, 16, 255);
 	settings.targetdir = s->targetdir;
-
+	settings.use_ntvfs = true;
 	status = provision_bare(s, s->lp_ctx, &settings, &result);
 
 	if (!NT_STATUS_IS_OK(status)) {
