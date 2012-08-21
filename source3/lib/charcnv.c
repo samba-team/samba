@@ -494,17 +494,6 @@ size_t pull_string_talloc(TALLOC_CTX *ctx,
 					flags);
 }
 
-
-size_t align_string(const void *base_ptr, const char *p, int flags)
-{
-	if (!(flags & STR_ASCII) && \
-	    ((flags & STR_UNICODE || \
-	      (SVAL(base_ptr, smb_flg2) & FLAGS2_UNICODE_STRINGS)))) {
-		return ucs2_align(base_ptr, p, flags);
-	}
-	return 0;
-}
-
 /*******************************************************************
  Write a string in (little-endian) unicode format. src is in
  the current DOS codepage. len is the length in bytes of the
