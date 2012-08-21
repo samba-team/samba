@@ -656,6 +656,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 					    cc,
 					    service,
 					    state->request->data.auth.user,
+					    state->request->data.auth.pass,
 					    realm,
 					    uid,
 					    time(NULL),
@@ -1034,6 +1035,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							    cc,
 							    service,
 							    state->request->data.auth.user,
+							    state->request->data.auth.pass,
 							    domain->alt_name,
 							    uid,
 							    time(NULL),
@@ -2455,6 +2457,13 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 			nt_errstr(result)));
 		goto process_result;
 	}
+
+	/*
+	 * Remove any mlock'ed memory creds in the child
+	 * we might be using for krb5 ticket renewal.
+	 */
+
+	winbindd_delete_memory_creds(state->request->data.logoff.user);
 
 #else
 	result = NT_STATUS_NOT_SUPPORTED;
