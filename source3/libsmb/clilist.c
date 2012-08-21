@@ -87,7 +87,9 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			finfo->mode = CVAL(p,24);
 			len = CVAL(p, 26);
 			p += 27;
-			p += align_string(base_ptr, p, 0);
+			if (recv_flags2 & FLAGS2_UNICODE_STRINGS) {
+				p += ucs2_align(base_ptr, p, STR_UNICODE);
+			}
 
 			/* We can safely use len here (which is required by OS/2)
 			 * and the NAS-BASIC server instead of +2 or +1 as the
