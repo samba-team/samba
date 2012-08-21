@@ -340,6 +340,12 @@ bld.SAMBA_PYTHON('python_dcerpc_xattr',
 	realname='samba/dcerpc/xattr.so'
 	)
 
+bld.SAMBA_PYTHON('python_dcerpc_idmap',
+	source='../../librpc/gen_ndr/py_idmap.c',
+	deps='pytalloc-util pyrpc_util RPC_NDR_XATTR',
+	realname='samba/dcerpc/idmap.so'
+	)
+
 bld.SAMBA_PYTHON('python_netlogon',
 	source='../../librpc/gen_ndr/py_netlogon.c',
 	deps='RPC_NDR_NETLOGON pytalloc-util pyrpc_util',

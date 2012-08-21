@@ -377,6 +377,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
     public_deps='NDR_XATTR dcerpc-binding'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_IDMAP',
+    source='gen_ndr/ndr_idmap_c.c',
+    public_deps='NDR_IDMAP dcerpc-binding'
+    )
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_SMB_ACL',
     source='gen_ndr/ndr_smb_acl_c.c',
     public_deps='NDR_SMB_ACL dcerpc-binding'
