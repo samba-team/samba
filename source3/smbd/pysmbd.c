@@ -336,7 +336,7 @@ static PyObject *py_smbd_have_posix_acls(PyObject *self, PyObject *args)
 }
 
 /*
-  set a simple ACL on a file, as a test
+  set the NT ACL on a file
  */
 static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
 {
@@ -362,7 +362,7 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
 }
 
 /*
-  set a simple ACL on a file, as a test
+  Return the NT ACL on a file
  */
 static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 {
