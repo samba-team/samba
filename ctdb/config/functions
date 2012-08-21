@@ -1286,10 +1286,36 @@ is_ctdb_managed_service ()
 
 ctdb_start_stop_service ()
 {
+    _service_name="${1:-${service_name}}"
+
+    # Allow service-start/service-stop pseudo-events to start/stop
+    # services when we're not auto-starting/stopping and we're not
+    # monitoring.
+    case "$event_name" in
+	service-start)
+	    if is_ctdb_managed_service "$_service_name" ; then
+		die 'service-start event not permitted when service is managed'
+	    fi
+	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
+		die 'service-start event not permitted with $CTDB_SERVICE_AUTOSTARTSTOP = yes'
+	    fi
+	    ctdb_service_start "$_service_name"
+	    exit $?
+	    ;;
+	service-stop)
+	    if is_ctdb_managed_service "$_service_name" ; then
+		die 'service-stop event not permitted when service is managed'
+	    fi
+	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
+		die 'service-stop event not permitted with $CTDB_SERVICE_AUTOSTARTSTOP = yes'
+	    fi
+	    ctdb_service_stop "$_service_name"
+	    exit $?
+	    ;;
+    esac
+
     # Do nothing unless configured to...
     [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] || return 0
-
-    _service_name="${1:-${service_name}}"
 
     [ "$event_name" = "monitor" ] || return 0
 
