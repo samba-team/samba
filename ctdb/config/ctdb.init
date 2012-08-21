@@ -257,6 +257,12 @@ start() {
 	return 0
     }
 
+    # About to start new $ctdbd.  The ping above has failed and any
+    # new $ctdbd will destroy the Unix domain socket, so any processes
+    # that aren't yet completely useless soon will be...  so kill
+    # them.
+    pkill -9 -f "$ctdbd"
+
     build_ctdb_options
 
     # make sure we drop any ips that might still be held if previous
