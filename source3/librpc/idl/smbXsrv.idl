@@ -145,6 +145,8 @@ interface smbXsrv
 		[ref] smbXsrv_session_global0		*global;
 		NTSTATUS				status;
 		NTTIME					idle_time;
+		hyper					nonce_high;
+		hyper					nonce_low;
 		[ignore] gensec_security		*gensec;
 		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
