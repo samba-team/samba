@@ -286,7 +286,9 @@ _PUBLIC_ bool process_exists_by_pid(pid_t pid)
 {
 	/* Doing kill with a non-positive pid causes messages to be
 	 * sent to places we don't want. */
-	SMB_ASSERT(pid > 0);
+	if (pid <= 0) {
+		return false;
+	}
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
