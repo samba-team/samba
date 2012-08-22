@@ -1404,6 +1404,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain, domain
     :param samdb: An LDB object on the SAM db
     :param netlogon: Physical path for the netlogon folder
     :param sysvol: Physical path for the sysvol folder
+    :param uid: The UID of the "Administrator" user
     :param gid: The GID of the "Domain adminstrators" group
     :param domainsid: The SID of the domain
     :param dnsdomain: The DNS name of the domain
