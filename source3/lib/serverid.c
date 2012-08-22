@@ -251,40 +251,15 @@ static void server_exists_parse(TDB_DATA key, TDB_DATA data, void *priv)
 
 bool serverid_exists(const struct server_id *id)
 {
-	struct db_context *db;
-	struct serverid_exists_state state;
-	struct serverid_key key;
-	TDB_DATA tdbkey;
-	NTSTATUS status;
+	bool result = false;
+	bool ok = false;
 
-	if (procid_is_me(id)) {
-		return true;
-	}
-
-	if (!process_exists(*id)) {
+	ok = serverids_exist(id, 1, &result);
+	if (!ok) {
 		return false;
 	}
 
-	if (id->unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-		return true;
-	}
-
-	db = serverid_db();
-	if (db == NULL) {
-		return false;
-	}
-
-	serverid_fill_key(id, &key);
-	tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
-
-	state.id = id;
-	state.exists = false;
-
-	status = dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
-	return state.exists;
+	return result;
 }
 
 bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
