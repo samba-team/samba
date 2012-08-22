@@ -292,12 +292,6 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 	struct db_context *db;
 	int i;
 
-#ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
-	if (lp_clustering()) {
-		return ctdb_serverids_exist(messaging_ctdbd_connection(),
-					    ids, num_ids, results);
-	}
-#endif
 	if (!processes_exist(ids, num_ids, results)) {
 		return false;
 	}
