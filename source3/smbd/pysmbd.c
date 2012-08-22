@@ -382,7 +382,7 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 	
 	sd = get_nt_acl_no_snum(tmp_ctx, fname);
 
-	py_sd = py_return_ndr_struct("samba.dcerpc.security", "security_descriptor", sd, sd);
+	py_sd = py_return_ndr_struct("samba.dcerpc.security", "descriptor", sd, sd);
 
 	talloc_free(tmp_ctx);
 
