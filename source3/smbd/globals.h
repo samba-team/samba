@@ -396,6 +396,10 @@ NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
 				uint64_t session_id, NTTIME now,
 				struct smbXsrv_session **session);
+struct smbXsrv_session_global0;
+NTSTATUS smbXsrv_session_global_traverse(
+			int (*fn)(struct smbXsrv_session_global0 *, void *),
+			void *private_data);
 struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbXsrv_connection *conn,

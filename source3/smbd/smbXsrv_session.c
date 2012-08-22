@@ -1524,3 +1524,74 @@ NTSTATUS smb2srv_session_lookup(struct smbXsrv_connection *conn,
 
 	return smbXsrv_session_local_lookup(table, local_id, now, session);
 }
+
+struct smbXsrv_session_global_traverse_state {
+	int (*fn)(struct smbXsrv_session_global0 *, void *);
+	void *private_data;
+};
+
+static int smbXsrv_session_global_traverse_fn(struct db_record *rec, void *data)
+{
+	int ret = -1;
+	struct smbXsrv_session_global_traverse_state *state =
+		(struct smbXsrv_session_global_traverse_state*)data;
+	TDB_DATA key = dbwrap_record_get_key(rec);
+	TDB_DATA val = dbwrap_record_get_value(rec);
+	DATA_BLOB blob = data_blob_const(val.dptr, val.dsize);
+	struct smbXsrv_session_globalB global_blob;
+	enum ndr_err_code ndr_err;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	ndr_err = ndr_pull_struct_blob(&blob, frame, &global_blob,
+			(ndr_pull_flags_fn_t)ndr_pull_smbXsrv_session_globalB);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1,("Invalid record in smbXsrv_session_global.tdb:"
+			 "key '%s' ndr_pull_struct_blob - %s\n",
+			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 ndr_errstr(ndr_err)));
+		goto done;
+	}
+
+	if (global_blob.version != SMBXSRV_VERSION_0) {
+		DEBUG(1,("Invalid record in smbXsrv_session_global.tdb:"
+			 "key '%s' unsuported version - %d\n",
+			 hex_encode_talloc(frame, key.dptr, key.dsize),
+			 (int)global_blob.version));
+		goto done;
+	}
+
+	ret = state->fn(global_blob.info.info0, state->private_data);
+done:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+NTSTATUS smbXsrv_session_global_traverse(
+			int (*fn)(struct smbXsrv_session_global0 *, void *),
+			void *private_data)
+{
+
+	NTSTATUS status;
+	int count = 0;
+	struct smbXsrv_session_global_traverse_state state = {
+		.fn = fn,
+		.private_data = private_data,
+	};
+
+	become_root();
+	status = smbXsrv_session_global_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		unbecome_root();
+		DEBUG(0, ("Failed to initialize session_global: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	status = dbwrap_traverse_read(smbXsrv_session_global_db_ctx,
+				      smbXsrv_session_global_traverse_fn,
+				      &state,
+				      &count);
+	unbecome_root();
+
+	return status;
+}
