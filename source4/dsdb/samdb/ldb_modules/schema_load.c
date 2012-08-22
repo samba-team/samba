@@ -166,10 +166,7 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 	struct dsdb_control_current_partition *ctrl;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *new_schema;
-	int interval;
-	time_t ts, lastts;
-	struct loadparm_context *lp_ctx =
-		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
+	time_t ts, lastts;	
 	
 	struct schema_load_private_data *private_data = talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
 	if (!private_data) {
@@ -184,9 +181,8 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 
 	lastts = schema->last_refresh;
 	ts = time(NULL);
-	interval = lpcfg_parm_int(lp_ctx, NULL, "dsdb", "schema_reload_interval", 120);
-	if (lastts > (ts - interval)) {
-		DEBUG(11, ("Less than %d seconds since last reload, returning cached version ts = %d\n", interval, (int)lastts));
+	if (lastts > (ts - schema->refresh_interval)) {
+		DEBUG(11, ("Less than %d seconds since last reload, returning cached version ts = %d\n", (int)schema->refresh_interval, (int)lastts));
 		return schema;
 	}
 
