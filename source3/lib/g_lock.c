@@ -29,6 +29,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "system/select.h"
 #include "messages.h"
+#include "serverid.h"
 
 struct g_lock_ctx {
 	struct db_context *db;
@@ -124,8 +125,16 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 			goto done;
 		}
 		if (g_lock_conflicts(type, locks[i].lock_type)) {
+			struct server_id pid = locks[i].pid;
 
-			if (process_exists(locks[i].pid)) {
+			/*
+			 * As the serverid_exists might recurse into
+			 * the g_lock code, we use
+			 * SERVERID_UNIQUE_ID_NOT_TO_VERIFY to avoid the loop
+			 */
+			pid.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
+
+			if (serverid_exists(&pid)) {
 				status = NT_STATUS_LOCK_NOT_GRANTED;
 				goto done;
 			}
