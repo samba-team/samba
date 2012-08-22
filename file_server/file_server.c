@@ -61,24 +61,12 @@ static const char *generate_smb_conf(struct task_server *task)
 	fdprintf(fd, "rpc_daemon:spoolssd = disabled\n");
 	fdprintf(fd, "rpc_server:tcpip = no\n");
 
-	/* If we are using xattr_tdb:file or posix:eadb then we need to load another VFS object */
-	if (lpcfg_parm_string(lp_ctx, NULL, "xattr_tdb", "file")) {
-		fdprintf(fd, "vfs objects = acl_xattr xattr_tdb\n");
-	} else if (lpcfg_parm_string(lp_ctx, NULL, "posix", "eadb")) {
-		fdprintf(fd, "vfs objects = acl_xattr posix_eadb\n");
-	} else {
-		fdprintf(fd, "vfs objects = acl_xattr\n");
-	}
-
 	fdprintf(fd, "map hidden = no\n");
 	fdprintf(fd, "map system = no\n");
 	fdprintf(fd, "map readonly = no\n");
 	fdprintf(fd, "store dos attributes = yes\n");
 
 	fdprintf(fd, "include = %s\n", lpcfg_configfile(lp_ctx));
-
-	fdprintf(fd, "[IPC$]\n");
-	fdprintf(fd, " vfs objects = dfs_samba4\n");
 
 	close(fd);
 	return path;

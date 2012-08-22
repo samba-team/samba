@@ -4902,6 +4902,19 @@ static bool lp_load_ex(const char *pszFname,
 
 	fault_configure(smb_panic_s3);
 
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		const char **vfs_objects = lp_vfs_objects(-1);
+		if (!vfs_objects || !vfs_objects[0]) {
+			if (lp_parm_const_string(-1, "xattr_tdb", "file", NULL)) {
+				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr xattr_tdb");
+			} else if (lp_parm_const_string(-1, "posix", "eadb", NULL)) {
+				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr posix_eadb");
+			} else {
+				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr");
+			}
+		}
+	}
+
 	bAllowIncludeRegistry = true;
 
 	return (bRetval);
