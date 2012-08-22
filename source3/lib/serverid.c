@@ -264,46 +264,131 @@ bool serverid_exists(const struct server_id *id)
 
 bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 {
+	int *todo_idx = NULL;
+	struct server_id *todo_ids = NULL;
+	bool *todo_results = NULL;
+	int todo_num = 0;
+	int *remote_idx = NULL;
+	int remote_num = 0;
+	int t, idx;
+	bool result = false;
 	struct db_context *db;
-	int i;
-
-	if (!processes_exist(ids, num_ids, results)) {
-		return false;
-	}
 
 	db = serverid_db();
 	if (db == NULL) {
 		return false;
 	}
 
-	for (i=0; i<num_ids; i++) {
+	todo_idx = talloc_array(talloc_tos(), int, num_ids);
+	if (todo_idx == NULL) {
+		goto fail;
+	}
+	todo_ids = talloc_array(talloc_tos(), struct server_id, num_ids);
+	if (todo_ids == NULL) {
+		goto fail;
+	}
+	todo_results = talloc_array(talloc_tos(), bool, num_ids);
+	if (todo_results == NULL) {
+		goto fail;
+	}
+
+	remote_idx = talloc_array(talloc_tos(), int, num_ids);
+	if (remote_idx == NULL) {
+		goto fail;
+	}
+
+	for (idx=0; idx<num_ids; idx++) {
+		results[idx] = false;
+
+		if (procid_is_me(&ids[idx])) {
+			results[idx] = true;
+			continue;
+		}
+
+		if (procid_is_local(&ids[idx])) {
+			bool exists = process_exists_by_pid(ids[idx].pid);
+
+			if (!exists) {
+				continue;
+			}
+
+			results[idx] = true;
+			continue;
+		}
+
+		if (!lp_clustering()) {
+			continue;
+		}
+
+		remote_idx[remote_num] = idx;
+		remote_num += 1;
+	}
+
+	if (remote_num != 0) {
+		todo_num = 0;
+
+		for (t=0; t<remote_num; t++) {
+			idx = remote_idx[t];
+			todo_idx[todo_num] = idx;
+			todo_ids[todo_num] = ids[idx];
+			todo_results[todo_num] = false;
+			todo_num += 1;
+		}
+
+#ifdef CLUSTER_SUPPORT
+		if (!ctdb_processes_exist(messaging_ctdbd_connection(),
+					  todo_ids, todo_num,
+					  todo_results)) {
+			goto fail;
+		}
+#endif
+
+		for (t=0; t<todo_num; t++) {
+			idx = todo_idx[t];
+
+			if (!todo_results[t]) {
+				continue;
+			}
+
+			results[idx] = true;
+		}
+	}
+
+	for (idx=0; idx<num_ids; idx++) {
 		struct serverid_exists_state state;
 		struct serverid_key key;
 		TDB_DATA tdbkey;
 		NTSTATUS status;
 
-		if (!results[i]) {
+		if (!results[idx]) {
 			continue;
 		}
 
-		if (ids[i].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-			results[i] = true;
+		if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+			results[idx] = true;
 			continue;
 		}
 
-		serverid_fill_key(&ids[i], &key);
+		serverid_fill_key(&ids[idx], &key);
 		tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
 
-		state.id = &ids[i];
+		state.id = &ids[idx];
 		state.exists = false;
 		status = dbwrap_parse_record(db, tdbkey, server_exists_parse, &state);
 		if (!NT_STATUS_IS_OK(status)) {
-			results[i] = false;
+			results[idx] = false;
 			continue;
 		}
-		results[i] = state.exists;
+		results[idx] = state.exists;
 	}
-	return true;
+
+	result = true;
+fail:
+	TALLOC_FREE(remote_idx);
+	TALLOC_FREE(todo_results);
+	TALLOC_FREE(todo_ids);
+	TALLOC_FREE(todo_idx);
+	return result;
 }
 
 static bool serverid_rec_parse(const struct db_record *rec,
