@@ -300,6 +300,10 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 	for (idx=0; idx<num_ids; idx++) {
 		results[idx] = false;
 
+		if (server_id_is_disconnected(&ids[idx])) {
+			continue;
+		}
+
 		if (procid_is_me(&ids[idx])) {
 			results[idx] = true;
 			continue;
