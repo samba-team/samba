@@ -315,8 +315,8 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 
 	ret = SMB_VFS_CHOWN( conn, fname, uid, gid);
 	if (ret != 0) {
-		status = map_nt_error_from_unix_common(ret);
-		DEBUG(0,("chwon returned failure: %s\n", strerror(ret)));
+		status = map_nt_error_from_unix_common(errno);
+		DEBUG(0,("chown returned failure: %s\n", strerror(errno)));
 	}
 
 	conn_free(conn);
