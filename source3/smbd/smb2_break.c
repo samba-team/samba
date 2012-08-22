@@ -235,6 +235,26 @@ void send_break_message_smb2(files_struct *fsp, int level)
 				SMB2_OPLOCK_LEVEL_II :
 				SMB2_OPLOCK_LEVEL_NONE;
 	NTSTATUS status;
+	struct smbXsrv_session *session = NULL;
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
+
+	status = smb2srv_session_lookup(fsp->conn->sconn->conn,
+					fsp->vuid,
+					now,
+					&session);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED) ||
+	    (session == NULL))
+	{
+
+		DEBUG(10,("send_break_message_smb2: skip oplock break "
+			"for file %s, %s, smb2 level %u session %llu not found\n",
+			fsp_str_dbg(fsp),
+			fsp_fnum_dbg(fsp),
+			(unsigned int)smb2_oplock_level,
+			(unsigned long long)fsp->vuid));
+		return;
+	}
 
 	DEBUG(10,("send_break_message_smb2: sending oplock break "
 		"for file %s, %s, smb2 level %u\n",
@@ -243,9 +263,10 @@ void send_break_message_smb2(files_struct *fsp, int level)
 		(unsigned int)smb2_oplock_level ));
 
 	status = smbd_smb2_send_oplock_break(fsp->conn->sconn,
-					fsp->op->global->open_persistent_id,
-					fsp->op->global->open_volatile_id,
-					smb2_oplock_level);
+					     session,
+					     fsp->conn->tcon,
+					     fsp->op,
+					     smb2_oplock_level);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(fsp->conn->sconn,
 				 nt_errstr(status));

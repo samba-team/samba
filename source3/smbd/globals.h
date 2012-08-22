@@ -235,8 +235,9 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	smbd_smb2_request_done_ex(req, NT_STATUS_OK, body, dyn, __location__)
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
-				     uint64_t file_id_persistent,
-				     uint64_t file_id_volatile,
+				     struct smbXsrv_session *session,
+				     struct smbXsrv_tcon *tcon,
+				     struct smbXsrv_open *op,
 				     uint8_t oplock_level);
 
 NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,

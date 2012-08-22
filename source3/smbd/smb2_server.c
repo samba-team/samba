@@ -2694,21 +2694,35 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 
 struct smbd_smb2_send_oplock_break_state {
 	struct smbd_server_connection *sconn;
-	uint8_t buf[4 + SMB2_HDR_BODY + 0x18];
-	struct iovec vector;
+	uint8_t buf[NBT_HDR_SIZE + SMB2_TF_HDR_SIZE + SMB2_HDR_BODY + 0x18];
+	struct iovec vector[1+SMBD_SMB2_NUM_IOV_PER_REQ];
 };
 
 static void smbd_smb2_oplock_break_writev_done(struct tevent_req *subreq);
 
 NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
-				     uint64_t file_id_persistent,
-				     uint64_t file_id_volatile,
+				     struct smbXsrv_session *session,
+				     struct smbXsrv_tcon *tcon,
+				     struct smbXsrv_open *op,
 				     uint8_t oplock_level)
 {
 	struct smbd_smb2_send_oplock_break_state *state;
+	struct smbXsrv_connection *conn = sconn->conn;
 	struct tevent_req *subreq;
+	uint8_t *tf;
+	size_t tf_len;
 	uint8_t *hdr;
 	uint8_t *body;
+	size_t body_len;
+	uint8_t *dyn;
+	size_t dyn_len;
+	bool do_encryption = session->global->encryption_required;
+	uint64_t nonce_high = 0;
+	uint64_t nonce_low = 0;
+
+	if (tcon->global->encryption_required) {
+		do_encryption = true;
+	}
 
 	state = talloc(sconn, struct smbd_smb2_send_oplock_break_state);
 	if (state == NULL) {
@@ -2716,12 +2730,29 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	}
 	state->sconn = sconn;
 
-	state->vector.iov_base = (void *)state->buf;
-	state->vector.iov_len = sizeof(state->buf);
-
-	_smb2_setlen(state->buf, sizeof(state->buf) - 4);
-	hdr = state->buf + 4;
+	tf = state->buf + NBT_HDR_SIZE;
+	tf_len = SMB2_TF_HDR_SIZE;
+	hdr = tf + tf_len;
 	body = hdr + SMB2_HDR_BODY;
+	body_len = 0x18;
+	dyn = body + body_len;
+	dyn_len = 0;
+
+	if (do_encryption) {
+		nonce_high = session->nonce_high;
+		nonce_low = session->nonce_low;
+
+		session->nonce_low += 1;
+		if (session->nonce_low == 0) {
+			session->nonce_low += 1;
+			session->nonce_high += 1;
+		}
+	}
+
+	SIVAL(tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
+	SBVAL(tf, SMB2_TF_NONCE+0, nonce_low);
+	SBVAL(tf, SMB2_TF_NONCE+8, nonce_high);
+	SBVAL(tf, SMB2_TF_SESSION_ID, session->global->session_wire_id);
 
 	SIVAL(hdr, 0,				SMB2_MAGIC);
 	SSVAL(hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
@@ -2737,19 +2768,55 @@ NTSTATUS smbd_smb2_send_oplock_break(struct smbd_server_connection *sconn,
 	SBVAL(hdr, SMB2_HDR_SESSION_ID,		0);
 	memset(hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
-	SSVAL(body, 0x00, 0x18);
+	SSVAL(body, 0x00, body_len);
 
 	SCVAL(body, 0x02, oplock_level);
 	SCVAL(body, 0x03, 0);		/* reserved */
 	SIVAL(body, 0x04, 0);		/* reserved */
-	SBVAL(body, 0x08, file_id_persistent);
-	SBVAL(body, 0x10, file_id_volatile);
+	SBVAL(body, 0x08, op->global->open_persistent_id);
+	SBVAL(body, 0x10, op->global->open_volatile_id);
+
+	state->vector[0].iov_base = (void *)state->buf;
+	state->vector[0].iov_len = NBT_HDR_SIZE;
+
+	if (do_encryption) {
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = tf;
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    = tf_len;
+	} else {
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = NULL;
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    = 0;
+	}
+
+	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_base  = hdr;
+	state->vector[1+SMBD_SMB2_HDR_IOV_OFS].iov_len   = SMB2_HDR_BODY;
+
+	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_base = body;
+	state->vector[1+SMBD_SMB2_BODY_IOV_OFS].iov_len  = body_len;
+
+	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_base  = dyn;
+	state->vector[1+SMBD_SMB2_DYN_IOV_OFS].iov_len   = dyn_len;
+
+	smb2_setup_nbt_length(state->vector, 1 + SMBD_SMB2_NUM_IOV_PER_REQ);
+
+	if (do_encryption) {
+		NTSTATUS status;
+		DATA_BLOB encryption_key = session->global->encryption_key;
+
+		status = smb2_signing_encrypt_pdu(encryption_key,
+					conn->protocol,
+					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
+					SMBD_SMB2_NUM_IOV_PER_REQ);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
 
 	subreq = tstream_writev_queue_send(state,
 					   sconn->ev_ctx,
 					   sconn->smb2.stream,
 					   sconn->smb2.send_queue,
-					   &state->vector, 1);
+					   state->vector,
+					   ARRAY_SIZE(state->vector));
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
