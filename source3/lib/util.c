@@ -30,6 +30,7 @@
 #include "messages.h"
 #include <ccan/hash/hash.h>
 #include "libcli/security/security.h"
+#include "serverid.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -712,20 +713,7 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 
 bool process_exists(const struct server_id pid)
 {
-	if (procid_is_me(&pid)) {
-		return True;
-	}
-
-	if (procid_is_local(&pid)) {
-		return (kill(pid.pid,0) == 0 || errno != ESRCH);
-	}
-
-#ifdef CLUSTER_SUPPORT
-	return ctdbd_process_exists(messaging_ctdbd_connection(),
-				    pid.vnn, pid.pid);
-#else
-	return False;
-#endif
+	return serverid_exists(&pid);
 }
 
 bool processes_exist(const struct server_id *pids, int num_pids,
