@@ -1801,7 +1801,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         file = tempfile.NamedTemporaryFile(dir=os.path.abspath(paths.sysvol))
         try:
             try:
-                smbd.set_simple_acl(file.name, root_uid, wheel_gid)
+                smbd.set_simple_acl(file.name, 0755, wheel_gid)
             except Exception:
                 raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  Try the mounting the filesystem with the 'acl' option.")
             try:

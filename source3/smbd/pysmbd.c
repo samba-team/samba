@@ -151,10 +151,13 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 }
 
 
-static SMB_ACL_T make_simple_acl(uid_t uid, gid_t gid)
+static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 {
 	mode_t mode = SMB_ACL_READ|SMB_ACL_WRITE;
-	mode_t mode0 = 0;
+
+	mode_t mode_user = (chmod_mode & 0700) >> 16;
+	mode_t mode_group = (chmod_mode & 070) >> 8;
+	mode_t mode_other = chmod_mode &  07;
 
 	SMB_ACL_ENTRY_T entry;
 	SMB_ACL_T acl = sys_acl_init(4);
@@ -173,7 +176,7 @@ static SMB_ACL_T make_simple_acl(uid_t uid, gid_t gid)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode) != 0) {
+	if (sys_acl_set_permset(entry, &mode_user) != 0) {
 		TALLOC_FREE(acl);
 		return NULL;
 	}
@@ -188,7 +191,7 @@ static SMB_ACL_T make_simple_acl(uid_t uid, gid_t gid)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode) != 0) {
+	if (sys_acl_set_permset(entry, &mode_group) != 0) {
 		TALLOC_FREE(acl);
 		return NULL;
 	}
@@ -203,29 +206,31 @@ static SMB_ACL_T make_simple_acl(uid_t uid, gid_t gid)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode0) != 0) {
+	if (sys_acl_set_permset(entry, &mode_other) != 0) {
 		TALLOC_FREE(acl);
 		return NULL;
 	}
 
-	if (sys_acl_create_entry(&acl, &entry) != 0) {
-		TALLOC_FREE(acl);
-		return NULL;
-	}
-
-	if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP) != 0) {
-		TALLOC_FREE(acl);
-		return NULL;
-	}
-
-	if (sys_acl_set_qualifier(entry, &gid) != 0) {
-		TALLOC_FREE(acl);
-		return NULL;
-	}
-
-	if (sys_acl_set_permset(entry, &mode) != 0) {
-		TALLOC_FREE(acl);
-		return NULL;
+	if (gid != -1) {
+		if (sys_acl_create_entry(&acl, &entry) != 0) {
+			TALLOC_FREE(acl);
+			return NULL;
+		}
+		
+		if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP) != 0) {
+			TALLOC_FREE(acl);
+			return NULL;
+		}
+		
+		if (sys_acl_set_qualifier(entry, &gid) != 0) {
+			TALLOC_FREE(acl);
+			return NULL;
+		}
+		
+		if (sys_acl_set_permset(entry, &mode_group) != 0) {
+			TALLOC_FREE(acl);
+			return NULL;
+		}
 	}
 
 	if (sys_acl_create_entry(&acl, &entry) != 0) {
@@ -238,7 +243,7 @@ static SMB_ACL_T make_simple_acl(uid_t uid, gid_t gid)
 		return NULL;
 	}
 
-	if (sys_acl_set_permset(entry, &mode0) != 0) {
+	if (sys_acl_set_permset(entry, &mode) != 0) {
 		TALLOC_FREE(acl);
 		return NULL;
 	}
@@ -252,14 +257,14 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 {
 	NTSTATUS status;
 	char *fname;
-	int uid, gid;
+	int mode, gid = -1;
 	SMB_ACL_T acl;
 	TALLOC_CTX *frame;
 
-	if (!PyArg_ParseTuple(args, "sii", &fname, &uid, &gid))
+	if (!PyArg_ParseTuple(args, "si|i", &fname, &mode, &gid))
 		return NULL;
 
-	acl = make_simple_acl(uid, gid);
+	acl = make_simple_acl(gid, mode);
 
 	frame = talloc_stackframe();
 
