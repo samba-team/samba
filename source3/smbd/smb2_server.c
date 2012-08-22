@@ -1431,8 +1431,8 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	uint32_t flags = 0;
 	uint64_t session_id = 0;
 	uint64_t message_id = 0;
-	uint64_t nonce_high;
-	uint64_t nonce_low;
+	uint64_t nonce_high = 0;
+	uint64_t nonce_low = 0;
 	uint64_t async_id = 0;
 	struct tevent_req *subreq = NULL;
 
@@ -1476,15 +1476,18 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	body = hdr + SMB2_HDR_BODY;
 	dyn = body + 8;
 
-	/*
-	 * We may have 2 responses (PENDING, FINAL),
-	 * so alter the nonce.
-	 *
-	 * The PENDING response has the SMB2_HDR_FLAG_ASYNC bit
-	 * set.
-	 */
-	nonce_high = session_id | SMB2_HDR_FLAG_ASYNC;
-	nonce_low = message_id;
+	if (req->do_encryption) {
+		struct smbXsrv_session *x = req->session;
+
+		nonce_high = x->nonce_high;
+		nonce_low = x->nonce_low;
+
+		x->nonce_low += 1;
+		if (x->nonce_low == 0) {
+			x->nonce_low += 1;
+			x->nonce_high += 1;
+		}
+	}
 
 	SIVAL(tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
 	SBVAL(tf, SMB2_TF_NONCE+0, nonce_low);
@@ -2310,22 +2313,18 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	{
 		DATA_BLOB encryption_key = req->session->global->encryption_key;
 		uint8_t *tf;
-		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 		uint64_t session_id = req->session->global->session_wire_id;
-		uint64_t message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
-		uint64_t async_id = BVAL(inhdr, SMB2_HDR_ASYNC_ID);
-		/*
-		 * We may have 2 responses (PENDING, FINAL),
-		 * so alter the nonce.
-		 *
-		 * The FINAL response has the SMB2_HDR_FLAG_ASYNC bit
-		 * cleared.
-		 */
-		uint64_t nonce_high = session_id & ~SMB2_HDR_FLAG_ASYNC;
-		uint64_t nonce_low = message_id;
+		struct smbXsrv_session *x = req->session;
+		uint64_t nonce_high;
+		uint64_t nonce_low;
 
-		if (nonce_low == 0) {
-			nonce_low = async_id;
+		nonce_high = x->nonce_high;
+		nonce_low = x->nonce_low;
+
+		x->nonce_low += 1;
+		if (x->nonce_low == 0) {
+			x->nonce_low += 1;
+			x->nonce_high += 1;
 		}
 
 		/*

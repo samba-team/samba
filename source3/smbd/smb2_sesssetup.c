@@ -277,6 +277,9 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 				    label.data, label.length,
 				    context.data, context.length,
 				    x->global->encryption_key.data);
+
+		generate_random_buffer((uint8_t *)&x->nonce_high, sizeof(x->nonce_high));
+		x->nonce_low = 1;
 	}
 
 	x->global->application_key = data_blob_dup_talloc(x->global,
