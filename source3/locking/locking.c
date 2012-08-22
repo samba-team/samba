@@ -1735,42 +1735,32 @@ struct forall_state {
 static int traverse_fn(struct db_record *rec, void *_state)
 {
 	struct forall_state *state = (struct forall_state *)_state;
-	struct locking_data *data;
-	struct share_mode_entry *shares;
-	const char *sharepath;
-	const char *fname;
-	const char *del_tokens;
-	uint32_t total_del_token_size = 0;
 	int i;
+	struct share_mode_lock *lck;
 
 	/* Ensure this is a locking_key record. */
 	if (rec->key.dsize != sizeof(struct file_id))
 		return 0;
 
-	data = (struct locking_data *)rec->value.dptr;
-	shares = (struct share_mode_entry *)(rec->value.dptr + sizeof(*data));
-	del_tokens = (const char *)rec->value.dptr + sizeof(*data) +
-		data->u.s.num_share_mode_entries*sizeof(*shares);
-
-	for (i = 0; i < data->u.s.num_delete_token_entries; i++) {
-		uint32_t del_token_size;
-		memcpy(&del_token_size, del_tokens, sizeof(uint32_t));
-		total_del_token_size += del_token_size;
-		del_tokens += del_token_size;
+	lck = TALLOC_ZERO_P(talloc_tos(), struct share_mode_lock);
+	if (lck == NULL) {
+		return 0;
 	}
 
-	sharepath = (const char *)rec->value.dptr + sizeof(*data) +
-		data->u.s.num_share_mode_entries*sizeof(*shares) +
-		total_del_token_size;
-	fname = (const char *)rec->value.dptr + sizeof(*data) +
-		data->u.s.num_share_mode_entries*sizeof(*shares) +
-		total_del_token_size +
-		strlen(sharepath) + 1;
-
-	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
-		state->fn(&shares[i], sharepath, fname,
-			  state->private_data);
+	if (!parse_share_modes(rec->value, lck)) {
+		TALLOC_FREE(lck);
+		DEBUG(1, ("parse_share_modes failed\n"));
+		return 0;
 	}
+
+	for (i=0; i<lck->num_share_modes; i++) {
+		struct share_mode_entry *se = &lck->share_modes[i];
+		state->fn(se,
+			lck->servicepath,
+			lck->base_name,
+			state->private_data);
+	}
+	TALLOC_FREE(lck);
 	return 0;
 }
 
