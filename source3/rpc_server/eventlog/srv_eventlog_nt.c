@@ -91,7 +91,7 @@ static bool elog_check_access( EVENTLOG_INFO *info, const struct security_token 
 
 	/* get the security descriptor for the file */
 
-	sec_desc = get_nt_acl_no_snum( info, tdbname );
+	sec_desc = get_nt_acl_no_snum( info, tdbname, SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
 	TALLOC_FREE( tdbname );
 
 	if ( !sec_desc ) {

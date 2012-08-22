@@ -372,15 +372,15 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
 static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 {
 	char *fname;
-	int security_info_sent;
+	int security_info_wanted;
 	PyObject *py_sd;
 	struct security_descriptor *sd;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
-	if (!PyArg_ParseTuple(args, "si", &fname, &security_info_sent))
+	if (!PyArg_ParseTuple(args, "si", &fname, &security_info_wanted))
 		return NULL;
 	
-	sd = get_nt_acl_no_snum(tmp_ctx, fname);
+	sd = get_nt_acl_no_snum(tmp_ctx, fname, security_info_wanted);
 
 	py_sd = py_return_ndr_struct("samba.dcerpc.security", "descriptor", sd, sd);
 

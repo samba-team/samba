@@ -4842,7 +4842,7 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
  Assume we are dealing with files (for now)
 ********************************************************************/
 
-struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
+struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname, uint32 security_info_wanted)
 {
 	struct security_descriptor *psd, *ret_sd;
 	connection_struct *conn;
@@ -4890,7 +4890,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 		return NULL;
 	}
 
-	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, SECINFO_DACL, &psd))) {
+	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, security_info_wanted, &psd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		TALLOC_FREE(finfo.fsp_name);
 		conn_free(conn);
