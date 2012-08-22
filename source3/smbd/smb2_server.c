@@ -1553,7 +1553,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 				(unsigned int)i,
 				(unsigned int)ARRAY_SIZE(state->vector),
 				(unsigned int)state->vector[i].iov_len);
-			dump_data(0, state->vector[i].iov_base, state->vector[i].iov_len);
 		}
 	}
 
