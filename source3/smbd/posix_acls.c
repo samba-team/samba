@@ -4849,8 +4849,9 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	files_struct finfo;
 	struct fd_handle fh;
 	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	conn = talloc_zero(ctx, connection_struct);
+	conn = talloc_zero(frame, connection_struct);
 	if (conn == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
@@ -4858,7 +4859,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 
 	if (!(conn->params = talloc(conn, struct share_params))) {
 		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
-		TALLOC_FREE(conn);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
@@ -4869,6 +4870,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	if (!smbd_vfs_init(conn)) {
 		DEBUG(0,("get_nt_acl_no_snum: Unable to create a fake connection struct!\n"));
 		conn_free(conn);
+		TALLOC_FREE(frame);
 		return NULL;
         }
 
@@ -4880,10 +4882,11 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	finfo.fh = &fh;
 	finfo.fh->fd = -1;
 
-	status = create_synthetic_smb_fname(talloc_tos(), fname, NULL, NULL,
+	status = create_synthetic_smb_fname(frame, fname, NULL, NULL,
 					    &finfo.fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		conn_free(conn);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
@@ -4891,6 +4894,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		TALLOC_FREE(finfo.fsp_name);
 		conn_free(conn);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
@@ -4898,6 +4902,7 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 
 	TALLOC_FREE(finfo.fsp_name);
 	conn_free(conn);
+	TALLOC_FREE(frame);
 
 	return ret_sd;
 }
