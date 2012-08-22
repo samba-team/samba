@@ -159,11 +159,6 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 {
 	uint64_t current_usn, value;
 	int ret;
-	struct ldb_result *res;
-	struct ldb_request *treq;
-	struct ldb_seqnum_request *tseq;
-	struct ldb_seqnum_result *tseqr;
-	struct dsdb_control_current_partition *ctrl;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *new_schema;
 	time_t ts, lastts;	
