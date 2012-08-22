@@ -453,6 +453,17 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 				 discard_const(binary_name));
 	}
 
+	if (lpcfg_server_role(cmdline_lp_ctx) != ROLE_ACTIVE_DIRECTORY_DC
+	    && !lpcfg_parm_bool(cmdline_lp_ctx, NULL, "server role check", "inhibit", false)
+	    && !str_list_check_ci(lpcfg_server_services(cmdline_lp_ctx), "smb") 
+	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx), "remote")
+	    && !str_list_check_ci(lpcfg_dcerpc_endpoint_servers(cmdline_lp_ctx), "mapiproxy")) {
+		DEBUG(0, ("At this time the 'samba' binary should only be used for either:\n"));
+		DEBUGADD(0, ("'server role = active directory domain controller' or to access the ntvfs file server with 'server services = +smb' or the rpc proxy with 'dcerpc endpoint servers = remote'\n"));
+		DEBUGADD(0, ("You should start smbd/nmbd/winbindd instead for domain member and standalone file server tasks\n"));
+		exit(1);
+	};
+
 	prime_ldb_databases(event_ctx);
 
 	status = setup_parent_messaging(event_ctx, cmdline_lp_ctx);

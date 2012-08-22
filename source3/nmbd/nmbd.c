@@ -888,6 +888,16 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
+	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
+		/* TODO: when we have a merged set of defaults for
+		 * loadparm, we could possibly check if the internal
+		 * nbt server is in the list, and allow a startup if disabled */
+		DEBUG(0, ("server role = 'active directory domain controller' not compatible with running nmbd standalone. \n"));
+		DEBUGADD(0, ("You should start 'samba' instead, and it will control starting the internal nbt server\n"));
+		exit(1);
+	}
+
 	msg = messaging_init(NULL, server_event_context());
 	if (msg == NULL) {
 		return 1;

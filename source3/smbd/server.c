@@ -1227,6 +1227,13 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
+	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
+		DEBUG(0, ("server role = 'active directory domain controller' not compatible with running smbd standalone. \n"));
+		DEBUGADD(0, ("You should start 'samba' instead, and it will control starting smbd if required\n"));
+		exit(1);
+	}
+
 	/* ...NOTE... Log files are working from this point! */
 
 	DEBUG(3,("loaded services\n"));
