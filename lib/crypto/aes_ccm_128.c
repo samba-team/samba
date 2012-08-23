@@ -70,7 +70,7 @@ void aes_ccm_128_init(struct aes_ccm_128_context *ctx,
 	 */
 	if (a_total >= UINT32_MAX) {
 		RSSVAL(ctx->B_i, 0, 0xFFFF);
-		RSBVAL(ctx->B_i, 2, a_total);
+		RSBVAL(ctx->B_i, 2, (uint64_t)a_total);
 		ctx->B_i_ofs = 10;
 	} else if (a_total >= 0xFF00) {
 		RSSVAL(ctx->B_i, 0, 0xFFFE);
