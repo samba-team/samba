@@ -1442,7 +1442,7 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
-				   undef, 1);
+				   undef, "", "", 1);
 
 	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
