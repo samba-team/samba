@@ -15,8 +15,9 @@ version_key = lambda x: map(int, x.split("."))
 def normalise_signature(sig):
     '''normalise a signature from gdb'''
     sig = sig.strip()
-    sig = re.sub('^\$[0-9]+\s=\s\{*', '', sig)
-    sig = re.sub('\}(\s0x[0-9a-f]+\s<\w+>)?$', '', sig)
+    sig = re.sub('^\$[0-9]+\s=\s\{(.+)\}$', r'\1', sig)
+    sig = re.sub('^\$[0-9]+\s=\s\{(.+)\}(\s0x[0-9a-f]+\s<\w+>)+$', r'\1', sig)
+    sig = re.sub('^\$[0-9]+\s=\s(0x[0-9a-f]+)\s?(<\w+>)?$', r'\1', sig)
     sig = re.sub('0x[0-9a-f]+', '0xXXXX', sig)
     sig = re.sub('", <incomplete sequence (\\\\[a-z0-9]+)>', r'\1"', sig)
 
