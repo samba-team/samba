@@ -66,33 +66,10 @@ static int net_serverid_wipe(struct net_context *c, int argc,
 	return serverid_traverse(net_serverid_wipe_fn, NULL) ? 0 : -1;
 }
 
-static int net_serverid_wipedbs_conn(
-	struct db_record *rec,
-	const struct connections_key *key,
-	const struct connections_data *data,
-	void *private_data)
-{
-	if (!serverid_exists(&key->pid)) {
-		NTSTATUS status;
-
-		DEBUG(10, ("Deleting connections.tdb record for pid %s\n",
-			   server_id_str(talloc_tos(), &key->pid)));
-
-		status = dbwrap_record_delete(rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Could not delete connections.tdb record "
-				  "for pid %s: %s\n",
-				  server_id_str(talloc_tos(), &key->pid),
-				  nt_errstr(status)));
-		}
-	}
-	return 0;
-}
-
 static int net_serverid_wipedbs(struct net_context *c, int argc,
 				const char **argv)
 {
-	connections_forall(net_serverid_wipedbs_conn, NULL);
+	d_printf("TODO reimplement!\n");
 	return 0;
 }
 
@@ -119,11 +96,9 @@ int net_serverid(struct net_context *c, int argc, const char **argv)
 			"wipedbs",
 			net_serverid_wipedbs,
 			NET_TRANSPORT_LOCAL,
-			N_("Clean dead entries from connections.tdb and "
-			   "sessionid.tdb"),
+			N_("Clean dead entries from temporary databases"),
 			N_("net serverid wipedbs\n"
-			   "    Clean dead entries from connections.tdb and "
-			   "sessionid.tdb")
+			   "    Clean dead entries from temporary databases")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
