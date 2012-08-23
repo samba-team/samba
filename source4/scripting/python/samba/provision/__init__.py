@@ -69,7 +69,7 @@ from samba.dsdb import (
     )
 from samba.idmap import IDmapDB
 from samba.ms_display_specifiers import read_ms_ldif
-from samba.ntacls import setntacl, dsacl2fsacl
+from samba.ntacls import setntacl, getntacl, dsacl2fsacl
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.provision.backend import (
     ExistingBackend,
@@ -1454,6 +1454,114 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain, domain
 
     # Set acls on Policy folder and policies folders
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs)
+
+def acl_type(direct_db_access):
+    if direct_db_access:
+        return "DB"
+    else:
+        return "VFS"
+
+def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
+    fsacl = getntacl(lp, path, direct_db_access=direct_db_access)
+    fsacl_sddl = fsacl.as_sddl(domainsid)
+    if fsacl_sddl != acl:
+        raise ProvisioningError('%s ACL on GPO directory %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), path, fsacl_sddl, acl))
+        
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            fsacl = getntacl(lp, os.path.join(root, name), direct_db_access=direct_db_access)
+            if fsacl is None:
+                raise ProvisioningError('%s ACL on GPO file %s %s not found!' % (acl_type(direct_db_access), os.path.join(root, name)))
+            fsacl_sddl = fsacl.as_sddl(domainsid)
+            if fsacl_sddl != acl:
+                raise ProvisioningError('%s ACL on GPO file %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl, acl))
+
+        for name in files:
+            fsacl = getntacl(lp, os.path.join(root, name), direct_db_access=direct_db_access)
+            if fsacl is None:
+                raise ProvisioningError('%s ACL on GPO directory %s %s not found!' % (acl_type(direct_db_access), os.path.join(root, name)))
+            fsacl_sddl = fsacl.as_sddl(domainsid)
+            if fsacl_sddl != acl:
+                raise ProvisioningError('%s ACL on GPO directory %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl, acl))
+
+
+def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, direct_db_access):
+    """Set ACL on the sysvol/<dnsname>/Policies folder and the policy
+    folders beneath.
+
+    :param sysvol: Physical path for the sysvol folder
+    :param dnsdomain: The DNS name of the domain
+    :param domainsid: The SID of the domain
+    :param domaindn: The DN of the domain (ie. DC=...)
+    :param samdb: An LDB object on the SAM db
+    :param lp: an LP object
+    """
+
+    # Set ACL for GPO root folder
+    root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
+    fsacl = getntacl(lp, root_policy_path, direct_db_access=direct_db_access)
+    if fsacl is None:
+        raise ProvisioningError('DB ACL on policy root %s %s not found!' % (acl_type(direct_db_access), root_policy_path))
+    fsacl_sddl = fsacl.as_sddl(domainsid)
+    if fsacl_sddl != POLICIES_ACL:
+        raise ProvisioningError('%s ACL on policy root %s %s does not match expected value %s from provision' % (acl_type(direct_db_access), policy_root, fsacl_sddl, acl))
+    res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
+                        attrs=["cn", "nTSecurityDescriptor"],
+                        expression="", scope=ldb.SCOPE_ONELEVEL)
+
+    for policy in res:
+        acl = ndr_unpack(security.descriptor,
+                         str(policy["nTSecurityDescriptor"])).as_sddl()
+        policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
+        check_dir_acl(policy_path, dsacl2fsacl(acl, str(domainsid)), lp,
+                      domainsid, direct_db_access)
+
+
+def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
+    lp):
+    """Set the ACL for the sysvol share and the subfolders
+
+    :param samdb: An LDB object on the SAM db
+    :param netlogon: Physical path for the netlogon folder
+    :param sysvol: Physical path for the sysvol folder
+    :param uid: The UID of the "Administrator" user
+    :param gid: The GID of the "Domain adminstrators" group
+    :param domainsid: The SID of the domain
+    :param dnsdomain: The DNS name of the domain
+    :param domaindn: The DN of the domain (ie. DC=...)
+    """
+
+    # This will ensure that the smbd code we are running when setting ACLs is initialised with the smb.conf
+    s3conf = s3param.get_context()
+    s3conf.load(lp.configfile)
+    # ensure we are using the right samba4 passdb backend, no matter what
+    s3conf.set("passdb backend", "samba4:%s" % samdb.url)
+    # ensure that we init the samba4 backend, so the domain sid is marked in secrets.tdb
+    s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+
+    # now ensure everything matches correctly, to avoid wierd issues
+    if passdb.get_global_sam_sid() != domainsid:
+        raise ProvisioningError('SID as seen by smbd [%s] does not match SID as seen by the provision script [%s]!' % (passdb.get_global_sam_sid(), domainsid))
+
+    domain_info = s4_passdb.domain_info()
+    if domain_info["dom_sid"] != domainsid:
+        raise ProvisioningError('SID as seen by pdb_samba4 [%s] does not match SID as seen by the provision script [%s]!' % (domain_info["dom_sid"], domainsid))
+
+    if domain_info["dns_domain"].upper() != dnsdomain.upper():
+        raise ProvisioningError('Realm as seen by pdb_samba4 [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
+
+    # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
+    for direct_db_access in [True, False]:
+        for dir_path in [os.path.join(sysvol, dnsdomain), netlogon]:
+            fsacl = getntacl(lp, dir_path, direct_db_access=direct_db_access)
+            if fsacl is None:
+                raise ProvisioningError('%s ACL on sysvol directory %s not found!' % (acl_type(direct_db_access), dir_path))
+            fsacl_sddl = fsacl.as_sddl(domainsid)
+            if fsacl_sddl != SYSVOL_ACL:
+                raise ProvisioningError('%s ACL on sysvol directory %s %s does not match expected value %s from provision' % (acl_type(direct_db_access), dir_path, fsacl_sddl, SYSVOL_ACL))
+
+        # Check acls on Policy folder and policies folders
+        check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, direct_db_access)
 
 
 def interface_ips_v4(lp):

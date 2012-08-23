@@ -179,6 +179,39 @@ class cmd_ntacl_sysvolreset(Command):
                                lp.get("realm").lower(), samdb.domain_dn(), 
                                lp, use_ntvfs=use_ntvfs)
 
+class cmd_ntacl_sysvolcheck(Command):
+    """Check sysvol ACLs match defaults (including correct ACLs on GPOs)"""
+    synopsis = "%prog <file> [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, 
+            credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        path = lp.private_path("secrets.ldb")
+        creds = credopts.get_credentials(lp)
+        creds.set_kerberos_state(DONT_USE_KERBEROS)
+        logger = self.get_logger()
+
+        netlogon = lp.get("path", "netlogon")
+        sysvol = lp.get("path", "sysvol")
+        try:
+            samdb = SamDB(session_info=system_session(), 
+                          lp=lp)
+        except Exception, e:
+            raise CommandError("Unable to open samdb:", e)
+
+        domain_sid = security.dom_sid(samdb.domain_sid)
+
+        provision.checksysvolacl(samdb, netlogon, sysvol,
+                                 domain_sid, 
+                                 lp.get("realm").lower(), samdb.domain_dn(), 
+                                 lp)
+
 
 class cmd_ntacl(SuperCommand):
     """NT ACLs manipulation"""
@@ -187,4 +220,5 @@ class cmd_ntacl(SuperCommand):
     subcommands["set"] = cmd_ntacl_set()
     subcommands["get"] = cmd_ntacl_get()
     subcommands["sysvolreset"] = cmd_ntacl_sysvolreset()
+    subcommands["sysvolcheck"] = cmd_ntacl_sysvolcheck()
 
