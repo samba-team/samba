@@ -89,33 +89,10 @@ static int net_serverid_wipedbs_conn(
 	return 0;
 }
 
-static int net_serverid_wipedbs_sessionid(struct db_record *rec,
-					  const char *key,
-					  struct sessionid *session,
-					  void *private_data)
-{
-	if (!serverid_exists(&session->pid)) {
-		NTSTATUS status;
-
-		DEBUG(10, ("Deleting sessionid.tdb record for pid %s\n",
-			   server_id_str(talloc_tos(), &session->pid)));
-
-		status = dbwrap_record_delete(rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Could not delete session.tdb record "
-				  "for pid %s: %s\n",
-				  server_id_str(talloc_tos(), &session->pid),
-				  nt_errstr(status)));
-		}
-	}
-	return 0;
-}
-
 static int net_serverid_wipedbs(struct net_context *c, int argc,
 				const char **argv)
 {
 	connections_forall(net_serverid_wipedbs_conn, NULL);
-	sessionid_traverse(net_serverid_wipedbs_sessionid, NULL);
 	return 0;
 }
 
