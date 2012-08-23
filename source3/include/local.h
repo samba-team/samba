@@ -154,26 +154,6 @@
 /* Minimum length of allowed password when changing UNIX password. */
 #define MINPASSWDLENGTH 5
 
-/* maximum ID number used for session control. This cannot be larger
-   than 62*62 for the current code */
-#define MAX_SESSION_ID 3000
-
-/* For the benifit of PAM and the 'session exec' scripts, we fake up a terminal
-   name. This can be in one of two forms:  The first for systems not using
-   utmp (and therefore not constrained as to length or the need for a number
-   < 3000 or so) and the second for systems with this 'well behaved terminal
-   like name' constraint.
-*/
-
-#ifndef SESSION_TEMPLATE
-/* Paramaters are 'pid' and 'vuid' */
-#define SESSION_TEMPLATE "smb/%lu/%llu"
-#endif
-
-#ifndef SESSION_UTMP_TEMPLATE
-#define SESSION_UTMP_TEMPLATE "smb/%d"
-#endif
-
 /* the maximum age in seconds of a password. Should be a lp_ parameter */
 #define MAX_PASSWORD_AGE (21*24*60*60)
 

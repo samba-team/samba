@@ -46,7 +46,6 @@ bool session_claim(struct smbXsrv_session *session)
 	struct smbd_server_connection *sconn = session->connection->sconn;
 	struct server_id pid = messaging_server_id(sconn->msg_ctx);
 	TDB_DATA data;
-	int i = 0;
 	struct sessionid sessionid;
 	fstring keystr;
 	struct db_record *rec;
@@ -67,76 +66,20 @@ bool session_claim(struct smbXsrv_session *session)
 
 	ZERO_STRUCT(sessionid);
 
+	sessionid.id_num = session->global->session_global_id;
+
 	data.dptr = NULL;
 	data.dsize = 0;
 
-	if (lp_utmp()) {
+	snprintf(keystr, sizeof(keystr), "ID/%u", sessionid.id_num);
+	snprintf(sessionid.id_str, sizeof(sessionid.id_str),
+		 "smb/%u", sessionid.id_num);
 
-		for (i=1;i<MAX_SESSION_ID;i++) {
-
-			/*
-			 * This is very inefficient and needs fixing -- vl
-			 */
-
-			struct server_id sess_pid;
-			TDB_DATA value;
-
-			snprintf(keystr, sizeof(keystr), "ID/%d", i);
-
-			rec = sessionid_fetch_record(NULL, keystr);
-			if (rec == NULL) {
-				DEBUG(1, ("Could not lock \"%s\"\n", keystr));
-				return False;
-			}
-
-			value = dbwrap_record_get_value(rec);
-
-			if (value.dsize != sizeof(sessionid)) {
-				DEBUG(1, ("Re-using invalid record\n"));
-				break;
-			}
-
-			memcpy(&sess_pid,
-			       ((char *)value.dptr)
-			       + offsetof(struct sessionid, pid),
-			       sizeof(sess_pid));
-
-			if (!process_exists(sess_pid)) {
-				DEBUG(5, ("%s has died -- re-using session\n",
-					  procid_str_static(&sess_pid)));
-				break;
-			}
-
-			TALLOC_FREE(rec);
-		}
-
-		if (i == MAX_SESSION_ID) {
-			SMB_ASSERT(rec == NULL);
-			DEBUG(1,("session_claim: out of session IDs "
-				 "(max is %d)\n", MAX_SESSION_ID));
-			return False;
-		}
-
-		snprintf(sessionid.id_str, sizeof(sessionid.id_str),
-			 SESSION_UTMP_TEMPLATE, i);
-	} else
-	{
-		snprintf(keystr, sizeof(keystr), "ID/%s/%llu",
-			 procid_str_static(&pid),
-			 (unsigned long long)vuser->vuid);
-
-		rec = sessionid_fetch_record(NULL, keystr);
-		if (rec == NULL) {
-			DEBUG(1, ("Could not lock \"%s\"\n", keystr));
-			return False;
-		}
-
-		snprintf(sessionid.id_str, sizeof(sessionid.id_str),
-			 SESSION_TEMPLATE, (long unsigned int)getpid(),
-			 (unsigned long long)vuser->vuid);
+	rec = sessionid_fetch_record(NULL, keystr);
+	if (rec == NULL) {
+		DEBUG(1, ("Could not lock \"%s\"\n", keystr));
+		return False;
 	}
-
-	SMB_ASSERT(rec != NULL);
 
 	raddr = tsocket_address_inet_addr_string(session->connection->remote_address,
 						 talloc_tos());
@@ -149,7 +92,6 @@ bool session_claim(struct smbXsrv_session *session)
 
 	fstrcpy(sessionid.username, vuser->session_info->unix_info->unix_name);
 	fstrcpy(sessionid.hostname, sconn->remote_hostname);
-	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;
 	sessionid.uid = vuser->session_info->unix_token->uid;
 	sessionid.gid = vuser->session_info->unix_token->gid;

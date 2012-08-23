@@ -472,22 +472,23 @@ static int ut_id_encode(int i, char *fourbyte)
 	int nbase;
 	const char *ut_id_encstr = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-	fourbyte[0] = 'S';
-	fourbyte[1] = 'M';
-
 /*
- * Encode remaining 2 bytes from 'i'.
  * 'ut_id_encstr' is the character set on which modulo arithmetic is done.
  * Example: digits would produce the base-10 numbers from '001'.
  */
 	nbase = strlen(ut_id_encstr);
 
+	fourbyte[0] = ut_id_encstr[i % nbase];
+	i /= nbase;
+	fourbyte[1] = ut_id_encstr[i % nbase];
+	i /= nbase;
 	fourbyte[3] = ut_id_encstr[i % nbase];
 	i /= nbase;
 	fourbyte[2] = ut_id_encstr[i % nbase];
 	i /= nbase;
 
-	return(i);	/* 0: good; else overflow */
+	/* we do not care about overflows as i is a random number */
+	return 0;
 }
 #endif /* defined(HAVE_UT_UT_ID) */
 
@@ -517,11 +518,6 @@ static bool sys_utmp_fill(struct utmp *u,
 	 * ut_line:
 	 *	If size limit proves troublesome, then perhaps use "ut_id_encode()".
 	 */
-	if (strlen(id_str) > sizeof(u->ut_line)) {
-		DEBUG(1,("id_str [%s] is too long for %lu char utmp field\n",
-			 id_str, (unsigned long)sizeof(u->ut_line)));
-		return False;
-	}
 	utmp_strcpy(u->ut_line, id_str, sizeof(u->ut_line));
 
 #if defined(HAVE_UT_UT_PID)
