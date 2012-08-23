@@ -330,7 +330,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (!session_claim(smb2req->sconn, session->compat)) {
+	if (!session_claim(smb2req->sconn, session)) {
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%llu\n",
 			(unsigned long long)session->compat->vuid));

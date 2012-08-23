@@ -993,9 +993,10 @@ void close_cnum(connection_struct *conn, uint64_t vuid);
 
 /* The following definitions come from smbd/session.c  */
 struct sessionid;
+struct smbXsrv_session;
 bool session_init(void);
-bool session_claim(struct smbd_server_connection *sconn, struct user_struct *vuser);
-void session_yield(struct user_struct *vuser);
+bool session_claim(struct smbd_server_connection *sconn, struct smbXsrv_session *session);
+void session_yield(struct smbXsrv_session *session);
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 
 /* The following definitions come from smbd/sesssetup.c  */
