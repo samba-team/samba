@@ -87,7 +87,6 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
-				 bool upper_case_domain, /* should the domain be transformed into upper case? */
 				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
@@ -122,7 +121,7 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	   but for NTLMv2 it is meant to contain the current time etc.
 	*/
 
-	if (!ntv2_owf_gen(part_passwd, user, domain, upper_case_domain, kr)) {
+	if (!ntv2_owf_gen(part_passwd, user, domain, false, kr)) {
 		return false;
 	}
 
@@ -161,7 +160,6 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 				const uint8_t *part_passwd,
 				const DATA_BLOB *sec_blob,
 				const char *user, const char *domain,
-				bool upper_case_domain, /* should the domain be transformed into upper case? */
 				DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
@@ -192,7 +190,7 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 
 	client_key_data = data_blob_talloc(mem_ctx, ntv2_response->data+16, ntv2_response->length-16);
 
-	if (!ntv2_owf_gen(part_passwd, user, domain, upper_case_domain, kr)) {
+	if (!ntv2_owf_gen(part_passwd, user, domain, false, kr)) {
 		return false;
 	}
 
@@ -364,7 +362,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 stored_nt->hash, challenge, 
 					 client_username, 
 					 client_domain,
-					 false,
 					 user_sess_key)) {
 			if (user_sess_key->length) {
 				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
@@ -379,7 +376,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 stored_nt->hash, challenge, 
 					 client_username, 
 					 upper_client_domain,
-					 false,
 					 user_sess_key)) {
 			if (user_sess_key->length) {
 				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
@@ -393,7 +389,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					 stored_nt->hash, challenge, 
 					 client_username, 
 					 "",
-					 false,
 					 user_sess_key)) {
 			if (user_sess_key->length) {
 				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
@@ -488,7 +483,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 stored_nt->hash, challenge, 
 				 client_username,
 				 client_domain,
-				 false,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -500,7 +494,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    stored_nt->hash, challenge, 
 					    client_username,
 					    client_domain,
-					    false,
 					    user_sess_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */
@@ -519,7 +512,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 stored_nt->hash, challenge, 
 				 client_username,
 				 upper_client_domain,
-				 false,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -531,7 +523,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    stored_nt->hash, challenge, 
 					    client_username,
 					    upper_client_domain,
-					    true,
 					    user_sess_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */
@@ -549,7 +540,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 stored_nt->hash, challenge, 
 				 client_username,
 				 "",
-				 false,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -561,7 +551,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    stored_nt->hash, challenge, 
 					    client_username,
 					    "",
-					    false,
 					    user_sess_key);
 		} else {
 			/* Otherwise, use the LMv2 session key */
