@@ -599,6 +599,8 @@ sub provision_raw_step1($$)
 
 	passdb backend = samba4
 
+        vfs objects = dfs_samba4 acl_xattr fake_acls xattr_tdb streams_depot
+
 	# remove this again, when our smb2 client library
 	# supports signin on compound related requests
 	server signing = on
@@ -1367,8 +1369,6 @@ sub provision_plugin_s4_dc($$)
 	smbd:writetimeupdatedelay = 500000
 	create mask = 755
 	dos filemode = yes
-
-        vfs objects = dfs_samba4 acl_xattr fake_acls xattr_tdb streams_depot
 
         dcerpc endpoint servers = -winreg -srvsvc
 
