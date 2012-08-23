@@ -256,7 +256,7 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
             backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
             slapd_path=None, 
             dom_for_fun_level=names.domainlevel, dns_backend=dns_backend,
-            useeadb=True)
+            useeadb=True, use_ntvfs=True)
 
 
 def dn_sort(x, y):
