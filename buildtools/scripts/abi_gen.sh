@@ -10,7 +10,7 @@ cat <<EOF
 set height 0
 set width 0
 EOF
-nm "$SHAREDLIB" | cut -d' ' -f2- | egrep '^[BDGTRVWS]' | grep -v @ | cut -c3- | sort | while read s; do
+nm "$SHAREDLIB" | cut -d' ' -f2- | egrep '^[BDGTRVWS]' | grep -v @ | egrep -v ' (__bss_start|_edata|_init|_fini|_end)' | cut -c3- | sort | while read s; do
     echo "echo $s: "
     echo p $s
 done
