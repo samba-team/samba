@@ -121,7 +121,7 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	   but for NTLMv2 it is meant to contain the current time etc.
 	*/
 
-	if (!ntv2_owf_gen(part_passwd, user, domain, false, kr)) {
+	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
 		return false;
 	}
 
@@ -190,7 +190,7 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 
 	client_key_data = data_blob_talloc(mem_ctx, ntv2_response->data+16, ntv2_response->length-16);
 
-	if (!ntv2_owf_gen(part_passwd, user, domain, false, kr)) {
+	if (!ntv2_owf_gen(part_passwd, user, domain, kr)) {
 		return false;
 	}
 
