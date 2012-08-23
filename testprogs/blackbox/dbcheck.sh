@@ -20,7 +20,12 @@ reindex() {
 	$BINDIR/samba-tool dbcheck --reindex
 }
 
+force_modules() {
+	$BINDIR/samba-tool dbcheck --force-modules
+}
+
 testit "dbcheck" dbcheck
 testit "reindex" reindex
+testit "force_modules" force_modules
 
 exit $failed

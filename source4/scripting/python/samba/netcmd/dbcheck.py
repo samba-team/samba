@@ -55,6 +55,7 @@ class cmd_dbcheck(Command):
             help="don't print details of checking"),
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
+        Option("--force-modules", dest="force_modules", default=False, action="store_true", help="force loading of Samba modules and ignore the @MODULES record (for very old databases)"),
         Option("-H", "--URL", help="LDB URL for database or target server (defaults to local SAM database)",
                type=str, metavar="URL", dest="H"),
         ]
@@ -62,7 +63,7 @@ class cmd_dbcheck(Command):
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False,
             cross_ncs=False, quiet=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None,
-            attrs=None, reindex=False):
+            attrs=None, reindex=False, force_modules=False):
 
         lp = sambaopts.get_loadparm()
 
@@ -73,8 +74,16 @@ class cmd_dbcheck(Command):
         else:
             creds = None
 
-        samdb = SamDB(session_info=system_session(), url=H,
-                      credentials=creds, lp=lp)
+        if force_modules:
+            samdb = SamDB(session_info=system_session(), url=H,
+                          credentials=creds, lp=lp, options=["modules=samba_dsdb"])
+        else:
+            try:
+                samdb = SamDB(session_info=system_session(), url=H,
+                              credentials=creds, lp=lp)
+            except:
+                raise CommandError("Failed to connect to DB at %s.  If this is a really old sam.ldb (before alpha9), then try again with --force-modules" % H)
+
 
         if H is None or not over_ldap:
             samdb_schema = samdb
@@ -105,13 +114,20 @@ class cmd_dbcheck(Command):
             started_transaction = True
         try:
             chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
-                    fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction)
+                          fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction)
 
             if reindex:
                 self.outf.write("Re-indexing...\n")
                 error_count = 0
                 if chk.reindex_database():
                     self.outf.write("completed re-index OK\n")
+
+            elif force_modules:
+                self.outf.write("Resetting @MODULES...\n")
+                error_count = 0
+                if chk.reset_modules():
+                    self.outf.write("completed @MODULES reset OK\n")
+
             else:
                 error_count = chk.check_database(DN=DN, scope=search_scope,
                         controls=controls, attrs=attrs)

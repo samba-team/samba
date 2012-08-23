@@ -936,3 +936,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         m['add']    = ldb.MessageElement('NONE', ldb.FLAG_MOD_ADD, 'force_reindex')
         m['delete'] = ldb.MessageElement('NONE', ldb.FLAG_MOD_DELETE, 'force_reindex')
         return self.do_modify(m, [], 're-indexed database', validate=False)
+
+    ###############################################
+    # reset @MODULES
+    def reset_modules(self):
+        '''reset @MODULES to that needed for current sam.ldb (to read a very old database)'''
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, "@MODULES")
+        m['@LIST'] = ldb.MessageElement('samba_dsdb', ldb.FLAG_MOD_REPLACE, '@LIST')
+        return self.do_modify(m, [], 'reset @MODULES on database', validate=False)
