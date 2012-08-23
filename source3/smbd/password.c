@@ -105,7 +105,7 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 		return;
 	}
 
-	session_yield(vuser);
+	session_yield(vuser->session);
 
 	DLIST_REMOVE(sconn->users, vuser);
 	SMB_ASSERT(sconn->num_users > 0);
