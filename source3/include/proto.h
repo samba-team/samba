@@ -1509,12 +1509,6 @@ void server_messaging_context_free(void);
 
 /* The following definitions come from lib/sessionid_tdb.c  */
 struct sessionid;
-bool sessionid_init(void);
-struct db_record *sessionid_fetch_record(TALLOC_CTX *mem_ctx, const char *key);
-NTSTATUS sessionid_traverse(int (*fn)(struct db_record *rec, const char *key,
-				      struct sessionid *session,
-				      void *private_data),
-			    void *private_data);
 NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,
 					   struct sessionid *session,
 					   void *private_data),
