@@ -300,7 +300,7 @@ static const struct {
 	const char* const name;
 	charset_t ctype;
 	int  len;
-	char seq[4];
+	uint8_t seq[4];
 } BOM[] = {
 	{"UTF-8",    CH_UTF8,    3, {0xEF, 0xBB, 0xBF}},
 	{"UTF-32LE", CH_INVALID, 4, {0xFF, 0xFE, 0x00, 0x00}},
