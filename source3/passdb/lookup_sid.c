@@ -1314,17 +1314,17 @@ bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 	for (i=0; i<num_sids; i++) {
 		if (ids[i].type == ID_TYPE_NOT_SPECIFIED) {
 			switch (wbc_ids[num_not_cached].type) {
-			case ID_TYPE_UID:
-				ids[i].type = WBC_ID_TYPE_UID;
+			case WBC_ID_TYPE_UID:
+				ids[i].type = ID_TYPE_UID;
 				ids[i].id = wbc_ids[num_not_cached].id.uid;
 				break;
-			case ID_TYPE_GID:
-				ids[i].type = WBC_ID_TYPE_GID;
+			case WBC_ID_TYPE_GID:
+				ids[i].type = ID_TYPE_GID;
 				ids[i].id = wbc_ids[num_not_cached].id.gid;
 				break;
 			default:
 				/* The types match, and wbcUnixId -> id is a union anyway */
-				ids[i].type = wbc_ids[num_not_cached].type;
+				ids[i].type = (enum id_type)wbc_ids[num_not_cached].type;
 				ids[i].id = wbc_ids[num_not_cached].id.gid;
 				break;
 			}
