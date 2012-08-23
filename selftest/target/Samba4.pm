@@ -1020,7 +1020,7 @@ sub provision_promoted_vampire_dc($$$)
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain dcpromo $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
-	$cmd .= " --machinepass=machine$ret->{password}";
+	$cmd .= " --machinepass=machine$ret->{password} --use-ntvfs";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
@@ -1079,7 +1079,7 @@ sub provision_vampire_dc($$$)
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} --domain-critical-only";
-	$cmd .= " --machinepass=machine$ret->{password}";
+	$cmd .= " --machinepass=machine$ret->{password} --use-ntvfs";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
@@ -1142,7 +1142,7 @@ sub provision_subdom_dc($$$)
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $ctx->{realm} subdomain ";
 	$cmd .= "--parent-domain=$dcvars->{REALM} -U$dcvars->{DC_USERNAME}\@$dcvars->{REALM}\%$dcvars->{DC_PASSWORD}";
-	$cmd .= " --machinepass=machine$ret->{password}";
+	$cmd .= " --machinepass=machine$ret->{password} --use-ntvfs";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
@@ -1312,7 +1312,7 @@ sub provision_rodc($$$)
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
-	$cmd .= " --server=$dcvars->{DC_SERVER}";
+	$cmd .= " --server=$dcvars->{DC_SERVER} --use-ntvfs";
 
 	unless (system($cmd) == 0) {
 		warn("RODC join failed\n$cmd");
