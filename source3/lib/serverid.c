@@ -270,6 +270,8 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 	int todo_num = 0;
 	int *remote_idx = NULL;
 	int remote_num = 0;
+	int *verify_idx = NULL;
+	int verify_num = 0;
 	int t, idx;
 	bool result = false;
 	struct db_context *db;
@@ -296,6 +298,10 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 	if (remote_idx == NULL) {
 		goto fail;
 	}
+	verify_idx = talloc_array(talloc_tos(), int, num_ids);
+	if (verify_idx == NULL) {
+		goto fail;
+	}
 
 	for (idx=0; idx<num_ids; idx++) {
 		results[idx] = false;
@@ -316,7 +322,13 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 				continue;
 			}
 
-			results[idx] = true;
+			if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+				results[idx] = true;
+				continue;
+			}
+
+			verify_idx[verify_num] = idx;
+			verify_num += 1;
 			continue;
 		}
 
@@ -354,24 +366,23 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 				continue;
 			}
 
-			results[idx] = true;
+			if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+				results[idx] = true;
+				continue;
+			}
+
+			verify_idx[verify_num] = idx;
+			verify_num += 1;
 		}
 	}
 
-	for (idx=0; idx<num_ids; idx++) {
+	for (t=0; t<verify_num; t++) {
 		struct serverid_exists_state state;
 		struct serverid_key key;
 		TDB_DATA tdbkey;
 		NTSTATUS status;
 
-		if (!results[idx]) {
-			continue;
-		}
-
-		if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
-			results[idx] = true;
-			continue;
-		}
+		idx = verify_idx[t];
 
 		serverid_fill_key(&ids[idx], &key);
 		tdbkey = make_tdb_data((uint8_t *)&key, sizeof(key));
@@ -388,6 +399,7 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 
 	result = true;
 fail:
+	TALLOC_FREE(verify_idx);
 	TALLOC_FREE(remote_idx);
 	TALLOC_FREE(todo_results);
 	TALLOC_FREE(todo_ids);
