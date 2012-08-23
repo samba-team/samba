@@ -297,6 +297,14 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 {
 	const static uint8_t zeros[8];
 	DATA_BLOB tmp_sess_key;
+	const char *upper_client_domain = NULL;
+
+	if (client_domain != NULL) {
+		upper_client_domain = talloc_strdup_upper(mem_ctx, client_domain);
+		if (upper_client_domain == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	if (stored_nt == NULL) {
 		DEBUG(3,("ntlm_password_check: NO NT password stored for user %s.\n", 
@@ -348,7 +356,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it 
 		*/
-		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n", client_domain));
+		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with domain [%s]\n",
+			client_domain ? client_domain : "<NULL>"));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
 					 stored_nt->hash, challenge, 
@@ -362,13 +371,14 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_OK;
 		}
 
-		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
+		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n",
+			upper_client_domain ? upper_client_domain : "<NULL>"));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
 					 stored_nt->hash, challenge, 
 					 client_username, 
-					 client_domain,
-					 true,
+					 upper_client_domain,
+					 false,
 					 user_sess_key)) {
 			if (user_sess_key->length) {
 				*lm_sess_key = data_blob_talloc(mem_ctx, user_sess_key->data, MIN(8, user_sess_key->length));
@@ -470,7 +480,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
 	   - related to Win9X, legacy NAS pass-though authentication
 	*/
-	DEBUG(4,("ntlm_password_check: Checking LMv2 password with domain %s\n", client_domain));
+	DEBUG(4,("ntlm_password_check: Checking LMv2 password with domain %s\n",
+		client_domain ? client_domain : "<NULL>"));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
 				 stored_nt->hash, challenge, 
@@ -500,13 +511,14 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(4,("ntlm_password_check: Checking LMv2 password with upper-cased version of domain %s\n", client_domain));
+	DEBUG(4,("ntlm_password_check: Checking LMv2 password with upper-cased version of domain %s\n",
+		upper_client_domain ? upper_client_domain : "<NULL>"));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
 				 stored_nt->hash, challenge, 
 				 client_username,
-				 client_domain,
-				 true,
+				 upper_client_domain,
+				 false,
 				 &tmp_sess_key)) {
 		if (nt_response->length > 24) {
 			/* If NTLMv2 authentication has preceeded us
@@ -517,7 +529,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 					    nt_response, 
 					    stored_nt->hash, challenge, 
 					    client_username,
-					    client_domain,
+					    upper_client_domain,
 					    true,
 					    user_sess_key);
 		} else {
