@@ -767,8 +767,15 @@ if test x"$ac_cv_header_md5_h" = x"yes" -a \
 	AC_CHECK_LIB(md, MD5Update, [samba_cv_md5lib=md])
 fi
 
+if test x"$ac_cv_header_md5_h" = x"yes" -a \
+        x"$samba_cv_md5lib" = x"none" ; then
+	AC_CHECK_LIB(c, MD5Update, [samba_cv_md5lib=""])
+fi
+
 if test x"$samba_cv_md5lib" != x"none" ; then
-	LIBS="${LIBS} -l${samba_cv_md5lib}"
+	if test x"$samba_cv_md5lib" != x ; then
+		LIBS="${LIBS} -l${samba_cv_md5lib}"
+	fi
 	CRYPTO_MD5_OBJ=
 	AC_DEFINE(HAVE_LIBMD5, 1,
 	    [Whether libmd5 conformant to rfc1321 is available.])
