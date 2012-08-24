@@ -1178,6 +1178,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	    (p=strchr_m(user2,*lp_winbind_separator()))) {
 		*p = 0;
 		user = p+1;
+		strupper_m(user2);
 		workgroup = user2;
 	}
 
