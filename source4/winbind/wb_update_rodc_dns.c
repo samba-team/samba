@@ -42,6 +42,8 @@ struct wb_update_rodc_dns_state {
 
 	struct winbind_DsrUpdateReadOnlyServerDnsRecords *req;
 
+	struct wbsrv_domain *domain;
+	struct tevent_queue_entry *queue_entry;
         struct netlogon_creds_CredentialState *creds_state;
         struct netr_Authenticator auth1, auth2;
 
@@ -50,6 +52,7 @@ struct wb_update_rodc_dns_state {
 };
 
 static void wb_update_rodc_dns_recv_domain(struct composite_context *csubreq);
+static void wb_sam_logon_queue_trigger(struct tevent_req *req, void *priv);
 static void wb_update_rodc_dns_recv_response(struct tevent_req *subreq);
 
 /*
@@ -95,13 +98,32 @@ static void wb_update_rodc_dns_recv_domain(struct composite_context *csubreq)
 		tevent_req_data(req,
 		struct wb_update_rodc_dns_state);
 	NTSTATUS status;
-	struct wbsrv_domain *domain;
-	struct tevent_req *subreq;
+	struct tevent_queue_entry *e;
 
-	status = wb_sid2domain_recv(csubreq, &domain);
+	status = wb_sid2domain_recv(csubreq, &state->domain);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	/*
+	 * Because of the netlogon_creds behavior we have to
+	 * queue the netr_LogonSamLogon() calls
+	 */
+	e = tevent_queue_add_entry(state->domain->netlogon_queue,
+				   state->ev,
+				   req,
+				   wb_sam_logon_queue_trigger,
+				   NULL);
+	state->queue_entry = e;
+}
+
+static void wb_sam_logon_queue_trigger(struct tevent_req *req, void *priv)
+{
+	struct wb_update_rodc_dns_state *state =
+		tevent_req_data(req,
+		struct wb_update_rodc_dns_state);
+	struct wbsrv_domain *domain = state->domain;
+	struct tevent_req *subreq;
 
 	state->creds_state = cli_credentials_get_netlogon_creds(domain->libnet_ctx->cred);
 	netlogon_creds_client_authenticator(state->creds_state, &state->auth1);
@@ -180,6 +202,11 @@ static void wb_update_rodc_dns_recv_response(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
+
+	/*
+	 * we do not need the netlogon_creds lock anymore
+	 */
+	TALLOC_FREE(state->queue_entry);
 
 	tevent_req_done(req);
 }
