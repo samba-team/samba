@@ -340,6 +340,51 @@ bool serverids_exist(const struct server_id *ids, int num_ids, bool *results)
 		remote_num += 1;
 	}
 
+#ifdef HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL
+	if (remote_num != 0) {
+		int old_remote_num = remote_num;
+
+		remote_num = 0;
+		todo_num = 0;
+
+		for (t=0; t<old_remote_num; t++) {
+			idx = remote_idx[t];
+
+			if (ids[idx].unique_id == SERVERID_UNIQUE_ID_NOT_TO_VERIFY) {
+				remote_idx[remote_num] = idx;
+				remote_num += 1;
+				continue;
+			}
+
+			todo_idx[todo_num] = idx;
+			todo_ids[todo_num] = ids[idx];
+			todo_results[todo_num] = false;
+			todo_num += 1;
+		}
+
+		/*
+		 * Note: this only uses CTDB_CONTROL_CHECK_SRVIDS
+		 * to verify that the server_id still exists,
+		 * which means only the server_id.unique_id and
+		 * server_id.vnn are verified, while server_id.pid
+		 * is not verified at all.
+		 *
+		 * TODO: do we want to verify server_id.pid somehow?
+		 */
+		if (!ctdb_serverids_exist(messaging_ctdbd_connection(),
+					  todo_ids, todo_num, todo_results))
+		{
+			goto fail;
+		}
+
+		for (t=0; t<todo_num; t++) {
+			idx = todo_idx[t];
+
+			results[idx] = todo_results[t];
+		}
+	}
+#endif
+
 	if (remote_num != 0) {
 		todo_num = 0;
 
