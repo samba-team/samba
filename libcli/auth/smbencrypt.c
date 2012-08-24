@@ -471,8 +471,11 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	/* We don't use the NT# directly.  Instead we use it mashed up with
 	   the username and domain.
 	   This prevents username swapping during the auth exchange
+	   NB. *DON'T* tell ntv2_owf_gen() to uppercase the domain
+	   name here, we may have already been added to an NTLMSSP
+	   exchange in the non-uppercase form.
 	*/
-	if (!ntv2_owf_gen(nt_hash, user, domain, true, ntlm_v2_hash)) {
+	if (!ntv2_owf_gen(nt_hash, user, domain, false, ntlm_v2_hash)) {
 		return false;
 	}
 
