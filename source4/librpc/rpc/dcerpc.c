@@ -1451,8 +1451,8 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 
 req_done:
 	/* we've got the full payload */
+	dcerpc_req_dequeue(req);
 	req->state = RPC_REQUEST_DONE;
-	DLIST_REMOVE(c->pending, req);
 
 	/*
 	 * We have to look at shipping further requests before calling
