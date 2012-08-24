@@ -1395,6 +1395,13 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	if (req->recv_handler != NULL) {
 		dcerpc_req_dequeue(req);
 		req->state = RPC_REQUEST_DONE;
+
+		/*
+		 * We have to look at shipping further requests before calling
+		 * the async function, that one might close the pipe
+		 */
+		dcerpc_schedule_io_trigger(c);
+
 		req->recv_handler(req, raw_packet, pkt);
 		return;
 	}
