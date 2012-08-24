@@ -68,6 +68,8 @@ struct wbsrv_domain {
 
 	struct dcerpc_pipe *netlogon_pipe;
 	struct dcerpc_binding *netlogon_binding;
+	/* netlogon_creds usage needs to be queued */
+	struct tevent_queue *netlogon_queue;
 };
 
 /*

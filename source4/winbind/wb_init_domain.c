@@ -160,6 +160,13 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 
 	state->domain->netlogon_pipe = NULL;
 
+	state->domain->netlogon_queue = tevent_queue_create(state->domain,
+							    "netlogon_queue");
+	if (state->domain->netlogon_queue == NULL) goto failed;
+
+	/* We start the queue when the connection is usable */
+	tevent_queue_stop(state->domain->netlogon_queue);
+
 	if ((!cli_credentials_is_anonymous(state->domain->libnet_ctx->cred)) &&
 	    ((lpcfg_server_role(service->task->lp_ctx) == ROLE_DOMAIN_MEMBER) ||
 	     (lpcfg_server_role(service->task->lp_ctx) == ROLE_ACTIVE_DIRECTORY_DC)) &&
@@ -210,6 +217,9 @@ static void init_domain_recv_netlogonpipe(struct composite_context *ctx)
 		return;
 	}
 	talloc_reparent(state, state->domain->netlogon_pipe, state->domain->netlogon_binding);
+
+	/* the netlogon connection is ready */
+	tevent_queue_start(state->domain->netlogon_queue);
 
 	state->domain->lsa_binding = init_domain_binding(state, &ndr_table_lsarpc);
 
