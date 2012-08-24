@@ -30,7 +30,7 @@ struct wb_irpc_SamLogon_state {
 	struct winbind_SamLogon *req;
 };
 
-static void wb_irpc_SamLogon_callback(struct composite_context *ctx);
+static void wb_irpc_SamLogon_callback(struct tevent_req *subreq);
 
 static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg, 
 				 struct winbind_SamLogon *req)
@@ -38,7 +38,7 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	struct wbsrv_service *service = talloc_get_type(msg->private_data,
 					struct wbsrv_service);
 	struct wb_irpc_SamLogon_state *s;
-	struct composite_context *ctx;
+	struct tevent_req *subreq;
 
 	DEBUG(5, ("wb_irpc_SamLogon called\n"));
 
@@ -48,25 +48,28 @@ static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg,
 	s->msg = msg;
 	s->req = req;
 
-	ctx = wb_sam_logon_send(msg, service, req);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
+	subreq = wb_sam_logon_send(s,
+				   service->task->event_ctx,
+				   service, req);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
 
-	ctx->async.fn = wb_irpc_SamLogon_callback;
-	ctx->async.private_data = s;
+	tevent_req_set_callback(subreq, wb_irpc_SamLogon_callback, s);
 
 	msg->defer_reply = true;
 	return NT_STATUS_OK;
 }
 
-static void wb_irpc_SamLogon_callback(struct composite_context *ctx)
+static void wb_irpc_SamLogon_callback(struct tevent_req *subreq)
 {
-	struct wb_irpc_SamLogon_state *s = talloc_get_type(ctx->async.private_data,
-					   struct wb_irpc_SamLogon_state);
+	struct wb_irpc_SamLogon_state *s =
+		tevent_req_callback_data(subreq,
+		struct wb_irpc_SamLogon_state);
 	NTSTATUS status;
 
 	DEBUG(5, ("wb_irpc_SamLogon_callback called\n"));
 
-	status = wb_sam_logon_recv(ctx, s, s->req);
+	status = wb_sam_logon_recv(subreq, s, s->req);
+	TALLOC_FREE(subreq);
 
 	irpc_send_reply(s->msg, status);
 }

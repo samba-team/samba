@@ -54,7 +54,7 @@ struct pam_auth_crap_state {
  * NTLM authentication.
 */
 
-static void pam_auth_crap_recv_logon(struct composite_context *ctx);
+static void pam_auth_crap_recv_logon(struct tevent_req *subreq);
 
 struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 						    struct wbsrv_service *service,
@@ -66,10 +66,11 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 						    DATA_BLOB nt_resp,
 						    DATA_BLOB lm_resp)
 {
-	struct composite_context *result, *ctx;
+	struct composite_context *result;
 	struct pam_auth_crap_state *state;
 	struct netr_NetworkInfo *ninfo;
 	DATA_BLOB tmp_nt_resp, tmp_lm_resp;
+	struct tevent_req *subreq;
 
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
@@ -113,10 +114,11 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 
 	state->unix_username = NULL;
 
-	ctx = wb_sam_logon_send(mem_ctx, service, state->req);
-	if (ctx == NULL) goto failed;
-
-	composite_continue(result, ctx, pam_auth_crap_recv_logon, state);
+	subreq = wb_sam_logon_send(state,
+				   service->task->event_ctx,
+				   service, state->req);
+	if (subreq == NULL) goto failed;
+	tevent_req_set_callback(subreq, pam_auth_crap_recv_logon, state);
 	return result;
 
  failed:
@@ -129,16 +131,17 @@ struct composite_context *wb_cmd_pam_auth_crap_send(TALLOC_CTX *mem_ctx,
 
     Send of a SamLogon request to authenticate a user.
 */
-static void pam_auth_crap_recv_logon(struct composite_context *ctx)
+static void pam_auth_crap_recv_logon(struct tevent_req *subreq)
 {
 	DATA_BLOB tmp_blob;
 	enum ndr_err_code ndr_err;
 	struct netr_SamBaseInfo *base;
 	struct pam_auth_crap_state *state =
-		talloc_get_type(ctx->async.private_data,
+		tevent_req_callback_data(subreq,
 				struct pam_auth_crap_state);
 
-	state->ctx->status = wb_sam_logon_recv(ctx, state, state->req);
+	state->ctx->status = wb_sam_logon_recv(subreq, state, state->req);
+	TALLOC_FREE(subreq);
 	if (!composite_is_ok(state->ctx)) return;
 
 	ndr_err = ndr_push_struct_blob(

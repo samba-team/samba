@@ -22,6 +22,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "../lib/util/tevent_ntstatus.h"
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
@@ -31,7 +33,7 @@
 #include "librpc/gen_ndr/winbind.h"
 
 struct wb_sam_logon_state {
-	struct composite_context *ctx;
+	struct tevent_context *ev;
 
 	struct winbind_SamLogon *req;
 
@@ -48,77 +50,98 @@ static void wb_sam_logon_recv_samlogon(struct tevent_req *subreq);
 /*
     Find the connection to the DC (or find an existing connection)
 */
-struct composite_context *wb_sam_logon_send(TALLOC_CTX *mem_ctx,
-					    struct wbsrv_service *service,
-					    struct winbind_SamLogon *req)
+struct tevent_req *wb_sam_logon_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct wbsrv_service *service,
+				     struct winbind_SamLogon *_req)
 {
-	struct composite_context *c, *creq;
-	struct wb_sam_logon_state *s;
+	struct tevent_req *req;
+	struct wb_sam_logon_state *state;
+	struct composite_context *csubreq;
 
-	c = composite_create(mem_ctx, service->task->event_ctx);
-	if (!c) return NULL;
+	req = tevent_req_create(mem_ctx, &state,
+				struct wb_sam_logon_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->req = _req;
 
-	s = talloc_zero(c, struct wb_sam_logon_state);
-	if (composite_nomem(s, c)) return c;
-	s->ctx = c;
-	s->req = req;
+	csubreq = wb_sid2domain_send(state, service, service->primary_sid);
+	if (tevent_req_nomem(csubreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	csubreq->async.fn = wb_sam_logon_recv_domain;
+	csubreq->async.private_data = req;
 
-	c->private_data = s;
-
-	creq = wb_sid2domain_send(s, service, service->primary_sid);
-	composite_continue(c, creq, wb_sam_logon_recv_domain, s);
-	return c;
+	return req;
 }
 
 /*
     Having finished making the connection to the DC
     Send of a SamLogon request to authenticate a user.
 */
-static void wb_sam_logon_recv_domain(struct composite_context *creq)
+static void wb_sam_logon_recv_domain(struct composite_context *csubreq)
 {
-	struct wb_sam_logon_state *s = talloc_get_type(creq->async.private_data,
-				       struct wb_sam_logon_state);
+	struct tevent_req *req =
+		talloc_get_type_abort(csubreq->async.private_data,
+		struct tevent_req);
+	struct wb_sam_logon_state *state =
+		tevent_req_data(req,
+		struct wb_sam_logon_state);
 	struct wbsrv_domain *domain;
 	struct tevent_req *subreq;
+	NTSTATUS status;
 
-	s->ctx->status = wb_sid2domain_recv(creq, &domain);
-	if (!composite_is_ok(s->ctx)) return;
+	status = wb_sid2domain_recv(csubreq, &domain);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
-	s->creds_state = cli_credentials_get_netlogon_creds(domain->libnet_ctx->cred);
-	netlogon_creds_client_authenticator(s->creds_state, &s->auth1);
+	state->creds_state = cli_credentials_get_netlogon_creds(domain->libnet_ctx->cred);
+	netlogon_creds_client_authenticator(state->creds_state, &state->auth1);
 
-	s->r.in.server_name = talloc_asprintf(s, "\\\\%s",
+	state->r.in.server_name = talloc_asprintf(state, "\\\\%s",
 			      dcerpc_server_name(domain->netlogon_pipe));
-	if (composite_nomem(s->r.in.server_name, s->ctx)) return;
+	if (tevent_req_nomem(state->r.in.server_name, req)) {
+		return;
+	}
 
-	s->r.in.computer_name = cli_credentials_get_workstation(domain->libnet_ctx->cred);
-	s->r.in.credential = &s->auth1;
-	s->r.in.return_authenticator = &s->auth2;
-	s->r.in.logon_level = s->req->in.logon_level;
-	s->r.in.logon = &s->req->in.logon;
-	s->r.in.validation_level = s->req->in.validation_level;
-	s->r.out.return_authenticator = NULL;
-	s->r.out.validation = talloc(s, union netr_Validation);
-	if (composite_nomem(s->r.out.validation, s->ctx)) return;
-	s->r.out.authoritative = talloc(s, uint8_t);
-	if (composite_nomem(s->r.out.authoritative, s->ctx)) return;
-
+	state->r.in.computer_name = cli_credentials_get_workstation(domain->libnet_ctx->cred);
+	state->r.in.credential = &state->auth1;
+	state->r.in.return_authenticator = &state->auth2;
+	state->r.in.logon_level = state->req->in.logon_level;
+	state->r.in.logon = &state->req->in.logon;
+	state->r.in.validation_level = state->req->in.validation_level;
+	state->r.out.return_authenticator = NULL;
+	state->r.out.validation = talloc(state, union netr_Validation);
+	if (tevent_req_nomem(state->r.out.validation, req)) {
+		return;
+	}
+	state->r.out.authoritative = talloc(state, uint8_t);
+	if (tevent_req_nomem(state->r.out.authoritative, req)) {
+		return;
+	}
 
 	/*
 	 * use a new talloc context for the LogonSamLogon call
 	 * because then we can just to a talloc_steal on this context
 	 * in the final _recv() function to give the caller all the content of
-	 * the s->r.out.validation
+	 * the state->r.out.validation
 	 */
-	s->r_mem_ctx = talloc_new(s);
-	if (composite_nomem(s->r_mem_ctx, s->ctx)) return;
+	state->r_mem_ctx = talloc_new(state);
+	if (tevent_req_nomem(state->r_mem_ctx, req)) {
+		return;
+	}
 
-	subreq = dcerpc_netr_LogonSamLogon_r_send(s,
-						  s->ctx->event_ctx,
+	subreq = dcerpc_netr_LogonSamLogon_r_send(state,
+						  state->ev,
 						  domain->netlogon_pipe->binding_handle,
-						  &s->r);
-	if (composite_nomem(subreq, s->ctx)) return;
-	tevent_req_set_callback(subreq, wb_sam_logon_recv_samlogon, s);
+						  &state->r);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_sam_logon_recv_samlogon, req);
 }
 
 /* 
@@ -128,48 +151,66 @@ static void wb_sam_logon_recv_domain(struct composite_context *creq)
 */
 static void wb_sam_logon_recv_samlogon(struct tevent_req *subreq)
 {
-	struct wb_sam_logon_state *s = tevent_req_callback_data(subreq,
-				       struct wb_sam_logon_state);
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct wb_sam_logon_state *state =
+		tevent_req_data(req,
+		struct wb_sam_logon_state);
+	NTSTATUS status;
+	bool ok;
 
-	s->ctx->status = dcerpc_netr_LogonSamLogon_r_recv(subreq, s->r_mem_ctx);
+	status = dcerpc_netr_LogonSamLogon_r_recv(subreq, state->r_mem_ctx);
 	TALLOC_FREE(subreq);
-	if (!composite_is_ok(s->ctx)) return;
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 
-	s->ctx->status = s->r.out.result;
-	if (!composite_is_ok(s->ctx)) return;
+	if (tevent_req_nterror(req, state->r.out.result)) {
+		return;
+	}
 
-	if ((s->r.out.return_authenticator == NULL) ||
-	    (!netlogon_creds_client_check(s->creds_state,
-					  &s->r.out.return_authenticator->cred))) {
+	if (state->r.out.return_authenticator == NULL) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	ok = netlogon_creds_client_check(state->creds_state,
+				&state->r.out.return_authenticator->cred);
+	if (!ok) {
 		DEBUG(0, ("Credentials check failed!\n"));
-		composite_error(s->ctx, NT_STATUS_ACCESS_DENIED);
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;
 	}
 
 	/* Decrypt the session keys before we reform the info3, so the
 	 * person on the other end of winbindd pipe doesn't have to.
 	 * They won't have the encryption key anyway */
-	netlogon_creds_decrypt_samlogon(s->creds_state,
-					s->r.in.validation_level,
-					s->r.out.validation);
+	netlogon_creds_decrypt_samlogon(state->creds_state,
+					state->r.in.validation_level,
+					state->r.out.validation);
 
-	composite_done(s->ctx);
+	tevent_req_done(req);
 }
 
-NTSTATUS wb_sam_logon_recv(struct composite_context *c,
+NTSTATUS wb_sam_logon_recv(struct tevent_req *req,
 			   TALLOC_CTX *mem_ctx,
-			   struct winbind_SamLogon *req)
+			   struct winbind_SamLogon *_req)
 {
-	struct wb_sam_logon_state *s = talloc_get_type(c->private_data,
-				       struct wb_sam_logon_state);
-	NTSTATUS status = composite_wait(c);
+	struct wb_sam_logon_state *state =
+		tevent_req_data(req,
+		struct wb_sam_logon_state);
+	NTSTATUS status;
 
-	if (NT_STATUS_IS_OK(status)) {
-		talloc_steal(mem_ctx, s->r_mem_ctx);
-		req->out.validation	= *s->r.out.validation;
-		req->out.authoritative	= 1;
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
 	}
 
-	talloc_free(s);
-	return status;
+	talloc_steal(mem_ctx, state->r_mem_ctx);
+	_req->out.validation = *state->r.out.validation;
+	_req->out.authoritative = 1;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
