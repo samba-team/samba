@@ -304,7 +304,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
 
 local = ["local.nss-wrapper", "local.ndr"]
 
-winbind = ["winbind.struct", "winbind.wbclient"]
+winbind = ["winbind.struct", "winbind.wbclient", "winbind.pac"]
 
 rap = ["rap.basic", "rap.rpc", "rap.printing", "rap.sam"]
 
@@ -323,6 +323,8 @@ for t in tests:
     elif t == "rap.sam":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
+    elif t == "winbind.pac":
+        plansmbtorturetestsuite(t, "s3member:local", '//$SERVER/tmp --realm=$REALM --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
     elif t == "unix.whoami":
         plansmbtorturetestsuite(t, "member:local", '//$SERVER/tmp --machine-pass', description="machine account")
         plansmbtorturetestsuite(t, "s3member:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
