@@ -1478,22 +1478,14 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 
 	p->conn->transport.recv_data = dcerpc_recv_data;
 
-	req = talloc(mem_ctx, struct rpc_request);
+	req = talloc_zero(mem_ctx, struct rpc_request);
 	if (req == NULL) {
 		return NULL;
 	}
 
 	req->p = p;
 	req->call_id = next_call_id(p->conn);
-	req->status = NT_STATUS_OK;
 	req->state = RPC_REQUEST_QUEUED;
-	req->payload = data_blob(NULL, 0);
-	req->flags = 0;
-	req->fault_code = 0;
-	req->ignore_timeout = false;
-	req->async.callback = NULL;
-	req->async.private_data = NULL;
-	req->recv_handler = NULL;
 
 	if (object != NULL) {
 		req->object = (struct GUID *)talloc_memdup(req, (const void *)object, sizeof(*object));
@@ -1501,8 +1493,6 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 			talloc_free(req);
 			return NULL;
 		}
-	} else {
-		req->object = NULL;
 	}
 
 	req->opnum = opnum;
