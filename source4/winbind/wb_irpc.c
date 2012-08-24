@@ -79,7 +79,7 @@ struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state {
 	struct winbind_DsrUpdateReadOnlyServerDnsRecords *req;
 };
 
-static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct composite_context *ctx);
+static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req *subreq);
 
 static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *msg,
 				 struct winbind_DsrUpdateReadOnlyServerDnsRecords *req)
@@ -87,7 +87,7 @@ static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *m
 	struct wbsrv_service *service = talloc_get_type(msg->private_data,
 					struct wbsrv_service);
 	struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state *s;
-	struct composite_context *ctx;
+	struct tevent_req *subreq;
 
 	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords called\n"));
 
@@ -97,25 +97,30 @@ static NTSTATUS wb_irpc_DsrUpdateReadOnlyServerDnsRecords(struct irpc_message *m
 	s->msg = msg;
 	s->req = req;
 
-	ctx = wb_update_rodc_dns_send(msg, service, req);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
+	subreq = wb_update_rodc_dns_send(s,
+					 service->task->event_ctx,
+					 service, req);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
 
-	ctx->async.fn = wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback;
-	ctx->async.private_data = s;
+	tevent_req_set_callback(subreq,
+				wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback,
+				s);
 
 	msg->defer_reply = true;
 	return NT_STATUS_OK;
 }
 
-static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct composite_context *ctx)
+static void wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback(struct tevent_req *subreq)
 {
-	struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state *s = talloc_get_type(ctx->async.private_data,
-					   struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state);
+	struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state *s =
+		tevent_req_callback_data(subreq,
+		struct wb_irpc_DsrUpdateReadOnlyServerDnsRecords_state);
 	NTSTATUS status;
 
 	DEBUG(5, ("wb_irpc_DsrUpdateReadOnlyServerDnsRecords_callback called\n"));
 
-	status = wb_update_rodc_dns_recv(ctx, s, s->req);
+	status = wb_update_rodc_dns_recv(subreq, s, s->req);
+	TALLOC_FREE(subreq);
 
 	irpc_send_reply(s->msg, status);
 }
