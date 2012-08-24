@@ -60,6 +60,7 @@ struct rpc_request {
 	uint16_t opnum;
 	DATA_BLOB request_data;
 	bool ignore_timeout;
+	bool wait_for_sync;
 
 	/* use by the ndr level async recv call */
 	struct {
@@ -1535,6 +1536,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 	bool first_packet = true;
 	size_t sig_size = 0;
 	bool need_async = false;
+	bool can_async = true;
 
 	req = c->request_queue;
 	if (req == NULL) {
@@ -1546,6 +1548,32 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 
 	if (c->pending) {
 		need_async = true;
+	}
+
+	if (c->security_state.auth_info &&
+	    c->security_state.generic_state)
+	{
+		struct gensec_security *gensec = c->security_state.generic_state;
+
+		switch (c->security_state.auth_info->auth_level) {
+		case DCERPC_AUTH_LEVEL_PRIVACY:
+		case DCERPC_AUTH_LEVEL_INTEGRITY:
+			can_async = gensec_have_feature(gensec,
+						GENSEC_FEATURE_ASYNC_REPLIES);
+			break;
+		case DCERPC_AUTH_LEVEL_CONNECT:
+		case DCERPC_AUTH_LEVEL_NONE:
+			can_async = true;
+			break;
+		default:
+			can_async = false;
+			break;
+		}
+	}
+
+	if (need_async && !can_async) {
+		req->wait_for_sync = true;
+		return;
 	}
 
 	DLIST_REMOVE(c->request_queue, req);
@@ -1659,6 +1687,10 @@ static void dcerpc_schedule_io_trigger(struct dcecli_connection *c)
 	}
 
 	if (c->request_queue == NULL) {
+		return;
+	}
+
+	if (c->request_queue->wait_for_sync && c->pending) {
 		return;
 	}
 
