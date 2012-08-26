@@ -204,6 +204,76 @@ done:
 	return ret;
 }
 
+static bool test_compound_related3(struct torture_context *tctx,
+				   struct smb2_tree *tree)
+{
+	struct smb2_handle hd;
+	struct smb2_ioctl io;
+	struct smb2_create cr;
+	struct smb2_close cl;
+	const char *fname = "compound_related3.dat";
+	struct smb2_request *req[3];
+	NTSTATUS status;
+	bool ret = false;
+
+	smb2_util_unlink(tree, fname);
+
+	ZERO_STRUCT(cr);
+	cr.in.security_flags	= 0x00;
+	cr.in.oplock_level	= 0;
+	cr.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	cr.in.create_flags	= 0x00000000;
+	cr.in.reserved		= 0x00000000;
+	cr.in.desired_access	= SEC_RIGHTS_FILE_ALL;
+	cr.in.file_attributes	= FILE_ATTRIBUTE_NORMAL;
+	cr.in.share_access	= NTCREATEX_SHARE_ACCESS_READ |
+				  NTCREATEX_SHARE_ACCESS_WRITE |
+				  NTCREATEX_SHARE_ACCESS_DELETE;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	cr.in.create_options	= NTCREATEX_OPTIONS_SEQUENTIAL_ONLY |
+				  NTCREATEX_OPTIONS_ASYNC_ALERT	|
+				  NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
+				  0x00200000;
+	cr.in.fname		= fname;
+
+	smb2_transport_compound_start(tree->session->transport, 3);
+
+	req[0] = smb2_create_send(tree, &cr);
+
+	hd.data[0] = UINT64_MAX;
+	hd.data[1] = UINT64_MAX;
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(io);
+	io.in.function = FSCTL_CREATE_OR_GET_OBJECT_ID;
+	io.in.file.handle = hd;
+	io.in.unknown2 = 0;
+	io.in.max_response_size = 64;
+	io.in.flags = 1;
+
+	req[1] = smb2_ioctl_send(tree, &io);
+
+	ZERO_STRUCT(cl);
+	cl.in.file.handle = hd;
+
+	req[2] = smb2_close_send(tree, &cl);
+
+	status = smb2_create_recv(req[0], tree, &cr);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_ioctl_recv(req[1], tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb2_close_recv(req[2], &cl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_util_unlink(tree, fname);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret = true;
+done:
+	return ret;
+}
+
 static bool test_compound_unrelated1(struct torture_context *tctx,
 				     struct smb2_tree *tree)
 {
@@ -645,6 +715,8 @@ struct torture_suite *torture_smb2_compound_init(void)
 
 	torture_suite_add_1smb2_test(suite, "related1", test_compound_related1);
 	torture_suite_add_1smb2_test(suite, "related2", test_compound_related2);
+	torture_suite_add_1smb2_test(suite, "related3",
+				     test_compound_related3);
 	torture_suite_add_1smb2_test(suite, "unrelated1", test_compound_unrelated1);
 	torture_suite_add_1smb2_test(suite, "invalid1", test_compound_invalid1);
 	torture_suite_add_1smb2_test(suite, "invalid2", test_compound_invalid2);
