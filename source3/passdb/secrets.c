@@ -59,6 +59,7 @@ bool secrets_init_path(const char *private_dir)
 {
 	char *fname = NULL;
 	unsigned char dummy;
+	TALLOC_CTX *frame;
 
 	if (db_ctx != NULL) {
 		return True;
@@ -68,9 +69,11 @@ bool secrets_init_path(const char *private_dir)
 		return False;
 	}
 
-	fname = talloc_asprintf(talloc_tos(), "%s/secrets.tdb",
+	frame = talloc_stackframe();
+	fname = talloc_asprintf(frame, "%s/secrets.tdb",
 				private_dir);
 	if (fname == NULL) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -80,10 +83,9 @@ bool secrets_init_path(const char *private_dir)
 
 	if (db_ctx == NULL) {
 		DEBUG(0,("Failed to open %s\n", fname));
+		TALLOC_FREE(frame);
 		return False;
 	}
-
-	TALLOC_FREE(fname);
 
 	/**
 	 * Set a reseed function for the crypto random generator
@@ -96,6 +98,7 @@ bool secrets_init_path(const char *private_dir)
 	/* Ensure that the reseed is done now, while we are root, etc */
 	generate_random_buffer(&dummy, sizeof(dummy));
 
+	TALLOC_FREE(frame);
 	return True;
 }
 
