@@ -274,16 +274,6 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		}
 	}
 
-	/* TODO: remove this, as it is file server specific */
-	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
-	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
-	}
-	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
-	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
-	}
-
 	if ((bits_remaining & SEC_STD_WRITE_OWNER) &&
 	     security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
 		bits_remaining &= ~(SEC_STD_WRITE_OWNER);
@@ -298,6 +288,82 @@ done:
 	return NT_STATUS_OK;
 }
 
+/*
+  The main entry point for access checking FOR THE FILE SERVER ONLY !
+  If returning ACCESS_DENIED this function returns the denied bits in
+  the uint32_t pointed to by the access_granted pointer.
+*/
+NTSTATUS se_file_access_check(const struct security_descriptor *sd,
+			  const struct security_token *token,
+			  bool priv_open_requested,
+			  uint32_t access_desired,
+			  uint32_t *access_granted)
+{
+	uint32_t bits_remaining;
+	NTSTATUS status;
+
+	if (!priv_open_requested) {
+		/* Fall back to generic se_access_check(). */
+		return se_access_check(sd,
+				token,
+				access_desired,
+				access_granted);
+	}
+
+	/*
+	 * We need to handle the maximum allowed flag
+	 * outside of se_access_check(), as we need to
+	 * add in the access allowed by the privileges
+	 * as well.
+	 */
+
+	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		uint32_t orig_access_desired = access_desired;
+
+		access_desired |= access_check_max_allowed(sd, token);
+		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+
+		if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+			access_desired |= SEC_RIGHTS_PRIV_BACKUP;
+		}
+
+		if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+			access_desired |= SEC_RIGHTS_PRIV_RESTORE;
+		}
+
+		DEBUG(10,("se_file_access_check: MAX desired = 0x%x "
+			"mapped to 0x%x\n",
+			orig_access_desired,
+			access_desired));
+	}
+
+	status = se_access_check(sd,
+				token,
+				access_desired,
+				access_granted);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		return status;
+	}
+
+	bits_remaining = *access_granted;
+
+	/* Check if we should override with privileges. */
+	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
+	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
+	}
+	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
+	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if (bits_remaining != 0) {
+		*access_granted = bits_remaining;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return NT_STATUS_OK;
+}
 
 static const struct GUID *get_ace_object_type(struct security_ace *ace)
 {

@@ -54,6 +54,17 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			 uint32_t access_desired,
 			 uint32_t *access_granted);
 
+/*
+  The main entry point for access checking FOR THE FILE SERVER ONLY !
+  If returning ACCESS_DENIED this function returns the denied bits in
+  the uint32_t pointed to by the access_granted pointer.
+*/
+NTSTATUS se_file_access_check(const struct security_descriptor *sd,
+			 const struct security_token *token,
+			 bool priv_open_requested,
+			 uint32_t access_desired,
+			 uint32_t *access_granted);
+
 /* modified access check for the purposes of DS security
  * Lots of code duplication, it will ve united in just one
  * function eventually */
