@@ -81,62 +81,6 @@ struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
 	return connections_fetch_entry_ext(mem_ctx, id, conn->cnum, name);
 }
 
-
-struct conn_traverse_state {
-	int (*fn)(struct db_record *rec,
-		  const struct connections_key *key,
-		  const struct connections_data *data,
-		  void *private_data);
-	void *private_data;
-};
-
-static int conn_traverse_fn(struct db_record *rec, void *private_data)
-{
-	TDB_DATA key;
-	TDB_DATA value;
-	struct conn_traverse_state *state =
-		(struct conn_traverse_state *)private_data;
-
-	key = dbwrap_record_get_key(rec);
-	value = dbwrap_record_get_value(rec);
-
-	if ((key.dsize != sizeof(struct connections_key))
-	    || (value.dsize != sizeof(struct connections_data))) {
-		return 0;
-	}
-
-	return state->fn(rec, (const struct connections_key *)key.dptr,
-			 (const struct connections_data *)value.dptr,
-			 state->private_data);
-}
-
-int connections_forall(int (*fn)(struct db_record *rec,
-				 const struct connections_key *key,
-				 const struct connections_data *data,
-				 void *private_data),
-		       void *private_data)
-{
-	struct db_context *ctx;
-	struct conn_traverse_state state;
-	NTSTATUS status;
-	int count;
-
-	ctx = connections_db_ctx(true);
-	if (ctx == NULL) {
-		return -1;
-	}
-
-	state.fn = fn;
-	state.private_data = private_data;
-
-	status = dbwrap_traverse(ctx, conn_traverse_fn, (void *)&state, &count);
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-
-	return count;
-}
-
 struct conn_traverse_read_state {
 	int (*fn)(const struct connections_key *key,
 		  const struct connections_data *data,
