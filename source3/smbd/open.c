@@ -129,11 +129,12 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	}
 
  	/*
-	 * Never test FILE_READ_ATTRIBUTES. se_access_check() also takes care of
+	 * Never test FILE_READ_ATTRIBUTES. se_file_access_check() also takes care of
 	 * owner WRITE_DAC and READ_CONTROL.
 	 */
-	status = se_access_check(sd,
+	status = se_file_access_check(sd,
 				get_current_nttok(conn),
+				false,
 				(access_mask & ~FILE_READ_ATTRIBUTES),
 				&rejected_mask);
 
@@ -245,11 +246,12 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 	}
 
  	/*
-	 * Never test FILE_READ_ATTRIBUTES. se_access_check() also takes care of
+	 * Never test FILE_READ_ATTRIBUTES. se_file_access_check() also takes care of
 	 * owner WRITE_DAC and READ_CONTROL.
 	 */
-	status = se_access_check(parent_sd,
+	status = se_file_access_check(parent_sd,
 				get_current_nttok(conn),
+				false,
 				(access_mask & ~FILE_READ_ATTRIBUTES),
 				&access_granted);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -1681,11 +1683,12 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	}
 
 	/*
-	 * Never test FILE_READ_ATTRIBUTES. se_access_check()
+	 * Never test FILE_READ_ATTRIBUTES. se_file_access_check()
 	 * also takes care of owner WRITE_DAC and READ_CONTROL.
 	 */
-	status = se_access_check(sd,
+	status = se_file_access_check(sd,
 				 get_current_nttok(conn),
+				 false,
 				 (*p_access_mask & ~FILE_READ_ATTRIBUTES),
 				 &access_granted);
 

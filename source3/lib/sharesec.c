@@ -451,7 +451,7 @@ bool share_access_check(const struct security_token *token,
 		return false;
 	}
 
-	status = se_access_check(psd, token, desired_access, &granted);
+	status = se_file_access_check(psd, token, true, desired_access, &granted);
 
 	TALLOC_FREE(psd);
 
