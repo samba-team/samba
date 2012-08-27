@@ -330,13 +330,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (!session_claim(session)) {
-		DEBUG(1, ("smb2: Failed to claim session "
-			"for vuid=%llu\n",
-			(unsigned long long)session->compat->vuid));
-		return NT_STATUS_LOGON_FAILURE;
-	}
-
 	set_current_user_info(session_info->unix_info->sanitized_username,
 			      session_info->unix_info->unix_name,
 			      session_info->info->domain_name);
@@ -349,6 +342,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	session->global->channels[0].auth_session_info_seqnum =
 		session->global->auth_session_info_seqnum;
 	session->global->expiration_time = gensec_expire_time(session->gensec);
+
+	if (!session_claim(session)) {
+		DEBUG(1, ("smb2: Failed to claim session "
+			"for vuid=%llu\n",
+			(unsigned long long)session->compat->vuid));
+		return NT_STATUS_LOGON_FAILURE;
+	}
 
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
