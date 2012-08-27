@@ -69,7 +69,8 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 			KRB5_ENCTYPE_DES_CBC_MD5,
 			KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96,
 			KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-			KRB5_ENCTYPE_ARCFOUR_HMAC_MD5
+			KRB5_ENCTYPE_ARCFOUR_HMAC_MD5,
+			0
 		};
 		ret = kt_copy_one_principal(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name, r->in.principal, 0, enctypes);
 	} else {
