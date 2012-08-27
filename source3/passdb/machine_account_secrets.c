@@ -307,7 +307,8 @@ void *secrets_get_trust_account_lock(TALLOC_CTX *mem_ctx, const char *domain)
 enum netr_SchannelType get_default_sec_channel(void)
 {
 	if (lp_server_role() == ROLE_DOMAIN_BDC ||
-	    lp_server_role() == ROLE_DOMAIN_PDC) {
+	    lp_server_role() == ROLE_DOMAIN_PDC ||
+	    lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
 		return SEC_CHAN_BDC;
 	} else {
 		return SEC_CHAN_WKSTA;
