@@ -126,6 +126,12 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
 
+bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const char *domain,
+				   const char *realm,
+				   const char *salting_principal, uint32_t supported_enc_types,
+				   const struct dom_sid *domain_sid, uint32_t last_change_time,
+				   bool delete_join);
+
 /* The following definitions come from passdb/secrets_lsa.c  */
 NTSTATUS lsa_secret_get(TALLOC_CTX *mem_ctx,
 			const char *secret_name,

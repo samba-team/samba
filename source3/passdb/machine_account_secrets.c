@@ -471,6 +471,92 @@ bool secrets_store_machine_password(const char *pass, const char *domain,
 	return ret;
 }
 
+/************************************************************************
+ Set the machine trust account password, the old pw and last change
+ time, domain SID and salting principals based on values passed in
+ (added to supprt the secrets_tdb_sync module on secrets.ldb)
+************************************************************************/
+
+bool secrets_store_machine_pw_sync(const char *pass, const char *oldpass, const char *domain,
+				   const char *realm,
+				   const char *salting_principal, uint32_t supported_enc_types,
+				   const struct dom_sid *domain_sid, uint32_t last_change_time,
+				   bool delete_join)
+{
+	bool ret;
+	uint8_t last_change_time_store[4];
+	TALLOC_CTX *frame = talloc_stackframe();
+	void *value;
+
+	if (delete_join) {
+		secrets_delete_machine_password_ex(domain);
+		secrets_delete_domain_sid(domain);
+		TALLOC_FREE(frame);
+		return true;
+	}
+
+	ret = secrets_store(machine_password_keystr(domain), pass, strlen(pass)+1);
+	if (!ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	if (oldpass) {
+		ret = secrets_store(machine_prev_password_keystr(domain), oldpass, strlen(oldpass)+1);
+	} else {
+		value = secrets_fetch_prev_machine_password(domain);
+		if (value) {
+			SAFE_FREE(value);
+			ret = secrets_delete_prev_machine_password(domain);
+		}
+	}
+	if (!ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	/* We delete this and instead have the read code fall back to
+	 * a default based on server role, as our caller can't specify
+	 * this with any more certainty */
+	value = secrets_fetch(machine_sec_channel_type_keystr(domain), NULL);
+	if (value) {
+		SAFE_FREE(value);
+		ret = secrets_delete(machine_sec_channel_type_keystr(domain));
+		if (!ret) {
+			TALLOC_FREE(frame);
+			return ret;
+		}
+	}
+
+	SIVAL(&last_change_time_store, 0, last_change_time);
+	ret = secrets_store(machine_last_change_time_keystr(domain),
+			    &last_change_time_store, sizeof(last_change_time));
+
+	if (!ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	ret = secrets_store_domain_sid(domain, domain_sid);
+
+	if (!ret) {
+		TALLOC_FREE(frame);
+		return ret;
+	}
+
+	if (realm && salting_principal) {
+		char *key = talloc_asprintf(frame, "%s/DES/%s", SECRETS_SALTING_PRINCIPAL, realm);
+		if (!key) {
+			TALLOC_FREE(frame);
+			return false;
+		}
+		ret = secrets_store(key, salting_principal, strlen(salting_principal)+1 );
+	}
+
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 
 /************************************************************************
  Routine to fetch the previous plaintext machine account password for a realm
