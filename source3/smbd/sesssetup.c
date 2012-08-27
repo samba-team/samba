@@ -326,7 +326,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				register_homes_share(session_info->unix_info->unix_name);
 		}
 
-		if (!session_claim(sconn, session)) {
+		if (!session_claim(session)) {
 			DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
 				  (unsigned long long)session->compat->vuid));
 			data_blob_free(&out_blob);
@@ -1008,7 +1008,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (!session_claim(sconn, session)) {
+	if (!session_claim(session)) {
 		DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
 			  (unsigned long long)session->compat->vuid));
 		data_blob_free(&nt_resp);

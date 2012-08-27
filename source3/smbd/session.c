@@ -40,9 +40,10 @@
  called when a session is created
 ********************************************************************/
 
-bool session_claim(struct smbd_server_connection *sconn, struct smbXsrv_session *session)
+bool session_claim(struct smbXsrv_session *session)
 {
 	struct user_struct *vuser = session->compat;
+	struct smbd_server_connection *sconn = session->connection->sconn;
 	struct server_id pid = messaging_server_id(sconn->msg_ctx);
 	TDB_DATA data;
 	int i = 0;
@@ -137,7 +138,7 @@ bool session_claim(struct smbd_server_connection *sconn, struct smbXsrv_session 
 
 	SMB_ASSERT(rec != NULL);
 
-	raddr = tsocket_address_inet_addr_string(sconn->remote_address,
+	raddr = tsocket_address_inet_addr_string(session->connection->remote_address,
 						 talloc_tos());
 	if (raddr == NULL) {
 		return false;

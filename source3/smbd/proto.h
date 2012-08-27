@@ -995,7 +995,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid);
 struct sessionid;
 struct smbXsrv_session;
 bool session_init(void);
-bool session_claim(struct smbd_server_connection *sconn, struct smbXsrv_session *session);
+bool session_claim(struct smbXsrv_session *session);
 void session_yield(struct smbXsrv_session *session);
 int list_sessions(TALLOC_CTX *mem_ctx, struct sessionid **session_list);
 
