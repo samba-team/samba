@@ -326,15 +326,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 				register_homes_share(session_info->unix_info->unix_name);
 		}
 
-		if (!session_claim(session)) {
-			DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
-				  (unsigned long long)session->compat->vuid));
-			data_blob_free(&out_blob);
-			TALLOC_FREE(session);
-			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
-			return;
-		}
-
 		if (srv_is_signing_negotiated(sconn) &&
 		    action == 0 &&
 		    session->global->signing_key.length > 0)
@@ -364,6 +355,15 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		} else {
 			session->global->expiration_time =
 				GENSEC_EXPIRE_TIME_INFINITY;
+		}
+
+		if (!session_claim(session)) {
+			DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
+				  (unsigned long long)session->compat->vuid));
+			data_blob_free(&out_blob);
+			TALLOC_FREE(session);
+			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
+			return;
 		}
 
 		status = smbXsrv_session_update(session);
@@ -1008,17 +1008,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
-	if (!session_claim(session)) {
-		DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
-			  (unsigned long long)session->compat->vuid));
-		data_blob_free(&nt_resp);
-		data_blob_free(&lm_resp);
-		TALLOC_FREE(session);
-		reply_nterror(req, NT_STATUS_LOGON_FAILURE);
-		END_PROFILE(SMBsesssetupX);
-		return;
-	}
-
 	if (srv_is_signing_negotiated(sconn) &&
 	    action == 0 &&
 	    session->global->signing_key.length > 0)
@@ -1053,6 +1042,17 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		data_blob_free(&lm_resp);
 		TALLOC_FREE(session);
 		reply_nterror(req, nt_status_squash(nt_status));
+		END_PROFILE(SMBsesssetupX);
+		return;
+	}
+
+	if (!session_claim(session)) {
+		DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
+			  (unsigned long long)session->compat->vuid));
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		TALLOC_FREE(session);
+		reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}
