@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "krb5_samba.h"
 #include "lib/util/asn1.h"
+#include "librpc/gen_ndr/netlogon.h"
 
 #ifndef KRB5_AUTHDATA_WIN2K_PAC
 #define KRB5_AUTHDATA_WIN2K_PAC 128
@@ -2345,6 +2346,26 @@ const krb5_enctype *samba_all_enctypes(void)
 	};
 	return enctypes;
 };
+
+/* Translate between the IETF encryption type values and the Microsoft
+ * msDS-SupportedEncryptionTypes values */
+uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum)
+{
+	switch (enc_type_enum) {
+	case ENCTYPE_DES_CBC_CRC:
+		return ENC_CRC32;
+	case ENCTYPE_DES_CBC_MD5:
+		return ENC_RSA_MD5;
+	case ENCTYPE_ARCFOUR_HMAC_MD5:
+		return ENC_RC4_HMAC_MD5;
+	case ENCTYPE_AES128_CTS_HMAC_SHA1_96:
+		return ENC_HMAC_SHA1_96_AES128;
+	case ENCTYPE_AES256_CTS_HMAC_SHA1_96:
+		return ENC_HMAC_SHA1_96_AES256;
+	default:
+		return 0;
+	}
+}
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */

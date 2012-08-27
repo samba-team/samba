@@ -295,6 +295,8 @@ krb5_boolean smb_krb5_kt_compare(krb5_context context,
 
 const krb5_enctype *samba_all_enctypes(void);
 
+uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum);
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
