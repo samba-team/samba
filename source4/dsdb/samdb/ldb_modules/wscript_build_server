@@ -199,6 +199,15 @@ bld.SAMBA_MODULE('ldb_update_keytab',
 	deps='talloc samba-credentials ldb com_err KERBEROS_SRV_KEYTAB SECRETS DSDB_MODULE_HELPERS'
 	)
 
+bld.SAMBA_MODULE('ldb_secrets_tdb_sync',
+	source='secrets_tdb_sync.c',
+	subsystem='ldb',
+	init_function='ldb_secrets_tdb_sync_module_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='talloc secrets3 DSDB_MODULE_HELPERS dbwrap'
+	)
+
 
 bld.SAMBA_MODULE('ldb_objectclass',
 	source='objectclass.c',

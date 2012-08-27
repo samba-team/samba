@@ -172,7 +172,7 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         self.assertTrue(re.match(".*upgrade to.*", str(oem2)))
 
     def tearDown(self):
-        for name in ["ref.ldb", "secrets.ldb", "sam.ldb"]:
+        for name in ["ref.ldb", "secrets.ldb", "secrets.tdb", "sam.ldb"]:
             path = os.path.join(self.tempdir, name)
             if os.path.exists(path):
                 os.unlink(path)

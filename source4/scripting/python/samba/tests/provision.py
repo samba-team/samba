@@ -55,6 +55,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
 
     def test_setup_secretsdb(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
+        secrets_tdb_path = os.path.join(self.tempdir, "secrets.tdb")
         paths = ProvisionPaths()
         paths.secrets = path
         paths.private_dir = os.path.dirname(path)
@@ -67,6 +68,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         finally:
             del ldb
             os.unlink(path)
+            os.unlink(secrets_tdb_path)
 
 
 class FindNssTests(TestCase):

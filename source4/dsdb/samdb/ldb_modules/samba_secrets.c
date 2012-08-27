@@ -52,6 +52,7 @@ static int samba_secrets_init(struct ldb_module *module)
 	  stack visually
 	*/
 	static const char *modules_list[] = {"update_keytab",
+					     "secrets_tdb_sync",
 					     "objectguid",
 					     "rdn_name",
 					     NULL };
