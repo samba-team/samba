@@ -60,98 +60,6 @@ struct sess_file_count {
 	int count;
 };
 
-/* Used to store pipe open records for NetFileEnum() */
-
-struct pipe_open_rec {
-	struct server_id pid;
-	uid_t uid;
-	int pnum;
-	fstring name;
-};
-
-/****************************************************************************
- Count the entries belonging to a service in the connection db.
-****************************************************************************/
-
-static int pipe_enum_fn( struct db_record *rec, void *p)
-{
-	struct pipe_open_rec prec;
-	struct file_enum_count *fenum = (struct file_enum_count *)p;
-	struct srvsvc_NetFileInfo3 *f;
-	int i = fenum->ctr3->count;
-	char *fullpath = NULL;
-	const char *username;
-	TDB_DATA value;
-
-	value = dbwrap_record_get_value(rec);
-
-	if (value.dsize != sizeof(struct pipe_open_rec))
-		return 0;
-
-	memcpy(&prec, value.dptr, sizeof(struct pipe_open_rec));
-
-	if ( !process_exists(prec.pid) ) {
-		return 0;
-	}
-
-	username = uidtoname(prec.uid);
-
-	if ((fenum->username != NULL)
-	    && !strequal(username, fenum->username)) {
-		return 0;
-	}
-
-	fullpath = talloc_asprintf(fenum->ctx, "\\PIPE\\%s", prec.name );
-	if (!fullpath) {
-		return 1;
-	}
-
-	f = talloc_realloc(fenum->ctx, fenum->ctr3->array,
-				 struct srvsvc_NetFileInfo3, i+1);
-	if ( !f ) {
-		DEBUG(0,("conn_enum_fn: realloc failed for %d items\n", i+1));
-		return 1;
-	}
-	fenum->ctr3->array = f;
-
-	fenum->ctr3->array[i].fid		=
-		(((uint32_t)(procid_to_pid(&prec.pid))<<16) | prec.pnum);
-	fenum->ctr3->array[i].permissions	=
-		(FILE_READ_DATA|FILE_WRITE_DATA);
-	fenum->ctr3->array[i].num_locks		= 0;
-	fenum->ctr3->array[i].path		= fullpath;
-	fenum->ctr3->array[i].user		= username;
-
-	fenum->ctr3->count++;
-
-	return 0;
-}
-
-/*******************************************************************
-********************************************************************/
-
-static WERROR net_enum_pipes(TALLOC_CTX *ctx,
-			     const char *username,
-			     struct srvsvc_NetFileCtr3 **ctr3,
-			     uint32_t resume )
-{
-	struct file_enum_count fenum;
-
-	fenum.ctx = ctx;
-	fenum.username = username;
-	fenum.ctr3 = *ctr3;
-
-	if (connections_traverse(pipe_enum_fn, &fenum) < 0) {
-		DEBUG(0,("net_enum_pipes: traverse of connections.tdb "
-			 "failed\n"));
-		return WERR_NOMEM;
-	}
-
-	*ctr3 = fenum.ctr3;
-
-	return WERR_OK;
-}
-
 /*******************************************************************
 ********************************************************************/
 
@@ -1102,11 +1010,6 @@ WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 	   (c) open directories and files */
 
 	werr = net_enum_files(ctx, r->in.user, &ctr3, resume_hnd);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = net_enum_pipes(ctx, r->in.user, &ctr3, resume_hnd);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
