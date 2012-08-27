@@ -769,41 +769,6 @@ Please fix this account before attempting to upgrade again
             logger.error("   %s" % str(sid))
         raise ProvisioningError("Please remove duplicate sid entries before upgrade.")
 
-    if not (serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC"):
-        dns_backend = "NONE"
-
-    # Do full provision
-    result = provision(logger, session_info, None,
-                       targetdir=targetdir, realm=realm, domain=domainname,
-                       domainsid=str(domainsid), next_rid=next_rid,
-                       dc_rid=machinerid,
-                       dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
-                       hostname=netbiosname.lower(), machinepass=machinepass,
-                       serverrole=serverrole, samdb_fill=FILL_FULL,
-                       useeadb=useeadb, dns_backend=dns_backend, use_rfc2307=True,
-                       use_ntvfs=use_ntvfs)
-    result.report_logger(logger)
-
-    # Import WINS database
-    logger.info("Importing WINS database")
-
-    samba3_winsdb = None
-    try:
-        samba3_winsdb = samba3.get_wins_db()
-    except IOError, e:
-        logger.warn('Cannot open wins database, Ignoring: %s', str(e))
-
-    if samba3_winsdb:
-        import_wins(Ldb(result.paths.winsdb), samba3_winsdb)
-
-    # Set Account policy
-    logger.info("Importing Account policy")
-    import_sam_policy(result.samdb, policy, logger)
-
-    # Migrate IDMAP database
-    logger.info("Importing idmap database")
-    import_idmap(result.idmap, samba3, logger)
-
     # Get posix attributes from ldap or the os
     homes = {}
     shells = {}
@@ -843,6 +808,41 @@ Please fix this account before attempting to upgrade again
                     pgids[username] = pwd.getpwnam(username).pw_gid
                 except KeyError:
                     pass
+
+    if not (serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC"):
+        dns_backend = "NONE"
+
+    # Do full provision
+    result = provision(logger, session_info, None,
+                       targetdir=targetdir, realm=realm, domain=domainname,
+                       domainsid=str(domainsid), next_rid=next_rid,
+                       dc_rid=machinerid,
+                       dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
+                       hostname=netbiosname.lower(), machinepass=machinepass,
+                       serverrole=serverrole, samdb_fill=FILL_FULL,
+                       useeadb=useeadb, dns_backend=dns_backend, use_rfc2307=True,
+                       use_ntvfs=use_ntvfs)
+    result.report_logger(logger)
+
+    # Import WINS database
+    logger.info("Importing WINS database")
+
+    samba3_winsdb = None
+    try:
+        samba3_winsdb = samba3.get_wins_db()
+    except IOError, e:
+        logger.warn('Cannot open wins database, Ignoring: %s', str(e))
+
+    if samba3_winsdb:
+        import_wins(Ldb(result.paths.winsdb), samba3_winsdb)
+
+    # Set Account policy
+    logger.info("Importing Account policy")
+    import_sam_policy(result.samdb, policy, logger)
+
+    # Migrate IDMAP database
+    logger.info("Importing idmap database")
+    import_idmap(result.idmap, samba3, logger)
 
     # Set the s3 context for samba4 configuration
     new_lp_ctx = s3param.get_context()
