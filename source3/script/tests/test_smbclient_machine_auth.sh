@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# this runs the file serving tests that are expected to pass with samba3 against shares with various options
+
+if [ $# -lt 2 ]; then
+cat <<EOF
+Usage: test_smbclient_machine_auth.sh SERVER SMBCLIENT <smbclient arguments>
+EOF
+exit 1;
+fi
+
+SERVER="$1"
+SMBCLIENT="$2"
+SMBCLIENT="$VALGRIND ${SMBCLIENT}"
+shift 2
+ADDARGS="$*"
+
+incdir=`dirname $0`/../../../testprogs/blackbox
+. $incdir/subunit.sh
+
+testit "smbclient //$SERVER/tmp" $SMBCLIENT //$SERVER/tmp --machine-pass -I $SERVER_IP -p 139 -c quit $ADDARGS

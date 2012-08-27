@@ -42,6 +42,7 @@
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,smb2,bigendian\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2\]
 ^samba3.blackbox.rpcclient over ncacn_np with \[spnego,connect,smb2,bigendian\]
+^samba3.blackbox.smbclient_machine_auth.plain \(s3dc:local\)# the S3dc does not currently set up a self-join
 ^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls.generic\(s3dc\) # This fails against smbd
