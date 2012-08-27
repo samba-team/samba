@@ -809,6 +809,13 @@ Please fix this account before attempting to upgrade again
                 except KeyError:
                     pass
 
+    logger.info("Reading WINS database")
+    samba3_winsdb = None
+    try:
+        samba3_winsdb = samba3.get_wins_db()
+    except IOError, e:
+        logger.warn('Cannot open wins database, Ignoring: %s', str(e))
+
     if not (serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC"):
         dns_backend = "NONE"
 
@@ -826,12 +833,6 @@ Please fix this account before attempting to upgrade again
 
     # Import WINS database
     logger.info("Importing WINS database")
-
-    samba3_winsdb = None
-    try:
-        samba3_winsdb = samba3.get_wins_db()
-    except IOError, e:
-        logger.warn('Cannot open wins database, Ignoring: %s', str(e))
 
     if samba3_winsdb:
         import_wins(Ldb(result.paths.winsdb), samba3_winsdb)
