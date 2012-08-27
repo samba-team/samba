@@ -26,7 +26,7 @@ import pwd
 
 from samba import Ldb, registry
 from samba.param import LoadParm
-from samba.provision import provision, FILL_FULL, ProvisioningError
+from samba.provision import provision, FILL_FULL, ProvisioningError, setsysvolacl
 from samba.samba3 import passdb
 from samba.samba3 import param as s3param
 from samba.dcerpc import lsa, samr, security
@@ -828,7 +828,7 @@ Please fix this account before attempting to upgrade again
                        hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
                        useeadb=useeadb, dns_backend=dns_backend, use_rfc2307=True,
-                       use_ntvfs=use_ntvfs)
+                       use_ntvfs=use_ntvfs, skip_sysvolacl=True)
     result.report_logger(logger)
 
     # Import WINS database
@@ -901,6 +901,10 @@ Please fix this account before attempting to upgrade again
             admin_userdata.pw_history = userdata[admin_user].pw_history
         s4_passdb.update_sam_account(admin_userdata)
         logger.info("Administrator password has been set to password of user '%s'", admin_user)
+
+    if result.server_role == "active directory domain controller":
+        setsysvolacl(result.samdb, result.paths.netlogon, result.paths.sysvol, result.paths.root_uid, result.paths.wheel_gid,
+                     security.dom_sid(result.domainsid), result.names.dnsdomain, result.names.domaindn, result.lp, use_ntvfs)
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
     # FIXME: shares

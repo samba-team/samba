@@ -1594,7 +1594,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    invocationid=None, machinepass=None, ntdsguid=None,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
-                   am_rodc=False, lp=None, use_ntvfs=False):
+                   am_rodc=False, lp=None, use_ntvfs=False, skip_sysvolacl=True):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
     # "How Core Group Policy Works"
@@ -1631,8 +1631,9 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         # policy)
         create_default_gpo(paths.sysvol, names.dnsdomain, policyguid,
                            policyguid_dc)
-        setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid, paths.wheel_gid,
-                     domainsid, names.dnsdomain, names.domaindn, lp, use_ntvfs)
+        if not skip_sysvolacl:
+            setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid, paths.wheel_gid,
+                         domainsid, names.dnsdomain, names.domaindn, lp, use_ntvfs)
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
                             realm=names.realm, dnsdomain=names.dnsdomain,
@@ -1766,7 +1767,8 @@ def provision(logger, session_info, credentials, smbconf=None,
         ol_mmr_urls=None, ol_olc=None, slapd_path="/bin/false",
         useeadb=False, am_rodc=False,
         lp=None, use_ntvfs=False,
-        use_rfc2307=False, maxuid=None, maxgid=None):
+        use_rfc2307=False, maxuid=None, maxgid=None,
+              skip_sysvolacl=True):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -2014,7 +2016,8 @@ def provision(logger, session_info, credentials, smbconf=None,
                     ntdsguid=ntdsguid, dns_backend=dns_backend,
                     dnspass=dnspass, serverrole=serverrole,
                     dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-                    lp=lp, use_ntvfs=use_ntvfs)
+                    lp=lp, use_ntvfs=use_ntvfs,
+                           skip_sysvolacl=skip_sysvolacl)
 
         create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,
