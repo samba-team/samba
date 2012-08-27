@@ -51,9 +51,6 @@ struct db_record *connections_fetch_entry_ext(TALLOC_CTX *mem_ctx,
 					      struct server_id id,
 					      int cnum,
 					      const char *name);
-int connections_traverse(int (*fn)(struct db_record *rec,
-				   void *private_data),
-			 void *private_data);
 int connections_forall(int (*fn)(struct db_record *rec,
 				 const struct connections_key *key,
 				 const struct connections_data *data,

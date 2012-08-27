@@ -110,26 +110,6 @@ static int conn_traverse_fn(struct db_record *rec, void *private_data)
 			 state->private_data);
 }
 
-int connections_traverse(int (*fn)(struct db_record *rec,
-				   void *private_data),
-			 void *private_data)
-{
-	NTSTATUS status;
-	int count;
-	struct db_context *ctx = connections_db_ctx(False);
-
-	if (ctx == NULL) {
-		return -1;
-	}
-
-	status = dbwrap_traverse(ctx, fn, private_data, &count);
-	if (!NT_STATUS_IS_OK(status)) {
-		return -1;
-	}
-
-	return count;
-}
-
 int connections_forall(int (*fn)(struct db_record *rec,
 				 const struct connections_key *key,
 				 const struct connections_data *data,
