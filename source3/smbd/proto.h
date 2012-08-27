@@ -158,7 +158,7 @@ void msg_force_tdis(struct messaging_context *msg,
 /* The following definitions come from smbd/connection.c  */
 
 bool yield_connection(connection_struct *conn, const char *name);
-int count_current_connections( const char *sharename, bool clear  );
+int count_current_connections(const char *sharename, bool verify);
 bool connections_snum_used(struct smbd_server_connection *unused, int snum);
 bool claim_connection(connection_struct *conn, const char *name);
 

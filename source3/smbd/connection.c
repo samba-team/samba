@@ -57,15 +57,14 @@ bool yield_connection(connection_struct *conn, const char *name)
 struct count_stat {
 	int curr_connections;
 	const char *name;
-	bool Clear;
+	bool verify;
 };
 
 /****************************************************************************
  Count the entries belonging to a service in the connection db.
 ****************************************************************************/
 
-static int count_fn(struct db_record *rec,
-		    const struct connections_key *ckey,
+static int count_fn(const struct connections_key *ckey,
 		    const struct connections_data *crec,
 		    void *udp)
 {
@@ -75,24 +74,13 @@ static int count_fn(struct db_record *rec,
 		return 0;
 	}
 
-	/* If the pid was not found delete the entry from connections.tdb */
-
-	if (cs->Clear && !process_exists(crec->pid) && (errno == ESRCH)) {
-		NTSTATUS status;
-		DEBUG(2,("pid %s doesn't exist - deleting connections %d [%s]\n",
-			 procid_str_static(&crec->pid), crec->cnum,
-			 crec->servicename));
-
-		status = dbwrap_record_delete(rec);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("count_fn: tdb_delete failed with error %s\n",
-				 nt_errstr(status)));
-		}
+	if (cs->verify && !process_exists(crec->pid)) {
 		return 0;
 	}
 
-	if (strequal(crec->servicename, cs->name))
+	if (strequal(crec->servicename, cs->name)) {
 		cs->curr_connections++;
+	}
 
 	return 0;
 }
@@ -101,14 +89,14 @@ static int count_fn(struct db_record *rec,
  Claim an entry in the connections database.
 ****************************************************************************/
 
-int count_current_connections( const char *sharename, bool clear  )
+int count_current_connections(const char *sharename, bool verify)
 {
 	struct count_stat cs;
 	int ret;
 
 	cs.curr_connections = 0;
 	cs.name = sharename;
-	cs.Clear = clear;
+	cs.verify = verify;
 
 	/*
 	 * This has a race condition, but locking the chain before hand is worse
@@ -120,7 +108,7 @@ int count_current_connections( const char *sharename, bool clear  )
 	 * via ctdb, which is not possible without root.
 	 */
 	become_root();
-	ret = connections_forall(count_fn, &cs);
+	ret = connections_forall_read(count_fn, &cs);
 	unbecome_root();
 
 	if (ret < 0) {
