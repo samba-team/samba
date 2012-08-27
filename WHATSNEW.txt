@@ -1,4 +1,4 @@
-What's new in Samba 4.0 beta6
+What's new in Samba 4.0 beta7
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,17 +11,20 @@ and above.
 WARNINGS
 ========
 
-Samba 4.0 beta6 is not a final Samba release, however we are now making
-good progress towards a Samba 4.0 release, of which this is a preview.
-Be aware the this release contains the best of all of Samba's
+Samba 4.0 beta7 is not a final Samba release, however we are now making
+good progress towards a Samba 4.0 release.  However, this is expected to be the
+last beta release before we start on our release candidate series.
+
+This release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
 to upgrade existing Samba 3.x releases to) and the AD domain
 controller work previously known as 'samba4'.
 
 Samba 4.0 is subjected to an awesome battery of tests on an automated
 basis, we have found Samba 4.0 to be very stable in it's behaviour.
-However, we still recommend against upgrading production servers from
-Samba 3.x release to Samba 4.0 beta at this stage.
+However, as with all our pre-releases we still recommend against
+upgrading production servers from Samba 3.x release to Samba 4.0 beta
+at this stage.
 
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
 beta releases, you should backup all configuration and data.
@@ -35,10 +38,16 @@ Samba 4.0 as an AD DC should use the 'samba-tool domain
 classicupgrade' command.  See the wiki for more details:
 https://wiki.samba.org/index.php/Samba4/samba3upgrade/HOWTO 
 
-Users upgrading from Samba 4.0 alpha and beta releases since alpha15 
-should run 'samba-tool dbcheck --cross-ncs --fix'.  Users upgrading
-from earlier alpha releases should contact the team for advice. 
+Users upgrading from Samba 4.0 alpha and beta releases since alpha15
+should run 'samba-tool dbcheck --cross-ncs --fix' before re-starting
+Samba.  Users upgrading from earlier alpha releases should contact the
+team for advice.
 
+Users upgrading an AD DC from any previous release should run
+'samba-tool ntacl sysvolreset' to re-sync ACLs on the sysvol share
+with those matching the GPOs in LDAP and the defaults from an initial
+provision.  This will set an underlying POSIX ACL if required (eg not
+using the NTVFS file server).
 
 NEW FEATURES
 ============
@@ -89,29 +98,36 @@ Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
-CHANGES SINCE beta5
+CHANGES SINCE beta6
 =====================
 
-For a list of changes since beta5, please see the git log.
+For a list of changes since beta6, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0beta5..samba-4.0.0beta6
+$ git log samba-4.0.0beta6..samba-4.0.0beta7
 
 Some major user-visible changes include:
 
-- Provision is now faster, as we now correctly use the database
-  indices during the provision
+- ACLs are now set during provision at the POSIX layer for the sysvol
+  share.  This allows group policies to be modified by Domain
+  Administrators (Policy Administrators) that are not the actual
+  Administrator user.
 
-- Support for handling of Extended Signatures (Session Key Protection)
+- A number of verified fixes for expanding memory use across the AD
+  domain controller, including in the Bind9 DLZ module.
 
-- A (unverified at this time) fix for expanding memory use in our
-  AD DRS replication server.
+- A fix for bug #9097 (the winbind in the AD DC would lock up under
+  parallel requests).
 
-- A fix for supporting the userWorkstations restriction in the KDC
+- wbinfo --ping-dc now returns helpful information on what failed and
+  against which DC it failed
 
-- Support for upgrading classic domains that may not have all the
-  default domain policies set.
+- SMB3 encryption support
+
+- New 'samba-tool ntacl' commands:
+  - samba-tool ntacl sysvolreset
+  - samba-tool ntacl sysvolcheck
 
 Less visible, but important changes under the hood include:
 
@@ -122,20 +138,18 @@ Less visible, but important changes under the hood include:
 - Patches to ensure that talloc_tos() and talloc_stackframe() are
   always used correctly.
 
-- Preparation for correctly setting POSIX ACLs during provision.
+- We can now test the implementation of NT -> POSIX ACL mapping in a
+  unit test with VFS bindings exposing both to python.  We also store
+  the posix ACL in a tdb during make test, allowing testing of this
+  feature on all platforms, regardless of local FS settings.
+
+- Python bindings for the source3 async libsmb library (for use in testing)
 
 KNOWN ISSUES
 ============
 
 - This release makes the s3fs file server the default, as this is the
   file server combination we will use for the Samba 4.0 release.
-
-- Modifying of group policies by members of the Domain Administrators
-  group is not possible with the s3fs file server, only with the ntvfs
-  file server.  This is due to the underlying POSIX ACL not being set
-  at provision time.  Recursivly giving 'domain administrators' write
-  access to the contents of the sysvol share using a windows client
-  will fix this in the interim.
 
 - For similar reasons, sites with ACLs stored by the ntvfs file server
   may wish to continue to use that file server implementation, as a
