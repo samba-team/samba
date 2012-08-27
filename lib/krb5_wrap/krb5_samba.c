@@ -2332,6 +2332,20 @@ char *smb_get_krb5_error_message(krb5_context context,
 	return ret;
 }
 
+const krb5_enctype *samba_all_enctypes(void)
+{
+	/* TODO: Find a way not to have to use a fixed list */
+	static const krb5_enctype enctypes[] = {
+		KRB5_ENCTYPE_DES_CBC_CRC,
+		KRB5_ENCTYPE_DES_CBC_MD5,
+		KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+		KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+		KRB5_ENCTYPE_ARCFOUR_HMAC_MD5,
+		0
+	};
+	return enctypes;
+};
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,

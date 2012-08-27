@@ -293,6 +293,8 @@ krb5_boolean smb_krb5_kt_compare(krb5_context context,
 				 krb5_enctype enctype);
 #endif
 
+const krb5_enctype *samba_all_enctypes(void);
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
