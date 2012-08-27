@@ -2784,13 +2784,14 @@ static bool handle_dos_charset(struct loadparm_context *unused, int snum, const 
 static bool handle_realm(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	bool ret = true;
-	char *realm = strupper_talloc(talloc_tos(), pszParmValue);
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *realm = strupper_talloc(frame, pszParmValue);
 	char *dnsdomain = strlower_talloc(realm, pszParmValue);
 
 	ret &= string_set(&Globals.szRealm, pszParmValue);
 	ret &= string_set(&Globals.szRealm_upper, realm);
 	ret &= string_set(&Globals.szRealm_lower, dnsdomain);
-	TALLOC_FREE(realm);
+	TALLOC_FREE(frame);
 
 	return ret;
 }
