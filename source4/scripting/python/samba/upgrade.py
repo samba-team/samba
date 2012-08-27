@@ -810,7 +810,7 @@ Please fix this account before attempting to upgrade again
     pgids = {}
     if ldap:
         creds = Credentials()
-        creds.guess(result.lp)
+        creds.guess(s3param.get_context())
         creds.set_bind_dn(ldapuser)
         creds.set_password(ldappass)
         urls = samba3.lp.get("passdb backend").split(":",1)[1].strip('"')
