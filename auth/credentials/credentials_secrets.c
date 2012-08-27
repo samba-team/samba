@@ -204,6 +204,15 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	char *error_string;
 	const char *domain;
 	const char *realm;
+	bool secrets_tdb_password_more_recent;
+	time_t secrets_tdb_lct = 0;
+	char *secrets_tdb_password = NULL;
+	char *keystr;
+	char *keystr_upper = NULL;
+	char *secrets_tdb = lpcfg_private_path(cred, lp_ctx, "secrets.tdb");
+	struct db_context *db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb, 0,
+						      TDB_DEFAULT, O_RDWR, 0600,
+						      DBWRAP_LOCK_ORDER_1);
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
@@ -213,49 +222,78 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	 * cli_credentials_set_secrets is to run as anonymous, so the domain is wiped */
 	domain = cli_credentials_get_domain(cred);
 	realm = cli_credentials_get_realm(cred);
+
+	if (db_ctx) {
+		TDB_DATA dbuf;
+		keystr = talloc_asprintf(cred, "%s/%s",
+					 SECRETS_MACHINE_LAST_CHANGE_TIME,
+					 domain);
+		keystr_upper = strupper_talloc(cred, keystr);
+		TALLOC_FREE(keystr);
+		status = dbwrap_fetch(db_ctx, cred, string_tdb_data(keystr_upper),
+				      &dbuf);
+		TALLOC_FREE(keystr_upper);
+		if (NT_STATUS_IS_OK(status) && dbuf.dsize == 4) {
+			secrets_tdb_lct = IVAL(dbuf.dptr,0);
+		}
+		TALLOC_FREE(dbuf.dptr);
+
+		keystr = talloc_asprintf(cred, "%s/%s",
+					 SECRETS_MACHINE_PASSWORD,
+					 domain);
+		keystr_upper = strupper_talloc(cred, keystr);
+		TALLOC_FREE(keystr);
+		status = dbwrap_fetch(db_ctx, cred, string_tdb_data(keystr_upper),
+				      &dbuf);
+		if (NT_STATUS_IS_OK(status)) {
+			secrets_tdb_password = (char *)dbuf.dptr;
+		}
+	}
+
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				 domain);
 	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
 					     SECRETS_PRIMARY_DOMAIN_DN,
 					     filter, &error_string);
-	if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
+	if (secrets_tdb_password == NULL) {
+		secrets_tdb_password_more_recent = false;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
 	    || NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, status)) {
-		TDB_DATA dbuf;
-		char *secrets_tdb = lpcfg_private_path(cred, lp_ctx, "secrets.tdb");
-		struct db_context *db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb, 0,
-							      TDB_DEFAULT, O_RDWR, 0600,
-							      DBWRAP_LOCK_ORDER_1);
+		secrets_tdb_password_more_recent = true;
+	} else if (secrets_tdb_lct > cli_credentials_get_password_last_changed_time(cred)) {
+		secrets_tdb_password_more_recent = true;
+	} else if (secrets_tdb_lct == cli_credentials_get_password_last_changed_time(cred)) {
+		secrets_tdb_password_more_recent = strcmp(secrets_tdb_password, cli_credentials_get_password(cred)) != 0;
+	} else {
+		secrets_tdb_password_more_recent = false;
+	}
+
+	if (secrets_tdb_password_more_recent) {
+		char *machine_account = talloc_asprintf(cred, "%s$", lpcfg_netbios_name(lp_ctx));
+		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
+		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
+		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
+		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
+		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
+		TALLOC_FREE(machine_account);
+	} else if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
+		   || NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, status)) {
 		if (db_ctx) {
-			char *keystr;
-			char *keystr_upper;
-			keystr = talloc_asprintf(cred, "%s/%s",
-						 SECRETS_MACHINE_PASSWORD,
-						 domain);
-			keystr_upper = strupper_talloc(cred, keystr);
-			TALLOC_FREE(keystr);
-			status = dbwrap_fetch(db_ctx, cred, string_tdb_data(keystr_upper),
-					      &dbuf);
-			
-			if (NT_STATUS_IS_OK(status)) {
-				char *machine_account = talloc_asprintf(cred, "%s$", lpcfg_netbios_name(lp_ctx));
-				cli_credentials_set_password(cred, (const char *)dbuf.dptr, CRED_SPECIFIED);
-				cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
-				cli_credentials_set_realm(cred, domain, CRED_SPECIFIED);
-				cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
-				cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
-				TALLOC_FREE(machine_account);
-				TALLOC_FREE(dbuf.dptr);
-			} else {
-				error_string = talloc_asprintf(cred, 
-							       "Failed to fetch machine account password from "
-							       "secrets.ldb: %s and failed to fetch %s from %s", 
-							       error_string, keystr_upper, secrets_tdb);
-			}
-			TALLOC_FREE(keystr_upper);
-			TALLOC_FREE(secrets_tdb);
+			error_string = talloc_asprintf(cred,
+						       "Failed to fetch machine account password from "
+						       "secrets.ldb: %s and failed to fetch %s from %s",
+						       error_string, keystr_upper, secrets_tdb);
+		} else {
+			error_string = talloc_asprintf(cred,
+						       "Failed to fetch machine account password from "
+						       "secrets.ldb: %s and failed to open %s",
+						       error_string, secrets_tdb);
 		}
 	}
 	
+	TALLOC_FREE(secrets_tdb_password);
+	TALLOC_FREE(secrets_tdb);
+	TALLOC_FREE(db_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", 
 			  error_string, nt_errstr(status)));
