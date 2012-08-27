@@ -203,6 +203,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	char *filter;
 	char *error_string;
 	const char *domain;
+	const char *realm;
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
@@ -211,6 +212,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	/* We have to do this, as the fallback in
 	 * cli_credentials_set_secrets is to run as anonymous, so the domain is wiped */
 	domain = cli_credentials_get_domain(cred);
+	realm = cli_credentials_get_realm(cred);
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				 domain);
 	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
@@ -238,6 +240,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 				char *machine_account = talloc_asprintf(cred, "%s$", lpcfg_netbios_name(lp_ctx));
 				cli_credentials_set_password(cred, (const char *)dbuf.dptr, CRED_SPECIFIED);
 				cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
+				cli_credentials_set_realm(cred, domain, CRED_SPECIFIED);
+				cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
 				cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 				TALLOC_FREE(machine_account);
 				TALLOC_FREE(dbuf.dptr);
