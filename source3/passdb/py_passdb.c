@@ -3645,8 +3645,23 @@ static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_reload_static_pdb(PyObject *self, PyObject *args)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	/* Initialize secrets database */
+	if (!initialize_password_db(true, NULL)) {
+		PyErr_Format(py_pdb_error, "Cannot re-open passdb backend %s", lp_passdb_backend());
+		talloc_free(frame);
+		return NULL;
+	}
+
+	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_get_global_sam_sid(PyObject *self)
@@ -3684,6 +3699,9 @@ static PyMethodDef py_passdb_methods[] = {
 	{ "get_global_sam_sid", (PyCFunction)py_get_global_sam_sid, METH_NOARGS,
 		"get_global_sam_sid() -> dom_sid\n\n \
 		Return domain SID." },
+	{ "reload_static_pdb", (PyCFunction)py_reload_static_pdb, METH_NOARGS,
+		"reload_static_pdb() -> None\n\n \
+		Re-initalise the static pdb used internally.  Needed if 'passdb backend' is changed." },
 	{ NULL },
 };
 

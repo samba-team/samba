@@ -1299,10 +1299,11 @@ bool pdb_new_rid(uint32_t *rid)
 
 bool initialize_password_db(bool reload, struct tevent_context *tevent_ctx)
 {
-	pdb_tevent_ctx = tevent_ctx;
+	if (tevent_ctx) {
+		pdb_tevent_ctx = tevent_ctx;
+	}
 	return (pdb_get_methods_reload(reload) != NULL);
 }
-
 
 /***************************************************************************
   Default implementations of some functions.

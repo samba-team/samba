@@ -1417,6 +1417,8 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain, domain
         s3conf.load(lp.configfile)
         # ensure we are using the right samba4 passdb backend, no matter what
         s3conf.set("passdb backend", "samba4:%s" % samdb.url)
+        passdb.reload_static_pdb()
+
         # ensure that we init the samba4 backend, so the domain sid is marked in secrets.tdb
         s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
 
