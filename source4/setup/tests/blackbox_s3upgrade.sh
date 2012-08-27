@@ -63,8 +63,8 @@ EOF
 
 mv $PREFIX/samba3-upgrade/samba3/wins.dat2 $PREFIX/samba3-upgrade/samba3/wins.dat
 
+# Upgrade NT4-like domains in samba3upgrade
 testit "samba3-upgrade-dc" $samba_tool domain classicupgrade $PREFIX/samba3-upgrade/samba3/smb2.conf --targetdir=$PREFIX/samba3-upgrade/s4_2 --dbdir=$PREFIX/samba3-upgrade/samba3 --use-ntvfs
- NT4-like domains in samba3upgrade
 testit "samba3-upgrade-dc-getlocalsid" $samba_net getlocalsid samba -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 testit "samba3-upgrade-dc-getdomainsid" $samba_net getdomainsid -s $PREFIX/samba3-upgrade/s4_2/etc/smb.conf
 
