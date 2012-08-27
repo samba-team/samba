@@ -109,14 +109,12 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 	if (res->count != 1) {
 		/* if it's not a kerberosSecret then we don't have anything to update */
 		talloc_free(res);
-		talloc_free(filter);
 		return LDB_SUCCESS;
 	}
 
 	item = talloc(data->changed_dns? (void *)data->changed_dns: (void *)data, struct dn_list);
 	if (!item) {
 		talloc_free(res);
-		talloc_free(filter);
 		return ldb_oom(ldb);
 	}
 
