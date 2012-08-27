@@ -29,7 +29,7 @@
    server string = Samba Server
 
 # Security mode. Defines in which mode Samba will operate. Possible 
-# values are share, user, server, domain and ads. Most people will want 
+# values are user, domain and ads. Most people will want
 # user level security. See the Samba-HOWTO-Collection for details.
    security = user
 
