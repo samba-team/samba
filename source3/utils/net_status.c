@@ -91,8 +91,7 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 	return 0;
 }
 
-static int show_share(struct db_record *rec,
-		      const struct connections_key *key,
+static int show_share(const struct connections_key *key,
 		      const struct connections_data *crec,
 		      void *state)
 {
@@ -205,7 +204,7 @@ static int net_status_shares(struct net_context *c, int argc, const char **argv)
 		           "-------------------------------------"
 			   "------------------\n"));
 
-		connections_forall(show_share, NULL);
+		connections_forall_read(show_share, NULL);
 
 		return 0;
 	}
