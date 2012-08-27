@@ -187,51 +187,6 @@ static krb5_error_code salt_principal(TALLOC_CTX *parent_ctx,
 	return ret;
 }
 
-/* Translate between the Microsoft msDS-SupportedEncryptionTypes values
- * and the IETF encryption type values */
-static krb5_enctype ms_suptype_to_ietf_enctype(uint32_t enctype_bitmap)
-{
-	switch (enctype_bitmap) {
-	case ENC_CRC32:
-		return ENCTYPE_DES_CBC_CRC;
-	case ENC_RSA_MD5:
-		return ENCTYPE_DES_CBC_MD5;
-	case ENC_RC4_HMAC_MD5:
-		return ENCTYPE_ARCFOUR_HMAC;
-	case ENC_HMAC_SHA1_96_AES128:
-		return ENCTYPE_AES128_CTS_HMAC_SHA1_96;
-	case ENC_HMAC_SHA1_96_AES256:
-		return ENCTYPE_AES256_CTS_HMAC_SHA1_96;
-	default:
-		return 0;
-	}
-}
-
-/* Return an array of krb5_enctype values */
-static krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
-						uint32_t enctype_bitmap,
-						krb5_enctype **enctypes)
-{
-	unsigned int i, j = 0;
-	*enctypes = talloc_zero_array(mem_ctx, krb5_enctype,
-					(8 * sizeof(enctype_bitmap)) + 1);
-	if (!*enctypes) {
-		return ENOMEM;
-	}
-	for (i = 0; i < (8 * sizeof(enctype_bitmap)); i++) {
-		uint32_t bit_value = (1 << i) & enctype_bitmap;
-		if (bit_value & enctype_bitmap) {
-			(*enctypes)[j] = ms_suptype_to_ietf_enctype(bit_value);
-			if (!(*enctypes)[j]) {
-				continue;
-			}
-			j++;
-		}
-	}
-	(*enctypes)[j] = 0;
-	return 0;
-}
-
 static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 				       krb5_principal *principals,
 				       krb5_principal salt_princ,

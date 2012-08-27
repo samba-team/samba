@@ -296,6 +296,10 @@ krb5_boolean smb_krb5_kt_compare(krb5_context context,
 const krb5_enctype *samba_all_enctypes(void);
 
 uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum);
+krb5_enctype ms_suptype_to_ietf_enctype(uint32_t enctype_bitmap);
+krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
+					     uint32_t enctype_bitmap,
+					     krb5_enctype **enctypes);
 
 #endif /* HAVE_KRB5 */
 
