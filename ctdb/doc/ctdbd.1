@@ -2,12 +2,12 @@
 .\"     Title: ctdbd
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 07/26/2012
+.\"      Date: 10/11/2012
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDBD" "1" "07/26/2012" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "10/11/2012" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -483,6 +483,11 @@ When you enable this tunable, CTDB will no longer attempt to recover the cluster
 Default: 0
 .PP
 When set to 1, ctdb will allow ip addresses to be failed over onto this node\&. Any ip addresses that the node currently hosts will remain on the node but no new ip addresses can be failed over onto the node\&.
+.SS "NoIPTakeoverOnDisabled"
+.PP
+Default: 0
+.PP
+If no nodes are healthy then by default ctdb will happily host public IPs on disabled (unhealthy or administratively disabled) nodes\&. This can cause problems, for example if the underlying cluster filesystem is not mounted\&. When set to 1 this behaviour is switched off and disabled nodes will not be able to takeover IPs\&.
 .SS "DBRecordCountWarn"
 .PP
 Default: 100000
@@ -681,7 +686,7 @@ There can be multiple NATGW groups in one cluster but each node can only be memb
 In each NATGW group, one of the nodes is designated the NAT Gateway through which all traffic that is originated by nodes in this group will be routed through if a public addresses are not available\&.
 .SS "Configuration"
 .PP
-NAT\-GW is configured in /etc/sysconfigctdb by setting the following variables:
+NAT\-GW is configured in /etc/sysconfig/ctdb by setting the following variables:
 .sp
 .if n \{\
 .RS 4

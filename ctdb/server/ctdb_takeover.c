@@ -1941,12 +1941,12 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 		}
 	}
 
-	if (num_healthy > 0) {
-		/* We have healthy nodes, so only consider them for 
-		   serving public addresses
-		*/
-		mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
-	} else {
+	/* If we have healthy nodes then we will only consider them
+	   for serving public addresses
+	*/
+	mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
+	if ((num_healthy == 0) &&
+	    (ctdb->tunable.no_ip_takeover_on_disabled == 0)) {
 		/* We didnt have any completely healthy nodes so
 		   use "disabled" nodes as a fallback
 		*/

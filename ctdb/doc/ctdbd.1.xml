@@ -862,6 +862,18 @@
     </para>
     </refsect2>
 
+    <refsect2><title>NoIPTakeoverOnDisabled</title>
+    <para>Default: 0</para>
+    <para>
+    If no nodes are healthy then by default ctdb will happily host
+    public IPs on disabled (unhealthy or administratively disabled)
+    nodes.  This can cause problems, for example if the underlying
+    cluster filesystem is not mounted.  When set to 1 this behaviour
+    is switched off and disabled nodes will not be able to takeover
+    IPs.
+    </para>
+    </refsect2>
+
     <refsect2><title>DBRecordCountWarn</title>
     <para>Default: 100000</para>
     <para>

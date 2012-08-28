@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdbd</title><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="ctdbd"><a name="ctdbd.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdbd &#8212; The CTDB cluster daemon</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdbd</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdbd</code>  [-? --help] [-d --debug=&lt;INTEGER&gt;] {--dbdir=&lt;directory&gt;} {--dbdir-persistent=&lt;directory&gt;} [--event-script-dir=&lt;directory&gt;] [-i --interactive] [--listen=&lt;address&gt;] [--logfile=&lt;filename&gt;] [--lvs] {--nlist=&lt;filename&gt;} [--no-lmaster] [--no-recmaster] [--nosetsched] {--notification-script=&lt;filename&gt;} [--public-addresses=&lt;filename&gt;] [--public-interface=&lt;interface&gt;] {--reclock=&lt;filename&gt;} [--single-public-ip=&lt;address&gt;] [--socket=&lt;filename&gt;] [--start-as-disabled] [--start-as-stopped] [--syslog] [--log-ringbuf-size=&lt;num-entries&gt;] [--torture] [--transport=&lt;STRING&gt;] [--usage]</p></div></div><div class="refsect1" title="DESCRIPTION"><a name="idp199104"></a><h2>DESCRIPTION</h2><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdbd</title><meta name="generator" content="DocBook XSL Stylesheets V1.76.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" title="ctdbd"><a name="ctdbd.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdbd &#8212; The CTDB cluster daemon</p></div><div class="refsynopsisdiv" title="Synopsis"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdbd</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdbd</code>  [-? --help] [-d --debug=&lt;INTEGER&gt;] {--dbdir=&lt;directory&gt;} {--dbdir-persistent=&lt;directory&gt;} [--event-script-dir=&lt;directory&gt;] [-i --interactive] [--listen=&lt;address&gt;] [--logfile=&lt;filename&gt;] [--lvs] {--nlist=&lt;filename&gt;} [--no-lmaster] [--no-recmaster] [--nosetsched] {--notification-script=&lt;filename&gt;} [--public-addresses=&lt;filename&gt;] [--public-interface=&lt;interface&gt;] {--reclock=&lt;filename&gt;} [--single-public-ip=&lt;address&gt;] [--socket=&lt;filename&gt;] [--start-as-disabled] [--start-as-stopped] [--syslog] [--log-ringbuf-size=&lt;num-entries&gt;] [--torture] [--transport=&lt;STRING&gt;] [--usage]</p></div></div><div class="refsect1" title="DESCRIPTION"><a name="idp228184"></a><h2>DESCRIPTION</h2><p>
       ctdbd is the main ctdb daemon.
     </p><p>
       ctdbd provides a clustered version of the TDB database with automatic rebuild/recovery of the databases upon nodefailures.
@@ -8,7 +8,7 @@
       ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures.
     </p><p>
       ctdbd is the main component in clustered Samba that provides a high-availability load-sharing CIFS server cluster.
-    </p></div><div class="refsect1" title="OPTIONS"><a name="idp201064"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-? --help</span></dt><dd><p>
+    </p></div><div class="refsect1" title="OPTIONS"><a name="idp230192"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-? --help</span></dt><dd><p>
             Print some help text to the screen.
           </p></dd><dt><span class="term">-d --debug=&lt;DEBUGLEVEL&gt;</span></dt><dd><p>
             This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
@@ -154,10 +154,10 @@
 	    implemented in the future.
           </p></dd><dt><span class="term">--usage</span></dt><dd><p>
             Print useage information to the screen.
-          </p></dd></dl></div></div><div class="refsect1" title="Private vs Public addresses"><a name="idp90512"></a><h2>Private vs Public addresses</h2><p>
+          </p></dd></dl></div></div><div class="refsect1" title="Private vs Public addresses"><a name="idp120024"></a><h2>Private vs Public addresses</h2><p>
       When used for ip takeover in a HA environment, each node in a ctdb 
       cluster has multiple ip addresses assigned to it. One private and one or more public.
-    </p><div class="refsect2" title="Private address"><a name="idp91136"></a><h3>Private address</h3><p>
+    </p><div class="refsect2" title="Private address"><a name="idp120648"></a><h3>Private address</h3><p>
         This is the physical ip address of the node which is configured in 
         linux and attached to a physical interface. This address uniquely
         identifies a physical node in the cluster and is the ip addresses
@@ -187,7 +187,7 @@
         10.1.1.2
         10.1.1.3
         10.1.1.4
-      </pre></div><div class="refsect2" title="Public address"><a name="idp94040"></a><h3>Public address</h3><p>
+      </pre></div><div class="refsect2" title="Public address"><a name="idp123552"></a><h3>Public address</h3><p>
         A public address on the other hand is not attached to an interface.
         This address is managed by ctdbd itself and is attached/detached to
         a physical node at runtime.
@@ -248,7 +248,7 @@
 	unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since
 	these nodes do not have this ip address listed in their public
 	addresses file.
-	</p></div></div><div class="refsect1" title="Node status"><a name="idp98936"></a><h2>Node status</h2><p>
+	</p></div></div><div class="refsect1" title="Node status"><a name="idp128472"></a><h2>Node status</h2><p>
       The current status of each node in the cluster can be viewed by the 
       'ctdb status' command.
     </p><p>
@@ -285,9 +285,9 @@
       RECMASTER or NATGW.
       This node does not perticipate in the CTDB cluster but can still be
       communicated with. I.e. ctdb commands can be sent to it.
-    </p></div><div class="refsect1" title="PUBLIC TUNABLES"><a name="idp102960"></a><h2>PUBLIC TUNABLES</h2><p>
+    </p></div><div class="refsect1" title="PUBLIC TUNABLES"><a name="idp132496"></a><h2>PUBLIC TUNABLES</h2><p>
     These are the public tuneables that can be used to control how ctdb behaves.
-    </p><div class="refsect2" title="MaxRedirectCount"><a name="idp103592"></a><h3>MaxRedirectCount</h3><p>Default: 3</p><p>
+    </p><div class="refsect2" title="MaxRedirectCount"><a name="idp133128"></a><h3>MaxRedirectCount</h3><p>Default: 3</p><p>
     If we are not the DMASTER and need to fetch a record across the network
     we first send the request to the LMASTER after which the record
     is passed onto the current DMASTER. If the DMASTER changes before
@@ -301,7 +301,7 @@
     </p><p>
     When chasing a record, this is how many hops we will chase the record
     for before going back to the LMASTER to ask for new guidance.
-    </p></div><div class="refsect2" title="SeqnumInterval"><a name="idp105312"></a><h3>SeqnumInterval</h3><p>Default: 1000</p><p>
+    </p></div><div class="refsect2" title="SeqnumInterval"><a name="idp134848"></a><h3>SeqnumInterval</h3><p>Default: 1000</p><p>
     Some databases have seqnum tracking enabled, so that samba will be able
     to detect asynchronously when there has been updates to the database.
     Everytime a database is updated its sequence number is increased.
@@ -309,17 +309,17 @@
     This tunable is used to specify in 'ms' how frequently ctdb will
     send out updates to remote nodes to inform them that the sequence
     number is increased.
-    </p></div><div class="refsect2" title="ControlTimeout"><a name="idp106664"></a><h3>ControlTimeout</h3><p>Default: 60</p><p>
+    </p></div><div class="refsect2" title="ControlTimeout"><a name="idp136200"></a><h3>ControlTimeout</h3><p>Default: 60</p><p>
     This is the default
     setting for timeout for when sending a control message to either the
     local or a remote ctdb daemon.
-    </p></div><div class="refsect2" title="TraverseTimeout"><a name="idp107552"></a><h3>TraverseTimeout</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" title="TraverseTimeout"><a name="idp137088"></a><h3>TraverseTimeout</h3><p>Default: 20</p><p>
     This setting controls how long we allow a traverse process to run.
     After this timeout triggers, the main ctdb daemon will abort the
     traverse if it has not yet finished.
-    </p></div><div class="refsect2" title="KeepaliveInterval"><a name="idp108488"></a><h3>KeepaliveInterval</h3><p>Default: 5</p><p>
+    </p></div><div class="refsect2" title="KeepaliveInterval"><a name="idp138024"></a><h3>KeepaliveInterval</h3><p>Default: 5</p><p>
     How often in seconds should the nodes send keepalives to eachother.
-    </p></div><div class="refsect2" title="KeepaliveLimit"><a name="idp109320"></a><h3>KeepaliveLimit</h3><p>Default: 5</p><p>
+    </p></div><div class="refsect2" title="KeepaliveLimit"><a name="idp138856"></a><h3>KeepaliveLimit</h3><p>Default: 5</p><p>
     After how many keepalive intervals without any traffic should a node
     wait until marking the peer as DISCONNECTED.
     </p><p>
@@ -328,60 +328,60 @@
     require a recovery. This limitshould not be set too high since we want
     a hung node to be detectec, and expunged from the cluster well before
     common CIFS timeouts (45-90 seconds) kick in.
-    </p></div><div class="refsect2" title="RecoverTimeout"><a name="idp110760"></a><h3>RecoverTimeout</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" title="RecoverTimeout"><a name="idp140296"></a><h3>RecoverTimeout</h3><p>Default: 20</p><p>
     This is the default setting for timeouts for controls when sent from the
     recovery daemon. We allow longer control timeouts from the recovery daemon
     than from normal use since the recovery dameon often use controls that 
     can take a lot longer than normal controls.
-    </p></div><div class="refsect2" title="RecoverInterval"><a name="idp111800"></a><h3>RecoverInterval</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="RecoverInterval"><a name="idp141336"></a><h3>RecoverInterval</h3><p>Default: 1</p><p>
     How frequently in seconds should the recovery daemon perform the
     consistency checks that determine if we need to perform a recovery or not.
-    </p></div><div class="refsect2" title="ElectionTimeout"><a name="idp112704"></a><h3>ElectionTimeout</h3><p>Default: 3</p><p>
+    </p></div><div class="refsect2" title="ElectionTimeout"><a name="idp142240"></a><h3>ElectionTimeout</h3><p>Default: 3</p><p>
     When electing a new recovery master, this is how many seconds we allow
     the election to take before we either deem the election finished
     or we fail the election and start a new one.
-    </p></div><div class="refsect2" title="TakeoverTimeout"><a name="idp113656"></a><h3>TakeoverTimeout</h3><p>Default: 9</p><p>
+    </p></div><div class="refsect2" title="TakeoverTimeout"><a name="idp143192"></a><h3>TakeoverTimeout</h3><p>Default: 9</p><p>
     This is how many seconds we allow controls to take for IP failover events.
-    </p></div><div class="refsect2" title="MonitorInterval"><a name="idp114496"></a><h3>MonitorInterval</h3><p>Default: 15</p><p>
+    </p></div><div class="refsect2" title="MonitorInterval"><a name="idp144032"></a><h3>MonitorInterval</h3><p>Default: 15</p><p>
     How often should ctdb run the event scripts to check for a nodes health.
-    </p></div><div class="refsect2" title="TickleUpdateInterval"><a name="idp115328"></a><h3>TickleUpdateInterval</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" title="TickleUpdateInterval"><a name="idp144864"></a><h3>TickleUpdateInterval</h3><p>Default: 20</p><p>
     How often will ctdb record and store the "tickle" information used to
     kickstart stalled tcp connections after a recovery.
-    </p></div><div class="refsect2" title="EventScriptTimeout"><a name="idp116192"></a><h3>EventScriptTimeout</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" title="EventScriptTimeout"><a name="idp145728"></a><h3>EventScriptTimeout</h3><p>Default: 20</p><p>
     How long should ctdb let an event script run before aborting it and
     marking the node unhealthy.
-    </p></div><div class="refsect2" title="EventScriptTimeoutCount"><a name="idp117056"></a><h3>EventScriptTimeoutCount</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="EventScriptTimeoutCount"><a name="idp146592"></a><h3>EventScriptTimeoutCount</h3><p>Default: 1</p><p>
     How many events in a row needs to timeout before we flag the node UNHEALTHY.
     This setting is useful if your scripts can not be written so that they
     do not hang for benign reasons.
-    </p></div><div class="refsect2" title="EventScriptUnhealthyOnTimeout"><a name="idp117984"></a><h3>EventScriptUnhealthyOnTimeout</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="EventScriptUnhealthyOnTimeout"><a name="idp147520"></a><h3>EventScriptUnhealthyOnTimeout</h3><p>Default: 0</p><p>
     This setting can be be used to make ctdb never become UNHEALTHY if your
     eventscripts keep hanging/timing out.
-    </p></div><div class="refsect2" title="RecoveryGracePeriod"><a name="idp118832"></a><h3>RecoveryGracePeriod</h3><p>Default: 120</p><p>
+    </p></div><div class="refsect2" title="RecoveryGracePeriod"><a name="idp148368"></a><h3>RecoveryGracePeriod</h3><p>Default: 120</p><p>
     During recoveries, if a node has not caused recovery failures during the
     last grace period, any records of transgressions that the node has caused
     recovery failures will be forgiven. This resets the ban-counter back to 
     zero for that node.
-    </p></div><div class="refsect2" title="RecoveryBanPeriod"><a name="idp119856"></a><h3>RecoveryBanPeriod</h3><p>Default: 300</p><p>
+    </p></div><div class="refsect2" title="RecoveryBanPeriod"><a name="idp149392"></a><h3>RecoveryBanPeriod</h3><p>Default: 300</p><p>
     If a node becomes banned causing repetitive recovery failures. The node will
     eventually become banned from the cluster.
     This controls how long the culprit node will be banned from the cluster
     before it is allowed to try to join the cluster again.
     Don't set to small. A node gets banned for a reason and it is usually due
     to real problems with the node.
-    </p></div><div class="refsect2" title="DatabaseHashSize"><a name="idp121384"></a><h3>DatabaseHashSize</h3><p>Default: 100001</p><p>
+    </p></div><div class="refsect2" title="DatabaseHashSize"><a name="idp150920"></a><h3>DatabaseHashSize</h3><p>Default: 100001</p><p>
     Size of the hash chains for the local store of the tdbs that ctdb manages.
-    </p></div><div class="refsect2" title="DatabaseMaxDead"><a name="idp122232"></a><h3>DatabaseMaxDead</h3><p>Default: 5</p><p>
+    </p></div><div class="refsect2" title="DatabaseMaxDead"><a name="idp151768"></a><h3>DatabaseMaxDead</h3><p>Default: 5</p><p>
     How many dead records per hashchain in the TDB database do we allow before
     the freelist needs to be processed.
-    </p></div><div class="refsect2" title="RerecoveryTimeout"><a name="idp123112"></a><h3>RerecoveryTimeout</h3><p>Default: 10</p><p>
+    </p></div><div class="refsect2" title="RerecoveryTimeout"><a name="idp152648"></a><h3>RerecoveryTimeout</h3><p>Default: 10</p><p>
     Once a recovery has completed, no additional recoveries are permitted
     until this timeout has expired.
-    </p></div><div class="refsect2" title="EnableBans"><a name="idp123976"></a><h3>EnableBans</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="EnableBans"><a name="idp153512"></a><h3>EnableBans</h3><p>Default: 1</p><p>
     When set to 0, this disables BANNING completely in the cluster and thus
     nodes can not get banned, even it they break. Don't set to 0 unless you
     know what you are doing.
-    </p></div><div class="refsect2" title="DeterministicIPs"><a name="idp124904"></a><h3>DeterministicIPs</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="DeterministicIPs"><a name="idp154440"></a><h3>DeterministicIPs</h3><p>Default: 0</p><p>
     When enabled, this tunable makes ctdb try to keep public IP addresses
     locked to specific nodes as far as possible. This makes it easier for
     debugging since you can know that as long as all nodes are healthy
@@ -392,12 +392,12 @@
     public IP assignment changes in the cluster. This tunable may increase
     the number of IP failover/failbacks that are performed on the cluster
     by a small margin.
-    </p></div><div class="refsect2" title="LCP2PublicIPs"><a name="idp126448"></a><h3>LCP2PublicIPs</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="LCP2PublicIPs"><a name="idp155984"></a><h3>LCP2PublicIPs</h3><p>Default: 1</p><p>
     When enabled this switches ctdb to use the LCP2 ip allocation
     algorithm.
-    </p></div><div class="refsect2" title="ReclockPingPeriod"><a name="idp127288"></a><h3>ReclockPingPeriod</h3><p>Default: x</p><p>
+    </p></div><div class="refsect2" title="ReclockPingPeriod"><a name="idp156824"></a><h3>ReclockPingPeriod</h3><p>Default: x</p><p>
     Obsolete
-    </p></div><div class="refsect2" title="NoIPFailback"><a name="idp128056"></a><h3>NoIPFailback</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="NoIPFailback"><a name="idp157592"></a><h3>NoIPFailback</h3><p>Default: 0</p><p>
     When set to 1, ctdb will not perform failback of IP addresses when a node
     becomes healthy. Ctdb WILL perform failover of public IP addresses when a
     node becomes UNHEALTHY, but when the node becomes HEALTHY again, ctdb
@@ -415,7 +415,7 @@
     intervention from the administrator. When this parameter is set, you can
     manually fail public IP addresses over to the new node(s) using the
     'ctdb moveip' command.
-    </p></div><div class="refsect2" title="DisableIPFailover"><a name="idp130224"></a><h3>DisableIPFailover</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="DisableIPFailover"><a name="idp159760"></a><h3>DisableIPFailover</h3><p>Default: 0</p><p>
     When enabled, ctdb will not perform failover or failback. Even if a
     node fails while holding public IPs, ctdb will not recover the IPs or
     assign them to another node.
@@ -424,52 +424,59 @@
     the cluster by failing IP addresses over to other nodes. This leads to
     a service outage until the administrator has manually performed failover
     to replacement nodes using the 'ctdb moveip' command.
-    </p></div><div class="refsect2" title="NoIPTakeover"><a name="idp131648"></a><h3>NoIPTakeover</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="NoIPTakeover"><a name="idp161184"></a><h3>NoIPTakeover</h3><p>Default: 0</p><p>
     When set to 1, ctdb will allow ip addresses to be failed over onto this
     node. Any ip addresses that the node currently hosts will remain on the
     node but no new ip addresses can be failed over onto the node.
-    </p></div><div class="refsect2" title="DBRecordCountWarn"><a name="idp132624"></a><h3>DBRecordCountWarn</h3><p>Default: 100000</p><p>
+    </p></div><div class="refsect2" title="NoIPTakeoverOnDisabled"><a name="idp162160"></a><h3>NoIPTakeoverOnDisabled</h3><p>Default: 0</p><p>
+    If no nodes are healthy then by default ctdb will happily host
+    public IPs on disabled (unhealthy or administratively disabled)
+    nodes.  This can cause problems, for example if the underlying
+    cluster filesystem is not mounted.  When set to 1 this behaviour
+    is switched off and disabled nodes will not be able to takeover
+    IPs.
+    </p></div><div class="refsect2" title="DBRecordCountWarn"><a name="idp163240"></a><h3>DBRecordCountWarn</h3><p>Default: 100000</p><p>
     When set to non-zero, ctdb will log a warning when we try to recover a
     database with more than this many records. This will produce a warning
     if a database grows uncontrollably with orphaned records.
-    </p></div><div class="refsect2" title="DBRecordSizeWarn"><a name="idp133600"></a><h3>DBRecordSizeWarn</h3><p>Default: 10000000</p><p>
+    </p></div><div class="refsect2" title="DBRecordSizeWarn"><a name="idp164216"></a><h3>DBRecordSizeWarn</h3><p>Default: 10000000</p><p>
     When set to non-zero, ctdb will log a warning when we try to recover a
     database where a single record is bigger than this. This will produce
     a warning if a database record grows uncontrollably with orphaned
     sub-records.
-    </p></div><div class="refsect2" title="DBSizeWarn"><a name="idp134600"></a><h3>DBSizeWarn</h3><p>Default: 1000000000</p><p>
+    </p></div><div class="refsect2" title="DBSizeWarn"><a name="idp165216"></a><h3>DBSizeWarn</h3><p>Default: 1000000000</p><p>
     When set to non-zero, ctdb will log a warning when we try to recover a
     database bigger than this. This will produce
     a warning if a database grows uncontrollably.
-    </p></div><div class="refsect2" title="VerboseMemoryNames"><a name="idp135528"></a><h3>VerboseMemoryNames</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="VerboseMemoryNames"><a name="idp3317272"></a><h3>VerboseMemoryNames</h3><p>Default: 0</p><p>
     This feature consumes additional memory. when used the talloc library
     will create more verbose names for all talloc allocated objects.
-    </p></div><div class="refsect2" title="RecdPingTimeout"><a name="idp136432"></a><h3>RecdPingTimeout</h3><p>Default: 60</p><p>
+    </p></div><div class="refsect2" title="RecdPingTimeout"><a name="idp3318136"></a><h3>RecdPingTimeout</h3><p>Default: 60</p><p>
     If the main dameon has not heard a "ping" from the recovery dameon for
     this many seconds, the main dameon will log a message that the recovery
     daemon is potentially hung.
-    </p></div><div class="refsect2" title="RecdFailCount"><a name="idp137376"></a><h3>RecdFailCount</h3><p>Default: 10</p><p>
+    </p></div><div class="refsect2" title="RecdFailCount"><a name="idp3319040"></a><h3>RecdFailCount</h3><p>Default: 10</p><p>
     If the recovery daemon has failed to ping the main dameon for this many
     consecutive intervals, the main daemon will consider the recovery daemon
     as hung and will try to restart it to recover.
-    </p></div><div class="refsect2" title="LogLatencyMs"><a name="idp138336"></a><h3>LogLatencyMs</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="LogLatencyMs"><a name="idp3319960"></a><h3>LogLatencyMs</h3><p>Default: 0</p><p>
     When set to non-zero, this will make the main daemon log any operation that
     took longer than this value, in 'ms', to complete.
     These include "how long time a lockwait child process needed", 
     "how long time to write to a persistent database" but also
     "how long did it take to get a response to a CALL from a remote node".
-    </p></div><div class="refsect2" title="RecLockLatencyMs"><a name="idp139432"></a><h3>RecLockLatencyMs</h3><p>Default: 1000</p><p>
+    </p></div><div class="refsect2" title="RecLockLatencyMs"><a name="idp3321016"></a><h3>RecLockLatencyMs</h3><p>Default: 1000</p><p>
     When using a reclock file for split brain prevention, if set to non-zero
     this tunable will make the recovery dameon log a message if the fcntl()
     call to lock/testlock the recovery file takes longer than this number of 
     ms.
-    </p></div><div class="refsect2" title="RecoveryDropAllIPs"><a name="idp140440"></a><h3>RecoveryDropAllIPs</h3><p>Default: 120</p><p>
+    </p></div><div class="refsect2" title="RecoveryDropAllIPs"><a name="idp3321976"></a><h3>RecoveryDropAllIPs</h3><p>Default: 120</p><p>
     If we have been stuck in recovery, or stopped, or banned, mode for
     this many seconds we will force drop all held public addresses.
-    </p></div><div class="refsect2" title="verifyRecoveryLock"><a name="idp141344"></a><h3>verifyRecoveryLock</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="verifyRecoveryLock"><a name="idp3322832"></a><h3>verifyRecoveryLock</h3><p>Default: 1</p><p>
     Should we take a fcntl() lock on the reclock file to verify that we are the
     sole recovery master node on the cluster or not.
-    </p></div><div class="refsect2" title="DeferredAttachTO"><a name="idp142232"></a><h3>DeferredAttachTO</h3><p>Default: 120</p><p>
+    </p></div><div class="refsect2" title="DeferredAttachTO"><a name="idp3323680"></a><h3>DeferredAttachTO</h3><p>Default: 120</p><p>
     When databases are frozen we do not allow clients to attach to the
     databases. Instead of returning an error immediately to the application
     the attach request from the client is deferred until the database
@@ -477,7 +484,7 @@
     </p><p>
     This timeout controls how long we will defer the request from the client
     before timing it out and returning an error to the client.
-    </p></div><div class="refsect2" title="HopcountMakeSticky"><a name="idp3179992"></a><h3>HopcountMakeSticky</h3><p>Default: 50</p><p>
+    </p></div><div class="refsect2" title="HopcountMakeSticky"><a name="idp3325024"></a><h3>HopcountMakeSticky</h3><p>Default: 50</p><p>
     If the database is set to 'STICKY' mode, using the 'ctdb setdbsticky' 
     command, any record that is seen as very hot and migrating so fast that
     hopcount surpasses 50 is set to become a STICKY record for StickyDuration
@@ -488,15 +495,15 @@
     migrating across the cluster so fast. This will improve performance for
     certain workloads, such as locking.tdb if many clients are opening/closing
     the same file concurrently.
-    </p></div><div class="refsect2" title="StickyDuration"><a name="idp3181552"></a><h3>StickyDuration</h3><p>Default: 600</p><p>
+    </p></div><div class="refsect2" title="StickyDuration"><a name="idp3326584"></a><h3>StickyDuration</h3><p>Default: 600</p><p>
     Once a record has been found to be fetch-lock hot and has been flagged to
     become STICKY, this is for how long, in seconds, the record will be 
     flagged as a STICKY record.
-    </p></div><div class="refsect2" title="StickyPindown"><a name="idp3182456"></a><h3>StickyPindown</h3><p>Default: 200</p><p>
+    </p></div><div class="refsect2" title="StickyPindown"><a name="idp3327488"></a><h3>StickyPindown</h3><p>Default: 200</p><p>
     Once a STICKY record has been migrated onto a node, it will be pinned down
     on that node for this number of ms. Any request from other nodes to migrate
     the record off the node will be deferred until the pindown timer expires.
-    </p></div><div class="refsect2" title="MaxLACount"><a name="idp3183408"></a><h3>MaxLACount</h3><p>Default: 20</p><p>
+    </p></div><div class="refsect2" title="MaxLACount"><a name="idp3328440"></a><h3>MaxLACount</h3><p>Default: 20</p><p>
     When record content is fetched from a remote node, if it is only for 
     reading the record, pass back the content of the record but do not yet 
     migrate the record. Once MaxLACount identical requests from the 
@@ -504,13 +511,13 @@
     onto the requesting node. This reduces the amount of migration for a 
     database read-mostly workload at the expense of more frequent network
     roundtrips.
-    </p></div><div class="refsect2" title="StatHistoryInterval"><a name="idp3184584"></a><h3>StatHistoryInterval</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="StatHistoryInterval"><a name="idp3329616"></a><h3>StatHistoryInterval</h3><p>Default: 1</p><p>
     Granularity of the statistics collected in the statistics history.
-    </p></div><div class="refsect2" title="AllowClientDBAttach"><a name="idp3185376"></a><h3>AllowClientDBAttach</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="AllowClientDBAttach"><a name="idp3330408"></a><h3>AllowClientDBAttach</h3><p>Default: 1</p><p>
     When set to 0, clients are not allowed to attach to any databases.
     This can be used to temporarily block any new processes from attaching
     to and accessing the databases.
-    </p></div><div class="refsect2" title="RecoverPDBBySeqNum"><a name="idp3186272"></a><h3>RecoverPDBBySeqNum</h3><p>Default: 0</p><p>
+    </p></div><div class="refsect2" title="RecoverPDBBySeqNum"><a name="idp3331304"></a><h3>RecoverPDBBySeqNum</h3><p>Default: 0</p><p>
     When set to non-zero, this will change how the recovery process for
     persistent databases ar performed. By default, when performing a database
     recovery, for normal as for persistent databases, recovery is
@@ -521,7 +528,7 @@
     a whole db and not by individual records. The node that contains the
     highest value stored in the record "__db_sequence_number__" is selected
     and the copy of that nodes database is used as the recovered database.
-    </p></div><div class="refsect2" title="FetchCollapse"><a name="idp3187824"></a><h3>FetchCollapse</h3><p>Default: 1</p><p>
+    </p></div><div class="refsect2" title="FetchCollapse"><a name="idp3332856"></a><h3>FetchCollapse</h3><p>Default: 1</p><p>
     When many clients across many nodes try to access the same record at the
     same time this can lead to a fetch storm where the record becomes very
     active and bounces between nodes very fast. This leads to high CPU
@@ -537,7 +544,7 @@
     </p><p>
     This timeout controls if we should collapse multiple fetch operations
     of the same record into a single request and defer all duplicates or not.
-    </p></div></div><div class="refsect1" title="LVS"><a name="idp3190272"></a><h2>LVS</h2><p>
+    </p></div></div><div class="refsect1" title="LVS"><a name="idp3335256"></a><h2>LVS</h2><p>
     LVS is a mode where CTDB presents one single IP address for the entire
     cluster. This is an alternative to using public IP addresses and round-robin
     DNS to loadbalance clients across the cluster.
@@ -578,7 +585,7 @@
     the processing node back to the clients. For read-intensive i/o patterns you can acheive very high throughput rates in this mode.
     </p><p>
     Note: you can use LVS and public addresses at the same time.
-    </p><div class="refsect2" title="Configuration"><a name="idp3194584"></a><h3>Configuration</h3><p>
+    </p><div class="refsect2" title="Configuration"><a name="idp3339568"></a><h3>Configuration</h3><p>
     To activate LVS on a CTDB node you must specify CTDB_PUBLIC_INTERFACE and 
     CTDB_LVS_PUBLIC_ADDRESS in /etc/sysconfig/ctdb.
 	</p><p>
@@ -601,7 +608,7 @@ You must also specify the "--lvs" command line argument to ctdbd to activate LVS
     all of the clients from the node BEFORE you enable LVS. Also make sure
     that when you ping these hosts that the traffic is routed out through the
     eth0 interface.
-    </p></div><div class="refsect1" title="REMOTE CLUSTER NODES"><a name="idp3197376"></a><h2>REMOTE CLUSTER NODES</h2><p>
+    </p></div><div class="refsect1" title="REMOTE CLUSTER NODES"><a name="idp3342360"></a><h2>REMOTE CLUSTER NODES</h2><p>
 It is possible to have a CTDB cluster that spans across a WAN link. 
 For example where you have a CTDB cluster in your datacentre but you also
 want to have one additional CTDB node located at a remote branch site.
@@ -630,7 +637,7 @@ CTDB_CAPABILITY_RECMASTER=no
     </p><p>
 	Verify with the command "ctdb getcapabilities" that that node no longer
 	has the recmaster or the lmaster capabilities.
-    </p></div><div class="refsect1" title="NAT-GW"><a name="idp3200392"></a><h2>NAT-GW</h2><p>
+    </p></div><div class="refsect1" title="NAT-GW"><a name="idp3345376"></a><h2>NAT-GW</h2><p>
       Sometimes it is desireable to run services on the CTDB node which will
       need to originate outgoing traffic to external servers. This might
       be contacting NIS servers, LDAP servers etc. etc.
@@ -653,7 +660,7 @@ CTDB_CAPABILITY_RECMASTER=no
       if there are no public addresses assigned to the node.
       This is the simplest way but it uses up a lot of ip addresses since you
       have to assign both static and also public addresses to each node.
-    </p><div class="refsect2" title="NAT-GW"><a name="idp3202792"></a><h3>NAT-GW</h3><p>
+    </p><div class="refsect2" title="NAT-GW"><a name="idp3347776"></a><h3>NAT-GW</h3><p>
       A second way is to use the built in NAT-GW feature in CTDB.
       With NAT-GW you assign one public NATGW address for each natgw group.
       Each NATGW group is a set of nodes in the cluster that shares the same
@@ -668,8 +675,8 @@ CTDB_CAPABILITY_RECMASTER=no
       In each NATGW group, one of the nodes is designated the NAT Gateway
       through which all traffic that is originated by nodes in this group
       will be routed through if a public addresses are not available. 
-    </p></div><div class="refsect2" title="Configuration"><a name="idp3204560"></a><h3>Configuration</h3><p>
-      NAT-GW is configured in /etc/sysconfigctdb by setting the following
+    </p></div><div class="refsect2" title="Configuration"><a name="idp3350040"></a><h3>Configuration</h3><p>
+      NAT-GW is configured in /etc/sysconfig/ctdb by setting the following
       variables:
     </p><pre class="screen">
 # NAT-GW configuration
@@ -716,31 +723,31 @@ CTDB_CAPABILITY_RECMASTER=no
 # become natgw master.
 #
 # CTDB_NATGW_SLAVE_ONLY=yes
-    </pre></div><div class="refsect2" title="CTDB_NATGW_PUBLIC_IP"><a name="idp3207544"></a><h3>CTDB_NATGW_PUBLIC_IP</h3><p>
+    </pre></div><div class="refsect2" title="CTDB_NATGW_PUBLIC_IP"><a name="idp3353024"></a><h3>CTDB_NATGW_PUBLIC_IP</h3><p>
       This is an ip address in the public network that is used for all outgoing
       traffic when the public addresses are not assigned.
       This address will be assigned to one of the nodes in the cluster which
       will masquerade all traffic for the other nodes.
     </p><p>
       Format of this parameter is IPADDRESS/NETMASK
-    </p></div><div class="refsect2" title="CTDB_NATGW_PUBLIC_IFACE"><a name="idp3208592"></a><h3>CTDB_NATGW_PUBLIC_IFACE</h3><p>
+    </p></div><div class="refsect2" title="CTDB_NATGW_PUBLIC_IFACE"><a name="idp3354072"></a><h3>CTDB_NATGW_PUBLIC_IFACE</h3><p>
       This is the physical interface where the CTDB_NATGW_PUBLIC_IP will be
       assigned to. This should be an interface connected to the public network.
     </p><p>
       Format of this parameter is INTERFACE
-    </p></div><div class="refsect2" title="CTDB_NATGW_DEFAULT_GATEWAY"><a name="idp3209520"></a><h3>CTDB_NATGW_DEFAULT_GATEWAY</h3><p>
+    </p></div><div class="refsect2" title="CTDB_NATGW_DEFAULT_GATEWAY"><a name="idp3355000"></a><h3>CTDB_NATGW_DEFAULT_GATEWAY</h3><p>
       This is the default gateway to use on the node that is elected to host
       the CTDB_NATGW_PUBLIC_IP. This is the default gateway on the public network.
     </p><p>
       Format of this parameter is IPADDRESS
-    </p></div><div class="refsect2" title="CTDB_NATGW_PRIVATE_NETWORK"><a name="idp3210456"></a><h3>CTDB_NATGW_PRIVATE_NETWORK</h3><p>
+    </p></div><div class="refsect2" title="CTDB_NATGW_PRIVATE_NETWORK"><a name="idp3355936"></a><h3>CTDB_NATGW_PRIVATE_NETWORK</h3><p>
       This is the network/netmask used for the interal private network.
     </p><p>
       Format of this parameter is IPADDRESS/NETMASK
-    </p></div><div class="refsect2" title="CTDB_NATGW_NODES"><a name="idp3211312"></a><h3>CTDB_NATGW_NODES</h3><p>
+    </p></div><div class="refsect2" title="CTDB_NATGW_NODES"><a name="idp3356792"></a><h3>CTDB_NATGW_NODES</h3><p>
       This is the list of all nodes that belong to the same NATGW group
       as this node. The default is /etc/ctdb/natgw_nodes.
-    </p></div><div class="refsect2" title="Operation"><a name="idp3211968"></a><h3>Operation</h3><p>
+    </p></div><div class="refsect2" title="Operation"><a name="idp3357448"></a><h3>Operation</h3><p>
       When the NAT-GW functionality is used, one of the nodes is elected
       to act as a NAT router for all the other nodes in the group when
       they need to originate traffic to the external public network.
@@ -759,7 +766,7 @@ CTDB_CAPABILITY_RECMASTER=no
     </p><p>
       This is implemented in the 11.natgw eventscript. Please see the
       eventscript for further information.
-    </p></div><div class="refsect2" title="Removing/Changing NATGW at runtime"><a name="idp3214056"></a><h3>Removing/Changing NATGW at runtime</h3><p>
+    </p></div><div class="refsect2" title="Removing/Changing NATGW at runtime"><a name="idp3359536"></a><h3>Removing/Changing NATGW at runtime</h3><p>
       The following are the procedures to change/remove a NATGW configuration 
       at runtime, without having to restart ctdbd.
     </p><p>
@@ -773,7 +780,7 @@ CTDB_CAPABILITY_RECMASTER=no
 1, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw removenatgw'
 2, Then change the configuration in /etc/sysconfig/ctdb
 3, Run 'CTDB_BASE=/etc/ctdb /etc/ctdb/events.d/11.natgw updatenatgw'
-    </pre></div></div><div class="refsect1" title="POLICY ROUTING"><a name="idp3216304"></a><h2>POLICY ROUTING</h2><p>
+    </pre></div></div><div class="refsect1" title="POLICY ROUTING"><a name="idp3361784"></a><h2>POLICY ROUTING</h2><p>
       A node running CTDB may be a component of a complex network
       topology.  In particular, public addresses may be spread across
       several different networks (or VLANs) and it may not be possible
@@ -783,7 +790,7 @@ CTDB_CAPABILITY_RECMASTER=no
       be specified for packets sourced from each public address.  The
       routes are added and removed as CTDB moves public addresses
       between nodes.
-    </p><div class="refsect2" title="Configuration variables"><a name="idp3217400"></a><h3>Configuration variables</h3><p>
+    </p><div class="refsect2" title="Configuration variables"><a name="idp3362880"></a><h3>Configuration variables</h3><p>
 	There are 4 configuration variables related to policy routing:
       </p><div class="variablelist"><dl><dt><span class="term"><code class="varname">CTDB_PER_IP_ROUTING_CONF</code></span></dt><dd><p>
 	    The name of a configuration file that specifies the
@@ -824,7 +831,7 @@ CTDB_CAPABILITY_RECMASTER=no
 	      The label for a public address &lt;addr;gt; will look
 	      like ctdb.&lt;addr&gt;.  This means that the associated
 	      rules and routes are easy to read (and manipulate).
-	    </p></dd></dl></div></div><div class="refsect2" title="Configuration file"><a name="idp3224576"></a><h3>Configuration file</h3><p>
+	    </p></dd></dl></div></div><div class="refsect2" title="Configuration file"><a name="idp3369976"></a><h3>Configuration file</h3><p>
 	The format of each line is:
       </p><pre class="screen">
     &lt;public_address&gt; &lt;network&gt; [ &lt;gateway&gt; ]
@@ -885,7 +892,7 @@ CTDB_CAPABILITY_RECMASTER=no
       </p><pre class="screen">
   192.168.1.0/24 dev eth2 scope link 
   default via 192.168.1.1 dev eth2 
-      </pre></div><div class="refsect2" title="Example configuration"><a name="idp3233304"></a><h3>Example configuration</h3><p>
+      </pre></div><div class="refsect2" title="Example configuration"><a name="idp3378624"></a><h3>Example configuration</h3><p>
 	Here is a more complete example configuration.
       </p><pre class="screen">
 /etc/ctdb/public_addresses:
@@ -905,7 +912,7 @@ CTDB_CAPABILITY_RECMASTER=no
 	The routes local packets as expected, the default route is as
 	previously discussed, but packets to 192.168.200.0/24 are
 	routed via the alternate gateway 192.168.1.254.
-      </p></div></div><div class="refsect1" title="NOTIFICATION SCRIPT"><a name="idp3235048"></a><h2>NOTIFICATION SCRIPT</h2><p>
+      </p></div></div><div class="refsect1" title="NOTIFICATION SCRIPT"><a name="idp3380368"></a><h2>NOTIFICATION SCRIPT</h2><p>
       Notification scripts are used with ctdb to have a call-out from ctdb
       to a user-specified script when certain state changes occur in ctdb.
       This is commonly to set up either sending SNMP traps or emails
@@ -917,17 +924,17 @@ CTDB_CAPABILITY_RECMASTER=no
       See /etc/ctdb/notify.sh for an example script.
     </p><p>
       CTDB currently generates notifications on these state changes:
-    </p><div class="refsect2" title="unhealthy"><a name="idp3236848"></a><h3>unhealthy</h3><p>
+    </p><div class="refsect2" title="unhealthy"><a name="idp3382168"></a><h3>unhealthy</h3><p>
       This call-out is triggered when the node changes to UNHEALTHY state.
-    </p></div><div class="refsect2" title="healthy"><a name="idp3237448"></a><h3>healthy</h3><p>
+    </p></div><div class="refsect2" title="healthy"><a name="idp3382768"></a><h3>healthy</h3><p>
       This call-out is triggered when the node changes to HEALTHY state.
-    </p></div><div class="refsect2" title="startup"><a name="idp3238048"></a><h3>startup</h3><p>
+    </p></div><div class="refsect2" title="startup"><a name="idp3383368"></a><h3>startup</h3><p>
       This call-out is triggered when ctdb has started up and all managed services are up and running.
-    </p></div></div><div class="refsect1" title="ClamAV Daemon"><a name="idp3238744"></a><h2>ClamAV Daemon</h2><p>
+    </p></div></div><div class="refsect1" title="ClamAV Daemon"><a name="idp3384064"></a><h2>ClamAV Daemon</h2><p>
 CTDB has support to manage the popular anti-virus daemon ClamAV.
 This support is implemented through the
 eventscript : /etc/ctdb/events.d/31.clamd.
-</p><div class="refsect2" title="Configuration"><a name="idp3239352"></a><h3>Configuration</h3><p>
+</p><div class="refsect2" title="Configuration"><a name="idp3384672"></a><h3>Configuration</h3><p>
 Start by configuring CLAMAV normally and test that it works. Once this is
 done, copy the configuration files over to all the nodes so that all nodes
 share identical CLAMAV configurations.
@@ -956,10 +963,10 @@ Once you have restarted CTDBD, use
 ctdb scriptstatus
 </pre><p>
 and verify that the 31.clamd eventscript is listed and that it was executed successfully.
-</p></div></div><div class="refsect1" title="SEE ALSO"><a name="idp3242904"></a><h2>SEE ALSO</h2><p>
+</p></div></div><div class="refsect1" title="SEE ALSO"><a name="idp3388144"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" title="COPYRIGHT/LICENSE"><a name="idp3243704"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" title="COPYRIGHT/LICENSE"><a name="idp3388904"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>
