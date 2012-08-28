@@ -431,6 +431,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct timespec write_time_ts;
 	struct smb2_create_blobs out_context_blobs;
 	int requested_oplock_level;
+	struct smb2_create_blob *dhnc = NULL;
 
 	ZERO_STRUCT(out_context_blobs);
 
@@ -466,6 +467,19 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		smb1req = state->smb1req;
 		DEBUG(10,("smbd_smb2_create_send: reentrant for file %s\n",
 			in_name ));
+	}
+
+	dhnc = smb2_create_blob_find(&in_context_blobs,
+				     SMB2_CREATE_TAG_DHNC);
+
+	if (dhnc) {
+		if (dhnc->data.length != 16) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+		/* we don't support durable handles yet */
+		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return tevent_req_post(req, ev);
 	}
 
 	if (IS_IPC(smb1req->conn)) {
@@ -507,7 +521,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		struct smb2_create_blob *secd = NULL;
 		struct security_descriptor *sec_desc = NULL;
 		struct smb2_create_blob *dhnq = NULL;
-		struct smb2_create_blob *dhnc = NULL;
 		struct smb2_create_blob *alsi = NULL;
 		uint64_t allocation_size = 0;
 		struct smb2_create_blob *twrp = NULL;
@@ -521,8 +534,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 					     SMB2_CREATE_TAG_SECD);
 		dhnq = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_DHNQ);
-		dhnc = smb2_create_blob_find(&in_context_blobs,
-					     SMB2_CREATE_TAG_DHNC);
 		alsi = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_ALSI);
 		twrp = smb2_create_blob_find(&in_context_blobs,
@@ -536,11 +547,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (exta) {
-			if (dhnc) {
-				tevent_req_nterror(req,NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
-
 			ea_list = read_nttrans_ea_list(mem_ctx,
 				(const char *)exta->data.data, exta->data.length);
 			if (!ea_list) {
@@ -551,11 +557,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (mxac) {
-			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
-
 			if (mxac->data.length == 0) {
 				max_access_time = 0;
 			} else if (mxac->data.length == 8) {
@@ -568,11 +569,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (secd) {
 			enum ndr_err_code ndr_err;
-
-			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
 
 			sec_desc = talloc_zero(state, struct security_descriptor);
 			if (tevent_req_nomem(sec_desc, req)) {
@@ -591,11 +587,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (dhnq) {
-			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
-
 			if (dhnq->data.length != 16) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 				return tevent_req_post(req, ev);
@@ -606,22 +597,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			 */
 		}
 
-		if (dhnc) {
-			if (dhnc->data.length != 16) {
-				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-				return tevent_req_post(req, ev);
-			}
-			/* we don't support durable handles yet */
-			tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-			return tevent_req_post(req, ev);
-		}
-
 		if (alsi) {
-			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
-
 			if (alsi->data.length != 8) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 				return tevent_req_post(req, ev);
@@ -633,11 +609,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			NTTIME nttime;
 			time_t t;
 			struct tm *tm;
-
-			if (dhnc) {
-				tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
 
 			if (twrp->data.length != 8) {
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
