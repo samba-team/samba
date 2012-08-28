@@ -775,13 +775,13 @@ Please fix this account before attempting to upgrade again
     pgids = {}
     if ldap:
         creds = Credentials()
-        creds.guess(s3param.get_context())
+        creds.guess(samba3.lp)
         creds.set_bind_dn(ldapuser)
         creds.set_password(ldappass)
         urls = samba3.lp.get("passdb backend").split(":",1)[1].strip('"')
         for url in urls.split():
             try:
-                ldb_object = Ldb(url, session_info=system_session(result.lp), credentials=creds, lp=result.lp)
+                ldb_object = Ldb(url, credentials=creds)
             except ldb.LdbError, e:
                 logger.warning("Could not open ldb connection to %s, the error message is: %s", url, e)
             else:
