@@ -1228,9 +1228,6 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	if (!print_backend_init(smbd_messaging_context()))
-		exit(1);
-
 	if (!init_guest_info()) {
 		DEBUG(0,("ERROR: failed to setup guest info.\n"));
 		return -1;
@@ -1256,6 +1253,13 @@ extern void build_options(bool screen);
 	if (!dcesrv_ep_setup(smbd_event_context(), smbd_server_conn->msg_ctx)) {
 		exit(1);
 	}
+
+	/*
+	 * The print backend init also migrates the printing tdb's,
+	 * this requires a winreg pipe.
+	 */
+	if (!print_backend_init(smbd_messaging_context()))
+		exit(1);
 
 	/* Publish nt printers, this requires a working winreg pipe */
 	pcap_cache_reload(server_event_context(), smbd_messaging_context(),
