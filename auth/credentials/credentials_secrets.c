@@ -332,35 +332,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 }
 
 /**
- * Fill in credentials for the machine trust account, from the secrets database.
- * 
- * @param cred Credentials structure to fill in
- * @retval NTSTATUS error detailing any failure
- */
-NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
-				    struct loadparm_context *lp_ctx)
-{
-	NTSTATUS status;
-	char *filter;
-	char *error_string;
-	/* Bleh, nasty recursion issues: We are setting a machine
-	 * account here, so we don't want the 'pending' flag around
-	 * any more */
-	cred->machine_account_pending = false;
-	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
-				       cli_credentials_get_realm(cred),
-				       cli_credentials_get_domain(cred));
-	status = cli_credentials_set_secrets_lct(cred, lp_ctx, NULL,
-						 SECRETS_PRINCIPALS_DN,
-						 filter, 0, NULL, &error_string);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not find krbtgt (master Kerberos) account in secrets database: %s: %s\n", nt_errstr(status), error_string));
-		talloc_free(error_string);
-	}
-	return status;
-}
-
-/**
  * Fill in credentials for a particular prinicpal, from the secrets database.
  * 
  * @param cred Credentials structure to fill in
