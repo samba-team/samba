@@ -288,7 +288,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 		ret = 0;
 	}
 	if (pjob->sysjob == -1) {
-		DEBUG(0, ("failed to get sysjob for job %u (%s), tracking as "
+		DEBUG(2, ("failed to get sysjob for job %u (%s), tracking as "
 			  "Unix job\n", pjob->jobid, jobname));
 	}
 
