@@ -427,6 +427,10 @@ NTSTATUS smb2srv_tcon_lookup(struct smbXsrv_session *session,
 			     uint32_t tree_id, NTTIME now,
 			     struct smbXsrv_tcon **tcon);
 NTSTATUS smb2srv_tcon_disconnect_all(struct smbXsrv_session *session);
+struct smbXsrv_tcon_global0;
+NTSTATUS smbXsrv_tcon_global_traverse(
+			int (*fn)(struct smbXsrv_tcon_global0 *, void *),
+			void *private_data);
 
 NTSTATUS smbXsrv_open_global_init(void);
 NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
