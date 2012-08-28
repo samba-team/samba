@@ -98,7 +98,7 @@ void delete_and_reload_printers(struct tevent_context *ev,
 		pname = lp_printername(session_info, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
-		if (!pcap_printername_ok(pname) && lp_autoloaded(snum)) {
+		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
 			if (is_printer_published(session_info, session_info,
