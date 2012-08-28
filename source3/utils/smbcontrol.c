@@ -321,12 +321,13 @@ cleanup:
 	ptrace(PTRACE_DETACH, pid, NULL, NULL);
 }
 
-static int stack_trace_connection(const struct connections_key *key,
-				  const struct connections_data *crec,
-				  void *priv)
+static int stack_trace_server(const struct server_id *id,
+			      uint32_t msg_flags,
+			      void *priv)
 {
-	print_stack_trace(procid_to_pid(&crec->pid), (int *)priv);
-
+	if (id->vnn == get_my_vnn()) {
+		print_stack_trace(procid_to_pid(&id->pid), (int *)priv);
+	}
 	return 0;
 }
 
@@ -353,7 +354,7 @@ static bool do_daemon_stack_trace(struct tevent_context *ev_ctx,
 		 */
 		print_stack_trace(dest, &count);
 	} else {
-		connections_forall_read(stack_trace_connection, &count);
+		serverid_traverse_read(stack_trace_server, &count);
 	}
 
 	return True;
