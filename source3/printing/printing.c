@@ -2843,8 +2843,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 	}
 
 	slprintf(pjob->filename, sizeof(pjob->filename)-1,
-		 "%s/%s%.8u.XXXXXX", lp_pathname(snum),
-		 PRINT_SPOOL_PREFIX, (unsigned int)jobid);
+		 "%s/%sXXXXXX", lp_pathname(snum), PRINT_SPOOL_PREFIX);
 	pjob->fd = mkstemp(pjob->filename);
 
 	if (pjob->fd == -1) {
