@@ -304,7 +304,7 @@ planpythontestsuite("s3dc", "samba.tests.libsmb_samba_internal");
 # the API. These mainly test that the various command-line options of commands
 # work correctly.
 
-for env in ["s3member", "s4member", "dc"]:
+for env in ["s3member", "s4member", "dc", "chgdcpass"]:
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient])
 
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")

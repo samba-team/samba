@@ -672,6 +672,7 @@ nogroup:x:65534:nobody
 		LOCKDIR => $ctx->{lockdir},
 		STATEDIR => $ctx->{statedir},
 		CACHEDIR => $ctx->{cachedir},
+		PRIVATEDIR => $ctx->{privatedir},
 		SERVERCONFFILE => $ctx->{smb_conf},
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},
@@ -1450,6 +1451,14 @@ sub provision_chgdcpass($$)
 		warn("Unable to add wins configuration");
 		return undef;
 	}
+	
+	# Remove secrets.tdb from this environment to test that we still start up
+	# on systems without the new matching secrets.tdb records
+	unless (unlink("$ret->{PRIVATEDIR}/secrets.tdb")) {
+		warn("Unable to remove $ret->{PRIVATEDIR}/secrets.tdb added during provision");
+		return undef;
+	}
+	    
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
