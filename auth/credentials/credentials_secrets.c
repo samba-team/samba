@@ -235,8 +235,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		TALLOC_FREE(keystr_upper);
 		if (NT_STATUS_IS_OK(status) && dbuf.dsize == 4) {
 			secrets_tdb_lct = IVAL(dbuf.dptr,0);
+			TALLOC_FREE(dbuf.dptr);
 		}
-		TALLOC_FREE(dbuf.dptr);
 
 		keystr = talloc_asprintf(cred, "%s/%s",
 					 SECRETS_MACHINE_PASSWORD,
