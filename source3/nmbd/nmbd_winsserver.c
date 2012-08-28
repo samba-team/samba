@@ -1014,7 +1014,7 @@ static void wins_register_query_success(struct subnet_record *subrec,
 	DEBUG(3,("wins_register_query_success: Original client at IP %s still wants the \
 name %s. Rejecting registration request.\n", inet_ntoa(ip), nmb_namestr(question_name) ));
 
-	send_wins_name_registration_response(RFS_ERR, 0, orig_reg_packet);
+	send_wins_name_registration_response(ACT_ERR, 0, orig_reg_packet);
 
 	orig_reg_packet->locked = False;
 	free_packet(orig_reg_packet);
