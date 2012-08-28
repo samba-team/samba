@@ -64,21 +64,16 @@ struct count_stat {
  Count the entries belonging to a service in the connection db.
 ****************************************************************************/
 
-static int count_fn(const struct connections_key *ckey,
-		    const struct connections_data *crec,
+static int count_fn(struct smbXsrv_tcon_global0 *tcon,
 		    void *udp)
 {
 	struct count_stat *cs = (struct count_stat *)udp;
 
-	if (crec->cnum == TID_FIELD_INVALID) {
+	if (cs->verify && !process_exists(tcon->server_id)) {
 		return 0;
 	}
 
-	if (cs->verify && !process_exists(crec->pid)) {
-		return 0;
-	}
-
-	if (strequal(crec->servicename, cs->name)) {
+	if (strequal(tcon->share_name, cs->name)) {
 		cs->curr_connections++;
 	}
 
@@ -92,7 +87,7 @@ static int count_fn(const struct connections_key *ckey,
 int count_current_connections(const char *sharename, bool verify)
 {
 	struct count_stat cs;
-	int ret;
+	NTSTATUS status;
 
 	cs.curr_connections = 0;
 	cs.name = sharename;
@@ -103,17 +98,12 @@ int count_current_connections(const char *sharename, bool verify)
 	 * as it leads to deadlock.
 	 */
 
-	/*
-	 * become_root() because we might have to open connections.tdb
-	 * via ctdb, which is not possible without root.
-	 */
-	become_root();
-	ret = connections_forall_read(count_fn, &cs);
-	unbecome_root();
+	status = smbXsrv_tcon_global_traverse(count_fn, &cs);
 
-	if (ret < 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("count_current_connections: traverse of "
-			 "connections.tdb failed\n"));
+			 "smbXsrv_tcon_global.tdb failed - %s\n",
+			 nt_errstr(status)));
 		return 0;
 	}
 
