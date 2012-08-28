@@ -73,7 +73,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	/* some other parts of the system will key off this */
 	cred->machine_account = true;
 
-	mem_ctx = talloc_named(cred, 0, "cli_credentials fetch machine password");
+	mem_ctx = talloc_named(cred, 0, "cli_credentials_set_secrets from ldb");
 
 	if (!ldb) {
 		/* Local secrets are stored in secrets.ldb */
@@ -209,10 +209,21 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	char *secrets_tdb_password = NULL;
 	char *keystr;
 	char *keystr_upper = NULL;
-	char *secrets_tdb = lpcfg_private_path(cred, lp_ctx, "secrets.tdb");
-	struct db_context *db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb, 0,
-						      TDB_DEFAULT, O_RDWR, 0600,
-						      DBWRAP_LOCK_ORDER_1);
+	char *secrets_tdb;
+	struct db_context *db_ctx;
+	TALLOC_CTX *tmp_ctx = talloc_named(cred, 0, "cli_credentials_set_secrets from ldb");
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	secrets_tdb = lpcfg_private_path(cred, lp_ctx, "secrets.tdb");
+	if (!secrets_tdb) {
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+		
+	db_ctx = dbwrap_local_open(cred, lp_ctx, secrets_tdb, 0,
+				   TDB_DEFAULT, O_RDWR, 0600,
+				   DBWRAP_LOCK_ORDER_1);
 	/* Bleh, nasty recursion issues: We are setting a machine
 	 * account here, so we don't want the 'pending' flag around
 	 * any more */
@@ -225,25 +236,21 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 
 	if (db_ctx) {
 		TDB_DATA dbuf;
-		keystr = talloc_asprintf(cred, "%s/%s",
+		keystr = talloc_asprintf(tmp_ctx, "%s/%s",
 					 SECRETS_MACHINE_LAST_CHANGE_TIME,
 					 domain);
-		keystr_upper = strupper_talloc(cred, keystr);
-		TALLOC_FREE(keystr);
-		status = dbwrap_fetch(db_ctx, cred, string_tdb_data(keystr_upper),
+		keystr_upper = strupper_talloc(tmp_ctx, keystr);
+		status = dbwrap_fetch(db_ctx, tmp_ctx, string_tdb_data(keystr_upper),
 				      &dbuf);
-		TALLOC_FREE(keystr_upper);
 		if (NT_STATUS_IS_OK(status) && dbuf.dsize == 4) {
 			secrets_tdb_lct = IVAL(dbuf.dptr,0);
-			TALLOC_FREE(dbuf.dptr);
 		}
 
-		keystr = talloc_asprintf(cred, "%s/%s",
+		keystr = talloc_asprintf(tmp_ctx, "%s/%s",
 					 SECRETS_MACHINE_PASSWORD,
 					 domain);
-		keystr_upper = strupper_talloc(cred, keystr);
-		TALLOC_FREE(keystr);
-		status = dbwrap_fetch(db_ctx, cred, string_tdb_data(keystr_upper),
+		keystr_upper = strupper_talloc(tmp_ctx, keystr);
+		status = dbwrap_fetch(db_ctx, tmp_ctx, string_tdb_data(keystr_upper),
 				      &dbuf);
 		if (NT_STATUS_IS_OK(status)) {
 			secrets_tdb_password = (char *)dbuf.dptr;
@@ -269,15 +276,13 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	}
 
 	if (secrets_tdb_password_more_recent) {
-		char *machine_account = talloc_asprintf(cred, "%s$", lpcfg_netbios_name(lp_ctx));
+		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
 		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
 		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
-		TALLOC_FREE(machine_account);
-	} else if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
-		   || NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, status)) {
+	} else if (!NT_STATUS_IS_OK(status)) {
 		if (db_ctx) {
 			error_string = talloc_asprintf(cred,
 						       "Failed to fetch machine account password from "
@@ -289,16 +294,11 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 						       "secrets.ldb: %s and failed to open %s",
 						       error_string, secrets_tdb);
 		}
-	}
-	
-	TALLOC_FREE(secrets_tdb_password);
-	TALLOC_FREE(secrets_tdb);
-	TALLOC_FREE(db_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", 
 			  error_string, nt_errstr(status)));
-		talloc_free(error_string);
 	}
+	
+	TALLOC_FREE(tmp_ctx);
 	return status;
 }
 
