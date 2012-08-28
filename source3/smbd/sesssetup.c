@@ -488,36 +488,43 @@ struct shutdown_state {
 	struct messaging_context *msg_ctx;
 };
 
-static int shutdown_other_smbds(const struct connections_key *key,
-				const struct connections_data *crec,
+static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 				void *private_data)
 {
 	struct shutdown_state *state = (struct shutdown_state *)private_data;
 	struct server_id self_pid = messaging_server_id(state->msg_ctx);
+	struct server_id pid = session->channels[0].server_id;
+	const char *addr = session->channels[0].remote_address;
 
 	DEBUG(10, ("shutdown_other_smbds: %s, %s\n",
-		   server_id_str(talloc_tos(), &crec->pid), crec->addr));
+		   server_id_str(talloc_tos(), &pid), addr));
 
-	if (!process_exists(crec->pid)) {
+	if (!process_exists(pid)) {
 		DEBUG(10, ("process does not exist\n"));
 		return 0;
 	}
 
-	if (serverid_equal(&crec->pid, &self_pid)) {
+	if (serverid_equal(&pid, &self_pid)) {
 		DEBUG(10, ("It's me\n"));
 		return 0;
 	}
 
-	if (strcmp(state->ip, crec->addr) != 0) {
-		DEBUG(10, ("%s does not match %s\n", state->ip, crec->addr));
+	/*
+	 * here we use strstr() because 'addr'
+	 * (session->channels[0].remote_address)
+	 * contains a string like:
+	 * 'ipv4:127.0.0.1:48163'
+	 */
+	if (strstr(addr, state->ip)  == NULL) {
+		DEBUG(10, ("%s does not match %s\n", state->ip, addr));
 		return 0;
 	}
 
 	DEBUG(1, ("shutdown_other_smbds: shutting down pid %u "
-		  "(IP %s)\n", (unsigned int)procid_to_pid(&crec->pid),
+		  "(IP %s)\n", (unsigned int)procid_to_pid(&pid),
 		  state->ip));
 
-	messaging_send(state->msg_ctx, crec->pid, MSG_SHUTDOWN,
+	messaging_send(state->msg_ctx, pid, MSG_SHUTDOWN,
 		       &data_blob_null);
 	return 0;
 }
@@ -541,7 +548,7 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 		}
 		state.ip = addr;
 		state.msg_ctx = sconn->msg_ctx;
-		connections_forall_read(shutdown_other_smbds, &state);
+		smbXsrv_session_global_traverse(shutdown_other_smbds, &state);
 		TALLOC_FREE(addr);
 	}
 }
