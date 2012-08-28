@@ -46,12 +46,14 @@
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-_PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
-					      struct loadparm_context *lp_ctx,
-					      struct ldb_context *ldb,
-					      const char *base,
-					      const char *filter, 
-					      char **error_string)
+static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred, 
+						struct loadparm_context *lp_ctx,
+						struct ldb_context *ldb,
+						const char *base,
+						const char *filter, 
+						time_t secrets_tdb_last_change_time,
+						const char *secrets_tdb_password,
+						char **error_string)
 {
 	TALLOC_CTX *mem_ctx;
 	
@@ -66,6 +68,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	const char *salt_principal;
 	char *keytab;
 	const struct ldb_val *whenChanged;
+	time_t lct;
 
 	/* ok, we are going to get it now, don't recurse back here */
 	cred->machine_account_pending = false;
@@ -79,8 +82,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		/* Local secrets are stored in secrets.ldb */
 		ldb = secrets_db_connect(mem_ctx, lp_ctx);
 		if (!ldb) {
-			/* set anonymous as the fallback, if the machine account won't work */
-			cli_credentials_set_anonymous(cred);
 			*error_string = talloc_strdup(cred, "Could not open secrets.ldb");
 			talloc_free(mem_ctx);
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -96,14 +97,32 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		*error_string = talloc_asprintf(cred, "Could not find entry to match filter: '%s' base: '%s': %s: %s",
 						filter, base ? base : "",
 						ldb_strerror(ldb_ret), ldb_errstring(ldb));
-		/* set anonymous as the fallback, if the machine account won't work */
-		cli_credentials_set_anonymous(cred);
 		talloc_free(mem_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	password = ldb_msg_find_attr_as_string(msg, "secret", NULL);
 
+	whenChanged = ldb_msg_find_ldb_val(msg, "whenChanged");
+	if (!whenChanged || ldb_val_to_time(whenChanged, &lct) != LDB_SUCCESS) {
+		/* This attribute is mandetory */
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	/* Don't set secrets.ldb info if the secrets.tdb entry was more recent */
+	if (lct < secrets_tdb_last_change_time) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+	
+	if (lct == secrets_tdb_last_change_time && secrets_tdb_password && strcmp(password, secrets_tdb_password) != 0) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NOT_FOUND;
+	}
+	
+	cli_credentials_set_password_last_changed_time(cred, lct);
+	
 	machine_account = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
 	if (!machine_account) {
@@ -117,8 +136,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 								"'servicePrincipalName' or "
 								"'ldapBindDn' in secrets record: %s",
 								ldb_dn_get_linearized(msg->dn));
-				/* set anonymous as the fallback, if the machine account won't work */
-				cli_credentials_set_anonymous(cred);
 				talloc_free(mem_ctx);
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			} else {
@@ -169,14 +186,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	cli_credentials_set_kvno(cred, ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0));
 
-	whenChanged = ldb_msg_find_ldb_val(msg, "whenChanged");
-	if (whenChanged) {
-		time_t lct;
-		if (ldb_val_to_time(whenChanged, &lct) == LDB_SUCCESS) {
-			cli_credentials_set_password_last_changed_time(cred, lct);
-		}
-	}
-	
 	/* If there was an external keytab specified by reference in
 	 * the LDB, then use this.  Otherwise we will make one up
 	 * (chewing CPU time) from the password */
@@ -188,6 +197,28 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	talloc_free(mem_ctx);
 	
 	return NT_STATUS_OK;
+}
+
+
+/**
+ * Fill in credentials for the machine trust account, from the secrets database.
+ * 
+ * @param cred Credentials structure to fill in
+ * @retval NTSTATUS error detailing any failure
+ */
+_PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+					      struct loadparm_context *lp_ctx,
+					      struct ldb_context *ldb,
+					      const char *base,
+					      const char *filter, 
+					      char **error_string)
+{
+	NTSTATUS status = cli_credentials_set_secrets_lct(cred, lp_ctx, ldb, base, filter, 0, NULL, error_string);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* set anonymous as the fallback, if the machine account won't work */
+		cli_credentials_set_anonymous(cred);
+	}
+	return status;
 }
 
 /**
@@ -203,7 +234,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	char *filter;
 	char *error_string;
 	const char *domain;
-	const char *realm;
 	bool secrets_tdb_password_more_recent;
 	time_t secrets_tdb_lct = 0;
 	char *secrets_tdb_password = NULL;
@@ -232,7 +262,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	/* We have to do this, as the fallback in
 	 * cli_credentials_set_secrets is to run as anonymous, so the domain is wiped */
 	domain = cli_credentials_get_domain(cred);
-	realm = cli_credentials_get_realm(cred);
 
 	if (db_ctx) {
 		TDB_DATA dbuf;
@@ -259,9 +288,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
 				 domain);
-	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
-					     SECRETS_PRIMARY_DOMAIN_DN,
-					     filter, &error_string);
+	status = cli_credentials_set_secrets_lct(cred, lp_ctx, NULL,
+						 SECRETS_PRIMARY_DOMAIN_DN,
+						 filter, secrets_tdb_lct, secrets_tdb_password, &error_string);
 	if (secrets_tdb_password == NULL) {
 		secrets_tdb_password_more_recent = false;
 	} else if (NT_STATUS_EQUAL(NT_STATUS_CANT_ACCESS_DOMAIN_INFO, status)
@@ -279,8 +308,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		char *machine_account = talloc_asprintf(tmp_ctx, "%s$", lpcfg_netbios_name(lp_ctx));
 		cli_credentials_set_password(cred, secrets_tdb_password, CRED_SPECIFIED);
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
-		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
-		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
 		cli_credentials_set_username(cred, machine_account, CRED_SPECIFIED);
 	} else if (!NT_STATUS_IS_OK(status)) {
 		if (db_ctx) {
@@ -296,6 +323,8 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 		}
 		DEBUG(1, ("Could not find machine account in secrets database: %s: %s\n", 
 			  error_string, nt_errstr(status)));
+		/* set anonymous as the fallback, if the machine account won't work */
+		cli_credentials_set_anonymous(cred);
 	}
 	
 	TALLOC_FREE(tmp_ctx);
@@ -321,9 +350,9 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
-					     SECRETS_PRINCIPALS_DN,
-					     filter, &error_string);
+	status = cli_credentials_set_secrets_lct(cred, lp_ctx, NULL,
+						 SECRETS_PRINCIPALS_DN,
+						 filter, 0, NULL, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not find krbtgt (master Kerberos) account in secrets database: %s: %s\n", nt_errstr(status), error_string));
 		talloc_free(error_string);
@@ -352,9 +381,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
+	status = cli_credentials_set_secrets_lct(cred, lp_ctx, NULL,
 					     SECRETS_PRINCIPALS_DN, filter,
-					     &error_string);
+					     0, NULL, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not find %s principal in secrets database: %s: %s\n", serviceprincipal, nt_errstr(status), error_string));
 	}
