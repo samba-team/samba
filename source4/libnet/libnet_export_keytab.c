@@ -63,7 +63,7 @@ NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, s
 	}
 
 	if (r->in.principal) {
-		ret = kt_copy_one_principal(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name, r->in.principal, 0, samba_all_enctypes);
+		ret = kt_copy_one_principal(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name, r->in.principal, 0, samba_all_enctypes());
 	} else {
 		unlink(r->in.keytab_name);
 		ret = kt_copy(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name);
