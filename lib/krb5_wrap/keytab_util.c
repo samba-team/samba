@@ -162,7 +162,7 @@ krb5_error_code kt_copy_one_principal(krb5_context context,
 				      const char *to,
 				      const char *principal,
 				      krb5_kvno kvno,
-				      krb5_enctype *enctypes)
+				      const krb5_enctype *enctypes)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;

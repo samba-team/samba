@@ -281,7 +281,7 @@ krb5_error_code kt_copy_one_principal(krb5_context context,
 				      const char *to,
 				      const char *principal,
 				      krb5_kvno kvno,
-				      krb5_enctype *enctypes);
+				      const krb5_enctype *enctypes);
 
 #if defined(HAVE_KRB5_KT_COMPARE)
 #define smb_krb5_kt_compare krb5_kt_compare
