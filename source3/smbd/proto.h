@@ -577,7 +577,7 @@ void *init_quota_handle(TALLOC_CTX *mem_ctx);
 /* The following definitions come from smbd/nttrans.c  */
 
 void reply_ntcreate_and_X(struct smb_request *req);
-NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
+NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
                        uint32_t security_info_sent);
 struct ea_list *read_nttrans_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t data_size);
 void reply_ntcancel(struct smb_request *req);
