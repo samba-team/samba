@@ -206,7 +206,6 @@
 ^samba3.smb2.oplock.batch12
 ^samba3.smb2.oplock.batch20
 ^samba3.smb2.acls.GENERIC
-^samba3.smb2.acls.INHERITFLAGS
 ^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
 ^samba3.smb2.streams.attributes
