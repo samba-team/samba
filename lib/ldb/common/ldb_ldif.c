@@ -270,18 +270,20 @@ static const struct {
 #define CHECK_RET do { if (ret < 0) { talloc_free(mem_ctx); return ret; } total += ret; } while (0)
 
 /*
-  write to ldif, using a caller supplied write method
+  write to ldif, using a caller supplied write method, and only printing secrets if we are not in a trace
 */
-int ldb_ldif_write(struct ldb_context *ldb,
-		   int (*fprintf_fn)(void *, const char *, ...), 
-		   void *private_data,
-		   const struct ldb_ldif *ldif)
+static int ldb_ldif_write_trace(struct ldb_context *ldb,
+				int (*fprintf_fn)(void *, const char *, ...), 
+				void *private_data,
+				const struct ldb_ldif *ldif, 
+				bool in_trace)
 {
 	TALLOC_CTX *mem_ctx;
 	unsigned int i, j;
 	int total=0, ret;
 	char *p;
 	const struct ldb_message *msg;
+	const char * const * secret_attributes = ldb_get_opaque(ldb, LDB_SECRET_ATTRIBUTE_LIST_OPAQUE);
 
 	mem_ctx = talloc_named_const(NULL, 0, "ldb_ldif_write");
 
@@ -327,6 +329,14 @@ int ldb_ldif_write(struct ldb_context *ldb,
 					   msg->elements[i].name);
 				break;
 			}
+		}
+		
+		if (in_trace && secret_attributes && ldb_attr_in_list(secret_attributes, msg->elements[i].name)) {
+			/* Deliberatly skip printing this password */
+			ret = fprintf_fn(private_data, "# %s::: REDACTED SECRET ATTRIBUTE",
+					 msg->elements[i].name);
+			CHECK_RET;
+			continue;
 		}
 
 		for (j=0;j<msg->elements[i].num_values;j++) {
@@ -380,6 +390,18 @@ int ldb_ldif_write(struct ldb_context *ldb,
 }
 
 #undef CHECK_RET
+
+
+/*
+  write to ldif, using a caller supplied write method
+*/
+int ldb_ldif_write(struct ldb_context *ldb,
+		   int (*fprintf_fn)(void *, const char *, ...), 
+		   void *private_data,
+		   const struct ldb_ldif *ldif)
+{
+	return ldb_ldif_write_trace(ldb, fprintf_fn, private_data, ldif, false);
+}
 
 
 /*
@@ -727,7 +749,6 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	char *chunk=NULL, *s;
 	struct ldb_val value;
 	unsigned flags = 0;
-
 	value.data = NULL;
 
 	ldif = talloc(ldb, struct ldb_ldif);
@@ -1000,6 +1021,20 @@ static int ldif_printf_string(void *private_data, const char *fmt, ...)
 	}
 
 	return talloc_get_size(state->string) - oldlen;
+}
+
+char *ldb_ldif_write_redacted_trace_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
+					   const struct ldb_ldif *ldif)
+{
+	struct ldif_write_string_state state;
+	state.string = talloc_strdup(mem_ctx, "");
+	if (!state.string) {
+		return NULL;
+	}
+	if (ldb_ldif_write_trace(ldb, ldif_printf_string, &state, ldif, true) == -1) {
+		return NULL;
+	}
+	return state.string;
 }
 
 char *ldb_ldif_write_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 

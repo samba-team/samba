@@ -55,6 +55,10 @@ struct ldb_module;
 /* an extended match rule that always fails to match */
 #define SAMBA_LDAP_MATCH_ALWAYS_FALSE "1.3.6.1.4.1.7165.4.5.1"
 
+/* The const char * const * pointer to a list of secret (password)
+ * attributes, not to be printed in trace messages */
+#define LDB_SECRET_ATTRIBUTE_LIST_OPAQUE "LDB_SECRET_ATTRIBUTE_LIST"
+
 /*
    these function pointers define the operations that a ldb module can intercept
 */

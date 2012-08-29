@@ -726,6 +726,7 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	unsigned int i;
+	struct ldb_ldif ldif;
 
 	switch (req->operation) {
 	case LDB_SEARCH:
@@ -765,18 +766,36 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 		ldb_debug_add(ldb, " data: %s\n", req->op.extended.data?"yes":"no");
 		break;
 	case LDB_ADD:
+		ldif.changetype = LDB_CHANGETYPE_ADD;
+		ldif.msg = discard_const_p(struct ldb_message, req->op.add.message);
+
 		ldb_debug_add(ldb, "ldb_trace_request: ADD\n");
+
+		/* 
+		 * The choice to call
+		 * ldb_ldif_write_redacted_trace_string() is CRITICAL
+		 * for security.  It ensures that we do not output
+		 * passwords into debug logs 
+		 */
+
 		ldb_debug_add(req->handle->ldb, "%s\n", 
-			      ldb_ldif_message_string(req->handle->ldb, tmp_ctx, 
-						      LDB_CHANGETYPE_ADD, 
-						      req->op.add.message));
+			      ldb_ldif_write_redacted_trace_string(req->handle->ldb, tmp_ctx, &ldif));
 		break;
 	case LDB_MODIFY:
+		ldif.changetype = LDB_CHANGETYPE_MODIFY;
+		ldif.msg = discard_const_p(struct ldb_message, req->op.mod.message);
+
 		ldb_debug_add(ldb, "ldb_trace_request: MODIFY\n");
+
+		/* 
+		 * The choice to call
+		 * ldb_ldif_write_redacted_trace_string() is CRITICAL
+		 * for security.  It ensures that we do not output
+		 * passwords into debug logs 
+		 */
+
 		ldb_debug_add(req->handle->ldb, "%s\n", 
-			      ldb_ldif_message_string(req->handle->ldb, tmp_ctx, 
-						      LDB_CHANGETYPE_MODIFY,
-						      req->op.mod.message));
+			      ldb_ldif_write_redacted_trace_string(req->handle->ldb, tmp_ctx, &ldif));
 		break;
 	case LDB_REQ_REGISTER_CONTROL:
 		ldb_debug_add(ldb, "ldb_trace_request: REGISTER_CONTROL\n");

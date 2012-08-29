@@ -709,8 +709,21 @@ int ldb_module_send_entry(struct ldb_request *req,
 	if ((req->handle->ldb->flags & LDB_FLG_ENABLE_TRACING) &&
 	    req->handle->nesting == 0) {
 		char *s;
+		struct ldb_ldif ldif;
+		
+		ldif.changetype = LDB_CHANGETYPE_NONE;
+		ldif.msg = discard_const_p(struct ldb_message, msg);
+
 		ldb_debug_add(req->handle->ldb, "ldb_trace_response: ENTRY\n");
-		s = ldb_ldif_message_string(req->handle->ldb, msg, LDB_CHANGETYPE_NONE, msg);
+
+		/* 
+		 * The choice to call
+		 * ldb_ldif_write_redacted_trace_string() is CRITICAL
+		 * for security.  It ensures that we do not output
+		 * passwords into debug logs 
+		 */
+
+		s = ldb_ldif_write_redacted_trace_string(req->handle->ldb, msg, &ldif);
 		ldb_debug_add(req->handle->ldb, "%s\n", s);
 		talloc_free(s);
 		ldb_debug_end(req->handle->ldb, LDB_DEBUG_TRACE);
