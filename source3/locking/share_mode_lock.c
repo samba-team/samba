@@ -346,7 +346,7 @@ static int the_lock_destructor(struct share_mode_lock *l)
 }
 
 /*******************************************************************
- Get a share_mode_lock, Reference counted to allow nexted calls.
+ Get a share_mode_lock, Reference counted to allow nested calls.
 ********************************************************************/
 
 struct share_mode_lock *get_share_mode_lock(
