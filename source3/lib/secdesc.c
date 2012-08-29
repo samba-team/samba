@@ -563,6 +563,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	struct security_acl *new_dacl = NULL, *the_acl = NULL;
 	struct security_ace *new_ace_list = NULL;
 	unsigned int new_ace_list_ndx = 0, i;
+	bool set_inherited_flags = (parent_ctr->type & SEC_DESC_DACL_AUTO_INHERITED);
 
 	*ppsd = NULL;
 	*psize = 0;
@@ -625,7 +626,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 			/* First add the regular ACE entry. */
 			init_sec_ace(new_ace, ptrustee, ace->type,
-			     	ace->access_mask, 0);
+				ace->access_mask,
+				set_inherited_flags ? SEC_ACE_FLAG_INHERITED_ACE : 0);
 
 			DEBUG(5,("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x"
 				" inherited as %s:%d/0x%02x/0x%08x\n",
@@ -648,7 +650,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		}
 
 		init_sec_ace(new_ace, ptrustee, ace->type,
-			     ace->access_mask, new_flags);
+				ace->access_mask, new_flags |
+				(set_inherited_flags ? SEC_ACE_FLAG_INHERITED_ACE : 0));
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n",
@@ -675,7 +678,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 	*ppsd = make_sec_desc(ctx,
 			SECURITY_DESCRIPTOR_REVISION_1,
-			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT|
+			(set_inherited_flags ? SEC_DESC_DACL_AUTO_INHERITED : 0),
 			owner_sid,
 			group_sid,
 			NULL,
