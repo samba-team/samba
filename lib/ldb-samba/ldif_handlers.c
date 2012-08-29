@@ -27,6 +27,7 @@
 #include <ldb_module.h>
 #include "ldb_handlers.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
@@ -1534,6 +1535,8 @@ const struct ldb_schema_syntax *ldb_samba_syntax_by_lDAPDisplayName(struct ldb_c
 	return s;
 }
 
+static const char *secret_attributes[] = {DSDB_SECRET_ATTRIBUTES, NULL};
+
 /*
   register the samba ldif handlers
 */
@@ -1544,6 +1547,11 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 
 	if (ldb_get_opaque(ldb, "SAMBA_HANDLERS_REGISTERED") != NULL) {
 		return LDB_SUCCESS;
+	}
+
+	ret = ldb_set_opaque(ldb, LDB_SECRET_ATTRIBUTE_LIST_OPAQUE, discard_const_p(char *, secret_attributes));
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
