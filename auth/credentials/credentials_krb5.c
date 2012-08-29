@@ -717,6 +717,11 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	cred->keytab_obtained = (MAX(cred->principal_obtained, 
 				     cred->username_obtained));
 
+	/* We make this keytab up based on a password.  Therefore
+	 * match-by-key is acceptable, we can't match on the wrong
+	 * principal */
+	ktc->password_based = true;
+
 	talloc_steal(cred, ktc);
 	cred->keytab = ktc;
 	*_ktc = cred->keytab;
@@ -818,12 +823,12 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	if (obtained < CRED_SPECIFIED) {
-		/* This creates a GSSAPI cred_id_t with the principal and keytab set */
+	if (ktc->password_based || obtained < CRED_SPECIFIED) {
+		/* This creates a GSSAPI cred_id_t for match-by-key with only the keytab set */
 		maj_stat = gss_krb5_import_cred(&min_stat, NULL, NULL, ktc->keytab,
 						&gcc->creds);
 	} else {
-		/* This creates a GSSAPI cred_id_t with the principal and keytab set */
+		/* This creates a GSSAPI cred_id_t with the principal and keytab set, matching by name */
 		maj_stat = gss_krb5_import_cred(&min_stat, NULL, princ, ktc->keytab,
 						&gcc->creds);
 	}

@@ -378,6 +378,7 @@ krb5_error_code smb_krb5_get_keytab_container(TALLOC_CTX *mem_ctx,
 
 	(*ktc)->smb_krb5_context = talloc_reference(*ktc, smb_krb5_context);
 	(*ktc)->keytab = keytab;
+	(*ktc)->password_based = false;
 	talloc_set_destructor(*ktc, free_keytab_container);
 
 	return 0;

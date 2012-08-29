@@ -40,6 +40,7 @@ struct ccache_container {
 struct keytab_container {
 	struct smb_krb5_context *smb_krb5_context;
 	krb5_keytab keytab;
+	bool password_based;
 };
 
 /* not really ASN.1, but RFC 1964 */
