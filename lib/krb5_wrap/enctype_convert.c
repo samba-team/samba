@@ -28,11 +28,11 @@ const krb5_enctype *samba_all_enctypes(void)
 {
 	/* TODO: Find a way not to have to use a fixed list */
 	static const krb5_enctype enctypes[] = {
-		KRB5_ENCTYPE_DES_CBC_CRC,
-		KRB5_ENCTYPE_DES_CBC_MD5,
-		KRB5_ENCTYPE_AES128_CTS_HMAC_SHA1_96,
-		KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
-		KRB5_ENCTYPE_ARCFOUR_HMAC_MD5,
+		ENCTYPE_DES_CBC_CRC,
+		ENCTYPE_DES_CBC_MD5,
+		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+		ENCTYPE_ARCFOUR_HMAC,
 		0
 	};
 	return enctypes;
@@ -47,7 +47,7 @@ uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum)
 		return ENC_CRC32;
 	case ENCTYPE_DES_CBC_MD5:
 		return ENC_RSA_MD5;
-	case ENCTYPE_ARCFOUR_HMAC_MD5:
+	case ENCTYPE_ARCFOUR_HMAC:
 		return ENC_RC4_HMAC_MD5;
 	case ENCTYPE_AES128_CTS_HMAC_SHA1_96:
 		return ENC_HMAC_SHA1_96_AES128;
