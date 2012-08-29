@@ -561,7 +561,7 @@ void send_nt_replies(connection_struct *conn,
 		     char *params, int paramsize,
 		     char *pdata, int datasize);
 void reply_ntcreate_and_X(struct smb_request *req);
-NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
+NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
                        uint32_t security_info_sent);
 NTSTATUS smb_fsctl(struct files_struct *fsp,
 		       TALLOC_CTX *ctx,
