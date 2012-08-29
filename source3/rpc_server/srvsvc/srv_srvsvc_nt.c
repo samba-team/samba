@@ -2318,26 +2318,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	psd = r->in.sd_buf->sd;
 	security_info_sent = r->in.securityinformation;
 
-	if (psd->owner_sid==0) {
-		security_info_sent &= ~SECINFO_OWNER;
-	}
-	if (psd->group_sid==0) {
-		security_info_sent &= ~SECINFO_GROUP;
-	}
-	if (psd->sacl==0) {
-		security_info_sent &= ~SECINFO_SACL;
-	}
-	if (psd->dacl==0) {
-		security_info_sent &= ~SECINFO_DACL;
-	}
-
-	/* Convert all the generic bits. */
-	security_acl_map_generic(psd->dacl, &file_generic_mapping);
-	security_acl_map_generic(psd->sacl, &file_generic_mapping);
-
-	nt_status = SMB_VFS_FSET_NT_ACL(fsp,
-					security_info_sent,
-					psd);
+	nt_status = set_sd(fsp, psd, security_info_sent);
 
 	if (!NT_STATUS_IS_OK(nt_status) ) {
 		DEBUG(3,("_srvsvc_NetSetFileSecurity: Unable to set NT ACL "

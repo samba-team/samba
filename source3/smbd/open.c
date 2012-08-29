@@ -3363,15 +3363,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		fsp->access_mask = FILE_GENERIC_ALL;
 
-		/* Convert all the generic bits. */
-		security_acl_map_generic(sd->dacl, &file_generic_mapping);
-		security_acl_map_generic(sd->sacl, &file_generic_mapping);
-
 		if (sec_info_sent & (SECINFO_OWNER|
 					SECINFO_GROUP|
 					SECINFO_DACL|
 					SECINFO_SACL)) {
-			status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
+			status = set_sd(fsp, sd, sec_info_sent);
 		}
 
 		fsp->access_mask = saved_access_mask;
