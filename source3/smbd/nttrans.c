@@ -827,18 +827,13 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 }
 
 /****************************************************************************
- Internal fn to set security descriptors from a data blob.
+ Internal fn to set security descriptors.
 ****************************************************************************/
 
-NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
+NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		       uint32_t security_info_sent)
 {
-	struct security_descriptor *psd = NULL;
 	NTSTATUS status;
-
-	if (sd_len == 0) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
 
 	if (!CAN_WRITE(fsp->conn)) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -846,12 +841,6 @@ NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 
 	if (!lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
-	}
-
-	status = unmarshall_sec_desc(talloc_tos(), data, sd_len, &psd);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	if (psd->owner_sid == NULL) {
@@ -906,7 +895,7 @@ NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("set_sd_blob for file %s\n", fsp_str_dbg(fsp)));
+		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -915,6 +904,29 @@ NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 	TALLOC_FREE(psd);
 
 	return status;
+}
+
+/****************************************************************************
+ Internal fn to set security descriptors from a data blob.
+****************************************************************************/
+
+NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
+		       uint32_t security_info_sent)
+{
+	struct security_descriptor *psd = NULL;
+	NTSTATUS status;
+
+	if (sd_len == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = unmarshall_sec_desc(talloc_tos(), data, sd_len, &psd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return set_sd(fsp, psd, security_info_sent);
 }
 
 /****************************************************************************
