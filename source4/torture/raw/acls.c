@@ -1846,7 +1846,6 @@ done:
 	return ret;
 }
 
-#if 0
 static bool test_inheritance_flags(struct torture_context *tctx,
     struct smbcli_state *cli)
 {
@@ -1867,7 +1866,7 @@ static bool test_inheritance_flags(struct torture_context *tctx,
 		uint32_t parent_get_ace_inherit;
 		uint32_t child_get_sd_type;
 		uint32_t child_get_ace_inherit;
-	} tflags[16]; /* 2^4 */
+	} tflags[16] = {{0}}; /* 2^4 */
 
 	for (i = 0; i < 15; i++) {
 		torture_comment(tctx, "i=%d:", i);
@@ -1925,6 +1924,8 @@ static bool test_inheritance_flags(struct torture_context *tctx,
 		return false;
 
 	torture_comment(tctx, "TESTING ACL INHERITANCE FLAGS\n");
+
+	ZERO_STRUCT(io);
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -2072,9 +2073,15 @@ done:
 	smbcli_close(cli->tree, fnum);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
+
+	if (!ret) {
+		torture_result(tctx,
+			TORTURE_FAIL, "(%s) test_inheritance_flags\n",
+			__location__);
+	}
+
 	return ret;
 }
-#endif
 
 /*
   test dynamic acl inheritance
@@ -2456,9 +2463,7 @@ struct torture_suite *torture_raw_acls(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "owner", test_owner_bits);
 	torture_suite_add_1smb_test(suite, "inheritance", test_inheritance);
 
-#if 0
 	torture_suite_add_1smb_test(suite, "INHERITFLAGS", test_inheritance_flags);
-#endif
 	torture_suite_add_1smb_test(suite, "dynamic", test_inheritance_dynamic);
 #if 0
 	/* XXX This test does not work against XP or Vista. */
