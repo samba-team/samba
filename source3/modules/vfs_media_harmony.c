@@ -430,7 +430,7 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 		(*newPath)[pathPtr - path + CREATING_DIRNAME_LEN] = '\0';
 		DEBUG(MH_INFO_DEBUG, ("newPath #2 %s\n", *newPath));
 
-		if (status = alloc_append_client_suffix(handle, newPath))
+		if ((status = alloc_append_client_suffix(handle, newPath)))
 		{
 			goto out;
 		}
@@ -462,7 +462,7 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 	)
 	{
 		DEBUG(MH_INFO_DEBUG, ("newPath #5 %s\n", *newPath));
-		if (status = alloc_append_client_suffix(handle, newPath))
+		if ((status = alloc_append_client_suffix(handle, newPath)))
 		{
 			goto out;
 		}
@@ -498,9 +498,9 @@ static int alloc_get_client_smb_fname(struct vfs_handle_struct *handle,
 		status = -1;
 		goto err;
 	}
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				smb_fname->base_name,
-				&(*clientFname)->base_name))
+				&(*clientFname)->base_name)))
 	{
 		goto err;
 	}
@@ -533,7 +533,7 @@ static int alloc_set_client_dirinfo_path(struct vfs_handle_struct *handle,
 		status = -1;
 		goto err;
 	}
-	if (status = alloc_append_client_suffix(handle, path))
+	if ((status = alloc_append_client_suffix(handle, path)))
 	{
 		goto err;
 	}
@@ -590,14 +590,14 @@ static int set_fake_mtime(vfs_handle_struct *handle,
 		copy_len -= 2;
 	}
 
-	if ((statPath = talloc_strndup(ctx,
-			(*clientFname)->base_name, copy_len)) == NULL)
+	if (((statPath = talloc_strndup(ctx,
+			(*clientFname)->base_name, copy_len)) == NULL))
 	{
 		errno = ENOMEM;
 		status = -1;
 		goto err;
 	}
-	if (status = alloc_append_client_suffix(handle, &statPath))
+	if ((status = alloc_append_client_suffix(handle, &statPath)))
 	{
 		goto err;
 	}
@@ -647,9 +647,9 @@ static int mh_statvfs(struct vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1046,9 +1046,9 @@ static int mh_mkdir(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1081,9 +1081,9 @@ static int mh_rmdir(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1300,16 +1300,16 @@ static int mh_rename(vfs_handle_struct *handle,
 	struct smb_filename *dstClientFname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname_src,
-				&srcClientFname))
+				&srcClientFname)))
 	{
 		goto err;
 	}
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname_dst,
-				&dstClientFname))
+				&dstClientFname)))
 	{
 		goto err;
 	}
@@ -1348,19 +1348,19 @@ static int mh_stat(vfs_handle_struct *handle,
 	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
-				&clientFname))
+				&clientFname)))
 	{
 		goto err;
 	}
 	DEBUG(MH_INFO_DEBUG, ("Stat'ing clientFname->base_name '%s'\n",
 				clientFname->base_name));
-	if (status = SMB_VFS_NEXT_STAT(handle, clientFname))
+	if ((status = SMB_VFS_NEXT_STAT(handle, clientFname)))
 	{
 		goto err;
 	}
-	if (status = set_fake_mtime(handle, ctx, &clientFname, sys_stat))
+	if ((status = set_fake_mtime(handle, ctx, &clientFname, sys_stat)))
 	{
 		goto err;
 	}
@@ -1402,18 +1402,18 @@ static int mh_lstat(vfs_handle_struct *handle,
 	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
-				&clientFname))
+				&clientFname)))
 	{
 		goto err;
 	}
-	if (status = SMB_VFS_NEXT_LSTAT(handle, clientFname))
+	if ((status = SMB_VFS_NEXT_LSTAT(handle, clientFname)))
 	{
 		goto err;
 	}
 
-	if (status = set_fake_mtime(handle, ctx, &clientFname, sys_lstat))
+	if ((status = set_fake_mtime(handle, ctx, &clientFname, sys_lstat)))
 	{
 		goto err;
 	}
@@ -1441,7 +1441,7 @@ static int mh_fstat(vfs_handle_struct *handle,
 
 	int status = 0;
 
-	if (status = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf))
+	if ((status = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf)))
 	{
 		goto out;
 	}
@@ -1452,7 +1452,7 @@ static int mh_fstat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	if (status = mh_stat(handle, fsp->fsp_name))
+	if ((status = mh_stat(handle, fsp->fsp_name)))
 	{
 		goto out;
 	}
@@ -1484,9 +1484,9 @@ static int mh_unlink(vfs_handle_struct *handle,
 	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
-				&clientFname))
+				&clientFname)))
 	{
 		goto err;
 	}
@@ -1518,9 +1518,9 @@ static int mh_chmod(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1553,9 +1553,9 @@ static int mh_chown(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1588,9 +1588,9 @@ static int mh_lchown(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1621,9 +1621,9 @@ static int mh_chdir(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1655,9 +1655,9 @@ static int mh_ntimes(vfs_handle_struct *handle,
 	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
-				&clientFname))
+				&clientFname)))
 	{
 		goto err;
 	}
@@ -1690,16 +1690,16 @@ static int mh_symlink(vfs_handle_struct *handle,
 	char *newClientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				oldpath,
-				&oldClientPath))
+				&oldClientPath)))
 	{
 		goto err;
 	}
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				newpath,
-				&newClientPath))
+				&newClientPath)))
 	{
 		goto err;
 	}
@@ -1736,9 +1736,9 @@ static int mh_readlink(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1771,16 +1771,16 @@ static int mh_link(vfs_handle_struct *handle,
 	char *newClientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				oldpath,
-				&oldClientPath))
+				&oldClientPath)))
 	{
 		goto err;
 	}
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				newpath,
-				&newClientPath))
+				&newClientPath)))
 	{
 		goto err;
 	}
@@ -1814,9 +1814,9 @@ static int mh_mknod(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				pathname,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -1882,9 +1882,9 @@ static int mh_chflags(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -2004,9 +2004,9 @@ static int mh_chmod_acl(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -2076,9 +2076,9 @@ static int mh_sys_acl_set_file(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				name,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -2111,9 +2111,9 @@ static int mh_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -2221,9 +2221,9 @@ static int mh_removexattr(struct vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -2260,9 +2260,9 @@ static int mh_setxattr(struct vfs_handle_struct *handle,
 	char *clientPath = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_path(handle, ctx,
+	if ((status = alloc_get_client_path(handle, ctx,
 				path,
-				&clientPath))
+				&clientPath)))
 	{
 		goto err;
 	}
@@ -2330,9 +2330,9 @@ static int mh_set_offline(struct vfs_handle_struct *handle,
 	struct smb_filename *clientFname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (status = alloc_get_client_smb_fname(handle, ctx,
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				fname,
-				&clientFname))
+				&clientFname)))
 	{
 		goto err;
 	}
