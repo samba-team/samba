@@ -298,7 +298,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		status = set_sd(fsp,
+		status = set_sd_blob(fsp,
 				in_input_buffer.data,
 				in_input_buffer.length,
 				in_additional_information);

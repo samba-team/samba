@@ -827,10 +827,10 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 }
 
 /****************************************************************************
- Internal fn to set security descriptors.
+ Internal fn to set security descriptors from a data blob.
 ****************************************************************************/
 
-NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
+NTSTATUS set_sd_blob(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 		       uint32_t security_info_sent)
 {
 	struct security_descriptor *psd = NULL;
@@ -906,7 +906,7 @@ NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
+		DEBUG(10,("set_sd_blob for file %s\n", fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -2095,7 +2095,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 		return;
 	}
 
-	status = set_sd(fsp, (uint8 *)data, data_count, security_info_sent);
+	status = set_sd_blob(fsp, (uint8 *)data, data_count, security_info_sent);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
