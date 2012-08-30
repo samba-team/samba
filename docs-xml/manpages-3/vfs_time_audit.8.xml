@@ -31,7 +31,7 @@
 
 	<para>The <command>time_audit</command> VFS module logs system calls
 	that take longer than the number of milliseconds defined by the variable
-	<command>time_audit:audit_timeout</command>. It will log the calls and
+	<command>time_audit:timeout</command>. It will log the calls and
 	the time spent in it.
 	</para>
 
@@ -51,7 +51,7 @@
 
 		<varlistentry>
 
-		<term>time_audit:audit_timeout = number of milliseconds</term>
+		<term>time_audit:timeout = number of milliseconds</term>
 		<listitem>
 		<para>VFS calls that take longer than the defined number of milliseconds
 		that should be logged. The default is 10000 (10s).
@@ -74,7 +74,7 @@
         <smbconfsection name="[sample_share]"/>
 	<smbconfoption name="path">/test/sample_share</smbconfoption>
 	<smbconfoption name="vfs objects">time_audit</smbconfoption>
-	<smbconfoption name="time_audit: audit_timeout">3000</smbconfoption>
+	<smbconfoption name="time_audit:timeout">3000</smbconfoption>
 </programlisting>
 </refsect1>
 
