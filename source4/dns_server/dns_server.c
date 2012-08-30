@@ -43,6 +43,8 @@
 #include "auth/session.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_werror.h"
+#include "auth/auth.h"
+#include "auth/credentials/credentials.h"
 
 NTSTATUS server_service_dns_init(void);
 
@@ -719,6 +721,22 @@ static void dns_task_init(struct task_server *task)
 	}
 
 	dns->task = task;
+
+	dns->server_credentials = cli_credentials_init(dns);
+	if (!dns->server_credentials) {
+		task_server_terminate(task, "Failed to init server credentials\n", true);
+		return;
+	}
+
+	cli_credentials_set_conf(dns->server_credentials, task->lp_ctx);
+	status = cli_credentials_set_machine_account(dns->server_credentials, task->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task,
+			talloc_asprintf(task, "Failed to obtain server credentials, perhaps a standalone server?: %s\n",
+					nt_errstr(status)),
+			true);
+		return;
+	}
 
 	dns->samdb = samdb_connect(dns, dns->task->event_ctx, dns->task->lp_ctx,
 			      system_session(dns->task->lp_ctx), 0);

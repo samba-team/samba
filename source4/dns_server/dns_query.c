@@ -33,6 +33,10 @@
 #include "libcli/dns/libdns.h"
 #include "lib/util/util_net.h"
 #include "lib/util/tevent_werror.h"
+#include "auth/auth.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
+#include "lib/util/dlinklist.h"
 
 static WERROR create_response_rr(const struct dns_name_question *question,
 				 const struct dnsp_DnssrvRpcRecord *rec,
@@ -317,6 +321,214 @@ static WERROR handle_question(struct dns_server *dns,
 	return WERR_OK;
 }
 
+static NTSTATUS create_new_tkey(TALLOC_CTX *mem_ctx,
+				struct dns_server *dns,
+				struct dns_server_tkey **tkey,
+				const char* name)
+{
+	NTSTATUS status;
+	struct dns_server_tkey *k = talloc_zero(mem_ctx, struct dns_server_tkey);
+
+	if (k == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	k->name = talloc_strdup(mem_ctx, name);
+
+	if (k->name  == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = samba_server_gensec_start(k,
+					   dns->task->event_ctx,
+					   dns->task->msg_ctx,
+					   dns->task->lp_ctx,
+					   dns->server_credentials,
+					   "dns",
+					   &k->gensec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+		*tkey = NULL;
+		return status;
+	}
+
+	gensec_want_feature(k->gensec, GENSEC_FEATURE_SIGN);
+
+	status = gensec_start_mech_by_oid(k->gensec, GENSEC_OID_SPNEGO);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC server code: %s\n",
+			  nt_errstr(status)));
+		*tkey = NULL;
+		return status;
+	}
+
+	*tkey = k;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
+				  struct dns_server *dns,
+				  struct dns_server_tkey *tkey,
+				  const DATA_BLOB *key,
+				  DATA_BLOB *reply,
+				  uint16_t *dns_auth_error)
+{
+	NTSTATUS status;
+
+	status = gensec_update(tkey->gensec, mem_ctx, dns->task->event_ctx,
+			       *key, reply);
+
+	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
+		*dns_auth_error = DNS_RCODE_OK;
+		return status;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+
+		status = gensec_session_info(tkey->gensec, tkey, &tkey->session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			*dns_auth_error = DNS_RCODE_BADKEY;
+			return status;
+		}
+		*dns_auth_error = DNS_RCODE_OK;
+	}
+
+	return status;
+}
+
+static struct dns_server_tkey *find_tkey(struct dns_server *dns,
+					 const char *name)
+{
+	struct dns_server_tkey *tkey = NULL;
+
+	for (tkey = dns->tkeys; tkey != NULL; tkey = tkey->next) {
+		if (dns_name_equal(name, tkey->name)) {
+			break;
+		}
+	}
+
+	return tkey;
+}
+
+static WERROR handle_tkey(struct dns_server *dns,
+                          TALLOC_CTX *mem_ctx,
+                          const struct dns_name_packet *in,
+                          struct dns_res_rec **answers,
+                          uint16_t *ancount)
+{
+	struct dns_res_rec *in_tkey = NULL;
+	struct dns_res_rec *ret_tkey;
+	uint16_t i;
+
+	for (i = 0; i < in->arcount; i++) {
+		if (in->additional[i].rr_type == DNS_QTYPE_TKEY) {
+			in_tkey = &in->additional[i];
+			break;
+		}
+	}
+
+	/* If this is a TKEY query, it should have a TKEY RR.
+	 * Behaviour is not really specified in RFC 2930 or RFC 3645, but
+	 * FORMAT_ERROR seems to be what BIND uses .*/
+	if (in_tkey == NULL) {
+		return DNS_ERR(FORMAT_ERROR);
+	}
+
+	ret_tkey = talloc_zero(mem_ctx, struct dns_res_rec);
+	if (ret_tkey == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ret_tkey->name = talloc_strdup(ret_tkey, in_tkey->name);
+	if (ret_tkey->name == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ret_tkey->rr_type = DNS_QTYPE_TKEY;
+	ret_tkey->rr_class = DNS_QCLASS_ANY;
+	ret_tkey->length = UINT16_MAX;
+
+	ret_tkey->rdata.tkey_record.algorithm = talloc_strdup(ret_tkey, ret_tkey->name);
+	if (ret_tkey->rdata.tkey_record.algorithm  == NULL) {
+		return WERR_NOMEM;
+	}
+
+	ret_tkey->rdata.tkey_record.inception = in_tkey->rdata.tkey_record.inception;
+	ret_tkey->rdata.tkey_record.expiration = in_tkey->rdata.tkey_record.expiration;
+	ret_tkey->rdata.tkey_record.mode = in_tkey->rdata.tkey_record.mode;
+
+	switch (in_tkey->rdata.tkey_record.mode) {
+	case DNS_TKEY_MODE_DH:
+		/* FIXME: According to RFC 2930, we MUST support this, but we don't.
+		 * Still, claim it's a bad key instead of a bad mode */
+		ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
+		break;
+	case DNS_TKEY_MODE_GSSAPI: {
+		NTSTATUS status;
+		struct dns_server_tkey *tkey;
+		DATA_BLOB key;
+		DATA_BLOB reply;
+
+		tkey = find_tkey(dns, in->questions[0].name);
+		if (tkey != NULL && tkey->complete) {
+			/* TODO: check if the key is still valid */
+			DEBUG(1, ("Rejecting tkey negotiation for already established key\n"));
+			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADNAME;
+			break;
+		}
+
+		if (tkey == NULL) {
+			status  = create_new_tkey(dns, dns, &tkey,
+						  in->questions[0].name);
+			if (!NT_STATUS_IS_OK(status)) {
+				ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
+				return ntstatus_to_werror(status);
+			}
+
+			DLIST_ADD_END(dns->tkeys, tkey, NULL);
+		}
+
+		key.data = in_tkey->rdata.tkey_record.key_data;
+		key.length = in_tkey->rdata.tkey_record.key_size;
+
+		status = accept_gss_ticket(ret_tkey, dns, tkey, &key, &reply,
+					   &ret_tkey->rdata.tkey_record.error);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(1, ("More processing required\n"));
+			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
+		} else if (NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Tkey handshake completed\n"));
+		} else {
+			DEBUG(0, ("GSS key negotiation returned %s\n", nt_errstr(status)));
+			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
+		}
+
+		break;
+		}
+	case DNS_TKEY_MODE_DELETE:
+		/* TODO: implement me */
+		DEBUG(1, ("Should delete tkey here\n"));
+		ret_tkey->rdata.tkey_record.error = DNS_RCODE_OK;
+		break;
+	case DNS_TKEY_MODE_NULL:
+	case DNS_TKEY_MODE_SERVER:
+	case DNS_TKEY_MODE_CLIENT:
+	case DNS_TKEY_MODE_LAST:
+		/* We don't have to implement these, return a mode error */
+		ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADMODE;
+		break;
+	default:
+		DEBUG(1, ("Unsupported TKEY mode %d\n",
+		      in_tkey->rdata.tkey_record.mode));
+	}
+
+	*answers = ret_tkey;
+	*ancount = 1;
+
+	return WERR_OK;
+}
+
 struct dns_server_process_query_state {
 	struct dns_res_rec *answers;
 	uint16_t ancount;
@@ -349,6 +561,18 @@ struct tevent_req *dns_server_process_query_send(
 	/* Windows returns NOT_IMPLEMENTED on this as well */
 	if (in->questions[0].question_class == DNS_QCLASS_NONE) {
 		tevent_req_werror(req, DNS_ERR(NOT_IMPLEMENTED));
+		return tevent_req_post(req, ev);
+	}
+
+	if (in->questions[0].question_type == DNS_QTYPE_TKEY) {
+                WERROR err;
+
+		err = handle_tkey(dns, state, in, &state->answers,
+				  &state->ancount);
+		if (tevent_req_werror(req, err)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
