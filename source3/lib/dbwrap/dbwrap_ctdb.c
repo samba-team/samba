@@ -996,7 +996,14 @@ static int db_ctdb_record_destr(struct db_record* data)
 	if (threshold != 0) {
 		double timediff = timeval_elapsed(&crec->lock_time);
 		if ((timediff * 1000) > threshold) {
-			DEBUG(0, ("Held tdb lock %f seconds\n", timediff));
+			const char *key;
+
+			key = hex_encode_talloc(data,
+						(unsigned char *)data->key.dptr,
+						data->key.dsize);
+			DEBUG(0, ("Held tdb lock on db %s, key %s %f seconds\n",
+				  tdb_name(crec->ctdb_ctx->wtdb->tdb), key,
+				  timediff));
 		}
 	}
 
