@@ -722,6 +722,12 @@ sub provision($$$$$$$$$)
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 	push(@{$ctx->{directories}}, "$ctx->{share}/test1");
 	push(@{$ctx->{directories}}, "$ctx->{share}/test2");
+
+	# precreate directories for printer drivers
+	push(@{$ctx->{directories}}, "$ctx->{share}/W32X86");
+	push(@{$ctx->{directories}}, "$ctx->{share}/x64");
+	push(@{$ctx->{directories}}, "$ctx->{share}/WIN40");
+
 	my $msdfs = "no";
 	$msdfs = "yes" if ($server_role eq "domain controller");
 	$ctx->{smb_conf_extra_options} = "
@@ -1353,6 +1359,7 @@ sub provision_plugin_s4_dc($$)
 
 	my $bindir_abs = abs_path($self->{bindir});
 	my $lockdir="$prefix_abs/lockdir";
+        my $conffile="$prefix_abs/etc/smb.conf";
 
 	my $extra_smbconf_options = "
         server services = -smb +s3fs
@@ -1377,6 +1384,9 @@ sub provision_plugin_s4_dc($$)
         dcerpc endpoint servers = -winreg -srvsvc
 
 	printcap name = /dev/null
+
+	addprinter command = $ENV{SRCDIR_ABS}/source3/script/tests/printing/modprinter.pl -a -s $conffile --
+	deleteprinter command = $ENV{SRCDIR_ABS}/source3/script/tests/printing/modprinter.pl -d -s $conffile --
 
 	printing = vlp
 	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
@@ -1407,6 +1417,20 @@ sub provision_plugin_s4_dc($$)
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
+
+[print\$]
+	copy = tmp
+
+[print1]
+	copy = tmp
+	printable = yes
+
+[print2]
+	copy = print1
+[print3]
+	copy = print1
+[lp]
+	copy = print1
 ";
 
 	print "PROVISIONING PLUGIN S4 DC...";
