@@ -2161,6 +2161,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	struct client_async_data *async_data;
 	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	uint32_t disable_timeout;
 
 	/*
 	 * ip failover is completely disabled, just send out the 
@@ -2196,6 +2197,19 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 
 	/* Do the IP reassignment calculations */
 	ctdb_takeover_run_core(ctdb, nodemap, &all_ips);
+
+	/* The recovery daemon does regular sanity checks of the IPs.
+	 * However, sometimes it is overzealous and thinks changes are
+	 * required when they're already underway.  This stops the
+	 * checks for a while before we start moving IPs.
+	 */
+	disable_timeout = ctdb->tunable.takeover_timeout;
+	data.dptr  = (uint8_t*)&disable_timeout;
+	data.dsize = sizeof(disable_timeout);
+	if (ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
+				     CTDB_SRVID_DISABLE_IP_CHECK, data) != 0) {
+		DEBUG(DEBUG_INFO,("Failed to disable ip verification\n"));
+	}
 
 	/* now tell all nodes to delete any alias that they should not
 	   have.  This will be a NOOP on nodes that don't currently

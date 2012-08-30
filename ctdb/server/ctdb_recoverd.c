@@ -2174,6 +2174,12 @@ static void disable_ip_check_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	timeout = *((uint32_t *)data.dptr);
+
+	if (timeout == 0) {
+		DEBUG(DEBUG_NOTICE,("Reenabling ip check\n"));
+		return;
+	}
+		
 	DEBUG(DEBUG_NOTICE,("Disabling ip check for %u seconds\n", timeout));
 
 	rec->ip_check_disable_ctx = talloc_new(rec);
