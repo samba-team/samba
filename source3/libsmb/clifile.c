@@ -5256,7 +5256,7 @@ struct tevent_req *cli_shadow_copy_data_send(TALLOC_CTX *mem_ctx,
 
 	SIVAL(state->setup + 0, 0, FSCTL_GET_SHADOW_COPY_DATA);
 	SSVAL(state->setup + 2, 0, fnum);
-	SCVAL(state->setup + 3, 0, 0); /* isFsctl */
+	SCVAL(state->setup + 3, 0, 1); /* isFsctl */
 	SCVAL(state->setup + 3, 1, 0); /* compfilter, isFlags (WSSP) */
 
 	subreq = cli_trans_send(
