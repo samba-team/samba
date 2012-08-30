@@ -478,6 +478,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{privatedir} = "$prefix_abs/private";
 	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
 	$ctx->{lockdir} = "$prefix_abs/lockdir";
+	$ctx->{logdir} = "$prefix_abs/logs";
 	$ctx->{statedir} = "$prefix_abs/statedir";
 	$ctx->{cachedir} = "$prefix_abs/cachedir";
 	$ctx->{winbindd_socket_dir} = "$prefix_abs/winbindd_socket";
@@ -495,6 +496,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	push(@{$ctx->{directories}}, $ctx->{etcdir});
 	push(@{$ctx->{directories}}, $ctx->{piddir});
 	push(@{$ctx->{directories}}, $ctx->{lockdir});
+	push(@{$ctx->{directories}}, $ctx->{logdir});
 	push(@{$ctx->{directories}}, $ctx->{statedir});
 	push(@{$ctx->{directories}}, $ctx->{cachedir});
 
@@ -588,6 +590,7 @@ sub provision_raw_step1($$)
 	ldb:nosync = true
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
+	log file = $ctx->{logdir}/log.\%m
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	rndc command = true
