@@ -182,10 +182,19 @@ def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_m
         f.write("}%s;\n\n" % last_key)
         last_key = " %s" % symver
     f.write("%s {\n" % current_version)
+    local_abi = filter(lambda x: x[0] == '!', abi_match)
+    global_abi = filter(lambda x: x[0] != '!', abi_match)
     f.write("\tglobal:\n")
-    for x in abi_match:
-        f.write("\t\t%s;\n" % x)
-    if abi_match != ["*"]:
+    if len(global_abi) > 0:
+        for x in global_abi:
+            f.write("\t\t%s;\n" % x)
+    else:
+        f.write("\t\t*;\n")
+    if len(local_abi) > 0:
+        f.write("\tlocal:\n")
+        for x in local_abi:
+            f.write("\t\t%s;\n" % x[1:])
+    elif abi_match != ["*"]:
         f.write("\tlocal: *;\n")
     f.write("};\n")
     f.close()
