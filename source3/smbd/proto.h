@@ -608,12 +608,6 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				    const char *fname,
 				    SMB_STRUCT_STAT *psbuf);
 bool is_stat_open(uint32 access_mask);
-bool open_match_attributes(connection_struct *conn,
-			   uint32 old_dos_attr,
-			   uint32 new_dos_attr,
-			   mode_t existing_unx_mode,
-			   mode_t new_unx_mode,
-			   mode_t *returned_unx_mode);
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid);
 bool is_deferred_open_async(const void *ptr);

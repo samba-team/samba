@@ -1480,12 +1480,12 @@ static void defer_open(struct share_mode_lock *lck,
  On overwrite open ensure that the attributes match.
 ****************************************************************************/
 
-bool open_match_attributes(connection_struct *conn,
-			   uint32 old_dos_attr,
-			   uint32 new_dos_attr,
-			   mode_t existing_unx_mode,
-			   mode_t new_unx_mode,
-			   mode_t *returned_unx_mode)
+static bool open_match_attributes(connection_struct *conn,
+				  uint32 old_dos_attr,
+				  uint32 new_dos_attr,
+				  mode_t existing_unx_mode,
+				  mode_t new_unx_mode,
+				  mode_t *returned_unx_mode)
 {
 	uint32 noarch_old_dos_attr, noarch_new_dos_attr;
 
