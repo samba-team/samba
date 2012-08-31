@@ -2687,7 +2687,7 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 	NTSTATUS status;
 	union smb_fileinfo q;
 	const char *owner_sid;
-	bool has_restore_privilege, has_backup_privilege;
+	bool has_restore_privilege, has_backup_privilege, has_system_security_privilege;
 
 	mem_ctx = talloc_init("torture_maximum_allowed");
 
@@ -2747,18 +2747,41 @@ bool torture_maximum_allowed(struct torture_context *tctx,
 			owner_sid,
 			has_backup_privilege?"Yes":"No");
 
+	status = torture_check_privilege(cli,
+					 owner_sid,
+					 sec_privilege_name(SEC_PRIV_SECURITY));
+	has_system_security_privilege = NT_STATUS_IS_OK(status);
+	torture_comment(tctx, "Checked SEC_PRIV_SECURITY for %s - %s\n",
+			owner_sid,
+			has_system_security_privilege?"Yes":"No");
+
 	smbcli_close(cli->tree, fnum);
 
 	for (i = 0; i < 32; i++) {
 		uint32_t mask = SEC_FLAG_MAXIMUM_ALLOWED | (1u << i);
-		uint32_t ok_mask = SEC_RIGHTS_FILE_READ | SEC_GENERIC_READ | 
+		/*
+		 * SEC_GENERIC_EXECUTE is a complete subset of
+		 * SEC_GENERIC_READ when mapped to specific bits,
+		 * so we need to include it in the basic OK mask.
+		 */
+		uint32_t ok_mask = SEC_RIGHTS_FILE_READ | SEC_GENERIC_READ | SEC_GENERIC_EXECUTE |
 			SEC_STD_DELETE | SEC_STD_WRITE_DAC;
 
+		/*
+		 * Now SEC_RIGHTS_PRIV_RESTORE and SEC_RIGHTS_PRIV_BACKUP
+		 * don't include any generic bits (they're used directly
+		 * in the fileserver where the generic bits have already
+		 * been mapped into file specific bits) we need to add the
+		 * generic bits to the ok_mask when we have these privileges.
+		 */
 		if (has_restore_privilege) {
-			ok_mask |= SEC_RIGHTS_PRIV_RESTORE;
+			ok_mask |= SEC_RIGHTS_PRIV_RESTORE|SEC_GENERIC_WRITE;
 		}
 		if (has_backup_privilege) {
-			ok_mask |= SEC_RIGHTS_PRIV_BACKUP;
+			ok_mask |= SEC_RIGHTS_PRIV_BACKUP|SEC_GENERIC_READ;
+		}
+		if (has_system_security_privilege) {
+			ok_mask |= SEC_FLAG_SYSTEM_SECURITY;
 		}
 
 		/* Skip all SACL related tests. */
