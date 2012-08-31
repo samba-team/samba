@@ -119,7 +119,8 @@ static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 			reject_string = "Password does not meet complexity requirements";
 			break;
 		case SAM_PWD_CHANGE_PWD_IN_HISTORY:
-			reject_string = "Password is already in password history";
+			reject_string = talloc_asprintf(mem_ctx, "Password is already in password history, cannot match any of your %d passwords",
+							dominfo->password_history_length);
 			break;
 		default:
 			reject_string = talloc_asprintf(mem_ctx, "Password must be at least %d characters long, and cannot match any of your %d previous passwords",
