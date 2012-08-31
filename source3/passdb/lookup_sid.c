@@ -1085,15 +1085,15 @@ static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 {
 	GROUP_MAP *map;
 	bool ret;
-	
+
 	become_root();
 	ret = pdb_sid_to_id(psid, id);
 	unbecome_root();
-	
+
 	if (ret) {
 		goto done;
 	}
-	
+
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
 		map = talloc_zero(NULL, GROUP_MAP);
