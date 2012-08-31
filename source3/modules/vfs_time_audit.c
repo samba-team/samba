@@ -2137,6 +2137,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.sys_acl_get_fd_fn = smb_time_audit_sys_acl_get_fd,
 	.sys_acl_set_file_fn = smb_time_audit_sys_acl_set_file,
 	.sys_acl_set_fd_fn = smb_time_audit_sys_acl_set_fd,
+	.sys_acl_delete_def_file_fn = smb_time_audit_sys_acl_delete_def_file,
 	.getxattr_fn = smb_time_audit_getxattr,
 	.fgetxattr_fn = smb_time_audit_fgetxattr,
 	.listxattr_fn = smb_time_audit_listxattr,
