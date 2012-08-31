@@ -132,10 +132,10 @@ typedef struct mh_dirinfo_struct
 static int alloc_append_client_suffix(vfs_handle_struct *handle,
 		char **path)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with *path '%s'\n", *path));
-
 	int status = 0;
 	char *raddr = NULL;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with *path '%s'\n", *path));
 
 	raddr = tsocket_address_inet_addr_string(
 			handle->conn->sconn->remote_address, talloc_tos());
@@ -172,9 +172,9 @@ err:
  */
 static bool is_apple_double(const char* fname)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
-
 	bool ret = False;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
 
 	if (strncmp(APPLE_DOUBLE_PREFIX, fname, APPLE_DOUBLE_PREFIX_LEN)
 			== 0)
@@ -189,11 +189,11 @@ static bool is_apple_double(const char* fname)
 static bool starts_with_media_dir(const char* media_dirname,
 		size_t media_dirname_len, const char* path)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with media_dirname '%s' "
-				"path '%s'\n", media_dirname, path));
-
 	bool ret = False;
 	char* path_start;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with media_dirname '%s' "
+			      "path '%s'\n", media_dirname, path));
 
 	/* Sometimes Samba gives us "./OMFI MediaFiles". */
 	if (strncmp(path, "./", 2) == 0)
@@ -230,9 +230,9 @@ static bool starts_with_media_dir(const char* media_dirname,
  */
 static bool is_in_media_files(const char* path)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
-
 	bool ret = False;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
 
 	if (
 		starts_with_media_dir(AVID_MEDIAFILES_DIRNAME,
@@ -264,11 +264,12 @@ static bool is_in_media_files(const char* path)
 static int depth_from_media_dir(const char* media_dirname,
 		size_t media_dirname_len, const char* path)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with media_dirname '%s' "
-				"path '%s'\n", media_dirname, path));
 	int transition_count = 0;
 	char* path_start;
 	char* pathPtr;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with media_dirname '%s' "
+			      "path '%s'\n", media_dirname, path));
 
 	/* Sometimes Samba gives us "./OMFI MediaFiles". */
 	if (strncmp(path, "./", 2) == 0)
@@ -336,14 +337,14 @@ static bool is_avid_database(
 		const char *avid_db_filename,
 		const size_t avid_db_filename_len)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s', "
-				"avid_db_filename '%s', "
-				"path_len '%i', "
-				"avid_db_filename_len '%i'\n",
-				path, avid_db_filename,
-				path_len, avid_db_filename_len));
-
 	bool ret = False;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s', "
+			      "avid_db_filename '%s', "
+			      "path_len '%i', "
+			      "avid_db_filename_len '%i'\n",
+			      path, avid_db_filename,
+			      path_len, avid_db_filename_len));
 
 	if (
 		path_len > avid_db_filename_len
@@ -387,14 +388,16 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 		const char *path,
 		char **newPath)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
-
 	/* replace /CREATING_DIRNAME/ or /._CREATING_DIRNAME/
 	 * directory in path - potentially in middle of path
 	 * - with suffixed name.
 	 */
 	int status = 0;
 	char* pathPtr;
+	size_t intermPathLen;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
+
 	*newPath = talloc_strdup(ctx, path);
 	if (*newPath == NULL)
 	{
@@ -452,7 +455,7 @@ static int alloc_get_client_path(vfs_handle_struct *handle,
 	/* replace /MDB_FILENAME or /PMR_FILENAME or /._MDB_FILENAME
 	 * or /._PMR_FILENAME at newPath end with suffixed name.
 	 */
-	size_t intermPathLen = strlen(*newPath);
+	intermPathLen = strlen(*newPath);
 	if (
 		is_avid_database(*newPath, intermPathLen,
 			MDB_FILENAME, MDB_FILENAME_LEN)
@@ -483,11 +486,11 @@ static int alloc_get_client_smb_fname(struct vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname,
 		struct smb_filename **clientFname)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
-				smb_fname->base_name));
-
 	int status = 0;
 	NTSTATUS copystatus;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
+			      smb_fname->base_name));
 
 	copystatus = copy_smb_filename(ctx, smb_fname, clientFname);
 	if (!NT_STATUS_IS_OK(copystatus))
@@ -520,10 +523,10 @@ static int alloc_set_client_dirinfo_path(struct vfs_handle_struct *handle,
 		char **path,
 		const char *avid_db_filename)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with avid_db_filename '%s'\n",
-				avid_db_filename));
-
 	int status = 0;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with avid_db_filename '%s'\n",
+			      avid_db_filename));
 
 	if ((*path = talloc_strdup(ctx, avid_db_filename)) == NULL)
 	{
@@ -554,12 +557,15 @@ static int set_fake_mtime(vfs_handle_struct *handle,
 		struct smb_filename **clientFname,
 		int (*statFn)(const char *, SMB_STRUCT_STAT *, bool))
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with (*clientFname)->base_name "
-			"'%s', (*clientFname)->st.st_ex_mtime %s",
-			(*clientFname)->base_name,
-			ctime(&((*clientFname)->st.st_ex_mtime.tv_sec))));
-
 	int status = 0;
+	char *statPath;
+	SMB_STRUCT_STAT fakeStat;
+	int copy_len;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with (*clientFname)->base_name "
+			      "'%s', (*clientFname)->st.st_ex_mtime %s",
+			      (*clientFname)->base_name,
+			      ctime(&((*clientFname)->st.st_ex_mtime.tv_sec))));
 
 	if (
 		depth_from_media_dir(AVID_MXF_DIRNAME,
@@ -576,9 +582,7 @@ static int set_fake_mtime(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *statPath;
-	SMB_STRUCT_STAT fakeStat;
-	int copy_len = strlen((*clientFname)->base_name);
+	copy_len = strlen((*clientFname)->base_name);
 
 	/* Hack to deal with occasional "Avid MediaFiles/MXF/1/." paths.
 	 * We know we're under a media dir, so paths are at least 2 chars
@@ -634,9 +638,11 @@ static int mh_statvfs(struct vfs_handle_struct *handle,
 		const char *path,
 		struct vfs_statvfs_struct *statbuf)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
-
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
 
 	if (!is_in_media_files(path))
 	{
@@ -644,8 +650,8 @@ static int mh_statvfs(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -666,9 +672,11 @@ static int alloc_set_client_dirinfo(vfs_handle_struct *handle,
 		const char *fname,
 		struct mh_dirinfo_struct **dirInfo)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
-
 	int status = 0;
+	char *clientPath;
+	TALLOC_CTX *ctx;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
 
 	*dirInfo = talloc(NULL, struct mh_dirinfo_struct);
 	if (*dirInfo == NULL)
@@ -718,8 +726,8 @@ static int alloc_set_client_dirinfo(vfs_handle_struct *handle,
 		goto err;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
 				fname,
@@ -759,9 +767,9 @@ static DIR *mh_opendir(vfs_handle_struct *handle,
 		const char *mask,
 		uint32 attr)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
-
 	struct mh_dirinfo_struct *dirInfo;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
 
 	if (alloc_set_client_dirinfo(handle, fname, &dirInfo))
 	{
@@ -800,11 +808,11 @@ static DIR *mh_fdopendir(vfs_handle_struct *handle,
 		const char *mask,
 		uint32 attr)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with fsp->fsp_name->base_name '%s'\n",
-			fsp->fsp_name->base_name));
-
 	struct mh_dirinfo_struct *dirInfo;
 	DIR *dirstream;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with fsp->fsp_name->base_name '%s'\n",
+			      fsp->fsp_name->base_name));
 
 	dirstream = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
 	if (!dirstream)
@@ -861,24 +869,24 @@ static struct dirent *mh_readdir(vfs_handle_struct *handle,
 		DIR *dirp,
 		SMB_STRUCT_STAT *sbuf)
 {
+	mh_dirinfo_struct* dirInfo = (mh_dirinfo_struct*)dirp;
+	struct dirent *d = NULL;
+	int skip;
+
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_readdir\n"));
 
-	mh_dirinfo_struct* dirInfo = (mh_dirinfo_struct*)dirp;
-
 	DEBUG(MH_INFO_DEBUG, ("dirInfo->dirpath '%s', "
-				"dirInfo->clientPath '%s', "
-				"dirInfo->isInMediaFiles '%s', "
-				"dirInfo->clientMDBFilename '%s', "
-				"dirInfo->clientPMRFilename '%s', "
-				"dirInfo->clientCreatingDirname '%s'\n",
-				dirInfo->dirpath,
-				dirInfo->clientPath,
-				dirInfo->isInMediaFiles ? "True" : "False",
-				dirInfo->clientMDBFilename,
-				dirInfo->clientPMRFilename,
-				dirInfo->clientCreatingDirname));
-
-	struct dirent *d = NULL;
+			      "dirInfo->clientPath '%s', "
+			      "dirInfo->isInMediaFiles '%s', "
+			      "dirInfo->clientMDBFilename '%s', "
+			      "dirInfo->clientPMRFilename '%s', "
+			      "dirInfo->clientCreatingDirname '%s'\n",
+			      dirInfo->dirpath,
+			      dirInfo->clientPath,
+			      dirInfo->isInMediaFiles ? "True" : "False",
+			      dirInfo->clientMDBFilename,
+			      dirInfo->clientPMRFilename,
+			      dirInfo->clientCreatingDirname));
 
 	if (! dirInfo->isInMediaFiles)
 	{
@@ -886,9 +894,11 @@ static struct dirent *mh_readdir(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	int skip;
 	do
 	{
+		const char* dname;
+		bool isAppleDouble;
+
 		skip = False;
 		d = SMB_VFS_NEXT_READDIR(handle, dirInfo->dirstream, sbuf);
 
@@ -896,9 +906,6 @@ static struct dirent *mh_readdir(vfs_handle_struct *handle,
 		{
 			break;
 		}
-
-		const char* dname;
-		bool isAppleDouble;
 
 		/* ignore apple double prefix for logic below */
 		if (is_apple_double(d->d_name))
@@ -1033,9 +1040,12 @@ static int mh_mkdir(vfs_handle_struct *handle,
 		const char *path,
 		mode_t mode)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
-
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
+
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
 
 	if (!is_in_media_files(path))
 	{
@@ -1043,8 +1053,8 @@ static int mh_mkdir(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1068,9 +1078,12 @@ out:
 static int mh_rmdir(vfs_handle_struct *handle,
 		const char *path)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
-
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
+
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
 
 	if (!is_in_media_files(path))
 	{
@@ -1078,8 +1091,8 @@ static int mh_rmdir(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1103,8 +1116,9 @@ out:
 static int mh_closedir(vfs_handle_struct *handle,
 		DIR *dirp)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_closedir\n"));
 	DIR *realdirp = ((mh_dirinfo_struct*)dirp)->dirstream;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering mh_closedir\n"));
 	// Will this talloc_free destroy realdirp?
 	TALLOC_FREE(dirp);
 
@@ -1134,10 +1148,13 @@ static int mh_open(vfs_handle_struct *handle,
 		int flags,
 		mode_t mode)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
-				smb_fname->base_name));
-
 	int ret;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
+			      smb_fname->base_name));
 
 	if (!is_in_media_files(smb_fname->base_name))
 	{
@@ -1146,8 +1163,8 @@ static int mh_open(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if(alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
@@ -1199,6 +1216,9 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		int *pinfo)
 {
 	NTSTATUS status;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
 				smb_fname->base_name));
@@ -1224,8 +1244,8 @@ static NTSTATUS mh_create_file(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
@@ -1279,13 +1299,17 @@ static int mh_rename(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname_src,
 		const struct smb_filename *smb_fname_dst)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with "
-				"smb_fname_src->base_name '%s', "
-				"smb_fname_dst->base_name '%s'\n",
-				smb_fname_src->base_name,
-				smb_fname_dst->base_name));
-
 	int status;
+	struct smb_filename *srcClientFname;
+	struct smb_filename *dstClientFname;
+	TALLOC_CTX *ctx;
+
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with "
+			      "smb_fname_src->base_name '%s', "
+			      "smb_fname_dst->base_name '%s'\n",
+			      smb_fname_src->base_name,
+			      smb_fname_dst->base_name));
 
 	if (!is_in_media_files(smb_fname_src->base_name)
 				&&
@@ -1296,9 +1320,9 @@ static int mh_rename(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *srcClientFname = NULL;
-	struct smb_filename *dstClientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	srcClientFname = NULL;
+	dstClientFname = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname_src,
@@ -1334,10 +1358,13 @@ out:
 static int mh_stat(vfs_handle_struct *handle,
 		struct smb_filename *smb_fname)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
-				smb_fname->base_name));
-
 	int status = 0;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
+			      smb_fname->base_name));
 
 	if (!is_in_media_files(smb_fname->base_name))
 	{
@@ -1345,8 +1372,8 @@ static int mh_stat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
@@ -1388,10 +1415,12 @@ out:
 static int mh_lstat(vfs_handle_struct *handle,
 		struct smb_filename *smb_fname)
 {
-	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
-				smb_fname->base_name));
-
 	int status = 0;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
+			      smb_fname->base_name));
 
 	if (!is_in_media_files(smb_fname->base_name))
 	{
@@ -1399,8 +1428,8 @@ static int mh_lstat(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
@@ -1436,10 +1465,10 @@ out:
 static int mh_fstat(vfs_handle_struct *handle,
 		files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
+	int status = 0;
+
 	DEBUG(MH_INFO_DEBUG, ("Entering with fsp->fsp_name->base_name "
 				"'%s'\n", fsp_str_dbg(fsp)));
-
-	int status = 0;
 
 	if ((status = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf)))
 	{
@@ -1473,6 +1502,8 @@ static int mh_unlink(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname)
 {
 	int status;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_unlink\n"));
 	if (!is_in_media_files(smb_fname->base_name))
@@ -1481,8 +1512,8 @@ static int mh_unlink(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
@@ -1507,6 +1538,8 @@ static int mh_chmod(vfs_handle_struct *handle,
 		mode_t mode)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chmod\n"));
 	if (!is_in_media_files(path))
@@ -1515,8 +1548,8 @@ static int mh_chmod(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1542,6 +1575,8 @@ static int mh_chown(vfs_handle_struct *handle,
 		gid_t gid)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chown\n"));
 	if (!is_in_media_files(path))
@@ -1550,8 +1585,8 @@ static int mh_chown(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1577,6 +1612,8 @@ static int mh_lchown(vfs_handle_struct *handle,
 		gid_t gid)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_lchown\n"));
 	if (!is_in_media_files(path))
@@ -1585,8 +1622,8 @@ static int mh_lchown(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1610,6 +1647,8 @@ static int mh_chdir(vfs_handle_struct *handle,
 		const char *path)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chdir\n"));
 	if (!is_in_media_files(path))
@@ -1618,8 +1657,8 @@ static int mh_chdir(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1644,6 +1683,9 @@ static int mh_ntimes(vfs_handle_struct *handle,
 		struct smb_file_time *ft)
 {
 	int status;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_ntimes\n"));
 	if (!is_in_media_files(smb_fname->base_name))
@@ -1652,8 +1694,8 @@ static int mh_ntimes(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				smb_fname,
@@ -1678,6 +1720,9 @@ static int mh_symlink(vfs_handle_struct *handle,
 		const char *newpath)
 {
 	int status;
+	char *oldClientPath;
+	char *newClientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_symlink\n"));
 	if (!is_in_media_files(oldpath) && !is_in_media_files(newpath))
@@ -1686,9 +1731,9 @@ static int mh_symlink(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *oldClientPath = NULL;
-	char *newClientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	oldClientPath = NULL;
+	newClientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				oldpath,
@@ -1725,6 +1770,8 @@ static int mh_readlink(vfs_handle_struct *handle,
 		size_t bufsiz)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_readlink\n"));
 	if (!is_in_media_files(path))
@@ -1733,8 +1780,8 @@ static int mh_readlink(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1759,6 +1806,9 @@ static int mh_link(vfs_handle_struct *handle,
 		const char *newpath)
 {
 	int status;
+	char *oldClientPath;
+	char *newClientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_link\n"));
 	if (!is_in_media_files(oldpath) && !is_in_media_files(newpath))
@@ -1767,9 +1817,9 @@ static int mh_link(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *oldClientPath = NULL;
-	char *newClientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	oldClientPath = NULL;
+	newClientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				oldpath,
@@ -1803,6 +1853,8 @@ static int mh_mknod(vfs_handle_struct *handle,
 		SMB_DEV_T dev)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_mknod\n"));
 	if (!is_in_media_files(pathname))
@@ -1811,8 +1863,8 @@ static int mh_mknod(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				pathname,
@@ -1836,6 +1888,8 @@ static char *mh_realpath(vfs_handle_struct *handle,
 		const char *path)
 {
 	char *buf;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_realpath\n"));
 	if (!is_in_media_files(path))
@@ -1844,8 +1898,8 @@ static char *mh_realpath(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
 				path,
@@ -1871,6 +1925,8 @@ static int mh_chflags(vfs_handle_struct *handle,
 		unsigned int flags)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chflags\n"));
 	if (!is_in_media_files(path))
@@ -1879,8 +1935,8 @@ static int mh_chflags(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -1908,6 +1964,8 @@ static NTSTATUS mh_streaminfo(struct vfs_handle_struct *handle,
 		struct stream_struct **streams)
 {
 	NTSTATUS status;
+	char *clientPath;
+	TALLOC_CTX *mem_ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_streaminfo\n"));
 	if (!is_in_media_files(fname))
@@ -1917,8 +1975,8 @@ static NTSTATUS mh_streaminfo(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *mem_ctx = talloc_tos();
+	clientPath = NULL;
+	mem_ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, mem_ctx,
 				fname,
@@ -1956,6 +2014,8 @@ static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 		struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_get_nt_acl\n"));
 	if (!is_in_media_files(name))
@@ -1965,8 +2025,8 @@ static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
 				name,
@@ -1993,6 +2053,8 @@ static int mh_chmod_acl(vfs_handle_struct *handle,
 		mode_t mode)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chmod_acl\n"));
 	if (!is_in_media_files(path))
@@ -2001,8 +2063,8 @@ static int mh_chmod_acl(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -2027,6 +2089,8 @@ static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
 		SMB_ACL_TYPE_T type)
 {
 	SMB_ACL_T ret;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_get_file\n"));
 	if (!is_in_media_files(path_p))
@@ -2035,8 +2099,8 @@ static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
 				path_p,
@@ -2064,6 +2128,8 @@ static int mh_sys_acl_set_file(vfs_handle_struct *handle,
 		SMB_ACL_T theacl)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_set_file\n"));
 	if (!is_in_media_files(name))
@@ -2073,8 +2139,8 @@ static int mh_sys_acl_set_file(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				name,
@@ -2099,6 +2165,8 @@ static int mh_sys_acl_delete_def_file(vfs_handle_struct *handle,
 		const char *path)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_delete_def_file\n"));
 	if (!is_in_media_files(path))
@@ -2108,8 +2176,8 @@ static int mh_sys_acl_delete_def_file(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -2137,6 +2205,8 @@ static ssize_t mh_getxattr(struct vfs_handle_struct *handle,
 		size_t size)
 {
 	ssize_t ret;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_getxattr\n"));
 	if (!is_in_media_files(path))
@@ -2146,8 +2216,8 @@ static ssize_t mh_getxattr(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
 				path,
@@ -2174,6 +2244,8 @@ static ssize_t mh_listxattr(struct vfs_handle_struct *handle,
 		size_t size)
 {
 	ssize_t ret;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_listxattr\n"));
 	if (!is_in_media_files(path))
@@ -2182,8 +2254,8 @@ static ssize_t mh_listxattr(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
 				path,
@@ -2210,6 +2282,8 @@ static int mh_removexattr(struct vfs_handle_struct *handle,
 		const char *name)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_removexattr\n"));
 	if (!is_in_media_files(path))
@@ -2218,8 +2292,8 @@ static int mh_removexattr(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -2248,6 +2322,8 @@ static int mh_setxattr(struct vfs_handle_struct *handle,
 		int flags)
 {
 	int status;
+	char *clientPath;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_setxattr\n"));
 	if (!is_in_media_files(path))
@@ -2257,8 +2333,8 @@ static int mh_setxattr(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	char *clientPath = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientPath = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_path(handle, ctx,
 				path,
@@ -2285,6 +2361,8 @@ static bool mh_is_offline(struct vfs_handle_struct *handle,
 {
 	// check if sbuf is modified further down the chain.
 	bool ret;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_is_offline\n"));
 	if (!is_in_media_files(fname->base_name))
@@ -2293,8 +2371,8 @@ static bool mh_is_offline(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if(alloc_get_client_smb_fname(handle, ctx,
 				fname,
@@ -2319,6 +2397,8 @@ static int mh_set_offline(struct vfs_handle_struct *handle,
 		const struct smb_filename *fname)
 {
 	int status;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_set_offline\n"));
 	if (!is_in_media_files(fname->base_name))
@@ -2327,8 +2407,8 @@ static int mh_set_offline(struct vfs_handle_struct *handle,
 		goto out;
 	}
 
-	struct smb_filename *clientFname = NULL;
-	TALLOC_CTX *ctx = talloc_tos();
+	clientFname = NULL;
+	ctx = talloc_tos();
 
 	if ((status = alloc_get_client_smb_fname(handle, ctx,
 				fname,
