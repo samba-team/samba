@@ -2011,8 +2011,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* We only care about matching attributes on file exists and
 	 * overwrite. */
 
-	if (!posix_open && file_existed && ((create_disposition == FILE_OVERWRITE) ||
-			     (create_disposition == FILE_OVERWRITE_IF))) {
+	if (!posix_open && file_existed &&
+	    ((create_disposition == FILE_OVERWRITE) ||
+	     (create_disposition == FILE_OVERWRITE_IF))) {
 		if (!open_match_attributes(conn, existing_dos_attributes,
 					   new_dos_attributes,
 					   smb_fname->st.st_ex_mode,
