@@ -237,6 +237,9 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 			if (bufsize < len)
 				goto no_space;
 			*ps = SMB_STRDUP((const char *)buf);
+			if (*ps == NULL) {
+				goto no_space;
+			}
 			break;
 		case 'f': /* null-terminated string */
 			s = va_arg(ap,char *);
