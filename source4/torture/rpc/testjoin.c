@@ -29,6 +29,7 @@
 #include "../lib/crypto/crypto.h"
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
 #include "libcli/auth/libcli_auth.h"
@@ -394,6 +395,79 @@ failed:
 	return NULL;
 }
 
+/*
+ * Set privileges on an account.
+ */
+
+static void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s)
+{
+	name->string = s;
+}
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
+bool torture_setup_privs(struct torture_context *tctx,
+			struct dcerpc_pipe *p,
+			uint32_t num_privs,
+			const char **privs,
+			const struct dom_sid *user_sid)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct policy_handle *handle;
+	int i;
+
+	torture_assert(tctx,
+		test_lsa_OpenPolicy2(b, tctx, &handle),
+		"failed to open policy");
+
+	for (i=0; i < num_privs; i++) {
+		struct lsa_LookupPrivValue r;
+		struct lsa_LUID luid;
+		struct lsa_String name;
+
+		init_lsa_String(&name, privs[i]);
+
+		r.in.handle = handle;
+		r.in.name = &name;
+		r.out.luid = &luid;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_lsa_LookupPrivValue_r(b, tctx, &r),
+			"lsa_LookupPrivValue failed");
+		if (!NT_STATUS_IS_OK(r.out.result)) {
+			torture_comment(tctx, "lsa_LookupPrivValue failed for '%s' with %s\n",
+				privs[i], nt_errstr(r.out.result));
+			return false;
+		}
+	}
+
+	{
+		struct lsa_AddAccountRights r;
+		struct lsa_RightSet rights;
+
+		rights.count = num_privs;
+		rights.names = talloc_zero_array(tctx, struct lsa_StringLarge, rights.count);
+		for (i=0; i < rights.count; i++) {
+			init_lsa_StringLarge(&rights.names[i], privs[i]);
+		}
+
+		r.in.handle = handle;
+		r.in.sid = discard_const_p(struct dom_sid, user_sid);
+		r.in.rights = &rights;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_lsa_AddAccountRights_r(b, tctx, &r),
+			"lsa_AddAccountRights failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"lsa_AddAccountRights failed");
+	}
+
+	test_lsa_Close(b, tctx, handle);
+
+	return true;
+}
 
 struct test_join *torture_create_testuser(struct torture_context *torture,
 					  const char *username,

@@ -2391,9 +2391,119 @@ bool try_tcon(struct torture_context *tctx,
 
 static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 {
-	struct smbcli_state *cli;
-	struct security_descriptor *sd;
-	struct dom_sid *user_sid;
+	struct smbcli_state *cli = NULL;
+	struct security_descriptor *sd = NULL;
+	struct dom_sid *user_sid = NULL;
+	const char *testuser_passwd = NULL;
+	struct cli_credentials *test_credentials = NULL;
+	struct smbcli_options options;
+	struct smbcli_session_options session_options;
+	NTSTATUS status;
+	struct test_join *tj = NULL;
+	struct dcerpc_pipe *lsa_pipe = NULL;
+	const char *priv_array[1];
+
+	/* Create a new user. The normal user has SeBackup and SeRestore
+	   privs so we can't lock them out with a share security descriptor. */
+	tj = torture_create_testuser(torture,
+					"sharesec_user",
+					torture_setting_string(torture, "workgroup", NULL),
+					ACB_NORMAL,
+					&testuser_passwd);
+	if (!tj) {
+		torture_fail(torture, "Creating sharesec_user failed\n");
+	}
+
+	/* Give them SeDiskOperatorPrivilege but no other privs. */
+	status = torture_rpc_connection(torture, &lsa_pipe, &ndr_table_lsarpc);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_delete_testuser(torture, tj, "sharesec_user");
+		talloc_free(tj);
+		torture_fail(torture, "Error connecting to LSA pipe");
+	}
+
+	priv_array[0] = "SeDiskOperatorPrivilege";
+	if (!torture_setup_privs(torture,
+				lsa_pipe,
+				1,
+				priv_array,
+				torture_join_user_sid(tj))) {
+		talloc_free(lsa_pipe);
+		torture_delete_testuser(torture, tj, "sharesec_user");
+		talloc_free(tj);
+		torture_fail(torture, "Failed to setup privs\n");
+	}
+	talloc_free(lsa_pipe);
+
+	test_credentials = cli_credentials_init(torture);
+	cli_credentials_set_workstation(test_credentials, "localhost", CRED_SPECIFIED);
+	cli_credentials_set_domain(test_credentials, lpcfg_workgroup(torture->lp_ctx),
+			CRED_SPECIFIED);
+	cli_credentials_set_username(test_credentials, "sharesec_user", CRED_SPECIFIED);
+	cli_credentials_set_password(test_credentials, testuser_passwd, CRED_SPECIFIED);
+
+	ZERO_STRUCT(options);
+	ZERO_STRUCT(session_options);
+	lpcfg_smbcli_options(torture->lp_ctx, &options);
+	lpcfg_smbcli_session_options(torture->lp_ctx, &session_options);
+
+	status = smbcli_full_connection(torture,
+					&cli,
+					torture_setting_string(torture, "host", NULL),
+					lpcfg_smb_ports(torture->lp_ctx),
+					"IPC$",
+					NULL,
+					lpcfg_socket_options(torture->lp_ctx),
+					test_credentials,
+					lpcfg_resolve_context(torture->lp_ctx),
+					torture->ev,
+					&options,
+					&session_options,
+					lpcfg_gensec_settings(torture, torture->lp_ctx));
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(cli);
+		torture_delete_testuser(torture, tj, "sharesec_user");
+		talloc_free(tj);
+		torture_fail(torture, "Failed to open connection\n");
+	}
+
+	if (!(user_sid = whoami(torture, torture, cli->tree))) {
+		talloc_free(cli);
+		torture_delete_testuser(torture, tj, "sharesec_user");
+		talloc_free(tj);
+		torture_fail(torture, "whoami failed\n");
+	}
+
+	sd = get_sharesec(torture, torture, cli->session,
+			  torture_setting_string(torture, "share", NULL));
+
+	if (!try_tcon(torture, torture, sd, cli->session,
+			torture_setting_string(torture, "share", NULL),
+			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK)) {
+		talloc_free(cli);
+		torture_delete_testuser(torture, tj, "sharesec_user");
+		talloc_free(tj);
+		torture_fail(torture, "failed to test tcon with 0 access_mask");
+	}
+
+	if (!try_tcon(torture, torture, sd, cli->session,
+			torture_setting_string(torture, "share", NULL),
+			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
+			NT_STATUS_MEDIA_WRITE_PROTECTED)) {
+		talloc_free(cli);
+		torture_delete_testuser(torture, tj, "sharesec_user");
+		talloc_free(tj);
+		torture_fail(torture, "failed to test tcon with SEC_FILE_READ_DATA access_mask");
+	}
+
+	/* sharesec_user doesn't have any rights on the underlying file system.
+	   Go back to the normal user. */
+
+	talloc_free(cli);
+	cli = NULL;
+	torture_delete_testuser(torture, tj, "sharesec_user");
+	talloc_free(tj);
+	tj = NULL;
 
 	if (!(torture_open_connection_share(
 		      torture, &cli, torture, torture_setting_string(torture, "host", NULL),
@@ -2404,23 +2514,6 @@ static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 	if (!(user_sid = whoami(torture, torture, cli->tree))) {
 		torture_fail(torture, "whoami failed\n");
 	}
-
-	sd = get_sharesec(torture, torture, cli->session,
-			  torture_setting_string(torture, "share", NULL));
-
-	torture_assert(torture, try_tcon(
-			torture, torture, sd, cli->session,
-			torture_setting_string(torture, "share", NULL),
-			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK),
-			"failed to test tcon with 0 access_mask");
-
-	torture_assert(torture, try_tcon(
-			torture, torture, sd, cli->session,
-			torture_setting_string(torture, "share", NULL),
-			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
-			NT_STATUS_MEDIA_WRITE_PROTECTED),
-			"failed to test tcon with SEC_FILE_READ_DATA access_mask");
-
 	torture_assert(torture, try_tcon(
 			torture, torture, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
