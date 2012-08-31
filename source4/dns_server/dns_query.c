@@ -36,7 +36,6 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
-#include "lib/util/dlinklist.h"
 
 static WERROR create_response_rr(const struct dns_name_question *question,
 				 const struct dnsp_DnssrvRpcRecord *rec,
@@ -321,52 +320,6 @@ static WERROR handle_question(struct dns_server *dns,
 	return WERR_OK;
 }
 
-static NTSTATUS create_new_tkey(TALLOC_CTX *mem_ctx,
-				struct dns_server *dns,
-				struct dns_server_tkey **tkey,
-				const char* name)
-{
-	NTSTATUS status;
-	struct dns_server_tkey *k = talloc_zero(mem_ctx, struct dns_server_tkey);
-
-	if (k == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	k->name = talloc_strdup(mem_ctx, name);
-
-	if (k->name  == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = samba_server_gensec_start(k,
-					   dns->task->event_ctx,
-					   dns->task->msg_ctx,
-					   dns->task->lp_ctx,
-					   dns->server_credentials,
-					   "dns",
-					   &k->gensec);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
-		*tkey = NULL;
-		return status;
-	}
-
-	gensec_want_feature(k->gensec, GENSEC_FEATURE_SIGN);
-
-	status = gensec_start_mech_by_oid(k->gensec, GENSEC_OID_SPNEGO);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC server code: %s\n",
-			  nt_errstr(status)));
-		*tkey = NULL;
-		return status;
-	}
-
-	*tkey = k;
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
 				  struct dns_server *dns,
 				  struct dns_server_tkey *tkey,
@@ -397,18 +350,82 @@ static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static struct dns_server_tkey *find_tkey(struct dns_server *dns,
+static struct dns_server_tkey *find_tkey(struct dns_server_tkey_store *store,
 					 const char *name)
 {
 	struct dns_server_tkey *tkey = NULL;
+	uint16_t i = 0;
 
-	for (tkey = dns->tkeys; tkey != NULL; tkey = tkey->next) {
-		if (dns_name_equal(name, tkey->name)) {
+	do {
+		struct dns_server_tkey *tmp_key = store->tkeys[i];
+
+		i++;
+		i %= TKEY_BUFFER_SIZE;
+
+		if (tmp_key == NULL) {
+			continue;
+		}
+		if (dns_name_equal(name, tmp_key->name)) {
+			tkey = tmp_key;
 			break;
 		}
-	}
+	} while (i != 0);
 
 	return tkey;
+}
+
+static NTSTATUS create_tkey(struct dns_server *dns,
+			    const char* name,
+			    struct dns_server_tkey **tkey)
+{
+	NTSTATUS status;
+	struct dns_server_tkey_store *store = dns->tkeys;
+	struct dns_server_tkey *k = talloc_zero(store, struct dns_server_tkey);
+
+	if (k == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	k->name = talloc_strdup(k, name);
+
+	if (k->name  == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = samba_server_gensec_start(k,
+					   dns->task->event_ctx,
+					   dns->task->msg_ctx,
+					   dns->task->lp_ctx,
+					   dns->server_credentials,
+					   "dns",
+					   &k->gensec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+		*tkey = NULL;
+		return status;
+	}
+
+	gensec_want_feature(k->gensec, GENSEC_FEATURE_SIGN);
+
+	status = gensec_start_mech_by_oid(k->gensec, GENSEC_OID_SPNEGO);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC server code: %s\n",
+			  nt_errstr(status)));
+		*tkey = NULL;
+		return status;
+	}
+
+	if (store->tkeys[store->next_idx] != NULL) {
+		TALLOC_FREE(store->tkeys[store->next_idx]);
+	}
+
+	store->tkeys[store->next_idx] = k;
+	(store->next_idx)++;
+	store->next_idx %= store->size;
+
+	*tkey = k;
+	return NT_STATUS_OK;
 }
 
 static WERROR handle_tkey(struct dns_server *dns,
@@ -470,7 +487,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 		DATA_BLOB key;
 		DATA_BLOB reply;
 
-		tkey = find_tkey(dns, in->questions[0].name);
+		tkey = find_tkey(dns->tkeys, in->questions[0].name);
 		if (tkey != NULL && tkey->complete) {
 			/* TODO: check if the key is still valid */
 			DEBUG(1, ("Rejecting tkey negotiation for already established key\n"));
@@ -479,14 +496,12 @@ static WERROR handle_tkey(struct dns_server *dns,
 		}
 
 		if (tkey == NULL) {
-			status  = create_new_tkey(dns, dns, &tkey,
-						  in->questions[0].name);
+			status  = create_tkey(dns, in->questions[0].name,
+					      &tkey);
 			if (!NT_STATUS_IS_OK(status)) {
 				ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
 				return ntstatus_to_werror(status);
 			}
-
-			DLIST_ADD_END(dns->tkeys, tkey, NULL);
 		}
 
 		key.data = in_tkey->rdata.tkey_record.key_data;

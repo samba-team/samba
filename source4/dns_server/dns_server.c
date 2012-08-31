@@ -683,6 +683,27 @@ static int dns_server_sort_zones(struct ldb_message **m1, struct ldb_message **m
 	return 0;
 }
 
+static struct dns_server_tkey_store *tkey_store_init(TALLOC_CTX *mem_ctx,
+						     uint16_t size)
+{
+	struct dns_server_tkey_store *buffer = talloc_zero(mem_ctx,
+						struct dns_server_tkey_store);
+
+	if (buffer == NULL) {
+		return NULL;
+	}
+
+	buffer->size = size;
+	buffer->next_idx = 0;
+
+	buffer->tkeys = talloc_zero_array(buffer, struct dns_server_tkey *, size);
+	if (buffer->tkeys == NULL) {
+		TALLOC_FREE(buffer);
+	}
+
+	return buffer;
+}
+
 static void dns_task_init(struct task_server *task)
 {
 	struct dns_server *dns;
@@ -735,6 +756,12 @@ static void dns_task_init(struct task_server *task)
 			talloc_asprintf(task, "Failed to obtain server credentials, perhaps a standalone server?: %s\n",
 					nt_errstr(status)),
 			true);
+		return;
+	}
+
+	dns->tkeys = tkey_store_init(dns, TKEY_BUFFER_SIZE);
+	if (!dns->tkeys) {
+		task_server_terminate(task, "Failed to allocate tkey storage\n", true);
 		return;
 	}
 

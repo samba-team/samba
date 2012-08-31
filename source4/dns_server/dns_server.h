@@ -34,7 +34,6 @@ struct dns_server_zone {
 };
 
 struct dns_server_tkey {
-	struct dns_server_tkey *prev, *next;
 	const char *name;
 	enum dns_tkey_mode mode;
 	struct auth_session_info *session_info;
@@ -42,11 +41,19 @@ struct dns_server_tkey {
 	bool complete;
 };
 
+#define TKEY_BUFFER_SIZE 128
+
+struct dns_server_tkey_store {
+	struct dns_server_tkey **tkeys;
+	uint16_t next_idx;
+	uint16_t size;
+};
+
 struct dns_server {
 	struct task_server *task;
 	struct ldb_context *samdb;
 	struct dns_server_zone *zones;
-	struct dns_server_tkey *tkeys;
+	struct dns_server_tkey_store *tkeys;
 	struct cli_credentials *server_credentials;
 };
 
