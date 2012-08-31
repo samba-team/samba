@@ -1096,8 +1096,6 @@ static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 	
 	if ((sid_check_is_in_builtin(psid) ||
 	     sid_check_is_in_wellknown_domain(psid))) {
-		bool ret;
-
 		map = talloc_zero(NULL, GROUP_MAP);
 		if (!map) {
 			return false;
