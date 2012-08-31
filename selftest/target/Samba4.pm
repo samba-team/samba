@@ -456,6 +456,9 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{password} = $password;
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
 
+#
+# Set smbd log level here.
+#
 	$ctx->{server_loglevel} =$ENV{SERVER_LOG_LEVEL} || 1;
 	$ctx->{username} = "Administrator";
 	$ctx->{domain} = $domain;
