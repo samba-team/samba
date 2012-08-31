@@ -590,9 +590,10 @@ static struct tevent_req *aio_fork_pread_send(struct vfs_handle_struct *handle,
 	ssize_t written;
 	int err;
 	struct aio_fork_config *config;
+
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct aio_fork_config,
-				return -1);
+				return NULL);
 
 	req = tevent_req_create(mem_ctx, &state, struct aio_fork_pread_state);
 	if (req == NULL) {
@@ -821,9 +822,10 @@ static struct tevent_req *aio_fork_fsync_send(
 	ssize_t written;
 	int err;
 	struct aio_fork_config *config;
+
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct aio_fork_config,
-				return -1);
+				return NULL);
 
 	req = tevent_req_create(mem_ctx, &state, struct aio_fork_fsync_state);
 	if (req == NULL) {
