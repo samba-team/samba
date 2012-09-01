@@ -1643,10 +1643,7 @@ int samdb_reference_dn_is_our_ntdsa(struct ldb_context *ldb, struct ldb_dn *base
 {
 	int ret;
 	struct ldb_dn *referenced_dn;
-	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-	struct GUID referenced_guid;
-	const struct GUID *our_ntds_guid;
 	if (tmp_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
