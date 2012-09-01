@@ -1618,12 +1618,10 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 int samdb_dn_is_our_ntdsa(struct ldb_context *ldb, struct ldb_dn *dn, bool *is_ntdsa)
 {
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	struct GUID dn_guid;
 	const struct GUID *our_ntds_guid;
 	status = dsdb_get_extended_dn_guid(dn, &dn_guid, "GUID");
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
