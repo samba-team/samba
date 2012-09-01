@@ -112,19 +112,18 @@ static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 		const char *reject_string;
 		switch (reject_reason) {
 		case SAM_PWD_CHANGE_PASSWORD_TOO_SHORT:
-			reject_string = talloc_asprintf(mem_ctx, "Password too short, password must be at least %d characters long",
+			reject_string = talloc_asprintf(mem_ctx, "Password too short, password must be at least %d characters long.",
 							dominfo->min_password_length);
 			break;
 		case SAM_PWD_CHANGE_NOT_COMPLEX:
 			reject_string = "Password does not meet complexity requirements";
 			break;
 		case SAM_PWD_CHANGE_PWD_IN_HISTORY:
-			reject_string = talloc_asprintf(mem_ctx, "Password is already in password history, cannot match any of your %d passwords",
+			reject_string = talloc_asprintf(mem_ctx, "Password is already in password history.  New password must not match any of your %d previous passwords.",
 							dominfo->password_history_length);
 			break;
 		default:
-			reject_string = talloc_asprintf(mem_ctx, "Password must be at least %d characters long, and cannot match any of your %d previous passwords",
-							dominfo->min_password_length, dominfo->password_history_length);
+			reject_string = "Password change rejected, password changes may not be permitted on this account, or the minimum password age may not have elapsed.";
 			break;
 		}
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
