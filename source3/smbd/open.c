@@ -1942,14 +1942,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		case FILE_SUPERSEDE:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
-			flags2 |= (O_CREAT | O_TRUNC);
+			flags2 = (O_CREAT | O_TRUNC);
 			clear_ads = true;
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
-			flags2 |= (O_CREAT | O_TRUNC);
+			flags2 = (O_CREAT | O_TRUNC);
 			clear_ads = true;
 			break;
 
@@ -1976,7 +1976,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				errno = ENOENT;
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
-			flags2 |= O_TRUNC;
+			flags2 = O_TRUNC;
 			clear_ads = true;
 			break;
 
@@ -1995,13 +1995,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				}
 				return map_nt_error_from_unix(errno);
 			}
-			flags2 |= (O_CREAT|O_EXCL);
+			flags2 = (O_CREAT|O_EXCL);
 			break;
 
 		case FILE_OPEN_IF:
 			/* If file exists open. If file doesn't exist
 			 * create. */
-			flags2 |= O_CREAT;
+			flags2 = O_CREAT;
 			break;
 
 		default:
