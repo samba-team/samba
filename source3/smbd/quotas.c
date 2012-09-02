@@ -51,6 +51,7 @@ bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize, uint64_t *d
 
 #endif /* VXFS_QUOTA */
 
+
 #ifdef LINUX
 
 #include <sys/types.h>
@@ -86,15 +87,6 @@ typedef struct _LINUX_SMB_DISK_QUOTA {
 #include <rpc/nettype.h>
 #endif
 #include <rpc/xdr.h>
-
-static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
-{
-	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
-		return(0);
-	if (!xdr_int(xdrsp, &args->gqa_uid))
-		return(0);
-	return (1);
-}
 
 static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
@@ -612,15 +604,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #include <rpcsvc/rquota.h>
 #include <rpc/nettype.h>
 #include <rpc/xdr.h>
-
-static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
-{
-	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
-		return(0);
-	if (!xdr_int(xdrsp, &args->gqa_uid))
-		return(0);
-	return (1);
-}
 
 static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
@@ -1170,15 +1153,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #endif
 #include <rpc/xdr.h>
 
-static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
-{
-	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
-		return(0);
-	if (!xdr_int(xdrsp, &args->gqa_uid))
-		return(0);
-	return (1);
-}
-
 static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
 	int quotastat;
@@ -1509,6 +1483,17 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
   return (True);
 }
 
+#endif
+
+#if definedr(LINUX) || defined(SUNOS) || defined (__FreeBSD__) || defined(__DragonFly__)
+static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
+{
+	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
+		return(0);
+	if (!xdr_int(xdrsp, &args->gqa_uid))
+		return(0);
+	return (1);
+}
 #endif
 
 #if defined(VXFS_QUOTA)
