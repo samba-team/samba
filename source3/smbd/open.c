@@ -1778,6 +1778,22 @@ bool is_deferred_open_async(const void *ptr)
 	return state->async_open;
 }
 
+static bool clear_ads(uint32_t create_disposition)
+{
+	bool ret = false;
+
+	switch (create_disposition) {
+	case FILE_SUPERSEDE:
+	case FILE_OVERWRITE_IF:
+	case FILE_OVERWRITE:
+		ret = true;
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -1802,7 +1818,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool def_acl = False;
 	bool posix_open = False;
 	bool new_file_created = False;
-	bool clear_ads = false;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
@@ -1943,14 +1958,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 = (O_CREAT | O_TRUNC);
-			clear_ads = true;
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 = (O_CREAT | O_TRUNC);
-			clear_ads = true;
 			break;
 
 		case FILE_OPEN:
@@ -1977,7 +1990,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			flags2 = O_TRUNC;
-			clear_ads = true;
 			break;
 
 		case FILE_CREATE:
@@ -2494,7 +2506,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	SMB_ASSERT(lck != NULL);
 
 	/* Delete streams if create_disposition requires it */
-	if (!new_file_created && clear_ads &&
+	if (!new_file_created && clear_ads(create_disposition) &&
 	    !is_ntfs_stream_smb_fname(smb_fname)) {
 		status = delete_all_streams(conn, smb_fname->base_name);
 		if (!NT_STATUS_IS_OK(status)) {
