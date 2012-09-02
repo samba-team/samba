@@ -630,32 +630,14 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 
   /* find the block device file */
 
-#ifdef HPUX
-  /* Need to set the cache flag to 1 for HPUX. Seems
-   * to have a significant performance boost when
-   * lstat calls on /dev access this function.
-   */
-  if ((sys_stat(path, &S, false)<0)
-      || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 1)<0))
-#else
   if ((sys_stat(path, &S, false)<0)
       || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 0)<0))
 	return (False);
-#endif /* ifdef HPUX */
 
 #endif /* !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) && !defined(__DragonFly__) */
 
   euser_id = geteuid();
 
-#ifdef HPUX
-  /* for HPUX, real uid must be same as euid to execute quotactl for euid */
-  save_re_uid();
-  if (set_re_uid() != 0) return False;
-  
-  r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-
-  restore_re_uid();
-#else 
 #if   defined(AIX)
   /* AIX has both USER and GROUP quotas: 
      Get the USER quota (ohnielse@fysik.dtu.dk) */
@@ -696,7 +678,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
 #endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
-#endif /* HPUX */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
   *bsize = 1024;
