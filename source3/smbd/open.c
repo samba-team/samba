@@ -1794,6 +1794,59 @@ static bool clear_ads(uint32_t create_disposition)
 	return ret;
 }
 
+static int disposition_to_open_flags(uint32_t create_disposition)
+{
+	int ret = 0;
+
+	/*
+	 * Currently we're using FILE_SUPERSEDE as the same as
+	 * FILE_OVERWRITE_IF but they really are
+	 * different. FILE_SUPERSEDE deletes an existing file
+	 * (requiring delete access) then recreates it.
+	 */
+
+	switch (create_disposition) {
+	case FILE_SUPERSEDE:
+	case FILE_OVERWRITE_IF:
+		/*
+		 * If file exists replace/overwrite. If file doesn't
+		 * exist create.
+		 */
+		ret = O_CREAT|O_TRUNC;
+		break;
+
+	case FILE_OPEN:
+		/*
+		 * If file exists open. If file doesn't exist error.
+		 */
+		ret = 0;
+		break;
+
+	case FILE_OVERWRITE:
+		/*
+		 * If file exists overwrite. If file doesn't exist
+		 * error.
+		 */
+		ret = O_TRUNC;
+		break;
+
+	case FILE_CREATE:
+		/*
+		 * If file exists error. If file doesn't exist create.
+		 */
+		ret = O_CREAT|O_EXCL;
+		break;
+
+	case FILE_OPEN_IF:
+		/*
+		 * If file exists open. If file doesn't exist create.
+		 */
+		ret = O_CREAT;
+		break;
+	}
+	return ret;
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -1948,24 +2001,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	switch( create_disposition ) {
-		/*
-		 * Currently we're using FILE_SUPERSEDE as the same as
-		 * FILE_OVERWRITE_IF but they really are
-		 * different. FILE_SUPERSEDE deletes an existing file
-		 * (requiring delete access) then recreates it.
-		 */
-		case FILE_SUPERSEDE:
-			/* If file exists replace/overwrite. If file doesn't
-			 * exist create. */
-			flags2 = (O_CREAT | O_TRUNC);
-			break;
-
-		case FILE_OVERWRITE_IF:
-			/* If file exists replace/overwrite. If file doesn't
-			 * exist create. */
-			flags2 = (O_CREAT | O_TRUNC);
-			break;
-
 		case FILE_OPEN:
 			/* If file exists open. If file doesn't exist error. */
 			if (!file_existed) {
@@ -1989,7 +2024,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				errno = ENOENT;
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
-			flags2 = O_TRUNC;
 			break;
 
 		case FILE_CREATE:
@@ -2007,18 +2041,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				}
 				return map_nt_error_from_unix(errno);
 			}
-			flags2 = (O_CREAT|O_EXCL);
 			break;
 
+		case FILE_SUPERSEDE:
+		case FILE_OVERWRITE_IF:
 		case FILE_OPEN_IF:
-			/* If file exists open. If file doesn't exist
-			 * create. */
-			flags2 = O_CREAT;
 			break;
-
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	flags2 = disposition_to_open_flags(create_disposition);
 
 	/* We only care about matching attributes on file exists and
 	 * overwrite. */
