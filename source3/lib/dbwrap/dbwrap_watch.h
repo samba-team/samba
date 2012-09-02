@@ -43,4 +43,4 @@ void dbwrap_watchers_traverse_read(
 void dbwrap_watchers_wakeall(struct messaging_context *msg);
 
 
-#endif /* __DBWRAP_H__ */
+#endif /* __DBWRAP_WATCH_H__ */
