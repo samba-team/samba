@@ -36,6 +36,7 @@ struct dns_server_zone {
 struct dns_server_tkey {
 	const char *name;
 	enum dns_tkey_mode mode;
+	const char *algorithm;
 	struct auth_session_info *session_info;
 	struct gensec_security *gensec;
 	bool complete;
@@ -59,6 +60,11 @@ struct dns_server {
 
 struct dns_request_state {
 	uint16_t flags;
+	bool authenticated;
+	bool sign;
+	char *key_name;
+	struct dns_res_rec *tsig;
+	uint16_t tsig_error;
 };
 
 struct tevent_req *dns_server_process_query_send(
@@ -101,6 +107,16 @@ WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
 		   struct ldb_dn **_dn);
+struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
+				      const char *name);
+WERROR dns_verify_tsig(struct dns_server *dns,
+		       struct dns_request_state *state,
+		       struct dns_name_packet *packet);
+WERROR dns_sign_tsig(struct dns_server *dns,
+		     TALLOC_CTX *mem_ctx,
+		     struct dns_request_state *state,
+		     struct dns_name_packet *packet,
+		     uint16_t error);
 
 #define DNS_ERR(err_str) WERR_DNS_ERROR_RCODE_##err_str
 #endif /* __DNS_SERVER_H__ */
