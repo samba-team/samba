@@ -52,7 +52,7 @@ bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize, uint64_t *d
 #endif /* VXFS_QUOTA */
 
 
-#if   defined(SUNOS5) || defined(SUNOS4)
+#if defined(SUNOS5) || defined(SUNOS4)
 
 #include <fcntl.h>
 #include <sys/param.h>
@@ -598,10 +598,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 
 #else
 
-#if    defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-#include <ufs/ufs/quota.h>
-#include <machine/param.h>
-#elif         AIX
+#if           AIX
 /* AIX quota patch from Ole Holm Nielsen <ohnielse@fysik.dtu.dk> */
 #include <jfs/quota.h>
 /* AIX 4.X: Rename members of the dqblk structure (ohnielse@fysik.dtu.dk) */
@@ -617,170 +614,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #include <devnm.h>
 #endif
 
-#if defined(__FreeBSD__) || defined(__DragonFly__)
-
-#include <rpc/rpc.h>
-#include <rpc/types.h>
-#include <rpcsvc/rquota.h>
-#ifdef HAVE_RPC_NETTYPE_H
-#include <rpc/nettype.h>
-#endif
-#include <rpc/xdr.h>
-
-static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
-{
-	int quotastat;
-
-	if (!xdr_int(xdrsp, &quotastat)) {
-		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
-		return 0;
-	}
-	gqr->status = quotastat;
-
-	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsize)) {
-		DEBUG(6,("nfs_quotas: Block size bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_bool(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_active)) {
-		DEBUG(6,("nfs_quotas: Active bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bhardlimit)) {
-		DEBUG(6,("nfs_quotas: Hardlimit bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsoftlimit)) {
-		DEBUG(6,("nfs_quotas: Softlimit bad or zero\n"));
-		return 0;
-	}
-	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_curblocks)) {
-		DEBUG(6,("nfs_quotas: Currentblocks bad or zero\n"));
-		return 0;
-	}
-	return (1);
-}
-
-/* Works on FreeBSD, too. :-) */
-static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
-{
-	uid_t uid = euser_id;
-	struct dqblk D;
-	char *mnttype = nfspath;
-	CLIENT *clnt;
-	struct getquota_rslt gqr;
-	struct getquota_args args;
-	char *cutstr, *pathname, *host, *testpath;
-	int len;
-	static struct timeval timeout = {2,0};
-	enum clnt_stat clnt_stat;
-	bool ret = True;
-
-	*bsize = *dfree = *dsize = (uint64_t)0;
-
-	len=strcspn(mnttype, ":");
-	pathname=strstr(mnttype, ":");
-	cutstr = (char *) SMB_MALLOC(len+1);
-	if (!cutstr)
-		return False;
-
-	memset(cutstr, '\0', len+1);
-	host = strncat(cutstr,mnttype, sizeof(char) * len );
-	DEBUG(5,("nfs_quotas: looking for mount on \"%s\"\n", cutstr));
-	DEBUG(5,("nfs_quotas: of path \"%s\"\n", mnttype));
-	testpath=strchr_m(mnttype, ':');
-	args.gqa_pathp = testpath+1;
-	args.gqa_uid = uid;
-
-	DEBUG(5,("nfs_quotas: Asking for host \"%s\" rpcprog \"%i\" rpcvers \"%i\" network \"%s\"\n", host, RQUOTAPROG, RQUOTAVERS, "udp"));
-
-	if ((clnt = clnt_create(host, RQUOTAPROG, RQUOTAVERS, "udp")) == NULL) {
-		ret = False;
-		goto out;
-	}
-
-	clnt->cl_auth = authunix_create_default();
-	DEBUG(9,("nfs_quotas: auth_success\n"));
-
-	clnt_stat=clnt_call(clnt, RQUOTAPROC_GETQUOTA, (const xdrproc_t) my_xdr_getquota_args, (caddr_t)&args, (const xdrproc_t) my_xdr_getquota_rslt, (caddr_t)&gqr, timeout);
-
-	if (clnt_stat != RPC_SUCCESS) {
-		DEBUG(9,("nfs_quotas: clnt_call fail\n"));
-		ret = False;
-		goto out;
-	}
-
-	/* 
-	 * gqr->status returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
-	 * no quota set, and 3 if no permission to get the quota.  If 0 or 3 return
-	 * something sensible.
-	 */   
-
-	switch (gqr.status) {
-	case 0:
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", gqr.status));
-		ret = False;
-		goto out;
-
-	case 1:
-		DEBUG(9,("nfs_quotas: Good quota data\n"));
-		D.dqb_bsoftlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bsoftlimit;
-		D.dqb_bhardlimit = gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit;
-		D.dqb_curblocks = gqr.getquota_rslt_u.gqr_rquota.rq_curblocks;
-		break;
-
-	case 2:
-	case 3:
-		D.dqb_bsoftlimit = 1;
-		D.dqb_curblocks = 1;
-		DEBUG(9,("nfs_quotas: Remote Quotas returned \"%i\" \n", gqr.status));
-		break;
-
-	default:
-		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", gqr.status));
-		break;
-	}
-
-	DEBUG(10,("nfs_quotas: Let`s look at D a bit closer... status \"%i\" bsize \"%i\" active? \"%i\" bhard \"%i\" bsoft \"%i\" curb \"%i\" \n",
-			gqr.status,
-			gqr.getquota_rslt_u.gqr_rquota.rq_bsize,
-			gqr.getquota_rslt_u.gqr_rquota.rq_active,
-			gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit,
-			gqr.getquota_rslt_u.gqr_rquota.rq_bsoftlimit,
-			gqr.getquota_rslt_u.gqr_rquota.rq_curblocks));
-
-	if (D.dqb_bsoftlimit == 0)
-		D.dqb_bsoftlimit = D.dqb_bhardlimit;
-	if (D.dqb_bsoftlimit == 0)
-		return False;
-
-	*bsize = gqr.getquota_rslt_u.gqr_rquota.rq_bsize;
-	*dsize = D.dqb_bsoftlimit;
-
-	if (D.dqb_curblocks == 1)
-		*bsize = DEV_BSIZE;
-
-	if (D.dqb_curblocks > D.dqb_bsoftlimit) {
-		*dfree = 0;
-		*dsize = D.dqb_curblocks;
-	} else
-		*dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
-
-  out:
-
-	if (clnt) {
-		if (clnt->cl_auth)
-			auth_destroy(clnt->cl_auth);
-		clnt_destroy(clnt);
-	}
-
-	DEBUG(5,("nfs_quotas: For path \"%s\" returning  bsize %.0f, dfree %.0f, dsize %.0f\n",args.gqa_pathp,(double)*bsize,(double)*dfree,(double)*dsize));
-
-	SAFE_FREE(cutstr);
-	DEBUG(10,("nfs_quotas: End of nfs_quotas\n" ));
-	return ret;
-}
-
-#endif
 
 /****************************************************************************
 try to get the disk space from disk quotas - default version
@@ -823,57 +656,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 
   restore_re_uid();
 #else 
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-  {
-    /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
-    gid_t egrp_id;
-#if defined(__FreeBSD__) || defined(__DragonFly__)
-    SMB_DEV_T devno;
-    struct statfs *mnts;
-    SMB_STRUCT_STAT st;
-    int mntsize, i;
-    
-    if (sys_stat(path, &st, false) < 0)
-        return False;
-    devno = st.st_ex_dev;
-
-    mntsize = getmntinfo(&mnts,MNT_NOWAIT);
-    if (mntsize <= 0)
-        return False;
-
-    for (i = 0; i < mntsize; i++) {
-	if (sys_stat(mnts[i].f_mntonname, &st, false) < 0)
-            return False;
-        if (st.st_ex_dev == devno)
-            break;
-    }
-    if (i == mntsize)
-        return False;
-#endif
-    
-    become_root();
-
-#if defined(__FreeBSD__) || defined(__DragonFly__)
-    if (strcmp(mnts[i].f_fstypename,"nfs") == 0) {
-        bool retval;
-        retval = nfs_quotas(mnts[i].f_mntfromname,euser_id,bsize,dfree,dsize);
-        unbecome_root();
-        return retval;
-    }
-#endif
-
-    egrp_id = getegid();
-    r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
-
-    /* As FreeBSD has group quotas, if getting the user
-       quota fails, try getting the group instead. */
-    if (r) {
-	    r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
-    }
-
-    unbecome_root();
-  }
-#elif defined(AIX)
+#if   defined(AIX)
   /* AIX has both USER and GROUP quotas: 
      Get the USER quota (ohnielse@fysik.dtu.dk) */
 #ifdef _AIXVERSION_530
@@ -916,11 +699,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #endif /* HPUX */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
-#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
-  *bsize = DEV_BSIZE;
-#else /* !__FreeBSD__ && !__OpenBSD__ && !__DragonFly__ */
   *bsize = 1024;
-#endif /*!__FreeBSD__ && !__OpenBSD__ && !__DragonFly__ */
 
   if (r)
     {
@@ -943,9 +722,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
     return(False);
   /* Use softlimit to determine disk space, except when it has been exceeded */
   if ((D.dqb_curblocks>D.dqb_bsoftlimit)
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__DragonFly__)
 ||((D.dqb_curfiles>D.dqb_fsoftlimit) && (D.dqb_fsoftlimit != 0))
-#endif
     ) {
       *dfree = 0;
       *dsize = D.dqb_curblocks;
