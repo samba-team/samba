@@ -3684,11 +3684,12 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
-		/*
-		 * We're opening the stream element of a base_fsp
-		 * we already opened. Set up the base_fsp pointer.
-		 */
 		if (base_fsp) {
+			/*
+			 * We're opening the stream element of a
+			 * base_fsp we already opened. Set up the
+			 * base_fsp pointer.
+			 */
 			fsp->base_fsp = base_fsp;
 		}
 
