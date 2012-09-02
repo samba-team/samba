@@ -349,7 +349,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/process.c smbd/service.c smbd/error.c
                printing/printspoolss.c printing/spoolssd.c
                lib/sysquotas.c lib/sysquotas_linux.c
-               lib/sysquotas_xfs.c lib/sysquotas_4A.c
+               lib/sysquotas_xfs.c lib/sysquotas_4A.c lib/sysquotas_4B.c
                lib/sysquotas_nfs.c
                lib/background.c
                smbd/fake_file.c
