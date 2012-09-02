@@ -43,8 +43,14 @@
 #include <sys/quota.h>
 #endif
 
-/* WorkARound broken HFS access checks in hfs_quotactl. */
+#ifdef HAVE_UFS_UFS_QUOTA_H
+#include <ufs/ufs/quota.h>
+#endif
+
+#if defined(DARWINOS)
+/* WorkARound broken HFS access checks in hfs_quotactl. Darwin only(?) */
 #define HFS_QUOTACTL_WAR 1
+#endif
 
 static void xlate_qblk_to_smb(const struct dqblk * const qblk,
 			SMB_DISK_QUOTA *dp)
@@ -53,12 +59,17 @@ static void xlate_qblk_to_smb(const struct dqblk * const qblk,
 
 	DEBUG(10, ("unix softlimit=%u hardlimit=%u curblock=%u\n",
 	    (unsigned)qblk->dqb_bsoftlimit, (unsigned)qblk->dqb_bhardlimit,
+#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
 	    (unsigned)qblk->dqb_curbytes));
+#else
+	    (unsigned)qblk->dqb_curblocks));
+#endif
 
 	DEBUGADD(10, ("unix softinodes=%u hardinodes=%u curinodes=%u\n",
 	    (unsigned)qblk->dqb_isoftlimit, (unsigned)qblk->dqb_ihardlimit,
 	    (unsigned)qblk->dqb_curinodes));
 
+#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
 	/* On Darwin, quotas are counted in bytes. We report them
 	 * in 512b blocks because various callers have assumptions
 	 * about the block size.
@@ -70,6 +81,7 @@ static void xlate_qblk_to_smb(const struct dqblk * const qblk,
 	dp->hardlimit = XLATE_TO_BLOCKS(qblk->dqb_bhardlimit);
 	dp->curblocks = XLATE_TO_BLOCKS(qblk->dqb_curbytes);
 #undef XLATE_TO_BLOCKS
+#endif
 
 	dp->ihardlimit = qblk->dqb_ihardlimit;
 	dp->isoftlimit = qblk->dqb_isoftlimit;
@@ -92,9 +104,13 @@ static void xlate_smb_to_qblk(const SMB_DISK_QUOTA * const dp,
 {
 	ZERO_STRUCTP(qblk);
 
+	qblk->dqb_bsoftlimit = dp->softlimit;
+	qblk->dqb_bhardlimit = dp->hardlimit;
+#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
 	/* On Darwin, quotas are counted in bytes. */
-	qblk->dqb_bsoftlimit = dp->softlimit * dp->bsize;
-	qblk->dqb_bhardlimit = dp->hardlimit * dp->bsize;
+	qblk->dqb_bsoftlimit *= dp->bsize;
+	qblk->dqb_bhardlimit *= dp->bsize;
+#endif
 	qblk->dqb_ihardlimit = dp->ihardlimit;
 	qblk->dqb_isoftlimit = dp->isoftlimit;
 }

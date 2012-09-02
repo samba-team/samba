@@ -4646,6 +4646,10 @@ AC_CHECK_HEADERS(linux/dqblk_xfs.h)
 # For sys/quota.h and linux/quota.h
 AC_CHECK_HEADERS(sys/quota.h)
 
+# For quotas on BSD systems
+AC_CHECK_HEADERS(ufs/ufs/quota.h)
+
+
 if test x"$samba_cv_found_xfs_header" != x"yes"; then
 # if we have xfs quota support <sys/quota.h> (IRIX) we should use it
 AC_CACHE_CHECK([for XFS QUOTA in <sys/quota.h>],samba_cv_HAVE_SYS_QUOTA_XFS, [
@@ -4710,6 +4714,11 @@ if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;
     AC_DEFINE(HAVE_QUOTACTL_4B,1,[Whether int quotactl(const char *path, int cmd, int id, char *addr) is available])
     samba_cv_sysquotas_file="lib/sysquotas_4B.c"
+    AC_CHECK_MEMBERS([struct dqblk.dqb_curbytes], # Darwin bytecount style
+	[ AC_DEFINE([HAVE_STRUCT_DQBLK_DQB_CURBYTES],[1],[darwin style quota bytecount])],,
+	[#include <sys/typeѕ.h>
+	#include <sys/quota.h>])
+
 fi
 fi
 
