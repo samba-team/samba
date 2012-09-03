@@ -720,7 +720,7 @@ static bool smb_pam_chauthtok(pam_handle_t *pamh, const char * user)
  * PAM Externally accessible Session handler
  */
 
-bool smb_pam_claim_session(char *user, char *tty, char *rhost)
+bool smb_pam_claim_session(const char *user, const char *tty, const char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	struct pam_conv *pconv = NULL;
@@ -748,7 +748,7 @@ bool smb_pam_claim_session(char *user, char *tty, char *rhost)
  * PAM Externally accessible Session handler
  */
 
-bool smb_pam_close_session(char *user, char *tty, char *rhost)
+bool smb_pam_close_session(const char *user, const char *tty, const char *rhost)
 {
 	pam_handle_t *pamh = NULL;
 	struct pam_conv *pconv = NULL;
@@ -880,13 +880,13 @@ NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost)
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
-bool smb_pam_claim_session(char *user, char *tty, char *rhost)
+bool smb_pam_claim_session(const char *user, const char *tty, const char *rhost)
 {
 	return True;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */
-bool smb_pam_close_session(char *in_user, char *tty, char *rhost)
+bool smb_pam_close_session(const char *in_user, const char *tty, const char *rhost)
 {
 	return True;
 }

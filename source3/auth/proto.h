@@ -304,8 +304,8 @@ NTSTATUS auth_wbc_init(void);
 
 /* The following definitions come from auth/pampass.c  */
 
-bool smb_pam_claim_session(char *user, char *tty, char *rhost);
-bool smb_pam_close_session(char *user, char *tty, char *rhost);
+bool smb_pam_claim_session(const char *user, const char *tty, const char *rhost);
+bool smb_pam_close_session(const char *user, const char *tty, const char *rhost);
 NTSTATUS smb_pam_accountcheck(const char *user, const char *rhost);
 NTSTATUS smb_pam_passcheck(const char * user, const char * rhost,
 			   const char * password);
