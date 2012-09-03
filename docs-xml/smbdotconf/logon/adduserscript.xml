@@ -19,14 +19,6 @@
 	</para>
 
 	<para>
-	In order to use this option, <citerefentry><refentrytitle>smbd</refentrytitle>
-	<manvolnum>8</manvolnum></citerefentry> must <emphasis>NOT</emphasis> be set to 
-	<smbconfoption name="security">share</smbconfoption> and <smbconfoption name="add user script"/> 
-	must be set to a full pathname for a script that will create a UNIX user given one argument of 
-	<parameter moreinfo="none">%u</parameter>, which expands into the UNIX user name to create.
-	</para>
-
-	<para>
 	When the Windows user attempts to access the Samba server, at login (session setup in 
 	the SMB protocol) time, <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> contacts the <smbconfoption name="password server"/> 

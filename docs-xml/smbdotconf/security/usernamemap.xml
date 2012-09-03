@@ -12,7 +12,7 @@
 	</para>
 
     <para>
-	Please note that for user or share mode security, the username map is applied prior to validating the user
+	Please note that for user mode security, the username map is applied prior to validating the user
 	credentials.  Domain member servers (domain or ads) apply the username map after the user has been
 	successfully authenticated by the domain controller and require fully qualified entries in the map table (e.g.
 	biddle = <literal>DOMAIN\foo</literal>).
@@ -84,8 +84,8 @@ guest = *
 	Note that the remapping is applied to all occurrences of usernames.  Thus if you connect to \\server\fred and
 	<constant>fred</constant> is remapped to <constant>mary</constant> then you will actually be connecting to
 	\\server\mary and will need to supply a password suitable for <constant>mary</constant> not
-	<constant>fred</constant>. The only exception to this is the username passed to the <smbconfoption
-	name="password server"/> (if you have one). The password server will receive whatever username the client
+	<constant>fred</constant>. The only exception to this is the
+	username passed to a Domain Controller (if you have one). The DC will receive whatever username the client
 	supplies without  modification.
     </para>
 

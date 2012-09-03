@@ -16,7 +16,7 @@
 
     <para>The alternatives are
     <command moreinfo="none">security = ads</command> or <command moreinfo="none">security = domain
-    </command>, which support joining Samba to a Windows domain, along with <command moreinfo="none">security = server</command>, which is deprecated.</para>
+    </command>, which support joining Samba to a Windows domain</para>
 
     <para>You should use <command moreinfo="none">security = user</command> and 
     <smbconfoption name="map to guest"/> if you 

@@ -4,11 +4,6 @@
                  advanced="1" developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-    <para>This parameter is only useful in <smbconfoption name="SECURITY">
-    security</smbconfoption> modes other than <parameter moreinfo="none">security = share</parameter> 
-    and <parameter moreinfo="none">security = server</parameter>
-    - i.e. <constant>user</constant>, and <constant>domain</constant>.</para>
-
     <para>This parameter can take four different values, which tell
     <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> what to do with user 
@@ -55,20 +50,11 @@
     </itemizedlist>
 
     <para>Note that this parameter is needed to set up &quot;Guest&quot; 
-    share services when using <parameter moreinfo="none">security</parameter> modes other than 
-    share and server. This is because in these modes the name of the resource being
+    share services. This is because in these modes the name of the resource being
     requested is <emphasis>not</emphasis> sent to the server until after 
     the server has successfully authenticated the client so the server 
     cannot make authentication decisions at the correct time (connection 
-    to the share) for &quot;Guest&quot; shares. This parameter is not useful with
-    <parameter moreinfo="none">security = server</parameter> as in this security mode
-    no information is returned about whether a user logon failed due to
-    a bad username or bad password, the same error is returned from a modern server
-    in both cases.</para>
-
-    <para>For people familiar with the older Samba releases, this 
-    parameter maps to the old compile-time setting of the <constant>
-		GUEST_SESSSETUP</constant> value in local.h.</para>
+    to the share) for &quot;Guest&quot; shares. </para>
 </description>
 
 <value type="default">Never</value>
