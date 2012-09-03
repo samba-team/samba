@@ -214,16 +214,6 @@ EOF
     done
 }
 
-set_ctdb_variables () {
-    # set any tunables from the config file
-    set | grep ^CTDB_SET_ | cut -d_ -f3- | 
-    while read v; do
-	varname=`echo $v | cut -d= -f1`
-	value=`echo $v | cut -d= -f2`
-	ctdb setvar $varname $value || RETVAL=1
-    done || exit 1
-}
-
 set_retval() {
     return $1
 }
@@ -304,9 +294,7 @@ start() {
     esac
 
     if [ $RETVAL -eq 0 ] ; then
-	if wait_until_ready ; then
-	    set_ctdb_variables
-	else
+	if ! wait_until_ready ; then
 	    RETVAL=1
 	    pkill -9 -f $ctdbd >/dev/null 2>&1
 	fi

@@ -35,6 +35,30 @@ update_config_from_tdb() {
     fi
 }
 
+set_ctdb_variables () {
+    # set any tunables from the config file
+    set | grep ^CTDB_SET_ | cut -d_ -f3- | 
+    while read v; do
+	varname=`echo $v | cut -d= -f1`
+	value=`echo $v | cut -d= -f2`
+	ctdb setvar $varname $value || return 1
+	echo "Set $varname to $value"
+    done
+}
+
+wait_until_ready () {
+    _timeout="${1:-10}" # default is 10 seconds
+
+    _count=0
+    while ! ctdb ping >/dev/null 2>&1 ; do
+	if [ $_count -ge $_timeout ] ; then
+	    return 1
+	fi
+	sleep 1
+	_count=$(($_count + 1))
+    done
+}
+
 ctdb_check_args "$@"
 
 case "$1" in 
@@ -51,14 +75,11 @@ case "$1" in
 	;;
 
      setup)
-	# set any tunables from the config file
-	set | grep ^CTDB_SET_ | cut -d_ -f3- | 
-	while read v; do
-	    varname=`echo $v | cut -d= -f1`
-	    value=`echo $v | cut -d= -f2`
-	    ctdb setvar $varname $value || exit 1
-	    echo "Set $varname to $value"
-	done || exit 1
+        # Make sure CTDB daemon is ready to process requests
+        if wait_until_ready ; then
+	    # set any tunables from the config file
+	    set_ctdb_variables
+	fi || exit 1
 	;;
 
     startup)
