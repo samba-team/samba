@@ -107,7 +107,7 @@ $(DOCBOOKDIR)/manpages/index.xml: $(MANPAGES) xslt/manpage-summary.xsl
 $(HTMLDIR)/index.html: htmldocs.html
 	@mkdir -p $(@D)
 	cp $< $@
-	
+
 $(HTMLDIR)/%/index.html: $(DOCBOOKDIR)/%.xml $(HTMLDIR)/%/samba.css xslt/html-chunk.xsl %-images-html-chunks
 	@mkdir -p $(@D)
 	$(XSLTPROC) --stringparam base.dir "$(HTMLDIR)/$*/" xslt/html-chunk.xsl $<
@@ -241,7 +241,7 @@ $(OUTPUTDIR)/%: $(DOCBOOKDIR)/%.xml xslt/man.xsl
 
 # Individual smb.conf parameters
 smb.conf-chunks: $(patsubst $(SMBDOTCONFDOC)/%.xml,$(HTMLDIR)/smb.conf/%.html,$(wildcard $(SMBDOTCONFDOC)/*/*.xml))
-	
+
 $(HTMLDIR)/smb.conf/%.html: $(SMBDOTCONFDOC)/%.xml
 	@mkdir -p $(@D)
 	$(XSLTPROC) --output $@ xslt/smb.conf-html.xsl $<
