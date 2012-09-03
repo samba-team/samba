@@ -25,21 +25,14 @@ struct connections_key {
 };
 
 struct connections_data {
-	int magic;
 	struct server_id pid;
 	int cnum;
 	uid_t uid;
 	gid_t gid;
 	char servicename[FSTRING_LEN];
-	char addr[24];
+	char addr[FSTRING_LEN];
 	char machine[FSTRING_LEN];
 	time_t start;
-
-	/*
-	 * This field used to hold the msg_flags. For compatibility reasons,
-	 * keep the data structure in the tdb file the same.
-	 */
-	uint32 unused_compatitibility_field;
 };
 
 /* The following definitions come from lib/conn_tdb.c  */
