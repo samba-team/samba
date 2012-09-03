@@ -1,12 +1,17 @@
 This is the release version of Samba, the free SMB and CIFS client and
-server for UNIX and other operating systems. Samba is maintained by
-the Samba Team, who support the original author, Andrew Tridgell.
+server and Domain Controller for UNIX and other operating
+systems. Samba is maintained by the Samba Team, who support the
+original author, Andrew Tridgell.
 
 >>>> Please read THE WHOLE of this file as it gives important information
 >>>> about the configuration and use of Samba.
 
-NOTE: Installation instructions may be found in 
+NOTE: Installation instructions may be found
+      for the file/print server and domain member in:
       docs/htmldocs/Samba3-HOWTO/install.html
+
+      For the AD DC implementation a full HOWTO is provided at:
+      http://wiki.samba.org/index.php/Samba4/HOWTO
 
 This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
