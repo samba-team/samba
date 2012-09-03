@@ -95,6 +95,30 @@ die ()
     exit $_rc
 }
 
+# When things are run in the background in an eventscript then logging
+# output might get lost.  This is the "solution".  :-)
+background_with_logging ()
+{
+    _using_syslog=false
+    if [ "$CTDB_SYSLOG" = "yes" -o -z "$CTDB_LOGFILE" ] ; then
+	_using_syslog=true
+    fi
+    case "$CTDB_OPTIONS" in
+	*--syslog*) _using_syslog=true ;;
+    esac
+
+    (
+	"$@" 2>&1 </dev/null |
+	if $_using_syslog ; then
+	    logger -t "ctdbd: ${script_name}&"
+	else
+	    cat >>"$CTDB_LOGFILE"
+	fi
+    )&
+
+    return 0
+}
+
 ##############################################################
 # check number of args for different events
 ctdb_check_args ()
@@ -1272,13 +1296,13 @@ ctdb_start_stop_service ()
     if is_ctdb_managed_service "$_service_name" ; then
 	if ! is_ctdb_previously_managed_service "$_service_name" ; then
 	    echo "Starting service \"$_service_name\" - now managed"
-	    ctdb_service_start "$_service_name"
+	    background_with_logging ctdb_service_start "$_service_name"
 	    exit $?
 	fi
     else
 	if is_ctdb_previously_managed_service "$_service_name" ; then
 	    echo "Stopping service \"$_service_name\" - no longer managed"
-	    ctdb_service_stop "$_service_name"
+	    background_with_logging ctdb_service_stop "$_service_name"
 	    exit $?
 	fi
     fi

@@ -23,6 +23,9 @@ fi
 mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
 export CTDB_VARDIR="$EVENTSCRIPTS_TESTS_VAR_DIR/ctdb"
 
+export CTDB_LOGFILE="${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
+touch "$CTDB_LOGFILE" || die "Unable to create CTDB_LOGFILE=$CTDB_LOGFILE"
+
 if [ -d "${TEST_SUBDIR}/etc" ] ; then    
     cp -a "${TEST_SUBDIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
     export CTDB_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
@@ -763,7 +766,7 @@ simple_test_event ()
     $_passed || return 1
 
     event="$1" ; shift
-    echo "##################################################"
+    echo "=================================================="
     simple_test "$@"
 }
 
@@ -773,9 +776,22 @@ simple_test_command ()
     : ${_passed:=true}
     $_passed || return 1
 
-    echo "##################################################"
+    echo "=================================================="
     echo "Running command \"$*\""
     _out=$("$@" 2>&1)
+
+    result_check
+}
+
+check_ctdb_logfile ()
+{
+    # If something has previously failed then don't continue.
+    : ${_passed:=true}
+    $_passed || return 1
+
+    echo "=================================================="
+    echo "Checking CTDB_LOGFILE=\"${CTDB_LOGFILE}\""
+    _out=$(cat "$CTDB_LOGFILE" 2>&1)
 
     result_check
 }
