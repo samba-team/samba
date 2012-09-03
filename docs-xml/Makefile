@@ -44,7 +44,6 @@ $(PDFDIR)/Samba3-ByExample.pdf $(PSDIR)/Samba3-ByExample.ps $(DOCBOOKDIR)/Samba3
 $(PDFDIR)/Samba3-HOWTO.pdf $(PSDIR)/Samba3-HOWTO.ps Samba3-HOWTO.tex $(DOCBOOKDIR)/Samba3-HOWTO.xml: $(wildcard Samba3-HOWTO/*.xml) Samba3-HOWTO-attributions.xml
 Samba3-HOWTO/manpages.xml: $(MANPAGEDIR3)/smb.conf.5.xml
 $(PDFDIR)/Samba3-Developers-Guide.pdf $(PSDIR)/Samba3-Developers-Guide.ps $(DOCBOOKDIR)/Samba3-Developers-Guide.xml Samba3-Developers-Guide.tex: $(wildcard Samba3-Developers-Guide/*.xml) Samba3-Developers-Guide-attributions.xml
-$(PDFDIR)/Samba4-HOWTO.pdf $(PSDIR)/Samba4-HOWTO.ps Samba4-HOWTO.tex $(DOCBOOKDIR)/Samba4-HOWTO.xml: $(filter-out Samba4-HOWTO/index.xml,$(wildcard Samba4-HOWTO/*.xml)) Samba4-HOWTO-attributions.xml
 
 # Pseudo targets 
 all:: $(TARGETS)
