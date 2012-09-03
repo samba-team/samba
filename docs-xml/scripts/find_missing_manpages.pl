@@ -30,7 +30,7 @@ foreach(split(/bin\//, $progs)) {
 	$found = 0;
 
 	for($i = 0; $i < 9; $i++) {
-		if(-e "manpages-3/$f.$i.xml") { $found = 1; }
+		if(-e "manpages/$f.$i.xml") { $found = 1; }
 	}
 
 	if(!$found) {

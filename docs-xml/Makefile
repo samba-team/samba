@@ -8,10 +8,10 @@ include Makefile.settings
 
 # Docs to build
 MAIN_DOCS = $(patsubst %/index.xml,%,$(wildcard */index.xml))
-MANPAGES3 = $(wildcard $(MANPAGEDIR3)/*.?.xml)
+MANPAGES = $(wildcard $(MANPAGEDIR)/*.?.xml)
 
 # Lists of files to process
-MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR3)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES3))
+MANPAGES_PLUCKER = $(patsubst $(MANPAGEDIR)/%.xml,$(PLUCKERDIR)/%.pdb,$(MANPAGES))
 DBLATEX_OPTIONS = -p xslt/latex.xsl -i xslt/latex
 
 DATETIME := $(shell date +%Y%m%d%H%M%S)
@@ -33,7 +33,7 @@ help:
 	@echo " release - Build the docs needed for a Samba release"
 	@echo " all - Build all docs that can be build using the utilities found by configure"
 	@echo " everything - Build all of the above"
-	@echo " pdf,tex,ps,manpages3,txt,pearson,htmlhelp - Build specific output format"
+	@echo " pdf,tex,ps,manpages,txt,pearson,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
 	@echo " htmlman3 - Build HTML version of manpages"
@@ -42,13 +42,13 @@ help:
 
 $(PDFDIR)/Samba3-ByExample.pdf $(PSDIR)/Samba3-ByExample.ps $(DOCBOOKDIR)/Samba3-ByExample.xml Samba3-ByExample.tex: $(wildcard Samba3-ByExample/*.xml)
 $(PDFDIR)/Samba3-HOWTO.pdf $(PSDIR)/Samba3-HOWTO.ps Samba3-HOWTO.tex $(DOCBOOKDIR)/Samba3-HOWTO.xml: $(wildcard Samba3-HOWTO/*.xml) Samba3-HOWTO-attributions.xml
-Samba3-HOWTO/manpages.xml: $(MANPAGEDIR3)/smb.conf.5.xml
+Samba3-HOWTO/manpages.xml: $(MANPAGEDIR)/smb.conf.5.xml
 $(PDFDIR)/Samba3-Developers-Guide.pdf $(PSDIR)/Samba3-Developers-Guide.ps $(DOCBOOKDIR)/Samba3-Developers-Guide.xml Samba3-Developers-Guide.tex: $(wildcard Samba3-Developers-Guide/*.xml) Samba3-Developers-Guide-attributions.xml
 
 # Pseudo targets 
 all:: $(TARGETS)
-everything:: manpages3 pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
-release:: manpages3 htmlman3 html pdf 
+everything:: manpages pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
+release:: manpages htmlman3 html pdf 
 clean::
 	@echo "Cleaning up..." 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
@@ -71,11 +71,11 @@ txt:: $(patsubst %,$(TXTDIR)/%.txt,$(MAIN_DOCS))
 tex:: $(addsuffix .tex,$(MAIN_DOCS))
 texi:: $(patsubst %,$(TEXINFODIR)/%.texi,$(MAIN_DOCS))
 texiinfo:: $(patsubst %,$(TEXINFODIR)/%.info,$(MAIN_DOCS))
-manpages3:: $(patsubst $(MANPAGEDIR3)/%.xml,$(OUTPUTDIR)/manpages-3/%,$(MANPAGES3))
+manpages:: $(patsubst $(MANPAGEDIR)/%.xml,$(OUTPUTDIR)/manpages/%,$(MANPAGES))
 pearson:: $(PEARSONDIR)/Samba3-HOWTO.xml
 pearson-verify:: $(PEARSONDIR)/Samba3-HOWTO.report.html
 plucker:: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
-htmlman3:: $(patsubst $(MANPAGEDIR3)/%.xml,$(HTMLDIR)/manpages-3/%.html,$(MANPAGES3)) $(HTMLDIR)/manpages-3/index.html
+htmlman3:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
 html-single:: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html:: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
 htmlhelp:: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))
@@ -93,14 +93,14 @@ $(DOCBOOKDIR)/%.xml: %/index.xml xslt/expand-sambadoc.xsl
 	@mkdir -p $(@D)
 	@$(XSLTPROC) --stringparam latex.imagebasedir "$*/"  --stringparam noreference 0  --xinclude --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/manpages-3/%.xml: $(MANPAGEDIR3)/%.xml xslt/expand-sambadoc.xsl
+$(DOCBOOKDIR)/manpages/%.xml: $(MANPAGEDIR)/%.xml xslt/expand-sambadoc.xsl
 	@mkdir -p $(@D)
 	$(XSLTPROC) --xinclude --stringparam noreference 0 --output $@ xslt/expand-sambadoc.xsl $<
 
-$(DOCBOOKDIR)/manpages-3/index.xml: $(MANPAGES3) xslt/manpage-summary.xsl
+$(DOCBOOKDIR)/manpages/index.xml: $(MANPAGES) xslt/manpage-summary.xsl
 	@mkdir -p $(@D)
 	echo "<article><variablelist>" > $@
-	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES3) >> $@
+	$(XSLTPROC) xslt/manpage-summary.xsl $(MANPAGES) >> $@
 	@echo "</variablelist></article>" >> $@
 
 # HTML docs
@@ -211,7 +211,7 @@ $(TEXINFODIR)/%.info: $(TEXINFODIR)/%.texi
 	$(MAKEINFO) --no-validate --force -o $@ "$<"
 
 # Manpages
-$(MANPAGEDIR3)/smb.conf.5.xml: parameters
+$(MANPAGEDIR)/smb.conf.5.xml: parameters
 
 # The phony parameters target exists in order to always create the
 # the parameters xml files. Otherwise, when parameters.*.xml does not exist
