@@ -29,7 +29,7 @@ chdir($curdir);
 # Reading entries from source code
 
 
-open(SOURCE,"$topdir/param/loadparm.c") or die("Can't open $topdir/param/loadparm.c: $!");
+open(SOURCE,"$topdir/lib/param/param_table.c") or die("Can't open $topdir/lib/param/param_table.c: $!");
 
 while ($ln = <SOURCE>) {
   last if $ln =~ m/^static\ struct\ parm_struct\ parm_table.*/;

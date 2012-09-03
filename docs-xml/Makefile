@@ -262,7 +262,7 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 # Find undocumented parameters
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
 	$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
-	$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)
+	$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)/source3
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	@mkdir -p examples
