@@ -869,6 +869,7 @@ Please fix this account before attempting to upgrade again
     for username in userdata:
         if username.lower() == 'administrator':
             if userdata[username].user_sid != dom_sid(str(domainsid) + "-500"):
+                logger.error("User 'Administrator' in your existing directory has SID %s, expected it to be %s" % (userdata[username].user_sid, dom_sid(str(domainsid) + "-500")))
                 raise ProvisioningError("User 'Administrator' in your existing directory does not have SID ending in -500")
         if username.lower() == 'root':
             if userdata[username].user_sid == dom_sid(str(domainsid) + "-500"):
