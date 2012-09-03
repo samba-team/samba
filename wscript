@@ -239,7 +239,8 @@ def dist():
 
     if sambaversion.IS_SNAPSHOT:
         # write .distversion file and add to tar
-        os.makedirs(blddir)
+        if not os.path.isdir(blddir):
+            os.makedirs(blddir)
         distversionf = tempfile.NamedTemporaryFile(mode='w', prefix='.distversion',dir=blddir)
         for field in sambaversion.vcs_fields:
             distveroption = field + '=' + str(sambaversion.vcs_fields[field])
