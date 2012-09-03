@@ -12,12 +12,14 @@ shift 1
 
 . `dirname $0`/subunit.sh
 
+alpha13_dir=`dirname $0`/../../source4/selftest/provisions/alpha13
+
 alpha13() {
        if test -x $BINDIR/tdbrestore;
        then
-	`dirname $0`/../../source4/selftest/provisions/undump.sh `dirname $0`/../../source4/selftest/provisions/alpha13 $PREFIX_ABS/alpha13 $BINDIR/tdbrestore
+	`dirname $0`/../../source4/selftest/provisions/undump.sh $alpha13_dir $PREFIX_ABS/alpha13 $BINDIR/tdbrestore
        else 
-	`dirname $0`/../../source4/selftest/provisions/undump.sh `dirname $0`/../../source4/selftest/provisions/alpha13 $PREFIX_ABS/alpha13
+	`dirname $0`/../../source4/selftest/provisions/undump.sh $alpha13_dir $PREFIX_ABS/alpha13
        fi
 }
 
@@ -34,9 +36,29 @@ dbcheck_clean() {
        $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/alpha13/private/sam.ldb $@
 }
 
-testit "alpha13" alpha13
-testit "reindex" reindex
-testit_expect_failure "dbcheck" dbcheck
-testit "dbcheck_clean" dbcheck_clean
+if [ -d $alpha13_dir ]; then
+    testit "alpha13" alpha13
+    testit "reindex" reindex
+    testit_expect_failure "dbcheck" dbcheck
+    testit "dbcheck_clean" dbcheck_clean
+else
+    subunit_start_test "alpha13"
+    subunit_skip_test "alpha13" <<EOF 
+no test provision 
+EOF
+
+    subunit_start_test "reindex"
+    subunit_skip_test "reindex" <<EOF 
+no test provision 
+EOF
+    subunit_start_test "dbcheck"
+    subunit_skip_test "dbcheck" <<EOF 
+no test provision 
+EOF
+    subunit_start_test "dbcheck_clean"
+    subunit_skip_test "dbcheck_clean" <<EOF 
+no test provision 
+EOF
+fi
 
 exit $failed
