@@ -89,14 +89,22 @@ struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
 }
 
 WERROR dns_verify_tsig(struct dns_server *dns,
+		       TALLOC_CTX *mem_ctx,
 		       struct dns_request_state *state,
 		       struct dns_name_packet *packet)
 {
 	WERROR werror;
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	bool found_tsig = false;
-	uint16_t i, mac_length = 0;
+	uint16_t i;
+	DATA_BLOB packet_blob, tsig_blob, sig;
+	uint8_t *buffer = NULL;
+	size_t buffer_len = 0;
 	struct dns_server_tkey *tkey = NULL;
-	uint8_t *mac = NULL;
+	struct dns_fake_tsig_rec *check_rec = talloc_zero(mem_ctx,
+			struct dns_fake_tsig_rec);
+
 
 	/* Find the first TSIG record in the additional records */
 	for (i=0; i < packet->arcount; i++) {
@@ -110,6 +118,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return WERR_OK;
 	}
 
+	DEBUG(0, ("got here\n"));
 	/* The TSIG record needs to be the last additional record */
 	if (found_tsig && i + 1 != packet->arcount) {
 		DEBUG(0, ("TSIG record not the last additional record!\n"));
@@ -119,12 +128,16 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	/* We got a TSIG, so we need to sign our reply */
 	state->sign = true;
 
-	state->tsig = talloc_zero(state, struct dns_res_rec);
-	W_ERROR_HAVE_NO_MEMORY(state->tsig);
+	state->tsig = talloc_zero(mem_ctx, struct dns_res_rec);
+	if (state->tsig == NULL) {
+		return WERR_NOMEM;
+	}
 
 	werror = dns_copy_tsig(state->tsig, &packet->additional[i],
 			       state->tsig);
-	W_ERROR_NOT_OK_RETURN(werror);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
 
 	packet->arcount--;
 
@@ -135,10 +148,74 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 
 	/* FIXME: check TSIG here */
+	if (check_rec == NULL) {
+		return WERR_NOMEM;
+	}
 
-	dump_data(1, mac, mac_length);
-	state->tsig_error = DNS_RCODE_BADKEY;
-	return DNS_ERR(NOTAUTH);
+	/* first build and verify check packet */
+	check_rec->name = talloc_strdup(check_rec, tkey->name);
+	if (check_rec->name == NULL) {
+		return WERR_NOMEM;
+	}
+	check_rec->rr_class = DNS_QCLASS_ANY;
+	check_rec->ttl = 0;
+	check_rec->algorithm_name = talloc_strdup(check_rec, tkey->algorithm);
+	if (check_rec->algorithm_name == NULL) {
+		return WERR_NOMEM;
+	}
+	check_rec->time_prefix = 0;
+	check_rec->time = state->tsig->rdata.tsig_record.time;
+	check_rec->fudge = state->tsig->rdata.tsig_record.fudge;
+	check_rec->error = 0;
+	check_rec->other_size = 0;
+	check_rec->other_data = NULL;
+
+	ndr_err = ndr_push_struct_blob(&packet_blob, mem_ctx, packet,
+		(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1, ("Failed to push packet: %s!\n",
+			  ndr_errstr(ndr_err)));
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	ndr_err = ndr_push_struct_blob(&tsig_blob, mem_ctx, check_rec,
+		(ndr_push_flags_fn_t)ndr_push_dns_fake_tsig_rec);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1, ("Failed to push packet: %s!\n",
+			  ndr_errstr(ndr_err)));
+		return DNS_ERR(SERVER_FAILURE);
+	}
+
+	buffer_len = packet_blob.length + tsig_blob.length;
+	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
+	if (buffer == NULL) {
+		return WERR_NOMEM;
+	}
+
+	memcpy(buffer, packet_blob.data, packet_blob.length);
+	memcpy(buffer, tsig_blob.data, tsig_blob.length);
+
+	sig.length = state->tsig->rdata.tsig_record.mac_size;
+	sig.data = talloc_memdup(mem_ctx, state->tsig->rdata.tsig_record.mac, sig.length);
+	if (sig.data == NULL) {
+		return WERR_NOMEM;
+	}
+
+
+	status = gensec_check_packet(tkey->gensec, buffer, buffer_len,
+				    buffer, buffer_len, &sig);
+	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
+		return DNS_ERR(BADKEY);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Verifying tsig failed: %s\n", nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+
+	state->authenticated = true;
+
+	return WERR_OK;
 }
 
 WERROR dns_sign_tsig(struct dns_server *dns,
