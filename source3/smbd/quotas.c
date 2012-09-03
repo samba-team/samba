@@ -480,7 +480,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #include <sys/statfs.h>
 #include <sys/vmount.h>
 #endif /* AIX 5.3 */
-#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
+#else /* !AIX */
 #include <sys/quota.h>
 #include <devnm.h>
 #endif
@@ -495,7 +495,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
   int r;
   struct dqblk D;
   uid_t euser_id;
-#if !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) && !defined(__DragonFly__)
+#if !defined(AIX)
   char dev_disk[256];
   SMB_STRUCT_STAT S;
 
@@ -505,7 +505,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
       || (devnm(S_IFBLK, S.st_ex_dev, dev_disk, 256, 0)<0))
 	return (False);
 
-#endif /* !defined(__FreeBSD__) && !defined(AIX) && !defined(__OpenBSD__) && !defined(__DragonFly__) */
+#endif /* !defined(AIX) */
 
   euser_id = geteuid();
 
@@ -546,9 +546,9 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
       r = 1; /* Fail for other FS-types */
   }
 #endif /* AIX 5.3 */
-#else /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
+#else /* !AIX */
   r=quotactl(Q_GETQUOTA, dev_disk, euser_id, &D);
-#endif /* !__FreeBSD__ && !AIX && !__OpenBSD__ && !__DragonFly__ */
+#endif /* !AIX */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
   *bsize = 1024;
@@ -588,7 +588,7 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 
 #endif
 
-#if definedr(LINUX) || defined(SUNOS) || defined (__FreeBSD__) || defined(__DragonFly__)
+#if defined(SUNOS)
 static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 {
 	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
