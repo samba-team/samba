@@ -563,14 +563,13 @@ static NTSTATUS fd_open_atomic(struct connection_struct *conn,
 		 * Fail if already exists, just pass through.
 		 */
 		status = fd_open(conn, fsp, flags, mode);
-		if (NT_STATUS_IS_OK(status)) {
-			/*
-			 * Here we've opened with O_CREAT|O_EXCL
-			 * and got success. We *know* we created
-			 * this file.
-			 */
-			*file_created = true;
-		}
+
+		/*
+		 * Here we've opened with O_CREAT|O_EXCL. If that went
+		 * NT_STATUS_OK, we *know* we created this file.
+		 */
+		*file_created = NT_STATUS_IS_OK(status);
+
 		return status;
 	}
 
