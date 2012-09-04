@@ -119,16 +119,20 @@ echo "*TODO* Testing UTF8 upper lower case searches !!"
 
 echo "Testing compare"
 count=`$VALGRIND ldbsearch '(cn>=t)' cn | grep '^dn' | wc -l`
-if [ $count != 2 ]; then
-    echo returned $count records - expected 2
-    echo "this fails on openLdap ..."
+if [ $count != 1 ]; then
+    # only "cn: test_multi_test_multi_test_multi" (comes after "t")
+    # upper-cased words come before "t" - hence excluded
+    echo returned $count records - expected 1
+    exit 1
 fi
 $VALGRIND ldbsearch '(cn>t)' cn && exit 1 # strictly greater should not work
 
 count=`$VALGRIND ldbsearch '(cn<=t)' cn | grep '^dn' | wc -l`
-if [ $count != 13 ]; then
-    echo returned $count records - expected 13
-    echo "this fails on openLdap ..."
+if [ $count != 18 ]; then
+    # everything except "cn: test_multi_test_multi_test_multi" (comes after "t")
+    # upper-cased letters come before "t" - hence included
+    echo returned $count records - expected 18
+    exit 1
 fi
 $VALGRIND ldbsearch '(cn<t)' cn && exit 1 # strictly less should not work
 
@@ -140,7 +144,6 @@ checkcount() {
     n=`$VALGRIND ldbsearch -s "$scope" -b "$basedn" "$expression" | grep '^dn' | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
-	bin/ldbsearch "$expression"
 	exit 1
     fi
     echo "OK: $count $expression"
