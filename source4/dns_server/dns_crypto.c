@@ -223,6 +223,10 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 
 	state->authenticated = true;
+	state->key_name = talloc_strdup(mem_ctx, tkey->name);
+	if (state->key_name == NULL) {
+		return WERR_NOMEM;
+	}
 
 	return WERR_OK;
 }
