@@ -96,7 +96,7 @@ static void file_server_smbd_done(struct tevent_req *subreq)
 static void s3fs_task_init(struct task_server *task)
 {
 	const char *fileserver_conf;
-	struct tevent_req *req;
+	struct tevent_req *subreq;
 	const char *smbd_path;
 	const char *smbd_cmd[2] = { NULL, NULL };
 
@@ -109,19 +109,19 @@ static void s3fs_task_init(struct task_server *task)
 	smbd_cmd[0] = smbd_path;
 
 	/* start it as a child process */
-	req = samba_runcmd_send(task, task->event_ctx, timeval_zero(), 1, 0,
+	subreq = samba_runcmd_send(task, task->event_ctx, timeval_zero(), 1, 0,
 				smbd_cmd,
 				"--configfile", fileserver_conf,
 				"--foreground",
 				debug_get_output_is_stdout()?"--log-stdout":NULL,
 				NULL);
-	if (req == NULL) {
+	if (subreq == NULL) {
 		DEBUG(0, ("Failed to start smbd as child daemon\n"));
 		task_server_terminate(task, "Failed to startup s3fs smb task", true);
 		return;
 	}
 
-	tevent_req_set_callback(req, file_server_smbd_done, task);
+	tevent_req_set_callback(subreq, file_server_smbd_done, task);
 
 	DEBUG(1,("Started file server smbd with config %s\n", fileserver_conf));
 }
