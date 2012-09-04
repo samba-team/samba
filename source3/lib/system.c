@@ -1197,6 +1197,7 @@ int sys_popen(const char *command)
 	entry->child_pid = fork();
 
 	if (entry->child_pid == -1) {
+		DEBUG(0, ("sys_popen: fork failed: %s\n", strerror(errno)));
 		goto err_exit;
 	}
 
