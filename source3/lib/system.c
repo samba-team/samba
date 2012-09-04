@@ -1188,8 +1188,10 @@ int sys_popen(const char *command)
 	 * Extract the command and args into a NULL terminated array.
 	 */
 
-	if(!(argl = extract_args(NULL, command)))
+	argl = extract_args(NULL, command);
+	if (argl == NULL) {
 		goto err_exit;
+	}
 
 	entry->child_pid = fork();
 
