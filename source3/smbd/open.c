@@ -1869,6 +1869,35 @@ static int disposition_to_open_flags(uint32_t create_disposition)
 	return ret;
 }
 
+static int calculate_open_access_flags(uint32_t access_mask,
+				       int oplock_request,
+				       uint32_t private_flags)
+{
+	int flags;
+
+	/*
+	 * Note that we ignore the append flag as append does not
+	 * mean the same thing under DOS and Unix.
+	 */
+
+	if ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
+	    (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
+		/* DENY_DOS opens are always underlying read-write on the
+		   file handle, no matter what the requested access mask
+		    says. */
+		if ((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
+		    access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|
+				   FILE_READ_EA|FILE_EXECUTE)) {
+			flags = O_RDWR;
+		} else {
+			flags = O_WRONLY;
+		}
+	} else {
+		flags = O_RDONLY;
+	}
+	return flags;
+}
+
 /****************************************************************************
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
@@ -2123,21 +2152,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	if ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
-	    (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
-		/* DENY_DOS opens are always underlying read-write on the
-		   file handle, no matter what the requested access mask
-		    says. */
-		if ((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
-		    access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|
-				   FILE_READ_EA|FILE_EXECUTE)) {
-			flags = O_RDWR;
-		} else {
-			flags = O_WRONLY;
-		}
-	} else {
-		flags = O_RDONLY;
-	}
+	flags = calculate_open_access_flags(access_mask, oplock_request,
+					    private_flags);
 
 	/*
 	 * Currently we only look at FILE_WRITE_THROUGH for create options.
