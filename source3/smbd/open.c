@@ -678,7 +678,8 @@ static NTSTATUS open_file(files_struct *fsp,
 			DEBUG(3,("Permission denied opening %s\n",
 				 smb_fname_str_dbg(smb_fname)));
 			return NT_STATUS_ACCESS_DENIED;
-		} else if(flags & O_CREAT) {
+		}
+		if (flags & O_CREAT) {
 			/* We don't want to write - but we must make sure that
 			   O_CREAT doesn't create the file if we have write
 			   access into the directory.
