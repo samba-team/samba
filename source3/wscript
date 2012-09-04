@@ -1473,7 +1473,7 @@ main() {
         
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-        default_static_modules.extend(TO_LIST('pdb_samba4 auth_samba4 vfs_dfs_samba4'))
+        default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
 
     if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
         default_static_modules.extend(TO_LIST('vfs_posixacl'))

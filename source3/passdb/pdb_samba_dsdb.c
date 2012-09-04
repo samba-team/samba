@@ -1,8 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
-   pdb glue module for samba4
+   pdb glue module for direct access to the dsdb via LDB APIs
    Copyright (C) Volker Lendecke 2009-2011
-   Copyright (C) Andrew Bartlett 2010
+   Copyright (C) Andrew Bartlett 2010-2012
    Copyright (C) Matthias Dieter Wallnöfer                 2009
 
    This program is free software; you can redistribute it and/or modify
@@ -36,24 +36,24 @@
 #include "source4/dsdb/common/util.h"
 #include "source3/include/secrets.h"
 
-struct pdb_samba4_state {
+struct pdb_samba_dsdb_state {
 	struct tevent_context *ev;
 	struct ldb_context *ldb;
 	struct idmap_context *idmap_ctx;
 	struct loadparm_context *lp_ctx;
 };
 
-static NTSTATUS pdb_samba4_getsampwsid(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_getsampwsid(struct pdb_methods *m,
 				    struct samu *sam_acct,
 				    const struct dom_sid *sid);
-static NTSTATUS pdb_samba4_getsamupriv(struct pdb_samba4_state *state,
+static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 				    const char *filter,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **pmsg);
-static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
+static bool pdb_samba_dsdb_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 				 struct unixid *id);
 
-static bool pdb_samba4_pull_time(struct ldb_message *msg, const char *attr,
+static bool pdb_samba_dsdb_pull_time(struct ldb_message *msg, const char *attr,
 			      time_t *ptime)
 {
 	uint64_t tmp;
@@ -65,18 +65,18 @@ static bool pdb_samba4_pull_time(struct ldb_message *msg, const char *attr,
 	return true;
 }
 
-static struct pdb_domain_info *pdb_samba4_get_domain_info(
+static struct pdb_domain_info *pdb_samba_dsdb_get_domain_info(
 	struct pdb_methods *m, TALLOC_CTX *mem_ctx)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct pdb_domain_info *info;
 	struct dom_sid *domain_sid;
 	struct ldb_dn *forest_dn, *domain_dn;
 	struct ldb_result *dom_res = NULL;
 	const char *dom_attrs[] = {
-		"objectSid", 
-		"objectGUID", 
+		"objectSid",
+		"objectGUID",
 		"fSMORoleOwner",
 		NULL
 	};
@@ -88,7 +88,7 @@ static struct pdb_domain_info *pdb_samba4_get_domain_info(
 		return NULL;
 	}
 
-	domain_dn = ldb_get_default_basedn(state->ldb); 
+	domain_dn = ldb_get_default_basedn(state->ldb);
 
 	ret = ldb_search(state->ldb, info, &dom_res,
 			 domain_dn, LDB_SCOPE_BASE, dom_attrs, NULL);
@@ -142,11 +142,11 @@ fail:
 	return NULL;
 }
 
-static struct ldb_message *pdb_samba4_get_samu_private(
+static struct ldb_message *pdb_samba_dsdb_get_samu_private(
 	struct pdb_methods *m, struct samu *sam)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_message *msg;
 	char *sidstr, *filter;
 	NTSTATUS status;
@@ -170,7 +170,7 @@ static struct ldb_message *pdb_samba4_get_samu_private(
 		return NULL;
 	}
 
-	status = pdb_samba4_getsamupriv(state, filter, sam, &msg);
+	status = pdb_samba_dsdb_getsamupriv(state, filter, sam, &msg);
 	TALLOC_FREE(filter);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -179,12 +179,12 @@ static struct ldb_message *pdb_samba4_get_samu_private(
 	return msg;
 }
 
-static NTSTATUS pdb_samba4_init_sam_from_priv(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_init_sam_from_priv(struct pdb_methods *m,
 					   struct samu *sam,
 					   struct ldb_message *msg)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 	const char *str;
@@ -200,16 +200,16 @@ static NTSTATUS pdb_samba4_init_sam_from_priv(struct pdb_methods *m,
 	}
 	pdb_set_username(sam, str, PDB_SET);
 
-	if (pdb_samba4_pull_time(msg, "lastLogon", &tmp_time)) {
+	if (pdb_samba_dsdb_pull_time(msg, "lastLogon", &tmp_time)) {
 		pdb_set_logon_time(sam, tmp_time, PDB_SET);
 	}
-	if (pdb_samba4_pull_time(msg, "lastLogoff", &tmp_time)) {
+	if (pdb_samba_dsdb_pull_time(msg, "lastLogoff", &tmp_time)) {
 		pdb_set_logoff_time(sam, tmp_time, PDB_SET);
 	}
-	if (pdb_samba4_pull_time(msg, "pwdLastSet", &tmp_time)) {
+	if (pdb_samba_dsdb_pull_time(msg, "pwdLastSet", &tmp_time)) {
 		pdb_set_pass_last_set_time(sam, tmp_time, PDB_SET);
 	}
-	if (pdb_samba4_pull_time(msg, "accountExpires", &tmp_time)) {
+	if (pdb_samba_dsdb_pull_time(msg, "accountExpires", &tmp_time)) {
 		pdb_set_kickoff_time(sam, tmp_time, PDB_SET);
 	}
 
@@ -288,7 +288,7 @@ static NTSTATUS pdb_samba4_init_sam_from_priv(struct pdb_methods *m,
 		}
 		pdb_set_nt_passwd(sam, blob->data, PDB_SET);
 	}
-	
+
 	blob = ldb_msg_find_ldb_val(msg, "dBCSPwd");
 	if (blob) {
 		if (blob->length != LM_HASH_LEN) {
@@ -298,7 +298,7 @@ static NTSTATUS pdb_samba4_init_sam_from_priv(struct pdb_methods *m,
 		}
 		pdb_set_lanman_passwd(sam, blob->data, PDB_SET);
 	}
-	
+
 	n = ldb_msg_find_attr_as_uint(msg, "primaryGroupID", 0);
 	if (n == 0) {
 		DEBUG(10, ("Could not pull primaryGroupID\n"));
@@ -313,7 +313,7 @@ fail:
 	return status;
 }
 
-static bool pdb_samba4_add_time(struct ldb_message *msg, 
+static bool pdb_samba_dsdb_add_time(struct ldb_message *msg,
 				const char *attrib, time_t t)
 {
 	uint64_t nt_time;
@@ -323,7 +323,7 @@ static bool pdb_samba4_add_time(struct ldb_message *msg,
 	return ldb_msg_add_fmt(msg, attrib, "%llu", (unsigned long long) nt_time);
 }
 
-static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
+static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 				     bool (*need_update)(const struct samu *,
 							 enum pdb_elements),
 				     struct ldb_dn *dn,
@@ -357,8 +357,8 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	 * force the pwdLastSet to now() */
 	if (need_update(sam, PDB_PASSLASTSET)) {
 		dsdb_flags = DSDB_PASSWORD_BYPASS_LAST_SET;
-		
-		ret |= pdb_samba4_add_time(msg, "pwdLastSet",
+
+		ret |= pdb_samba_dsdb_add_time(msg, "pwdLastSet",
 					   pdb_get_pass_last_set_time(sam));
 	}
 
@@ -369,7 +369,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 			talloc_free(frame);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		
+
 		if (!convert_string_talloc(msg,
 					   CH_UNIX, CH_UTF16,
 					   pw, strlen(pw),
@@ -506,17 +506,17 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	}
 
 	if (need_update(sam, PDB_KICKOFFTIME)) {
-		ret |= pdb_samba4_add_time(msg, "accountExpires",
+		ret |= pdb_samba_dsdb_add_time(msg, "accountExpires",
 					pdb_get_kickoff_time(sam));
 	}
 
 	if (need_update(sam, PDB_LOGONTIME)) {
-		ret |= pdb_samba4_add_time(msg, "lastLogon",
+		ret |= pdb_samba_dsdb_add_time(msg, "lastLogon",
 					pdb_get_logon_time(sam));
 	}
 
 	if (need_update(sam, PDB_LOGOFFTIME)) {
-		ret |= pdb_samba4_add_time(msg, "lastLogoff",
+		ret |= pdb_samba_dsdb_add_time(msg, "lastLogoff",
 					pdb_get_logoff_time(sam));
 	}
 
@@ -567,13 +567,13 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 				       "%i", (int)pdb_get_code_page(sam));
 	}
 
-	/* Not yet handled here or not meaningful for modifies on a Samba4 backend:
+	/* Not yet handled here or not meaningful for modifies on a Samba_Dsdb backend:
 	PDB_BAD_PASSWORD_TIME,
 	PDB_CANCHANGETIME, - these are calculated per policy, not stored
 	PDB_DOMAIN,
 	PDB_NTUSERNAME, - this makes no sense, and never really did
 	PDB_LOGONDIVS,
-	PDB_USERSID, - Handled in pdb_samba4_add_sam_account()
+	PDB_USERSID, - Handled in pdb_samba_dsdb_add_sam_account()
 	PDB_FIELDS_PRESENT,
 	PDB_BAD_PASSWORD_COUNT,
 	PDB_LOGON_COUNT,
@@ -604,7 +604,7 @@ static int pdb_samba4_replace_by_sam(struct pdb_samba4_state *state,
 	return ret;
 }
 
-static NTSTATUS pdb_samba4_getsamupriv(struct pdb_samba4_state *state,
+static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 				    const char *filter,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_message **msg)
@@ -628,8 +628,8 @@ static NTSTATUS pdb_samba4_getsamupriv(struct pdb_samba4_state *state,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_getsampwfilter(struct pdb_methods *m,
-					  struct pdb_samba4_state *state,
+static NTSTATUS pdb_samba_dsdb_getsampwfilter(struct pdb_methods *m,
+					  struct pdb_samba_dsdb_state *state,
 					  struct samu *sam_acct,
 					  const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(4, 5)
 {
@@ -643,23 +643,23 @@ static NTSTATUS pdb_samba4_getsampwfilter(struct pdb_methods *m,
 	va_start(ap, exp_fmt);
 	expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
 	va_end(ap);
-	
+
 	if (!expression) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_samba4_getsamupriv(state, expression, sam_acct, &priv);
+	status = pdb_samba_dsdb_getsamupriv(state, expression, sam_acct, &priv);
 	talloc_free(tmp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("pdb_samba4_getsamupriv failed: %s\n",
+		DEBUG(10, ("pdb_samba_dsdb_getsamupriv failed: %s\n",
 			   nt_errstr(status)));
 		return status;
 	}
 
-	status = pdb_samba4_init_sam_from_priv(m, sam_acct, priv);
+	status = pdb_samba_dsdb_init_sam_from_priv(m, sam_acct, priv);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("pdb_samba4_init_sam_from_priv failed: %s\n",
+		DEBUG(10, ("pdb_samba_dsdb_init_sam_from_priv failed: %s\n",
 			   nt_errstr(status)));
 		TALLOC_FREE(priv);
 		return status;
@@ -669,44 +669,44 @@ static NTSTATUS pdb_samba4_getsampwfilter(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_getsampwnam(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_getsampwnam(struct pdb_methods *m,
 				    struct samu *sam_acct,
 				    const char *username)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 
-	return pdb_samba4_getsampwfilter(m, state, sam_acct, 
+	return pdb_samba_dsdb_getsampwfilter(m, state, sam_acct,
 					 "(&(samaccountname=%s)(objectclass=user))",
 					 username);
 }
 
-static NTSTATUS pdb_samba4_getsampwsid(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_getsampwsid(struct pdb_methods *m,
 				    struct samu *sam_acct,
 				    const struct dom_sid *sid)
 {
 	NTSTATUS status;
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	char *sidstr;
 
 	sidstr = dom_sid_string(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	status = pdb_samba4_getsampwfilter(m, state, sam_acct,  
-					   "(&(objectsid=%s)(objectclass=user))", 
+	status = pdb_samba_dsdb_getsampwfilter(m, state, sam_acct,
+					   "(&(objectsid=%s)(objectclass=user))",
 					   sidstr);
 	talloc_free(sidstr);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_create_user(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_create_user(struct pdb_methods *m,
 				    TALLOC_CTX *mem_ctx,
 				    const char *name, uint32 acct_flags,
 				    uint32 *rid)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct dom_sid *sid;
 	struct ldb_dn *dn;
 	NTSTATUS status;
@@ -726,12 +726,12 @@ static NTSTATUS pdb_samba4_create_user(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_delete_user(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_delete_user(struct pdb_methods *m,
 				       TALLOC_CTX *mem_ctx,
 				       struct samu *sam)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_dn *dn;
 	int rc;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -758,14 +758,14 @@ static NTSTATUS pdb_samba4_delete_user(struct pdb_methods *m,
  * the database.  This is not implemented at this time as we need to
  * be careful around the creation of arbitary SIDs (ie, we must ensrue
  * they are not left in a RID pool */
-static NTSTATUS pdb_samba4_add_sam_account(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_add_sam_account(struct pdb_methods *m,
 					struct samu *sampass)
 {
 	int ret;
 	NTSTATUS status;
 	struct ldb_dn *dn;
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	uint32_t acb_flags = pdb_get_acct_ctrl(sampass);
 	const char *username = pdb_get_username(sampass);
 	const struct dom_sid *user_sid = pdb_get_user_sid(sampass);
@@ -787,7 +787,7 @@ static NTSTATUS pdb_samba4_add_sam_account(struct pdb_methods *m,
 		return status;
 	}
 
-	ret = pdb_samba4_replace_by_sam(state, pdb_element_is_set_or_changed,
+	ret = pdb_samba_dsdb_replace_by_sam(state, pdb_element_is_set_or_changed,
 					dn, sampass);
 	if (ret != LDB_SUCCESS) {
 		ldb_transaction_cancel(state->ldb);
@@ -808,37 +808,37 @@ static NTSTATUS pdb_samba4_add_sam_account(struct pdb_methods *m,
 }
 
 /*
- * Update the Samba4 LDB with the changes from a struct samu.
+ * Update the Samba_Dsdb LDB with the changes from a struct samu.
  *
  * This takes care not to update elements that have not been changed
  * by the caller
  */
-static NTSTATUS pdb_samba4_update_sam_account(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_update_sam_account(struct pdb_methods *m,
 					   struct samu *sam)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
-	struct ldb_message *msg = pdb_samba4_get_samu_private(
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	struct ldb_message *msg = pdb_samba_dsdb_get_samu_private(
 		m, sam);
 	int ret;
 
-	ret = pdb_samba4_replace_by_sam(state, pdb_element_is_changed, msg->dn,
+	ret = pdb_samba_dsdb_replace_by_sam(state, pdb_element_is_changed, msg->dn,
 					sam);
 	return dsdb_ldb_err_to_ntstatus(ret);
 }
 
-static NTSTATUS pdb_samba4_delete_sam_account(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_delete_sam_account(struct pdb_methods *m,
 					   struct samu *username)
 {
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-	status = pdb_samba4_delete_user(m, tmp_ctx, username);
+	status = pdb_samba_dsdb_delete_user(m, tmp_ctx, username);
 	talloc_free(tmp_ctx);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_rename_sam_account(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_rename_sam_account(struct pdb_methods *m,
 					   struct samu *oldname,
 					   const char *newname)
 {
@@ -846,21 +846,21 @@ static NTSTATUS pdb_samba4_rename_sam_account(struct pdb_methods *m,
 }
 
 /* This is not implemented, as this module is exptected to be used
- * with auth_samba4, and this is responible for login counters etc
+ * with auth_samba_dsdb, and this is responible for login counters etc
  *
  */
-static NTSTATUS pdb_samba4_update_login_attempts(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_update_login_attempts(struct pdb_methods *m,
 					      struct samu *sam_acct,
 					      bool success)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
+static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 				    const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(4, 5)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	const char *attrs[] = { "objectSid", "description", "samAccountName", "groupType",
 				NULL };
 	struct ldb_message *msg;
@@ -873,11 +873,11 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	struct id_map *id_maps[2];
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-	
+
 	va_start(ap, exp_fmt);
 	expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
 	va_end(ap);
-	
+
 	if (!expression) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -900,9 +900,9 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 		DEBUG(10, ("Could not pull SID\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	
+
 	map->sid = *sid;
-	
+
 	if (samdb_find_attribute(state->ldb, msg, "objectClass", "group")) {
 		NTSTATUS status;
 		uint32_t grouptype = ldb_msg_find_attr_as_uint(msg, "groupType", 0);
@@ -974,7 +974,7 @@ static NTSTATUS pdb_samba4_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
+static NTSTATUS pdb_samba_dsdb_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
 				 struct dom_sid sid)
 {
 	char *filter;
@@ -987,16 +987,16 @@ static NTSTATUS pdb_samba4_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_samba4_getgrfilter(m, map, filter);
+	status = pdb_samba_dsdb_getgrfilter(m, map, filter);
 	TALLOC_FREE(filter);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_getgrgid(struct pdb_methods *m, GROUP_MAP *map,
+static NTSTATUS pdb_samba_dsdb_getgrgid(struct pdb_methods *m, GROUP_MAP *map,
 				 gid_t gid)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	NTSTATUS status;
 	struct id_map id_map;
 	struct id_map *id_maps[2];
@@ -1012,12 +1012,12 @@ static NTSTATUS pdb_samba4_getgrgid(struct pdb_methods *m, GROUP_MAP *map,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	status = pdb_samba4_getgrsid(m, map, *id_map.sid);
+	status = pdb_samba_dsdb_getgrsid(m, map, *id_map.sid);
 	talloc_free(tmp_ctx);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
+static NTSTATUS pdb_samba_dsdb_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 				 const char *name)
 {
 	char *filter;
@@ -1030,17 +1030,17 @@ static NTSTATUS pdb_samba4_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_samba4_getgrfilter(m, map, filter);
+	status = pdb_samba_dsdb_getgrfilter(m, map, filter);
 	TALLOC_FREE(filter);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_create_dom_group(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_create_dom_group(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx, const char *name,
 					 uint32 *rid)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	NTSTATUS status;
 	struct dom_sid *sid;
 	struct ldb_dn *dn;
@@ -1058,12 +1058,12 @@ static NTSTATUS pdb_samba4_create_dom_group(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_delete_dom_group(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_delete_dom_group(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx, uint32 rid)
 {
 	const char *attrs[] = { NULL };
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct dom_sid sid;
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
@@ -1072,9 +1072,9 @@ static NTSTATUS pdb_samba4_delete_dom_group(struct pdb_methods *m,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	sid_compose(&sid, samdb_domain_sid(state->ldb), rid);
-	
+
 	if (ldb_transaction_start(state->ldb) != LDB_SUCCESS) {
-		DEBUG(0, ("Unable to start transaction in pdb_samba4_delete_dom_group()\n"));
+		DEBUG(0, ("Unable to start transaction in pdb_samba_dsdb_delete_dom_group()\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -1103,31 +1103,31 @@ static NTSTATUS pdb_samba4_delete_dom_group(struct pdb_methods *m,
 	}
 
 	if (ldb_transaction_commit(state->ldb) != LDB_SUCCESS) {
-		DEBUG(0, ("Unable to commit transaction in pdb_samba4_delete_dom_group()\n"));
+		DEBUG(0, ("Unable to commit transaction in pdb_samba_dsdb_delete_dom_group()\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_add_group_mapping_entry(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_add_group_mapping_entry(struct pdb_methods *m,
 						GROUP_MAP *map)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_update_group_mapping_entry(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_update_group_mapping_entry(struct pdb_methods *m,
 						   GROUP_MAP *map)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_delete_group_mapping_entry(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_delete_group_mapping_entry(struct pdb_methods *m,
 						   struct dom_sid sid)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_enum_group_mapping(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_enum_group_mapping(struct pdb_methods *m,
 					   const struct dom_sid *sid,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP ***pp_rmap,
@@ -1137,15 +1137,15 @@ static NTSTATUS pdb_samba4_enum_group_mapping(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_enum_group_members(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_enum_group_members(struct pdb_methods *m,
 					   TALLOC_CTX *mem_ctx,
 					   const struct dom_sid *group,
 					   uint32_t **pmembers,
 					   size_t *pnum_members)
 {
 	unsigned int i, num_sids, num_members;
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct dom_sid *members_as_sids;
 	struct dom_sid *dom_sid;
 	uint32_t *members;
@@ -1179,7 +1179,7 @@ static NTSTATUS pdb_samba4_enum_group_members(struct pdb_methods *m,
 		if (!dom_sid_in_domain(dom_sid, &members_as_sids[i])) {
 			continue;
 		}
-		status = dom_sid_split_rid(NULL, &members_as_sids[i], 
+		status = dom_sid_split_rid(NULL, &members_as_sids[i],
 					   NULL, &members[num_members]);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
@@ -1192,7 +1192,7 @@ static NTSTATUS pdb_samba4_enum_group_members(struct pdb_methods *m,
 }
 
 /* Just convert the primary group SID into a group */
-static NTSTATUS fake_enum_group_memberships(struct pdb_samba4_state *state,
+static NTSTATUS fake_enum_group_memberships(struct pdb_samba_dsdb_state *state,
 					    TALLOC_CTX *mem_ctx,
 					    struct samu *user,
 					    struct dom_sid **pp_sids,
@@ -1204,7 +1204,7 @@ static NTSTATUS fake_enum_group_memberships(struct pdb_samba4_state *state,
 	struct dom_sid *group_sids;
 	gid_t *gids;
 	TALLOC_CTX *tmp_ctx;
-	
+
 	tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
@@ -1231,7 +1231,7 @@ static NTSTATUS fake_enum_group_memberships(struct pdb_samba4_state *state,
 		id_map.sid = &group_sids[0];
 		id_maps[0] = &id_map;
 		id_maps[1] = NULL;
-		
+
 		status = idmap_sids_to_xids(state->idmap_ctx, tmp_ctx, id_maps);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
@@ -1240,7 +1240,7 @@ static NTSTATUS fake_enum_group_memberships(struct pdb_samba4_state *state,
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
 			gids[0] = id_map.xid.id;
 		} else {
-			DEBUG(1, (__location__ 
+			DEBUG(1, (__location__
 				  "Group %s, of which %s is a member, could not be converted to a GID\n",
 				  dom_sid_string(tmp_ctx, &group_sids[0]),
 				  dom_sid_string(tmp_ctx, &user->user_sid)));
@@ -1259,16 +1259,16 @@ static NTSTATUS fake_enum_group_memberships(struct pdb_samba4_state *state,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_enum_group_memberships(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_enum_group_memberships(struct pdb_methods *m,
 					       TALLOC_CTX *mem_ctx,
 					       struct samu *user,
 					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
 					       uint32_t *p_num_groups)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
-	struct ldb_message *msg = pdb_samba4_get_samu_private(
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	struct ldb_message *msg = pdb_samba_dsdb_get_samu_private(
 		m, user);
 	const char *attrs[] = { "tokenGroups", NULL};
 	struct ldb_message *tokengroups_msg;
@@ -1280,11 +1280,11 @@ static NTSTATUS pdb_samba4_enum_group_memberships(struct pdb_methods *m,
 	struct dom_sid *group_sids;
 	gid_t *gids;
 	TALLOC_CTX *tmp_ctx;
-		
+
 	if (msg == NULL) {
 		/* Fake up some things here */
-		return fake_enum_group_memberships(state, 
-						   mem_ctx, 
+		return fake_enum_group_memberships(state,
+						   mem_ctx,
 						   user, pp_sids,
 						   pp_gids, p_num_groups);
 	}
@@ -1333,7 +1333,7 @@ static NTSTATUS pdb_samba4_enum_group_memberships(struct pdb_methods *m,
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
-		
+
 		ZERO_STRUCT(id_map);
 		id_map.sid = &group_sids[num_groups];
 		id_maps[0] = &id_map;
@@ -1347,7 +1347,7 @@ static NTSTATUS pdb_samba4_enum_group_memberships(struct pdb_methods *m,
 		if (id_map.xid.type == ID_TYPE_GID || id_map.xid.type == ID_TYPE_BOTH) {
 			gids[num_groups] = id_map.xid.id;
 		} else {
-			DEBUG(1, (__location__ 
+			DEBUG(1, (__location__
 				  "Group %s, of which %s is a member, could not be converted to a GID\n",
 				  dom_sid_string(tmp_ctx, &group_sids[num_groups]),
 				  ldb_dn_get_linearized(msg->dn)));
@@ -1371,21 +1371,21 @@ static NTSTATUS pdb_samba4_enum_group_memberships(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_set_unix_primary_group(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_set_unix_primary_group(struct pdb_methods *m,
 					       TALLOC_CTX *mem_ctx,
 					       struct samu *user)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_mod_groupmem_by_sid(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_mod_groupmem_by_sid(struct pdb_methods *m,
 					       TALLOC_CTX *mem_ctx,
-					       const struct dom_sid *groupsid, 
+					       const struct dom_sid *groupsid,
 					       const struct dom_sid *membersid,
 					       int mod_op)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_message *msg;
 	int ret;
 	struct ldb_message_element *el;
@@ -1426,13 +1426,13 @@ static NTSTATUS pdb_samba4_mod_groupmem_by_sid(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_mod_groupmem(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_mod_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
 				     uint32 grouprid, uint32 memberrid,
 				     int mod_op)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	const struct dom_sid *dom_sid, *groupsid, *membersid;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -1444,38 +1444,38 @@ static NTSTATUS pdb_samba4_mod_groupmem(struct pdb_methods *m,
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupsid, tmp_ctx);
 	membersid = dom_sid_add_rid(tmp_ctx, dom_sid, memberrid);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(membersid, tmp_ctx);
-	status = pdb_samba4_mod_groupmem_by_sid(m, tmp_ctx, groupsid, membersid, mod_op);
+	status = pdb_samba_dsdb_mod_groupmem_by_sid(m, tmp_ctx, groupsid, membersid, mod_op);
 	talloc_free(tmp_ctx);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_add_groupmem(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_add_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
 				     uint32 group_rid, uint32 member_rid)
 {
-	return pdb_samba4_mod_groupmem(m, mem_ctx, group_rid, member_rid,
+	return pdb_samba_dsdb_mod_groupmem(m, mem_ctx, group_rid, member_rid,
 				    LDB_FLAG_MOD_ADD);
 }
 
-static NTSTATUS pdb_samba4_del_groupmem(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_del_groupmem(struct pdb_methods *m,
 				     TALLOC_CTX *mem_ctx,
 				     uint32 group_rid, uint32 member_rid)
 {
-	return pdb_samba4_mod_groupmem(m, mem_ctx, group_rid, member_rid,
+	return pdb_samba_dsdb_mod_groupmem(m, mem_ctx, group_rid, member_rid,
 				       LDB_FLAG_MOD_DELETE);
 }
 
-static NTSTATUS pdb_samba4_create_alias(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_create_alias(struct pdb_methods *m,
 				     const char *name, uint32 *rid)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct dom_sid *sid;
 
 	struct ldb_dn *dn;
 	NTSTATUS status;
-	
+
 	/* Internally this uses transactions to ensure all the steps
 	 * happen or fail as one */
 	status = dsdb_add_domain_alias(state->ldb, frame, name, &sid, &dn);
@@ -1488,12 +1488,12 @@ static NTSTATUS pdb_samba4_create_alias(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_delete_alias(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_delete_alias(struct pdb_methods *m,
 				     const struct dom_sid *sid)
 {
 	const char *attrs[] = { NULL };
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_message *msg;
 	struct ldb_dn *dn;
 	int rc;
@@ -1533,7 +1533,7 @@ static NTSTATUS pdb_samba4_delete_alias(struct pdb_methods *m,
 	}
 
 	if (ldb_transaction_commit(state->ldb) != LDB_SUCCESS) {
-		DEBUG(0, ("Failed to commit transaction in pdb_samba4_delete_alias(): %s\n",
+		DEBUG(0, ("Failed to commit transaction in pdb_samba_dsdb_delete_alias(): %s\n",
 			  ldb_errstring(state->ldb)));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -1542,12 +1542,12 @@ static NTSTATUS pdb_samba4_delete_alias(struct pdb_methods *m,
 }
 
 #if 0
-static NTSTATUS pdb_samba4_set_aliasinfo(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_set_aliasinfo(struct pdb_methods *m,
 				      const struct dom_sid *sid,
 				      struct acct_info *info)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct tldap_context *ld;
 	const char *attrs[3] = { "objectSid", "description",
 				 "samAccountName" };
@@ -1558,7 +1558,7 @@ static NTSTATUS pdb_samba4_set_aliasinfo(struct pdb_methods *m,
 	int num_mods;
 	bool ok;
 
-	ld = pdb_samba4_ld(state);
+	ld = pdb_samba_dsdb_ld(state);
 	if (ld == NULL) {
 		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
 	}
@@ -1566,7 +1566,7 @@ static NTSTATUS pdb_samba4_set_aliasinfo(struct pdb_methods *m,
 	sidstr = sid_binstring(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
-	rc = pdb_samba4_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
+	rc = pdb_samba_dsdb_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
 				attrs, ARRAY_SIZE(attrs), 0, talloc_tos(),
 				&msg, "(&(objectSid=%s)(objectclass=group)"
 				"(|(grouptype=%d)(grouptype=%d)))",
@@ -1622,36 +1622,36 @@ static NTSTATUS pdb_samba4_set_aliasinfo(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 #endif
-static NTSTATUS pdb_samba4_add_aliasmem(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_add_aliasmem(struct pdb_methods *m,
 				     const struct dom_sid *alias,
 				     const struct dom_sid *member)
 {
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
-	status = pdb_samba4_mod_groupmem_by_sid(m, frame, alias, member, LDB_FLAG_MOD_ADD);
+	status = pdb_samba_dsdb_mod_groupmem_by_sid(m, frame, alias, member, LDB_FLAG_MOD_ADD);
 	talloc_free(frame);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_del_aliasmem(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_del_aliasmem(struct pdb_methods *m,
 				     const struct dom_sid *alias,
 				     const struct dom_sid *member)
 {
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
-	status = pdb_samba4_mod_groupmem_by_sid(m, frame, alias, member, LDB_FLAG_MOD_DELETE);
+	status = pdb_samba_dsdb_mod_groupmem_by_sid(m, frame, alias, member, LDB_FLAG_MOD_DELETE);
 	talloc_free(frame);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_enum_aliasmem(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_enum_aliasmem(struct pdb_methods *m,
 				      const struct dom_sid *alias,
 				      TALLOC_CTX *mem_ctx,
 				      struct dom_sid **pmembers,
 				      size_t *pnum_members)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct ldb_dn *dn;
 	unsigned int num_members;
 	NTSTATUS status;
@@ -1672,7 +1672,7 @@ static NTSTATUS pdb_samba4_enum_aliasmem(struct pdb_methods *m,
 	return status;
 }
 
-static NTSTATUS pdb_samba4_enum_alias_memberships(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_enum_alias_memberships(struct pdb_methods *m,
 					       TALLOC_CTX *mem_ctx,
 					       const struct dom_sid *domain_sid,
 					       const struct dom_sid *members,
@@ -1680,8 +1680,8 @@ static NTSTATUS pdb_samba4_enum_alias_memberships(struct pdb_methods *m,
 					       uint32_t **palias_rids,
 					       size_t *pnum_alias_rids)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	uint32_t *alias_rids = NULL;
 	size_t num_alias_rids = 0;
 	int i;
@@ -1712,9 +1712,9 @@ static NTSTATUS pdb_samba4_enum_alias_memberships(struct pdb_methods *m,
 
 		sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_dn, tmp_ctx);
-		
+
 		sid_blob = data_blob_string_const(sid_dn);
-		
+
 		status = dsdb_expand_nested_groups(state->ldb, &sid_blob, true, filter,
 						   tmp_ctx, &groupSIDs, &num_groupSIDs);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1741,15 +1741,15 @@ static NTSTATUS pdb_samba4_enum_alias_memberships(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_samba4_lookup_rids(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_lookup_rids(struct pdb_methods *m,
 				    const struct dom_sid *domain_sid,
 				    int num_rids,
 				    uint32 *rids,
 				    const char **names,
 				    enum lsa_SidType *lsa_attrs)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	NTSTATUS status;
 
 	TALLOC_CTX *tmp_ctx;
@@ -1760,13 +1760,13 @@ static NTSTATUS pdb_samba4_lookup_rids(struct pdb_methods *m,
 
 	tmp_ctx = talloc_stackframe();
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-	
+
 	status = dsdb_lookup_rids(state->ldb, tmp_ctx, domain_sid, num_rids, rids, names, lsa_attrs);
 	talloc_free(tmp_ctx);
 	return status;
 }
 
-static NTSTATUS pdb_samba4_lookup_names(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_lookup_names(struct pdb_methods *m,
 				     const struct dom_sid *domain_sid,
 				     int num_names,
 				     const char **pp_names,
@@ -1776,7 +1776,7 @@ static NTSTATUS pdb_samba4_lookup_names(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_samba4_get_account_policy(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_get_account_policy(struct pdb_methods *m,
 					   enum pdb_policy_type type,
 					   uint32_t *value)
 {
@@ -1784,7 +1784,7 @@ static NTSTATUS pdb_samba4_get_account_policy(struct pdb_methods *m,
 		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS pdb_samba4_set_account_policy(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_set_account_policy(struct pdb_methods *m,
 					   enum pdb_policy_type type,
 					   uint32_t value)
 {
@@ -1792,11 +1792,11 @@ static NTSTATUS pdb_samba4_set_account_policy(struct pdb_methods *m,
 		? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static NTSTATUS pdb_samba4_get_seq_num(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_get_seq_num(struct pdb_methods *m,
 				    time_t *seq_num_out)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	uint64_t seq_num;
 	int ret = ldb_sequence_number(state->ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
 	if (ret == LDB_SUCCESS) {
@@ -1807,7 +1807,7 @@ static NTSTATUS pdb_samba4_get_seq_num(struct pdb_methods *m,
 	}
 }
 
-struct pdb_samba4_search_state {
+struct pdb_samba_dsdb_search_state {
 	uint32_t acct_flags;
 	struct samr_displayentry *entries;
 	uint32_t num_entries;
@@ -1815,11 +1815,11 @@ struct pdb_samba4_search_state {
 	uint32_t current;
 };
 
-static bool pdb_samba4_next_entry(struct pdb_search *search,
+static bool pdb_samba_dsdb_next_entry(struct pdb_search *search,
 			       struct samr_displayentry *entry)
 {
-	struct pdb_samba4_search_state *state = talloc_get_type_abort(
-		search->private_data, struct pdb_samba4_search_state);
+	struct pdb_samba_dsdb_search_state *state = talloc_get_type_abort(
+		search->private_data, struct pdb_samba_dsdb_search_state);
 
 	if (state->current == state->num_entries) {
 		return false;
@@ -1840,21 +1840,21 @@ static bool pdb_samba4_next_entry(struct pdb_search *search,
 	return true;
 }
 
-static void pdb_samba4_search_end(struct pdb_search *search)
+static void pdb_samba_dsdb_search_end(struct pdb_search *search)
 {
-	struct pdb_samba4_search_state *state = talloc_get_type_abort(
-		search->private_data, struct pdb_samba4_search_state);
+	struct pdb_samba_dsdb_search_state *state = talloc_get_type_abort(
+		search->private_data, struct pdb_samba_dsdb_search_state);
 	talloc_free(state);
 }
 
-static bool pdb_samba4_search_filter(struct pdb_methods *m,
+static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 				     struct pdb_search *search,
-				     struct pdb_samba4_search_state **pstate,
+				     struct pdb_samba_dsdb_search_state **pstate,
 				     const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(4, 5)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
-	struct pdb_samba4_search_state *sstate;
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
+	struct pdb_samba_dsdb_search_state *sstate;
 	const char * attrs[] = { "objectSid", "sAMAccountName", "displayName",
 				 "userAccountControl", "description", NULL };
 	struct ldb_result *res;
@@ -1871,13 +1871,13 @@ static bool pdb_samba4_search_filter(struct pdb_methods *m,
 	va_start(ap, exp_fmt);
 	expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
 	va_end(ap);
-	
+
 	if (!expression) {
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	sstate = talloc_zero(tmp_ctx, struct pdb_samba4_search_state);
+	sstate = talloc_zero(tmp_ctx, struct pdb_samba_dsdb_search_state);
 	if (sstate == NULL) {
 		talloc_free(tmp_ctx);
 		return false;
@@ -1917,9 +1917,9 @@ static bool pdb_samba4_search_filter(struct pdb_methods *m,
 			return false;
 		}
 		sid_peek_rid(sid, &e->rid);
-	
+
 		e->acct_flags = samdb_result_acct_flags(state->ldb, tmp_ctx,
-							res->msgs[i], 
+							res->msgs[i],
 							ldb_get_default_basedn(state->ldb));
 		e->account_name = ldb_msg_find_attr_as_string(
 			res->msgs[i], "samAccountName", NULL);
@@ -1939,21 +1939,21 @@ static bool pdb_samba4_search_filter(struct pdb_methods *m,
 	}
 	talloc_steal(sstate->entries, res->msgs);
 	search->private_data = talloc_steal(search, sstate);
-	search->next_entry = pdb_samba4_next_entry;
-	search->search_end = pdb_samba4_search_end;
+	search->next_entry = pdb_samba_dsdb_next_entry;
+	search->search_end = pdb_samba_dsdb_search_end;
 	*pstate = sstate;
 	talloc_free(tmp_ctx);
 	return true;
 }
 
-static bool pdb_samba4_search_users(struct pdb_methods *m,
+static bool pdb_samba_dsdb_search_users(struct pdb_methods *m,
 				 struct pdb_search *search,
 				 uint32 acct_flags)
 {
-	struct pdb_samba4_search_state *sstate;
+	struct pdb_samba_dsdb_search_state *sstate;
 	bool ret;
 
-	ret = pdb_samba4_search_filter(m, search, &sstate, "(objectclass=user)");
+	ret = pdb_samba_dsdb_search_filter(m, search, &sstate, "(objectclass=user)");
 	if (!ret) {
 		return false;
 	}
@@ -1961,13 +1961,13 @@ static bool pdb_samba4_search_users(struct pdb_methods *m,
 	return true;
 }
 
-static bool pdb_samba4_search_groups(struct pdb_methods *m,
+static bool pdb_samba_dsdb_search_groups(struct pdb_methods *m,
 				  struct pdb_search *search)
 {
-	struct pdb_samba4_search_state *sstate;
+	struct pdb_samba_dsdb_search_state *sstate;
 	bool ret;
 
-	ret = pdb_samba4_search_filter(m, search, &sstate, 
+	ret = pdb_samba_dsdb_search_filter(m, search, &sstate,
 				       "(&(grouptype=%d)(objectclass=group))",
 				       GTYPE_SECURITY_GLOBAL_GROUP);
 	if (!ret) {
@@ -1977,14 +1977,14 @@ static bool pdb_samba4_search_groups(struct pdb_methods *m,
 	return true;
 }
 
-static bool pdb_samba4_search_aliases(struct pdb_methods *m,
+static bool pdb_samba_dsdb_search_aliases(struct pdb_methods *m,
 				   struct pdb_search *search,
 				   const struct dom_sid *sid)
 {
-	struct pdb_samba4_search_state *sstate;
+	struct pdb_samba_dsdb_search_state *sstate;
 	bool ret;
 
-	ret = pdb_samba4_search_filter(m, search, &sstate, 
+	ret = pdb_samba_dsdb_search_filter(m, search, &sstate,
 				       "(&(grouptype=%d)(objectclass=group))",
 				       sid_check_is_builtin(sid)
 				       ? GTYPE_SECURITY_BUILTIN_LOCAL_GROUP
@@ -1996,11 +1996,11 @@ static bool pdb_samba4_search_aliases(struct pdb_methods *m,
 	return true;
 }
 
-static bool pdb_samba4_uid_to_sid(struct pdb_methods *m, uid_t uid,
+static bool pdb_samba_dsdb_uid_to_sid(struct pdb_methods *m, uid_t uid,
 			       struct dom_sid *sid)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	NTSTATUS status;
 	struct id_map id_map;
 	struct id_map *id_maps[2];
@@ -2024,11 +2024,11 @@ static bool pdb_samba4_uid_to_sid(struct pdb_methods *m, uid_t uid,
 	return true;
 }
 
-static bool pdb_samba4_gid_to_sid(struct pdb_methods *m, gid_t gid,
+static bool pdb_samba_dsdb_gid_to_sid(struct pdb_methods *m, gid_t gid,
 			       struct dom_sid *sid)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	NTSTATUS status;
 	struct id_map id_map;
 	struct id_map *id_maps[2];
@@ -2051,11 +2051,11 @@ static bool pdb_samba4_gid_to_sid(struct pdb_methods *m, gid_t gid,
 	return true;
 }
 
-static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
+static bool pdb_samba_dsdb_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 				 struct unixid *id)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		m->private_data, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_samba_dsdb_state);
 	struct id_map id_map;
 	struct id_map *id_maps[2];
 	NTSTATUS status;
@@ -2081,17 +2081,17 @@ static bool pdb_samba4_sid_to_id(struct pdb_methods *m, const struct dom_sid *si
 	return false;
 }
 
-static uint32_t pdb_samba4_capabilities(struct pdb_methods *m)
+static uint32_t pdb_samba_dsdb_capabilities(struct pdb_methods *m)
 {
 	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
 }
 
-static bool pdb_samba4_new_rid(struct pdb_methods *m, uint32 *rid)
+static bool pdb_samba_dsdb_new_rid(struct pdb_methods *m, uint32 *rid)
 {
 	return false;
 }
 
-static bool pdb_samba4_get_trusteddom_pw(struct pdb_methods *m,
+static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 				      const char *domain, char** pwd,
 				      struct dom_sid *sid,
 				      time_t *pass_last_set_time)
@@ -2099,20 +2099,20 @@ static bool pdb_samba4_get_trusteddom_pw(struct pdb_methods *m,
 	return false;
 }
 
-static bool pdb_samba4_set_trusteddom_pw(struct pdb_methods *m,
+static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 				      const char* domain, const char* pwd,
 				      const struct dom_sid *sid)
 {
 	return false;
 }
 
-static bool pdb_samba4_del_trusteddom_pw(struct pdb_methods *m,
+static bool pdb_samba_dsdb_del_trusteddom_pw(struct pdb_methods *m,
 				      const char *domain)
 {
 	return false;
 }
 
-static NTSTATUS pdb_samba4_enum_trusteddoms(struct pdb_methods *m,
+static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 					 TALLOC_CTX *mem_ctx,
 					 uint32 *num_domains,
 					 struct trustdom_info ***domains)
@@ -2122,73 +2122,73 @@ static NTSTATUS pdb_samba4_enum_trusteddoms(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
-static void pdb_samba4_init_methods(struct pdb_methods *m)
+static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 {
-	m->name = "samba4";
-	m->get_domain_info = pdb_samba4_get_domain_info;
-	m->getsampwnam = pdb_samba4_getsampwnam;
-	m->getsampwsid = pdb_samba4_getsampwsid;
-	m->create_user = pdb_samba4_create_user;
-	m->delete_user = pdb_samba4_delete_user;
-	m->add_sam_account = pdb_samba4_add_sam_account;
-	m->update_sam_account = pdb_samba4_update_sam_account;
-	m->delete_sam_account = pdb_samba4_delete_sam_account;
-	m->rename_sam_account = pdb_samba4_rename_sam_account;
-	m->update_login_attempts = pdb_samba4_update_login_attempts;
-	m->getgrsid = pdb_samba4_getgrsid;
-	m->getgrgid = pdb_samba4_getgrgid;
-	m->getgrnam = pdb_samba4_getgrnam;
-	m->create_dom_group = pdb_samba4_create_dom_group;
-	m->delete_dom_group = pdb_samba4_delete_dom_group;
-	m->add_group_mapping_entry = pdb_samba4_add_group_mapping_entry;
-	m->update_group_mapping_entry = pdb_samba4_update_group_mapping_entry;
-	m->delete_group_mapping_entry =	pdb_samba4_delete_group_mapping_entry;
-	m->enum_group_mapping = pdb_samba4_enum_group_mapping;
-	m->enum_group_members = pdb_samba4_enum_group_members;
-	m->enum_group_memberships = pdb_samba4_enum_group_memberships;
-	m->set_unix_primary_group = pdb_samba4_set_unix_primary_group;
-	m->add_groupmem = pdb_samba4_add_groupmem;
-	m->del_groupmem = pdb_samba4_del_groupmem;
-	m->create_alias = pdb_samba4_create_alias;
-	m->delete_alias = pdb_samba4_delete_alias;
+	m->name = "samba_dsdb";
+	m->get_domain_info = pdb_samba_dsdb_get_domain_info;
+	m->getsampwnam = pdb_samba_dsdb_getsampwnam;
+	m->getsampwsid = pdb_samba_dsdb_getsampwsid;
+	m->create_user = pdb_samba_dsdb_create_user;
+	m->delete_user = pdb_samba_dsdb_delete_user;
+	m->add_sam_account = pdb_samba_dsdb_add_sam_account;
+	m->update_sam_account = pdb_samba_dsdb_update_sam_account;
+	m->delete_sam_account = pdb_samba_dsdb_delete_sam_account;
+	m->rename_sam_account = pdb_samba_dsdb_rename_sam_account;
+	m->update_login_attempts = pdb_samba_dsdb_update_login_attempts;
+	m->getgrsid = pdb_samba_dsdb_getgrsid;
+	m->getgrgid = pdb_samba_dsdb_getgrgid;
+	m->getgrnam = pdb_samba_dsdb_getgrnam;
+	m->create_dom_group = pdb_samba_dsdb_create_dom_group;
+	m->delete_dom_group = pdb_samba_dsdb_delete_dom_group;
+	m->add_group_mapping_entry = pdb_samba_dsdb_add_group_mapping_entry;
+	m->update_group_mapping_entry = pdb_samba_dsdb_update_group_mapping_entry;
+	m->delete_group_mapping_entry =	pdb_samba_dsdb_delete_group_mapping_entry;
+	m->enum_group_mapping = pdb_samba_dsdb_enum_group_mapping;
+	m->enum_group_members = pdb_samba_dsdb_enum_group_members;
+	m->enum_group_memberships = pdb_samba_dsdb_enum_group_memberships;
+	m->set_unix_primary_group = pdb_samba_dsdb_set_unix_primary_group;
+	m->add_groupmem = pdb_samba_dsdb_add_groupmem;
+	m->del_groupmem = pdb_samba_dsdb_del_groupmem;
+	m->create_alias = pdb_samba_dsdb_create_alias;
+	m->delete_alias = pdb_samba_dsdb_delete_alias;
 	m->get_aliasinfo = pdb_default_get_aliasinfo;
-	m->add_aliasmem = pdb_samba4_add_aliasmem;
-	m->del_aliasmem = pdb_samba4_del_aliasmem;
-	m->enum_aliasmem = pdb_samba4_enum_aliasmem;
-	m->enum_alias_memberships = pdb_samba4_enum_alias_memberships;
-	m->lookup_rids = pdb_samba4_lookup_rids;
-	m->lookup_names = pdb_samba4_lookup_names;
-	m->get_account_policy = pdb_samba4_get_account_policy;
-	m->set_account_policy = pdb_samba4_set_account_policy;
-	m->get_seq_num = pdb_samba4_get_seq_num;
-	m->search_users = pdb_samba4_search_users;
-	m->search_groups = pdb_samba4_search_groups;
-	m->search_aliases = pdb_samba4_search_aliases;
-	m->uid_to_sid = pdb_samba4_uid_to_sid;
-	m->gid_to_sid = pdb_samba4_gid_to_sid;
-	m->sid_to_id = pdb_samba4_sid_to_id;
-	m->capabilities = pdb_samba4_capabilities;
-	m->new_rid = pdb_samba4_new_rid;
-	m->get_trusteddom_pw = pdb_samba4_get_trusteddom_pw;
-	m->set_trusteddom_pw = pdb_samba4_set_trusteddom_pw;
-	m->del_trusteddom_pw = pdb_samba4_del_trusteddom_pw;
-	m->enum_trusteddoms = pdb_samba4_enum_trusteddoms;
+	m->add_aliasmem = pdb_samba_dsdb_add_aliasmem;
+	m->del_aliasmem = pdb_samba_dsdb_del_aliasmem;
+	m->enum_aliasmem = pdb_samba_dsdb_enum_aliasmem;
+	m->enum_alias_memberships = pdb_samba_dsdb_enum_alias_memberships;
+	m->lookup_rids = pdb_samba_dsdb_lookup_rids;
+	m->lookup_names = pdb_samba_dsdb_lookup_names;
+	m->get_account_policy = pdb_samba_dsdb_get_account_policy;
+	m->set_account_policy = pdb_samba_dsdb_set_account_policy;
+	m->get_seq_num = pdb_samba_dsdb_get_seq_num;
+	m->search_users = pdb_samba_dsdb_search_users;
+	m->search_groups = pdb_samba_dsdb_search_groups;
+	m->search_aliases = pdb_samba_dsdb_search_aliases;
+	m->uid_to_sid = pdb_samba_dsdb_uid_to_sid;
+	m->gid_to_sid = pdb_samba_dsdb_gid_to_sid;
+	m->sid_to_id = pdb_samba_dsdb_sid_to_id;
+	m->capabilities = pdb_samba_dsdb_capabilities;
+	m->new_rid = pdb_samba_dsdb_new_rid;
+	m->get_trusteddom_pw = pdb_samba_dsdb_get_trusteddom_pw;
+	m->set_trusteddom_pw = pdb_samba_dsdb_set_trusteddom_pw;
+	m->del_trusteddom_pw = pdb_samba_dsdb_del_trusteddom_pw;
+	m->enum_trusteddoms = pdb_samba_dsdb_enum_trusteddoms;
 }
 
 static void free_private_data(void **vp)
 {
-	struct pdb_samba4_state *state = talloc_get_type_abort(
-		*vp, struct pdb_samba4_state);
+	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
+		*vp, struct pdb_samba_dsdb_state);
 	talloc_unlink(state, state->ldb);
 	return;
 }
 
-static NTSTATUS pdb_samba4_init_secrets(struct pdb_methods *m)
+static NTSTATUS pdb_samba_dsdb_init_secrets(struct pdb_methods *m)
 {
 	struct pdb_domain_info *dom_info;
 	bool ret;
 
-	dom_info = pdb_samba4_get_domain_info(m, m);
+	dom_info = pdb_samba_dsdb_get_domain_info(m, m);
 	if (!dom_info) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2217,24 +2217,24 @@ done:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
+static NTSTATUS pdb_init_samba_dsdb(struct pdb_methods **pdb_method,
 			     const char *location)
 {
 	struct pdb_methods *m;
-	struct pdb_samba4_state *state;
+	struct pdb_samba_dsdb_state *state;
 	NTSTATUS status;
 
 	if ( !NT_STATUS_IS_OK(status = make_pdb_method( &m )) ) {
 		return status;
 	}
 
-	state = talloc_zero(m, struct pdb_samba4_state);
+	state = talloc_zero(m, struct pdb_samba_dsdb_state);
 	if (state == NULL) {
 		goto nomem;
 	}
 	m->private_data = state;
 	m->free_private_data = free_private_data;
-	pdb_samba4_init_methods(m);
+	pdb_samba_dsdb_init_methods(m);
 
 	state->ev = s4_event_context_init(state);
 	if (!state->ev) {
@@ -2275,9 +2275,9 @@ static NTSTATUS pdb_init_samba4(struct pdb_methods **pdb_method,
 		goto fail;
 	}
 
-	status = pdb_samba4_init_secrets(m);
+	status = pdb_samba_dsdb_init_secrets(m);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("pdb_samba4_init_secrets failed!\n"));
+		DEBUG(10, ("pdb_samba_dsdb_init_secrets failed!\n"));
 		goto fail;
 	}
 
@@ -2290,9 +2290,14 @@ fail:
 	return status;
 }
 
-NTSTATUS pdb_samba4_init(void);
-NTSTATUS pdb_samba4_init(void)
+NTSTATUS pdb_samba_dsdb_init(void);
+NTSTATUS pdb_samba_dsdb_init(void)
 {
+	NTSTATUS status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "samba_dsdb",
+					      pdb_init_samba_dsdb);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "samba4",
-				   pdb_init_samba4);
+				   pdb_init_samba_dsdb);
 }

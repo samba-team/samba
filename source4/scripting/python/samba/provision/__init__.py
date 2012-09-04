@@ -613,7 +613,6 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
     realm = realm.upper()
 
     global_settings = {
-        "passdb backend": "samba4",
         "netbios name": netbiosname,
         "workgroup": domain,
         "realm": realm,
@@ -660,6 +659,8 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
         shares["sysvol"] = os.path.join(lp.get("state directory"), "sysvol")
         shares["netlogon"] = os.path.join(shares["sysvol"], realm.lower(),
             "scripts")
+    else:
+        global_settings["passdb backend"] = "samba_dsdb"
 
     f = open(smbconf, 'w')
     try:
@@ -1415,11 +1416,11 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain, domain
         # This will ensure that the smbd code we are running when setting ACLs is initialised with the smb.conf
         s3conf = s3param.get_context()
         s3conf.load(lp.configfile)
-        # ensure we are using the right samba4 passdb backend, no matter what
-        s3conf.set("passdb backend", "samba4:%s" % samdb.url)
+        # ensure we are using the right samba_dsdb passdb backend, no matter what
+        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
         passdb.reload_static_pdb()
 
-        # ensure that we init the samba4 backend, so the domain sid is marked in secrets.tdb
+        # ensure that we init the samba_dsdb backend, so the domain sid is marked in secrets.tdb
         s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
 
         # now ensure everything matches correctly, to avoid wierd issues
@@ -1428,10 +1429,10 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain, domain
 
         domain_info = s4_passdb.domain_info()
         if domain_info["dom_sid"] != domainsid:
-            raise ProvisioningError('SID as seen by pdb_samba4 [%s] does not match SID as seen by the provision script [%s]!' % (domain_info["dom_sid"], domainsid))
+            raise ProvisioningError('SID as seen by pdb_samba_dsdb [%s] does not match SID as seen by the provision script [%s]!' % (domain_info["dom_sid"], domainsid))
 
         if domain_info["dns_domain"].upper() != dnsdomain.upper():
-            raise ProvisioningError('Realm as seen by pdb_samba4 [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
+            raise ProvisioningError('Realm as seen by pdb_samba_dsdb [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
 
 
     try:
@@ -1536,9 +1537,9 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
     # This will ensure that the smbd code we are running when setting ACLs is initialised with the smb.conf
     s3conf = s3param.get_context()
     s3conf.load(lp.configfile)
-    # ensure we are using the right samba4 passdb backend, no matter what
-    s3conf.set("passdb backend", "samba4:%s" % samdb.url)
-    # ensure that we init the samba4 backend, so the domain sid is marked in secrets.tdb
+    # ensure we are using the right samba_dsdb passdb backend, no matter what
+    s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+    # ensure that we init the samba_dsdb backend, so the domain sid is marked in secrets.tdb
     s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
 
     # now ensure everything matches correctly, to avoid wierd issues
@@ -1547,10 +1548,10 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
 
     domain_info = s4_passdb.domain_info()
     if domain_info["dom_sid"] != domainsid:
-        raise ProvisioningError('SID as seen by pdb_samba4 [%s] does not match SID as seen by the provision script [%s]!' % (domain_info["dom_sid"], domainsid))
+        raise ProvisioningError('SID as seen by pdb_samba_dsdb [%s] does not match SID as seen by the provision script [%s]!' % (domain_info["dom_sid"], domainsid))
 
     if domain_info["dns_domain"].upper() != dnsdomain.upper():
-        raise ProvisioningError('Realm as seen by pdb_samba4 [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
+        raise ProvisioningError('Realm as seen by pdb_samba_dsdb [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
 
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
     for direct_db_access in [True, False]:

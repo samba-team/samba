@@ -152,8 +152,8 @@ class cmd_ntacl_sysvolreset(Command):
 
         s3conf = s3param.get_context()
         s3conf.load(lp.configfile)
-        # ensure we are using the right samba4 passdb backend, no matter what
-        s3conf.set("passdb backend", "samba4:%s" % samdb.url)
+        # ensure we are using the right samba_dsdb passdb backend, no matter what
+        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
         LA_sid = security.dom_sid(str(domain_sid)
                                   +"-"+str(security.DOMAIN_RID_ADMINISTRATOR))

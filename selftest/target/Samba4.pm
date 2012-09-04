@@ -603,8 +603,6 @@ sub provision_raw_step1($$)
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
 
-	passdb backend = samba4
-
         vfs objects = dfs_samba4 acl_xattr fake_acls xattr_tdb streams_depot
 
 	# remove this again, when our smb2 client library

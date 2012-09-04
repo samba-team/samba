@@ -4914,6 +4914,7 @@ static bool lp_load_ex(const char *pszFname,
 				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr");
 			}
 		}
+		lp_do_parameter(-1, "passdb backend", "samba_dsdb");
 	}
 
 	bAllowIncludeRegistry = true;
