@@ -95,7 +95,7 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_que
 			return (uint64_t)-1;
 		}
 
-		DEBUG (3, ("disk_free: Running command %s\n", syscmd));
+		DEBUG (3, ("disk_free: Running command '%s'\n", syscmd));
 
 		lines = file_lines_pload(syscmd, NULL);
 		if (lines) {
