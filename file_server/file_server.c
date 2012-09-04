@@ -78,6 +78,9 @@ static const char *generate_smb_conf(struct task_server *task)
  */
 static void file_server_smbd_done(struct tevent_req *subreq)
 {
+	struct task_server *task =
+		tevent_req_callback_data(subreq,
+		struct task_server);
 	int sys_errno;
 	int ret;
 
@@ -87,6 +90,7 @@ static void file_server_smbd_done(struct tevent_req *subreq)
 	} else {
 		DEBUG(0,("file_server smbd daemon exited normally\n"));
 	}
+	task_server_terminate(task, "smbd child process exited", true);
 }
 
 
