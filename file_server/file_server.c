@@ -117,15 +117,13 @@ static void s3fs_task_init(struct task_server *task)
 				NULL);
 	if (req == NULL) {
 		DEBUG(0, ("Failed to start smbd as child daemon\n"));
-		goto failed;
+		task_server_terminate(task, "Failed to startup s3fs smb task", true);
+		return;
 	}
 
 	tevent_req_set_callback(req, file_server_smbd_done, task);
 
 	DEBUG(1,("Started file server smbd with config %s\n", fileserver_conf));
-	return;
-failed:
-	task_server_terminate(task, "Failed to startup s3fs smb task", true);
 }
 
 /* called at smbd startup - register ourselves as a server service */
