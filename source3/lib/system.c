@@ -1176,8 +1176,11 @@ int sys_popen(const char *command)
 	parent_end = pipe_fds[0];
 	child_end = pipe_fds[1];
 
-	if((entry = SMB_MALLOC_P(popen_list)) == NULL)
+	entry = SMB_MALLOC_P(popen_list);
+	if (entry == NULL) {
+		DEBUG(0, ("sys_popen: malloc failed\n"));
 		goto err_exit;
+	}
 
 	ZERO_STRUCTP(entry);
 
