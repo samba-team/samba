@@ -123,8 +123,9 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_que
 			if (!*dfree)
 				*dfree = 1024;
 		} else {
-			DEBUG (0, ("disk_free: file_lines_load() failed for command %s. Error was : %s\n",
-				syscmd, strerror(errno) ));
+			DEBUG (0, ("disk_free: file_lines_load() failed for "
+				   "command %s. Error was : %s\n",
+				   syscmd, strerror(errno) ));
 			if (sys_fsusage(path, dfree, dsize) != 0) {
 				DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
 					strerror(errno) ));
