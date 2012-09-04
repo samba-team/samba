@@ -1190,6 +1190,7 @@ int sys_popen(const char *command)
 
 	argl = extract_args(NULL, command);
 	if (argl == NULL) {
+		DEBUG(0, ("sys_popen: extract_args() failed: %s\n", strerror(errno)));
 		goto err_exit;
 	}
 
