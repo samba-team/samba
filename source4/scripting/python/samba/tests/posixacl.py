@@ -92,6 +92,20 @@ class PosixAclMappingTests(TestCase):
         self.assertEquals(facl.as_sddl(anysid),acl)
         os.unlink(tempf)
 
+    def test_setntacl_smbd_getntacl_smbd_gpo(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:DAG:DUD:P(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;EA)(A;OICIIO;0x001f01ff;;;CO)(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001200a9;;;ED)S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
+        facl = getntacl(lp,tempf, direct_db_access=False)
+        domsid = security.dom_sid("S-1-5-21-2212615479-2695158682-2101375467")
+        self.assertEquals(facl.as_sddl(domsid),acl)
+        os.unlink(tempf)
+
     def test_setntacl_getposixacl(self):
         random.seed()
         lp = LoadParm()
