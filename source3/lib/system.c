@@ -1166,8 +1166,12 @@ int sys_popen(const char *command)
 		return -1;
 	}
 
-	if (pipe(pipe_fds) < 0)
+	ret = pipe(pipe_fds);
+	if (ret < 0) {
+		DEBUG(0, ("sys_popen: error opening pipe: %s\n",
+			  strerror(errno)));
 		return -1;
+	}
 
 	parent_end = pipe_fds[0];
 	child_end = pipe_fds[1];
