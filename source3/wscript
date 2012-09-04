@@ -58,6 +58,9 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
+    default_static_modules = []
+    default_shared_modules = []
+
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
         conf.env.developer = True
@@ -300,10 +303,33 @@ utimensat vsyslog _write __write __xstat
     else:
         Logs.warn("Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os)
 
-    #FIXME: add more checks
     if Options.options.with_acl_support:
-        if (host_os.rfind('darwin') > -1):
-            conf.SET_TARGET_TYPE('acl', 'EMPTY')
+	if (host_os.rfind('sysv5') > -1) and conf.CHECK_FUNCS_IN('sec', 'facl', checklibc=True):
+		Logs.info('Using UnixWare ACLs')
+                conf.DEFINE('HAVE_UNIXWARE_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_solarisacl'))
+	elif (host_os.rfind('solaris') > -1) and conf.CHECK_FUNCS_IN('sec', 'facl'):
+		Logs.info('Using solaris ACLs')
+                conf.DEFINE('HAVE_SOLARIS_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_solarisacl'))
+	elif (host_os.rfind('hpux') > -1):
+		Logs.info('Using HPUX ACLs')
+                conf.DEFINE('HAVE_HPUX_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_hpuxacl'))
+	elif (host_os.rfind('irix') > -1):
+		Logs.info('Using IRIX ACLs')
+                conf.DEFINE('HAVE_IRIX_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_irixacl'))
+	elif (host_os.rfind('aix') > -1):
+		Logs.info('Using AIX ACLs')
+                conf.DEFINE('HAVE_AIX_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_aixacl'))
+	elif (host_os.rfind('osf') > -1) and conf.CHECK_FUNCS_IN('pacl', 'acl_get_fd'):
+		Logs.info('Using Tru64 ACLs')
+                conf.DEFINE('HAVE_TRU64_ACLS',1)
+                default_static_modules.extend(TO_LIST('vfs_tru64acl'))
+        elif (host_os.rfind('darwin') > -1):
+            Logs.warn('ACLs on Dwarwin currently not supported')
         else:
             conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
             if conf.CHECK_CODE('''
@@ -323,8 +349,8 @@ return acl_get_perm_np(permset_d, perm);
                         'HAVE_ACL_GET_PERM_NP',
                         headers='sys/types.h sys/acl.h', link=True,
                         msg="Checking whether acl_get_perm_np() is available")
-    else:
-        conf.SET_TARGET_TYPE('acl', 'EMPTY')
+                default_static_modules.extend(TO_LIST('vfs_posixacl'))
+
 
     if conf.CHECK_FUNCS('dirfd'):
         conf.DEFINE('HAVE_DIRFD_DECL', 1)
@@ -1440,13 +1466,13 @@ main() {
     if conf.CHECK_HEADERS('gpfs_gpl.h'):
         conf.DEFINE('HAVE_GPFS', '1')
 
-    default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
+    default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc
                                       auth_domain auth_builtin vfs_default
                                       nss_info_template idmap_tdb idmap_passdb
-                                      idmap_nss''')
+                                      idmap_nss'''))
 
-    default_shared_modules=TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
+    default_shared_modules.extend(TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
                                       vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
                                       vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 
                                       auth_script vfs_readahead vfs_xattr_tdb vfs_posix_eadb
@@ -1455,7 +1481,7 @@ main() {
 				      vfs_media_harmony
                                       vfs_crossrename vfs_linux_xfs_sgid
                                       vfs_time_audit idmap_autorid idmap_tdb2
-                                      idmap_rid idmap_hash''')
+                                      idmap_rid idmap_hash'''))
 
     if Options.options.developer:
         default_static_modules.extend(TO_LIST('charset_weird'))
@@ -1469,9 +1495,6 @@ main() {
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
-
-    if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
-        default_static_modules.extend(TO_LIST('vfs_posixacl'))
 
     if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
         default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
