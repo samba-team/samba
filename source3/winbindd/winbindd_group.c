@@ -35,8 +35,16 @@ bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 {
 	fstring full_group_name;
 	char *mapped_name = NULL;
-	struct winbindd_domain *domain = find_domain_from_name_noinit(dom_name);
+	struct winbindd_domain *domain;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+
+	domain = find_domain_from_name_noinit(dom_name);
+	if (domain == NULL) {
+		DEBUG(0, ("Failed to find domain '%s'. "
+			  "Check connection to trusted domains!\n",
+			  dom_name));
+		return false;
+	}
 
 	nt_status = normalize_name_map(mem_ctx, domain, gr_name,
 				       &mapped_name);
