@@ -509,4 +509,29 @@
 #define SMB_VFS_NEXT_SET_OFFLINE(handle,fname) \
 	smb_vfs_call_set_offline((handle)->next, (fname))
 
+/* durable handle operations */
+
+#define SMB_VFS_DURABLE_COOKIE(fsp, mem_ctx, cookie) \
+	smb_vfs_call_durable_cookie((fsp)->conn->vfs_handles, \
+				    (fsp), (mem_ctx), (cookie))
+#define SMB_VFS_NEXT_DURABLE_COOKIE(handle, fsp, mem_ctx, cookie) \
+	smb_vfs_call_durable_cookie(((handle)->next, \
+				    (fsp), (mem_ctx), (cookie))
+
+#define SMB_VFS_DURABLE_DISCONNECT(fsp, old_cookie, mem_ctx, new_cookie) \
+	smb_vfs_call_durable_disconnect((fsp)->conn->vfs_handles, \
+					(fsp), (old_cookie), (mem_ctx), (new_cookie))
+#define SMB_VFS_NEXT_DURABLE_DISCONNECT(handle, fsp, old_cookie, mem_ctx, new_cookie) \
+	smb_vfs_call_durable_disconnect((handle)->next, \
+					(fsp), (old_cookie), (mem_ctx), (new_cookie))
+
+#define SMB_VFS_DURABLE_RECONNECT(conn, smb1req, op, old_cookie, mem_ctx, fsp, new_cookie) \
+	smb_vfs_call_durable_reconnect((conn)->vfs_handles, \
+				       (smb1req), (op), (old_cookie), \
+				       (mem_ctx), (fsp), (new_cookie))
+#define SMB_VFS_NEXT_DURABLE_RECONNECT(handle, smb1req, op, old_cookie, mem_ctx, fsp, new_cookie) \
+	smb_vfs_call_durable_reconnect((handle)->next, \
+					(smb1req), (op), (old_cookie), \
+					(mem_ctx), (fsp), (new_cookie))
+
 #endif /* _VFS_MACROS_H */

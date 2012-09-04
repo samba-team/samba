@@ -2227,6 +2227,34 @@ static int vfswrap_set_offline(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static NTSTATUS vfswrap_durable_cookie(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       TALLOC_CTX *mem_ctx,
+				       DATA_BLOB *cookie)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS vfswrap_durable_disconnect(struct vfs_handle_struct *handle,
+					   struct files_struct *fsp,
+					   const DATA_BLOB old_cookie,
+					   TALLOC_CTX *mem_ctx,
+					   DATA_BLOB *new_cookie)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS vfswrap_durable_reconnect(struct vfs_handle_struct *handle,
+					  struct smb_request *smb1req,
+					  struct smbXsrv_open *op,
+					  const DATA_BLOB old_cookie,
+					  TALLOC_CTX *mem_ctx,
+					  struct files_struct **fsp,
+					  DATA_BLOB *new_cookie)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
 static struct vfs_fn_pointers vfs_default_fns = {
 	/* Disk operations */
 
@@ -2344,7 +2372,12 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	/* offline operations */
 	.is_offline_fn = vfswrap_is_offline,
-	.set_offline_fn = vfswrap_set_offline
+	.set_offline_fn = vfswrap_set_offline,
+
+	/* durable handle operations */
+	.durable_cookie_fn = vfswrap_durable_cookie,
+	.durable_disconnect_fn = vfswrap_durable_disconnect,
+	.durable_reconnect_fn = vfswrap_durable_reconnect,
 };
 
 NTSTATUS vfs_default_init(void);

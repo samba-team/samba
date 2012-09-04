@@ -2330,3 +2330,37 @@ int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
 	VFS_FIND(set_offline);
 	return handle->fns->set_offline_fn(handle, fname);
 }
+
+NTSTATUS smb_vfs_call_durable_cookie(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *cookie)
+{
+	VFS_FIND(durable_cookie);
+	return handle->fns->durable_cookie_fn(handle, fsp, mem_ctx, cookie);
+}
+
+NTSTATUS smb_vfs_call_durable_disconnect(struct vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 const DATA_BLOB old_cookie,
+					 TALLOC_CTX *mem_ctx,
+					 DATA_BLOB *new_cookie)
+{
+	VFS_FIND(durable_disconnect);
+	return handle->fns->durable_disconnect_fn(handle, fsp, old_cookie,
+					          mem_ctx, new_cookie);
+}
+
+NTSTATUS smb_vfs_call_durable_reconnect(struct vfs_handle_struct *handle,
+					struct smb_request *smb1req,
+					struct smbXsrv_open *op,
+					const DATA_BLOB old_cookie,
+					TALLOC_CTX *mem_ctx,
+					struct files_struct **fsp,
+					DATA_BLOB *new_cookie)
+{
+	VFS_FIND(durable_reconnect);
+	return handle->fns->durable_reconnect_fn(handle, smb1req, op,
+					         old_cookie, mem_ctx, fsp,
+					         new_cookie);
+}

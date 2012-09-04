@@ -142,6 +142,7 @@
 /* Leave at 29 - not yet released. move to plain off_t - abartlet */
 /* Leave at 29 - not yet released. Remove sys_acl functions other than set and get - abartlet */
 /* Leave at 29 - not yet released. Added backup_intent bool to files_struct - JRA */
+/* Leave at 29 - not yet released. Add durable handle functions - metze/obnox */
 #define SMB_VFS_INTERFACE_VERSION 29
 
 /*
@@ -712,6 +713,24 @@ struct vfs_fn_pointers {
 			   SMB_STRUCT_STAT *sbuf);
 	int (*set_offline_fn)(struct vfs_handle_struct *handle,
 			   const struct smb_filename *fname);
+
+	/* durable handle operations */
+	NTSTATUS (*durable_cookie_fn)(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      TALLOC_CTX *mem_ctx,
+				      DATA_BLOB *cookie);
+	NTSTATUS (*durable_disconnect_fn)(struct vfs_handle_struct *handle,
+					  struct files_struct *fsp,
+					  const DATA_BLOB old_cookie,
+					  TALLOC_CTX *mem_ctx,
+					  DATA_BLOB *new_cookie);
+	NTSTATUS (*durable_reconnect_fn)(struct vfs_handle_struct *handle,
+					 struct smb_request *smb1req,
+					 struct smbXsrv_open *op,
+					 const DATA_BLOB old_cookie,
+					 TALLOC_CTX *mem_ctx,
+					 struct files_struct **fsp,
+					 DATA_BLOB *new_cookie);
 };
 
 /*
@@ -1108,6 +1127,22 @@ bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
 			     SMB_STRUCT_STAT *sbuf);
 int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
 			     const struct smb_filename *fname);
+NTSTATUS smb_vfs_call_durable_cookie(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *cookie);
+NTSTATUS smb_vfs_call_durable_disconnect(struct vfs_handle_struct *handle,
+					 struct files_struct *fsp,
+					 const DATA_BLOB old_cookie,
+					 TALLOC_CTX *mem_ctx,
+					 DATA_BLOB *new_cookie);
+NTSTATUS smb_vfs_call_durable_reconnect(struct vfs_handle_struct *handle,
+					struct smb_request *smb1req,
+					struct smbXsrv_open *op,
+					const DATA_BLOB old_cookie,
+					TALLOC_CTX *mem_ctx,
+					struct files_struct **fsp,
+					DATA_BLOB *new_cookie);
 
 NTSTATUS smb_register_vfs(int version, const char *name,
 			  const struct vfs_fn_pointers *fns);
