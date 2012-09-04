@@ -1634,7 +1634,8 @@ main() {
     if conf.CONFIG_SET('HAVE_GPFS'):
 	default_shared_modules.extend(TO_LIST('vfs_gpfs'))
 
-    if conf.CONFIG_SET('HAVE_LINUX_IOCTL'):
+    if (conf.CONFIG_SET('HAVE_LINUX_IOCTL')
+      and conf.CONFIG_SET('HAVE_BASENAME') and conf.CONFIG_SET('HAVE_DIRNAME')):
 	default_shared_modules.extend(TO_LIST('vfs_btrfs'))
 
     if conf.CONFIG_SET('SAMBA_FAM_LIBS'):
