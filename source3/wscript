@@ -1440,9 +1440,6 @@ main() {
     if conf.CHECK_HEADERS('gpfs_gpl.h'):
         conf.DEFINE('HAVE_GPFS', '1')
 
-    # Note that all charset 'modules' must actually be static, due to dependency loop issues 
-    # if we include the module loader in iconv
-
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc
                                       auth_domain auth_builtin vfs_default
