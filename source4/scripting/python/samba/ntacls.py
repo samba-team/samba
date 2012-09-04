@@ -105,7 +105,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
             samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
                                              ndr_pack(ntacl))
     else:
-        smbd.set_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL, sd)
+        smbd.set_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd)
 
 
 def ldapmask2filemask(ldm):
