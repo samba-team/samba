@@ -1216,7 +1216,7 @@ int sys_popen(const char *command)
 
 		ret = execv(argl[0], argl);
 		if (ret == -1) {
-			DEBUG(0, ("sys_popen: ERROR executing dfree command "
+			DEBUG(0, ("sys_popen: ERROR executing command "
 				  "'%s': %s\n", command, strerror(errno)));
 		}
 		_exit (127);
