@@ -2122,12 +2122,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
-			(oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
+	    (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
 		/* DENY_DOS opens are always underlying read-write on the
 		   file handle, no matter what the requested access mask
 		    says. */
 		if ((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
-			access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|FILE_READ_EA|FILE_EXECUTE)) {
+		    access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|
+				   FILE_READ_EA|FILE_EXECUTE)) {
 			flags = O_RDWR;
 		} else {
 			flags = O_WRONLY;
