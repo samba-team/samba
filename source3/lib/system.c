@@ -1161,16 +1161,16 @@ int sys_popen(const char *command)
 	char **argl = NULL;
 	int ret;
 
+	if (!*command) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	if (pipe(pipe_fds) < 0)
 		return -1;
 
 	parent_end = pipe_fds[0];
 	child_end = pipe_fds[1];
-
-	if (!*command) {
-		errno = EINVAL;
-		goto err_exit;
-	}
 
 	if((entry = SMB_MALLOC_P(popen_list)) == NULL)
 		goto err_exit;
