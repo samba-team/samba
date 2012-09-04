@@ -1500,7 +1500,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 		if (!locks_copy) {
 			smb_panic("brl_close_fnum: talloc failed");
 			}
-	} else {	
+	} else {
 		locks_copy = NULL;
 	}
 
