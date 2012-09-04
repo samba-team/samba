@@ -303,7 +303,6 @@ utimensat vsyslog _write __write __xstat
     #FIXME: add more checks
     if Options.options.with_acl_support:
         if (host_os.rfind('darwin') > -1):
-            conf.DEFINE('HAVE_NO_ACLS', 1)
             conf.SET_TARGET_TYPE('acl', 'EMPTY')
         else:
             conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
@@ -325,7 +324,6 @@ return acl_get_perm_np(permset_d, perm);
                         headers='sys/types.h sys/acl.h', link=True,
                         msg="Checking whether acl_get_perm_np() is available")
     else:
-        conf.DEFINE('HAVE_NO_ACLS', 1)
         conf.SET_TARGET_TYPE('acl', 'EMPTY')
 
     if conf.CHECK_FUNCS('dirfd'):

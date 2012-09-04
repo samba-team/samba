@@ -5365,7 +5365,6 @@ AC_MSG_RESULT($with_acl_support)
 
 if test x"$with_acl_support" = x"no"; then
 	AC_MSG_RESULT(Disabling ACL support)
-	AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support should be built in])
 else
 	AC_MSG_NOTICE(checking whether ACL support is available:)
 	case "$host_os" in
@@ -5403,7 +5402,6 @@ else
 		;;
 	*darwin*)
 		AC_MSG_NOTICE(ACLs on Darwin currently not supported)
-		AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
 		;;
 	*)
 		AC_CHECK_LIB(acl,acl_get_file,[ACL_LIBS="$ACL_LIBS -lacl"])
@@ -5452,7 +5450,6 @@ else
    			default_static_modules="$default_static_modules vfs_posixacl"
 		else
 			AC_MSG_NOTICE(ACL support is not avaliable)
-			AC_DEFINE(HAVE_NO_ACLS,1,[Whether no ACLs support is available])
 		fi
 		;;
         esac
