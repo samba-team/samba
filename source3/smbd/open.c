@@ -1874,26 +1874,30 @@ static int calculate_open_access_flags(uint32_t access_mask,
 				       uint32_t private_flags)
 {
 	int flags;
+	bool need_write;
 
 	/*
 	 * Note that we ignore the append flag as append does not
 	 * mean the same thing under DOS and Unix.
 	 */
 
-	if ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
-	    (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
-		/* DENY_DOS opens are always underlying read-write on the
-		   file handle, no matter what the requested access mask
-		    says. */
-		if ((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
-		    access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|
-				   FILE_READ_EA|FILE_EXECUTE)) {
-			flags = O_RDWR;
-		} else {
-			flags = O_WRONLY;
-		}
+	need_write =
+		((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
+		 (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE));
+
+	if (!need_write) {
+		return O_RDONLY;
+	}
+
+	/* DENY_DOS opens are always underlying read-write on the
+	   file handle, no matter what the requested access mask
+	   says. */
+	if ((private_flags & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
+	    access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|
+			   FILE_READ_EA|FILE_EXECUTE)) {
+		flags = O_RDWR;
 	} else {
-		flags = O_RDONLY;
+		flags = O_WRONLY;
 	}
 	return flags;
 }
