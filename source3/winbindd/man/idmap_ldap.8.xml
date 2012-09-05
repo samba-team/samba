@@ -82,8 +82,8 @@
 	<title>EXAMPLES</title>
 
 	<para>
-	The following example shows how an ldap directory is used as the 
-	default idmap backend. It also configures the idmap range and base 
+	The following example shows how an ldap directory is used as the
+	default idmap backend. It also configures the idmap range and base
 	directory suffix. The secret for the ldap_user_dn has to be set with
 	&quot;net idmap secret '*' password&quot;.
 	</para>
