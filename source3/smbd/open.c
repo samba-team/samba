@@ -1071,9 +1071,8 @@ bool is_stat_open(uint32 access_mask)
 		 FILE_READ_ATTRIBUTES|
 		 FILE_WRITE_ATTRIBUTES);
 
-	return (access_mask &&
-		((access_mask & ~stat_open_bits) == 0) &&
-		((access_mask & stat_open_bits) != 0));
+	return (((access_mask &  stat_open_bits) != 0) &&
+		((access_mask & ~stat_open_bits) == 0));
 }
 
 /****************************************************************************
