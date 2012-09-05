@@ -1066,11 +1066,14 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 
 bool is_stat_open(uint32 access_mask)
 {
+	const uint32_t stat_open_bits =
+		(SYNCHRONIZE_ACCESS|
+		 FILE_READ_ATTRIBUTES|
+		 FILE_WRITE_ATTRIBUTES);
+
 	return (access_mask &&
-		((access_mask & ~(SYNCHRONIZE_ACCESS| FILE_READ_ATTRIBUTES|
-				  FILE_WRITE_ATTRIBUTES))==0) &&
-		((access_mask & (SYNCHRONIZE_ACCESS|FILE_READ_ATTRIBUTES|
-				 FILE_WRITE_ATTRIBUTES)) != 0));
+		((access_mask & ~stat_open_bits) == 0) &&
+		((access_mask & stat_open_bits) != 0));
 }
 
 /****************************************************************************
