@@ -227,6 +227,7 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	state->out_packet.operation |= state->state.flags;
 
 	if (state->state.sign) {
+		DEBUG(0, ("Signing\n"));
 		ret = dns_sign_tsig(state->dns, mem_ctx, &state->state,
 				    &state->out_packet, 0);
 		if (!W_ERROR_IS_OK(ret)) {
@@ -234,6 +235,8 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			goto drop;
 		}
 	}
+
+	//NDR_PRINT_DEBUG(dns_name_packet, &state->out_packet);
 
 	ndr_err = ndr_push_struct_blob(
 		out, mem_ctx, &state->out_packet,
