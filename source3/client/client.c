@@ -1717,7 +1717,8 @@ static int do_allinfo(const char *name)
 	}
 
 	status = cli_ntcreate(cli, name, 0,
-			      CREATE_ACCESS_READ, 0,
+			      SEC_FILE_READ_DATA | SEC_FILE_READ_ATTRIBUTE |
+			      SEC_STD_SYNCHRONIZE, 0,
 			      FILE_SHARE_READ|FILE_SHARE_WRITE
 			      |FILE_SHARE_DELETE,
 			      FILE_OPEN, 0x0, 0x0, &fnum);
