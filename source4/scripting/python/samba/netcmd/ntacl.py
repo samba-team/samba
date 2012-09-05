@@ -21,7 +21,7 @@ import samba.getopt as options
 from samba.dcerpc import security, idmap
 from samba.ntacls import setntacl, getntacl
 from samba import Ldb
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_unpack, ndr_print
 from samba.samdb import SamDB
 from samba.samba3 import param as s3param, passdb, smbd
 from samba import provision
@@ -107,9 +107,9 @@ class cmd_ntacl_get(Command):
         acl = getntacl(lp, file, xattr_backend, eadb_file)
         if as_sddl:
             anysid = security.dom_sid(security.SID_NT_SELF)
-            self.outf.write(acl.info.as_sddl(anysid)+"\n")
+            self.outf.write(acl.as_sddl(anysid)+"\n")
         else:
-            acl.dump()
+            self.outf.write(ndr_print(acl))
 
 
 class cmd_ntacl_sysvolreset(Command):
