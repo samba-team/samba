@@ -55,31 +55,42 @@ class cmd_ntacl_set(Command):
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
                choices=["native","tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
+        Option("--use-ntvfs", help="Set the ACLs directly to the TDB or xattr for use with the ntvfs file server", action="store_true"),
+        Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server via the VFS layer", action="store_true")
         ]
 
     takes_args = ["acl","file"]
 
-    def run(self, acl, file, quiet=False,xattr_backend=None,eadb_file=None,
+    def run(self, acl, file, use_ntvfs=False, use_s3fs=False,
+            quiet=False,xattr_backend=None,eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None):
+        logger = self.get_logger()
         lp = sambaopts.get_loadparm()
-        path = lp.private_path("secrets.ldb")
-        creds = credopts.get_credentials(lp)
-        creds.set_kerberos_state(DONT_USE_KERBEROS)
         try:
-            ldb = Ldb(path, session_info=system_session(), credentials=creds,
-                      lp=lp)
+            samdb = SamDB(session_info=system_session(),
+                          lp=lp)
         except Exception, e:
-            raise CommandError("Unable to read domain SID from configuration files", e)
-        attrs = ["objectSid"]
-        res = ldb.search(expression="(objectClass=*)",
-            base="flatname=%s,cn=Primary Domains" % lp.get("workgroup"),
-            scope=SCOPE_BASE, attrs=attrs)
-        if len(res) !=0:
-            domainsid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
-            setntacl(lp, file, acl, str(domainsid), xattr_backend, eadb_file)
-        else:
+            raise CommandError("Unable to open samdb:", e)
+
+        if not use_ntvfs and not use_s3fs:
+            use_ntvfs = "smb" in lp.get("server services")
+        elif use_s3fs:
+            use_ntvfs = False
+
+        try:
+            domain_sid = security.dom_sid(samdb.domain_sid)
+        except:
             raise CommandError("Unable to read domain SID from configuration files")
 
+        s3conf = s3param.get_context()
+        s3conf.load(lp.configfile)
+        # ensure we are using the right samba_dsdb passdb backend, no matter what
+        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+
+        setntacl(lp, file, acl, str(domain_sid), xattr_backend, eadb_file, use_ntvfs=use_ntvfs)
+
+        if use_ntvfs:
+            logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
 
 
 class cmd_ntacl_get(Command):
@@ -97,17 +108,40 @@ class cmd_ntacl_get(Command):
         Option("--xattr-backend", type="choice", help="xattr backend type (native fs or tdb)",
                choices=["native","tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
+        Option("--use-ntvfs", help="Get the ACLs directly from the TDB or xattr used with the ntvfs file server", action="store_true"),
+        Option("--use-s3fs", help="Get the ACLs for use via the VFS layer used by the default s3fs file server", action="store_true")
         ]
 
     takes_args = ["file"]
 
-    def run(self, file, as_sddl=False, xattr_backend=None, eadb_file=None,
+    def run(self, file, use_ntvfs=False, use_s3fs=False,
+            as_sddl=False, xattr_backend=None, eadb_file=None,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        acl = getntacl(lp, file, xattr_backend, eadb_file)
+        try:
+            samdb = SamDB(session_info=system_session(),
+                          lp=lp)
+        except Exception, e:
+            raise CommandError("Unable to open samdb:", e)
+
+        if not use_ntvfs and not use_s3fs:
+            use_ntvfs = "smb" in lp.get("server services")
+        elif use_s3fs:
+            use_ntvfs = False
+
+
+        s3conf = s3param.get_context()
+        s3conf.load(lp.configfile)
+        # ensure we are using the right samba_dsdb passdb backend, no matter what
+        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+
+        acl = getntacl(lp, file, xattr_backend, eadb_file, direct_db_access=use_ntvfs)
         if as_sddl:
-            anysid = security.dom_sid(security.SID_NT_SELF)
-            self.outf.write(acl.as_sddl(anysid)+"\n")
+            try:
+                domain_sid = security.dom_sid(samdb.domain_sid)
+            except:
+                raise CommandError("Unable to read domain SID from configuration files")
+            self.outf.write(acl.as_sddl(domain_sid)+"\n")
         else:
             self.outf.write(ndr_print(acl))
 
