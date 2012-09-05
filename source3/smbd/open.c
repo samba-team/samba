@@ -710,13 +710,6 @@ static NTSTATUS open_file(files_struct *fsp,
 		const char *wild;
 		int ret;
 
-		/*
-		 * We can't actually truncate here as the file may be locked.
-		 * open_file_ntcreate will take care of the truncate later. JRA.
-		 */
-
-		local_flags &= ~O_TRUNC;
-
 #if defined(O_NONBLOCK) && defined(S_ISFIFO)
 		/*
 		 * We would block on opening a FIFO with no one else on the
@@ -725,6 +718,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		 */
 
 		if (file_existed && S_ISFIFO(smb_fname->st.st_ex_mode)) {
+			local_flags &= ~O_TRUNC; /* Can't truncate a FIFO. */
 			local_flags |= O_NONBLOCK;
 		}
 #endif
@@ -2382,10 +2376,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)unx_mode, (unsigned int)access_mask,
 		 (unsigned int)open_access_mask));
 
-	/*
-	 * open_file strips any O_TRUNC flags itself.
-	 */
-
 	fsp_open = open_file(fsp, conn, req, parent_dir,
 			     flags|flags2, unx_mode, access_mask,
 			     open_access_mask, &new_file_created);
@@ -2573,24 +2563,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * is locked, whether we created the file or not, and that the
 	 * deny mode is compatible with all current opens.
 	 */
-
-	/*
-	 * If requested, truncate the file.
-	 */
-
-	if (!new_file_created && (flags2&O_TRUNC)) {
-		/*
-		 * We are modifying the file after open - update the stat
-		 * struct..
-		 */
-		if ((SMB_VFS_FTRUNCATE(fsp, 0) == -1) ||
-		    (SMB_VFS_FSTAT(fsp, &smb_fname->st)==-1)) {
-			status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
-		}
-	}
 
 	/*
 	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
