@@ -141,6 +141,7 @@
 /* Leave at 29 - not yet released. Remove l{list,get,set,remove}xattr - abartlet */
 /* Leave at 29 - not yet released. move to plain off_t - abartlet */
 /* Leave at 29 - not yet released. Remove sys_acl functions other than set and get - abartlet */
+/* Leave at 29 - not yet released. Added backup_intent bool to files_struct - JRA */
 #define SMB_VFS_INTERFACE_VERSION 29
 
 /*
@@ -226,6 +227,8 @@ typedef struct files_struct {
 	bool delete_on_close;
 	bool posix_open;
 	bool is_sparse;
+	bool backup_intent; /* Handle was successfully opened with backup intent
+				and opener has privilege to do so. */
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 	uint64_t mid;			/* Mid of the operation that created us. */
