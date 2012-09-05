@@ -922,4 +922,15 @@ void unixid_from_uid(struct unixid *id, uint32_t some_uid);
 void unixid_from_gid(struct unixid *id, uint32_t some_gid);
 void unixid_from_both(struct unixid *id, uint32_t some_id);
 
+/* The following definitions come from passdb/pdb_secrets.c
+ * and should be used by PDB modules if they need to store
+ * sid/guid information for the domain in secrets database
+ */
+bool PDB_secrets_mark_domain_protected(const char *domain);
+bool PDB_secrets_clear_domain_protection(const char *domain);
+bool PDB_secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid);
+bool PDB_secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid);
+bool PDB_secrets_store_domain_guid(const char *domain, struct GUID *guid);
+bool PDB_secrets_fetch_domain_guid(const char *domain, struct GUID *guid);
+
 #endif /* _PASSDB_H */

@@ -135,3 +135,37 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 	*domains = state.domains;
 	return NT_STATUS_OK;
 }
+
+/* In order to avoid direct linking against libsecrets for pdb modules
+ * following helpers are provided for pdb module writers.
+ * To differentiate them from pdb_* API, they are prefixed by PDB upper case
+ */
+bool PDB_secrets_store_domain_sid(const char *domain, const struct dom_sid *sid)
+{
+	return secrets_store_domain_sid(domain, sid);
+}
+
+bool PDB_secrets_mark_domain_protected(const char *domain)
+{
+	return secrets_mark_domain_protected(domain);
+}
+
+bool PDB_secrets_clear_domain_protection(const char *domain)
+{
+	return secrets_clear_domain_protection(domain);
+}
+
+bool PDB_secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
+{
+	return secrets_fetch_domain_sid(domain, sid);
+}
+
+bool PDB_secrets_store_domain_guid(const char *domain, struct GUID *guid)
+{
+	return secrets_store_domain_guid(domain, guid);
+}
+
+bool PDB_secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
+{
+	return secrets_fetch_domain_guid(domain, guid);
+}
