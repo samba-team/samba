@@ -6563,7 +6563,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 			TALLOC_FREE(domain_sid_string);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		found_sid = secrets_fetch_domain_sid(ldap_state->domain_name,
+		found_sid = PDB_secrets_fetch_domain_sid(ldap_state->domain_name,
 						     &secrets_domain_sid);
 		if (!found_sid || !dom_sid_equal(&secrets_domain_sid,
 					     &ldap_domain_sid)) {
@@ -6574,7 +6574,7 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 				  sid_string_dbg(&ldap_domain_sid)));
 
 			/* reset secrets.tdb sid */
-			secrets_store_domain_sid(ldap_state->domain_name,
+			PDB_secrets_store_domain_sid(ldap_state->domain_name,
 						 &ldap_domain_sid);
 			DEBUG(1, ("New global sam SID: %s\n",
 				  sid_string_dbg(get_global_sam_sid())));
