@@ -322,6 +322,7 @@ static WERROR handle_question(struct dns_server *dns,
 
 static NTSTATUS create_tkey(struct dns_server *dns,
 			    const char* name,
+			    const char* algorithm,
 			    struct dns_server_tkey **tkey)
 {
 	NTSTATUS status;
@@ -335,6 +336,11 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 	k->name = talloc_strdup(k, name);
 
 	if (k->name  == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	k->algorithm = talloc_strdup(k, algorithm);
+	if (k->algorithm == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -442,7 +448,8 @@ static WERROR handle_tkey(struct dns_server *dns,
 	ret_tkey->rr_class = DNS_QCLASS_ANY;
 	ret_tkey->length = UINT16_MAX;
 
-	ret_tkey->rdata.tkey_record.algorithm = talloc_strdup(ret_tkey, ret_tkey->name);
+	ret_tkey->rdata.tkey_record.algorithm = talloc_strdup(ret_tkey,
+			in_tkey->rdata.tkey_record.algorithm);
 	if (ret_tkey->rdata.tkey_record.algorithm  == NULL) {
 		return WERR_NOMEM;
 	}
@@ -473,6 +480,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 
 		if (tkey == NULL) {
 			status  = create_tkey(dns, in->questions[0].name,
+					      in_tkey->rdata.tkey_record.algorithm,
 					      &tkey);
 			if (!NT_STATUS_IS_OK(status)) {
 				ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;

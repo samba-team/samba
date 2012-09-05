@@ -36,6 +36,7 @@ struct dns_server_zone {
 struct dns_server_tkey {
 	const char *name;
 	enum dns_tkey_mode mode;
+	const char *algorithm;
 	struct auth_session_info *session_info;
 	struct gensec_security *gensec;
 	bool complete;
