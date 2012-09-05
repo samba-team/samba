@@ -54,8 +54,6 @@ uint8_t werr_to_dns_err(WERROR werr)
 		return DNS_RCODE_NOTAUTH;
 	} else if (W_ERROR_EQUAL(DNS_ERR(NOTZONE), werr)) {
 		return DNS_RCODE_NOTZONE;
-	} else if (W_ERROR_EQUAL(DNS_ERR(BADKEY), werr)) {
-		return DNS_RCODE_BADKEY;
 	}
 	DEBUG(5, ("No mapping exists for %s\n", win_errstr(werr)));
 	return DNS_RCODE_SERVFAIL;

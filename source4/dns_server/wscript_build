@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_MODULE('service_dns',
-        source='dns_server.c dns_query.c dns_update.c dns_utils.c dns_crypto.c',
+        source='dns_server.c dns_query.c dns_update.c dns_utils.c',
         subsystem='service',
         init_function='server_service_dns_init',
         deps='samba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET ldbsamba clidns gensec auth',

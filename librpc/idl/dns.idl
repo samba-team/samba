@@ -192,20 +192,6 @@ interface dns
 		uint8      other_data[other_size];
 	} dns_tsig_record;
 
-	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
-		dns_string	name;
-		dns_qclass 	rr_class;
-		uint32     	ttl;
-		dns_string 	algorithm_name;
-		uint16     	time_prefix; /* 0 until February 2106*/
-		uint32     	time;
-		uint16     	fudge;
-		uint16     	original_id;
-		uint16     	error;
-		uint16     	other_size;
-		uint8      	other_data[other_size];
-	} dns_fake_tsig_rec;
-
 	typedef [nodiscriminant,public,flag(NDR_NOALIGN)] union {
 		[case(DNS_QTYPE_A)]     ipv4address	 ipv4_record;
 		[case(DNS_QTYPE_NS)]    dns_string       ns_record;

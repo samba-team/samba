@@ -98,7 +98,6 @@ static void dns_tcp_send(struct stream_connection *conn, uint16_t flags)
 
 struct dns_process_state {
 	DATA_BLOB *in;
-	struct dns_server *dns;
 	struct dns_name_packet in_packet;
 	struct dns_request_state state;
 	uint16_t dns_err;
@@ -124,8 +123,6 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	}
 	state->in = in;
 
-	state->dns = dns;
-
 	if (in->length < 12) {
 		tevent_req_werror(req, WERR_INVALID_PARAM);
 		return tevent_req_post(req, ev);
@@ -143,14 +140,6 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	}
 	if (DEBUGLVL(8)) {
 		NDR_PRINT_DEBUG(dns_name_packet, &state->in_packet);
-	}
-
-	ret = dns_verify_tsig(dns, state, &state->state, &state->in_packet, in);
-	if (!W_ERROR_IS_OK(ret)) {
-		DEBUG(0, ("Bailing out early!\n"));
-		state->dns_err = werr_to_dns_err(ret);
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
 	}
 
 	state->state.flags = state->in_packet.operation;
@@ -225,18 +214,6 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		goto drop;
 	}
 	state->out_packet.operation |= state->state.flags;
-
-	if (state->state.sign) {
-		DEBUG(0, ("Signing\n"));
-		ret = dns_sign_tsig(state->dns, mem_ctx, &state->state,
-				    &state->out_packet, 0);
-		if (!W_ERROR_IS_OK(ret)) {
-			state->dns_err = DNS_RCODE_SERVFAIL;
-			goto drop;
-		}
-	}
-
-	//NDR_PRINT_DEBUG(dns_name_packet, &state->out_packet);
 
 	ndr_err = ndr_push_struct_blob(
 		out, mem_ctx, &state->out_packet,

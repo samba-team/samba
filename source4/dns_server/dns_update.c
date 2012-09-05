@@ -734,13 +734,8 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	/* TODO: Check if update is allowed, we probably want "always",
 	 * key-based GSSAPI, key-based bind-style TSIG and "never" as
 	 * smb.conf options. */
-	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_OFF) {
+	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) != DNS_UPDATE_ON) {
 		DEBUG(0, ("Update not allowed.\n"));
-		return DNS_ERR(REFUSED);
-	}
-	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_SIGNED &&
-	    state->authenticated == false ) {
-		DEBUG(0, ("Update not allowed for unsigned packet.\n"));
 		return DNS_ERR(REFUSED);
 	}
 
