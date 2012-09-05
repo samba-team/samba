@@ -91,16 +91,17 @@ struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
 WERROR dns_verify_tsig(struct dns_server *dns,
 		       TALLOC_CTX *mem_ctx,
 		       struct dns_request_state *state,
-		       struct dns_name_packet *packet)
+		       struct dns_name_packet *packet,
+		       DATA_BLOB *in)
 {
 	WERROR werror;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	bool found_tsig = false;
-	uint16_t i;
-	DATA_BLOB packet_blob, tsig_blob, sig;
+	uint16_t i, arcount = 0;
+	DATA_BLOB tsig_blob, fake_tsig_blob, sig;
 	uint8_t *buffer = NULL;
-	size_t buffer_len = 0;
+	size_t buffer_len = 0, packet_len = 0;
 	struct dns_server_tkey *tkey = NULL;
 	struct dns_fake_tsig_rec *check_rec = talloc_zero(mem_ctx,
 			struct dns_fake_tsig_rec);
@@ -169,15 +170,15 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	check_rec->other_size = 0;
 	check_rec->other_data = NULL;
 
-	ndr_err = ndr_push_struct_blob(&packet_blob, mem_ctx, packet,
-		(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
+	ndr_err = ndr_push_struct_blob(&tsig_blob, mem_ctx, state->tsig,
+		(ndr_push_flags_fn_t)ndr_push_dns_res_rec);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("Failed to push packet: %s!\n",
 			  ndr_errstr(ndr_err)));
 		return DNS_ERR(SERVER_FAILURE);
 	}
 
-	ndr_err = ndr_push_struct_blob(&tsig_blob, mem_ctx, check_rec,
+	ndr_err = ndr_push_struct_blob(&fake_tsig_blob, mem_ctx, check_rec,
 		(ndr_push_flags_fn_t)ndr_push_dns_fake_tsig_rec);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(1, ("Failed to push packet: %s!\n",
@@ -185,14 +186,17 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return DNS_ERR(SERVER_FAILURE);
 	}
 
-	buffer_len = packet_blob.length + tsig_blob.length;
+	/* we need to work some magic here. we need to keep the input packet
+	 * exactly like we got it, but we need to cut off the tsig record */
+	packet_len = in->length - tsig_blob.length;
+	buffer_len = packet_len + fake_tsig_blob.length;
 	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
 	if (buffer == NULL) {
 		return WERR_NOMEM;
 	}
 
-	memcpy(buffer, packet_blob.data, packet_blob.length);
-	memcpy(buffer, tsig_blob.data, tsig_blob.length);
+	memcpy(buffer, in->data, packet_len);
+	memcpy(buffer + packet_len, fake_tsig_blob.data, fake_tsig_blob.length);
 
 	sig.length = state->tsig->rdata.tsig_record.mac_size;
 	sig.data = talloc_memdup(mem_ctx, state->tsig->rdata.tsig_record.mac, sig.length);
@@ -200,6 +204,12 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return WERR_NOMEM;
 	}
 
+	/*FIXME: Why is there too much padding? */
+	buffer_len -= 2;
+
+	/* Now we also need to count down the additional record counter */
+	arcount = RSVAL(buffer, 10);
+	RSSVAL(buffer, 10, arcount-1);
 
 	status = gensec_check_packet(tkey->gensec, buffer, buffer_len,
 				    buffer, buffer_len, &sig);
