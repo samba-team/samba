@@ -408,7 +408,6 @@ static void init_printer_values(struct loadparm_service *pService)
 
 		case PRINT_CUPS:
 		case PRINT_IPRINT:
-#ifdef HAVE_CUPS
 			/* set the lpq command to contain the destination printer
 			   name only.  This is used by cups_queue_get() */
 			string_set(&pService->szLpqcommand, "%p");
@@ -418,15 +417,6 @@ static void init_printer_values(struct loadparm_service *pService)
 			string_set(&pService->szLpresumecommand, "");
 			string_set(&pService->szQueuepausecommand, "");
 			string_set(&pService->szQueueresumecommand, "");
-#else
-			string_set(&pService->szLpqcommand, "lpq -P'%p'");
-			string_set(&pService->szLprmcommand, "lprm -P'%p' %j");
-			string_set(&pService->szPrintcommand, "lpr -P'%p' %s; rm %s");
-			string_set(&pService->szLppausecommand, "lp -i '%p-%j' -H hold");
-			string_set(&pService->szLpresumecommand, "lp -i '%p-%j' -H resume");
-			string_set(&pService->szQueuepausecommand, "disable '%p'");
-			string_set(&pService->szQueueresumecommand, "enable '%p'");
-#endif /* HAVE_CUPS */
 			break;
 
 		case PRINT_SYSV:
@@ -5284,11 +5274,7 @@ const char *lp_printcapname(void)
 		return Globals.szPrintcapname;
 
 	if (sDefault.iPrinting == PRINT_CUPS) {
-#ifdef HAVE_CUPS
 		return "cups";
-#else
-		return "lpstat";
-#endif
 	}
 
 	if (sDefault.iPrinting == PRINT_BSD)

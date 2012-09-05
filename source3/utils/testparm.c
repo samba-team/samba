@@ -333,13 +333,11 @@ static void do_per_share_checks(int s)
 			"%s. Map system can only work if force create mode "
 			"excludes octal 010 (S_IXGRP).\n", lp_servicename(talloc_tos(), s));
 	}
-#ifdef HAVE_CUPS
 	if (lp_printing(s) == PRINT_CUPS && *(lp_printcommand(talloc_tos(), s)) != '\0') {
 		 fprintf(stderr,"Warning: Service %s defines a print command, but \
 rameter is ignored when using CUPS libraries.\n",
 			   lp_servicename(talloc_tos(), s) );
 	}
-#endif
 }
 
  int main(int argc, const char *argv[])

@@ -18,7 +18,11 @@
     <constant>LPRNG</constant>, <constant>PLP</constant>,
     <constant>SYSV</constant>, <constant>HPUX</constant>,
     <constant>QNX</constant>, <constant>SOFTQ</constant>,
-    and <constant>CUPS</constant>.</para>
+    <constant>CUPS</constant> and <constant>IPRINT</constant>.</para>
+
+    <para>Be aware that CUPS and IPRINT are only available if the CUPS
+    development library was available at the time Samba was compiled
+    or packaged.</para>
 
     <para>To see what the defaults are for the other print 
     commands when using the various options use the <citerefentry><refentrytitle>testparm</refentrytitle>

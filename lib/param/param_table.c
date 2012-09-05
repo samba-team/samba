@@ -186,8 +186,12 @@ static const struct enum_list enum_printing[] = {
 	{PRINT_QNX, "qnx"},
 	{PRINT_PLP, "plp"},
 	{PRINT_LPRNG, "lprng"},
+#ifdef HAVE_CUPS
 	{PRINT_CUPS, "cups"},
+#endif
+#ifdef HAVE_IPRINT
 	{PRINT_IPRINT, "iprint"},
+#endif
 	{PRINT_LPRNT, "nt"},
 	{PRINT_LPROS2, "os2"},
 #if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
