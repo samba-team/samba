@@ -109,6 +109,11 @@ WERROR dns_name2dn(struct dns_server *dns,
 		   struct ldb_dn **_dn);
 struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
 				      const char *name);
+WERROR dns_verify_tsig(struct dns_server *dns,
+		       TALLOC_CTX *mem_ctx,
+		       struct dns_request_state *state,
+		       struct dns_name_packet *packet,
+		       DATA_BLOB *in);
 WERROR dns_sign_tsig(struct dns_server *dns,
 		     TALLOC_CTX *mem_ctx,
 		     struct dns_request_state *state,
