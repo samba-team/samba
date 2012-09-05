@@ -320,60 +320,6 @@ static WERROR handle_question(struct dns_server *dns,
 	return WERR_OK;
 }
 
-static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
-				  struct dns_server *dns,
-				  struct dns_server_tkey *tkey,
-				  const DATA_BLOB *key,
-				  DATA_BLOB *reply,
-				  uint16_t *dns_auth_error)
-{
-	NTSTATUS status;
-
-	status = gensec_update(tkey->gensec, mem_ctx, dns->task->event_ctx,
-			       *key, reply);
-
-	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
-		*dns_auth_error = DNS_RCODE_OK;
-		return status;
-	}
-
-	if (NT_STATUS_IS_OK(status)) {
-
-		status = gensec_session_info(tkey->gensec, tkey, &tkey->session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			*dns_auth_error = DNS_RCODE_BADKEY;
-			return status;
-		}
-		*dns_auth_error = DNS_RCODE_OK;
-	}
-
-	return status;
-}
-
-static struct dns_server_tkey *find_tkey(struct dns_server_tkey_store *store,
-					 const char *name)
-{
-	struct dns_server_tkey *tkey = NULL;
-	uint16_t i = 0;
-
-	do {
-		struct dns_server_tkey *tmp_key = store->tkeys[i];
-
-		i++;
-		i %= TKEY_BUFFER_SIZE;
-
-		if (tmp_key == NULL) {
-			continue;
-		}
-		if (dns_name_equal(name, tmp_key->name)) {
-			tkey = tmp_key;
-			break;
-		}
-	} while (i != 0);
-
-	return tkey;
-}
-
 static NTSTATUS create_tkey(struct dns_server *dns,
 			    const char* name,
 			    struct dns_server_tkey **tkey)
@@ -426,6 +372,36 @@ static NTSTATUS create_tkey(struct dns_server *dns,
 
 	*tkey = k;
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
+				  struct dns_server *dns,
+				  struct dns_server_tkey *tkey,
+				  const DATA_BLOB *key,
+				  DATA_BLOB *reply,
+				  uint16_t *dns_auth_error)
+{
+	NTSTATUS status;
+
+	status = gensec_update(tkey->gensec, mem_ctx, dns->task->event_ctx,
+			       *key, reply);
+
+	if (NT_STATUS_EQUAL(NT_STATUS_MORE_PROCESSING_REQUIRED, status)) {
+		*dns_auth_error = DNS_RCODE_OK;
+		return status;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+
+		status = gensec_session_info(tkey->gensec, tkey, &tkey->session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			*dns_auth_error = DNS_RCODE_BADKEY;
+			return status;
+		}
+		*dns_auth_error = DNS_RCODE_OK;
+	}
+
+	return status;
 }
 
 static WERROR handle_tkey(struct dns_server *dns,
@@ -487,7 +463,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 		DATA_BLOB key;
 		DATA_BLOB reply;
 
-		tkey = find_tkey(dns->tkeys, in->questions[0].name);
+		tkey = dns_find_tkey(dns->tkeys, in->questions[0].name);
 		if (tkey != NULL && tkey->complete) {
 			/* TODO: check if the key is still valid */
 			DEBUG(1, ("Rejecting tkey negotiation for already established key\n"));

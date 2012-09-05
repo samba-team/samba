@@ -101,6 +101,8 @@ WERROR dns_name2dn(struct dns_server *dns,
 		   TALLOC_CTX *mem_ctx,
 		   const char *name,
 		   struct ldb_dn **_dn);
+struct dns_server_tkey *dns_find_tkey(struct dns_server_tkey_store *store,
+				      const char *name);
 
 #define DNS_ERR(err_str) WERR_DNS_ERROR_RCODE_##err_str
 #endif /* __DNS_SERVER_H__ */
