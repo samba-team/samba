@@ -60,6 +60,11 @@ struct dns_server {
 
 struct dns_request_state {
 	uint16_t flags;
+	bool authenticated;
+	bool sign;
+	char *key_name;
+	struct dns_res_rec *tsig;
+	uint16_t tsig_error;
 };
 
 struct tevent_req *dns_server_process_query_send(

@@ -413,6 +413,7 @@ static NTSTATUS accept_gss_ticket(TALLOC_CTX *mem_ctx,
 static WERROR handle_tkey(struct dns_server *dns,
                           TALLOC_CTX *mem_ctx,
                           const struct dns_name_packet *in,
+			  struct dns_request_state *state,
                           struct dns_res_rec **answers,
                           uint16_t *ancount)
 {
@@ -498,6 +499,15 @@ static WERROR handle_tkey(struct dns_server *dns,
 			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
 		} else if (NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Tkey handshake completed\n"));
+			ret_tkey->rdata.tkey_record.key_size = reply.length;
+			ret_tkey->rdata.tkey_record.key_data = talloc_memdup(ret_tkey,
+								reply.data,
+								reply.length);
+			state->sign = true;
+			state->key_name = talloc_strdup(mem_ctx, tkey->name);
+			if (state->key_name == NULL) {
+				return WERR_NOMEM;
+			}
 		} else {
 			DEBUG(0, ("GSS key negotiation returned %s\n", nt_errstr(status)));
 			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
@@ -566,8 +576,8 @@ struct tevent_req *dns_server_process_query_send(
 	if (in->questions[0].question_type == DNS_QTYPE_TKEY) {
                 WERROR err;
 
-		err = handle_tkey(dns, state, in, &state->answers,
-				  &state->ancount);
+		err = handle_tkey(dns, state, in, req_state,
+				  &state->answers, &state->ancount);
 		if (tevent_req_werror(req, err)) {
 			return tevent_req_post(req, ev);
 		}
