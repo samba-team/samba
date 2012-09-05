@@ -1416,18 +1416,18 @@ static NTSTATUS pdb_ipa_init_secrets(struct pdb_methods *m)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	secrets_clear_domain_protection(dom_info->name);
-	ret = secrets_store_domain_sid(dom_info->name,
+	PDB_secrets_clear_domain_protection(dom_info->name);
+	ret = PDB_secrets_store_domain_sid(dom_info->name,
 				       &dom_info->sid);
 	if (!ret) {
 		goto done;
 	}
-	ret = secrets_store_domain_guid(dom_info->name,
+	ret = PDB_secrets_store_domain_guid(dom_info->name,
 				        &dom_info->guid);
 	if (!ret) {
 		goto done;
 	}
-	ret = secrets_mark_domain_protected(dom_info->name);
+	ret = PDB_secrets_mark_domain_protected(dom_info->name);
 	if (!ret) {
 		goto done;
 	}
