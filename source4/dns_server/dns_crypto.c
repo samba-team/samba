@@ -291,7 +291,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	}
 
 	memcpy(buffer, packet_blob.data, packet_blob.length);
-	memcpy(buffer, tsig_blob.data, tsig_blob.length);
+	memcpy(buffer+packet_blob.length, tsig_blob.data, tsig_blob.length);
 
 
 	status = gensec_sign_packet(tkey->gensec, mem_ctx, buffer, buffer_len,
