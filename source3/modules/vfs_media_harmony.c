@@ -344,7 +344,7 @@ static bool is_avid_database(
 			      "path_len '%i', "
 			      "avid_db_filename_len '%i'\n",
 			      path, avid_db_filename,
-			      path_len, avid_db_filename_len));
+			      (int)path_len, (int)avid_db_filename_len));
 
 	if (
 		path_len > avid_db_filename_len
