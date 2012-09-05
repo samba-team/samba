@@ -118,7 +118,6 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return WERR_OK;
 	}
 
-	DEBUG(0, ("got here\n"));
 	/* The TSIG record needs to be the last additional record */
 	if (found_tsig && i + 1 != packet->arcount) {
 		DEBUG(0, ("TSIG record not the last additional record!\n"));
