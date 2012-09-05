@@ -1477,7 +1477,7 @@ def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
                 raise ProvisioningError('%s ACL on GPO file %s %s not found!' % (acl_type(direct_db_access), os.path.join(root, name)))
             fsacl_sddl = fsacl.as_sddl(domainsid)
             if fsacl_sddl != acl:
-                raise ProvisioningError('%s ACL on GPO file %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl, acl))
+                raise ProvisioningError('%s ACL on GPO file %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl_sddl, acl))
 
         for name in files:
             fsacl = getntacl(lp, os.path.join(root, name), direct_db_access=direct_db_access)
@@ -1485,7 +1485,7 @@ def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
                 raise ProvisioningError('%s ACL on GPO directory %s %s not found!' % (acl_type(direct_db_access), os.path.join(root, name)))
             fsacl_sddl = fsacl.as_sddl(domainsid)
             if fsacl_sddl != acl:
-                raise ProvisioningError('%s ACL on GPO directory %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl, acl))
+                raise ProvisioningError('%s ACL on GPO directory %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl_sddl, acl))
 
 
 def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, direct_db_access):
