@@ -59,6 +59,30 @@ void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 	abort();
 }
 
+/* Invoke an external program to do some sort of tracing on the CTDB
+ * process.  This might block for a little while.  The external
+ * program is specified by the environment variable
+ * CTDB_EXTERNAL_TRACE.  This program should take one argument: the
+ * pid of the process to trace.  Commonly, the program would be a
+ * wrapper script around gcore.
+ */
+void ctdb_external_trace(void)
+{
+
+	const char * t = getenv("CTDB_EXTERNAL_TRACE");
+	char * cmd;
+
+	if (t == NULL) {
+		return;
+	}
+
+	cmd = talloc_asprintf(NULL, "%s %lu", t, (unsigned long) getpid());
+	DEBUG(DEBUG_WARNING,("begin external trace: %s\n", cmd));
+	system(cmd);
+	DEBUG(DEBUG_WARNING,("end external trace: %s\n", cmd));
+	talloc_free(cmd);
+}
+
 /*
   parse a IP:port pair
 */
@@ -555,6 +579,7 @@ char *ctdb_addr_to_str(ctdb_sock_addr *addr)
 		break;
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " ERROR, unknown family %u\n", addr->sa.sa_family));
+		ctdb_external_trace();
 	}
 
 	return cip;

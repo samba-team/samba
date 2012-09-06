@@ -359,6 +359,7 @@ install: all $(PMDA_INSTALL)
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.sh ];then ${INSTALLCMD} -m 755 config/notify.sh $(DESTDIR)$(etcdir)/ctdb; fi
 	${INSTALLCMD} -m 755 config/debug-hung-script.sh $(DESTDIR)$(etcdir)/ctdb
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/ctdb-crash-cleanup.sh ];then ${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb; fi
+	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/gcore_trace.sh ];then ${INSTALLCMD} -m 755 config/gcore_trace.sh $(DESTDIR)$(etcdir)/ctdb; fi
 
 install_pmda:
 	$(INSTALLCMD) -m 755 -d $(PMDA_DEST_DIR)
