@@ -21,7 +21,11 @@
 #include "torture/smbtorture.h"
 #include "dlz_minimal.h"
 #include <talloc.h>
+#include <ldb.h>
 #include "lib/param/param.h"
+#include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
+#include "auth/session.h"
 
 struct torture_context *tctx_static;
 
@@ -63,6 +67,62 @@ static bool test_dlz_bind9_create(struct torture_context *tctx)
 	return true;
 }
 
+static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
+					   const char *zone_name)
+{
+	struct torture_context *tctx = talloc_get_type((void *)view, struct torture_context);
+	struct ldb_context *samdb = samdb_connect_url(tctx, NULL, tctx->lp_ctx,
+						      system_session(tctx->lp_ctx),
+						      0, lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"));
+	struct ldb_message *msg;
+	int ret;
+	const char *attrs[] = {
+		NULL
+	};
+	if (!samdb) {
+		torture_fail(tctx, "Failed to connect to samdb");
+		return ISC_R_FAILURE;
+	}
+
+	ret = dsdb_search_one(samdb, tctx, &msg, NULL,
+			      LDB_SCOPE_SUBTREE, attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+			      "(&(objectClass=dnsZone)(name=%s))", zone_name);
+	if (ret != LDB_SUCCESS) {
+		torture_fail(tctx, talloc_asprintf(tctx, "Failed to search for %s: %s", zone_name, ldb_errstring(samdb)));
+		return ISC_R_FAILURE;
+	}
+	talloc_free(msg);
+
+	return ISC_R_SUCCESS;
+}
+
+static bool test_dlz_bind9_configure(struct torture_context *tctx)
+{
+	void *dbdata;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		NULL
+	};
+	tctx_static = tctx;
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+						  "log", dlz_bind9_log_wrapper,
+						  "writeable_zone", dlz_bind9_writeable_zone_hook, NULL),
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+						     ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+
+	dlz_destroy(dbdata);
+
+	return true;
+}
+
+
+
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dlz_bind9");
@@ -71,6 +131,7 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	                                   "Tests for the BIND 9 DLZ module");
 	torture_suite_add_simple_test(suite, "version", test_dlz_bind9_version);
 	torture_suite_add_simple_test(suite, "create", test_dlz_bind9_create);
+	torture_suite_add_simple_test(suite, "configure", test_dlz_bind9_configure);
 	return suite;
 }
 
