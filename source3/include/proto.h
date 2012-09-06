@@ -1327,6 +1327,7 @@ bool lp_afs_share(int );
 bool lp_acl_check_permissions(int );
 bool lp_acl_group_control(int );
 bool lp_acl_map_full_control(int );
+bool lp_durable_handles(int);
 int lp_create_mask(int );
 int lp_force_create_mode(int );
 int lp_security_mask(int );

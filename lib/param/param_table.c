@@ -1763,6 +1763,15 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL
 	},
+	{
+		.label		= "durable handles",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bDurableHandles),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{N_("Tuning Options"), P_SEP, P_SEPARATOR},
 

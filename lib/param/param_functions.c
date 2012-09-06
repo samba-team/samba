@@ -156,6 +156,7 @@ FN_LOCAL_CHAR(magicchar, magic_char)
 FN_LOCAL_STRING(cups_options, szCupsOptions)
 FN_LOCAL_PARM_BOOL(change_notify, bChangeNotify)
 FN_LOCAL_PARM_BOOL(kernel_change_notify, bKernelChangeNotify)
+FN_LOCAL_BOOL(durable_handles, bDurableHandles)
 
 FN_GLOBAL_BOOL(allow_insecure_widelinks, bAllowInsecureWidelinks)
 FN_GLOBAL_BOOL(allow_trusted_domains, bAllowTrustedDomains)

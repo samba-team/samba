@@ -282,6 +282,7 @@ static struct loadparm_service sDefault =
 #endif
 	.ismb_encrypt = SMB_SIGNING_DEFAULT,
 	.bKernelShareModes = true,
+	.bDurableHandles = true,
 	.param_opt = NULL,
 	.dummy = ""
 };
