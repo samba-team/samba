@@ -31,6 +31,7 @@ import samba_wildcard
 import stale_files
 import symbols
 import pkgconfig
+import configure_file
 
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':
@@ -579,6 +580,12 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
     if not enabled:
         return
 
+    dep_vars = []
+    if isinstance(vars, dict):
+        dep_vars = vars.keys()
+    elif isinstance(vars, list):
+        dep_vars = vars
+
     bld.SET_BUILD_GROUP(group)
     t = bld(
         rule=rule,
@@ -589,7 +596,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         before='cc',
         ext_out='.c',
         samba_type='GENERATOR',
-        dep_vars = [rule] + (vars or []),
+        dep_vars = [rule] + dep_vars,
         name=name)
 
     if always:
