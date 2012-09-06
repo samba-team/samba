@@ -56,10 +56,6 @@ class dc_join(object):
         ctx.netbios_name = netbios_name
         ctx.targetdir = targetdir
         ctx.use_ntvfs = use_ntvfs
-        if dns_backend is None:
-            ctx.dns_backend = "NONE"
-        else:
-            ctx.dns_backend = dns_backend
 
         ctx.promote_existing = promote_existing
         ctx.promote_from_dn = None
@@ -118,6 +114,21 @@ class dc_join(object):
 
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
         ctx.dnsforest = ctx.samdb.forest_dns_name()
+        ctx.domaindns_zone = 'DC=DomainDnsZones,%s' % ctx.base_dn
+
+        res_domaindns = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+                                         attrs=[],
+                                         base=ctx.samdb.get_partitions_dn(),
+                                         expression="(&(objectClass=crossRef)(ncName=%s))" % ctx.domaindns_zone)
+        if dns_backend is None:
+            ctx.dns_backend = "NONE"
+        else:
+            if len(res_domaindns) == 0:
+                ctx.dns_backend = "NONE"
+                print "NO DNS zone information found in source domain, not replicating DNS"
+            else:
+                ctx.dns_backend = dns_backend
+
         ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
 
         ctx.realm = ctx.dnsdomain
@@ -735,8 +746,8 @@ class dc_join(object):
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.domain_replica_flags)
 
-            if 'DC=DomainDnsZones,%s' % ctx.base_dn in ctx.nc_list:
-                repl.replicate('DC=DomainDnsZones,%s' % ctx.base_dn, source_dsa_invocation_id,
+            if ctx.domaindns_zone in ctx.nc_list:
+                repl.replicate(ctx.domaindns_zone, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.replica_flags)
 
@@ -966,7 +977,7 @@ class dc_join(object):
         if not ctx.subdomain:
             ctx.nc_list += [ctx.base_dn]
             if ctx.dns_backend != "NONE":
-                ctx.nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
+                ctx.nc_list += [ctx.domaindns_zone]
 
         if ctx.dns_backend != "NONE":
             ctx.full_nc_list += ['DC=DomainDnsZones,%s' % ctx.base_dn]
