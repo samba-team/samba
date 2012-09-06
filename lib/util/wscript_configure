@@ -58,6 +58,18 @@ if not found_statfs:
     print("FATAL: Failed to find a statfs method")
     raise
 
+if conf.CONFIG_SET('STAT_STATFS2_BSIZE'):
+    conf.CHECK_CODE("""#ifdef HAVE_SYS_PARAM_H
+                     #include <sys/param.h>
+                     #endif
+                     #ifdef HAVE_SYS_MOUNT_H
+                     #include <sys/mount.h>
+                     #endif
+                     struct statfs fsd; fsd.f_iosize = 0;""",
+                    define='BSD_STYLE_STATVFS',
+                    msg='Checking for *bsd style statfs with statfs.f_iosize',
+                    execute=False,
+                    local_include=False)
 
 conf.CHECK_CODE('struct statvfs buf; buf.f_fsid = 0',
                 define='HAVE_FSID_INT',
