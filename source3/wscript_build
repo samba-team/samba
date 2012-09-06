@@ -866,7 +866,11 @@ bld.SAMBA3_LIBRARY('smbldap',
                     deps='ldap lber samba-util param',
                     vars=locals(),
                     enabled=bld.env.HAVE_LDAP,
-                    private_library=True,
+                    private_library=False,
+                    abi_directory='lib/ABI',
+                    abi_match='smbldap_*',
+                    pc_files=[],
+                    vnum='0',
                     public_headers='include/smbldap.h include/smb_ldap.h')
 
 bld.SAMBA3_LIBRARY('ads',
