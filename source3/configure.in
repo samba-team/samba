@@ -4554,7 +4554,6 @@ case "$host_os" in
 	    AC_MSG_CHECKING(whether to use the lib/sysquotas_linux.c builtin support)
 	    AC_MSG_RESULT(yes)
 
-	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
 	    AC_MSG_CHECKING(whether to use the lib/sysquotas_xfs.c builtin support)
 	    AC_MSG_RESULT(yes)
 	    ;;
@@ -4575,8 +4574,10 @@ AC_CHECK_HEADER(asm/types.h,[
 # For quotas on Veritas VxFS filesystems
 AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 
-# For quotas on Linux XFS filesystems
-AC_CHECK_HEADERS(linux/dqblk_xfs.h)
+# For quotas on XFS filesystems, Linux style
+AC_CHECK_HEADERS(xfs/xqm.h,[
+	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+	])
 
 # For sys/quota.h and linux/quota.h
 AC_CHECK_HEADERS(sys/quota.h)
