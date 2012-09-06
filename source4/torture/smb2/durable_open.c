@@ -450,7 +450,6 @@ bool test_durable_open_reopen2(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.durable_open, true);
 	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
 	_h = io2.out.file.handle;
 	h = &_h;
@@ -524,7 +523,6 @@ bool test_durable_open_reopen2a(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.durable_open, true);
 	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
 	_h = io2.out.file.handle;
 	h = &_h;
@@ -689,7 +687,6 @@ bool test_durable_open_reopen4(struct torture_context *tctx,
 	_h = io2.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.durable_open, true);
 	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
 
 done:
@@ -895,7 +892,6 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(io2.out.durable_open, true);
 	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
 	CHECK_VAL(io2.out.reserved, 0x00);
 	CHECK_VAL(io2.out.create_action, NTCREATEX_ACTION_EXISTED);
