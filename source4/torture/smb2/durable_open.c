@@ -443,7 +443,8 @@ bool test_durable_open_reopen2(struct torture_context *tctx,
 	}
 
 	ZERO_STRUCT(io2);
-	io2.in.fname = fname;
+	/* the path name is ignored by the server */
+	io2.in.fname = "__non_existing_fname__";
 	io2.in.durable_handle = h;
 	h = NULL;
 
