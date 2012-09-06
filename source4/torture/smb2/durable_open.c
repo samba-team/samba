@@ -59,6 +59,16 @@
 		CHECK_VAL((__io)->out.reserved2, 0);			\
 	} while(0)
 
+#define CHECK_CREATED_SIZE(__io, __created, __attribute, __alloc_size, __size)	\
+	do {									\
+		CHECK_VAL((__io)->out.create_action, NTCREATEX_ACTION_ ## __created); \
+		CHECK_VAL((__io)->out.alloc_size, (__alloc_size));		\
+		CHECK_VAL((__io)->out.size, (__size));				\
+		CHECK_VAL((__io)->out.file_attr, (__attribute));		\
+		CHECK_VAL((__io)->out.reserved2, 0);				\
+	} while(0)
+
+
 
 /**
  * basic durable_open test.
@@ -1458,6 +1468,148 @@ bool test_durable_open_open2_oplock(struct torture_context *tctx,
 	return ret;
 }
 
+/**
+ * test behaviour with initial allocation size
+ */
+bool test_durable_open_alloc_size(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	bool ret = true;
+	uint64_t previous_session_id;
+	uint64_t alloc_size_step;
+	uint64_t initial_alloc_size = 0x100;
+	const uint8_t *b = NULL;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_initial_alloc_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = true;
+	io.in.alloc_size = initial_alloc_size;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_NOT_VAL(io.out.alloc_size, 0);
+	alloc_size_step = io.out.alloc_size;
+	CHECK_CREATED_SIZE(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE,
+			   alloc_size_step, 0);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/* prepare buffer */
+	b = talloc_zero_size(mem_ctx, alloc_size_step);
+	CHECK_NOT_VAL(b, NULL);
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* disconnect, reconnect and then do durable reopen */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED_SIZE(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE,
+			   alloc_size_step, 0);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* write one byte */
+	status = smb2_util_write(tree, *h, b, 0, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* disconnect, reconnect and then do durable reopen */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED_SIZE(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE,
+			   alloc_size_step, 1);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* write more byte than initial allocation size */
+	status = smb2_util_write(tree, *h, b, 1, alloc_size_step);
+
+	/* disconnect, reconnect and then do durable reopen */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED_SIZE(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE,
+			   alloc_size_step * 2, alloc_size_step + 1);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
 struct torture_suite *torture_smb2_durable_open_init(void)
 {
 	struct torture_suite *suite =
@@ -1482,6 +1634,8 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 				     test_durable_open_open2_lease);
 	torture_suite_add_2smb2_test(suite, "open2-oplock",
 				     test_durable_open_open2_oplock);
+	torture_suite_add_1smb2_test(suite, "alloc-size",
+				     test_durable_open_alloc_size);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 
