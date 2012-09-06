@@ -143,3 +143,7 @@ bld.RECURSE('testsuite/headers')
 
 bld.SYMBOL_CHECK()
 bld.DUP_SYMBOL_CHECK()
+
+bld.env.ABS_TOP_BUILDDIR = bld.srcnode.abspath() + '/docs-xml'
+bld.CONFIGURE_FILE('docs-xml/build/catalog.xml',
+                   ABS_TOP_BUILDDIR = bld.env.ABS_TOP_BUILDDIR)

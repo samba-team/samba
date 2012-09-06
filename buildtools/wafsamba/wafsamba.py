@@ -774,13 +774,14 @@ Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 def MANPAGES(bld, manpages):
     '''build and install manual pages'''
     bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
+    os.environ["XML_CATALOG_FILES"] = 'file:///etc/xml/catalog file://' + bld.srcnode.abspath() + '/bin/default/docs-xml/build/catalog.xml'
     for m in manpages.split():
         source = m + '.xml'
         bld.SAMBA_GENERATOR(m,
                             source=source,
                             target=m,
                             group='final',
-                            rule='${XSLTPROC} -o ${TGT} --nonet ${MAN_XSL} ${SRC}'
+                            rule='${XSLTPROC} --xinclude -o ${TGT} --nonet ${MAN_XSL} ${SRC}'
                             )
         bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
 Build.BuildContext.MANPAGES = MANPAGES
