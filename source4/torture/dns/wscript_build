@@ -1,0 +1,10 @@
+#!/usr/bin/env python
+
+bld.SAMBA_MODULE('TORTURE_DNS',
+	source='dlz_bind9.c',
+	subsystem='smbtorture',
+	init_function='torture_dns_init',
+	cflags='-DBIND_VERSION_9_8',
+	deps='torture talloc torturemain dlz_bind9_for_torture',
+	internal_module=True
+	)

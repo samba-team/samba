@@ -30,3 +30,10 @@ bld.SAMBA_LIBRARY('dlz_bind9_9',
                   install_path='${MODULESDIR}/bind9',
                   deps='samba-hostconfig samdb-common gensec popt',
                   enabled=bld.AD_DC_BUILD_IS_ENABLED())
+
+bld.SAMBA_LIBRARY('dlz_bind9_for_torture',
+                  source='dlz_bind9.c',
+                  cflags='-DBIND_VERSION_9_8',
+                  private_library=True,
+                  deps='samba-hostconfig samdb-common gensec popt',
+                  enabled=bld.AD_DC_BUILD_IS_ENABLED())

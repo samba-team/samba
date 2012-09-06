@@ -57,6 +57,7 @@ bld.SAMBA_MODULE('torture_rpc',
 	)
 
 bld.RECURSE('drs')
+bld.RECURSE('dns')
 
 bld.SAMBA_MODULE('TORTURE_RAP',
 	source='rap/rap.c rap/rpc.c rap/printing.c rap/sam.c',

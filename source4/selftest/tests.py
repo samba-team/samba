@@ -296,6 +296,10 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
 
 # DNS tests
 planpythontestsuite("dc", "samba.tests.dns")
+# Local tests
+for t in smb4torture_testsuites("dlz_bind9."):
+    #The dlz_bind9 tests needs to look at the DNS database
+    plansmbtorturetestsuite(t, "dc:local", "ncalrpc:localhost")
 
 planpythontestsuite("s3dc", "samba.tests.libsmb_samba_internal");
 
