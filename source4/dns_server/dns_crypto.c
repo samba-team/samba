@@ -121,7 +121,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 
 	/* The TSIG record needs to be the last additional record */
 	if (found_tsig && i + 1 != packet->arcount) {
-		DEBUG(0, ("TSIG record not the last additional record!\n"));
+		DEBUG(1, ("TSIG record not the last additional record!\n"));
 		return DNS_ERR(FORMAT_ERROR);
 	}
 
@@ -218,7 +218,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Verifying tsig failed: %s\n", nt_errstr(status)));
+		DEBUG(1, ("Verifying tsig failed: %s\n", nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	}
 

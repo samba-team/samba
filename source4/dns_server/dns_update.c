@@ -436,10 +436,10 @@ static WERROR handle_one_update(struct dns_server *dns,
 						  tkey->session_info->security_token,
 						  access_mask, NULL);
 		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(0, ("Disallowing update: %s\n", ldb_strerror(ldb_ret)));
+			DEBUG(5, ("Disallowing update: %s\n", ldb_strerror(ldb_ret)));
 			return DNS_ERR(REFUSED);
 		}
-		DEBUG(0, ("Allowing signed update\n"));
+		DEBUG(5, ("Allowing signed update\n"));
 	}
 
 	if (update->rr_class == zone->question_class) {
@@ -450,7 +450,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 			 */
 			for (i = 0; i < rcount; i++) {
 				if (recs[i].wType != DNS_TYPE_CNAME) {
-					DEBUG(0, ("Skipping update\n"));
+					DEBUG(5, ("Skipping update\n"));
 					return WERR_OK;
 				}
 				break;
@@ -481,7 +481,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 			 */
 			for (i = 0; i < rcount; i++) {
 				if (recs[i].wType == DNS_TYPE_CNAME) {
-					DEBUG(0, ("Skipping update\n"));
+					DEBUG(5, ("Skipping update\n"));
 					return WERR_OK;
 				}
 			}
@@ -505,7 +505,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 					 * logic for RFC2136
 					 */
 					if (n <= o) {
-						DEBUG(0, ("Skipping update\n"));
+						DEBUG(5, ("Skipping update\n"));
 						return WERR_OK;
 					}
 					found = true;
@@ -513,7 +513,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 				}
 			}
 			if (!found) {
-				DEBUG(0, ("Skipping update\n"));
+				DEBUG(5, ("Skipping update\n"));
 				return WERR_OK;
 			}
 
@@ -675,7 +675,7 @@ static WERROR handle_updates(struct dns_server *dns,
 	werror = check_prerequisites(dns, tmp_ctx, zone, prereqs, pcount);
 	W_ERROR_NOT_OK_GOTO(werror, failed);
 
-	DEBUG(0, ("update count is %u\n", upd_count));
+	DEBUG(1, ("update count is %u\n", upd_count));
 
 	for (ri = 0; ri < upd_count; ri++) {
 		werror = handle_one_update(dns, tmp_ctx, zone,
@@ -699,17 +699,17 @@ static WERROR dns_update_allowed(struct dns_server *dns,
 				 struct dns_server_tkey **tkey)
 {
 	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_ON) {
-		DEBUG(0, ("All updates allowed.\n"));
+		DEBUG(2, ("All updates allowed.\n"));
 		return WERR_OK;
 	}
 
 	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_OFF) {
-		DEBUG(0, ("Updates disabled.\n"));
+		DEBUG(2, ("Updates disabled.\n"));
 		return DNS_ERR(REFUSED);
 	}
 
 	if (state->authenticated == false ) {
-		DEBUG(0, ("Update not allowed for unsigned packet.\n"));
+		DEBUG(2, ("Update not allowed for unsigned packet.\n"));
 		return DNS_ERR(REFUSED);
 	}
 
@@ -764,13 +764,13 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	}
 
 	if (z == NULL) {
-		DEBUG(0, ("We're not authoritative for this zone\n"));
+		DEBUG(1, ("We're not authoritative for this zone\n"));
 		return DNS_ERR(NOTAUTH);
 	}
 
 	if (host_part_len != 0) {
 		/* TODO: We need to delegate this one */
-		DEBUG(0, ("Would have to delegate zones.\n"));
+		DEBUG(1, ("Would have to delegate zones.\n"));
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 

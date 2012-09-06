@@ -509,7 +509,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 				return WERR_NOMEM;
 			}
 		} else {
-			DEBUG(0, ("GSS key negotiation returned %s\n", nt_errstr(status)));
+			DEBUG(1, ("GSS key negotiation returned %s\n", nt_errstr(status)));
 			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
 		}
 

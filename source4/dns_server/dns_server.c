@@ -147,7 +147,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 
 	ret = dns_verify_tsig(dns, state, &state->state, &state->in_packet, in);
 	if (!W_ERROR_IS_OK(ret)) {
-		DEBUG(0, ("Bailing out early!\n"));
+		DEBUG(1, ("Failed to verify TSIG!\n"));
 		state->dns_err = werr_to_dns_err(ret);
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
