@@ -1,0 +1,90 @@
+#!/usr/bin/env python
+
+manpages='''
+         manpages/eventlogadm.8
+         manpages/findsmb.1
+         manpages/libsmbclient.7
+         manpages/lmhosts.5
+         manpages/log2pcap.1
+         manpages/net.8
+         manpages/nmbd.8
+         manpages/nmblookup.1
+         manpages/ntlm_auth.1
+         manpages/pdbedit.8
+         manpages/profiles.1
+         manpages/rpcclient.1
+         manpages/samba.7
+         manpages/sharesec.1
+         manpages/smb.conf.5
+         manpages/smbcacls.1
+         manpages/smbclient.1
+         manpages/smbcontrol.1
+         manpages/smbcquotas.1
+         manpages/smbd.8
+         manpages/smbget.1
+         manpages/smbgetrc.5
+         manpages/smbpasswd.5
+         manpages/smbpasswd.8
+         manpages/smbspool.8
+         manpages/smbstatus.1
+         manpages/smbta-util.8
+         manpages/smbtar.1
+         manpages/smbtree.1
+         manpages/swat.8
+         manpages/testparm.1
+         manpages/vfs_acl_tdb.8
+         manpages/vfs_acl_xattr.8
+         manpages/vfs_aio_fork.8
+         manpages/vfs_aio_linux.8
+         manpages/vfs_aio_pthread.8
+         manpages/vfs_audit.8
+         manpages/vfs_cacheprime.8
+         manpages/vfs_cap.8
+         manpages/vfs_catia.8
+         manpages/vfs_commit.8
+         manpages/vfs_crossrename.8
+         manpages/vfs_default_quota.8
+         manpages/vfs_dirsort.8
+         manpages/vfs_extd_audit.8
+         manpages/vfs_fake_perms.8
+         manpages/vfs_fileid.8
+         manpages/vfs_full_audit.8
+         manpages/vfs_gpfs.8
+         manpages/vfs_media_harmony.8
+         manpages/vfs_netatalk.8
+         manpages/vfs_notify_fam.8
+         manpages/vfs_prealloc.8
+         manpages/vfs_preopen.8
+         manpages/vfs_readahead.8
+         manpages/vfs_readonly.8
+         manpages/vfs_recycle.8
+         manpages/vfs_scannedonly.8
+         manpages/vfs_shadow_copy.8
+         manpages/vfs_shadow_copy2.8
+         manpages/vfs_smb_traffic_analyzer.8
+         manpages/vfs_streams_depot.8
+         manpages/vfs_streams_xattr.8
+         manpages/vfs_time_audit.8
+         manpages/vfs_tsmsm.8
+         manpages/vfs_xattr_tdb.8
+         manpages/vfstest.1
+         manpages/wbinfo.1
+         manpages/winbindd.8
+         '''
+
+pam_winbind_manpages = '''
+                       manpages/pam_winbind.8
+                       manpages/pam_winbind.conf.5
+                       '''
+
+krb5_locator_manpages = 'manpages/winbind_krb5_locator.7'
+
+if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
+
+    bld.MANPAGES(manpages)
+
+    if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
+        bld.MANPAGES(pam_winbind_manpages)
+
+    if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
+        bld.MANPAGES(krb5_locator_manpages)
