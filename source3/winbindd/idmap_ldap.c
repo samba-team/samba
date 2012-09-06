@@ -305,7 +305,7 @@ static NTSTATUS idmap_ldap_allocate_id_internal(struct idmap_domain *dom,
 		goto done;
 	}
 
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	count = ldap_count_entries(ctx->smbldap_state->ldap_struct, result);
 	if (count != 1) {

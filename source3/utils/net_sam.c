@@ -1723,7 +1723,7 @@ static int net_sam_provision(struct net_context *c, int argc, const char **argv)
 				sid_string_talloc(tc, &gsid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
 
-		talloc_autofree_ldapmod(tc, mods);
+		smbldap_talloc_autofree_ldapmod(tc, mods);
 
 		rc = smbldap_add(state, dn, mods);
 
@@ -1800,7 +1800,7 @@ domu_done:
 				sid_string_talloc(tc, &gsid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
 
-		talloc_autofree_ldapmod(tc, mods);
+		smbldap_talloc_autofree_ldapmod(tc, mods);
 
 		rc = smbldap_add(state, dn, mods);
 
@@ -1918,7 +1918,7 @@ doma_done:
 				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
 				NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
-		talloc_autofree_ldapmod(tc, mods);
+		smbldap_talloc_autofree_ldapmod(tc, mods);
 
 		rc = smbldap_add(state, dn, mods);
 
@@ -2030,7 +2030,7 @@ doma_done:
 				pdb_encode_acct_ctrl(ACB_NORMAL|ACB_DISABLED,
 				NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
-		talloc_autofree_ldapmod(tc, mods);
+		smbldap_talloc_autofree_ldapmod(tc, mods);
 
 		rc = smbldap_add(state, dn, mods);
 
@@ -2104,7 +2104,7 @@ doma_done:
 				sid_string_talloc(tc, &gsid));
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", gtype);
 
-		talloc_autofree_ldapmod(tc, mods);
+		smbldap_talloc_autofree_ldapmod(tc, mods);
 
 		rc = smbldap_add(state, dn, mods);
 

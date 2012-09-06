@@ -165,7 +165,7 @@ static bool get_trusted_domain_int(struct ldapsam_privates *ldap_state,
 	TALLOC_FREE(base_dn);
 
 	if (result != NULL) {
-		talloc_autofree_ldapmsg(mem_ctx, result);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 	}
 
 	if (rc == LDAP_NO_SUCH_OBJECT) {
@@ -586,7 +586,7 @@ static NTSTATUS ipasam_set_trusted_domain(struct pdb_methods *methods,
 				      &td->trust_forest_trust_info);
 	}
 
-	talloc_autofree_ldapmod(talloc_tos(), mods);
+	smbldap_talloc_autofree_ldapmod(talloc_tos(), mods);
 
 	trusted_dn = trusted_domain_dn(ldap_state, domain);
 	if (trusted_dn == NULL) {
@@ -671,7 +671,7 @@ static NTSTATUS ipasam_enum_trusted_domains(struct pdb_methods *methods,
 	TALLOC_FREE(base_dn);
 
 	if (result != NULL) {
-		talloc_autofree_ldapmsg(mem_ctx, result);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 	}
 
 	if (rc == LDAP_NO_SUCH_OBJECT) {

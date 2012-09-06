@@ -782,7 +782,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 			}
 			pdb_set_backend_private_data(sam_acct, result, NULL,
 						     methods, PDB_CHANGED);
-			talloc_autofree_ldapmsg(sam_acct, result);
+			smbldap_talloc_autofree_ldapmsg(sam_acct, result);
 		}
 
 		if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
@@ -812,7 +812,7 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 
 		if((success != True) || (got_clear_text_pw == True)) {
 			
-			rc = smb_ldap_setup_full_conn(&ld, ldap_state->location);
+			rc = smbldap_setup_full_conn(&ld, ldap_state->location);
 			if (rc) {
 				TALLOC_FREE(dn);
 				return NT_STATUS_INVALID_CONNECTION;

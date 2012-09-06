@@ -448,7 +448,7 @@ static int ldapsam_delete_entry(struct ldapsam_privates *priv,
 	}
 
 	smbldap_set_mod(&mods, LDAP_MOD_DELETE, "objectClass", objectclass);
-	talloc_autofree_ldapmod(mem_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(mem_ctx, mods);
 
 	return smbldap_modify(priv->smbldap_state, dn, mods);
 }
@@ -1534,7 +1534,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, struct samu 
 		}
 		pdb_set_backend_private_data(user, result, NULL,
 					     my_methods, PDB_CHANGED);
-		talloc_autofree_ldapmsg(user, result);
+		smbldap_talloc_autofree_ldapmsg(user, result);
 		ret = NT_STATUS_OK;
 	} else {
 		ldap_msgfree(result);
@@ -1624,7 +1624,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, struct samu 
 
 	pdb_set_backend_private_data(user, result, NULL,
 				     my_methods, PDB_CHANGED);
-	talloc_autofree_ldapmsg(user, result);
+	smbldap_talloc_autofree_ldapmsg(user, result);
 	return NT_STATUS_OK;
 }	
 
@@ -1896,7 +1896,7 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struc
 		}
 		pdb_set_backend_private_data(newpwd, result, NULL,
 					     my_methods, PDB_CHANGED);
-		talloc_autofree_ldapmsg(newpwd, result);
+		smbldap_talloc_autofree_ldapmsg(newpwd, result);
 	}
 
 	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, result) == 0) {
@@ -2634,7 +2634,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	count = ldap_count_entries(conn->ldap_struct, result);
 
@@ -2705,7 +2705,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 		count = ldap_count_entries(conn->ldap_struct, result);
 		DEBUG(10,("ldapsam_enum_group_members: found %d accounts\n", count));
 
-		talloc_autofree_ldapmsg(mem_ctx, result);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 		for (entry = ldap_first_entry(conn->ldap_struct, result);
 		     entry != NULL;
@@ -2758,7 +2758,7 @@ static NTSTATUS ldapsam_enum_group_members(struct pdb_methods *methods,
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	for (entry = ldap_first_entry(conn->ldap_struct, result);
 	     entry != NULL;
@@ -2844,7 +2844,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		if (rc != LDAP_SUCCESS)
 			goto done;
 
-		talloc_autofree_ldapmsg(mem_ctx, result);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 		count = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -2885,7 +2885,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	if (rc != LDAP_SUCCESS)
 		goto done;
 
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	num_gids = 0;
 	*pp_gids = NULL;
@@ -2991,7 +2991,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter,
 				   get_attr_list(mem_ctx, groupmap_attr_list),
 				   &msg);
-	talloc_autofree_ldapmsg(mem_ctx, msg);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, msg);
 
 	if ((rc != LDAP_SUCCESS) ||
 	    (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, msg) != 1) ||
@@ -3015,7 +3015,7 @@ static NTSTATUS ldapsam_map_posixgroup(TALLOC_CTX *mem_ctx,
 			 map->nt_name);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "description",
 			 map->comment);
-	talloc_autofree_ldapmod(mem_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(mem_ctx, mods);
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 	if (rc != LDAP_SUCCESS) {
@@ -3058,7 +3058,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_suffix(talloc_tos()),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, True, &msg);
-	talloc_autofree_ldapmsg(mem_ctx, msg);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, msg);
 
 	if ((rc == LDAP_SUCCESS) &&
 	    (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, msg) > 0)) {
@@ -3139,7 +3139,7 @@ static NTSTATUS ldapsam_add_group_mapping_entry(struct pdb_methods *methods,
 			 map->comment);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, NULL, &mods, "gidNumber",
 			 talloc_asprintf(mem_ctx, "%u", (unsigned int)map->gid));
-	talloc_autofree_ldapmod(mem_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(mem_ctx, mods);
 
 	rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
 
@@ -3193,7 +3193,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter,
 				   get_attr_list(mem_ctx, groupmap_attr_list),
 				   &msg);
-	talloc_autofree_ldapmsg(mem_ctx, msg);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, msg);
 
 	if ((rc != LDAP_SUCCESS) ||
 	    (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, msg) != 1) ||
@@ -3214,7 +3214,7 @@ static NTSTATUS ldapsam_update_group_mapping_entry(struct pdb_methods *methods,
 			 map->nt_name);
 	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, &mods, "description",
 			 map->comment);
-	talloc_autofree_ldapmod(mem_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(mem_ctx, mods);
 
 	if (mods == NULL) {
 		DEBUG(4, ("ldapsam_update_group_mapping_entry: mods is empty: "
@@ -3270,7 +3270,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 	rc = smbldap_search_suffix(priv->smbldap_state, filter,
 				   get_attr_list(mem_ctx, groupmap_attr_list),
 				   &msg);
-	talloc_autofree_ldapmsg(mem_ctx, msg);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, msg);
 
 	if ((rc != LDAP_SUCCESS) ||
 	    (ldap_count_entries(priv2ld(priv), msg) != 1) ||
@@ -3773,7 +3773,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		if (rc != LDAP_SUCCESS) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
-		talloc_autofree_ldapmsg(filter, result);
+		smbldap_talloc_autofree_ldapmsg(filter, result);
 	}
 
 	ldap_struct = ldap_state->smbldap_state->ldap_struct;
@@ -3810,7 +3810,7 @@ static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
 		TALLOC_FREE(ldap_state->search_cache.filter);
 		/*
 		 * Note: result is a talloc child of filter because of the
-		 * talloc_autofree_ldapmsg() usage
+		 * smbldap_talloc_autofree_ldapmsg() usage
 		 */
 		ldap_state->search_cache.filter = talloc_move(ldap_state, &filter);
 		ldap_state->search_cache.result = result;
@@ -4083,7 +4083,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 				    lp_ldap_user_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
 				    &msg);
-		talloc_autofree_ldapmsg(mem_ctx, msg);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, msg);
 	}
 
 	if (rc != LDAP_SUCCESS)
@@ -4151,7 +4151,7 @@ static NTSTATUS ldapsam_lookup_rids(struct pdb_methods *methods,
 				    lp_ldap_suffix(talloc_tos()),
 				    LDAP_SCOPE_SUBTREE, filter, ldap_attrs, 0,
 				    &msg);
-		talloc_autofree_ldapmsg(mem_ctx, msg);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, msg);
 	}
 
 	if (rc != LDAP_SUCCESS)
@@ -4826,7 +4826,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 		goto done;
 	}
 
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	entry = ldap_first_entry(priv2ld(priv), result);
 	if (entry == NULL) {
@@ -4870,7 +4870,7 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 
 	smbldap_make_mod(priv2ld(priv), entry, &mods, "sambaNextRid",
 			 talloc_asprintf(mem_ctx, "%d", nextRid));
-	talloc_autofree_ldapmod(mem_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(mem_ctx, mods);
 
 	if ((dn = smbldap_talloc_dn(mem_ctx, priv2ld(priv), entry)) == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -4964,7 +4964,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 	if (rc != LDAP_SUCCESS) {
 		goto done;
 	}
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	if (ldap_count_entries(priv2ld(priv), result) != 1) {
 		DEBUG(10, ("Got %d entries, expected one\n",
@@ -5053,7 +5053,7 @@ static bool ldapsam_uid_to_sid(struct pdb_methods *methods, uid_t uid,
 	if (rc != LDAP_SUCCESS) {
 		goto done;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	if (ldap_count_entries(priv2ld(priv), result) != 1) {
 		DEBUG(3, ("ERROR: Got %d entries for uid %u, expected one\n",
@@ -5126,7 +5126,7 @@ static bool ldapsam_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	if (rc != LDAP_SUCCESS) {
 		goto done;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	if (ldap_count_entries(priv2ld(priv), result) != 1) {
 		DEBUG(3, ("ERROR: Got %d entries for gid %u, expected one\n",
@@ -5223,7 +5223,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		DEBUG(0,("ldapsam_create_user: ldap search failed!\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5375,7 +5375,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "loginShell", shell);
 	}
 
-	talloc_autofree_ldapmod(tmp_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(tmp_ctx, mods);
 
 	if (add_posix) {	
 		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
@@ -5423,7 +5423,7 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 		DEBUG(0,("ldapsam_delete_user: user search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5533,7 +5533,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		DEBUG(0,("ldapsam_create_group: ldap search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5633,7 +5633,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
 	}
 
-	talloc_autofree_ldapmod(tmp_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(tmp_ctx, mods);
 
 	if (is_new_entry) {	
 		rc = smbldap_add(ldap_state->smbldap_state, dn, mods);
@@ -5690,7 +5690,7 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 		DEBUG(1,("ldapsam_delete_dom_group: group search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5736,7 +5736,7 @@ static NTSTATUS ldapsam_delete_dom_group(struct pdb_methods *my_methods, TALLOC_
 		DEBUG(1,("ldapsam_delete_dom_group: accounts search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5805,7 +5805,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 		DEBUG(1,("ldapsam_change_groupmem: member search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5869,7 +5869,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 		DEBUG(1,("ldapsam_change_groupmem: group search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(tmp_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(tmp_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -5897,7 +5897,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 
 	smbldap_set_mod(&mods, modop, "memberUid", uidstr);
 
-	talloc_autofree_ldapmod(tmp_ctx, mods);
+	smbldap_talloc_autofree_ldapmod(tmp_ctx, mods);
 
 	rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 	if (rc != LDAP_SUCCESS) {
@@ -5983,7 +5983,7 @@ static NTSTATUS ldapsam_set_primary_group(struct pdb_methods *my_methods,
 		DEBUG(0,("ldapsam_set_primary_group: user search failed!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	talloc_autofree_ldapmsg(mem_ctx, result);
+	smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 
 	num_result = ldap_count_entries(priv2ld(ldap_state), result);
 
@@ -6066,7 +6066,7 @@ static bool get_trusteddom_pw_int(struct ldapsam_privates *ldap_state,
 			    filter, attrs, attrsonly, &result);
 
 	if (result != NULL) {
-		talloc_autofree_ldapmsg(mem_ctx, result);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 	}
 
 	if (rc == LDAP_NO_SUCH_OBJECT) {
@@ -6207,7 +6207,7 @@ static bool ldapsam_set_trusteddom_pw(struct pdb_methods *methods,
 		}
 	}
 
-	talloc_autofree_ldapmod(talloc_tos(), mods);
+	smbldap_talloc_autofree_ldapmod(talloc_tos(), mods);
 
 	trusted_dn = trusteddom_dn(ldap_state, domain);
 	if (trusted_dn == NULL) {
@@ -6288,7 +6288,7 @@ static NTSTATUS ldapsam_enum_trusteddoms(struct pdb_methods *methods,
 			    &result);
 
 	if (result != NULL) {
-		talloc_autofree_ldapmsg(mem_ctx, result);
+		smbldap_talloc_autofree_ldapmsg(mem_ctx, result);
 	}
 
 	if (rc != LDAP_SUCCESS) {
