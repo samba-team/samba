@@ -31,6 +31,7 @@
 #include "dsdb/common/util.h"
 #include "smbd/service_task.h"
 #include "dns_server/dns_server.h"
+#include "auth/auth.h"
 
 static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
@@ -381,7 +382,8 @@ done:
 static WERROR handle_one_update(struct dns_server *dns,
 				TALLOC_CTX *mem_ctx,
 				const struct dns_name_question *zone,
-				const struct dns_res_rec *update)
+				const struct dns_res_rec *update,
+				const struct dns_server_tkey *tkey)
 {
 	struct dnsp_DnssrvRpcRecord *recs = NULL;
 	uint16_t rcount = 0;
@@ -389,6 +391,7 @@ static WERROR handle_one_update(struct dns_server *dns,
 	uint16_t i;
 	WERROR werror;
 	bool needs_add = false;
+	uint32_t access_mask = 0;
 
 	DEBUG(2, ("Looking at record: \n"));
 	if (DEBUGLVL(2)) {
@@ -421,8 +424,23 @@ static WERROR handle_one_update(struct dns_server *dns,
 		rcount = 0;
 		needs_add = true;
 		werror = WERR_OK;
+		access_mask = SEC_ADS_CREATE_CHILD;
 	}
 	W_ERROR_NOT_OK_RETURN(werror);
+
+	access_mask = SEC_STD_REQUIRED | SEC_ADS_SELF_WRITE;
+
+	if (tkey != NULL) {
+		int ldb_ret;
+		ldb_ret = dsdb_check_access_on_dn(dns->samdb, mem_ctx, dn,
+						  tkey->session_info->security_token,
+						  access_mask, NULL);
+		if (ldb_ret != LDB_SUCCESS) {
+			DEBUG(0, ("Disallowing update: %s\n", ldb_strerror(ldb_ret)));
+			return DNS_ERR(REFUSED);
+		}
+		DEBUG(0, ("Allowing signed update\n"));
+	}
 
 	if (update->rr_class == zone->question_class) {
 		if (update->rr_type == DNS_QTYPE_CNAME) {
@@ -637,7 +655,8 @@ static WERROR handle_updates(struct dns_server *dns,
 			     TALLOC_CTX *mem_ctx,
 			     const struct dns_name_question *zone,
 			     const struct dns_res_rec *prereqs, uint16_t pcount,
-			     struct dns_res_rec *updates, uint16_t upd_count)
+			     struct dns_res_rec *updates, uint16_t upd_count,
+			     struct dns_server_tkey *tkey)
 {
 	struct ldb_dn *zone_dn = NULL;
 	WERROR werror = WERR_OK;
@@ -660,7 +679,7 @@ static WERROR handle_updates(struct dns_server *dns,
 
 	for (ri = 0; ri < upd_count; ri++) {
 		werror = handle_one_update(dns, tmp_ctx, zone,
-					   &updates[ri]);
+					   &updates[ri], tkey);
 		W_ERROR_NOT_OK_GOTO(werror, failed);
 	}
 
@@ -675,6 +694,35 @@ failed:
 
 }
 
+static WERROR dns_update_allowed(struct dns_server *dns,
+				 struct dns_request_state *state,
+				 struct dns_server_tkey **tkey)
+{
+	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_ON) {
+		DEBUG(0, ("All updates allowed.\n"));
+		return WERR_OK;
+	}
+
+	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_OFF) {
+		DEBUG(0, ("Updates disabled.\n"));
+		return DNS_ERR(REFUSED);
+	}
+
+	if (state->authenticated == false ) {
+		DEBUG(0, ("Update not allowed for unsigned packet.\n"));
+		return DNS_ERR(REFUSED);
+	}
+
+        *tkey = dns_find_tkey(dns->tkeys, state->key_name);
+	if (*tkey == NULL) {
+		DEBUG(0, ("Authenticated, but key not found. Something is wrong.\n"));
+		return DNS_ERR(REFUSED);
+	}
+
+	return WERR_OK;
+}
+
+
 WERROR dns_server_process_update(struct dns_server *dns,
 				 struct dns_request_state *state,
 				 TALLOC_CTX *mem_ctx,
@@ -687,6 +735,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
 	WERROR werror = DNS_ERR(NOT_IMPLEMENTED);
+	struct dns_server_tkey *tkey = NULL;
 
 	if (in->qdcount != 1) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -731,17 +780,9 @@ WERROR dns_server_process_update(struct dns_server *dns,
 				     *prereq_count);
 	W_ERROR_NOT_OK_RETURN(werror);
 
-	/* TODO: Check if update is allowed, we probably want "always",
-	 * key-based GSSAPI, key-based bind-style TSIG and "never" as
-	 * smb.conf options. */
-	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_OFF) {
-		DEBUG(0, ("Update not allowed.\n"));
-		return DNS_ERR(REFUSED);
-	}
-	if (lpcfg_allow_dns_updates(dns->task->lp_ctx) == DNS_UPDATE_SIGNED &&
-	    state->authenticated == false ) {
-		DEBUG(0, ("Update not allowed for unsigned packet.\n"));
-		return DNS_ERR(REFUSED);
+	werror = dns_update_allowed(dns, state, &tkey);
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
 	}
 
 	*update_count = in->nscount;
@@ -749,9 +790,8 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	werror = update_prescan(in->questions, *updates, *update_count);
 	W_ERROR_NOT_OK_RETURN(werror);
 
-
 	werror = handle_updates(dns, mem_ctx, in->questions, *prereqs,
-			        *prereq_count, *updates, *update_count);
+			        *prereq_count, *updates, *update_count, tkey);
 	W_ERROR_NOT_OK_RETURN(werror);
 
 	return werror;
