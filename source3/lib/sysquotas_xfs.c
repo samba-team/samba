@@ -23,13 +23,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA
 
-#ifndef HAVE_SYS_QUOTAS
-#ifdef HAVE_XFS_QUOTAS
-#undef HAVE_XFS_QUOTAS
-#endif
-#endif
-
-#ifdef HAVE_XFS_QUOTAS
+#if defined(HAVE_SYS_QUOTAS) && (defined(HAVE_XFS_QUOTAS) || defined(HAVE_LINUX_XFS_QUOTAS))
 
 #ifdef HAVE_LINUX_XFS_QUOTAS
 #include "samba_linux_quota.h"
