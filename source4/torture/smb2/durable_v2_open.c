@@ -369,6 +369,188 @@ bool test_durable_v2_open_lease(struct torture_context *tctx,
 	return ret;
 }
 
+/**
+ * basic test for doing a durable open
+ * and do a durable reopen on the same connection
+ * while the first open is still active (fails)
+ */
+bool test_durable_v2_open_reopen1(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io1, io2;
+	bool ret = true;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_v2_open_reopen1_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = GUID_random();
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io1.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.persistent_open, false);
+	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+
+	/* try a durable reconnect while the file is still open */
+	ZERO_STRUCT(io2);
+	io2.in = io1.in;
+	io2.in.durable_open_v2 = false;
+	io2.in.durable_handle_v2 = h;
+	io2.in.create_guid = io1.in.create_guid;
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * basic test for doing a durable open
+ * tcp disconnect, reconnect, do a durable reopen (succeeds)
+ */
+bool test_durable_v2_open_reopen2(struct torture_context *tctx,
+				  struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io1, io2;
+	bool ret = true;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_v2_open_reopen2_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = GUID_random();
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io1.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.persistent_open, false);
+	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+
+	/* disconnect, reconnect and then do durable reopen */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = "";
+	io2.in.durable_handle_v2 = h;
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = "__non_existing_fname__";
+	io2.in.durable_handle_v2 = h;
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	ZERO_STRUCT(io2);
+	io2.in.fname = fname;
+	io2.in.durable_handle_v2 = h;
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	ZERO_STRUCT(io2);
+	/*
+	 * These are completely ignored by the server
+	 */
+	io2.in.security_flags = 0x78;
+	io2.in.oplock_level = 0x78;
+	io2.in.impersonation_level = 0x12345678;
+	io2.in.create_flags = 0x12345678;
+	io2.in.reserved = 0x12345678;
+	io2.in.desired_access = 0x12345678;
+	io2.in.file_attributes = 0x12345678;
+	io2.in.share_access = 0x12345678;
+	io2.in.create_disposition = 0x12345678;
+	io2.in.create_options = 0x12345678;
+	io2.in.fname = "__non_existing_fname__";
+
+	/*
+	 * only io2.in.durable_handle_v2 and
+	 * io2.in.create_guid are checked
+	 */
+	io2.in.durable_open_v2 = false;
+	io2.in.durable_handle_v2 = h;
+	io2.in.create_guid = io1.in.create_guid;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.persistent_open, false);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io2.out.file.handle;
+	h = &_h;
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
 
 /**
  * basic persistent open test.
@@ -546,6 +728,8 @@ struct torture_suite *torture_smb2_durable_v2_open_init(void)
 
 	torture_suite_add_1smb2_test(suite, "open-oplock", test_durable_v2_open_oplock);
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
+	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
+	torture_suite_add_1smb2_test(suite, "reopen2", test_durable_v2_open_reopen2);
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
 
