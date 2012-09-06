@@ -225,7 +225,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			/* we need to deal with long long unsigned here, if supported */
 
-			dp->qflags = (enum SMB_QUOTA_TYPE)strtoul(line, &p2, 10);
+			dp->qflags = strtoul(line, &p2, 10);
 			p = p2;
 			while (p && *p && isspace(*p)) {
 				p++;
