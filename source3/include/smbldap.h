@@ -118,8 +118,8 @@ bool smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 int smbldap_modify(struct smbldap_state *ldap_state,
                    const char *dn,
                    LDAPMod *attrs[]);
-int smb_ldap_start_tls(LDAP *ldap_struct, int version);
-int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri);
+int smbldap_start_tls(LDAP *ldap_struct, int version);
+int smbldap_setup_full_conn(LDAP **ldap_struct, const char *uri);
 int smbldap_search(struct smbldap_state *ldap_state,
 		   const char *base, int scope, const char *filter,
 		   const char *attrs[], int attrsonly,
@@ -157,8 +157,8 @@ bool smbldap_talloc_single_blob(TALLOC_CTX *mem_ctx, LDAP *ld,
 				DATA_BLOB *blob);
 bool smbldap_pull_sid(LDAP *ld, LDAPMessage *msg, const char *attrib,
 		      struct dom_sid *sid);
-void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
-void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
+void smbldap_talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
+void smbldap_talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
 char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 			      LDAPMessage *entry);
 

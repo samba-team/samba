@@ -247,7 +247,7 @@
 	return 0;
 }
 
- void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result)
+ void smbldap_talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result)
 {
 	LDAPMessage **handle;
 
@@ -267,7 +267,7 @@
 	return 0;
 }
 
- void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod)
+ void smbldap_talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod)
 {
 	LDAPMod ***handle;
 
@@ -554,7 +554,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
  start TLS on an existing LDAP connection
 *******************************************************************/
 
-int smb_ldap_start_tls(LDAP *ldap_struct, int version)
+int smbldap_start_tls(LDAP *ldap_struct, int version)
 { 
 #ifdef LDAP_OPT_X_TLS
 	int rc;
@@ -725,7 +725,7 @@ static int smb_ldap_upgrade_conn(LDAP *ldap_struct, int *new_version)
  open a connection to the ldap server (just until the bind)
  ******************************************************************/
 
-int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri)
+int smbldap_setup_full_conn(LDAP **ldap_struct, const char *uri)
 {
 	int rc, version;
 
@@ -739,7 +739,7 @@ int smb_ldap_setup_full_conn(LDAP **ldap_struct, const char *uri)
 		return rc;
 	}
 
-	rc = smb_ldap_start_tls(*ldap_struct, version);
+	rc = smbldap_start_tls(*ldap_struct, version);
 	if (rc) {
 		return rc;
 	}
@@ -776,7 +776,7 @@ static int smbldap_open_connection (struct smbldap_state *ldap_state)
 
 	/* Start TLS if required */
 
-	rc = smb_ldap_start_tls(*ldap_struct, version);
+	rc = smbldap_start_tls(*ldap_struct, version);
 	if (rc) {
 		return rc;
 	}
@@ -870,7 +870,7 @@ static int rebindproc_connect_with_state (LDAP *ldap_struct,
 	 * our credentials. At least *try* to secure the connection - Guenther */
 
 	smb_ldap_upgrade_conn(ldap_struct, &version);
-	smb_ldap_start_tls(ldap_struct, version);
+	smbldap_start_tls(ldap_struct, version);
 
 	/** @TODO Should we be doing something to check what servers we rebind to?
 	    Could we get a referral to a machine that we don't want to give our
