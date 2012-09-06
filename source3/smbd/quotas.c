@@ -746,9 +746,6 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 	*bsize = gqr.getquota_rslt_u.gqr_rquota.rq_bsize;
 	*dsize = D.dqb_bsoftlimit;
 
-	if (D.dqb_curblocks == 1)
-		*bsize = 512;
-
 	if (D.dqb_curblocks > D.dqb_bsoftlimit) {
 		*dfree = 0;
 		*dsize = D.dqb_curblocks;
