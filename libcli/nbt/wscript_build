@@ -19,7 +19,7 @@ bld.SAMBA_LIBRARY('cli-nbt',
 
 bld.SAMBA_BINARY('nmblookup' + bld.env.suffix4,
                  source='tools/nmblookup.c',
-                 manpages='man/nmblookup.1',
+                 manpages='man/nmblookup4.1',
                  deps='samba-hostconfig samba-util cli-nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
                  )
 
