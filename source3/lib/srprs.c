@@ -24,12 +24,9 @@
  * @brief  A simple recursive parser.
  */
 
+#include "includes.h"
 #include "srprs.h"
 #include "cbuf.h"
-#include <ctype.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
 
 bool srprs_skipws(const char** ptr) {
 	while (isspace(**ptr))

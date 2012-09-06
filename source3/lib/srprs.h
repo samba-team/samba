@@ -34,9 +34,6 @@
 #ifndef __SRPRS_H
 #define __SRPRS_H
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
 struct cbuf;
 
 /**

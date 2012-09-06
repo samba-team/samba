@@ -29,11 +29,6 @@
 #ifndef __CBUF_H
 #define __CBUF_H
 
-#include <stddef.h>
-#include <stdbool.h>
-#include <stdint.h>
-
-
 struct cbuf;
 typedef struct cbuf cbuf;
 
