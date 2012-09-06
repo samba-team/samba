@@ -179,6 +179,7 @@ static struct {
 #endif /* HAVE_XFS_QUOTAS */
 #ifdef HAVE_NFS_QUOTAS
 	{"nfs", sys_get_nfs_quota,	sys_set_nfs_quota},
+	{"nfs4", sys_get_nfs_quota,	sys_set_nfs_quota},
 #endif /* HAVE_NFS_QUOTAS */
 	{NULL, 	NULL, 			NULL}
 };
