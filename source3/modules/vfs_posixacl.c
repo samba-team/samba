@@ -177,7 +177,7 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 			DEBUG(0, ("smb_acl_get_qualifier failed\n"));
 			return False;
 		}
-		ace->uid = *puid;
+		ace->info.user.uid = *puid;
 		acl_free(puid);
 		break;
 	}
@@ -188,7 +188,7 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 			DEBUG(0, ("smb_acl_get_qualifier failed\n"));
 			return False;
 		}
-		ace->gid = *pgid;
+		ace->info.group.gid = *pgid;
 		acl_free(pgid);
 		break;
 	}
@@ -323,14 +323,14 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl)
 
 		switch (entry->a_type) {
 		case SMB_ACL_USER:
-			if (acl_set_qualifier(e, &entry->uid) != 0) {
+			if (acl_set_qualifier(e, &entry->info.user.uid) != 0) {
 				DEBUG(1, ("acl_set_qualifiier failed: %s\n",
 					  strerror(errno)));
 				goto fail;
 			}
 			break;
 		case SMB_ACL_GROUP:
-			if (acl_set_qualifier(e, &entry->gid) != 0) {
+			if (acl_set_qualifier(e, &entry->info.group.gid) != 0) {
 				DEBUG(1, ("acl_set_qualifiier failed: %s\n",
 					  strerror(errno)));
 				goto fail;

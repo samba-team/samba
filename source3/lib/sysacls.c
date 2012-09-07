@@ -107,11 +107,11 @@ int sys_acl_get_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
 void *sys_acl_get_qualifier(SMB_ACL_ENTRY_T entry_d)
 {
 	if (entry_d->a_type == SMB_ACL_USER) {
-		return &entry_d->uid;
+		return &entry_d->info.user.uid;
 		}
 
 	if (entry_d->a_type == SMB_ACL_GROUP) {
-		return &entry_d->gid;
+		return &entry_d->info.group.gid;
 	}
 
 	errno = EINVAL;
@@ -189,15 +189,15 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 				break;
  
 			case SMB_ACL_USER:
-				id = uidtoname(ap->uid);
+				id = uidtoname(ap->info.user.uid);
 			case SMB_ACL_USER_OBJ:
 				tag = "user";
 				break;
 
 			case SMB_ACL_GROUP:
-				if ((gr = getgrgid(ap->gid)) == NULL) {
+				if ((gr = getgrgid(ap->info.group.gid)) == NULL) {
 					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
-						(long)ap->gid);
+						(long)ap->info.group.gid);
 					id = idbuf;
 				} else {
 					id = gr->gr_name;
@@ -294,8 +294,6 @@ int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
 
 	entry_d		= &acl_d->acl[acl_d->count++];
 	entry_d->a_type	= SMB_ACL_TAG_INVALID;
-	entry_d->uid	= -1;
-	entry_d->gid	= -1;
 	entry_d->a_perm	= 0;
 	*entry_p	= entry_d;
 
@@ -324,11 +322,11 @@ int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type)
 int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p)
 {
 	if (entry_d->a_type == SMB_ACL_USER) {
-		entry_d->uid = *((uid_t *)qual_p);
+		entry_d->info.user.uid = *((uid_t *)qual_p);
 		return 0;
 		}
 	if (entry_d->a_type == SMB_ACL_GROUP) {
-		entry_d->gid = *((gid_t *)qual_p);
+		entry_d->info.group.gid = *((gid_t *)qual_p);
 		return 0;
 	}
 

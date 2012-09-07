@@ -40,18 +40,34 @@ interface smb_acl
 		SMB_ACL_OTHER       = 5,
 		SMB_ACL_MASK        = 6
 	} smb_acl_tag_t;
-	
+
+	typedef struct {
+		uid_t uid;
+	} smb_acl_user;
+
+	typedef struct {
+		gid_t gid;
+	} smb_acl_group;
+
+	typedef [switch_type(uint16)] union {
+		[case (SMB_ACL_USER)] smb_acl_user user;
+		[case (SMB_ACL_USER_OBJ)];
+		[case (SMB_ACL_GROUP)] smb_acl_group group;
+		[case (SMB_ACL_GROUP_OBJ)];
+		[case (SMB_ACL_OTHER)];
+		[case (SMB_ACL_MASK)];		
+	} smb_acl_entry_info;
+
 	typedef struct {
 		smb_acl_tag_t a_type;
+		[switch_is(a_type)] smb_acl_entry_info info;
 		mode_t a_perm;
-		uid_t uid;
-		gid_t gid;
 	} smb_acl_entry;
 	
 	[public] typedef struct {
-		int	size;
+		[value(0)] int	size;
 		int	count;
-		int	next;
+		[value(0)] int	next;
 		[size_is(count)] smb_acl_entry acl[*];
 	} smb_acl_t;
 	
