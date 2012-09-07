@@ -1188,12 +1188,30 @@ main() {
     if Options.options.with_quotas:
         # For quotas on Veritas VxFS filesystems
         conf.CHECK_HEADERS('sys/fs/vx_quota.h')
-        # For quotas on Linux XFS filesystems
-        conf.CHECK_HEADERS('xfs/xqm.h')
         # For sys/quota.h and linux/quota.h
         conf.CHECK_HEADERS('sys/quota.h')
         # For quotas on BSD systems
         conf.CHECK_HEADERS('ufs/ufs/quota.h')
+        # For quotas on Linux XFS filesystems
+        if conf.CHECK_HEADERS('xfs/xqm.h'):
+            conf.DEFINE('HAVE_XFS_QUOTAS', '1')
+        else:
+            # For Irix XFS
+            conf.CHECK_CODE('''
+                #include "confdefs.h"
+                #ifdef HAVE_SYS_TYPES_H
+                #include <sys/types.h>
+                #endif
+                #ifdef HAVE_ASM_TYPES_H
+                #include <asm/types.h>
+                #endif
+                #include <sys/quota.h>
+                int i = Q_XGETQUOTA;''',
+                define='HAVE_XFS_QUOTAS',
+                msg='for XFS QUOTA in <sys/quota.h>',
+                execute=False,
+                local_include=False)
+        
 
 
     #
