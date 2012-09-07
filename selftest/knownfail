@@ -176,6 +176,7 @@
 ^samba3.smb2.notify.dir
 ^samba3.smb2.notify.rec
 ^samba3.smb2.durable-open.file-position
+^samba3.smb2.durable-open.alloc-size
 ^samba3.smb2.durable-open.lease
 ^samba3.smb2.durable-open.lock-oplock
 ^samba3.smb2.durable-open.lock-lease
