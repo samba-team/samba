@@ -1212,6 +1212,9 @@ main() {
                 execute=False,
                 local_include=False)
         
+        # For IRIX like dqb_isoftlimit instead of dqb_fsoftlimit in struc dqblk
+        conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_fsoftlimit', define='HAVE_DQB_FSOFTLIMIT',
+                                headers='sys/quota.h')
 
 
     #
