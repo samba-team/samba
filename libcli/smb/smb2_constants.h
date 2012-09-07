@@ -204,6 +204,7 @@
 #define SMB2_CREATE_TAG_RQLS "RqLs"
 #define SMB2_CREATE_TAG_DH2Q "DH2Q"
 #define SMB2_CREATE_TAG_DH2C "DH2C"
+#define SMB2_CREATE_TAG_APP_INSTANCE_ID "\x45\xBC\xA6\x6A\xEF\xA7\xF7\x4A\x90\x08\xFA\x46\x2E\x14\x4D\x74"
 
 /* SMB2 notify flags */
 #define SMB2_WATCH_TREE 0x0001
