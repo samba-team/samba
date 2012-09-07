@@ -531,9 +531,9 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.durable_open, false);
-	CHECK_VAL(io1.out.durable_open_v2, true);
-	CHECK_VAL(io1.out.persistent_open, false);
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(io2.out.durable_open_v2, true);
+	CHECK_VAL(io2.out.persistent_open, false);
 	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
 	_h = io2.out.file.handle;
 	h = &_h;
