@@ -446,7 +446,8 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	char fname[256];
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
-	struct smb2_create io1, io2;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
 	bool ret = true;
 
 	/* Choose a random name in case the state is left a little funky. */
@@ -455,25 +456,25 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	smb2_oplock_create_share(&io1, fname,
+	smb2_oplock_create_share(&io, fname,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
-	io1.in.durable_open = false;
-	io1.in.durable_open_v2 = true;
-	io1.in.persistent_open = false;
-	io1.in.create_guid = GUID_random();
-	io1.in.timeout = UINT32_MAX;
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
 
-	status = smb2_create(tree, mem_ctx, &io1);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	_h = io1.out.file.handle;
+	_h = io.out.file.handle;
 	h = &_h;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
-	CHECK_VAL(io1.out.durable_open, false);
-	CHECK_VAL(io1.out.durable_open_v2, true);
-	CHECK_VAL(io1.out.persistent_open, false);
-	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, io.in.timeout);
 
 	/* disconnect, reconnect and then do durable reopen */
 	talloc_free(tree);
@@ -485,57 +486,57 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 		goto done;
 	}
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = "";
-	io2.in.durable_handle_v2 = h;
-	status = smb2_create(tree, mem_ctx, &io2);
+	ZERO_STRUCT(io);
+	io.in.fname = "";
+	io.in.durable_handle_v2 = h;
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = "__non_existing_fname__";
-	io2.in.durable_handle_v2 = h;
-	status = smb2_create(tree, mem_ctx, &io2);
+	ZERO_STRUCT(io);
+	io.in.fname = "__non_existing_fname__";
+	io.in.durable_handle_v2 = h;
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = fname;
-	io2.in.durable_handle_v2 = h;
-	status = smb2_create(tree, mem_ctx, &io2);
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle_v2 = h;
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	ZERO_STRUCT(io2);
+	ZERO_STRUCT(io);
 	/*
 	 * These are completely ignored by the server
 	 */
-	io2.in.security_flags = 0x78;
-	io2.in.oplock_level = 0x78;
-	io2.in.impersonation_level = 0x12345678;
-	io2.in.create_flags = 0x12345678;
-	io2.in.reserved = 0x12345678;
-	io2.in.desired_access = 0x12345678;
-	io2.in.file_attributes = 0x12345678;
-	io2.in.share_access = 0x12345678;
-	io2.in.create_disposition = 0x12345678;
-	io2.in.create_options = 0x12345678;
-	io2.in.fname = "__non_existing_fname__";
+	io.in.security_flags = 0x78;
+	io.in.oplock_level = 0x78;
+	io.in.impersonation_level = 0x12345678;
+	io.in.create_flags = 0x12345678;
+	io.in.reserved = 0x12345678;
+	io.in.desired_access = 0x12345678;
+	io.in.file_attributes = 0x12345678;
+	io.in.share_access = 0x12345678;
+	io.in.create_disposition = 0x12345678;
+	io.in.create_options = 0x12345678;
+	io.in.fname = "__non_existing_fname__";
 
 	/*
-	 * only io2.in.durable_handle_v2 and
-	 * io2.in.create_guid are checked
+	 * only io.in.durable_handle_v2 and
+	 * io.in.create_guid are checked
 	 */
-	io2.in.durable_open_v2 = false;
-	io2.in.durable_handle_v2 = h;
-	io2.in.create_guid = io1.in.create_guid;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
 	h = NULL;
 
-	status = smb2_create(tree, mem_ctx, &io2);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.durable_open, false);
-	CHECK_VAL(io2.out.durable_open_v2, true);
-	CHECK_VAL(io2.out.persistent_open, false);
-	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
-	_h = io2.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
 	h = &_h;
 
 done:
