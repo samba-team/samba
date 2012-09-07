@@ -58,7 +58,7 @@ static bool test_dlz_bind9_create(struct torture_context *tctx)
 		NULL
 	};
 	tctx_static = tctx;
-	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, discard_const_p(char *, argv), &dbdata,
 						  "log", dlz_bind9_log_wrapper, NULL), ISC_R_SUCCESS,
 		"Failed to create samba_dlz");
 
@@ -106,7 +106,7 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 		NULL
 	};
 	tctx_static = tctx;
-	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, argv, &dbdata,
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, discard_const_p(char *, argv), &dbdata,
 						  "log", dlz_bind9_log_wrapper,
 						  "writeable_zone", dlz_bind9_writeable_zone_hook, NULL),
 				 ISC_R_SUCCESS,
