@@ -533,7 +533,7 @@ bool test_durable_v2_open_reopen2(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, true);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
 	CHECK_VAL(io.out.persistent_open, false);
 	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
 	_h = io.out.file.handle;
