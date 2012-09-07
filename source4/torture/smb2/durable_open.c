@@ -1487,7 +1487,7 @@ bool test_durable_open_alloc_size(struct torture_context *tctx,
 	const uint8_t *b = NULL;
 
 	/* Choose a random name in case the state is left a little funky. */
-	snprintf(fname, 256, "durable_open_initial_alloc_%s.dat",
+	snprintf(fname, 256, "durable_open_alloc_size_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
