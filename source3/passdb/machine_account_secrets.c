@@ -149,9 +149,11 @@ bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 		if (strncmp(protect_ids, "TRUE", 4)) {
 			DEBUG(0, ("Refusing to store a Domain SID, "
 				  "it has been marked as protected!\n"));
+			SAFE_FREE(protect_ids);
 			return false;
 		}
 	}
+	SAFE_FREE(protect_ids);
 #endif
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
