@@ -837,8 +837,8 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 				     struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
-	struct smb2_handle h1, h2;
-	struct smb2_create io1, io2;
+	struct smb2_handle h;
+	struct smb2_create io;
 	NTSTATUS status;
 	const char *fname = "durable_open_position.dat";
 	union smb_fileinfo qfinfo;
@@ -849,21 +849,21 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
-	io1.in.durable_open = true;
+	smb2_oplock_create(&io, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	io.in.durable_open = true;
 
-	status = smb2_create(tree, mem_ctx, &io1);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	h1 = io1.out.file.handle;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.durable_open, true);
-	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	h = io.out.file.handle;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
 
 	/* TODO: check extra blob content */
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	qfinfo.generic.in.file.handle = h1;
+	qfinfo.generic.in.file.handle = h;
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0);
@@ -873,14 +873,14 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 
 	ZERO_STRUCT(sfinfo);
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
-	sfinfo.generic.in.file.handle = h1;
+	sfinfo.generic.in.file.handle = h;
 	sfinfo.position_information.in.position = 0x1000;
 	status = smb2_setinfo_file(tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	qfinfo.generic.in.file.handle = h1;
+	qfinfo.generic.in.file.handle = h;
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0x1000);
@@ -903,29 +903,29 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	qfinfo.generic.in.file.handle = h1;
+	qfinfo.generic.in.file.handle = h;
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = fname;
-	io2.in.durable_handle = &h1;
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = &h;
 
-	status = smb2_create(tree, mem_ctx, &io2);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
-	CHECK_VAL(io2.out.reserved, 0x00);
-	CHECK_VAL(io2.out.create_action, NTCREATEX_ACTION_EXISTED);
-	CHECK_VAL(io2.out.alloc_size, 0);
-	CHECK_VAL(io2.out.size, 0);
-	CHECK_VAL(io2.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.reserved2, 0);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+	CHECK_VAL(io.out.reserved, 0x00);
+	CHECK_VAL(io.out.create_action, NTCREATEX_ACTION_EXISTED);
+	CHECK_VAL(io.out.alloc_size, 0);
+	CHECK_VAL(io.out.size, 0);
+	CHECK_VAL(io.out.file_attr, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.reserved2, 0);
 
-	h2 = io2.out.file.handle;
+	h = io.out.file.handle;
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
-	qfinfo.generic.in.file.handle = h2;
+	qfinfo.generic.in.file.handle = h;
 	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0x1000);
@@ -933,7 +933,7 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	torture_comment(tctx, "position: %llu\n",
 			(unsigned long long)pos);
 
-	smb2_util_close(tree, h2);
+	smb2_util_close(tree, h);
 
 	talloc_free(mem_ctx);
 
