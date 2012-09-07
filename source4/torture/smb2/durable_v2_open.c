@@ -413,8 +413,7 @@ bool test_durable_v2_open_reopen1(struct torture_context *tctx,
 
 	/* try a durable reconnect while the file is still open */
 	ZERO_STRUCT(io2);
-	io2.in = io1.in;
-	io2.in.durable_open_v2 = false;
+	io2.in.fname = "";
 	io2.in.durable_handle_v2 = h;
 	io2.in.create_guid = io1.in.create_guid;
 	status = smb2_create(tree, mem_ctx, &io2);
