@@ -255,7 +255,7 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 			    const char *principal, int time_offset,
 			    DATA_BLOB *targ,
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
-			    time_t *expire_time)
+			    const char *ccname, time_t *expire_time)
 {
 	int retval;
 	DATA_BLOB tkt, tkt_wrapped;
@@ -264,7 +264,7 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 	/* get a kerberos ticket for the service and extract the session key */
 	retval = cli_krb5_get_ticket(ctx, principal, time_offset,
 					  &tkt, session_key_krb5,
-					  extra_ap_opts, NULL,
+					  extra_ap_opts, ccname,
 					  expire_time, NULL);
 	if (retval) {
 		return retval;

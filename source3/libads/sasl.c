@@ -271,6 +271,74 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 }
 
 #ifdef HAVE_KRB5
+static ADS_STATUS ads_init_gssapi_cred(ADS_STRUCT *ads, gss_cred_id_t *cred)
+{
+	ADS_STATUS status;
+	krb5_context kctx;
+	krb5_error_code kerr;
+	krb5_ccache kccache = NULL;
+	uint32_t maj, min;
+
+	*cred = GSS_C_NO_CREDENTIAL;
+
+	if (!ads->auth.ccache_name) {
+		return ADS_SUCCESS;
+	}
+
+	kerr = krb5_init_context(&kctx);
+	if (kerr) {
+		return ADS_ERROR_KRB5(kerr);
+	}
+
+#ifdef HAVE_GSS_KRB5_IMPORT_CRED
+	kerr = krb5_cc_resolve(kctx, ads->auth.ccache_name, &kccache);
+	if (kerr) {
+		status = ADS_ERROR_KRB5(kerr);
+		goto done;
+	}
+
+	maj = gss_krb5_import_cred(&min, kccache, NULL, NULL, cred);
+	if (maj != GSS_S_COMPLETE) {
+		status = ADS_ERROR_GSS(maj, min);
+		goto done;
+	}
+#else
+	/* We need to fallback to overriding the default creds.
+	 * This operation is not thread safe as it changes the process
+	 * environment variable, but we do not have any better option
+	 * with older kerberos libraries */
+	{
+		const char *oldccname = NULL;
+
+		oldccname = getenv("KRB5CCNAME");
+		setenv("KRB5CCNAME", ads->auth.ccache_name, 1);
+
+		maj = gss_acquire_cred(&min, GSS_C_NO_NAME, GSS_C_INDEFINITE,
+				       NULL, GSS_C_INITIATE, cred, NULL, NULL);
+
+		if (oldccname) {
+			setenv("KRB5CCNAME", oldccname, 1);
+		} else {
+			unsetenv("KRB5CCNAME");
+		}
+
+		if (maj != GSS_S_COMPLETE) {
+			status = ADS_ERROR_GSS(maj, min);
+			goto done;
+		}
+	}
+#endif
+
+	status = ADS_SUCCESS;
+
+done:
+	if (!ADS_ERR_OK(status) && kccache != NULL) {
+		krb5_cc_close(kctx, kccache);
+	}
+	krb5_free_context(kctx);
+	return status;
+}
+
 static ADS_STATUS ads_sasl_gssapi_wrap(ADS_STRUCT *ads, uint8 *buf, uint32 len)
 {
 	gss_ctx_id_t context_handle = (gss_ctx_id_t)ads->ldap.wrap_private_data;
@@ -377,6 +445,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	bool ok;
 	uint32 minor_status;
 	int gss_rc, rc;
+	gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
 	gss_OID_desc krb5_mech_type =
 	{9, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
 	gss_OID mech_type = &krb5_mech_type;
@@ -389,6 +458,11 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	DATA_BLOB unwrapped;
 	DATA_BLOB wrapped;
 	struct berval cred, *scred = NULL;
+
+	status = ads_init_gssapi_cred(ads, &gss_cred);
+	if (!ADS_ERR_OK(status)) {
+		goto failed;
+	}
 
 	input_token.value = NULL;
 	input_token.length = 0;
@@ -407,7 +481,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 
 	/* Note: here we explicit ask for the krb5 mech_type */
 	gss_rc = gss_init_sec_context(&minor_status,
-				      GSS_C_NO_CREDENTIAL,
+				      gss_cred,
 				      &context_handle,
 				      serv_name,
 				      mech_type,
@@ -544,7 +618,7 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	 * to gssapi
 	 */
 	gss_rc = gss_init_sec_context(&minor_status,
-				      GSS_C_NO_CREDENTIAL,
+				      gss_cred,
 				      &context_handle,
 				      serv_name,
 				      mech_type,
@@ -606,6 +680,8 @@ static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t
 	status = ADS_SUCCESS;
 
 failed:
+	if (gss_cred != GSS_C_NO_CREDENTIAL)
+		gss_release_cred(&minor_status, &gss_cred);
 	if (context_handle != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
 	return status;
@@ -791,6 +867,7 @@ static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *prin
 
 	rc = spnego_gen_krb5_negTokenInit(talloc_tos(), principal,
 				     ads->auth.time_offset, &blob, &session_key, 0,
+				     ads->auth.ccache_name,
 				     &ads->auth.tgs_expire);
 
 	if (rc) {
@@ -952,6 +1029,7 @@ failed:
 static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv_name)
 {
 	uint32 minor_status;
+	gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
 	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
 	gss_OID mech_type = GSS_C_NULL_OID;
 	gss_buffer_desc output_token, input_token;
@@ -969,6 +1047,11 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 	input_token.value = NULL;
 	input_token.length = 0;
 
+	status = ads_init_gssapi_cred(ads, &gss_cred);
+	if (!ADS_ERR_OK(status)) {
+		goto failed;
+	}
+
 	/*
 	 * Note: here we always ask the gssapi for sign and seal
 	 *       as this is negotiated later after the mutal
@@ -978,7 +1061,7 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 
 	for (i=0; i < MAX_GSS_PASSES; i++) {
 		gss_rc = gss_init_sec_context(&minor_status,
-					  GSS_C_NO_CREDENTIAL,
+					  gss_cred,
 					  &context_handle,
 					  serv_name,
 					  mech_type,
@@ -1137,7 +1220,8 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 	}
 
 failed:
-
+	if (gss_cred != GSS_C_NO_CREDENTIAL)
+		gss_release_cred(&minor_status, &gss_cred);
 	if (context_handle != GSS_C_NO_CONTEXT)
 		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
 

@@ -768,7 +768,7 @@ int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
 			    const char *principal, int time_offset,
 			    DATA_BLOB *targ,
 			    DATA_BLOB *session_key_krb5, uint32 extra_ap_opts,
-			    time_t *expire_time);
+			    const char *ccname, time_t *expire_time);
 bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 			    DATA_BLOB *chal1, DATA_BLOB *chal2);
 DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob);

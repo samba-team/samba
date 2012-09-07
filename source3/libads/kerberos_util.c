@@ -63,9 +63,11 @@ int ads_kinit_password(ADS_STRUCT *ads)
 		return KRB5_LIBOS_CANTREADPWD;
 	}
 
-	ret = kerberos_kinit_password_ext(s, ads->auth.password, ads->auth.time_offset,
-			&ads->auth.tgt_expire, NULL, NULL, False, False, ads->auth.renewable,
-			NULL);
+	ret = kerberos_kinit_password_ext(s, ads->auth.password,
+					  ads->auth.time_offset,
+					  &ads->auth.tgt_expire, NULL,
+					  ads->auth.ccache_name, false, false,
+					  ads->auth.renewable, NULL);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n",

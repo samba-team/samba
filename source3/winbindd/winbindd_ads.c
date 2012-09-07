@@ -78,14 +78,14 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		}
 	}
 
-	/* we don't want this to affect the users ccache */
-	setenv("KRB5CCNAME", "MEMORY:winbind_ccache", 1);
-
 	ads = ads_init(domain->alt_name, domain->name, NULL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", domain->name));
 		return NULL;
 	}
+
+	/* we don't want ads operations to affect the default ccache */
+	ads->auth.ccache_name = SMB_STRDUP("MEMORY:winbind_ccache");
 
 	/* the machine acct password might have change - fetch it every time */
 

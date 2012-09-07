@@ -1461,7 +1461,7 @@ static struct tevent_req *cli_session_setup_kerberos_send(
 	 * we have to acquire a ticket. To be fixed later :-)
 	 */
 	rc = spnego_gen_krb5_negTokenInit(state, principal, 0, &state->negTokenTarg,
-				     &state->session_key_krb5, 0, NULL);
+				     &state->session_key_krb5, 0, NULL, NULL);
 	if (rc) {
 		DEBUG(1, ("cli_session_setup_kerberos: "
 			  "spnego_gen_krb5_negTokenInit failed: %s\n",

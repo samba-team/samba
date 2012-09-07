@@ -201,6 +201,7 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->auth.password);
 		SAFE_FREE((*ads)->auth.user_name);
 		SAFE_FREE((*ads)->auth.kdc_server);
+		SAFE_FREE((*ads)->auth.ccache_name);
 
 		SAFE_FREE((*ads)->config.realm);
 		SAFE_FREE((*ads)->config.bind_path);

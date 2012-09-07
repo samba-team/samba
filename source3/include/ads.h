@@ -45,6 +45,7 @@ typedef struct ads_struct {
 		char *kdc_server;
 		unsigned flags;
 		int time_offset;
+		char *ccache_name;
 		time_t tgt_expire;
 		time_t tgs_expire;
 		time_t renewable;
