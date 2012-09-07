@@ -1690,6 +1690,99 @@ done:
 	return ret;
 }
 
+/**
+ * test behaviour when a disconnect happens while creating a read-only file
+ */
+bool test_durable_open_read_only(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	bool ret = true;
+	uint64_t previous_session_id;
+	const uint8_t b = 0;
+	uint64_t alloc_size = 0;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_initial_alloc_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = true;
+	io.in.file_attributes = FILE_ATTRIBUTE_READONLY;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* write one byte */
+	status = smb2_util_write(tree, *h, &b, 0, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* disconnect, reconnect and then do durable reopen */
+	talloc_free(tree);
+	tree = NULL;
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	alloc_size = io.out.alloc_size;
+	CHECK_CREATED_SIZE(&io, EXISTED,
+			   FILE_ATTRIBUTE_READONLY|FILE_ATTRIBUTE_ARCHIVE,
+			   alloc_size, 1);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
+	h = &_h;
+
+	/* write one byte */
+	status = smb2_util_write(tree, *h, &b, 1, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	if (h != NULL) {
+		union smb_setfileinfo sfinfo;
+
+		ZERO_STRUCT(sfinfo);
+		sfinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION;
+		sfinfo.basic_info.in.file.handle = *h;
+		sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
+		smb2_setinfo_file(tree, &sfinfo);
+
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
 
 struct torture_suite *torture_smb2_durable_open_init(void)
 {
@@ -1719,6 +1812,8 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 				     test_durable_open_open2_oplock);
 	torture_suite_add_1smb2_test(suite, "alloc-size",
 				     test_durable_open_alloc_size);
+	torture_suite_add_1smb2_test(suite, "read-only",
+				     test_durable_open_read_only);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 
