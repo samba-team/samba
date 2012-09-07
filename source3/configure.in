@@ -4586,7 +4586,7 @@ AC_CHECK_HEADERS(sys/quota.h)
 AC_CHECK_HEADERS(ufs/ufs/quota.h)
 
 
-if test x"$samba_cv_found_xfs_header" != x"yes"; then
+if test x"$ac_cv_header_xfs_xqm_h" != x"yes"; then
 # if we have xfs quota support <sys/quota.h> (IRIX) we should use it
 AC_CACHE_CHECK([for XFS QUOTA in <sys/quota.h>],samba_cv_HAVE_SYS_QUOTA_XFS, [
 AC_TRY_COMPILE([
