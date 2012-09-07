@@ -208,7 +208,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 				return -1;
 		}
 
-		if (asprintf(&syscmd, "%s \"%s\" %d %d",
+		if (asprintf(&syscmd, "%s %s %d %d",
 			get_quota_command, path, qtype, _id) < 0) {
 			return -1;
 		}
@@ -351,7 +351,7 @@ static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		}
 
 		if (asprintf(&syscmd,
-			"%s \"%s\" %d %d "
+			"%s %s %d %d "
 			"%u %llu %llu "
 			"%llu %llu %llu ",
 			set_quota_command, path, qtype, _id, dp->qflags,
