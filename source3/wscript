@@ -1216,6 +1216,11 @@ main() {
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_fsoftlimit', define='HAVE_DQB_FSOFTLIMIT',
                                 headers='sys/quota.h')
 
+        if conf.CHECK_HEADERS('rpcsvc/rquota.h'):
+            conf.DEFINE('HAVE_NFS_QUOTAS', '1')
+            conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 'getquota_rslt_u',
+                                        define='HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U',
+                                        headers='rpcsvc/rquota.h')
 
     #
     # checking for clustering extensions (CTDB)
