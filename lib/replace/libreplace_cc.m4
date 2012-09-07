@@ -64,6 +64,7 @@ dnl Add #include for broken IRIX header files
 case "$host_os" in
 	*irix6*) AC_ADD_INCLUDE(<standards.h>)
 		AC_N_DEFINE(_XOPEN_SOURCE,600)
+		AC_N_DEFINE(_BSD_TYPES)
 		;;
 	*hpux*)
 		# mmap on HPUX is completely broken...
