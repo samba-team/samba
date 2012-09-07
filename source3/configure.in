@@ -4576,7 +4576,7 @@ AC_CHECK_HEADERS(sys/fs/vx_quota.h)
 
 # For quotas on XFS filesystems, Linux style
 AC_CHECK_HEADERS(xfs/xqm.h,[
-	    AC_DEFINE(HAVE_LINUX_XFS_QUOTAS,1,[Whether Linux xfs quota support is available])
+	    AC_DEFINE(HAVE_XFS_QUOTAS,1,[Whether xfs quota support is available])
 	])
 
 # For sys/quota.h and linux/quota.h
@@ -4601,7 +4601,7 @@ AC_TRY_COMPILE([
 ],[int i = Q_XGETQUOTA;],
 samba_cv_HAVE_SYS_QUOTA_XFS=yes,samba_cv_HAVE_SYS_QUOTA_XFS=no)])
 if test "$samba_cv_HAVE_SYS_QUOTA_XFS"x = "yes"x; then
-	samba_cv_found_xfs_header=yes
+	AC_DEFINE(HAVE_XFS_QUOTAS,1,[Whether xfs quota support is available])
 fi
 fi
 
@@ -4693,9 +4693,6 @@ if test x"$samba_cv_SYSQUOTA_FOUND" = x"yes"; then
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(WITH_QUOTAS,1,[Whether to use disk quota support])
 	AC_DEFINE(HAVE_SYS_QUOTAS,1,[Whether the new lib/sysquotas.c interface can be used])
-	if test x"$samba_cv_found_xfs_header" = x"yes"; then
-	   AC_DEFINE(HAVE_XFS_QUOTAS,1,[Whether xfs quota support is available])
-	fi
 else
     AC_MSG_RESULT(no)
     AC_MSG_CHECKING(whether to use the old quota support)
