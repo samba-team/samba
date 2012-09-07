@@ -480,8 +480,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  ../libcli/smb/smb_signing.o \
 	  ../lib/util/charset/iconv.o ../lib/util/charset/weird.o \
 	  ../lib/util/charset/charset_macosxfs.o intl/lang_tdb.o \
-	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
-	  lib/sessionid_tdb.o \
+	  lib/adt_tree.o lib/gencache.o \
 	  ../lib/util/modules.o lib/events.o @LIBTEVENT_OBJ0@ \
 	  @CCAN_OBJ@ \
 	  lib/server_contexts.o \
@@ -1001,7 +1000,9 @@ SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(PRIVILEGES_BASIC_OBJ) \
 		$(REGFIO_OBJ) \
 		$(REG_API_REGF_OBJ) \
-		$(LIBNDR_XATTR_OBJ)
+		$(LIBNDR_XATTR_OBJ) \
+		lib/conn_tdb.o lib/sessionid_tdb.o
+
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_cups.o printing/print_generic.o \
@@ -1043,19 +1044,9 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o web/neg_lang.o
 
-SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(PRINTBASE_OBJ) $(LIBSMB_OBJ) \
-	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(KRBCLIENT_OBJ) \
-	   $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
-	   $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) \
-           $(PASSCHANGE_OBJ) $(FNAME_UTIL_OBJ) \
-	   $(LIBCLI_SAMR_OBJ) \
-	   rpc_client/init_lsa.o
+SWAT_OBJ = $(SWAT_OBJ1) $(SMBD_OBJ_BASE) $(PASSCHANGE_OBJ)
 
-STATUS_OBJ = utils/status.o utils/status_profile.o \
-	     $(LOCKING_OBJ) $(PARAM_OBJ) \
-	     smbd/notify_internal.o autoconf/librpc/gen_ndr/ndr_notify.o \
-             $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-	     $(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
+STATUS_OBJ = utils/status.o utils/status_profile.o $(SMBD_OBJ_BASE)
 
 
 SMBCONTROL_OBJ = utils/smbcontrol.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
@@ -1223,50 +1214,32 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o utils/net_registry_check.o\
-	   auth/token_util.o utils/net_dom.o utils/net_share.o utils/net_connections.o\
+	   utils/net_dom.o utils/net_share.o utils/net_connections.o\
 	   utils/net_g_lock.o \
 	   utils/net_serverid.o \
 	   utils/net_eventlog.o \
 	   utils/net_printing.o \
 	   utils/net_rpc_trust.o \
 	   utils/net_rpc_conf.o\
-	   $(LIBNDR_NTPRINTING_OBJ) \
 	   $(LIBNDR_PREG_OBJ) \
-	   $(LIBCLI_SPOOLSS_OBJ) \
-	   $(LIBCLI_WINREG_OBJ) \
 	   $(LIBCLI_DRSUAPI_OBJ) \
 	   $(LIBCLI_INITSHUTDOWN_OBJ) \
 	   $(LIBCLI_DSSETUP_OBJ) \
 	   $(LIBCLI_SVCCTL_OBJ) \
 	   $(LIBCLI_WKSSVC_OBJ) \
-	   $(LIBCLI_SRVSVC_OBJ) \
-	   $(LIBCLI_LSA_OBJ) \
-	   $(LIBCLI_SAMR_OBJ) \
-	   $(RPC_CLIENT_SCHANNEL_OBJ) \
-	   rpc_client/init_samr.o \
 	   registry/reg_parse.o registry/reg_format.o \
-	   registry/reg_import.o \
-	   printing/nt_printing_migrate.o
+	   registry/reg_import.o
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
 
 NET_OBJ = $(NET_OBJ1) \
-	  $(NET_OBJ2) @FAKE_KASERVER_OBJ@\
-	  $(PARAM_WITHOUT_REG_OBJ) $(LIBSMB_OBJ) \
-	  $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-	  $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(LIBADDNS_OBJ0) \
-	  $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
-	  $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) $(LIBADS_PRINTER_OBJ) $(POPT_LIB_OBJ) \
-	  $(SMBLDAP_OBJ) $(DCUTIL_OBJ) \
-	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(READLINE_OBJ) \
-	  $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
-	  $(REG_SMBCONF_OBJ) \
-	  $(LIBNET_OBJ) $(LIBNET_DSSYNC_OBJ) $(LIBNET_SAMSYNC_OBJ) \
-	  $(LIBSMBCONF_OBJ) \
-	  $(REGFIO_OBJ) \
-	  $(PRIVILEGES_BASIC_OBJ) \
-	  $(LIB_EVENTLOG_OBJ)
+	  $(NET_OBJ2) \
+	  $(LIBADDNS_OBJ0) \
+	  $(READLINE_OBJ) \
+	  $(LIBGPO_OBJ) $(INIPARSER_OBJ) $(DISPLAY_SEC_OBJ) \
+	  $(LIBNET_DSSYNC_OBJ) $(LIBNET_SAMSYNC_OBJ) \
+	  $(SMBD_OBJ_BASE)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
@@ -1896,11 +1869,13 @@ bin/nmbd: $(BINARY_PREREQS) $(NMBD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LI
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(POPT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(ZLIB_LIBS)
 
-bin/swat: $(BINARY_PREREQS) $(SWAT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
+bin/swat: $(BINARY_PREREQS) $(SWAT_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) @BUILD_POPT@
 	@echo Linking $@
-	@$(CC) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(PRINT_LIBS) \
-	  $(AUTH_LIBS) $(LIBS) $(PASSDB_LIBS) $(POPT_LIBS) $(KRB5LIBS) \
-	  $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
+	@$(CC) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LDAP_LIBS) @SMBD_FAM_LIBS@ \
+		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
+		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) $(DNSSD_LIBS) $(AVAHI_LIBS) \
+		$(POPT_LIBS) @SMBD_LIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
+		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
 bin/rpcclient: $(BINARY_PREREQS) $(RPCCLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo Linking $@
@@ -1918,11 +1893,11 @@ bin/smbclient: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTD
 
 bin/net: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) $(LIBNETAPI)
 	@echo Linking $@
-	@$(CC) -o $@ $(NET_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
-		$(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) \
-		$(PASSDB_LIBS) $(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) \
-		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) $(LIBNETAPI_LIBS) \
-		$(ZLIB_LIBS)
+	@$(CC) -o $@ $(NET_OBJ) $(LDFLAGS) $(LDAP_LIBS) @SMBD_FAM_LIBS@ \
+		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
+		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) $(DNSSD_LIBS) $(AVAHI_LIBS) \
+		$(POPT_LIBS) @SMBD_LIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
+		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS) $(LIBNETAPI_LIBS) $(TERMLDFLAGS) $(TERMLIBS)
 
 bin/profiles: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@
@@ -1945,10 +1920,13 @@ bin/smbta-util: $(BINARY_PREREQS) $(SMBTA_UTIL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(
 	@$(CC) -o $@ $(SMBTA_UTIL_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbstatus: $(BINARY_PREREQS) $(STATUS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/smbstatus: $(BINARY_PREREQS) $(STATUS_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) @BUILD_POPT@
 	@echo Linking $@
-	@$(CC) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
-		$(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+	@$(CC) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LDAP_LIBS) @SMBD_FAM_LIBS@ \
+		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
+		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) $(DNSSD_LIBS) $(AVAHI_LIBS) \
+		$(POPT_LIBS) @SMBD_LIBS@ $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) \
+		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
 bin/smbcontrol: $(BINARY_PREREQS) $(SMBCONTROL_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@

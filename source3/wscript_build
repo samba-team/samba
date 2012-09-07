@@ -58,8 +58,7 @@ LIB_SRC = '''
           lib/ms_fnmatch.c
           lib/tallocmsg.c lib/dmallocmsg.c
           intl/lang_tdb.c
-          lib/conn_tdb.c lib/gencache.c
-          lib/sessionid_tdb.c
+          lib/gencache.c
           lib/events.c
           lib/server_contexts.c
           lib/server_prefork.c
@@ -351,6 +350,8 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                lib/sysquotas_xfs.c lib/sysquotas_4A.c lib/sysquotas_4B.c
                lib/sysquotas_nfs.c
                lib/background.c
+               lib/sessionid_tdb.c
+               lib/conn_tdb.c
                smbd/fake_file.c
                smbd/quotas.c smbd/ntquotas.c smbd/msdfs.c
                smbd/aio.c smbd/statvfs.c
@@ -638,6 +639,7 @@ bld.SAMBA3_LIBRARY('netapi',
                     libcli_netlogon3
                     LIBCLI_SAMR
                     INIT_SAMR
+                    auth
                     ''',
                     public_headers='../source3/lib/netapi/netapi.h',
                     pc_files='libnet/netapi.pc',
@@ -675,7 +677,7 @@ bld.SAMBA3_LIBRARY('msrpc3',
 
 bld.SAMBA3_LIBRARY('gpo',
                    source='${LIBGPO_SRC}',
-                   deps='talloc ads TOKEN_UTIL gpext',
+                   deps='talloc ads TOKEN_UTIL gpext auth',
                    vars=locals(),
                    private_library=True)
 
@@ -976,6 +978,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
 		    LIBASYS
                     ccan-hash
                     NDR_SMB_ACL
+                    netapi
                     ''',
                     private_library=True,
                     vars=locals())
@@ -1223,6 +1226,7 @@ bld.SAMBA3_BINARY('web/swat',
                  param
                  pdb
                  popt_samba3
+                 smbd_base
                  LOCKING
                  PLAINTEXT_AUTH
                  PASSCHANGE
@@ -1294,6 +1298,7 @@ bld.SAMBA3_BINARY('net',
                  msrpc3
                  gpo
                  ads
+                 smbd_base
                  LIBADS_SERVER
                  LIBADS_PRINTER
                  SMBREADLINE
@@ -1359,6 +1364,7 @@ bld.SAMBA3_BINARY('smbstatus',
                  talloc
                  param
                  popt_samba3
+                 smbd_base
                  LOCKING
                  PROFILE''',
                  vars=locals())
