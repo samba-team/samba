@@ -51,6 +51,38 @@
 		CHECK_VAL((__io)->out.reserved2, 0);			\
 	} while(0)
 
+static struct {
+	int count;
+	struct smb2_close cl;
+} break_info;
+
+static void torture_oplock_close_callback(struct smb2_request *req)
+{
+	smb2_close_recv(req, &break_info.cl);
+}
+
+/* A general oplock break notification handler.  This should be used when a
+ * test expects to break from batch or exclusive to a lower level. */
+static bool torture_oplock_handler(struct smb2_transport *transport,
+				   const struct smb2_handle *handle,
+				   uint8_t level,
+				   void *private_data)
+{
+	struct smb2_tree *tree = private_data;
+	const char *name;
+	struct smb2_request *req;
+
+	break_info.count++;
+
+	ZERO_STRUCT(break_info.cl);
+	break_info.cl.in.file.handle = *handle;
+
+	req = smb2_close_send(tree, &break_info.cl);
+	req->async.fn = torture_oplock_close_callback;
+	req->async.private_data = NULL;
+	return true;
+}
+
 /**
  * basic durable_open test.
  * durable state should only be granted when requested
@@ -554,6 +586,107 @@ done:
 }
 
 /**
+ * Test durable request / reconnect with AppInstanceId
+ */
+bool test_durable_v2_open_app_instance(struct torture_context *tctx,
+				       struct smb2_tree *tree1,
+				       struct smb2_tree *tree2)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h1, _h2;
+	struct smb2_handle *h1 = NULL, *h2 = NULL;
+	struct smb2_create io1, io2;
+	bool ret = true;
+	struct GUID create_guid_1 = GUID_random();
+	struct GUID create_guid_2 = GUID_random();
+	struct GUID app_instance_id = GUID_random();
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_v2_open_app_instance_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree1, fname);
+
+	ZERO_STRUCT(break_info);
+	tree1->session->transport->oplock.handler = torture_oplock_handler;
+	tree1->session->transport->oplock.private_data = tree1;
+
+	smb2_oplock_create_share(&io1, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid_1;
+	io1.in.app_instance_id = &app_instance_id;
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(io1.out.durable_open_v2, true);
+	CHECK_VAL(io1.out.persistent_open, false);
+	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+
+	/*
+	 * try to open the file as durable from a second tree with
+	 * a different create guid but the same app_instance_id
+	 * while the first handle is still open.
+	 */
+
+	smb2_oplock_create_share(&io2, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io2.in.durable_open = false;
+	io2.in.durable_open_v2 = true;
+	io2.in.persistent_open = false;
+	io2.in.create_guid = create_guid_2;
+	io2.in.app_instance_id = &app_instance_id;
+	io2.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree2, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io2.out.file.handle;
+	h2 = &_h2;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(io2.out.durable_open_v2, true);
+	CHECK_VAL(io2.out.persistent_open, false);
+	CHECK_VAL(io2.out.timeout, io2.in.timeout);
+
+	CHECK_VAL(break_info.count, 0);
+
+	status = smb2_util_close(tree1, *h1);
+	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
+	h1 = NULL;
+
+done:
+	if (h1 != NULL) {
+		smb2_util_close(tree1, *h1);
+	}
+	if (h2 != NULL) {
+		smb2_util_close(tree2, *h2);
+	}
+
+	smb2_util_unlink(tree2, fname);
+
+	talloc_free(tree1);
+	talloc_free(tree2);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+/**
  * basic persistent open test.
  *
  * This test tests durable open with all possible oplock types.
@@ -731,6 +864,7 @@ struct torture_suite *torture_smb2_durable_v2_open_init(void)
 	torture_suite_add_1smb2_test(suite, "open-lease", test_durable_v2_open_lease);
 	torture_suite_add_1smb2_test(suite, "reopen1", test_durable_v2_open_reopen1);
 	torture_suite_add_1smb2_test(suite, "reopen2", test_durable_v2_open_reopen2);
+	torture_suite_add_2smb2_test(suite, "app-instance", test_durable_v2_open_app_instance);
 	torture_suite_add_1smb2_test(suite, "persistent-open-oplock", test_persistent_open_oplock);
 	torture_suite_add_1smb2_test(suite, "persistent-open-lease", test_persistent_open_lease);
 
