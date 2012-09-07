@@ -4672,6 +4672,9 @@ AC_TRY_COMPILE([
 
 if test x"$samba_cv_HAVE_NFS_QUOTAS" = x"yes"; then
     AC_DEFINE(HAVE_NFS_QUOTAS,1,[NFS quota support is available])
+    AC_CHECK_MEMBER(struct getquota_rslt.getquota_rslt_u,
+		AC_DEFINE(HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U, 1, [Defined if struct getquota_rslt has getquota_rslt_u]),,
+		[#include <rpcsvc/rquota.h>])
 fi
 
 #################################################
