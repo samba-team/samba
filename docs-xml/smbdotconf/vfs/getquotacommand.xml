@@ -8,23 +8,25 @@
 	whenever there is no operating system API available from the OS that 
 	samba can use.</para>
 
-	<para>This option is only available you have compiled Samba with the
-	<command moreinfo="none">--with-sys-quotas</command> option or on Linux with
-	<command moreinfo="none">--with-quotas</command> and a working quota api
-	was found in the system.</para>
+	<para>This option is only available Samba was compiled with
+	quotas support.</para>
 
 	<para>This parameter should specify the path to a script that 
 	queries the quota information for the specified 
 	user/group for the partition that 
 	the specified directory is on.</para>
 
-	<para>Such a script should take 3 arguments:</para>
+	<para>Such a script is being given 3 arguments:</para>
 
 	<itemizedlist>
 		<listitem><para>directory</para></listitem>
 		<listitem><para>type of query</para></listitem>
 		<listitem><para>uid of user or gid of group</para></listitem>
 	</itemizedlist>
+
+	<para>The directory is actually mostly just "." - It needs to be
+	treated relatively to the current working directory that the script can
+	also query.</para>
 
 	<para>The type of query can be one of:</para>
 
@@ -35,18 +37,18 @@
 		<listitem><para>4 - group default quotas (gid = -1)</para></listitem>
 	</itemizedlist>
 
-	<para>This script should print one line as output with spaces between the arguments. The arguments are: 
+	<para>This script should print one line as output with spaces between the columns. The printed columns should be: 
 	      </para>
 
 	<itemizedlist>
-		<listitem><para>Arg 1 - quota flags (0 = no quotas, 1 = quotas enabled, 2 = quotas enabled and enforced)</para></listitem>
-		<listitem><para>Arg 2 - number of currently used blocks</para></listitem>
-		<listitem><para>Arg 3 - the softlimit number of blocks</para></listitem>
-		<listitem><para>Arg 4 - the hardlimit number of blocks</para></listitem>
-		<listitem><para>Arg 5 - currently used number of inodes</para></listitem>
-		<listitem><para>Arg 6 - the softlimit number of inodes</para></listitem>
-		<listitem><para>Arg 7 - the hardlimit number of inodes</para></listitem>
-		<listitem><para>Arg 8(optional) - the number of bytes in a block(default is 1024)</para></listitem>
+		<listitem><para>1 - quota flags (0 = no quotas, 1 = quotas enabled, 2 = quotas enabled and enforced)</para></listitem>
+		<listitem><para>2 - number of currently used blocks</para></listitem>
+		<listitem><para>3 - the softlimit number of blocks</para></listitem>
+		<listitem><para>4 - the hardlimit number of blocks</para></listitem>
+		<listitem><para>5 - currently used number of inodes</para></listitem>
+		<listitem><para>6 - the softlimit number of inodes</para></listitem>
+		<listitem><para>7 - the hardlimit number of inodes</para></listitem>
+		<listitem><para>8 (optional) - the number of bytes in a block(default is 1024)</para></listitem>
 	</itemizedlist>
 </description>
 
