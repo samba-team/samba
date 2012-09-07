@@ -226,6 +226,31 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		}
 	}
 
+	if (io->in.app_instance_id) {
+		uint8_t data[20];
+		DATA_BLOB guid_blob;
+
+		SSVAL(data, 0, 20); /* structure size */
+		SSVAL(data, 2, 0);  /* reserved */
+
+		status = GUID_to_ndr_blob(io->in.app_instance_id,
+					  req, /* TALLOC_CTX */
+					  &guid_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+		memcpy(data+4, guid_blob.data, 16);
+
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_APP_INSTANCE_ID,
+					      data_blob_const(data, 20));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
 	/* and any custom blobs */
 	for (i=0;i<io->in.blobs.num_blobs;i++) {
 		status = smb2_create_blob_add(req, &blobs,
