@@ -180,6 +180,7 @@
 ^samba3.smb2.durable-open.delete_on_close2
 ^samba3.smb2.durable-v2-open.open-lease
 ^samba3.smb2.durable-v2-open.persistent-open-lease
+^samba3.smb2.durable-v2-open.app-instance
 ^samba3.smb2.ioctl.shadow_copy
 ^samba3.smb2.ioctl.req_resume_key
 ^samba3.smb2.ioctl.copy_chunk_simple
