@@ -1743,7 +1743,9 @@ union smb_open {
 			NTTIME timewarp;
 			bool   query_on_disk_id;
 			struct smb2_lease *lease_request;
-			
+
+			struct GUID *app_instance_id;
+
 			/* and any additional blobs the caller wants */
 			struct smb2_create_blobs blobs;
 		} in;
