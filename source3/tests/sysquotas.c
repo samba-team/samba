@@ -51,7 +51,9 @@
 #include <sys/quota.h>
 #else /* *BSD */
 #include <sys/types.h>
+#ifdef HAVE_UFS_UFS_QUOTA_H
 #include <ufs/ufs/quota.h>
+#endif
 #include <machine/param.h>
 #endif
 
