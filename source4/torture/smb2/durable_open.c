@@ -834,8 +834,7 @@ done:
    regarding the position information on the handle
 */
 bool test_durable_open_file_position(struct torture_context *tctx,
-				     struct smb2_tree *tree1,
-				     struct smb2_tree *tree2)
+				     struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle h1, h2;
@@ -846,13 +845,14 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 	bool ret = true;
 	uint64_t pos;
+	uint64_t previous_session_id;
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
 	smb2_oplock_create(&io1, fname, SMB2_OPLOCK_LEVEL_BATCH);
 	io1.in.durable_open = true;
 
-	status = smb2_create(tree1, mem_ctx, &io1);
+	status = smb2_create(tree, mem_ctx, &io1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h1 = io1.out.file.handle;
 	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
@@ -864,7 +864,7 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
 	qfinfo.generic.in.file.handle = h1;
-	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0);
 	pos = qfinfo.position_information.out.position;
@@ -875,33 +875,43 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	sfinfo.generic.level = RAW_SFILEINFO_POSITION_INFORMATION;
 	sfinfo.generic.in.file.handle = h1;
 	sfinfo.position_information.in.position = 0x1000;
-	status = smb2_setinfo_file(tree1, &sfinfo);
+	status = smb2_setinfo_file(tree, &sfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
 	qfinfo.generic.in.file.handle = h1;
-	status = smb2_getinfo_file(tree1, mem_ctx, &qfinfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0x1000);
 	pos = qfinfo.position_information.out.position;
 	torture_comment(tctx, "position: %llu\n",
 			(unsigned long long)pos);
 
-	talloc_free(tree1);
-	tree1 = NULL;
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* tcp disconnect */
+	talloc_free(tree);
+	tree = NULL;
+
+	/* do a session reconnect */
+	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
 
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
 	qfinfo.generic.in.file.handle = h1;
-	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 
 	ZERO_STRUCT(io2);
 	io2.in.fname = fname;
 	io2.in.durable_handle = &h1;
 
-	status = smb2_create(tree2, mem_ctx, &io2);
+	status = smb2_create(tree, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(io2.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
 	CHECK_VAL(io2.out.reserved, 0x00);
@@ -916,21 +926,21 @@ bool test_durable_open_file_position(struct torture_context *tctx,
 	ZERO_STRUCT(qfinfo);
 	qfinfo.generic.level = RAW_FILEINFO_POSITION_INFORMATION;
 	qfinfo.generic.in.file.handle = h2;
-	status = smb2_getinfo_file(tree2, mem_ctx, &qfinfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &qfinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VAL(qfinfo.position_information.out.position, 0x1000);
 	pos = qfinfo.position_information.out.position;
 	torture_comment(tctx, "position: %llu\n",
 			(unsigned long long)pos);
 
-	smb2_util_close(tree2, h2);
+	smb2_util_close(tree, h2);
 
 	talloc_free(mem_ctx);
 
-	smb2_util_unlink(tree2, fname);
+	smb2_util_unlink(tree, fname);
+
 done:
-	talloc_free(tree1);
-	talloc_free(tree2);
+	talloc_free(tree);
 
 	return ret;
 }
@@ -1624,7 +1634,7 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	torture_suite_add_1smb2_test(suite, "reopen4", test_durable_open_reopen4);
 	torture_suite_add_1smb2_test(suite, "delete_on_close1",
 				     test_durable_open_delete_on_close1);
-	torture_suite_add_2smb2_test(suite, "file-position",
+	torture_suite_add_1smb2_test(suite, "file-position",
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
 	torture_suite_add_2smb2_test(suite, "lease", test_durable_open_lease);
