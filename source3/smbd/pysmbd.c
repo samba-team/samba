@@ -160,7 +160,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 	mode_t mode_other = chmod_mode &  07;
 
 	SMB_ACL_ENTRY_T entry;
-	SMB_ACL_T acl = sys_acl_init(4);
+	SMB_ACL_T acl = sys_acl_init();
 
 	if (!acl) {
 		return NULL;

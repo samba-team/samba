@@ -214,7 +214,7 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 
 static struct smb_acl_t *smb_acl_to_internal(acl_t acl)
 {
-	struct smb_acl_t *result = sys_acl_init(0);
+	struct smb_acl_t *result = sys_acl_init();
 	int entry_id = ACL_FIRST_ENTRY;
 	acl_entry_t e;
 	if (result == NULL) {

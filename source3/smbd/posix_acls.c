@@ -2823,7 +2823,7 @@ static bool set_canon_ace_list(files_struct *fsp,
 {
 	connection_struct *conn = fsp->conn;
 	bool ret = False;
-	SMB_ACL_T the_acl = sys_acl_init(count_canon_ace_list(the_ace) + 1);
+	SMB_ACL_T the_acl = sys_acl_init();
 	canon_ace *p_ace;
 	int i;
 	SMB_ACL_ENTRY_T mask_entry;
@@ -4524,7 +4524,7 @@ static bool unix_ex_wire_to_tagtype(unsigned char wire_tt, SMB_ACL_TAG_T *p_tt)
 static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn, uint16 num_acls, const char *pdata)
 {
 	unsigned int i;
-	SMB_ACL_T the_acl = sys_acl_init(num_acls);
+	SMB_ACL_T the_acl = sys_acl_init();
 
 	if (the_acl == NULL) {
 		return NULL;
@@ -4668,7 +4668,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 	SMB_ACL_ENTRY_T entry;
 	bool ret = False;
 	/* Create a new ACL with only 3 entries, u/g/w. */
-	SMB_ACL_T new_file_acl = sys_acl_init(3);
+	SMB_ACL_T new_file_acl = sys_acl_init();
 	SMB_ACL_ENTRY_T user_ent = NULL;
 	SMB_ACL_ENTRY_T group_ent = NULL;
 	SMB_ACL_ENTRY_T other_ent = NULL;

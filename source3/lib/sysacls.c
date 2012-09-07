@@ -249,25 +249,19 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 	return text;
 }
 
-SMB_ACL_T sys_acl_init(int count)
+SMB_ACL_T sys_acl_init(void)
 {
 	SMB_ACL_T	a;
-
-	if (count < 0) {
-		errno = EINVAL;
-		return NULL;
-	}
 
 	if ((a = talloc(NULL, struct smb_acl_t)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
  
-	a->size = count + 1;
 	a->count = 0;
 	a->next = -1;
 
-	a->acl = talloc_array(a, struct smb_acl_entry, count+1);
+	a->acl = talloc_array(a, struct smb_acl_entry, 0);
 	if (!a->acl) {
 		TALLOC_FREE(a);
 		errno = ENOMEM;
@@ -281,22 +275,25 @@ int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p)
 {
 	SMB_ACL_T	acl_d;
 	SMB_ACL_ENTRY_T	entry_d;
+	struct smb_acl_entry *acl;
 
 	if (acl_p == NULL || entry_p == NULL || (acl_d = *acl_p) == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	if (acl_d->count >= acl_d->size) {
-		errno = ENOSPC;
+	acl = talloc_realloc(acl_d, acl_d->acl, struct smb_acl_entry, acl_d->count+1);
+	if (!acl) {
+		errno = ENOMEM;
 		return -1;
 	}
-
-	entry_d		= &acl_d->acl[acl_d->count++];
+	acl_d->acl = acl;
+	entry_d		= &acl_d->acl[acl_d->count];
 	entry_d->a_type	= SMB_ACL_TAG_INVALID;
 	entry_d->a_perm	= 0;
 	*entry_p	= entry_d;
 
+	acl_d->count++;
 	return 0;
 }
 
