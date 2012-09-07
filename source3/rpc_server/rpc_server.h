@@ -21,7 +21,6 @@
 #define _RPC_SERVER_H_
 
 struct pipes_struct;
-enum dcerpc_transport_t;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
 typedef void (named_pipe_termination_fn)(void *private_data);
