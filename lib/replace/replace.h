@@ -61,7 +61,7 @@
 #endif
 
 #ifndef __PRI64_PREFIX
-# if __WORDSIZE == 64
+# if __WORDSIZE == 64 && ! defined __APPLE__
 #  define __PRI64_PREFIX	"l"
 # else
 #  define __PRI64_PREFIX	"ll"
