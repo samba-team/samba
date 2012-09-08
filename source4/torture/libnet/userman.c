@@ -250,10 +250,10 @@ static bool test_userdel(struct torture_context *tctx,
 		if (timeval_compare(&t, mod->in.change.fld)) { \
 			torture_comment(tctx, "'%s' field does not match\n", #fld); \
 			torture_comment(tctx, "received: '%s (+%ld us)'\n", \
-			       timestring(mem_ctx, t.tv_sec), t.tv_usec); \
+			       timestring(mem_ctx, t.tv_sec), (long)t.tv_usec); \
 			torture_comment(tctx, "expected: '%s (+%ld us)'\n", \
 			       timestring(mem_ctx, mod->in.change.fld->tv_sec), \
-			       mod->in.change.fld->tv_usec); \
+			       (long)mod->in.change.fld->tv_usec); \
 			return false; \
 		} \
 	}
