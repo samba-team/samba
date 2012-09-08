@@ -281,6 +281,7 @@ static struct loadparm_service sDefault =
 	.iDirectoryNameCacheSize = 100,
 #endif
 	.ismb_encrypt = SMB_SIGNING_DEFAULT,
+	.bKernelShareModes = true,
 	.param_opt = NULL,
 	.dummy = ""
 };

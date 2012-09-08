@@ -3001,6 +3001,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 	{
+		.label		= "kernel share modes",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.offset		= LOCAL_VAR(bKernelShareModes),
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+	},
+	{
 		.label		= "locking",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,

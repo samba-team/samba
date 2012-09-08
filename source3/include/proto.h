@@ -1291,6 +1291,7 @@ bool lp_posix_locking(const struct share_params *p );
 bool lp_oplocks(int );
 bool lp_kernel_oplocks(int );
 bool lp_level2_oplocks(int );
+bool lp_kernel_share_modes(int);
 bool lp_onlyuser(int );
 bool lp_manglednames(const struct share_params *p );
 bool lp_allow_insecure_widelinks(void);
