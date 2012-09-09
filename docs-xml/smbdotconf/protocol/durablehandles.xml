@@ -1,0 +1,27 @@
+<samba:parameter name="durable handles"
+                 context="S"
+                 advanced="1"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>
+    This boolean parameter controls
+    whether Samba can grant SMB2 durable file handles on a share.
+    </para>
+    <para>
+    Note that durable handles are only enabled if
+    <smbconfoption name="kernel oplocks">no</smbconfoption>,
+    <smbconfoption name="kernel share modes">no</smbconfoption>, and
+    <smbconfoption name="posix locking">no</smbconfoption>,
+    i.e. if the share is configured for CIFS/SMB2 only access,
+    not supporting interoperability features with local UNIX processes
+    or NFS operations.
+    </para>
+    <para>
+    Also note that, for the time being, durability is not granted
+    for a handle that has the delete on close flag set.
+    </para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
