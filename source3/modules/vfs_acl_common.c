@@ -375,6 +375,12 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		"file system SD mapping.\n",
 		name ));
 
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("get_nt_acl_internal: acl for blob hash for %s is:\n",
+			name ));
+		NDR_PRINT_DEBUG(security_descriptor, pdesc_next);
+	}
+
 	TALLOC_FREE(psd);
 	psd = pdesc_next;
 
@@ -596,6 +602,10 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor,
 			discard_const_p(struct security_descriptor, psd));
+
+		DEBUG(10,("fset_nt_acl_xattr: storing has in xattr sd based on \n"));
+		NDR_PRINT_DEBUG(security_descriptor,
+			discard_const_p(struct security_descriptor, pdesc_next));
 	}
 	status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	if (!NT_STATUS_IS_OK(status)) {
