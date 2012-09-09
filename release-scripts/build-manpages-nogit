@@ -39,14 +39,14 @@ make clean || _exit "Error running make clean"
 # re-establish catalog (has been removed by make clean...)
 ./config.status
 
-make manpages3 || _exit "Error running make manpages3"
+make manpages || _exit "Error running make manpages"
 
 popd
 
 test -e ${DOCS_DIR}/manpages && rm -rf ${DOCS_DIR}/manpages
 mkdir -p ${DOCS_DIR}/manpages
 
-rsync -Ca ${DOCS_XML_DIR}/output/manpages-3/ ${DOCS_DIR}/manpages
+rsync -Ca ${DOCS_XML_DIR}/output/manpages/ ${DOCS_DIR}/manpages
 
 echo "Success"
 exit
