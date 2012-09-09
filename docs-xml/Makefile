@@ -84,7 +84,7 @@ validate:: $(addsuffix -validate,$(MAIN_DOCS))
 test:: validate
 check:: validate
 
-.PHONY: test check validate
+.PHONY: test check validate manpages
 
 # Intermediate docbook docs
 #
