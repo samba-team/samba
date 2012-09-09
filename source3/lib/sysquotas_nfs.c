@@ -69,7 +69,7 @@ static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
 		return 0;
 	}
-	gqr->status = quotastat;
+	gqr->GQR_STATUS = quotastat;
 
 	if (!xdr_int(xdrsp, &gqr->GQR_RQUOTA.rq_bsize)) {
 		DEBUG(6,("nfs_quotas: Block size bad or zero\n"));
