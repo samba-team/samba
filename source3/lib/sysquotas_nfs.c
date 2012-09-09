@@ -44,6 +44,10 @@
 #endif
 #include <rpc/xdr.h>
 
+#ifndef RQ_PATHLEN
+#define RQ_PATHLEN 1024
+#endif
+
 #ifdef HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U
 #define GQR_RQUOTA getquota_rslt_u.gqr_rquota
 #define GQR_STATUS status
