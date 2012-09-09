@@ -1906,17 +1906,17 @@ def provision(logger, session_info, credentials, smbconf=None,
         if paths.sysvol is None:
             raise MissingShareError("sysvol", paths.smbconf)
 
-        if not smbd.have_posix_acls():
-            # This clue is only strictly correct for RPM and
-            # Debian-like Linux systems, but hopefully other users
-            # will get enough clue from it.
-            raise ProvisioningError("Samba was compiled without the posix ACL support that s3fs requires.  Try installing libacl1-dev or libacl-devel, then re-run configure and make.")
-            
         file = tempfile.NamedTemporaryFile(dir=os.path.abspath(paths.sysvol))
         try:
             try:
                 smbd.set_simple_acl(file.name, 0755, wheel_gid)
             except Exception:
+                if not smbd.have_posix_acls():
+                    # This clue is only strictly correct for RPM and
+                    # Debian-like Linux systems, but hopefully other users
+                    # will get enough clue from it.
+                    raise ProvisioningError("Samba was compiled without the posix ACL support that s3fs requires.  Try installing libacl1-dev or libacl-devel, then re-run configure and make.")
+            
                 raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  Try the mounting the filesystem with the 'acl' option.")
             try:
                 smbd.chown(file.name, root_uid, wheel_gid)
