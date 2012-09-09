@@ -97,6 +97,33 @@ Finally, a new scripting interface has been added to Samba 4, allowing
 Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
+CHANGES SINCE beta8
+===================
+
+The smbd file server now offers SMB3 as the maximum protocol
+by default. Samba can negotiate version 3 of the SMB protocol
+and supports the required features, including all required
+features of SMB 2.1 and SMB 2.0. Note that this does not imply
+that Samba implements all features of SMB3 since many of them
+are optional capabilities. Examples of features that Samba does
+not implement yet are leases (SMB 2.1) and multi-channel (SMB 3).
+
+Samba now offers an initial support for SMB2 durable file handles.
+These are enabled by default and can be turned off on a per share
+basis by setting "durable handles = no" on the share configuration.
+Note that in order to prevent conflicts with other applications
+accessing the same files, durable handles are only granted on
+shares that are configured for CIFS/SMB2-only access, i.e. more
+explicitly shares that are configured for minimal interoperability
+with these settings:
+
+  kernel oplocks = no
+  kernel share modes = no
+  posix locking = no
+
+The option "kernel share modes" has been introduced to be able
+to turn the translation of SMB share modes into kernel flocks
+off.
 
 CHANGES SINCE beta7
 =====================
