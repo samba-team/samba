@@ -1,0 +1,31 @@
+<samba:parameter name="kernel share modes"
+		 type="boolean"
+		 context="S"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This parameter controls whether SMB share modes are
+	translated into UNIX flocks.
+	</para>
+
+	<para>
+	Kernel share modes provide a minimal level of interoperability
+	with local UNIX processes and NFS operations by preventing
+	access with flocks corresponding to the SMB share modes.
+	Generally, it is very desirable to leave this enabled.
+	</para>
+
+	<para>
+	Note that in order to use SMB2 durable file handles on a share,
+	you have to turn kernel share modes off.
+	</para>
+
+	<para>
+	This parameter defaults to <constant>yes</constant> and
+	is translated to a no-op on systems that do not have the
+	 necessary kernel flock support.
+	</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
