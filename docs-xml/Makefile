@@ -36,7 +36,7 @@ help:
 	@echo " pdf,tex,ps,manpages,txt,pearson,htmlhelp - Build specific output format"
 	@echo " html - Build multi-file HTML versions"
 	@echo " html-single - Build single-file HTML versions"
-	@echo " htmlman3 - Build HTML version of manpages"
+	@echo " htmlman - Build HTML version of manpages"
 	@echo " undocumented - Output list of undocumented smb.conf options"
 	@echo " samples - Extract examples"
 
@@ -47,8 +47,8 @@ $(PDFDIR)/Samba3-Developers-Guide.pdf $(PSDIR)/Samba3-Developers-Guide.ps $(DOCB
 
 # Pseudo targets 
 all:: $(TARGETS)
-everything:: manpages pdf html-single html htmlman3 txt ps fo htmlhelp pearson 
-release:: manpages htmlman3 html pdf 
+everything:: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson
+release:: manpages htmlman html pdf
 clean::
 	@echo "Cleaning up..." 
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
@@ -75,7 +75,7 @@ manpages:: $(patsubst $(MANPAGEDIR)/%.xml,$(OUTPUTDIR)/manpages/%,$(MANPAGES))
 pearson:: $(PEARSONDIR)/Samba3-HOWTO.xml
 pearson-verify:: $(PEARSONDIR)/Samba3-HOWTO.report.html
 plucker:: $(patsubst %,$(PLUCKERDIR)/%.pdb,$(MAIN_DOCS))
-htmlman3:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
+htmlman:: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/manpages/%.html,$(MANPAGES)) $(HTMLDIR)/manpages/index.html
 html-single:: $(patsubst %,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html:: $(patsubst %,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
 htmlhelp:: $(addprefix $(HTMLHELPDIR)/,$(MAIN_DOCS))

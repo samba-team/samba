@@ -36,7 +36,7 @@ autoconf || _exit "Error running autoconf."
 
 export XML_CATALOG_FILES="file:///etc/xml/catalog file://$(pwd)/build/catalog.xml"
 
-make htmlman3 || _exit "Error running make htmlman3"
+make htmlman || _exit "Error running make htmlman"
 
 popd
 

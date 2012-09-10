@@ -39,7 +39,7 @@ make clean || _exit "Error running make clean"
 # re-establish catalog (has been removed by make clean...)
 ./config.status
 
-make htmlman3 || _exit "Error running make htmlman3"
+make htmlman || _exit "Error running make htmlman"
 
 popd
 
