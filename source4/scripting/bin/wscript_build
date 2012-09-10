@@ -1,5 +1,5 @@
 #!/usr/bin/env python
 
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
-    for script in ['samba-tool', 'samba_dnsupdate', 'samba_spnupdate', 'samba_kcc', 'upgradeprovision', 'samba_upgradedns']:
+    for script in ['samba-tool', 'samba_dnsupdate', 'samba_spnupdate', 'samba_kcc', 'samba_upgradeprovision', 'samba_upgradedns']:
         bld.SAMBA_SCRIPT(script, pattern=script, installdir='.')

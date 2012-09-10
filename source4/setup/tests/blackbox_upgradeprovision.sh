@@ -19,7 +19,7 @@ upgradeprovision() {
     rm -fr $PREFIX/upgradeprovision
   fi
 	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/upgradeprovision" --server-role="dc" --use-ntvfs
-	$PYTHON $SRCDIR/source4/scripting/bin/upgradeprovision -s "$PREFIX/upgradeprovision/etc/smb.conf" --debugchange
+	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX/upgradeprovision/etc/smb.conf" --debugchange
 }
 
 upgradeprovision_full() {
@@ -27,7 +27,7 @@ upgradeprovision_full() {
     rm -fr $PREFIX/upgradeprovision_full
   fi
 	$PYTHON $BINDIR/samba-tool domain provision --host-name=bar --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/upgradeprovision_full" --server-role="dc" --use-ntvfs
-	$PYTHON $SRCDIR/source4/scripting/bin/upgradeprovision -s "$PREFIX/upgradeprovision_full/etc/smb.conf" --full --debugchange
+	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX/upgradeprovision_full/etc/smb.conf" --full --debugchange
 }
 
 if [ -d $PREFIX/upgradeprovision ]; then
