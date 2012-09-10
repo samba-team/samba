@@ -13,7 +13,7 @@ shift 1
 . `dirname $0`/subunit.sh
 
 if [ ! -d $PREFIX/renamedc_test ]; then
-	$PYTHON $SRCDIR/source4/setup/provision --host-name=bar --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/renamedc_test" --server-role="dc" --use-ntvfs
+	$PYTHON $BINDIR/samba-tool domain provision --host-name=bar --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/renamedc_test" --server-role="dc" --use-ntvfs
 fi
 
 
