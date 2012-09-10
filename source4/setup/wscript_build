@@ -1,13 +1,7 @@
 #!/usr/bin/env python
 
-from samba_utils import MODE_755
-
 bld.INSTALL_WILDCARD('${SETUPDIR}', 'ad-schema/*.txt')
 bld.INSTALL_WILDCARD('${SETUPDIR}', 'display-specifiers/*.txt')
-
-bld.INSTALL_FILES('${SBINDIR}', 'provision', chmod=MODE_755, python_fixup=True)
-
-bld.SAMBA_SCRIPT('provision', pattern='provision', installdir='.')
 
 bld.INSTALL_FILES('${SETUPDIR}', 'dns_update_list')
 bld.INSTALL_FILES('${SETUPDIR}', 'spn_update_list')
