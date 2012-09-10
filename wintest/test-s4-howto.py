@@ -25,7 +25,9 @@ def provision_s4(t, func_level="2008"):
     t.chdir('${PREFIX}')
     t.del_files(["var", "private"])
     t.run_cmd("rm -f etc/smb.conf")
-    provision=['sbin/provision',
+    provision=['bin/samba-tool',
+               'domain',
+               'provision',
                '--realm=${LCREALM}',
                '--domain=${DOMAIN}',
                '--adminpass=${PASSWORD1}',
