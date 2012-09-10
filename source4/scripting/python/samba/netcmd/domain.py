@@ -2,9 +2,11 @@
 #
 # Copyright Matthias Dieter Wallnoefer 2009
 # Copyright Andrew Kroeger 2009
-# Copyright Jelmer Vernooij 2009
+# Copyright Jelmer Vernooij 2007-2009
 # Copyright Giampaolo Lauria 2011
 # Copyright Matthieu Patou <mat@matws.net> 2011
+# Copyright Andrew Bartlett 2008
+# Copyright Stefan Metzmacher 2012
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +28,7 @@ import samba.getopt as options
 import ldb
 import string
 import os
+import sys
 import tempfile
 import logging
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
@@ -61,6 +64,15 @@ from samba.dsdb import (
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_SERVER_TRUST_ACCOUNT,
     UF_TRUSTED_FOR_DELEGATION
+    )
+
+from samba.credentials import DONT_USE_KERBEROS
+from samba.provision import (
+    provision,
+    FILL_FULL,
+    FILL_NT4SYNC,
+    FILL_DRS,
+    ProvisioningError,
     )
 
 def get_testparm_var(testparm, smbconf, varname):
@@ -125,6 +137,256 @@ class cmd_domain_info(Command):
         except RuntimeError:
             raise CommandError("Invalid IP address '" + address + "'!")
 
+class cmd_domain_provision(Command):
+    """Promotes an existing domain member or NT4 PDC to an AD DC"""
+
+    synopsis = "%prog <dnsdomain> [DC|RODC] [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_options = [
+         Option("--interactive", help="Ask for names", action="store_true"),
+         Option("--domain", type="string", metavar="DOMAIN",
+                help="set domain"),
+         Option("--domain-guid", type="string", metavar="GUID",
+                help="set domainguid (otherwise random)"),
+         Option("--domain-sid", type="string", metavar="SID",
+                help="set domainsid (otherwise random)"),
+         Option("--ntds-guid", type="string", metavar="GUID",
+                help="set NTDS object GUID (otherwise random)"),
+         Option("--invocationid", type="string", metavar="GUID",
+                help="set invocationid (otherwise random)"),
+         Option("--host-name", type="string", metavar="HOSTNAME",
+                help="set hostname"),
+         Option("--host-ip", type="string", metavar="IPADDRESS",
+                help="set IPv4 ipaddress"),
+         Option("--host-ip6", type="string", metavar="IP6ADDRESS",
+                help="set IPv6 ipaddress"),
+         Option("--adminpass", type="string", metavar="PASSWORD",
+                help="choose admin password (otherwise random)"),
+         Option("--krbtgtpass", type="string", metavar="PASSWORD",
+                help="choose krbtgt password (otherwise random)"),
+         Option("--machinepass", type="string", metavar="PASSWORD",
+                help="choose machine password (otherwise random)"),
+         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
+                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
+                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+                     "BIND9_FLATFILE uses bind9 text database to store zone information, " \
+                     "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+                     "NONE skips the DNS setup entirely (not recommended)",
+                default="BIND9_DLZ"),
+         Option("--dnspass", type="string", metavar="PASSWORD",
+                help="choose dns password (otherwise random)"),
+         Option("--ldapadminpass", type="string", metavar="PASSWORD",
+                help="choose password to set between Samba and it's LDAP backend (otherwise random)"),
+         Option("--root", type="string", metavar="USERNAME",
+                help="choose 'root' unix username"),
+         Option("--nobody", type="string", metavar="USERNAME",
+                help="choose 'nobody' user"),
+         Option("--wheel", type="string", metavar="GROUPNAME",
+                help="choose 'wheel' privileged group"),
+         Option("--users", type="string", metavar="GROUPNAME",
+                help="choose 'users' group"),
+         Option("--quiet", help="Be quiet", action="store_true"),
+         Option("--blank", action="store_true",
+                help="do not add users or groups, just the structure"),
+         Option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE",
+                help="Test initialisation support for unsupported LDAP backend type (fedora-ds or openldap) DO NOT USE",
+                choices=["fedora-ds", "openldap"]),
+         Option("--server-role", type="choice", metavar="ROLE",
+                choices=["domain controller", "dc", "member server", "member", "standalone"],
+                help="The server role (domain controller | dc | member server | member | standalone). Default is dc.",
+                default="domain controller"),
+         Option("--function-level", type="choice", metavar="FOR-FUN-LEVEL",
+                choices=["2000", "2003", "2008", "2008_R2"],
+                help="The domain and forest function level (2000 | 2003 | 2008 | 2008_R2 - always native). Default is (Windows) 2003 Native.",
+                default="2003"),
+         Option("--next-rid", type="int", metavar="NEXTRID", default=1000,
+                help="The initial nextRid value (only needed for upgrades).  Default is 1000."),
+         Option("--partitions-only",
+                help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true"),
+         Option("--targetdir", type="string", metavar="DIR",
+                help="Set target directory"),
+         Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
+                help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
+         Option("--use-xattrs", type="choice", choices=["yes", "no", "auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
+         Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
+         Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
+        ]
+    takes_args = []
+
+    def run(self, sambaopts=None, credopts=None, versionopts=None,
+            interactive = None,
+            domain = None,
+            domain_guid = None,
+            domain_sid = None,
+            ntds_guid = None,
+            invocationid = None,
+            host_name = None,
+            host_ip = None,
+            host_ip6 = None,
+            adminpass = None,
+            krbtgtpass = None,
+            machinepass = None,
+            dns_backend = None,
+            dnspass = None,
+            ldapadminpass = None,
+            root = None,
+            nobody = None,
+            wheel = None,
+            users = None,
+            quiet = None,
+            blank = None,
+            ldap_backend_type = None,
+            server_role = None,
+            function_level = None,
+            next_rid = None,
+            partitions_only = None,
+            targetdir = None,
+            ol_mmr_urls = None,
+            use_xattrs = None,
+            use_ntvfs = None,
+            use_rfc2307 = None):
+
+        logger = self.get_logger("provision")
+        if quiet:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
+
+        lp = sambaopts.get_loadparm()
+        smbconf = lp.configfile
+
+        creds = credopts.get_credentials(lp)
+
+        creds.set_kerberos_state(DONT_USE_KERBEROS)
+
+        if len(self.raw_argv) == 1:
+            interactive = True
+
+        if interactive:
+            from getpass import getpass
+            import socket
+
+            def ask(prompt, default=None):
+                if default is not None:
+                    print "%s [%s]: " % (prompt, default),
+                else:
+                    print "%s: " % (prompt,),
+                return sys.stdin.readline().rstrip("\n") or default
+
+            try:
+                default = socket.getfqdn().split(".", 1)[1].upper()
+            except IndexError:
+                default = None
+            realm = ask("Realm", default)
+            if realm in (None, ""):
+                raise CommandError("No realm set!")
+
+            try:
+                default = realm.split(".")[0]
+            except IndexError:
+                default = None
+            domain = ask("Domain", default)
+            if domain is None:
+                raise CommandError("No domain set!")
+
+            server_role = ask("Server Role (dc, member, standalone)", "dc")
+
+            dns_backend = ask("DNS backend (SAMBA_INTERNAL, BIND9_FLATFILE, BIND9_DLZ, NONE)", "BIND9_DLZ")
+            if dns_backend in (None, ''):
+                raise CommandError("No DNS backend set!")
+
+            while True:
+                adminpassplain = getpass("Administrator password: ")
+                if not adminpassplain:
+                    print >>sys.stderr, "Invalid administrator password."
+                else:
+                    adminpassverify = getpass("Retype password: ")
+                    if not adminpassplain == adminpassverify:
+                        print >>sys.stderr, "Sorry, passwords do not match."
+                    else:
+                        adminpass = adminpassplain
+                        break
+
+        else:
+            realm = sambaopts._lp.get('realm')
+            if realm is None:
+                raise CommandError("No realm set!")
+            if domain is None:
+                raise CommandError("No domain set!")
+
+        if not adminpass:
+            logger.info("Administrator password will be set randomly!")
+
+        if function_level == "2000":
+            dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
+        elif function_level == "2003":
+            dom_for_fun_level = DS_DOMAIN_FUNCTION_2003
+        elif function_level == "2008":
+            dom_for_fun_level = DS_DOMAIN_FUNCTION_2008
+        elif function_level == "2008_R2":
+            dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
+
+        samdb_fill = FILL_FULL
+        if blank:
+            samdb_fill = FILL_NT4SYNC
+        elif partitions_only:
+            samdb_fill = FILL_DRS
+
+        if targetdir is not None:
+            if not os.path.isdir(targetdir):
+                os.mkdir(targetdir)
+
+        eadb = True
+
+        if use_xattrs == "yes":
+            eadb = False
+        elif use_xattrs == "auto" and not lp.get("posix:eadb"):
+            if targetdir:
+                file = tempfile.NamedTemporaryFile(dir=os.path.abspath(targetdir))
+            else:
+                file = tempfile.NamedTemporaryFile(dir=os.path.abspath(os.path.dirname(lp.get("private dir"))))
+            try:
+                try:
+                    samba.ntacls.setntacl(lp, file.name,
+                                          "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+                    eadb = False
+                except Exception:
+                    logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. ")
+            finally:
+                file.close()
+
+        if eadb:
+            logger.info("not using extended attributes to store ACLs and other metadata. If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+
+        session = system_session()
+        try:
+            result = provision(logger,
+                  session, creds, smbconf=smbconf, targetdir=targetdir,
+                  samdb_fill=samdb_fill, realm=realm, domain=domain,
+                  domainguid=domain_guid, domainsid=domain_sid,
+                  hostname=host_name,
+                  hostip=host_ip, hostip6=host_ip6,
+                  ntdsguid=ntds_guid,
+                  invocationid=invocationid, adminpass=adminpass,
+                  krbtgtpass=krbtgtpass, machinepass=machinepass,
+                  dns_backend=dns_backend,
+                  dnspass=dnspass, root=root, nobody=nobody,
+                  wheel=wheel, users=users,
+                  serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
+                  backend_type=ldap_backend_type,
+                  ldapadminpass=ldapadminpass, ol_mmr_urls=ol_mmr_urls,
+                  useeadb=eadb, next_rid=next_rid, lp=lp, use_ntvfs=(use_ntvfs),
+                  use_rfc2307=(use_rfc2307))
+        except ProvisioningError, e:
+            raise CommandError("Provision failed", e)
+
+        result.report_logger(logger)
 
 class cmd_domain_dcpromo(Command):
     """Promotes an existing domain member or NT4 PDC to an AD DC"""
@@ -1020,6 +1282,7 @@ class cmd_domain(SuperCommand):
     if type(cmd_domain_export_keytab).__name__ != 'NoneType':
         subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["info"] = cmd_domain_info()
+    subcommands["provision"] = cmd_domain_provision()
     subcommands["join"] = cmd_domain_join()
     subcommands["dcpromo"] = cmd_domain_dcpromo()
     subcommands["level"] = cmd_domain_level()
