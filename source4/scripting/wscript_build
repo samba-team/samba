@@ -8,7 +8,7 @@ if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
 
 if sbin_files:
     bld.INSTALL_FILES('${SBINDIR}',
-                      'bin/upgradeprovision bin/samba_dnsupdate bin/samba_spnupdate bin/samba_upgradedns',
+                      sbin_files,
                       chmod=MODE_755, python_fixup=True, flat=True)
 
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
