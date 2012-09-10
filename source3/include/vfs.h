@@ -143,6 +143,7 @@
 /* Leave at 29 - not yet released. Remove sys_acl functions other than set and get - abartlet */
 /* Leave at 29 - not yet released. Added backup_intent bool to files_struct - JRA */
 /* Leave at 29 - not yet released. Add durable handle functions - metze/obnox */
+/* Leave at 29 - not yet released. Added sys_acl_blob_get_file and sys_acl_blob_get_fd */
 /* Bump to version 30 - Samba 4.0.0 will ship with interface version 30 */
 #define SMB_VFS_INTERFACE_VERSION 30
 
@@ -691,6 +692,12 @@ struct vfs_fn_pointers {
 
 	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type);
 	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
+	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type, 	
+					TALLOC_CTX *mem_ctx, char **blob_description,
+					DATA_BLOB *blob);
+	int (*sys_acl_blob_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, 	
+				      TALLOC_CTX *mem_ctx, char **blob_description,
+				      DATA_BLOB *blob);
 	int (*sys_acl_set_file_fn)(struct vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 	int (*sys_acl_set_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_ACL_T theacl);
 	int (*sys_acl_delete_def_file_fn)(struct vfs_handle_struct *handle, const char *path);
@@ -1088,6 +1095,17 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
 					SMB_ACL_TYPE_T type);
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      struct files_struct *fsp);
+int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
+				       const char *path_p,
+				       SMB_ACL_TYPE_T type, 	
+				       TALLOC_CTX *mem_ctx,
+				       char **blob_description,
+				       DATA_BLOB *blob);
+int smb_vfs_call_sys_acl_blob_get_fd(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp, 	
+				     TALLOC_CTX *mem_ctx,
+				     char **blob_description,
+				     DATA_BLOB *blob);
 int smb_vfs_call_sys_acl_set_file(struct vfs_handle_struct *handle,
 				  const char *name, SMB_ACL_TYPE_T acltype,
 				  SMB_ACL_T theacl);

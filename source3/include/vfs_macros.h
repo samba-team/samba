@@ -439,6 +439,16 @@
 #define SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp) \
 	smb_vfs_call_sys_acl_get_fd((handle)->next, (fsp))
 
+#define SMB_VFS_SYS_ACL_BLOB_GET_FILE(conn, path_p, type, mem_ctx, blob_description, blob)	\
+	smb_vfs_call_sys_acl_blob_get_file((conn)->vfs_handles, (path_p), (type), (mem_ctx), (blob_description), (blob))
+#define SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, type, mem_ctx, blob_description, blob) \
+	smb_vfs_call_sys_acl_blob_get_file((handle)->next, (path_p), (type), (mem_ctx), (blob_description), (blob))
+
+#define SMB_VFS_SYS_ACL_BLOB_GET_FD(fsp, mem_ctx, blob_description, blob)			\
+	smb_vfs_call_sys_acl_blob_get_fd((fsp)->conn->vfs_handles, (fsp), (mem_ctx), (blob_description), (blob))
+#define SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description, blob)	\
+	smb_vfs_call_sys_acl_blob_get_fd((handle)->next, (fsp), mem_ctx, (blob_description), (blob))
+
 #define SMB_VFS_SYS_ACL_SET_FILE(conn, name, acltype, theacl) \
 	smb_vfs_call_sys_acl_set_file((conn)->vfs_handles, (name), (acltype), (theacl))
 #define SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype, theacl) \

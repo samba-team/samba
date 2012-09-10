@@ -175,6 +175,8 @@ typedef enum _vfs_op_type {
 
 	SMB_VFS_OP_SYS_ACL_GET_FILE,
 	SMB_VFS_OP_SYS_ACL_GET_FD,
+	SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,
+	SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,
 	SMB_VFS_OP_SYS_ACL_SET_FILE,
 	SMB_VFS_OP_SYS_ACL_SET_FD,
 	SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
@@ -284,6 +286,8 @@ static struct {
 	{ SMB_VFS_OP_FCHMOD_ACL,	"fchmod_acl" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FILE,	"sys_acl_get_file" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FD,	"sys_acl_get_fd" },
+	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,	"sys_acl_blob_get_file" },
+	{ SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,	"sys_acl_blob_get_fd" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FILE,	"sys_acl_set_file" },
 	{ SMB_VFS_OP_SYS_ACL_SET_FD,	"sys_acl_set_fd" },
 	{ SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,	"sys_acl_delete_def_file" },
@@ -1816,6 +1820,39 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FD, (result != NULL), handle,
+	       "%s", fsp_str_do_log(fsp));
+
+	return result;
+}
+
+static int smb_full_audit_sys_acl_blob_get_file(vfs_handle_struct *handle,
+						const char *path_p,
+						SMB_ACL_TYPE_T type, 
+						TALLOC_CTX *mem_ctx, 
+						char **blob_description,
+						DATA_BLOB *blob)
+{
+	SMB_ACL_T result;
+
+	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, type, mem_ctx, blob_description, blob);
+
+	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,  (result >= 0), handle,
+	       "%s", path_p);
+
+	return result;
+}
+
+static int smb_full_audit_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+					      files_struct *fsp, 
+					      TALLOC_CTX *mem_ctx, 
+					      char **blob_description,
+					      DATA_BLOB *blob)
+{
+	SMB_ACL_T result;
+
+	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description,blob);
+
+	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,  (result >= 0), handle,
 	       "%s", fsp_str_do_log(fsp));
 
 	return result;

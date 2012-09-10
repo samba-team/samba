@@ -699,6 +699,22 @@ static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fs
 	return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
 }
 
+static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type,
+				      TALLOC_CTX *mem_ctx,
+				      char **blob_description, 
+				      DATA_BLOB *blob)
+{
+	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, type, mem_ctx, blob_description, blob);
+}
+
+static int skel_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp,
+				      TALLOC_CTX *mem_ctx,
+				      char **blob_description, 
+				      DATA_BLOB *blob)
+{
+	return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description, blob);
+}
+
 static int skel_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype, theacl);
@@ -869,6 +885,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 
 	.sys_acl_get_file_fn = skel_sys_acl_get_file,
 	.sys_acl_get_fd_fn = skel_sys_acl_get_fd,
+	.sys_acl_blob_get_file_fn = skel_sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = skel_sys_acl_blob_get_fd,
 	.sys_acl_set_file_fn = skel_sys_acl_set_file,
 	.sys_acl_set_fd_fn = skel_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = skel_sys_acl_delete_def_file,
