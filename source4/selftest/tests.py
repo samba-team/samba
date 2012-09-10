@@ -295,7 +295,8 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
         planperltestsuite("pidl.%s" % f[:-3], os.path.normpath(os.path.join(samba4srcdir, "../pidl/tests", f)))
 
 # DNS tests
-planpythontestsuite("dc", "samba.tests.dns")
+planpythontestsuite("fl2003dc", "samba.tests.dns")
+
 # Local tests
 for t in smb4torture_testsuites("dlz_bind9."):
     #The dlz_bind9 tests needs to look at the DNS database

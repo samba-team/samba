@@ -1184,7 +1184,7 @@ sub provision_dc($$)
 
 	print "PROVISIONING DC...";
         my $extra_conf_options = "netbios aliases = localDC1-a
-allow dns updates = True";
+allow dns updates = signed";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1243,7 +1243,7 @@ sub provision_fl2003dc($$)
 				   "samba2003.example.com",
 				   "2003",
 				   "locDCpass6",
-				   undef, "", "", 1);
+				   undef, "allow dns updates = True", "", 1);
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
