@@ -112,6 +112,15 @@ static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 	return (1);
 }
 
+static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
+{
+	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
+		return(0);
+	if (!xdr_int(xdrsp, &args->gqa_uid))
+		return(0);
+	return (1);
+}
+
 /* Restricted to SUNOS5 for the moment, I haven`t access to others to test. */
 static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
@@ -518,17 +527,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
   return (True);
 }
 
-#endif
-
-#if defined(SUNOS)
-static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
-{
-	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
-		return(0);
-	if (!xdr_int(xdrsp, &args->gqa_uid))
-		return(0);
-	return (1);
-}
 #endif
 
 #if defined(VXFS_QUOTA)
