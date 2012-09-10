@@ -387,7 +387,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 	struct ldb_dn *dn;
 	struct ldb_message *hwm_msg, *map_msg, *sam_msg;
 	struct ldb_result *res = NULL;
-	int trans;
+	int trans = -1;
 	uint32_t low, high, hwm, new_xid;
 	char *sid_string, *unixid_string, *hwm_string;
 	bool hwm_entry_exists;
