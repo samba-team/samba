@@ -274,7 +274,7 @@ base = ["base.attr", "base.charset", "base.chkpath", "base.defer_open", "base.de
         "base.xcopy", "base.samba3error"]
 
 raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "raw.eas",
-       "raw.ioctl", "raw.lock", "raw.mkdir", "raw.mux", "raw.notify", "raw.open", "raw.oplock"
+       "raw.ioctl", "raw.lock", "raw.mkdir", "raw.mux", "raw.notify", "raw.open", "raw.oplock",
        "raw.qfileinfo", "raw.qfsinfo", "raw.read", "raw.rename", "raw.search", "raw.seek",
        "raw.sfileinfo.base", "raw.sfileinfo.bug", "raw.streams", "raw.unlink", "raw.write",
        "raw.samba3hide", "raw.samba3badpath", "raw.sfileinfo.rename", "raw.session",
