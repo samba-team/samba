@@ -124,7 +124,8 @@ char *ldb_binary_encode(TALLOC_CTX *mem_ctx, struct ldb_val val)
 	unsigned char *buf = val.data;
 
 	for (i=0;i<val.length;i++) {
-		if (!isprint(buf[i]) || strchr(" *()\\&|!\"", buf[i])) {
+		unsigned int cval = buf[i];
+		if (cval < 0x20 || cval > 0x7E || strchr(" *()\\&|!\"", buf[i])) {
 			len += 2;
 		}
 	}
@@ -133,7 +134,8 @@ char *ldb_binary_encode(TALLOC_CTX *mem_ctx, struct ldb_val val)
 
 	len = 0;
 	for (i=0;i<val.length;i++) {
-		if (!isprint(buf[i]) || strchr(" *()\\&|!\"", buf[i])) {
+		unsigned int cval = buf[i];
+		if (cval < 0x20 || cval > 0x7E || strchr(" *()\\&|!\"", buf[i])) {
 			snprintf(ret+len, 4, "\\%02X", buf[i]);
 			len += 3;
 		} else {
