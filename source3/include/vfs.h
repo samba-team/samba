@@ -143,7 +143,8 @@
 /* Leave at 29 - not yet released. Remove sys_acl functions other than set and get - abartlet */
 /* Leave at 29 - not yet released. Added backup_intent bool to files_struct - JRA */
 /* Leave at 29 - not yet released. Add durable handle functions - metze/obnox */
-#define SMB_VFS_INTERFACE_VERSION 29
+/* Bump to version 30 - Samba 4.0.0 will ship with interface version 30 */
+#define SMB_VFS_INTERFACE_VERSION 30
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
