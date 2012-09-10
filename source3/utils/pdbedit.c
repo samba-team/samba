@@ -965,8 +965,8 @@ static int delete_machine_entry(const char *machinename)
 	if (!pdb_getsampwnam(samaccount, name)) {
 		fprintf (stderr,
 			 "machine %s does not exist in the passdb\n", name);
-		return -1;
 		TALLOC_FREE(samaccount);
+		return -1;
 	}
 
 	if (!NT_STATUS_IS_OK(pdb_delete_sam_account(samaccount))) {
