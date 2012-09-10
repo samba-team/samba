@@ -770,7 +770,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 
 	if (host_part_len != 0) {
 		/* TODO: We need to delegate this one */
-		DEBUG(1, ("Would have to delegate zones.\n"));
+		DEBUG(1, ("Would have to delegate zone '%s'.\n", zone->name));
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
