@@ -43,11 +43,6 @@ class cmd_testparm(Command):
     synopsis = "%prog [options]"
 
     takes_optiongroups = {
-        "sambaopts" : options.SambaOptions,
-        "versionopts": options.VersionOptions
-    }
-
-    takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions
     }
