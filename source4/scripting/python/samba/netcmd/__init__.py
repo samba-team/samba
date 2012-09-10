@@ -70,6 +70,10 @@ class Command(object):
     takes_options = []
     takes_optiongroups = {}
 
+    raw_argv = None
+    raw_args = None
+    raw_kwargs = None
+
     def __init__(self, outf=sys.stdout, errf=sys.stderr):
         self.outf = outf
         self.errf = errf
@@ -155,6 +159,10 @@ class Command(object):
         if (len(args) < min_args) or (undetermined_max_args == False and len(args) > max_args):
             parser.print_usage()
             return -1
+
+        self.raw_argv = list(argv)
+        self.raw_args = args
+        self.raw_kwargs = kwargs
 
         try:
             return self.run(*args, **kwargs)
