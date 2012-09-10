@@ -296,6 +296,8 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
 
 # DNS tests
 planpythontestsuite("fl2003dc", "samba.tests.dns")
+for t in smb4torture_testsuites("dns_internal."):
+    plansmbtorturetestsuite(t, "dc:local", '//$SERVER/whavever')
 
 # Local tests
 for t in smb4torture_testsuites("dlz_bind9."):

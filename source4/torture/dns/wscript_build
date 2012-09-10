@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 
 if bld.AD_DC_BUILD_IS_ENABLED():
-	bld.SAMBA_MODULE('TORTURE_DNS',
+	bld.SAMBA_MODULE('TORTURE_BIND_DNS',
 		source='dlz_bind9.c',
 		subsystem='smbtorture',
-		init_function='torture_dns_init',
+		init_function='torture_bind_dns_init',
 		cflags='-DBIND_VERSION_9_8',
 		deps='torture talloc torturemain dlz_bind9_for_torture',
+		internal_module=True
+		)
+
+	bld.SAMBA_MODULE('TORTURE_INTERNAL_DNS',
+		source='internal_dns.c',
+		subsystem='smbtorture',
+		init_function='torture_internal_dns_init',
+		deps='torture talloc torturemain',
 		internal_module=True
 		)
