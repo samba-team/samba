@@ -167,6 +167,12 @@ if opts.interactive:
         sys.exit(1)
 
     opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
+
+    opts.dns_backend = ask("DNS backend (SAMBA_INTERNAL, BIND9_FLATFILE, BIND9_DLZ, NONE)", "BIND9_DLZ")
+    if opts.dns_backend in (None, ''):
+        print >> sys.stderr, "No DNS backend set!"
+        sys.exit(1)
+
     while True:
         adminpass = getpass("Administrator password: ")
         if not adminpass:
