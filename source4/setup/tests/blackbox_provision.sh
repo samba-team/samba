@@ -16,29 +16,29 @@ shift 1
 rm -rf $PREFIX/simple-default
 mkdir -p $PREFIX/simple-default/etc
 touch $PREFIX/simple-default/etc/smb.conf
-testit "simple-default" $PYTHON $SRCDIR/source4/setup/provision --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-default --use-ntvfs
+testit "simple-default" $PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-default --use-ntvfs
 #And try with just whitespace
 rm -rf $PREFIX/simple-dc
 mkdir -p $PREFIX/simple-dc/etc
 echo "  " > $PREFIX/simple-dc/etc/smb.conf
-testit "simple-dc" $PYTHON $SRCDIR/source4/setup/provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --use-ntvfs
+testit "simple-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --use-ntvfs
 #The rest of these tests are with no smb.conf file present
 
 rm -rf $PREFIX/simple-dc
-testit "simple-dc-guids" $PYTHON $SRCDIR/source4/setup/provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --domain-guid=6054d36d-2bfd-44f1-a9cd-32cfbb06480b --ntds-guid=b838f255-c8aa-4fe8-9402-b7d61ca3bd1b --invocationid=6d4cff9a-2bbf-4b4c-98a2-36242ddb0bd6 --targetdir=$PREFIX/simple-dc --use-ntvfs
+testit "simple-dc-guids" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --domain-guid=6054d36d-2bfd-44f1-a9cd-32cfbb06480b --ntds-guid=b838f255-c8aa-4fe8-9402-b7d61ca3bd1b --invocationid=6d4cff9a-2bbf-4b4c-98a2-36242ddb0bd6 --targetdir=$PREFIX/simple-dc --use-ntvfs
 rm -rf $PREFIX/simple-member
-testit "simple-member" $PYTHON $SRCDIR/source4/setup/provision --server-role="member" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-member --use-ntvfs
+testit "simple-member" $PYTHON $BINDIR/samba-tool domain provision --server-role="member" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-member --use-ntvfs
 rm -rf $PREFIX/simple-standalone
-testit "simple-standalone" $PYTHON $SRCDIR/source4/setup/provision --server-role="standalone" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-standalone --use-ntvfs
+testit "simple-standalone" $PYTHON $BINDIR/samba-tool domain provision --server-role="standalone" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-standalone --use-ntvfs
 rm -rf $PREFIX/blank-dc
-testit "blank-dc" $PYTHON $SRCDIR/source4/setup/provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/blank-dc --blank --use-ntvfs
+testit "blank-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/blank-dc --blank --use-ntvfs
 rm -rf $PREFIX/partitions-only-dc
-testit "partitions-only-dc" $PYTHON $SRCDIR/source4/setup/provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/partitions-only-dc --partitions-only --use-ntvfs
+testit "partitions-only-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/partitions-only-dc --partitions-only --use-ntvfs
 
 reprovision() {
         rm -rf $PREFIX/reprovision
-	$PYTHON $SRCDIR/source4/setup/provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision" --use-ntvfs
-	$PYTHON $SRCDIR/source4/setup/provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision" --use-ntvfs
+	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision" --use-ntvfs
+	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision" --use-ntvfs
 }
 
 testit "reprovision" reprovision
