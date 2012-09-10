@@ -525,7 +525,9 @@ sub provision_raw_prepare($$$$$$$$$$)
 	if (defined($ENV{PYTHON})) {
 		push (@provision_options, $ENV{PYTHON});
 	}
-	push (@provision_options, "$self->{srcdir}/source4/setup/provision");
+	push (@provision_options, Samba::bindir_path($self, "samba-tool"));
+	push (@provision_options, "domain");
+	push (@provision_options, "provision");
 	push (@provision_options, "--configfile=$ctx->{smb_conf}");
 	push (@provision_options, "--host-name=$ctx->{hostname}");
 	push (@provision_options, "--host-ip=$ctx->{ipv4}");
