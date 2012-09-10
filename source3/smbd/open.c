@@ -1155,11 +1155,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-static bool is_delete_request(files_struct *fsp) {
-	return ((fsp->access_mask == DELETE_ACCESS) &&
-		(fsp->oplock_type == NO_OPLOCK));
-}
-
 /*
  * Send a break message to the oplock holder and delay the open for
  * our client.
@@ -1330,8 +1325,6 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 					int oplock_request,
 					struct share_mode_entry *ex_entry)
 {
-	bool delay_it;
-
 	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
 		return false;
 	}
@@ -1345,15 +1338,6 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 		 * and we can only get durable handles with batch oplocks,
 		 * this should actually never be reached...
 		 */
-		return false;
-	}
-
-	/* Found an exclusive or batch oplock */
-
-	delay_it = is_delete_request(fsp) ?
-		BATCH_OPLOCK_TYPE(ex_entry->op_type) : true;
-
-	if (!delay_it) {
 		return false;
 	}
 
