@@ -24,6 +24,12 @@
 # include <sys/quota.h>
 #endif
 
+#ifdef HPUX
+/* HPUX has no prototype for quotactl but we test compile with strict
+   error checks, which would fail without function prototype */
+extern int quotactl(int cmd, const char *special, uid_t uid, void *addr);
+#endif
+
 #ifndef SYS_DQBLK
 #define SYS_DQBLK dqblk
 #endif
