@@ -934,11 +934,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-static bool is_delete_request(files_struct *fsp) {
-	return ((fsp->access_mask == DELETE_ACCESS) &&
-		(fsp->oplock_type == NO_OPLOCK));
-}
-
 /*
  * Send a break message to the oplock holder and delay the open for
  * our client.
@@ -1083,13 +1078,8 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 	}
 
 	if (ex_entry != NULL) {
-		/* Found an exclusive or batch oplock */
-		bool delay_it = is_delete_request(fsp) ?
-				BATCH_OPLOCK_TYPE(ex_entry->op_type) : true;
-		if (delay_it) {
-			send_break_message(fsp, ex_entry, mid, oplock_request);
-			return true;
-		}
+		send_break_message(fsp, ex_entry, mid, oplock_request);
+		return true;
 	}
 	return false;
 }
