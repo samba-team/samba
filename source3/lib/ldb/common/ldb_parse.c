@@ -92,6 +92,13 @@ struct ldb_val ldb_binary_decode(void *mem_ctx, const char *str)
 	return ret;
 }
 
+static bool need_encode(unsigned char cval)
+{
+	if (cval < 0x20 || cval > 0x7E || strchr(" *()\\&|!\"", cval)) {
+		return true;
+	}
+	return false;
+}
 
 /*
    encode a blob as a RFC2254 binary string, escaping any
@@ -105,7 +112,7 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 	unsigned char *buf = val.data;
 
 	for (i=0;i<val.length;i++) {
-		if (!isprint(buf[i]) || strchr(" *()\\&|!\"", buf[i])) {
+		if (need_encode(buf[i])) {
 			len += 2;
 		}
 	}
@@ -114,7 +121,7 @@ char *ldb_binary_encode(void *mem_ctx, struct ldb_val val)
 
 	len = 0;
 	for (i=0;i<val.length;i++) {
-		if (!isprint(buf[i]) || strchr(" *()\\&|!\"", buf[i])) {
+		if (need_encode(buf[i])) {
 			snprintf(ret+len, 4, "\\%02X", buf[i]);
 			len += 3;
 		} else {
