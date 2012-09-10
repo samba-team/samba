@@ -693,14 +693,28 @@ bld.SAMBA3_SUBSYSTEM('TLDAP',
                     source=TLDAP_SRC,
                     deps='asn1util LIBTSOCKET')
 
-static_pdb_modules = ['tdbsam', 'ldap', 'smbpasswd', 'wbc_sam']
-static_pdb_match = filter(lambda x: bld.SAMBA3_IS_STATIC_MODULE('pdb_%s' % x), static_pdb_modules)
+# libpdb.so should not expose internal symbols that are only usable
+# to the statically linked modules that are merged into libpdb.
+# Note that we always filter these symbols out in libpdb, even
+# when modules are not linked statically. In the latter case
+# symbols will not be present in the libpdb anyway so no hurt is
+# done to the version script.
+static_pdb_match = ['tdbsam', 'smbpasswd', 'wbc_sam']
 private_pdb_match = []
-if bld.SAMBA3_IS_STATIC_MODULE('pdb_samba_dsdb') and bld.AD_DC_BUILD_IS_ENABLED():
-    static_pdb_match.append('samba_dsdb')
-    private_pdb_match.append('!idmap_init')
-    private_pdb_match.append('!idmap_sids_to_xids')
-    private_pdb_match.append('!idmap_xids_to_sids')
+
+# AD DC module when linked statically will pull in few source4/winbind
+# dependencies which are not used outside AD DC module
+static_pdb_match.append('samba_dsdb')
+private_pdb_match.append('!idmap_init')
+private_pdb_match.append('!idmap_sids_to_xids')
+private_pdb_match.append('!idmap_xids_to_sids')
+
+# ldap module is actually three modules merged together: ldapsam, ipa, and nds
+static_pdb_match = static_pdb_match + ['ldap', 'ipa', 'nds']
+ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info', '!ldapsam_*', '!groupmap_attr_list*']
+private_pdb_match.append('!pdb_nds_*')
+private_pdb_match.append('!pdb_init_ldapsam')
+private_pdb_match = private_pdb_match + ldapsam_pdb_match
 
 private_pdb_match = private_pdb_match + map(lambda x: '!pdb_%s_init' % x, static_pdb_match)
 
