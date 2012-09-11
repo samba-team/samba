@@ -1286,10 +1286,17 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		iplist_size = 0;
         }
 
-	/* Try standard netbios queries if no ADS */
+	/* Try standard netbios queries if no ADS and fall back to DNS queries
+	 * if alt_name is available */
 	if (*num_dcs == 0) {
 		get_sorted_dc_list(domain->name, NULL, &ip_list, &iplist_size,
-		       False);
+		       false);
+		if (iplist_size == 0) {
+			if (domain->alt_name != NULL) {
+				get_sorted_dc_list(domain->alt_name, NULL, &ip_list,
+				       &iplist_size, true);
+			}
+		}
 
 		for ( i=0; i<iplist_size; i++ ) {
 			char addr[INET6_ADDRSTRLEN];
