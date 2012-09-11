@@ -36,7 +36,7 @@ if len(sys.argv) > 1:
 try:
     retval = cmd._run("samba-tool", subcommand, *args)
 except SystemExit, e:
-    retval = -1
+    retval = e.code
 except Exception, e:
     cmd.show_command_error(e)
     retval = 1
