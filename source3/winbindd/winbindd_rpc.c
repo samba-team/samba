@@ -972,29 +972,44 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 
 	do {
 		struct lsa_DomainList dom_list;
+		struct lsa_DomainListEx dom_list_ex;
+		bool has_ex = false;
 		uint32_t i;
 
 		/*
 		 * We don't run into deadlocks here, cause winbind_off() is
 		 * called in the main function.
 		 */
-		status = dcerpc_lsa_EnumTrustDom(b,
-						 mem_ctx,
-						 lsa_policy,
-						 &enum_ctx,
-						 &dom_list,
-						 (uint32_t) -1,
-						 &result);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		if (!NT_STATUS_IS_OK(result)) {
-			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-				return result;
+		status = dcerpc_lsa_EnumTrustedDomainsEx(b,
+							 mem_ctx,
+							 lsa_policy,
+							 &enum_ctx,
+							 &dom_list_ex,
+							 (uint32_t) -1,
+							 &result);
+		if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result) &&
+		    dom_list_ex.count > 0) {
+			count += dom_list_ex.count;
+			has_ex = true;
+		} else {
+			status = dcerpc_lsa_EnumTrustDom(b,
+							 mem_ctx,
+							 lsa_policy,
+							 &enum_ctx,
+							 &dom_list,
+							 (uint32_t) -1,
+							 &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
-		}
+			if (!NT_STATUS_IS_OK(result)) {
+				if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+					return result;
+				}
+			}
 
-		count += dom_list.count;
+			count += dom_list.count;
+		}
 
 		array = talloc_realloc(mem_ctx,
 				       array,
@@ -1004,21 +1019,32 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		for (i = 0; i < dom_list.count; i++) {
+		for (i = 0; i < count; i++) {
 			struct netr_DomainTrust *trust = &array[i];
 			struct dom_sid *sid;
 
 			ZERO_STRUCTP(trust);
 
-			trust->netbios_name = talloc_move(array,
-							  &dom_list.domains[i].name.string);
-			trust->dns_name = NULL;
-
 			sid = talloc(array, struct dom_sid);
 			if (sid == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
-			sid_copy(sid, dom_list.domains[i].sid);
+
+			if (has_ex) {
+				trust->netbios_name = talloc_move(array,
+								  &dom_list_ex.domains[i].netbios_name.string);
+				trust->dns_name = talloc_move(array,
+							      &dom_list_ex.domains[i].domain_name.string);
+
+				sid_copy(sid, dom_list_ex.domains[i].sid);
+			} else {
+				trust->netbios_name = talloc_move(array,
+								  &dom_list.domains[i].name.string);
+				trust->dns_name = NULL;
+
+				sid_copy(sid, dom_list.domains[i].sid);
+			}
+
 			trust->sid = sid;
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));

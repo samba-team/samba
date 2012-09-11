@@ -108,9 +108,9 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 		}
 	}
 
-	/* ignore alt_name if we are not in an AD domain */
+	/* use alt_name if available to allow DNS lookups */
 
-	if ( (lp_security() == SEC_ADS) && alt_name && *alt_name) {
+	if (alt_name && *alt_name) {
 		alternative_name = alt_name;
 	}
 
