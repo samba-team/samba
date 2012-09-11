@@ -831,7 +831,7 @@ static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 	}
 	_pam_log(ctx, LOG_CRIT, "Received [%s] reply from application.\n", resp->resp);
 
-	if (strcasecmp(resp->resp, "yes") == 0) {
+	if ((resp->resp != NULL) && (strcasecmp(resp->resp, "yes") == 0)) {
 		retval = true;
 	}
 
