@@ -18,9 +18,10 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	../../dsdb/schema/tests/schema_syntax.c
 	../../../lib/util/tests/anonymous_shared.c
 	verif_trailer.c
-	nss_tests.c'''
+	nss_tests.c
+	fsrvp_state.c'''
 
-TORTURE_LOCAL_DEPS = 'RPC_NDR_ECHO TDR LIBCLI_SMB MESSAGING iconv POPT_CREDENTIALS TORTURE_AUTH TORTURE_UTIL TORTURE_NDR TORTURE_LIBCRYPTO share torture_registry PROVISION ldb samdb replace-test'
+TORTURE_LOCAL_DEPS = 'RPC_NDR_ECHO TDR LIBCLI_SMB MESSAGING iconv POPT_CREDENTIALS TORTURE_AUTH TORTURE_UTIL TORTURE_NDR TORTURE_LIBCRYPTO share torture_registry PROVISION ldb samdb replace-test RPC_FSS_STATE'
 
 bld.SAMBA_MODULE('TORTURE_LOCAL',
 	source=TORTURE_LOCAL_SOURCE,
