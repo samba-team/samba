@@ -792,6 +792,114 @@ done:
 	return ret;
 }
 
+
+bool test_durable_open_delete_on_close2(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	bool ret = true;
+	uint8_t b = 0;
+	uint64_t previous_session_id;
+	uint64_t alloc_size_step;
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname, 256, "durable_open_delete_on_close2_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = true;
+	io.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	status = smb2_util_write(tree, *h, &b, 0, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* disconnect, leaving the durable handle in place */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id, &tree)) {
+		torture_warning(tctx, "could not reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	alloc_size_step = io.out.alloc_size;
+	CHECK_CREATED_SIZE(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE, alloc_size_step, 1);
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+	/* close the file, thereby deleting it */
+	smb2_util_close(tree, *h);
+	status = smb2_logoff(tree->session);
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "could not reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * Open the file on the new connection again
+	 * and check that it has been newly created,
+	 * i.e. delete on close was effective on the reconnected handle.
+	 * Also check that the file is really empty,
+	 * the previously written byte gone.
+	 */
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = true;
+	io.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED_SIZE(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE, 0, 0);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 /*
    basic testing of SMB2 durable opens
    regarding the position information on the handle
@@ -1597,6 +1705,8 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 	torture_suite_add_1smb2_test(suite, "reopen4", test_durable_open_reopen4);
 	torture_suite_add_1smb2_test(suite, "delete_on_close1",
 				     test_durable_open_delete_on_close1);
+	torture_suite_add_1smb2_test(suite, "delete_on_close2",
+				     test_durable_open_delete_on_close2);
 	torture_suite_add_1smb2_test(suite, "file-position",
 	    test_durable_open_file_position);
 	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
