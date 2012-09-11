@@ -2001,7 +2001,7 @@ krb5_error_code smb_krb5_make_principal(krb5_context context,
 	va_end(ap);
 
 	if (free_realm) {
-		krb5_free_default_realm(context, &realm);
+		krb5_free_default_realm(context, realm);
 	}
 
 	return code;
