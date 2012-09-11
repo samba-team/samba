@@ -446,6 +446,12 @@ struct smbd_smb2_session_setup_state {
 static int pp_self_ref_destructor(struct smbd_smb2_session_setup_state **pp_state)
 {
 	(*pp_state)->session = NULL;
+	/*
+	 * To make things clearer, ensure the pp_self_ref
+	 * pointer is nulled out. We're never going to
+	 * access this again.
+	 */
+	(*pp_state)->pp_self_ref = NULL;
 	return 0;
 }
 
