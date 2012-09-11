@@ -711,7 +711,7 @@ private_pdb_match.append('!idmap_xids_to_sids')
 
 # ldap module is actually three modules merged together: ldapsam, ipa, and nds
 static_pdb_match = static_pdb_match + ['ldap', 'ipa', 'nds']
-ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info', '!ldapsam_*', '!groupmap_attr_list*']
+ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info', '!ldapsam_*', '!groupmap_attr_list*', '!get_userattr_list']
 private_pdb_match.append('!pdb_nds_*')
 private_pdb_match.append('!pdb_init_ldapsam')
 private_pdb_match = private_pdb_match + ldapsam_pdb_match

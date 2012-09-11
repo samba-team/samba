@@ -35,7 +35,6 @@ get_privileges_for_sid_as_set: NTSTATUS (TALLOC_CTX *, PRIVILEGE_SET **, struct 
 get_privileges_for_sids: bool (uint64_t *, struct dom_sid *, int)
 get_trust_pw_clear: bool (const char *, char **, const char **, enum netr_SchannelType *)
 get_trust_pw_hash: bool (const char *, uint8_t *, const char **, enum netr_SchannelType *)
-get_userattr_list: const char **(TALLOC_CTX *, int)
 gid_to_sid: void (struct dom_sid *, gid_t)
 gid_to_unix_groups_sid: void (gid_t, struct dom_sid *)
 grab_named_mutex: struct named_mutex *(TALLOC_CTX *, const char *, int)
