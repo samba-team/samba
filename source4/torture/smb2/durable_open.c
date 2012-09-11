@@ -722,12 +722,9 @@ bool test_durable_open_delete_on_close1(struct torture_context *tctx,
 	char fname[256];
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
-	struct smb2_create io1, io2, io3;
+	struct smb2_create io1, io2;
 	bool ret = true;
-	struct smb2_transport *transport;
-	struct smb2_session *session2;
-	struct smb2_tree *tree2;
-	union smb_fileinfo info1, info2;
+	uint8_t b = 0;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_open_delete_on_close1_%s.dat",
@@ -749,80 +746,46 @@ bool test_durable_open_delete_on_close1(struct torture_context *tctx,
 	CHECK_VAL(io1.out.durable_open, true);
 	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
 
-	ZERO_STRUCT(info1);
-	info1.internal_information.level = RAW_FILEINFO_INTERNAL_INFORMATION;
-	info1.internal_information.in.file.handle = _h;
-	status = smb2_getinfo_file(tree, tree, &info1);
+	status = smb2_util_write(tree, *h, &b, 0, 1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	/*
-	 * do a session logoff, establish a new session and tree
-	 * connect on the same transport, and try a durable reopen
-	 */
-	transport = tree->session->transport;
-	status = smb2_logoff(tree->session);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	if (!torture_smb2_session_setup(tctx, transport,
-					0, /* previous_session_id */
-					mem_ctx, &session2))
-	{
-		torture_warning(tctx, "session setup failed.\n");
-		ret = false;
-		goto done;
-	}
-
-	/*
-	 * the session setup has talloc-stolen the transport,
-	 * so we can safely free the old tree+session for clarity
-	 */
+	/* disconnect, leaving the durable handle in place */
 	TALLOC_FREE(tree);
 
-	if (!torture_smb2_tree_connect(tctx, session2, mem_ctx, &tree2)) {
-		torture_warning(tctx, "tree connect failed.\n");
+	if (!torture_smb2_connection(tctx, &tree)) {
+		torture_warning(tctx, "could not reconnect, bailing\n");
 		ret = false;
 		goto done;
 	}
 
-	ZERO_STRUCT(io3);
-	io3.in.fname = fname;
-	io3.in.durable_handle = h;
-	h = NULL;
-
+	/*
+	 * Open the file on the new connection again
+	 * and check that it has been newly created,
+	 * i.e. delete on close was effective on the disconnected handle.
+	 * Also check that the file is really empty,
+	 * the previously written byte gone.
+	 */
 	smb2_oplock_create_share(&io2, fname,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
 	io2.in.create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 
-	status = smb2_create(tree2, mem_ctx, &io2);
+	status = smb2_create(tree, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	_h = io2.out.file.handle;
 	h = &_h;
-	CHECK_CREATED(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_CREATED_SIZE(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE, 0, 0);
 	CHECK_VAL(io2.out.durable_open, false);
 	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
 
-	ZERO_STRUCT(info2);
-	info2.internal_information.level = RAW_FILEINFO_INTERNAL_INFORMATION;
-	info2.internal_information.in.file.handle = _h;
-	status = smb2_getinfo_file(tree2, tree2, &info2);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	CHECK_NOT_VAL(info1.internal_information.out.file_id,
-		      info2.internal_information.out.file_id);
-
-	status = smb2_create(tree2, mem_ctx, &io3);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-
 done:
 	if (h != NULL) {
-		smb2_util_close(tree2, *h);
+		smb2_util_close(tree, *h);
 	}
 
-	smb2_util_unlink(tree2, fname);
+	smb2_util_unlink(tree, fname);
 
 	talloc_free(tree);
-	talloc_free(tree2);
 
 	talloc_free(mem_ctx);
 
