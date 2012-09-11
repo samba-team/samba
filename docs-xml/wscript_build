@@ -81,7 +81,7 @@ krb5_locator_manpages = 'manpages/winbind_krb5_locator.7'
 
 if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
 
-    bld.MANPAGES(manpages)
+    bld.SAMBAMANPAGES(manpages)
 
     if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
         bld.MANPAGES(pam_winbind_manpages)
