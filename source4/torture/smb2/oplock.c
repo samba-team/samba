@@ -3190,7 +3190,6 @@ static bool test_smb2_oplock_brl3(struct torture_context *tctx, struct smb2_tree
 	const char *fname = BASEDIR "\\test_batch_brl.dat";
 	bool ret = true;
 	uint8_t buf[1000];
-	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 	struct smb2_handle h, h1, h2;
@@ -3241,7 +3240,7 @@ static bool test_smb2_oplock_brl3(struct torture_context *tctx, struct smb2_tree
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		torture_comment(tctx, "Failed to create file\n");
-		correct = false;
+		ret = false;
 		goto done;
 	}
 
