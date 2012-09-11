@@ -364,7 +364,6 @@ static bool test_smb2_oplock_exclusive1(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
-	union smb_unlink unl;
 	struct smb2_handle h1;
 	struct smb2_handle h;
 
@@ -411,8 +410,6 @@ static bool test_smb2_oplock_exclusive1(struct torture_context *tctx,
 	CHECK_VAL(break_info.failures, 0);
 
 	torture_comment(tctx, "unlink it - should also be no break\n");
-	unl.unlink.in.pattern = fname;
-	unl.unlink.in.attrib = 0;
 	status = smb2_util_unlink(tree2, fname);
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_SHARING_VIOLATION,
 				      "Incorrect status");
