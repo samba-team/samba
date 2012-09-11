@@ -900,11 +900,11 @@ RebootOnCompletion=No
         self.parser.add_option("--use-ntvfs", action='store_true', default=False, help='use NTVFS for the fileserver')
         self.parser.add_option("--dns-backend", type="choice",
             choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-            help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+            help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
                  "BIND9_FLATFILE uses bind9 text database to store zone information, " \
-                 "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+                 "BIND9_DLZ uses samba4 AD to store zone information, " \
                  "NONE skips the DNS setup entirely (not recommended)",
-            default="BIND9_DLZ")
+            default="SAMBA_INTERNAL")
 
         self.opts, self.args = self.parser.parse_args()
 

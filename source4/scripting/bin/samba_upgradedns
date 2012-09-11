@@ -238,8 +238,8 @@ if __name__ == '__main__':
     parser.add_option_group(credopts)
 
     parser.add_option("--dns-backend", type="choice", metavar="<BIND9_DLZ|SAMBA_INTERNAL>",
-                      choices=["SAMBA_INTERNAL", "BIND9_DLZ"], default="BIND9_DLZ",
-                      help="The DNS server backend, default BIND9_DLZ")
+                      choices=["SAMBA_INTERNAL", "BIND9_DLZ"], default="SAMBA_INTERNAL",
+                      help="The DNS server backend, default SAMBA_INTERNAL")
     parser.add_option("--migrate", type="choice", metavar="<yes|no>",
                       choices=["yes","no"], default="yes",
                       help="Migrate existing zone data, default yes")
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     opts = parser.parse_args()[0]
 
     if opts.dns_backend is None:
-        opts.dns_backend = 'DLZ_BIND9'
+        opts.dns_backend = 'SAMBA_INTERNAL'
 
     if opts.migrate:
         autofill = False

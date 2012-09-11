@@ -1816,8 +1816,8 @@ def provision(logger, session_info, credentials, smbconf=None,
     if use_rfc2307:
         global_param["idmap_ldb:use rfc2307"] = ["yes"]
 
-    if dns_backend == "SAMBA_INTERNAL":
-        server_services.append("+dns")
+    if dns_backend != "SAMBA_INTERNAL":
+        server_services.append("-dns")
 
     if use_ntvfs:
         server_services.append("+smb")

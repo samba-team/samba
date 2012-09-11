@@ -174,11 +174,11 @@ class cmd_domain_provision(Command):
                 help="choose machine password (otherwise random)"),
          Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                 choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
                      "BIND9_FLATFILE uses bind9 text database to store zone information, " \
-                     "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+                     "BIND9_DLZ uses samba4 AD to store zone information, " \
                      "NONE skips the DNS setup entirely (not recommended)",
-                default="BIND9_DLZ"),
+                default="SAMBA_INTERNAL"),
          Option("--dnspass", type="string", metavar="PASSWORD",
                 help="choose dns password (otherwise random)"),
          Option("--ldapadminpass", type="string", metavar="PASSWORD",
@@ -297,7 +297,7 @@ class cmd_domain_provision(Command):
 
             server_role = ask("Server Role (dc, member, standalone)", "dc")
 
-            dns_backend = ask("DNS backend (SAMBA_INTERNAL, BIND9_FLATFILE, BIND9_DLZ, NONE)", "BIND9_DLZ")
+            dns_backend = ask("DNS backend (SAMBA_INTERNAL, BIND9_FLATFILE, BIND9_DLZ, NONE)", "SAMBA_INTERNAL")
             if dns_backend in (None, ''):
                 raise CommandError("No DNS backend set!")
 
@@ -412,10 +412,10 @@ class cmd_domain_dcpromo(Command):
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
-                   "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
+                   "BIND9_DLZ uses samba4 AD to store zone information, " \
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="BIND9_DLZ")
+               default="SAMBA_INTERNAL")
        ]
 
     takes_args = ["domain", "role?"]
@@ -479,10 +479,10 @@ class cmd_domain_join(Command):
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
-                   "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
+                   "BIND9_DLZ uses samba4 AD to store zone information, " \
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="BIND9_DLZ")
+               default="SAMBA_INTERNAL")
        ]
 
     takes_args = ["domain", "role?"]
@@ -1177,11 +1177,11 @@ class cmd_domain_classicupgrade(Command):
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server, " \
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
                    "BIND9_FLATFILE uses bind9 text database to store zone information, " \
-                   "BIND9_DLZ uses samba4 AD to store zone information (default), " \
+                   "BIND9_DLZ uses samba4 AD to store zone information, " \
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
-               default="BIND9_DLZ")
+               default="SAMBA_INTERNAL")
     ]
 
     takes_args = ["smbconf"]
