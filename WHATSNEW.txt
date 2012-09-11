@@ -49,6 +49,10 @@ with those matching the GPOs in LDAP and the defaults from an initial
 provision.  This will set an underlying POSIX ACL if required (eg not
 using the NTVFS file server).
 
+If you used the BIND9_FLATFILE or BIND9_DLZ features,
+you'll have to add '-dns' to the 'server services' option,
+as the internal dns server (SAMBA_INTERNAL) is the default now.
+
 NEW FEATURES
 ============
 
@@ -80,13 +84,14 @@ running an AD DC, you only need to run 'samba' (not
 nmbd/smbd/winbind), as the required services are co-coordinated by this
 master binary.
 
-As DNS is an integral part of Active Directory, we also provide a DNS
-solution, using the BIND DLZ mechanism in versions 9.8 and 9.9.
-During the provision, a configuration file will be generated for bind
-to make it use this plugin.  We also have a project to provide a
-minimal internal DNS server from within the Samba process, for easier
-'out of the box' configuration.  Note however that this is not yet
-complete (pending addition of secure DNS update support).
+As DNS is an integral part of Active Directory, we also provide two DNS
+solutions, a simple internal DNS server for 'out of the box' configurations
+and a more elaborate BIND plugin using the BIND DLZ mechanism in versions
+9.8 and 9.9. During the provision, you can select which backend to use.
+With the internal backend, your DNS server is good to go.
+If you chose the BIND_DLZ backend, a configuration file will be generated
+for bind to make it use this plugin, as well as a file explaining how to
+set up bind.
 
 To provide accurate timestamps to Windows clients, we integrate with
 the NTP project to provide secured NTP replies.  To use you need to
@@ -130,6 +135,11 @@ as 'samba-tool domain provision' the arguments are still
 the same.
 
 The 'updateprovision' script was renamed to 'samba_upgradeprovision'.
+
+We changed the default dns implementation to the internal dns server
+(SAMBA_INTERNAL). BIND9_FLATFILE and BIND9_DLZ are still available,
+but you'll have to add '-dns' to the 'server services' option
+to disable the internal dns server.
 
 CHANGES SINCE beta7
 =====================
