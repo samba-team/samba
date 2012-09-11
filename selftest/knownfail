@@ -177,6 +177,7 @@
 ^samba3.smb2.notify.rec
 ^samba3.smb2.durable-open.lock-lease
 ^samba3.smb2.durable-open.reopen4
+^samba3.smb2.durable-open.delete_on_close2
 ^samba3.smb2.durable-v2-open.open-lease
 ^samba3.smb2.durable-v2-open.persistent-open-lease
 ^samba3.smb2.ioctl.shadow_copy
