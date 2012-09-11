@@ -125,6 +125,12 @@ The option "kernel share modes" has been introduced to be able
 to turn the translation of SMB share modes into kernel flocks
 off.
 
+The 'provision' script was merged into 'samba-tool'
+as 'samba-tool domain provision' the arguments are still
+the same.
+
+The 'updateprovision' script was renamed to 'samba_upgradeprovision'.
+
 CHANGES SINCE beta7
 =====================
 
