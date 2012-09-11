@@ -432,7 +432,6 @@ static bool test_smb2_oplock_exclusive2(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
-	union smb_unlink unl;
 	struct smb2_handle h, h1, h2;
 
 	status = torture_smb2_testdir(tree1, BASEDIR, &h);
@@ -487,8 +486,6 @@ static bool test_smb2_oplock_exclusive2(struct torture_context *tctx,
 
 	/* now we have 2 level II oplocks... */
 	torture_comment(tctx, "try to unlink it - should cause a break\n");
-	unl.unlink.in.pattern = fname;
-	unl.unlink.in.attrib = 0;
 	status = smb2_util_unlink(tree2, fname);
 	torture_assert_ntstatus_ok(tctx, status, "Error unlinking the file");
 	torture_wait_for_oplock_break(tctx);
