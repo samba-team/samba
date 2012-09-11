@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">3.6</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
 </refmeta>
 
 
@@ -27,8 +27,6 @@
 	group objects in the AD.</para>
 
 	<para>
-	Note that the idmap_ad module has changed considerably since
-	Samba versions 3.0 and 3.2.
 	Currently, the <parameter>ad</parameter> backend
 	does not work as the the default idmap backend, but one has
 	to configure it separately for each domain for which one wants
