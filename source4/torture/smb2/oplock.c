@@ -2967,7 +2967,6 @@ static bool test_smb2_oplock_brl1(struct torture_context *tctx,
 	/*int fname, f;*/
 	bool ret = true;
 	uint8_t buf[1000];
-	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 	struct smb2_lock lck;
@@ -3019,7 +3018,7 @@ static bool test_smb2_oplock_brl1(struct torture_context *tctx,
 	status = smb2_util_write(tree1, h1,buf, 0, sizeof(buf));
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		torture_comment(tctx, "Failed to create file\n");
-		correct = false;
+		ret = false;
 		goto done;
 	}
 
