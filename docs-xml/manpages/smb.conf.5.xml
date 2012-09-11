@@ -6,7 +6,7 @@
 	<manvolnum>5</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">File Formats and Conventions</refmiscinfo>
-	<refmiscinfo class="version">3.6</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
 </refmeta>
 
 
@@ -503,7 +503,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<varlistentry>
 		<term>%I</term>
 		<listitem><para>the IP address of the client machine.</para>
-		<para>Before 3.6.0 it could contain IPv4 mapped IPv6 addresses,
+		<para>Before 4.0.0 it could contain IPv4 mapped IPv6 addresses,
 			now it only contains IPv4 or IPv6 addresses.</para>
 		</listitem>
 		</varlistentry>
@@ -511,7 +511,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<varlistentry>
 		<term>%i</term>
 		<listitem><para>the local IP address to which a client connected.</para>
-		<para>Before 3.6.0 it could contain IPv4 mapped IPv6 addresses,
+		<para>Before 4.0.0 it could contain IPv4 mapped IPv6 addresses,
 			now it only contains IPv4 or IPv6 addresses.</para>
 		</listitem>
 		</varlistentry>

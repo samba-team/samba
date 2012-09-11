@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">3.6</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
 </refmeta>
 
 
@@ -45,7 +45,7 @@
 	protocol, supporting only a small list of VFS operations, and had
 	several drawbacks. The protocol version 2 is a try to solve the
 	problems version 1 had while at the same time adding new features.
-	With the release of Samba 3.6.0, the module will run protocol version 2
+	With the release of Samba 4.0.0, the module will run protocol version 2
 	by default.
 	</para>
 </refsect1>
