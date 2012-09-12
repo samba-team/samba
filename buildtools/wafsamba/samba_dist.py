@@ -219,11 +219,13 @@ def DIST_DIRS(dirs):
         dist_dirs = dirs
 
 @conf
-def DIST_FILES(files):
+def DIST_FILES(files, extend=False):
     '''set additional files for packaging, relative to top srcdir'''
     global dist_files
     if not dist_files:
         dist_files = files
+    elif extend:
+        dist_files = dist_files + " " + files
 
 @conf
 def DIST_BLACKLIST(blacklist):
