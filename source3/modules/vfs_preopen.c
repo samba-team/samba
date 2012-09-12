@@ -405,7 +405,7 @@ static int preopen_open(vfs_handle_struct *handle,
 
 	TALLOC_FREE(state->template_fname);
 	state->template_fname = talloc_asprintf(
-		state, "%s/%s", fsp->conn->connectpath, smb_fname->base_name);
+		state, "%s/%s", fsp->conn->cwd, smb_fname->base_name);
 
 	if (state->template_fname == NULL) {
 		return res;
