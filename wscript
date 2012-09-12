@@ -246,7 +246,7 @@ def dist():
             distveroption = field + '=' + str(sambaversion.vcs_fields[field])
             distversionf.write(distveroption + '\n')
         distversionf.flush()
-        samba_dist.DIST_FILES('%s:.distversion' % distversionf.name)
+        samba_dist.DIST_FILES('%s:.distversion' % distversionf.name, extend=True)
 
         samba_dist.dist()
         distversionf.close()
