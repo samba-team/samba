@@ -35,6 +35,18 @@
 #include "samba_linux_quota.h"
 #ifdef HAVE_LINUX_DQBLK_XFS_H
 #include <linux/dqblk_xfs.h>
+#ifndef XFS_QUOTA_UDQ_ACCT
+#define XFS_QUOTA_UDQ_ACCT FS_QUOTA_UDQ_ACCT
+#endif
+#ifndef XFS_QUOTA_UDQ_ENFD
+#define XFS_QUOTA_UDQ_ENFD FS_QUOTA_UDQ_ENFD
+#endif
+#ifndef XFS_QUOTA_GDQ_ACCT
+#define XFS_QUOTA_GDQ_ACCT FS_QUOTA_GDQ_ACCT
+#endif
+#ifndef XFS_QUOTA_GDQ_ENFD
+#define XFS_QUOTA_GDQ_ENFD FS_QUOTA_GDQ_ENFD
+#endif
 #endif
 #define HAVE_GROUP_QUOTA
 #else /* IRIX */
