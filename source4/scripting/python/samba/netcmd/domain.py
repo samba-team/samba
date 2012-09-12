@@ -233,6 +233,7 @@ class cmd_domain_provision(Command):
             krbtgtpass = None,
             machinepass = None,
             dns_backend = None,
+            dns_forwarder = None,
             dnspass = None,
             ldapadminpass = None,
             root = None,
@@ -252,11 +253,11 @@ class cmd_domain_provision(Command):
             use_ntvfs = None,
             use_rfc2307 = None):
 
-        logger = self.get_logger("provision")
+        self.logger = self.get_logger("provision")
         if quiet:
-            logger.setLevel(logging.WARNING)
+            self.logger.setLevel(logging.WARNING)
         else:
-            logger.setLevel(logging.INFO)
+            self.logger.setLevel(logging.INFO)
 
         lp = sambaopts.get_loadparm()
         smbconf = lp.configfile
@@ -264,6 +265,8 @@ class cmd_domain_provision(Command):
         creds = credopts.get_credentials(lp)
 
         creds.set_kerberos_state(DONT_USE_KERBEROS)
+
+        suggested_forwarder = dns_forwarder is None and self._get_nameserver_ip() or dns_forwarder
 
         if len(self.raw_argv) == 1:
             interactive = True
@@ -301,6 +304,12 @@ class cmd_domain_provision(Command):
             if dns_backend in (None, ''):
                 raise CommandError("No DNS backend set!")
 
+            if dns_backend == "SAMBA_INTERNAL":
+                dns_forwarder = ask("DNS forwarder IP address (write 'none' to disable forwarding)", suggested_forwarder)
+                if dns_forwarder.lower() in (None, 'none'):
+                    suggested_forwarder = None
+                    dns_forwarder = None
+
             while True:
                 adminpassplain = getpass("Administrator password: ")
                 if not adminpassplain:
@@ -321,7 +330,7 @@ class cmd_domain_provision(Command):
                 raise CommandError("No domain set!")
 
         if not adminpass:
-            logger.info("Administrator password will be set randomly!")
+            self.logger.info("Administrator password will be set randomly!")
 
         if function_level == "2000":
             dom_for_fun_level = DS_DOMAIN_FUNCTION_2000
@@ -331,6 +340,9 @@ class cmd_domain_provision(Command):
             dom_for_fun_level = DS_DOMAIN_FUNCTION_2008
         elif function_level == "2008_R2":
             dom_for_fun_level = DS_DOMAIN_FUNCTION_2008_R2
+
+        if dns_backend == "SAMBA_INTERNAL" and dns_forwarder is None:
+            dns_forwarder = suggested_forwarder
 
         samdb_fill = FILL_FULL
         if blank:
@@ -357,16 +369,16 @@ class cmd_domain_provision(Command):
                                           "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
                     eadb = False
                 except Exception:
-                    logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. ")
+                    self.logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. ")
             finally:
                 file.close()
 
         if eadb:
-            logger.info("not using extended attributes to store ACLs and other metadata. If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
+            self.logger.info("not using extended attributes to store ACLs and other metadata. If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
 
         session = system_session()
         try:
-            result = provision(logger,
+            result = provision(self.logger,
                   session, creds, smbconf=smbconf, targetdir=targetdir,
                   samdb_fill=samdb_fill, realm=realm, domain=domain,
                   domainguid=domain_guid, domainsid=domain_sid,
@@ -375,7 +387,7 @@ class cmd_domain_provision(Command):
                   ntdsguid=ntds_guid,
                   invocationid=invocationid, adminpass=adminpass,
                   krbtgtpass=krbtgtpass, machinepass=machinepass,
-                  dns_backend=dns_backend,
+                  dns_backend=dns_backend, dns_forwarder=dns_forwarder,
                   dnspass=dnspass, root=root, nobody=nobody,
                   wheel=wheel, users=users,
                   serverrole=server_role, dom_for_fun_level=dom_for_fun_level,
@@ -386,7 +398,32 @@ class cmd_domain_provision(Command):
         except ProvisioningError, e:
             raise CommandError("Provision failed", e)
 
-        result.report_logger(logger)
+        result.report_logger(self.logger)
+
+    def _get_nameserver_ip(self):
+        """Grab the nameserver IP address from /etc/resolv.conf"""
+        from os import path
+        RESOLV_CONF="/etc/resolv.conf"
+
+        if not path.isfile(RESOLV_CONF):
+            self.logger.warning("Failed to locate %s" % RESOLV_CONF)
+            return None
+
+        handle = None
+        try:
+            handle = open(RESOLV_CONF, 'r')
+            for line in handle:
+                if not line.startswith('nameserver'):
+                    continue
+                # we want the last non-space continuous string of the line
+                return line.strip().split()[-1]
+        finally:
+            if handle is not None:
+                handle.close()
+
+        self.logger.warning("No nameserver found in %s" % RESOLV_CONF)
+        return None
+
 
 class cmd_domain_dcpromo(Command):
     """Promotes an existing domain member or NT4 PDC to an AD DC"""

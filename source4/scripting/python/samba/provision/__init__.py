@@ -1764,7 +1764,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
         next_rid=1000, dc_rid=None, adminpass=None, ldapadminpass=None, krbtgtpass=None,
         domainguid=None, policyguid=None, policyguid_dc=None,
-        dns_backend=None, dnspass=None,
+        dns_backend=None, dns_forwarder=None, dnspass=None,
         invocationid=None, machinepass=None, ntdsguid=None,
         root=None, nobody=None, users=None, wheel=None, backup=None, aci=None,
         serverrole=None, dom_for_fun_level=None, 
@@ -1822,6 +1822,9 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     if dns_backend != "SAMBA_INTERNAL":
         server_services.append("-dns")
+    else:
+        if dns_forwarder is not None:
+            global_param["dns forwarder"] = [dns_forwarder]
 
     if use_ntvfs:
         server_services.append("+smb")
