@@ -798,9 +798,6 @@ def update_dns_account_password(samdb, secrets_ldb, names):
                                                 "msDS-KeyVersionNumber")
 
         secrets_ldb.modify(msg)
-    else:
-        raise ProvisioningError("Unable to find an object"
-                                " with %s" % expression )
 
 def search_constructed_attrs_stored(samdb, rootdn, attrs):
     """Search a given sam DB for calculated attributes that are
