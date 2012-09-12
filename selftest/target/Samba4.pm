@@ -1384,7 +1384,7 @@ sub provision_plugin_s4_dc($$)
 	printing = bsd
 	printcap name = /dev/null
 
-	max protocol = SMB2
+	max protocol = SMB3
 	read only = no
 	server signing = auto
 
