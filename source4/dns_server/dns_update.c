@@ -391,7 +391,6 @@ static WERROR handle_one_update(struct dns_server *dns,
 	uint16_t i;
 	WERROR werror;
 	bool needs_add = false;
-	uint32_t access_mask = 0;
 
 	DEBUG(2, ("Looking at record: \n"));
 	if (DEBUGLVL(2)) {
@@ -424,23 +423,8 @@ static WERROR handle_one_update(struct dns_server *dns,
 		rcount = 0;
 		needs_add = true;
 		werror = WERR_OK;
-		access_mask = SEC_ADS_CREATE_CHILD;
 	}
 	W_ERROR_NOT_OK_RETURN(werror);
-
-	access_mask = SEC_STD_REQUIRED | SEC_ADS_SELF_WRITE;
-
-	if (tkey != NULL) {
-		int ldb_ret;
-		ldb_ret = dsdb_check_access_on_dn(dns->samdb, mem_ctx, dn,
-						  tkey->session_info->security_token,
-						  access_mask, NULL);
-		if (ldb_ret != LDB_SUCCESS) {
-			DEBUG(5, ("Disallowing update: %s\n", ldb_strerror(ldb_ret)));
-			return DNS_ERR(REFUSED);
-		}
-		DEBUG(5, ("Allowing signed update\n"));
-	}
 
 	if (update->rr_class == zone->question_class) {
 		if (update->rr_type == DNS_QTYPE_CNAME) {
