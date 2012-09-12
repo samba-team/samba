@@ -1,4 +1,4 @@
-What's new in Samba 4.0 beta8
+What's new in Samba 4.0.0 rc1
 =============================
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
@@ -11,7 +11,7 @@ and above.
 WARNINGS
 ========
 
-Samba 4.0 beta8 is not a final Samba release, however we are now making
+Samba 4.0.0 rc1 is not a final Samba release, however we are now making
 good progress towards a Samba 4.0 release.  However, this is expected to be the
 last beta release before we start on our release candidate series.
 
@@ -56,7 +56,7 @@ as the internal dns server (SAMBA_INTERNAL) is the default now.
 NEW FEATURES
 ============
 
-Samba 4.0 beta supports the server-side of the Active Directory logon
+Samba 4.0 supports the server-side of the Active Directory logon
 environment used by Windows 2000 and later, so we can do full domain
 join and domain logon operations with these clients.
 
@@ -105,71 +105,50 @@ internal workings of the DC code is now implemented in python.
 CHANGES SINCE beta8
 ===================
 
-The smbd file server now offers SMB3 as the maximum protocol
-by default. Samba can negotiate version 3 of the SMB protocol
-and supports the required features, including all required
-features of SMB 2.1 and SMB 2.0. Note that this does not imply
-that Samba implements all features of SMB3 since many of them
-are optional capabilities. Examples of features that Samba does
-not implement yet are leases (SMB 2.1) and multi-channel (SMB 3).
-
-Samba now offers an initial support for SMB2 durable file handles.
-These are enabled by default and can be turned off on a per share
-basis by setting "durable handles = no" on the share configuration.
-Note that in order to prevent conflicts with other applications
-accessing the same files, durable handles are only granted on
-shares that are configured for CIFS/SMB2-only access, i.e. more
-explicitly shares that are configured for minimal interoperability
-with these settings:
-
-  kernel oplocks = no
-  kernel share modes = no
-  posix locking = no
-
-The option "kernel share modes" has been introduced to be able
-to turn the translation of SMB share modes into kernel flocks
-off.
-
-The 'provision' script was merged into 'samba-tool'
-as 'samba-tool domain provision' the arguments are still
-the same.
-
-The 'updateprovision' script was renamed to 'samba_upgradeprovision'.
-
-We changed the default dns implementation to the internal dns server
-(SAMBA_INTERNAL). BIND9_FLATFILE and BIND9_DLZ are still available,
-but you'll have to add '-dns' to the 'server services' option
-to disable the internal dns server.
-The default for 'allow dns updates' has changed to 'secure only'.
-
-CHANGES SINCE beta7
-=====================
-
-For a list of changes since beta7, please see the git log.
+For a list of changes since beta8, please see the git log.
 
 $ git clone git://git.samba.org/samba.git
 $ cd samba.git
-$ git log samba-4.0.0beta7..samba-4.0.0beta8
+$ git log samba-4.0.0beta8..samba-4.0.0rc1
 
 Some major user-visible changes include:
 
-- A fix for a segfault/abort on startup of the 'samba' binary in the
-  credentials_secrets code. 
+- The smbd file server now offers SMB3 as the maximum protocol
+  by default. Samba can negotiate version 3 of the SMB protocol
+  and supports the required features, including all required
+  features of SMB 2.1 and SMB 2.0. Note that this does not imply
+  that Samba implements all features of SMB3 since many of them
+  are optional capabilities. Examples of features that Samba does
+  not implement yet are leases (SMB 2.1) and multi-channel (SMB 3).
 
-- A fix for samba-tool classicupgrade of pdb_ldap-based domains
+  Samba now offers an initial support for SMB2 durable file handles.
+  These are enabled by default and can be turned off on a per share
+  basis by setting "durable handles = no" on the share configuration.
+  Note that in order to prevent conflicts with other applications
+  accessing the same files, durable handles are only granted on
+  shares that are configured for CIFS/SMB2-only access, i.e. more
+  explicitly shares that are configured for minimal interoperability
+  with these settings:
 
-- A fix for samba-tool domain exportkeyab only exporting DES keys
+    kernel oplocks = no
+    kernel share modes = no
+    posix locking = no
 
-- Printing is now enabled on the AD DC
+  The option "kernel share modes" has been introduced to be able
+  to turn the translation of SMB share modes into kernel flocks
+  off.
 
-- Fix bug #9124 - Samba fails to set "inherited" bit on inherited ACE's.
+- The 'provision' script was merged into 'samba-tool'
+  as 'samba-tool domain provision' the arguments are still
+  the same.
 
-- We now avoid printing secret attributes (such as unicodePwd and
-  suppliementalCredentials) in ldb trace logs
+- The 'updateprovision' script was renamed to 'samba_upgradeprovision'.
 
-- s3-printing: fix bug 9123 lprng job tracking errors
-
-- A fix for building with MIT Kerberos
+- We changed the default dns implementation to the internal dns server
+  (SAMBA_INTERNAL). BIND9_FLATFILE and BIND9_DLZ are still available,
+  but you'll have to add '-dns' to the 'server services' option
+  to disable the internal dns server.
+  The default for 'allow dns updates' has changed to 'secure only'.
 
 KNOWN ISSUES
 ============
@@ -202,7 +181,7 @@ KNOWN ISSUES
 - Replication may fail on FreeBSD due to getaddrinfo() rejecting names
   containing _.  A workaround will be in a future beta.
 
-- upgradeprovision should not be run when upgrading to this release
+- samba_upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
   been made since alpha16.  
 
