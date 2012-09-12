@@ -799,26 +799,13 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 
 int vfs_ChDir(connection_struct *conn, const char *path)
 {
-	int res;
-
-	if (!LastDir) {
-		LastDir = SMB_STRDUP("");
+	if (strcsequal(path,".")) {
+		return 0;
 	}
-
-	if (strcsequal(path,"."))
-		return(0);
-
-	if (*path == '/' && strcsequal(LastDir,path))
-		return(0);
 
 	DEBUG(4,("vfs_ChDir to %s\n",path));
 
-	res = SMB_VFS_CHDIR(conn,path);
-	if (!res) {
-		SAFE_FREE(LastDir);
-		LastDir = SMB_STRDUP(path);
-	}
-	return(res);
+	return SMB_VFS_CHDIR(conn,path);
 }
 
 /*******************************************************************

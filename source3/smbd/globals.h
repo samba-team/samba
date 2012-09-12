@@ -101,7 +101,6 @@ extern int conn_ctx_stack_ndx;
 struct vfs_init_function_entry;
 extern struct vfs_init_function_entry *backends;
 extern char *sparse_buf;
-extern char *LastDir;
 
 struct smbd_parent_context;
 extern struct smbd_parent_context *am_parent;
