@@ -237,6 +237,9 @@ def dist():
     '''makes a tarball for distribution'''
     sambaversion = samba_version.load_version(env=None)
 
+    os.system(srcdir + "/release-scripts/build-manpages-nogit")
+    samba_dist.DIST_FILES('bin/docs:docs', extend=True)
+
     if sambaversion.IS_SNAPSHOT:
         # write .distversion file and add to tar
         if not os.path.isdir(blddir):
