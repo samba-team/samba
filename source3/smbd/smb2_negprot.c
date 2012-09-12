@@ -255,11 +255,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	}
 
 	if ((protocol >= PROTOCOL_SMB2_24) &&
-	    (lp_smb_encrypt(-1) != SMB_SIGNING_OFF))
-	{
-		if (in_capabilities & SMB2_CAP_ENCRYPTION) {
-			capabilities |= SMB2_CAP_ENCRYPTION;
-		}
+	    (lp_smb_encrypt(-1) != SMB_SIGNING_OFF) &&
+	    (in_capabilities & SMB2_CAP_ENCRYPTION)) {
+		capabilities |= SMB2_CAP_ENCRYPTION;
 	}
 
 	/*
