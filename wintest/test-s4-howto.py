@@ -40,8 +40,6 @@ def provision_s4(t, func_level="2008"):
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
                '${USE_NTVFS}',
                '--dns-backend=${NAMESERVER_BACKEND}',
-               '${ALLOW_DNS_UPDATES}',
-               '${DNS_RECURSIVE_QUERIES}',
                '${DNS_FORWARDER}']
     if t.getvar('INTERFACE_IPV6'):
         provision.append('--host-ip6=${INTERFACE_IPV6}')
@@ -191,7 +189,7 @@ def test_dcpromo(t, vm):
     smbclient = t.getvar("smbclient")
     t.chdir('${PREFIX}')
     t.port_wait("${WIN_IP}", 139)
-    t.retry_cmd("host -t A ${WIN_HOSTNAME}.${LCREALM}. ${INTERFACE_IP}",
+    t.retry_cmd("host -t A ${WIN_HOSTNAME}.${LCREALM}. ${NAMED_INTERFACE_IP}",
                 ['${WIN_HOSTNAME}.${LCREALM} has address'],
                 retries=30, delay=10, casefold=True)
     t.retry_cmd('%s -L ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%%${PASSWORD1}' % (smbclient), ["C$", "IPC$", "Sharename"])
@@ -567,11 +565,10 @@ def test_howto(t):
     # we don't need fsync safety in these tests
     t.putenv('TDB_NO_FSYNC', '1')
 
-    if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
-        if not t.skip("configure_bind"):
-            t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
-        if not t.skip("stop_bind"):
-            t.stop_bind()
+    if not t.skip("configure_bind"):
+        t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
+    if not t.skip("stop_bind"):
+        t.stop_bind()
 
     if not t.skip("stop_vms"):
         t.stop_vms()
@@ -592,13 +589,10 @@ def test_howto(t):
     if not t.skip("smbclient"):
         test_smbclient(t)
 
-    t.set_nameserver(t.getvar('INTERFACE_IP'))
-
-    if not t.getvar('NAMESERVER_BACKEND') == 'SAMBA_INTERNAL':
-        if not t.skip("configure_bind2"):
-            t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
-        if not t.skip("start_bind"):
-            t.start_bind()
+    if not t.skip("configure_bind2"):
+        t.configure_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
+    if not t.skip("start_bind"):
+        t.start_bind()
 
     if not t.skip("dns"):
         test_dns(t)
