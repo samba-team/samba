@@ -2,6 +2,20 @@
 
 # Run this script to build samba from GIT.
 
+
+_exit() {
+	echo $@ >&2
+	cd ${OLD_DIR}
+	exit 1
+}
+
+OLD_DIR=$(pwd)
+BASE_DIR=$(dirname $0)
+SCRIPT_NAME=$(basename $0)
+
+cd ${BASE_DIR} || exit 1
+
+
 while true; do
     case $1 in
 	--version-file)
@@ -55,8 +69,7 @@ done
 ## do we have it?
 ##
 if test "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0"; then
-	echo "$0: need autoconf 2.53 or later to build samba from GIT" >&2
-	exit 1
+	_exit "$0: need autoconf 2.53 or later to build samba from GIT"
 fi
 
 echo "$0: running script/mkversion.sh"
@@ -68,10 +81,10 @@ rm -f configure include/config.h*
 IPATHS="-Im4 -I../m4 -I../lib/replace"
 
 echo "$0: running $AUTOHEADER $IPATHS"
-$AUTOHEADER $IPATHS || exit 1
+$AUTOHEADER $IPATHS || _exit "ERROR running autoheader"
 
 echo "$0: running $AUTOCONF $IPATHS"
-$AUTOCONF $IPATHS || exit 1
+$AUTOCONF $IPATHS || _exit "ERROR running autoconf"
 
 rm -rf autom4te*.cache
 
@@ -81,7 +94,7 @@ rm -rf autom4te*.cache
   echo "$0: running $AUTOCONF in ../examples/VFS/"
   $AUTOCONF || exit 1
   rm -rf autom4te*.cache
-) || exit 1
+) || _exit "ERROR running autoheader/autoconf in examples/VFS"
 
 
 if gcc -E tests/preproc-dummy.c -o /dev/null ;
@@ -102,5 +115,7 @@ perl ../source4/script/mkproto.pl ../lib/param/loadparm.c ../lib/param/param_fun
 perl ../script/mks3param.pl ../lib/param/loadparm.c ../lib/param/param_functions.c --file autoconf/lib/param/s3_param.h
 
 echo "Now run ./configure (or ./configure.developer) and then make."
+
+cd ${OLD_DIR}
 exit 0
 
