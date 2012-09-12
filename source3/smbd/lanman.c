@@ -3524,7 +3524,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 					    QueueName,
 					    NULL,
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_ADMINISTER,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4979,7 +4979,7 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 					    name,
 					    NULL,
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_USE,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -5179,7 +5179,7 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 					    PrinterName,
 					    NULL,
 					    devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_USE,
 					    &handle,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
