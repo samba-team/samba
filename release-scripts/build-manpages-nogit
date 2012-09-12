@@ -24,7 +24,7 @@ _exit() {
 
 DIRNAME=$(dirname $0)
 DOCS_XML_DIR=${DIRNAME}/../docs-xml
-DOCS_DIR=${DIRNAME}/../docs
+DOCS_DIR=${DIRNAME}/../bin/docs
 
 pushd ${DOCS_XML_DIR} || exit 1
 
