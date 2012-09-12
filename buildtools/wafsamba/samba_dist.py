@@ -127,6 +127,14 @@ def dist(appname='',version=''):
             add_tarfile(tar, fname, abspath, srcsubdir)
 
 
+    def list_directory_files(abspath):
+        out_files = []
+        for root, dirs, files in os.walk(abspath):
+            for f in files:
+                out_files.append(os.path.join(root, f))
+        return out_files
+
+
     if not isinstance(appname, str) or not appname:
         # this copes with a mismatch in the calling arguments for dist()
         appname = Utils.g_module.APPNAME
@@ -175,8 +183,14 @@ def dist(appname='',version=''):
 
             absfile = os.path.join(srcdir, file)
 
-            fname = dist_base + '/' + destfile
-            add_tarfile(tar, fname, absfile, destfile)
+            if os.path.isdir(absfile):
+                destdir = destfile
+                dir = file
+                files = list_directory_files(dir)
+                add_files_to_tarball(tar, srcdir, dir, dist_base, destdir, blacklist, files)
+            else:
+                fname = dist_base + '/' + destfile
+                add_tarfile(tar, fname, absfile, destfile)
 
     tar.close()
 
