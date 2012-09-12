@@ -140,6 +140,7 @@ We changed the default dns implementation to the internal dns server
 (SAMBA_INTERNAL). BIND9_FLATFILE and BIND9_DLZ are still available,
 but you'll have to add '-dns' to the 'server services' option
 to disable the internal dns server.
+The default for 'allow dns updates' has changed to 'secure only'.
 
 CHANGES SINCE beta7
 =====================

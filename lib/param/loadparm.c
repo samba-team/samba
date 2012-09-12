@@ -2214,7 +2214,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
 	lpcfg_do_global_parameter(lp_ctx, "nsupdate command", "/usr/bin/nsupdate -g");
 
-        lpcfg_do_global_parameter(lp_ctx, "allow dns updates", "False");
+        lpcfg_do_global_parameter(lp_ctx, "allow dns updates", "secure only");
         lpcfg_do_global_parameter(lp_ctx, "dns recursive queries", "False");
         lpcfg_do_global_parameter(lp_ctx, "dns forwarder", "");
 
