@@ -498,11 +498,12 @@ static int secrets_tdb_sync_init(struct ldb_module *module)
 	p = strrchr(private_dir, '/');
 	if (p) {
 		*p = '\0';
+		secrets_init_path(private_dir);
 	} else {
-		return ldb_operr(ldb);
+		secrets_init_path(".");
 	}
 
-	secrets_init_path(private_dir);
+	TALLOC_FREE(private_dir);
 
 	data->secrets_tdb = secrets_db_ctx();
 
