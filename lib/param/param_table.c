@@ -113,8 +113,20 @@ static const struct enum_list enum_smb_signing_vals[] = {
 
 /* DNS update options. */
 static const struct enum_list enum_dns_update_settings[] = {
+	{DNS_UPDATE_OFF, "disabled"},
+	{DNS_UPDATE_OFF, "No"},
 	{DNS_UPDATE_OFF, "False"},
+	{DNS_UPDATE_OFF, "0"},
+	{DNS_UPDATE_OFF, "Off"},
+	{DNS_UPDATE_ON, "nonsecure and secure"},
+	{DNS_UPDATE_ON, "nonsecure"},
+	{DNS_UPDATE_ON, "Yes"},
 	{DNS_UPDATE_ON, "True"},
+	{DNS_UPDATE_ON, "1"},
+	{DNS_UPDATE_ON, "On"},
+	{DNS_UPDATE_ON, "enabled"},
+	{DNS_UPDATE_SIGNED, "secure only"},
+	{DNS_UPDATE_SIGNED, "secure"},
 	{DNS_UPDATE_SIGNED, "signed"},
 	{-1, NULL}
 };
