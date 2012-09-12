@@ -4261,14 +4261,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "dns recursive queries",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(dns_recursive_queries),
-		.special	= NULL,
-		.enum_list	= NULL
-	},
-	{
 		.label		= "dns update command",
 		.type		= P_CMDLIST,
 		.p_class	= P_GLOBAL,
