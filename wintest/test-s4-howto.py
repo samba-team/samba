@@ -38,9 +38,11 @@ def provision_s4(t, func_level="2008"):
                '--host-ip=${INTERFACE_IP}',
                '--option=bind interfaces only=yes',
                '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf',
-               '${USE_NTVFS}',
                '--dns-backend=${NAMESERVER_BACKEND}',
                '${DNS_FORWARDER}']
+    if t.getvar('USE_NTVFS'):
+        provision.append('${USE_NTVFS}')
+
     if t.getvar('INTERFACE_IPV6'):
         provision.append('--host-ip6=${INTERFACE_IPV6}')
     t.run_cmd(provision)
