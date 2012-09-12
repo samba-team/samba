@@ -799,13 +799,21 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 
 int vfs_ChDir(connection_struct *conn, const char *path)
 {
+	int ret;
+
 	if (strcsequal(path,".")) {
 		return 0;
 	}
 
 	DEBUG(4,("vfs_ChDir to %s\n",path));
 
-	return SMB_VFS_CHDIR(conn,path);
+	ret = SMB_VFS_CHDIR(conn,path);
+	if (ret == 0) {
+		TALLOC_FREE(conn->cwd);
+		conn->cwd = vfs_GetWd(conn, conn);
+		DEBUG(4,("vfs_ChDir got %s\n",conn->cwd));
+	}
+	return ret;
 }
 
 /*******************************************************************

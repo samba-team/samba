@@ -164,6 +164,12 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 
 	talloc_free(conn->connectpath);
 	conn->connectpath = destname;
+	/* Ensure conn->cwd is initialized - start as conn->connectpath. */
+	TALLOC_FREE(conn->cwd);
+	conn->cwd = talloc_strdup(conn, conn->connectpath);
+	if (!conn->cwd) {
+		return false;
+	}
 	return true;
 }
 

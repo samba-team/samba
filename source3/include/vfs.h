@@ -145,6 +145,7 @@
 /* Leave at 29 - not yet released. Add durable handle functions - metze/obnox */
 /* Leave at 29 - not yet released. Added sys_acl_blob_get_file and sys_acl_blob_get_fd */
 /* Bump to version 30 - Samba 4.0.0 will ship with interface version 30 */
+/* Leave at 30 - not yet released. Added conn->cwd to save vfs_GetWd() calls. */
 #define SMB_VFS_INTERFACE_VERSION 30
 
 /*
@@ -315,6 +316,7 @@ typedef struct connection_struct {
 	enum timestamp_set_resolution ts_res;
 	char *connectpath;
 	char *origpath;
+	char *cwd; /* Working directory. */
 
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */
 
