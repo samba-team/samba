@@ -240,6 +240,13 @@ def dist():
     os.system(srcdir + "/release-scripts/build-manpages-nogit")
     samba_dist.DIST_FILES('bin/docs:docs', extend=True)
 
+    os.system(srcdir + "/source3/autogen.sh")
+    samba_dist.DIST_FILES('source3/configure', extend=True)
+    samba_dist.DIST_FILES('source3/autoconf', extend=True)
+    samba_dist.DIST_FILES('source3/include/autoconf', extend=True)
+    samba_dist.DIST_FILES('examples/VFS/configure', extend=True)
+    samba_dist.DIST_FILES('examples/VFS/module_config.h.in', extend=True)
+
     if sambaversion.IS_SNAPSHOT:
         # write .distversion file and add to tar
         if not os.path.isdir(blddir):
