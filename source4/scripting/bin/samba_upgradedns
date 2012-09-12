@@ -472,5 +472,33 @@ if __name__ == '__main__':
         logger.info("See %s for an example configuration include file for BIND", paths.namedconf)
         logger.info("and %s for further documentation required for secure DNS "
                     "updates", paths.namedtxt)
+    elif opts.dns_backend == "SAMBA_INTERNAL":
+        # Check if dns-HOSTNAME account exists and delete it if required
+        try:
+            dn_str = 'samAccountName=dns-%s,CN=Principals' % hostname
+            msg = ldbs.secrets.search(expression='(dn=%s)' % dn_str, attrs=['secret'])
+            dn = msg[0].dn
+        except Exception:
+            dn = None
+
+        if dn is not None:
+            try:
+                ldbs.secrets.delete(dn)
+            except Exception:
+                logger.info("Failed to delete %s from secrets.ldb" % dn)
+
+        try:
+            msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
+                                  expression='(sAMAccountName=dns-%s)' % (hostname),
+                                  attrs=['clearTextPassword'])
+            dn = msg[0].dn
+        except Exception:
+            dn = None
+
+        if dn is not None:
+            try:
+                ldbs.sam.delete(dn)
+            except Exception:
+                logger.info("Failed to delete %s from sam.ldb" % dn)
 
     logger.info("Finished upgrading DNS")
