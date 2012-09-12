@@ -175,11 +175,8 @@ def dist(appname='',version=''):
 
             absfile = os.path.join(srcdir, file)
 
-            if destfile != file:
-                file = destfile
-
-            fname = dist_base + '/' + file
-            add_tarfile(tar, fname, absfile, file)
+            fname = dist_base + '/' + destfile
+            add_tarfile(tar, fname, absfile, destfile)
 
     tar.close()
 
