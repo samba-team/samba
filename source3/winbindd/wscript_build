@@ -62,7 +62,7 @@ bld.SAMBA3_MODULE('idmap_passdb',
 bld.SAMBA3_MODULE('idmap_ldap',
                  subsystem='idmap',
                  source=IDMAP_LDAP_SRC,
-                 deps='smbldap',
+                 deps='smbldap smbldaphelper',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ldap'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ldap') and bld.env.HAVE_LDAP)
