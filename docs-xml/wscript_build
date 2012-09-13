@@ -6,6 +6,14 @@ manpages='''
          manpages/libsmbclient.7
          manpages/lmhosts.5
          manpages/log2pcap.1
+         manpages/idmap_ad.8
+         manpages/idmap_autorid.8
+         manpages/idmap_hash.8
+         manpages/idmap_ldap.8
+         manpages/idmap_nss.8
+         manpages/idmap_rid.8
+         manpages/idmap_tdb.8
+         manpages/idmap_tdb2.8
          manpages/net.8
          manpages/nmbd.8
          manpages/nmblookup.1
