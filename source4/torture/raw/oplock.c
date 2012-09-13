@@ -3824,7 +3824,6 @@ static bool test_raw_oplock_brl3(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\test_batch_brl.dat";
 	bool ret = true;
 	uint8_t buf[1000];
-	bool correct = true;
 	union smb_open io;
 	NTSTATUS status;
 	uint16_t fnum=0;
@@ -3877,7 +3876,7 @@ static bool test_raw_oplock_brl3(struct torture_context *tctx,
 			 sizeof(buf))
 	{
 		torture_comment(tctx, "Failed to create file\n");
-		correct = false;
+		ret = false;
 		goto done;
 	}
 
