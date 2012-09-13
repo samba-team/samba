@@ -710,7 +710,11 @@ private_pdb_match.append('!idmap_xids_to_sids')
 
 # ldap module is actually three modules merged together: ldapsam, ipa, and nds
 static_pdb_match = static_pdb_match + ['ldap', 'ipa', 'nds']
-ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info', '!ldapsam_*', '!groupmap_attr_list*', '!get_userattr_list']
+ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info',
+                     '!ldapsam_*', '!groupmap_attr_list*', '!get_userattr_list',
+                     '!dominfo_attr_list', '!get_attr_key2string',
+                     '!sidmap_attr_list', '!attrib_map_*', '!idpool_attr_list',
+                     '!get_attr_list']
 private_pdb_match.append('!pdb_nds_*')
 private_pdb_match.append('!pdb_init_ldapsam')
 private_pdb_match = private_pdb_match + ldapsam_pdb_match
@@ -732,9 +736,11 @@ bld.SAMBA3_LIBRARY('pdb',
                    vnum='0',
                    vars=locals())
 
-bld.SAMBA3_SUBSYSTEM('smbldaphelper',
+bld.SAMBA3_LIBRARY('smbldaphelper',
                    source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
-                   deps='smbldap secrets3 pdb')
+                   deps='smbldap secrets3',
+                   allow_undefined_symbols=True,
+                   private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
                      source=SERVER_MUTEX_SRC,
