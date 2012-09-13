@@ -510,6 +510,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 		dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
 	} else {
 		int ret;
+		bool backup_intent = (req && req->priv_paths);
 		struct smb_filename *smb_dname = NULL;
 		NTSTATUS status = create_synthetic_smb_fname(talloc_tos(),
 						path,
@@ -536,7 +537,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		if (req && req->priv_paths) {
+		if (backup_intent) {
 			dir_hnd = open_dir_with_privilege(conn,
 						req,
 						path,
