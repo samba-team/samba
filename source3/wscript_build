@@ -215,7 +215,6 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c
                 passdb/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c
                 passdb/pdb_util.c passdb/pdb_interface.c
-                passdb/pdb_ldap_schema.c
                 passdb/pdb_secrets.c
                 passdb/pdb_unixid.c'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
@@ -732,6 +731,10 @@ bld.SAMBA3_LIBRARY('pdb',
                    abi_directory='passdb/ABI',
                    vnum='0',
                    vars=locals())
+
+bld.SAMBA3_SUBSYSTEM('smbldaphelper',
+                   source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
+                   deps='smbldap secrets3 pdb')
 
 bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
                      source=SERVER_MUTEX_SRC,

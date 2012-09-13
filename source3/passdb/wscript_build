@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 PDB_TDBSAM_SRC =    'pdb_tdb.c'
-PDB_LDAP_SRC =      'pdb_ldap.c pdb_nds.c pdb_ipa.c pdb_ldap_util.c'
+PDB_LDAP_SRC =      'pdb_ldap.c pdb_nds.c pdb_ipa.c'
 PDB_SMBPASSWD_SRC = 'pdb_smbpasswd.c'
 PDB_WBC_SAM_SRC =   'pdb_wbc_sam.c'
 
@@ -15,7 +15,7 @@ bld.SAMBA3_MODULE('pdb_tdbsam',
 
 bld.SAMBA3_MODULE('pdb_ldap',
                  subsystem='pdb',
-                 deps='smbldap',
+                 deps='smbldap smbldaphelper',
                  source=PDB_LDAP_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ldap'),
