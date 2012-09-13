@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 #
 # Copyright (C) Shirish A Kalele 2000
 # Copyright (C) Gerald Carter    2004
@@ -50,13 +50,9 @@ add_dynamic_entries()
 	
 	echo "#\n# libsmbclient\n#"
 	echo f none lib/libsmbclient.so 0755 root other
-	echo f none lib/libsmbclient.a 0755 root other
 	echo f none include/libsmbclient.h 0644 root other
 
 	echo "#\n# libmsrpc\n#"
-	echo f none lib/libmsrpc.so 0755 root other
-	echo f none lib/libmsrpc.a 0755 root other
-	echo f none include/libmsrpc.h 0644 root other
 
 	if [ -f lib/smbwrapper.so -a -f bin/smbsh ]; then
 		echo "#\n# smbwrapper\n#"
@@ -76,17 +72,19 @@ add_dynamic_entries()
 	echo "#\n# man pages \n#"
 
 	# Create directories for man page sections if nonexistent
-	cd man
+	cd share/man
 	for i in 1 2 3 4 5 6 7 8 9; do
+		set +e
 		manpages=`ls man$i 2>/dev/null`
+		set -e
 		if [ $? -eq 0 ]; then
-			echo d none man/man${i} ? ? ?
+			echo d none share/man/man${i} ? ? ?
 			for manpage in $manpages; do
-				echo f none man/man${i}/${manpage} 0644 root other
+				echo f none share/man/man${i}/${manpage} 0644 root other
 			done
 		fi
 	done
-	cd ..
+	cd ../..
 
 	echo "#\n# SWAT \n#"
 	list=`find swat -type d | grep -v "/.svn$"`
@@ -128,7 +126,7 @@ echo "Install directory:  $INSTALL_BASE"
 
 cd $DISTR_BASE/source
 
-if test "x$1" = "xbuild" ]; then
+if test "x$1" = "xbuild" -o ! -f bin/smbd ]; then
 	./configure --prefix=$INSTALL_BASE \
 		--localstatedir=/var/lib/samba \
 		--with-piddir=/var/run \
@@ -136,6 +134,7 @@ if test "x$1" = "xbuild" ]; then
 		--with-privatedir=/etc/samba/private \
 		--with-configdir=/etc/samba \
 		--with-lockdir=/var/lib/samba \
+		--with-mandir=/usr/share/man \
 		--with-pam --with-acl-support \
 		--with-quotas --with-included-popt \
 	&& make
@@ -146,7 +145,8 @@ if test "x$1" = "xbuild" ]; then
 	fi
 fi
 	
-mkdir $TMPINSTALLDIR
+rm -rf $TMPINSTALLDIR
+mkdir -p $TMPINSTALLDIR
 make DESTDIR=$TMPINSTALLDIR install
 
 ## clear out *.old
@@ -155,6 +155,8 @@ find $TMPINSTALLDIR -name \*.old |while read x; do rm -rf "$x"; done
 ##
 ## Now get the install locations
 ##
+LD_LIBRARY_PATH=$DISTR_BASE/source/bin
+export LD_LIBRARY_PATH
 SBINDIR=`bin/smbd -b | grep SBINDIR | awk '{print $2}'`
 BINDIR=`bin/smbd -b | grep BINDIR | grep -v SBINDIR |  awk '{print $2}'`
 SWATDIR=`bin/smbd -b | grep SWATDIR | awk '{print $2}'`
