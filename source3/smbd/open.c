@@ -2487,8 +2487,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * We have the share entry *locked*.....
 	 */
 
-	SMB_ASSERT(lck != NULL);
-
 	/* Delete streams if create_disposition requires it */
 	if (!new_file_created && clear_ads(create_disposition) &&
 	    !is_ntfs_stream_smb_fname(smb_fname)) {
