@@ -65,6 +65,7 @@ static bool parent_override_delete(connection_struct *conn,
 
 NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
+				bool use_privs,
 				uint32_t access_mask)
 {
 	/* Check if we have rights to open. */
@@ -84,7 +85,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (!use_privs && get_current_uid(conn) == (uid_t)0) {
 		/* I'm sorry sir, I didn't know you were root... */
 		DEBUG(10,("smbd_check_access_rights: root override "
 			"on %s. Granting 0x%x\n",
@@ -135,7 +136,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	 */
 	status = se_file_access_check(sd,
 				get_current_nttok(conn),
-				false,
+				use_privs,
 				(access_mask & ~FILE_READ_ATTRIBUTES),
 				&rejected_mask);
 
@@ -745,6 +746,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			if (file_existed) {
 				status = smbd_check_access_rights(conn,
 						smb_fname,
+						false,
 						access_mask);
 			} else if (local_flags & O_CREAT){
 				status = check_parent_access(conn,
@@ -836,6 +838,7 @@ static NTSTATUS open_file(files_struct *fsp,
 
 		status = smbd_check_access_rights(conn,
 				smb_fname,
+				false,
 				access_mask);
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
@@ -2308,7 +2311,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if (((can_access_mask & FILE_WRITE_DATA) &&
 				!CAN_WRITE(conn)) ||
 				!NT_STATUS_IS_OK(smbd_check_access_rights(conn,
-						smb_fname, can_access_mask))) {
+							smb_fname,
+							false,
+							can_access_mask))) {
 				can_access = False;
 			}
 
@@ -3025,7 +3030,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
-		status = smbd_check_access_rights(conn, smb_dname, access_mask);
+		status = smbd_check_access_rights(conn,
+						smb_dname,
+						false,
+						access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("open_directory: smbd_check_access_rights on "
 				"file %s failed with %s\n",

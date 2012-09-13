@@ -124,6 +124,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 
 	ret = NT_STATUS_IS_OK(smbd_check_access_rights(conn,
 				smb_fname_parent,
+				false,
 				FILE_DELETE_CHILD));
  out:
 	TALLOC_FREE(dname);
@@ -140,6 +141,7 @@ bool can_write_to_file(connection_struct *conn,
 {
 	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
 				smb_fname,
+				false,
 				FILE_WRITE_DATA));
 }
 

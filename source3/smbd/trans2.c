@@ -67,6 +67,7 @@ NTSTATUS check_access(connection_struct *conn,
 	} else {
 		NTSTATUS status = smbd_check_access_rights(conn,
 					smb_fname,
+					false,
 					access_mask);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

@@ -598,6 +598,7 @@ void reply_nttranss(struct smb_request *req);
 
 NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
+				bool use_privs,
 				uint32_t access_mask);
 NTSTATUS fd_open(struct connection_struct *conn, files_struct *fsp,
 		 int flags, mode_t mode);

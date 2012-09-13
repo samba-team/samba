@@ -533,6 +533,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 		}
 		status = smbd_check_access_rights(conn,
 						smb_dname,
+						backup_intent,
 						SEC_DIR_LIST);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -1281,6 +1282,7 @@ static bool user_can_read_file(connection_struct *conn,
 
 	return NT_STATUS_IS_OK(smbd_check_access_rights(conn,
 				smb_fname,
+				false,
 				FILE_READ_DATA));
 }
 
