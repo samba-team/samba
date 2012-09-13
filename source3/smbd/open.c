@@ -1571,7 +1571,8 @@ static NTSTATUS fcb_or_dos_open(struct smb_request *req,
 			  (unsigned int)fsp->fh->private_options,
 			  (unsigned int)fsp->access_mask ));
 
-		if (fsp->fh->fd != -1 &&
+		if (fsp != fsp_to_dup_into &&
+		    fsp->fh->fd != -1 &&
 		    fsp->vuid == vuid &&
 		    fsp->file_pid == file_pid &&
 		    (fsp->fh->private_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
