@@ -5930,16 +5930,23 @@ fi
 #################################################
 # check for sendfile support
 
-with_sendfile_support=yes
-AC_MSG_CHECKING(whether to check to support sendfile)
+AC_MSG_CHECKING(whether sendfile support should be built in)
 AC_ARG_WITH(sendfile-support,
-[AS_HELP_STRING([--with-sendfile-support], [Check for sendfile support (default=yes)])],
+[AS_HELP_STRING([--with-sendfile-support], [Whether sendfile support should be built in (default=auto)])],
 [ case "$withval" in
-  yes)
+  yes|no)
+	AC_MSG_RESULT($withval);
+	with_sendfile_support=$withval
+	;;
+  *)
+	AC_MSG_RESULT(yes)
+	with_sendfile_support=auto
+	;;
+  esac ],
+)
 
-	AC_MSG_RESULT(yes);
-
-	case "$host_os" in
+if test x$with_sendfile_support != xno ; then
+    case "$host_os" in
 	*linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu)
 		AC_CACHE_CHECK([for linux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
 		AC_TRY_LINK([#include <sys/sendfile.h>],
@@ -6175,14 +6182,12 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 	;;
 	*)
 	;;
-        esac
-        ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(yes)
-)
+    esac
+fi
+
+if test x$with_sendfile_support = xyes -a x"$samba_cv_HAVE_SENDFILE" != xyes ; then
+	AC_MSG_ERROR(sendfile support requested but sendfile not available )
+fi
 
 ############################################
 # See if we have the Linux readahead syscall.
