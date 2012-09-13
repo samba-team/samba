@@ -1262,42 +1262,42 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 		ret = false;
 		goto done;
 	}
-	
+
 	written =  smbcli_write(cli2->tree, fnum2, 0, "x", 0, 1);
-	
+
 	if (written != 1) {
 		torture_result(tctx, TORTURE_FAIL, __location__": written gave %d - should have been 1", 
 		       (int)written);
 		ret = false;
 		goto done;
 	}
-	
+
 	finfo2.basic_info.level = RAW_FILEINFO_BASIC_INFO;
 	finfo2.basic_info.in.file.path = fname;
-	
+
 	status = smb_raw_pathinfo(cli2->tree, tctx, &finfo2);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, __location__": fileinfo failed: %s", 
 			  nt_errstr(status));
 		ret = false;
 		goto done;
 	}
-	
+
 	if (finfo1.basic_info.out.create_time !=
 	    finfo2.basic_info.out.create_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": create_time changed");
 		ret = false;
 		goto done;
 	}
-	
+
 	if (finfo1.basic_info.out.access_time !=
 	    finfo2.basic_info.out.access_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": access_time changed");
 		ret = false;
 		goto done;
 	}
-	
+
 	if (finfo1.basic_info.out.write_time !=
 	    finfo2.basic_info.out.write_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": write_time changed:\n"
@@ -1307,19 +1307,19 @@ static bool test_finfo_after_write(struct torture_context *tctx, struct smbcli_s
 		ret = false;
 		goto done;
 	}
-	
+
 	if (finfo1.basic_info.out.change_time !=
 	    finfo2.basic_info.out.change_time) {
 		torture_result(tctx, TORTURE_FAIL, __location__": change_time changed");
 		ret = false;
 		goto done;
 	}
-	
+
 	/* One of the two following calls updates the qpathinfo. */
-	
+
 	/* If you had skipped the smbcli_write on fnum2, it would
 	 * *not* have updated the stat on disk */
-	
+
 	smbcli_close(cli2->tree, fnum2);
 	cli2 = NULL;
 
