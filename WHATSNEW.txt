@@ -8,7 +8,10 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.8 include:
 
-o  
+o  Fix crash bug in smbd caused by a blocking lock followed by
+   close (bug #9084).
+o  Fix Winbind panic if we couldn't find the domain (bug #9135).
+
 
 Changes since 3.6.7:
 --------------------
@@ -119,8 +122,8 @@ Changes since 3.6.6:
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 8974: Fix kernel oplocks when uid(file) != uid(process).
-    * BUG 8989: Send correct responses to NT Transact Secondary when no data and
-      no params for the Trans2 calls are set.
+    * BUG 8989: Send correct responses to NT Transact Secondary when no data
+      and no params for the Trans2 calls are set.
     * BUG 9034: Fix typo in set_re_uid() call when USE_SETRESUID selected in
       configure.
 
