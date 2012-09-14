@@ -1219,6 +1219,7 @@ fi
 AC_CHECK_LIB(resolv, dn_expand)
 AC_CHECK_LIB(resolv, _dn_expand)
 AC_CHECK_LIB(resolv, __dn_expand)
+AC_CHECK_LIB(inet, dn_expand)
 
 #
 # Check for the functions putprpwnam, set_auth_parameters,
