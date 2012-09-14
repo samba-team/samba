@@ -2138,7 +2138,7 @@ fi
 if test "x$enable_external_libtalloc" = xno
 then
 	m4_include(../lib/talloc/libtalloc.m4)
-	if test x"$USESHARED" == x"no" ; then
+	if test x"$USESHARED" = x"no" ; then
 		LINK_LIBTALLOC=STATIC
 	fi
 	LIBTALLOCVERSION=`grep ^VERSION ${tallocdir}/wscript | sed -e "s/'//g" -e 's/.* //'`
@@ -2179,7 +2179,7 @@ AC_SUBST(LIBTDB_OBJ0)
 if test "x$enable_external_libtdb" = xno
 then
 	m4_include(../lib/tdb/libtdb.m4)
-	if test x"$USESHARED" == x"no" ; then
+	if test x"$USESHARED" = x"no" ; then
 		LINK_LIBTDB=STATIC
 	fi
 	LIBTDBVERSION=`grep ^VERSION ${tdbdir}/wscript | sed -e "s/'//g" -e 's/.* //'`
