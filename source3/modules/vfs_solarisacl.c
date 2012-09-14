@@ -370,13 +370,13 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
 		switch(solaris_entry.a_type) {
 		case USER:
 			DEBUG(10, ("got tag type USER with uid %u\n", 
-				   (unsigned int)smb_entry->uid));
-			solaris_entry.a_id = (uid_t)smb_entry->uid;
+				   (unsigned int)smb_entry->info.user.uid));
+			solaris_entry.a_id = (uid_t)smb_entry->info.user.uid;
 			break;
 		case GROUP:
 			DEBUG(10, ("got tag type GROUP with gid %u\n", 
-				   (unsigned int)smb_entry->gid));
-			solaris_entry.a_id = (uid_t)smb_entry->gid;
+				   (unsigned int)smb_entry->info.group.gid));
+			solaris_entry.a_id = (uid_t)smb_entry->info.group.gid;
 			break;
 		default:
 			break;
@@ -429,7 +429,7 @@ static SMB_ACL_T solaris_acl_to_smb_acl(SOLARIS_ACL_T solaris_acl, int count,
 	SMB_ACL_T result;
 	int i;
 
-	if ((result = sys_acl_init(0)) == NULL) {
+	if ((result = sys_acl_init()) == NULL) {
 		DEBUG(10, ("error allocating memory for SMB_ACL\n"));
 		goto fail;
 	}
