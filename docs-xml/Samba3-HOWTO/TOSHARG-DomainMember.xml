@@ -1286,24 +1286,5 @@ account to which the Samba backend database account can be mapped.
 </para>
 
 </sect2>
-
-<sect2>
-	<title>I Can't Join a Windows 2003 PDC</title>
-
-	<para>
-<indexterm><primary>SMB signing</primary></indexterm>
-<indexterm><primary>SMB</primary></indexterm>
-<indexterm><primary>Windows 2003</primary></indexterm>
-<indexterm><primary>SMB/CIFS</primary></indexterm>
-	Windows 2003 requires SMB signing. Client-side SMB signing has been implemented in Samba-3.0.
-	Set <smbconfoption name="client use spnego">yes</smbconfoption> when communicating 
-	with a Windows 2003 server. This will not interfere with other Windows clients that do not
-	support the more advanced security features of Windows 2003 because the client will simply
-	negotiate a protocol that both it and the server suppport. This is a well-known fall-back facility
-	that is built into the SMB/CIFS protocols.
-	</para>
-
-</sect2>
-
 </sect1>
 </chapter>
