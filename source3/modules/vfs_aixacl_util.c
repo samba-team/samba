@@ -27,7 +27,7 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 	struct acl_entry *acl_entry;
 	struct ace_id *idp;
 	
-	struct smb_acl_t *result = sys_acl_init(0);
+	struct smb_acl_t *result = sys_acl_init();
 	struct smb_acl_entry *ace;
 	int i;
 	
@@ -78,15 +78,15 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 							
 			switch(ace->a_type) {
 			case ACEID_USER: {
-			ace->uid = idp->id_data[0];
-			DEBUG(10,("case ACEID_USER ace->uid is %d\n",ace->uid));
+			ace->info.user.uid = idp->id_data[0];
+			DEBUG(10,("case ACEID_USER ace->info.user.uid is %d\n",ace->info.user.uid));
 			ace->a_type = SMB_ACL_USER;
 			break;
 			}
 		
 			case ACEID_GROUP: {
-			ace->gid = idp->id_data[0];
-			DEBUG(10,("case ACEID_GROUP ace->gid is %d\n",ace->gid));
+			ace->info.group.gid = idp->id_data[0];
+			DEBUG(10,("case ACEID_GROUP ace->info.group.gid is %d\n",ace->info.group.gid));
 			ace->a_type = SMB_ACL_GROUP;
 			break;
 			}
@@ -149,9 +149,9 @@ SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
 			
 		ace = &result->acl[result->count];
 		
-		ace->uid = 0;
-		ace->gid = 0;
-		DEBUG(10,("ace->uid = %d\n",ace->uid));
+		ace->info.user.uid = 0;
+		ace->info.group.gid = 0;
+		DEBUG(10,("ace->info.user.uid = %d\n",ace->info.user.uid));
 		
 		switch(i) {
 		case 2:
@@ -287,7 +287,7 @@ struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 		ace_id->id_type = (smb_entry->a_type==SMB_ACL_GROUP) ? ACEID_GROUP : ACEID_USER;
 		DEBUG(10,("The id type is %d\n",ace_id->id_type));
 		ace_id->id_len = sizeof(struct ace_id); /* contains 1 id_data */
-		ace_id->id_data[0] = (smb_entry->a_type==SMB_ACL_GROUP) ? smb_entry->gid : smb_entry->uid;
+		ace_id->id_data[0] = (smb_entry->a_type==SMB_ACL_GROUP) ? smb_entry->info.group.gid : smb_entry->info.user.uid;
 	}
 
 	return file_acl;
