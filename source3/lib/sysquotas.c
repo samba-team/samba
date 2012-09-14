@@ -408,7 +408,7 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	}
 
 	errno = 0;
-	DEBUG(10,("sys_get_quota() uid(%u, %u)\n", (unsigned)getuid(), (unsigned)geteuid()));
+	DEBUG(10,("sys_get_quota() uid(%u, %u), fs(%s)\n", (unsigned)getuid(), (unsigned)geteuid(), fs));
 
 	for (i=0;(fs && sys_quota_backends[i].name && sys_quota_backends[i].get_quota);i++) {
 		if (strcmp(fs,sys_quota_backends[i].name)==0) {
