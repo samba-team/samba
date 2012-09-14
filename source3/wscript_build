@@ -740,6 +740,7 @@ bld.SAMBA3_LIBRARY('smbldaphelper',
                    source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
                    deps='smbldap secrets3',
                    allow_undefined_symbols=True,
+                   enabled=bld.env.HAVE_LDAP,
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
