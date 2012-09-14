@@ -1106,27 +1106,6 @@ specify the <option>-k</option> option to choose Kerberos authentication.
 </para>
 
 </sect2>
-
-<sect2>
-<title>Notes</title>
-
-<para>
-<indexterm><primary>administrator password</primary></indexterm>
-<indexterm><primary>change password</primary></indexterm>
-<indexterm><primary>encryption types</primary></indexterm>
-You must change the administrator password at least once after installing a domain controller, 
-to create the right encryption types.
-</para>
-
-<para>
-<indexterm><primary>_kerberos._udp</primary></indexterm>
-<indexterm><primary>_ldap._tcp</primary></indexterm>
-<indexterm><primary>default DNS setup</primary></indexterm>
-Windows 200x does not seem to create the <parameter>_kerberos._udp</parameter> and
-<parameter>_ldap._tcp</parameter> in the default DNS setup. Perhaps this will be fixed later in service packs.
-</para>
-
-</sect2>
 </sect1>
 
 <sect1>
