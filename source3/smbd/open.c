@@ -1686,8 +1686,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 		return NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("smbd_calculate_access_mask: "
-			  "Could not get acl on file %s: %s\n",
+		DEBUG(10,("Could not get acl on file %s: %s\n",
 			  smb_fname_str_dbg(smb_fname),
 			  nt_errstr(status)));
 		return NT_STATUS_ACCESS_DENIED;
@@ -1706,8 +1705,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	TALLOC_FREE(sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("smbd_calculate_access_mask: "
-			   "Access denied on file %s: "
+		DEBUG(10, ("Access denied on file %s: "
 			   "when calculating maximum access\n",
 			   smb_fname_str_dbg(smb_fname)));
 		return NT_STATUS_ACCESS_DENIED;
