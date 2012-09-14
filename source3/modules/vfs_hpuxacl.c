@@ -436,13 +436,13 @@ static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
 		switch(hpux_entry.a_type) {
 		case USER:
 			DEBUG(10, ("got tag type USER with uid %d\n", 
-				   smb_entry->uid));
-			hpux_entry.a_id = (uid_t)smb_entry->uid;
+				   smb_entry->info.user.uid));
+			hpux_entry.a_id = (uid_t)smb_entry->info.user.uid;
 			break;
 		case GROUP:
 			DEBUG(10, ("got tag type GROUP with gid %d\n", 
-				   smb_entry->gid));
-			hpux_entry.a_id = (uid_t)smb_entry->gid;
+				   smb_entry->info.group.gid));
+			hpux_entry.a_id = (uid_t)smb_entry->info.group.gid;
 			break;
 		default:
 			break;
@@ -495,7 +495,7 @@ static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpux_acl, int count,
 	SMB_ACL_T result;
 	int i;
 
-	if ((result = sys_acl_init(0)) == NULL) {
+	if ((result = sys_acl_init()) == NULL) {
 		DEBUG(10, ("error allocating memory for SMB_ACL\n"));
 		goto fail;
 	}
