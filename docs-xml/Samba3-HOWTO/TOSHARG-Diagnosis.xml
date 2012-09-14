@@ -130,9 +130,9 @@ configuration file is faulty.
 
 <note><para>
 <indexterm><primary>/etc/samba</primary></indexterm>
-<indexterm><primary>/usr/local/samba/lib</primary></indexterm>
+<indexterm><primary>/usr/local/samba/etc</primary></indexterm>
 Your &smb.conf; file may be located in <filename>/etc/samba</filename>
-or in <filename>/usr/local/samba/lib</filename>.
+or in <filename>/usr/local/samba/etc</filename>.
 </para></note>
 </step>
 
@@ -431,8 +431,9 @@ If it says <quote><errorname>bad password,</errorname></quote> then the likely c
 <orderedlist>
 <listitem>
 	<para>
-	You have shadow passwords (or some other password system) but didn't
-	compile in support for them in &smbd;.
+	Password encryption is enabled by default, but you have not
+	yet set a password for your samba user. Run
+	<command>smbpasswd -a username</command>
 	</para>
 </listitem>
 
@@ -444,7 +445,8 @@ If it says <quote><errorname>bad password,</errorname></quote> then the likely c
 
 <listitem>
 	<para>
-	You have a mixed-case password and you haven't enabled the <smbconfoption name="password level"/> option at a high enough level.
+	You have explicitly disabled encrypted passwords with
+	<smbconfoption name="encrypt passwords">no</smbconfoption> have a mixed-case password and you haven't enabled the <smbconfoption name="password level"/> option at a high enough level.
 	</para>
 </listitem>
 
@@ -454,12 +456,6 @@ If it says <quote><errorname>bad password,</errorname></quote> then the likely c
 	</para>
 </listitem>
 
-<listitem>
-	<para>
-	You enabled password encryption but didn't map UNIX to Samba users. Run
-	<command>smbpasswd -a username</command>
-	</para>
-</listitem>
 </orderedlist>
 
 <para>
@@ -544,17 +540,7 @@ and other config lines in &smb.conf; are correct.
 </para>
 
 <para>
-It's also possible that the server can't work out what username to connect you as.
-To see if this is the problem, add the line
-<smbconfoption name="user">username</smbconfoption> to the
-<smbconfsection name="[tmp]"/> section of 
-&smb.conf; where <parameter>username</parameter> is the
-username corresponding to the password you typed. If you find this
-fixes things, you may need the username mapping option. 
-</para>
-
-<para>
-It might also be the case that your client only sends encrypted passwords 
+By default, most clients only sends encrypted passwords 
 and you have <smbconfoption name="encrypt passwords">no</smbconfoption> in &smb.conf;.
 Change this setting to `yes' to fix this.
 </para>
@@ -587,13 +573,9 @@ From file manager, try to browse the server. Your Samba server should
 appear in the browse list of your local workgroup (or the one you
 specified in &smb.conf;). You should be able to double-click on the name
 of the server and get a list of shares. If you get the error message <quote>invalid password,</quote>
- you are probably running Windows NT and it
-is refusing to browse a server that has no encrypted password
-capability and is in user-level security mode. In this case, either set
-<smbconfoption name="security">server</smbconfoption> and 
-<smbconfoption name="password server">Windows_NT_Machine</smbconfoption> in your
-&smb.conf; file or make sure <smbconfoption name="encrypt passwords"/> is
-set to <quote>yes</quote>.
+your client may be refusing to browse a server that has no encrypted password
+capability. In this case make sure <smbconfoption name="encrypt passwords"/> is
+set to <quote>yes</quote> and repeat the steps in this gude.
 </para>
 
 </step>
