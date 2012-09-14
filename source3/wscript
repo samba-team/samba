@@ -97,6 +97,7 @@ def configure(conf):
     #FIXME: for some reason this one still fails
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
+    conf.CHECK_FUNCS_IN('dn_expand', 'inet')
     conf.CHECK_DECLS('fdatasync', reverse=True)
     conf.CHECK_DECLS('readahead', reverse=True, headers='fcntl.h')
 
