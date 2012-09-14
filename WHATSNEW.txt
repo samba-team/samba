@@ -12,8 +12,7 @@ WARNINGS
 ========
 
 Samba 4.0.0 rc1 is not a final Samba release, however we are now making
-good progress towards a Samba 4.0 release.  However, this is expected to be the
-last beta release before we start on our release candidate series.
+good progress towards a Samba 4.0 release.
 
 This release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
@@ -21,13 +20,13 @@ to upgrade existing Samba 3.x releases to) and the AD domain
 controller work previously known as 'samba4'.
 
 Samba 4.0 is subjected to an awesome battery of tests on an automated
-basis, we have found Samba 4.0 to be very stable in it's behaviour.
+basis, we have found Samba 4.0 to be very stable in its behaviour.
 However, as with all our pre-releases we still recommend against
-upgrading production servers from Samba 3.x release to Samba 4.0 beta
+upgrading production servers from Samba 3.x release to Samba 4.0.0rc1
 at this stage.
 
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
-beta releases, you should backup all configuration and data.
+releases candidates, you should backup all configuration and data.
 
 
 UPGRADING
@@ -36,7 +35,7 @@ UPGRADING
 Users upgrading from Samba 3.x domain controllers and wanting to use
 Samba 4.0 as an AD DC should use the 'samba-tool domain
 classicupgrade' command.  See the wiki for more details:
-https://wiki.samba.org/index.php/Samba4/samba3upgrade/HOWTO 
+https://wiki.samba.org/index.php/Samba4/samba3upgrade/HOWTO
 
 Users upgrading from Samba 4.0 alpha and beta releases since alpha15
 should run 'samba-tool dbcheck --cross-ncs --fix' before re-starting
@@ -66,7 +65,7 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
-Samba 4.0 beta ships with two distinct file servers.  We now use the
+Samba 4.0.0rc1 ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
 default.
 
@@ -76,7 +75,7 @@ tuned to match the requirements of an AD domain controller.  We
 continue to support this, not only to provide continuity to
 installations that have deployed it as part of an AD DC, but also as a
 running example of the NT-FSA architecture we expect to move smbd to in
-the longer term.  
+the longer term.
 
 For pure file server work, the binaries users would expect from that
 series (nmbd, winbindd, smbpasswd) continue to be available.  When
@@ -179,17 +178,17 @@ KNOWN ISSUES
   this partition is not yet reliable.
 
 - Replication may fail on FreeBSD due to getaddrinfo() rejecting names
-  containing _.  A workaround will be in a future beta.
+  containing _.  A workaround will be in a future release.
 
 - samba_upgradeprovision should not be run when upgrading to this release
   from a recent release.  No important database format changes have
-  been made since alpha16.  
+  been made since alpha16.
 
 - Installation on systems without a system iconv (and developer
   headers at compile time) is known to cause errors when dealing with
   non-ASCII characters.
 
-- Domain member support in the 'samba' binary is in it's infancy, and
+- Domain member support in the 'samba' binary is in its infancy, and
   is not comparable to the support found in winbindd.  As such, do not
   use the 'samba' binary (provided for the AD server) on a member
   server.
@@ -205,7 +204,7 @@ KNOWN ISSUES
 
 - The DRS replication code may fail.  Please contact the team if you
   experience issues with DRS replication, as we have fixed many issues
-  here in response to feedback from our production users. 
+  here in response to feedback from our production users.
 
 
 RUNNING Samba 4.0 as an AD DC
