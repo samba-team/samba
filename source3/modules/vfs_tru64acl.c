@@ -160,7 +160,7 @@ static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl)
 
 	DEBUG(10, ("Hi! This is tru64_acl_to_smb_acl.\n"));
 	
-	if ((result = sys_acl_init(0)) == NULL) {
+	if ((result = sys_acl_init()) == NULL) {
 		DEBUG(0, ("sys_acl_init() failed in tru64_acl_to_smb_acl\n"));
 		errno = ENOMEM;
 		goto fail;
@@ -299,23 +299,23 @@ static acl_t smb_acl_to_tru64_acl(const SMB_ACL_T smb_acl)
 		switch (smb_entry->a_type) {
 		case SMB_ACL_USER:
 			if (acl_set_qualifier(tru64_entry, 
-						(int *)&smb_entry->uid) != 0) 
+						(int *)&smb_entry->info.user.uid) != 0) 
 			{
 				DEBUG(3, ("acl_set_qualifier failed: %s\n",
 					strerror(errno)));
 				goto fail;
 			}
-			DEBUGADD(10, (" - setting uid to %d\n", smb_entry->uid));
+			DEBUGADD(10, (" - setting uid to %d\n", smb_entry->info.user.uid));
 			break;
 		case SMB_ACL_GROUP:
 			if (acl_set_qualifier(tru64_entry, 
-						(int *)&smb_entry->gid) != 0)
+						(int *)&smb_entry->info.group.gid) != 0)
 			{
 				DEBUG(3, ("acl_set_qualifier failed: %s\n",
 					strerror(errno)));
 				goto fail;
 			}
-			DEBUGADD(10, (" - setting gid to %d\n", smb_entry->gid));
+			DEBUGADD(10, (" - setting gid to %d\n", smb_entry->info.group.gid));
 			break;
 		default:
 			break;
