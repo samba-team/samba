@@ -1662,13 +1662,14 @@ static void schedule_async_open(struct timeval request_time,
 static NTSTATUS smbd_calculate_maximum_allowed_access(
 	connection_struct *conn,
 	const struct smb_filename *smb_fname,
+	bool use_privs,
 	uint32_t *p_access_mask)
 {
 	struct security_descriptor *sd;
 	uint32_t access_granted;
 	NTSTATUS status;
 
-	if (get_current_uid(conn) == (uid_t)0) {
+	if (!use_privs && (get_current_uid(conn) == (uid_t)0)) {
 		*p_access_mask |= FILE_GENERIC_ALL;
 		return NT_STATUS_OK;
 	}
@@ -1698,7 +1699,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	 */
 	status = se_file_access_check(sd,
 				 get_current_nttok(conn),
-				 false,
+				 use_privs,
 				 (*p_access_mask & ~FILE_READ_ATTRIBUTES),
 				 &access_granted);
 
@@ -1716,6 +1717,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				    const struct smb_filename *smb_fname,
+				    bool use_privs,
 				    uint32_t access_mask,
 				    uint32_t *access_mask_out)
 {
@@ -1733,7 +1735,7 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
 
 		status = smbd_calculate_maximum_allowed_access(
-			conn, smb_fname, &access_mask);
+			conn, smb_fname, use_privs, &access_mask);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2085,6 +2087,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	status = smbd_calculate_access_mask(conn, smb_fname,
+					false,
 					access_mask,
 					&access_mask); 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2922,7 +2925,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)create_disposition,
 		 (unsigned int)file_attributes));
 
-	status = smbd_calculate_access_mask(conn, smb_dname,
+	status = smbd_calculate_access_mask(conn, smb_dname, false,
 					    access_mask, &access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_directory: smbd_calculate_access_mask "

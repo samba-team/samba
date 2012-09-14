@@ -202,6 +202,7 @@ bool smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				    const struct smb_filename *smb_fname,
+				    bool use_privs,
 				    uint32_t access_mask,
 				    uint32_t *access_mask_out);
 
