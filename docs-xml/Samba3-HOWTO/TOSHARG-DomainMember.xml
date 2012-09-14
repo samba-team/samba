@@ -913,11 +913,7 @@ When manually configuring <filename>krb5.conf</filename>, the minimal configurat
 <screen>
 [libdefaults]
 	default_realm = YOUR.KERBEROS.REALM
-
-[realms]
-	YOUR.KERBEROS.REALM = {
-	kdc = your.kerberos.server
-	}
+	dns_lookup_kdc = true
 
 [domain_realms]
 	.kerberos.server = YOUR.KERBEROS.REALM
@@ -925,13 +921,10 @@ When manually configuring <filename>krb5.conf</filename>, the minimal configurat
 </para>
 
 <para>
-<indexterm><primary>Heimdal</primary></indexterm>
-When using Heimdal versions before 0.6, use the following configuration settings:
+If you must specify the KDC directly, the minimal configuration is:
 <screen>
 [libdefaults]
 	default_realm      = YOUR.KERBEROS.REALM
-	default_etypes     = des-cbc-crc des-cbc-md5
-	default_etypes_des = des-cbc-crc des-cbc-md5
 
 [realms]
         YOUR.KERBEROS.REALM = {
@@ -949,19 +942,6 @@ When using Heimdal versions before 0.6, use the following configuration settings
 Test your config by doing a <userinput>kinit
 <replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput> and
 making sure that your password is accepted by the Win2000 KDC.
-</para>
-
-<para>
-<indexterm><primary>Heimdal</primary></indexterm>
-<indexterm><primary>ADS</primary></indexterm>
-<indexterm><primary>KDC</primary></indexterm>
-<indexterm><primary>Windows 2003</primary></indexterm>
-With Heimdal versions earlier than 0.6.x you can use only newly created accounts
-in ADS or accounts that have had the password changed once after migration, or
-in case of <constant>Administrator</constant> after installation. At the
-moment, a Windows 2003 KDC can only be used with Heimdal releases later than 0.6
-(and no default etypes in krb5.conf). Unfortunately, this whole area is still
-in a state of flux.
 </para>
 
 <note><para>
@@ -986,25 +966,6 @@ great while getting initial credentials</errorname></quote> if the time differen
 <indexterm><primary>clock skew</primary></indexterm>
 <indexterm><primary>Kerberos</primary></indexterm>
 Clock skew limits are configurable in the Kerberos protocols. The default setting is five minutes.
-</para>
-
-<para>
-<indexterm><primary>DNS</primary></indexterm>
-<indexterm><primary>KDC</primary></indexterm>
-<indexterm><primary>hostname</primary></indexterm>
-<indexterm><primary>realm</primary></indexterm>
-You also must ensure that you can do a reverse DNS lookup on the IP address of your KDC. Also, the name that
-this reverse lookup maps to must either be the NetBIOS name of the KDC (i.e., the hostname with no domain
-attached) or it can be the NetBIOS name followed by the realm.
-</para>
-
-<para>
-<indexterm><primary>/etc/hosts</primary></indexterm>
-<indexterm><primary>KDC</primary></indexterm>
-<indexterm><primary>realm</primary></indexterm>
-The easiest way to ensure you get this right is to add a <filename>/etc/hosts</filename> entry mapping the IP
-address of your KDC to its NetBIOS name. If you do not get this correct, then you will get a <errorname>local
-error</errorname> when you try to join the realm.
 </para>
 
 <para>
@@ -1093,15 +1054,6 @@ name, it may need to be quadrupled to pass through the shell escape and ldap esc
 	You need to login to the domain using <userinput>kinit
 	<replaceable>USERNAME</replaceable>@<replaceable>REALM</replaceable></userinput>.
 	<replaceable>USERNAME</replaceable> must be a user who has rights to add a machine to the domain.
-	</para></listitem></varlistentry>
-
-	<varlistentry><term>Unsupported encryption/or checksum types</term>
-	<listitem><para>
-	<indexterm><primary>/etc/krb5.conf</primary></indexterm>
-	<indexterm><primary>unsupported encryption</primary></indexterm>
-	<indexterm><primary>Kerberos</primary></indexterm>
-	Make sure that the <filename>/etc/krb5.conf</filename> is correctly configured
-	for the type and version of Kerberos installed on the system.
 	</para></listitem></varlistentry>
 </variablelist>
 </para>
