@@ -47,95 +47,11 @@ you will have stability and operational problems.
 <indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
 <indexterm><primary>non-LDAP</primary><secondary>backend</secondary></indexterm>
 <indexterm><primary>propagate</primary></indexterm>
-While it is possible to run a Samba-3 BDC with a non-LDAP backend, that backend must allow some form of
+It is not possible to run a Samba-3 BDC with a non-LDAP backend, as that backend must allow some form of
 "two-way" propagation of changes from the BDC to the master.  At this time only LDAP delivers the capability
 to propagate identity database changes from the BDC to the PDC. The BDC can use a slave LDAP server, while it
 is preferable for the PDC to use as its primary an LDAP master server.
 </para>
-
-<para>
-<indexterm><primary>non-LDAP</primary><secondary>backend</secondary></indexterm>
-<indexterm><primary>SAM backend</primary><secondary>non-LDAP</secondary></indexterm>
-<indexterm><primary>domain</primary><secondary>member</secondary><tertiary>server</tertiary></indexterm>
-<indexterm><primary>BDC</primary></indexterm>
-<indexterm><primary>PDC</primary></indexterm>
-<indexterm><primary>trust account password</primary></indexterm>
-<indexterm><primary>domain trust</primary></indexterm>
-The use of a non-LDAP backend SAM database is particularly problematic because domain member
-servers and workstations periodically change the Machine Trust Account password. The new
-password is then stored only locally. This means that in the absence of a centrally stored
-accounts database (such as that provided with an LDAP-based solution) if Samba-3 is running
-as a BDC, the BDC instance of the domain member trust account password will not reach the
-PDC (master) copy of the SAM. If the PDC SAM is then replicated to BDCs, this results in 
-overwriting the SAM that contains the updated (changed) trust account password with resulting
-breakage of the domain trust.
-</para>
-
-<para>
-<indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
-<indexterm><primary>SAM backend</primary><secondary>ldapsam</secondary></indexterm>
-<indexterm><primary>SAM backend</primary><secondary>tdbsam</secondary></indexterm>
-<indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
-Considering the number of comments and questions raised concerning how to configure a BDC,
-let's consider each possible option and look at the pros and cons for each possible solution.
-<link linkend="pdc-bdc-table">The Domain Backend Account Distribution Options table below</link> lists 
-possible design configurations for a PDC/BDC infrastructure.
-</para>
-
-<table frame="all" id="pdc-bdc-table"><title>Domain Backend Account Distribution Options</title>
-<tgroup cols="3">
-        <colspec align="center" colwidth="1*"/>
-        <colspec align="center" colwidth="1*"/>
-        <colspec align="left" colwidth="3*"/>
-
-        <thead>
-        <row><entry>PDC Backend</entry><entry>BDC Backend</entry><entry>Notes/Discussion</entry></row>
-        </thead>
-        <tbody>
-        <row>
-        <entry><para>Master LDAP Server</para></entry>
-        <entry><para>Slave LDAP Server</para></entry>
-        <entry><para>The optimal solution that provides high integrity. The SAM will be
-		replicated to a common master LDAP server.</para></entry>
-        </row>
-        <row>
-        <entry><para>Single Central LDAP Server</para></entry>
-        <entry><para>Single Central LDAP Server</para></entry>
-	<entry><para>
-	A workable solution without failover ability. This is a usable solution, but not optimal. 
-	</para></entry>
-        </row>
-        <row>
-        <entry><para>tdbsam</para></entry>
-        <entry><para>tdbsam + <command>net rpc vampire</command></para></entry>
-        <entry><para>
-	Does not work with Samba-3.0; Samba does not implement the
-        server-side protocols required.
-	</para></entry>
-        </row>
-        <row>
-        <entry><para>tdbsam</para></entry>
-        <entry><para>tdbsam + <command>rsync</command></para></entry>
-        <entry><para>
-	Do not use this configuration.
-	Does not work because the TDB files are live and data may not
-        have been flushed to disk.  Furthermore, this will cause
-        domain trust breakdown.
-	</para></entry>
-        </row>
-        <row>
-        <entry><para>smbpasswd file</para></entry>
-        <entry><para>smbpasswd file</para></entry>
-        <entry><para>
-	Do not use this configuration.
-	Not an elegant solution due to the delays in synchronization
-        and also suffers
-        from the issue of domain trust breakdown.
-	</para></entry>
-        </row>
-        </tbody>
-</tgroup>
-</table>
 
 </sect1>
 
@@ -453,9 +369,12 @@ Servers in &smb.conf; example</link>.
 <indexterm><primary>domain controller</primary></indexterm>
 As of the release of MS Windows 2000 and Active Directory, this information is now stored
 in a directory that can be replicated and for which partial or full administrative control
-can be delegated. Samba-3 is not able to be a domain controller within an Active Directory
-tree, and it cannot be an Active Directory server. This means that Samba-3 also cannot
-act as a BDC to an Active Directory domain controller.
+can be delegated. Samba-4.0 is able to be a domain controller within an Active Directory
+tree, and it can be an Active Directory server.  The details for how
+this can be done are documented in the <ulink
+url="https://wiki.samba.org/index.php/Samba4/HOWTO">Samba 4.0 as an
+AD DC HOWTO</ulink>
+
 </para>
 
 </sect2>
@@ -554,35 +473,6 @@ The creation of a BDC requires some steps to prepare the Samba server before
 
 <itemizedlist>
 	<listitem><para>
-	<indexterm><primary>SID</primary></indexterm>
-	<indexterm><primary>PDC</primary></indexterm>
-	<indexterm><primary>BDC</primary></indexterm>
-	<indexterm><primary>private/secrets.tdb</primary></indexterm>
-	<indexterm><primary>private/MACHINE.SID</primary></indexterm>
-	<indexterm><primary>domain SID</primary></indexterm>
-	The domain SID has to be the same on the PDC and the BDC. In Samba versions pre-2.2.5, the domain SID was
-	stored in the file <filename>private/MACHINE.SID</filename>.  For all versions of Samba released since 2.2.5
-	the domain SID is stored in the file <filename>private/secrets.tdb</filename>. This file is unique to each
-	server and cannot be copied from a PDC to a BDC; the BDC will generate a new SID at startup. It will overwrite
-	the PDC domain SID with the newly created BDC SID.  There is a procedure that will allow the BDC to acquire the
-	domain SID. This is described here.
-	</para>
-
-	<para>
-	<indexterm><primary>domain SID</primary></indexterm>
-	<indexterm><primary>PDC</primary></indexterm>
-	<indexterm><primary>BDC</primary></indexterm>
-	<indexterm><primary>secrets.tdb</primary></indexterm>
-	<indexterm><primary>net</primary><secondary>rpc</secondary><tertiary>getsid</tertiary></indexterm>
-	To retrieve the domain SID from the PDC or an existing BDC and store it in the
-	<filename>secrets.tdb</filename>, execute:
-	</para>
-<screen>
-&rootprompt;<userinput>net rpc getsid</userinput>
-</screen>
-	</listitem>
-
-	<listitem><para>
 	<indexterm><primary>secrets.tdb</primary></indexterm>
 	<indexterm><primary>smbpasswd</primary></indexterm>
 	<indexterm><primary>LDAP administration password</primary></indexterm>
@@ -623,9 +513,7 @@ The creation of a BDC requires some steps to prepare the Samba server before
 	<indexterm><primary>ssh</primary></indexterm>
 	<indexterm><primary>LDAP</primary></indexterm>
 	The Samba password database must be replicated from the PDC to the BDC.
-	Although it is possible to synchronize the <filename>smbpasswd</filename>
-	file with <command>rsync</command> and <command>ssh</command>, this method
-	is broken and flawed, and is therefore not recommended. A better solution
+        The solution
 	is to set up slave LDAP servers for each BDC and a master LDAP server for the PDC.
 	The use of rsync is inherently flawed by the fact that the data will be replicated
 	at timed intervals. There is no guarantee that the BDC will be operating at all
@@ -804,7 +692,10 @@ No. The native NT4 SAM replication protocols have not yet been fully implemented
 <indexterm><primary>BDC</primary></indexterm>
 <indexterm><primary>PDC</primary></indexterm>
 <indexterm><primary>logon requests</primary></indexterm>
-Can I get the benefits of a BDC with Samba?  Yes, but only to a Samba PDC.The
+Can I get the benefits of a BDC with Samba?  Yes, but only to a Samba
+PDC or as a <ulink
+url="https://wiki.samba.org/index.php/Samba4/HOWTO">Samba 4.0 Active
+Directory domain controller.</ulink>  The
 main reason for implementing a BDC is availability. If the PDC is a Samba
 machine, a second Samba machine can be set up to service logon requests whenever
 the PDC is down.
@@ -812,51 +703,5 @@ the PDC is down.
 
 </sect2>
 
-<sect2>
-<title>How Do I Replicate the smbpasswd File?</title>
-
-<para>
-<indexterm><primary>replication</primary><secondary>SAM</secondary></indexterm>
-<indexterm><primary>smbpasswd</primary></indexterm>
-<indexterm><primary>SAM</primary></indexterm>
-Replication of the smbpasswd file is sensitive. It has to be done whenever changes
-to the SAM are made. Every user's password change is done in the smbpasswd file and
-has to be replicated to the BDC. So replicating the smbpasswd file very often is necessary.
-</para>
-
-<para>
-<indexterm><primary>plaintext password</primary></indexterm>
-<indexterm><primary>ssh</primary></indexterm>
-<indexterm><primary>rsync</primary></indexterm>
-As the smbpasswd file contains plaintext password equivalents, it must not be
-sent unencrypted over the wire. The best way to set up smbpasswd replication from
-the PDC to the BDC is to use the utility rsync. rsync can use ssh as a transport.
-<command>ssh</command> itself can be set up to accept <emphasis>only</emphasis>
-<command>rsync</command> transfer without requiring the user to type a password.
-</para>
-
-<para>
-<indexterm><primary>machine trust accounts</primary></indexterm>
-<indexterm><primary>LDAP</primary></indexterm>
-As said a few times before, use of this method is broken and flawed. Machine trust 
-accounts will go out of sync, resulting in a broken domain. This method is
-<emphasis>not</emphasis> recommended. Try using LDAP instead.
-</para>
-
-</sect2>
-
-<sect2>
-<title>Can I Do This All with LDAP?</title>
-
-<para>
-<indexterm><primary>pdb_ldap</primary></indexterm>
-<indexterm><primary>LDAP</primary></indexterm>
-The simple answer is yes. Samba's pdb_ldap code supports binding to a replica
-LDAP server and will also follow referrals and rebind to the master if it ever
-needs to make a modification to the database. (Normally BDCs are read-only, so
-this will not occur often).
-</para>
-
-</sect2>
 </sect1>
 </chapter>
