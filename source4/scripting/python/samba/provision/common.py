@@ -28,8 +28,6 @@
 __docformat__ = "restructuredText"
 
 import os
-import tdb
-import ldb
 from samba import read_and_sub_file
 from samba.param import setup_dir
 
