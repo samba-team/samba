@@ -42,6 +42,7 @@ from samba import Ldb, read_and_sub_file, setup_file
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.schema import Schema
 
+
 class SlapdAlreadyRunning(Exception):
 
     def __init__(self, uri):
