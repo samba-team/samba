@@ -858,7 +858,7 @@ bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *grou
 	gid_t gid;
 	char *found_username;
 	struct security_token *token;
-	bool result;
+	bool result = false;
 	enum lsa_SidType type;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
@@ -880,8 +880,7 @@ bool user_sid_in_group_sid(const struct dom_sid *sid, const struct dom_sid *grou
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("could not create token for %s\n", dom_sid_string(mem_ctx, sid)));
-		TALLOC_FREE(mem_ctx);
-		return False;
+		goto done;
 	}
 
 	result = security_token_has_sid(token, group_sid);
