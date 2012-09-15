@@ -202,8 +202,6 @@ The chapters in this part each cover specific Samba features.
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Compiling.xml"/>
 	<?latex \cleardoublepage ?>
-	<xi:include href="TOSHARG-Other-Clients.xml"/>
-	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Speed.xml"/>
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-SecureLDAP.xml"/>
