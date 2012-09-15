@@ -20,7 +20,7 @@ you can download Samba from Subversion or using <command>rsync</command>.
 </para>
 
 <sect1>
-<title>Access Samba Source Code via Subversion</title>
+<title>Access Samba Source Code via GIT</title>
 
 
 <sect2>
@@ -28,115 +28,16 @@ you can download Samba from Subversion or using <command>rsync</command>.
 
 <para>
 <indexterm><primary>Subversion</primary></indexterm>
-Samba is developed in an open environment. Developers use a
-Subversion to <quote>checkin</quote> (also known as 
-<quote>commit</quote>) new source code. Samba's various Subversion branches can
-be accessed via anonymous Subversion using the instructions
-detailed in this chapter.
-</para>
-
-<para>
-This chapter is a modified version of the instructions found at the
-<ulink noescape="1" url="http://samba.org/samba/subversion.html">Samba</ulink> Web site.
+Samba is developed in an open environment. Developers use
+GIT to <quote>checkin</quote> (also known as 
+<quote>commit</quote>) new source code.  See the
+<ulink noescape="1"
+       url="https://wiki.samba.org/index.php/Using_Git_for_Samba_Development">Using
+Git for Samba Development page</ulink> in the Samba wiki.
 </para>
 
 </sect2>
 
-<sect2>
-<title>Subversion Access to samba.org</title>
-
-<para>
-The machine samba.org runs a publicly accessible Subversion
-repository for access to the source code of several packages, 
-including Samba, rsync, distcc, ccache, and jitterbug. There are two main ways
-of accessing the Subversion server on this host.
-</para>
-
-<sect3>
-<title>Access via ViewCVS</title>
-
-
-<para>
-<indexterm><primary>SVN</primary><secondary>web</secondary></indexterm>
-You can access the source code via your favorite WWW browser. This allows you to access
-the contents of individual files in the repository and also to look at the revision 
-history and commit logs of individual files. You can also ask for a diff 
-listing between any two versions on the repository.
-</para>
-
-<para>
-Use the URL
-<ulink noescape="1" url="http://viewcvs.samba.org/">http://viewcvs.samba.org/</ulink>.
-</para>
-</sect3>
-
-<sect3>
-<title>Access via Subversion</title>
-
-<para>
-<indexterm><primary>Subversion</primary></indexterm>
-You can also access the source code via a normal Subversion client. This gives you much more control over what
-you can do with the repository and allows you to check out whole source trees and keep them up to date via
-normal Subversion commands. This is the preferred method of access if you are a developer and not just a
-casual browser.
-</para>
-
-<para>In order to be able to download the Samba sources off Subversion, you need 
-a Subversion client. Your distribution might include one, or you can download the 
-sources from <ulink noescape="1" url="http://subversion.tigris.org/">http://subversion.tigris.org/</ulink>.
-</para>
-
-<para>
-To gain access via anonymous Subversion, use the following steps. 
-</para>
-
-<procedure>
-	<title>Retrieving Samba using Subversion</title>
-
-	<step>
-	<para>
-	Install a recent copy of Subversion. All you really need is a 
-	copy of the Subversion client binary. 
-	</para>
-	</step>
-
-	<step>
-	<para>
-	Run the command 
-	<screen>
-	<userinput>svn co svn://svnanon.samba.org/samba/trunk samba</userinput>.
-	</screen>
-	</para>
-	
-	<para>
-	This will create a directory called <filename>samba</filename> containing the 
-	latest Samba source code (usually the branch that is going to be the next major release). This 
-	currently corresponds to the 3.1 development tree. 
-	</para>
-	
-	<para>
-	Subversion branches other then trunk can be obtained by adding branches/BRANCH_NAME to the URL you check
-	out. A list of branch names can be found on the <quote>Development</quote> page of the Samba Web site. A
-	common request is to obtain the latest 3.0 release code. This could be done by using the following command:
-	<screen>
-	<userinput>svn co svn://svnanon.samba.org/samba/branches/SAMBA_3_0 samba_3</userinput>.
-	</screen>
-	</para>
-	</step>
-
-	<step>
-	<para>
-	Whenever you want to merge in the latest code changes, use the following command from within the Samba
-	directory:
-	<screen>
-	<userinput>svn update</userinput>
-	</screen>
-	</para>
-	</step>
-</procedure>
-	
-</sect3>
-</sect2>
 
 </sect1>
 
@@ -158,7 +59,7 @@ To gain access via anonymous Subversion, use the following steps.
 
 	<para>
 	The disadvantage of the unpacked trees is that they do not support automatic
-	merging of local changes as Subversion does. <command>rsync</command> access is most convenient 
+	merging of local changes as GIT does. <command>rsync</command> access is most convenient 
 	for an initial install.                      
 	</para>
 </sect1>
