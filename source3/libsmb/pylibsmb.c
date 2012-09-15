@@ -166,7 +166,7 @@ static int py_cli_thread_destructor(struct py_cli_thread *t)
 
 static bool py_cli_state_setup_ev(struct py_cli_state *self)
 {
-	struct py_cli_thread *t;
+	struct py_cli_thread *t = NULL;
 	int ret;
 
 	self->ev = tevent_context_init_byname(NULL, "poll_mt");
@@ -202,15 +202,18 @@ static bool py_cli_state_setup_ev(struct py_cli_state *self)
 	return true;
 
 fail:
-	TALLOC_FREE(t->shutdown_fde);
+	if (t != NULL) {
+		TALLOC_FREE(t->shutdown_fde);
 
-	if (t->shutdown_pipe[0] != -1) {
-		close(t->shutdown_pipe[0]);
-		t->shutdown_pipe[0] = -1;
-	}
-	if (t->shutdown_pipe[1] != -1) {
-		close(t->shutdown_pipe[1]);
-		t->shutdown_pipe[1] = -1;
+		if (t->shutdown_pipe[0] != -1) {
+			close(t->shutdown_pipe[0]);
+			t->shutdown_pipe[0] = -1;
+		}
+		if (t->shutdown_pipe[1] != -1) {
+			close(t->shutdown_pipe[1]);
+			t->shutdown_pipe[1] = -1;
+		}
+		TALLOC_FREE(t);
 	}
 
 	TALLOC_FREE(self->thread_state);
