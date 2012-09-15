@@ -32,12 +32,9 @@ us fix it fast.
 </para>
 
 <para>
-<indexterm><primary>comp.protocols.smb</primary></indexterm>
-<indexterm><primary>newsgroup</primary></indexterm>
 <indexterm><primary>configuration problem</primary></indexterm>
-If you post the bug to the comp.protocols.smb
-newsgroup or the mailing list, do not assume that we will read it. If you suspect that your 
-problem is not a bug but a configuration problem, it is better to send 
+If you suspect that your 
+problem is not a bug but a configuration problem, it is best to send 
 it to the Samba mailing list, as there are thousands of other users on
 that list who may be able to help you.
 </para>
@@ -260,10 +257,10 @@ to catch any panics. If <command>smbd</command> seems to be frozen, look for any
 processes. If it is not, and appears to be spinning, find the PID
 of the spinning process and type:
 <screen>
-&rootprompt; gdb /usr/local/samba/sbin/smbd
+&rootprompt; gdb -p PID
 </screen>
 <indexterm><primary>spinning process</primary></indexterm>
-then <quote>attach `pid'</quote> (of the spinning process), then type <quote>bt</quote> to
+then type <quote>bt full</quote> to
 get a backtrace to see where the smbd is in the call path.
 </para>
 
