@@ -379,26 +379,6 @@ netbios-ns dgram udp wait root /usr/local/samba/sbin/nmbd nmbd
 
 	<sect3>
 	<title>Starting Samba for Red Hat Linux</title>
-
-	<para>
-	Red Hat Linux has not always included all Samba components in the standard installation.
-	So versions of Red Hat Linux do not install the winbind utility, even though it is present
-	on the installation CDROM media. Check to see if the <command>winbindd</command> is present
-	on the system:
-<screen>
-&rootprompt; ls /usr/sbin/winbindd
-/usr/sbin/winbindd
-</screen>
-	This means that the appropriate RPM package was installed. The following response means
-	that it is not installed:
-<screen>
-/bin/ls: /usr/sbin/winbind: No such file or directory
-</screen>
-	In this case, it should be installed if you intend to use <command>winbindd</command>. Search
-	the CDROM installation media for the samba-winbind RPM and install it following Red Hat
-	guidelines.
-	</para>
-
 	<para>
 	The process for starting Samba will now be outlined. Be sure to configure Samba's &smb.conf;
 	file before starting Samba. When configured, start Samba by executing:
