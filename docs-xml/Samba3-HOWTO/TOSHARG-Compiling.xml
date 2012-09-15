@@ -49,9 +49,9 @@ Git for Samba Development page</ulink> in the Samba wiki.
 	<indexterm><primary>rsync</primary></indexterm>
 	<indexterm><primary>ftp</primary></indexterm>
 	<parameter>pserver.samba.org</parameter> also exports unpacked copies of most parts of the Subversion tree
-	at the Samba <ulink noescape="1" url="ftp://pserver.samba.org/pub/unpacked">pserver</ulink> location and also
+	at the Samba <ulink noescape="1" url="ftp://samba.org/pub/unpacked">unpacked</ulink> location and also
 	via anonymous rsync at the Samba <ulink noescape="1"
-	url="rsync://pserver.samba.org/ftp/unpacked/">rsync</ulink> server location.  I recommend using rsync rather
+	url="rsync://samba.org/ftp/unpacked/">rsync</ulink> server location.  I recommend using rsync rather
 	than ftp, because rsync is capable of compressing data streams, but it is also more useful than FTP because
 	during a partial update it will transfer only the data that is missing plus a small overhead.  See <ulink
 	noescape="1" url="http://rsync.samba.org/">the rsync home page</ulink> for more info on rsync.
@@ -82,8 +82,9 @@ With that said, go ahead and download the following files:
 </para>
 
 <para><screen>
-&prompt;<userinput>wget http://us1.samba.org/samba/ftp/samba-3.0.20.tar.asc</userinput>
-&prompt;<userinput>wget http://us1.samba.org/samba/ftp/samba-pubkey.asc</userinput>
+&prompt;<userinput>wget http://samba.org/samba/ftp/samba-latest.tar.asc</userinput>
+&prompt;<userinput>wget http://samba.org/samba/ftp/samba-latest.tar.gz</userinput>
+&prompt;<userinput>wget http://samba.org/samba/ftp/samba-pubkey.asc</userinput>
 </screen></para>
 
 
@@ -96,8 +97,8 @@ PGP key itself. Import the public PGP key with:
 </screen>
 and verify the Samba source code integrity with:
 <screen>
-&prompt;<userinput>gzip -d samba-3.0.20.tar.gz</userinput>
-&prompt;<userinput>gpg --verify samba-3.0.20.tar.asc</userinput>
+&prompt;<userinput>gzip -d samba-latest.tar.gz</userinput>
+&prompt;<userinput>gpg --verify samba-latest.tar.asc</userinput>
 </screen>
 </para>
 
