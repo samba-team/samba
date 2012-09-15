@@ -554,7 +554,7 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl)
 	SMB_ACL_T result;
 	gpfs_aclCount_t i;
 
-	result = sys_acl_init(pacl->acl_nace);
+	result = sys_acl_init();
 	if (result == NULL) {
 		errno = ENOMEM;
 		return NULL;
@@ -573,14 +573,14 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl)
 		switch (g_ace->ace_type) {
 		case GPFS_ACL_USER:
 			ace->a_type = SMB_ACL_USER;
-			ace->uid = (uid_t)g_ace->ace_who;
+			ace->info.user.uid = (uid_t)g_ace->ace_who;
 			break;
 		case GPFS_ACL_USER_OBJ:
 			ace->a_type = SMB_ACL_USER_OBJ;
 			break;
 		case GPFS_ACL_GROUP:
 			ace->a_type = SMB_ACL_GROUP;
-			ace->gid = (gid_t)g_ace->ace_who;
+			ace->info.group.gid = (gid_t)g_ace->ace_who;
 			break;
 		case GPFS_ACL_GROUP_OBJ:
  			ace->a_type = SMB_ACL_GROUP_OBJ;
@@ -738,7 +738,7 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 		switch(ace->a_type) {
 		case SMB_ACL_USER:
 			g_ace->ace_type = GPFS_ACL_USER;
-			g_ace->ace_who = (gpfs_uid_t)ace->uid;
+			g_ace->ace_who = (gpfs_uid_t)ace->info.user.uid;
 			break;
 		case SMB_ACL_USER_OBJ:
 			g_ace->ace_type = GPFS_ACL_USER_OBJ;
@@ -747,7 +747,7 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 			break;
 		case SMB_ACL_GROUP:
 			g_ace->ace_type = GPFS_ACL_GROUP;
-			g_ace->ace_who = (gpfs_uid_t)ace->gid;
+			g_ace->ace_who = (gpfs_uid_t)ace->info.group.gid;
 			break;
 		case SMB_ACL_GROUP_OBJ:
 			g_ace->ace_type = GPFS_ACL_GROUP_OBJ;
