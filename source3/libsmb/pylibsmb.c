@@ -321,6 +321,25 @@ static int py_tevent_req_wait(struct tevent_context *ev,
 
 #endif
 
+static bool py_tevent_req_wait_exc(struct tevent_context *ev,
+				   struct tevent_req *req)
+{
+	int ret;
+
+	if (req == NULL) {
+		PyErr_NoMemory();
+		return false;
+	}
+	ret = py_tevent_req_wait(ev, req);
+	if (ret != 0) {
+		TALLOC_FREE(req);
+		errno = ret;
+		PyErr_SetFromErrno(PyExc_RuntimeError);
+		return false;
+	}
+	return true;
+}
+
 static PyObject *py_cli_state_new(PyTypeObject *type, PyObject *args,
 				  PyObject *kwds)
 {
@@ -398,25 +417,6 @@ static void py_cli_state_dealloc(struct py_cli_state *self)
 		self->cli = NULL;
 	}
 	self->ob_type->tp_free((PyObject *)self);
-}
-
-static bool py_tevent_req_wait_exc(struct tevent_context *ev,
-				   struct tevent_req *req)
-{
-	int ret;
-
-	if (req == NULL) {
-		PyErr_NoMemory();
-		return false;
-	}
-	ret = py_tevent_req_wait(ev, req);
-	if (ret != 0) {
-		TALLOC_FREE(req);
-		errno = ret;
-		PyErr_SetFromErrno(PyExc_RuntimeError);
-		return false;
-	}
-	return true;
 }
 
 static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
