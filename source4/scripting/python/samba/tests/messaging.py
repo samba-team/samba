@@ -26,7 +26,7 @@ class MessagingTests(TestCase):
 
     def get_context(self, *args, **kwargs):
         return Messaging(*args, **kwargs)
-    
+
     def test_register(self):
         x = self.get_context()
         def callback():

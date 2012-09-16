@@ -24,7 +24,7 @@ import samba.tests
 class HelperTests(samba.tests.TestCase):
 
     def test_predef_to_name(self):
-        self.assertEquals("HKEY_LOCAL_MACHINE", 
+        self.assertEquals("HKEY_LOCAL_MACHINE",
                           registry.get_predef_name(0x80000002))
 
     def test_str_regtype(self):

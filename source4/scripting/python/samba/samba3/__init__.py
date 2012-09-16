@@ -137,6 +137,7 @@ IDMAP_VERSION_V2 = 2
 
 class IdmapDatabase(TdbDatabase):
     """Samba 3 ID map database reader."""
+
     def _check_version(self):
         assert fetch_int32(self.tdb, "IDMAP_VERSION\0") == IDMAP_VERSION_V2
 
@@ -199,6 +200,7 @@ class IdmapDatabase(TdbDatabase):
 
 class SecretsDatabase(TdbDatabase):
     """Samba 3 Secrets database reader."""
+
     def get_auth_password(self):
         return self.tdb.get("SECRETS/AUTH_PASSWORD")
 
@@ -261,8 +263,10 @@ class SecretsDatabase(TdbDatabase):
 SHARE_DATABASE_VERSION_V1 = 1
 SHARE_DATABASE_VERSION_V2 = 2
 
+
 class ShareInfoDatabase(TdbDatabase):
     """Samba 3 Share Info database reader."""
+
     def _check_version(self):
         assert fetch_int32(self.tdb, "INFO/version\0") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
 
@@ -355,6 +359,7 @@ class WinsDatabase(object):
 
 class Samba3(object):
     """Samba 3 configuration and state data reader."""
+
     def __init__(self, smbconfpath, s3_lp_ctx=None):
         """Open the configuration and data for a Samba 3 installation.
 
