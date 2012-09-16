@@ -70,11 +70,10 @@ class cmd_testparm(Command):
 
     takes_args = []
 
-    def run(self, sambaopts, versionopts, 
-            section_name=None, parameter_name=None,
-            client_ip=None, client_name=None, verbose=False,
-            suppress_prompt=None,
-            show_all_parameters=False, server=None):
+    def run(self, sambaopts, versionopts, section_name=None,
+            parameter_name=None, client_ip=None, client_name=None,
+            verbose=False, suppress_prompt=None, show_all_parameters=False,
+            server=None):
         if server:
             raise NotImplementedError("--server not yet implemented")
         if show_all_parameters:
@@ -100,7 +99,8 @@ class cmd_testparm(Command):
         else:
             if section_name is not None or parameter_name is not None:
                 if parameter_name is None:
-                    lp[section_name].dump(sys.stdout, lp.default_service, verbose)
+                    lp[section_name].dump(sys.stdout, lp.default_service,
+                            verbose)
                 else:
                     self.outf.write(lp.get(parameter_name, section_name)+"\n")
             else:
@@ -148,8 +148,9 @@ class cmd_testparm(Command):
             valid = False
 
         if winbind_separator == '+':
-            logger.error("'winbind separator = +' might cause problems with group "
-                         "membership.")
+            logger.error(
+                "'winbind separator = +' might cause problems with group "
+                "membership.")
             valid = False
 
         return valid
@@ -161,7 +162,8 @@ class cmd_testparm(Command):
         valid = True
         for s in lp.services():
             if len(s) > 12:
-                logger.warning("You have some share names that are longer than 12 "
+                logger.warning(
+                    "You have some share names that are longer than 12 "
                     "characters. These may not be accessible to some older "
                     "clients. (Eg. Windows9x, WindowsMe, and not listed in "
                     "smbclient in Samba 3.0.)")

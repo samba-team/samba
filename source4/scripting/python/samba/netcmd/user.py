@@ -107,11 +107,13 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
         }
 
     def run(self, username, password=None, credopts=None, sambaopts=None,
-            versionopts=None, H=None, must_change_at_next_login=False, random_password=False,
-            use_username_as_cn=False, userou=None, surname=None, given_name=None, initials=None,
-            profile_path=None, script_path=None, home_drive=None, home_directory=None,
+            versionopts=None, H=None, must_change_at_next_login=False,
+            random_password=False, use_username_as_cn=False, userou=None,
+            surname=None, given_name=None, initials=None, profile_path=None,
+            script_path=None, home_drive=None, home_directory=None,
             job_title=None, department=None, company=None, description=None,
-            mail_address=None, internet_address=None, telephone_number=None, physical_delivery_office=None):
+            mail_address=None, internet_address=None, telephone_number=None,
+            physical_delivery_office=None):
 
         if random_password:
             password = generate_random_password(128, 255)
@@ -131,8 +133,7 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
-            samdb.newuser(username, password,
-                          force_password_change_at_next_login_req=must_change_at_next_login,
+            samdb.newuser(username, password, force_password_change_at_next_login_req=must_change_at_next_login,
                           useusernameascn=use_username_as_cn, userou=userou, surname=surname, givenname=given_name, initials=initials,
                           profilepath=profile_path, homedrive=home_drive, scriptpath=script_path, homedirectory=home_directory,
                           jobtitle=job_title, department=department, company=company, description=description,
@@ -147,10 +148,13 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
 class cmd_user_add(cmd_user_create):
     __doc__ = cmd_user_create.__doc__
     # take this print out after the add subcommand is removed.
-    # the add subcommand is deprecated but left in for now to allow people to migrate to create
+    # the add subcommand is deprecated but left in for now to allow people to
+    # migrate to create
 
     def run(self, *args, **kwargs):
-        self.err.write("\nNote: samba-tool user add is deprecated.  Please use samba-tool user create for the same function.\n")
+        self.err.write(
+            "Note: samba-tool user add is deprecated.  "
+            "Please use samba-tool user create for the same function.\n")
         return super(self, cmd_user_add).run(*args, **kwargs)
 
 
@@ -188,7 +192,8 @@ Example2 shows how to delete a user in the domain against the local server.   su
         "versionopts": options.VersionOptions,
         }
 
-    def run(self, username, credopts=None, sambaopts=None, versionopts=None, H=None):
+    def run(self, username, credopts=None, sambaopts=None, versionopts=None,
+            H=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
