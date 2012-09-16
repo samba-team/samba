@@ -22,8 +22,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-
 import samba.getopt as options
 import ldb
 import string
@@ -127,15 +125,16 @@ class cmd_domain_info(Command):
         lp = sambaopts.get_loadparm()
         try:
             res = netcmd_get_domain_infos_via_cldap(lp, None, address)
-            print "Forest           : %s" % res.forest
-            print "Domain           : %s" % res.dns_domain
-            print "Netbios domain   : %s" % res.domain_name
-            print "DC name          : %s" % res.pdc_dns_name
-            print "DC netbios name  : %s" % res.pdc_name
-            print "Server site      : %s" % res.server_site
-            print "Client site      : %s" % res.client_site
         except RuntimeError:
             raise CommandError("Invalid IP address '" + address + "'!")
+        self.outf.write("Forest           : %s\n" % res.forest)
+        self.outf.write("Domain           : %s\n" % res.dns_domain)
+        self.outf.write("Netbios domain   : %s\n" % res.domain_name)
+        self.outf.write("DC name          : %s\n" % res.pdc_dns_name)
+        self.outf.write("DC netbios name  : %s\n" % res.pdc_name)
+        self.outf.write("Server site      : %s\n" % res.server_site)
+        self.outf.write("Client site      : %s\n" % res.client_site)
+
 
 class cmd_domain_provision(Command):
     """Promotes an existing domain member or NT4 PDC to an AD DC"""
@@ -220,38 +219,38 @@ class cmd_domain_provision(Command):
     takes_args = []
 
     def run(self, sambaopts=None, credopts=None, versionopts=None,
-            interactive = None,
-            domain = None,
-            domain_guid = None,
-            domain_sid = None,
-            ntds_guid = None,
-            invocationid = None,
-            host_name = None,
-            host_ip = None,
-            host_ip6 = None,
-            adminpass = None,
-            krbtgtpass = None,
-            machinepass = None,
-            dns_backend = None,
-            dns_forwarder = None,
-            dnspass = None,
-            ldapadminpass = None,
-            root = None,
-            nobody = None,
-            wheel = None,
-            users = None,
-            quiet = None,
-            blank = None,
-            ldap_backend_type = None,
-            server_role = None,
-            function_level = None,
-            next_rid = None,
-            partitions_only = None,
-            targetdir = None,
-            ol_mmr_urls = None,
-            use_xattrs = None,
-            use_ntvfs = None,
-            use_rfc2307 = None):
+            interactive=None,
+            domain=None,
+            domain_guid=None,
+            domain_sid=None,
+            ntds_guid=None,
+            invocationid=None,
+            host_name=None,
+            host_ip=None,
+            host_ip6=None,
+            adminpass=None,
+            krbtgtpass=None,
+            machinepass=None,
+            dns_backend=None,
+            dns_forwarder=None,
+            dnspass=None,
+            ldapadminpass=None,
+            root=None,
+            nobody=None,
+            wheel=None,
+            users=None,
+            quiet=None,
+            blank=None,
+            ldap_backend_type=None,
+            server_role=None,
+            function_level=None,
+            next_rid=None,
+            partitions_only=None,
+            targetdir=None,
+            ol_mmr_urls=None,
+            use_xattrs=None,
+            use_ntvfs=None,
+            use_rfc2307=None):
 
         self.logger = self.get_logger("provision")
         if quiet:
@@ -313,11 +312,11 @@ class cmd_domain_provision(Command):
             while True:
                 adminpassplain = getpass("Administrator password: ")
                 if not adminpassplain:
-                    print >>sys.stderr, "Invalid administrator password."
+                    self.errf.write("Invalid administrator password.\n")
                 else:
                     adminpassverify = getpass("Retype password: ")
                     if not adminpassplain == adminpassverify:
-                        print >>sys.stderr, "Sorry, passwords do not match."
+                        self.errf.write("Sorry, passwords do not match.\n")
                     else:
                         adminpass = adminpassplain
                         break
@@ -422,7 +421,6 @@ class cmd_domain_provision(Command):
                 handle.close()
 
         self.logger.warning("No nameserver found in %s" % RESOLV_CONF)
-        return None
 
 
 class cmd_domain_dcpromo(Command):
@@ -477,16 +475,15 @@ class cmd_domain_dcpromo(Command):
             join_DC(server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
-                    machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend, 
+                    machinepass=machinepass, use_ntvfs=use_ntvfs,
+                    dns_backend=dns_backend,
                     promote_existing=True)
-            return
         elif role == "RODC":
             join_RODC(server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend,
                       promote_existing=True)
-            return
         else:
             raise CommandError("Invalid role '%s' (possible values: DC, RODC)" % role)
 
@@ -541,36 +538,33 @@ class cmd_domain_join(Command):
             role = role.upper()
 
         if role is None or role == "MEMBER":
-            (join_password, sid, domain_name) = net.join_member(domain,
-                                                                netbios_name,
-                                                                LIBNET_JOIN_AUTOMATIC,
-                                                                machinepass=machinepass)
+            (join_password, sid, domain_name) = net.join_member(
+                domain, netbios_name, LIBNET_JOIN_AUTOMATIC,
+                machinepass=machinepass)
 
-            self.outf.write("Joined domain %s (%s)\n" % (domain_name, sid))
-            return
+            self.errf.write("Joined domain %s (%s)\n" % (domain_name, sid))
         elif role == "DC":
             join_DC(server=server, creds=creds, lp=lp, domain=domain,
                     site=site, netbios_name=netbios_name, targetdir=targetdir,
                     domain_critical_only=domain_critical_only,
                     machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend)
-            return
         elif role == "RODC":
             join_RODC(server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
-                      machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend)
-            return
+                      machinepass=machinepass, use_ntvfs=use_ntvfs,
+                      dns_backend=dns_backend)
         elif role == "SUBDOMAIN":
             netbios_domain = lp.get("workgroup")
             if parent_domain is None:
                 parent_domain = ".".join(domain.split(".")[1:])
-            join_subdomain(server=server, creds=creds, lp=lp, dnsdomain=domain, parent_domain=parent_domain,
-                           site=site, netbios_name=netbios_name, netbios_domain=netbios_domain, targetdir=targetdir,
-                           machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend)
-            return
+            join_subdomain(server=server, creds=creds, lp=lp, dnsdomain=domain,
+                    parent_domain=parent_domain, site=site,
+                    netbios_name=netbios_name, netbios_domain=netbios_domain,
+                    targetdir=targetdir, machinepass=machinepass,
+                    use_ntvfs=use_ntvfs, dns_backend=dns_backend)
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
-
 
 
 class cmd_domain_demote(Command):
@@ -612,9 +606,9 @@ class cmd_domain_demote(Command):
                     break
 
         ntds_guid = samdb.get_ntds_GUID()
-        msg = samdb.search(base=str(samdb.get_config_basedn()), scope=ldb.SCOPE_SUBTREE,
-                                expression="(objectGUID=%s)" % ntds_guid,
-                                attrs=['options'])
+        msg = samdb.search(base=str(samdb.get_config_basedn()),
+            scope=ldb.SCOPE_SUBTREE, expression="(objectGUID=%s)" % ntds_guid,
+            attrs=['options'])
         if len(msg) == 0 or "options" not in msg[0]:
             raise CommandError("Failed to find options on %s" % ntds_guid)
 
@@ -627,10 +621,11 @@ class cmd_domain_demote(Command):
         if len(res) != 0:
             raise CommandError("Current DC is still the owner of %d role(s), use the role command to transfer roles to another DC" % len(res))
 
-        print "Using %s as partner server for the demotion" % server
+        self.errf.write("Using %s as partner server for the demotion\n" %
+                        server)
         (drsuapiBind, drsuapi_handle, supportedExtensions) = drsuapi_connect(server, lp, creds)
 
-        print "Desactivating inbound replication"
+        self.errf.write("Desactivating inbound replication\n")
 
         nmsg = ldb.Message()
         nmsg.dn = msg[0].dn
@@ -641,14 +636,17 @@ class cmd_domain_demote(Command):
 
         if not (dsa_options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) and not samdb.am_rodc():
 
-            print "Asking partner server %s to synchronize from us" % server
+            self.errf.write("Asking partner server %s to synchronize from us\n"
+                            % server)
             for part in (samdb.get_schema_basedn(),
                             samdb.get_config_basedn(),
                             samdb.get_root_basedn()):
                 try:
                     sendDsReplicaSync(drsuapiBind, drsuapi_handle, ntds_guid, str(part), drsuapi.DRSUAPI_DRS_WRIT_REP)
                 except drsException, e:
-                    print "Error while demoting, re-enabling inbound replication"
+                    self.errf.write(
+                        "Error while demoting, "
+                        "re-enabling inbound replication\n")
                     dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
                     nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
                     samdb.modify(nmsg)
@@ -658,7 +656,7 @@ class cmd_domain_demote(Command):
                                 session_info=system_session(),
                                 credentials=creds, lp=lp)
 
-            print "Changing userControl and container"
+            self.errf.write("Changing userControl and container\n")
             res = remote_samdb.search(base=str(remote_samdb.get_root_basedn()),
                                 expression="(&(objectClass=user)(sAMAccountName=%s$))" %
                                             netbios_name.upper(),
@@ -667,14 +665,16 @@ class cmd_domain_demote(Command):
             uac = int(str(res[0]["userAccountControl"]))
 
         except Exception, e:
-                print "Error while demoting, re-enabling inbound replication"
-                dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
-                nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
-                samdb.modify(nmsg)
-                raise CommandError("Error while changing account control", e)
+            self.errf.write(
+                "Error while demoting, re-enabling inbound replication\n")
+            dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
+            nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
+            samdb.modify(nmsg)
+            raise CommandError("Error while changing account control", e)
 
         if (len(res) != 1):
-            print "Error while demoting, re-enabling inbound replication"
+            self.errf.write(
+                "Error while demoting, re-enabling inbound replication")
             dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
             nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
             samdb.modify(nmsg)
@@ -695,7 +695,8 @@ class cmd_domain_demote(Command):
         try:
             remote_samdb.modify(msg)
         except Exception, e:
-            print "Error while demoting, re-enabling inbound replication"
+            self.errf.write(
+                "Error while demoting, re-enabling inbound replication")
             dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
             nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
             samdb.modify(nmsg)
@@ -721,7 +722,8 @@ class cmd_domain_demote(Command):
                                             scope=ldb.SCOPE_ONELEVEL)
 
             if i == 100:
-                print "Error while demoting, re-enabling inbound replication"
+                self.errf.write(
+                    "Error while demoting, re-enabling inbound replication\n")
                 dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
                 nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
                 samdb.modify(nmsg)
@@ -745,7 +747,8 @@ class cmd_domain_demote(Command):
             newdn = ldb.Dn(remote_samdb, "%s,%s" % (newrdn, str(computer_dn)))
             remote_samdb.rename(dc_dn, newdn)
         except Exception, e:
-            print "Error while demoting, re-enabling inbound replication"
+            self.errf.write(
+                "Error while demoting, re-enabling inbound replication\n")
             dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
             nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
             samdb.modify(nmsg)
@@ -767,7 +770,8 @@ class cmd_domain_demote(Command):
         try:
             sendRemoveDsServer(drsuapiBind, drsuapi_handle, server_dsa_dn, domain)
         except drsException, e:
-            print "Error while demoting, re-enabling inbound replication"
+            self.errf.write(
+                "Error while demoting, re-enabling inbound replication\n")
             dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
             nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
             samdb.modify(nmsg)
@@ -802,7 +806,7 @@ class cmd_domain_demote(Command):
             except ldb.LdbError, l:
                 pass
 
-        self.outf.write("Demote successfull\n")
+        self.errf.write("Demote successfull\n")
 
 
 class cmd_domain_level(Command):

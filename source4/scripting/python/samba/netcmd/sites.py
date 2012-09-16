@@ -16,8 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-
 import os
 from samba import sites
 from samba.samdb import SamDB
@@ -92,7 +90,8 @@ class cmd_sites_delete(Command):
             samdb.transaction_commit()
         except sites.SiteException, e:
             samdb.transaction_cancel()
-            raise CommandError("Error while removing site %s, error: %s" % (sitename, str(e)))
+            raise CommandError(
+                "Error while removing site %s, error: %s" % (sitename, str(e)))
 
         self.outf.write("Site %s removed!\n" % sitename)
 

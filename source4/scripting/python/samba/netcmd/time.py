@@ -49,7 +49,8 @@ Example2 return the date and time of the local server.
 
     takes_args = ["server_name?"]
 
-    def run(self, server_name=None, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, server_name=None, credopts=None, sambaopts=None,
+            versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         net = Net(creds, lp, server=credopts.ipaddress)
