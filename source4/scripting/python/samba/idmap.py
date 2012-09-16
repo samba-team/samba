@@ -96,5 +96,3 @@ cn: %s
 
 """ % (sid, unixid, sid, type_string, sid)
         self.add(self.parse_ldif(mod).next()[1])
-
-

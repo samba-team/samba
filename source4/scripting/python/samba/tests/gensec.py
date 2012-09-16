@@ -67,7 +67,7 @@ class GensecTests(samba.tests.TestCase):
         client_finished = False
         server_finished = False
         server_to_client = ""
-        
+
         """Run the actual call loop"""
         while client_finished == False and server_finished == False:
             if not client_finished:

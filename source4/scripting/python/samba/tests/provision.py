@@ -135,9 +135,15 @@ class SanitizeServerRoleTests(TestCase):
         self.assertRaises(ValueError, sanitize_server_role, "foo")
 
     def test_valid(self):
-        self.assertEquals("standalone server", sanitize_server_role("ROLE_STANDALONE"))
-        self.assertEquals("standalone server", sanitize_server_role("standalone"))
-        self.assertEquals("active directory domain controller", sanitize_server_role("domain controller"))
+        self.assertEquals(
+            "standalone server",
+            sanitize_server_role("ROLE_STANDALONE"))
+        self.assertEquals(
+            "standalone server",
+            sanitize_server_role("standalone"))
+        self.assertEquals(
+            "active directory domain controller",
+            sanitize_server_role("domain controller"))
 
 
 class DummyLogger(object):

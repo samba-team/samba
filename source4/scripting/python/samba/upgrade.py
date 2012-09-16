@@ -32,7 +32,6 @@ from samba.samba3 import param as s3param
 from samba.dcerpc import lsa, samr, security
 from samba.dcerpc.security import dom_sid
 from samba.credentials import Credentials
-from samba.auth import system_session
 from samba import dsdb
 from samba.ndr import ndr_pack
 from samba import unix2nttime
@@ -93,7 +92,9 @@ def import_sam_policy(samdb, policy, logger):
     except ldb.LdbError, e:
         logger.warn("Could not set account policy, (%s)", str(e))
 
-def add_posix_attrs(logger, samdb, sid, name, nisdomain, xid_type, home=None, shell=None, pgid=None):
+
+def add_posix_attrs(logger, samdb, sid, name, nisdomain, xid_type, home=None,
+        shell=None, pgid=None):
     """Add posix attributes for the user/group
 
     :param samdb: Samba4 sam.ldb database
@@ -155,6 +156,7 @@ def add_ad_posix_idmap_entry(samdb, sid, xid, xid_type, logger):
         logger.warn(
             'Could not modify AD idmap entry for sid=%s, id=%s, type=%s (%s)',
             str(sid), str(xid), xid_type, str(e))
+
 
 def add_idmap_entry(idmapdb, sid, xid, xid_type, logger):
     """Create idmap entry
@@ -545,8 +547,9 @@ def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
             logger.warning("LDAP entry for user %s contains more than one %s", user, attr)
             return None
 
-def upgrade_from_samba3(samba3, logger, targetdir, session_info=None, useeadb=False, dns_backend=None,
-                        use_ntvfs=False):
+
+def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
+        useeadb=False, dns_backend=None, use_ntvfs=False):
     """Upgrade from samba3 database to samba4 AD database
 
     :param samba3: samba3 object
@@ -904,8 +907,10 @@ Please fix this account before attempting to upgrade again
         logger.info("Administrator password has been set to password of user '%s'", admin_user)
 
     if result.server_role == "active directory domain controller":
-        setsysvolacl(result.samdb, result.paths.netlogon, result.paths.sysvol, result.paths.root_uid, result.paths.wheel_gid,
-                     security.dom_sid(result.domainsid), result.names.dnsdomain, result.names.domaindn, result.lp, use_ntvfs)
+        setsysvolacl(result.samdb, result.paths.netlogon, result.paths.sysvol,
+                result.paths.root_uid, result.paths.wheel_gid,
+                security.dom_sid(result.domainsid), result.names.dnsdomain,
+                result.names.domaindn, result.lp, use_ntvfs)
 
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
     # FIXME: shares

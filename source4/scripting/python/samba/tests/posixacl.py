@@ -18,10 +18,10 @@
 
 """Tests for the Samba3 NT -> posix ACL layer"""
 
-from samba.ntacls import setntacl, getntacl, XattrBackendError
+from samba.ntacls import setntacl, getntacl
 from samba.dcerpc import xattr, security, smb_acl, idmap
 from samba.param import LoadParm
-from samba.tests import TestCase, TestSkipped
+from samba.tests import TestCase
 from samba import provision
 import random
 import os
@@ -34,7 +34,7 @@ from samba.samba3 import param as s3param
 #            print "a_perm: %o" % entry.a_perm
 #            print "uid: %d" % entry.uid
 #            print "gid: %d" % entry.gid
-            
+
 class PosixAclMappingTests(TestCase):
 
     def test_setntacl(self):

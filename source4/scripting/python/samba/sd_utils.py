@@ -26,15 +26,14 @@ from samba.dcerpc import security
 
 
 class SDUtils(object):
-    """Some utilities for manipulation of security descriptors
-    on objects"""
+    """Some utilities for manipulation of security descriptors on objects."""
 
     def __init__(self, samdb):
         self.ldb = samdb
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
 
     def modify_sd_on_dn(self, object_dn, sd, controls=None):
-        """ Modify security descriptor using either SDDL string
+        """Modify security descriptor using either SDDL string
             or security.descriptor object
         """
         m = Message()
@@ -61,7 +60,7 @@ class SDUtils(object):
         return ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
 
     def dacl_add_ace(self, object_dn, ace):
-        """ Adds an ACE to an objects security descriptor
+        """Add an ACE to an objects security descriptor
         """
         desc = self.read_sd_on_dn(object_dn)
         desc_sddl = desc.as_sddl(self.domain_sid)
@@ -75,7 +74,7 @@ class SDUtils(object):
         self.modify_sd_on_dn(object_dn, desc_sddl)
 
     def get_sd_as_sddl(self, object_dn, controls=None):
-        """ Return object nTSecutiryDescriptor in SDDL format
+        """Return object nTSecutiryDescriptor in SDDL format
         """
         desc = self.read_sd_on_dn(object_dn, controls=controls)
         return desc.as_sddl(self.domain_sid)

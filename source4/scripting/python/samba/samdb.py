@@ -431,7 +431,6 @@ member: %s
         else:
             self.transaction_commit()
 
-
     def setpassword(self, search_filter, password,
             force_change_at_next_login=False, username=None):
         """Sets the password for a user

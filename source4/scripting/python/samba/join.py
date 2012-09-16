@@ -44,7 +44,7 @@ class DCJoinException(Exception):
 
 
 class dc_join(object):
-    '''perform a DC join'''
+    """Perform a DC join."""
 
     def __init__(ctx, server=None, creds=None, lp=None, site=None,
                  netbios_name=None, targetdir=None, domain=None,
@@ -166,7 +166,7 @@ class dc_join(object):
             pass
 
     def cleanup_old_join(ctx):
-        '''remove any DNs from a previous join'''
+        """Remove any DNs from a previous join."""
         try:
             # find the krbtgt link
             print("checking sAMAccountName")
@@ -219,7 +219,7 @@ class dc_join(object):
             pass
 
     def promote_possible(ctx):
-        '''confirm that the account is just a bare NT4 BDC or a member server, so can be safely promoted'''
+        """confirm that the account is just a bare NT4 BDC or a member server, so can be safely promoted"""
         if ctx.subdomain:
             # This shouldn't happen
             raise Exception("Can not promote into a subdomain")
@@ -233,12 +233,12 @@ class dc_join(object):
             raise Exception("Account '%s' appears to be an active DC, use 'samba-tool domain join' if you must re-create this account" % ctx.samname)
         if (int(res[0]["userAccountControl"][0]) & (samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT|samba.dsdb.UF_SERVER_TRUST_ACCOUNT) == 0):
             raise Exception("Account %s is not a domain member or a bare NT4 BDC, use 'samba-tool domain join' instead'" % ctx.samname)
-        
+
         ctx.promote_from_dn = res[0].dn
 
 
     def find_dc(ctx, domain):
-        '''find a writeable DC for the given domain'''
+        """find a writeable DC for the given domain"""
         try:
             ctx.cldap_ret = ctx.net.finddc(domain=domain, flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
         except Exception:
@@ -484,7 +484,7 @@ class dc_join(object):
                 rec["msDS-NeverRevealGroup"] = ctx.never_reveal_sid
             elif ctx.promote_existing:
                 rec["msDS-NeverRevealGroup"] = []
-                
+
             if ctx.reveal_sid:
                 rec["msDS-RevealOnDemandGroup"] = ctx.reveal_sid
             elif ctx.promote_existing:
@@ -579,7 +579,7 @@ class dc_join(object):
             ctx.samdb.modify(m)
 
     def join_add_objects2(ctx):
-        '''add the various objects needed for the join, for subdomains post replication'''
+        """add the various objects needed for the join, for subdomains post replication"""
 
         print "Adding %s" % ctx.partition_dn
         # NOTE: windows sends a ntSecurityDescriptor here, we
@@ -638,7 +638,7 @@ class dc_join(object):
                            replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
 
     def join_provision(ctx):
-        '''provision the local SAM'''
+        """Provision the local SAM."""
 
         print "Calling bare provision"
 
@@ -662,7 +662,7 @@ class dc_join(object):
         ctx.names       = presult.names
 
     def join_provision_own_domain(ctx):
-        '''provision the local SAM'''
+        """Provision the local SAM."""
 
         # we now operate exclusively on the local database, which
         # we need to reopen in order to get the newly created schema
@@ -697,7 +697,7 @@ class dc_join(object):
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
     def join_replicate(ctx):
-        '''replicate the SAM'''
+        """Replicate the SAM."""
 
         print "Starting replication"
         ctx.local_samdb.transaction_start()
@@ -790,7 +790,7 @@ class dc_join(object):
             ctx.drsuapi.DsReplicaUpdateRefs(ctx.drsuapi_handle, 1, r)
 
     def join_finalise(ctx):
-        '''finalise the join, mark us synchronised and setup secrets db'''
+        """Finalise the join, mark us synchronised and setup secrets db."""
 
         logger = logging.getLogger("provision")
         logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -858,7 +858,7 @@ class dc_join(object):
                             targetdir=ctx.targetdir)
 
     def join_setup_trusts(ctx):
-        '''provision the local SAM'''
+        """provision the local SAM."""
 
         def arcfour_encrypt(key, data):
             from Crypto.Cipher import ARC4
@@ -988,7 +988,7 @@ class dc_join(object):
             ctx.promote_possible()
         else:
             ctx.cleanup_old_join()
-            
+
         try:
             ctx.join_add_objects()
             ctx.join_provision()
@@ -1008,7 +1008,7 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None, domain_critical_only=False,
               machinepass=None, use_ntvfs=False, dns_backend=None,
               promote_existing=False):
-    """join as a RODC"""
+    """Join as a RODC."""
 
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
                   machinepass, use_ntvfs, dns_backend, promote_existing)
@@ -1022,11 +1022,12 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.krbtgt_dn = "CN=krbtgt_%s,CN=Users,%s" % (ctx.myname, ctx.base_dn)
 
     # setup some defaults for accounts that should be replicated to this RODC
-    ctx.never_reveal_sid = [ "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
-                             "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
-                             "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
-                             "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
-                             "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
+    ctx.never_reveal_sid = [
+        "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_DENY),
+        "<SID=%s>" % security.SID_BUILTIN_ADMINISTRATORS,
+        "<SID=%s>" % security.SID_BUILTIN_SERVER_OPERATORS,
+        "<SID=%s>" % security.SID_BUILTIN_BACKUP_OPERATORS,
+        "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS]
     ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
 
     mysid = ctx.get_mysid()
@@ -1055,7 +1056,6 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
     ctx.do_join()
 
-
     print "Joined domain %s (SID %s) as an RODC" % (ctx.domain_name, ctx.domsid)
 
 
@@ -1063,7 +1063,7 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
             targetdir=None, domain=None, domain_critical_only=False,
             machinepass=None, use_ntvfs=False, dns_backend=None,
             promote_existing=False):
-    """join as a DC"""
+    """Join as a DC."""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, domain,
                   machinepass, use_ntvfs, dns_backend, promote_existing)
 
@@ -1090,10 +1090,11 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.do_join()
     print "Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid)
 
-def join_subdomain(server=None, creds=None, lp=None, site=None, netbios_name=None,
-                   targetdir=None, parent_domain=None, dnsdomain=None, netbios_domain=None,
-                   machinepass=None, use_ntvfs=False, dns_backend=None):
-    """join as a DC"""
+def join_subdomain(server=None, creds=None, lp=None, site=None,
+        netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
+        netbios_domain=None, machinepass=None, use_ntvfs=False,
+        dns_backend=None):
+    """Join as a DC."""
     ctx = dc_join(server, creds, lp, site, netbios_name, targetdir, parent_domain,
                   machinepass, use_ntvfs, dns_backend)
     ctx.subdomain = True
