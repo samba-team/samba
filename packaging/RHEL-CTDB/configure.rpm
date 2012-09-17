@@ -24,6 +24,12 @@ else
 	CC="gcc"
 fi
 
+shared_modules="idmap_rid,idmap_ad,idmap_tdb2"
+
+if test "x$BUILD_GPFS" != "xno"; then
+	shared_modules="${shared_modules},vfs_gpfs,vfs_tsmsm"
+fi
+
 ./autogen.sh
 
 CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
@@ -51,7 +57,7 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm \
+	--with-shared-modules=${shared_modules} \
 	--with-syslog \
 	--with-utmp \
 	--with-cluster-support \

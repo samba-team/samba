@@ -45,12 +45,19 @@ else
 	echo "GITHASH: ${GITHASH}"
 fi
 
+if test "x$BUILD_GPFS" = "xno"; then
+	echo "GPFS: not build by default"
+	PGPFS_DEFAULT="%{?_with_gpfs: 1} %{?!_with_gpfs: 0}"
+else
+	echo "GPFS: build by default"
+	PGPFS_DEFAULT="%{?_with_no_gpfs: 0} %{?!_with_no_gpfs: 1}"
+fi
 
 sed \
-	-e s/PVERSION/${VERSION}/g \
-	-e s/GITHASH/${GITHASH}/g \
-	-e s/LIBTDBVERSION/${LIBTDBVERSION}/g \
-	-e s/LIBTALLOCVERSION/${LIBTALLOCVERSION}/g \
+	-e "s/PVERSION/${VERSION}/g" \
+	-e "s/GITHASH/${GITHASH}/g" \
+	-e "s/PGPFS_NO_DEFAULT/${PGPFS_NO_DEFAULT}/g" \
+	-e "s/PGPFS_DEFAULT/${PGPFS_DEFAULT}/g" \
 	< ${SPECFILE}.tmpl \
 	> ${SPECFILE}
 

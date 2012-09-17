@@ -46,6 +46,21 @@ BuildRequires: ctdb-devel >= 1.2.25
 
 %define numcpu  %(grep "^processor" /proc/cpuinfo |wc -l | sed -e 's/^0$/1/')
 
+%define with_vfs_gpfs PGPFS_DEFAULT
+%define with_vfs_tsmsm PGPFS_DEFAULT
+
+%if %{with_vfs_tsmsm}
+%define		vfs_tsmsm	,vfs_tsmsm
+%endif
+
+%if %{with_vfs_gpfs}
+%define		vfs_gpfs	,vfs_gpfs
+%endif
+
+%define		vfs_modules %{?vfs_gpfs}%{?vfs_tsmsm}
+
+%define		shared_modules idmap_rid,idmap_ad,idmap_tdb2%{vfs_modules}
+
 %description
 Samba is the protocol by which a lot of PC-related machines share
 files, printers, and other information (such as lists of available
@@ -137,7 +152,6 @@ export CC
 ## always run autogen.sh
 ./autogen.sh
 
-
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
@@ -161,7 +175,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm \
+	--with-shared-modules=%{shared_modules} \
 	--with-syslog \
 	--with-utmp \
 	--with-cluster-support \
@@ -192,7 +206,12 @@ make -j %{numcpu} %{?_smp_mflags} \
 
 # check that desired suppor has been compiled into smbd:
 export LD_LIBRARY_PATH=./bin
-for test in HAVE_POSIX_ACLS HAVE_LDAP HAVE_KRB5 HAVE_GPFS CLUSTER_SUPPORT
+
+HAVE_VARS="HAVE_POSIX_ACLS HAVE_LDAP HAVE_KRB5 CLUSTER_SUPPORT"
+%if %{with_vfs_gpfs}
+	HAVE_VARS="${HAVE_VARS} HAVE_GPFS"
+%endif
+for test in ${HAVE_VARS}
 do
 	if ! $(./bin/smbd -b | grep -q $test ) ; then
 		echo "ERROR: '$test' is not in smbd. Build stopped."
@@ -391,7 +410,9 @@ exit 0
 %{_libarchdir}/samba/vfs/fake_perms.so
 %{_libarchdir}/samba/vfs/fileid.so
 %{_libarchdir}/samba/vfs/full_audit.so
+%if %{with_vfs_gpfs}
 %{_libarchdir}/samba/vfs/gpfs.so
+%endif
 %{_libarchdir}/samba/vfs/linux_xfs_sgid.so
 %{_libarchdir}/samba/vfs/netatalk.so
 %{_libarchdir}/samba/vfs/preopen.so
@@ -406,7 +427,9 @@ exit 0
 %{_libarchdir}/samba/vfs/streams_xattr.so
 %{_libarchdir}/samba/vfs/syncops.so
 %{_libarchdir}/samba/vfs/time_audit.so
+%if %{with_vfs_tsmsm}
 %{_libarchdir}/samba/vfs/tsmsm.so
+%endif
 %{_libarchdir}/samba/vfs/xattr_tdb.so
 %{_libarchdir}/samba/vfs/aio_posix.so
 %{_libarchdir}/samba/vfs/aio_pthread.so
