@@ -314,10 +314,10 @@ Samba-3 introduces a number of new password backend capabilities.
 
 		<note>
 		<para>
-<indexterm><primary>Windows XP Home</primary></indexterm>
+<indexterm><primary>Windows Home edition</primary></indexterm>
 <indexterm><primary>domain member</primary></indexterm>
 <indexterm><primary>domain logons</primary></indexterm>
- 		MS Windows XP Home does not have facilities to become a domain member, and it cannot participate in domain logons.
+ 		MS Windows Home editions do not have facilities to become a domain member, and cannot participate in domain logons.
 		</para>
 		</note>
 
@@ -328,9 +328,8 @@ Samba-3 introduces a number of new password backend capabilities.
 		<itemizedlist>
 			<listitem><para>Windows NT 3.5x.</para></listitem>
 			<listitem><para>Windows NT 4.0.</para></listitem>
-			<listitem><para>Windows 2000 Professional.</para></listitem>
-			<listitem><para>Windows 200x Server/Advanced Server.</para></listitem>
-			<listitem><para>Windows XP Professional.</para></listitem>
+			<listitem><para>Windows editions labeled Professional.</para></listitem>
+			<listitem><para>Windows editions laveled Server/Advanced Server.</para></listitem>
 		</itemizedlist>
 
 		<para>
