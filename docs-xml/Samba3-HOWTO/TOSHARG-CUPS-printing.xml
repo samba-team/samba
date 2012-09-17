@@ -98,9 +98,7 @@
 <indexterm><primary>/etc/printcap</primary></indexterm>
 <indexterm><primary>Printcap</primary></indexterm>
 <indexterm><primary>PrintcapFormat</primary></indexterm>
-Printing with CUPS in the most basic &smb.conf; setup in Samba-3.0 (as was true for 2.2.x) requires just two
-parameters: <smbconfoption name="printing">cups</smbconfoption> and <smbconfoption
-name="printcap">cups</smbconfoption>. CUPS does not need a printcap file.  However, the
+Printing with CUPS in the most basic &smb.conf; setup in Samba requires just this parameter: <smbconfoption name="printing">cups</smbconfoption>. CUPS does not need a printcap file.  However, the
 <filename>cupsd.conf</filename> configuration file knows of two related directives that control how such a
 file will be automatically created and maintained by CUPS for the convenience of third-party applications
 (example: <parameter>Printcap /etc/printcap</parameter> and <parameter>PrintcapFormat BSD</parameter>).
@@ -116,51 +114,12 @@ url="http://localhost:631/documentation.html">CUPS</ulink> web site.
 
 	<para>
 <indexterm><primary>libcups.so</primary></indexterm>
-	Samba has a special relationship to CUPS. Samba can be compiled with CUPS library support.
+	Samba has a special relationship to CUPS, and to use CUPS Samba must be compiled with CUPS library support.
 	Most recent installations have this support enabled. By default, CUPS linking is compiled
-	into smbd and other Samba binaries. Of course, you can use CUPS even
-	if Samba is not linked against <filename>libcups.so</filename> &smbmdash; but
-	there are some differences in required or supported configuration.
+	into smbd and other Samba binaries.  The parameter
+	<smbconfoption name="printing">cups</smbconfoption> will only
+	be accepted if this is the case.
 	</para>
-
-	<para>
-<indexterm><primary>libcups</primary></indexterm>
-<indexterm><primary>ldd</primary></indexterm>
-	When Samba is compiled and linked with <filename>libcups</filename>, <smbconfoption name="printcap">cups</smbconfoption>
-	uses the CUPS API to list printers, submit jobs, query queues, and so on. Otherwise it maps to the System V
-	commands with an additional <command>-oraw</command> option for printing. On a Linux
-	system, you can use the <command>ldd</command> utility to find out if smbd has been linked with the
-	libcups library (<command>ldd</command> may not be present on other OS platforms, or its function may be embodied
-	by a different command):
-<screen>
-&rootprompt;<userinput>ldd `which smbd`</userinput>
-libssl.so.0.9.6 =&gt; /usr/lib/libssl.so.0.9.6 (0x4002d000)
-libcrypto.so.0.9.6 =&gt; /usr/lib/libcrypto.so.0.9.6 (0x4005a000)
-libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
-[....]
-</screen>
-	</para>
-
-	<para>
-<indexterm><primary>libcups.so.2</primary></indexterm>
-	The line <computeroutput>libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)</computeroutput> shows
-	there is CUPS support compiled into this version of Samba. If this is the case, and printing = cups
-	is set, then <emphasis>any otherwise manually set print command in &smb.conf; is ignored</emphasis>.
-	This is an important point to remember!
-	</para>
-
-	<tip><para> Should it be necessary, for any reason, to set your own print commands, you can do this by setting
-	<smbconfoption name="printing">sysv</smbconfoption>. However, you will lose all the benefits
-	of tight CUPS-Samba integration. When you do this, you must manually configure the printing system commands
-	(most important: 
-	<smbconfoption name="print command"/>; other commands are
-	<smbconfoption name="lppause command"/>,
-	<smbconfoption name="lpresume command"/>,
-	<smbconfoption name="lpq command"/>,
-	<smbconfoption name="lprm command"/>,
-	<smbconfoption name="queuepause command"/> and
-	<smbconfoption name="queue resume command"/>).
-	</para></tip>
 
 	</sect2>
 
@@ -179,7 +138,6 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfsection name="[global]"/>
 	<smbconfoption name="load printers">yes</smbconfoption>
 	<smbconfoption name="printing">cups</smbconfoption>
-	<smbconfoption name="printcap name">cups</smbconfoption>
 
 	<smbconfsection name="[printers]"/>
 	<smbconfoption name="comment">All Printers</smbconfoption>
@@ -222,7 +180,6 @@ libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
 	<smbconfblock>
 	<smbconfsection name="[global]"/>
 	<smbconfoption name="printing">cups</smbconfoption>
-	<smbconfoption name="printcap name">cups</smbconfoption>
 	<smbconfoption name="load printers">yes</smbconfoption>
 
 	<smbconfsection name="[printers]"/>
@@ -2198,18 +2155,14 @@ file <parameter>[global]</parameter> section:
 
 <smbconfblock>
 <smbconfoption name="printing">cups</smbconfoption>
-<smbconfoption name="printcap">cups</smbconfoption>
 </smbconfblock>
 
 <para>
 When these parameters are specified, all manually set print directives (like <smbconfoption name="print
 command"/> or <smbconfoption name="lppause command"/>) in &smb.conf; (as well as in Samba itself) will be
-ignored. Instead, Samba will directly interface with CUPS through its application program interface (API), as
-long as Samba has been compiled with CUPS library (libcups) support. If Samba has not been compiled with CUPS
-support, and if no other print commands are set up, then printing will use the <emphasis>System V</emphasis>
-AT&amp;T command set, with the -oraw option automatically passing through (if you want your own defined print
-commands to work with a Samba server that has CUPS support compiled in, simply use <smbconfoption
-name="classicalprinting">sysv</smbconfoption>). This is illustrated in <link linkend="f13small">the Printing via
+ignored. Instead, Samba will directly interface with CUPS through its
+application program interface (API). 
+This is illustrated in <link linkend="f13small">the Printing via
 CUPS/Samba Server diagram</link>.
 </para>
 
@@ -4732,8 +4685,6 @@ For everything to work as it should, you need to have three things:
 	<listitem><para>A Samba-&smb.conf; setting of
 			<smbconfoption name="printing">cups</smbconfoption>.</para></listitem>
 
-	<listitem><para>Another Samba &smb.conf; setting of
-			<smbconfoption name="printcap">cups</smbconfoption>.</para></listitem>
 </itemizedlist>
 
 <note><para>
@@ -4747,16 +4698,6 @@ influence whatsoever on your printing.
 </para></note>
 </sect2>
 
-<sect2>
-<title>Manual Configuration</title>
-
-<para>
-If you want to do things manually, replace the <smbconfoption name="printing">cups</smbconfoption>
-by <smbconfoption name="printing">bsd</smbconfoption>. Then your manually set commands may work
-(I haven't tested this), and a <smbconfoption name="print command">lp -d %P %s; rm %s</smbconfoption>
-may do what you need.
-</para>
-</sect2>
 </sect1>
 
 <sect1>
