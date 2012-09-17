@@ -131,7 +131,6 @@ static bool defaults_saved = false;
 	char *tls_cafile;						\
 	char *tls_crlfile;						\
 	char *tls_dhpfile;						\
-	char *panic_action;						\
 	int bPreferredMaster;
 
 #include "param/param_global.h"

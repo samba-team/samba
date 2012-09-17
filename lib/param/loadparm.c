@@ -2295,7 +2295,7 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 		return true;
 	}
 
-	panic_action = lp_ctx->globals->panic_action;
+	panic_action = lp_ctx->globals->szPanicAction;
 
 	reload_charcnv(lp_ctx);
 
