@@ -757,7 +757,10 @@ chmod 1770 /usr/local/samba/lib/usershares
 	<title>EXPLANATION OF EACH PARAMETER</title>
 	
 	<samba:parameterlist>
-		<xi:include href="../smbdotconf/parameters.all.xml" parse="xml"/>
+		<!-- The URI below is resolved to local generated version of parameters.all.xml //-->
+		<!-- WAF build places it in bin/default/docs-xml/smbdotconf/parameters.all.xml //-->
+		<!-- and we redirect there via use of XML_CATALOG_FILES, see docs-xml/build/catalog.xml.in //-->
+		<xi:include href="http://www.samba.org/samba/smbdotconf/parameters.all.xml" parse="xml"/>
 	</samba:parameterlist>
 
 </refsect1>
