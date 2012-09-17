@@ -20,16 +20,6 @@
 <title>Account Information Databases</title>
 
 <para>
-<indexterm><primary>account backends</primary></indexterm>
-<indexterm><primary>password backends</primary></indexterm>
-<indexterm><primary>scalability</primary></indexterm>
-<indexterm><primary>ADS</primary></indexterm>
-Early releases of Samba-3 implemented new capability to work concurrently with multiple account backends. This
-capability was removed beginning with release of Samba 3.0.23. Commencing with Samba 3.0.23 it is possible to
-work with only one specified passwd backend.
-</para>
-
-<para>
 <indexterm><primary>passdb backend</primary></indexterm>
 <indexterm><primary>smbpasswd</primary></indexterm>
 <indexterm><primary>tdbsam</primary></indexterm>
@@ -1653,25 +1643,6 @@ regarding this facility.
 
 <sect1>
 <title>Password Backends</title>
-
-<para>
-<indexterm><primary>account database</primary></indexterm>
-<indexterm><primary>SMB/CIFS server</primary></indexterm>
-Samba offers flexibility in backend account database design. The flexibility is immediately obvious as one
-begins to explore this capability. Recent changes to Samba (since 3.0.23) have removed the mulitple backend
-feature in order to simplify problems that broke some installations. This removal has made the internal
-operation of Samba-3 more consistent and predictable.
-</para>
-
-<para>
-<indexterm><primary>multiple backends</primary></indexterm>
-<indexterm><primary>tdbsam databases</primary></indexterm>
-Beginning with Samba 3.0.23 it is no longer possible to specify use of mulitple passdb backends. Earlier
-versions of Samba-3 made it possible to specify multiple password backends, and even multiple
-backends of the same type. The multiple passdb backend capability caused many problems with name to SID and
-SID to name ID resolution.  The Samba team wrestled with the challenges and decided that this feature needed
-to be removed.
-</para>
 
 	<sect2>
 	<title>Plaintext</title>
