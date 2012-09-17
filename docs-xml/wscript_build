@@ -113,7 +113,7 @@ if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
     bld.SAMBAMANPAGES(manpages)
 
     if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
-        bld.MANPAGES(pam_winbind_manpages)
+        bld.SAMBAMANPAGES(pam_winbind_manpages)
 
     if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
-        bld.MANPAGES(krb5_locator_manpages)
+        bld.SAMBAMANPAGES(krb5_locator_manpages)
