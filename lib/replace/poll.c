@@ -46,7 +46,7 @@ int rep_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 	int rc;
 	nfds_t i;
 
-	if (fds == NULL) {
+	if ((fds == NULL) && (nfds != 0)) {
 		errno = EFAULT;
 		return -1;
 	}
