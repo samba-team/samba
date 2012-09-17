@@ -27,6 +27,9 @@ TOPDIR=${DIRNAME}/../..
 
 SPECFILE="samba.spec"
 RPMVER=`rpm --version | awk '{print $3}'`
+test -z "$RPMVER" && {
+	RPMVER=`rpm --version | awk '{print $2}'`
+}
 RPM="rpmbuild"
 
 ##
