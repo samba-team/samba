@@ -213,7 +213,6 @@ fail:
 			close(t->shutdown_pipe[1]);
 			t->shutdown_pipe[1] = -1;
 		}
-		TALLOC_FREE(t);
 	}
 
 	TALLOC_FREE(self->thread_state);
