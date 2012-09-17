@@ -392,10 +392,6 @@ static bool svcctl_add_service(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (ipath == NULL || dname == NULL || description == NULL) {
-		goto done;
-	}
-
 	/* Default to an external service if we haven't found a match */
 	if (builtin_svcs[i].servicename == NULL) {
 		struct rcinit_file_information *init_info = NULL;
