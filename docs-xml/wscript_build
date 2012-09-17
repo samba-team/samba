@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from samba_utils import save_file
 manpages='''
          manpages/eventlogadm.8
          manpages/findsmb.1
@@ -23,7 +23,6 @@ manpages='''
          manpages/rpcclient.1
          manpages/samba.7
          manpages/sharesec.1
-         manpages/smb.conf.5
          manpages/smbcacls.1
          manpages/smbclient.1
          manpages/smbcontrol.1
@@ -87,8 +86,30 @@ pam_winbind_manpages = '''
 
 krb5_locator_manpages = 'manpages/winbind_krb5_locator.7'
 
+def smbdotconf_generate_parameter_list(task):
+    parameter_all = task.outputs[0].bldpath(task.env)
+    articles = task.inputs
+
+    t = '<section xmlns:xi="http://www.w3.org/2003/XInclude">\n'
+    for article in articles:
+        t += "<xi:include href='file://" + article.abspath(task.env) + "' parse='xml'/>\n"
+    t += "</section>\n"
+    save_file(parameter_all, t , create_dir=True)
+    return 0
+
+def SMBDOTCONF_MANPAGE(bld, target):
+    ''' assemble and build smb.conf.5 manual page'''
+    articles = bld.path.ant_glob("smbdotconf/**/*.xml")
+    parameter_all = 'smbdotconf/parameters.all.xml'
+    bld.SAMBA_GENERATOR(parameter_all,
+                        source=articles,
+                        target=parameter_all,
+                        rule=smbdotconf_generate_parameter_list)
+    bld.SAMBAMANPAGES(target)
+
 if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
 
+    SMBDOTCONF_MANPAGE(bld, 'manpages/smb.conf.5')
     bld.SAMBAMANPAGES(manpages)
 
     if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):

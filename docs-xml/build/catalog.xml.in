@@ -6,9 +6,12 @@
 
     <rewriteURI
 			uriStartString="http://www.samba.org/samba/DTD/"
-			rewritePrefix="file://@abs_top_builddir@/build/DTD/"/>
+			rewritePrefix="file://@abs_top_srcdir@/build/DTD/"/>
 
     <rewriteURI
 			uriStartString="http://www.gnu.org/licenses/"
-			rewritePrefix="file://@abs_top_builddir@/Samba3-ByExample/"/>
+			rewritePrefix="file://@abs_top_srcdir@/Samba3-ByExample/"/>
+    <rewriteURI
+			uriStartString="http://www.samba.org/samba/smbdotconf/"
+			rewritePrefix="file://@abs_top_builddir@/smbdotconf/"/>
 </catalog>
