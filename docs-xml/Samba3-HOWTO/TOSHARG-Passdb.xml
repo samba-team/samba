@@ -385,7 +385,7 @@ Samba-3 introduces a number of new password backend capabilities.
 <indexterm><primary>password prompt</primary></indexterm>
 <indexterm><primary>SMB encryption</primary></indexterm>
 				Windows NT does not like talking to a server that does not support encrypted passwords. It will refuse to
-				browse the server if the server is also in user-level security mode. It will insist on prompting the user for
+				browse the server. It will insist on prompting the user for
 				the password on each connection, which is very annoying. The only thing you can do to stop this is to use SMB
 				encryption.
 				</para></listitem>
