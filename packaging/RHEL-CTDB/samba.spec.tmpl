@@ -77,35 +77,12 @@ shares and printing to SMB printers.
 Summary: Files used by both Samba servers and clients.
 Group: Applications/System
 Provides: samba-common = %{version}-%{release}
-Requires: libtalloc >= 2.0.1
-Requires: libtdb >= 1.2.6
 
 %description common
 Samba-common provides files necessary for both the server and client
 packages of Samba.
 
 
-#######################################################################
-%package libtdb
-Summary: the tdb library
-Group: Applications/System
-Provides: libtdb = LIBTDBVERSION-%{release}
-Obsoletes: libtdb
-#Conflicts: libtdb < LIBTALLOCVERSION
-
-%description libtdb
-Samba's tdb library.
-
-#######################################################################
-%package libtalloc
-Summary: the talloc library
-Group: Applications/System
-Provides: libtalloc = LIBTALLOCVERSION-%{release}
-Obsoletes: libtalloc
-#Conflicts: libtalloc < LIBTALLOCVERSION
-
-%description libtalloc
-Samba's talloc library
 
 #######################################################################
 %package swat
@@ -164,26 +141,24 @@ export CC
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
 	--localstatedir=/var \
-        --with-configdir=%{_sysconfdir}/samba \
-        --libdir=%{_libarchdir} \
+	--with-configdir=%{_sysconfdir}/samba \
+	--libdir=%{_libarchdir} \
 	--with-modulesdir=%{_libarchdir}/samba \
-	--with-pammodulesdir=%{_libarch}/security \
-        --with-lockdir=/var/lib/samba \
-        --with-logfilebase=/var/log/samba \
-        --mandir=%{_mandir} \
-        --with-piddir=/var/run \
+	--with-pammodulesdir=/%{_libarch}/security \
+	--with-lockdir=/var/lib/samba \
+	--with-logfilebase=/var/log/samba \
+	--mandir=%{_mandir} \
+	--with-piddir=/var/run \
 	--with-privatedir=%{_sysconfdir}/samba \
-        --with-sambabook=%{_datadir}/swat/using_samba \
-        --with-swatdir=%{_datadir}/swat \
 	--disable-cups \
-        --with-acl-support \
+	--with-acl-support \
 	--with-ads \
-        --with-automount \
-        --with-fhs \
+	--with-automount \
+	--enable-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
 	--with-libsmbsharemodes \
-        --without-smbwrapper \
+	--without-smbwrapper \
 	--with-pam \
 	--with-quotas \
 	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs,vfs_tsmsm \
@@ -193,7 +168,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--with-ctdb=/usr/include \
 	--without-ldb \
 	--without-dnsupdate \
-	--with-aio-support\
+	--with-aio-support \
 	--disable-merged-build \
 	--disable-smbtorture4 \
 	--disable-external-libtalloc \
@@ -237,7 +212,7 @@ find examples docs -type f | xargs -r chmod -x
 rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/swat/{help,include,using_samba/{figs,gifsa}}
+mkdir -p $RPM_BUILD_ROOT%{_datadir}/samba/swat/{help,include,using_samba/{figs,gifsa}}
 mkdir -p $RPM_BUILD_ROOT%{_includedir}
 mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT{%{_libarchdir},%{_includedir}}
@@ -285,6 +260,7 @@ cp -p source3/bin/winbind_krb5_locator.so ${RPM_BUILD_ROOT}/%{_libarchdir}/krb5/
 # remove installed but unpackaged files:
 /bin/rm -f $RPM_BUILD_ROOT/usr/lib*/libtalloc.so
 /bin/rm -f $RPM_BUILD_ROOT/usr/lib*/libtdb.so
+/bin/rm -f $RPM_BUILD_ROOT/usr/lib*/samba/perfcount/pc_test.so
 
 
 # Install the miscellany
@@ -432,7 +408,9 @@ exit 0
 %{_libarchdir}/samba/vfs/time_audit.so
 %{_libarchdir}/samba/vfs/tsmsm.so
 %{_libarchdir}/samba/vfs/xattr_tdb.so
-
+%{_libarchdir}/samba/vfs/aio_posix.so
+%{_libarchdir}/samba/vfs/aio_pthread.so
+%{_libarchdir}/samba/vfs/media_harmony.so
 
 %{_mandir}/man1/smbcontrol.1*
 %{_mandir}/man1/smbstatus.1*
@@ -443,9 +421,6 @@ exit 0
 %{_mandir}/man8/nmbd.8*
 %{_mandir}/man8/pdbedit.8*
 %{_mandir}/man8/smbd.8*
-%{_mandir}/man8/tdbbackup.8*
-%{_mandir}/man8/tdbdump.8*
-%{_mandir}/man8/tdbtool.8*
 %{_mandir}/man8/eventlogadm.8*
 %{_mandir}/man8/vfs_*.8*
 %{_mandir}/man8/smbta-util.8*
@@ -457,7 +432,6 @@ exit 0
 %defattr(-,root,root)
 %doc README
 %doc COPYING
-%doc Manifest 
 %doc WHATSNEW.txt
 %doc Roadmap
 %doc docs-xml/archives/THANKS
@@ -475,11 +449,11 @@ exit 0
 %files swat
 %defattr(-,root,root)
 %config(noreplace) %{_sysconfdir}/xinetd.d/swat
-%dir %{_datadir}/swat
-%{_datadir}/swat/*
+%dir %{_datadir}/samba/swat
+%{_datadir}/samba/swat/*
 %{_sbindir}/swat
 %{_mandir}/man8/swat.8*
-%attr(755,root,root) /usr/share/codepages/*.msg
+%attr(755,root,root) %{_datadir}/samba/codepages/*.msg
 
 ##########
 
@@ -513,13 +487,6 @@ exit 0
 
 ##########
 
-%files libtalloc
-%{_libarchdir}/libtalloc.so.LIBTALLOCVERSION
-%{_libarchdir}/libtalloc.so.2
-
-%files libtdb
-%{_libarchdir}/libtdb.so.LIBTDBVERSION
-%{_libarchdir}/libtdb.so.1
 
 %files common
 %defattr(-,root,root)
@@ -541,12 +508,14 @@ exit 0
 %{_libarchdir}/samba/idmap/rid.so
 %{_libarchdir}/samba/idmap/tdb2.so
 %{_libarchdir}/samba/idmap/autorid.so
+%{_libarchdir}/samba/idmap/hash.so
+%{_libarchdir}/samba/nss_info/hash.so
 %{_libarchdir}/samba/nss_info/rfc2307.so
 %{_libarchdir}/samba/nss_info/sfu.so
 %{_libarchdir}/samba/nss_info/sfu20.so
-/usr/share/codepages/lowcase.dat
-/usr/share/codepages/upcase.dat
-/usr/share/codepages/valid.dat
+%{_datadir}/samba/codepages/lowcase.dat
+%{_datadir}/samba/codepages/upcase.dat
+%{_datadir}/samba/codepages/valid.dat
 
 %{_includedir}/libsmbclient.h
 %{_libarchdir}/libsmbclient.*
@@ -556,8 +525,6 @@ exit 0
 
 %{_includedir}/netapi.h
 %{_includedir}/wbclient.h
-%{_includedir}/talloc.h
-%{_includedir}/tdb.h
 %{_libarchdir}/libnetapi.so
 %{_libarchdir}/libnetapi.so.0
 %{_libarchdir}/libwbclient.so
@@ -591,12 +558,6 @@ exit 0
 %{_mandir}/man8/net.8*
 %{_mandir}/man8/pam_winbind.8*
 %{_mandir}/man7/libsmbclient.7*
-%{_mandir}/man1/ldbadd.1*
-%{_mandir}/man1/ldbdel.1*
-%{_mandir}/man1/ldbedit.1*
-%{_mandir}/man1/ldbmodify.1*
-%{_mandir}/man1/ldbsearch.1*
-%{_mandir}/man1/ldbrename.1*
 %{_mandir}/man7/winbind_krb5_locator.7*
 %{_mandir}/man8/idmap_*.8*
 

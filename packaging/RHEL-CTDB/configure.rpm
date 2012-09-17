@@ -2,14 +2,14 @@
 
 case `uname -m` in
 	x86_64)
-		_libarch=lib64
+		_libarch="/lib64"
 		;;
 	*)
-		_libarch=lib
+		_libarch="/lib"
 		;;
 esac
 
-_libarchdir=/usr/${_libarch}
+_libarchdir=/usr${_libarch}
 
 _prefix=/usr
 _sysconfdir=/etc
@@ -32,7 +32,7 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--with-configdir=${_sysconfdir}/samba \
 	--libdir=${_libarchdir} \
 	--with-modulesdir=${_libarchdir}/samba \
-	--with-pammodulesdir=/${_libarch}/security \
+	--with-pammodulesdir=${_libarch}/security \
 	--with-lockdir=/var/lib/samba \
 	--with-logfilebase=/var/log/samba \
 	--mandir=${_mandir} \
@@ -44,7 +44,7 @@ CC="$CC" CFLAGS="-Wall -g -D_GNU_SOURCE -O3" ./configure -C \
 	--with-acl-support \
 	--with-ads \
 	--with-automount \
-	--with-fhs \
+	--enable-fhs \
 	--with-pam_smbpass \
 	--with-libsmbclient \
 	--with-libsmbsharemodes \
