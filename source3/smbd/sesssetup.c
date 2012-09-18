@@ -735,7 +735,7 @@ static void reply_spnego_auth(struct smb_request *req,
 		return;
 	}
 
-	if (auth.data[0] == ASN1_APPLICATION(0)) {
+	if (auth.length > 0 && auth.data[0] == ASN1_APPLICATION(0)) {
 		/* Might be a second negTokenTarg packet */
 		char *kerb_mech = NULL;
 
