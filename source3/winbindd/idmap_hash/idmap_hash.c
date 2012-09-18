@@ -259,7 +259,7 @@ done:
 
 static NTSTATUS nss_hash_init(struct nss_domain_entry *e )
 {
-	return be_init(NULL);
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************
