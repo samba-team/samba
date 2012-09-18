@@ -173,8 +173,7 @@ void put_long_date_timespec(enum timestamp_set_resolution res, char *p, struct t
 	NTTIME nt;
 	round_timespec(res, &ts);
 	unix_timespec_to_nt_time(&nt, ts);
-	SIVAL(p, 0, nt & 0xFFFFFFFF);
-	SIVAL(p, 4, nt >> 32);
+	SBVAL(p, 0, nt);
 }
 
 void put_long_date(char *p, time_t t)
