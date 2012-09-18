@@ -176,6 +176,8 @@ static struct {
 } sys_quota_backends[] = {
 #ifdef HAVE_XFS_QUOTAS
 	{"xfs", sys_get_xfs_quota, 	sys_set_xfs_quota},
+	{"gfs", sys_get_xfs_quota, 	sys_set_xfs_quota},
+	{"gfs2", sys_get_xfs_quota, 	sys_set_xfs_quota},
 #endif /* HAVE_XFS_QUOTAS */
 #ifdef HAVE_NFS_QUOTAS
 	{"nfs", sys_get_nfs_quota,	sys_set_nfs_quota},
