@@ -560,7 +560,7 @@ static NTSTATUS smbd_smb2_spnego_auth(struct smbd_smb2_session *session,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	if (auth.data[0] == ASN1_APPLICATION(0)) {
+	if (auth.length > 0 && auth.data[0] == ASN1_APPLICATION(0)) {
 		/* Might be a second negTokenTarg packet */
 		DATA_BLOB secblob_in = data_blob_null;
 		char *kerb_mech = NULL;
