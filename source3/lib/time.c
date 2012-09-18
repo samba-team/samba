@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    time handling functions
 
    Copyright (C) Andrew Tridgell 		1992-2004
-   Copyright (C) Stefan (metze) Metzmacher	2002   
+   Copyright (C) Stefan (metze) Metzmacher	2002
    Copyright (C) Jeremy Allison			2007
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -87,17 +87,17 @@ bool nt_time_is_zero(const NTTIME *nt)
 
 /****************************************************************************
  Convert ASN.1 GeneralizedTime string to unix-time.
- Returns 0 on failure; Currently ignores timezone. 
+ Returns 0 on failure; Currently ignores timezone.
 ****************************************************************************/
 
 time_t generalized_to_unix_time(const char *str)
-{ 
+{
 	struct tm tm;
 
 	ZERO_STRUCT(tm);
 
-	if (sscanf(str, "%4d%2d%2d%2d%2d%2d", 
-		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday, 
+	if (sscanf(str, "%4d%2d%2d%2d%2d%2d",
+		   &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		   &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 		return 0;
 	}
@@ -164,7 +164,7 @@ void round_timespec(enum timestamp_set_resolution res, struct timespec *ts)
 }
 
 /****************************************************************************
- Take a Unix time and convert to an NTTIME structure and place in buffer 
+ Take a Unix time and convert to an NTTIME structure and place in buffer
  pointed to by p, rounded to the correct resolution.
 ****************************************************************************/
 
@@ -372,12 +372,12 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 		*nt = 0x7fffffffffffffffLL;
 		return;
 	}
-		
+
 	if (t == (time_t)-1) {
 		/* that's what NT uses for infinite */
 		*nt = NTTIME_INFINITY;
 		return;
-	}		
+	}
 
 	d = (double)(t);
 	d *= 1.0e7;
@@ -423,7 +423,7 @@ const char *display_time(NTTIME nttime)
 	if (nttime==NTTIME_INFINITY)
 		return "Never";
 
-	high = 65536;	
+	high = 65536;
 	high = high/10000;
 	high = high*65536;
 	high = high/1000;
