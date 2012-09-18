@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
 
    RFC2478 Compliant SPNEGO implementation
-   
+
    Copyright (C) Jim McDonough <jmcd@us.ibm.com>      2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2005
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2004-2008
@@ -11,13 +11,13 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -121,7 +121,7 @@ static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_secur
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_unseal_packet(spnego_state->sub_sec_security, 
 				    data, length, 
 				    whole_pdu, pdu_length,
@@ -139,7 +139,7 @@ static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_securi
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_check_packet(spnego_state->sub_sec_security, 
 				   data, length, 
 				   whole_pdu, pdu_length,
@@ -158,7 +158,7 @@ static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_securit
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_seal_packet(spnego_state->sub_sec_security, 
 				  mem_ctx, 
 				  data, length, 
@@ -178,7 +178,7 @@ static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_securit
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_sign_packet(spnego_state->sub_sec_security, 
 				  mem_ctx, 
 				  data, length, 
@@ -198,7 +198,7 @@ static NTSTATUS gensec_spnego_wrap(struct gensec_security *gensec_security,
 		DEBUG(1, ("gensec_spnego_wrap: wrong state for wrap\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_wrap(spnego_state->sub_sec_security, 
 			   mem_ctx, in, out);
 }
@@ -215,7 +215,7 @@ static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security,
 		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_unwrap(spnego_state->sub_sec_security, 
 			     mem_ctx, in, out);
 }
@@ -233,7 +233,7 @@ static NTSTATUS gensec_spnego_wrap_packets(struct gensec_security *gensec_securi
 		DEBUG(1, ("gensec_spnego_wrap: wrong state for wrap\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_wrap_packets(spnego_state->sub_sec_security, 
 				   mem_ctx, in, out,
 				   len_processed);
@@ -249,7 +249,7 @@ static NTSTATUS gensec_spnego_packet_full_request(struct gensec_security *gensec
 		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_packet_full_request(spnego_state->sub_sec_security, 
 					  blob, size);
 }
@@ -267,7 +267,7 @@ static NTSTATUS gensec_spnego_unwrap_packets(struct gensec_security *gensec_secu
 		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_unwrap_packets(spnego_state->sub_sec_security, 
 				     mem_ctx, in, out,
 				     len_processed);
@@ -281,7 +281,7 @@ static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, si
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return 0;
 	}
-	
+
 	return gensec_sig_size(spnego_state->sub_sec_security, data_size);
 }
 
@@ -293,7 +293,7 @@ static size_t gensec_spnego_max_input_size(struct gensec_security *gensec_securi
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return 0;
 	}
-	
+
 	return gensec_max_input_size(spnego_state->sub_sec_security);
 }
 
@@ -305,7 +305,7 @@ static size_t gensec_spnego_max_wrapped_size(struct gensec_security *gensec_secu
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return 0;
 	}
-	
+
 	return gensec_max_wrapped_size(spnego_state->sub_sec_security);
 }
 
@@ -317,7 +317,7 @@ static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_securit
 	if (!spnego_state->sub_sec_security) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_session_key(spnego_state->sub_sec_security, 
 				  mem_ctx,
 				  session_key);
@@ -331,7 +331,7 @@ static NTSTATUS gensec_spnego_session_info(struct gensec_security *gensec_securi
 	if (!spnego_state->sub_sec_security) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	return gensec_session_info(spnego_state->sub_sec_security, 
 				   mem_ctx,
 				   session_info);
@@ -405,7 +405,6 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 	}
 	DEBUG(1, ("Failed to parse SPNEGO request\n"));
 	return NT_STATUS_INVALID_PARAMETER;
-	
 }
 
 /* 
@@ -478,7 +477,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
 					/* Pretend we never started it (lets the first run find some incompatible demand) */
-					
+
 					DEBUG(1, ("SPNEGO(%s) NEG_TOKEN_INIT failed to parse contents: %s\n", 
 						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 					talloc_free(spnego_state->sub_sec_security);
@@ -499,11 +498,11 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
-	
+
 	/* Having tried any optimistic token from the client (if we
 	 * were the server), if we didn't get anywhere, walk our list
 	 * in our preference order */
-	
+
 	if (!spnego_state->sub_sec_security) {
 		for (i=0; all_sec && all_sec[i].op; i++) {
 			nt_status = gensec_subcontext_start(spnego_state,
@@ -520,7 +519,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				spnego_state->sub_sec_security = NULL;
 				continue;
 			}
-			
+
 			spnego_state->neg_oid = all_sec[i].oid;
 
 			/* only get the helping start blob for the first OID */
@@ -541,7 +540,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_TIME_DIFFERENCE_AT_DC) ||
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
 					/* Pretend we never started it (lets the first run find some incompatible demand) */
-					
+
 					DEBUG(3, ("SPNEGO(%s) NEG_TOKEN_INIT failed: %s\n",
 						  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 					talloc_free(spnego_state->sub_sec_security);
@@ -561,12 +560,12 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		 * just push us along the merry-go-round
 		 * again, and hope for better luck next
 		 * time */
-		
+
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
 			*unwrapped_out = data_blob(NULL, 0);
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		}
-		
+
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) 
 		    && !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
 		    && !NT_STATUS_IS_OK(nt_status)) {
@@ -574,15 +573,14 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				  spnego_state->sub_sec_security->ops->name, nt_errstr(nt_status)));
 			talloc_free(spnego_state->sub_sec_security);
 			spnego_state->sub_sec_security = NULL;
-			
+
 			/* We started the mech correctly, and the
 			 * input from the other side was valid.
 			 * Return the error (say bad password, invalid
 			 * ticket) */
 			return nt_status;
 		}
-	
-		
+
 		return nt_status; /* OK, INVALID_PARAMETER ore MORE PROCESSING */
 	}
 
@@ -646,7 +644,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 						  ev,
 						  null_data_blob,
 						  &unwrapped_out);
-			
+
 			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
 			    && !NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(1, ("SPNEGO(%s) creating NEG_TOKEN_INIT failed: %s\n", 
@@ -654,7 +652,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 				talloc_free(spnego_state->sub_sec_security);
 				spnego_state->sub_sec_security = NULL;
 				/* Pretend we never started it (lets the first run find some incompatible demand) */
-				
+
 				continue;
 			}
 		}
@@ -676,7 +674,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_out.negTokenInit.mechTypes = send_mech_types;
 		spnego_out.negTokenInit.reqFlags = null_data_blob;
 		spnego_out.negTokenInit.reqFlagsPadding = 0;
-		
+
 		if (spnego_state->state_position == SPNEGO_SERVER_START) {
 			spnego_out.negTokenInit.mechListMIC
 				= data_blob_string_const(ADS_IGNORE_PRINCIPAL);
@@ -685,15 +683,15 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		}
 
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
-		
+
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 			DEBUG(1, ("Failed to write NEG_TOKEN_INIT\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		/* set next state */
 		spnego_state->neg_oid = all_sec[i].oid;
-		
+
 		if (NT_STATUS_IS_OK(nt_status)) {
 			spnego_state->no_response_expected = true;
 		}
@@ -802,7 +800,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-			
+
 			nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
 								     spnego_state,
 								     out_mem_ctx, 
@@ -810,16 +808,16 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 								     spnego.negTokenInit.mechTypes,
 								     spnego.negTokenInit.mechToken, 
 								     &unwrapped_out);
-			
+
 			nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
 								      out_mem_ctx,
 								      nt_status,
 								      unwrapped_out,
 								      null_data_blob,
 								      out);
-			
+
 			spnego_free_data(&spnego);
-			
+
 			return nt_status;
 		} else {
 			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state, 
@@ -829,11 +827,11 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return nt_status;
 		}
 	}
-	
+
 	case SPNEGO_CLIENT_START:
 	{
 		/* The server offers a list of mechanisms */
-		
+
 		const char *my_mechs[] = {NULL, NULL};
 		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
 
@@ -845,15 +843,15 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 			return nt_status;
 		}
-		
+
 		len = spnego_read_data(gensec_security, in, &spnego);
-		
+
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
 			dump_data(1, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
 			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
@@ -892,12 +890,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		spnego_out.negTokenInit.reqFlagsPadding = 0;
 		spnego_out.negTokenInit.mechListMIC = null_data_blob;
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
-		
+
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 			DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		/* set next state */
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
@@ -905,7 +903,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (NT_STATUS_IS_OK(nt_status)) {
 			spnego_state->no_response_expected = true;
 		}
-		
+
 		spnego_free_data(&spnego);
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
@@ -917,15 +915,15 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (!in.length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		len = spnego_read_data(gensec_security, in, &spnego);
-		
+
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
 			dump_data(1, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
 			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
@@ -978,9 +976,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 							      unwrapped_out,
 							      mech_list_mic,
 							      out);
-		
+
 		spnego_free_data(&spnego);
-		
+
 		return nt_status;
 	}
 	case SPNEGO_CLIENT_TARG:
@@ -989,15 +987,15 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (!in.length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		len = spnego_read_data(gensec_security, in, &spnego);
-		
+
 		if (len == -1) {
 			DEBUG(1, ("Invalid SPNEGO request:\n"));
 			dump_data(1, in.data, in.length);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		
+
 		/* OK, so it's real SPNEGO, check the packet's the one we expect */
 		if (spnego.type != spnego_state->expected_packet) {
 			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
@@ -1006,7 +1004,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-	
+
 		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
 			spnego_free_data(&spnego);
 			return NT_STATUS_ACCESS_DENIED;
@@ -1019,7 +1017,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
 				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech), 
 				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid)));
-			
+
 			talloc_free(spnego_state->sub_sec_security);
 			nt_status = gensec_subcontext_start(spnego_state,
 							    gensec_security,
@@ -1093,7 +1091,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				spnego_state->no_response_expected = true;
 			}
 		} 
-		
+
 		spnego_free_data(&spnego);
 
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)
@@ -1111,12 +1109,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			spnego_out.negTokenTarg.supportedMech = NULL;
 			spnego_out.negTokenTarg.responseToken = unwrapped_out;
 			spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
-			
+
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 				DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_TARG\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
-		
+
 			spnego_state->state_position = SPNEGO_CLIENT_TARG;
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		} else {
@@ -1129,7 +1127,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				DEBUG(1,("gensec_update ok but not accepted\n"));
 				nt_status = NT_STATUS_INVALID_PARAMETER;
 			}
-		
+
 			spnego_state->state_position = SPNEGO_DONE;
 		}
 
@@ -1347,7 +1345,7 @@ static bool gensec_spnego_have_feature(struct gensec_security *gensec_security,
 	if (!spnego_state->sub_sec_security) {
 		return false;
 	}
-	
+
 	return gensec_have_feature(spnego_state->sub_sec_security, 
 				   feature);
 }
