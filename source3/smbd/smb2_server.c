@@ -1998,6 +1998,21 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
 
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		/*
+		 * This check is mostly for giving the correct error code
+		 * for compounded requests.
+		 *
+		 * TODO: we may need to move this after the session
+		 *       and tcon checks.
+		 */
+		if (!NT_STATUS_IS_OK(req->next_status)) {
+			return smbd_smb2_request_error(req, req->next_status);
+		}
+	} else {
+		req->compat_chain_fsp = NULL;
+	}
+
 	if (req->do_encryption) {
 		signing_required = false;
 	} else if (flags & SMB2_HDR_FLAG_SIGNED) {
@@ -2044,21 +2059,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 */
 		req->do_signing = true;
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
-	}
-
-	if (flags & SMB2_HDR_FLAG_CHAINED) {
-		/*
-		 * This check is mostly for giving the correct error code
-		 * for compounded requests.
-		 *
-		 * TODO: we may need to move this after the session
-		 *       and tcon checks.
-		 */
-		if (!NT_STATUS_IS_OK(req->next_status)) {
-			return smbd_smb2_request_error(req, req->next_status);
-		}
-	} else {
-		req->compat_chain_fsp = NULL;
 	}
 
 	if (req->compound_related) {
