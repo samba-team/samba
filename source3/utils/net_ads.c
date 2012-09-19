@@ -1128,7 +1128,8 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const struct sockaddr_storage *sslist,
 		      size_t num_addrs );
 
-static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
+static NTSTATUS net_update_dns_internal(struct net_context *c,
+					TALLOC_CTX *ctx, ADS_STRUCT *ads,
 					const char *machine_name,
 					const struct sockaddr_storage *addrs,
 					int num_addrs)
@@ -1233,7 +1234,8 @@ done:
 	return status;
 }
 
-static NTSTATUS net_update_dns_ext(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
+static NTSTATUS net_update_dns_ext(struct net_context *c,
+				   TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
 				   const char *hostname,
 				   struct sockaddr_storage *iplist,
 				   int num_addrs)
@@ -1263,18 +1265,18 @@ static NTSTATUS net_update_dns_ext(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
 		iplist = iplist_alloc;
 	}
 
-	status = net_update_dns_internal(mem_ctx, ads, machine_name,
+	status = net_update_dns_internal(c, mem_ctx, ads, machine_name,
 					 iplist, num_addrs);
 
 	SAFE_FREE(iplist_alloc);
 	return status;
 }
 
-static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads, const char *hostname)
+static NTSTATUS net_update_dns(struct net_context *c, TALLOC_CTX *mem_ctx, ADS_STRUCT *ads, const char *hostname)
 {
 	NTSTATUS status;
 
-	status = net_update_dns_ext(mem_ctx, ads, hostname, NULL, 0);
+	status = net_update_dns_ext(c, mem_ctx, ads, hostname, NULL, 0);
 	return status;
 }
 #endif
@@ -1479,7 +1481,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			ads_kinit_password( ads_dns );
 		}
 
-		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns, NULL)) ) {
+		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns(c, ctx, ads_dns, NULL)) ) {
 			d_fprintf( stderr, _("DNS update failed!\n") );
 		}
 
@@ -1584,7 +1586,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	ntstatus = net_update_dns_ext(ctx, ads, hostname, addrs, num_addrs);
+	ntstatus = net_update_dns_ext(c, ctx, ads, hostname, addrs, num_addrs);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_fprintf( stderr, _("DNS update failed!\n") );
 		ads_destroy( &ads );
