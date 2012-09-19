@@ -537,10 +537,6 @@ static bool test_compound_interim2(struct torture_context *tctx,
     /* Win7 compound request implementation deviates substantially from the
      * SMB2 spec as noted in MS-SMB2 <159>, <162>.  This, test currently
      * verifies the Windows behavior, not the general spec behavior. */
-    if (!TARGET_IS_WIN7(tctx) && !TARGET_IS_W2K8(tctx)) {
-	    torture_skip(tctx, "Interim test is specific to Windows server "
-			       "behavior.\n");
-    }
 
     smb2_transport_credits_ask_num(tree->session->transport, 5);
 
