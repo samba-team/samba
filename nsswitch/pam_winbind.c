@@ -2063,6 +2063,9 @@ static int valid_user(struct pwb_context *ctx,
 
 	switch (wbc_status) {
 		case WBC_ERR_UNKNOWN_USER:
+		/* match other insane libwbclient return codes */
+		case WBC_ERR_WINBIND_NOT_AVAILABLE:
+		case WBC_ERR_DOMAIN_NOT_FOUND:
 			return 1;
 		case WBC_ERR_SUCCESS:
 			return 0;
