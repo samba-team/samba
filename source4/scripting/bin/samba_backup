@@ -35,12 +35,12 @@ DAYS=90
 WHEN=`date +%d%m%y`
 
 if [ ! -d $WHERE ]; then
-	echo "Missing backup directorty $WHERE"
+	echo "Missing backup directory $WHERE"
 	exit 1
 fi
 
 if [ ! -d $FROMWHERE ]; then
-	echo "Missing or wrong provision directorty $FROMWHERE"
+	echo "Missing or wrong provision directory $FROMWHERE"
 	exit 1
 fi
 
