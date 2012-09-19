@@ -33,9 +33,6 @@
 		goto done; \
 	}} while (0)
 
-#define TARGET_IS_W2K8(_tctx) (torture_setting_bool(_tctx, "w2k8", false))
-#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
-
 static bool test_compound_related1(struct torture_context *tctx,
 				   struct smb2_tree *tree)
 {
