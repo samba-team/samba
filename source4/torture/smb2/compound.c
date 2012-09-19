@@ -439,9 +439,9 @@ static bool test_compound_invalid3(struct torture_context *tctx,
 	status = smb2_close_recv(req[2], &cl);
 	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	status = smb2_close_recv(req[3], &cl);
-	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 	status = smb2_close_recv(req[4], &cl);
-	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	CHECK_STATUS(status, NT_STATUS_FILE_CLOSED);
 
 	smb2_util_unlink(tree, fname);
 done:
