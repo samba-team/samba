@@ -59,10 +59,10 @@ NTSTATUS smb2_create_blob_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffer,
 
 		if ((next & 0x7) != 0 ||
 		    next > remaining ||
-		    name_offset < 16 ||
-		    name_offset > remaining ||
-		    name_length != 4 || /* windows enforces this */
+		    name_offset != 16 ||
+		    name_length < 4 ||
 		    name_offset + name_length > remaining ||
+		    (data_offset & 0x7) != 0 ||
 		    (data_offset && (data_offset < name_offset + name_length)) ||
 		    (data_offset && (data_offset > remaining)) ||
 		    (data_offset && data_length &&
@@ -106,25 +106,44 @@ static NTSTATUS smb2_create_blob_push_one(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer
 {
 	uint32_t ofs = buffer->length;
 	size_t tag_length = strlen(blob->tag);
-	uint8_t pad = smb2_create_blob_padding(blob->data.length+tag_length, 4);
+	size_t blob_offset = 0;
+	size_t blob_pad = 0;
+	size_t next_offset = 0;
+	size_t next_pad = 0;
+	bool ok;
 
-	if (!data_blob_realloc(mem_ctx, buffer,
-			       buffer->length + 0x14 + tag_length + blob->data.length + pad))
+	blob_offset = 0x14 + tag_length;
+	blob_pad = smb2_create_blob_padding(blob_offset, 8);
+	next_offset = blob_offset + blob_pad + blob->data.length;
+	if (!last) {
+		next_pad = smb2_create_blob_padding(next_offset, 8);
+	}
+
+	ok = data_blob_realloc(mem_ctx, buffer,
+			       buffer->length + next_offset + next_pad);
+	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (last) {
 		SIVAL(buffer->data, ofs+0x00, 0);
 	} else {
-		SIVAL(buffer->data, ofs+0x00, 0x14 + tag_length + blob->data.length + pad);
+		SIVAL(buffer->data, ofs+0x00, next_offset + next_pad);
 	}
 	SSVAL(buffer->data, ofs+0x04, 0x10); /* offset of tag */
 	SIVAL(buffer->data, ofs+0x06, tag_length); /* tag length */
-	SSVAL(buffer->data, ofs+0x0A, 0x14 + tag_length); /* offset of data */
+	SSVAL(buffer->data, ofs+0x0A, blob_offset + blob_pad); /* offset of data */
 	SIVAL(buffer->data, ofs+0x0C, blob->data.length);
 	memcpy(buffer->data+ofs+0x10, blob->tag, tag_length);
-	SIVAL(buffer->data, ofs+0x10+tag_length, 0); /* pad? */
-	memcpy(buffer->data+ofs+0x14+tag_length, blob->data.data, blob->data.length);
-	memset(buffer->data+ofs+0x14+tag_length+blob->data.length, 0, pad);
+	if (blob_pad > 0) {
+		memset(buffer->data+ofs+blob_offset, 0, blob_pad);
+		blob_offset += blob_pad;
+	}
+	memcpy(buffer->data+ofs+blob_offset, blob->data.data, blob->data.length);
+	if (next_pad > 0) {
+		memset(buffer->data+ofs+next_offset, 0, next_pad);
+		next_offset += next_pad;
+	}
 
 	return NT_STATUS_OK;
 }
