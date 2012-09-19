@@ -2100,10 +2100,9 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 	}
 
 	/*
-	 * if a request fails, all other remaining
-	 * compounded requests should fail too
+	 * Note: Even if there is an error, continue to process the request.
+	 * per MS-SMB2.
 	 */
-	req->next_status = NT_STATUS_INVALID_PARAMETER;
 
 	return smbd_smb2_request_done_ex(req, status, body, info, __location__);
 }
