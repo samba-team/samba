@@ -22,16 +22,9 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "../lib/addns/dns.h"
+#include "utils/net_dns.h"
 
 #if defined(WITH_DNS_UPDATES)
-/*
- * Silly prototype to get rid of a warning
- */
-
-DNS_ERROR DoDNSUpdate(char *pszServerName,
-		      const char *pszDomainName, const char *pszHostName,
-		      const struct sockaddr_storage *sslist,
-		      size_t num_addrs );
 
 /*********************************************************************
 *********************************************************************/
@@ -181,12 +174,6 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 
 	return count;
 }
-
-/*
- * Silly prototype to get rid of a warning
- */
-
-DNS_ERROR do_gethostbyname(const char *server, const char *host);
 
 DNS_ERROR do_gethostbyname(const char *server, const char *host)
 {
