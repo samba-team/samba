@@ -2017,7 +2017,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		status = smb2_signing_check_pdu(signing_key,
 						conn->protocol,
 						SMBD_SMB2_IN_HDR_IOV(req),
-						SMBD_SMB2_NUM_IOV_PER_REQ);
+						SMBD_SMB2_NUM_IOV_PER_REQ - 1);
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
