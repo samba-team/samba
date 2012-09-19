@@ -320,9 +320,11 @@ NTSTATUS idmap_tdb_common_unixids_to_sids(struct idmap_domain * dom,
 	    talloc_get_type_abort(dom->private_data,
 				  struct idmap_tdb_common_context);
 
-	unixid_to_sid_fn =
-	    (ctx->unixid_to_sid_fn ==
-	     NULL) ? idmap_tdb_common_unixid_to_sid : ctx->unixid_to_sid_fn;
+	if (ctx->unixid_to_sid_fn == NULL) {
+		unixid_to_sid_fn = idmap_tdb_common_unixid_to_sid;
+	} else {
+		unixid_to_sid_fn = ctx->unixid_to_sid_fn;
+	}
 
 	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
