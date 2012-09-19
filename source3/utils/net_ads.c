@@ -38,6 +38,7 @@
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
 #include "lib/param/loadparm.h"
+#include "utils/net_dns.h"
 
 #ifdef HAVE_ADS
 
@@ -1126,10 +1127,6 @@ static WERROR check_ads_config( void )
 
 #if defined(WITH_DNS_UPDATES)
 #include "../lib/addns/dns.h"
-DNS_ERROR DoDNSUpdate(char *pszServerName,
-		      const char *pszDomainName, const char *pszHostName,
-		      const struct sockaddr_storage *sslist,
-		      size_t num_addrs );
 
 static NTSTATUS net_update_dns_internal(struct net_context *c,
 					TALLOC_CTX *ctx, ADS_STRUCT *ads,
@@ -1663,10 +1660,6 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	return -1;
 #endif
 }
-
-#if defined(WITH_DNS_UPDATES)
-DNS_ERROR do_gethostbyname(const char *server, const char *host);
-#endif
 
 static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char **argv)
 {
