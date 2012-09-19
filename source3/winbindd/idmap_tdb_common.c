@@ -638,9 +638,11 @@ NTSTATUS idmap_tdb_common_sids_to_unixids(struct idmap_domain * dom,
 	state.dom = dom;
 	state.ids = ids;
 	state.allocate_unmapped = false;
-	state.sid_to_unixid_fn =
-	    (ctx->sid_to_unixid_fn ==
-	     NULL) ? idmap_tdb_common_sid_to_unixid : ctx->sid_to_unixid_fn;
+	if (ctx->sid_to_unixid_fn == NULL) {
+		state.sid_to_unixid_fn = idmap_tdb_common_sid_to_unixid;
+	} else {
+		state.sid_to_unixid_fn = ctx->sid_to_unixid_fn;
+	}
 
 	ret = idmap_tdb_common_sids_to_unixids_action(ctx->db, &state);
 
