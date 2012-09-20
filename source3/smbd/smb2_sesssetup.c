@@ -835,6 +835,8 @@ NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 		in_session_id = req->last_session_id;
 	}
 
+	req->last_session_id = UINT64_MAX;
+
 	/* lookup an existing session */
 	p = idr_find(req->sconn->smb2.sessions.idtree, in_session_id);
 	if (p == NULL) {
