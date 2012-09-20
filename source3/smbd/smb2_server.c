@@ -947,9 +947,13 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		 * request chain. This is not allowed.
 		 * Cancel the outstanding request.
 		 */
-		tevent_req_cancel(req->subreq);
+		bool ok = tevent_req_cancel(req->subreq);
+		if (ok) {
+			return NT_STATUS_OK;
+		}
+		TALLOC_FREE(req->subreq);
 		return smbd_smb2_request_error(req,
-			NT_STATUS_INSUFFICIENT_RESOURCES);
+			NT_STATUS_INTERNAL_ERROR);
 	}
 
 	if (DEBUGLEVEL >= 10) {
