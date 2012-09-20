@@ -298,6 +298,8 @@ NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		in_tid = req->last_tid;
 	}
 
+	req->last_tid = UINT32_MAX;
+
 	/* lookup an existing session */
 	p = idr_find(req->session->tcons.idtree, in_tid);
 	if (p == NULL) {
