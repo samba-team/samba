@@ -1649,7 +1649,7 @@ static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle
 
 	do_log(SMB_VFS_OP_BRL_LOCK_WINDOWS, NT_STATUS_IS_OK(result), handle,
 	    "%s:%llu-%llu. type=%d. blocking=%d", fsp_str_do_log(br_lck->fsp),
-	    plock->start, plock->size, plock->lock_type, blocking_lock );
+	    plock->start, plock->size, plock->lock_type, blocking_lock);
 
 	return result;
 }
@@ -1682,7 +1682,7 @@ static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_BRL_CANCEL_WINDOWS, (result == 0), handle,
 	    "%s:%llu-%llu:%d", fsp_str_do_log(br_lck->fsp), plock->start,
-	    plock->size);
+	    plock->size, plock->lock_type);
 
 	return result;
 }
@@ -1697,7 +1697,7 @@ static bool smb_full_audit_strict_lock(struct vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_STRICT_LOCK, result, handle,
 	    "%s:%llu-%llu:%d", fsp_str_do_log(fsp), plock->start,
-	    plock->size);
+	    plock->size, plock->lock_type);
 
 	return result;
 }
@@ -1710,7 +1710,7 @@ static void smb_full_audit_strict_unlock(struct vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_STRICT_UNLOCK, true, handle,
 	    "%s:%llu-%llu:%d", fsp_str_do_log(fsp), plock->start,
-	    plock->size);
+	    plock->size, plock->lock_type);
 }
 
 static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
