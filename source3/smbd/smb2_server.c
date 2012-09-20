@@ -1691,6 +1691,8 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		in_tid = req->last_tid;
 	}
 
+	req->last_tid = 0;
+
 	status = smb2srv_tcon_lookup(req->session,
 				     in_tid, now, &tcon);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1739,6 +1741,8 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	if (in_flags & SMB2_HDR_FLAG_CHAINED) {
 		in_session_id = req->last_session_id;
 	}
+
+	req->last_session_id = 0;
 
 	/* lookup an existing session */
 	status = smb2srv_session_lookup(req->sconn->conn,
