@@ -92,7 +92,8 @@ NTSTATUS printer_list_get_printer(TALLOC_CTX *mem_ctx,
 
 	status = dbwrap_fetch_bystring_upper(db, key, key, &data);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to fetch record!\n"));
+		DEBUG(6, ("Failed to fetch record! "
+			  "The printer database is empty?\n"));
 		goto done;
 	}
 
