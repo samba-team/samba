@@ -1827,32 +1827,32 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 
 static int smb_full_audit_sys_acl_blob_get_file(vfs_handle_struct *handle,
 						const char *path_p,
-						SMB_ACL_TYPE_T type, 
-						TALLOC_CTX *mem_ctx, 
+						SMB_ACL_TYPE_T type,
+						TALLOC_CTX *mem_ctx,
 						char **blob_description,
 						DATA_BLOB *blob)
 {
-	SMB_ACL_T result;
+	int result;
 
 	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, type, mem_ctx, blob_description, blob);
 
-	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,  (result >= 0), handle,
+	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE, (result >= 0), handle,
 	       "%s", path_p);
 
 	return result;
 }
 
 static int smb_full_audit_sys_acl_blob_get_fd(vfs_handle_struct *handle,
-					      files_struct *fsp, 
-					      TALLOC_CTX *mem_ctx, 
+					      files_struct *fsp,
+					      TALLOC_CTX *mem_ctx,
 					      char **blob_description,
 					      DATA_BLOB *blob)
 {
-	SMB_ACL_T result;
+	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description,blob);
+	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description, blob);
 
-	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FD,  (result >= 0), handle,
+	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FD, (result >= 0), handle,
 	       "%s", fsp_str_do_log(fsp));
 
 	return result;
@@ -2131,6 +2131,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fchmod_acl_fn = smb_full_audit_fchmod_acl,
 	.sys_acl_get_file_fn = smb_full_audit_sys_acl_get_file,
 	.sys_acl_get_fd_fn = smb_full_audit_sys_acl_get_fd,
+	.sys_acl_blob_get_file_fn = smb_full_audit_sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = smb_full_audit_sys_acl_blob_get_fd,
 	.sys_acl_set_file_fn = smb_full_audit_sys_acl_set_file,
 	.sys_acl_set_fd_fn = smb_full_audit_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = smb_full_audit_sys_acl_delete_def_file,
