@@ -956,9 +956,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 			talloc_free(vnn);
 			return -1;
 		}
-		if (i == 0) {
-			vnn->iface = ctdb_find_iface(ctdb, vnn->ifaces[i]);
-		}
 	}
 
 	DLIST_ADD(ctdb->vnn, vnn);
