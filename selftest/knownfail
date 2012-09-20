@@ -45,7 +45,6 @@
 ^samba3.blackbox.smbclient_machine_auth.plain \(s3dc:local\)# the S3dc does not currently set up a self-join
 ^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
-^samba3.raw.acls.generic\(s3dc\) # This fails against smbd
 ^samba3.base.delete.deltest16a
 ^samba3.base.delete.deltest17a
 ^samba3.unix.whoami anonymous connection.whoami\(plugin_s4_dc\) # We need to resolve if we should be including SID_NT_WORLD and SID_NT_NETWORK in this token
@@ -197,7 +196,6 @@
 ^samba3.smb2.lease.multibreak
 ^samba3.smb2.oplock.batch12
 ^samba3.smb2.oplock.batch20
-^samba3.smb2.acls.GENERIC
 ^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
 ^samba3.smb2.streams.attributes
@@ -214,7 +212,6 @@
 # but in the interests of ensuring we do not regress, we run the tests
 # and list the current failures here.
 #
-^samba3.raw.acls.generic\(plugin_s4_dc\)
 ^samba3.rpc.eventlog.eventlog.GetLogIntormation\(plugin_s4_dc\)
 ^samba3.rpc.eventlog.eventlog.FlushEventLog\(plugin_s4_dc\)
 ^samba3.rpc.eventlog.eventlog.ReportEventLog\(plugin_s4_dc\)
