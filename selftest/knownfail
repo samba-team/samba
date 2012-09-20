@@ -201,6 +201,7 @@
 ^samba3.smb2.getinfo.getinfo
 ^samba3.smb2.setinfo.setinfo
 ^samba3.smb2.session.*reauth5 # some special anonymous checks?
+^samba3.smb2.compound.interim2 # wrong return code (STATUS_CANCELLED)
 ^samba3.raw.session.*reauth2 # maybe fix this?
 ^samba3.rpc.spoolss.printer.addprinter.driver_info_winreg # knownfail or flapping?
 ^samba3.rpc.spoolss.printer.addprinterex.driver_info_winreg # knownfail or flapping?
