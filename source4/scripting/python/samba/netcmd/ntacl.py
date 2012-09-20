@@ -94,7 +94,7 @@ class cmd_ntacl_set(Command):
 
 
 class cmd_ntacl_get(Command):
-    """Set ACLs on a file"""
+    """Get ACLs of a file"""
     synopsis = "%prog <file> [options]"
 
     takes_optiongroups = {
