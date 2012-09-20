@@ -1712,6 +1712,13 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	*p_access_mask = (access_granted | FILE_READ_ATTRIBUTES);
+
+	if (!(access_granted & DELETE_ACCESS)) {
+		if (can_delete_file_in_directory(conn, smb_fname)) {
+			*p_access_mask |= DELETE_ACCESS;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 
