@@ -134,31 +134,6 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 
-	if (smb2req->cancelled) {
-		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
-		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
-		struct smbd_smb2_lock_state *state;
-
-		DEBUG(10,("smbd_smb2_request_lock_done: cancelled mid %llu\n",
-			(unsigned long long)mid ));
-
-		state = tevent_req_data(smb2req->subreq,
-				struct smbd_smb2_lock_state);
-
-		SMB_ASSERT(state);
-		SMB_ASSERT(state->blr);
-
-		remove_pending_lock(state, state->blr);
-
-		error = smbd_smb2_request_error(smb2req, NT_STATUS_CANCELLED);
-		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(smb2req->sconn,
-				nt_errstr(error));
-			return;
-		}
-		return;
-	}
-
 	status = smbd_smb2_lock_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -407,7 +382,9 @@ static bool smbd_smb2_lock_cancel(struct tevent_req *req)
         smb2req = state->smb2req;
         smb2req->cancelled = true;
 
-        tevent_req_done(req);
+	remove_pending_lock(state, state->blr);
+	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
+	tevent_req_nterror(req, NT_STATUS_CANCELLED);
         return true;
 }
 
