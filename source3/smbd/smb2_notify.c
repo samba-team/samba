@@ -112,24 +112,6 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 
-	if (req->cancelled) {
-		struct smbd_smb2_notify_state *state = tevent_req_data(subreq,
-					       struct smbd_smb2_notify_state);
-		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
-		uint64_t mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
-
-		DEBUG(10,("smbd_smb2_request_notify_done: cancelled mid %llu\n",
-			(unsigned long long)mid ));
-		error = smbd_smb2_request_error(req, NT_STATUS_CANCELLED);
-		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(req->sconn,
-				nt_errstr(error));
-			return;
-		}
-		TALLOC_FREE(state->im);
-		return;
-	}
-
 	status = smbd_smb2_notify_recv(subreq,
 				       req,
 				       &out_output_buffer);
