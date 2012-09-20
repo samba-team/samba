@@ -284,19 +284,6 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	NTSTATUS status;
 	NTSTATUS error; /* transport error */
 
-	if (smb2req->cancelled) {
-		uint64_t mid = get_mid_from_smb2req(smb2req);
-		DEBUG(10,("smbd_smb2_request_create_done: cancelled mid %llu\n",
-			(unsigned long long)mid ));
-		error = smbd_smb2_request_error(smb2req, NT_STATUS_CANCELLED);
-		if (!NT_STATUS_IS_OK(error)) {
-			smbd_server_connection_terminate(smb2req->sconn,
-				nt_errstr(error));
-			return;
-		}
-		return;
-	}
-
 	status = smbd_smb2_create_recv(tsubreq,
 				       smb2req,
 				       &out_oplock_level,
@@ -1427,7 +1414,8 @@ static bool smbd_smb2_create_cancel(struct tevent_req *req)
 	remove_deferred_open_message_smb2_internal(smb2req, mid);
 	smb2req->cancelled = true;
 
-	tevent_req_done(req);
+	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
+	tevent_req_nterror(req, NT_STATUS_CANCELLED);
 	return true;
 }
 
