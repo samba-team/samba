@@ -28,7 +28,6 @@
 struct smbd_smb2_notify_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smbreq;
-	struct tevent_immediate *im;
 	NTSTATUS status;
 	DATA_BLOB out_output_buffer;
 };
@@ -177,9 +176,6 @@ static void smbd_smb2_request_notify_done(struct tevent_req *subreq)
 static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 				   NTSTATUS error_code,
 				   uint8_t *buf, size_t len);
-static void smbd_smb2_notify_reply_trigger(struct tevent_context *ctx,
-					   struct tevent_immediate *im,
-					   void *private_data);
 static bool smbd_smb2_notify_cancel(struct tevent_req *req);
 
 static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
@@ -205,7 +201,6 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	state->smb2req = smb2req;
 	state->status = NT_STATUS_INTERNAL_ERROR;
 	state->out_output_buffer = data_blob_null;
-	state->im = NULL;
 
 	DEBUG(10,("smbd_smb2_notify_send: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
@@ -275,11 +270,6 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->im = tevent_create_immediate(state);
-	if (tevent_req_nomem(state->im, req)) {
-		return tevent_req_post(req, ev);
-	}
-
 	/*
 	 * No changes pending, queue the request
 	 */
@@ -321,30 +311,7 @@ static void smbd_smb2_notify_reply(struct smb_request *smbreq,
 		}
 	}
 
-	if (state->im == NULL) {
-		smbd_smb2_notify_reply_trigger(NULL, NULL, req);
-		return;
-	}
-
-	/*
-	 * if this is called async, we need to go via an immediate event
-	 * because the caller replies on the smb_request (a child of req
-	 * being arround after calling this function
-	 */
-	tevent_schedule_immediate(state->im,
-				  state->smb2req->sconn->ev_ctx,
-				  smbd_smb2_notify_reply_trigger,
-				  req);
-}
-
-static void smbd_smb2_notify_reply_trigger(struct tevent_context *ctx,
-					   struct tevent_immediate *im,
-					   void *private_data)
-{
-	struct tevent_req *req = talloc_get_type_abort(private_data,
-						       struct tevent_req);
-	struct smbd_smb2_notify_state *state = tevent_req_data(req,
-					       struct smbd_smb2_notify_state);
+	tevent_req_defer_callback(req, state->smb2req->sconn->ev_ctx);
 
 	if (!NT_STATUS_IS_OK(state->status)) {
 		tevent_req_nterror(req, state->status);
