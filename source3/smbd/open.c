@@ -1461,6 +1461,7 @@ static void defer_open(struct share_mode_lock *lck,
 				DEBUG(0, ("Trying to defer an already deferred "
 					"request: mid=%llu, exiting\n",
 					(unsigned long long)req->mid));
+				TALLOC_FREE(lck);
 				exit_server("attempt to defer a deferred request");
 			}
 		}
@@ -1476,6 +1477,7 @@ static void defer_open(struct share_mode_lock *lck,
 
 	if (!push_deferred_open_message_smb(req, request_time, timeout,
 				       state->id, (char *)state, sizeof(*state))) {
+		TALLOC_FREE(lck);
 		exit_server("push_deferred_open_message_smb failed");
 	}
 	if (lck) {
