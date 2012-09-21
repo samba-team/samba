@@ -486,8 +486,6 @@ struct smbd_smb2_request {
 	struct smb_request *smb1req;
 	struct files_struct *compat_chain_fsp;
 
-	NTSTATUS next_status;
-
 	/*
 	 * The sub request for async backend calls.
 	 * This is used for SMB2 Cancel.
