@@ -1,18 +1,58 @@
                    ==============================
                    Release Notes for Samba 3.5.18
-			   , 2012
+			 September 24, 2012
                    ==============================
 
 
 This is the latest stable release of Samba 3.5.
 
-Major enhancements in Samba 3.5.16 include:
+Major enhancements in Samba 3.5.18 include:
+
+o  Fix a smbd crash in reply_lockingX_error (bug #9084).
+o  Fix Winbind crashes caused by mis-identified idle clients (bug #9104).
+o  Desktop Managers (xdm, gdm, lightdm...) crash with SIGSEGV in
+   _pam_winbind_change_pwd() when password is expiring (bug #9013).
 
 
 Changes since 3.5.17:
 ---------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 7788: Clarify the idmap_rid manpage.
+
+
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9098: Winbind does not refresh Kerberos tickets.
+    * BUG 9147: Winbind can't fetch user or group info from AD via LDAP.
+    * BUG 9150: Valid open requests can cause smbd assert due to incorrect
+      oplock handling on delete requests.
+
+
+o   Neil R. Goldberg <ngoldber@mitre.org>
+    * BUG 9100: Winbind doesn't return "Domain Local" groups from own domain.
+
+
+o   Hargagan <shargagan@novell.com>
+    * BUG 9085: NMB registration for a duplicate workstation fails with
+      registration refuse.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7814: Fix build of sysquote_xfs.
+    * BUG 8402: Winbind log spammed with idmap messages.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9084: Fix a smbd crash in reply_lockingX_error.
+
+
+o   Herb Lewis <hlewis@panasas.com>
+    * BUG 9104: Fix Winbind crashes caused by mis-identified idle clients.
+
+
+o   Luca Lorenzetto <lorenzetto-luca@ubuntu-it.org>
+    * BUG 9013: Desktop Managers (xdm, gdm, lightdm...) crash with SIGSEGV in
+      _pam_winbind_change_pwd() when password is expiring.
 
 
 ######################################################################
