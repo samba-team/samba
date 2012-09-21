@@ -704,6 +704,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			case PIPE_AUTH_TYPE_SPNEGO_KRB5:
 				oid = GENSEC_OID_KERBEROS5;
 				break;
+			case PIPE_AUTH_TYPE_SPNEGO_NONE:
+				break;
 			}
 			ntresult = cli_rpc_pipe_open_spnego(
 				cli, cmd_entry->table,
