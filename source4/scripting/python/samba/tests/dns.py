@@ -544,6 +544,35 @@ class TestComplexQueries(DNSTest):
         self.assertEquals(response.answers[1].rdata,
                           os.getenv('SERVER_IP'))
 
+class TestInvalidQueries(DNSTest):
+
+    def test_one_a_query(self):
+        "send 0 bytes follows by create a query packet containing one query record"
+
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+            s.connect((os.getenv('SERVER_IP'), 53))
+            s.send("", 0)
+        finally:
+            if s is not None:
+                s.close()
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
+        print "asking for ", q.name
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rdata,
+                          os.getenv('SERVER_IP'))
 
 if __name__ == "__main__":
     import unittest
