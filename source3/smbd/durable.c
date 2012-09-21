@@ -234,7 +234,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	NTSTATUS status;
 	bool ok;
 	int ret;
-	int flags;
+	int flags = 0;
 	struct file_id file_id;
 	struct smb_filename *smb_fname = NULL;
 	enum ndr_err_code ndr_err;
