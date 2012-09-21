@@ -876,10 +876,6 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 	bool retry;
 
 	ret = tsocket_bsd_pending(bsds->fd);
-	if (ret == 0) {
-		/* retry later */
-		return;
-	}
 	err = tsocket_bsd_error_from_errno(ret, errno, &retry);
 	if (retry) {
 		/* retry later */
@@ -889,6 +885,7 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 		return;
 	}
 
+	/* note that 'ret' can be 0 here */
 	state->buf = talloc_array(state, uint8_t, ret);
 	if (tevent_req_nomem(state->buf, req)) {
 		return;
