@@ -70,9 +70,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.8: Added wbcSidsToUnixIds() and wbcLookupSids()
  *  0.9: Added support for WBC_ID_TYPE_BOTH
  *  0.10: Added wbcPingDc2()
+ *  0.11: Extended wbcAuthenticateUserEx to provide PAC parsing
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 10
+#define WBCLIENT_MINOR_VERSION 11
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
