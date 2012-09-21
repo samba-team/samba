@@ -228,33 +228,30 @@ struct py_tevent_cond {
 
 static void py_tevent_signalme(struct tevent_req *req);
 
-static int py_tevent_req_wait(struct tevent_context *ev,
-			      struct tevent_req *req)
+static int py_tevent_cond_wait(struct py_tevent_cond *cond)
 {
-	struct py_tevent_cond cond;
 	int ret, result;
 
-	result = pthread_mutex_init(&cond.mutex, NULL);
+	result = pthread_mutex_init(&cond->mutex, NULL);
 	if (result != 0) {
 		goto fail;
 	}
-	result = pthread_cond_init(&cond.cond, NULL);
+	result = pthread_cond_init(&cond->cond, NULL);
 	if (result != 0) {
 		goto fail_mutex;
 	}
 
-	cond.is_done = false;
-	tevent_req_set_callback(req, py_tevent_signalme, &cond);
-
-	result = pthread_mutex_lock(&cond.mutex);
+	result = pthread_mutex_lock(&cond->mutex);
 	if (result != 0) {
 		goto fail_cond;
 	}
 
-	while (!cond.is_done) {
+	cond->is_done = false;
+
+	while (!cond->is_done) {
 
 		Py_BEGIN_ALLOW_THREADS
-		result = pthread_cond_wait(&cond.cond, &cond.mutex);
+		result = pthread_cond_wait(&cond->cond, &cond->mutex);
 		Py_END_ALLOW_THREADS
 
 		if (result != 0) {
@@ -263,16 +260,24 @@ static int py_tevent_req_wait(struct tevent_context *ev,
 	}
 
 fail_unlock:
-	ret = pthread_mutex_unlock(&cond.mutex);
+	ret = pthread_mutex_unlock(&cond->mutex);
 	assert(ret == 0);
 fail_cond:
-	ret = pthread_cond_destroy(&cond.cond);
+	ret = pthread_cond_destroy(&cond->cond);
 	assert(ret == 0);
 fail_mutex:
-	ret = pthread_mutex_destroy(&cond.mutex);
+	ret = pthread_mutex_destroy(&cond->mutex);
 	assert(ret == 0);
 fail:
 	return result;
+}
+
+static int py_tevent_req_wait(struct tevent_context *ev,
+			      struct tevent_req *req)
+{
+	struct py_tevent_cond cond;
+	tevent_req_set_callback(req, py_tevent_signalme, &cond);
+	return py_tevent_cond_wait(&cond);
 }
 
 static void py_tevent_signalme(struct tevent_req *req)
