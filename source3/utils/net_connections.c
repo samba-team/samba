@@ -194,7 +194,7 @@ static int delete_orphans(struct cclean_ctx *ctx)
 
 static int cclean(bool verbose, bool dry_run, bool automatic)
 {
-	int ret;
+	int ret = -1;
 	struct cclean_ctx *ctx = talloc_zero(talloc_tos(), struct cclean_ctx);
 	if (ctx == NULL) {
 		d_printf("Out of memory\n");
