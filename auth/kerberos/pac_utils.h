@@ -21,6 +21,8 @@
 #ifndef _PAC_UTILS_H
 #define _PAC_UTILS_H
 
+#ifdef HAVE_KRB5
+
 #include "lib/krb5_wrap/krb5_samba.h"
 #include "lib/krb5_wrap/gss_samba.h"
 
@@ -65,4 +67,5 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 char *gssapi_error_string(TALLOC_CTX *mem_ctx,
 			  OM_uint32 maj_stat, OM_uint32 min_stat,
 			  const gss_OID mech);
+#endif /* HAVE_KRB5 */
 #endif /* _PAC_UTILS_H */
