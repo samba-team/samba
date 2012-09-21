@@ -426,7 +426,6 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 
 	for (idx=1; idx < count; idx += 3) {
 		const uint8_t *inhdr = NULL;
-		uint32_t flags;
 
 		if (req->in.vector[idx].iov_len != SMB2_HDR_BODY) {
 			return NT_STATUS_INVALID_PARAMETER;
@@ -445,50 +444,6 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 
 		if (!smb2_validate_message_id(req->sconn, inhdr)) {
 			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		flags = IVAL(inhdr, SMB2_HDR_FLAGS);
-		if (idx == 1) {
-			/*
-			 * the 1st request should never have the
-			 * SMB2_HDR_FLAG_CHAINED flag set
-			 */
-			if (flags & SMB2_HDR_FLAG_CHAINED) {
-				req->next_status = NT_STATUS_INVALID_PARAMETER;
-				return NT_STATUS_OK;
-			}
-		} else if (idx == 4) {
-			/*
-			 * the 2nd request triggers related vs. unrelated
-			 * compounded requests
-			 */
-			if (flags & SMB2_HDR_FLAG_CHAINED) {
-				req->compound_related = true;
-			}
-		} else if (idx > 4) {
-#if 0
-			/*
-			 * It seems the this tests are wrong
-			 * see the SMB2-COMPOUND test
-			 */
-
-			/*
-			 * all other requests should match the 2nd one
-			 */
-			if (flags & SMB2_HDR_FLAG_CHAINED) {
-				if (!req->compound_related) {
-					req->next_status =
-						NT_STATUS_INVALID_PARAMETER;
-					return NT_STATUS_OK;
-				}
-			} else {
-				if (req->compound_related) {
-					req->next_status =
-						NT_STATUS_INVALID_PARAMETER;
-					return NT_STATUS_OK;
-				}
-			}
-#endif
 		}
 	}
 
@@ -1374,9 +1329,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 * This check is mostly for giving the correct error code
 		 * for compounded requests.
 		 */
-		if (!NT_STATUS_IS_OK(req->next_status)) {
-			return smbd_smb2_request_error(req, req->next_status);
-		}
 		if (!NT_STATUS_IS_OK(session_status)) {
 			return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 		}
@@ -1402,7 +1354,8 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_ACCESS_DENIED);
 	}
 
-	if (req->compound_related) {
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		req->compound_related = true;
 		req->sconn->smb2.compound_related_in_progress = true;
 	}
 
@@ -1853,6 +1806,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	}
 
 	if (req->compound_related) {
+		req->compound_related = false;
 		req->sconn->smb2.compound_related_in_progress = false;
 	}
 
