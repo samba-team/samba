@@ -347,29 +347,6 @@ int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
 }
 
 /*******************************************************************
- Run the search by rid.
-******************************************************************/
-
-static int ldapsam_search_suffix_by_rid (struct ldapsam_privates *ldap_state,
-					 uint32_t rid, LDAPMessage ** result,
-					 const char **attr)
-{
-	char *filter = NULL;
-	int rc;
-
-	filter = talloc_asprintf(talloc_tos(), "(&(rid=%i)%s)", rid,
-		get_objclass_filter(ldap_state->schema_ver));
-	if (!filter) {
-		return LDAP_NO_MEMORY;
-	}
-
-	rc = smbldap_search_suffix(ldap_state->smbldap_state,
-			filter, attr, result);
-	TALLOC_FREE(filter);
-	return rc;
-}
-
-/*******************************************************************
  Run the search by SID.
 ******************************************************************/
 
