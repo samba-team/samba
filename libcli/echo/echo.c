@@ -172,6 +172,11 @@ static void echo_request_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (len != state->orig_len) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
 	state->message[len-1] = '\0';
 	/* Once the async function has completed, set tevent_req_done() */
 	tevent_req_done(req);
