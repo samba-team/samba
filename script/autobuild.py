@@ -184,19 +184,6 @@ tasks = {
     'fail' : [ ("fail", 'echo failing && /bin/false', "text/plain") ]
 }
 
-retry_task = [ ( "retry",
-                 '''set -e
-                git remote add -t master master %s
-                git fetch master
-                while :; do
-                  sleep 60
-                  git describe master/master > old_master.desc
-                  git fetch master
-                  git describe master/master > master.desc
-                  diff old_master.desc master.desc
-                done
-               ''' % samba_master, "test/plain" ) ]
-
 def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show is None:
         show = options.verbose
@@ -262,7 +249,7 @@ class builder(object):
 class buildlist(object):
     '''handle build of multiple directories'''
 
-    def __init__(self, tasklist, tasknames):
+    def __init__(self, tasklist, tasknames, rebase_url, rebase_branch="master"):
         global tasks
         self.tlist = []
         self.tail_proc = None
@@ -273,6 +260,27 @@ class buildlist(object):
             b = builder(n, tasks[n])
             self.tlist.append(b)
         if options.retry:
+            rebase_remote = "rebaseon"
+            retry_task = [ ("retry",
+                            '''set -e
+                            git remote add -t %s %s %s
+                            git fetch %s
+                            while :; do
+                              sleep 60
+                              git describe %s/%s > old_remote_branch.desc
+                              git fetch %s
+                              git describe %s/%s > remote_branch.desc
+                              diff old_remote_branch.desc remote_branch.desc
+                            done
+                           ''' % (
+                               rebase_branch, rebase_remote, rebase_url,
+                               rebase_remote,
+                               rebase_remote, rebase_branch,
+                               rebase_remote,
+                               rebase_remote, rebase_branch
+                           ),
+                           "test/plain" ) ]
+
             self.retry = builder('retry', retry_task)
             self.need_retry = False
 
@@ -400,22 +408,36 @@ def write_pidfile(fname):
     f.close()
 
 
-def rebase_tree(url):
-    print("Rebasing on %s" % url)
+def rebase_tree(rebase_url, rebase_branch = "master"):
+    rebase_remote = "rebaseon"
+    print("Rebasing on %s" % rebase_url)
     run_cmd("git describe HEAD", show=True, dir=test_master)
-    run_cmd("git remote add -t master master %s" % url, show=True, dir=test_master)
-    run_cmd("git fetch master", show=True, dir=test_master)
+    run_cmd("git remote add -t %s %s %s" %
+            (rebase_branch, rebase_remote, rebase_url),
+            show=True, dir=test_master)
+    run_cmd("git fetch %s" % rebase_remote, show=True, dir=test_master)
     if options.fix_whitespace:
-        run_cmd("git rebase --whitespace=fix master/master", show=True, dir=test_master)
+        run_cmd("git rebase --whitespace=fix %s/%s" %
+                (rebase_remote, rebase_branch),
+                show=True, dir=test_master)
     else:
-        run_cmd("git rebase master/master", show=True, dir=test_master)
-    diff = run_cmd("git --no-pager diff HEAD master/master", dir=test_master, output=True)
+        run_cmd("git rebase %s/%s" %
+                (rebase_remote, rebase_branch),
+                show=True, dir=test_master)
+    diff = run_cmd("git --no-pager diff HEAD %s/%s" %
+                   (rebase_remote, rebase_branch),
+                   dir=test_master, output=True)
     if diff == '':
-        print("No differences between HEAD and master/master - exiting")
+        print("No differences between HEAD and %s/%s - exiting" %
+              (rebase_remote, rebase_branch))
         sys.exit(0)
-    run_cmd("git describe master/master", show=True, dir=test_master)
+    run_cmd("git describe %s/%s" %
+            (rebase_remote, rebase_branch),
+            show=True, dir=test_master)
     run_cmd("git describe HEAD", show=True, dir=test_master)
-    run_cmd("git --no-pager diff --stat HEAD master/master", show=True, dir=test_master)
+    run_cmd("git --no-pager diff --stat HEAD %s/%s" %
+            (rebase_remote, rebase_branch),
+            show=True, dir=test_master)
 
 def push_to(url):
     print("Pushing to %s" % url)
@@ -579,15 +601,19 @@ while True:
     try:
         try:
             if options.rebase is not None:
-                rebase_tree(options.rebase)
+                rebase_url = options.rebase
             elif options.rebase_master:
-                rebase_tree(samba_master)
+                rebase_url = samba_master
+            else:
+                rebase_url = None
+            if rebase_url is not None:
+                rebase_tree(rebase_url)
         except Exception:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
             email_failure(-1, 'rebase', 'rebase', 'rebase', 'rebase on master failed')
             sys.exit(1)
-        blist = buildlist(tasks, args)
+        blist = buildlist(tasks, args, rebase_url)
         if options.tail:
             blist.start_tail()
         (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
