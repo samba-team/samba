@@ -884,20 +884,20 @@ in Samba). One domain controller must be configured without the
 
 </sect3>
 <sect3>
-<title>The Special Case of MS Windows XP Home Edition</title>
+<title>The Special Case of MS Windows Home Editions</title>
 
 <para>
-<indexterm><primary>Windows XP Home edition</primary></indexterm>
-To be completely clear: If you want MS Windows XP Home Edition to integrate with your
+<indexterm><primary>Windows Home editions</primary></indexterm>
+To be completely clear: If you want MS Windows Home Editions to integrate with your
 MS Windows NT4 or Active Directory domain security, understand it cannot be done.
-The only option is to purchase the upgrade from MS Windows XP Home Edition to
-MS Windows XP Professional.
+The only option is to purchase the upgrade from MS Windows Home Edition to
+a MS Windows Professional edition.
 </para>
 
 <note><para>
-MS Windows XP Home Edition does not have the ability to join any type of domain
-security facility. Unlike MS Windows 9x/Me, MS Windows XP Home Edition also completely
-lacks the ability to log onto a network.
+MS Windows Home Editions do not have the ability to join any type of domain
+security facility. Unlike MS Windows 9x/Me, MS Windows Home Edition
+deliberatly lacks the ability to log onto a network.
 </para></note>
 
 <para>
