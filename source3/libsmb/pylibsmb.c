@@ -50,6 +50,24 @@ static PyTypeObject *get_pytype(const char *module, const char *type)
 	return result;
 }
 
+/*
+ * We're using "const char **" for keywords,
+ * PyArg_ParseTupleAndKeywords expects a "char **". Confine the
+ * inevitable warnings to just one place.
+ */
+static int ParseTupleAndKeywords(PyObject *args, PyObject *kw,
+				 const char *format, const char **keywords,
+				 ...)
+{
+	va_list a;
+	int ret;
+	va_start(a, keywords);
+	ret = PyArg_VaParseTupleAndKeywords(args, kw, format,
+					    (char **)keywords, a);
+	va_end(a);
+	return ret;
+}
+
 struct py_cli_thread;
 
 struct py_cli_state {
@@ -375,8 +393,8 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		return -1;
 	}
 
-	ret = PyArg_ParseTupleAndKeywords(
-		args, kwds, "ss|O!", (char **)kwlist,
+	ret = ParseTupleAndKeywords(
+		args, kwds, "ss|O!", kwlist,
 		&host, &share, py_type_Credentials, &creds);
 
 	Py_DECREF(py_type_Credentials);
@@ -440,8 +458,8 @@ static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
 		"ShareAccess", "CreateDisposition", "CreateOptions",
 		"SecurityFlags", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kwds, "s|IIIIIII", (char **)kwlist,
+	if (!ParseTupleAndKeywords(
+		    args, kwds, "s|IIIIIII", kwlist,
 		    &fname, &CreateFlags, &DesiredAccess, &FileAttributes,
 		    &ShareAccess, &CreateDisposition, &CreateOptions,
 		    &SecurityFlags)) {
@@ -505,8 +523,8 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 	static const char *kwlist[] = {
 		"fnum", "buffer", "offset", "mode", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kwds, "Is#K|I", (char **)kwlist,
+	if (!ParseTupleAndKeywords(
+		    args, kwds, "Is#K|I", kwlist,
 		    &fnum, &buf, &buflen, &offset, &mode)) {
 		return NULL;
 	}
@@ -541,8 +559,8 @@ static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 	static const char *kwlist[] = {
 		"fnum", "offset", "size", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kwds, "IKI", (char **)kwlist, &fnum, &offset,
+	if (!ParseTupleAndKeywords(
+		    args, kwds, "IKI", kwlist, &fnum, &offset,
 		    &size)) {
 		return NULL;
 	}
@@ -575,8 +593,8 @@ static PyObject *py_cli_ftruncate(struct py_cli_state *self, PyObject *args,
 	static const char *kwlist[] = {
 		"fnum", "size", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kwds, "IK", (char **)kwlist, &fnum, &size)) {
+	if (!ParseTupleAndKeywords(
+		    args, kwds, "IK", kwlist, &fnum, &size)) {
 		return NULL;
 	}
 
@@ -606,8 +624,8 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 	static const char *kwlist[] = {
 		"fnum", "flag", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kwds, "II", (char **)kwlist, &fnum, &flag)) {
+	if (!ParseTupleAndKeywords(
+		    args, kwds, "II", kwlist, &fnum, &flag)) {
 		return NULL;
 	}
 
@@ -647,8 +665,8 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 		"mask", "attribute", "info_level", NULL
 	};
 
-	if (!PyArg_ParseTupleAndKeywords(
-		    args, kwds, "s|II", (char **)kwlist,
+	if (!ParseTupleAndKeywords(
+		    args, kwds, "s|II", kwlist,
 		    &mask, &attribute, &info_level)) {
 		return NULL;
 	}
