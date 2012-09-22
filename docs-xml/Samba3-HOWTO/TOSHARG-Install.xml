@@ -657,24 +657,8 @@ The following questions and issues are raised repeatedly on the Samba mailing li
 	</para>
 
 	<para>
-	&winbindd; will run as one or two daemons, depending on whether or not it is being
-	run in <emphasis>split mode</emphasis> (in which case there will be two instances).
-	</para>
-
-	</sect2>
-
-	<sect2>
-		<title>Error Message: open_oplock_ipc</title>
-
-	<para>
-	An error message is observed in the log files when &smbd; is started: <quote>open_oplock_ipc: Failed to
-	get local UDP socket for address 100007f. Error was Cannot assign requested.</quote>
-	</para>
-
-	<para>
-	Your loopback device isn't working correctly. Make sure it is configured correctly. The loopback
-	device is an internal (virtual) network device with the IP address <emphasis>127.0.0.1</emphasis>.
-	Read your OS documentation for details on how to configure the loopback on your system.
+	&winbindd; will run as many processes depending in part on how many
+	domains it needs to contact.
 	</para>
 
 	</sect2>
