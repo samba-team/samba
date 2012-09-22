@@ -47,7 +47,8 @@ struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
 	 * Create a fake SMB request that we will never send out. This is only
 	 * used to be set into the pending queue with the right mid.
 	 */
-	subreq = cli_smb_req_create(mem_ctx, ev, cli, 0, 0, 0, NULL, 0, NULL);
+	subreq = smb1cli_req_create(mem_ctx, ev, cli->conn, 0, 0, 0, 0, 0, 0,
+				    0, NULL, NULL, 0, NULL, 0, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -67,17 +68,29 @@ static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_smb_oplock_break_waiter_state *state = tevent_req_data(
 		req, struct cli_smb_oplock_break_waiter_state);
+	struct iovec *iov;
 	uint8_t wct;
 	uint16_t *vwv;
-	uint32_t num_bytes;
-	uint8_t *bytes;
 	NTSTATUS status;
 
-	status = cli_smb_recv(subreq, state, NULL, 8, &wct, &vwv,
-			      &num_bytes, &bytes);
+	status = smb1cli_req_recv(subreq, state,
+				  &iov, /* piov */
+				  NULL, /* phdr */
+				  &wct,
+				  &vwv,
+				  NULL, /* pvwv_offset */
+				  NULL, /* pnum_bytes */
+				  NULL, /* pbytes */
+				  NULL, /* pbytes_offset */
+				  NULL, /* pinbuf */
+				  NULL, 0); /* expected */
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
+		return;
+	}
+	if (wct < 8) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 	state->fnum = SVAL(vwv+2, 0);
