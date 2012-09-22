@@ -541,7 +541,7 @@ msg.msg_acctrightslen = sizeof(fd);
             conf.DEFINE('LDAP_SET_REBIND_PROC_ARGS', '2')
 
         # last but not least, if ldap_init() exists, we want to use ldap
-        if conf.CONFIG_SET('HAVE_LDAP_INIT'):
+        if conf.CONFIG_SET('HAVE_LDAP_INIT') and conf.CONFIG_SET('HAVE_LDAP_H'):
             conf.DEFINE('HAVE_LDAP', '1')
             conf.DEFINE('LDAP_DEPRECATED', '1')
             conf.env['HAVE_LDAP'] = '1'
