@@ -299,10 +299,8 @@ static int py_tevent_req_wait(struct tevent_context *ev,
 	return py_tevent_cond_wait(&cond);
 }
 
-static void py_tevent_signalme(struct tevent_req *req)
+static void py_tevent_cond_signal(struct py_tevent_cond *cond)
 {
-	struct py_tevent_cond *cond = (struct py_tevent_cond *)
-		tevent_req_callback_data_void(req);
 	int ret;
 
 	ret = pthread_mutex_lock(&cond->mutex);
@@ -314,6 +312,14 @@ static void py_tevent_signalme(struct tevent_req *req)
 	assert(ret == 0);
 	ret = pthread_mutex_unlock(&cond->mutex);
 	assert(ret == 0);
+}
+
+static void py_tevent_signalme(struct tevent_req *req)
+{
+	struct py_tevent_cond *cond = (struct py_tevent_cond *)
+		tevent_req_callback_data_void(req);
+
+	py_tevent_cond_signal(cond);
 }
 
 #else
