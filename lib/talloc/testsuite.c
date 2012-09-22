@@ -1355,6 +1355,175 @@ static bool test_free_children(void)
 	return true;
 }
 
+static bool test_memlimit(void)
+{
+	void *root;
+	char *l1, *l2, *l3, *l4, *l5, *t;
+
+	printf("test: memlimit\n# MEMORY LIMITS\n");
+
+	printf("==== talloc_new(NULL)\n");
+	root = talloc_new(NULL);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_size(root, 2048)\n");
+	l1 = talloc_size(root, 2048);
+	torture_assert("memlimit", l1 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_free(l1)\n");
+	talloc_free(l1);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(root, level 1)\n");
+	l1 = talloc_strdup(root, "level 1");
+	torture_assert("memlimit", l1 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_set_memlimit(l1, 2048)\n");
+	torture_assert("memlimit", talloc_set_memlimit(l1, 2048) == 0,
+		"failed: setting memlimit should never fail\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_size(root, 2048)\n");
+	l2 = talloc_size(l1, 2048);
+	torture_assert("memlimit", l2 == NULL,
+		"failed: alloc should fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l1, level 2)\n");
+	l2 = talloc_strdup(l1, "level 2");
+	torture_assert("memlimit", l2 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_free(l2)\n");
+	talloc_free(l2);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_size(NULL, 2048)\n");
+	l2 = talloc_size(NULL, 2048);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_steal(l1, l2)\n");
+	talloc_steal(l1, l2);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l2, level 3)\n");
+	l3 = talloc_strdup(l2, "level 3");
+	torture_assert("memlimit", l3 == NULL,
+		"failed: alloc should fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_free(l2)\n");
+	talloc_free(l2);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(NULL, level 2)\n");
+	l2 = talloc_strdup(NULL, "level 2");
+	talloc_steal(l1, l2);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l2, level 3)\n");
+	l3 = talloc_strdup(l2, "level 3");
+	torture_assert("memlimit", l3 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_set_memlimit(l3, 1024)\n");
+	torture_assert("memlimit", talloc_set_memlimit(l3, 1024) == 0,
+		"failed: setting memlimit should never fail\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l3, level 4)\n");
+	l4 = talloc_strdup(l3, "level 4");
+	torture_assert("memlimit", l4 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_set_memlimit(l4, 512)\n");
+	torture_assert("memlimit", talloc_set_memlimit(l4, 512) == 0,
+		"failed: setting memlimit should never fail\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l4, level 5)\n");
+	l5 = talloc_strdup(l4, "level 5");
+	torture_assert("memlimit", l5 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_realloc(NULL, l5, char, 600)\n");
+	t = talloc_realloc(NULL, l5, char, 600);
+	torture_assert("memlimit", t == NULL,
+		"failed: alloc should fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_realloc(NULL, l5, char, 5)\n");
+	l5 = talloc_realloc(NULL, l5, char, 5);
+	torture_assert("memlimit", l5 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l3, level 4)\n");
+	l4 = talloc_strdup(l3, "level 4");
+	torture_assert("memlimit", l4 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_set_memlimit(l4, 512)\n");
+	torture_assert("memlimit", talloc_set_memlimit(l4, 512) == 0,
+		"failed: setting memlimit should never fail\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_strdup(l4, level 5)\n");
+	l5 = talloc_strdup(l4, "level 5");
+	torture_assert("memlimit", l5 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+
+	printf("==== Make new temp context and steal l5\n");
+	t = talloc_new(root);
+	talloc_steal(t, l5);
+
+	talloc_report_full(root, stdout);
+
+	printf("==== talloc_size(t, 2048)\n");
+	l1 = talloc_size(t, 2048);
+	torture_assert("memlimit", l1 != NULL,
+		"failed: alloc should not fail due to memory limit\n");
+
+	talloc_report_full(root, stdout);
+	talloc_free(root);
+
+	printf("success: memlimit\n");
+
+	return true;
+}
 
 static void test_reset(void)
 {
@@ -1416,6 +1585,9 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_rusty();
 	test_reset();
 	ret &= test_free_children();
+	test_reset();
+	ret &= test_memlimit();
+
 
 	if (ret) {
 		test_reset();
