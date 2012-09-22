@@ -269,7 +269,7 @@ static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle, file
 	DATA_BLOB blob = data_blob_null;
 	ssize_t length;
 	const char *name = FAKE_ACL_ACCESS_XATTR;
-	struct smb_acl_t *acl;
+	struct smb_acl_t *acl = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 		
 	do {
