@@ -1373,12 +1373,12 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		/*
 		 * This check is mostly for giving the correct error code
 		 * for compounded requests.
-		 *
-		 * TODO: we may need to move this after the session
-		 *       and tcon checks.
 		 */
 		if (!NT_STATUS_IS_OK(req->next_status)) {
 			return smbd_smb2_request_error(req, req->next_status);
+		}
+		if (!NT_STATUS_IS_OK(session_status)) {
+			return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 		}
 	} else {
 		req->compat_chain_fsp = NULL;
