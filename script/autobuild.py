@@ -485,6 +485,8 @@ parser.add_option("", "--always-email", help="always send email, even on success
                   action="store_true")
 parser.add_option("", "--daemon", help="daemonize after initial setup",
                   action="store_true")
+parser.add_option("", "--branch", help="the branch to work on (default=master)",
+                  default="master", type='str')
 
 
 def email_failure(status, failed_task, failed_stage, failed_tag, errstr):
@@ -612,13 +614,14 @@ while True:
             else:
                 rebase_url = None
             if rebase_url is not None:
-                rebase_tree(rebase_url)
+                rebase_tree(rebase_url, rebase_branch=options.branch)
         except Exception:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
-            email_failure(-1, 'rebase', 'rebase', 'rebase', 'rebase on master failed')
+            email_failure(-1, 'rebase', 'rebase', 'rebase',
+                          'rebase on %s failed' % options.branch)
             sys.exit(1)
-        blist = buildlist(tasks, args, rebase_url)
+        blist = buildlist(tasks, args, rebase_url, rebase_branch=options.branch)
         if options.tail:
             blist.start_tail()
         (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
@@ -642,9 +645,9 @@ if status == 0:
         print("Running passcmd: %s" % options.passcmd)
         run_cmd(options.passcmd, dir=test_master)
     if options.pushto is not None:
-        push_to(options.pushto)
+        push_to(options.pushto, push_branch=options.branch)
     elif options.push_master:
-        push_to(samba_master_ssh)
+        push_to(samba_master_ssh, push_branch=options.branch)
     if options.keeplogs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
