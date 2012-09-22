@@ -487,6 +487,8 @@ parser.add_option("", "--daemon", help="daemonize after initial setup",
                   action="store_true")
 parser.add_option("", "--branch", help="the branch to work on (default=master)",
                   default="master", type='str')
+parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
+                  default=None, type='str')
 
 def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=None):
     '''send an email to options.email about the failure'''
@@ -622,7 +624,8 @@ while True:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
             email_failure(-1, 'rebase', 'rebase', 'rebase',
-                          'rebase on %s failed' % options.branch)
+                          'rebase on %s failed' % options.branch,
+                          log_base=options.log_base)
             sys.exit(1)
         blist = buildlist(tasks, args, rebase_url, rebase_branch=options.branch)
         if options.tail:
@@ -655,7 +658,7 @@ if status == 0:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
     if options.always_email:
-        email_success()
+        email_success(log_base=options.log_base)
     blist.remove_logs()
     cleanup()
     print(errstr)
@@ -665,7 +668,7 @@ if status == 0:
 blist.tarlogs("logs.tar.gz")
 
 if options.email is not None:
-    email_failure(status, failed_task, failed_stage, failed_tag, errstr)
+    email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=options.log_base)
 
 cleanup()
 print(errstr)
