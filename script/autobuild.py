@@ -488,10 +488,11 @@ parser.add_option("", "--daemon", help="daemonize after initial setup",
 parser.add_option("", "--branch", help="the branch to work on (default=master)",
                   default="master", type='str')
 
-
-def email_failure(status, failed_task, failed_stage, failed_tag, errstr):
+def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=None):
     '''send an email to options.email about the failure'''
     user = os.getenv("USER")
+    if log_base is None:
+        log_base = "http://git.samba.org/%s/samba-autobuild" % user
     text = '''
 Dear Developer,
 
@@ -502,25 +503,25 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 
 A summary of the autobuild process is here:
 
-  http://git.samba.org/%s/samba-autobuild/autobuild.log
-''' % (failed_task, errstr, user)
+  %s/autobuild.log
+''' % (failed_task, errstr, log_base)
     
     if failed_task != 'rebase':
         text += '''
 You can see logs of the failed task here:
 
-  http://git.samba.org/%s/samba-autobuild/%s.stdout
-  http://git.samba.org/%s/samba-autobuild/%s.stderr
+  %s/%s.stdout
+  %s/%s.stderr
 
 or you can get full logs of all tasks in this job here:
 
-  http://git.samba.org/%s/samba-autobuild/logs.tar.gz
+  %s/logs.tar.gz
 
 The top commit for the tree that was built was:
 
 %s
 
-''' % (user, failed_tag, user, failed_tag, user, top_commit_msg)
+''' % (log_base, failed_tag, log_base, failed_tag, log_base, top_commit_msg)
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
@@ -531,9 +532,11 @@ The top commit for the tree that was built was:
     s.sendmail(msg['From'], [msg['To']], msg.as_string())
     s.quit()
 
-def email_success():
+def email_success(log_base=None):
     '''send an email to options.email about a successful build'''
     user = os.getenv("USER")
+    if log_base is None:
+        log_base = "http://git.samba.org/%s/samba-autobuild" % user
     text = '''
 Dear Developer,
 
@@ -546,9 +549,9 @@ Your autobuild has succeeded.
 
 you can get full logs of all tasks in this job here:
 
-  http://git.samba.org/%s/samba-autobuild/logs.tar.gz
+  %s/logs.tar.gz
 
-''' % user
+''' % log_base
 
     text += '''
 The top commit for the tree that was built was:
