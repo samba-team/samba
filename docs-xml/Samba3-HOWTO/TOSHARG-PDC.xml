@@ -823,23 +823,21 @@ a more complete explanation.
 
 <para>
 <indexterm><primary>active directory</primary></indexterm>
-Samba-3 is not, and cannot act as, an Active Directory server. It cannot truly function as an Active Directory
-PDC. The protocols for some of the functionality of Active Directory domain controllers has been partially
-implemented on an experimental only basis. Please do not expect Samba-3 to support these protocols. Do not
-depend on any such functionality either now or in the future. The Samba Team may remove these experimental
-features or may change their behavior. This is mentioned for the benefit of those who have discovered secret
-capabilities in Samba-3 and who have asked when this functionality will be completed. The answer is maybe
-someday or maybe never!
+Samba-4 is also available as an Active Directory server. It can truly function as an Active Directory
+PDC. The protocols for some of the functionality of Active Directory
+domain controllers has been implemented.
 </para>
 
 <para>
 <indexterm><primary>domain controllers</primary></indexterm>
 <indexterm><primary>active directory</primary></indexterm>
-To be sure, Samba-3 is designed to provide most of the functionality that Microsoft Windows NT4-style
-domain controllers have. Samba-3 does not have all the capabilities of Windows NT4, but it does have
-a number of features that Windows NT4 domain controllers do not have. In short, Samba-3 is not NT4 and it
-is not Windows Server 200x: it is not an Active Directory server. We hope this is plain and simple
-enough for all to understand.
+<indexterm><primary>classic domain support</primary></indexterm>
+To be sure, Samba-4 is also designed to provide most of the functionality that Microsoft Windows NT4-style
+domain controllers have. Samba-4 does not have all the capabilities of Windows NT4, but it does have
+a number of features that Windows NT4 domain controllers do not
+have. We call it a <emphasis>classic domain</emphasis> controller for
+this reason, as in short, Samba-4 when acting in this mode is not NT4,
+and the Active Directory Domain Control aspect is a distinct capability.
 </para>
 
 </sect1>
