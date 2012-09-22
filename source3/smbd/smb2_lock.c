@@ -380,7 +380,6 @@ static bool smbd_smb2_lock_cancel(struct tevent_req *req)
         }
 
         smb2req = state->smb2req;
-        smb2req->cancelled = true;
 
 	remove_pending_lock(state, state->blr);
 	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);

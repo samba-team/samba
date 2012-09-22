@@ -363,8 +363,6 @@ static bool smbd_smb2_read_cancel(struct tevent_req *req)
 		tevent_req_data(req,
 		struct smbd_smb2_read_state);
 
-	state->smb2req->cancelled = true;
-
 	return cancel_smb2_aio(state->smbreq);
 }
 

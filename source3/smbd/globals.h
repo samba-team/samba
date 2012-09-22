@@ -465,7 +465,6 @@ struct smbd_smb2_request {
 	bool do_signing;
 	bool do_encryption;
 	struct tevent_timer *async_te;
-	bool cancelled;
 	bool compound_related;
 
 	/*
