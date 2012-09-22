@@ -439,15 +439,20 @@ def rebase_tree(rebase_url, rebase_branch = "master"):
             (rebase_remote, rebase_branch),
             show=True, dir=test_master)
 
-def push_to(url):
-    print("Pushing to %s" % url)
+def push_to(push_url, push_branch = "master"):
+    push_remote = "pushto"
+    print("Pushing to %s" % push_url)
     if options.mark:
         run_cmd("git config --replace-all core.editor script/commit_mark.sh", dir=test_master)
         run_cmd("git commit --amend -c HEAD", dir=test_master)
         # the notes method doesn't work yet, as metze hasn't allowed refs/notes/* in master
         # run_cmd("EDITOR=script/commit_mark.sh git notes edit HEAD", dir=test_master)
-    run_cmd("git remote add -t master pushto %s" % url, show=True, dir=test_master)
-    run_cmd("git push pushto +HEAD:master", show=True, dir=test_master)
+    run_cmd("git remote add -t %s %s %s" %
+            (push_branch, push_remote, push_url),
+            show=True, dir=test_master)
+    run_cmd("git push %s +HEAD:%s" %
+            (push_remote, push_branch),
+            show=True, dir=test_master)
 
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
 
