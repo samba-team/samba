@@ -10,9 +10,6 @@ import smtplib
 from email.mime.text import MIMEText
 from distutils.sysconfig import get_python_lib
 
-samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
-samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/git/samba.git')
-
 # This speeds up testing remarkably.
 os.environ['TDB_NO_FSYNC'] = '1'
 
@@ -467,12 +464,8 @@ parser.add_option("", "--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
 parser.add_option("", "--rebase", help="rebase on the given tree before testing",
                   default=None, type='str')
-parser.add_option("", "--rebase-master", help="rebase on %s before testing" % samba_master,
-                  default=False, action='store_true')
 parser.add_option("", "--pushto", help="push to a git url on success",
                   default=None, type='str')
-parser.add_option("", "--push-master", help="push to %s on success" % samba_master_ssh,
-                  default=False, action='store_true')
 parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
                   default=False, action="store_true")
 parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
@@ -575,7 +568,7 @@ The top commit for the tree that was built was:
 (options, args) = parser.parse_args()
 
 if options.retry:
-    if not options.rebase_master and options.rebase is None:
+    if options.rebase is None:
         raise Exception('You can only use --retry if you also rebase')
 
 testbase = "%s/b%u" % (options.testbase, os.getpid())
@@ -613,13 +606,7 @@ while True:
     try:
         try:
             if options.rebase is not None:
-                rebase_url = options.rebase
-            elif options.rebase_master:
-                rebase_url = samba_master
-            else:
-                rebase_url = None
-            if rebase_url is not None:
-                rebase_tree(rebase_url, rebase_branch=options.branch)
+                rebase_tree(options.rebase, rebase_branch=options.branch)
         except Exception:
             cleanup_list.append(gitroot + "/autobuild.pid")
             cleanup()
@@ -627,7 +614,7 @@ while True:
                           'rebase on %s failed' % options.branch,
                           log_base=options.log_base)
             sys.exit(1)
-        blist = buildlist(tasks, args, rebase_url, rebase_branch=options.branch)
+        blist = buildlist(tasks, args, options.rebase, rebase_branch=options.branch)
         if options.tail:
             blist.start_tail()
         (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
@@ -652,8 +639,6 @@ if status == 0:
         run_cmd(options.passcmd, dir=test_master)
     if options.pushto is not None:
         push_to(options.pushto, push_branch=options.branch)
-    elif options.push_master:
-        push_to(samba_master_ssh, push_branch=options.branch)
     if options.keeplogs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
