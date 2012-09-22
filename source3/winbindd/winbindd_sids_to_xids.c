@@ -223,7 +223,7 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 	struct winbindd_sids_to_xids_state *state = tevent_req_data(
 		req, struct winbindd_sids_to_xids_state);
 	NTSTATUS status;
-	char *result;
+	char *result = NULL;
 	uint32_t i, num_non_cached;
 
 	if (tevent_req_is_nterror(req, &status)) {
