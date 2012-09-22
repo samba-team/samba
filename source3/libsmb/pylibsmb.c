@@ -70,11 +70,20 @@ static int ParseTupleAndKeywords(PyObject *args, PyObject *kw,
 
 struct py_cli_thread;
 
+struct py_cli_oplock_break {
+	uint16_t fnum;
+	uint8_t level;
+};
+
 struct py_cli_state {
 	PyObject_HEAD
 	struct cli_state *cli;
 	struct tevent_context *ev;
 	struct py_cli_thread *thread_state;
+
+	struct tevent_req *oplock_waiter;
+	struct py_cli_oplock_break *oplock_breaks;
+	struct py_tevent_cond *oplock_cond;
 };
 
 #if HAVE_PTHREAD
@@ -377,8 +386,13 @@ static PyObject *py_cli_state_new(PyTypeObject *type, PyObject *args,
 	self->cli = NULL;
 	self->ev = NULL;
 	self->thread_state = NULL;
+	self->oplock_waiter = NULL;
+	self->oplock_cond = NULL;
+	self->oplock_breaks = NULL;
 	return (PyObject *)self;
 }
+
+static void py_cli_got_oplock_break(struct tevent_req *req);
 
 static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 			     PyObject *kwds)
@@ -429,12 +443,116 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		PyErr_SetNTSTATUS(status);
 		return -1;
 	}
+
+	self->oplock_waiter = cli_smb_oplock_break_waiter_send(
+		self->ev, self->ev, self->cli);
+	if (self->oplock_waiter == NULL) {
+		PyErr_NoMemory();
+		return -1;
+	}
+	tevent_req_set_callback(self->oplock_waiter, py_cli_got_oplock_break,
+				self);
 	return 0;
+}
+
+static void py_cli_got_oplock_break(struct tevent_req *req)
+{
+	struct py_cli_state *self = (struct py_cli_state *)
+		tevent_req_callback_data_void(req);
+	struct py_cli_oplock_break b;
+	struct py_cli_oplock_break *tmp;
+	size_t num_breaks;
+	NTSTATUS status;
+
+	status = cli_smb_oplock_break_waiter_recv(req, &b.fnum, &b.level);
+	TALLOC_FREE(req);
+	self->oplock_waiter = NULL;
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	num_breaks = talloc_array_length(self->oplock_breaks);
+	tmp = talloc_realloc(self->ev, self->oplock_breaks,
+			     struct py_cli_oplock_break, num_breaks+1);
+	if (tmp == NULL) {
+		return;
+	}
+	self->oplock_breaks = tmp;
+	self->oplock_breaks[num_breaks] = b;
+
+	if (self->oplock_cond != NULL) {
+		py_tevent_cond_signal(self->oplock_cond);
+	}
+
+	self->oplock_waiter = cli_smb_oplock_break_waiter_send(
+		self->ev, self->ev, self->cli);
+	if (self->oplock_waiter == NULL) {
+		return;
+	}
+	tevent_req_set_callback(self->oplock_waiter, py_cli_got_oplock_break,
+				self);
+}
+
+static PyObject *py_cli_get_oplock_break(struct py_cli_state *self,
+					 PyObject *args)
+{
+	size_t num_oplock_breaks;
+
+	if (!PyArg_ParseTuple(args, "")) {
+		return NULL;
+	}
+
+	if (self->oplock_cond != NULL) {
+		errno = EBUSY;
+		PyErr_SetFromErrno(PyExc_RuntimeError);
+		return NULL;
+	}
+
+	num_oplock_breaks = talloc_array_length(self->oplock_breaks);
+
+	if (num_oplock_breaks == 0) {
+		struct py_tevent_cond cond;
+		int ret;
+
+		self->oplock_cond = &cond;
+		ret = py_tevent_cond_wait(&cond);
+		self->oplock_cond = NULL;
+
+		if (ret != 0) {
+			errno = ret;
+			PyErr_SetFromErrno(PyExc_RuntimeError);
+			return NULL;
+		}
+	}
+
+	num_oplock_breaks = talloc_array_length(self->oplock_breaks);
+	if (num_oplock_breaks > 0) {
+		PyObject *result;
+
+		result = Py_BuildValue(
+			"{s:i,s:i}",
+			"fnum", self->oplock_breaks[0].fnum,
+			"level", self->oplock_breaks[0].level);
+
+		memmove(&self->oplock_breaks[0], &self->oplock_breaks[1],
+			sizeof(self->oplock_breaks[0]) *
+			(num_oplock_breaks - 1));
+		self->oplock_breaks = talloc_realloc(
+			NULL, self->oplock_breaks, struct py_cli_oplock_break,
+			num_oplock_breaks - 1);
+
+		return result;
+	}
+
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static void py_cli_state_dealloc(struct py_cli_state *self)
 {
 	TALLOC_FREE(self->thread_state);
+	TALLOC_FREE(self->oplock_waiter);
 	TALLOC_FREE(self->ev);
 
 	if (self->cli != NULL) {
@@ -737,6 +855,8 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "readdir", (PyCFunction)py_cli_list,
 	  METH_VARARGS|METH_KEYWORDS,
 	  "List a directory" },
+	{ "get_oplock_break", (PyCFunction)py_cli_get_oplock_break,
+	  METH_VARARGS, "Wait for an oplock break" },
 	{ NULL, NULL, 0, NULL }
 };
 
