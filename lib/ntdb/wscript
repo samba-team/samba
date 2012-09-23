@@ -155,7 +155,7 @@ def build(bld):
 
         bld.SAMBA_BINARY('ntdbtorture',
                          'tools/ntdbtorture.c',
-                         deps='ntdb',
+                         deps='ntdb ccan-err',
                          install=False)
 
         bld.SAMBA_BINARY('ntdbtool',
