@@ -165,11 +165,11 @@ def build(bld):
     ccan_module(bld, 'endian')
     ccan_module(bld, 'likely', 'ccan-str')
     ccan_module(bld, 'typesafe_cb')
+    ccan_module(bld, 'err', 'ccan-compiler')
 
     # Failtest pulls in a lot of stuff, and it's only for unit tests.
     if bld.env.DEVELOPER_MODE:
         ccan_module(bld, 'container_of', 'ccan-check_type')
-        ccan_module(bld, 'err', 'ccan-compiler')
         ccan_module(bld, 'htable', 'ccan-compiler')
         ccan_module(bld, 'list', 'ccan-container_of')
         ccan_module(bld, 'time')
