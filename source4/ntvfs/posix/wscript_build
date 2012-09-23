@@ -54,7 +54,7 @@ bld.SAMBA_LIBRARY('posix_eadb',
 
 bld.SAMBA_PYTHON('python_posix_eadb',
 	source='python/pyposix_eadb.c',
-	deps='pyparam_util posix_eadb',
+	deps='pyparam_util posix_eadb tdb_compat',
 	realname='samba/posix_eadb.so'
 	)
 
