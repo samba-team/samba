@@ -239,7 +239,7 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 	num_non_cached = 0;
 
 	for (i=0; i<state->num_sids; i++) {
-		char type;
+		char type = '\0';
 		uint32_t unix_id = UINT32_MAX;
 		bool found = true;
 
