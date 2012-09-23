@@ -323,6 +323,7 @@ utimensat vsyslog _write __write __xstat
 	elif (host_os.rfind('hpux') > -1):
 		Logs.info('Using HPUX ACLs')
                 conf.DEFINE('HAVE_HPUX_ACLS',1)
+                conf.DEFINE('POSIX_ACL_NEEDS_MASK',1)
                 default_static_modules.extend(TO_LIST('vfs_hpuxacl'))
 	elif (host_os.rfind('irix') > -1):
 		Logs.info('Using IRIX ACLs')
