@@ -214,16 +214,6 @@ int rep_initgroups(char *name, gid_t id)
 #endif /* HAVE_INITGROUPS */
 
 
-#if (defined(SecureWare) && defined(SCO))
-/* This is needed due to needing the nap() function but we don't want
-   to include the Xenix libraries since that will break other things...
-   BTW: system call # 0x0c28 is the same as calling nap() */
-long nap(long milliseconds) {
-	 return syscall(0x0c28, milliseconds);
- }
-#endif
-
-
 #ifndef HAVE_MEMMOVE
 /*******************************************************************
 safely copies memory, ensuring no overlap problems.

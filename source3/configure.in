@@ -1477,8 +1477,7 @@ DSO_EXPORTS=""
 				test x"$LDSHFLAGS_Z_NODEFS" != x && break
 			done
 			;;
-		*sco*) AC_DEFINE(SCO,1,[Whether the host os is sco unix])
-			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+		*sco*) AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			;;
 		*unixware*) AC_DEFINE(UNIXWARE,1,[Whether the host os is unixware])
 			BLDSHARED="true"
