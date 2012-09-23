@@ -212,12 +212,27 @@ AC_TRY_RUN([#include <stdlib.h>
 #include <unistd.h>
 main() { 
   struct stat st;
-  char tpl[20]="/tmp/test.XXXXXX"; 
-  int fd = mkstemp(tpl); 
-  if (fd == -1) exit(1);
+  char tpl[20]="/tmp/test.XXXXXX";
+  char tpl2[20]="/tmp/test.XXXXXX";
+  int fd = mkstemp(tpl);
+  int fd2 = mkstemp(tpl2);
+  if (fd == -1) {
+        if (fd2 != -1) {
+                unlink(tpl2);
+        }
+        exit(1);
+  }
+  if (fd2 == -1) exit(1);
   unlink(tpl);
+  unlink(tpl2);
   if (fstat(fd, &st) != 0) exit(1);
   if ((st.st_mode & 0777) != 0600) exit(1);
+  if (strcmp(tpl, "/tmp/test.XXXXXX") == 0) {
+        exit(1);
+  }
+  if (strcmp(tpl, tpl2) == 0) {
+        exit(1);
+  }
   exit(0);
 }],
 libreplace_cv_HAVE_SECURE_MKSTEMP=yes,
