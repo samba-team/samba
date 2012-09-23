@@ -287,22 +287,29 @@ utimensat vsyslog _write __write __xstat
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('darwin') > -1):
         conf.DEFINE('DARWINOS', 1)
-        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
         conf.ADD_CFLAGS('-fno-common')
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('freebsd') > -1):
         if conf.CHECK_HEADERS('sunacl.h'):
             conf.DEFINE('HAVE_FREEBSD_SUNACL_H', '1')
             conf.CHECK_FUNCS_IN('acl', 'sunacl')
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
-    elif (host_os.rfind('netbsd') > -1):
+    elif (host_os.rfind('irix') > -1):
+        conf.DEFINE('IRIX', 1)
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
-    elif (host_os.rfind('openbsd') > -1):
+    elif (host_os.rfind('aix') > -1):
+        conf.DEFINE('AIX', 1)
+        conf.DEFINE('STAT_ST_BLOCKSIZE', 'DEV_BSIZE')
+    elif (host_os.rfind('hpux') > -1):
+        conf.DEFINE('HPUX', 1)
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '8192')
+    elif (host_os.rfind('osf') > -1):
+        conf.DEFINE('OSF1', 1)
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
-    elif (host_os.rfind('sunos') > -1):
-        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+
     # FIXME: Add more checks here.
     else:
-        Logs.warn("Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os)
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
 
     if Options.options.with_acl_support:
 	if (host_os.rfind('sysv5') > -1) and conf.CHECK_FUNCS_IN('sec', 'facl', checklibc=True):
