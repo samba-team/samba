@@ -1390,12 +1390,7 @@ DSO_EXPORTS=""
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
-		*irix*) AC_DEFINE(IRIX,1,[Whether the host os is irix])
-			case "$host_os" in
-			*irix6*) AC_DEFINE(IRIX6,1,[Whether the host os is irix6])
-			;;
-			esac
-			BLDSHARED="true"
+		*irix*) BLDSHARED="true"
 			LDSHFLAGS="-Wl,-set_version,sgi1.0 -shared"
 			SONAMEFLAG="-Wl,-soname,"
 			if test "${GCC}" = "yes"; then
