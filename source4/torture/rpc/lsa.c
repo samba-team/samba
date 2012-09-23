@@ -247,22 +247,18 @@ static bool test_OpenPolicy2_fail(struct dcerpc_binding_handle *b,
 		return true;
 	}
 
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
-		    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
-			torture_comment(tctx,
-					"OpenPolicy2 correctly returned with "
-					"result: %s\n",
-					nt_errstr(r.out.result));
-			return true;
-		}
+	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_ACCESS_DENIED) ||
+	    NT_STATUS_EQUAL(r.out.result, NT_STATUS_RPC_PROTSEQ_NOT_SUPPORTED)) {
+		torture_comment(tctx,
+				"OpenPolicy2 correctly returned with "
+				"result: %s\n",
+				nt_errstr(r.out.result));
+		return true;
 	}
 
-	torture_assert_ntstatus_equal(tctx,
-				      r.out.result,
-				      NT_STATUS_OK,
-				      "OpenPolicy2 return value should be "
-				      "ACCESS_DENIED");
+	torture_fail(tctx,
+		     "OpenPolicy2 return value should be "
+		     "ACCESS_DENIED or RPC_PROTSEQ_NOT_SUPPORTED");
 
 	return false;
 }
