@@ -1770,23 +1770,16 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		d_o.out.handle = &sec_handle2;
 		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_DeleteObject_r(b, tctx, &d_o),
 			"DeleteObject failed");
-		if (!NT_STATUS_EQUAL(d_o.out.result, NT_STATUS_INVALID_HANDLE)) {
-			torture_comment(tctx, "Second delete expected INVALID_HANDLE - %s\n", nt_errstr(d_o.out.result));
-			ret = false;
-		} else {
+		torture_assert_ntstatus_equal(tctx, d_o.out.result, NT_STATUS_INVALID_HANDLE,
+					      "OpenSecret expected INVALID_HANDLE");
 
-			torture_comment(tctx, "Testing OpenSecret of just-deleted secret\n");
+		torture_comment(tctx, "Testing OpenSecret of just-deleted secret\n");
 
-			torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenSecret_r(b, tctx, &r2),
-				"OpenSecret failed");
-			if (!NT_STATUS_EQUAL(r2.out.result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-				torture_comment(tctx, "OpenSecret expected OBJECT_NAME_NOT_FOUND - %s\n", nt_errstr(r2.out.result));
-				ret = false;
-			}
-		}
-
+		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenSecret_r(b, tctx, &r2),
+					   "OpenSecret failed");
+		torture_assert_ntstatus_equal(tctx, r2.out.result, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					      "OpenSecret expected OBJECT_NAME_NOT_FOUND");
 	}
-
 	return ret;
 }
 
@@ -1810,8 +1803,9 @@ static bool test_EnumAccountRights(struct dcerpc_binding_handle *b,
 	if (!NT_STATUS_IS_OK(r.out.result)) {
 		torture_comment(tctx, "EnumAccountRights of %s failed - %s\n",
 		       dom_sid_string(tctx, sid), nt_errstr(r.out.result));
-		return false;
 	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"EnumAccountRights failed");
 
 	return true;
 }
@@ -1865,10 +1859,8 @@ static bool test_OpenAccount(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenAccount_r(b, tctx, &r),
 		"OpenAccount failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "OpenAccount failed - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"OpenAccount failed");
 
 	if (!test_EnumPrivsAccount(b, tctx, handle, &acct_handle)) {
 		return false;
@@ -1910,10 +1902,8 @@ static bool test_EnumAccounts(struct dcerpc_binding_handle *b,
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NO_MORE_ENTRIES)) {
 			break;
 		}
-		if (!NT_STATUS_IS_OK(r.out.result)) {
-			torture_comment(tctx, "EnumAccounts failed - %s\n", nt_errstr(r.out.result));
-			return false;
-		}
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"EnumAccounts failed");
 
 		if (!test_LookupSids(b, tctx, handle, &sids1)) {
 			return false;
@@ -1946,10 +1936,8 @@ static bool test_EnumAccounts(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_EnumAccounts_r(b, tctx, &r),
 		"EnumAccounts failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "EnumAccounts failed - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"EnumAccounts failed");
 
 	if (sids2.num_sids != 1) {
 		torture_comment(tctx, "Returned wrong number of entries (%d)\n", sids2.num_sids);
@@ -2047,10 +2035,8 @@ static bool test_EnumPrivs(struct dcerpc_binding_handle *b,
 	resume_handle = 0;
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_EnumPrivs_r(b, tctx, &r),
 		"EnumPrivs failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "EnumPrivs failed - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"EnumPrivs failed");
 
 	for (i = 0; i< privs1.count; i++) {
 		test_LookupPrivDisplayName(b, tctx, handle, (struct lsa_String *)&privs1.privs[i].name);
@@ -3301,11 +3287,8 @@ bool test_lsa_Close(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_Close_r(b, tctx, &r),
 		"Close failed");
-	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "Close failed - %s\n",
-		nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"Close failed");
 
 	torture_assert_ntstatus_equal(tctx, dcerpc_lsa_Close_r(b, tctx, &r),
 		NT_STATUS_RPC_SS_CONTEXT_MISMATCH, "Close should failed");
