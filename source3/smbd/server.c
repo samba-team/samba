@@ -1529,7 +1529,10 @@ extern void build_options(bool screen);
 
 	/* do a printer update now that all messaging has been set up,
 	 * before we allow clients to start connecting */
-	printing_subsystem_update(ev_ctx, msg_ctx, false);
+	if (!lp__disable_spoolss() &&
+	    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
+		printing_subsystem_update(ev_ctx, msg_ctx, false);
+	}
 
 	TALLOC_FREE(frame);
 	/* make sure we always have a valid stackframe */
