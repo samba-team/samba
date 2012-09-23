@@ -1363,7 +1363,6 @@ DSO_EXPORTS=""
 				SONAMEFLAG="-Wl,-h,"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
-			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*sunos*) AC_DEFINE(SUNOS4,1,[Whether the host os is sunos4])
 			BLDSHARED="true"
@@ -1371,7 +1370,6 @@ DSO_EXPORTS=""
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*netbsd* | *freebsd* | *dragonfly* )
 			BLDSHARED="true"
@@ -1380,7 +1378,6 @@ DSO_EXPORTS=""
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC -DPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
-			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*openbsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
@@ -1388,7 +1385,6 @@ DSO_EXPORTS=""
 			SONAMEFLAG="-Wl,-soname,"
 			PICFLAG="-fPIC"
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512,[The size of a block])
-			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			;;
 		*irix*) BLDSHARED="true"
 			LDSHFLAGS="-Wl,-set_version,sgi1.0 -shared"
@@ -1469,7 +1465,6 @@ DSO_EXPORTS=""
 				PICFLAG="-fPIC"
 			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
-			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			for flags in "-expect_unresolved '*'" "-Wl,-expect_unresolved,'*'" ; do
 				saved_ldflags="$LDFLAGS"
 				AC_MSG_CHECKING([if $flags works])
