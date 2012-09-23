@@ -43,6 +43,16 @@ def configure(conf):
         conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
         conf.DEFINE('_BSD_TYPES', 1, add_to_cflags=True)
 
+    # Try to find the right extra flags for C99 initialisers
+    for f in ["", "-AC99", "-qlanglvl=extc99", "-qlanglvl=stdc99", "-c99"]:
+        if conf.CHECK_CFLAGS([f], '''
+struct foo {int x;char y;};
+struct foo bar = { .y = 'X', .x = 1 };
+'''):
+            if f != "":
+                conf.ADD_CFLAGS(f)
+            break
+
     conf.CHECK_HEADERS('linux/types.h crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
