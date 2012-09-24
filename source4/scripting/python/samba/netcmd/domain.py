@@ -137,9 +137,9 @@ class cmd_domain_info(Command):
 
 
 class cmd_domain_provision(Command):
-    """Promotes an existing domain member or NT4 PDC to an AD DC"""
+    """Provision a domain."""
 
-    synopsis = "%prog <dnsdomain> [DC|RODC] [options]"
+    synopsis = "%prog [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
