@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Jeremy Allison 		1996-2002
@@ -180,7 +180,7 @@ static struct dom_sid *pdb_generate_sam_sid(void)
 	}
 
 	return sam_sid;
-}   
+}
 
 /* return our global_sam_sid */
 struct dom_sid *get_global_sam_sid(void)
@@ -194,7 +194,7 @@ struct dom_sid *get_global_sam_sid(void)
 	 * memory for global_sam_sid is allocated in
 	 * pdb_generate_sam_sid() as needed
 	 *
-	 * Note: this is garded by a transaction
+	 * Note: this is guarded by a transaction
 	 *       to prevent races on startup which
 	 *       can happen with some dbwrap backends
 	 */
@@ -220,8 +220,8 @@ struct dom_sid *get_global_sam_sid(void)
 	return global_sam_sid;
 }
 
-/** 
- * Force get_global_sam_sid to requery the backends 
+/**
+ * Force get_global_sam_sid to requery the backends
  */
 void reset_global_sam_sid(void) 
 {
@@ -230,7 +230,7 @@ void reset_global_sam_sid(void)
 
 /*****************************************************************
  Check if the SID is our sam SID (S-1-5-21-x-y-z).
-*****************************************************************/  
+*****************************************************************/
 
 bool sid_check_is_our_sam(const struct dom_sid *sid)
 {
@@ -239,7 +239,7 @@ bool sid_check_is_our_sam(const struct dom_sid *sid)
 
 /*****************************************************************
  Check if the SID is our domain SID (S-1-5-21-x-y-z).
-*****************************************************************/  
+*****************************************************************/
 
 bool sid_check_is_in_our_sam(const struct dom_sid *sid)
 {
