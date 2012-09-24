@@ -1410,6 +1410,12 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
+			if (!(access_granted & DELETE_ACCESS)) {
+				if (can_delete_file_in_directory(conn, smb_fname)) {
+					access_granted |= DELETE_ACCESS;
+				}
+			}
+
 			access_mask = access_granted;
 		} else {
 			access_mask = FILE_GENERIC_ALL;
