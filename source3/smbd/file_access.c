@@ -87,7 +87,7 @@ bool can_access_file_acl(struct connection_struct *conn,
 ****************************************************************************/
 
 bool can_delete_file_in_directory(connection_struct *conn,
-				  struct smb_filename *smb_fname)
+				  const struct smb_filename *smb_fname)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dname = NULL;
