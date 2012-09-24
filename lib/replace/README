@@ -73,6 +73,7 @@ readlink
 symlink
 realpath
 poll
+setproctitle
 
 Types:
 bool

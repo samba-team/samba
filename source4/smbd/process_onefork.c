@@ -32,19 +32,6 @@
 #include "param/param.h"
 #include "ldb_wrap.h"
 
-#ifdef HAVE_SETPROCTITLE
-#ifdef HAVE_SETPROCTITLE_H
-#include <setproctitle.h>
-#endif
-#else
-#define setproctitle none_setproctitle
-static int none_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
-static int none_setproctitle(const char *fmt, ...)
-{
-	return 0;
-}
-#endif
-
 NTSTATUS process_model_onefork_init(void);
 
 /*
