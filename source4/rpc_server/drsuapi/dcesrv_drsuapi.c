@@ -220,7 +220,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	/*
 	 * allocate the return bind_info
 	 */
-	bind_info = talloc(mem_ctx, struct drsuapi_DsBindInfoCtr);
+	bind_info = talloc_zero(mem_ctx, struct drsuapi_DsBindInfoCtr);
 	W_ERROR_HAVE_NO_MEMORY(bind_info);
 
 	bind_info->length	= 28;
