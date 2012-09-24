@@ -265,7 +265,10 @@ class cmd_domain_provision(Command):
 
         creds.set_kerberos_state(DONT_USE_KERBEROS)
 
-        suggested_forwarder = dns_forwarder is None and self._get_nameserver_ip() or dns_forwarder
+        if (dns_forwarder is None and self._get_nameserver_ip() or dns_forwarder):
+            suggested_forwarder = True
+        else:
+            suggested_forwarder = False
 
         if len(self.raw_argv) == 1:
             interactive = True
