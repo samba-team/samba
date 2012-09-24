@@ -544,9 +544,7 @@ static PyObject *py_cli_get_oplock_break(struct py_cli_state *self,
 
 		return result;
 	}
-
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static void py_cli_state_dealloc(struct py_cli_state *self)
@@ -628,8 +626,7 @@ static PyObject *py_cli_close(struct py_cli_state *self, PyObject *args)
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
@@ -733,8 +730,7 @@ static PyObject *py_cli_ftruncate(struct py_cli_state *self, PyObject *args,
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
@@ -765,8 +761,7 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 		PyErr_SetNTSTATUS(status);
 		return NULL;
 	}
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_cli_list(struct py_cli_state *self,
