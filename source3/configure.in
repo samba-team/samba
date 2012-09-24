@@ -4641,7 +4641,7 @@ if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     samba_cv_sysquotas_file="lib/sysquotas_4B.c"
     AC_CHECK_MEMBERS([struct dqblk.dqb_curbytes], # Darwin bytecount style
 	[ AC_DEFINE([HAVE_STRUCT_DQBLK_DQB_CURBYTES],[1],[darwin style quota bytecount])],,
-	[#include <sys/typeѕ.h>
+	[#include <sys/types.h>
 	#include <sys/quota.h>])
 
 fi
