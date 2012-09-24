@@ -108,33 +108,6 @@ enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEED
 
 
 /*
-  run the "recovered" eventscript on all nodes
- */
-static int run_recovered_eventscript(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, const char *caller)
-{
-	TALLOC_CTX *tmp_ctx;
-	uint32_t *nodes;
-
-	tmp_ctx = talloc_new(ctdb);
-	CTDB_NO_MEMORY(ctdb, tmp_ctx);
-
-	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
-					nodes, 0,
-					CONTROL_TIMEOUT(), false, tdb_null,
-					NULL, NULL,
-					NULL) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event when called from %s\n", caller));
-
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
-/*
   remember the trouble maker
  */
 static void ctdb_set_culprit_count(struct ctdb_recoverd *rec, uint32_t culprit, uint32_t count)
@@ -174,6 +147,46 @@ static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
 	ctdb_set_culprit_count(rec, culprit, 1);
 }
 
+
+/* this callback is called for every node that failed to execute the
+   recovered event
+*/
+static void recovered_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR, (__location__ " Node %u failed the recovered event. Setting it as recovery fail culprit\n", node_pnn));
+
+	ctdb_set_culprit(rec, node_pnn);
+}
+
+/*
+  run the "recovered" eventscript on all nodes
+ */
+static int run_recovered_eventscript(struct ctdb_recoverd *rec, struct ctdb_node_map *nodemap, const char *caller)
+{
+	TALLOC_CTX *tmp_ctx;
+	uint32_t *nodes;
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	tmp_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, tmp_ctx);
+
+	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_END_RECOVERY,
+					nodes, 0,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					NULL, recovered_fail_callback,
+					rec) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event when called from %s\n", caller));
+
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
 
 /* this callback is called for every node that failed to execute the
    start recovery event
@@ -1775,7 +1788,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	/* execute the "recovered" event script on all nodes */
-	ret = run_recovered_eventscript(ctdb, nodemap, "do_recovery");
+	ret = run_recovered_eventscript(rec, nodemap, "do_recovery");
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Recovery process failed.\n"));
 		return -1;
@@ -3726,7 +3739,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		}
 
 		/* execute the "recovered" event script on all nodes */
-		ret = run_recovered_eventscript(ctdb, nodemap, "monitor_cluster");
+		ret = run_recovered_eventscript(rec, nodemap, "monitor_cluster");
 #if 0
 // we cant check whether the event completed successfully
 // since this script WILL fail if the node is in recovery mode
