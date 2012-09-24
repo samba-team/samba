@@ -453,6 +453,10 @@ def push_to(push_url, push_branch = "master"):
 
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
 
+gitroot = find_git_root()
+if gitroot is None:
+    raise Exception("Failed to find git root")
+
 parser = OptionParser()
 parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
@@ -481,13 +485,13 @@ parser.add_option("", "--daemon", help="daemonize after initial setup",
 parser.add_option("", "--branch", help="the branch to work on (default=master)",
                   default="master", type='str')
 parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
-                  default=None, type='str')
+                  default=gitroot, type='str')
 
 def email_failure(status, failed_task, failed_stage, failed_tag, errstr, log_base=None):
     '''send an email to options.email about the failure'''
     user = os.getenv("USER")
     if log_base is None:
-        log_base = "http://git.samba.org/%s/samba-autobuild" % user
+        log_base = gitroot
     text = '''
 Dear Developer,
 
@@ -531,7 +535,7 @@ def email_success(log_base=None):
     '''send an email to options.email about a successful build'''
     user = os.getenv("USER")
     if log_base is None:
-        log_base = "http://git.samba.org/%s/samba-autobuild" % user
+        log_base = gitroot
     text = '''
 Dear Developer,
 
@@ -573,10 +577,6 @@ if options.retry:
 
 testbase = "%s/b%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
-
-gitroot = find_git_root()
-if gitroot is None:
-    raise Exception("Failed to find git root")
 
 # get the top commit message, for emails
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
