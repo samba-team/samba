@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
-   Set NT and POSIX ACLs and other VFS operations from Python 
-   
+   Set NT and POSIX ACLs and other VFS operations from Python
+
    Copyrigyt (C) Andrew Bartlett 2012
    Copyright (C) Jeremy Allison 1994-2009.
    Copyright (C) Andreas Gruenbacher 2002.
@@ -217,17 +217,17 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 			TALLOC_FREE(acl);
 			return NULL;
 		}
-		
+
 		if (sys_acl_set_tag_type(entry, SMB_ACL_GROUP) != 0) {
 			TALLOC_FREE(acl);
 			return NULL;
 		}
-		
+
 		if (sys_acl_set_qualifier(entry, &gid) != 0) {
 			TALLOC_FREE(acl);
 			return NULL;
 		}
-		
+
 		if (sys_acl_set_permset(entry, &mode_group) != 0) {
 			TALLOC_FREE(acl);
 			return NULL;
@@ -380,7 +380,7 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "si", &fname, &security_info_wanted))
 		return NULL;
-	
+
 	sd = get_nt_acl_no_snum(tmp_ctx, fname, security_info_wanted);
 
 	py_sd = py_return_ndr_struct("samba.dcerpc.security", "descriptor", sd, sd);
