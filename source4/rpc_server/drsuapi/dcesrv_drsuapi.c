@@ -576,13 +576,8 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 	unsigned int i;
 
 	*r->out.level_out = r->in.req->req1.level;
-	r->out.ctr = talloc(mem_ctx, union drsuapi_DsGetDCInfoCtr);
+	r->out.ctr = talloc_zero(mem_ctx, union drsuapi_DsGetDCInfoCtr);
 	W_ERROR_HAVE_NO_MEMORY(r->out.ctr);
-
-	sites_dn = samdb_sites_dn(b_state->sam_ctx, mem_ctx);
-	if (!sites_dn) {
-		return WERR_DS_OBJ_NOT_FOUND;
-	}
 
 	switch (*r->out.level_out) {
 	case -1:
@@ -596,6 +591,11 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
+	}
+
+	sites_dn = samdb_sites_dn(b_state->sam_ctx, mem_ctx);
+	if (!sites_dn) {
+		return WERR_DS_OBJ_NOT_FOUND;
 	}
 
 	ret = ldb_search(b_state->sam_ctx, mem_ctx, &res, sites_dn, LDB_SCOPE_SUBTREE, attrs,
