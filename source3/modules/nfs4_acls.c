@@ -574,7 +574,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 static bool smbacl4_fill_ace4(
 	TALLOC_CTX *mem_ctx,
-	const char *filename,
+	const files_struct *fsp,
 	smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
@@ -582,6 +582,7 @@ static bool smbacl4_fill_ace4(
 	SMB_ACE4PROP_T *ace_v4 /* output */
 )
 {
+	const char *filename = fsp->fsp_name->base_name;
 	DEBUG(10, ("got ace for %s\n", sid_string_dbg(&ace_nt->trustee)));
 
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
@@ -673,7 +674,7 @@ static int smbacl4_MergeIgnoreReject(
 }
 
 static SMB4ACL_T *smbacl4_win2nfs4(
-	const char *filename,
+	const files_struct *fsp,
 	const struct security_acl *dacl,
 	smbacl4_vfs_params *pparams,
 	uid_t ownerUID,
@@ -683,6 +684,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 	SMB4ACL_T *theacl;
 	uint32	i;
 	TALLOC_CTX *mem_ctx = talloc_tos();
+	const char *filename = fsp->fsp_name->base_name;
 
 	DEBUG(10, ("smbacl4_win2nfs4 invoked\n"));
 
@@ -694,7 +696,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 		SMB_ACE4PROP_T	ace_v4;
 		bool	addNewACE = True;
 
-		if (!smbacl4_fill_ace4(mem_ctx, filename, pparams,
+		if (!smbacl4_fill_ace4(mem_ctx, fsp, pparams,
 				       ownerUID, ownerGID,
 				       dacl->aces + i, &ace_v4)) {
 			DEBUG(3, ("Could not fill ace for file %s, SID %s\n",
@@ -791,7 +793,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	theacl = smbacl4_win2nfs4(fsp->fsp_name->base_name, psd->dacl, &params,
+	theacl = smbacl4_win2nfs4(fsp, psd->dacl, &params,
 				  sbuf.st_ex_uid, sbuf.st_ex_gid);
 	if (!theacl)
 		return map_nt_error_from_unix(errno);
