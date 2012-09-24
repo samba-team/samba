@@ -908,6 +908,5 @@ int rep_usleep(useconds_t sec)
 #ifndef HAVE_SETPROCTITLE
 void rep_setproctitle(const char *fmt, ...)
 {
-	return 0;
 }
 #endif
