@@ -128,6 +128,10 @@
 #include <sys/types.h>
 #endif
 
+#ifdef HAVE_SETPROCTITLE_H
+#include <setproctitle.h>
+#endif
+
 #if STDC_HEADERS
 #include <stdlib.h>
 #include <stddef.h>
@@ -843,6 +847,11 @@ int rep_getpeereid(int s, uid_t *uid, gid_t *gid);
 #define usleep rep_usleep
 typedef long useconds_t;
 int usleep(useconds_t);
+#endif
+
+#ifndef HAVE_SETPROCTITLE
+#define setproctitle rep_setproctitle
+void rep_setproctitle(const char *fmt, ...) PRINTF_ATTRIBUTE(1, 2);
 #endif
 
 #endif /* _LIBREPLACE_REPLACE_H */
