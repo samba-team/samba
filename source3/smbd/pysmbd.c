@@ -51,7 +51,7 @@ static NTSTATUS set_sys_acl_no_snum(const char *fname,
 	}
 
 	if (!(conn->params = talloc(conn, struct share_params))) {
-		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
+		DEBUG(0,("set_sys_acl_no_snum: talloc() failed!\n"));
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -65,7 +65,8 @@ static NTSTATUS set_sys_acl_no_snum(const char *fname,
 	ret = SMB_VFS_SYS_ACL_SET_FILE( conn, fname, acltype, theacl);
 	if (ret != 0) {
 		status = map_nt_error_from_unix_common(ret);
-		DEBUG(0,("set_nt_acl_no_snum: fset_nt_acl returned zero.\n"));
+		DEBUG(0,("set_sys_acl_no_snum: SMB_VFS_SYS_ACL_SET_FILE "
+			 "returned zero.\n"));
 	}
 
 	conn_free(conn);
