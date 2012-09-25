@@ -752,6 +752,15 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		ports = (const char **)str_list_make_v3(talloc_tos(), smb_ports, NULL);
 	}
 
+	for (j = 0; ports && ports[j]; j++) {
+		unsigned port = atoi(ports[j]);
+
+		if (port == 0 || port > 0xffff) {
+			exit_server_cleanly("Invalid port in the config or on "
+					    "the commandline specified!");
+		}
+	}
+
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		/* We have been given an interfaces line, and been
 		   told to only bind to those interfaces. Create a
@@ -772,9 +781,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 
 			for (j = 0; ports && ports[j]; j++) {
 				unsigned port = atoi(ports[j]);
-				if (port == 0 || port > 0xffff) {
-					continue;
-				}
 
 				/* Keep the first port for mDNS service
 				 * registration.
@@ -810,11 +816,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,"); ) {
 			for (j = 0; ports && ports[j]; j++) {
 				struct sockaddr_storage ss;
-
 				unsigned port = atoi(ports[j]);
-				if (port == 0 || port > 0xffff) {
-					continue;
-				}
 
 				/* Keep the first port for mDNS service
 				 * registration.
