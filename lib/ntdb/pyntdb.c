@@ -550,8 +550,8 @@ static PyMethodDef ntdb_methods[] = {
 	{ NULL }
 };
 
-void inittdb(void);
-void inittdb(void)
+void initntdb(void);
+void initntdb(void)
 {
 	PyObject *m;
 
