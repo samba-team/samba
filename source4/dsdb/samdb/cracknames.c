@@ -638,6 +638,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		domain_filter = NULL;
 		if (!sid) {
+			info1->dns_domain_name = NULL;
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			return WERR_OK;
 		}
@@ -1195,6 +1196,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 	}
 	case DRSUAPI_DS_NAME_FORMAT_DNS_DOMAIN:	
 	case DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY: {
+		info1->dns_domain_name = NULL;
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 		return WERR_OK;
 	}
