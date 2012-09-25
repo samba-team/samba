@@ -66,6 +66,12 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  print_provision_ranges)
 from samba.xattr import copytree_with_xattrs
 
+# make sure the script dies immediately when hitting control-C,
+# rather than raising KeyboardInterrupt. As we do all database
+# operations using transactions, this is safe.
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 replace=2**FLAG_MOD_REPLACE
 add=2**FLAG_MOD_ADD
 delete=2**FLAG_MOD_DELETE

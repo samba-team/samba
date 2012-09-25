@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 #  provide information on connected users and open files
-#  Copyright ǒ Jelmer Vernooij 2008
+#  Copyright (c) Jelmer Vernooij 2008
 #
 #  Based on the original in EJS:
 #  Copyright Andrew Tridgell 2005
@@ -10,6 +10,12 @@
 #
 
 import os, sys
+
+# make sure the script dies immediately when hitting control-C,
+# rather than raising KeyboardInterrupt. As we do all database
+# operations using transactions, this is safe.
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 sys.path.insert(0, "bin/python")
 
