@@ -71,5 +71,8 @@ if __name__ == "__main__":
     req.names = [names]
 
     (result, ctr) = drs.DsCrackNames(drs_handle, 1, req)
-    print ctr.array[0].status
-    print ctr.array[0].result_name
+    print "# of result %d" %ctr.count
+    if ctr.count:
+        print ctr.array[0].status
+        print ctr.array[0].result_name
+        print ctr.array[0].dns_domain_name
