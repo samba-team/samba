@@ -1,0 +1,13 @@
+<samba:parameter name="cldap port"
+                 context="G"
+				 type="integer"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This option controls the port used by the CLDAP protocol.
+</para>
+</description>
+
+<value type="default">389</value>
+<value type="example">3389</value>
+</samba:parameter>
