@@ -136,6 +136,10 @@ bool spnego_parse_negTokenInit(DATA_BLOB blob,
 	bool ret;
 	ASN1_DATA *data;
 
+	for (i = 0; i < ASN1_MAX_OIDS; i++) {
+		OIDs[i] = NULL;
+	}
+
 	data = asn1_init(talloc_tos());
 	if (data == NULL) {
 		return false;
