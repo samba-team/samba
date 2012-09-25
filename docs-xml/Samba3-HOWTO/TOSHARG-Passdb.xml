@@ -329,7 +329,7 @@ Samba-3 introduces a number of new password backend capabilities.
 			<listitem><para>Windows NT 3.5x.</para></listitem>
 			<listitem><para>Windows NT 4.0.</para></listitem>
 			<listitem><para>Windows editions labeled Professional.</para></listitem>
-			<listitem><para>Windows editions laveled Server/Advanced Server.</para></listitem>
+			<listitem><para>Windows editions labeled Server/Advanced Server.</para></listitem>
 		</itemizedlist>
 
 		<para>
