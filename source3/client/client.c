@@ -4970,6 +4970,7 @@ static char **remote_completion(const char *text, int len)
 
 	info.matches[0] = SMB_STRNDUP(info.matches[1], info.samelen);
 	info.matches[info.count] = NULL;
+	TALLOC_FREE(ctx);
 	return info.matches;
 
 cleanup:
