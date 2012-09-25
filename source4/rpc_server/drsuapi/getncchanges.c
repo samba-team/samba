@@ -1016,7 +1016,6 @@ static WERROR getncchanges_repl_obj(struct drsuapi_bind_state *b_state,
 		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
 
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
-	req10->highwatermark.highest_usn = 0;
 	return WERR_OK;
 }
 
