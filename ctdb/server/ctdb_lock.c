@@ -1058,7 +1058,7 @@ void ctdb_lock_blocked_handler(struct tevent_context *ev,
 	    process_name && strstr(process_name, "smbd")) {
 		DEBUG(DEBUG_WARNING,
 		      ("Deadlock detected. Killing smbd process (pid=%d)", blocker_pid));
-		ctdb_kill(lock_ctx->ctdb, blocker_pid, SIGKILL);
+		kill(blocker_pid, SIGKILL);
 	}
 
 	free(process_name);
