@@ -810,7 +810,9 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
-
+	if (r->in.req->ctr1.taskID != 0) {
+		return WERR_INVALID_PARAM;
+	}
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSEXECUTEKCC,
 				     &ndr_table_drsuapi, "kccsrv", "DsExecuteKCC",
 				     IRPC_CALL_TIMEOUT);
