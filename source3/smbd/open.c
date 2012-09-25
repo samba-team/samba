@@ -1929,6 +1929,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool def_acl = False;
 	bool posix_open = False;
 	bool new_file_created = False;
+	bool first_open_attempt = true;
 	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
@@ -2035,6 +2036,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			/* Ensure we don't reprocess this message. */
 			remove_deferred_open_message_smb(req->sconn, req->mid);
+
+			first_open_attempt = false;
 		}
 	}
 
@@ -2191,6 +2194,24 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		flags2 &= ~(O_CREAT|O_TRUNC);
 	}
 
+	if (first_open_attempt && lp_kernel_oplocks(SNUM(conn))) {
+		/*
+		 * With kernel oplocks the open breaking an oplock
+		 * blocks until the oplock holder has given up the
+		 * oplock or closed the file. We prevent this by first
+		 * trying to open the file with O_NONBLOCK (see "man
+		 * fcntl" on Linux). For the second try, triggered by
+		 * an oplock break response, we do not need this
+		 * anymore.
+		 *
+		 * This is true under the assumption that only Samba
+		 * requests kernel oplocks. Once someone else like
+		 * NFSv4 starts to use that API, we will have to
+		 * modify this by communicating with the NFSv4 server.
+		 */
+		flags2 |= O_NONBLOCK;
+	}
+
 	/*
 	 * Ensure we can't write on a read-only share or file.
 	 */
@@ -2238,6 +2259,64 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp_open = open_file(fsp, conn, req, parent_dir,
 			     flags|flags2, unx_mode, access_mask,
 			     open_access_mask, &new_file_created);
+
+	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
+		struct deferred_open_record state;
+
+		/*
+		 * EWOULDBLOCK/EAGAIN maps to NETWORK_BUSY.
+		 */
+		if (file_existed && S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
+			DEBUG(10, ("FIFO busy\n"));
+			return NT_STATUS_NETWORK_BUSY;
+		}
+		if (req == NULL) {
+			DEBUG(10, ("Internal open busy\n"));
+			return NT_STATUS_NETWORK_BUSY;
+		}
+
+		/*
+		 * From here on we assume this is an oplock break triggered
+		 */
+
+		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
+		if (lck == NULL) {
+			state.delayed_for_oplocks = false;
+			state.async_open = false;
+			state.id = fsp->file_id;
+			defer_open(NULL, request_time, timeval_set(0, 0),
+				   req, &state);
+			DEBUG(10, ("No share mode lock found after "
+				   "EWOULDBLOCK, retrying sync\n"));
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
+		find_oplock_types(fsp, 0, lck, &batch_entry, &exclusive_entry,
+				  &got_level2_oplock, &got_a_none_oplock);
+
+		if (delay_for_batch_oplocks(fsp, req->mid, 0, batch_entry) ||
+		    delay_for_exclusive_oplocks(fsp, req->mid, 0,
+						exclusive_entry)) {
+			schedule_defer_open(lck, request_time, req);
+			TALLOC_FREE(lck);
+			DEBUG(10, ("Sent oplock break request to kernel "
+				   "oplock holder\n"));
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
+		/*
+		 * No oplock from Samba around. Immediately retry with
+		 * a blocking open.
+		 */
+		state.delayed_for_oplocks = false;
+		state.async_open = false;
+		state.id = lck->data->id;
+		defer_open(lck, request_time, timeval_set(0, 0), req, &state);
+		TALLOC_FREE(lck);
+		DEBUG(10, ("No Samba oplock around after EWOULDBLOCK. "
+			   "Retrying sync\n"));
+		return NT_STATUS_SHARING_VIOLATION;
+	}
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
