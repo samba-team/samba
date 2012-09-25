@@ -26,7 +26,9 @@
 DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
 		      const struct sockaddr_storage *sslist,
-		      size_t num_addrs );
+		      size_t num_addrs,
+		      uint32_t flags);
+
 DNS_ERROR do_gethostbyname(const char *server, const char *host);
 
 #endif /* defined(WITH_DNS_UPDATES) */

@@ -31,7 +31,8 @@
 
 DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
-		      const struct sockaddr_storage *sslist, size_t num_addrs )
+		      const struct sockaddr_storage *sslist, size_t num_addrs,
+		      uint32_t flags)
 {
 	DNS_ERROR err;
 	struct dns_connection *conn;
