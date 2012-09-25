@@ -260,9 +260,9 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 	cd $(<D) && $(XMLLINT) --xinclude --noent --postvalid --noout $(<F)
 
 # Find undocumented parameters
-undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl
-	$(PERL) scripts/find_missing_doc.pl $(SRCDIR)
-	$(PERL) scripts/find_missing_manpages.pl $(SRCDIR)/source3
+undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc scripts/find_missing_manpages
+	$(PERL) scripts/find_missing_doc $(SRCDIR)
+	$(PERL) scripts/find_missing_manpages $(SRCDIR)/source3
 
 samples: $(DOCBOOKDIR)/Samba3-HOWTO.xml xslt/extract-examples.xsl scripts/indent-smb.conf.pl
 	@mkdir -p examples
