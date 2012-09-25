@@ -592,6 +592,17 @@ static bool smbacl4_fill_ace4(
 
 	ace_v4->aceFlags = map_windows_ace_flags_to_nfs4_ace_flags(
 		ace_nt->flags);
+
+	/* remove inheritance flags on files */
+	if (VALID_STAT(fsp->fsp_name->st) &&
+	    !S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		DEBUG(10, ("Removing inheritance flags from a file\n"));
+		ace_v4->aceFlags &= ~(SMB_ACE4_FILE_INHERIT_ACE|
+				      SMB_ACE4_DIRECTORY_INHERIT_ACE|
+				      SMB_ACE4_NO_PROPAGATE_INHERIT_ACE|
+				      SMB_ACE4_INHERIT_ONLY_ACE);
+	}
+
 	ace_v4->aceMask = ace_nt->access_mask &
 		(SEC_STD_ALL | SEC_FILE_ALL);
 
