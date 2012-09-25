@@ -40,6 +40,14 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 	OM_uint32 minor;
 	struct dns_update_request *req, *resp;
 
+	DEBUG(10,("DoDNSUpdate called with flags: 0x%08x\n", flags));
+
+	if (!(flags & DNS_UPDATE_SIGNED) &&
+	    !(flags & DNS_UPDATE_UNSIGNED) &&
+	    !(flags & DNS_UPDATE_PROBE)) {
+		return ERROR_DNS_INVALID_PARAMETER;
+	}
+
 	if ( (num_addrs <= 0) || !sslist ) {
 		return ERROR_DNS_INVALID_PARAMETER;
 	}
@@ -53,44 +61,64 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		goto error;
 	}
 
-	/*
-	 * Probe if everything's fine
-	 */
+	if (flags & DNS_UPDATE_PROBE) {
 
-	err = dns_create_probe(mem_ctx, pszDomainName, pszHostName,
-			       num_addrs, sslist, &req);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+		/*
+		 * Probe if everything's fine
+		 */
 
-	err = dns_update_transaction(mem_ctx, conn, req, &resp);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+		err = dns_create_probe(mem_ctx, pszDomainName, pszHostName,
+				       num_addrs, sslist, &req);
+		if (!ERR_DNS_IS_OK(err)) goto error;
 
-	if (dns_response_code(resp->flags) == DNS_NO_ERROR) {
-		TALLOC_FREE(mem_ctx);
-		return ERROR_DNS_SUCCESS;
+		err = dns_update_transaction(mem_ctx, conn, req, &resp);
+		if (!ERR_DNS_IS_OK(err)) goto error;
+
+		if (!ERR_DNS_IS_OK(err)) {
+			DEBUG(3,("DoDNSUpdate: failed to probe DNS\n"));
+		}
+
+		if ((dns_response_code(resp->flags) == DNS_NO_ERROR) &&
+		    (flags & DNS_UPDATE_PROBE_SUFFICIENT)) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_SUCCESS;
+		}
 	}
 
-	/*
-	 * First try without signing
-	 */
+	if (flags & DNS_UPDATE_UNSIGNED) {
 
-	err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
-					sslist, num_addrs, &req);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+		/*
+		 * First try without signing
+		 */
 
-	err = dns_update_transaction(mem_ctx, conn, req, &resp);
-	if (!ERR_DNS_IS_OK(err)) goto error;
+		err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
+						sslist, num_addrs, &req);
+		if (!ERR_DNS_IS_OK(err)) goto error;
 
-	if (dns_response_code(resp->flags) == DNS_NO_ERROR) {
-		TALLOC_FREE(mem_ctx);
-		return ERROR_DNS_SUCCESS;
+		err = dns_update_transaction(mem_ctx, conn, req, &resp);
+		if (!ERR_DNS_IS_OK(err)) goto error;
+
+		if (!ERR_DNS_IS_OK(err)) {
+			DEBUG(3,("DoDNSUpdate: unsigned update failed\n"));
+		}
+
+		if ((dns_response_code(resp->flags) == DNS_NO_ERROR) &&
+		    (flags & DNS_UPDATE_UNSIGNED_SUFFICIENT)) {
+			TALLOC_FREE(mem_ctx);
+			return ERROR_DNS_SUCCESS;
+		}
 	}
 
 	/*
 	 * Okay, we have to try with signing
 	 */
-	{
+	if (flags & DNS_UPDATE_SIGNED) {
 		gss_ctx_id_t gss_context;
 		char *keyname;
+
+		err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
+						sslist, num_addrs, &req);
+		if (!ERR_DNS_IS_OK(err)) goto error;
 
 		if (!(keyname = dns_generate_keyname( mem_ctx ))) {
 			err = ERROR_DNS_NO_MEMORY;
@@ -122,6 +150,10 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 
 		err = (dns_response_code(resp->flags) == DNS_NO_ERROR) ?
 			ERROR_DNS_SUCCESS : ERROR_DNS_UPDATE_FAILED;
+
+		if (!ERR_DNS_IS_OK(err)) {
+			DEBUG(3,("DoDNSUpdate: signed update failed\n"));
+		}
 	}
 
 

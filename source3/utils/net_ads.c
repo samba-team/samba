@@ -1199,12 +1199,25 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 
 	for (i=0; i < ns_count; i++) {
 
+		uint32_t flags = DNS_UPDATE_SIGNED |
+				 DNS_UPDATE_UNSIGNED |
+				 DNS_UPDATE_UNSIGNED_SUFFICIENT |
+				 DNS_UPDATE_PROBE |
+				 DNS_UPDATE_PROBE_SUFFICIENT;
+
+		if (c->opt_force) {
+			flags &= ~DNS_UPDATE_PROBE_SUFFICIENT;
+			flags &= ~DNS_UPDATE_UNSIGNED_SUFFICIENT;
+		}
+
+		status = NT_STATUS_UNSUCCESSFUL;
+
 		/* Now perform the dns update - we'll try non-secure and if we fail,
 		   we'll follow it up with a secure update */
 
 		fstrcpy( dns_server, nameservers[i].hostname );
 
-		dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs);
+		dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs, flags);
 		if (ERR_DNS_IS_OK(dns_err)) {
 			status = NT_STATUS_OK;
 			goto done;
