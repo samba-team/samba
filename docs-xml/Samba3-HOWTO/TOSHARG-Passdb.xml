@@ -2605,18 +2605,6 @@ sambaNTPassword: 878D8014606CDA29677A44EFA1353FC7
 		Read the <link linkend="acctmgmttools">Account Management Tools</link> for details.</para>
 
 	</sect2>
-
-	<sect2>
-	<title>Configuration of <parameter>auth methods</parameter></title>
-
-	<para>
-	When explicitly setting an <smbconfoption name="auth methods"/> parameter,
-	<parameter>guest</parameter> must be specified as the first entry on the line &smbmdash;
-	for example, <smbconfoption name="auth methods">guest sam</smbconfoption>.
-	</para>
-
-	</sect2>
-
 </sect1>
 
 </chapter>
