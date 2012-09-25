@@ -1494,3 +1494,110 @@ WERROR dcesrv_drsuapi_CrackNamesByNameFormat(struct ldb_context *sam_ctx, TALLOC
 
 	return WERR_OK;
 }
+
+WERROR dcesrv_drsuapi_ListInfoServer(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+				     const struct drsuapi_DsNameRequest1 *req1,
+				     struct drsuapi_DsNameCtr1 **_ctr1)
+{
+	struct drsuapi_DsNameInfo1 *names;
+	struct ldb_result *res;
+	struct ldb_dn *server_dn, *dn;
+	struct drsuapi_DsNameCtr1 *ctr1;
+	int ret, i;
+	const char *str;
+	const char *attrs[] = {
+		"dn",
+		"dNSHostName",
+		"serverReference",
+		NULL
+	};
+
+	*_ctr1 = NULL;
+
+	ctr1 = talloc_zero(mem_ctx, struct drsuapi_DsNameCtr1);
+	W_ERROR_HAVE_NO_MEMORY(ctr1);
+
+	/*
+	 * No magic value here, we have to return 3 entries according to the
+	 * MS-DRSR.pdf
+	 */
+	ctr1->count = 3;
+	names = talloc_zero_array(ctr1, struct drsuapi_DsNameInfo1,
+				  ctr1->count);
+	W_ERROR_HAVE_NO_MEMORY(names);
+	ctr1->array = names;
+
+	for (i=0; i < ctr1->count; i++) {
+		names[i].status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+	}
+	*_ctr1 = ctr1;
+
+	if (req1->count != 1) {
+		DEBUG(1, ("Expected a count of 1 for the ListInfoServer crackname \n"));
+		return WERR_OK;
+	}
+
+	if (req1->names[0].str == NULL) {
+		return WERR_OK;
+	}
+
+	server_dn = ldb_dn_new(mem_ctx, sam_ctx, req1->names[0].str);
+	W_ERROR_HAVE_NO_MEMORY(server_dn);
+
+	ret = ldb_search(sam_ctx, mem_ctx, &res, server_dn, LDB_SCOPE_ONELEVEL,
+			 NULL, "(objectClass=nTDSDSA)");
+
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search for objectClass=nTDSDSA "
+			  "returned less than 1 objects\n"));
+		return WERR_OK;
+	}
+
+	if (res->count != 1) {
+		DEBUG(1, ("Search for objectClass=nTDSDSA "
+			  "returned less than 1 objects\n"));
+		return WERR_OK;
+	}
+
+	if (res->msgs[0]->dn) {
+		names[0].result_name = ldb_dn_alloc_linearized(names, res->msgs[0]->dn);
+		W_ERROR_HAVE_NO_MEMORY(names[0].result_name);
+		names[0].status = DRSUAPI_DS_NAME_STATUS_OK;
+	}
+
+	talloc_free(res);
+
+	ret = ldb_search(sam_ctx, mem_ctx, &res, server_dn, LDB_SCOPE_BASE,
+			 attrs, "(objectClass=*)");
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search for objectClass=* on dn %s"
+			  "returned %s\n", req1->names[0].str,
+			  ldb_strerror(ret)));
+		return WERR_OK;
+	}
+
+	if (res->count != 1) {
+		DEBUG(1, ("Search for objectClass=* on dn %s"
+			  "returned less than 1 objects\n", req1->names[0].str));
+		return WERR_OK;
+	}
+
+	str = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
+	if (str != NULL) {
+		names[1].result_name = talloc_strdup(names, str);
+		W_ERROR_HAVE_NO_MEMORY(names[1].result_name);
+		names[1].status = DRSUAPI_DS_NAME_STATUS_OK;
+	}
+
+	dn = ldb_msg_find_attr_as_dn(sam_ctx, mem_ctx, res->msgs[0], "serverReference");
+	if (dn != NULL) {
+		names[2].result_name = ldb_dn_alloc_linearized(names, dn);
+		W_ERROR_HAVE_NO_MEMORY(names[2].result_name);
+		names[2].status = DRSUAPI_DS_NAME_STATUS_OK;
+	}
+
+	talloc_free(dn);
+	talloc_free(res);
+
+	return WERR_OK;
+}

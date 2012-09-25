@@ -441,7 +441,6 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 			case DRSUAPI_DS_NAME_FORMAT_LIST_DOMAINS:
 			case DRSUAPI_DS_NAME_FORMAT_MAP_SCHEMA_GUID:
 			case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT_NAME_SANS_DOMAIN:
-			case DRSUAPI_DS_NAME_FORMAT_LIST_INFO_FOR_SERVER:
 			case DRSUAPI_DS_NAME_FORMAT_LIST_SERVERS_FOR_DOMAIN_IN_SITE:
 			case DRSUAPI_DS_NAME_FORMAT_LIST_DOMAINS_IN_SITE:
 			case DRSUAPI_DS_NAME_FORMAT_LIST_SERVERS_IN_SITE:
@@ -449,6 +448,8 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 				DEBUG(0, ("DsCrackNames: Unsupported operation requested: %X",
 					  r->in.req->req1.format_offered));
 				return WERR_OK;
+			case DRSUAPI_DS_NAME_FORMAT_LIST_INFO_FOR_SERVER:
+				return dcesrv_drsuapi_ListInfoServer(b_state->sam_ctx, mem_ctx, &r->in.req->req1, &r->out.ctr->ctr1);
 			case DRSUAPI_DS_NAME_FORMAT_LIST_ROLES:
 				return dcesrv_drsuapi_ListRoles(b_state->sam_ctx, mem_ctx,
 								&r->in.req->req1, &r->out.ctr->ctr1);
