@@ -599,7 +599,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 	}
 
 	ret = ldb_search(b_state->sam_ctx, mem_ctx, &res, sites_dn, LDB_SCOPE_SUBTREE, attrs,
-				 "objectClass=server");
+				 "(&(objectClass=server)(serverReference=*))");
 	
 	if (ret) {
 		DEBUG(1, ("searching for servers in sites DN %s failed: %s\n", 
@@ -630,7 +630,9 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
-						 LDB_SCOPE_BASE, attrs_account_1, "objectClass=computer");
+						 LDB_SCOPE_BASE, attrs_account_1,
+						"(&(objectClass=computer)(userAccountControl:1.2.840.113556.1.4.803:=%u)",
+						UF_SERVER_TRUST_ACCOUNT);
 			if (ret == LDB_SUCCESS && res_account->count == 1) {
 				const char *errstr;
 				ctr1->array[i].dns_name
