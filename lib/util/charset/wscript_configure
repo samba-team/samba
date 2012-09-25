@@ -10,8 +10,11 @@
 
 conf.CHECK_LIB(libs="iconv", shlib=True)
 
+#HP-UX can use libiconv as an add-on package, which has #define iconv_open libiconv_open
 if (conf.CHECK_FUNCS_IN('iconv_open', 'iconv', checklibc=False, headers='iconv.h') or
+    conf.CHECK_FUNCS_IN('libiconv_open', 'iconv', checklibc=False, headers='iconv.h') or 
     conf.CHECK_FUNCS('iconv_open', headers='iconv.h')):
+    
     if conf.env['HAVE_LIBICONV']:
         if conf.CHECK_FUNCS('mbrtowc', headers='wchar.h'):
             conf.DEFINE('HAVE_NATIVE_ICONV', 1)
