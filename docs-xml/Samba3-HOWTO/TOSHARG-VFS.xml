@@ -34,8 +34,7 @@ modules that come with the Samba source and provides references to some external
 <indexterm><primary>IRIX</primary></indexterm>
 <indexterm><primary>GNU/Linux</primary></indexterm>
 If not supplied with your platform distribution binary Samba package, you may have problems compiling these
-modules, as shared libraries are compiled and linked in different ways on different systems. They currently
-have been tested against GNU/Linux and IRIX.
+modules, as shared libraries are compiled and linked in different ways on different systems.
 </para>
 
 <para>
