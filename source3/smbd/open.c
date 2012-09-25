@@ -2592,7 +2592,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	/*
-	 * At this point onwards, we can guarentee that the share entry
+	 * At this point onwards, we can guarantee that the share entry
 	 * is locked, whether we created the file or not, and that the
 	 * deny mode is compatible with all current opens.
 	 */
