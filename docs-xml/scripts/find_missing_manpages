@@ -20,6 +20,7 @@ while(<IN>) {
 }
 
 $progs =~ s/@([^@]+)@//g;
+$progs =~ s/\$\(.*?\)//g;
 
 foreach(split(/bin\//, $progs)) {
 	next if($_ eq " ");
