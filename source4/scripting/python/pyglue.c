@@ -244,12 +244,5 @@ void init_glue(void)
 
 	PyModule_AddObject(m, "version",
 					   PyString_FromString(SAMBA_VERSION_STRING));
-
-	/* one of the most annoying things about python scripts is
- 	   that they don't die when you hit control-C. This fixes that
- 	   sillyness. As we do all database operations using
- 	   transactions, this is also safe. 
-	*/
-	signal(SIGINT, SIG_DFL);
 }
 

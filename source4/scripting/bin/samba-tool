@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Unix SMB/CIFS implementation.
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2008-2012
 # Copyright (C) Amitay Isaacs <amitay@gmail.com> 2011
 # Copyright (C) Giampaolo Lauria <lauria2@yahoo.com> 2011
 #
@@ -22,6 +23,12 @@ import sys
 
 # Find right direction when running from source tree
 sys.path.insert(0, "bin/python")
+
+# make sure the script dies immediately when hitting control-C,
+# rather than raising KeyboardInterrupt. As we do all database
+# operations using transactions, this is safe.
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 from samba.netcmd.main import cmd_sambatool
 cmd = cmd_sambatool()
