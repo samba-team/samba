@@ -3328,7 +3328,7 @@ test:: all torture timelimit
 		VFSLIBDIR="$(builddir)/bin" \
 		RUN_FROM_BUILD_FARM="$(RUN_FROM_BUILD_FARM)" \
 		SUBUNIT_FORMATTER="$(SUBUNIT_FORMATTER)" \
-		PERL="$(PERL)" PYTHON="$(PYTHON)" \
+		PERL="$(PERL)" PYTHON="$(PYTHON)" PYTHONPATH="$(srcdir)/../bin/python" \
 		$(srcdir)/selftest/s3-selftest.sh
 
 test-%:

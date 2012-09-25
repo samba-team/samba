@@ -278,10 +278,17 @@ def call_nsupdate(d):
         print "Calling nsupdate for %s" % d
 
     if opts.use_file is not None:
-        wfile = open(opts.use_file, 'a')
-        fcntl.lockf(wfile, fcntl.LOCK_EX)
+        rfile = open(opts.use_file, 'r+')
+        fcntl.lockf(rfile, fcntl.LOCK_EX)
+        (file_dir, file_name) = os.path.split(opts.use_file)
+        (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
+        wfile = os.fdopen(tmp_fd, 'a')
+        rfile.seek(0)
+        for line in rfile:
+            wfile.write(line)
         wfile.write(str(d)+"\n")
-        fcntl.lockf(wfile, fcntl.LOCK_UN)
+        os.rename(tmpfile, opts.use_file)
+        fcntl.lockf(rfile, fcntl.LOCK_UN)
         return
 
     normalised_name = d.name.rstrip('.') + '.'
