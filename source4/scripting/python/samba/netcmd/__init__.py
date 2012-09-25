@@ -1,5 +1,5 @@
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009-2011
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009-2012
 # Copyright (C) Theresa Halloran <theresahalloran@gmail.com> 2011
 #
 # This program is free software; you can redistribute it and/or modify
@@ -69,6 +69,8 @@ class Command(object):
     takes_args = []
     takes_options = []
     takes_optiongroups = {}
+
+    hidden = False
 
     raw_argv = None
     raw_args = None
@@ -199,16 +201,17 @@ class SuperCommand(Command):
         subcmds = self.subcommands.keys()
         subcmds.sort()
         max_length = max([len(c) for c in subcmds])
-        for cmd in subcmds:
-            self.outf.write("  %*s  - %s\n" % (
-                -max_length, cmd, self.subcommands[cmd].short_description))
+        for cmd_name in subcmds:
+            cmd = self.subcommands[cmd_name]
+            if not cmd.hidden:
+                self.outf.write("  %*s  - %s\n" % (
+                    -max_length, cmd_name, cmd.short_description))
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
             self.outf.write("For more help on a specific subcommand, please type: %s (-h|--help)\n" % myname)
             return 0
         raise CommandError("No such subcommand '%s'" % subcommand)
-
 
 
 class CommandError(Exception):

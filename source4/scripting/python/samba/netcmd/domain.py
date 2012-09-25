@@ -2,7 +2,7 @@
 #
 # Copyright Matthias Dieter Wallnoefer 2009
 # Copyright Andrew Kroeger 2009
-# Copyright Jelmer Vernooij 2007-2009
+# Copyright Jelmer Vernooij 2007-2012
 # Copyright Giampaolo Lauria 2011
 # Copyright Matthieu Patou <mat@matws.net> 2011
 # Copyright Andrew Bartlett 2008
@@ -1230,7 +1230,7 @@ class cmd_domain_classicupgrade(Command):
 
     takes_args = ["smbconf"]
 
-    def run(self, smbconf=None, targetdir=None, dbdir=None, testparm=None, 
+    def run(self, smbconf=None, targetdir=None, dbdir=None, testparm=None,
             quiet=False, verbose=False, use_xattrs=None, sambaopts=None, versionopts=None,
             dns_backend=None, use_ntvfs=False):
 
@@ -1308,22 +1308,32 @@ class cmd_domain_classicupgrade(Command):
 
         for p in paths:
             s3conf.set(p, paths[p])
-    
+
         # load smb.conf parameters
         logger.info("Reading smb.conf")
         s3conf.load(smbconf)
         samba3 = Samba3(smbconf, s3conf)
-    
+
         logger.info("Provisioning")
-        upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session(), 
+        upgrade_from_samba3(samba3, logger, targetdir, session_info=system_session(),
                             useeadb=eadb, dns_backend=dns_backend, use_ntvfs=use_ntvfs)
+
+
+class cmd_domain_samba3upgrade(cmd_domain_classicupgrade):
+    __doc__ = cmd_domain_classicupgrade.__doc__
+
+    # This command is present for backwards compatibility only,
+    # and should not be shown.
+
+    hidden = True
+
 
 class cmd_domain(SuperCommand):
     """Domain management"""
 
     subcommands = {}
     subcommands["demote"] = cmd_domain_demote()
-    if type(cmd_domain_export_keytab).__name__ != 'NoneType':
+    if cmd_domain_export_keytab is not None:
         subcommands["exportkeytab"] = cmd_domain_export_keytab()
     subcommands["info"] = cmd_domain_info()
     subcommands["provision"] = cmd_domain_provision()
@@ -1332,4 +1342,4 @@ class cmd_domain(SuperCommand):
     subcommands["level"] = cmd_domain_level()
     subcommands["passwordsettings"] = cmd_domain_passwordsettings()
     subcommands["classicupgrade"] = cmd_domain_classicupgrade()
-    subcommands["samba3upgrade"] = cmd_domain_classicupgrade()
+    subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
