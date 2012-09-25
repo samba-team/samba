@@ -19,6 +19,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* flags for DoDNSUpdate */
+
+#define	DNS_UPDATE_SIGNED		0x01
+#define	DNS_UPDATE_SIGNED_SUFFICIENT	0x02
+#define	DNS_UPDATE_UNSIGNED		0x04
+#define	DNS_UPDATE_UNSIGNED_SUFFICIENT	0x08
+#define	DNS_UPDATE_PROBE		0x10
+#define	DNS_UPDATE_PROBE_SUFFICIENT	0x20
+
 #if defined(WITH_DNS_UPDATES)
 
 #include "../lib/addns/dns.h"
