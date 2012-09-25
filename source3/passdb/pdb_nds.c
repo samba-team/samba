@@ -23,7 +23,6 @@
 
 #include <lber.h>
 #include <ldap.h>
-#include <wchar.h>
 
 #include "smbldap.h"
 #include "passdb/pdb_ldap.h"
