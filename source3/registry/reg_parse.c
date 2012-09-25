@@ -34,7 +34,6 @@
 #include "reg_format.h"
 
 #include <stdio.h>
-#include <wchar.h>
 #include <talloc.h>
 #include <stdbool.h>
 #include <string.h>
