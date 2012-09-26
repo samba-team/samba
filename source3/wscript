@@ -1280,8 +1280,10 @@ main() {
 
         if conf.CONFIG_SET('HAVE_QUOTACTL_LINUX') or \
            conf.CONFIG_SET('HAVE_QUOTACTL_4A') or \
-           conf.CONFIG_SET('HAVE_QUOTACTL_4B'):
+           conf.CONFIG_SET('HAVE_QUOTACTL_4B') or \
+           conf.CONFIG_SET('HAVE_XFS_QUOTAS'):
             conf.DEFINE('HAVE_SYS_QUOTAS', '1')
+            conf.DEFINE('WITH_QUOTAS', '1')
 
     #
     # checking for clustering extensions (CTDB)
