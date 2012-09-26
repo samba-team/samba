@@ -72,6 +72,7 @@
 
 <related>server min protocol</related>
 <synonym>max protocol</synonym>
+<synonym>protocol</synonym>
 
 <value type="default">SMB3</value>
 <value type="example">LANMAN1</value>
