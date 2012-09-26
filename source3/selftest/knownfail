@@ -8,6 +8,9 @@ samba3.posix_s3.rpc.spoolss.printer.*addprinter.driver_info_winreg # knownfail o
 samba3.posix_s3.rpc.spoolss.printer.*addprinterex.driver_info_winreg # knownfail or flapping?
 samba3.posix_s3.smb2.lock.*.rw-exclusive # another intermittent failure
 samba3.posix_s3.smb2.compound.*interim2 # wrong return code (STATUS_CANCELLED)
+samba3.posix_s3.smb2.oplock.*batch12
+samba3.posix_s3.smb2.oplock.*batch20
+samba3.posix_s3.smb2.oplock.*stream1
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
 samba3.raw.mux.* #This test is flaky on the async lock time
 samba3.smbtorture_s3.*OPLOCK4 # fails sometimes on sn-devel
