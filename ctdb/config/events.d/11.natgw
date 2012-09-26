@@ -34,6 +34,26 @@ delete_all() {
 	iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
 }
 
+ensure_natgwmaster ()
+{
+    _event="$1"
+
+    set -- $(ctdb natgwlist)
+    natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
+    natgwip="$2"
+
+    if [ "$natgwmaster" = "-1" ]; then
+	echo "There is no NATGW master node"
+	# The recovered event should never fail - we'll catch this
+	# failure in the monitor event.
+	if [ "$_event" = "recovered" ] ; then
+	    exit 0
+	else
+	    exit 1
+	fi
+    fi
+}
+
 case "$1" in 
     startup)
 	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
@@ -47,11 +67,7 @@ case "$1" in
     recovered|updatenatgw|ipreallocated)
 	mypnn=$(ctdb pnn | cut -d: -f2)
 
-	set -- $(ctdb natgwlist)
-	natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
-	natgwip="$2"
-
-	[ "$natgwmaster" = "-1" ] && die "There is no NATGW master node"
+	ensure_natgwmaster "$1"
 
 	delete_all
 
@@ -81,6 +97,10 @@ case "$1" in
 
     shutdown|stopped|removenatgw)
 	delete_all
+	;;
+
+    monitor)
+	ensure_natgwmaster "$1"
 	;;
 
     *)
