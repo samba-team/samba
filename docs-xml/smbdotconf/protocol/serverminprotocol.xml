@@ -1,7 +1,7 @@
 <samba:parameter name="server min protocol"
                  context="G"
-				 type="string"
-                 developer="1"
+                 type="enum"
+				 developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>min protocol</synonym>
 <description>
@@ -10,6 +10,6 @@
 
 <related>server max protocol</related>
 
-<value type="default">LANMAN1</value>
+<value type="default">CORE</value>
 <value type="example">NT1</value>
 </samba:parameter>
