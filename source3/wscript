@@ -31,7 +31,6 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('pam')
     opt.SAMBA3_ADD_OPTION('pam_smbpass')
     opt.SAMBA3_ADD_OPTION('quotas')
-    opt.SAMBA3_ADD_OPTION('sys-quotas')
     opt.SAMBA3_ADD_OPTION('sendfile-support')
     opt.SAMBA3_ADD_OPTION('utmp')
     opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable", default=True)
