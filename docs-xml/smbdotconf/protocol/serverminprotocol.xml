@@ -5,7 +5,12 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>min protocol</synonym>
 <description>
-	<para>This setting controls the minimum protocol version that the server will allow the client to use.</para>
+	<para>This setting controls the minimum protocol version that the server
+		will allow the client to use.</para>
+
+    <para>Normally this option should not be set as the automatic 
+    negotiation phase in the SMB protocol takes care of choosing 
+    the appropriate protocol.</para>
 </description>
 
 <related>server max protocol</related>
