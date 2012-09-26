@@ -1,4 +1,4 @@
-<samba:parameter name="rpc_server"
+<samba:parameter name="rpc_server:SERVER"
                  context="G"
 		 type="string"
 		 advanced="1" print="1"

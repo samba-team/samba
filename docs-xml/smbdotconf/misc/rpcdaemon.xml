@@ -1,4 +1,4 @@
-<samba:parameter name="rpc_daemon"
+<samba:parameter name="rpc_daemon:DAEMON"
                  context="G"
 		 type="string"
 		 advanced="1" print="1"
