@@ -1,0 +1,12 @@
+<samba:parameter name="kpasswd port"
+                 context="G"
+				 type="integer"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies which ports the Kerberos server should listen on for
+		password changes.</para>
+</description>
+
+<value type="default">464</value>
+</samba:parameter>
