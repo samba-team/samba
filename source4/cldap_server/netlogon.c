@@ -241,7 +241,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	}
 
 	if (str_list_check(services, "ntp_signd")) {
-		server_type | DS_SERVER_TIMESERV | DS_SERVER_GOOD_TIMESERV;
+		server_type |= DS_SERVER_TIMESERV | DS_SERVER_GOOD_TIMESERV;
 	}
 
 	if (samdb_rodc(sam_ctx, &am_rodc) == LDB_SUCCESS && !am_rodc) {
