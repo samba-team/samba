@@ -1,4 +1,4 @@
-<samba:parameter name="client ntlmv2 auth"
+<samba:parameter name="client NTLMv2 auth"
                  context="G"
 				 type="boolean"
                  advanced="1" developer="1"

@@ -1,4 +1,4 @@
-<samba:parameter name="add port command"
+<samba:parameter name="addport command"
                  context="G"
 				 type="string"
 		 advanced="1" developer="1"
