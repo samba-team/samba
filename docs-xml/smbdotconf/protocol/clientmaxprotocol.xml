@@ -1,0 +1,78 @@
+<samba:parameter name="client max protocol"
+		 context="G"
+		 type="enum"
+		 developer="1"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>The value of the parameter (a string) is the highest 
+    protocol level that will be supported by the client.</para>
+
+    <para>Possible values are :</para>
+    <itemizedlist>
+	<listitem>
+	    <para><constant>CORE</constant>: Earliest version. No 
+	    concept of user names.</para>
+	</listitem>
+			
+	<listitem>
+	    <para><constant>COREPLUS</constant>: Slight improvements on 
+	    CORE for efficiency.</para>
+	</listitem>
+
+	<listitem>
+	    <para><constant>LANMAN1</constant>: First <emphasis>modern</emphasis>
+	    version of the protocol. Long filename support.</para>
+	</listitem>
+
+	<listitem>
+	    <para><constant>LANMAN2</constant>: Updates to Lanman1 protocol.</para>
+	</listitem>
+
+	<listitem>
+	    <para><constant>NT1</constant>: Current up to date version of the protocol. 
+	    Used by Windows NT. Known as CIFS.</para>
+	</listitem>
+
+	<listitem>
+	    <para><constant>SMB2</constant>: Re-implementation of the SMB protocol.
+	    Used by Windows Vista and later versions of Windows. SMB2 has sub protocols available.</para>
+	    <itemizedlist>
+		<listitem>
+		    <para><constant>SMB2_02</constant>: The earliest SMB2 version.</para>
+		</listitem>
+		<listitem>
+		    <para><constant>SMB2_10</constant>: Windows 7 SMB2 version.</para>
+		</listitem>
+		<listitem>
+		    <para><constant>SMB2_22</constant>: Early Windows 8 SMB2 version.</para>
+		</listitem>
+		<listitem>
+		    <para><constant>SMB2_24</constant>: Windows 8 beta SMB2 version.</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>By default SMB2 selects the SMB2_10 variant.</para>
+	</listitem>
+
+	<listitem>
+	    <para><constant>SMB3</constant>: The same as SMB2.
+	    Used by Windows 8. SMB3 has sub protocols available.</para>
+	    <itemizedlist>
+		<listitem>
+		    <para><constant>SMB3_00</constant>: Windows 8 SMB3 version. (mostly the same as SMB2_24)</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>By default SMB3 selects the SMB3_00 variant.</para>
+	</listitem>
+    </itemizedlist>
+
+    <para>Normally this option should not be set as the automatic 
+    negotiation phase in the SMB protocol takes care of choosing 
+    the appropriate protocol.</para>
+</description>
+
+<related>server max protocol</related>
+<related>client mn protocol</related>
+
+<value type="default">SMB3</value>
+<value type="example">LANMAN1</value>
+</samba:parameter>
