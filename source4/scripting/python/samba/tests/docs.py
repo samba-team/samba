@@ -46,7 +46,7 @@ def get_documented_parameters(sourcedir):
         if m:
             name = m.group(1).replace(" ", "")
             yield name
-        m = re.match('<synonym>(.*)</synonym>', l)
+        m = re.match('.*<synonym>(.*)</synonym>.*', l)
         if m:
             name = m.group(1).replace(" ", "")
             yield name
