@@ -911,6 +911,30 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
+	/*
+	 * In MS-DRSR.pdf 5.99 IsGetNCChangesPermissionGranted
+	 *
+	 * The pseudo code indicate
+	 * revealsecrets = true
+	 * if IsRevealSecretRequest(msgIn) then
+	 *   if AccessCheckCAR(ncRoot, Ds-Replication-Get-Changes-All) = false
+	 *   then
+	 *     if (msgIn.ulExtendedOp = EXOP_REPL_SECRETS) then
+	 *     <... check if this account is ok to be replicated on this DC ...>
+	 *     <... and if not reveal secrets = no ...>
+	 *     else
+	 *       reveal secrets = false
+	 *     endif
+	 *   endif
+	 * endif
+	 *
+	 * Which basically means that if you have GET_ALL_CHANGES rights (~== RWDC)
+	 * then you can do EXOP_REPL_SECRETS
+	 */
+	if (has_get_all_changes) {
+		goto allowed;
+	}
+
 	obj_dn = drs_ObjectIdentifier_to_dn(mem_ctx, b_state->sam_ctx_system, ncRoot);
 	if (!ldb_dn_validate(obj_dn)) goto failed;
 
