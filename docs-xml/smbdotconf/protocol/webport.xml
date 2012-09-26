@@ -1,0 +1,12 @@
+<samba:parameter name="web port"
+                 context="G"
+				 type="list"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies which port the Samba web server should listen on.</para>
+</description>
+
+<value type="default">901</value>
+<value type="example">80</value>
+</samba:parameter>
