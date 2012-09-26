@@ -65,6 +65,7 @@ parser.add_option("--use-file", type="string", help="Use a file, rather than rea
 parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
 parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
 parser.add_option("--no-credentials", dest='nocreds', action='store_true', help="don't try and get credentials")
+parser.add_option("--no-substiutions", dest='nosubs', action='store_true', help="don't try and expands variables in file specified by --update-list")
 
 creds = None
 ccachename = None
@@ -278,7 +279,13 @@ def call_nsupdate(d):
         print "Calling nsupdate for %s" % d
 
     if opts.use_file is not None:
-        rfile = open(opts.use_file, 'r+')
+        try:
+            rfile = open(opts.use_file, 'r+')
+        except IOError:
+            # Perhaps create it
+            rfile = open(opts.use_file, 'w+')
+            # Open it for reading again, in case someone else got to it first
+            rfile = open(opts.use_file, 'r+')
         fcntl.lockf(rfile, fcntl.LOCK_EX)
         (file_dir, file_name) = os.path.split(opts.use_file)
         (tmp_fd, tmpfile) = tempfile.mkstemp(dir=file_dir, prefix=file_name, suffix="XXXXXX")
@@ -432,10 +439,13 @@ os.environ['KRB5_CONFIG'] = krb5conf
 
 file = open(dns_update_list, "r")
 
-samdb = SamDB(url=lp.samdb_url(), session_info=system_session(), lp=lp)
+if opts.nosubs:
+    sub_vars = {}
+else:
+    samdb = SamDB(url=lp.samdb_url(), session_info=system_session(), lp=lp)
 
-# get the substitution dictionary
-sub_vars = get_subst_vars(samdb)
+    # get the substitution dictionary
+    sub_vars = get_subst_vars(samdb)
 
 # build up a list of update commands to pass to nsupdate
 update_list = []
