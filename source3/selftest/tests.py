@@ -104,7 +104,7 @@ for t in tests:
 
 tests = ["RW1", "RW2", "RW3"]
 for t in tests:
-    plantestsuite("samba3.smbtorture_s3.vfs_aio_fork(secshare).%s" % t, "secshare", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_fork', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+    plantestsuite("samba3.smbtorture_s3.vfs_aio_fork(simpleserver).%s" % t, "simpleserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_fork', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
 posix_tests=[ "POSIX", "POSIX-APPEND"]
 
@@ -200,7 +200,7 @@ plantestsuite("samba3.ntlm_auth.krb5(ktest:local) old ccache", "ktest:local", [o
 plantestsuite("samba3.ntlm_auth.krb5(ktest:local)", "ktest:local", [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_krb5.sh"), valgrindify(python), samba3srcdir, ntlm_auth, '$PREFIX/ktest/krb5_ccache-3', '$SERVER', configuration])
 
 
-for env in ["maptoguest", "secshare"]:
+for env in ["maptoguest", "simpleserver"]:
     plantestsuite("samba3.blackbox.smbclient_auth.plain (%s) local creds" % env, env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_auth.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient, configuration + " --option=clientntlmv2auth=no --option=clientlanmanauth=yes"])
 
 env = "maptoguest"
@@ -343,7 +343,7 @@ for t in tests:
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
     elif t == "raw.samba3hide" or t == "raw.samba3checkfsp" or t ==  "raw.samba3closeerr":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "secshare", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorturetestsuite(t, "simpleserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "raw.session" or t == "smb2.session":
         plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'plain')

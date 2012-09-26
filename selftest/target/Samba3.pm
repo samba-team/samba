@@ -153,8 +153,8 @@ sub setup_env($$$)
 
 	if ($envname eq "s3dc") {
 		return $self->setup_s3dc("$path/s3dc");
-	} elsif ($envname eq "secshare") {
-		return $self->setup_secshare("$path/secshare");
+	} elsif ($envname eq "simpleserver") {
+		return $self->setup_simpleserver("$path/simpleserver");
 	} elsif ($envname eq "maptoguest") {
 		return $self->setup_maptoguest("$path/maptoguest");
 	} elsif ($envname eq "ktest") {
@@ -337,7 +337,7 @@ sub setup_admember($$$$)
 	return $ret;
 }
 
-sub setup_secshare($$)
+sub setup_simpleserver($$)
 {
 	my ($self, $path) = @_;
 	my $vfs_modulesdir_abs = $ENV{VFSLIBDIR};
@@ -346,8 +346,7 @@ sub setup_secshare($$)
 
 	my $prefix_abs = abs_path($path);
 
-	my $secshare_options = "
-	security = share
+	my $simpleserver_options = "
 	lanman auth = yes
 	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
 
@@ -361,7 +360,7 @@ sub setup_secshare($$)
 	my $vars = $self->provision($path,
 				    "LOCALSHARE4",
 				    "local4pass",
-				    $secshare_options);
+				    $simpleserver_options);
 
 	$vars or return undef;
 
@@ -371,7 +370,7 @@ sub setup_secshare($$)
 	       return undef;
 	}
 
-	$self->{vars}->{secshare} = $vars;
+	$self->{vars}->{simpleserver} = $vars;
 
 	return $vars;
 }
