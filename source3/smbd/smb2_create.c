@@ -377,6 +377,7 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 struct smbd_smb2_create_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
+	bool open_was_deferred;
 	struct timed_event *te;
 	struct tevent_immediate *im;
 	struct timeval request_time;
@@ -1204,7 +1205,7 @@ bool open_was_deferred_smb2(struct smbd_server_connection *sconn, uint64_t mid)
 		return false;
 	}
 	/* It's not in progress if there's no timeout event. */
-	if (!state->te) {
+	if (!state->open_was_deferred) {
 		return false;
 	}
 
@@ -1235,6 +1236,7 @@ static void remove_deferred_open_message_smb2_internal(struct smbd_smb2_request 
 		"mid %llu\n",
 		(unsigned long long)mid ));
 
+	state->open_was_deferred = false;
 	/* Ensure we don't have any outstanding timer event. */
 	TALLOC_FREE(state->te);
 	/* Ensure we don't have any outstanding immediate event. */
@@ -1457,6 +1459,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 				&end_time,
 				true) ));
 
+	state->open_was_deferred = true;
 	state->te = tevent_add_timer(smb2req->sconn->ev_ctx,
 				state,
 				end_time,
