@@ -3,21 +3,12 @@
                  type="enum"
 				 developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<synonym>min protocol</synonym>
 <description>
-    <para>The value of the parameter (a string) is the 
-    lowest SMB protocol dialect than Samba will support.  Please refer
-    to the <smbconfoption name="server max protocol"/>
-    parameter for a list of valid protocol names and a brief description
-    of each.  You may also wish to refer to the C source code in
-    <filename moreinfo="none">source/smbd/negprot.c</filename> for a listing of known protocol
-    dialects supported by clients.</para>
-		
-    <para>If you are viewing this parameter as a security measure, you should
-    also refer to the <smbconfoption name="lanman auth"/> parameter.  Otherwise, you should never need 
-    to change this parameter.</para>
+	<para>This setting controls the minimum protocol version that the server will allow the client to use.</para>
 </description>
 
-<related>server min protocol</related>
+<related>server max protocol</related>
 <synonym>min protocol</synonym>
 
 <value type="default">CORE</value>
