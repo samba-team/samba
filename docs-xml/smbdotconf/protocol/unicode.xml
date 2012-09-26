@@ -1,0 +1,13 @@
+<samba:parameter name="unicode"
+                 context="G"
+				 type="bool"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies whether the server and client should support unicode.</para>
+
+	<para>If this option is set to false, the use of ASCII will be forced.</para>
+</description>
+
+<value type="default">True</value>
+</samba:parameter>
