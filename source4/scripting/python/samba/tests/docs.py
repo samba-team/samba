@@ -76,14 +76,22 @@ def get_implementation_parameters(sourcedir):
 
 class SmbDotConfTests(TestCase):
 
-    def test_missing(self):
+    def test_unknown(self):
         topdir = samba.source_tree_topdir()
         documented = set(get_documented_parameters(topdir))
         parameters = set(get_implementation_parameters(topdir))
+        # Filter out parametric options, since we can't find them in the parm
+        # table
+        documented = set([p for p in documented if not ":" in p])
         unknown = documented.difference(parameters)
         if len(unknown) > 0:
             self.fail(self._format_message(unknown,
                 "Parameters that are documented but not in the implementation:"))
+
+    def test_undocumented(self):
+        topdir = samba.source_tree_topdir()
+        documented = set(get_documented_parameters(topdir))
+        parameters = set(get_implementation_parameters(topdir))
         undocumented = parameters.difference(documented)
         if len(undocumented) > 0:
             self.fail(self._format_message(undocumented,
