@@ -1,4 +1,4 @@
-<samba:parameter name="nis homedir"
+<samba:parameter name="NIS homedir"
 	         context="G"
 			 type="boolean"
 		 advanced="1" developer="1"

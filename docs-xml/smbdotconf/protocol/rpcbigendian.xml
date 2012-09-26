@@ -1,4 +1,4 @@
-<samba:parameter name="rpc bigendian"
+<samba:parameter name="rpc big endian"
                  context="G"
 				 type="bool"
                  advanced="1" developer="1"
