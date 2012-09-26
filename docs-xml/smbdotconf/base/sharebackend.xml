@@ -1,0 +1,18 @@
+<samba:parameter name="share backend"
+                 context="G"
+                 type="choice"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	This option specifies the backend that will be used to access the configuration of
+	file shares.
+	</para>
+
+	<para>Traditionally, Samba file shares have been configured in the
+		<option>smb.conf</option> file and this is still the default.
+	</para>
+
+	<para>At the moment there are no other supported backends.</para>
+</description>
+<value type="default">classic</value>
+</samba:parameter>
