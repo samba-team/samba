@@ -1012,7 +1012,8 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 	}
 
 	if (is_deferred_open_entry(share_entry) &&
-	    !open_was_deferred(sconn, share_entry->op_mid)) {
+	    !open_was_deferred(sconn, share_entry->op_mid))
+	{
 		char *str = talloc_asprintf(talloc_tos(),
 			"Got a deferred entry without a request: "
 			"PANIC: %s\n",
@@ -1038,7 +1039,8 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 	}
 
 	if ((share_entry->op_type == NO_OPLOCK) &&
-	    (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK)) {
+	    (fsp->oplock_type == FAKE_LEVEL_II_OPLOCK))
+	{
 		/* Someone has already written to it, but I haven't yet
 		 * noticed */
 		return;
