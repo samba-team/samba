@@ -882,7 +882,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				       TALLOC_CTX *mem_ctx,
 				       struct drsuapi_DsGetNCChangesRequest10 *req10,
 				       struct dom_sid *user_sid,
-				       struct drsuapi_DsGetNCChangesCtr6 *ctr6)
+				       struct drsuapi_DsGetNCChangesCtr6 *ctr6,
+				       bool has_get_all_changes)
 {
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req10->naming_context;
 	struct ldb_dn *obj_dn, *rodc_dn, *krbtgt_link_dn;
@@ -897,7 +898,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
 
 	/*
-	 * we need to work out if we will allow this RODC to
+	 * we need to work out if we will allow this DC to
 	 * replicate the secrets for this object
 	 *
 	 * see 4.1.10.5.14 GetRevealSecretsPolicyForUser for details
@@ -981,20 +982,21 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 
 	/* default deny */
 denied:
-	DEBUG(2,(__location__ ": Denied RODC secret replication for %s by RODC %s\n",
+	DEBUG(2,(__location__ ": Denied single object with secret replication for %s by RODC %s\n",
 		 ldb_dn_get_linearized(obj_dn), ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
 	return WERR_DS_DRA_ACCESS_DENIED;
 
 allowed:
-	DEBUG(2,(__location__ ": Allowed RODC secret replication for %s by RODC %s\n",
-		 ldb_dn_get_linearized(obj_dn), ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
+	DEBUG(2,(__location__ ": Allowed single object with secret replication for %s by %s %s\n",
+		 ldb_dn_get_linearized(obj_dn), has_get_all_changes?"RWDC":"RODC",
+		 ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	req10->highwatermark.highest_usn = 0;
 	return WERR_OK;
 
 failed:
-	DEBUG(2,(__location__ ": Failed RODC secret replication for %s by RODC %s\n",
+	DEBUG(2,(__location__ ": Failed single secret replication for %s by RODC %s\n",
 		 ldb_dn_get_linearized(obj_dn), dom_sid_string(mem_ctx, user_sid)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
 	return WERR_DS_DRA_BAD_DN;
@@ -1437,6 +1439,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	time_t max_wait;
 	time_t start = time(NULL);
 	bool max_wait_reached = false;
+	bool has_get_all_changes = false;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1538,6 +1541,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 							 GUID_DRS_GET_ALL_CHANGES);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
+		} else {
+			has_get_all_changes = true;
 		}
 	}
 
@@ -1605,7 +1610,10 @@ allowed:
 			search_dn = ldb_get_default_basedn(sam_ctx);
 			break;
 		case DRSUAPI_EXOP_REPL_SECRET:
-			werr = getncchanges_repl_secret(b_state, mem_ctx, req10, user_sid, &r->out.ctr->ctr6);
+			werr = getncchanges_repl_secret(b_state, mem_ctx, req10,
+						        user_sid,
+						        &r->out.ctr->ctr6,
+						        has_get_all_changes);
 			r->out.result = werr;
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
