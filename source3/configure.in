@@ -4533,7 +4533,6 @@ case "$host_os" in
 	*linux*)
 	    samba_cv_SYSQUOTA_FOUND=yes
 	    AC_DEFINE(HAVE_QUOTACTL_LINUX,1,[Whether Linux quota support is available])
-	    samba_cv_sysquotas_file="lib/sysquotas_linux.c"
 	    AC_MSG_CHECKING(whether to use the lib/sysquotas_linux.c builtin support)
 	    AC_MSG_RESULT(yes)
 
@@ -4617,7 +4616,6 @@ AC_TRY_RUN_STRICT([
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;
     AC_DEFINE(HAVE_QUOTACTL_4A,1,[Whether long quotactl(int cmd, char *special, qid_t id, caddr_t addr) is available])
-    samba_cv_sysquotas_file="lib/sysquotas_4A.c"
 fi
 fi
 
@@ -4632,7 +4630,6 @@ AC_TRY_RUN_STRICT([
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;
     AC_DEFINE(HAVE_QUOTACTL_4B,1,[Whether int quotactl(const char *path, int cmd, int id, char *addr) is available])
-    samba_cv_sysquotas_file="lib/sysquotas_4B.c"
     AC_CHECK_MEMBERS([struct dqblk.dqb_curbytes], # Darwin bytecount style
 	[ AC_DEFINE([HAVE_STRUCT_DQBLK_DQB_CURBYTES],[1],[darwin style quota bytecount])],,
 	[#include <sys/types.h>
