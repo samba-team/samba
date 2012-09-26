@@ -524,6 +524,13 @@ static void create_share_access_mask(connection_struct *conn, int snum)
 			MAXIMUM_ALLOWED_ACCESS,
 			&conn->share_access);
 
+	if (!CAN_WRITE(conn)) {
+		conn->share_access &=
+			~(SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA |
+			  SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE |
+			  SEC_DIR_DELETE_CHILD );
+	}
+
 	if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
 		conn->share_access |= SEC_FLAG_SYSTEM_SECURITY;
 	}
