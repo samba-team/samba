@@ -2348,6 +2348,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
 		/* DELETE_PENDING is not deferred for a second */
 		TALLOC_FREE(lck);
+		fd_close(fsp);
 		return status;
 	}
 
@@ -2366,6 +2367,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				DEBUG(0, ("DOS open without an SMB "
 					  "request!\n"));
 				TALLOC_FREE(lck);
+				fd_close(fsp);
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 
@@ -2463,6 +2465,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		TALLOC_FREE(lck);
+		fd_close(fsp);
 		if (can_access) {
 			/*
 			 * We have detected a sharing violation here
