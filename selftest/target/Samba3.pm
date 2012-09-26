@@ -1067,10 +1067,13 @@ domusers:X:$gid_domusers:
         }
 	print "DONE\n";
 
-	open(HOSTS, ">>$ENV{SELFTEST_PREFIX}/dns_host_file") or die("Unable to open $ENV{SELFTEST_PREFIX}/dns_host_file");
-	print HOSTS "A $server. $server_ip
-";
-	close(HOSTS);
+	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
+	print DNS_UPDATE_LIST "A $server. $server_ip";
+	close(DNS_UPDATE_LIST);
+
+        if (system("$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$dns_host_file -s $conffile --update-list=$prefix/dns_update_list --no-substiutions --no-credentials") != 0) {
+                die "Unable to update hostname into $dns_host_file";
+        }
 
 	$ret{SERVER_IP} = $server_ip;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
