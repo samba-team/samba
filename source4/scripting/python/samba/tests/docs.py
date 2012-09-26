@@ -44,11 +44,11 @@ def get_documented_parameters(sourcedir):
     for l in out.splitlines():
         m = re.match('<samba:parameter .*?name="([^"]*?)"', l)
         if m:
-            name = m.group(1).replace(" ", "")
+            name = m.group(1)
             yield name
         m = re.match('.*<synonym>(.*)</synonym>.*', l)
         if m:
-            name = m.group(1).replace(" ", "")
+            name = m.group(1)
             yield name
 
 
@@ -73,7 +73,7 @@ def get_implementation_parameters(sourcedir):
                 continue
 
             name = m.group(1)
-            yield name.lower().replace(" ", "")
+            yield name
     finally:
         f.close()
 
