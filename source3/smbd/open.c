@@ -2546,26 +2546,133 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			}
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			struct deferred_open_record state;
-
-			state.delayed_for_oplocks = False;
-			state.async_open = false;
-			state.id = id;
-
-			/* Do it all over again immediately. In the second
-			 * round we will find that the file existed and handle
-			 * the DELETE_PENDING and FCB cases correctly. No need
-			 * to duplicate the code here. Essentially this is a
-			 * "goto top of this function", but don't tell
-			 * anybody... */
-
-			if (req != NULL) {
-				defer_open(lck, request_time, timeval_zero(),
-					   req, &state);
-			}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			/* DELETE_PENDING is not deferred for a second */
 			TALLOC_FREE(lck);
-			fd_close(fsp);
+			return status;
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			uint32 can_access_mask;
+			bool can_access = True;
+
+			SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
+
+			/* Check if this can be done with the deny_dos and fcb
+			 * calls. */
+			if (private_flags &
+			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
+			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+				if (req == NULL) {
+					DEBUG(0, ("DOS open without an SMB "
+						  "request!\n"));
+					TALLOC_FREE(lck);
+					return NT_STATUS_INTERNAL_ERROR;
+				}
+
+				/* Use the client requested access mask here,
+				 * not the one we open with. */
+				status = fcb_or_dos_open(req,
+							conn,
+							fsp,
+							smb_fname,
+							id,
+							req->smbpid,
+							req->vuid,
+							access_mask,
+							share_access,
+							create_options);
+
+				if (NT_STATUS_IS_OK(status)) {
+					TALLOC_FREE(lck);
+					if (pinfo) {
+						*pinfo = FILE_WAS_OPENED;
+					}
+					return NT_STATUS_OK;
+				}
+			}
+
+			/*
+			 * This next line is a subtlety we need for
+			 * MS-Access. If a file open will fail due to share
+			 * permissions and also for security (access) reasons,
+			 * we need to return the access failed error, not the
+			 * share error. We can't open the file due to kernel
+			 * oplock deadlock (it's possible we failed above on
+			 * the open_mode_check()) so use a userspace check.
+			 */
+
+			if (flags & O_RDWR) {
+				can_access_mask = FILE_READ_DATA|FILE_WRITE_DATA;
+			} else if (flags & O_WRONLY) {
+				can_access_mask = FILE_WRITE_DATA;
+			} else {
+				can_access_mask = FILE_READ_DATA;
+			}
+
+			if (((can_access_mask & FILE_WRITE_DATA) &&
+				!CAN_WRITE(conn)) ||
+				!NT_STATUS_IS_OK(smbd_check_access_rights(conn,
+							smb_fname,
+							false,
+							can_access_mask))) {
+				can_access = False;
+			}
+
+			/*
+			 * If we're returning a share violation, ensure we
+			 * cope with the braindead 1 second delay.
+			 */
+
+			if (!(oplock_request & INTERNAL_OPEN_ONLY) &&
+			    lp_defer_sharing_violations()) {
+				struct timeval timeout;
+				struct deferred_open_record state;
+				int timeout_usecs;
+
+				/* this is a hack to speed up torture tests
+				   in 'make test' */
+				timeout_usecs = lp_parm_int(SNUM(conn),
+							    "smbd","sharedelay",
+							    SHARING_VIOLATION_USEC_WAIT);
+
+				/* This is a relative time, added to the absolute
+				   request_time value to get the absolute timeout time.
+				   Note that if this is the second or greater time we enter
+				   this codepath for this particular request mid then
+				   request_time is left as the absolute time of the *first*
+				   time this request mid was processed. This is what allows
+				   the request to eventually time out. */
+
+				timeout = timeval_set(0, timeout_usecs);
+
+				/* Nothing actually uses state.delayed_for_oplocks
+				   but it's handy to differentiate in debug messages
+				   between a 30 second delay due to oplock break, and
+				   a 1 second delay for share mode conflicts. */
+
+				state.delayed_for_oplocks = False;
+				state.async_open = false;
+				state.id = id;
+
+				if ((req != NULL)
+				    && !request_timed_out(request_time,
+							  timeout)) {
+					defer_open(lck, request_time, timeout,
+						   req, &state);
+				}
+			}
+
+			TALLOC_FREE(lck);
+			if (can_access) {
+				/*
+				 * We have detected a sharing violation here
+				 * so return the correct error code
+				 */
+				status = NT_STATUS_SHARING_VIOLATION;
+			} else {
+				status = NT_STATUS_ACCESS_DENIED;
+			}
 			return status;
 		}
 
