@@ -2784,7 +2784,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	bool need_re_stat = false;
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
 
-	if(access_mask & ~(conn->share_access)) {
+	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
 			 "%s\n", lp_servicename(talloc_tos(), SNUM(conn))));
 		return NT_STATUS_ACCESS_DENIED;
