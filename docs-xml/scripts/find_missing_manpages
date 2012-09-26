@@ -1,4 +1,19 @@
 #!/usr/bin/python
+# Copyright (C) 2007,2012 Jelmer Vernooij <jelmer@samba.org>
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 import optparse
 import os
@@ -8,7 +23,7 @@ parser = optparse.OptionParser("source_dir")
 
 (opts, args) = parser.parse_args()
 
-invar = 0
+invar = False
 
 if len(args) == 1:
     topdir = args[0]
@@ -18,19 +33,21 @@ else:
 progs = []
 
 f = open(os.path.join(topdir, "Makefile.in"), "r")
-
-for l in f.readlines():
-    l = l.strip()
-    if invar:
-        invar = (l[-1] == "\\")
-        progs.extend(l.rstrip("\\").split(" "))
-    else:
-        m = re.match("^([^ ]*)_PROGS([0-9]*) = (.*?)([\\\\])$", l)
-        if m:
-            progs.extend(m.group(3).split(" "))
-            invar = (m.group(4) == "\\")
+try:
+    for l in f.readlines():
+        l = l.strip()
+        if invar:
+            invar = (l[-1] == "\\")
+            progs.extend(l.rstrip("\\").split(" "))
         else:
-            invar = False
+            m = re.match("^([^ ]*)_PROGS([0-9]*) = (.*?)([\\\\])$", l)
+            if m:
+                progs.extend(m.group(3).split(" "))
+                invar = (m.group(4) == "\\")
+            else:
+                invar = False
+finally:
+    f.close()
 
 #$progs =~ s/@([^@]+)@//g;
 #$progs =~ s/\$\(.*?\)//g;
