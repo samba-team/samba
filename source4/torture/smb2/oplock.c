@@ -2416,10 +2416,6 @@ static bool test_smb2_oplock_batch22(struct torture_context *tctx,
 	int timeout = torture_setting_int(tctx, "oplocktimeout", 30);
 	int te;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BATCH22 disabled against samba3\n");
-	}
-
 	status = torture_smb2_testdir(tree1, BASEDIR, &h);
 	torture_assert_ntstatus_ok(tctx, status, "Error creating directory");
 
@@ -2758,12 +2754,6 @@ static bool test_raw_oplock_stream1(struct torture_context *tctx,
 		{&fname_stream, true, SMB2_OPLOCK_LEVEL_EXCLUSIVE, SMB2_OPLOCK_LEVEL_EXCLUSIVE},
 		{&fname_default_stream, true,  SMB2_OPLOCK_LEVEL_EXCLUSIVE, SMB2_OPLOCK_LEVEL_II},
 	};
-
-	/* Only passes against windows at the moment. */
-	if (torture_setting_bool(tctx, "samba3", false) ||
-	    torture_setting_bool(tctx, "samba4", false)) {
-		torture_skip(tctx, "STREAM1 disabled against samba3+4\n");
-	}
 
 	fname_stream = talloc_asprintf(tctx, "%s:%s", fname_base, stream);
 	fname_default_stream = talloc_asprintf(tctx, "%s%s", fname_base,
