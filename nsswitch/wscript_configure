@@ -4,3 +4,19 @@ conf.CHECK_HEADERS('nss.h nss_common.h ns_api.h')
 
 conf.CHECK_HEADERS('security/pam_appl.h security/pam_modules.h pam/pam_modules.h', together=True)
 conf.CHECK_FUNCS_IN('pam_start', 'pam', checklibc=True, headers='security/pam_appl.h')
+
+# Solaris 10 does have new member in nss_XbyY_key
+conf.CHECK_STRUCTURE_MEMBER('union nss_XbyY_key', 'ipnode.af_family', 
+                            define='HAVE_NSS_XBYY_KEY_IPNODE',
+                            headers='nss_dbdefs.h')
+
+# Solaris has some extra fields in struct passwd that need to be
+# initialised otherwise nscd crashes.
+
+conf.CHECK_STRUCTURE_MEMBER('struct passwd', 'pw_comment',
+                            define='HAVE_PASSWD_PW_COMMENT',
+                            headers='pwd.h')
+
+conf.CHECK_STRUCTURE_MEMBER('struct passwd', 'pw_age',
+                            define='HAVE_PASSWD_PW_AGE',
+                            headers='pwd.h')
