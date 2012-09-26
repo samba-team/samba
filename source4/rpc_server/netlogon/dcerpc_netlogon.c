@@ -1685,7 +1685,8 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		domain_info->workstation_flags =
-			r->in.query->workstation_info->workstation_flags;
+			r->in.query->workstation_info->workstation_flags & (
+			NETR_WS_FLAG_HANDLES_SPN_UPDATE | NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS);
 
 		r->out.info->domain_info = domain_info;
 	break;

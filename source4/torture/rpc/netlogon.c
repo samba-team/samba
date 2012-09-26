@@ -3209,7 +3209,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 					   NULL,
 					   cmdline_credentials,
 					   0);
-		
+
 		torture_assert(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
 	}
 
@@ -3581,13 +3581,35 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		old_dnsname,
 		"'DNS hostname' changed!");
 
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 7th call (extra workstation flags)\n");
+	netlogon_creds_client_authenticator(creds, &a);
+
+	q1.workstation_flags = NETR_WS_FLAG_HANDLES_SPN_UPDATE
+		| NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS | 0x4;
+
+	/* Put the DNS hostname back */
+	talloc_free(discard_const_p(char, q1.dns_hostname));
+	q1.dns_hostname = talloc_asprintf(tctx, "%s.%s", TEST_MACHINE_NAME,
+		lpcfg_dnsdomain(tctx->lp_ctx));
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonGetDomainInfo_r(b, tctx, &r),
+		"LogonGetDomainInfo failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
+	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
+
+	/* Checks "workstation flags" */
+	torture_assert(tctx,
+		info.domain_info->workstation_flags
+		== (NETR_WS_FLAG_HANDLES_SPN_UPDATE
+			| NETR_WS_FLAG_HANDLES_INBOUND_TRUSTS),
+		"Out 'workstation flags' don't match!");
 
 	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		torture_comment(tctx, "Not testing netr_LogonGetDomainInfo 7th call (no workstation info) - enable dangerous tests in order to do so\n");
+		torture_comment(tctx, "Not testing netr_LogonGetDomainInfo 8th call (no workstation info) - enable dangerous tests in order to do so\n");
 	} else {
 		/* Try a call without the workstation information structure */
 
-		torture_comment(tctx, "Testing netr_LogonGetDomainInfo 7th call (no workstation info)\n");
+		torture_comment(tctx, "Testing netr_LogonGetDomainInfo 8th call (no workstation info)\n");
 		netlogon_creds_client_authenticator(creds, &a);
 
 		query.workstation_info = NULL;
