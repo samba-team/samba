@@ -1,7 +1,7 @@
 <samba:parameter name="server min protocol"
                  context="G"
-				 type="string"
-                 developer="1"
+                 type="enum"
+				 developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>The value of the parameter (a string) is the 
@@ -20,6 +20,6 @@
 <related>server min protocol</related>
 <synonym>min protocol</synonym>
 
-<value type="default">LANMAN1</value>
+<value type="default">CORE</value>
 <value type="example">NT1</value>
 </samba:parameter>
