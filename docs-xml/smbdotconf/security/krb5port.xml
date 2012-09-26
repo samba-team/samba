@@ -1,0 +1,11 @@
+<samba:parameter name="krb5 port"
+                 context="G"
+				 type="list"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies which port the KDC should listen on for Kerberos traffic.</para>
+</description>
+
+<value type="default">88</value>
+</samba:parameter>
