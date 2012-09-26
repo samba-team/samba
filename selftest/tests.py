@@ -21,6 +21,7 @@
 from selftesthelpers import *
 
 planpythontestsuite("none", "samba.tests.source")
+planpythontestsuite("none", "samba.tests.docs")
 planpythontestsuite("none", "selftest.tests.test_suite", extra_path=[srcdir()])
 planpythontestsuite("none", "subunit")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
