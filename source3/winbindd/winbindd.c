@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
@@ -216,7 +216,7 @@ static void winbindd_stdin_handler(struct tevent_context *ev,
 	char c;
 	if (read(0, &c, 1) != 1) {
 		bool *is_parent = talloc_get_type_abort(private_data, bool);
-		
+
 		/* we have reached EOF on stdin, which means the
 		   parent has exited. Shutdown the server */
 		DEBUG(0,("EOF on stdin (is_parent=%d)\n",
@@ -282,7 +282,7 @@ bool winbindd_setup_stdin_handler(bool parent, bool foreground)
 		if (!is_parent) {
 			return false;
 		}
-		
+
 		*is_parent = parent;
 
 		/* if we are running in the foreground then look for
@@ -291,7 +291,7 @@ bool winbindd_setup_stdin_handler(bool parent, bool foreground)
 		*/
 		tevent_add_fd(winbind_event_context(), is_parent, 0, TEVENT_FD_READ, winbindd_stdin_handler, is_parent);
 	}
-	
+
 	return true;
 }
 
