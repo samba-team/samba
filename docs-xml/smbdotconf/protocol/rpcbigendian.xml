@@ -1,0 +1,16 @@
+<samba:parameter name="rpc bigendian"
+                 context="G"
+				 type="bool"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Setting this option will force the RPC client and server to
+		transfer data in big endian.</para>
+
+	<para>If it is disabled, data will be transferred in little endian.</para>
+
+	<para>The behaviour is independent of the endianness of the host machine.</para>
+</description>
+
+<value type="default">False</value>
+</samba:parameter>
