@@ -1231,7 +1231,9 @@ main() {
         # For IRIX like dqb_isoftlimit instead of dqb_fsoftlimit in struc dqblk
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_fsoftlimit', define='HAVE_DQB_FSOFTLIMIT',
                                 headers='sys/quota.h')
-
+        #darwin style quota bytecount
+        conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_curbytes', define='HAVE_STRUCT_DQBLK_DQB_CURBYTES',
+                                headers='sys/quota.h')
         if conf.CHECK_HEADERS('rpcsvc/rquota.h'):
             conf.DEFINE('HAVE_NFS_QUOTAS', '1')
             conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 'getquota_rslt_u',
@@ -1240,6 +1242,41 @@ main() {
 
         if (host_os.rfind('linux') > -1):
             conf.DEFINE('HAVE_QUOTACTL_LINUX', '1')
+        elif not conf.CONFIG_SET("HAVE_XFS_QUOTAS"):
+            if not conf.CHECK_CODE('''
+                #define HAVE_QUOTACTL_4A 1
+                #define AUTOCONF_TEST 1
+                #include "confdefs.h"
+                #include "${srcdir-.}/../tests/sysquotas.c"
+                ''',
+                                   define='HAVE_QUOTACTL_4A',
+                                   msg='for QUOTACTL_4A: long quotactl(int cmd, char *special, qid_t id, caddr_t addr)',
+                                   execute=True,
+                                   local_include=False):
+                conf.CHECK_CODE('''
+                #define HAVE_QUOTACTL_4B 1
+                #define AUTOCONF_TEST 1
+                #include "confdefs.h"
+                #include "${srcdir-.}/../tests/sysquotas.c"
+                ''',
+                                define='HAVE_QUOTACTL_4B',
+                                msg='for QUOTACTL_4B:  int quotactl(const char *path, int cmd, int id, char *addr)',
+                                execute=True,
+                                local_include=False)
+
+        conf.CHECK_CODE('''
+                     clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");
+''', 
+                        headers="rpc/rpc.h rpc/types.h rpcsvc/rquota.h rpc/nettype.h rpc/xdr.h", 
+                        define='HAVE_NFS_QUOTAS',
+                        msg='for NFS QUOTAS',
+                        execute=True,
+                        local_include=False)
+
+        conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 
+                                    'getquota_rslt_u', 
+                                    define='HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U',
+                                    headers='rpcsvc/rquota.h')
 
         if conf.CONFIG_SET('HAVE_QUOTACTL_LINUX') or \
            conf.CONFIG_SET('HAVE_QUOTACTL_4A') or \
