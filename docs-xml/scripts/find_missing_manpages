@@ -1,40 +1,54 @@
-#!/usr/bin/perl
+#!/usr/bin/python
 
-my %doc;
+import optparse
+import os
+import re
 
-$invar = 0;
+parser = optparse.OptionParser("source_dir")
 
-$topdir = (shift @ARGV) or $topdir = ".";
+(opts, args) = parser.parse_args()
 
-$progs = "";
+invar = 0
 
-open(IN, "$topdir/Makefile.in");
-while(<IN>) {
-	if($invar && /^([ \t]*)(.*?)([\\])$/) {
-		$progs.=" " . $2;
-		if($4) { $invar = 1; } else { $invar = 0; }
-	} elsif(/^([^ ]*)_PROGS([0-9]*) = (.*?)([\\])$/) {
-		$progs.=" " . $3;
-		if($4) { $invar = 1; }
-	} else { $invar = 0; }
-}
+if len(args) == 1:
+    topdir = args[0]
+else:
+    topdir = "."
 
-$progs =~ s/@([^@]+)@//g;
-$progs =~ s/\$\(.*?\)//g;
+progs = []
 
-foreach(split(/bin\//, $progs)) {
-	next if($_ eq " ");
-	s/ //g;
+f = open(os.path.join(topdir, "Makefile.in"), "r")
 
-	$f = $_;
-	
-	$found = 0;
+for l in f.readlines():
+    l = l.strip()
+    if invar:
+        invar = (l[-1] == "\\")
+        progs.extend(l.rstrip("\\").split(" "))
+    else:
+        m = re.match("^([^ ]*)_PROGS([0-9]*) = (.*?)([\\\\])$", l)
+        if m:
+            progs.extend(m.group(3).split(" "))
+            invar = (m.group(4) == "\\")
+        else:
+            invar = False
 
-	for($i = 0; $i < 9; $i++) {
-		if(-e "manpages/$f.$i.xml") { $found = 1; }
-	}
+#$progs =~ s/@([^@]+)@//g;
+#$progs =~ s/\$\(.*?\)//g;
 
-	if(!$found) {
-		print "'$f' does not have a manpage\n";
-	}
-}
+for prog in progs:
+    prog = prog.strip()
+    if prog == "":
+        continue
+    if prog[0] in ("@", "$"):
+        continue
+    prog = prog[len("bin/"):]
+
+    found = False
+
+    for i in range(9):
+        p = "manpages/%s.%d.xml" % (prog, i)
+        if os.path.exists(p):
+            found = True
+
+    if not found:
+        print "'%s' does not have a manpage" % prog
