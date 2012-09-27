@@ -217,9 +217,8 @@ static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
 		int policy_value, s;
 
 		s = sscanf((const char *)el->values[i].data, "%255[^=]=%d", policy_name, &policy_value);
-		if (ret != 2 || policy_value == 0)
+		if (s != 2 || policy_value == 0)
 			continue;
-
 		if (strcasecmp("InitRecvTimeout", policy_name) == 0) {
 			conn->limits.initial_timeout = policy_value;
 			continue;
