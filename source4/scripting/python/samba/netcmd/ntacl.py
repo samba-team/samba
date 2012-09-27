@@ -172,7 +172,7 @@ class cmd_ntacl_sysvolreset(Command):
         netlogon = lp.get("path", "netlogon")
         sysvol = lp.get("path", "sysvol")
         try:
-            samdb = SamDB(session_info=system_session(), 
+            samdb = SamDB(session_info=system_session(),
                           lp=lp)
         except Exception, e:
             raise CommandError("Unable to open samdb:", e)
@@ -207,10 +207,10 @@ class cmd_ntacl_sysvolreset(Command):
 
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
-                    
+
         provision.setsysvolacl(samdb, netlogon, sysvol,
-                               LA_uid, BA_gid, domain_sid, 
-                               lp.get("realm").lower(), samdb.domain_dn(), 
+                               LA_uid, BA_gid, domain_sid,
+                               lp.get("realm").lower(), samdb.domain_dn(),
                                lp, use_ntvfs=use_ntvfs)
 
 class cmd_ntacl_sysvolcheck(Command):
@@ -223,8 +223,7 @@ class cmd_ntacl_sysvolcheck(Command):
         "versionopts": options.VersionOptions,
         }
 
-    def run(self, 
-            credopts=None, sambaopts=None, versionopts=None):
+    def run(self, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         path = lp.private_path("secrets.ldb")
         creds = credopts.get_credentials(lp)
@@ -234,16 +233,15 @@ class cmd_ntacl_sysvolcheck(Command):
         netlogon = lp.get("path", "netlogon")
         sysvol = lp.get("path", "sysvol")
         try:
-            samdb = SamDB(session_info=system_session(), 
-                          lp=lp)
+            samdb = SamDB(session_info=system_session(), lp=lp)
         except Exception, e:
             raise CommandError("Unable to open samdb:", e)
 
         domain_sid = security.dom_sid(samdb.domain_sid)
 
         provision.checksysvolacl(samdb, netlogon, sysvol,
-                                 domain_sid, 
-                                 lp.get("realm").lower(), samdb.domain_dn(), 
+                                 domain_sid,
+                                 lp.get("realm").lower(), samdb.domain_dn(),
                                  lp)
 
 

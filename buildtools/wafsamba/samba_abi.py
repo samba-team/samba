@@ -154,7 +154,7 @@ def abi_process_file(fname, version, symmap):
 
 def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_match):
     '''write a vscript file for a library in --version-script format
-    
+
     :param vscript: Path to the vscript file
     :param libname: Name of the library, uppercased
     :param current_version: Current version

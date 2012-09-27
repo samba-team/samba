@@ -28,14 +28,13 @@ import sys
 import samba
 import samba.getopt as options
 from samba import Ldb
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.ndr import ndr_unpack
 from samba.dcerpc import security
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, ERR_NO_SUCH_OBJECT, LdbError
 from samba.netcmd import (
     Command,
     CommandError,
     Option,
-    SuperCommand,
     )
 
 global summary
@@ -103,7 +102,7 @@ class LDAPBase(object):
     def find_servers(self):
         """
         """
-        res = self.ldb.search(base="OU=Domain Controllers,%s" % self.base_dn, \
+        res = self.ldb.search(base="OU=Domain Controllers,%s" % self.base_dn,
                 scope=SCOPE_SUBTREE, expression="(objectClass=computer)", attrs=["cn"])
         assert len(res) > 0
         srv = []
@@ -112,7 +111,7 @@ class LDAPBase(object):
         return srv
 
     def find_netbios(self):
-        res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn, \
+        res = self.ldb.search(base="CN=Partitions,%s" % self.config_dn,
                 scope=SCOPE_SUBTREE, attrs=["nETBIOSName"])
         assert len(res) > 0
         for x in res:

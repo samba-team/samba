@@ -380,8 +380,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 m = ldb.Message()
                 m.dn = obj.dn
                 m['lastKnownParent'] = ldb.MessageElement(str(obj.dn.parent()), ldb.FLAG_MOD_REPLACE, 'lastKnownParent')
-                
-                if self.do_modify(m, [], 
+
+                if self.do_modify(m, [],
                                   "Failed to set lastKnownParent on lostAndFound object at %s" % (new_dn + lost_and_found)):
                     self.report("Set lastKnownParent on lostAndFound object at %s" % (new_dn + lost_and_found))
                     keep_transaction = True
@@ -473,7 +473,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if is_deleted and not target_is_deleted and reverse_link_name is not None:
                 revealed_dn = self.find_revealed_link(obj.dn, attrname, guid)
                 rmd_flags = revealed_dn.dn.get_extended_component("RMD_FLAGS")
-                if rmd_flags != None and (int(rmd_flags) & 1) == 0:
+                if rmd_flags is not None and (int(rmd_flags) & 1) == 0:
                     # the RMD_FLAGS for this link should be 1, as the target is deleted
                     self.err_incorrect_rmd_flags(obj, attrname, revealed_dn)
                     continue
@@ -551,7 +551,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return True
         if dn == self.rid_dn:
             return True
-        
+
         return False
 
     def calculate_instancetype(self, dn):

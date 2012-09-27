@@ -158,7 +158,7 @@ class Command(object):
                undetermined_max_args = True
             else:
                max_args += 1
-        if (len(args) < min_args) or (undetermined_max_args == False and len(args) > max_args):
+        if (len(args) < min_args) or (not undetermined_max_args and len(args) > max_args):
             parser.print_usage()
             return -1
 

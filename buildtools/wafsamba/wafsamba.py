@@ -285,7 +285,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     if pc_files is not None and not private_library:
         bld.PKG_CONFIG_FILES(pc_files, vnum=vnum)
 
-    if (manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and 
+    if (manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and
         bld.env['XSLTPROC_MANPAGES']):
         bld.MANPAGES(manpages)
 
@@ -670,7 +670,7 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
     bld.SET_BUILD_GROUP('build_source')
     for s in TO_LIST(source):
         iname = s
-        if installname != None:
+        if installname is not None:
             iname = installname
         target = os.path.join(installdir, iname)
         tgtdir = os.path.dirname(os.path.join(bld.srcnode.abspath(bld.env), '..', target))

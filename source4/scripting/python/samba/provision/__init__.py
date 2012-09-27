@@ -358,7 +358,7 @@ def get_last_provision_usn(sam):
             if (len(myids) > 0 and id not in myids):
                 continue
             tab2 = p.split(tab1[0])
-            if range.get(id) == None:
+            if range.get(id) is None:
                 range[id] = []
             range[id].append(tab2[0])
             range[id].append(tab2[1])
@@ -1743,7 +1743,7 @@ def sanitize_server_role(role):
         "active directory domain controller", "standalone server")
     """
     try:
-        return  _ROLES_MAP[role]
+        return _ROLES_MAP[role]
     except KeyError:
         raise ValueError(role)
 

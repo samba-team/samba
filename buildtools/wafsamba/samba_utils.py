@@ -256,7 +256,7 @@ def ENFORCE_GROUP_ORDERING(bld):
         @feature('*')
         @before('exec_rule', 'apply_core', 'collect')
         def force_previous_groups(self):
-            if getattr(self.bld, 'enforced_group_ordering', False) == True:
+            if getattr(self.bld, 'enforced_group_ordering', False):
                 return
             self.bld.enforced_group_ordering = True
 
@@ -274,7 +274,7 @@ def ENFORCE_GROUP_ORDERING(bld):
                         debug('group: Forcing up to group %s for target %s',
                               group_name(g), self.name or self.target)
                         break
-                if stop != None:
+                if stop is not None:
                     break
             if stop is None:
                 return
@@ -502,15 +502,15 @@ def CHECK_MAKEFLAGS(bld):
                 if v == 'j':
                     jobs_set = True
                 elif v == 'k':
-                    Options.options.keep = True                
+                    Options.options.keep = True
         elif opt == '-j':
             jobs_set = True
         elif opt == '-k':
-            Options.options.keep = True                
+            Options.options.keep = True
     if not jobs_set:
         # default to one job
         Options.options.jobs = 1
-            
+
 Build.BuildContext.CHECK_MAKEFLAGS = CHECK_MAKEFLAGS
 
 option_groups = {}

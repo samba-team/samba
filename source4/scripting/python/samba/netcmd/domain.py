@@ -173,9 +173,9 @@ class cmd_domain_provision(Command):
                 help="choose machine password (otherwise random)"),
          Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                 choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
-                     "BIND9_FLATFILE uses bind9 text database to store zone information, " \
-                     "BIND9_DLZ uses samba4 AD to store zone information, " \
+                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
+                     "BIND9_FLATFILE uses bind9 text database to store zone information, "
+                     "BIND9_DLZ uses samba4 AD to store zone information, "
                      "NONE skips the DNS setup entirely (not recommended)",
                 default="SAMBA_INTERNAL"),
          Option("--dnspass", type="string", metavar="PASSWORD",
@@ -452,8 +452,8 @@ class cmd_domain_dcpromo(Command):
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
-                   "BIND9_DLZ uses samba4 AD to store zone information, " \
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
+                   "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL")
        ]
@@ -518,8 +518,8 @@ class cmd_domain_join(Command):
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
-                   "BIND9_DLZ uses samba4 AD to store zone information, " \
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
+                   "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL")
        ]
@@ -1223,9 +1223,9 @@ class cmd_domain_classicupgrade(Command):
                action="store_true"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
-               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), " \
-                   "BIND9_FLATFILE uses bind9 text database to store zone information, " \
-                   "BIND9_DLZ uses samba4 AD to store zone information, " \
+               help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
+                   "BIND9_FLATFILE uses bind9 text database to store zone information, "
+                   "BIND9_DLZ uses samba4 AD to store zone information, "
                    "NONE skips the DNS setup entirely (this DC will not be a DNS server)",
                default="SAMBA_INTERNAL")
     ]

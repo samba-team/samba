@@ -883,9 +883,9 @@ Please fix this account before attempting to upgrade again
         s4_passdb.add_sam_account(userdata[username])
         if username in uids:
             add_ad_posix_idmap_entry(result.samdb, userdata[username].user_sid, uids[username], "ID_TYPE_UID", logger)
-            if (username in homes) and (homes[username] != None) and \
-               (username in shells) and (shells[username] != None) and \
-               (username in pgids) and (pgids[username] != None):
+            if (username in homes) and (homes[username] is not None) and \
+               (username in shells) and (shells[username] is not None) and \
+               (username in pgids) and (pgids[username] is not None):
                 add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, name=username, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
 
     logger.info("Adding users to groups")

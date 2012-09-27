@@ -256,7 +256,7 @@ all=all of the above"""),
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
-                      credentials=creds, lp=lp)   
+                      credentials=creds, lp=lp)
 
         if role == "all":
             transfer_role(self.outf, "rid", samdb)

@@ -18,7 +18,7 @@
 """Tests for samba.upgradeprovision."""
 
 import os
-from samba.upgradehelpers import  (usn_in_range, dn_sort,
+from samba.upgradehelpers import (usn_in_range, dn_sort,
                                   get_diff_sddls, update_secrets,
                                   construct_existor_expr)
 

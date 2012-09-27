@@ -384,7 +384,7 @@ class OpenLDAPBackend(LDAPBackend):
         lnkattr = self.schema.linked_attributes()
         refint_attributes = ""
         memberof_config = "# Generated from Samba4 schema\n"
-        for att in  lnkattr.keys():
+        for att in lnkattr.keys():
             if lnkattr[att] is not None:
                 refint_attributes = refint_attributes + " " + att
 

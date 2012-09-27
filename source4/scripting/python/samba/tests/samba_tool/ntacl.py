@@ -29,14 +29,14 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
 
 
     def test_ntvfs(self):
-        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset", 
+        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-ntvfs")
         self.assertCmdSuccess(result)
         self.assertEquals(out,"","Shouldn't be any output messages")
         self.assertIn("Please note that POSIX permissions have NOT been changed, only the stored NT ACL", err)
 
     def test_s3fs(self):
-        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset", 
+        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-s3fs")
 
         self.assertCmdSuccess(result)
@@ -44,7 +44,7 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
         self.assertEquals(out,"","Shouldn't be any output messages")
 
     def test_ntvfs_check(self):
-        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset", 
+        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-ntvfs")
         self.assertCmdSuccess(result)
         self.assertEquals(out,"","Shouldn't be any output messages")
@@ -56,7 +56,7 @@ class NtACLCmdSysvolTestCase(SambaToolCmdTest):
         self.assertEquals(out,"","Shouldn't be any output messages")
 
     def test_s3fs_check(self):
-        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset", 
+        (result, out, err) =  self.runsubcmd("ntacl", "sysvolreset",
                                              "--use-s3fs")
 
         self.assertCmdSuccess(result)

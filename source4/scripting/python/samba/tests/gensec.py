@@ -17,7 +17,7 @@
 
 """Tests for GENSEC.
 
-Note that this just tests the bindings work. It does not intend to test 
+Note that this just tests the bindings work. It does not intend to test
 the functionality, that's already done in other tests.
 """
 
@@ -54,7 +54,7 @@ class GensecTests(samba.tests.TestCase):
         self.gensec_client.want_feature(gensec.FEATURE_SEAL)
         self.gensec_client.start_mech_by_sasl_name("GSSAPI")
 
-        self.gensec_server = gensec.Security.start_server(settings=self.settings, 
+        self.gensec_server = gensec.Security.start_server(settings=self.settings,
                                                           auth_context=auth.AuthContext(lp_ctx=self.lp_ctx))
         creds = Credentials()
         creds.guess(self.lp_ctx)
@@ -69,7 +69,7 @@ class GensecTests(samba.tests.TestCase):
         server_to_client = ""
 
         """Run the actual call loop"""
-        while client_finished == False and server_finished == False:
+        while not client_finished and not server_finished:
             if not client_finished:
                 print "running client gensec_update"
                 (client_finished, client_to_server) = self.gensec_client.update(server_to_client)
@@ -118,7 +118,7 @@ class GensecTests(samba.tests.TestCase):
 
         """Run the actual call loop"""
         i = 0
-        while client_finished == False or server_finished == False:
+        while not client_finished or not server_finished:
             i += 1
             if not client_finished:
                 print "running client gensec_update: %d: %r" % (len(server_to_client), server_to_client)

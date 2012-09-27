@@ -47,13 +47,13 @@ class DNSTest(TestCase):
     def assert_dns_rcode_equals(self, packet, rcode):
         "Helper function to check return code"
         p_errcode = packet.operation & 0x000F
-        self.assertEquals(p_errcode, rcode, "Expected RCODE %s, got %s" % \
+        self.assertEquals(p_errcode, rcode, "Expected RCODE %s, got %s" %
                             (self.errstr(rcode), self.errstr(p_errcode)))
 
     def assert_dns_opcode_equals(self, packet, opcode):
         "Helper function to check opcode"
         p_opcode = packet.operation & 0x7800
-        self.assertEquals(p_opcode, opcode, "Expected OPCODE %s, got %s" % \
+        self.assertEquals(p_opcode, opcode, "Expected OPCODE %s, got %s" %
                             (opcode, p_opcode))
 
     def make_name_packet(self, opcode, qid=None):

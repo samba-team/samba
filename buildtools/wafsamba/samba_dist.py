@@ -98,10 +98,10 @@ def vcs_dir_contents(path):
     return Utils.cmd_output(ls_files_cmd, cwd=cwd, env=env).split()
 
 
-def dist(appname='',version=''):
+def dist(appname='', version=''):
 
     def add_files_to_tarball(tar, srcdir, srcsubdir, dstdir, dstsubdir, blacklist, files):
-        if blacklist == None:
+        if blacklist is None:
             blacklist = []
         for f in files:
             abspath = os.path.join(srcdir, f)

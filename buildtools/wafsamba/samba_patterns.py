@@ -21,7 +21,7 @@ def write_version_header(task):
 
 def SAMBA_MKVERSION(bld, target):
     '''generate the version.h header for Samba'''
-    t = bld.SAMBA_GENERATOR('VERSION', 
+    t = bld.SAMBA_GENERATOR('VERSION',
                             rule=write_version_header,
                             source= 'VERSION',
                             target=target,

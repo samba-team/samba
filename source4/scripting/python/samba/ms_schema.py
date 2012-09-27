@@ -28,7 +28,7 @@ bitFields = {}
 bitFields["searchflags"] = {
     'fATTINDEX': 31,         # IX
     'fPDNTATTINDEX': 30,     # PI
-    'fANR': 29, #AR
+    'fANR': 29,  # AR
     'fPRESERVEONDELETE': 28,         # PR
     'fCOPY': 27,     # CP
     'fTUPLEINDEX': 26,       # TP
@@ -85,7 +85,7 @@ multivalued_attrs = set(["auxiliaryclass","maycontain","mustcontain","posssuperi
 def __read_folded_line(f, buffer):
     """ reads a line from an LDIF file, unfolding it"""
     line = buffer
-    
+
     while True:
         l = f.readline()
 
@@ -98,7 +98,7 @@ def __read_folded_line(f, buffer):
             # preserves '\n '
             line = line + l
         else:
-            # non-continued line            
+            # non-continued line
             if line == "":
                 line = l
 
@@ -111,7 +111,7 @@ def __read_folded_line(f, buffer):
                 # buffer contains the start of the next possibly folded line
                 buffer = l
                 break
-        
+
     return (line, buffer)
 
 
@@ -122,13 +122,13 @@ def __read_raw_entries(f):
     attr_type_re = re.compile("^([A-Za-z]+[A-Za-z0-9-]*):")
 
     buffer = ""
-    
+
     while True:
         entry = []
-        
+
         while True:
             (l, buffer) = __read_folded_line(f, buffer)
-                        
+
             if l[:1] == "#":
                 continue
 
@@ -140,7 +140,7 @@ def __read_raw_entries(f):
             if m:
                 if l[-1:] == "\n":
                     l = l[:-1]
-                    
+
                 entry.append(l)
             else:
                 print >>sys.stderr, "Invalid line: %s" % l,
@@ -170,7 +170,7 @@ def __convert_bitfield(key, value):
 
     value = value.replace("\n ", "")
     value = value.replace(" ", "")
-    
+
     try:
         # some attributes already have numeric values
         o = int(value)
@@ -186,7 +186,7 @@ def __convert_bitfield(key, value):
 def __write_ldif_one(entry):
     """Write out entry as LDIF"""
     out = []
-    
+
     for l in entry:
         if isinstance(l[1], str):
             vl = [l[1]]
@@ -196,21 +196,21 @@ def __write_ldif_one(entry):
         if l[0].lower() == 'omobjectclass':
             out.append("%s:: %s" % (l[0], l[1]))
             continue
-            
+
         for v in vl:
             out.append("%s: %s" % (l[0], v))
 
 
     return "\n".join(out)
-    
+
 def __transform_entry(entry, objectClass):
     """Perform transformations required to convert the LDIF-like schema
        file entries to LDIF, including Samba-specific stuff."""
-    
+
     entry = [l.split(":", 1) for l in entry]
 
     cn = ""
-    
+
     for l in entry:
         key = l[0].lower()
         l[1] = l[1].lstrip()
@@ -243,7 +243,7 @@ def __transform_entry(entry, objectClass):
     entry.insert(2, ["objectGUID", str(uuid.uuid4())])
     entry.insert(2, ["adminDescription", cn])
     entry.insert(2, ["adminDisplayName", cn])
-    
+
     for l in entry:
         key = l[0].lower()
 
@@ -256,7 +256,7 @@ def __parse_schema_file(filename, objectClass):
     """Load and transform a schema file."""
 
     out = []
-    
+
     f = open(filename, "rU")
     for entry in __read_raw_entries(f):
         out.append(__write_ldif_one(__transform_entry(entry, objectClass)))
@@ -269,7 +269,7 @@ def read_ms_schema(attr_file, classes_file, dump_attributes = True, dump_classes
 
     attr_ldif = ""
     classes_ldif = ""
-    
+
     if dump_attributes:
         attr_ldif =  __parse_schema_file(attr_file, "attributeSchema")
     if dump_classes:

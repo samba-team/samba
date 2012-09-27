@@ -879,7 +879,7 @@ class cmd_create(Command):
         Option("--tmpdir", help="Temporary directory for copying policy files", type=str)
         ]
 
-    def run(self, displayname, H=None, tmpdir=None, sambaopts=None, credopts=None, 
+    def run(self, displayname, H=None, tmpdir=None, sambaopts=None, credopts=None,
             versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
@@ -926,7 +926,7 @@ class cmd_create(Command):
             gpt_contents = "[General]\r\nVersion=0\r\n"
             file(os.path.join(gpodir, "GPT.INI"), "w").write(gpt_contents)
         except Exception, e:
-            raise CommandError("Error Creating GPO files", e) 
+            raise CommandError("Error Creating GPO files", e)
 
         # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
