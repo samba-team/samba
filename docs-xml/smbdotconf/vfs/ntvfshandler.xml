@@ -1,0 +1,16 @@
+<samba:parameter name="ntvfs handler"
+                 context="S"
+		 		 type="list"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This specifies the NTVFS handlers for this share.</para>
+
+	<para>Note that this option is only used when the NTVFS file server
+		is in use. It is not used with the (default)
+		s3fs file server.
+	</para>
+</description>
+
+<value type="default">unixuid default</value>
+</samba:parameter>
