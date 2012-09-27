@@ -1,0 +1,14 @@
+<samba:parameter name="winbindd privileged socket directory"
+                 context="G"
+                 type="string"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This setting controls the location of the winbind daemon's privileged
+		socket.</para>
+</description>
+
+<related>winbindd socket directory</related>
+
+<value type="default">$prefix/lib/winbindd_privileged</value>
+</samba:parameter>
