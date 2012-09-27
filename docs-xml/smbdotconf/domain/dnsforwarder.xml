@@ -1,0 +1,17 @@
+<samba:parameter name="dns forwarder"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option specifies the DNS server that DNS requests will be 
+		forwarded to if they can not be handled by Samba itself.
+	</para>
+
+	<para>The DNS forwarder is only used if the internal DNS server
+		in Samba is used.
+	</para>
+</description>
+
+<value type="default"></value>
+<value type="example">192.168.0.1</value>
+</samba:parameter>
