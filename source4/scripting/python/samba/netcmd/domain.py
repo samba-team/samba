@@ -269,6 +269,8 @@ class cmd_domain_provision(Command):
             suggested_forwarder = dns_forwarder
         else:
             suggested_forwarder = self._get_nameserver_ip()
+            if suggested_forwarder is None:
+                suggested_forwarder = "none"
 
         if len(self.raw_argv) == 1:
             interactive = True
