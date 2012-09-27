@@ -198,6 +198,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	if (SMB_VFS_NEXT_STAT(handle, smb_fname_hash) == 0) {
 		struct smb_filename *smb_fname_new = NULL;
 		char *newname;
+		bool delete_lost;
 
 		if (!S_ISDIR(smb_fname_hash->st.st_ex_mode)) {
 			errno = EINVAL;
@@ -211,36 +212,54 @@ static char *stream_dir(vfs_handle_struct *handle,
 
 		/*
 		 * Someone has recreated a file under an existing inode
-		 * without deleting the streams directory. For now, just move
-		 * it away.
+		 * without deleting the streams directory.
+		 * Move it away or remove if streams_depot:delete_lost is set.
 		 */
 
 	again:
-		newname = talloc_asprintf(talloc_tos(), "lost-%lu", random());
-		if (newname == NULL) {
-			errno = ENOMEM;
-			goto fail;
-		}
+		delete_lost = lp_parm_bool(SNUM(handle->conn), "streams_depot",
+					   "delete_lost", false);
 
-		status = create_synthetic_smb_fname(talloc_tos(), newname,
-						    NULL, NULL,
-						    &smb_fname_new);
-		TALLOC_FREE(newname);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			goto fail;
-		}
-
-		if (SMB_VFS_NEXT_RENAME(handle, smb_fname_hash,
-					smb_fname_new) == -1) {
-			TALLOC_FREE(smb_fname_new);
-			if ((errno == EEXIST) || (errno == ENOTEMPTY)) {
-				goto again;
+		if (delete_lost) {
+			DEBUG(3, ("Someone has recreated a file under an "
+			      "existing inode. Removing: %s\n",
+			      smb_fname_hash->base_name));
+			recursive_rmdir(talloc_tos(), handle->conn,
+					smb_fname_hash);
+			SMB_VFS_NEXT_RMDIR(handle, smb_fname_hash->base_name);
+		} else {
+			newname = talloc_asprintf(talloc_tos(), "lost-%lu",
+						  random());
+			DEBUG(3, ("Someone has recreated a file under an "
+			      "existing inode. Renaming: %s to: %s\n",
+			      smb_fname_hash->base_name,
+			      newname));
+			if (newname == NULL) {
+				errno = ENOMEM;
+				goto fail;
 			}
-			goto fail;
-		}
 
-		TALLOC_FREE(smb_fname_new);
+			status = create_synthetic_smb_fname(talloc_tos(),
+							    newname,
+							    NULL, NULL,
+							    &smb_fname_new);
+			TALLOC_FREE(newname);
+			if (!NT_STATUS_IS_OK(status)) {
+				errno = map_errno_from_nt_status(status);
+				goto fail;
+			}
+
+			if (SMB_VFS_NEXT_RENAME(handle, smb_fname_hash,
+						smb_fname_new) == -1) {
+				TALLOC_FREE(smb_fname_new);
+				if ((errno == EEXIST) || (errno == ENOTEMPTY)) {
+					goto again;
+				}
+				goto fail;
+			}
+
+			TALLOC_FREE(smb_fname_new);
+		}
 	}
 
 	if (!create_it) {
