@@ -619,26 +619,6 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	return true;
 }
 
-static bool smbd_parent_housekeeping(const struct timeval *now, void *private_data)
-{
-	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
-	time_t t = time_mono(NULL);
-
-	DEBUG(5, ("parent housekeeping\n"));
-
-	/* if periodic printcap rescan is enabled, see if it's time to reload */
-	if ((printcap_cache_time != 0)
-	 && (t >= (last_printer_reload_time + printcap_cache_time))) {
-		DEBUG( 3,( "Printcap cache time expired.\n"));
-		pcap_cache_reload(server_event_context(),
-				  smbd_messaging_context(),
-				  &reload_pcap_change_notify);
-		last_printer_reload_time = t;
-	}
-
-	return true;
-}
-
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -778,14 +758,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			       |FLAG_MSG_DBWRAP)) {
 		DEBUG(0, ("open_sockets_smbd: Failed to register "
 			  "myself in serverid.tdb\n"));
-		return false;
-	}
-
-	if (!(event_add_idle(smbd_event_context(), NULL,
-			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
-			     "parent_housekeeping", smbd_parent_housekeeping,
-			     NULL))) {
-		DEBUG(0, ("Could not add parent_housekeeping event\n"));
 		return false;
 	}
 

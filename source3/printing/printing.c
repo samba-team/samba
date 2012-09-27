@@ -1656,6 +1656,28 @@ static void add_child_pid(pid_t pid)
         num_children += 1;
 }
 
+static bool printer_housekeeping_fn(const struct timeval *now,
+				    void *private_data)
+{
+	static time_t last_pcap_reload_time = 0;
+	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
+	time_t t = time_mono(NULL);
+
+	DEBUG(5, ("printer housekeeping\n"));
+
+	/* if periodic printcap rescan is enabled, see if it's time to reload */
+	if ((printcap_cache_time != 0)
+	 && (t >= (last_pcap_reload_time + printcap_cache_time))) {
+		DEBUG( 3,( "Printcap cache time expired.\n"));
+		pcap_cache_reload(server_event_context(),
+				  smbd_messaging_context(),
+				  &reload_pcap_change_notify);
+		last_pcap_reload_time = t;
+	}
+
+	return true;
+}
+
 static pid_t background_lpq_updater_pid = -1;
 
 /****************************************************************************
@@ -1727,6 +1749,15 @@ void start_background_queue(struct tevent_context *ev,
 		if (!fde) {
 			DEBUG(0,("tevent_add_fd() failed for pause_pipe\n"));
 			smb_panic("tevent_add_fd() failed for pause_pipe");
+		}
+
+		if (!(event_add_idle(ev, NULL,
+				     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
+				     "printer_housekeeping",
+				     printer_housekeeping_fn,
+				     NULL))) {
+			DEBUG(0, ("Could not add printing housekeeping event\n"));
+			exit(1);
 		}
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
