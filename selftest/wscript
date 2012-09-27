@@ -180,7 +180,8 @@ def cmd_testonly(opt):
     if not os.path.isdir(env.SELFTEST_PREFIX):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
-    env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
+    env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/selftest/tests.py|" ' +
+                     '--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
                      '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
 
     if CONFIG_SET(opt, 'AD_DC_BUILD_IS_ENABLED'):
