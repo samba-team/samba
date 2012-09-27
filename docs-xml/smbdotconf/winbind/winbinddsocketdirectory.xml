@@ -1,0 +1,13 @@
+<samba:parameter name="winbind socket directory"
+                 context="G"
+                 type="string"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This setting controls the location of the winbind daemon's socket.</para>
+</description>
+
+<related>winbindd privileged socket directory</related>
+
+<value type="default">$prefix/run/samba/winbindd</value>
+</samba:parameter>
