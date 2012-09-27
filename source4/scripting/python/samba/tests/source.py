@@ -183,6 +183,16 @@ class TestSource(TestCase):
             self.fail(self._format_message(illegal_newlines,
                 'Non-unix newlines were found in the following source files:'))
 
+    def test_trailing_whitespace(self):
+        """Check that there is not trailing whitespace in Python files."""
+        trailing_whitespace = {}
+        for fname, line_no, line in self._iter_source_files_lines():
+            if line.rstrip("\n").endswith(" "):
+                self._push_file(trailing_whitespace, fname, line_no)
+        if trailing_whitespace:
+            self.fail(self._format_message(trailing_whitespace,
+                'Trailing whitespace was found in the following source files.'))
+
     def test_shebang_lines(self):
         """Check that files with shebang lines and only those are executable."""
         files_with_shebang = {}
@@ -246,4 +256,9 @@ class TestSource(TestCase):
             checker.report_error = report_error
             checker.check_all()
         if len(pep8_errors) > 0:
-            self.fail('there were %d pep8 errors' % len(pep8_errors))
+            d = {}
+            for (fname, line_no, offset, text, check) in pep8_errors:
+                d.setdefault(fname, []).append(line_no - 1)
+            self.fail(self._format_message(d,
+                'There were %d PEP8 errors:' % len(pep8_errors)))
+
