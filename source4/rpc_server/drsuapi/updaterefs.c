@@ -127,7 +127,9 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 			  struct drsuapi_DsReplicaUpdateRefsRequest1 *req)
 {
 	WERROR werr;
+	int ret;
 	struct ldb_dn *dn;
+	struct ldb_dn *nc_root;
 	struct ldb_context *sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
 
 	DEBUG(4,("DsReplicaUpdateRefs for host '%s' with GUID %s options 0x%08x nc=%s\n",
@@ -135,15 +137,20 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		 req->options,
 		 drs_ObjectIdentifier_to_string(mem_ctx, req->naming_context)));
 
-	dn = ldb_dn_new(mem_ctx, sam_ctx, req->naming_context->dn);
-	if (dn == NULL) {
-		return WERR_DS_INVALID_DN_SYNTAX;
+	dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, req->naming_context);
+	W_ERROR_HAVE_NO_MEMORY(dn);
+	ret = dsdb_find_nc_root(sam_ctx, dn, dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_DRA_BAD_NC;
+	}
+	if (ldb_dn_compare(dn, nc_root) != 0) {
+		return WERR_DS_DRA_BAD_NC;
 	}
 
 	if (ldb_transaction_start(sam_ctx) != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to start transaction on samdb: %s\n",
 			 ldb_errstring(sam_ctx)));
-		return WERR_DS_DRA_INTERNAL_ERROR;		
+		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	if (req->options & DRSUAPI_DRS_DEL_REF) {
