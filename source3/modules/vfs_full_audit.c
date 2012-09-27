@@ -236,6 +236,8 @@ static struct {
 	{ SMB_VFS_OP_PREAD_RECV,	"pread_recv" },
 	{ SMB_VFS_OP_WRITE,	"write" },
 	{ SMB_VFS_OP_PWRITE,	"pwrite" },
+	{ SMB_VFS_OP_PWRITE_SEND,	"pwrite_send" },
+	{ SMB_VFS_OP_PWRITE_RECV,	"pwrite_recv" },
 	{ SMB_VFS_OP_LSEEK,	"lseek" },
 	{ SMB_VFS_OP_SENDFILE,	"sendfile" },
 	{ SMB_VFS_OP_RECVFILE,  "recvfile" },
