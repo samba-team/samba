@@ -41,6 +41,15 @@ extern pid_t start_spoolssd(struct event_context *ev_ctx,
 static void reload_pcap_change_notify(struct tevent_context *ev,
 			       struct messaging_context *msg_ctx)
 {
+	/*
+	 * Reload the printers first in the background process so that
+	 * newly added printers get default values created in the registry.
+	 *
+	 * This will block the process for some time (~1 sec per printer), but
+	 * it doesn't block smbd's servering clients.
+	 */
+	delete_and_reload_printers(ev, msg_ctx);
+
 	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
 }
 
