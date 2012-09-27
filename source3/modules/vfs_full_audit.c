@@ -203,7 +203,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LAST
 } vfs_op_type;
 
-/* The following array *must* be in the same order as defined in vfs.h */
+/* The following array *must* be in the same order as defined in vfs_op_type */
 
 static struct {
 	vfs_op_type type;
@@ -444,9 +444,10 @@ static struct bitmap *init_bitmap(TALLOC_CTX *mem_ctx, const char **ops)
 		}
 
 		for (i=0; i<SMB_VFS_OP_LAST; i++) {
-			if (vfs_op_names[i].name == NULL) {
+			if ((vfs_op_names[i].name == NULL)
+			 || (vfs_op_names[i].type != i)) {
 				smb_panic("vfs_full_audit.c: name table not "
-					  "in sync with vfs.h\n");
+					  "in sync with vfs_op_type enums\n");
 			}
 			if (strequal(op, vfs_op_names[i].name)) {
 				if (neg) {
