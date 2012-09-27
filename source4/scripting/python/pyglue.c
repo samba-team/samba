@@ -223,6 +223,8 @@ static PyMethodDef py_misc_methods[] = {
 	{ "get_debug_level", (PyCFunction)py_get_debug_level, METH_NOARGS,
 		"get debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
+		"interface_ips(lp_ctx[, all_interfaces) -> list_of_ifaces\n"
+		"\n"
 		"get interface IP address list"},
 	{ "strcasecmp_m", (PyCFunction)py_strcasecmp_m, METH_VARARGS,
 		"(for testing) compare two strings using Samba's strcasecmp_m()"},
