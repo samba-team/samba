@@ -140,9 +140,9 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	struct loadparm_context *lp_ctx;
 	struct interface *ifaces;
 	int i, ifcount;
-	int all_interfaces;
+	int all_interfaces = 1;
 
-	if (!PyArg_ParseTuple(args, "Oi", &py_lp_ctx, &all_interfaces))
+	if (!PyArg_ParseTuple(args, "O|i", &py_lp_ctx, &all_interfaces))
 		return NULL;
 
 	tmp_ctx = talloc_new(NULL);
