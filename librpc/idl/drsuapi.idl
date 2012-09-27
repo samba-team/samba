@@ -204,7 +204,7 @@ interface drsuapi
 	typedef struct {
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		GUID source_dsa_guid;
-		astring *source_dsa_dns; /* Source DSA dns_name in <guid>._msdcs.<domain_dns> form */
+		[charset(DOS),string] char *source_dsa_dns; /* Source DSA dns_name in <guid>._msdcs.<domain_dns> form */
 		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaSyncRequest1;
 
