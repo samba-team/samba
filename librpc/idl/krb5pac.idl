@@ -37,18 +37,20 @@ interface krb5pac
 		[size_is(num_transited_services)] lsa_String *transited_services;
 	} PAC_CONSTRAINED_DELEGATION;
 
+	typedef [public,bitmap32bit] bitmap {
+		UDI_ACCT_HAS_NO_UPN	= 0x00000001 /* 1= User account has no UPN */
+	} upn_dns_info_flags;
+
 	typedef struct {
 		[value(2*strlen_m(upn_name))] uint16 upn_size;
 		uint16 upn_offset;
 		[value(2*strlen_m(domain_name))] uint16 domain_size;
 		uint16 domain_offset;
-		uint16 unknown3; /* 0x01 */
-		uint16 unknown4;
-		uint32 unknown5;
+		upn_dns_info_flags flags;
+		uint32 padding;
 		[charset(UTF16)] uint8 upn_name[upn_size+2];
 		[charset(UTF16)] uint8 domain_name[domain_size+2];
-		uint32 unknown6; /* padding */
-	} PAC_UNKNOWN_12;
+	} PAC_UPN_DNS_INFO;
 
 	typedef [public] struct {
 		PAC_LOGON_INFO *info;
@@ -64,7 +66,7 @@ interface krb5pac
 		PAC_TYPE_KDC_CHECKSUM = 7,
 		PAC_TYPE_LOGON_NAME = 10,
 		PAC_TYPE_CONSTRAINED_DELEGATION = 11,
-		PAC_TYPE_UNKNOWN_12 = 12
+		PAC_TYPE_UPN_DNS_INFO = 12
 	} PAC_TYPE;
 
 	typedef struct {
@@ -78,12 +80,12 @@ interface krb5pac
 		[case(PAC_TYPE_LOGON_NAME)]	PAC_LOGON_NAME logon_name;
 		[case(PAC_TYPE_CONSTRAINED_DELEGATION)][subcontext(0xFFFFFC01)]
 			PAC_CONSTRAINED_DELEGATION_CTR constrained_delegation;
+		[case(PAC_TYPE_UPN_DNS_INFO)]	PAC_UPN_DNS_INFO upn_dns_info;
 		/* when new PAC info types are added they are supposed to be done
 		   in such a way that they are backwards compatible with existing
 		   servers. This makes it safe to just use a [default] for
 		   unknown types, which lets us ignore the data */
 		[default]	[subcontext(0)] DATA_BLOB_REM unknown;
-		/* [case(PAC_TYPE_UNKNOWN_12)]	PAC_UNKNOWN_12 unknown; */
 	} PAC_INFO;
 
 	typedef [public,nopush,nopull,noprint] struct {
