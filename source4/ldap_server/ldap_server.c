@@ -99,10 +99,9 @@ static void ldapsrv_terminate_connection_done(struct tevent_req *subreq)
 	struct ldapsrv_connection *conn =
 		tevent_req_callback_data(subreq,
 		struct ldapsrv_connection);
-	int ret;
 	int sys_errno;
 
-	ret = tstream_disconnect_recv(subreq, &sys_errno);
+	tstream_disconnect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 
 	if (conn->sockets.active == conn->sockets.raw) {
