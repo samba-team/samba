@@ -940,9 +940,6 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
                                 obj["max"], id)
 
     if ldif != "":
-        if dest is None:
-            dest = "/tmp"
-
         file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")
         print
         print "To track the USNs modified/created by provision and upgrade proivsion,"
