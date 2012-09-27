@@ -563,11 +563,11 @@ static void ctdb_tevent_logging(void *private_data,
 				const char *fmt,
 				va_list ap)
 {
-	enum debug_level lvl = DEBUG_EMERG;
+	enum debug_level lvl = DEBUG_CRIT;
 
 	switch (level) {
 	case TEVENT_DEBUG_FATAL:
-		lvl = DEBUG_EMERG;
+		lvl = DEBUG_CRIT;
 		break;
 	case TEVENT_DEBUG_ERROR:
 		lvl = DEBUG_ERR;
