@@ -27,7 +27,7 @@ struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 {
 	struct dns_buffer *result;
 
-	if (!(result = talloc(mem_ctx, struct dns_buffer))) {
+	if (!(result = talloc_zero(mem_ctx, struct dns_buffer))) {
 		return NULL;
 	}
 
@@ -39,7 +39,7 @@ struct dns_buffer *dns_create_buffer(TALLOC_CTX *mem_ctx)
 	 */
 	result->size = 2;
 
-	if (!(result->data = TALLOC_ARRAY(result, uint8, result->size))) {
+	if (!(result->data = TALLOC_ZERO_ARRAY(result, uint8, result->size))) {
 		TALLOC_FREE(result);
 		return NULL;
 	}
@@ -216,14 +216,14 @@ static void dns_unmarshall_label(TALLOC_CTX *mem_ctx,
 		return;
 	}
 
-	if (!(label = talloc(mem_ctx, struct dns_domain_label))) {
+	if (!(label = talloc_zero(mem_ctx, struct dns_domain_label))) {
 		buf->error = ERROR_DNS_NO_MEMORY;
 		return;
 	}
 
 	label->len = len;
 
-	if (!(label->label = TALLOC_ARRAY(label, char, len+1))) {
+	if (!(label->label = TALLOC_ZERO_ARRAY(label, char, len+1))) {
 		buf->error = ERROR_DNS_NO_MEMORY;
 		goto error;
 	}
@@ -250,7 +250,7 @@ void dns_unmarshall_domain_name(TALLOC_CTX *mem_ctx,
 
 	if (!ERR_DNS_IS_OK(buf->error)) return;
 
-	if (!(name = talloc(mem_ctx, struct dns_domain_name))) {
+	if (!(name = talloc_zero(mem_ctx, struct dns_domain_name))) {
 		buf->error = ERROR_DNS_NO_MEMORY;
 		return;
 	}
@@ -281,7 +281,7 @@ static void dns_unmarshall_question(TALLOC_CTX *mem_ctx,
 
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
-	if (!(q = talloc(mem_ctx, struct dns_question))) {
+	if (!(q = talloc_zero(mem_ctx, struct dns_question))) {
 		buf->error = ERROR_DNS_NO_MEMORY;
 		return;
 	}
@@ -314,7 +314,7 @@ static void dns_unmarshall_rr(TALLOC_CTX *mem_ctx,
 
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
-	if (!(r = talloc(mem_ctx, struct dns_rrec))) {
+	if (!(r = talloc_zero(mem_ctx, struct dns_rrec))) {
 		buf->error = ERROR_DNS_NO_MEMORY;
 		return;
 	}
@@ -329,7 +329,7 @@ static void dns_unmarshall_rr(TALLOC_CTX *mem_ctx,
 	if (!(ERR_DNS_IS_OK(buf->error))) return;
 
 	if (r->data_length != 0) {
-		if (!(r->data = TALLOC_ARRAY(r, uint8, r->data_length))) {
+		if (!(r->data = TALLOC_ZERO_ARRAY(r, uint8, r->data_length))) {
 			buf->error = ERROR_DNS_NO_MEMORY;
 			return;
 		}
@@ -406,22 +406,22 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 	err = ERROR_DNS_NO_MEMORY;
 
 	if ((req->num_questions != 0) &&
-	    !(req->questions = TALLOC_ARRAY(req, struct dns_question *,
+	    !(req->questions = TALLOC_ZERO_ARRAY(req, struct dns_question *,
 					    req->num_questions))) {
 		goto error;
 	}
 	if ((req->num_answers != 0) &&
-	    !(req->answers = TALLOC_ARRAY(req, struct dns_rrec *,
+	    !(req->answers = TALLOC_ZERO_ARRAY(req, struct dns_rrec *,
 					  req->num_answers))) {
 		goto error;
 	}
 	if ((req->num_auths != 0) &&
-	    !(req->auths = TALLOC_ARRAY(req, struct dns_rrec *,
+	    !(req->auths = TALLOC_ZERO_ARRAY(req, struct dns_rrec *,
 					req->num_auths))) {
 		goto error;
 	}
 	if ((req->num_additionals != 0) &&
-	    !(req->additionals = TALLOC_ARRAY(req, struct dns_rrec *,
+	    !(req->additionals = TALLOC_ZERO_ARRAY(req, struct dns_rrec *,
 					      req->num_additionals))) {
 		goto error;
 	}
