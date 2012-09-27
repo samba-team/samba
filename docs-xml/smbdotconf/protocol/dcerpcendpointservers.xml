@@ -1,0 +1,12 @@
+<samba:parameter name="dcerpc endpoint servers"
+                 context="G"
+				 type="list"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies which DCE/RPC endpoint servers should be run.</para>
+</description>
+
+<value type="example">epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey</value>
+<value type="default">rpcecho</value>
+</samba:parameter>
