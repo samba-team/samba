@@ -1,4 +1,4 @@
-<samba:parameter name="winbind socket directory"
+<samba:parameter name="winbindd socket directory"
                  context="G"
                  type="string"
                  advanced="1"
