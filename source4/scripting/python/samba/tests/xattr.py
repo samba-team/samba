@@ -48,7 +48,7 @@ class XattrTests(TestCase):
         tempf = self._tmpfilename()
         open(tempf, 'w').write("empty")
         try:
-            samba.xattr_native.wrap_setxattr(tempf, "user.unittests", 
+            samba.xattr_native.wrap_setxattr(tempf, "user.unittests",
                 ndr_pack(ntacl))
         except IOError:
             raise TestSkipped("the filesystem where the tests are runned do not support XATTR")

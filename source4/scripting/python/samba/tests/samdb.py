@@ -54,7 +54,7 @@ class SamDBTestCase(TestCaseInTempDir):
 
         hostname="foo"
         domain="EXAMPLE"
-        dnsdomain="example.com" 
+        dnsdomain="example.com"
         serverrole="domain controller"
         policyguid_dc = DEFAULT_DC_POLICY_GUID
 
@@ -65,10 +65,10 @@ class SamDBTestCase(TestCaseInTempDir):
         self.lp = param.LoadParm()
         self.lp.load(smbconf)
 
-        names = guess_names(lp=self.lp, hostname=hostname, 
-                            domain=domain, dnsdomain=dnsdomain, 
-                            serverrole=serverrole, 
-                            domaindn=self.domaindn, configdn=configdn, 
+        names = guess_names(lp=self.lp, hostname=hostname,
+                            domain=domain, dnsdomain=dnsdomain,
+                            serverrole=serverrole,
+                            domaindn=self.domaindn, configdn=configdn,
                             schemadn=schemadn)
 
         paths = provision_paths_from_lp(self.lp, names.dnsdomain)

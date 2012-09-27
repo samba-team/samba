@@ -15,9 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-"""Tests for the Auth Python bindings. 
+"""Tests for the Auth Python bindings.
 
-Note that this just tests the bindings work. It does not intend to test 
+Note that this just tests the bindings work. It does not intend to test
 the functionality, that's already done in other tests.
 """
 

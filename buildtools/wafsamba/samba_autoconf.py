@@ -62,9 +62,9 @@ def COMPOUND_END(conf, result):
     conf.check_message_1 = conf.saved_check_message_1
     conf.check_message_2 = conf.saved_check_message_2
     p = conf.check_message_2
-    if result == True:
+    if result:
         p('ok ')
-    elif result == False:
+    elif not result:
         p('not found', 'YELLOW')
     else:
         p(result)
@@ -241,7 +241,7 @@ def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
 
     conf.COMPOUND_START('Checking for %s' % f)
 
-    if link is None or link == True:
+    if link is None or link:
         ret = CHECK_CODE(conf,
                          # this is based on the autoconf strategy
                          '''
@@ -284,7 +284,7 @@ def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
                              headers=headers,
                              msg='Checking for macro %s' % f)
 
-    if not ret and (link is None or link == False):
+    if not ret and (link is None or not link):
         ret = CHECK_VARIABLE(conf, f,
                              define=define,
                              headers=headers,
@@ -470,7 +470,7 @@ def CONFIG_SET(conf, option):
     if option not in conf.env:
         return False
     v = conf.env[option]
-    if v == None:
+    if v is None:
         return False
     if v == []:
         return False

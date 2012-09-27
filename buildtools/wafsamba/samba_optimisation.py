@@ -31,7 +31,7 @@ def apply_incpaths(self):
 
     for path in self.to_list(self.includes):
         if not path in lst:
-            if preproc.go_absolute or path[0] != '/': #os.path.isabs(path):
+            if preproc.go_absolute or path[0] != '/':  # os.path.isabs(path):
                 lst.append(path)
             else:
                 self.env.prepend_value('CPPPATH', path)

@@ -869,7 +869,7 @@ def checkKeepAttributeOldMtd(delta, att, reference, current,
         else:
             if hashOverwrittenAtt.get(att)&2**msgElt.flags() :
                 continue
-            elif  hashOverwrittenAtt.get(att)==never:
+            elif hashOverwrittenAtt.get(att) == never:
                 delta.remove(att)
                 continue
 
@@ -961,8 +961,8 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
                 message(CHANGESD, "%ssd are not identical:\n%s" % (txt, diff))
                 txt = ""
                 if attrUSN == -1:
-                    message(CHANGESD, "But the SD has been changed by someonelse "\
-                                    "so it's impossible to know if the difference"\
+                    message(CHANGESD, "But the SD has been changed by someonelse "
+                                    "so it's impossible to know if the difference"
                                     " cames from the modification or from a previous bug")
                     dnNotToRecalculate.append(str(dn))
                 else:
@@ -1342,7 +1342,7 @@ def rebuild_sd(samdb, names):
     listKeys.sort(dn_sort)
 
     if len(dnToRecalculate) != 0:
-        message(CHANGESD, "%d DNs have been marked as needed to be recalculated"\
+        message(CHANGESD, "%d DNs have been marked as needed to be recalculated"
                             ", recalculating %d due to inheritance"
                             % (len(dnToRecalculate), len(listKeys)))
 
@@ -1372,7 +1372,7 @@ def hasATProvision(samdb):
                                 scope=SCOPE_BASE,
                                 attrs=["dn"])
 
-        if entry != None and len(entry) == 1:
+        if entry is not None and len(entry) == 1:
             return True
         else:
             return False
@@ -1695,10 +1695,10 @@ if __name__ == '__main__':
                     v = v + 1
 
             message(CHANGE,
-                "Find last provision USN, %d invocation(s) for a total of %d ranges" % \
+                "Find last provision USN, %d invocation(s) for a total of %d ranges" %
                             (len(lastProvisionUSNs.keys()), v /2 ))
 
-            if lastProvisionUSNs.get("default") != None:
+            if lastProvisionUSNs.get("default") is not None:
                 message(CHANGE, "Old style for usn ranges used")
                 lastProvisionUSNs[str(names.invocation)] = lastProvisionUSNs["default"]
                 del lastProvisionUSNs["default"]
@@ -1709,7 +1709,7 @@ if __name__ == '__main__':
                 minobj = 5
                 (hash_id, nb_obj) = findprovisionrange(ldbs.sam, ldb.Dn(ldbs.sam, str(names.rootdn)))
                 message(SIMPLE, "Here is a list of changes that modified more than %d objects in 1 minute." % minobj)
-                message(SIMPLE, "Usually changes made by provision and upgradeprovision are those who affect a couple"\
+                message(SIMPLE, "Usually changes made by provision and upgradeprovision are those who affect a couple"
                         " of hundred of objects or more")
                 message(SIMPLE, "Total number of objects: %d" % nb_obj)
                 message(SIMPLE, "")

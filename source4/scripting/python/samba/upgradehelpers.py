@@ -252,9 +252,9 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
             invocationid=names.invocation, adminpass=names.adminpass,
             krbtgtpass=None, machinepass=None, dnspass=None, root=None,
             nobody=None, wheel=None, users=None,
-            serverrole="domain controller", 
+            serverrole="domain controller",
             backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
-            slapd_path=None, 
+            slapd_path=None,
             dom_for_fun_level=names.domainlevel, dns_backend=dns_backend,
             useeadb=True, use_ntvfs=True)
 
@@ -864,7 +864,7 @@ def findprovisionrange(samdb, basedn):
             minutestamp =_glue.nttime2unix(o.originating_change_time)/60
             hash_ts = hash_id.get(str(o.originating_invocation_id))
 
-            if hash_ts == None:
+            if hash_ts is None:
                 ob = {}
                 ob["min"] = o.originating_usn
                 ob["max"] = o.originating_usn
@@ -873,7 +873,7 @@ def findprovisionrange(samdb, basedn):
                 hash_ts = {}
             else:
                 ob = hash_ts.get(minutestamp)
-                if ob == None:
+                if ob is None:
                     ob = {}
                     ob["min"] = o.originating_usn
                     ob["max"] = o.originating_usn
@@ -935,12 +935,12 @@ def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
 
         for k in kept_record:
                 obj = hash_ts[k]
-                if obj.get("skipped") == None:
+                if obj.get("skipped") is None:
                     ldif = "%slastProvisionUSN: %d-%d;%s\n" % (ldif, obj["min"],
                                 obj["max"], id)
 
     if ldif != "":
-        if dest == None:
+        if dest is None:
             dest = "/tmp"
 
         file = tempfile.mktemp(dir=dest, prefix="usnprov", suffix=".ldif")

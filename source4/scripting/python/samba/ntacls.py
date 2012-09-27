@@ -63,7 +63,7 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True):
                 attribute = backend_obj.wrap_getxattr(dbname, file,
                                                       xattr.XATTR_NTACL_NAME)
             except Exception:
-                # FIXME: Don't catch all exceptions, just those related to opening 
+                # FIXME: Don't catch all exceptions, just those related to opening
                 # xattrdb
                 print "Fail to open %s" % dbname
                 attribute = samba.xattr_native.wrap_getxattr(file,
@@ -96,10 +96,10 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                 backend_obj.wrap_setxattr(dbname,
                                           file, xattr.XATTR_NTACL_NAME, ndr_pack(ntacl))
             except Exception:
-                # FIXME: Don't catch all exceptions, just those related to opening 
+                # FIXME: Don't catch all exceptions, just those related to opening
                 # xattrdb
                 print "Fail to open %s" % dbname
-                samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME, 
+                samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
                                                  ndr_pack(ntacl))
         else:
             samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
@@ -144,14 +144,14 @@ def ldapmask2filemask(ldm):
     filemask = ldm & STANDARD_RIGHTS_ALL
 
     if (ldm & RIGHT_DS_READ_PROPERTY) and (ldm & RIGHT_DS_LIST_CONTENTS):
-        filemask = filemask | (SYNCHRONIZE | FILE_LIST_DIRECTORY |\
-                                FILE_READ_ATTRIBUTES | FILE_READ_EA |\
+        filemask = filemask | (SYNCHRONIZE | FILE_LIST_DIRECTORY |
+                                FILE_READ_ATTRIBUTES | FILE_READ_EA |
                                 FILE_READ_DATA | FILE_EXECUTE)
 
     if ldm & RIGHT_DS_WRITE_PROPERTY:
-        filemask = filemask | (SYNCHRONIZE | FILE_WRITE_DATA |\
-                                FILE_APPEND_DATA | FILE_WRITE_EA |\
-                                FILE_WRITE_ATTRIBUTES | FILE_ADD_FILE |\
+        filemask = filemask | (SYNCHRONIZE | FILE_WRITE_DATA |
+                                FILE_APPEND_DATA | FILE_WRITE_EA |
+                                FILE_WRITE_ATTRIBUTES | FILE_ADD_FILE |
                                 FILE_ADD_SUBDIRECTORY)
 
     if ldm & RIGHT_DS_CREATE_CHILD:
@@ -165,7 +165,7 @@ def ldapmask2filemask(ldm):
 
 def dsacl2fsacl(dssddl, domsid):
     """
-    
+
     This function takes an the SDDL representation of a DS
     ACL and return the SDDL representation of this ACL adapted
     for files. It's used for Policy object provision

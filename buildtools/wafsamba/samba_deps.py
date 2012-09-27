@@ -136,7 +136,7 @@ def build_includes(self):
     includes = []
 
     # maybe add local includes
-    if getattr(self, 'local_include', True) == True and getattr(self, 'local_include_first', True):
+    if getattr(self, 'local_include', True) and getattr(self, 'local_include_first', True):
         includes.append('.')
 
     includes.extend(self.samba_includes_extended)
@@ -153,7 +153,7 @@ def build_includes(self):
         t = bld.name_to_obj(d, bld.env)
         bld.ASSERT(t is not None, "Unable to find dependency %s for %s" % (d, self.sname))
         inclist = getattr(t, 'samba_includes_extended', [])[:]
-        if getattr(t, 'local_include', True) == True:
+        if getattr(t, 'local_include', True):
             inclist.append('.')
         if inclist == []:
             continue
@@ -169,7 +169,7 @@ def build_includes(self):
         relpath = os_path_relpath(inc, mypath)
         includes.append(relpath)
 
-    if getattr(self, 'local_include', True) == True and not getattr(self, 'local_include_first', True):
+    if getattr(self, 'local_include', True) and not getattr(self, 'local_include_first', True):
         includes.append('.')
 
     # now transform the includes list to be relative to the top directory
@@ -306,7 +306,7 @@ def check_orphaned_targets(bld, tgt_list):
     debug('deps: checking for orphaned targets')
 
     for t in tgt_list:
-        if getattr(t, 'samba_used', False) == True:
+        if getattr(t, 'samba_used', False):
             continue
         type = target_dict[t.sname]
         if not type in ['BINARY', 'LIBRARY', 'MODULE', 'ET', 'PYTHON']:

@@ -126,7 +126,7 @@ class Disabled(object):
 class SanitizeServerRoleTests(TestCase):
 
     def test_same(self):
-        self.assertEquals("standalone server", 
+        self.assertEquals("standalone server",
             sanitize_server_role("standalone server"))
         self.assertEquals("member server",
             sanitize_server_role("member server"))

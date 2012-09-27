@@ -44,6 +44,6 @@ class UnixinfoTests(RpcInterfaceTestCase):
 
     def test_uidtosid(self):
         self.conn.UidToSid(1000)
-    
+
     def test_uidtosid_fail(self):
         self.assertRaises(TypeError, self.conn.UidToSid, "100")

@@ -132,7 +132,7 @@ class SambaVersion(object):
     def __init__(self, version_dict, path, env=None, is_install=True):
         '''Determine the version number of samba
 
-See VERSION for the format.  Entries on that file are 
+See VERSION for the format.  Entries on that file are
 also accepted as dictionary entries here
         '''
 

@@ -301,10 +301,10 @@ class KCC(object):
             #
             # Bit NTDSCONN_OPT_RODC_TOPOLOGY is clear in cn!options
             if same_site:
-                if cn_conn.is_generated() == False:
+                if not cn_conn.is_generated():
                     continue
 
-                if self.my_site.is_cleanup_ntdsconn_disabled() == True:
+                if self.my_site.is_cleanup_ntdsconn_disabled():
                     continue
 
                 # Loop thru connections looking for a duplicate that
@@ -328,10 +328,10 @@ class KCC(object):
                               (cn_conn.whenCreated == cn2_conn.whenCreated and
                                cmp(cn_conn.guid, cn2_conn.guid) < 0))
 
-                    if lesser == True:
+                    if lesser:
                         break
 
-                if lesser and cn_conn.is_rodc_topology() == False:
+                if lesser and not cn_conn.is_rodc_topology():
                     cn_conn.to_be_deleted = True
 
             # Given an nTDSConnection object cn, if the DC with the nTDSDSA
@@ -359,29 +359,29 @@ class KCC(object):
             #
             else: # different site
 
-                if mydsa.is_istg() == False:
+                if not mydsa.is_istg():
                     continue
 
-                if cn_conn.is_generated() == False:
+                if not cn_conn.is_generated():
                     continue
 
-                if self.keep_connection(cn_conn) == True:
+                if self.keep_connection(cn_conn):
                     continue
 
                 # XXX - To be implemented
 
-                if all_connected == False:
+                if not all_connected:
                     continue
 
-                if cn_conn.is_rodc_topology() == False:
+                if not cn_conn.is_rodc_topology():
                     cn_conn.to_be_deleted = True
 
 
         if opts.readonly:
             for dnstr, connect in mydsa.connect_table.items():
-                if connect.to_be_deleted == True:
+                if connect.to_be_deleted:
                     logger.info("TO BE DELETED:\n%s" % connect)
-                if connect.to_be_added == True:
+                if connect.to_be_added:
                     logger.info("TO BE ADDED:\n%s" % connect)
 
             # Peform deletion from our tables but perform
@@ -480,7 +480,7 @@ class KCC(object):
                     drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:
                     t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_NEVER_NOTIFY
 
-        elif same_site == False:
+        elif not same_site:
 
             if (t_repsFrom.replica_flags &
                 drsuapi.DRSUAPI_DRS_NEVER_NOTIFY) == 0x0:
@@ -491,7 +491,7 @@ class KCC(object):
         # not in the same site and the
         # NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION bit is
         # clear in cn!options
-        if (same_site == False and
+        if (not same_site and
            (cn_conn.options &
             dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION) == 0x0):
 
@@ -509,7 +509,7 @@ class KCC(object):
 
         # Bits DRS_DISABLE_AUTO_SYNC and DRS_DISABLE_PERIODIC_SYNC are
         # set in t.replicaFlags if and only if cn!enabledConnection = false.
-        if cn_conn.is_enabled() == False:
+        if not cn_conn.is_enabled():
 
             if (t_repsFrom.replica_flags &
                 drsuapi.DRSUAPI_DRS_DISABLE_AUTO_SYNC) == 0x0:
@@ -586,10 +586,10 @@ class KCC(object):
         # We're not currently supporting SMTP replication
         # so is_smtp_replication_available() is currently
         # always returning False
-        if (same_site == True or
-            cn_conn.transport_dnstr == None or
+        if (same_site or
+            cn_conn.transport_dnstr is None or
             cn_conn.transport_dnstr.find("CN=IP") == 0 or
-            is_smtp_replication_available() == False):
+            not is_smtp_replication_available()):
 
             if (t_repsFrom.replica_flags &
                 drsuapi.DRSUAPI_DRS_MAIL_REP) != 0x0:
@@ -614,14 +614,14 @@ class KCC(object):
                     t_repsFrom.dns_name2 = nastr
 
         else:
-            if (t_repsFrom.replica_flags & \
+            if (t_repsFrom.replica_flags &
                 drsuapi.DRSUAPI_DRS_MAIL_REP) == 0x0:
                 t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_MAIL_REP
 
             # We have a transport type but its not an
             # object in the database
             if cn_conn.transport_dnstr not in self.transport_table.keys():
-                raise Exception("Missing inter-site transport - (%s)" % \
+                raise Exception("Missing inter-site transport - (%s)" %
                                 cn_conn.transport_dnstr)
 
             x_transport = self.transport_table[cn_conn.transport_dnstr]
@@ -656,7 +656,7 @@ class KCC(object):
                                             attrs=attrs)
                 except ldb.ldbError, (enum, estr):
                     raise Exception \
-                        ("Unable to find attr (%s) for (%s) - (%s)" % \
+                        ("Unable to find attr (%s) for (%s) - (%s)" %
                          (x_transport.address_attr, pdnstr, estr))
 
                 msg = res[0]
@@ -696,15 +696,14 @@ class KCC(object):
         #    cn!fromServer references an nTDSDSA object.
         s_dsa = None
 
-        if cn_conn.is_enabled() == True and \
-            cn_conn.is_rodc_topology() == False:
+        if cn_conn.is_enabled() and not cn_conn.is_rodc_topology():
 
             s_dnstr = cn_conn.get_from_dnstr()
             if s_dnstr is not None:
                 s_dsa = self.get_dsa(s_dnstr)
 
             # No DSA matching this source DN string?
-            if s_dsa == None:
+            if s_dsa is None:
                 return False, None
 
         # To imply a repsFrom tuple is needed, each of these
@@ -718,7 +717,7 @@ class KCC(object):
         #     the local DC
         s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
 
-        if s_rep is None or s_rep.is_present() == False:
+        if s_rep is None or not s_rep.is_present():
             return False, None
 
         # To imply a repsFrom tuple is needed, each of these
@@ -733,10 +732,10 @@ class KCC(object):
         #     replica, cn!transportType has no value, or
         #     cn!transportType has an RDN of CN=IP.
         #
-        implied = (s_rep.is_ro() == False or n_rep.is_partial() == True) and \
-                  (n_rep.is_domain() == False or
-                   n_rep.is_partial() == True or
-                   cn_conn.transport_dnstr == None or
+        implied = (not s_rep.is_ro() or n_rep.is_partial()) and \
+                  (not n_rep.is_domain() or
+                   n_rep.is_partial() or
+                   cn_conn.transport_dnstr is None or
                    cn_conn.transport_dnstr.find("CN=IP") == 0)
 
         if implied:
@@ -815,7 +814,7 @@ class KCC(object):
                 # is a child of the local DC's nTDSDSA object and
                 # (cn!fromServer = s) and (cn!options) does not contain
                 # NTDSCONN_OPT_RODC_TOPOLOGY or NULL if no such (cn) exists.
-                if cn_conn and cn_conn.is_rodc_topology() == True:
+                if cn_conn and cn_conn.is_rodc_topology():
                     cn_conn = None
 
                 # KCC removes this repsFrom tuple if any of the following
@@ -831,8 +830,8 @@ class KCC(object):
                 s_rep = s_dsa.get_current_replica(n_rep.nc_dnstr)
 
                 if cn_conn is None or \
-                   s_rep is None or s_rep.is_present() == False or \
-                   (n_rep.is_ro() == False and s_rep.is_partial() == True):
+                   s_rep is None or not s_rep.is_present() or \
+                   (not n_rep.is_ro() and s_rep.is_partial()):
 
                     t_repsFrom.to_be_deleted = True
                     continue
@@ -846,7 +845,7 @@ class KCC(object):
             for cn_dnstr, cn_conn in self.my_dsa.connect_table.items():
 
                 implied, s_dsa = self.is_repsFrom_implied(n_rep, cn_conn)
-                if implied == False:
+                if not implied:
                     continue
 
                 # Loop thru the existing repsFrom tupples (if any) and
@@ -860,7 +859,7 @@ class KCC(object):
                          s_dsa = None
                          break
 
-                if s_dsa == None:
+                if s_dsa is None:
                     continue
 
                 # Create a new RepsFromTo and proceed to modify
@@ -995,7 +994,7 @@ class KCC(object):
             #        Skip dc
             if self.my_site.same_site(dsa):
                 needed, ro, partial = part.should_be_present(dsa)
-                if needed == False or (partial == True and partial_ok == False):
+                if not needed or (partial and not partial_ok):
                     continue
 
             # ELSE
@@ -1005,7 +1004,7 @@ class KCC(object):
             #          Skip dc
             else:
                 rep = dsa.get_current_replica(part.nc_dnstr)
-                if rep is None or (rep.is_partial() and partial_ok == False):
+                if rep is None or (rep.is_partial() and not partial_ok):
                     continue
 
             # IF AmIRODC() and cr!nCName corresponds to default NC then
@@ -1013,7 +1012,7 @@ class KCC(object):
             #     IF  dsaobj.msDS-Behavior-Version < DS_BEHAVIOR_WIN2008
             #         Skip dc
             if self.my_dsa.is_ro() and part.is_default():
-                if dsa.is_minimum_behavior(DS_BEHAVIOR_WIN2008) == False:
+                if not dsa.is_minimum_behavior(DS_BEHAVIOR_WIN2008):
                     continue
 
             # IF t!name != "IP" and the parent object of dc has no value for
@@ -1036,7 +1035,7 @@ class KCC(object):
 
             # IF BridgeheadDCFailed(dc!objectGUID, detectFailedDCs) = TRUE
             #     Skip dc
-            if self.is_bridgehead_failed(dsa, detect_failed) == True:
+            if self.is_bridgehead_failed(dsa, detect_failed):
                 continue
 
             logger.debug("get_all_bridgeheads: dsadn=%s" % dsa.dsa_dnstr)
@@ -1048,7 +1047,7 @@ class KCC(object):
         #    servers, and otherwise by ascending objectGUID
         # ELSE
         #    SORT bhs in a random order
-        if site.is_random_bridgehead_disabled() == True:
+        if site.is_random_bridgehead_disabled():
             bhs.sort(sort_dsa_by_gc_and_guid)
         else:
             random.shuffle(bhs)
@@ -1132,8 +1131,8 @@ class KCC(object):
 
                     # IF bits NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT and
                     # NTDSCONN_OPT_USE_NOTIFY are set in cn
-                    if cn.is_override_notify_default() == True and \
-                       cn.is_use_notify() == True:
+                    if cn.is_override_notify_default() and \
+                       cn.is_use_notify():
 
                         # IF bit NTDSSITELINK_OPT_USE_NOTIFY is clear in
                         # ri.Options
@@ -1142,7 +1141,7 @@ class KCC(object):
                         #    NTDSCONN_OPT_USE_NOTIFY in cn!options
                         if (link_opt & dsdb.NTDSSITELINK_OPT_USE_NOTIFY) == 0:
                             cn.options &= \
-                                ~(dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT | \
+                                ~(dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT |
                                   dsdb.NTDSCONN_OPT_USE_NOTIFY)
                             cn.set_modified(True)
 
@@ -1156,13 +1155,13 @@ class KCC(object):
                         #     NTDSCONN_OPT_USE_NOTIFY in cn!options
                         if (link_opt & dsdb.NTDSSITELINK_OPT_USE_NOTIFY) != 0:
                             cn.options |= \
-                                (dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT | \
+                                (dsdb.NTDSCONN_OPT_OVERRIDE_NOTIFY_DEFAULT |
                                  dsdb.NTDSCONN_OPT_USE_NOTIFY)
                             cn.set_modified(True)
 
 
                     # IF bit NTDSCONN_OPT_TWOWAY_SYNC is set in cn!options
-                    if cn.is_twoway_sync() == True:
+                    if cn.is_twoway_sync():
 
                         # IF bit NTDSSITELINK_OPT_TWOWAY_SYNC is clear in
                         # ri.Options
@@ -1186,14 +1185,14 @@ class KCC(object):
 
                     # IF bit NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION is set
                     # in cn!options
-                    if cn.is_intersite_compression_disabled() == True:
+                    if cn.is_intersite_compression_disabled():
 
                         # IF bit NTDSSITELINK_OPT_DISABLE_COMPRESSION is clear
                         # in ri.Options
                         #     Perform an originating update to clear bit
                         #     NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in
                         #     cn!options
-                        if (link_opt & \
+                        if (link_opt &
                             dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) == 0:
                             cn.options &= \
                                 ~dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
@@ -1206,7 +1205,7 @@ class KCC(object):
                         #     Perform an originating update to set bit
                         #     NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION in
                         #     cn!options
-                        if (link_opt & \
+                        if (link_opt &
                             dsdb.NTDSSITELINK_OPT_DISABLE_COMPRESSION) != 0:
                             cn.options |= \
                                 dsdb.NTDSCONN_OPT_DISABLE_INTERSITE_COMPRESSION
@@ -1214,7 +1213,7 @@ class KCC(object):
 
                     # Display any modified connection
                     if opts.readonly:
-                        if cn.to_be_modified == True:
+                        if cn.to_be_modified:
                             logger.info("TO BE MODIFIED:\n%s" % cn)
 
                         ldsa.commit_connections(self.samdb, ro=True)
@@ -1295,7 +1294,7 @@ class KCC(object):
 
             # Display any added connection
             if opts.readonly:
-                if cn.to_be_added == True:
+                if cn.to_be_added:
                     logger.info("TO BE ADDED:\n%s" % cn)
 
                     lbh.commit_connections(self.samdb, ro=True)
@@ -1658,7 +1657,7 @@ class KCC(object):
             # If we haven't been told to turn off stale connection
             # detection and this dsa has a stale connection then
             # continue
-            if detect_stale and self.is_stale_link_connection(dc_s) == True:
+            if detect_stale and self.is_stale_link_connection(dc_s):
                continue
 
             # Replica meets criteria.  Add it to table indexed
@@ -1669,7 +1668,7 @@ class KCC(object):
         # on the local DC, append to R each partial replica (p of x)
         # such that p "is present" on a DC satisfying the same
         # criteria defined above for full replica DCs.
-        if partial == True:
+        if partial:
 
             # Now we loop thru all the DSAs looking for
             # partial NC replicas that match the naming
@@ -1731,7 +1730,7 @@ class KCC(object):
                 # If we haven't been told to turn off stale connection
                 # detection and this dsa has a stale connection then
                 # continue
-                if detect_stale and self.is_stale_link_connection(dc_s) == True:
+                if detect_stale and self.is_stale_link_connection(dc_s):
                     continue
 
                 # Replica meets criteria.  Add it to table indexed
@@ -1808,11 +1807,11 @@ class KCC(object):
                 findex = rindex = random.randint(0, r_len-1)
 
                 # while this node doesn't have sufficient edges
-                while tnode.has_sufficient_edges() == False:
+                while not tnode.has_sufficient_edges():
                     # If this edge can be successfully added (i.e. not
                     # the same node and edge doesn't already exist) then
                     # select a new random index for the next round
-                    if tnode.add_edge_from(graph_list[rindex].dsa_dnstr) == True:
+                    if tnode.add_edge_from(graph_list[rindex].dsa_dnstr):
                         findex = rindex = random.randint(0, r_len-1)
                     else:
                         # Otherwise continue looking against each node
@@ -1850,7 +1849,7 @@ class KCC(object):
         if mysite.is_intrasite_topology_disabled():
             return
 
-        detect_stale = (mysite.is_detect_stale_disabled() == False)
+        detect_stale = (not mysite.is_detect_stale_disabled())
 
         # Loop thru all the partitions.
         for partdn, part in self.part_table.items():
@@ -1890,11 +1889,11 @@ class KCC(object):
         if opts.readonly:
             # Display any to be added or modified repsFrom
             for dnstr, connect in mydsa.connect_table.items():
-                if connect.to_be_deleted == True:
+                if connect.to_be_deleted:
                     logger.info("TO BE DELETED:\n%s" % connect)
-                if connect.to_be_modified == True:
+                if connect.to_be_modified:
                     logger.info("TO BE MODIFIED:\n%s" % connect)
-                if connect.to_be_added == True:
+                if connect.to_be_added:
                     logger.info("TO BE ADDED:\n%s" % connect)
 
             mydsa.commit_connections(self.samdb, ro=True)
@@ -2330,9 +2329,9 @@ def sort_replica_by_dsa_guid(rep1, rep2):
     return cmp(rep1.rep_dsa_guid, rep2.rep_dsa_guid)
 
 def sort_dsa_by_gc_and_guid(dsa1, dsa2):
-    if dsa1.is_gc() == True and dsa2.is_gc() == False:
+    if dsa1.is_gc() and not dsa2.is_gc():
         return -1
-    if dsa1.is_gc() == False and dsa2.is_gc() == True:
+    if not dsa1.is_gc() and dsa2.is_gc():
         return +1
     return cmp(dsa1.dsa_guid, dsa2.dsa_guid)
 

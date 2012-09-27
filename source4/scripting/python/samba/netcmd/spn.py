@@ -60,7 +60,7 @@ class cmd_spn_list(Command):
             spns = res[0].get("servicePrincipalName")
             found = False
             flag = ldb.FLAG_MOD_ADD
-            if spns != None:
+            if spns is not None:
                 self.outf.write(
                     "User %s has the following servicePrincipalName: \n" %
                     res[0].dn)
@@ -84,7 +84,7 @@ class cmd_spn_add(Command):
         "versionopts": options.VersionOptions,
         }
     takes_options = [
-        Option("--force", help="Force the addition of the spn"\
+        Option("--force", help="Force the addition of the spn"
                                " even it exists already", action="store_true"),
             ]
     takes_args = ["name", "user"]
@@ -99,7 +99,7 @@ class cmd_spn_add(Command):
         res = sam.search(
             expression="servicePrincipalName=%s" % ldb.binary_encode(name),
             scope=ldb.SCOPE_SUBTREE)
-        if len(res) != 0  and not force:
+        if len(res) != 0 and not force:
             raise CommandError("Service principal %s already"
                                    " affected to another user" % name)
 
@@ -114,7 +114,7 @@ class cmd_spn_add(Command):
             tab = []
             found = False
             flag = ldb.FLAG_MOD_ADD
-            if spns != None:
+            if spns is not None:
                 for e in spns:
                     if str(e) == name:
                         found = True
@@ -172,8 +172,8 @@ class cmd_spn_delete(Command):
                     listUser = ""
                     for r in res:
                         listUser = "%s\n%s" % (listUser, str(r.dn))
-                    raise CommandError("More than one user has the spn %s "\
-                           "and no specific user was specified, list of users"\
+                    raise CommandError("More than one user has the spn %s "
+                           "and no specific user was specified, list of users"
                            " with this spn:%s" % (name, listUser))
                 else:
                     result=res[0]
@@ -182,7 +182,7 @@ class cmd_spn_delete(Command):
             msg = ldb.Message()
             spns = result.get("servicePrincipalName")
             tab = []
-            if spns != None:
+            if spns is not None:
                 for e in spns:
                     if str(e) != name:
                         tab.append(str(e))

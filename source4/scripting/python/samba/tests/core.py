@@ -36,11 +36,11 @@ class SubstituteVarTestCase(TestCase):
                 samba.substitute_var("foo ${bar}", {"bar": "bla"}))
 
     def test_broken(self):
-        self.assertEquals("foo ${bdkjfhsdkfh sdkfh ", 
+        self.assertEquals("foo ${bdkjfhsdkfh sdkfh ",
             samba.substitute_var("foo ${bdkjfhsdkfh sdkfh ", {"bar": "bla"}))
 
     def test_unknown_var(self):
-        self.assertEquals("foo ${bla} gsff", 
+        self.assertEquals("foo ${bla} gsff",
                 samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
 
     def test_check_all_substituted(self):

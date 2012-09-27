@@ -73,7 +73,7 @@ class NamingContext(object):
                                scope=ldb.SCOPE_BASE, attrs=attrs)
 
         except ldb.LdbError, (enum, estr):
-            raise Exception("Unable to find naming context (%s)" % \
+            raise Exception("Unable to find naming context (%s)" %
                             (self.nc_dnstr, estr))
         msg = res[0]
         if "objectGUID" in msg:
@@ -213,7 +213,7 @@ class NCReplica(NamingContext):
 
     def set_instantiated_flags(self, flags=None):
         '''Set or clear NC replica instantiated flags'''
-        if (flags == None):
+        if flags is None:
             self.rep_instantiated_flags = 0
         else:
             self.rep_instantiated_flags = flags
@@ -337,7 +337,7 @@ class NCReplica(NamingContext):
             # replacement list.  Build a list
             # of to be deleted reps which we will
             # remove from rep_repsFrom list below
-            if repsFrom.to_be_deleted == True:
+            if repsFrom.to_be_deleted:
                 delreps.append(repsFrom)
                 modify = True
                 continue
@@ -361,7 +361,7 @@ class NCReplica(NamingContext):
         # need to be deleted or input option has informed
         # us to be "readonly" (ro).  Leave database
         # record "as is"
-        if modify == False or ro == True:
+        if not modify or ro:
             return
 
         m = ldb.Message()
@@ -380,7 +380,7 @@ class NCReplica(NamingContext):
     def dumpstr_to_be_deleted(self):
         text=""
         for repsFrom in self.rep_repsFrom:
-            if repsFrom.to_be_deleted == True:
+            if repsFrom.to_be_deleted:
                 if text:
                     text = text + "\n%s" % repsFrom
                 else:
@@ -390,7 +390,7 @@ class NCReplica(NamingContext):
     def dumpstr_to_be_modified(self):
         text=""
         for repsFrom in self.rep_repsFrom:
-            if repsFrom.is_modified() == True:
+            if repsFrom.is_modified():
                 if text:
                     text = text + "\n%s" % repsFrom
                 else:
@@ -948,13 +948,13 @@ class NTDSConnection(object):
         self.to_be_deleted = False
 
         # No database modification requested
-        if ro == True:
+        if ro:
             return
 
         try:
             samdb.delete(self.dnstr)
         except ldb.LdbError, (enum, estr):
-            raise Exception("Could not delete nTDSConnection for (%s) - (%s)" % \
+            raise Exception("Could not delete nTDSConnection for (%s) - (%s)" %
                             (self.dnstr, estr))
 
     def commit_added(self, samdb, ro=False):
@@ -966,7 +966,7 @@ class NTDSConnection(object):
         self.to_be_added = False
 
         # No database modification requested
-        if ro == True:
+        if ro:
             return
 
         # First verify we don't have this entry to ensure nothing
@@ -979,10 +979,10 @@ class NTDSConnection(object):
 
         except ldb.LdbError, (enum, estr):
             if enum != ldb.ERR_NO_SUCH_OBJECT:
-                raise Exception("Unable to search for (%s) - (%s)" % \
+                raise Exception("Unable to search for (%s) - (%s)" %
                                 (self.dnstr, estr))
         if found:
-            raise Exception("nTDSConnection for (%s) already exists!" % \
+            raise Exception("nTDSConnection for (%s) already exists!" %
                             self.dnstr)
 
         if self.enabled:
@@ -995,10 +995,10 @@ class NTDSConnection(object):
         m.dn = ldb.Dn(samdb, self.dnstr)
 
         m["objectClass"] = \
-            ldb.MessageElement("nTDSConnection", ldb.FLAG_MOD_ADD, \
+            ldb.MessageElement("nTDSConnection", ldb.FLAG_MOD_ADD,
                                "objectClass")
         m["showInAdvancedViewOnly"] = \
-            ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, \
+            ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD,
                                "showInAdvancedViewOnly")
         m["enabledConnection"] = \
             ldb.MessageElement(enablestr, ldb.FLAG_MOD_ADD, "enabledConnection")
@@ -1007,12 +1007,12 @@ class NTDSConnection(object):
         m["options"] = \
             ldb.MessageElement(str(self.options), ldb.FLAG_MOD_ADD, "options")
         m["systemFlags"] = \
-            ldb.MessageElement(str(self.system_flags), ldb.FLAG_MOD_ADD, \
+            ldb.MessageElement(str(self.system_flags), ldb.FLAG_MOD_ADD,
                                "systemFlags")
 
         if self.transport_dnstr is not None:
             m["transportType"] = \
-                ldb.MessageElement(str(self.transport_dnstr), ldb.FLAG_MOD_ADD, \
+                ldb.MessageElement(str(self.transport_dnstr), ldb.FLAG_MOD_ADD,
                                    "transportType")
 
         if self.schedule is not None:
@@ -1022,7 +1022,7 @@ class NTDSConnection(object):
         try:
             samdb.add(m)
         except ldb.LdbError, (enum, estr):
-            raise Exception("Could not add nTDSConnection for (%s) - (%s)" % \
+            raise Exception("Could not add nTDSConnection for (%s) - (%s)" %
                             (self.dnstr, estr))
 
     def commit_modified(self, samdb, ro=False):
@@ -1034,7 +1034,7 @@ class NTDSConnection(object):
         self.to_be_modified = False
 
         # No database modification requested
-        if ro == True:
+        if ro:
             return
 
         # First verify we have this entry to ensure nothing
@@ -1047,9 +1047,9 @@ class NTDSConnection(object):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
                 found = False
             else:
-                raise Exception("Unable to search for (%s) - (%s)" % \
+                raise Exception("Unable to search for (%s) - (%s)" %
                                 (self.dnstr, estr))
-        if found == False:
+        if not found:
             raise Exception("nTDSConnection for (%s) doesn't exist!" %
                             self.dnstr)
 
@@ -1143,7 +1143,7 @@ class NTDSConnection(object):
                sched.headerArray[i].offset:
                 return False
 
-            for a, b in zip(self.schedule.dataArray[i].slots, \
+            for a, b in zip(self.schedule.dataArray[i].slots,
                             sched.dataArray[i].slots):
                 if a != b:
                     return False
@@ -1617,7 +1617,7 @@ class Site(object):
 
         # If readonly database then do not perform a
         # persistent update
-        if ro == True:
+        if ro:
             return True
 
         # Perform update to the samdb
@@ -1767,7 +1767,7 @@ class GraphNode(object):
             #    the DC on which ri "is present".
             #
             #    c.options does not contain NTDSCONN_OPT_RODC_TOPOLOGY
-            if connect and connect.is_rodc_topology() == False:
+            if connect and not connect.is_rodc_topology():
                 exists = True
             else:
                 exists = False
@@ -2157,7 +2157,7 @@ class Vertex(object):
 
             # We have a full replica which is the largest
             # value so exit
-            if rep.is_partial() == False:
+            if not rep.is_partial():
                 self.color = VertexColor.red
                 break
             else:

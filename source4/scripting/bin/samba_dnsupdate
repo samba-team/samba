@@ -150,11 +150,16 @@ class dnsobj(object):
             raise Exception("Received unexpected DNS reply of type %s" % self.type)
 
     def __str__(self):
-        if d.type == "A":     return "%s %s %s" % (self.type, self.name, self.ip)
-        if d.type == "AAAA":  return "%s %s %s" % (self.type, self.name, self.ip)
-        if d.type == "SRV":   return "%s %s %s %s" % (self.type, self.name, self.dest, self.port)
-        if d.type == "CNAME": return "%s %s %s" % (self.type, self.name, self.dest)
-        if d.type == "NS":    return "%s %s %s" % (self.type, self.name, self.dest)
+        if d.type == "A":
+            return "%s %s %s" % (self.type, self.name, self.ip)
+        if d.type == "AAAA":
+            return "%s %s %s" % (self.type, self.name, self.ip)
+        if d.type == "SRV":
+            return "%s %s %s %s" % (self.type, self.name, self.dest, self.port)
+        if d.type == "CNAME":
+            return "%s %s %s" % (self.type, self.name, self.dest)
+        if d.type == "NS":
+            return "%s %s %s" % (self.type, self.name, self.dest)
 
 
 def parse_dns_line(line, sub_vars):

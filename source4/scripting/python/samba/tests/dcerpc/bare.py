@@ -26,26 +26,26 @@ class BareTestCase(samba.tests.TestCase):
 
     def test_bare(self):
         # Connect to the echo pipe
-        x = ClientConnection("ncalrpc:localhost[DEFAULT]", 
+        x = ClientConnection("ncalrpc:localhost[DEFAULT]",
                 ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                 lp_ctx=samba.tests.env_loadparm())
         self.assertEquals("\x01\x00\x00\x00", x.request(0, chr(0) * 4))
 
     def test_alter_context(self):
-        x = ClientConnection("ncalrpc:localhost[DEFAULT]", 
+        x = ClientConnection("ncalrpc:localhost[DEFAULT]",
                 ("12345778-1234-abcd-ef00-0123456789ac", 1),
                 lp_ctx=samba.tests.env_loadparm())
-        y = ClientConnection("ncalrpc:localhost", 
+        y = ClientConnection("ncalrpc:localhost",
                 ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                 basis_connection=x, lp_ctx=samba.tests.env_loadparm())
         x.alter_context(("60a15ec5-4de8-11d7-a637-005056a20182", 1))
         # FIXME: self.assertEquals("\x01\x00\x00\x00", x.request(0, chr(0) * 4))
 
     def test_two_connections(self):
-        x = ClientConnection("ncalrpc:localhost[DEFAULT]", 
-                ("60a15ec5-4de8-11d7-a637-005056a20182", 1), 
+        x = ClientConnection("ncalrpc:localhost[DEFAULT]",
+                ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                 lp_ctx=samba.tests.env_loadparm())
-        y = ClientConnection("ncalrpc:localhost", 
+        y = ClientConnection("ncalrpc:localhost",
                 ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                 basis_connection=x, lp_ctx=samba.tests.env_loadparm())
         self.assertEquals("\x01\x00\x00\x00", y.request(0, chr(0) * 4))

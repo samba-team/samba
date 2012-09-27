@@ -56,7 +56,7 @@ class cmd_delegation_show(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % 
+        res = sam.search(expression="sAMAccountName=%s" %
                     ldb.binary_encode(cleanedaccount),
                     scope=ldb.SCOPE_SUBTREE,
                     attrs=["userAccountControl", "msDS-AllowedToDelegateTo"])
@@ -189,7 +189,7 @@ class cmd_delegation_add_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % 
+        res = sam.search(expression="sAMAccountName=%s" %
                          ldb.binary_encode(cleanedaccount),
                          scope=ldb.SCOPE_SUBTREE,
                          attrs=["msDS-AllowedToDelegateTo"])
@@ -233,7 +233,7 @@ class cmd_delegation_del_service(Command):
         # to the correct domain
         (cleanedaccount, realm, domain) = _get_user_realm_domain(accountname)
 
-        res = sam.search(expression="sAMAccountName=%s" % 
+        res = sam.search(expression="sAMAccountName=%s" %
                          ldb.binary_encode(cleanedaccount),
                          scope=ldb.SCOPE_SUBTREE,
                          attrs=["msDS-AllowedToDelegateTo"])

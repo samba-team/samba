@@ -47,7 +47,7 @@ def replace_refill_task_list(self):
     # paranoia
     if bin_base[-4:] != '/bin':
         raise Utils.WafError("Invalid bin base: %s" % bin_base)
-    
+
     # obtain the expected list of files
     expected = []
     for i in range(len(bld.task_manager.groups)):
