@@ -137,6 +137,22 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		 req->options,
 		 drs_ObjectIdentifier_to_string(mem_ctx, req->naming_context)));
 
+	/*
+	 * 4.1.26.2 Server Behavior of the IDL_DRSUpdateRefs Method
+	 * Implements the input validation checks
+	 */
+	if (GUID_all_zero(&req->dest_dsa_guid)) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	if (req->dest_dsa_dns_name == NULL) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	if (!(req->options & (DRSUAPI_DRS_DEL_REF|DRSUAPI_DRS_ADD_REF))) {
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
 	dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, req->naming_context);
 	W_ERROR_HAVE_NO_MEMORY(dn);
 	ret = dsdb_find_nc_root(sam_ctx, dn, dn, &nc_root);
