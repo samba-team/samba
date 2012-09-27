@@ -1,4 +1,4 @@
-<samba:parameter name="idmap config"
+<samba:parameter name="idmap config:OPTION"
                  context="G"
 		 type="string"
                  advanced="1" developer="1" hide="1"
