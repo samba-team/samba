@@ -1,0 +1,17 @@
+<samba:parameter name="rndc command"
+                 context="G"
+				 type="string"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option specifies the path to the name server control utility.
+	</para>
+
+	<para>The <filename>rndc</filename> utility should be a part of the
+		bind installation.
+	</para>
+</description>
+
+<value type="default">/usr/sbin/rndc</value>
+<value type="example">/usr/local/bind9/sbin/rndc</value>
+</samba:parameter>
