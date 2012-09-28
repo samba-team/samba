@@ -31,6 +31,7 @@ def build(bld):
 		smb2cli_query_info.c
 		smb2cli_query_directory.c
 		smb2cli_ioctl.c
+		smb2cli_echo.c
 	''',
 	deps='LIBCRYPTO errors gensec krb5samba smb_transport',
 	public_deps='talloc samba-util',
