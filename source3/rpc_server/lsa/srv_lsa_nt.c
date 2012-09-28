@@ -3940,9 +3940,14 @@ NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 	}
 
 	for (i=0; i<count; i++) {
+		init_lsa_StringLarge(&entries[i].domain_name,
+				     domains[i]->domain_name);
 		init_lsa_StringLarge(&entries[i].netbios_name,
 				     domains[i]->netbios_name);
 		entries[i].sid = &domains[i]->security_identifier;
+		entries[i].trust_direction = domains[i]->trust_direction;
+		entries[i].trust_type = domains[i]->trust_type;
+		entries[i].trust_attributes = domains[i]->trust_attributes;
 	}
 
 	if (*r->in.resume_handle >= count) {
