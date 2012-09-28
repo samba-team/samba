@@ -253,7 +253,7 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.samba3caseinsensitive", "raw.samba3posixtimedlock",
        "raw.samba3rootdirfid", "raw.sfileinfo.end-of-file",
        "raw.bench-oplock", "raw.bench-lock", "raw.bench-open", "raw.bench-tcon",
-       "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff"]
+       "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff", "raw.samba3badnameblob"]
 
 smb2 = smbtorture4_testsuites("smb2.")
 
