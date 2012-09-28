@@ -21,7 +21,9 @@
 
 import samba
 import samba.tests
+from samba.tests import TestSkipped
 
+import errno
 import os
 import re
 import subprocess
@@ -35,10 +37,21 @@ class TestCase(samba.tests.TestCase):
         return message + '\n\n    %s' % ('\n    '.join(parameters))
 
 
+class NoXsltProc(Exception):
+
+    def __init__(self):
+        Exception.__init__(self, "'xsltproc' is not installed")
+
+
 def get_documented_parameters(sourcedir):
-    p = subprocess.Popen(
-        ["xsltproc", "--xinclude", "--param", "smb.context", "ALL", "generate-context.xsl", "parameters.all.xml"],
-        stdout=subprocess.PIPE, cwd=os.path.join(sourcedir, "docs-xml", "smbdotconf"))
+    try:
+        p = subprocess.Popen(
+            ["xsltproc", "--xinclude", "--param", "smb.context", "ALL", "generate-context.xsl", "parameters.all.xml"],
+            stdout=subprocess.PIPE, cwd=os.path.join(sourcedir, "docs-xml", "smbdotconf"))
+    except OSError, e:
+        if e.errno == errno.ENOENT:
+            raise NoXsltProc()
+        raise
     out, err = p.communicate()
     assert p.returncode == 0, "returncode was %r" % p.returncode
     for l in out.splitlines():
@@ -82,7 +95,10 @@ class SmbDotConfTests(TestCase):
 
     def test_unknown(self):
         topdir = samba.source_tree_topdir()
-        documented = set(get_documented_parameters(topdir))
+        try:
+            documented = set(get_documented_parameters(topdir))
+        except NoXsltProc:
+            raise TestSkipped("'xsltproc' is missing, unable to load parameters")
         parameters = set(get_implementation_parameters(topdir))
         # Filter out parametric options, since we can't find them in the parm
         # table
@@ -94,7 +110,10 @@ class SmbDotConfTests(TestCase):
 
     def test_undocumented(self):
         topdir = samba.source_tree_topdir()
-        documented = set(get_documented_parameters(topdir))
+        try:
+            documented = set(get_documented_parameters(topdir))
+        except NoXsltProc:
+            raise TestSkipped("'xsltproc' is missing, unable to load parameters")
         parameters = set(get_implementation_parameters(topdir))
         undocumented = parameters.difference(documented)
         if len(undocumented) > 0:
