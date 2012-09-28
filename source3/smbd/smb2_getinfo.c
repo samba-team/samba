@@ -482,6 +482,10 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
+	case 0x04: /* SMB2_0_INFO_QUOTA */
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+
 	default:
 		DEBUG(10,("smbd_smb2_getinfo_send: "
 			"unknown in_info_type of %u "
