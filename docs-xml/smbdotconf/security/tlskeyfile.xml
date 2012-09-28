@@ -1,18 +1,18 @@
-<samba:parameter name="tls cafile"
+<samba:parameter name="tls keyfile"
                  type="string"
                  context="G"
                  basic="1" advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	 <para>This option can be set to a file (PEM format)
-		 containing CA certificates of root CAs to trust to sign
-		 certificates or intermediate CA certificates.</para>
+		 containing the RSA private key. This file must be accessible without
+		 a pass-phrase, i.e. it must not be encrypted.</para>
  </description>
 
  <related>tls certfile</related>
  <related>tls crlfile</related>
  <related>tls dh params file</related>
  <related>tls enabled</related>
- <related>tls keyfile</related>
+ <related>tls cafile</related>
  <value type="default"></value>
 </samba:parameter>
