@@ -987,7 +987,7 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 							 &dom_list_ex,
 							 (uint32_t) -1,
 							 &result);
-		if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result) &&
+		if (NT_STATUS_IS_OK(status) && !NT_STATUS_IS_ERR(result) &&
 		    dom_list_ex.count > 0) {
 			count += dom_list_ex.count;
 			has_ex = true;
