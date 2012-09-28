@@ -1,0 +1,17 @@
+<samba:parameter name="server services"
+                 context="G"
+				 type="list"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option contains the services that the Samba daemon will run.</para>
+
+	<para>An entry in the <filename>smb.conf</filename> file can either override
+		the previous value completely or entries can be removed from or added to it
+		by prefixing them with <constant>+</constant> or <constant>-</constant>.
+	</para>
+</description>
+
+<value type="default">s3fs rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate dns</value>
+<value type="example">-s3fs +smb</value>
+</samba:parameter>
