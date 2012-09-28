@@ -3,6 +3,7 @@
 			 type="string"
 		 developer="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<synonym>socket address</synonym>
 <description>
 	<para>This option allows you to control what address Samba
 	will send NBT client packets from, and process replies using,
