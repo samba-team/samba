@@ -95,6 +95,72 @@ Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
 
+######################################################################
+Changes
+#######
+
+smb.conf changes
+----------------
+
+   Parameter Name			Description	Default
+   --------------			-----------	-------
+
+   allow dns updates			New		disabled
+   announce as				Removed
+   announce version			Removed
+   cldap port				New		0
+   client max protocol			New
+   client min protocol			New
+   client signing			Changed default	default
+   dcerpc endpoint servers		New
+   dgram port				New		0
+   display charset			Removed
+   dns forwarder			New
+   dns update command			New
+   homedir map				Changed default	auto.home
+   kernel share modes			New		Yes
+   kpasswd port				New		0
+   krb5 port				New		0
+   max protocol				Removed
+   min protocol				Removed
+   nbt client socket address		New		0.0.0.0
+   nbt port				New		0
+   nsupdate command			New
+   ntp signd socket directory		New
+   ntvfs handler			New
+   paranoid server security		Removed
+   pid directory			New
+   printer admin			Removed
+   rndc command 			New
+   rpc big endian			New		No
+   samba kcc command			New
+   send spnego principal		Removed
+   server max protocol			New		SMB3
+   server min protocol			New		LANMAN1
+   server role				New		auto
+   server services			New
+   server signing			Changed default	default
+   share backend			New
+   share modes				Removed
+   smb2 max read			Changed default 1048576
+   smb2 max write			Changed default 1048576
+   smb2 max trans			Changed default 1048576
+   socket address			Removed
+   spn update command			New
+   time offset				Removed
+   tls cafile				New
+   tls certfile				New
+   tls crlfile				New
+   tls dh params file			New
+   tls enabled				New		No
+   tls keyfile				New
+   unicode				New		Yes
+   web port				New		0
+   winbindd privileged socket directory	New
+   winbind sealed pipes			New		No
+   winbindd socket directory		New
+
+
 CHANGES SINCE 4.0.0rc1
 ======================
 
