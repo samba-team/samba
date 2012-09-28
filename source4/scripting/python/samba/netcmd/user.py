@@ -262,10 +262,10 @@ samba-tool user enable Testuser1 --URL=ldap://samba.samdom.example.com --usernam
 
 Example1 shows how to enable a user in the domain against a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to update that server.
 
-Exampl2:
+Example2:
 su samba-tool user enable Testuser2
 
-Example2 shows how to enable user Testuser2 for use in the domain on the local server.   sudo is used so a user may run the command as root.
+Example2 shows how to enable user Testuser2 for use in the domain on the local server. sudo is used so a user may run the command as root.
 
 Example3:
 samba-tool user enable --filter=samaccountname=Testuser3
@@ -351,7 +351,7 @@ class cmd_user_disable(Command):
 class cmd_user_setexpiry(Command):
     """Set the expiration of a user account.
 
-This command sets the expiration of a user account.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
+The user can either be specified by their sAMAccountName or using the --filter option.
 
 When a user account expires, it becomes disabled and the user is unable to logon.  The administrator may issue the samba-tool user enable command to enable the account for logon.  The permissions and memberships associated with the account are retained when the account is enabled.
 
@@ -362,7 +362,7 @@ samba-tool user setexpiry User1 --days=20 --URL=ldap://samba.samdom.example.com 
 
 Example1 shows how to set the expiration of an account in a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The --username= and --password= options are used to pass the username and password of a user that exists on the remote server and is authorized to update that server.
 
-Exampl2:
+Example2:
 su samba-tool user setexpiry User2
 
 Example2 shows how to set the account expiration of user User2 so it will never expire.  The user in this example resides on the  local server.   sudo is used so a user may run the command as root.
@@ -415,8 +415,12 @@ Example4 shows how to set the account expiration so that it will never expire.  
             # FIXME: Catch more specific exception
             raise CommandError("Failed to set expiry for user '%s': %s" % (
                 username or filter, msg))
-        self.outf.write("Set expiry for user '%s' to %u days\n" % (
-            username or filter, days))
+        if days:
+            self.outf.write("Expiry for user '%s' set to %u days.\n" % (
+                username or filter, days))
+        else:
+            self.outf.write("Expiry for user '%s' disabled.\n" % (
+                username or filter))
 
 
 class cmd_user_password(Command):
