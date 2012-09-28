@@ -1,0 +1,17 @@
+<samba:parameter name="ntp signd socket directory"
+                 context="G"
+                 type="string"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This setting controls the location of the socket that
+		the NTP daemon uses to communicate with Samba for
+		signing packets.</para>
+
+	<para>If a non-default path is specified here, then it is also necessary
+		to make NTP aware of the new path using the <constant>ntpsigndsocket</constant>
+		directive in <filename>ntp.conf</filename>.</para>
+</description>
+
+<value type="default">$prefix/run/samba/ntp_signd</value>
+</samba:parameter>
