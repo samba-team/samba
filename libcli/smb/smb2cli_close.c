@@ -83,6 +83,7 @@ static void smb2cli_close_done(struct tevent_req *subreq)
 
 	status = smb2cli_req_recv(subreq, NULL, NULL,
 				  expected, ARRAY_SIZE(expected));
+	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
