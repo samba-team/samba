@@ -1,0 +1,14 @@
+<samba:parameter name="spn update command"
+                 context="G"
+				 type="string"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option sets the command that for updating
+		servicePrincipalName names from <filename>spn_update_list</filename>.
+	</para>
+</description>
+
+<value type="default">$prefix/sbin/samba_spnupdate</value>
+<value type="example">/usr/local/sbin/spnupdate</value>
+</samba:parameter>
