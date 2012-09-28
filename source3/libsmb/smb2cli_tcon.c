@@ -41,7 +41,6 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct smb2cli_tcon_state *state;
 	uint8_t *fixed;
-	char srv_ip[INET6_ADDRSTRLEN];
 	const char *tcon_share;
 	uint8_t *dyn;
 	size_t dyn_len;
@@ -52,10 +51,9 @@ struct tevent_req *smb2cli_tcon_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	print_sockaddr(srv_ip, sizeof(srv_ip), smbXcli_conn_remote_sockaddr(cli->conn));
-
 	tcon_share = talloc_asprintf(state, "\\\\%s\\%s",
-				     srv_ip, share);
+				     smbXcli_conn_remote_name(cli->conn),
+				     share);
 	if (tevent_req_nomem(tcon_share, req)) {
 		return tevent_req_post(req, ev);
 	}
