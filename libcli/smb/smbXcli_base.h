@@ -187,6 +187,16 @@ NTSTATUS smb1cli_trans(TALLOC_CTX *mem_ctx, struct smbXcli_conn *conn,
 		uint8_t **rparam, uint32_t min_rparam, uint32_t *num_rparam,
 		uint8_t **rdata, uint32_t min_rdata, uint32_t *num_rdata);
 
+struct tevent_req *smb1cli_echo_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct smbXcli_conn *conn,
+				     uint32_t timeout_msec,
+				     uint16_t num_echos,
+				     DATA_BLOB data);
+NTSTATUS smb1cli_echo_recv(struct tevent_req *req);
+NTSTATUS smb1cli_echo(struct smbXcli_conn *conn, uint32_t timeout_msec,
+		      uint16_t num_echos, DATA_BLOB data);
+
 uint32_t smb2cli_conn_server_capabilities(struct smbXcli_conn *conn);
 uint16_t smb2cli_conn_server_security_mode(struct smbXcli_conn *conn);
 uint32_t smb2cli_conn_max_trans_size(struct smbXcli_conn *conn);
