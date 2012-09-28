@@ -1,29 +1,21 @@
-What's new in Samba 4.0.0 rc1
-=============================
+Release Announcements
+=====================
+
+This is the second release candidate of Samba 4.0.  This is *not*
+intended for production environments and is designed for testing
+purposes only.  Please report any defects via the Samba bug reporting
+system at https://bugzilla.samba.org/.
 
 Samba 4.0 will be the next version of the Samba suite and incorporates
-all the technology found in both the Samba4 alpha series and the
+all the technology found in both the Samba4 series and the
 stable 3.x series. The primary additional features over Samba 3.6 are
 support for the Active Directory logon protocols used by Windows 2000
 and above.
-
-
-WARNINGS
-========
-
-Samba 4.0.0 rc1 is not a final Samba release, however we are now making
-good progress towards a Samba 4.0 release.
 
 This release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
 to upgrade existing Samba 3.x releases to) and the AD domain
 controller work previously known as 'samba4'.
-
-Samba 4.0 is subjected to an awesome battery of tests on an automated
-basis, we have found Samba 4.0 to be very stable in its behaviour.
-However, as with all our pre-releases we still recommend against
-upgrading production servers from Samba 3.x release to Samba 4.0.0rc1
-at this stage.
 
 If you are upgrading, or looking to develop, test or deploy Samba 4.0
 releases candidates, you should backup all configuration and data.
@@ -35,7 +27,7 @@ UPGRADING
 Users upgrading from Samba 3.x domain controllers and wanting to use
 Samba 4.0 as an AD DC should use the 'samba-tool domain
 classicupgrade' command.  See the wiki for more details:
-https://wiki.samba.org/index.php/Samba4/samba3upgrade/HOWTO
+https://wiki.samba.org/index.php/Samba4/samba3upgrade/HOWTO.
 
 Users upgrading from Samba 4.0 alpha and beta releases since alpha15
 should run 'samba-tool dbcheck --cross-ncs --fix' before re-starting
@@ -52,6 +44,7 @@ If you used the BIND9_FLATFILE or BIND9_DLZ features,
 you'll have to add '-dns' to the 'server services' option,
 as the internal dns server (SAMBA_INTERNAL) is the default now.
 
+
 NEW FEATURES
 ============
 
@@ -65,12 +58,12 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
-Samba 4.0.0rc1 ships with two distinct file servers.  We now use the
+Samba 4.0.0rc2 ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
 default.
 
 Samba 4.0 also ships with the 'NTVFS' file server.  This file server
-is what was used in all previous alpha releases of Samba 4.0, and is
+is what was used in all previous releases of Samba 4.0, and is
 tuned to match the requirements of an AD domain controller.  We
 continue to support this, not only to provide continuity to
 installations that have deployed it as part of an AD DC, but also as a
@@ -101,53 +94,66 @@ Finally, a new scripting interface has been added to Samba 4, allowing
 Python programs to interface to Samba's internals, and many tools and
 internal workings of the DC code is now implemented in python.
 
-CHANGES SINCE beta8
-===================
 
-For a list of changes since beta8, please see the git log.
+CHANGES SINCE 4.0.0rc1
+======================
 
-$ git clone git://git.samba.org/samba.git
-$ cd samba.git
-$ git log samba-4.0.0beta8..samba-4.0.0rc1
+o   Michael Adam <obnox@samba.org>
+    * BUG 9173: Make the SMB2 compound request create/delete_on_close/
+      close work as Windows.
 
-Some major user-visible changes include:
 
-- The smbd file server now offers SMB3 as the maximum protocol
-  by default. Samba can negotiate version 3 of the SMB protocol
-  and supports the required features, including all required
-  features of SMB 2.1 and SMB 2.0. Note that this does not imply
-  that Samba implements all features of SMB3 since many of them
-  are optional capabilities. Examples of features that Samba does
-  not implement yet are leases (SMB 2.1) and multi-channel (SMB 3).
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9161: Re-add the vfs_Chdir() cache.
+    * BUG 9189: SMB2 Create doesn't return correct MAX ACCESS access mask in
+      blob.
+    * BUG 9213: Bad ASN.1 NegTokenInit packet can cause invalid free.
 
-  Samba now offers an initial support for SMB2 durable file handles.
-  These are enabled by default and can be turned off on a per share
-  basis by setting "durable handles = no" on the share configuration.
-  Note that in order to prevent conflicts with other applications
-  accessing the same files, durable handles are only granted on
-  shares that are configured for CIFS/SMB2-only access, i.e. more
-  explicitly shares that are configured for minimal interoperability
-  with these settings:
 
-    kernel oplocks = no
-    kernel share modes = no
-    posix locking = no
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9162: Fix the build of the GPFS VFS module.
+    * BUG 9197: Only do 'printing_subsystem_update' when printing is enabled.
 
-  The option "kernel share modes" has been introduced to be able
-  to turn the translation of SMB share modes into kernel flocks
-  off.
 
-- The 'provision' script was merged into 'samba-tool'
-  as 'samba-tool domain provision' the arguments are still
-  the same.
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 9157: Cleanup idmap_ldap build dependencies.
 
-- The 'updateprovision' script was renamed to 'samba_upgradeprovision'.
 
-- We changed the default dns implementation to the internal dns server
-  (SAMBA_INTERNAL). BIND9_FLATFILE and BIND9_DLZ are still available,
-  but you'll have to add '-dns' to the 'server services' option
-  to disable the internal dns server.
-  The default for 'allow dns updates' has changed to 'secure only'.
+o   Ira Cooper <ira@samba.org>
+    * BUG 9162: Fix build on Illumos/Solaris using '--with-acl'.
+    * BUG 9173: Compound requests should continue processing.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 9162: Fix the build of the ACL VFS modules.
+    * BUG 9172: Fix reporting of gfs2 quotas.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9217: CreateFile with FILE_DIRECTORY_FILE can create directories
+      on read-only shares.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9173: Make the SMB2 compound request create/delete_on_close/
+      close work as Windows.
+    * BUG 9184: Fix receiving of UDP packets from 0 bytes.
+    * BUG 9191: Release the share mode lock before calling exit_server().
+    * BUG 9193: Fix usage of invalid memory in smb2_signing_check_pdu().
+    * BUG 9194: Disallow '--prefix=/usr' and '--prefix=/usr/local' without
+      '--enable-fhs'.
+    * BUG 9198: Fix RHEL-CTDB packaging.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 9199: Fix usage of "panic action".
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8632: Fix builtin forms order to match Windows again.
+    * BUG 9159: Fix generating idmap manpages.
+    * BUG 9218: Don't segfault if user specified ports out for range.
+
 
 KNOWN ISSUES
 ============
