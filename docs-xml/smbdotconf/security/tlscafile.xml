@@ -1,0 +1,20 @@
+<samba:parameter name="tls cafile"
+                 type="string"
+                 context="G"
+                 basic="1" advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+ <description>
+	 <para>This option can be set to a file (PEM format)
+		 containing CA certificates of root CAs to trust to sign
+		 certificates or intermediate CA certificates.</para>
+
+	 <para>At the moment, TLS is only used by the web server.</para>
+ </description>
+
+ <related>tls certfile</related>
+ <related>tls crlfile</related>
+ <related>tls dh params file</related>
+ <related>tls enabled</related>
+ <related>tls keyfile</related>
+ <value type="default"></value>
+</samba:parameter>
