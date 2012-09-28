@@ -5,6 +5,7 @@
 			type="enum"
 			xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 
+<synonym>ldap password sync</synonym>
 <description>
 	<para>
 	This option is used to define whether or not Samba should sync the LDAP password with the NT
