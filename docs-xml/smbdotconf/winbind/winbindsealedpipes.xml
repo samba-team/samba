@@ -1,0 +1,16 @@
+<samba:parameter name="winbind sealed pipes"
+                 context="G"
+                 type="boolean"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether any requests made over the Samba 4 winbind
+		pipe will be sealed. Disabling sealing can be useful for debugging
+		purposes.</para>
+
+	<para>Note that this option only applies to the Samba 4 winbind and not
+		to the standard winbind.</para>
+</description>
+
+<value type="default">yes</value>
+</samba:parameter>
