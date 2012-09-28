@@ -69,6 +69,7 @@ NTSTATUS torture_raw_init(void)
 				      torture_samba3_rootdirfid);
 	torture_suite_add_1smb_test(suite, "samba3checkfsp", torture_samba3_checkfsp);
 	torture_suite_add_1smb_test(suite, "samba3oplocklogoff", torture_samba3_oplock_logoff);
+	torture_suite_add_1smb_test(suite, "samba3badnameblob", torture_samba3_check_openX_badname);
 	torture_suite_add_simple_test(suite, "samba3badpath", torture_samba3_badpath);
 	torture_suite_add_1smb_test(suite, "samba3caseinsensitive",
 				      torture_samba3_caseinsensitive);

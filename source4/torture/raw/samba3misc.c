@@ -29,6 +29,126 @@
 #include "param/param.h"
 #include "torture/raw/proto.h"
 
+/*
+ The next 2 functions are stolen from source4/libcli/raw/rawfile.c
+ but allow us to send a raw data blob instead of an OpenX name.
+*/
+
+#define SETUP_REQUEST(cmd, wct, buflen) do { \
+        req = smbcli_request_setup(tree, cmd, wct, buflen); \
+        if (!req) return NULL; \
+} while (0)
+
+static struct smbcli_request *smb_raw_openX_name_blob_send(struct smbcli_tree *tree,
+					union smb_open *parms,
+					const DATA_BLOB *pname_blob)
+{
+        struct smbcli_request *req = NULL;
+
+	if (parms->generic.level != RAW_OPEN_OPENX) {
+		return NULL;
+	}
+
+	SETUP_REQUEST(SMBopenX, 15, 0);
+	SSVAL(req->out.vwv, VWV(0), SMB_CHAIN_NONE);
+	SSVAL(req->out.vwv, VWV(1), 0);
+	SSVAL(req->out.vwv, VWV(2), parms->openx.in.flags);
+	SSVAL(req->out.vwv, VWV(3), parms->openx.in.open_mode);
+	SSVAL(req->out.vwv, VWV(4), parms->openx.in.search_attrs);
+	SSVAL(req->out.vwv, VWV(5), parms->openx.in.file_attrs);
+	raw_push_dos_date3(tree->session->transport,
+			req->out.vwv, VWV(6), parms->openx.in.write_time);
+	SSVAL(req->out.vwv, VWV(8), parms->openx.in.open_func);
+	SIVAL(req->out.vwv, VWV(9), parms->openx.in.size);
+	SIVAL(req->out.vwv, VWV(11),parms->openx.in.timeout);
+	SIVAL(req->out.vwv, VWV(13),0); /* reserved */
+	smbcli_req_append_blob(req, pname_blob);
+
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
+		return NULL;
+	}
+
+	return req;
+}
+
+static NTSTATUS smb_raw_openX_name_blob(struct smbcli_tree *tree,
+			TALLOC_CTX *mem_ctx,
+			union smb_open *parms,
+			const DATA_BLOB *pname_blob)
+{
+	struct smbcli_request *req = smb_raw_openX_name_blob_send(tree, parms, pname_blob);
+	return smb_raw_open_recv(req, mem_ctx, parms);
+}
+
+static NTSTATUS raw_smbcli_openX_name_blob(struct smbcli_tree *tree,
+				const DATA_BLOB *pname_blob,
+				int flags,
+				int share_mode,
+				int *fnum)
+{
+        union smb_open open_parms;
+        unsigned int openfn=0;
+        unsigned int accessmode=0;
+        TALLOC_CTX *mem_ctx;
+        NTSTATUS status;
+
+        mem_ctx = talloc_init("raw_openX_name_blob");
+        if (!mem_ctx) return NT_STATUS_NO_MEMORY;
+
+        if (flags & O_CREAT) {
+                openfn |= OPENX_OPEN_FUNC_CREATE;
+        }
+        if (!(flags & O_EXCL)) {
+                if (flags & O_TRUNC) {
+                        openfn |= OPENX_OPEN_FUNC_TRUNC;
+                } else {
+                        openfn |= OPENX_OPEN_FUNC_OPEN;
+                }
+        }
+
+        accessmode = (share_mode<<OPENX_MODE_DENY_SHIFT);
+
+        if ((flags & O_ACCMODE) == O_RDWR) {
+                accessmode |= OPENX_MODE_ACCESS_RDWR;
+        } else if ((flags & O_ACCMODE) == O_WRONLY) {
+                accessmode |= OPENX_MODE_ACCESS_WRITE;
+        } else if ((flags & O_ACCMODE) == O_RDONLY) {
+                accessmode |= OPENX_MODE_ACCESS_READ;
+	}
+
+#if defined(O_SYNC)
+        if ((flags & O_SYNC) == O_SYNC) {
+                accessmode |= OPENX_MODE_WRITE_THRU;
+        }
+#endif
+
+        if (share_mode == DENY_FCB) {
+                accessmode = OPENX_MODE_ACCESS_FCB | OPENX_MODE_DENY_FCB;
+        }
+
+        open_parms.openx.level = RAW_OPEN_OPENX;
+        open_parms.openx.in.flags = 0;
+        open_parms.openx.in.open_mode = accessmode;
+        open_parms.openx.in.search_attrs = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
+        open_parms.openx.in.file_attrs = 0;
+        open_parms.openx.in.write_time = 0;
+        open_parms.openx.in.open_func = openfn;
+        open_parms.openx.in.size = 0;
+        open_parms.openx.in.timeout = 0;
+        open_parms.openx.in.fname = NULL;
+
+        status = smb_raw_openX_name_blob(tree, mem_ctx, &open_parms, pname_blob);
+        talloc_free(mem_ctx);
+
+        if (fnum && NT_STATUS_IS_OK(status)) {
+                *fnum = open_parms.openx.out.file.fnum;
+        }
+
+        return status;
+}
+
+
 #define CHECK_STATUS(torture, status, correct) do {	\
 	if (!NT_STATUS_EQUAL(status, correct)) { \
 		torture_result(torture, TORTURE_FAIL, "%s: Incorrect status %s - should be %s\n", \
@@ -916,5 +1036,23 @@ bool torture_samba3_oplock_logoff(struct torture_context *tctx, struct smbcli_st
 
 	ret = true;
  done:
+	return ret;
+}
+
+bool torture_samba3_check_openX_badname(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	NTSTATUS status;
+	bool ret = false;
+	int fnum = -1;
+	DATA_BLOB name_blob = data_blob_talloc(cli->tree, NULL, 65535);
+
+	if (name_blob.data == NULL) {
+		return false;
+	}
+	memset(name_blob.data, 0xcc, 65535);
+	status = raw_smbcli_openX_name_blob(cli->tree, &name_blob, O_RDWR, DENY_NONE, &fnum);
+	CHECK_STATUS(tctx, status, NT_STATUS_OBJECT_NAME_INVALID);
+	ret = true;
+
 	return ret;
 }
