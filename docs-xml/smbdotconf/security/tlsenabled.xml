@@ -1,0 +1,11 @@
+<samba:parameter name="tls enabled"
+			 type="boolean"
+                 context="G"
+                 basic="1"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+ <description>
+	 <para>If this option is set to <constant>yes</constant>, then Samba
+		 will use TLS when possible in communication.</para>
+ </description>
+ <value type="default">yes</value>
+</samba:parameter>
