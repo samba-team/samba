@@ -413,6 +413,11 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	return WERR_OK;
 }
 
+/**
+ * Find a partition when given a NC
+ * If the NC can't be found it will return BAD_NC
+ * Initial checks for invalid parameters have to be done beforehand
+ */
 WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 				      struct GUID *nc_guid,
 				      struct dom_sid *nc_sid,
@@ -429,8 +434,8 @@ WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 	valid_sid  = nc_sid && !dom_sid_equal(&null_sid, nc_sid);
 	valid_guid = nc_guid && !GUID_all_zero(nc_guid);
 
-	if (!valid_sid && !valid_guid && !nc_dn_str) {
-		return WERR_DS_DRA_INVALID_PARAMETER;
+	if (!valid_sid && !valid_guid && (!nc_dn_str)) {
+		return WERR_DS_DRA_BAD_NC;
 	}
 
 	for (p = s->partitions; p; p = p->next) {
