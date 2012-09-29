@@ -846,8 +846,13 @@ if ($opt_testenv) {
 
 	my $envvarstr = exported_envvars_str($testenv_vars);
 
-	my $term = ($ENV{TERMINAL} or "xterm -e");
-	system("$term 'echo -e \"
+	my @term = ();
+	if ($ENV{TERMINAL}) {
+	    @term = ($ENV{TERMINAL});
+	} else {
+	    @term = ("xterm", "-e");
+	}
+	my @term_args = ("bash", "-c", "echo -e \"
 Welcome to the Samba4 Test environment '$testenv_name'
 
 This matches the client environment used in make test
@@ -858,7 +863,10 @@ TORTURE_OPTIONS=\$TORTURE_OPTIONS
 SMB_CONF_PATH=\$SMB_CONF_PATH
 
 $envvarstr
-\" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash'");
+\" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash");
+
+	system(@term, @term_args);
+
 	teardown_env($testenv_name);
 } elsif ($opt_list) {
 	foreach (@todo) {
