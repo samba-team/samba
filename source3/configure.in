@@ -4617,7 +4617,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4A 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4A=yes,samba_cv_HAVE_QUOTACTL_4A=no,samba_cv_HAVE_QUOTACTL_4A=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;
@@ -4631,7 +4631,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4B 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../../tests/sysquotas.c"],[$CFLAGS $Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;

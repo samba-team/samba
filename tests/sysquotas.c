@@ -42,7 +42,7 @@ extern int quotactl(int cmd, const char *special, uid_t uid, void *addr);
 	struct SYS_DQBLK D;
 
 	ret = quotactl(Q_GETQUOTA,"/dev/hda1",0,(void *)&D);
-	
+
 	return ret;
 }
 
@@ -84,7 +84,7 @@ extern int quotactl(int cmd, const char *special, uid_t uid, void *addr);
 #endif
 
  int main(void)
-{	
+{
 	autoconf_quota();
 	return 0;
 }

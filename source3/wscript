@@ -1238,23 +1238,24 @@ main() {
             if not conf.CHECK_CODE('''
                 #define HAVE_QUOTACTL_4A 1
                 #define AUTOCONF_TEST 1
-                #include "confdefs.h"
-                #include "${srcdir-.}/../tests/sysquotas.c"
+                #include "../tests/sysquotas.c"
                 ''',
+                                   cflags=conf.env['WERROR_CFLAGS'],
                                    define='HAVE_QUOTACTL_4A',
                                    msg='for QUOTACTL_4A: long quotactl(int cmd, char *special, qid_t id, caddr_t addr)',
                                    execute=True,
-                                   local_include=False):
+                                   addmain=False):
+
                 conf.CHECK_CODE('''
                 #define HAVE_QUOTACTL_4B 1
                 #define AUTOCONF_TEST 1
-                #include "confdefs.h"
-                #include "${srcdir-.}/../tests/sysquotas.c"
+                #include "../tests/sysquotas.c"
                 ''',
+                                cflags=conf.env['WERROR_CFLAGS'],
                                 define='HAVE_QUOTACTL_4B',
                                 msg='for QUOTACTL_4B:  int quotactl(const char *path, int cmd, int id, char *addr)',
                                 execute=True,
-                                local_include=False)
+                                addmain=False)
 
         conf.CHECK_CODE('''
                      clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");
