@@ -1273,11 +1273,6 @@ main() {
                         execute=True,
                         local_include=False)
 
-        conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 
-                                    'getquota_rslt_u', 
-                                    define='HAVE_GETQUOTA_RSLT_GETQUOTA_RSLT_U',
-                                    headers='rpcsvc/rquota.h')
-
         if conf.CONFIG_SET('HAVE_QUOTACTL_LINUX') or \
            conf.CONFIG_SET('HAVE_QUOTACTL_4A') or \
            conf.CONFIG_SET('HAVE_QUOTACTL_4B') or \
