@@ -47,7 +47,7 @@ def get_documented_parameters(sourcedir):
     try:
         p = subprocess.Popen(
             ["xsltproc", "--xinclude", "--param", "smb.context", "ALL", "generate-context.xsl", "parameters.all.xml"],
-            stdout=subprocess.PIPE, cwd=os.path.join(sourcedir, "docs-xml", "smbdotconf"))
+            stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=os.path.join(sourcedir, "docs-xml", "smbdotconf"))
     except OSError, e:
         if e.errno == errno.ENOENT:
             raise NoXsltProc()
