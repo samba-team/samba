@@ -205,7 +205,9 @@ WERROR dns_lookup_records(struct dns_server *dns,
 	}
 
 	recs = talloc_zero_array(mem_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
-	W_ERROR_HAVE_NO_MEMORY(recs);
+	if (recs == NULL) {
+		return WERR_NOMEM;
+	}
 	for (ri = 0; ri < el->num_values; ri++) {
 		struct ldb_val *v = &el->values[ri];
 		enum ndr_err_code ndr_err;
