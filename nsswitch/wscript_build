@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import Utils
 
 bld.SAMBA_LIBRARY('winbind-client',
 	source='wb_common.c',
@@ -13,13 +14,19 @@ bld.SAMBA_BINARY('nsstest',
 	deps='replace dl'
 	)
 
+if Utils.unversioned_sys_platform() == 'linux':
+	bld.SAMBA_LIBRARY('nss_winbind',
+		source='winbind_nss_linux.c',
+		deps='winbind-client',
+		realname='libnss_winbind.so.2',
+		vnum='2')
 
-bld.SAMBA_LIBRARY('nss_winbind',
-	source='winbind_nss_linux.c',
-	deps='winbind-client',
-	realname='libnss_winbind.so.2',
-	vnum='2')
-
+if Utils.unversioned_sys_platform() == 'sunos':
+	bld.SAMBA_LIBRARY('nss_winbind',
+		source='winbind_nss_solaris.c winbind_nss_linux.c',
+		deps='winbind-client',
+		realname='libnss_winbind.so.2',
+		vnum='2')
 
 if bld.CONFIG_SET('WITH_PAM_MODULES') and bld.CONFIG_SET('HAVE_PAM_START'):
 	bld.SAMBA_LIBRARY('pamwinbind',
