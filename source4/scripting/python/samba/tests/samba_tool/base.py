@@ -103,6 +103,12 @@ class SambaToolCmdTest(samba.tests.TestCase):
         name += ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase+ string.digits) for x in range(count - 3))
         return name
 
+    def randomXid(self):
+        # pick some hopefully unused, high UID/GID range to avoid interference
+        # from the system the test runs on
+        xid = random.randint(4711000, 4799000)
+        return xid
+
     def assertWithin(self, val1, val2, delta, msg=""):
         """Assert that val1 is within delta of val2, useful for time computations"""
         self.assertTrue(((val1 + delta) > val2) and ((val1 - delta) < val2), msg)
