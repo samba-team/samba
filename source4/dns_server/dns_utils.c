@@ -201,7 +201,7 @@ WERROR dns_lookup_records(struct dns_server *dns,
 	if (el == NULL) {
 		*records = NULL;
 		*rec_count = 0;
-		return WERR_OK;
+		return DNS_ERR(NAME_ERROR);
 	}
 
 	recs = talloc_zero_array(mem_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
