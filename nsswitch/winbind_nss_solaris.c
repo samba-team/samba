@@ -26,6 +26,7 @@
 
 #undef DEVELOPER
 
+
 #include "winbind_client.h"
 #include <stdlib.h>
 #include <sys/types.h>
@@ -34,6 +35,7 @@
 #include <pwd.h>
 #include "includes.h"
 #include <syslog.h>
+
 #if !defined(HPUX)
 #include <sys/syslog.h>
 #endif /*hpux*/
@@ -46,6 +48,10 @@
 #define NSS_DEBUG(str) syslog(LOG_DEBUG, "nss_winbind: %s", str);
 #else
 #define NSS_DEBUG(str) ;
+#endif
+
+#if !defined(SMB_MALLOC_P)
+#define SMB_MALLOC_P(type) (type *)malloc(sizeof(type))
 #endif
 
 #define NSS_ARGS(args) ((nss_XbyY_args_t *)args)
