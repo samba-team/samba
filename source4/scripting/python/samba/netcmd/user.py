@@ -19,6 +19,7 @@
 
 import samba.getopt as options
 import ldb
+import pwd
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
@@ -46,6 +47,8 @@ User accounts may represent physical entities, such as people or may be used as 
 
 A user account enables a user to logon to a computer and domain with an identity that can be authenticated.  To maximize security, each user should have their own unique user account and password.  A user's access to domain resources is based on permissions assigned to the user account.
 
+Unix (RFC2307) attributes may be added to the user account. Attributes taken from NSS are obtained on the local machine. Explicitly given values override values obtained from NSS. Configure 'idmap_ldb:use rfc2307 = Yes' to use these attributes for UID/GID mapping.
+
 The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
 
 Example1:
@@ -62,6 +65,11 @@ Example3:
 samba-tool user add User3 passw3rd --userou=OrgUnit
 
 Example3 shows how to create a new user in the OrgUnit organizational unit.
+
+Example4:
+samba-tool user create User4 passw4rd --rfc2307-from-nss --gecos 'some text'
+
+Example4 shows how to create a new user with Unix UID, GID and login-shell set from the local NSS and GECOS set to 'some text'.
 
 """
     synopsis = "%prog <username> [<password>] [options]"
@@ -96,6 +104,14 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
         Option("--internet-address", help="User's home page", type=str),
         Option("--telephone-number", help="User's phone number", type=str),
         Option("--physical-delivery-office", help="User's office location", type=str),
+        Option("--rfc2307-from-nss",
+                help="Copy Unix user attributes from NSS (will be overridden by explicit UID/GID/GECOS/shell)",
+                action="store_true"),
+        Option("--uid", help="User's Unix/RFC2307 username", type=str),
+        Option("--uid-number", help="User's Unix/RFC2307 numeric UID", type=int),
+        Option("--gid-number", help="User's Unix/RFC2307 primary GID number", type=int),
+        Option("--gecos", help="User's Unix/RFC2307 GECOS field", type=str),
+        Option("--login-shell", help="User's Unix/RFC2307 login shell", type=str),
     ]
 
     takes_args = ["username", "password?"]
@@ -113,7 +129,8 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
             script_path=None, home_drive=None, home_directory=None,
             job_title=None, department=None, company=None, description=None,
             mail_address=None, internet_address=None, telephone_number=None,
-            physical_delivery_office=None):
+            physical_delivery_office=None, rfc2307_from_nss=False,
+            uid=None, uid_number=None, gid_number=None, gecos=None, login_shell=None):
 
         if random_password:
             password = generate_random_password(128, 255)
@@ -127,6 +144,19 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
                 password = None
                 self.outf.write("Sorry, passwords do not match.\n")
 
+        if rfc2307_from_nss:
+                pwent = pwd.getpwnam(username)
+                if uid is None:
+                    uid = username
+                if uid_number is None:
+                    uid_number = pwent[2]
+                if gid_number is None:
+                    gid_number = pwent[3]
+                if gecos is None:
+                    gecos = pwent[4]
+                if login_shell is None:
+                    login_shell = pwent[6]
+
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
@@ -138,7 +168,8 @@ Example3 shows how to create a new user in the OrgUnit organizational unit.
                           profilepath=profile_path, homedrive=home_drive, scriptpath=script_path, homedirectory=home_directory,
                           jobtitle=job_title, department=department, company=company, description=description,
                           mailaddress=mail_address, internetaddress=internet_address,
-                          telephonenumber=telephone_number, physicaldeliveryoffice=physical_delivery_office)
+                          telephonenumber=telephone_number, physicaldeliveryoffice=physical_delivery_office,
+                          uid=uid, uidnumber=uid_number, gidnumber=gid_number, gecos=gecos, loginshell=login_shell)
         except Exception, e:
             raise CommandError("Failed to add user '%s': " % username, e)
 

@@ -290,7 +290,8 @@ member: %s
             homedirectory=None, jobtitle=None, department=None, company=None,
             description=None, mailaddress=None, internetaddress=None,
             telephonenumber=None, physicaldeliveryoffice=None, sd=None,
-            setpassword=True):
+            setpassword=True, uidnumber=None, gidnumber=None, gecos=None,
+            loginshell=None, uid=None):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
@@ -316,6 +317,11 @@ member: %s
         :param physicaldeliveryoffice: Office location of the new user
         :param sd: security descriptor of the object
         :param setpassword: optionally disable password reset
+        :param uidnumber: RFC2307 Unix numeric UID of the new user
+        :param gidnumber: RFC2307 Unix primary GID of the new user
+        :param gecos: RFC2307 Unix GECOS field of the new user
+        :param loginshell: RFC2307 Unix login shell of the new user
+        :param uid: RFC2307 Unix username of the new user
         """
 
         displayname = ""
@@ -395,9 +401,27 @@ member: %s
         if sd is not None:
             ldbmessage["nTSecurityDescriptor"] = ndr_pack(sd)
 
+        ldbmessage2 = None
+        if any(map(lambda b: b is not None, (uid, uidnumber, gidnumber, gecos, loginshell))):
+            ldbmessage2 = ldb.Message()
+            ldbmessage2.dn = ldb.Dn(self, user_dn)
+            ldbmessage2["objectClass"] = ldb.MessageElement('posixAccount', ldb.FLAG_MOD_ADD, 'objectClass')
+            if uid is not None:
+                ldbmessage2["uid"] = ldb.MessageElement(str(uid), ldb.FLAG_MOD_REPLACE, 'uid')
+            if uidnumber is not None:
+                ldbmessage2["uidNumber"] = ldb.MessageElement(str(uidnumber), ldb.FLAG_MOD_REPLACE, 'uidNumber')
+            if gidnumber is not None:
+                ldbmessage2["gidNumber"] = ldb.MessageElement(str(gidnumber), ldb.FLAG_MOD_REPLACE, 'gidNumber')
+            if gecos is not None:
+                ldbmessage2["gecos"] = ldb.MessageElement(str(gecos), ldb.FLAG_MOD_REPLACE, 'gecos')
+            if loginshell is not None:
+                ldbmessage2["loginShell"] = ldb.MessageElement(str(loginshell), ldb.FLAG_MOD_REPLACE, 'loginShell')
+
         self.transaction_start()
         try:
             self.add(ldbmessage)
+            if ldbmessage2:
+                self.modify(ldbmessage2)
 
             # Sets the password for it
             if setpassword:
