@@ -160,6 +160,10 @@ Example4 shows how to create a new user with Unix UID, GID and login-shell set f
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
+        if uid_number or gid_number:
+            if not lp.get("idmap_ldb:use rfc2307"):
+                self.outf.write("You are setting a Unix/RFC2307 UID or GID. You may want to set 'idmap_ldb:use rfc2307 = Yes' to use those attributes for XID/SID-mapping.\n")
+
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
