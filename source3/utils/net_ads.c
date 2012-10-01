@@ -1188,7 +1188,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 		status = ads_dns_lookup_ns( ctx, root_domain, &nameservers, &ns_count );
 
 		if ( !NT_STATUS_IS_OK(status) || (ns_count == 0)) {
-			DEBUG(3,("net_ads_join: Failed to find name server for the %s "
+			DEBUG(3,("net_update_dns_internal: Failed to find name server for the %s "
 			 "realm\n", ads->config.realm));
 			goto done;
 		}
