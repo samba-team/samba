@@ -139,6 +139,9 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		    struct server_id server_id,
 		    DATA_BLOB *data);
 NTSTATUS delete_all_streams(connection_struct *conn, const char *fname);
+bool recursive_rmdir(TALLOC_CTX *ctx,
+		     connection_struct *conn,
+		     struct smb_filename *smb_dname);
 
 /* The following definitions come from smbd/conn.c  */
 
