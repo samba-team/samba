@@ -158,9 +158,7 @@ bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "\nTesting OpenPolicy2\n");
 
 	*handle = talloc(tctx, struct policy_handle);
-	if (!*handle) {
-		return false;
-	}
+	torture_assert(tctx, *handle != NULL, "talloc(tctx, struct policy_handle)");
 
 	qos.len = 0;
 	qos.impersonation_level = 2;
@@ -317,36 +315,37 @@ static bool test_LookupNames(struct dcerpc_binding_handle *b,
 				       tnames->names[i].name.string);
 			}
 		}
-		torture_comment(tctx, "LookupNames failed - %s\n",
-				nt_errstr(r.out.result));
-		return false;
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+					   "LookupNames failed");
 	} else if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_comment(tctx, "LookupNames failed - %s\n",
-				nt_errstr(r.out.result));
-		return false;
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+					   "LookupNames failed");
 	}
 
 	for (i=0;i< r.in.num_names;i++) {
-		if (i < count) {
-			if (sids.sids[i].sid_type != tnames->names[input_idx[i]].sid_type) {
-				torture_comment(tctx, "LookupName of %s got unexpected name type: %s\n",
-						tnames->names[input_idx[i]].name.string,
-						sid_type_lookup(sids.sids[i].sid_type));
-				return false;
-			}
-			if ((sids.sids[i].sid_type == SID_NAME_DOMAIN) &&
-			    (sids.sids[i].rid != (uint32_t)-1)) {
-				torture_comment(tctx, "LookupName of %s got unexpected rid: %d\n",
-					tnames->names[input_idx[i]].name.string, sids.sids[i].rid);
-				return false;
-			}
-		} else if (i >=count) {
-			torture_comment(tctx, "LookupName of %s failed to return a result\n",
-			       tnames->names[input_idx[i]].name.string);
-			return false;
+		torture_assert(tctx, (i < count),
+			       talloc_asprintf(tctx,
+			       "LookupName of %s failed to return a result\n",
+			       tnames->names[input_idx[i]].name.string));
+
+		torture_assert_int_equal(tctx,
+					 sids.sids[i].sid_type,
+					 tnames->names[input_idx[i]].sid_type,
+					 talloc_asprintf(tctx,
+					 "LookupName of %s got unexpected name type: %s\n",
+					 tnames->names[input_idx[i]].name.string,
+					 sid_type_lookup(sids.sids[i].sid_type)));
+		if (sids.sids[i].sid_type != SID_NAME_DOMAIN) {
+			continue;
 		}
+		torture_assert_int_equal(tctx,
+					 sids.sids[i].rid,
+					 UINT32_MAX,
+					 talloc_asprintf(tctx,
+					 "LookupName of %s got unexpected rid: %d\n",
+					 tnames->names[input_idx[i]].name.string,
+					 sids.sids[i].rid));
 	}
-	torture_comment(tctx, "\n");
 
 	return true;
 }
@@ -767,11 +766,9 @@ static bool test_LookupSids(struct dcerpc_binding_handle *b,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_LookupSids_r(b, tctx, &r),
 		"LookupSids failed");
-	if (!NT_STATUS_IS_OK(r.out.result) &&
-	    !NT_STATUS_EQUAL(r.out.result, STATUS_SOME_UNMAPPED)) {
-		torture_comment(tctx, "LookupSids failed - %s\n",
-				nt_errstr(r.out.result));
-		return false;
+	if (!NT_STATUS_EQUAL(r.out.result, STATUS_SOME_UNMAPPED)) {
+		torture_assert_ntstatus_ok(tctx, r.out.result,
+			"LookupSids failed");
 	}
 
 	torture_comment(tctx, "\n");
@@ -1338,10 +1335,8 @@ static bool test_Delete(struct dcerpc_binding_handle *b,
 	r.in.handle = handle;
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_Delete_r(b, tctx, &r),
 		"Delete failed");
-	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_NOT_SUPPORTED)) {
-		torture_comment(tctx, "Delete should have failed NT_STATUS_NOT_SUPPORTED - %s\n", nt_errstr(r.out.result));
-		return false;
-	}
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_NOT_SUPPORTED,
+		"Delete should have failed NT_STATUS_NOT_SUPPORTED");
 
 	return true;
 }
@@ -3583,46 +3578,44 @@ struct torture_suite *torture_rpc_lsa_trusted_domains(TALLOC_CTX *mem_ctx)
 static bool testcase_Privileges(struct torture_context *tctx,
 				struct dcerpc_pipe *p)
 {
-	bool ret = true;
 	struct policy_handle *handle;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	if (p->binding->transport != NCACN_NP &&
 	    p->binding->transport != NCALRPC) {
-		torture_comment(tctx, "testcase_Privileges is only available "
+		torture_skip(tctx, "testcase_Privileges is only available "
 				"over NCACN_NP or NCALRPC");
-		return true;
 	}
 
 	if (!test_OpenPolicy(b, tctx)) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_lsa_OpenPolicy2(b, tctx, &handle)) {
-		ret = false;
+		return false;
 	}
 
 	if (!handle) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_CreateAccount(b, tctx, handle)) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_EnumAccounts(b, tctx, handle)) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_EnumPrivs(b, tctx, handle)) {
-		ret = false;
+		return false;
 	}
 
 	if (!test_lsa_Close(b, tctx, handle)) {
-		ret = false;
+		return false;
 	}
 
-	return ret;
+	return true;
 }
 
 
