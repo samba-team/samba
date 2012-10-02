@@ -57,7 +57,7 @@ def start_s4(t):
     t.chdir("${PREFIX}")
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     t.run_cmd(['sbin/samba',
-             '--option', 'panic action=gnome-terminal -e "gdb --pid %d"'])
+             '--option', 'panic action=gnome-terminal -e "gdb --pid %d"', '--option', 'max protocol=nt1'])
     t.port_wait("${INTERFACE_IP}", 139)
 
 def test_smbclient(t):
