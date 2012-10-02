@@ -65,7 +65,7 @@ def test_smbclient(t):
     t.info('Testing smbclient')
     smbclient = t.getvar("smbclient")
     t.chdir('${PREFIX}')
-    t.cmd_contains("%s --version" % (smbclient), ["Version 4.0"])
+    t.cmd_contains("%s --version" % (smbclient), ["Version 4.1"])
     t.retry_cmd('%s -L ${INTERFACE_IP} -U%%' % (smbclient), ["netlogon", "sysvol", "IPC Service"])
     child = t.pexpect_spawn('%s //${INTERFACE_IP}/netlogon -Uadministrator%%${PASSWORD1}' % (smbclient))
     child.expect("smb:")
