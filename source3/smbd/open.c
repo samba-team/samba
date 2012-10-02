@@ -3436,6 +3436,9 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	bool inherit_owner = lp_inherit_owner(SNUM(fsp->conn));
 	bool inheritable_components = false;
 	size_t size = 0;
+	int orig_security_mask = 0;
+	int orig_directory_security_mask = 0;
+	int snum = SNUM(fsp->conn);
 
 	if (!parent_dirname(ctx, fsp->fsp_name->base_name, &parent_name, NULL)) {
 		return NT_STATUS_NO_MEMORY;
@@ -3506,6 +3509,14 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
+	/* Temporarily replace the security masks with the create masks,
+	   as we're actually doing a create here - we only call this
+	   when we've created a file or directory - but there's no
+	   way for FSET_NT_ACL to know the difference. */
+
+	orig_security_mask = lp_set_security_mask(snum, lp_create_mask(snum));
+	orig_directory_security_mask = lp_set_directory_security_mask(snum, lp_dir_mask(snum));
+
 	if (inherit_owner) {
 		/* We need to be root to force this. */
 		become_root();
@@ -3516,6 +3527,10 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	if (inherit_owner) {
 		unbecome_root();
 	}
+
+	(void)lp_set_security_mask(snum, orig_security_mask);
+	(void)lp_set_directory_security_mask(snum, orig_directory_security_mask);
+
 	return status;
 }
 
