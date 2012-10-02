@@ -1395,6 +1395,16 @@ static bool ensure_canon_entry_valid(connection_struct *conn,
 				apply_default_perms(params, is_directory, pace, S_IROTH);
 			}
 			pace_other = pace;
+
+		} else if (pace->type == SMB_ACL_USER || pace->type == SMB_ACL_GROUP) {
+
+			/*
+			 * Ensure create mask/force create mode is respected on set.
+			 */
+
+			if (setting_acl && !is_default_acl) {
+				apply_default_perms(params, is_directory, pace, S_IRGRP);
+			}
 		}
 	}
 
