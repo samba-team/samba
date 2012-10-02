@@ -5476,3 +5476,17 @@ int lp_security(void)
 	return lp_find_security(lp__server_role(),
 				lp__security());
 }
+
+int lp_set_security_mask(int snum, int new_val)
+{
+	int ret = ServicePtrs[snum]->iSecurity_mask;
+	ServicePtrs[snum]->iSecurity_mask = new_val;
+	return ret;
+}
+
+int lp_set_directory_security_mask(int snum, int new_val)
+{
+	int ret = ServicePtrs[snum]->iDir_Security_mask;
+	ServicePtrs[snum]->iDir_Security_mask = new_val;
+	return ret;
+}

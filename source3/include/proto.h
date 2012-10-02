@@ -1188,6 +1188,8 @@ bool lp_getwd_cache(void);
 int lp_srv_maxprotocol(void);
 int lp_srv_minprotocol(void);
 int lp_security(void);
+int lp_set_security_mask(int snum, int new_val);
+int lp_set_directory_security_mask(int snum, int new_mask);
 int lp__server_role(void);
 int lp__security(void);
 int lp__domain_master(void);
