@@ -1146,6 +1146,11 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 			if (zone == NULL) {
 				continue;
 			}
+			/* Ignore zones that are not handled in BIND */
+			if ((strcmp(zone, "RootDNSServers") == 0) ||
+			    (strcmp(zone, "..TrustAnchors") == 0)) {
+				continue;
+			}
 			zone_dn = ldb_dn_copy(tmp_ctx, dn);
 			if (zone_dn == NULL) {
 				talloc_free(tmp_ctx);
