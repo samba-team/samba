@@ -1,14 +1,6 @@
 #!/bin/bash
 # make a release of a Samba library
 
-[ -z "$GPG_USER" ] && {
-    GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
-}
-
-[ -z "$GPG_KEYID" ] && {
-    GPG_KEYID='13084025'
-}
-
 if [ ! -d ".git" ]; then
 	echo "Run this script from the top-level directory in the"
 	echo "repository"
@@ -67,6 +59,11 @@ release_lib() {
 	exit 1
     }
 
+    [ -z "$ftpdir" ] && {
+        popd
+        return 0
+    }
+
     echo "Push git tag $tagname"
     git push ssh://git.samba.org/data/git/samba.git refs/tags/$tagname:refs/tags/$tagname || {
 	exit 1
@@ -84,10 +81,27 @@ release_lib() {
 for lib in $*; do
     case $lib in
 	talloc | tdb | tevent | ldb)
+	    [ -z "$GPG_USER" ] && {
+	        GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
+	    }
+
+	    [ -z "$GPG_KEYID" ] && {
+	        GPG_KEYID='13084025'
+	    }
+
 	    release_lib $lib "lib/$lib" $lib
 	    ;;
-	samba4)
-	    release_lib $lib "." "samba/$lib"
+	samba)
+	    [ -z "$GPG_USER" ] && {
+	        GPG_USER='6568B7EA'
+	    }
+
+	    [ -z "$GPG_KEYID" ] && {
+	        GPG_KEYID='6568B7EA'
+	    }
+
+	    # for now we don't upload
+	    release_lib $lib "." ""
 	    ;;
 	*)
 	    echo "Unknown library $lib"
