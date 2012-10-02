@@ -1353,13 +1353,14 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
  type.
 ****************************************************************************/
 
-static bool ensure_canon_entry_valid(connection_struct *conn, canon_ace **pp_ace,
-				     const struct share_params *params,
-				     const bool is_directory,
-							const struct dom_sid *pfile_owner_sid,
-							const struct dom_sid *pfile_grp_sid,
-							const SMB_STRUCT_STAT *pst,
-							bool setting_acl)
+static bool ensure_canon_entry_valid(connection_struct *conn,
+					canon_ace **pp_ace,
+					const struct share_params *params,
+					const bool is_directory,
+					const struct dom_sid *pfile_owner_sid,
+					const struct dom_sid *pfile_grp_sid,
+					const SMB_STRUCT_STAT *pst,
+					bool setting_acl)
 {
 	canon_ace *pace;
 	bool got_user = False;
