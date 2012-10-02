@@ -1342,12 +1342,12 @@ static bool uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
 ****************************************************************************/
 
 static bool ensure_canon_entry_valid(canon_ace **pp_ace,
-				     const struct share_params *params,
-				     const bool is_directory,
-							const DOM_SID *pfile_owner_sid,
-							const DOM_SID *pfile_grp_sid,
-							const SMB_STRUCT_STAT *pst,
-							bool setting_acl)
+				const struct share_params *params,
+				const bool is_directory,
+				const DOM_SID *pfile_owner_sid,
+				const DOM_SID *pfile_grp_sid,
+				const SMB_STRUCT_STAT *pst,
+				bool setting_acl)
 {
 	canon_ace *pace;
 	bool got_user = False;
