@@ -1607,7 +1607,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    invocationid=None, machinepass=None, ntdsguid=None,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
-                   am_rodc=False, lp=None, use_ntvfs=False, skip_sysvolacl=True):
+                   am_rodc=False, lp=None, use_ntvfs=False, skip_sysvolacl=False):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
     # "How Core Group Policy Works"
@@ -1649,6 +1649,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid,
                          paths.wheel_gid, domainsid, names.dnsdomain,
                          names.domaindn, lp, use_ntvfs)
+        else:
+            print "Setting acl on sysvol skipped"
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
                 realm=names.realm, dnsdomain=names.dnsdomain,

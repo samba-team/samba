@@ -398,7 +398,7 @@ class cmd_domain_provision(Command):
                   backend_type=ldap_backend_type,
                   ldapadminpass=ldapadminpass, ol_mmr_urls=ol_mmr_urls,
                   useeadb=eadb, next_rid=next_rid, lp=lp, use_ntvfs=use_ntvfs,
-                  use_rfc2307=use_rfc2307)
+                  use_rfc2307=use_rfc2307, skip_sysvolacl=False)
         except ProvisioningError, e:
             raise CommandError("Provision failed", e)
 
