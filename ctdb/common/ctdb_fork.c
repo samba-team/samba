@@ -37,6 +37,24 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 		return -1;
 	}
 	if (pid == 0) {
+		/* Close the Unix Domain socket and the TCP socket.
+		 * This ensures that none of the child processes will
+		 * look like the main daemon when it is not running.
+		 * tevent needs to be stopped before closing sockets.
+		 */
+		if (ctdb->ev != NULL) {
+			talloc_free(ctdb->ev);
+			ctdb->ev = NULL;
+		}
+		if (ctdb->daemon.sd != -1) {
+			close(ctdb->daemon.sd);
+			ctdb->daemon.sd = -1;
+		}
+		if (ctdb->methods != NULL) {
+			ctdb->methods->shutdown(ctdb);
+		}
+
+		/* The child does not need to be realtime */
 		if (ctdb->do_setsched) {
 			ctdb_restore_scheduler(ctdb);
 		}

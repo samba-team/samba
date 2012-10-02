@@ -4091,9 +4091,11 @@ int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb)
 	return 0;
 }
 
-/* when forking the main daemon and the child process needs to connect back
- * to the daemon as a client process, this function can be used to change
- * the ctdb context from daemon into client mode
+/* When forking the main daemon and the child process needs to connect
+ * back to the daemon as a client process, this function can be used
+ * to change the ctdb context from daemon into client mode.  The child
+ * process must be created using ctdb_fork() and not fork() -
+ * ctdb_fork() does some necessary housekeeping.
  */
 int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...)
 {
@@ -4105,25 +4107,11 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 	debug_extra = talloc_strdup_append(talloc_vasprintf(NULL, fmt, ap), ":");
 	va_end(ap);
 
-	/* shutdown the transport */
-	if (ctdb->methods) {
-		ctdb->methods->shutdown(ctdb);
-	}
-
 	/* get a new event context */
-	talloc_free(ctdb->ev);
 	ctdb->ev = event_context_init(ctdb);
 	tevent_loop_allow_nesting(ctdb->ev);
 
-	close(ctdb->daemon.sd);
-	ctdb->daemon.sd = -1;
-
-	/* the client does not need to be realtime */
-	if (ctdb->do_setsched) {
-		ctdb_restore_scheduler(ctdb);
-	}
-
-	/* initialise ctdb */
+	/* Connect to main CTDB daemon */
 	ret = ctdb_socket_connect(ctdb);
 	if (ret != 0) {
 		DEBUG(DEBUG_ALERT, (__location__ " Failed to init ctdb client\n"));
