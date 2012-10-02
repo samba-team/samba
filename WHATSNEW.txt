@@ -118,6 +118,7 @@ smb.conf changes
    dns forwarder			New
    dns update command			New
    homedir map				Changed default
+   kernel oplocks			Changed default
    kernel share modes			New
    kpasswd port				New
    krb5 port				New
