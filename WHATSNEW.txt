@@ -102,29 +102,29 @@ Changes
 smb.conf changes
 ----------------
 
-   Parameter Name			Description	Default
-   --------------			-----------	-------
+   Parameter Name			Description
+   --------------			-----------
 
-   allow dns updates			New		disabled
+   allow dns updates			New
    announce as				Removed
    announce version			Removed
-   cldap port				New		0
+   cldap port				New
    client max protocol			New
    client min protocol			New
-   client signing			Changed default	default
+   client signing			Changed default
    dcerpc endpoint servers		New
-   dgram port				New		0
+   dgram port				New
    display charset			Removed
    dns forwarder			New
    dns update command			New
-   homedir map				Changed default	auto.home
-   kernel share modes			New		Yes
-   kpasswd port				New		0
-   krb5 port				New		0
+   homedir map				Changed default
+   kernel share modes			New
+   kpasswd port				New
+   krb5 port				New
    max protocol				Removed
    min protocol				Removed
-   nbt client socket address		New		0.0.0.0
-   nbt port				New		0
+   nbt client socket address		New
+   nbt port				New
    nsupdate command			New
    ntp signd socket directory		New
    ntvfs handler			New
@@ -132,19 +132,19 @@ smb.conf changes
    pid directory			New
    printer admin			Removed
    rndc command 			New
-   rpc big endian			New		No
+   rpc big endian			New
    samba kcc command			New
    send spnego principal		Removed
-   server max protocol			New		SMB3
-   server min protocol			New		LANMAN1
-   server role				New		auto
+   server max protocol			New
+   server min protocol			New
+   server role				New
    server services			New
-   server signing			Changed default	default
+   server signing			Changed default
    share backend			New
    share modes				Removed
-   smb2 max read			Changed default 1048576
-   smb2 max write			Changed default 1048576
-   smb2 max trans			Changed default 1048576
+   smb2 max read			Changed default
+   smb2 max write			Changed default
+   smb2 max trans			Changed default
    socket address			Removed
    spn update command			New
    time offset				Removed
@@ -152,12 +152,12 @@ smb.conf changes
    tls certfile				New
    tls crlfile				New
    tls dh params file			New
-   tls enabled				New		No
+   tls enabled				New
    tls keyfile				New
-   unicode				New		Yes
-   web port				New		0
+   unicode				New
+   web port				New
    winbindd privileged socket directory	New
-   winbind sealed pipes			New		No
+   winbind sealed pipes			New
    winbindd socket directory		New
 
 
