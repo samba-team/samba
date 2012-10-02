@@ -810,6 +810,7 @@ static void dns_task_init(struct task_server *task)
 
 		z = talloc_zero(dns, struct dns_server_zone);
 		if (z == NULL) {
+			task_server_terminate(task, "dns failed to allocate memory", true);
 		}
 
 		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
