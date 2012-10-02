@@ -8882,6 +8882,60 @@ static bool run_local_remove_duplicate_addrs2(int dummy)
 	return true;
 }
 
+static bool run_local_tdb_opener(int dummy)
+{
+	TDB_CONTEXT *t;
+	unsigned v = 0;
+
+	while (1) {
+		t = tdb_open("test.tdb", 1000, TDB_CLEAR_IF_FIRST,
+			     O_RDWR|O_CREAT, 0755);
+		if (t == NULL) {
+			perror("tdb_open failed");
+			return false;
+		}
+		tdb_close(t);
+
+		v += 1;
+		printf("\r%u", v);
+	}
+	return true;
+}
+
+static bool run_local_tdb_writer(int dummy)
+{
+	TDB_CONTEXT *t;
+	unsigned v = 0;
+	TDB_DATA val;
+
+	t = tdb_open("test.tdb", 1000, 0, O_RDWR|O_CREAT, 0755);
+	if (t == 0) {
+		perror("tdb_open failed");
+		return 1;
+	}
+
+	val.dptr = (uint8_t *)&v;
+	val.dsize = sizeof(v);
+
+	while (1) {
+		TDB_DATA data;
+		int ret;
+
+		ret = tdb_store(t, val, val, 0);
+		if (ret != 0) {
+			printf("%s\n", tdb_errorstr(t));
+		}
+		v += 1;
+		printf("\r%u", v);
+
+		data = tdb_fetch(t, val);
+		if (data.dptr != NULL) {
+			SAFE_FREE(data.dptr);
+		}
+	}
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -9094,6 +9148,8 @@ static struct {
 	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
 	{ "LOCAL-IDMAP-TDB-COMMON", run_idmap_tdb_common_test, 0},
 	{ "LOCAL-remove_duplicate_addrs2", run_local_remove_duplicate_addrs2, 0},
+	{ "local-tdb-opener", run_local_tdb_opener, 0 },
+	{ "local-tdb-writer", run_local_tdb_writer, 0 },
 	{NULL, NULL, 0}};
 
 
