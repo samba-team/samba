@@ -181,13 +181,28 @@ o   Christian Ambach <ambi@samba.org>
     * BUG 9197: Only do 'printing_subsystem_update' when printing is enabled.
 
 
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9228: Fix build on systems without ldap development headers.
+
+
 o   Alexander Bokovoy <ab@samba.org>
     * BUG 9157: Cleanup idmap_ldap build dependencies.
+    * BUG 9228: Make smbldaphelper subsystem an internal library.
+    * BUG 9229: Fix build of winbindd- and krb5 locator-related manpages.
+
+
+o   Sumit Bose <sbose@redhat.com>
+    * BUG 9185: Allow DNS resolution of trusted domains if DNS name is
+      available.
 
 
 o   Ira Cooper <ira@samba.org>
     * BUG 9162: Fix build on Illumos/Solaris using '--with-acl'.
     * BUG 9173: Compound requests should continue processing.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9185: Winbind cannot resolve AD DC in a different subnet.
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -198,6 +213,10 @@ o   Björn Jacke <bj@sernet.de>
 o   Volker Lendecke <vl@samba.org>
     * BUG 9217: CreateFile with FILE_DIRECTORY_FILE can create directories
       on read-only shares.
+
+
+o   Vladimir Marek <Vladimir.Marek@Oracle.COM>
+    * BUG 9192: Fix service control for non-internal services.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -213,12 +232,15 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   Matthieu Patou <mat@matws.net>
     * BUG 9199: Fix usage of "panic action".
+    * BUG 9233: Fix a non handled memory out of memory.
 
 
 o   Andreas Schneider <asn@samba.org>
     * BUG 8632: Fix builtin forms order to match Windows again.
     * BUG 9159: Fix generating idmap manpages.
     * BUG 9218: Don't segfault if user specified ports out for range.
+    * BUG 9231: Fix NT_STATUS_IO_TIMEOUT during slow import of printers into
+      registry.
 
 
 KNOWN ISSUES
