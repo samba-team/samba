@@ -749,8 +749,7 @@ The basic options shown in <link linkend="pdc-example">this example</link> are e
 		The parameters <emphasis>domain logons</emphasis>
 		parameter is the key parameter indicating domain
 		control and network logon support.
-		</para>
-
+		</para></listitem>
 	</varlistentry>
 
 	<varlistentry><term>Environment Parameters </term>
