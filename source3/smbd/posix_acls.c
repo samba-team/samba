@@ -2429,6 +2429,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
+	bool is_default_acl = (the_acl_type == SMB_ACL_TYPE_DEFAULT);
 	SMB_ACL_ENTRY_T entry;
 	size_t ace_count;
 
@@ -2516,7 +2517,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		ace->trustee = sid;
 		ace->unix_ug = unix_ug;
 		ace->owner_type = owner_type;
-		ace->ace_flags = get_pai_flags(pal, ace, (the_acl_type == SMB_ACL_TYPE_DEFAULT));
+		ace->ace_flags = get_pai_flags(pal, ace, is_default_acl);
 
 		DLIST_ADD(l_head, ace);
 	}
@@ -2535,7 +2536,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 	 * acl_mask. Ensure all DENY Entries are at the start of the list.
 	 */
 
-	DEBUG(10,("canonicalise_acl: %s ace entries before arrange :\n", the_acl_type == SMB_ACL_TYPE_ACCESS ? "Access" : "Default" ));
+	DEBUG(10,("canonicalise_acl: %s ace entries before arrange :\n", is_default_acl ?  "Default" : "Access"));
 
 	for ( ace_count = 0, ace = l_head; ace; ace = next_ace, ace_count++) {
 		next_ace = ace->next;
