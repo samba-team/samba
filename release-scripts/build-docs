@@ -11,6 +11,7 @@ DOCSRCDIR=`dirname $0`/../docs-xml
 pushd $DOCSRCDIR || exit 1
 
 git clean -d -x -f
+export XML_CATALOG_FILES="file:///etc/xml/catalog file://$(pwd)/build/catalog.xml"
 autoconf && \
 	./configure --with-papersize=letter && \
 	make smbdotconf/parameters.all.xml && \
@@ -28,8 +29,6 @@ rsync -Ca --exclude=.svn archives/ ../docs/
 cd ../docs || _exit "Error changing dir to ${DOCSDIR}/../docs/"
 
 /bin/rm -rf test.pdf Samba4*pdf htmldocs/Samba4* htmldocs/test
-mv manpages-3 manpages
-mv htmldocs/manpages-3 htmldocs/manpages
 
 cd ../docs-xml || _exit "Error changing dir to ${DOCSDIR}/../docs-xml/"
 make distclean

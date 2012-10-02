@@ -191,6 +191,9 @@ $(PSDIR)/%.ps: %/index.xml $(PSDIR) xslt/latex.xsl %-images-latex-eps
 %.eps: %.png
 	$(PNGTOPNM) $< | $(PNMTOPS) > $@
 
+%.pdf: %.svg
+	$(INKSCAPE) -z -f $(abspath $<) --export-pdf=$(abspath $@)
+
 $(HTMLHELPDIR)/%: $(DOCBOOKDIR)/%.xml %-images-htmlhelp
 	$(XSLTPROC) --stringparam htmlhelp.chm $*.chm \
 				--stringparam manifest.in.base.dir "$@/" \
