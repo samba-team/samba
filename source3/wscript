@@ -754,6 +754,9 @@ int i; i = PAM_RADIO_TYPE;
             conf.DEFINE('WITH_PAM', 1)
             conf.DEFINE('WITH_PAM_MODULES', 1)
 
+    if Options.options.with_pam_smbpass:
+        conf.env.with_pam_smbpass = True
+
     seteuid = False
 
 #
