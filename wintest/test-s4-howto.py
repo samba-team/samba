@@ -174,7 +174,7 @@ SafeModeAdminPassword=${PASSWORD1}
     child.expect("C:")
     child.expect("C:")
     child.sendline("dcpromo /answer:answers.txt")
-    i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:"], timeout=120)
+    i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:"], timeout=240)
     if i == 1 or i == 2:
         child.sendline("echo off")
         child.sendline("echo START DCPROMO log")
