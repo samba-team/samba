@@ -52,6 +52,25 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>streams_depot:delete_lost = [ yes | no ]</term>
+		<listitem>
+		<para>In the case of an already existing data streams directory
+		for a newly created file the streams directory will be renamed
+		to "lost-%lu", random(). With this option lost stream directories
+		will be removed	instead of renamed.</para>
+		<itemizedlist>
+		<listitem><para>
+		<command>no(default)</command> - rename lost streams to
+		"lost-%lu", random().
+		</para></listitem>
+		<listitem><para>
+		<command>yes</command> - remove lost streams.
+		</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
