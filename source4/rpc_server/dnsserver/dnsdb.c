@@ -124,6 +124,10 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 		z->partition = p;
 		name = talloc_strdup(z,
 				ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL));
+		if (strcmp(name, "..TrustAnchors") == 0) {
+			talloc_free(z);
+			continue;
+		}
 		if (strcmp(name, "RootDNSServers") == 0) {
 			talloc_free(name);
 			z->name = talloc_strdup(z, ".");
