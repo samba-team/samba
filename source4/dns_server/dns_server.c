@@ -832,7 +832,20 @@ static void dns_task_init(struct task_server *task)
 
 		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
 		z->dn = talloc_move(z, &res->msgs[i]->dn);
-
+		/*
+		 * Ignore the RootDNSServers zone and zones that we don't support yet
+		 * RootDNSServers should never be returned (Windows DNS server don't)
+		 * ..TrustAnchors should never be returned as is, (Windows returns
+		 * TrustAnchors) and for the moment we don't support DNSSEC so we'd better
+		 * not return this zone.
+		 */
+		if ((strcmp(z->name, "RootDNSServers") == 0) ||
+		    (strcmp(z->name, "..TrustAnchors") == 0))
+		{
+			DEBUG(10, ("Ignoring zone %s\n", z->name));
+			talloc_free(z);
+			continue;
+		}
 		DLIST_ADD_END(dns->zones, z, NULL);
 	}
 
