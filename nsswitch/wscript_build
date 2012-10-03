@@ -14,6 +14,15 @@ bld.SAMBA_BINARY('nsstest',
 	deps='replace dl'
 	)
 
+# The nss_wrapper code relies strictly on the linux implementation and
+# name, so compile but do not install a copy under this name.
+bld.SAMBA_LIBRARY('nss_wrapper_winbind',
+		  source='winbind_nss_linux.c',
+		  deps='winbind-client',
+		  realname='libnss_wrapper_winbind.so.2',
+		  install=False,
+		  vnum='2')
+
 if Utils.unversioned_sys_platform() == 'linux':
 	bld.SAMBA_LIBRARY('nss_winbind',
 		source='winbind_nss_linux.c',

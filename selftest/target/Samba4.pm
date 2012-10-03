@@ -682,7 +682,7 @@ nogroup:x:65534:nobody
 		SAMBA_TEST_FIFO => "$ctx->{prefix}/samba_test.fifo",
 		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
-	        NSS_WRAPPER_WINBIND_SO_PATH => Samba::bindir_path($self, "default/nsswitch/libnss-winbind.so"),
+	        NSS_WRAPPER_WINBIND_SO_PATH => Samba::nss_wrapper_winbind_so_path($self),
                 LOCAL_PATH => $ctx->{share}
 	};
 

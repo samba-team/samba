@@ -1098,10 +1098,7 @@ domusers:X:$gid_domusers:
 	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} = $swiface;
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
-	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
-        if (not defined($ret{NSS_WRAPPER_WINBIND_SO_PATH})) {
-	        $ret{NSS_WRAPPER_WINBIND_SO_PATH} = Samba::bindir_path($self, "default/nsswitch/libnss-winbind.so");
-        }
+	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = Samba::nss_wrapper_winbind_so_path($self);
 	$ret{LOCAL_PATH} = "$shrdir";
 
 	return \%ret;
