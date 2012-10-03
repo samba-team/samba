@@ -19,6 +19,9 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>tdbdump</command>
+		<arg choice="opt">-k <replaceable>keyname</replaceable></arg>
+		<arg choice="opt">-e</arg>
+		<arg choice="opt">-h</arg>
 		<arg choice="req">filename</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -39,6 +42,34 @@
 	</para>
 </refsect1>
 
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>-h</term>
+		<listitem><para>
+		Get help information.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-k <replaceable>keyname</replaceable></term>
+		<listitem><para>
+		The <command>-k</command> option restricts dumping to a single key, if found.
+		</para> </listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-e</term>
+		<listitem><para>
+		The <command>-e</command> tries to dump out from a corrupt database.  Naturally, such a dump is unreliable, at best.
+		</para></listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
 
 <refsect1>
 	<title>VERSION</title>
