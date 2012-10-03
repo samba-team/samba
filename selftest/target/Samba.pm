@@ -64,6 +64,15 @@ sub bindir_path($$) {
 	return $path;
 }
 
+sub nss_wrapper_winbind_so_path($) {
+        my ($object) = @_;
+	my $ret = $ENV{NSS_WRAPPER_WINBIND_SO_PATH};
+        if (not defined($ret)) {
+	    $ret = bindir_path($object, "default/nsswitch/libnss-winbind.so");
+	}
+	return $ret;
+}
+
 sub mk_krb5_conf($$)
 {
 	my ($ctx, $other_realms_stanza) = @_;
