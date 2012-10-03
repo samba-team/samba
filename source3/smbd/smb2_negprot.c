@@ -92,7 +92,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	DATA_BLOB security_buffer;
 	size_t expected_dyn_size = 0;
 	size_t c;
-	uint16_t security_mode = 0;
+	uint16_t security_mode;
 	uint16_t dialect_count;
 	uint16_t in_security_mode;
 	uint32_t in_capabilities;
@@ -244,11 +244,9 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 
-	if (lp_server_signing() != SMB_SIGNING_OFF) {
-		security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
-		if (lp_server_signing() == SMB_SIGNING_REQUIRED) {
-			security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
-		}
+	security_mode = SMB2_NEGOTIATE_SIGNING_ENABLED;
+	if (lp_server_signing() == SMB_SIGNING_REQUIRED) {
+		security_mode |= SMB2_NEGOTIATE_SIGNING_REQUIRED;
 	}
 
 	capabilities = 0;

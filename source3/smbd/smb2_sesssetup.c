@@ -185,12 +185,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	struct smbXsrv_session *x = session;
 	struct smbXsrv_connection *conn = session->connection;
 
-	if ((lp_server_signing() == SMB_SIGNING_OFF) &&
-			(in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED)) {
-		DEBUG(0,("SMB2 signing required and we have disabled it.\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||
 	    lp_server_signing() == SMB_SIGNING_REQUIRED) {
 		x->global->signing_required = true;
