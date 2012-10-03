@@ -814,6 +814,28 @@ int tdb_check(struct tdb_context *tdb,
 	      int (*check) (TDB_DATA key, TDB_DATA data, void *private_data),
 	      void *private_data);
 
+/**
+ * @brief Dump all possible records in a corrupt database.
+ *
+ * This is the only way to get data out of a database where tdb_check() fails.
+ * It will call walk() with anything which looks like a database record; this
+ * may well include invalid, incomplete or duplicate records.
+ *
+ * @param[in]  tdb      The database to check.
+ *
+ * @param[in]  walk     The walk function to use.
+ *
+ * @param[in]  private_data the private data to pass to the walk function.
+ *
+ * @return              0 on success, -1 on error with error code set.
+ *
+ * @see tdb_error()
+ * @see tdb_errorstr()
+ */
+int tdb_rescue(struct tdb_context *tdb,
+	       void (*walk) (TDB_DATA key, TDB_DATA data, void *private_data),
+	       void *private_data);
+
 /* @} ******************************************************************/
 
 /* Low level locking functions: use with care */

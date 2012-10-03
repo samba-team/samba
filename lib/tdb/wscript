@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tdb'
-VERSION = '1.2.10'
+VERSION = '1.2.11'
 
 blddir = 'bin'
 
@@ -65,7 +65,7 @@ def build(bld):
     COMMON_SRC = bld.SUBDIR('common',
                             '''check.c error.c tdb.c traverse.c
                             freelistcheck.c lock.c dump.c freelist.c
-                            io.c open.c transaction.c hash.c summary.c''')
+                            io.c open.c transaction.c hash.c summary.c rescue.c''')
 
     if bld.env.standalone_tdb:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
@@ -143,6 +143,10 @@ def build(bld):
                          'replace tdb-test-helpers', includes='include', install=False)
         bld.SAMBA_BINARY('tdb1-run-readonly-check', 'test/run-readonly-check.c',
                          'replace tdb-test-helpers', includes='include', install=False)
+        bld.SAMBA_BINARY('tdb1-run-rescue', 'test/run-rescue.c',
+                         'replace tdb-test-helpers', includes='include', install=False)
+        bld.SAMBA_BINARY('tdb1-run-rescue-find_entry', 'test/run-rescue-find_entry.c',
+                         'replace tdb-test-helpers', includes='include', install=False)
         bld.SAMBA_BINARY('tdb1-run-rwlock-check', 'test/run-rwlock-check.c',
                          'replace tdb-test-helpers', includes='include', install=False)
         bld.SAMBA_BINARY('tdb1-run-summary', 'test/run-summary.c',
@@ -185,7 +189,7 @@ def testonly(ctx):
         if not os.path.exists(link):
             os.symlink(os.path.abspath(os.path.join(env.cwd, 'test')), link)
 
-        for f in 'tdb1-run-3G-file', 'tdb1-run-bad-tdb-header', 'tdb1-run', 'tdb1-run-check', 'tdb1-run-corrupt', 'tdb1-run-die-during-transaction', 'tdb1-run-endian', 'tdb1-run-incompatible', 'tdb1-run-nested-transactions', 'tdb1-run-nested-traverse', 'tdb1-run-no-lock-during-traverse', 'tdb1-run-oldhash', 'tdb1-run-open-during-transaction', 'tdb1-run-readonly-check', 'tdb1-run-rwlock-check', 'tdb1-run-summary', 'tdb1-run-transaction-expand', 'tdb1-run-traverse-in-transaction', 'tdb1-run-wronghash-fail', 'tdb1-run-zero-append':
+        for f in 'tdb1-run-3G-file', 'tdb1-run-bad-tdb-header', 'tdb1-run', 'tdb1-run-check', 'tdb1-run-corrupt', 'tdb1-run-die-during-transaction', 'tdb1-run-endian', 'tdb1-run-incompatible', 'tdb1-run-nested-transactions', 'tdb1-run-nested-traverse', 'tdb1-run-no-lock-during-traverse', 'tdb1-run-oldhash', 'tdb1-run-open-during-transaction', 'tdb1-run-readonly-check', 'tdb1-run-rescue', 'tdb1-run-rescue-find_entry', 'tdb1-run-rwlock-check', 'tdb1-run-summary', 'tdb1-run-transaction-expand', 'tdb1-run-traverse-in-transaction', 'tdb1-run-wronghash-fail', 'tdb1-run-zero-append':
             cmd = "cd " + testdir + " && " + os.path.abspath(os.path.join(Utils.g_module.blddir, f)) + " > test-output 2>&1"
             print("..." + f)
             ret = samba_utils.RUN_COMMAND(cmd)
