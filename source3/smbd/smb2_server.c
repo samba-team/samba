@@ -780,7 +780,12 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	out_status = NT_STATUS(IVAL(outhdr, SMB2_HDR_STATUS));
 
 	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
-	SMB_ASSERT(sconn->smb2.max_credits >= credit_charge);
+
+	if (sconn->smb2.max_credits < credit_charge) {
+		smbd_server_connection_terminate(sconn,
+			"client error: credit charge > max credits\n");
+		return;
+	}
 
 	if (out_flags & SMB2_HDR_FLAG_ASYNC) {
 		/*
