@@ -1650,7 +1650,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                          paths.wheel_gid, domainsid, names.dnsdomain,
                          names.domaindn, lp, use_ntvfs)
         else:
-            print "Setting acl on sysvol skipped"
+            logger.info("Setting acl on sysvol skipped")
 
         secretsdb_self_join(secrets_ldb, domain=names.domain,
                 realm=names.realm, dnsdomain=names.dnsdomain,
