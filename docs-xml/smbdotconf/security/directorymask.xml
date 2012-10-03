@@ -24,14 +24,14 @@
     created from this parameter with the value of the <smbconfoption name="force directory mode"/> parameter. 
     This parameter is set to 000 by default (i.e. no extra mode bits are added).</para>
 
-    <para>Note that this parameter does not apply to permissions
-    set by Windows NT/2000 ACL editors. If the administrator wishes to enforce
-    a mask on access control lists also, they need to set the <smbconfoption name="directory security mask"/>.</para>
+    <para>
+    New in Samba 4.0.0. This mask is applied whenever permissions are changed on a directory. To allow clients full control
+    over permission changes it should be set to 0777.
+    </para>
 </description>
 
 <related>force directory mode</related>
 <related>create mask</related>
-<related>directory security mask</related>
 <related>inherit permissions</related>
 <value type="default">0755</value>
 <value type="example">0775</value>

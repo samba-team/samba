@@ -28,9 +28,8 @@
 	</para>
 
     <para>
-	Note that this parameter does not apply to permissions set by Windows NT/2000 ACL editors. If the
-	administrator wishes to enforce a mask on access control lists also, they need to set the <smbconfoption
-	name="security mask"/>.
+	New in Samba 4.0.0. This mask is applied whenever permissions are changed on a file. To allow clients full control
+	over permission changes it should be set to 0777.
 	</para>
 </description>
 
