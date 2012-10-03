@@ -1365,27 +1365,17 @@ static NTSTATUS unix_perms_from_wire( connection_struct *conn,
 
 	switch (ptype) {
 	case PERM_NEW_FILE:
+	case PERM_EXISTING_FILE:
 		/* Apply mode mask */
 		ret &= lp_create_mask(SNUM(conn));
 		/* Add in force bits */
 		ret |= lp_force_create_mode(SNUM(conn));
 		break;
 	case PERM_NEW_DIR:
+	case PERM_EXISTING_DIR:
 		ret &= lp_dir_mask(SNUM(conn));
 		/* Add in force bits */
 		ret |= lp_force_dir_mode(SNUM(conn));
-		break;
-	case PERM_EXISTING_FILE:
-		/* Apply mode mask */
-		ret &= lp_security_mask(SNUM(conn));
-		/* Add in force bits */
-		ret |= lp_force_security_mode(SNUM(conn));
-		break;
-	case PERM_EXISTING_DIR:
-		/* Apply mode mask */
-		ret &= lp_dir_security_mask(SNUM(conn));
-		/* Add in force bits */
-		ret |= lp_force_dir_security_mode(SNUM(conn));
 		break;
 	}
 

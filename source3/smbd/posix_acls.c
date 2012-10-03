@@ -1270,11 +1270,11 @@ static void apply_default_perms(const struct share_params *params,
 	/* Get the initial bits to apply. */
 
 	if (is_directory) {
-		and_bits = lp_dir_security_mask(params->service);
-		or_bits = lp_force_dir_security_mode(params->service);
+		and_bits = lp_dir_mask(params->service);
+		or_bits = lp_force_dir_mode(params->service);
 	} else {
-		and_bits = lp_security_mask(params->service);
-		or_bits = lp_force_security_mode(params->service);
+		and_bits = lp_create_mask(params->service);
+		or_bits = lp_force_create_mode(params->service);
 	}
 
 	/* Now bounce them into the S_USR space. */	
@@ -3185,11 +3185,11 @@ static bool convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file
 	/* Get the initial bits to apply. */
 
 	if (fsp->is_directory) {
-		and_bits = lp_dir_security_mask(snum);
-		or_bits = lp_force_dir_security_mode(snum);
+		and_bits = lp_dir_mask(snum);
+		or_bits = lp_force_dir_mode(snum);
 	} else {
-		and_bits = lp_security_mask(snum);
-		or_bits = lp_force_security_mode(snum);
+		and_bits = lp_create_mask(snum);
+		or_bits = lp_force_create_mode(snum);
 	}
 
 	*posix_perms = (((*posix_perms) & and_bits)|or_bits);
