@@ -909,7 +909,8 @@ sub provision($$$$$$)
 	map system = no
 	map readonly = no
 	store dos attributes = yes
-	create mask = 755
+	create mask = 0777
+	directory mask = 0777
 	dos filemode = yes
 	vfs objects = $vfs_modulesdir_abs/acl_xattr.so $vfs_modulesdir_abs/fake_acls.so $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
 
