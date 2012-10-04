@@ -114,9 +114,12 @@ smb.conf changes
    client signing			Changed default
    dcerpc endpoint servers		New
    dgram port				New
+   directory security mask		Removed
    display charset			Removed
    dns forwarder			New
    dns update command			New
+   force security mode			Removed
+   force directory security mode	Removed
    homedir map				Changed default
    kernel oplocks			Changed default
    kernel share modes			New
@@ -135,6 +138,7 @@ smb.conf changes
    rndc command 			New
    rpc big endian			New
    samba kcc command			New
+   security mask			Removed
    send spnego principal		Removed
    server max protocol			New
    server min protocol			New
