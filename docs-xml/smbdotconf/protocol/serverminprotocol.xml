@@ -9,7 +9,6 @@
 </description>
 
 <related>server max protocol</related>
-<synonym>min protocol</synonym>
 
 <value type="default">CORE</value>
 <value type="example">NT1</value>
