@@ -4902,28 +4902,6 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	return;
 }
 
-struct share_list {
-	int num_shares;
-	char **shares;
-};
-
-static void collect_share(const char *name, uint32 m,
-			  const char *comment, void *state)
-{
-	struct share_list *share_list = (struct share_list *)state;
-
-	if (m != STYPE_DISKTREE)
-		return;
-
-	share_list->num_shares += 1;
-	share_list->shares = SMB_REALLOC_ARRAY(share_list->shares, char *, share_list->num_shares);
-	if (!share_list->shares) {
-		share_list->num_shares = 0;
-		return;
-	}
-	share_list->shares[share_list->num_shares-1] = SMB_STRDUP(name);
-}
-
 /**
  * List shares on a remote RPC server, including the security descriptors.
  *
@@ -4949,15 +4927,20 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 						int argc,
 						const char **argv)
 {
-	int ret;
 	bool r;
-	uint32 i;
 	FILE *f;
+	NTSTATUS nt_status = NT_STATUS_OK;
+	uint32_t total_entries = 0;
+	uint32_t resume_handle = 0;
+	uint32_t preferred_len = 0xffffffff;
+	uint32_t i;
+	struct dcerpc_binding_handle *b = NULL;
+	struct srvsvc_NetShareInfoCtr info_ctr;
+	struct srvsvc_NetShareCtr1 ctr1;
+	WERROR result;
 
 	struct user_token *tokens = NULL;
 	int num_tokens = 0;
-
-	struct share_list share_list;
 
 	if (argc == 0) {
 		f = stdin;
@@ -4983,22 +4966,47 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 	for (i=0; i<num_tokens; i++)
 		collect_alias_memberships(&tokens[i].token);
 
-	share_list.num_shares = 0;
-	share_list.shares = NULL;
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(ctr1);
 
-	ret = cli_RNetShareEnum(cli, collect_share, &share_list);
+	info_ctr.level = 1;
+	info_ctr.ctr.ctr1 = &ctr1;
 
-	if (ret == -1) {
-		DEBUG(0, ("Error returning browse list: %s\n",
-			  cli_errstr(cli)));
+	b = pipe_hnd->binding_handle;
+
+	/* Issue the NetShareEnum RPC call and retrieve the response */
+	nt_status = dcerpc_srvsvc_NetShareEnumAll(b,
+					talloc_tos(),
+					pipe_hnd->desthost,
+					&info_ctr,
+					preferred_len,
+					&total_entries,
+					&resume_handle,
+					&result);
+
+	/* Was it successful? */
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		/*  Nope.  Go clean up. */
 		goto done;
 	}
 
-	for (i = 0; i < share_list.num_shares; i++) {
-		char *netname = share_list.shares[i];
+	if (!W_ERROR_IS_OK(result)) {
+		/*  Nope.  Go clean up. */
+		nt_status = werror_to_ntstatus(result);
+		goto done;
+	}
 
-		if (netname[strlen(netname)-1] == '$')
+	if (total_entries == 0) {
+		goto done;
+	}
+
+        /* For each returned entry... */
+	for (i = 0; i < info_ctr.ctr.ctr1->count; i++) {
+		const char *netname = info_ctr.ctr.ctr1->array[i].name;
+
+		if (info_ctr.ctr.ctr1->array[i].type != STYPE_DISKTREE) {
 			continue;
+		}
 
 		d_printf("%s\n", netname);
 
@@ -5010,9 +5018,8 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 		free_user_token(&tokens[i].token);
 	}
 	SAFE_FREE(tokens);
-	SAFE_FREE(share_list.shares);
 
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 static int rpc_share_allowedusers(struct net_context *c, int argc,
