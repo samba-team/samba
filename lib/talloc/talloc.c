@@ -222,37 +222,6 @@ static struct {
 	TC_UNDEFINE_GROW_VALGRIND_CHUNK(_tc, _new_size); \
 } while (0)
 
-#define TALLOC_MEMLIMIT_CHECK(limit, size) do { \
-	struct talloc_memlimit *l; \
-	for (l = limit; l != NULL; l = l->upper) { \
-		if (l->max_size != 0 && \
-		    ((l->max_size <= l->cur_size) || \
-		     (l->max_size - l->cur_size < TC_HDR_SIZE+size))) { \
-			errno = ENOMEM; \
-			return NULL; \
-		} \
-	} \
-} while(0)
-
-#define TALLOC_MEMLIMIT_UPDATE(limit, o_size, n_size) do { \
-	struct talloc_memlimit *l; \
-	ssize_t d; \
-	if (o_size == 0) { \
-		d = n_size + TC_HDR_SIZE; \
-	} else { \
-		d = n_size - o_size; \
-	} \
-	for (l = limit; l != NULL; l = l->upper) { \
-		ssize_t new_size = l->cur_size + d; \
-		if (new_size < 0) { \
-			talloc_abort("cur_size memlimit counter not correct!"); \
-			errno = EINVAL; \
-			return NULL; \
-		} \
-		l->cur_size = new_size; \
-	} \
-} while(0)
-
 struct talloc_reference_handle {
 	struct talloc_reference_handle *next, *prev;
 	void *ptr;
@@ -265,6 +234,10 @@ struct talloc_memlimit {
 	size_t max_size;
 	size_t cur_size;
 };
+
+static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size);
+static bool talloc_memlimit_update(struct talloc_memlimit *limit,
+				   size_t old_size, size_t new_size);
 
 typedef int (*talloc_destructor_t)(void *);
 
@@ -608,7 +581,10 @@ static inline void *__talloc(const void *context, size_t size)
 			limit = ptc->limit;
 		}
 
-		TALLOC_MEMLIMIT_CHECK(limit, (TC_HDR_SIZE+size));
+		if (!talloc_memlimit_check(limit, (TC_HDR_SIZE+size))) {
+			errno = ENOMEM;
+			return NULL;
+		}
 
 		tc = talloc_alloc_pool(ptc, TC_HDR_SIZE+size);
 	}
@@ -996,7 +972,11 @@ static void *_talloc_steal_internal(const void *new_ctx, const void *ptr)
 
 		ctx_size = _talloc_total_limit_size(ptr, NULL, NULL);
 
-		TALLOC_MEMLIMIT_UPDATE(tc->limit->upper, ctx_size, 0);
+		if (!talloc_memlimit_update(tc->limit->upper, ctx_size, 0)) {
+			talloc_abort("cur_size memlimit counter not correct!");
+			errno = EINVAL;
+			return NULL;
+		}
 
 		if (tc->limit->parent == tc) {
 			tc->limit->upper = NULL;
@@ -1531,7 +1511,10 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 	}
 
 	if (tc->limit && (size - tc->size > 0)) {
-		TALLOC_MEMLIMIT_CHECK(tc->limit, (size - tc->size));
+		if (!talloc_memlimit_check(tc->limit, (size - tc->size))) {
+			errno = ENOMEM;
+			return NULL;
+		}
 	}
 
 	/* handle realloc inside a talloc_pool */
@@ -1649,7 +1632,14 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_chunk_size == old_chunk_size) {
 			TC_UNDEFINE_GROW_CHUNK(tc, size);
 			tc->flags &= ~TALLOC_FLAG_FREE;
-			TALLOC_MEMLIMIT_UPDATE(tc->limit, tc->size, size);
+			if (!talloc_memlimit_update(tc->limit,
+							tc->size, size)) {
+				talloc_abort("cur_size memlimit counter not"
+					     " correct!");
+				errno = EINVAL;
+				return NULL;
+			}
+
 			tc->size = size;
 			return ptr;
 		}
@@ -1665,7 +1655,13 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			if (space_left >= space_needed) {
 				TC_UNDEFINE_GROW_CHUNK(tc, size);
 				tc->flags &= ~TALLOC_FLAG_FREE;
-				TALLOC_MEMLIMIT_UPDATE(tc->limit, tc->size, size);
+				if (!talloc_memlimit_update(tc->limit,
+							tc->size, size)) {
+					talloc_abort("cur_size memlimit "
+						     "counter not correct!");
+					errno = EINVAL;
+					return NULL;
+				}
 				tc->size = size;
 				pool_tc->hdr.c.pool = tc_next_chunk(tc);
 				return ptr;
@@ -1714,7 +1710,11 @@ got_new_ptr:
 		tc->next->prev = tc;
 	}
 
-	TALLOC_MEMLIMIT_UPDATE(tc->limit, tc->size, size);
+	if (!talloc_memlimit_update(tc->limit, tc->size, size)) {
+		talloc_abort("cur_size memlimit counter not correct!");
+		errno = EINVAL;
+		return NULL;
+	}
 	tc->size = size;
 	_talloc_set_name_const(TC_PTR_FROM_CHUNK(tc), name);
 
@@ -2528,6 +2528,43 @@ static size_t _talloc_total_limit_size(const void *ptr,
 {
 	return _talloc_total_mem_internal(ptr, TOTAL_MEM_LIMIT,
 					  old_limit, new_limit);
+}
+
+static bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t size)
+{
+	struct talloc_memlimit *l;
+
+	for (l = limit; l != NULL; l = l->upper) {
+		if (l->max_size != 0 &&
+		    ((l->max_size <= l->cur_size) ||
+		     (l->max_size - l->cur_size < TC_HDR_SIZE+size))) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool talloc_memlimit_update(struct talloc_memlimit *limit,
+				   size_t old_size, size_t new_size)
+{
+	struct talloc_memlimit *l;
+	ssize_t d;
+
+	if (old_size == 0) {
+		d = new_size + TC_HDR_SIZE;
+	} else {
+		d = new_size - old_size;
+	}
+	for (l = limit; l != NULL; l = l->upper) {
+		ssize_t new_cur_size = l->cur_size + d;
+		if (new_cur_size < 0) {
+			return false;
+		}
+		l->cur_size = new_cur_size;
+	}
+
+	return true;
 }
 
 _PUBLIC_ int talloc_set_memlimit(const void *ctx, size_t max_size)
