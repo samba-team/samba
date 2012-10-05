@@ -21,3 +21,5 @@
 from selftesthelpers import *
 
 planpythontestsuite("none", "samba.tests.source")
+planpythontestsuite("none", "selftest.tests.test_suite", extra_path=[srcdir()])
+planpythontestsuite("none", "subunit")
