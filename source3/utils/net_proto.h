@@ -132,10 +132,6 @@ int net_rap(struct net_context *c, int argc, const char **argv);
 
 int net_registry(struct net_context *c, int argc, const char **argv);
 
-/* The following definitions come from utils/net_connections.c  */
-
-int net_connections(struct net_context *c, int argc, const char **argv);
-
 /* The following definitions come from utils/net_rpc.c  */
 
 NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,

@@ -715,13 +715,6 @@ static struct functable net_func[] = {
 		N_("  Use 'net help registry' to get more information about "
 		   "'net registry' commands.")
 	},
-	{	"connections",
-		net_connections,
-		NET_TRANSPORT_LOCAL,
-		N_("Fiddle with connectinos tdb"),
-		N_("  Use 'net help connections' to get more information about "
-		   "'net connections' commands.")
-	},
 	{	"eventlog",
 		net_eventlog,
 		NET_TRANSPORT_LOCAL,

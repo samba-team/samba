@@ -1213,7 +1213,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o utils/net_registry_check.o\
-	   utils/net_dom.o utils/net_share.o utils/net_connections.o\
+	   utils/net_dom.o utils/net_share.o \
 	   utils/net_g_lock.o \
 	   utils/net_serverid.o \
 	   utils/net_eventlog.o \
