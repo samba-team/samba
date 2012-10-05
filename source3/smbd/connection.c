@@ -26,34 +26,6 @@
 #include "messages.h"
 #include "lib/conn_tdb.h"
 
-/****************************************************************************
- Delete a connection record.
-****************************************************************************/
-
-bool yield_connection(connection_struct *conn, const char *name)
-{
-	struct db_record *rec;
-	NTSTATUS status;
-
-	DEBUG(3,("Yielding connection to %s\n",name));
-
-	rec = connections_fetch_entry(talloc_tos(), conn, name);
-	if (rec == NULL) {
-		DEBUG(0, ("connections_fetch_entry failed\n"));
-		return False;
-	}
-
-	status = dbwrap_record_delete(rec);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG( NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) ? 3 : 0,
-		       ("deleting connection record returned %s\n",
-			nt_errstr(status)));
-	}
-
-	TALLOC_FREE(rec);
-	return NT_STATUS_IS_OK(status);
-}
-
 struct count_stat {
 	int curr_connections;
 	const char *name;
@@ -121,62 +93,4 @@ bool connections_snum_used(struct smbd_server_connection *unused, int snum)
 	}
 
 	return false;
-}
-
-/****************************************************************************
- Claim an entry in the connections database.
-****************************************************************************/
-
-bool claim_connection(connection_struct *conn, const char *name)
-{
-	struct db_record *rec;
-	struct connections_data crec;
-	char *raddr;
-	TDB_DATA dbuf;
-	NTSTATUS status;
-
-	DEBUG(5,("claiming [%s]\n", name));
-
-	if (!(rec = connections_fetch_entry(talloc_tos(), conn, name))) {
-		DEBUG(0, ("connections_fetch_entry failed\n"));
-		return False;
-	}
-
-	/* Make clear that we require the optional unix_token in the source3 code */
-	SMB_ASSERT(conn->session_info->unix_token);
-
-	/* fill in the crec */
-	ZERO_STRUCT(crec);
-	crec.magic = 0x280267;
-	crec.pid = messaging_server_id(conn->sconn->msg_ctx);
-	crec.cnum = conn->cnum;
-	crec.uid = conn->session_info->unix_token->uid;
-	crec.gid = conn->session_info->unix_token->gid;
-	strlcpy(crec.servicename, lp_servicename(rec, SNUM(conn)),
-		sizeof(crec.servicename));
-	crec.start = time(NULL);
-
-	raddr = tsocket_address_inet_addr_string(conn->sconn->remote_address,
-						 rec);
-	if (raddr == NULL) {
-		return false;
-	}
-
-	strlcpy(crec.machine,get_remote_machine_name(),sizeof(crec.machine));
-	strlcpy(crec.addr, raddr, sizeof(crec.addr));
-
-	dbuf.dptr = (uint8 *)&crec;
-	dbuf.dsize = sizeof(crec);
-
-	status = dbwrap_record_store(rec, dbuf, TDB_REPLACE);
-
-	TALLOC_FREE(rec);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("claim_connection: tdb_store failed with error %s.\n",
-			 nt_errstr(status)));
-		return False;
-	}
-
-	return True;
 }
