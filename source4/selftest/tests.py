@@ -51,8 +51,6 @@ subprocess.call([smb4torture, "-V"], stdout=sys.stderr)
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
-configuration = "--configfile=$SMB_CONF_PATH"
-
 torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", "--target=samba4", "--basedir=$SELFTEST_TMPDIR"]
 if not os.getenv("SELFTEST_VERBOSE"):
     torture_options.append("--option=torture:progress=no")
@@ -314,7 +312,6 @@ planpythontestsuite("s3dc", "samba.tests.libsmb_samba_internal");
 for env in ["s3member", "s4member", "dc", "chgdcpass"]:
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient])
 
-planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
 plantestsuite("samba4.blackbox.samba_tool(dc:local)", "dc:local", [os.path.join(samba4srcdir, "utils/tests/test_samba_tool.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', smbclient])
 plantestsuite("samba4.blackbox.pkinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_pkinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient, configuration])
 plantestsuite("samba4.blackbox.kinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", smbclient, configuration])
@@ -417,40 +414,19 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite(name, env, args)
 
-planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
-planpythontestsuite("none", "samba.tests.credentials")
 planoldpythontestsuite("dc:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
-planpythontestsuite("none", "samba.tests.registry")
 planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
-planpythontestsuite("none", "samba.tests.auth")
-planpythontestsuite("none", "samba.tests.getopt")
-planpythontestsuite("none", "samba.tests.security")
-planpythontestsuite("none", "samba.tests.dcerpc.misc")
-planpythontestsuite("none", "samba.tests.param")
-planpythontestsuite("none", "samba.tests.upgrade")
-planpythontestsuite("none", "samba.tests.core")
-planpythontestsuite("none", "samba.tests.provision")
-planpythontestsuite("none", "samba.tests.samba3")
-planpythontestsuite("none", "samba.tests.strings")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.sam")
 planpythontestsuite("dc:local", "samba.tests.dsdb")
-planpythontestsuite("none", "samba.tests.netcmd")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.bare")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.srvsvc")
-planpythontestsuite("none", "samba.tests.dcerpc.rpc_talloc")
-planpythontestsuite("none", "samba.tests.samdb")
-planpythontestsuite("none", "samba.tests.hostconfig")
-planpythontestsuite("none", "samba.tests.messaging")
-planpythontestsuite("none", "samba.tests.samba3sam")
-
 planpythontestsuite("dc:local", "samba.tests.samba_tool.timecmd")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.group")
 planpythontestsuite("plugin_s4_dc:local", "samba.tests.samba_tool.ntacl")
 
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
-planpythontestsuite("none", "wafsamba.tests.test_suite", extra_path=[os.path.join(samba4srcdir, "..", "buildtools"), os.path.join(samba4srcdir, "..", "buildtools", "wafadmin")])
 planoldpythontestsuite("dc:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("plugin_s4_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
@@ -475,16 +451,11 @@ for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
         # therefore skip it in that configuration
         plantestsuite("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
 
-plantestsuite("samba4.blackbox.dbcheck.alpha13", "none" , ["PYTHON=%s" % python, os.path.join(bbdir, "dbcheck-alpha13.sh"), '$PREFIX_ABS/provision', configuration])
 planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
-planpythontestsuite("none", "samba.tests.upgradeprovision")
-planpythontestsuite("none", "samba.tests.xattr")
-planpythontestsuite("none", "samba.tests.ntacls")
 planpythontestsuite("plugin_s4_dc:local", "samba.tests.posixacl")
 plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:%s/lib/subunit/python:%s/lib/testtools"' % (srcdir(), srcdir()),
                                                      python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
                                                      '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
-planpythontestsuite("none", "samba.tests.policy")
 plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")], allow_empty_output=True)
 plantestsuite("samba4.blackbox.upgrade", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_s3upgrade.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.provision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision.sh"), '$PREFIX/provision'])
