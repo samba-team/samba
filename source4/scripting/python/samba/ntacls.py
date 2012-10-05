@@ -21,7 +21,7 @@
 
 import os
 import samba.xattr_native, samba.xattr_tdb, samba.posix_eadb
-from samba.dcerpc import security, xattr
+from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samba3 import smbd
 
@@ -82,9 +82,42 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True):
         return smbd.get_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL)
 
 
-def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True):
+def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True, skip_invalid_chown=False, passdb=None):
     sid = security.dom_sid(domsid)
     sd = security.descriptor.from_sddl(sddl, sid)
+
+    if not use_ntvfs and skip_invalid_chown:
+        # Check if the owner can be resolved as a UID
+        (owner_id, owner_type) = passdb.sid_to_id(sd.owner_sid)
+        if ((owner_type != idmap.ID_TYPE_UID) and (owner_type != idmap.ID_TYPE_BOTH)):
+            # Check if this particular owner SID was domain admins,
+            # because we special-case this as mapping to
+            # 'administrator' instead.
+            if sd.owner_sid == security.dom_sid("%s-%d" % (domsid, security.DOMAIN_RID_ADMINS)):
+                administrator = security.dom_sid("%s-%d" % (domsid, security.DOMAIN_RID_ADMINISTRATOR))
+                (admin_id, admin_type) = passdb.sid_to_id(administrator)
+
+                # Confirm we have a UID for administrator
+                if ((admin_type == idmap.ID_TYPE_UID) or (admin_type == idmap.ID_TYPE_BOTH)):
+
+                    # Set it, changing the owner to 'administrator' rather than domain admins
+                    sd2 = security.descriptor.from_sddl(sddl, sid)
+                    sd2.owner_sid = administrator
+
+                    smbd.set_nt_acl(file, security.SECINFO_OWNER |security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd2)
+
+                    # and then set an NTVFS ACL (which does not set the posix ACL) to pretend the owner really was set
+                    use_ntvfs = True
+                else:
+                    raise XattrBackendError("Unable to find UID for domain administrator %s, got id %d of type %d" % (administrator, admin_id, admin_type))
+            else:
+                # For all other owning users, reset the owner to root
+                # and then set the ACL without changing the owner
+                #
+                # This won't work in test environments, as it tries a real (rather than xattr-based fake) chown
+
+                os.chown(file, 0, 0)
+                smbd.set_nt_acl(file, security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd)
 
     if use_ntvfs:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
