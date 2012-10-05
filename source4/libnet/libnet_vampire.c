@@ -527,7 +527,6 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 	struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t nc_linked_attributes_count;
 	uint32_t linked_attributes_count;
-	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 
 	switch (c->ctr_level) {
 	case 1:
@@ -537,7 +536,6 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		first_object			= c->ctr1->first_object;
 		nc_linked_attributes_count	= 0;
 		linked_attributes_count		= 0;
-		linked_attributes		= NULL;
 		break;
 	case 6:
 		mapping_ctr			= &c->ctr6->mapping_ctr;
@@ -546,7 +544,6 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		first_object			= c->ctr6->first_object;
 		nc_linked_attributes_count	= c->ctr6->nc_linked_attributes_count;
 		linked_attributes_count		= c->ctr6->linked_attributes_count;
-		linked_attributes		= c->ctr6->linked_attributes;
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
