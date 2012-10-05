@@ -1365,18 +1365,18 @@ SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
 
 
-def set_dir_acl(path, acl, lp, domsid, use_ntvfs):
-    setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs)
+def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb):
+    setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
             setntacl(lp, os.path.join(root, name), acl, domsid,
-                    use_ntvfs=use_ntvfs)
+                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
         for name in dirs:
             setntacl(lp, os.path.join(root, name), acl, domsid,
-                    use_ntvfs=use_ntvfs)
+                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
 
 
-def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs):
+def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb):
     """Set ACL on the sysvol/<dnsname>/Policies folder and the policy
     folders beneath.
 
@@ -1391,7 +1391,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs):
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
     setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid),
-            use_ntvfs=use_ntvfs)
+            use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
 
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
                         attrs=["cn", "nTSecurityDescriptor"],
@@ -1402,7 +1402,8 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs):
                          str(policy["nTSecurityDescriptor"])).as_sddl()
         policy_path = getpolicypath(sysvol, dnsdomain, str(policy["cn"]))
         set_dir_acl(policy_path, dsacl2fsacl(acl, str(domainsid)), lp,
-                    str(domainsid), use_ntvfs)
+                    str(domainsid), use_ntvfs,
+                    passdb=passdb)
 
 
 def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
@@ -1418,6 +1419,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     :param dnsdomain: The DNS name of the domain
     :param domaindn: The DN of the domain (ie. DC=...)
     """
+    s4_passdb = None
 
     if not use_ntvfs:
         # This will ensure that the smbd code we are running when setting ACLs
@@ -1453,19 +1455,19 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
         canchown = True
 
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
-    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs)
+    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb)
     for root, dirs, files in os.walk(sysvol, topdown=False):
         for name in files:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs)
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb)
         for name in dirs:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs)
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb)
 
     # Set acls on Policy folder and policies folders
-    set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs)
+    set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb=s4_passdb)
 
 def acl_type(direct_db_access):
     if direct_db_access:
