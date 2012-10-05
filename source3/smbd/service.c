@@ -559,7 +559,6 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	fstring dev;
 	int ret;
 	bool on_err_call_dis_hook = false;
-	bool claimed_connection = false;
 	uid_t effuid;
 	gid_t effgid;
 	NTSTATUS status;
@@ -698,16 +697,6 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		status = NT_STATUS_INSUFFICIENT_RESOURCES;
 		goto err_root_exit;
 	}
-
-	/*
-	 * Get us an entry in the connections db
-	 */
-	if (!claim_connection(conn, lp_servicename(talloc_tos(), snum))) {
-		DEBUG(1, ("Could not store connections entry\n"));
-		status = NT_STATUS_INTERNAL_DB_ERROR;
-		goto err_root_exit;
-	}
-	claimed_connection = true;
 
 	/* Invoke VFS make connection hook - this must be the first
 	   filesystem operation that we do. */
@@ -924,9 +913,6 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	if (on_err_call_dis_hook) {
 		/* Call VFS disconnect hook */
 		SMB_VFS_DISCONNECT(conn);
-	}
-	if (claimed_connection) {
-		yield_connection(conn, lp_servicename(talloc_tos(), snum));
 	}
 	return status;
 }
@@ -1179,8 +1165,6 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 
 	/* Call VFS disconnect hook */    
 	SMB_VFS_DISCONNECT(conn);
-
-	yield_connection(conn, lp_servicename(talloc_tos(), SNUM(conn)));
 
 	/* make sure we leave the directory available for unmount */
 	vfs_ChDir(conn, "/");
