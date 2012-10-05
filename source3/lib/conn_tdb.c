@@ -27,62 +27,6 @@
 #include "lib/conn_tdb.h"
 #include "util_tdb.h"
 
-static struct db_context *connections_db_ctx(bool rw)
-{
-	static struct db_context *db_ctx;
-	int open_flags;
-
-	if (db_ctx != NULL) {
-		return db_ctx;
-	}
-
-	open_flags = rw ? (O_RDWR|O_CREAT) : O_RDONLY;
-
-	db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
-			 TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH|TDB_DEFAULT,
-			 open_flags, 0644, DBWRAP_LOCK_ORDER_1);
-	return db_ctx;
-}
-
-static struct db_record *connections_fetch_record(TALLOC_CTX *mem_ctx,
-						  TDB_DATA key)
-{
-	struct db_context *ctx = connections_db_ctx(True);
-
-	if (ctx == NULL) {
-		return NULL;
-	}
-
-	return dbwrap_fetch_locked(ctx, mem_ctx, key);
-}
-
-struct db_record *connections_fetch_entry_ext(TALLOC_CTX *mem_ctx,
-					      struct server_id id,
-					      int cnum,
-					      const char *name)
-{
-	struct connections_key ckey;
-	TDB_DATA key;
-
-	ZERO_STRUCT(ckey);
-	ckey.pid = id;
-	ckey.cnum = cnum;
-	strlcpy(ckey.name, name, sizeof(ckey.name));
-
-	key.dsize = sizeof(ckey);
-	key.dptr = (uint8 *)&ckey;
-
-	return connections_fetch_record(mem_ctx, key);
-}
-
-struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
-					  connection_struct *conn,
-					  const char *name)
-{
-	struct server_id id = messaging_server_id(conn->sconn->msg_ctx);
-	return connections_fetch_entry_ext(mem_ctx, id, conn->cnum, name);
-}
-
 struct connections_forall_state {
 	struct db_context *session_by_pid;
 	int (*fn)(const struct connections_key *key,
@@ -200,7 +144,3 @@ done:
 	return ret;
 }
 
-bool connections_init(bool rw)
-{
-	return (connections_db_ctx(rw) != NULL);
-}
