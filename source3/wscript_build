@@ -514,7 +514,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_util.c utils/net_rpc_sh_acct.c utils/net_rpc_audit.c
               utils/net_dns.c utils/net_ads_gpo.c
               utils/net_conf.c utils/net_join.c utils/net_user.c
-              utils/net_group.c utils/net_file.c utils/net_registry.c utils/net_connections.c
+              utils/net_group.c utils/net_file.c utils/net_registry.c
               utils/net_registry_check.c
               utils/net_dom.c utils/net_share.c
               utils/net_g_lock.c
