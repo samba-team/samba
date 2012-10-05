@@ -37,15 +37,7 @@ struct connections_data {
 
 /* The following definitions come from lib/conn_tdb.c  */
 
-struct db_record *connections_fetch_entry(TALLOC_CTX *mem_ctx,
-					  connection_struct *conn,
-					  const char *name);
-struct db_record *connections_fetch_entry_ext(TALLOC_CTX *mem_ctx,
-					      struct server_id id,
-					      int cnum,
-					      const char *name);
 int connections_forall_read(int (*fn)(const struct connections_key *key,
 				      const struct connections_data *data,
 				      void *private_data),
 			    void *private_data);
-bool connections_init(bool rw);
