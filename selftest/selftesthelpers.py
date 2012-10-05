@@ -177,3 +177,9 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
     if pypath:
         args.insert(0, "PYTHONPATH=%s" % ":".join(["$PYTHONPATH"] + pypath))
     plantestsuite_idlist(name, env, args)
+
+
+samba4srcdir = source4dir()
+bbdir = os.path.join(srcdir(), "testprogs/blackbox")
+configuration = "--configfile=$SMB_CONF_PATH"
+
