@@ -1342,6 +1342,89 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 }
 
 /****************************************************************************
+ A well formed POSIX file or default ACL has at least 3 entries, a
+ SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ.
+ In addition, the owner must always have at least read access.
+ When using this call on get_acl, the pst struct is valid and contains
+ the mode of the file.
+****************************************************************************/
+
+static bool ensure_canon_entry_valid_on_get(connection_struct *conn,
+					canon_ace **pp_ace,
+					const struct dom_sid *pfile_owner_sid,
+					const struct dom_sid *pfile_grp_sid,
+					const SMB_STRUCT_STAT *pst)
+{
+	canon_ace *pace;
+	bool got_user = false;
+	bool got_group = false;
+	bool got_other = false;
+
+	for (pace = *pp_ace; pace; pace = pace->next) {
+		if (pace->type == SMB_ACL_USER_OBJ) {
+			got_user = true;
+		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
+			got_group = true;
+		} else if (pace->type == SMB_ACL_OTHER) {
+			got_other = true;
+		}
+	}
+
+	if (!got_user) {
+		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
+			DEBUG(0,("malloc fail.\n"));
+			return false;
+		}
+
+		ZERO_STRUCTP(pace);
+		pace->type = SMB_ACL_USER_OBJ;
+		pace->owner_type = UID_ACE;
+		pace->unix_ug.type = ID_TYPE_UID;
+		pace->unix_ug.id = pst->st_ex_uid;
+		pace->trustee = *pfile_owner_sid;
+		pace->attr = ALLOW_ACE;
+		pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IRUSR, S_IWUSR, S_IXUSR);
+		DLIST_ADD(*pp_ace, pace);
+	}
+
+	if (!got_group) {
+		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
+			DEBUG(0,("malloc fail.\n"));
+			return false;
+		}
+
+		ZERO_STRUCTP(pace);
+		pace->type = SMB_ACL_GROUP_OBJ;
+		pace->owner_type = GID_ACE;
+		pace->unix_ug.type = ID_TYPE_GID;
+		pace->unix_ug.id = pst->st_ex_gid;
+		pace->trustee = *pfile_grp_sid;
+		pace->attr = ALLOW_ACE;
+		pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+		DLIST_ADD(*pp_ace, pace);
+	}
+
+	if (!got_other) {
+		if ((pace = talloc(talloc_tos(), canon_ace)) == NULL) {
+			DEBUG(0,("malloc fail.\n"));
+			return false;
+		}
+
+		ZERO_STRUCTP(pace);
+		pace->type = SMB_ACL_OTHER;
+		pace->owner_type = WORLD_ACE;
+		pace->unix_ug.type = ID_TYPE_NOT_SPECIFIED;
+		pace->unix_ug.id = -1;
+		pace->trustee = global_sid_World;
+		pace->attr = ALLOW_ACE;
+		pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IROTH, S_IWOTH, S_IXOTH);
+		DLIST_ADD(*pp_ace, pace);
+	}
+
+	return true;
+}
+
+/****************************************************************************
  A well formed POSIX file or default ACL has at least 3 entries, a 
  SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ.
  In addition, the owner must always have at least read access.
@@ -2749,9 +2832,9 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 	 * This next call will ensure we have at least a user/group/world set.
 	 */
 
-	if (!ensure_canon_entry_valid(conn, &l_head, is_default_acl, conn->params,
-				      S_ISDIR(psbuf->st_ex_mode), powner, pgroup,
-				      psbuf, False))
+	if (!ensure_canon_entry_valid_on_get(conn, &l_head,
+				      powner, pgroup,
+				      psbuf))
 		goto fail;
 
 	/*
