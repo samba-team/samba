@@ -417,7 +417,6 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
         name = module
     plantestsuite(name, env, args)
 
-planpythontestsuite("none", "selftest.tests.test_suite", extra_path=[srcdir()])
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
 planpythontestsuite("none", "samba.tests.credentials")
 planoldpythontestsuite("dc:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
@@ -450,7 +449,6 @@ planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.group")
 planpythontestsuite("plugin_s4_dc:local", "samba.tests.samba_tool.ntacl")
 
-planpythontestsuite("none", "subunit")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
 planpythontestsuite("none", "wafsamba.tests.test_suite", extra_path=[os.path.join(samba4srcdir, "..", "buildtools"), os.path.join(samba4srcdir, "..", "buildtools", "wafadmin")])
 planoldpythontestsuite("dc:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
