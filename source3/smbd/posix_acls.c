@@ -1508,9 +1508,9 @@ static bool ensure_canon_entry_valid(connection_struct *conn,
 		pace->unix_ug.id = pst->st_ex_uid;
 		pace->trustee = *pfile_owner_sid;
 		pace->attr = ALLOW_ACE;
-		/* Start with existing permissions, principle of least
+		/* Start with existing user permissions, principle of least
 		   surprises for the user. */
-		pace->perms = pst->st_ex_mode;
+		pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 
 		if (setting_acl) {
 			/* See if the owning user is in any of the other groups in
