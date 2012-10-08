@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="samba-tool.8">
+
+<refmeta>
+	<refentrytitle>samba-tool</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>samba-tool</refname>
+	<refpurpose>Main Samba administration tool.
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>samba-tool</command>
+		<arg choice="opt">-h</arg>
+		<arg choice="opt">-W myworkgroup</arg>
+		<arg choice="opt">-U user</arg>
+		<arg choice="opt">-d debuglevel</arg>
+		<arg choice="opt">--v</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+	<varlistentry>
+	<term>-h|--help</term>
+	<listitem><para>
+	Show this help message and exit
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-s FILE|--configfile=FILE</term>
+	<listitem><para>
+	Configuration file
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-d DEBUGLEVEL|--debuglevel=DEBUGLEVEL</term>
+	<listitem><para>
+	Debug Level
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--option=OPTION</term>
+	<listitem><para>
+	Set smb.conf option from command line
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--realm=REALM</term>
+	<listitem><para>
+	Set the realm name
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--simple-bind-dn=DN</term>
+	<listitem><para>
+	DN to use for a simple bind
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--password=PASSWORD</term>
+	<listitem><para>
+	Password
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-U USERNAME|--username=USERNAME</term>
+	<listitem><para>
+	Username
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-W WORKGROUP|--workgroup=WORKGROUP</term>
+	<listitem><para>
+	Workgroup
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-N|--no-pass</term>
+	<listitem><para>
+	Don't ask for a password
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-k KERBEROS|--kerberos=KERBEROS</term>
+	<listitem><para>
+	Use Kerberos
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--ipaddress=IPADDRESS</term>
+	<listitem><para>
+	IP address of the server
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--version</term>
+	<listitem><para>
+	Display version number
+	</para></listitem>
+	</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+<title>COMMANDS</title>
+
+<refsect2>
+	<title>dbcheck</title>
+	<para>Check the local AD database for errors.</para>
+</refsect2>
+
+<refsect2>
+	<title>delegation</title>
+	<para>Manage Delegations.</para>
+</refsect2>
+
+<refsect3>
+	<title>delegation add-service <replaceable>accountname</replaceable> <replaceable>principal</replaceable> [options]</title>
+	<para>Add a service principal as msDS-AllowedToDelegateTo.</para>
+</refsect3>
+
+<refsect3>
+	<title>delegation del-service <replaceable>accountname</replaceable> <replaceable>principal</replaceable> [options]</title>
+	<para>Delete a service principal as msDS-AllowedToDelegateTo.</para>
+</refsect3>
+
+<refsect3>
+	<title>delegation for-any-protocol <replaceable>accountname</replaceable> [(on|off)] [options]</title>
+	<para>Set/unset UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION (S4U2Proxy)
+	for an account.</para>
+</refsect3>
+
+<refsect3>
+	<title>delegation for-any-service <replaceable>accountname</replaceable> [(on|off)] [options]</title>
+	<para>Set/unset UF_TRUSTED_FOR_DELEGATION for an account.</para>
+</refsect3>
+
+<refsect3>
+	<title>delegation show <replaceable>accountname</replaceable> [options]	</title>
+	<para>Show the delegation setting of an account.</para>
+</refsect3>
+
+<refsect2>
+	<title>dns</title>
+	<para>Manage Domain Name Service (DNS).</para>
+</refsect2>
+
+<refsect3>
+	<title>dns add <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT</replaceable> <replaceable>data</replaceable></title>
+	<para>Add a DNS record.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns delete <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT</replaceable> <replaceable>data</replaceable></title>
+	<para>Delete a DNS record.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns query <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT|ALL</replaceable> [options] <replaceable>data</replaceable></title>
+	<para>Query a name.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns roothints <replaceable>server</replaceable> [<replaceable>name</replaceable>] [options]</title>
+	<para>Query root hints.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns serverinfo <replaceable>server</replaceable> [options]</title>
+	<para>Query server information.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns update <replaceable>server</replaceable> <replaceable>zone</replaceable> <replaceable>name</replaceable> <replaceable>A|AAAA|PTR|CNAME|NS|MX|SRV|TXT</replaceable> <replaceable>olddata</replaceable> <replaceable>newdata</replaceable></title>
+	<para>Update a DNS record.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns zonecreate <replaceable>server</replaceable> <replaceable>zone</replaceable> [options]</title>
+	<para>Create a zone.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns zonedelete <replaceable>server</replaceable> <replaceable>zone</replaceable> [options]</title>
+	<para>Delete a zone.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns zoneinfo <replaceable>server</replaceable> <replaceable>zone</replaceable> [options]</title>
+	<para>Query zone information.</para>
+</refsect3>
+
+<refsect3>
+	<title>dns zonelist <replaceable>server</replaceable> [options]</title>
+	<para>List zones.</para>
+</refsect3>
+
+<refsect2>
+	<title>domain</title>
+	<para>Manage Domain.</para>
+</refsect2>
+
+<refsect3>
+	<title>domain classicupgrade [options] <replaceable>classic_smb_conf</replaceable></title>
+	<para>Upgrade from Samba classic (NT4-like) database to Samba AD DC
+	database.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain dcpromo <replaceable>dnsdomain</replaceable> [DC|RODC] [options]</title>
+	<para>Promote an existing domain member or NT4 PDC to an AD DC.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain demote</title>
+	<para>Demote ourselves from the role of domain controller.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain exportkeytab <replaceable>keytab</replaceable> [options]</title>
+	<para>Dumps Kerberos keys of the domain into a keytab.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain info <replaceable>ip_address</replaceable> [options]</title>
+	<para>Print basic info about a domain and the specified DC.
+</para>
+</refsect3>
+
+<refsect3>
+	<title>domain join <replaceable>dnsdomain</replaceable> [DC|RODC|MEMBER|SUBDOMAIN] [options]</title>
+	<para>Join a domain as either member or backup domain controller.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain level <replaceable>show|raise</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Show/raise domain and forest function levels.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain passwordsettings <replaceable>show|set</replaceable> <replaceable>options</replaceable> [options]</title>
+	<para>Show/set password settings.</para>
+</refsect3>
+
+<refsect3>
+	<title>domain provision</title>
+	<para>Promote an existing domain member or NT4 PDC to an AD DC.</para>
+</refsect3>
+
+<refsect2>
+	<title>drs</title>
+	<para>Manage Directory Replication Services (DRS).</para>
+</refsect2>
+
+<refsect3>
+	<title>drs bind</title>
+	<para>Show DRS capabilities of a server.</para>
+</refsect3>
+
+<refsect3>
+	<title>drs kcc</title>
+	<para>Trigger knowledge consistency center run.</para>
+</refsect3>
+
+<refsect3>
+	<title>drs options</title>
+	<para>Query or change <replaceable>options</replaceable> for NTDS Settings
+	object of a domain controller.</para>
+</refsect3>
+
+<refsect3>
+	<title>drs replicate <replaceable>destination_DC</replaceable> <replaceable>source_DC</replaceable> <replaceable>NC</replaceable> [options]</title>
+	<para>Replicate a naming context between two DCs.</para>
+</refsect3>
+
+<refsect3>
+	<title>drs showrepl</title>
+	<para>Show replication status.</para>
+</refsect3>
+
+<refsect2>
+	<title>dsacl</title>
+	<para>Administer DS ACLs</para>
+</refsect2>
+
+<refsect3>
+	<title>dsacl set</title>
+	<para>Modify access list on a directory object.</para>
+</refsect3>
+
+<refsect2>
+	<title>fsmo</title>
+	<para>Manage Flexible Single Master Operations (FSMO).</para>
+</refsect2>
+
+<refsect3>
+	<title>fsmo seize [options]</title>
+	<para>Seize the role.</para>
+</refsect3>
+
+<refsect3>
+	<title>fsmo show</title>
+	<para>Show the roles.</para>
+</refsect3>
+
+<refsect3>
+	<title>fsmo transfer [options]</title>
+	<para>Transfer the role.</para>
+</refsect3>
+
+<refsect2>
+	<title>gpo</title>
+	<para>Manage Group Policy Objects (GPO).</para>
+</refsect2>
+
+<refsect3>
+	<title>gpo create <replaceable>displayname</replaceable> [options]</title>
+	<para>Create an empty GPO.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo del <replaceable>gpo</replaceable> [options]</title>
+	<para>Delete GPO.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo dellink <replaceable>container_dn</replaceable> <replaceable>gpo</replaceable> [options]</title>
+	<para>Delete GPO link from a container.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo fetch <replaceable>gpo</replaceable> [options]</title>
+	<para>Download a GPO.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo getinheritance <replaceable>container_dn</replaceable> [options]</title>
+	<para>Get inheritance flag for a container.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo getlink <replaceable>container_dn</replaceable> [options]</title>
+	<para>List GPO Links for a container.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo list <replaceable>username</replaceable> [options]</title>
+	<para>List GPOs for an account.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo listall</title>
+	<para>List all GPOs.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo listcontainers <replaceable>gpo</replaceable> [options]</title>
+	<para>List all linked containers for a GPO.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo setinheritance <replaceable>container_dn</replaceable> <replaceable>block|inherit</replaceable> [options]</title>
+	<para>Set inheritance flag on a container.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo setlink <replaceable>container_dn</replaceable> <replaceable>gpo</replaceable> [options]</title>
+	<para>Add or Update a GPO link to a container.</para>
+</refsect3>
+
+<refsect3>
+	<title>gpo show <replaceable>gpo</replaceable> [options]</title>
+	<para>Show information for a GPO.</para>
+</refsect3>
+
+<refsect2>
+	<title>group</title>
+	<para>Manage groups.</para>
+</refsect2>
+
+<refsect3>
+	<title>group add <replaceable>groupname</replaceable> [options]</title>
+	<para>Create a new AD group.</para>
+</refsect3>
+
+<refsect3>
+	<title>group addmembers <replaceable>groupname</replaceable> <replaceable>members</replaceable> [options]</title>
+	<para>Add members to an AD group.</para>
+</refsect3>
+
+<refsect3>
+	<title>group delete <replaceable>groupname</replaceable> [options]</title>
+	<para>Delete an AD group.</para>
+</refsect3>
+
+<refsect3>
+	<title>group list</title>
+	<para>List all groups.</para>
+</refsect3>
+
+<refsect3>
+	<title>group listmembers <replaceable>groupname</replaceable> [options]</title>
+	<para>List all members of the specified AD group.</para>
+</refsect3>
+
+<refsect3>
+	<title>group removemembers <replaceable>groupname</replaceable> <replaceable>members</replaceable> [options]</title>
+	<para>Remove members from the specified AD group.</para>
+</refsect3>
+
+<refsect2>
+	<title>ldapcmp <replaceable>URL1</replaceable> <replaceable>URL2</replaceable> <replaceable>domain|configuration|schema|dnsdomain|dnsforest</replaceable> [options] </title>
+	<para>Compare two LDAP databases.</para>
+</refsect2>
+
+<refsect2>
+	<title>ntacl</title>
+	<para>Manage NT ACLs.</para>
+</refsect2>
+
+<refsect3>
+	<title>ntacl get <replaceable>file</replaceable> [options]</title>
+	<para>Get ACLs on a file.</para>
+</refsect3>
+
+<refsect3>
+	<title>ntacl set <replaceable>acl</replaceable> <replaceable>file</replaceable> [options]</title>
+	<para>Set ACLs on a file.</para>
+</refsect3>
+
+<refsect3>
+	<title>ntacl sysvolcheck</title>
+	<para>Check sysvol ACLs match defaults (including correct ACLs on GPOs).</para>
+</refsect3>
+
+<refsect3>
+	<title>ntacl sysvolreset</title>
+	<para>Reset sysvol ACLs to defaults (including correct ACLs on GPOs).</para>
+</refsect3>
+
+<refsect2>
+	<title>rodc</title>
+	<para>Manage Read-Only Domain Controller (RODC).</para>
+</refsect2>
+
+<refsect3>
+	<title>rodc preload <replaceable>SID</replaceable>|<replaceable>DN</replaceable>|<replaceable>accountname</replaceable> [options]</title>
+	<para>Preload one account for an RODC.</para>
+</refsect3>
+
+<refsect2>
+	<title>sites</title>
+	<para>Manage sites.</para>
+</refsect2>
+
+<refsect3>
+	<title>sites create <replaceable>site</replaceable> [options]</title>
+	<para>Create a new site.</para>
+</refsect3>
+
+<refsect3>
+	<title>sites remove <replaceable>site</replaceable> [options]</title>
+	<para>Delete an esxisting site.</para>
+</refsect3>
+
+<refsect2>
+	<title>spn</title>
+	<para>Manage Service Principal Names (SPN).</para>
+</refsect2>
+
+<refsect3>
+	<title>spn add <replaceable>name</replaceable> <replaceable>user</replaceable> [options]</title>
+	<para>Create a new SPN.</para>
+</refsect3>
+
+<refsect3>
+	<title>spn delete <replaceable>name</replaceable> [<replaceable>user</replaceable>] [options]</title>
+	<para>Delete an existing SPN.</para>
+</refsect3>
+
+<refsect3>
+	<title>spn list <replaceable>user</replaceable> [options]</title>
+	<para>List SPNs of a given user.</para>
+</refsect3>
+
+<refsect2>
+	<title>testparm</title>
+	<para>Check the syntax of the configuration file.</para>
+</refsect2>
+
+<refsect2>
+	<title>time</title>
+	<para>Retrieve the time on a server.</para>
+</refsect2>
+
+<refsect2>
+	<title>user</title>
+	<para>Manage users.</para>
+</refsect2>
+
+<refsect3>
+	<title>user add <replaceable>username</replaceable> [<replaceable>password</replaceable>]</title>
+	<para>Create a new user. Please note that this subcommand is deprecated
+	and available for compatibility reasons only. Please use
+	<command>samba-tool user create</command> instead.</para>
+</refsect3>
+
+<refsect3>
+	<title>user create <replaceable>username</replaceable> [<replaceable>password</replaceable>]</title>
+	<para>Create a new user in the Active Directory Domain.</para>
+</refsect3>
+
+<refsect3>
+	<title>user delete <replaceable>username</replaceable> [options]</title>
+	<para>Delete an existing user account.</para>
+</refsect3>
+
+<refsect3>
+	<title>user disable <replaceable>username</replaceable></title>
+	<para>Disable an user account.</para>
+</refsect3>
+
+<refsect3>
+	<title>user enable <replaceable>username</replaceable></title>
+	<para>Enable an user account.</para>
+</refsect3>
+
+<refsect3>
+	<title>user list</title>
+	<para>List all users.</para>
+</refsect3>
+
+<refsect3>
+	<title>user password [options]</title>
+	<para>Change password for an user account (the one provided in
+	authentication).</para>
+</refsect3>
+
+<refsect3>
+	<title>user setexpiry <replaceable>username</replaceable> [options]</title>
+	<para>Set the expiration of an user account.</para>
+</refsect3>
+
+<refsect3>
+	<title>user setpassword <replaceable>username</replaceable> [options]</title>
+	<para>Sets or resets the password of an user account.</para>
+</refsect3>
+
+<refsect2>
+	<title>vampire [options] <replaceable>domain</replaceable></title>
+	<para>Join and synchronise a remote AD domain to the local server.
+	Please note that <command>samba-tool vampire</command> is deprecated,
+	please use <command>samba-tool domain join</command> instead.</para>
+</refsect2>
+
+<refsect2>
+<title>help</title>
+<para>Gives usage information.</para>
+</refsect2>
+
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is complete for version 4 of the Samba
+	suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The samba-tool manpage was written by Karolin Seeger.</para>
+</refsect1>
+
+</refentry>
