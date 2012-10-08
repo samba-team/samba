@@ -53,6 +53,14 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		return -1;
 	}
 
+	/* Unmap, update size, remap */
+	if (tdb_munmap(tdb) == -1) {
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
+	tdb->map_size = st.st_size;
+	tdb_mmap(tdb);
+
 	if (st.st_size < (size_t)len) {
 		if (!probe) {
 			/* Ensure ecode is set for log fn. */
@@ -63,13 +71,6 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t len, int probe)
 		return -1;
 	}
 
-	/* Unmap, update size, remap */
-	if (tdb_munmap(tdb) == -1) {
-		tdb->ecode = TDB_ERR_IO;
-		return -1;
-	}
-	tdb->map_size = st.st_size;
-	tdb_mmap(tdb);
 	return 0;
 }
 
