@@ -426,7 +426,7 @@ class dc_join(object):
 
     def join_add_ntdsdsa(ctx):
         '''add the ntdsdsa object'''
-        # FIXME: the partition (NC) assignment has to be made dynamic
+
         print "Adding %s" % ctx.ntds_dn
         rec = {
             "dn" : ctx.ntds_dn,
@@ -755,6 +755,9 @@ class dc_join(object):
                 repl.replicate('DC=ForestDnsZones,%s' % ctx.root_dn, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.replica_flags)
+            # FIXME At this point we should add an entry in the forestdns and domaindns NC
+            # (those under CN=Partions,DC=...)
+            # in order to indicate that we hold a replica for this NC
 
             if ctx.RODC:
                 repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
@@ -795,6 +798,11 @@ class dc_join(object):
         logger = logging.getLogger("provision")
         logger.addHandler(logging.StreamHandler(sys.stdout))
 
+        # FIXME we shouldn't do this in all cases
+        # If for some reasons we joined in another site than the one of
+        # DC we just replicated from then we don't need to send the updatereplicateref
+        # as replication between sites is time based and on the initiative of the
+        # requesting DC
         print "Sending DsReplicateUpdateRefs for all the partitions"
         for nc in ctx.full_nc_list:
             ctx.send_DsReplicaUpdateRefs(nc)
@@ -971,6 +979,8 @@ class dc_join(object):
 
 
     def do_join(ctx):
+        # full_nc_list is the list of naming context (NC) for which we will
+        # send a updateRef command to the partner DC
         ctx.nc_list = [ ctx.config_dn, ctx.schema_dn ]
         ctx.full_nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
 
