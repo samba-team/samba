@@ -62,7 +62,7 @@ class cmd_sites_create(Command):
         self.outf.write("Site %s created !\n" % sitename)
 
 class cmd_sites_delete(Command):
-    """Delete a new site"""
+    """Delete an existing site"""
 
     synopsis = "%prog <site> [options]"
 
