@@ -2238,6 +2238,19 @@ if test x"$samba_cv_HAVE_UX_UT_SYSLEN" = x"yes"; then
     AC_DEFINE(HAVE_UX_UT_SYSLEN,1,[Whether the utmpx struct has a property ut_syslen])
 fi
 
+AC_CACHE_CHECK([whether sizeof ut_line in utmp is ok],samba_cv_HAVE_UX_UT_LINE,[
+AC_TRY_RUN([#include <stdio.h>
+#include <sys/types.h>
+#include <utmp.h>
+int main(void) {
+ if (sizeof(((struct utmp *)NULL)->ut_line) < 15) {
+     return 1;
+ }
+ return 0;
+}
+],
+samba_cv_HAVE_UX_UT_LINE=yes,samba_cv_HAVE_UX_UT_LINE=no,samba_cv_HAVE_UX_UT_LINE=cross)])
+
 fi
 # end utmp details
 
@@ -4700,6 +4713,11 @@ AC_ARG_WITH(utmp,
 
 if test x"$WITH_UTMP" = x"yes" -a x"$ac_cv_header_utmp_h" = x"no"; then
 	utmp_no_reason=", no utmp.h on $host_os"
+	WITH_UTMP=no
+fi
+
+if test x"$WITH_UTMP" = x"yes" -a x"$samba_cv_HAVE_UX_UT_LINE" != x"yes"; then
+	utmp_no_reason=", sizeof ut_line not ok"
 	WITH_UTMP=no
 fi
 

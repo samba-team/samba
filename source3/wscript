@@ -660,8 +660,16 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.CHECK_CODE('struct utmp utarg; struct utmp *utreturn; utreturn = pututline(&utarg);',
                         'PUTUTLINE_RETURNS_UTMP', headers='utmp.h',
                         msg="Checking whether pututline returns pointer")
+        conf.CHECK_SIZEOF(['((struct utmp *)NULL)->ut_line'], headers='utmp.h',
+                          define='SIZEOF_UTMP_UT_LINE')
+        if not conf.CONFIG_SET('SIZEOF_UTMP_UT_LINE'):
+            conf.env.with_utmp = False
+        elif int(conf.env.SIZEOF_UTMP_UT_LINE) < 15:
+            conf.env.with_utmp = False
         if conf.env.with_utmp:
             conf.DEFINE('WITH_UTMP', 1)
+        else:
+            Logs.warn("--with-utmp but utmp support not sufficient")
 
     if Options.options.with_avahi:
         conf.env.with_avahi = True
