@@ -1,13 +1,13 @@
 <samba:parameter name="force directory security mode"
-                 context="S"
-				 type="string"
-                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+		 context="S"
+		 type="string"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
 	This parameter has been removed for Samba 4.0.0. The parameter
 	<smbconfoption name="force directory mode"/> is now used instead to
 	force any permission changes on directories to include specific UNIX
 	permission bits.
-    <para>
+    </para>
 </description>
 </samba:parameter>
