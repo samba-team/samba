@@ -62,8 +62,8 @@ def COMPOUND_END(conf, result):
     conf.check_message_1 = conf.saved_check_message_1
     conf.check_message_2 = conf.saved_check_message_2
     p = conf.check_message_2
-    if result:
-        p('ok ')
+    if result is True:
+        p('ok')
     elif not result:
         p('not found', 'YELLOW')
     else:
