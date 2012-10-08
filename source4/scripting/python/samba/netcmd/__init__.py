@@ -40,6 +40,11 @@ class PlainHelpFormatter(optparse.IndentedHelpFormatter):
             result = "\n".join(wrapped_paragraphs) + "\n"
             return result
 
+    def format_epilog(self, epilog):
+        if epilog:
+            return "\n" + epilog + "\n"
+        else:
+            return ""
 
 class Command(object):
     """A samba-tool command."""
@@ -117,12 +122,12 @@ class Command(object):
         if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
 
-    def _create_parser(self, prog):
+    def _create_parser(self, prog, epilog=None):
         parser = optparse.OptionParser(
             usage=self.synopsis,
             description=self.full_description,
             formatter=PlainHelpFormatter(),
-            prog=prog)
+            prog=prog,epilog=epilog)
         parser.add_options(self.takes_options)
         optiongroups = {}
         for name, optiongroup in self.takes_optiongroups.iteritems():
