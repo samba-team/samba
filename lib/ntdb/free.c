@@ -683,7 +683,6 @@ static ntdb_off_t lock_and_alloc(struct ntdb_context *ntdb,
 
 	while (off) {
 		const struct ntdb_free_record *r;
-		ntdb_len_t len;
 		ntdb_off_t next;
 
 		r = ntdb_access_read(ntdb, off, sizeof(*r), true);
@@ -715,7 +714,6 @@ static ntdb_off_t lock_and_alloc(struct ntdb_context *ntdb,
 		multiplier *= 1.01;
 
 		next = r->next;
-		len = frec_len(r);
 		ntdb_access_release(ntdb, r);
 		off = next;
 	}
