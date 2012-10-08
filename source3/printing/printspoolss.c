@@ -163,7 +163,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 
 	status = dcerpc_spoolss_OpenPrinter(b, pf, pf->svcname,
 					    "RAW", devmode_ctr,
-					    SEC_FLAG_MAXIMUM_ALLOWED,
+					    PRINTER_ACCESS_USE,
 					    &pf->handle, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
