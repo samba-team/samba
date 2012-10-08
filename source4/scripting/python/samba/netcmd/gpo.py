@@ -284,7 +284,7 @@ def create_directory_hier(conn, remotedir):
 
 
 class cmd_listall(Command):
-    """list all GPOs"""
+    """List all GPOs."""
 
     synopsis = "%prog [options]"
 
@@ -321,7 +321,7 @@ class cmd_listall(Command):
 
 
 class cmd_list(Command):
-    """list GPOs for an account"""
+    """List GPOs for an account."""
 
     synopsis = "%prog <username> [options]"
 
@@ -435,7 +435,7 @@ class cmd_list(Command):
 
 
 class cmd_show(Command):
-    """Show information for a GPO"""
+    """Show information for a GPO."""
 
     synopsis = "%prog <gpo> [options]"
 
@@ -479,7 +479,7 @@ class cmd_show(Command):
 
 
 class cmd_getlink(Command):
-    """List GPO Links for a container"""
+    """List GPO Links for a container."""
 
     synopsis = "%prog <container_dn> [options]"
 
@@ -526,7 +526,7 @@ class cmd_getlink(Command):
 
 
 class cmd_setlink(Command):
-    """Add or Update a GPO link to a container"""
+    """Add or update a GPO link to a container."""
 
     synopsis = "%prog <container_dn> <gpo> [options]"
 
@@ -616,7 +616,7 @@ class cmd_setlink(Command):
 
 
 class cmd_dellink(Command):
-    """Delete GPO link from a container"""
+    """Delete GPO link from a container."""
 
     synopsis = "%prog <container_dn> <gpo> [options]"
 
@@ -655,7 +655,7 @@ class cmd_dellink(Command):
 
 
 class cmd_listcontainers(Command):
-    """List all linked containers for a GPO"""
+    """List all linked containers for a GPO."""
 
     synopsis = "%prog <gpo> [options]"
 
@@ -691,7 +691,7 @@ class cmd_listcontainers(Command):
 
 
 class cmd_getinheritance(Command):
-    """Get inheritance flag for a container"""
+    """Get inheritance flag for a container."""
 
     synopsis = "%prog <container_dn> [options]"
 
@@ -735,7 +735,7 @@ class cmd_getinheritance(Command):
 
 
 class cmd_setinheritance(Command):
-    """Set inheritance flag on a container"""
+    """Set inheritance flag on a container."""
 
     synopsis = "%prog <container_dn> <block|inherit> [options]"
 
@@ -789,7 +789,7 @@ class cmd_setinheritance(Command):
 
 
 class cmd_fetch(Command):
-    """Download a GPO"""
+    """Download a GPO."""
 
     synopsis = "%prog <gpo> [options]"
 
@@ -862,7 +862,7 @@ class cmd_fetch(Command):
 
 
 class cmd_create(Command):
-    """Create an empty GPO"""
+    """Create an empty GPO."""
 
     synopsis = "%prog <displayname> [options]"
 
@@ -995,7 +995,7 @@ class cmd_create(Command):
 
 
 class cmd_del(Command):
-    """Delete GPO"""
+    """Delete a GPO."""
 
     synopsis = "%prog <gpo> [options]"
 

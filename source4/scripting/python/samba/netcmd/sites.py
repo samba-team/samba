@@ -29,7 +29,7 @@ from samba.netcmd import (
 
 
 class cmd_sites_create(Command):
-    """Create a new site"""
+    """Create a new site."""
 
     synopsis = "%prog <site> [options]"
 
@@ -62,7 +62,7 @@ class cmd_sites_create(Command):
         self.outf.write("Site %s created !\n" % sitename)
 
 class cmd_sites_delete(Command):
-    """Delete an existing site"""
+    """Delete an existing site."""
 
     synopsis = "%prog <site> [options]"
 

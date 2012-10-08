@@ -81,7 +81,7 @@ def get_testparm_var(testparm, smbconf, varname):
 try:
    import samba.dckeytab
    class cmd_domain_export_keytab(Command):
-       """Dumps kerberos keys of the domain into a keytab"""
+       """Dump Kerberos keys of the domain into a keytab."""
 
        synopsis = "%prog <keytab> [options]"
 
@@ -106,7 +106,7 @@ except:
 
 
 class cmd_domain_info(Command):
-    """Print basic info about a domain and the DC passed as parameter"""
+    """Print basic info about a domain and the DC passed as parameter."""
 
     synopsis = "%prog <ip_address> [options]"
 
@@ -405,7 +405,7 @@ class cmd_domain_provision(Command):
         result.report_logger(self.logger)
 
     def _get_nameserver_ip(self):
-        """Grab the nameserver IP address from /etc/resolv.conf"""
+        """Grab the nameserver IP address from /etc/resolv.conf."""
         from os import path
         RESOLV_CONF="/etc/resolv.conf"
 
@@ -429,7 +429,7 @@ class cmd_domain_provision(Command):
 
 
 class cmd_domain_dcpromo(Command):
-    """Promotes an existing domain member or NT4 PDC to an AD DC"""
+    """Promote an existing domain member or NT4 PDC to an AD DC."""
 
     synopsis = "%prog <dnsdomain> [DC|RODC] [options]"
 
@@ -494,7 +494,7 @@ class cmd_domain_dcpromo(Command):
 
 
 class cmd_domain_join(Command):
-    """Joins domain as either member or backup domain controller"""
+    """Join domain as either member or backup domain controller."""
 
     synopsis = "%prog <dnsdomain> [DC|RODC|MEMBER|SUBDOMAIN] [options]"
 
@@ -573,7 +573,7 @@ class cmd_domain_join(Command):
 
 
 class cmd_domain_demote(Command):
-    """Demote ourselves from the role of Domain Controller"""
+    """Demote ourselves from the role of Domain Controller."""
 
     synopsis = "%prog [options]"
 
@@ -815,7 +815,7 @@ class cmd_domain_demote(Command):
 
 
 class cmd_domain_level(Command):
-    """Raises domain and forest function levels"""
+    """Raise domain and forest function levels."""
 
     synopsis = "%prog (show|raise <options>) [options]"
 
@@ -1019,7 +1019,7 @@ class cmd_domain_level(Command):
 
 
 class cmd_domain_passwordsettings(Command):
-    """Sets password settings
+    """Set password settings.
 
     Password complexity, history length, minimum password length, the minimum
     and maximum password age) on a Samba4 server.

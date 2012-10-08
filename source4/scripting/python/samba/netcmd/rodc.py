@@ -26,7 +26,7 @@ from samba.drs_utils import drs_Replicate
 
 
 class cmd_rodc_preload(Command):
-    """Preload one account for an RODC"""
+    """Preload one account for an RODC."""
 
     synopsis = "%prog (<SID>|<DN>|<accountname>) [options]"
 

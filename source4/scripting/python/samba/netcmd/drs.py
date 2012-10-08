@@ -80,7 +80,7 @@ def drs_parse_ntds_dn(ntds_dn):
 
 
 class cmd_drs_showrepl(Command):
-    """show replication status"""
+    """Show replication status."""
 
     synopsis = "%prog [<DC>] [options]"
 
@@ -194,7 +194,7 @@ class cmd_drs_showrepl(Command):
 
 
 class cmd_drs_kcc(Command):
-    """trigger knowledge consistency center run"""
+    """Trigger knowledge consistency center run."""
 
     synopsis = "%prog [<DC>] [options]"
 
@@ -263,7 +263,7 @@ def drs_local_replicate(self, SOURCE_DC, NC):
 
 
 class cmd_drs_replicate(Command):
-    """replicate a naming context between two DCs"""
+    """Replicate a naming context between two DCs."""
 
     synopsis = "%prog <destinationDC> <sourceDC> <NC> [options]"
 
@@ -339,7 +339,7 @@ class cmd_drs_replicate(Command):
 
 
 class cmd_drs_bind(Command):
-    """show DRS capabilities of a server"""
+    """Show DRS capabilities of a server."""
 
     synopsis = "%prog [<DC>] [options]"
 
@@ -438,7 +438,7 @@ class cmd_drs_bind(Command):
 
 
 class cmd_drs_options(Command):
-    """query or change 'options' for NTDS Settings object of a domain controller"""
+    """Query or change 'options' for NTDS Settings object of a Domain Controller."""
 
     synopsis = "%prog [<DC>] [options]"
 

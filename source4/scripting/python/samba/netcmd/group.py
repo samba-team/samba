@@ -40,7 +40,7 @@ distribution_group = dict({"Domain": GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP, "Glo
 
 
 class cmd_group_add(Command):
-    """Creates a new AD group
+    """Creates a new AD group.
 
 This command creates a new Active Directory group.  The groupname specified on the command is a unique sAMAccountName.
 
@@ -115,7 +115,7 @@ Example2 adds a new distribution group to the local server.  The command is run 
 
 
 class cmd_group_delete(Command):
-    """Deletes an AD group
+    """Deletes an AD group.
 
 The command deletes an existing AD group from the Active Directory domain.  The groupname specified on the command is the sAMAccountName.
 
@@ -165,7 +165,7 @@ Example2 deletes group Group2 from the local server.  The command is run under r
 
 
 class cmd_group_add_members(Command):
-    """Add members to an AD group
+    """Add members to an AD group.
 
 This command adds one or more members to an existing Active Directory group.  The command accepts one or more group member names seperated by commas.  A group member may be a user or computer account or another Active Directory group.
 
@@ -217,7 +217,7 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
 
 
 class cmd_group_remove_members(Command):
-    """Remove members from an AD group
+    """Remove members from an AD group.
 
 This command removes one or more members from an existing Active Directory group.  The command accepts one or more group member names seperated by commas.  A group member may be a user or computer account or another Active Directory group that is a member of the group specified on the command.
 
@@ -267,7 +267,7 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
 
 
 class cmd_group_list(Command):
-    """List all groups"""
+    """List all groups."""
 
     synopsis = "%prog [options]"
 
@@ -301,7 +301,7 @@ class cmd_group_list(Command):
 
 
 class cmd_group_list_members(Command):
-    """List all members of an AD group
+    """List all members of an AD group.
 
 This command lists members from an existing Active Directory group. The command accepts one group name.
 
