@@ -674,7 +674,7 @@ def dns_record_match(dns_conn, server, zone, name, record_type, data):
 
 
 class cmd_serverinfo(Command):
-    """Query for Server information"""
+    """Query for Server information."""
 
     synopsis = '%prog <server> [options]'
 
@@ -706,7 +706,7 @@ class cmd_serverinfo(Command):
 
 
 class cmd_zoneinfo(Command):
-    """Query for zone information"""
+    """Query for zone information."""
 
     synopsis = '%prog <server> <zone> [options]'
 
@@ -738,7 +738,7 @@ class cmd_zoneinfo(Command):
 
 
 class cmd_zonelist(Command):
-    """Query for zones"""
+    """Query for zones."""
 
     synopsis = '%prog <server> [options]'
 
@@ -817,7 +817,7 @@ class cmd_zonelist(Command):
 
 
 class cmd_zonecreate(Command):
-    """Create a zone"""
+    """Create a zone."""
 
     synopsis = '%prog <server> <zone> [options]'
 
@@ -876,7 +876,7 @@ class cmd_zonecreate(Command):
 
 
 class cmd_zonedelete(Command):
-    """Delete a zone"""
+    """Delete a zone."""
 
     synopsis = '%prog <server> <zone> [options]'
 
@@ -974,7 +974,7 @@ class cmd_query(Command):
 
 
 class cmd_roothints(Command):
-    """Query root hints"""
+    """Query root hints."""
 
     synopsis = '%prog <server> [<name>] [options]'
 
@@ -1169,7 +1169,7 @@ class cmd_delete_record(Command):
 
 
 class cmd_dns(SuperCommand):
-    """Domain Name Service (DNS) management"""
+    """Domain Name Service (DNS) management."""
 
     subcommands = {}
     subcommands['serverinfo'] = cmd_serverinfo()

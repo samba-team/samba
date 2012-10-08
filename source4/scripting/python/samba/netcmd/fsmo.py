@@ -69,7 +69,7 @@ def transfer_role(outf, role, samdb):
 
 
 class cmd_fsmo_seize(Command):
-    """Seize the role"""
+    """Seize the role."""
 
     synopsis = "%prog [options]"
 
@@ -161,7 +161,7 @@ all=all of the above"""),
 
 
 class cmd_fsmo_show(Command):
-    """Show the roles"""
+    """Show the roles."""
 
     synopsis = "%prog [options]"
 
@@ -224,7 +224,7 @@ class cmd_fsmo_show(Command):
 
 
 class cmd_fsmo_transfer(Command):
-    """Transfer the role"""
+    """Transfer the role."""
 
     synopsis = "%prog [options]"
 

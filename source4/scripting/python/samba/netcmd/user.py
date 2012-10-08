@@ -38,7 +38,7 @@ from samba.netcmd import (
 
 
 class cmd_user_create(Command):
-    """Creates a new user
+    """Create a new user.
 
 This command creates a new user account in the Active Directory domain.  The username specified on the command is the sAMaccountName.
 
@@ -159,7 +159,7 @@ class cmd_user_add(cmd_user_create):
 
 
 class cmd_user_delete(Command):
-    """Deletes a user
+    """Delete a user.
 
 This command deletes a user account from the Active Directory domain.  The username specified on the command is the sAMAccountName.
 
@@ -207,7 +207,7 @@ Example2 shows how to delete a user in the domain against the local server.   su
 
 
 class cmd_user_list(Command):
-    """List all users"""
+    """List all users."""
 
     synopsis = "%prog [options]"
 
@@ -242,7 +242,7 @@ class cmd_user_list(Command):
 
 
 class cmd_user_enable(Command):
-    """Enables a user
+    """Enable an user.
 
 This command enables a user account for logon to an Active Directory domain.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
 
@@ -311,7 +311,7 @@ Example3 shows how to enable a user in the domain against a local LDAP server.  
 
 
 class cmd_user_disable(Command):
-    """Disable a user"""
+    """Disable an user."""
 
     synopsis = "%prog (<username>|--filter <filter>) [options]"
 
@@ -349,7 +349,7 @@ class cmd_user_disable(Command):
 
 
 class cmd_user_setexpiry(Command):
-    """Sets the expiration of a user account
+    """Set the expiration of a user account.
 
 This command sets the expiration of a user account.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
 
@@ -420,7 +420,7 @@ Example4 shows how to set the account expiration so that it will never expire.  
 
 
 class cmd_user_password(Command):
-    """Change password for a user account (the one provided in authentication)
+    """Change password for a user account (the one provided in authentication).
 """
 
     synopsis = "%prog [options]"
@@ -465,7 +465,7 @@ class cmd_user_password(Command):
 
 
 class cmd_user_setpassword(Command):
-    """Sets or resets the password of a user account
+    """Set or reset the password of a user account.
 
 This command sets or resets the logon password for a user account.  The username specified on the command is the sAMAccountName.  The username may also be specified using the --filter option.
 

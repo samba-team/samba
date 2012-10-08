@@ -40,7 +40,7 @@ from samba.netcmd import (
 
 
 class cmd_ntacl_set(Command):
-    """Set ACLs on a file"""
+    """Set ACLs on a file."""
 
     synopsis = "%prog <acl> <file> [options]"
 
@@ -94,7 +94,7 @@ class cmd_ntacl_set(Command):
 
 
 class cmd_ntacl_get(Command):
-    """Get ACLs of a file"""
+    """Get ACLs of a file."""
     synopsis = "%prog <file> [options]"
 
     takes_optiongroups = {
@@ -147,7 +147,7 @@ class cmd_ntacl_get(Command):
 
 
 class cmd_ntacl_sysvolreset(Command):
-    """Reset sysvol ACLs to defaults (including correct ACLs on GPOs)"""
+    """Reset sysvol ACLs to defaults (including correct ACLs on GPOs)."""
     synopsis = "%prog <file> [options]"
 
     takes_optiongroups = {
@@ -214,7 +214,7 @@ class cmd_ntacl_sysvolreset(Command):
                                lp, use_ntvfs=use_ntvfs)
 
 class cmd_ntacl_sysvolcheck(Command):
-    """Check sysvol ACLs match defaults (including correct ACLs on GPOs)"""
+    """Check sysvol ACLs match defaults (including correct ACLs on GPOs)."""
     synopsis = "%prog <file> [options]"
 
     takes_optiongroups = {
