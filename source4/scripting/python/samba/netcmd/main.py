@@ -17,6 +17,8 @@
 
 """The main samba-tool command implementation."""
 
+from samba import getopt as options
+
 from samba.netcmd import SuperCommand
 from samba.netcmd.dbcheck import cmd_dbcheck
 from samba.netcmd.delegation import cmd_delegation
@@ -40,6 +42,10 @@ from samba.netcmd.vampire import cmd_vampire
 
 class cmd_sambatool(SuperCommand):
     """Main samba administration tool."""
+
+    takes_optiongroups = {
+        "versionopts": options.VersionOptions,
+        }
 
     subcommands = {}
     subcommands["dbcheck"] =  cmd_dbcheck()
