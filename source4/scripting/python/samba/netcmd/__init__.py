@@ -209,7 +209,7 @@ class SuperCommand(Command):
         if subcommand in [None]:
             raise CommandError("You must specify a subcommand")
         if subcommand in ['help', '-h', '--help']:
-            self.outf.write("For more help on a specific subcommand, please type: %s (-h|--help)\n" % myname)
+            self.outf.write("For more help on a specific subcommand, please type: %s <subcommand> (-h|--help)\n" % myname)
             return 0
         raise CommandError("No such subcommand '%s'" % subcommand)
 
