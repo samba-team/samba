@@ -201,22 +201,25 @@ class SuperCommand(Command):
             return self.subcommands[subcommand]._run(
                 "%s %s" % (myname, subcommand), *args)
 
-        self.usage(myname)
-        self.outf.write("Available subcommands:\n")
+        epilog = "\nAvailable subcommands:\n"
         subcmds = self.subcommands.keys()
         subcmds.sort()
         max_length = max([len(c) for c in subcmds])
         for cmd_name in subcmds:
             cmd = self.subcommands[cmd_name]
             if not cmd.hidden:
-                self.outf.write("  %*s  - %s\n" % (
-                    -max_length, cmd_name, cmd.short_description))
-        if subcommand in [None]:
-            raise CommandError("You must specify a subcommand")
-        if subcommand in ['help', '-h', '--help']:
-            self.outf.write("For more help on a specific subcommand, please type: %s <subcommand> (-h|--help)\n" % myname)
-            return 0
-        raise CommandError("No such subcommand '%s'" % subcommand)
+                epilog += "  %*s  - %s\n" % (
+                    -max_length, cmd_name, cmd.short_description)
+        epilog += "For more help on a specific subcommand, please type: %s <subcommand> (-h|--help)\n" % myname
+
+        parser, optiongroups = self._create_parser(myname, epilog=epilog)
+        args_list = list(args)
+        if subcommand:
+            args_list.insert(0, subcommand)
+        opts, args = parser.parse_args(args_list)
+
+        parser.print_help()
+        return -1
 
 
 class CommandError(Exception):
