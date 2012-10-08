@@ -100,7 +100,7 @@ class VersionOptions(optparse.OptionGroup):
     """Command line option for printing Samba version."""
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Version Options")
-        self.add_option("--version", action="callback",
+        self.add_option("-V", "--version", action="callback",
                 callback=self._display_version,
                 help="Display version number")
 
