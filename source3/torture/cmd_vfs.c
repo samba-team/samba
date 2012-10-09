@@ -1572,7 +1572,7 @@ static NTSTATUS cmd_sys_acl_get_fd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	acl = SMB_VFS_SYS_ACL_GET_FD(vfs->files[fd]);
+	acl = SMB_VFS_SYS_ACL_GET_FD(vfs->files[fd], talloc_tos());
 	if (!acl) {
 		printf("sys_acl_get_fd failed (%s)\n", strerror(errno));
 		return status;
@@ -1597,7 +1597,7 @@ static NTSTATUS cmd_sys_acl_get_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	}
 
 	type = atoi(argv[2]);
-	acl = SMB_VFS_SYS_ACL_GET_FILE(vfs->conn, argv[1], type);
+	acl = SMB_VFS_SYS_ACL_GET_FILE(vfs->conn, argv[1], type, talloc_tos());
 	if (!acl) {
 		printf("sys_acl_get_file failed (%s)\n", strerror(errno));
 		return status;

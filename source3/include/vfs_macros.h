@@ -429,15 +429,15 @@
 #define SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode) \
 	smb_vfs_call_fchmod_acl((handle)->next, (fsp), (mode))
 
-#define SMB_VFS_SYS_ACL_GET_FILE(conn, path_p, type) \
-	smb_vfs_call_sys_acl_get_file((conn)->vfs_handles, (path_p), (type))
-#define SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type) \
-	smb_vfs_call_sys_acl_get_file((handle)->next, (path_p), (type))
+#define SMB_VFS_SYS_ACL_GET_FILE(conn, path_p, type, mem_ctx)		\
+	smb_vfs_call_sys_acl_get_file((conn)->vfs_handles, (path_p), (type), (mem_ctx))
+#define SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx)		\
+	smb_vfs_call_sys_acl_get_file((handle)->next, (path_p), (type), (mem_ctx))
 
-#define SMB_VFS_SYS_ACL_GET_FD(fsp) \
-	smb_vfs_call_sys_acl_get_fd((fsp)->conn->vfs_handles, (fsp))
-#define SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp) \
-	smb_vfs_call_sys_acl_get_fd((handle)->next, (fsp))
+#define SMB_VFS_SYS_ACL_GET_FD(fsp, mem_ctx) \
+	smb_vfs_call_sys_acl_get_fd((fsp)->conn->vfs_handles, (fsp), (mem_ctx))
+#define SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx) \
+	smb_vfs_call_sys_acl_get_fd((handle)->next, (fsp), (mem_ctx))
 
 #define SMB_VFS_SYS_ACL_BLOB_GET_FILE(conn, path_p, type, mem_ctx, blob_description, blob)	\
 	smb_vfs_call_sys_acl_blob_get_file((conn)->vfs_handles, (path_p), (type), (mem_ctx), (blob_description), (blob))

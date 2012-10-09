@@ -249,11 +249,11 @@ char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p)
 	return text;
 }
 
-SMB_ACL_T sys_acl_init(void)
+SMB_ACL_T sys_acl_init(TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T	a;
 
-	if ((a = talloc(NULL, struct smb_acl_t)) == NULL) {
+	if ((a = talloc(mem_ctx, struct smb_acl_t)) == NULL) {
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -364,14 +364,14 @@ int sys_acl_valid(SMB_ACL_T acl_d)
 #if defined(HAVE_POSIX_ACLS)
  
 SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle, 
-			   const char *path_p, SMB_ACL_TYPE_T type)
+			   const char *path_p, SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
 {
-	return posixacl_sys_acl_get_file(handle, path_p, type);
+	return posixacl_sys_acl_get_file(handle, path_p, type, mem_ctx);
 }
  
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
-	return posixacl_sys_acl_get_fd(handle, fsp);
+	return posixacl_sys_acl_get_fd(handle, fsp, mem_ctx);
 }
  
 int sys_acl_set_file(vfs_handle_struct *handle,

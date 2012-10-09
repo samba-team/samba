@@ -692,8 +692,13 @@ struct vfs_fn_pointers {
 	int (*chmod_acl_fn)(struct vfs_handle_struct *handle, const char *name, mode_t mode);
 	int (*fchmod_acl_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 
-	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type);
-	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
+	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle,
+					 const char *path_p,
+					 SMB_ACL_TYPE_T type,
+					 TALLOC_CTX *mem_ctx);
+	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       TALLOC_CTX *mem_ctx);
 	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type, 	
 					TALLOC_CTX *mem_ctx, char **blob_description,
 					DATA_BLOB *blob);
@@ -1094,9 +1099,11 @@ int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, mode_t mode);
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,
 					const char *path_p,
-					SMB_ACL_TYPE_T type);
+					SMB_ACL_TYPE_T type,
+					TALLOC_CTX *mem_ctx);
 SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
-				      struct files_struct *fsp);
+				      struct files_struct *fsp,
+				      TALLOC_CTX *mem_ctx);
 int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
 				       const char *path_p,
 				       SMB_ACL_TYPE_T type, 	

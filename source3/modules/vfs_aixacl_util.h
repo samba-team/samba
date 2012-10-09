@@ -17,6 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl);
+SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl, TALLOC_CTX *mem_ctx);
 struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 

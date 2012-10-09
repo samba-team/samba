@@ -112,7 +112,7 @@ static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
 		HPUX_ACL_T *solariacl, int *count, 
 		SMB_ACL_TYPE_T type);
 static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpuxacl, int count,
-		SMB_ACL_TYPE_T type);
+				     SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx);
 static HPUX_ACL_TAG_T smb_tag_to_hpux_tag(SMB_ACL_TAG_T smb_tag);
 static SMB_ACL_TAG_T hpux_tag_to_smb_tag(HPUX_ACL_TAG_T hpux_tag);
 static bool hpux_add_to_acl(HPUX_ACL_T *hpux_acl, int *count,
@@ -140,7 +140,8 @@ static bool hpux_aclsort_call_present(void);
 
 SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
 				      const char *path_p,
-				      SMB_ACL_TYPE_T type)
+				   SMB_ACL_TYPE_T type,
+				   TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result = NULL;
 	int count;
@@ -168,7 +169,7 @@ SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
 	if (!hpux_acl_get_file(path_p, &hpux_acl, &count)) {
 		goto done;
 	}
-	result = hpux_acl_to_smb_acl(hpux_acl, count, type);
+	result = hpux_acl_to_smb_acl(hpux_acl, count, type, mem_ctx);
 	if (result == NULL) {
 		DEBUG(10, ("conversion hpux_acl -> smb_acl failed (%s).\n",
 			   strerror(errno)));
@@ -186,7 +187,8 @@ SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
  * get the access ACL of a file referred to by a fd
  */
 SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				 files_struct *fsp)
+				 files_struct *fsp,
+				 TALLOC_CTX *mem_ctx)
 {
         /* 
 	 * HPUX doesn't have the facl call. Fake it using the path.... JRA. 
@@ -200,7 +202,8 @@ SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
         return hpuxacl_sys_acl_get_file(handle,
 					fsp->fsp_name->base_name,
-					SMB_ACL_TYPE_ACCESS);
+					SMB_ACL_TYPE_ACCESS,
+					mem_ctx);
 }
 
 
@@ -490,12 +493,12 @@ static bool smb_acl_to_hpux_acl(SMB_ACL_T smb_acl,
  * soaris acl to the SMB_ACL format.
  */
 static SMB_ACL_T hpux_acl_to_smb_acl(HPUX_ACL_T hpux_acl, int count, 
-					SMB_ACL_TYPE_T type)
+				     SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 	int i;
 
-	if ((result = sys_acl_init()) == NULL) {
+	if ((result = sys_acl_init(mem_ctx)) == NULL) {
 		DEBUG(10, ("error allocating memory for SMB_ACL\n"));
 		goto fail;
 	}

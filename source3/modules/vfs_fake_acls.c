@@ -189,11 +189,10 @@ static int fake_acls_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STR
 	return ret;
 }
 
-static SMB_ACL_T fake_acls_blob2acl(DATA_BLOB *blob)
+static SMB_ACL_T fake_acls_blob2acl(DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	enum ndr_err_code ndr_err;
-	/* For now, ACLs are allocated on NULL */
-	struct smb_acl_t *acl = talloc(NULL, struct smb_acl_t);
+	struct smb_acl_t *acl = talloc(mem_ctx, struct smb_acl_t);
 	if (!acl) {
 		errno = ENOMEM;
 		return NULL;
@@ -226,7 +225,10 @@ static DATA_BLOB fake_acls_acl2blob(TALLOC_CTX *mem_ctx, SMB_ACL_T acl)
 	return blob;
 }
 
-static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T type)
+static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle,
+					    const char *path,
+					    SMB_ACL_TYPE_T type,
+					    TALLOC_CTX *mem_ctx)
 {
 	DATA_BLOB blob = data_blob_null;
 	ssize_t length;
@@ -258,13 +260,15 @@ static SMB_ACL_T fake_acls_sys_acl_get_file(struct vfs_handle_struct *handle, co
 		return NULL;
 	}
 	if (length != -1) {
-		acl = fake_acls_blob2acl(&blob);
+		acl = fake_acls_blob2acl(&blob, mem_ctx);
 	}
 	TALLOC_FREE(frame);
 	return acl;
 }
 
-static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle, files_struct *fsp)
+static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
+					  files_struct *fsp,
+					  TALLOC_CTX *mem_ctx)
 {
 	DATA_BLOB blob = data_blob_null;
 	ssize_t length;
@@ -288,7 +292,7 @@ static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle, file
 		return NULL;
 	}
 	if (length != -1) {
-		acl = fake_acls_blob2acl(&blob);
+		acl = fake_acls_blob2acl(&blob, mem_ctx);
 	}
 	TALLOC_FREE(frame);
 	return acl;

@@ -22,12 +22,12 @@
 #include "smbd/smbd.h"
 #include "vfs_aixacl_util.h"
 
-SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl)
+SMB_ACL_T aixacl_to_smbacl(struct acl *file_acl, TALLOC_CTX *mem_ctx)
 {
 	struct acl_entry *acl_entry;
 	struct ace_id *idp;
 	
-	struct smb_acl_t *result = sys_acl_init();
+	struct smb_acl_t *result = sys_acl_init(mem_ctx);
 	struct smb_acl_entry *ace;
 	int i;
 	

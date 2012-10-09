@@ -2111,14 +2111,19 @@ static int vfswrap_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode
 #endif
 }
 
-static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type)
+static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,
+					  const char *path_p,
+					  SMB_ACL_TYPE_T type,
+					  TALLOC_CTX *mem_ctx)
 {
-	return sys_acl_get_file(handle, path_p, type);
+	return sys_acl_get_file(handle, path_p, type, mem_ctx);
 }
 
-static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
+static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,
+					files_struct *fsp,
+					TALLOC_CTX *mem_ctx)
 {
-	return sys_acl_get_fd(handle, fsp);
+	return sys_acl_get_fd(handle, fsp, mem_ctx);
 }
 
 static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)

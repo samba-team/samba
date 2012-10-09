@@ -4911,12 +4911,14 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				uint16 num_def_acls = 0;
 
 				if (fsp && fsp->fh->fd != -1) {
-					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
+					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
+						talloc_tos());
 				} else {
 					file_acl =
 					    SMB_VFS_SYS_ACL_GET_FILE(conn,
 						smb_fname->base_name,
-						SMB_ACL_TYPE_ACCESS);
+						SMB_ACL_TYPE_ACCESS,
+						talloc_tos());
 				}
 
 				if (file_acl == NULL && no_acl_syscall_error(errno)) {
@@ -4933,13 +4935,15 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 						    SMB_VFS_SYS_ACL_GET_FILE(
 							    conn,
 							    fsp->fsp_name->base_name,
-							    SMB_ACL_TYPE_DEFAULT);
+							    SMB_ACL_TYPE_DEFAULT,
+							    talloc_tos());
 					} else {
 						def_acl =
 						    SMB_VFS_SYS_ACL_GET_FILE(
 							    conn,
 							    smb_fname->base_name,
-							    SMB_ACL_TYPE_DEFAULT);
+							    SMB_ACL_TYPE_DEFAULT,
+							    talloc_tos());
 					}
 					def_acl = free_empty_sys_acl(conn, def_acl);
 				}

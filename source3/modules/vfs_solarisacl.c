@@ -45,7 +45,7 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
 		SOLARIS_ACL_T *solariacl, int *count, 
 		SMB_ACL_TYPE_T type);
 static SMB_ACL_T solaris_acl_to_smb_acl(SOLARIS_ACL_T solarisacl, int count,
-		SMB_ACL_TYPE_T type);
+					SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx);
 static SOLARIS_ACL_TAG_T smb_tag_to_solaris_tag(SMB_ACL_TAG_T smb_tag);
 static SMB_ACL_TAG_T solaris_tag_to_smb_tag(SOLARIS_ACL_TAG_T solaris_tag);
 static bool solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
@@ -64,7 +64,7 @@ static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count);
 
 SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
 				      const char *path_p,
-				      SMB_ACL_TYPE_T type)
+				      SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result = NULL;
 	int count;
@@ -85,7 +85,7 @@ SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
 	if (!solaris_acl_get_file(path_p, &solaris_acl, &count)) {
 		goto done;
 	}
-	result = solaris_acl_to_smb_acl(solaris_acl, count, type);
+	result = solaris_acl_to_smb_acl(solaris_acl, count, type, mem_ctx);
 	if (result == NULL) {
 		DEBUG(10, ("conversion solaris_acl -> smb_acl failed (%s).\n",
 			   strerror(errno)));
@@ -103,7 +103,7 @@ SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
  * get the access ACL of a file referred to by a fd
  */
 SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				    files_struct *fsp)
+				    files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result = NULL;
 	int count;
@@ -424,12 +424,12 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
  * soaris acl to the SMB_ACL format.
  */
 static SMB_ACL_T solaris_acl_to_smb_acl(SOLARIS_ACL_T solaris_acl, int count, 
-					SMB_ACL_TYPE_T type)
+					SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 	int i;
 
-	if ((result = sys_acl_init()) == NULL) {
+	if ((result = sys_acl_init(mem_ctx)) == NULL) {
 		DEBUG(10, ("error allocating memory for SMB_ACL\n"));
 		goto fail;
 	}

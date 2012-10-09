@@ -549,12 +549,12 @@ static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
 
-static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl)
+static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 	gpfs_aclCount_t i;
 
-	result = sys_acl_init();
+	result = sys_acl_init(mem_ctx);
 	if (result == NULL) {
 		errno = ENOMEM;
 		return NULL;
@@ -614,7 +614,8 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl)
 	return result;
 }
 
-static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
+static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
+				       TALLOC_CTX *mem_ctx)
 {
 	struct gpfs_acl *pacl;
 	SMB_ACL_T result = NULL;
@@ -641,7 +642,7 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
 		   pacl->acl_len, pacl->acl_level, pacl->acl_version,
 		   pacl->acl_nace));
 
-	result = gpfs2smb_acl(pacl);
+	result = gpfs2smb_acl(pacl, mem_ctx);
 	if (result != NULL) {
 		errno = 0;
 	}
@@ -656,7 +657,8 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
 
 static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 					  const char *path_p,
-					  SMB_ACL_TYPE_T type)
+					  SMB_ACL_TYPE_T type,
+					  TALLOC_CTX *mem_ctx)
 {
 	gpfs_aclType_t gpfs_type;
 	struct gpfs_config_data *config;
@@ -666,7 +668,8 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 				return NULL);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
+		return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p,
+						     type, mem_ctx);
 	}
 
 	switch(type) {
@@ -681,11 +684,12 @@ static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 		smb_panic("exiting");
 	}
 
-	return gpfsacl_get_posix_acl(path_p, gpfs_type);
+	return gpfsacl_get_posix_acl(path_p, gpfs_type, mem_ctx);
 }
 
 static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
-					files_struct *fsp)
+					files_struct *fsp,
+					TALLOC_CTX *mem_ctx)
 {
 	struct gpfs_config_data *config;
 
@@ -694,11 +698,11 @@ static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				return NULL);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
+		return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
 	}
 
 	return gpfsacl_get_posix_acl(fsp->fsp_name->base_name,
-				     GPFS_ACL_TYPE_ACCESS);
+				     GPFS_ACL_TYPE_ACCESS, mem_ctx);
 }
 
 static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,

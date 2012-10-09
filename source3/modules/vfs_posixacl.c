@@ -26,7 +26,7 @@
 
 static bool smb_ace_to_internal(acl_entry_t posix_ace,
 				struct smb_acl_entry *ace);
-static struct smb_acl_t *smb_acl_to_internal(acl_t acl);
+static struct smb_acl_t *smb_acl_to_internal(acl_t acl, TALLOC_CTX *mem_ctx);
 static int smb_acl_set_mode(acl_entry_t entry, SMB_ACL_PERM_T perm);
 static acl_t smb_acl_to_posix(const struct smb_acl_t *acl);
 
@@ -35,7 +35,8 @@ static acl_t smb_acl_to_posix(const struct smb_acl_t *acl);
 
 SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
 				    const char *path_p,
-				    SMB_ACL_TYPE_T type)
+				    SMB_ACL_TYPE_T type,
+				    TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
 	acl_type_t acl_type;
@@ -59,13 +60,13 @@ SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	result = smb_acl_to_internal(acl);
+	result = smb_acl_to_internal(acl, mem_ctx);
 	acl_free(acl);
 	return result;
 }
 
 SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp)
+				  files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
 	acl_t acl = acl_get_fd(fsp->fh->fd);
@@ -74,7 +75,7 @@ SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	result = smb_acl_to_internal(acl);
+	result = smb_acl_to_internal(acl, mem_ctx);
 	acl_free(acl);
 	return result;
 }
@@ -212,9 +213,9 @@ static bool smb_ace_to_internal(acl_entry_t posix_ace,
 	return True;
 }
 
-static struct smb_acl_t *smb_acl_to_internal(acl_t acl)
+static struct smb_acl_t *smb_acl_to_internal(acl_t acl, TALLOC_CTX *mem_ctx)
 {
-	struct smb_acl_t *result = sys_acl_init();
+	struct smb_acl_t *result = sys_acl_init(mem_ctx);
 	int entry_id = ACL_FIRST_ENTRY;
 	acl_entry_t e;
 	if (result == NULL) {

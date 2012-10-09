@@ -745,7 +745,8 @@ catia_chmod_acl(vfs_handle_struct *handle,
 static SMB_ACL_T
 catia_sys_acl_get_file(vfs_handle_struct *handle,
 		       const char *path,
-		       SMB_ACL_TYPE_T type)
+		       SMB_ACL_TYPE_T type,
+		       TALLOC_CTX *mem_ctx)
 {
 	char *mapped_name = NULL;
 	NTSTATUS status;
@@ -758,7 +759,7 @@ catia_sys_acl_get_file(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, mapped_name, type);
+	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, mapped_name, type, mem_ctx);
 	TALLOC_FREE(mapped_name);
 
 	return ret;

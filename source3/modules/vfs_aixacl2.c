@@ -200,7 +200,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 				   pacl);
 }
 
-static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type)
+static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type, TALLOC_CTX *mem_ctx)
 {
         aixc_acl_t *pacl;
 	AIXJFS2_ACL_T *acl;
@@ -222,7 +222,7 @@ static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type)
         DEBUG(10, ("len: %d, mode: %d\n",
                    pacl->acl_len, pacl->acl_mode));
 
-        result = aixacl_to_smbacl(pacl);
+        result = aixacl_to_smbacl(pacl, mem_ctx);
         if (result == NULL) {
                 goto done;
         }
@@ -236,7 +236,8 @@ static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type)
 
 SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
                                     const char *path_p,
-                                    SMB_ACL_TYPE_T type)
+				   SMB_ACL_TYPE_T type,
+				   TALLOC_CTX *mem_ctx)
 {
         acl_type_t aixjfs2_type;
 
@@ -252,7 +253,7 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
                 smb_panic("exiting");
         }
 
-        return aixjfs2_get_posix_acl(path_p, aixjfs2_type);
+        return aixjfs2_get_posix_acl(path_p, aixjfs2_type, mem_ctx);
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,

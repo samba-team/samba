@@ -1803,11 +1803,12 @@ static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fs
 
 static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 					const char *path_p,
-					SMB_ACL_TYPE_T type)
+						 SMB_ACL_TYPE_T type,
+						 TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FILE, (result != NULL), handle,
 	       "%s", path_p);
@@ -1816,11 +1817,11 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
-				      files_struct *fsp)
+					       files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FD, (result != NULL), handle,
 	       "%s", fsp_str_do_log(fsp));
