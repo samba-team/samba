@@ -124,7 +124,7 @@
 	</varlistentry>
 
 	<varlistentry>
-	<term>--version</term>
+	<term>-V|--version</term>
 	<listitem><para>
 	Display version number
 	</para></listitem>
