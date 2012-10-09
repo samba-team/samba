@@ -33,6 +33,7 @@
 #include "serverid.h"
 #include "messages.h"
 #include "libcli/security/security.h"
+#include "lib/smbd_shim.h"
 
 /* List to hold groups of commands */
 static struct cmd_list {
@@ -405,15 +406,15 @@ static void process_file(struct vfs_state *pvfs, char *filename) {
 	}
 }
 
-void exit_server(const char *reason)
+static void vfstest_exit_server(const char * const reason)
 {
 	DEBUG(3,("Server exit (%s)\n", (reason ? reason : "")));
 	exit(0);
 }
 
-void exit_server_cleanly(const char *const reason)
+static void vfstest_exit_server_cleanly(const char * const reason)
 {
-	exit_server("normal exit");
+	vfstest_exit_server("normal exit");
 }
 
 struct smb_request *vfstest_get_smbreq(TALLOC_CTX *mem_ctx,
@@ -464,6 +465,11 @@ int main(int argc, char *argv[])
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	static const struct smbd_shim vfstest_shim_fns =
+	{
+		.exit_server = vfstest_exit_server,
+		.exit_server_cleanly = vfstest_exit_server_cleanly,
+	};
 
 	load_case_tables();
 
@@ -485,6 +491,8 @@ int main(int argc, char *argv[])
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging("vfstest", DEBUG_STDOUT);
+
+	set_smbd_shim(&vfstest_shim_fns);
 
 	/* Load command lists */
 

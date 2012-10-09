@@ -98,3 +98,19 @@ void unbecome_root(void)
 	}
 	return;
 }
+
+void exit_server(const char *reason)
+{
+	if (shim.exit_server) {
+		shim.exit_server(reason);
+	}
+	exit(1);
+}
+
+void exit_server_cleanly(const char *const reason)
+{
+	if (shim.exit_server_cleanly) {
+		shim.exit_server_cleanly(reason);
+	}
+	exit(0);
+}
