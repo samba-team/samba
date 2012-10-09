@@ -2210,7 +2210,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	}
 
 	sd_buf->sd_size = sd_size;
-	sd_buf->sd = psd;
+	sd_buf->sd = talloc_move(p->mem_ctx, &psd);
 
 	*r->out.sd_buf = sd_buf;
 
@@ -2237,6 +2237,8 @@ error_exit:
 	}
 
  done:
+
+	TALLOC_FREE(psd);
 	TALLOC_FREE(smb_fname);
 
 	return werr;
