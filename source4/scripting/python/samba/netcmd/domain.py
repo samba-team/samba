@@ -1331,7 +1331,7 @@ class cmd_domain_samba3upgrade(cmd_domain_classicupgrade):
 
 
 class cmd_domain(SuperCommand):
-    """Domain management"""
+    """Domain management."""
 
     subcommands = {}
     subcommands["demote"] = cmd_domain_demote()

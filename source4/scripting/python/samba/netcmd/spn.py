@@ -196,7 +196,7 @@ class cmd_spn_delete(Command):
 
 
 class cmd_spn(SuperCommand):
-    """Service Principal Name (SPN) management"""
+    """Service Principal Name (SPN) management."""
 
     subcommands = {}
     subcommands["add"] = cmd_spn_add()

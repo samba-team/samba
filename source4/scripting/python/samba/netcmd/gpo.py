@@ -1073,7 +1073,7 @@ class cmd_del(Command):
 
 
 class cmd_gpo(SuperCommand):
-    """Group Policy Object (GPO) management"""
+    """Group Policy Object (GPO) management."""
 
     subcommands = {}
     subcommands["listall"] = cmd_listall()

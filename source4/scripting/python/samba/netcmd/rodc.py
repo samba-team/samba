@@ -102,7 +102,7 @@ class cmd_rodc_preload(Command):
 
 
 class cmd_rodc(SuperCommand):
-    """Read-Only Domain Controller (RODC) management"""
+    """Read-Only Domain Controller (RODC) management."""
 
     subcommands = {}
     subcommands["preload"] = cmd_rodc_preload()

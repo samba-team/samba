@@ -864,7 +864,7 @@ class LDAPBundel(object):
 
 
 class cmd_ldapcmp(Command):
-    """compare two ldap databases"""
+    """Compare two ldap databases."""
     synopsis = "%prog <URL1> <URL2> (domain|configuration|schema|dnsdomain|dnsforest) [options]"
 
     takes_optiongroups = {

@@ -365,7 +365,7 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
 
 
 class cmd_group(SuperCommand):
-    """Group management"""
+    """Group management."""
 
     subcommands = {}
     subcommands["add"] = cmd_group_add()

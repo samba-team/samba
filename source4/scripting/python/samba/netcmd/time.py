@@ -25,7 +25,7 @@ from samba.netcmd import (
     )
 
 class cmd_time(Command):
-    """Retrieve the time on a server
+    """Retrieve the time on a server.
 
 This command returns the date and time of the Active Directory server specified on the command.  The server name specified may be the local server or a remote server.  If the servername is not specified, the command returns the time and date of the local AD server.
 
