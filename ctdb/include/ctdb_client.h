@@ -19,7 +19,7 @@
 
 #ifndef _CTDB_CLIENT_H
 #define _CTDB_CLIENT_H
-#include <ctdb_protocol.h>
+#include "ctdb_protocol.h"
 
 enum control_state {CTDB_CONTROL_WAIT, CTDB_CONTROL_DONE, CTDB_CONTROL_ERROR, CTDB_CONTROL_TIMEOUT};
 
