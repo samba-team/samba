@@ -179,7 +179,6 @@ bool session_claim(struct smbd_server_connection *sconn, struct user_struct *vus
 
 	if (lp_utmp()) {
 		sys_utmp_claim(sessionid.username, sessionid.hostname,
-			       sessionid.ip_addr_str,
 			       sessionid.id_str, sessionid.id_num);
 	}
 
@@ -219,7 +218,6 @@ void session_yield(struct user_struct *vuser)
 
 	if (lp_utmp()) {
 		sys_utmp_yield(sessionid.username, sessionid.hostname, 
-			       sessionid.ip_addr_str,
 			       sessionid.id_str, sessionid.id_num);
 	}
 

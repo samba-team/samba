@@ -2229,25 +2229,6 @@ if test x"$samba_cv_HAVE_UT_UT_EXIT" = x"yes"; then
     AC_DEFINE(HAVE_UT_UT_EXIT,1,[Whether the utmp struct has a property ut_exit])
 fi
 
-dnl Look for the IPv6 varient by preference. Many systems have both.
-AC_CACHE_CHECK([for ut_addr_v6 in utmp],samba_cv_HAVE_UT_UT_ADDR_V6,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <utmp.h>],
-[struct utmp ut;  ut.ut_addr_v6[0] = 0;],
-samba_cv_HAVE_UT_UT_ADDR_V6=yes,samba_cv_HAVE_UT_UT_ADDR_V6=no,samba_cv_HAVE_UT_UT_ADDR_V6=cross)])
-if test x"$samba_cv_HAVE_UT_UT_ADDR_V6" = x"yes"; then
-    AC_DEFINE(HAVE_UT_UT_ADDR_V6,1,[Whether the utmp struct has a property ut_addr_v6])
-fi
-
-AC_CACHE_CHECK([for ut_addr in utmp],samba_cv_HAVE_UT_UT_ADDR,[
-AC_TRY_COMPILE([#include <sys/types.h>
-#include <utmp.h>],
-[struct utmp ut;  ut.ut_addr = 0;],
-samba_cv_HAVE_UT_UT_ADDR=yes,samba_cv_HAVE_UT_UT_ADDR=no,samba_cv_HAVE_UT_UT_ADDR=cross)])
-if test x"$samba_cv_HAVE_UT_UT_ADDR" = x"yes"; then
-    AC_DEFINE(HAVE_UT_UT_ADDR,1,[Whether the utmp struct has a property ut_addr])
-fi
-
 if test x$ac_cv_func_pututline = xyes ; then
   AC_CACHE_CHECK([whether pututline returns pointer],samba_cv_PUTUTLINE_RETURNS_UTMP,[
   AC_TRY_COMPILE([#include <sys/types.h>
