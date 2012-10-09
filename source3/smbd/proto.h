@@ -1112,11 +1112,9 @@ uint64_t get_current_vuid(connection_struct *conn);
 /* The following definitions come from smbd/utmp.c  */
 
 void sys_utmp_claim(const char *username, const char *hostname,
-			const char *ip_addr_str,
-			const char *id_str, int id_num);
+		    const char *id_str, int id_num);
 void sys_utmp_yield(const char *username, const char *hostname,
-			const char *ip_addr_str,
-			const char *id_str, int id_num);
+		    const char *id_str, int id_num);
 
 /* The following definitions come from smbd/vfs.c  */
 

@@ -115,13 +115,11 @@ Notes:
  */
 
 void sys_utmp_claim(const char *username, const char *hostname,
-			const char *ip_addr_str,
-			const char *id_str, int id_num)
+		    const char *id_str, int id_num)
 {}
 
 void sys_utmp_yield(const char *username, const char *hostname,
-			const char *ip_addr_str,
-			const char *id_str, int id_num)
+		    const char *id_str, int id_num)
 {}
 
 #else /* WITH_UTMP */
@@ -499,7 +497,6 @@ static int ut_id_encode(int i, char *fourbyte)
 */
 static bool sys_utmp_fill(struct utmp *u,
 			const char *username, const char *hostname,
-			const char *ip_addr_str,
 			const char *id_str, int id_num)
 {
 	struct timeval timeval;
@@ -550,27 +547,6 @@ static bool sys_utmp_fill(struct utmp *u,
 #if defined(HAVE_UT_UT_HOST)
 	utmp_strcpy(u->ut_host, hostname, sizeof(u->ut_host));
 #endif
-#if defined(HAVE_IPV6) && defined(HAVE_UT_UT_ADDR_V6)
-	memset(&u->ut_addr_v6, '\0', sizeof(u->ut_addr_v6));
-	if (ip_addr_str) {
-		struct in6_addr addr;
-		if (inet_pton(AF_INET6, ip_addr_str, &addr) > 0) {
-			memcpy(&u->ut_addr_v6, &addr, sizeof(addr));
-		}
-	}
-#elif defined(HAVE_UT_UT_ADDR)
-	memset(&u->ut_addr, '\0', sizeof(u->ut_addr));
-	if (ip_addr_str) {
-		struct in_addr addr;
-		if (inet_pton(AF_INET, ip_addr_str, &addr) > 0) {
-			memcpy(&u->ut_addr, &addr, sizeof(addr));
-		}
-	}
-	/*
-	 * "(unsigned long) ut_addr" apparently exists on at least HP-UX 10.20.
-	 * Volunteer to implement, please ...
-	 */
-#endif
 
 #if defined(HAVE_UT_UT_ID)
 	if (ut_id_encode(id_num, u->ut_id) != 0) {
@@ -587,8 +563,7 @@ static bool sys_utmp_fill(struct utmp *u,
 ****************************************************************************/
 
 void sys_utmp_yield(const char *username, const char *hostname,
-			const char *ip_addr_str,
-			const char *id_str, int id_num)
+		    const char *id_str, int id_num)
 {
 	struct utmp u;
 
@@ -603,7 +578,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 	u.ut_type = DEAD_PROCESS;
 #endif
 
-	if (!sys_utmp_fill(&u, username, hostname, ip_addr_str, id_str, id_num))
+	if (!sys_utmp_fill(&u, username, hostname, id_str, id_num))
 		return;
 
 	sys_utmp_update(&u, NULL, False);
@@ -614,8 +589,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 ****************************************************************************/
 
 void sys_utmp_claim(const char *username, const char *hostname,
-			const char *ip_addr_str,
-			const char *id_str, int id_num)
+		    const char *id_str, int id_num)
 {
 	struct utmp u;
 
@@ -625,7 +599,7 @@ void sys_utmp_claim(const char *username, const char *hostname,
 	u.ut_type = USER_PROCESS;
 #endif
 
-	if (!sys_utmp_fill(&u, username, hostname, ip_addr_str, id_str, id_num))
+	if (!sys_utmp_fill(&u, username, hostname, id_str, id_num))
 		return;
 
 	sys_utmp_update(&u, hostname, True);
