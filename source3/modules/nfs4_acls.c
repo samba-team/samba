@@ -574,7 +574,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 static bool smbacl4_fill_ace4(
 	TALLOC_CTX *mem_ctx,
-	const files_struct *fsp,
+	const struct smb_filename *filename,
 	smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
@@ -582,7 +582,6 @@ static bool smbacl4_fill_ace4(
 	SMB_ACE4PROP_T *ace_v4 /* output */
 )
 {
-	const char *filename = fsp->fsp_name->base_name;
 	DEBUG(10, ("got ace for %s\n", sid_string_dbg(&ace_nt->trustee)));
 
 	memset(ace_v4, 0, sizeof(SMB_ACE4PROP_T));
@@ -594,8 +593,8 @@ static bool smbacl4_fill_ace4(
 		ace_nt->flags);
 
 	/* remove inheritance flags on files */
-	if (VALID_STAT(fsp->fsp_name->st) &&
-	    !S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+	if (VALID_STAT(filename->st) &&
+	    !S_ISDIR(filename->st.st_ex_mode)) {
 		DEBUG(10, ("Removing inheritance flags from a file\n"));
 		ace_v4->aceFlags &= ~(SMB_ACE4_FILE_INHERIT_ACE|
 				      SMB_ACE4_DIRECTORY_INHERIT_ACE|
@@ -641,7 +640,8 @@ static bool smbacl4_fill_ace4(
 			}
 		} else {
 			DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
-				  "convert %s to uid or gid\n", filename,
+				  "convert %s to uid or gid\n",
+				  filename->base_name,
 				  sid_string_dbg(&ace_nt->trustee)));
 			return False;
 		}
@@ -707,7 +707,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 		SMB_ACE4PROP_T	ace_v4;
 		bool	addNewACE = True;
 
-		if (!smbacl4_fill_ace4(mem_ctx, fsp, pparams,
+		if (!smbacl4_fill_ace4(mem_ctx, fsp->fsp_name, pparams,
 				       ownerUID, ownerGID,
 				       dacl->aces + i, &ace_v4)) {
 			DEBUG(3, ("Could not fill ace for file %s, SID %s\n",
