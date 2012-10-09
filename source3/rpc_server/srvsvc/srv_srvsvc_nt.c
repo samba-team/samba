@@ -2100,6 +2100,10 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
+	if (psd && psd->dacl) {
+		psd->dacl->revision = NT4_ACL_REVISION;
+	}
+
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
 	sd_buf = talloc_zero(p->mem_ctx, struct sec_desc_buf);
@@ -2112,8 +2116,6 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	sd_buf->sd = psd;
 
 	*r->out.sd_buf = sd_buf;
-
-	psd->dacl->revision = NT4_ACL_REVISION;
 
 	close_file(NULL, fsp, NORMAL_CLOSE);
 	vfs_ChDir(conn, oldcwd);
