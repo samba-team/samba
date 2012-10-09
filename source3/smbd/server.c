@@ -1065,6 +1065,9 @@ extern void build_options(bool screen);
 
 		.become_root = smbd_become_root,
 		.unbecome_root = smbd_unbecome_root,
+
+		.exit_server = smbd_exit_server,
+		.exit_server_cleanly = smbd_exit_server_cleanly,
 	};
 
 	/*

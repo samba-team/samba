@@ -225,12 +225,12 @@ static void exit_server_common(enum server_exit_reason how,
 	exit(0);
 }
 
-void exit_server(const char *const explanation)
+void smbd_exit_server(const char *const explanation)
 {
 	exit_server_common(SERVER_EXIT_ABNORMAL, explanation);
 }
 
-void exit_server_cleanly(const char *const explanation)
+void smbd_exit_server_cleanly(const char *const explanation)
 {
 	exit_server_common(SERVER_EXIT_NORMAL, explanation);
 }
