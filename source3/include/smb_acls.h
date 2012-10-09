@@ -44,7 +44,7 @@ int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d);
 int sys_acl_add_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
 int sys_acl_get_perm(SMB_ACL_PERMSET_T permset_d, SMB_ACL_PERM_T perm);
 char *sys_acl_to_text(const struct smb_acl_t *acl_d, ssize_t *len_p);
-SMB_ACL_T sys_acl_init(void);
+SMB_ACL_T sys_acl_init(TALLOC_CTX *mem_ctx);
 int sys_acl_create_entry(SMB_ACL_T *acl_p, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_set_tag_type(SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T tag_type);
 int sys_acl_set_qualifier(SMB_ACL_ENTRY_T entry_d, void *qual_p);
@@ -52,8 +52,10 @@ int sys_acl_set_permset(SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_free_text(char *text);
 int sys_acl_valid(SMB_ACL_T acl_d);
 SMB_ACL_T sys_acl_get_file(struct vfs_handle_struct *handle,
-			   const char *path_p, SMB_ACL_TYPE_T type);
-SMB_ACL_T sys_acl_get_fd(struct vfs_handle_struct *handle, struct files_struct *fsp);
+			   const char *path_p, SMB_ACL_TYPE_T type,
+			   TALLOC_CTX *mem_ctx);
+SMB_ACL_T sys_acl_get_fd(struct vfs_handle_struct *handle, struct files_struct *fsp,
+			 TALLOC_CTX *mem_ctx);
 int sys_acl_set_file(struct vfs_handle_struct *handle,
 		     const char *name, SMB_ACL_TYPE_T type, SMB_ACL_T acl_d);
 int sys_acl_set_fd(struct vfs_handle_struct *handle, struct files_struct *fsp,

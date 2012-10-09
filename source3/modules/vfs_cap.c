@@ -409,7 +409,9 @@ static int cap_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mod
 	return SMB_VFS_NEXT_CHMOD_ACL(handle, cappath, mode);
 }
 
-static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T type)
+static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle,
+				      const char *path, SMB_ACL_TYPE_T type,
+				      TALLOC_CTX *mem_ctx)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
@@ -417,7 +419,7 @@ static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle, const char *pat
 		errno = ENOMEM;
 		return (SMB_ACL_T)NULL;
 	}
-	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, cappath, type);
+	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, cappath, type, mem_ctx);
 }
 
 static int cap_sys_acl_set_file(vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)

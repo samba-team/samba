@@ -574,13 +574,18 @@ static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 	return -1;
 }
 
-static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type)
+static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,
+				       const char *path_p,
+				       SMB_ACL_TYPE_T type,
+				       TALLOC_CTX *mem_ctx)
 {
 	errno = ENOSYS;
 	return (SMB_ACL_T)NULL;
 }
 
-static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
+static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle,
+				     files_struct *fsp,
+				     TALLOC_CTX *mem_ctx)
 {
 	errno = ENOSYS;
 	return (SMB_ACL_T)NULL;

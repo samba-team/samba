@@ -2085,8 +2085,9 @@ out:
  * Failure: set errno, return NULL
  */
 static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
-		const char *path_p,
-		SMB_ACL_TYPE_T type)
+				     const char *path_p,
+				     SMB_ACL_TYPE_T type,
+				     TALLOC_CTX *mem_ctx)
 {
 	SMB_ACL_T ret;
 	char *clientPath;
@@ -2095,7 +2096,7 @@ static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_sys_acl_get_file\n"));
 	if (!is_in_media_files(path_p))
 	{
-		ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
+		ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx);
 		goto out;
 	}
 
@@ -2110,7 +2111,7 @@ static SMB_ACL_T mh_sys_acl_get_file(vfs_handle_struct *handle,
 		goto err;
 	}
 
-	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, clientPath, type);
+	ret = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, clientPath, type, mem_ctx);
 err:
 	TALLOC_FREE(clientPath);
 out:

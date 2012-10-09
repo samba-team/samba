@@ -24,7 +24,8 @@
 
 /* prototypes for private functions first - for clarity */
 
-static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl);
+static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl,
+					      TALLOC_CTX *mem_ctx);
 static bool tru64_ace_to_smb_ace(acl_entry_t tru64_ace, 
 				struct smb_acl_entry *smb_ace);
 static acl_t smb_acl_to_tru64_acl(const SMB_ACL_T smb_acl);
@@ -38,7 +39,8 @@ static SMB_ACL_PERM_T tru64_permset_to_smb(const acl_perm_t tru64_permset);
 
 SMB_ACL_T tru64acl_sys_acl_get_file(vfs_handle_struct *handle,
 				    const char *path_p,
-				    SMB_ACL_TYPE_T type)
+				    SMB_ACL_TYPE_T type,
+				    TALLOC_CTX *mem_ctx)
 {
         struct smb_acl_t *result;
         acl_type_t the_acl_type;
@@ -64,13 +66,14 @@ SMB_ACL_T tru64acl_sys_acl_get_file(vfs_handle_struct *handle,
                 return NULL;
         }
 
-        result = tru64_acl_to_smb_acl(tru64_acl);
+        result = tru64_acl_to_smb_acl(tru64_acl, mem_ctx);
         acl_free(tru64_acl);
         return result;
 }
 
 SMB_ACL_T tru64acl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp)
+				  files_struct *fsp,
+				  TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
 	acl_t tru64_acl = acl_get_fd(fsp->fh->fd, ACL_TYPE_ACCESS);
@@ -79,7 +82,7 @@ SMB_ACL_T tru64acl_sys_acl_get_fd(vfs_handle_struct *handle,
 		return NULL;
 	}
 	
-	result = tru64_acl_to_smb_acl(tru64_acl);
+	result = tru64_acl_to_smb_acl(tru64_acl, mem_ctx);
 	acl_free(tru64_acl);
 	return result;
 }
@@ -153,14 +156,15 @@ int tru64acl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 /* private functions */
 
-static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl) 
+static struct smb_acl_t *tru64_acl_to_smb_acl(const struct acl *tru64_acl,
+					      TALLOC_CTX *mem_ctx)
 {
 	struct smb_acl_t *result;
 	acl_entry_t entry;
 
 	DEBUG(10, ("Hi! This is tru64_acl_to_smb_acl.\n"));
 	
-	if ((result = sys_acl_init()) == NULL) {
+	if ((result = sys_acl_init(mem_ctx)) == NULL) {
 		DEBUG(0, ("sys_acl_init() failed in tru64_acl_to_smb_acl\n"));
 		errno = ENOMEM;
 		goto fail;

@@ -689,14 +689,19 @@ static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 	return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 }
 
-static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type)
+static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,
+				       const char *path_p,
+				       SMB_ACL_TYPE_T type,
+				       TALLOC_CTX *mem_ctx)
 {
-	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
+	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type, mem_ctx);
 }
 
-static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
+static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle,
+				     files_struct *fsp,
+				     TALLOC_CTX *mem_ctx)
 {
-	return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
+	return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, mem_ctx);
 }
 
 static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type,
