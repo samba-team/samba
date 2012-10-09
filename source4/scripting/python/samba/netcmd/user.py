@@ -552,7 +552,7 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
 
 
 class cmd_user(SuperCommand):
-    """User management"""
+    """User management."""
 
     subcommands = {}
     subcommands["add"] = cmd_user_create()

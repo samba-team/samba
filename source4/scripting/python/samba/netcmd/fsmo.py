@@ -269,7 +269,7 @@ all=all of the above"""),
 
 
 class cmd_fsmo(SuperCommand):
-    """Flexible Single Master Operations (FSMO) roles management"""
+    """Flexible Single Master Operations (FSMO) roles management."""
 
     subcommands = {}
     subcommands["seize"] = cmd_fsmo_seize()

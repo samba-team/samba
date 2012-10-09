@@ -98,7 +98,7 @@ class cmd_sites_delete(Command):
 
 
 class cmd_sites(SuperCommand):
-    """Sites management"""
+    """Sites management."""
 
     subcommands = {}
     subcommands["create"] = cmd_sites_create()

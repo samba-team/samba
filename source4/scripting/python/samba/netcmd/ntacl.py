@@ -246,7 +246,7 @@ class cmd_ntacl_sysvolcheck(Command):
 
 
 class cmd_ntacl(SuperCommand):
-    """NT ACLs manipulation"""
+    """NT ACLs manipulation."""
 
     subcommands = {}
     subcommands["set"] = cmd_ntacl_set()

@@ -501,7 +501,7 @@ class cmd_drs_options(Command):
 
 
 class cmd_drs(SuperCommand):
-    """Directory Replication Services (DRS) management"""
+    """Directory Replication Services (DRS) management."""
 
     subcommands = {}
     subcommands["bind"] = cmd_drs_bind()

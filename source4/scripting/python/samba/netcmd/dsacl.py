@@ -176,7 +176,7 @@ class cmd_dsacl_set(Command):
 
 
 class cmd_dsacl(SuperCommand):
-    """DS ACLs manipulation"""
+    """DS ACLs manipulation."""
 
     subcommands = {}
     subcommands["set"] = cmd_dsacl_set()

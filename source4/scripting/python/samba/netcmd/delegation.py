@@ -253,7 +253,7 @@ class cmd_delegation_del_service(Command):
 
 
 class cmd_delegation(SuperCommand):
-    """Delegation management"""
+    """Delegation management."""
 
     subcommands = {}
     subcommands["show"] = cmd_delegation_show()
