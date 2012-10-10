@@ -41,7 +41,7 @@
    is sure to try and execute them.  These stubs are used to prevent
    this possibility. */
 
-static int vfswrap_connect(vfs_handle_struct *handle,  const char *service, const char *user)
+static int vfswrap_connect(vfs_handle_struct *handle, const char *service, const char *user)
 {
     return 0;    /* Return >= 0 for success */
 }
@@ -52,7 +52,7 @@ static void vfswrap_disconnect(vfs_handle_struct *handle)
 
 /* Disk operations */
 
-static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,  const char *path, bool small_query, uint64_t *bsize,
+static uint64_t vfswrap_disk_free(vfs_handle_struct *handle, const char *path, bool small_query, uint64_t *bsize,
 			       uint64_t *dfree, uint64_t *dsize)
 {
 	uint64_t result;
@@ -61,7 +61,7 @@ static uint64_t vfswrap_disk_free(vfs_handle_struct *handle,  const char *path, 
 	return result;
 }
 
-static int vfswrap_get_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+static int vfswrap_get_quota(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
 {
 #ifdef HAVE_SYS_QUOTAS
 	int result;
@@ -76,7 +76,7 @@ static int vfswrap_get_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_T
 #endif
 }
 
-static int vfswrap_set_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+static int vfswrap_set_quota(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
 {
 #ifdef HAVE_SYS_QUOTAS
 	int result;
@@ -100,7 +100,7 @@ static int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 	return -1;  /* Not implemented. */
 }
 
-static int vfswrap_statvfs(struct vfs_handle_struct *handle,  const char *path, vfs_statvfs_struct *statbuf)
+static int vfswrap_statvfs(struct vfs_handle_struct *handle, const char *path, vfs_statvfs_struct *statbuf)
 {
 	return sys_statvfs(path, statbuf);
 }
@@ -347,7 +347,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 
 /* Directory operations */
 
-static DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *vfswrap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attr)
 {
 	DIR *result;
 
@@ -387,14 +387,14 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static void vfswrap_seekdir(vfs_handle_struct *handle,  DIR *dirp, long offset)
+static void vfswrap_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
 {
 	START_PROFILE(syscall_seekdir);
 	seekdir(dirp, offset);
 	END_PROFILE(syscall_seekdir);
 }
 
-static long vfswrap_telldir(vfs_handle_struct *handle,  DIR *dirp)
+static long vfswrap_telldir(vfs_handle_struct *handle, DIR *dirp)
 {
 	long result;
 	START_PROFILE(syscall_telldir);
@@ -403,14 +403,14 @@ static long vfswrap_telldir(vfs_handle_struct *handle,  DIR *dirp)
 	return result;
 }
 
-static void vfswrap_rewinddir(vfs_handle_struct *handle,  DIR *dirp)
+static void vfswrap_rewinddir(vfs_handle_struct *handle, DIR *dirp)
 {
 	START_PROFILE(syscall_rewinddir);
 	rewinddir(dirp);
 	END_PROFILE(syscall_rewinddir);
 }
 
-static int vfswrap_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int vfswrap_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
 	bool has_dacl = False;
@@ -444,7 +444,7 @@ static int vfswrap_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mo
 	return result;
 }
 
-static int vfswrap_rmdir(vfs_handle_struct *handle,  const char *path)
+static int vfswrap_rmdir(vfs_handle_struct *handle, const char *path)
 {
 	int result;
 
@@ -454,7 +454,7 @@ static int vfswrap_rmdir(vfs_handle_struct *handle,  const char *path)
 	return result;
 }
 
-static int vfswrap_closedir(vfs_handle_struct *handle,  DIR *dirp)
+static int vfswrap_closedir(vfs_handle_struct *handle, DIR *dirp)
 {
 	int result;
 
@@ -979,7 +979,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
 			      TALLOC_CTX *ctx,
 			      uint32_t function,
-			      uint16_t req_flags,  /* Needed for UNICODE ... */
+			      uint16_t req_flags, /* Needed for UNICODE ... */
 			      const uint8_t *_in_data,
 			      uint32_t in_len,
 			      uint8_t **_out_data,
@@ -1370,7 +1370,7 @@ static int vfswrap_unlink(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_chmod(vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int vfswrap_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
 
@@ -1466,7 +1466,7 @@ static int vfswrap_lchown(vfs_handle_struct *handle, const char *path, uid_t uid
 	return result;
 }
 
-static int vfswrap_chdir(vfs_handle_struct *handle,  const char *path)
+static int vfswrap_chdir(vfs_handle_struct *handle, const char *path)
 {
 	int result;
 
@@ -1780,7 +1780,7 @@ static int vfswrap_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int vfswrap_symlink(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
+static int vfswrap_symlink(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
 {
 	int result;
 
@@ -1790,7 +1790,7 @@ static int vfswrap_symlink(vfs_handle_struct *handle,  const char *oldpath, cons
 	return result;
 }
 
-static int vfswrap_readlink(vfs_handle_struct *handle,  const char *path, char *buf, size_t bufsiz)
+static int vfswrap_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
 {
 	int result;
 
@@ -1800,7 +1800,7 @@ static int vfswrap_readlink(vfs_handle_struct *handle,  const char *path, char *
 	return result;
 }
 
-static int vfswrap_link(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
+static int vfswrap_link(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
 {
 	int result;
 
@@ -1810,7 +1810,7 @@ static int vfswrap_link(vfs_handle_struct *handle,  const char *oldpath, const c
 	return result;
 }
 
-static int vfswrap_mknod(vfs_handle_struct *handle,  const char *pathname, mode_t mode, SMB_DEV_T dev)
+static int vfswrap_mknod(vfs_handle_struct *handle, const char *pathname, mode_t mode, SMB_DEV_T dev)
 {
 	int result;
 
@@ -1820,7 +1820,7 @@ static int vfswrap_mknod(vfs_handle_struct *handle,  const char *pathname, mode_
 	return result;
 }
 
-static char *vfswrap_realpath(vfs_handle_struct *handle,  const char *path)
+static char *vfswrap_realpath(vfs_handle_struct *handle, const char *path)
 {
 	char *result;
 
@@ -2085,7 +2085,7 @@ static NTSTATUS vfswrap_audit_file(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK; /* Nothing to do here ... */
 }
 
-static int vfswrap_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
+static int vfswrap_chmod_acl(vfs_handle_struct *handle, const char *name, mode_t mode)
 {
 #ifdef HAVE_NO_ACL
 	errno = ENOSYS;
@@ -2130,7 +2130,7 @@ static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,
 	return sys_acl_get_fd(handle, fsp, mem_ctx);
 }
 
-static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return sys_acl_set_file(handle, name, acltype, theacl);
 }
@@ -2140,7 +2140,7 @@ static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, 
 	return sys_acl_set_fd(handle, fsp, theacl);
 }
 
-static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
+static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle, const char *path)
 {
 	return sys_acl_delete_def_file(handle, path);
 }
