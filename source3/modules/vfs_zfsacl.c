@@ -301,11 +301,23 @@ static int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int zfsacl_fail__sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+{
+	return -1;
+}
+
+static int zfsacl_fail__skel_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+{
+	return -1;
+}
+
 /* VFS operations structure */
 
 static struct vfs_fn_pointers zfsacl_fns = {
 	.sys_acl_get_file_fn = zfsacl_fail__sys_acl_get_file,
 	.sys_acl_get_fd_fn = zfsacl_fail__sys_acl_get_fd,
+	.sys_acl_blob_get_file_fn = zfsacl_fail__sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = zfsacl_fail__sys_acl_blob_get_fd,
 	.sys_acl_set_file_fn = zfsacl_fail__sys_acl_set_file,
 	.sys_acl_set_fd_fn = zfsacl_fail__sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = zfsacl_fail__sys_acl_delete_def_file,
