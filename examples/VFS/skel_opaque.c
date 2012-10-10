@@ -21,7 +21,6 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "../source3/include/includes.h"
 
 /* PLEASE,PLEASE READ THE VFS MODULES CHAPTER OF THE 
@@ -32,7 +31,8 @@
  * you must re-implement every function.
  */
 
-static int skel_connect(vfs_handle_struct *handle,  const char *service, const char *user)    
+static int skel_connect(vfs_handle_struct *handle, const char *service,
+			const char *user)
 {
 	errno = ENOSYS;
 	return -1;
@@ -43,9 +43,9 @@ static void skel_disconnect(vfs_handle_struct *handle)
 	;
 }
 
-static uint64_t skel_disk_free(vfs_handle_struct *handle,  const char *path,
-	bool small_query, uint64_t *bsize,
-	uint64_t *dfree, uint64_t *dsize)
+static uint64_t skel_disk_free(vfs_handle_struct *handle, const char *path,
+			       bool small_query, uint64_t *bsize,
+			       uint64_t *dfree, uint64_t *dsize)
 {
 	*bsize = 0;
 	*dfree = 0;
@@ -53,31 +53,38 @@ static uint64_t skel_disk_free(vfs_handle_struct *handle,  const char *path,
 	return 0;
 }
 
-static int skel_get_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dq)
+static int skel_get_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
+			  unid_t id, SMB_DISK_QUOTA *dq)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_set_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dq)
+static int skel_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
+			  unid_t id, SMB_DISK_QUOTA *dq)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels)
+static int skel_get_shadow_copy_data(vfs_handle_struct *handle,
+				     files_struct *fsp,
+				     struct shadow_copy_data *shadow_copy_data,
+				     bool labels)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_statvfs(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf)
+static int skel_statvfs(struct vfs_handle_struct *handle,
+			const char *path, struct vfs_statvfs_struct *statbuf)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static uint32_t skel_fs_capabilities(struct vfs_handle_struct *handle, enum timestamp_set_resolution *p_ts_res)
+static uint32_t skel_fs_capabilities(struct vfs_handle_struct *handle,
+				     enum timestamp_set_resolution *p_ts_res)
 {
 	return 0;
 }
@@ -88,29 +95,30 @@ static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static DIR *skel_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
+static DIR *skel_opendir(vfs_handle_struct *handle, const char *fname,
+			 const char *mask, uint32 attr)
 {
 	return NULL;
 }
 
-static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+static DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
+			   const char *mask, uint32 attr)
 {
 	return NULL;
 }
 
 static struct dirent *skel_readdir(vfs_handle_struct *handle,
-				       DIR *dirp,
-				       SMB_STRUCT_STAT *sbuf)
+				   DIR *dirp, SMB_STRUCT_STAT *sbuf)
 {
 	return NULL;
 }
 
-static void skel_seekdir(vfs_handle_struct *handle,  DIR *dirp, long offset)
+static void skel_seekdir(vfs_handle_struct *handle, DIR *dirp, long offset)
 {
 	;
 }
 
-static long skel_telldir(vfs_handle_struct *handle,  DIR *dirp)
+static long skel_telldir(vfs_handle_struct *handle, DIR *dirp)
 {
 	return (long)-1;
 }
@@ -120,19 +128,19 @@ static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 	;
 }
 
-static int skel_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int skel_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_rmdir(vfs_handle_struct *handle,  const char *path)
+static int skel_rmdir(vfs_handle_struct *handle, const char *path)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_closedir(vfs_handle_struct *handle,  DIR *dir)
+static int skel_closedir(vfs_handle_struct *handle, DIR *dir)
 {
 	errno = ENOSYS;
 	return -1;
@@ -151,21 +159,20 @@ static int skel_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 }
 
 static NTSTATUS skel_create_file(struct vfs_handle_struct *handle,
-                                struct smb_request *req,
-                                uint16_t root_dir_fid,
-                                struct smb_filename *smb_fname,
-                                uint32_t access_mask,
-                                uint32_t share_access,
-                                uint32_t create_disposition,
-                                uint32_t create_options,
-                                uint32_t file_attributes,
-                                uint32_t oplock_request,
-                                uint64_t allocation_size,
-				uint32_t private_flags,
-                                struct security_descriptor *sd,
-                                struct ea_list *ea_list,
-                                files_struct **result,
-                                int *pinfo)
+				 struct smb_request *req,
+				 uint16_t root_dir_fid,
+				 struct smb_filename *smb_fname,
+				 uint32_t access_mask,
+				 uint32_t share_access,
+				 uint32_t create_disposition,
+				 uint32_t create_options,
+				 uint32_t file_attributes,
+				 uint32_t oplock_request,
+				 uint64_t allocation_size,
+				 uint32_t private_flags,
+				 struct security_descriptor *sd,
+				 struct ea_list *ea_list,
+				 files_struct **result, int *pinfo)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -176,13 +183,15 @@ static int skel_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 	return -1;
 }
 
-static ssize_t skel_vfs_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
+static ssize_t skel_vfs_read(vfs_handle_struct *handle, files_struct *fsp,
+			     void *data, size_t n)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n, off_t offset)
+static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp,
+			  void *data, size_t n, off_t offset)
 {
 	errno = ENOSYS;
 	return -1;
@@ -203,13 +212,15 @@ static ssize_t skel_pread_recv(struct tevent_req *req, int *err)
 	return -1;
 }
 
-static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
+static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp,
+			  const void *data, size_t n)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_pwrite(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n, off_t offset)
+static ssize_t skel_pwrite(vfs_handle_struct *handle, files_struct *fsp,
+			   const void *data, size_t n, off_t offset)
 {
 	errno = ENOSYS;
 	return -1;
@@ -231,19 +242,23 @@ static ssize_t skel_pwrite_recv(struct tevent_req *req, int *err)
 	return -1;
 }
 
-static off_t skel_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t offset, int whence)
+static off_t skel_lseek(vfs_handle_struct *handle, files_struct *fsp,
+			off_t offset, int whence)
 {
 	errno = ENOSYS;
-	return (off_t)-1;
+	return (off_t) - 1;
 }
 
-static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr, off_t offset, size_t n)
+static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd,
+			     files_struct *fromfsp, const DATA_BLOB *hdr,
+			     off_t offset, size_t n)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *tofsp, off_t offset, size_t n)
+static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd,
+			     files_struct *tofsp, off_t offset, size_t n)
 {
 	errno = ENOSYS;
 	return -1;
@@ -283,19 +298,23 @@ static int skel_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	return -1;
 }
 
-static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
+static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp,
+		      SMB_STRUCT_STAT *sbuf)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
+static int skel_lstat(vfs_handle_struct *handle,
+		      struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static uint64_t skel_get_alloc_size(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
+static uint64_t skel_get_alloc_size(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp,
+				    const SMB_STRUCT_STAT *sbuf)
 {
 	errno = ENOSYS;
 	return -1;
@@ -308,37 +327,41 @@ static int skel_unlink(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_chmod(vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int skel_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
+static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp,
+		       mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
+static int skel_chown(vfs_handle_struct *handle, const char *path,
+		      uid_t uid, gid_t gid)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
+static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp,
+		       uid_t uid, gid_t gid)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
+static int skel_lchown(vfs_handle_struct *handle, const char *path,
+		       uid_t uid, gid_t gid)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_chdir(vfs_handle_struct *handle,  const char *path)
+static int skel_chdir(vfs_handle_struct *handle, const char *path)
 {
 	errno = ENOSYS;
 	return -1;
@@ -358,86 +381,99 @@ static int skel_ntimes(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, off_t offset)
+static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
+			  off_t offset)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 static int skel_fallocate(vfs_handle_struct *handle, files_struct *fsp,
-			enum vfs_fallocate_mode mode,
-			off_t offset, off_t len)
+			  enum vfs_fallocate_mode mode, off_t offset, off_t len)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, off_t offset, off_t count, int type)
+static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op,
+		      off_t offset, off_t count, int type)
 {
 	errno = ENOSYS;
 	return false;
 }
 
-static int skel_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode, uint32 access_mask)
+static int skel_kernel_flock(struct vfs_handle_struct *handle,
+			     struct files_struct *fsp,
+			     uint32 share_mode, uint32 access_mask)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_linux_setlease(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype)
+static int skel_linux_setlease(struct vfs_handle_struct *handle,
+			       struct files_struct *fsp, int leasetype)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
+static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp,
+			 off_t *poffset, off_t *pcount, int *ptype,
+			 pid_t *ppid)
 {
 	errno = ENOSYS;
 	return false;
 }
 
-static int skel_symlink(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
+static int skel_symlink(vfs_handle_struct *handle, const char *oldpath,
+			const char *newpath)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_vfs_readlink(vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz)
+static int skel_vfs_readlink(vfs_handle_struct *handle, const char *path,
+			     char *buf, size_t bufsiz)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_link(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
+static int skel_link(vfs_handle_struct *handle, const char *oldpath,
+		     const char *newpath)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode, SMB_DEV_T dev)
+static int skel_mknod(vfs_handle_struct *handle, const char *path, mode_t mode,
+		      SMB_DEV_T dev)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static char *skel_realpath(vfs_handle_struct *handle,  const char *path)
+static char *skel_realpath(vfs_handle_struct *handle, const char *path)
 {
 	errno = ENOSYS;
 	return NULL;
 }
 
 static NTSTATUS skel_notify_watch(struct vfs_handle_struct *handle,
-	    struct sys_notify_context *ctx,
-	    const char *path,
-	    uint32_t *filter,
-	    uint32_t *subdir_filter,
-	    void (*callback)(struct sys_notify_context *ctx, void *private_data, struct notify_event *ev),
-	    void *private_data, void *handle_p)
+				  struct sys_notify_context *ctx,
+				  const char *path,
+				  uint32_t *filter,
+				  uint32_t *subdir_filter,
+				  void (*callback) (struct sys_notify_context *
+						    ctx, void *private_data,
+						    struct notify_event *ev),
+				  void *private_data, void *handle_p)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static int skel_chflags(vfs_handle_struct *handle,  const char *path, uint flags)
+static int skel_chflags(vfs_handle_struct *handle, const char *path,
+			uint flags)
 {
 	errno = ENOSYS;
 	return -1;
@@ -463,83 +499,80 @@ static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 }
 
 static int skel_get_real_filename(struct vfs_handle_struct *handle,
-				const char *path,
-				const char *name,
-				TALLOC_CTX *mem_ctx,
-				char **found_name)
+				  const char *path,
+				  const char *name,
+				  TALLOC_CTX *mem_ctx, char **found_name)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
 static const char *skel_connectpath(struct vfs_handle_struct *handle,
-				const char *filename)
+				    const char *filename)
 {
 	errno = ENOSYS;
 	return NULL;
 }
 
 static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,
-				struct byte_range_lock *br_lck,
-				struct lock_struct *plock,
-				bool blocking_lock,
-				struct blocking_lock_record *blr)
+				      struct byte_range_lock *br_lck,
+				      struct lock_struct *plock,
+				      bool blocking_lock,
+				      struct blocking_lock_record *blr)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static bool skel_brl_unlock_windows(struct vfs_handle_struct *handle,
-				struct messaging_context *msg_ctx,
-				struct byte_range_lock *br_lck,
-				const struct lock_struct *plock)
+				    struct messaging_context *msg_ctx,
+				    struct byte_range_lock *br_lck,
+				    const struct lock_struct *plock)
 {
 	errno = ENOSYS;
 	return false;
 }
 
 static bool skel_brl_cancel_windows(struct vfs_handle_struct *handle,
-				struct byte_range_lock *br_lck,
-				struct lock_struct *plock,
-				struct blocking_lock_record *blr)
+				    struct byte_range_lock *br_lck,
+				    struct lock_struct *plock,
+				    struct blocking_lock_record *blr)
 {
 	errno = ENOSYS;
 	return false;
 }
 
 static bool skel_strict_lock(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				struct lock_struct *plock)
+			     struct files_struct *fsp,
+			     struct lock_struct *plock)
 {
 	errno = ENOSYS;
 	return false;
 }
 
 static void skel_strict_unlock(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				struct lock_struct *plock)
+			       struct files_struct *fsp,
+			       struct lock_struct *plock)
 {
 	;
 }
 
 static NTSTATUS skel_translate_name(struct vfs_handle_struct *handle,
-				const char *mapped_name,
-				enum vfs_translate_direction direction,
-				TALLOC_CTX *mem_ctx,
-				char **pmapped_name)
+				    const char *mapped_name,
+				    enum vfs_translate_direction direction,
+				    TALLOC_CTX *mem_ctx, char **pmapped_name)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS skel_fsctl(struct vfs_handle_struct *handle,
-			struct files_struct *fsp,
-			TALLOC_CTX *ctx,
-			uint32_t function,
-			uint16_t req_flags,  /* Needed for UNICODE ... */
-			const uint8_t *_in_data,
-			uint32_t in_len,
-			uint8_t **_out_data,
-			uint32_t max_out_len,
-			uint32_t *out_len)
+			   struct files_struct *fsp,
+			   TALLOC_CTX *ctx,
+			   uint32_t function,
+			   uint16_t req_flags,	/* Needed for UNICODE ... */
+			   const uint8_t *_in_data,
+			   uint32_t in_len,
+			   uint8_t **_out_data,
+			   uint32_t max_out_len, uint32_t *out_len)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
@@ -561,18 +594,21 @@ static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info_sent, const struct security_descriptor *psd)
+				 uint32 security_info_sent,
+				 const struct security_descriptor *psd)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static int skel_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t mode)
+static int skel_chmod_acl(vfs_handle_struct *handle, const char *name,
+			  mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
+static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
+			   mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;
@@ -584,109 +620,131 @@ static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,
 				       TALLOC_CTX *mem_ctx)
 {
 	errno = ENOSYS;
-	return (SMB_ACL_T)NULL;
+	return (SMB_ACL_T) NULL;
 }
 
 static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle,
-				     files_struct *fsp,
-				     TALLOC_CTX *mem_ctx)
+				     files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
 	errno = ENOSYS;
-	return (SMB_ACL_T)NULL;
+	return (SMB_ACL_T) NULL;
 }
 
-static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,  const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
-static int skel_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,
+				      const char *path_p, TALLOC_CTX *mem_ctx,
+				      char **blob_description, DATA_BLOB *blob)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
+static int skel_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+				    files_struct *fsp, TALLOC_CTX *mem_ctx,
+				    char **blob_description, DATA_BLOB *blob)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, SMB_ACL_T theacl)
+static int skel_sys_acl_set_file(vfs_handle_struct *handle, const char *name,
+				 SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
+static int skel_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+			       SMB_ACL_T theacl)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_getxattr(vfs_handle_struct *handle, const char *path, const char *name, void *value, size_t size)
+static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,
+					const char *path)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
+static ssize_t skel_getxattr(vfs_handle_struct *handle, const char *path,
+			     const char *name, void *value, size_t size)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_listxattr(vfs_handle_struct *handle, const char *path, char *list, size_t size)
+static ssize_t skel_fgetxattr(vfs_handle_struct *handle,
+			      struct files_struct *fsp, const char *name,
+			      void *value, size_t size)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static ssize_t skel_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
+static ssize_t skel_listxattr(vfs_handle_struct *handle, const char *path,
+			      char *list, size_t size)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_removexattr(vfs_handle_struct *handle, const char *path, const char *name)
+static ssize_t skel_flistxattr(vfs_handle_struct *handle,
+			       struct files_struct *fsp, char *list,
+			       size_t size)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
-{
-	errno = ENOSYS;
-	return -1;
-        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
-}
-
-static int skel_setxattr(vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
+static int skel_removexattr(vfs_handle_struct *handle, const char *path,
+			    const char *name)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
+static int skel_fremovexattr(vfs_handle_struct *handle,
+			     struct files_struct *fsp, const char *name)
+{
+	errno = ENOSYS;
+	return -1;
+	return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
+}
+
+static int skel_setxattr(vfs_handle_struct *handle, const char *path,
+			 const char *name, const void *value, size_t size,
+			 int flags)
 {
 	errno = ENOSYS;
 	return -1;
 }
 
-static bool skel_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
+static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,
+			  const char *name, const void *value, size_t size,
+			  int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static bool skel_aio_force(struct vfs_handle_struct *handle,
+			   struct files_struct *fsp)
 {
 	errno = ENOSYS;
 	return false;
 }
 
-static bool skel_is_offline(struct vfs_handle_struct *handle, const struct smb_filename *fname, SMB_STRUCT_STAT *sbuf)
+static bool skel_is_offline(struct vfs_handle_struct *handle,
+			    const struct smb_filename *fname,
+			    SMB_STRUCT_STAT *sbuf)
 {
 	errno = ENOSYS;
 	return false;
 }
 
-static int skel_set_offline(struct vfs_handle_struct *handle, const struct smb_filename *fname)
+static int skel_set_offline(struct vfs_handle_struct *handle,
+			    const struct smb_filename *fname)
 {
 	errno = ENOSYS;
 	return -1;
@@ -798,7 +856,6 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.sys_acl_set_fd_fn = skel_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = skel_sys_acl_delete_def_file,
 
-
 	/* EA operations. */
 	.getxattr_fn = skel_getxattr,
 	.fgetxattr_fn = skel_fgetxattr,
@@ -819,5 +876,6 @@ struct vfs_fn_pointers skel_opaque_fns = {
 
 NTSTATUS vfs_skel_opaque_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_opaque", &skel_opaque_fns);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "skel_opaque",
+				&skel_opaque_fns);
 }
