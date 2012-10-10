@@ -6,11 +6,10 @@ define_test "not configured"
 
 setup_ctdb
 
-ok <<EOF
-# ip rule show
-0:	from all lookup local 
-32766:	from all lookup main 
-32767:	from all lookup default 
-EOF
+ok_null
+simple_test_event "takeip"
 
-simple_test_command dump_routes
+ok_null
+simple_test_event "ipreallocate"
+
+check_routes 0

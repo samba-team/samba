@@ -7,32 +7,19 @@ define_test "1 IP configured, takeip, releaseip"
 setup_ctdb
 setup_ctdb_policy_routing
 
+# create config for 1 IP
+create_policy_routing_config 1 default
+
 ctdb_get_1_public_address |
-{
-    read dev ip bits
-
-    net=$(ipv4_host_addr_to_net "$ip" "$bits")
-    gw="${net%.*}.1" # a dumb, calculated default
-
-    cat >"$CTDB_PER_IP_ROUTING_CONF" <<EOF
-$ip $net
-$ip 0.0.0.0/0 $gw
-EOF
-
+while read dev ip bits ; do
+    # takeip adds routes
     ok_null
-
     simple_test_event "takeip" $dev $ip $bits
 
+    # releaseip removes routes
     ok_null
-
     simple_test_event "releaseip" $dev $ip $bits
+done
 
-    ok <<EOF
-# ip rule show
-0:	from all lookup local 
-32766:	from all lookup main 
-32767:	from all lookup default 
-EOF
-
-    simple_test_command dump_routes
-}
+# should have no routes
+check_routes 0

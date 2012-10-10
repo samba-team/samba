@@ -2,43 +2,20 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "All IPs configured, takeip"
+define_test "All IPs configured, takeip 1 address"
 
 setup_ctdb
 setup_ctdb_policy_routing
 
-ctdb_get_all_public_addresses |
-while read dev ip bits ; do
-    net=$(ipv4_host_addr_to_net "$ip" "$bits")
-    gw="${net%.*}.1" # a dumb, calculated default
+# configure all addresses
+create_policy_routing_config all default
 
-    cat <<EOF
-$ip $net
-$ip 0.0.0.0/0 $gw
-EOF
-done >"$CTDB_PER_IP_ROUTING_CONF"
-
+# add routes for all 1 IP
 ctdb_get_1_public_address |
-{
-    read dev ip bits
-
-    net=$(ipv4_host_addr_to_net "$ip" "$bits")
-    gw="${net%.*}.1" # a dumb, calculated default
-
+while read dev ip bits ; do
     ok_null
-
     simple_test_event "takeip" $dev $ip $bits
+done
 
-    ok <<EOF
-# ip rule show
-0:	from all lookup local 
-${CTDB_PER_IP_ROUTING_RULE_PREF}:	from $ip lookup ctdb.$ip 
-32766:	from all lookup main 
-32767:	from all lookup default 
-# ip route show table ctdb.$ip
-$net dev $dev  scope link 
-default via $gw dev $dev 
-EOF
-
-    simple_test_command dump_routes
-}
+# for 1 IP
+check_routes 1 default
