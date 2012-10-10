@@ -8,6 +8,7 @@ PIDFile=/run/samba.pid
 LimitNOFILE=16384
 EnvironmentFile=-/etc/sysconfig/samba
 ExecStart=/usr/sbin/samba $SAMBAOPTIONS
+ExecReload=/usr/bin/kill -HUP $MAINPID
 
 [Install]
 WantedBy=multi-user.target
