@@ -595,7 +595,7 @@ static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle,
 	return (SMB_ACL_T)NULL;
 }
 
-static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,  const char *path_p, SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+static int skel_sys_acl_blob_get_file(vfs_handle_struct *handle,  const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
 {
 	errno = ENOSYS;
 	return -1;

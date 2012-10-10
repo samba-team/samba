@@ -146,6 +146,7 @@
 /* Leave at 29 - not yet released. Added sys_acl_blob_get_file and sys_acl_blob_get_fd */
 /* Bump to version 30 - Samba 4.0.0 will ship with interface version 30 */
 /* Leave at 30 - not yet released. Added conn->cwd to save vfs_GetWd() calls. */
+/* Leave at 30 - not yet released. Changed sys_acl_blob_get_file interface to remove type */
 #define SMB_VFS_INTERFACE_VERSION 30
 
 /*
@@ -701,10 +702,12 @@ struct vfs_fn_pointers {
 	SMB_ACL_T (*sys_acl_get_fd_fn)(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       TALLOC_CTX *mem_ctx);
-	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type, 	
-					TALLOC_CTX *mem_ctx, char **blob_description,
+	int (*sys_acl_blob_get_file_fn)(struct vfs_handle_struct *handle,
+					const char *path_p,
+					TALLOC_CTX *mem_ctx,
+					char **blob_description,
 					DATA_BLOB *blob);
-	int (*sys_acl_blob_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, 	
+	int (*sys_acl_blob_get_fd_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 				      TALLOC_CTX *mem_ctx, char **blob_description,
 				      DATA_BLOB *blob);
 	int (*sys_acl_set_file_fn)(struct vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
@@ -1110,7 +1113,6 @@ SMB_ACL_T smb_vfs_call_sys_acl_get_fd(struct vfs_handle_struct *handle,
 				      TALLOC_CTX *mem_ctx);
 int smb_vfs_call_sys_acl_blob_get_file(struct vfs_handle_struct *handle,
 				       const char *path_p,
-				       SMB_ACL_TYPE_T type, 	
 				       TALLOC_CTX *mem_ctx,
 				       char **blob_description,
 				       DATA_BLOB *blob);
