@@ -1835,14 +1835,13 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 
 static int smb_full_audit_sys_acl_blob_get_file(vfs_handle_struct *handle,
 						const char *path_p,
-						SMB_ACL_TYPE_T type,
 						TALLOC_CTX *mem_ctx,
 						char **blob_description,
 						DATA_BLOB *blob)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, type, mem_ctx, blob_description, blob);
+	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, mem_ctx, blob_description, blob);
 
 	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE, (result >= 0), handle,
 	       "%s", path_p);
