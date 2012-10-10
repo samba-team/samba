@@ -2165,20 +2165,22 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,
+				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
 	VFS_FIND(fget_nt_acl);
 	return handle->fns->fget_nt_acl_fn(handle, fsp, security_info,
-					   ppdesc);
+					   mem_ctx, ppdesc);
 }
 
 NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
 				 const char *name,
 				 uint32 security_info,
+				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc)
 {
 	VFS_FIND(get_nt_acl);
-	return handle->fns->get_nt_acl_fn(handle, name, security_info, ppdesc);
+	return handle->fns->get_nt_acl_fn(handle, name, security_info, mem_ctx, ppdesc);
 }
 
 NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,

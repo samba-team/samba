@@ -1671,6 +1671,7 @@ static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
 static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
 					   uint32 security_info,
+					   TALLOC_CTX *mem_ctx,
 					   struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
@@ -1678,7 +1679,8 @@ static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
+	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+					  mem_ctx, ppdesc);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
@@ -1692,6 +1694,7 @@ static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 static NTSTATUS smb_time_audit_get_nt_acl(vfs_handle_struct *handle,
 					  const char *name,
 					  uint32 security_info,
+					  TALLOC_CTX *mem_ctx,
 					  struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
@@ -1699,7 +1702,8 @@ static NTSTATUS smb_time_audit_get_nt_acl(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
+	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+					 mem_ctx, ppdesc);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

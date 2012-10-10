@@ -714,9 +714,12 @@ NTSTATUS unpack_nt_owners(connection_struct *conn, uid_t *puser, gid_t *pgrp, ui
 bool current_user_in_group(connection_struct *conn, gid_t gid);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
+			   TALLOC_CTX *mem_ctx,
 			   struct security_descriptor **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
-			  uint32_t security_info, struct security_descriptor **ppdesc);
+			  uint32_t security_info,
+			  TALLOC_CTX *mem_ctx,
+			  struct security_descriptor **ppdesc);
 NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid);
 NTSTATUS append_parent_acl(files_struct *fsp,
 				const struct security_descriptor *pcsd,

@@ -115,7 +115,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 			(SECINFO_OWNER |
 			SECINFO_GROUP |
-			SECINFO_DACL),&sd);
+			 SECINFO_DACL), talloc_tos(), &sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("smbd_check_access_rights: Could not get acl "
@@ -237,6 +237,7 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 	status = SMB_VFS_GET_NT_ACL(conn,
 				parent_dir,
 				SECINFO_DACL,
+				    talloc_tos(),
 				&parent_sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1683,7 +1684,8 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
 				    (SECINFO_OWNER |
 				     SECINFO_GROUP |
-				     SECINFO_DACL),&sd);
+				     SECINFO_DACL),
+				    talloc_tos(), &sd);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
@@ -3425,7 +3427,7 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 
 static NTSTATUS inherit_new_acl(files_struct *fsp)
 {
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *parent_name = NULL;
 	struct security_descriptor *parent_desc = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -3437,14 +3439,15 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	bool inheritable_components = false;
 	size_t size = 0;
 
-	if (!parent_dirname(ctx, fsp->fsp_name->base_name, &parent_name, NULL)) {
+	if (!parent_dirname(frame, fsp->fsp_name->base_name, &parent_name, NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = SMB_VFS_GET_NT_ACL(fsp->conn,
-				parent_name,
-				(SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
-				&parent_desc);
+				    parent_name,
+				    (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
+				    frame,
+				    &parent_desc);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3453,6 +3456,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 					fsp->is_directory);
 
 	if (!inheritable_components && !inherit_owner) {
+		TALLOC_FREE(frame);
 		/* Nothing to inherit and not setting owner. */
 		return NT_STATUS_OK;
 	}
@@ -3478,7 +3482,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 		group_sid = &fsp->conn->session_info->security_token->sids[PRIMARY_GROUP_SID_INDEX];
 	}
 
-	status = se_create_child_secdesc(ctx,
+	status = se_create_child_secdesc(frame,
 			&psd,
 			&size,
 			parent_desc,
@@ -3486,6 +3490,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 			group_sid,
 			fsp->is_directory);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
@@ -3516,6 +3521,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	if (inherit_owner) {
 		unbecome_root();
 	}
+	TALLOC_FREE(frame);
 	return status;
 }
 

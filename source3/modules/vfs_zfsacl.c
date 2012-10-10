@@ -192,14 +192,16 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp,
-				 uint32 security_info,
-				 struct security_descriptor **ppdesc)
+				   struct files_struct *fsp,
+				   uint32 security_info,
+				   TALLOC_CTX *mem_ctx,
+				   struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl;
 	NTSTATUS status;
 
-	status = zfs_get_nt_acl_common(fsp->fsp_name->base_name, security_info,
+	status = zfs_get_nt_acl_common(fsp->fsp_name->base_name,
+				       mem_ctx, security_info,
 				       &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -209,8 +211,9 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				const char *name,  uint32 security_info,
-				struct security_descriptor **ppdesc)
+				  const char *name, uint32 security_info,
+				  TALLOC_CTX *mem_ctx,
+				  struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl;
 	NTSTATUS status;
@@ -220,7 +223,8 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 		return status;
 	}
 
-	return smb_get_nt_acl_nfs4(handle->conn, name, security_info, ppdesc,
+	return smb_get_nt_acl_nfs4(handle->conn, name, security_info,
+				   mem_ctx, ppdesc,
 				   pacl);
 }
 

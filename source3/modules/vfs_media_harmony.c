@@ -2009,9 +2009,10 @@ out:
  * In this case, "name" is a path.
  */
 static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
-		const char *name,
-		uint32 security_info,
-		struct security_descriptor **ppdesc)
+			      const char *name,
+			      uint32 security_info,
+			      TALLOC_CTX *mem_ctx,
+			      struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
 	char *clientPath;
@@ -2021,7 +2022,8 @@ static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 	if (!is_in_media_files(name))
 	{
 		status = SMB_VFS_NEXT_GET_NT_ACL(handle, name,
-				security_info, ppdesc);
+						 security_info,
+						 mem_ctx, ppdesc);
 		goto out;
 	}
 
@@ -2037,7 +2039,8 @@ static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 	}
 
 	status = SMB_VFS_NEXT_GET_NT_ACL(handle, clientPath,
-			security_info, ppdesc);
+					 security_info,
+					 mem_ctx, ppdesc);
 err:
 	TALLOC_FREE(clientPath);
 out:

@@ -3389,6 +3389,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 				      SMB_ACL_T posix_acl,
 				      SMB_ACL_T def_acl,
 				      uint32_t security_info,
+				      TALLOC_CTX *mem_ctx,
 				      struct security_descriptor **ppdesc)
 {
 	struct dom_sid owner_sid;
@@ -3601,7 +3602,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 		}
 	} /* security_info & SECINFO_DACL */
 
-	psd = make_standard_sec_desc( talloc_tos(),
+	psd = make_standard_sec_desc(mem_ctx,
 			(security_info & SECINFO_OWNER) ? &owner_sid : NULL,
 			(security_info & SECINFO_GROUP) ? &group_sid : NULL,
 			psa,
@@ -3652,11 +3653,14 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 }
 
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
+			   TALLOC_CTX *mem_ctx,
 			   struct security_descriptor **ppdesc)
 {
 	SMB_STRUCT_STAT sbuf;
 	SMB_ACL_T posix_acl = NULL;
 	struct pai_val *pal;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	*ppdesc = NULL;
 
@@ -3665,33 +3669,42 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 
 	/* can it happen that fsp_name == NULL ? */
 	if (fsp->is_directory ||  fsp->fh->fd == -1) {
-		return posix_get_nt_acl(fsp->conn, fsp->fsp_name->base_name,
-					security_info, ppdesc);
+		status = posix_get_nt_acl(fsp->conn, fsp->fsp_name->base_name,
+					  security_info, mem_ctx, ppdesc);
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	/* Get the stat struct for the owner info. */
 	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
 	}
 
 	/* Get the ACL from the fd. */
-	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, talloc_tos());
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, frame);
 
 	pal = fload_inherited_info(fsp);
 
-	return posix_get_nt_acl_common(fsp->conn, fsp->fsp_name->base_name,
-				       &sbuf, pal, posix_acl, NULL,
-				       security_info, ppdesc);
+	status = posix_get_nt_acl_common(fsp->conn, fsp->fsp_name->base_name,
+					 &sbuf, pal, posix_acl, NULL,
+					 security_info, mem_ctx, ppdesc);
+	TALLOC_FREE(frame);
+	return status;
 }
 
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
-			  uint32_t security_info, struct security_descriptor **ppdesc)
+			  uint32_t security_info,
+			  TALLOC_CTX *mem_ctx,
+			  struct security_descriptor **ppdesc)
 {
 	SMB_ACL_T posix_acl = NULL;
 	SMB_ACL_T def_acl = NULL;
 	struct pai_val *pal;
 	struct smb_filename smb_fname;
 	int ret;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	*ppdesc = NULL;
 
@@ -3708,26 +3721,29 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 	}
 
 	if (ret == -1) {
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
 	}
 
 	/* Get the ACL from the path. */
 	posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, name,
-					     SMB_ACL_TYPE_ACCESS, talloc_tos());
+					     SMB_ACL_TYPE_ACCESS, frame);
 
 	/* If it's a directory get the default POSIX ACL. */
 	if(S_ISDIR(smb_fname.st.st_ex_mode)) {
 		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, name,
-                                                   SMB_ACL_TYPE_DEFAULT,
-                                                   talloc_tos());
+						   SMB_ACL_TYPE_DEFAULT, frame);
 		def_acl = free_empty_sys_acl(conn, def_acl);
 	}
 
 	pal = load_inherited_info(conn, name);
 
-	return posix_get_nt_acl_common(conn, name, &smb_fname.st, pal,
-				       posix_acl, def_acl, security_info,
-				       ppdesc);
+	status = posix_get_nt_acl_common(conn, name, &smb_fname.st, pal,
+					 posix_acl, def_acl, security_info,
+					 mem_ctx,
+					 ppdesc);
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
@@ -4953,7 +4969,7 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 
 struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname, uint32 security_info_wanted)
 {
-	struct security_descriptor *psd, *ret_sd;
+	struct security_descriptor *ret_sd;
 	connection_struct *conn;
 	files_struct finfo;
 	struct fd_handle fh;
@@ -4999,15 +5015,15 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 		return NULL;
 	}
 
-	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, security_info_wanted, &psd))) {
+	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo,
+						  security_info_wanted,
+						  ctx, &ret_sd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		TALLOC_FREE(finfo.fsp_name);
 		conn_free(conn);
 		TALLOC_FREE(frame);
 		return NULL;
 	}
-
-	ret_sd = dup_sec_desc( ctx, psd );
 
 	TALLOC_FREE(finfo.fsp_name);
 	conn_free(conn);

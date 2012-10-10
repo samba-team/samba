@@ -1907,6 +1907,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 {
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/*
 	 * Get the permissions to return.
@@ -1932,13 +1933,13 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	}
 
 	if (!lp_nt_acl_support(SNUM(conn))) {
-		status = get_null_nt_acl(mem_ctx, &psd);
+		status = get_null_nt_acl(frame, &psd);
 	} else if (security_info_wanted & SECINFO_LABEL) {
 		/* Like W2K3 return a null object. */
-		status = get_null_nt_acl(mem_ctx, &psd);
+		status = get_null_nt_acl(frame, &psd);
 	} else {
 		status = SMB_VFS_FGET_NT_ACL(
-			fsp, security_info_wanted, &psd);
+			fsp, security_info_wanted, frame, &psd);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1989,7 +1990,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	}
 
 	if (max_data_count < *psd_size) {
-		TALLOC_FREE(psd);
+		TALLOC_FREE(frame);
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -1997,11 +1998,11 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 				   ppmarshalled_sd, psd_size);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(psd);
+		TALLOC_FREE(frame);
 		return status;
 	}
 
-	TALLOC_FREE(psd);
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
