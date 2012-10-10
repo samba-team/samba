@@ -30,8 +30,6 @@ def target_in_list(target, lst, default):
 def BUILTIN_LIBRARY(bld, name):
     '''return True if a library should be builtin
        instead of being built as a shared lib'''
-    if bld.env.DISABLE_SHARED:
-        return True
     return target_in_list(name, bld.env.BUILTIN_LIBRARIES, False)
 Build.BuildContext.BUILTIN_LIBRARY = BUILTIN_LIBRARY
 
@@ -249,8 +247,6 @@ def CHECK_BUNDLED_SYSTEM_PYTHON(conf, libname, modulename, minversion='0.0.0'):
 
 def NONSHARED_BINARY(bld, name):
     '''return True if a binary should be built without non-system shared libs'''
-    if bld.env.DISABLE_SHARED:
-        return True
     return target_in_list(name, bld.env.NONSHARED_BINARIES, False)
 Build.BuildContext.NONSHARED_BINARY = NONSHARED_BINARY
 

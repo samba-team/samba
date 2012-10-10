@@ -50,9 +50,6 @@ def set_options(opt):
                    help=("list of minimum system library versions (LIBNAME1:version,LIBNAME2:version)"),
                    action="store", dest='MINIMUM_LIBRARY_VERSION', default='')
 
-    gr.add_option('--disable-shared',
-                   help=("Disable all use of shared libraries"),
-                   action="store_true", dest='disable_shared', default=False)
     gr.add_option('--disable-rpath',
                    help=("Disable use of rpath for build binaries"),
                    action="store_true", dest='disable_rpath_build', default=False)
@@ -248,7 +245,6 @@ def configure(conf):
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
     conf.env.PRIVATE_LIBS = Options.options.PRIVATE_LIBS.split(',')
     conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
-    conf.env.DISABLE_SHARED = Options.options.disable_shared
     conf.env.NONSHARED_BINARIES = Options.options.NONSHARED_BINARIES.split(',')
 
     conf.env.PRIVATE_EXTENSION = Options.options.PRIVATE_EXTENSION
@@ -297,12 +293,8 @@ def configure(conf):
                     headers='stdio.h',
                     msg='Checking simple C program')
 
-    # see if we can build shared libs
-    if not conf.CHECK_LIBRARY_SUPPORT():
-        conf.env.DISABLE_SHARED = True
-
     # check for rpath
-    if not conf.env.DISABLE_SHARED and conf.CHECK_LIBRARY_SUPPORT(rpath=True):
+    if conf.CHECK_LIBRARY_SUPPORT(rpath=True):
         support_rpath = True
         conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
         conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
@@ -322,8 +314,7 @@ def configure(conf):
             # the user can of course always override it.
             conf.env.PRIVATELIBDIR = conf.env.LIBDIR
 
-    if (not conf.env.DISABLE_SHARED and
-        not Options.options.disable_symbol_versions and
+    if (not Options.options.disable_symbol_versions and
         conf.CHECK_LIBRARY_SUPPORT(rpath=support_rpath,
                                    version_script=True,
                                    msg='-Wl,--version-script support')):
