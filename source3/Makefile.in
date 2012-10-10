@@ -947,7 +947,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
 	       smbd/vfs.o smbd/perfcount.o smbd/statcache.o smbd/seal.o \
-               smbd/posix_acls.o lib/sysacls.o \
+               smbd/posix_acls.o lib/sysacls.o autoconf/librpc/gen_ndr/ndr_smb_acl.o\
 	       smbd/process.o smbd/service.o param/service.o smbd/error.o \
 	       rpc_server/epmd.o \
 	       rpc_server/lsasd.o \

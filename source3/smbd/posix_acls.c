@@ -27,6 +27,7 @@
 #include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "../librpc/gen_ndr/idmap.h"
+#include "../librpc/gen_ndr/ndr_smb_acl.h"
 #include "lib/param/loadparm.h"
 
 extern const struct generic_mapping file_generic_mapping;
@@ -5140,4 +5141,118 @@ NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
+}
+
+int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
+				const char *path_p,
+				TALLOC_CTX *mem_ctx,
+				char **blob_description,
+				DATA_BLOB *blob)
+{
+	int ret;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smb_acl_wrapper acl_wrapper = {};
+	struct smb_filename *smb_fname = NULL;
+	NTSTATUS status = create_synthetic_smb_fname_split(frame, path_p,
+							   NULL,
+							   &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	acl_wrapper.access_acl
+		= smb_vfs_call_sys_acl_get_file(handle,
+						path_p,
+						SMB_ACL_TYPE_ACCESS,
+						frame);
+
+	ret = smb_vfs_call_stat(handle, smb_fname);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		acl_wrapper.default_acl
+			= smb_vfs_call_sys_acl_get_file(handle,
+							path_p,
+							SMB_ACL_TYPE_DEFAULT,
+							frame);
+	}
+
+	acl_wrapper.owner = smb_fname->st.st_ex_uid;
+	acl_wrapper.group = smb_fname->st.st_ex_gid;
+	acl_wrapper.mode = smb_fname->st.st_ex_mode;
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(blob, mem_ctx,
+							  &acl_wrapper,
+							  (ndr_push_flags_fn_t)ndr_push_smb_acl_wrapper))) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	*blob_description = talloc_strdup(mem_ctx, "posix_acl");
+	if (!*blob_description) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	TALLOC_FREE(frame);
+	return 0;
+}
+
+int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+			      files_struct *fsp,
+			      TALLOC_CTX *mem_ctx,
+			      char **blob_description,
+			      DATA_BLOB *blob)
+{
+	SMB_STRUCT_STAT sbuf;
+	TALLOC_CTX *frame;
+	struct smb_acl_wrapper acl_wrapper;
+	int ret;
+
+	/* This ensures that we also consider the default ACL */
+	if (fsp->is_directory ||  fsp->fh->fd == -1) {
+		return posix_sys_acl_blob_get_file(handle, fsp->fsp_name->base_name,
+						   mem_ctx, blob_description, blob);
+	}
+	frame = talloc_stackframe();
+
+	acl_wrapper.default_acl = NULL;
+
+	acl_wrapper.access_acl = smb_vfs_call_sys_acl_get_file(handle, fsp->fsp_name->base_name,
+							       SMB_ACL_TYPE_ACCESS, frame);
+
+	ret = smb_vfs_call_fstat(handle, fsp, &sbuf);
+	if (ret == -1) {
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	acl_wrapper.owner = sbuf.st_ex_uid;
+	acl_wrapper.group = sbuf.st_ex_gid;
+	acl_wrapper.mode = sbuf.st_ex_mode;
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(blob, mem_ctx,
+							  &acl_wrapper,
+							  (ndr_push_flags_fn_t)ndr_push_smb_acl_wrapper))) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	*blob_description = talloc_strdup(mem_ctx, "posix_acl");
+	if (!*blob_description) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	TALLOC_FREE(frame);
+	return 0;
 }

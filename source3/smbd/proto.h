@@ -739,6 +739,16 @@ NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 					const char *name,
 					SMB_STRUCT_STAT *psbuf,
 					struct security_descriptor **ppdesc);
+int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
+				const char *path_p,
+				TALLOC_CTX *mem_ctx,
+				char **blob_description,
+				DATA_BLOB *blob);
+int posix_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+			      files_struct *fsp,
+			      TALLOC_CTX *mem_ctx,
+			      char **blob_description,
+			      DATA_BLOB *blob);
 
 /* The following definitions come from smbd/process.c  */
 
