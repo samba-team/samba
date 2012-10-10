@@ -709,6 +709,62 @@ static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				     GPFS_ACL_TYPE_ACCESS, mem_ctx);
 }
 
+static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p,
+				      TALLOC_CTX *mem_ctx,
+				      char **blob_description,
+				      DATA_BLOB *blob)
+{
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NULL);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, mem_ctx, blob_description, blob);
+	}
+
+	result = gpfs_get_nfs4_acl(name, &pacl);
+	if (result == 0) {
+		/* We don't have a way to linearlise the NFS4 ACL
+		 * right now, and it is much closer to the NT ACL
+		 * anyway */
+		errno = EINVAL;
+		return -1;
+	}
+
+	return posix_sys_acl_blob_get_file(handle, path_p, mem_ctx,
+					   blob_description, blob);
+}
+
+static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp,
+				      TALLOC_CTX *mem_ctx,
+				      char **blob_description,
+				      DATA_BLOB *blob)
+{
+	struct gpfs_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NULL);
+
+	if (!config->acl) {
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description, blob);
+	}
+
+	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
+	if (result == 0) {
+		/* We don't have a way to linearlise the NFS4 ACL
+		 * right now, and it is much closer to the NT ACL
+		 * anyway */
+		errno = EINVAL;
+		return -1;
+	}
+
+	return posix_sys_acl_blob_get_fd(handle, fsp, mem_ctx,
+					 blob_description, blob);
+}
+
 static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 				     SMB_ACL_TYPE_T type)
 {
@@ -1916,6 +1972,8 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fset_nt_acl_fn = gpfsacl_fset_nt_acl,
 	.sys_acl_get_file_fn = gpfsacl_sys_acl_get_file,
 	.sys_acl_get_fd_fn = gpfsacl_sys_acl_get_fd,
+	.sys_acl_blob_get_file_fn = gpfsacl_sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = gpfsacl_sys_acl_blob_get_fd,
 	.sys_acl_set_file_fn = gpfsacl_sys_acl_set_file,
 	.sys_acl_set_fd_fn = gpfsacl_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = gpfsacl_sys_acl_delete_def_file,
