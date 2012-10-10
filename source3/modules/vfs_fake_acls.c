@@ -377,7 +377,7 @@ static int fake_acls_sys_acl_delete_def_file(vfs_handle_struct *handle, const ch
 	return ret;
 }
 
-static int fake_acls_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
+static int fake_acls_chown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
 {
 	int ret;
 	uint8_t id_buf[4];
@@ -398,7 +398,7 @@ static int fake_acls_chown(vfs_handle_struct *handle,  const char *path, uid_t u
 	return 0;
 }
 
-static int fake_acls_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
+static int fake_acls_lchown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
 {
 	int ret;
 	uint8_t id_buf[4];
