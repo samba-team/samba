@@ -49,6 +49,7 @@ VFS_SCANNEDONLY_SRC = 'vfs_scannedonly.c'
 VFS_CROSSRENAME_SRC = 'vfs_crossrename.c'
 VFS_LINUX_XFS_SGID_SRC = 'vfs_linux_xfs_sgid.c'
 VFS_TIME_AUDIT_SRC = 'vfs_time_audit.c'
+VFS_MEDIA_HARMONY_SRC = 'vfs_media_harmony.c'
 
 
 bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
@@ -463,6 +464,14 @@ bld.SAMBA3_MODULE('vfs_time_audit',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_time_audit'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_time_audit'))
+
+bld.SAMBA3_MODULE('vfs_media_harmony',
+                 subsystem='vfs',
+                 source=VFS_MEDIA_HARMONY_SRC,
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_media_harmony'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_media_harmony'))
 
 bld.SAMBA3_MODULE('vfs_dfs_samba4',
                  subsystem='vfs',
