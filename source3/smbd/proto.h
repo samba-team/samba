@@ -735,8 +735,9 @@ bool set_unix_posix_default_acl(connection_struct *conn, const char *fname,
 				const SMB_STRUCT_STAT *psbuf,
 				uint16 num_def_acls, const char *pdata);
 bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *fname, uint16 num_acls, const char *pdata);
-NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname, uint32 security_info_wanted,
-				struct security_descriptor **sd);
+NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,
+			     uint32 security_info_wanted,
+			     struct security_descriptor **sd);
 NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 					const char *name,
 					SMB_STRUCT_STAT *psbuf,
