@@ -218,8 +218,9 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 }
 
 /********************************************************
- Fake up a connection struct for the VFS layer.
- Note: this performs a vfs connect and CHANGES CWD !!!! JRA.
+ Fake up a connection struct for the VFS layer, for use in
+ applications (such as the python bindings), that do not want the
+ global working directory changed under them.
 *********************************************************/
 
 NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
@@ -228,12 +229,10 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 			    connection_struct **pconn,
 			    int snum,
 			    const char *path,
-			    const struct auth_session_info *session_info,
-			    char **poldcwd)
+			    const struct auth_session_info *session_info)
 {
 	connection_struct *conn;
 	char *connpath;
-	char *oldcwd;
 	const char *vfs_user;
 
 	conn = talloc_zero(ctx, connection_struct);
@@ -247,9 +246,9 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	connpath = talloc_string_sub(conn,
-				connpath,
-				"%S",
-				lp_servicename(talloc_tos(), snum));
+				     connpath,
+				     "%S",
+				     lp_servicename(talloc_tos(), snum));
 	if (!connpath) {
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
@@ -341,6 +340,37 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn, &conn->ts_res);
+	*pconn = conn;
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************
+ Fake up a connection struct for the VFS layer.
+ Note: this performs a vfs connect and CHANGES CWD !!!! JRA.
+
+ The old working directory is returned on *poldcwd, allocated on ctx.
+*********************************************************/
+
+NTSTATUS create_conn_struct_cwd(TALLOC_CTX *ctx,
+				struct tevent_context *ev,
+				struct messaging_context *msg,
+				connection_struct **pconn,
+				int snum,
+				const char *path,
+				const struct auth_session_info *session_info,
+				char **poldcwd)
+{
+	connection_struct *conn;
+	char *oldcwd;
+
+	NTSTATUS status = create_conn_struct(ctx, ev,
+					     msg, &conn,
+					     snum, path,
+					     session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/*
 	 * Windows seems to insist on doing trans2getdfsreferral() calls on
@@ -350,14 +380,14 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 
 	oldcwd = vfs_GetWd(ctx, conn);
 	if (oldcwd == NULL) {
-		NTSTATUS status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
 		DEBUG(3, ("vfs_GetWd failed: %s\n", strerror(errno)));
 		conn_free(conn);
 		return status;
 	}
 
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
-		NTSTATUS status = map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("create_conn_struct: Can't ChDir to new conn path %s. "
 			"Error was %s\n",
 			conn->connectpath, strerror(errno) ));
@@ -981,7 +1011,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = create_conn_struct(ctx,
+	status = create_conn_struct_cwd(ctx,
 				    server_event_context(),
 				    server_messaging_context(),
 				    &conn, snum,
@@ -1160,7 +1190,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 	if(snum < 0) {
 		return False;
 	}
-	status = create_conn_struct(talloc_tos(),
+	status = create_conn_struct_cwd(talloc_tos(),
 				    server_event_context(),
 				    server_messaging_context(),
 				    conn_out,
@@ -1325,7 +1355,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(talloc_tos(),
+	status = create_conn_struct_cwd(talloc_tos(),
 				    server_event_context(),
 				    server_messaging_context(),
 				    &conn,
@@ -1401,7 +1431,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(ctx,
+	status = create_conn_struct_cwd(ctx,
 				    server_event_context(),
 				    server_messaging_context(),
 				    &conn, snum, connect_path, NULL,
