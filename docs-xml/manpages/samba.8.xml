@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="samba.8">
+
+<refmeta>
+	<refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>samba</refname>
+	<refpurpose>Server to provide AD and SMB/CIFS services to clients</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>samba</command>
+		<arg choice="opt">-D</arg>
+		<arg choice="opt">-i</arg>
+		<arg choice="opt">-M &lt;model&gt;</arg>
+		<arg choice="opt">--maximum-runtime=&lt;seconds&gt;</arg>
+		<arg choice="opt">-b</arg>
+		<arg choice="opt">--help</arg>
+		<arg choice="opt">--usage</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">--debug-stderr</arg>
+		<arg choice="opt">-s &lt;configuration file&gt;</arg>
+		<arg choice="opt">--option=&lt;smb_conf_param&gt;=&lt;value&gt;</arg>
+		<arg choice="opt">-l &lt;log directory&gt;</arg>
+		<arg choice="opt">--leak-report</arg>
+		<arg choice="opt">--leak-report-full</arg>
+		<arg choice="opt">-V</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+	<para>This program is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para><command>samba</command> is the server daemon that
+	provides Active Directory, filesharing and printing services to clients.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>-D|--daemon</term>
+		<listitem><para>If specified, this parameter causes
+		the server to operate as a daemon. That is, it detaches
+		itself and runs in the background, fielding requests
+		on the appropriate ports. Operating the server as a
+		daemon is the recommended way of running
+		<command>samba</command> for servers that provide more
+		than casual use file and print services.  This switch is
+		assumed if <command>samba</command> is executed on the
+		command line of a shell.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-i|--interactive</term>
+		<listitem><para>If this parameter is specified it causes the
+		server to run "interactively", not as a daemon, even if the
+		server is executed on the command line of a shell. Setting this
+		parameter negates the implicit daemon mode when run from the
+		command line.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-M|--model</term>
+		<listitem><para>Select process model.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--maximum-runtime=seconds</term>
+		<listitem><para>Set maximum runtime of the server process till
+		autotermination in seconds.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-b|--show-build</term>
+		<listitem><para>Print information about how Samba was built.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-?|--help</term>
+		<listitem><para>Show help message.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--usage</term>
+		<listitem><para>Display brief usage message.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-d|--debuglevel=DEBUGLEVEL</term>
+		<listitem><para>Set debug level.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--debug-stderr</term>
+		<listitem><para>Send debug output to STDERR.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-s|--configfile=CONFIGFILE</term>
+		<listitem><para>Use alternative configuration file.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--option=SMB_CONF_PARAM=VALUE</term>
+		<listitem><para>Set smb.conf option from command line.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-l|--log-basename=LOGFILEBASE</term>
+		<listitem><para>Basename for log/debug files.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--leak-report</term>
+		<listitem><para>Enable talloc leak reporting on exit.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--leak-report-full</term>
+		<listitem><para>Enable full talloc leak reporting on exit.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-V|--version</term>
+		<listitem><para>Print version.</para></listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4 of	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><citerefentry><refentrytitle>hosts_access</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>inetd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>nmbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
+	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testparm</refentrytitle>
+	<manvolnum>1</manvolnum></citerefentry>. </para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+</refsect1>
+
+</refentry>
