@@ -184,10 +184,23 @@ interface xattr
 		uint8 hash[64]; /* 64 bytes hash. */
 	} security_descriptor_hash_v3;
 
+	typedef [public] struct {
+		security_descriptor *sd;
+		uint16 hash_type;
+		uint8 hash[64]; /* 64 bytes hash. */
+		utf8string description; /* description of what created
+					 * this hash (to allow
+					 * foresnics later, if we have
+					 * a bug in one codepath */
+		NTTIME time;
+		uint8 sys_acl_hash[64]; /* 64 bytes hash. */
+	} security_descriptor_hash_v4;
+
 	typedef [switch_type(uint16)] union {
 		[case(1)] security_descriptor *sd;
 		[case(2)] security_descriptor_hash_v2 *sd_hs2;
 		[case(3)] security_descriptor_hash_v3 *sd_hs3;
+		[case(4)] security_descriptor_hash_v4 *sd_hs4;
 	} xattr_NTACL_Info;
 
 	typedef [public] struct {

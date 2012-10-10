@@ -19,7 +19,14 @@
 */
 
 
-/* Allow the smb_acl interface to be pushed into an NDR blob and read/written in python */
+/* 
+ * Allow the smb_acl interface to be pushed into an NDR blob and
+ * read/written in python.
+ * 
+ * The exact layout of these stuctures is CRITICAL, as a SHA-256 hash is
+ * taken over these after they are pushed as NDR blobs, and stored in an
+ * xattr for ACL verification.
+ */
 [
 	pointer_default(unique)
 ]
@@ -75,4 +82,15 @@ interface smb_acl
 		
 	const int SMB_ACL_TYPE_ACCESS		= 0;
 	const int SMB_ACL_TYPE_DEFAULT		= 1;
+
+	/* A wrapper of all the information required to reproduce an
+	 * ACL, so we can hash it for the acl_xattr and acl_tdb
+	 * modules */
+	[public] typedef struct {
+		smb_acl_t *access_acl;
+		smb_acl_t *default_acl; /* NULL on files */
+		uid_t owner;
+		gid_t group;
+		mode_t mode;
+	} smb_acl_wrapper;
 }
