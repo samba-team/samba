@@ -671,10 +671,12 @@ struct vfs_fn_pointers {
 	NTSTATUS (*fget_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   uint32 security_info,
+				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc);
 	NTSTATUS (*get_nt_acl_fn)(struct vfs_handle_struct *handle,
 				  const char *name,
 				  uint32 security_info,
+				   TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 	NTSTATUS (*fset_nt_acl_fn)(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
@@ -1079,10 +1081,12 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,
+				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
 				 const char *name,
 				 uint32 security_info,
+				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_fset_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,

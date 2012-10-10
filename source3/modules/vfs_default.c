@@ -2056,12 +2056,14 @@ static void vfswrap_strict_unlock(struct vfs_handle_struct *handle,
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    uint32 security_info,
+				    TALLOC_CTX *mem_ctx,
 				    struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
 
 	START_PROFILE(fget_nt_acl);
-	result = posix_fget_nt_acl(fsp, security_info, ppdesc);
+	result = posix_fget_nt_acl(fsp, security_info,
+				   mem_ctx, ppdesc);
 	END_PROFILE(fget_nt_acl);
 	return result;
 }
@@ -2069,12 +2071,14 @@ static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 				   const char *name,
 				   uint32 security_info,
+				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
 
 	START_PROFILE(get_nt_acl);
-	result = posix_get_nt_acl(handle->conn, name, security_info, ppdesc);
+	result = posix_get_nt_acl(handle->conn, name, security_info,
+				  mem_ctx, ppdesc);
 	END_PROFILE(get_nt_acl);
 	return result;
 }

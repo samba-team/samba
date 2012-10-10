@@ -703,6 +703,7 @@ static NTSTATUS
 catia_get_nt_acl(struct vfs_handle_struct *handle,
 		 const char *path,
 		 uint32 security_info,
+		 TALLOC_CTX *mem_ctx,
 		 struct security_descriptor **ppdesc)
 {
 	char *mapped_name = NULL;
@@ -715,7 +716,7 @@ catia_get_nt_acl(struct vfs_handle_struct *handle,
 		return status;
 	}
 	status = SMB_VFS_NEXT_GET_NT_ACL(handle, mapped_name,
-					 security_info, ppdesc);
+					 security_info, mem_ctx, ppdesc);
 	TALLOC_FREE(mapped_name);
 
 	return status;

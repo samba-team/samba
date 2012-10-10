@@ -157,6 +157,7 @@ static bool aixjfs2_get_nfs4_acl(const char *name,
 
 static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 	files_struct *fsp, uint32 security_info,
+	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -169,17 +170,21 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_fget_nt_acl(fsp, security_info, ppdesc);
+		return posix_fget_nt_acl(fsp, security_info,
+					 mem_ctx, ppdesc);
 	}
 	if (result==False)
 		return NT_STATUS_ACCESS_DENIED;
 
-	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc,
+				    mem_ctx, pacl);
 }
 
 static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	const char *name,
-	uint32 security_info, struct security_descriptor **ppdesc)
+	uint32 security_info,
+	TALLOC_CTX *mem_ctx,
+	struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
 	bool	result;
@@ -191,12 +196,13 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
 		return posix_get_nt_acl(handle->conn, name, security_info,
-					ppdesc);
+					mem_ctx, ppdesc);
 	}
 	if (result==False)
 		return NT_STATUS_ACCESS_DENIED;
 
-	return smb_get_nt_acl_nfs4(handle->conn, name, security_info, ppdesc,
+	return smb_get_nt_acl_nfs4(handle->conn, name, security_info,
+				   mem_ctx, ppdesc,
 				   pacl);
 }
 

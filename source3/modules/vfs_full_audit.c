@@ -1733,12 +1733,14 @@ static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-				uint32 security_info,
-				struct security_descriptor **ppdesc)
+					   uint32 security_info,
+					   TALLOC_CTX *mem_ctx,
+					   struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
+	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+					  mem_ctx, ppdesc);
 
 	do_log(SMB_VFS_OP_FGET_NT_ACL, NT_STATUS_IS_OK(result), handle,
 	       "%s", fsp_str_do_log(fsp));
@@ -1749,11 +1751,13 @@ static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_stru
 static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
 					  const char *name,
 					  uint32 security_info,
+					  TALLOC_CTX *mem_ctx,
 					  struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
+	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+					 mem_ctx, ppdesc);
 
 	do_log(SMB_VFS_OP_GET_NT_ACL, NT_STATUS_IS_OK(result), handle,
 	       "%s", name);

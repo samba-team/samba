@@ -545,13 +545,17 @@ static NTSTATUS skel_fsctl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info, struct security_descriptor **ppdesc)
+				 uint32 security_info,
+				 TALLOC_CTX *mem_ctx,
+				 struct security_descriptor **ppdesc)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
-	const char *name, uint32 security_info, struct security_descriptor **ppdesc)
+				const char *name, uint32 security_info,
+				TALLOC_CTX *mem_ctx,
+				struct security_descriptor **ppdesc)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

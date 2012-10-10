@@ -348,6 +348,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 
 static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	files_struct *fsp, uint32 security_info,
+	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -367,11 +368,11 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
 
 	if (result == 0)
-		return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+		return smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx, ppdesc, pacl);
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_fget_nt_acl(fsp, security_info, ppdesc);
+		return posix_fget_nt_acl(fsp, security_info, mem_ctx, ppdesc);
 	}
 
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
@@ -380,7 +381,8 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 
 static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	const char *name,
-	uint32 security_info, struct security_descriptor **ppdesc)
+	uint32 security_info,
+	TALLOC_CTX *mem_ctx, struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
 	int	result;
@@ -399,11 +401,13 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	result = gpfs_get_nfs4_acl(name, &pacl);
 
 	if (result == 0)
-		return smb_get_nt_acl_nfs4(handle->conn, name, security_info, ppdesc, pacl);
+		return smb_get_nt_acl_nfs4(handle->conn, name, security_info,
+					   mem_ctx, ppdesc, pacl);
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_get_nt_acl(handle->conn, name, security_info, ppdesc);
+		return posix_get_nt_acl(handle->conn, name, security_info,
+					mem_ctx, ppdesc);
 	}
 
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */

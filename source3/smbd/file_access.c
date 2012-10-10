@@ -149,11 +149,11 @@ bool can_write_to_file(connection_struct *conn,
 
 bool directory_has_default_acl(connection_struct *conn, const char *fname)
 {
-	/* returns talloced off tos. */
 	struct security_descriptor *secdesc = NULL;
 	unsigned int i;
 	NTSTATUS status = SMB_VFS_GET_NT_ACL(conn, fname,
-				SECINFO_DACL, &secdesc);
+					     SECINFO_DACL, talloc_tos(),
+					     &secdesc);
 
 	if (!NT_STATUS_IS_OK(status) ||
 			secdesc == NULL ||

@@ -1188,6 +1188,7 @@ static int shadow_copy2_get_shadow_copy_data(
 static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					uint32 security_info,
+					 TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
 	time_t timestamp;
@@ -1202,6 +1203,7 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 	}
 	if (timestamp == 0) {
 		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+						mem_ctx,
 						ppdesc);
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
@@ -1209,7 +1211,8 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info, ppdesc);
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info,
+					 mem_ctx, ppdesc);
 	TALLOC_FREE(conv);
 	return status;
 }
@@ -1217,6 +1220,7 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 					const char *fname,
 					uint32 security_info,
+					TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
 	time_t timestamp;
@@ -1230,14 +1234,15 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 	}
 	if (timestamp == 0) {
 		return SMB_VFS_NEXT_GET_NT_ACL(handle, fname, security_info,
-					       ppdesc);
+					       mem_ctx, ppdesc);
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info, ppdesc);
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info,
+					 mem_ctx, ppdesc);
 	TALLOC_FREE(conv);
 	return status;
 }

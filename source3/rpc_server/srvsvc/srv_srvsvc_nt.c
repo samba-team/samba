@@ -2088,15 +2088,22 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
+	sd_buf = talloc_zero(p->mem_ctx, struct sec_desc_buf);
+	if (!sd_buf) {
+		werr = WERR_NOMEM;
+		goto error_exit;
+	}
+
 	nt_status = SMB_VFS_FGET_NT_ACL(fsp,
 				       (SECINFO_OWNER
 					|SECINFO_GROUP
-					|SECINFO_DACL), &psd);
+					|SECINFO_DACL), sd_buf, &sd_buf->sd);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("_srvsvc_NetGetFileSecurity: Unable to get NT ACL "
 			"for file %s\n", smb_fname_str_dbg(smb_fname)));
 		werr = ntstatus_to_werror(nt_status);
+		TALLOC_FREE(sd_buf);
 		goto error_exit;
 	}
 
@@ -2106,14 +2113,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
-	sd_buf = talloc_zero(p->mem_ctx, struct sec_desc_buf);
-	if (!sd_buf) {
-		werr = WERR_NOMEM;
-		goto error_exit;
-	}
-
 	sd_buf->sd_size = sd_size;
-	sd_buf->sd = talloc_move(p->mem_ctx, &psd);
 
 	*r->out.sd_buf = sd_buf;
 

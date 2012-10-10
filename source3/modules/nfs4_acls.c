@@ -370,7 +370,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 }
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
-	uint32 security_info,
+					   uint32 security_info, TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc, SMB4ACL_T *theacl)
 {
 	int	good_aces = 0;
@@ -378,7 +378,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	size_t sd_size = 0;
 	struct security_ace *nt_ace_list = NULL;
 	struct security_acl *psa = NULL;
-	TALLOC_CTX *mem_ctx = talloc_tos();
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (theacl==NULL || smb_get_naces(theacl)==0)
 		return NT_STATUS_ACCESS_DENIED; /* special because we
@@ -392,12 +392,14 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 			     S_ISDIR(sbuf->st_ex_mode),
 				&nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
 	}
 
-	psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, good_aces, nt_ace_list);
+	psa = make_sec_acl(frame, NT4_ACL_REVISION, good_aces, nt_ace_list);
 	if (psa == NULL) {
 		DEBUG(2,("make_sec_acl failed\n"));
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -409,6 +411,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 		NULL, psa, &sd_size);
 	if (*ppdesc==NULL) {
 		DEBUG(2,("make_sec_desc failed\n"));
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -416,11 +419,13 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 		   "sd_size %d\n",
 		   (int)ndr_size_security_descriptor(*ppdesc, 0)));
 
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 			      uint32 security_info,
+			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc,
 			      SMB4ACL_T *theacl)
 {
@@ -432,13 +437,15 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 		return map_nt_error_from_unix(errno);
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, security_info, ppdesc,
+	return smb_get_nt_acl_nfs4_common(&sbuf, security_info,
+					  mem_ctx, ppdesc,
 					  theacl);
 }
 
 NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 			     const char *name,
 			     uint32 security_info,
+			     TALLOC_CTX *mem_ctx,
 			     struct security_descriptor **ppdesc,
 			     SMB4ACL_T *theacl)
 {
@@ -450,7 +457,8 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, security_info, ppdesc,
+	return smb_get_nt_acl_nfs4_common(&sbuf, security_info,
+					  mem_ctx, ppdesc,
 					  theacl);
 }
 
