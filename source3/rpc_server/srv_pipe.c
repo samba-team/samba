@@ -31,6 +31,8 @@
 #include "system/filesys.h"
 #include "srv_pipe_internal.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
+#include "../librpc/gen_ndr/dcerpc.h"
+#include "../librpc/rpc/rpc_common.h"
 #include "../libcli/auth/schannel.h"
 #include "../libcli/auth/spnego.h"
 #include "dcesrv_auth_generic.h"
