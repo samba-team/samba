@@ -299,71 +299,6 @@ static SMB_ACL_T fake_acls_sys_acl_get_fd(struct vfs_handle_struct *handle,
 }
 
 
-static int fake_acls_sys_acl_blob_get_file(struct vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T type, TALLOC_CTX *mem_ctx, 
-					   char **blob_description, DATA_BLOB *blob)
-{
-	ssize_t length;
-	const char *name = NULL;
-	switch (type) {
-	case SMB_ACL_TYPE_ACCESS:
-		name = FAKE_ACL_ACCESS_XATTR;
-		break;
-	case SMB_ACL_TYPE_DEFAULT:
-		name = FAKE_ACL_DEFAULT_XATTR;
-		break;
-	}
-
-	*blob_description = talloc_strdup(mem_ctx, "fake_acls");
-	if (!*blob_description) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	*blob = data_blob_null;
-	do {
-		blob->length += 1000;
-		blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, blob->length);
-		if (!blob->data) {
-			errno = ENOMEM;
-			return -1;
-		}
-		length = SMB_VFS_NEXT_GETXATTR(handle, path, name, blob->data, blob->length);
-		blob->length = length;
-	} while (length == -1 && errno == ERANGE);
-	if (length == -1) {
-		return -1;
-	}
-	return 0;
-}
-
-static int fake_acls_sys_acl_blob_get_fd(struct vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, 
-					 char **blob_description, DATA_BLOB *blob)
-{
-	ssize_t length;
-	const char *name = FAKE_ACL_ACCESS_XATTR;
-		
-	*blob_description = talloc_strdup(mem_ctx, "fake_acls");
-	if (!*blob_description) {
-		errno = ENOMEM;
-		return -1;
-	}
-	*blob = data_blob_null;
-	do {
-		blob->length += 1000;
-		blob->data = talloc_realloc(mem_ctx, blob->data, uint8_t, blob->length);
-		if (!blob->data) {
-			errno = ENOMEM;
-			return -1;
-		}
-		length = SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, blob->data, blob->length);
-		blob->length = length;
-	} while (length == -1 && errno == ERANGE);
-	if (length == -1) {
-		return -1;
-	}
-	return 0;
-}
-
 static int fake_acls_sys_acl_set_file(vfs_handle_struct *handle, const char *path, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	int ret;
@@ -520,8 +455,8 @@ static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.fstat_fn = fake_acls_fstat,
 	.sys_acl_get_file_fn = fake_acls_sys_acl_get_file,
 	.sys_acl_get_fd_fn = fake_acls_sys_acl_get_fd,
-	.sys_acl_blob_get_file_fn = fake_acls_sys_acl_blob_get_file,
-	.sys_acl_blob_get_fd_fn = fake_acls_sys_acl_blob_get_fd,
+	.sys_acl_blob_get_file_fn = posix_sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = posix_sys_acl_blob_get_fd,
 	.sys_acl_set_file_fn = fake_acls_sys_acl_set_file,
 	.sys_acl_set_fd_fn = fake_acls_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = fake_acls_sys_acl_delete_def_file,
