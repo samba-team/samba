@@ -1092,11 +1092,27 @@ static int afsacl_connect(vfs_handle_struct *handle,
 	return 0;
 }
 
+/* We don't have a linear form of the AFS ACL yet */
+static int afsacl_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+/* We don't have a linear form of the AFS ACL yet */
+static int afsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static struct vfs_fn_pointers vfs_afsacl_fns = {
 	.connect_fn = afsacl_connect,
 	.fget_nt_acl_fn = afsacl_fget_nt_acl,
 	.get_nt_acl_fn = afsacl_get_nt_acl,
-	.fset_nt_acl_fn = afsacl_fset_nt_acl
+	.fset_nt_acl_fn = afsacl_fset_nt_acl,
+	.sys_acl_blob_get_file_fn = afsacl_sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = afsacl_sys_acl_blob_get_fd
 };
 
 NTSTATUS vfs_afsacl_init(void);
