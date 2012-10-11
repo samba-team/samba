@@ -684,6 +684,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
 	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
 	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
+	if (result & FILE_ATTRIBUTE_OFFLINE ) DEBUG(8, ("[offline]"));
 
 	DEBUG(8,("\n"));
 
