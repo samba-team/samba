@@ -28,15 +28,17 @@
 /* public functions - the api */
 
 SMB_ACL_T irixacl_sys_acl_get_file(vfs_handle_struct *handle,
-				    const char *path_p,
-				    SMB_ACL_TYPE_T type)
+				   const char *path_p,
+				   SMB_ACL_TYPE_T type,
+				   TALLOC_CTX *mem_ctx)
 {
 	errno = ENOTSUP;
 	return NULL;
 }
 
 SMB_ACL_T irixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				 files_struct *fsp)
+				 files_struct *fsp,
+				 TALLOC_CTX *mem_ctx)
 {
 	errno = ENOTSUP;
 	return NULL;
