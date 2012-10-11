@@ -227,6 +227,7 @@ EOF
 show_all "ctdb status; ctdb ip"
 show_all "ctdb statistics"
 show_all "ctdb uptime"
+show_all "ctdb listvars"
 
 echo "Showing log.ctdb"
 show_all "test -f /var/log/log.ctdb && tail -100 /var/log/log.ctdb"
