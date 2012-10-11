@@ -969,7 +969,7 @@ def setup_samdb_rootdse(samdb, names):
 
 
 def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
-        dns_backend, dnspass, domainsid, next_rid, invocationid,
+        dnspass, domainsid, next_rid, invocationid,
         policyguid, policyguid_dc,
         domainControllerFunctionality, ntdsguid=None, dc_rid=None):
     """Join a host to its own domain."""
@@ -1048,17 +1048,14 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
 
     samdb.set_session_info(admin_session_info)
 
-    if dns_backend != "SAMBA_INTERNAL":
-        # This is Samba4 specific and should be replaced by the correct
-        # DNS AD-style setup
-        setup_add_ldif(samdb, setup_path("provision_dns_add_samba.ldif"), {
-              "DNSDOMAIN": names.dnsdomain,
-              "DOMAINDN": names.domaindn,
-              "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
-              "HOSTNAME" : names.hostname,
-              "DNSNAME" : '%s.%s' % (
-                  names.netbiosname.lower(), names.dnsdomain.lower())
-              })
+    setup_add_ldif(samdb, setup_path("provision_dns_add_samba.ldif"), {
+          "DNSDOMAIN": names.dnsdomain,
+          "DOMAINDN": names.domaindn,
+          "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
+          "HOSTNAME" : names.hostname,
+          "DNSNAME" : '%s.%s' % (
+              names.netbiosname.lower(), names.dnsdomain.lower())
+          })
 
 
 def getpolicypath(sysvolpath, dnsdomain, guid):
@@ -1146,7 +1143,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
 
 
 def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
-        policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
+        policyguid_dc, fill, adminpass, krbtgtpass, machinepass,
         dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
         dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None):
 
@@ -1334,7 +1331,6 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
             logger.info("Setting up self join")
             setup_self_join(samdb, admin_session_info, names=names, fill=fill,
                 invocationid=invocationid,
-                dns_backend=dns_backend,
                 dnspass=dnspass,
                 machinepass=machinepass,
                 domainsid=domainsid,
@@ -1607,8 +1603,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    next_rid=1000, dc_rid=None, adminpass=None, krbtgtpass=None,
                    domainguid=None, policyguid=None, policyguid_dc=None,
                    invocationid=None, machinepass=None, ntdsguid=None,
-                   dns_backend=None, dnspass=None,
-                   serverrole=None, dom_for_fun_level=None,
+                   dns_backend=None,
+                   dnspass=None, serverrole=None, dom_for_fun_level=None,
                    am_rodc=False, lp=None, use_ntvfs=False, skip_sysvolacl=False):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
@@ -1636,8 +1632,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    policyguid=policyguid, policyguid_dc=policyguid_dc,
                    fill=samdb_fill, adminpass=adminpass, krbtgtpass=krbtgtpass,
                    invocationid=invocationid, machinepass=machinepass,
-                   dns_backend=dns_backend, dnspass=dnspass,
-                   ntdsguid=ntdsguid, serverrole=serverrole,
+                   dnspass=dnspass, ntdsguid=ntdsguid, serverrole=serverrole,
                    dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                    next_rid=next_rid, dc_rid=dc_rid)
 
