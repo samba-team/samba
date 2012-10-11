@@ -88,7 +88,7 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_serverids.o server/ctdb_persistent.o \
 	server/ctdb_keepalive.o server/ctdb_logging.o server/ctdb_uptime.o \
 	server/ctdb_vacuum.o server/ctdb_banning.o server/ctdb_statistics.o \
-	server/ctdb_update_record.o \
+	server/ctdb_update_record.o server/ctdb_lock.o \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
 TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \

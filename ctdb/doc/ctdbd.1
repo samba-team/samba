@@ -2,12 +2,12 @@
 .\"     Title: ctdbd
 .\"    Author: [FIXME: author] [see http://docbook.sf.net/el/author]
 .\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
-.\"      Date: 10/11/2012
+.\"      Date: 10/20/2012
 .\"    Manual: CTDB - clustered TDB database
 .\"    Source: ctdb
 .\"  Language: English
 .\"
-.TH "CTDBD" "1" "10/11/2012" "ctdb" "CTDB \- clustered TDB database"
+.TH "CTDBD" "1" "10/20/2012" "ctdb" "CTDB \- clustered TDB database"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -593,6 +593,13 @@ When many clients across many nodes try to access the same record at the same ti
 This parameter is used to activate a fetch\-collapse\&. A fetch\-collapse is when we track which records we have requests in flight so that we only keep one request in flight from a certain node, even if multiple smbd processes are attemtping to fetch the record at the same time\&. This can improve performance and reduce CPU utilization for certain workloads\&.
 .PP
 This timeout controls if we should collapse multiple fetch operations of the same record into a single request and defer all duplicates or not\&.
+.SS "DeadlockTimeout"
+.PP
+Default: 60
+.PP
+Number of seconds to determine if ctdb is in deadlock with samba\&.
+.PP
+When ctdb daemon is blocked waiting for a lock on a database which is blocked by some other process, ctdb logs a warning every 10 seconds\&. Most often this is caused by samba locking databases and waiting on ctdb and result in a deadlock\&. If the lock is not obtained by ctdb before deadlock timeout expires, ctdb will detect it as a deadlock and terminate the blocking samba process\&. Setting this value to 0 disables deadlock detection\&.
 .SH "LVS"
 .PP
 LVS is a mode where CTDB presents one single IP address for the entire cluster\&. This is an alternative to using public IP addresses and round\-robin DNS to loadbalance clients across the cluster\&.

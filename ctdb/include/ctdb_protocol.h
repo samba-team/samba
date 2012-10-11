@@ -661,6 +661,14 @@ struct ctdb_statistics {
 		struct latency_counter ctdbd;
 		struct latency_counter recd;
 	} reclock;
+	struct {
+		uint32_t num_calls;
+		uint32_t num_current;
+		uint32_t num_pending;
+		uint32_t num_failed;
+		struct latency_counter latency;
+		uint32_t buckets[MAX_COUNT_BUCKETS];
+	} locks;
 	uint32_t total_calls;
 	uint32_t pending_calls;
 	uint32_t lockwait_calls;
@@ -697,6 +705,14 @@ struct ctdb_db_hot_key {
 	TDB_DATA key;
 };
 struct ctdb_db_statistics {
+	struct {
+		uint32_t num_calls;
+		uint32_t num_current;
+		uint32_t num_pending;
+		uint32_t num_failed;
+		struct latency_counter latency;
+		uint32_t buckets[MAX_COUNT_BUCKETS];
+	} locks;
 	uint32_t db_ro_delegations;
 	uint32_t db_ro_revokes;
 	uint32_t hop_count_bucket[MAX_COUNT_BUCKETS];

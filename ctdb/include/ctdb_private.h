@@ -136,6 +136,7 @@ struct ctdb_tunable {
 	uint32_t db_size_warn;
 	uint32_t pulldb_preallocation_size;
 	uint32_t no_ip_takeover_on_disabled;
+	uint32_t deadlock_timeout;
 };
 
 /*
@@ -538,6 +539,12 @@ struct ctdb_context {
 	const char *public_addresses_file;
 	struct trbt_tree *child_processes; 
 	TALLOC_CTX *debug_hung_script_ctx;
+
+	/* Used for locking record/db/alldb */
+	int lock_num_current;
+	int lock_num_pending;
+	struct lock_context *lock_current;
+	struct lock_context *lock_pending;
 };
 
 struct ctdb_db_context {
@@ -1541,5 +1548,37 @@ struct reloadips_all_reply {
 int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
 
 int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb);
+
+/* from server/ctdb_lock.c */
+struct lock_request;
+
+int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority);
+int ctdb_unlockall_prio(struct ctdb_context *ctdb, uint32_t priority);
+int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority);
+int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority);
+
+void ctdb_lock_free_request_context(struct lock_request *lock_req);
+
+struct lock_request *ctdb_lock_record(struct ctdb_db_context *ctdb_db,
+				      TDB_DATA key,
+				      bool auto_mark,
+				      void (*callback)(void *, bool),
+				      void *private_data);
+
+struct lock_request *ctdb_lock_db(struct ctdb_db_context *ctdb_db,
+				  bool auto_mark,
+				  void (*callback)(void *, bool),
+				  void *private_data);
+
+struct lock_request *ctdb_lock_alldb_prio(struct ctdb_context *ctdb,
+					  uint32_t priority,
+					  bool auto_mark,
+					  void (*callback)(void *, bool),
+					  void *private_data);
+
+struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
+				     bool auto_mark,
+				     void (*callback)(void *, bool),
+				     void *private_data);
 
 #endif
