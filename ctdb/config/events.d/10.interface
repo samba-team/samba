@@ -49,38 +49,9 @@ get_all_interfaces ()
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
 }
 
-delete_unexpected_ips ()
-{
-    [ "$CTDB_DELETE_UNEXPECTED_IPS" = "yes" ] || return
-
-    for _i in $all_interfaces ; do
-	# Get the IPs actually on this interface
-	_ips=$(ip addr show dev "$_i" | \
-	    sed -n -e 's@.*inet[[:space:]]*\([^[:space:]]*\).*scope global.*@\1@p')
-	for _ip in $_ips ; do
-
-	    # The NATGW address is OK
-	    if [ "$CTDB_NATGW_PUBLIC_IP" = "$_ip" -a \
-		"$CTDB_NATGW_PUBLIC_IFACE" = "$_i" ] ; then
-		continue
-	    fi
-
-	    # If CTDB knows about the address then it is OK
-	    if ctdb ipinfo "${_ip%/*}" >/dev/null 2>&1 ; then
-		continue
-	    fi
-
-	    echo "WARNING: Removing unmanaged IP address $_ip from interface $_i"
-	    delete_ip_from_iface "$_i" "${_ip%/*}" "${_ip#*/}"
-	done
-    done
-}
-
 monitor_interfaces()
 {
 	get_all_interfaces
-
-	delete_unexpected_ips
 
 	fail=false
 	up_interfaces_found=false
