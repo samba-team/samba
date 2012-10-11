@@ -3346,12 +3346,12 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 			ret = ctdb_ctrl_freeze_priority(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, 1);
 			if (ret != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node due to node being STOPPED\n"));
+				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node in STOPPED state\n"));
 				return;
 			}
 			ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, CTDB_RECOVERY_ACTIVE);
 			if (ret != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode due to node being stopped\n"));
+				DEBUG(DEBUG_ERR,(__location__ " Failed to activate recovery mode in STOPPED state\n"));
 
 				return;
 			}
