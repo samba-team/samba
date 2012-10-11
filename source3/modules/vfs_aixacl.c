@@ -23,8 +23,9 @@
 #include "vfs_aixacl_util.h"
 
 SMB_ACL_T aixacl_sys_acl_get_file(vfs_handle_struct *handle,
-				    const char *path_p,
-				    SMB_ACL_TYPE_T type)
+				  const char *path_p,
+				  SMB_ACL_TYPE_T type,
+				  TALLOC_CTX *mem_ctx)
 {
 	struct acl *file_acl = (struct acl *)NULL;
 	struct smb_acl_t *result = (struct smb_acl_t *)NULL;
@@ -71,7 +72,7 @@ SMB_ACL_T aixacl_sys_acl_get_file(vfs_handle_struct *handle,
 	DEBUG(10,("Got facl and returned it\n"));
 
 	
-	result = aixacl_to_smbacl(file_acl);
+	result = aixacl_to_smbacl(file_acl, mem_ctx);
 	SAFE_FREE(file_acl);
 	return result;
 	
@@ -80,7 +81,8 @@ SMB_ACL_T aixacl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T aixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				files_struct *fsp)
+				files_struct *fsp,
+				TALLOC_CTX *mem_ctx)
 {
 
 	struct acl *file_acl = (struct acl *)NULL;
@@ -122,7 +124,7 @@ SMB_ACL_T aixacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
 	DEBUG(10,("Got facl and returned it\n"));
 
-	result = aixacl_to_smbacl(file_acl);
+	result = aixacl_to_smbacl(file_acl, mem_ctx);
 	SAFE_FREE(file_acl);
 	return result;
 	

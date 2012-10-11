@@ -120,7 +120,7 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 	 * access acl. So we need to filter this out here.  
 	 */
 	result = solaris_acl_to_smb_acl(solaris_acl, count,
-					SMB_ACL_TYPE_ACCESS);
+					SMB_ACL_TYPE_ACCESS, mem_ctx);
 	if (result == NULL) {
 		DEBUG(10, ("conversion solaris_acl -> smb_acl failed (%s).\n",
 			   strerror(errno)));
