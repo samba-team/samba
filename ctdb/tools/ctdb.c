@@ -1106,10 +1106,6 @@ static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **a
 		i++;
 	}
 
-	if (options.machinereadable) {
-		printf(":Node:IP:\n");
-	}
-
 	ret = 2; /* matches ENOENT */
 	pnn = -1;
 	ip = "0.0.0.0";
