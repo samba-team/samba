@@ -1914,12 +1914,14 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	if ((security_info_wanted & SECINFO_SACL) &&
 			!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
 		DEBUG(10, ("Access to SACL denied.\n"));
+		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if ((security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|SECINFO_GROUP)) &&
 			!(fsp->access_mask & SEC_STD_READ_CONTROL)) {
 		DEBUG(10, ("Access to DACL, OWNER, or GROUP denied.\n"));
+		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -1940,6 +1942,7 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 			fsp, security_info_wanted, frame, &psd);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
