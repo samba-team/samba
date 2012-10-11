@@ -933,7 +933,7 @@ static void run_eventscripts_callback(struct ctdb_context *ctdb, int status,
 	ctdb_enable_monitoring(ctdb);
 
 	if (status != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to forcibly run eventscripts\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to run eventscripts\n"));
 	}
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
@@ -979,7 +979,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	/* Figure out what call they want. */
 	options = get_call((const char *)indata.dptr, &call);
 	if (!options) {
-		DEBUG(DEBUG_ERR, (__location__ " Invalid forced \"%s\"\n", (const char *)indata.dptr));
+		DEBUG(DEBUG_ERR, (__location__ " Invalid event name \"%s\"\n", (const char *)indata.dptr));
 		return -1;
 	}
 
