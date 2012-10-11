@@ -148,8 +148,6 @@ NTSTATUS printer_list_set_printer(TALLOC_CTX *mem_ctx,
 	TDB_DATA data;
 	uint64_t time_64;
 	uint32_t time_h, time_l;
-	const char *str = NULL;
-	const char *str2 = NULL;
 	NTSTATUS status;
 	int len;
 
@@ -164,24 +162,25 @@ NTSTATUS printer_list_set_printer(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (comment) {
-		str = comment;
-	} else {
-		str = "";
+	if (comment == NULL) {
+		comment = "";
 	}
 
-	if (location) {
-		str2 = location;
-	} else {
-		str2 = "";
+	if (location == NULL) {
+		location = "";
 	}
-
 
 	time_64 = last_refresh;
 	time_l = time_64 & 0xFFFFFFFFL;
 	time_h = time_64 >> 32;
 
-	len = tdb_pack(NULL, 0, PL_DATA_FORMAT, time_h, time_l, name, str, str2);
+	len = tdb_pack(NULL, 0,
+		       PL_DATA_FORMAT,
+		       time_h,
+		       time_l,
+		       name,
+		       comment,
+		       location);
 
 	data.dptr = talloc_array(key, uint8_t, len);
 	if (!data.dptr) {
@@ -192,7 +191,12 @@ NTSTATUS printer_list_set_printer(TALLOC_CTX *mem_ctx,
 	data.dsize = len;
 
 	len = tdb_pack(data.dptr, data.dsize,
-		       PL_DATA_FORMAT, time_h, time_l, name, str, str2);
+		       PL_DATA_FORMAT,
+		       time_h,
+		       time_l,
+		       name,
+		       comment,
+		       location);
 
 	status = dbwrap_store_bystring_upper(db, key, data, TDB_REPLACE);
 
