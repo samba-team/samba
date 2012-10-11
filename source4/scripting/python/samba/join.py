@@ -749,7 +749,7 @@ class dc_join(object):
             print "Done with always replicated NC (base, config, schema)"
 
             for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
-                if nc  in ctx.nc_list:
+                if nc in ctx.nc_list:
                     print "Replicating %s" % (str(nc))
                     repl.replicate(nc, source_dsa_invocation_id,
                                     destination_dsa_guid, rodc=ctx.RODC,
