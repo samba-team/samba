@@ -2778,7 +2778,6 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_control_get_ifaces *ifaces = NULL;
-	struct ctdb_all_public_ips *ips = NULL;
 	struct ctdb_uptime *uptime1 = NULL;
 	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
@@ -2818,14 +2817,6 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 				     "local node %u - force takeover run\n",
 				     pnn));
 		need_takeover_run = true;
-	}
-
-	/* read the ip allocation from the local node */
-	ret = ctdb_ctrl_get_public_ips(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get public ips from local node %u\n", pnn));
-		talloc_free(mem_ctx);
-		return -1;
 	}
 
 	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
@@ -2870,25 +2861,51 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	   we also request a ip reallocation.
 	*/
 	if (ctdb->tunable.disable_ip_failover == 0) {
+		struct ctdb_all_public_ips *ips = NULL;
+
+		/* read the *available* IPs from the local node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE, &ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get available public IPs from local node %u\n", pnn));
+			talloc_free(mem_ctx);
+			return -1;
+		}
+
 		for (j=0; j<ips->num; j++) {
-			if (ips->ips[j].pnn == -1 && nodemap->nodes[pnn].flags == 0) {
-				DEBUG(DEBUG_CRIT,("Public address '%s' is not assigned and we could serve this ip\n",
-						ctdb_addr_to_str(&ips->ips[j].addr)));
+			if (ips->ips[j].pnn == -1 &&
+			    nodemap->nodes[pnn].flags == 0) {
+				DEBUG(DEBUG_CRIT,("Public IP '%s' is not assigned and we could serve it\n",
+						  ctdb_addr_to_str(&ips->ips[j].addr)));
 				need_takeover_run = true;
-			} else if (ips->ips[j].pnn == pnn) {
+			}
+		}
+
+		talloc_free(ips);
+
+		/* read the *known* IPs from the local node */
+		ret = ctdb_ctrl_get_public_ips_flags(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, 0, &ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get known public IPs from local node %u\n", pnn));
+			talloc_free(mem_ctx);
+			return -1;
+		}
+
+		for (j=0; j<ips->num; j++) {
+			if (ips->ips[j].pnn == pnn) {
 				if (ctdb->do_checkpublicip && !ctdb_sys_have_ip(&ips->ips[j].addr)) {
-					DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
+					DEBUG(DEBUG_CRIT,("Public IP '%s' is assigned to us but not on an interface\n",
 						ctdb_addr_to_str(&ips->ips[j].addr)));
 					need_takeover_run = true;
 				}
 			} else {
-				if (ctdb->do_checkpublicip && ctdb_sys_have_ip(&ips->ips[j].addr)) {
+				if (ctdb->do_checkpublicip &&
+				    ctdb_sys_have_ip(&ips->ips[j].addr)) {
 
-					DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving. Removing it.\n", 
+					DEBUG(DEBUG_CRIT,("We are still serving a public IP '%s' that we should not be serving. Removing it\n", 
 						ctdb_addr_to_str(&ips->ips[j].addr)));
 
 					if (ctdb_ctrl_release_ip(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ips->ips[j]) != 0) {
-						DEBUG(DEBUG_ERR,("Failed to release local ip address\n"));
+						DEBUG(DEBUG_ERR,("Failed to release local IP address\n"));
 					}
 				}
 			}
