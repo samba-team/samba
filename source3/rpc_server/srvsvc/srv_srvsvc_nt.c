@@ -2106,7 +2106,6 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 				  struct srvsvc_NetGetFileSecurity *r)
 {
 	struct smb_filename *smb_fname = NULL;
-	struct security_descriptor *psd = NULL;
 	size_t sd_size;
 	char *servicename = NULL;
 	SMB_STRUCT_STAT st;
@@ -2204,11 +2203,11 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	if (psd && psd->dacl) {
-		psd->dacl->revision = NT4_ACL_REVISION;
+	if (sd_buf->sd->dacl) {
+		sd_buf->sd->dacl->revision = NT4_ACL_REVISION;
 	}
 
-	sd_size = ndr_size_security_descriptor(psd, 0);
+	sd_size = ndr_size_security_descriptor(sd_buf->sd, 0);
 
 	sd_buf->sd_size = sd_size;
 
@@ -2238,7 +2237,6 @@ error_exit:
 
  done:
 
-	TALLOC_FREE(psd);
 	TALLOC_FREE(smb_fname);
 
 	return werr;
