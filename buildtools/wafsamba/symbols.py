@@ -569,7 +569,7 @@ def symbols_whyneeded(task):
 
 def report_duplicate(bld, binname, sym, libs, fail_on_error):
     '''report duplicated symbols'''
-    if sym in ['_init', '_fini']:
+    if sym in ['_init', '_fini', '_edata', '_end', '__bss_start']:
         return
     libnames = []
     for lib in libs:
