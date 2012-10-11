@@ -5216,11 +5216,6 @@ else
 		AC_DEFINE(HAVE_HPUX_ACLS,1,[Whether HPUX ACLs are available])
 		default_static_modules="$default_static_modules vfs_hpuxacl"
 		;;
-	*irix*)
-		AC_MSG_NOTICE(Using IRIX ACLs)
-		AC_DEFINE(HAVE_IRIX_ACLS,1,[Whether IRIX ACLs are available])
-		default_static_modules="$default_static_modules vfs_irixacl"
-		;;
 	*aix*)
 		AC_MSG_NOTICE(Using AIX ACLs)
 		AC_DEFINE(HAVE_AIX_ACLS,1,[Whether AIX ACLs are available])
@@ -6391,7 +6386,6 @@ SMB_MODULE(vfs_posixacl, \$(VFS_POSIXACL_OBJ), "bin/posixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aixacl, \$(VFS_AIXACL_OBJ), "bin/aixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aixacl2, \$(VFS_AIXACL2_OBJ), "bin/aixacl2.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_solarisacl, \$(VFS_SOLARISACL_OBJ), "bin/solarisacl.$SHLIBEXT", VFS)
-SMB_MODULE(vfs_irixacl, \$(VFS_IRIXACL_OBJ), "bin/irixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_hpuxacl, \$(VFS_HPUXACL_OBJ), "bin/hpuxacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_tru64acl, \$(VFS_TRU64ACL_OBJ), "bin/tru64acl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_catia, \$(VFS_CATIA_OBJ), "bin/catia.$SHLIBEXT", VFS)
