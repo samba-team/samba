@@ -1017,7 +1017,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
     if not is_valid_os_level(os_level):
         raise Exception("Invalid os level: %r" % os_level)
 
-    if dns_backend is "NONE":
+    if dns_backend == "NONE":
         logger.info("No DNS backend set, not configuring DNS")
         return
 
