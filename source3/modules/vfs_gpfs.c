@@ -365,7 +365,8 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
+		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+						mem_ctx, ppdesc);
 	}
 
 	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
@@ -398,7 +399,8 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
+		return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+					       mem_ctx, ppdesc);
 	}
 
 	result = gpfs_get_nfs4_acl(name, &pacl);
@@ -718,16 +720,18 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *
 				      DATA_BLOB *blob)
 {
 	struct gpfs_config_data *config;
+	SMB4ACL_T *pacl = NULL;
+	int result;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
-				return NULL);
+				return -1);
 
 	if (!config->acl) {
 		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, mem_ctx, blob_description, blob);
 	}
 
-	result = gpfs_get_nfs4_acl(name, &pacl);
+	result = gpfs_get_nfs4_acl(path_p, &pacl);
 	if (result == 0) {
 		/* We don't have a way to linearlise the NFS4 ACL
 		 * right now, and it is much closer to the NT ACL
@@ -746,10 +750,12 @@ static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *
 				      DATA_BLOB *blob)
 {
 	struct gpfs_config_data *config;
+	SMB4ACL_T *pacl = NULL;
+	int result;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
-				return NULL);
+				return -1);
 
 	if (!config->acl) {
 		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description, blob);
