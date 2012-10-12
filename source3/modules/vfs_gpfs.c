@@ -362,7 +362,8 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
+		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+						mem_ctx, ppdesc);
 	}
 
 	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
@@ -395,7 +396,8 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
+		return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+					       mem_ctx, ppdesc);
 	}
 
 	result = gpfs_get_nfs4_acl(name, &pacl);
