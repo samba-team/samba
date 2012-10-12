@@ -50,7 +50,7 @@ struct gpfs_config_data {
 };
 
 
-static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, 
+static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 				 uint32 share_mode, uint32 access_mask)
 {
 
