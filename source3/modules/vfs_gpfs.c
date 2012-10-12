@@ -714,7 +714,8 @@ static SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
 				     GPFS_ACL_TYPE_ACCESS, mem_ctx);
 }
 
-static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p,
+static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
+				      const char *path_p,
 				      TALLOC_CTX *mem_ctx,
 				      char **blob_description,
 				      DATA_BLOB *blob)
@@ -728,7 +729,10 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *
 				return -1);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p, mem_ctx, blob_description, blob);
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, path_p,
+							  mem_ctx,
+							  blob_description,
+							  blob);
 	}
 
 	result = gpfs_get_nfs4_acl(path_p, &pacl);
@@ -744,7 +748,8 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *
 					   blob_description, blob);
 }
 
-static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *fsp,
+static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+				      files_struct *fsp,
 				      TALLOC_CTX *mem_ctx,
 				      char **blob_description,
 				      DATA_BLOB *blob)
@@ -758,7 +763,8 @@ static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *
 				return -1);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx, blob_description, blob);
+		return SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle, fsp, mem_ctx,
+							blob_description, blob);
 	}
 
 	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
