@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.0.  This is *not*
+This is the third release candidate of Samba 4.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -58,7 +58,7 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
-Samba 4.0.0rc2 ships with two distinct file servers.  We now use the
+Samba 4.0.0rc3 ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
 default.
 
@@ -160,6 +160,64 @@ smb.conf changes
    winbindd privileged socket directory	New
    winbind sealed pipes			New
    winbindd socket directory		New
+
+
+CHANGES SINCE 4.0.0rc2
+======================
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 8966: Fix 'net rpc share allowedusers' to work with 2008r2.
+    * BUG 9209: Parse of invalid SMB2 create blob can cause smbd crash.
+    * BUG 9214: Bad user supplied SMB2 credit value can cause smbd to call
+      smb_panic.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9235: Update Samba3-HOWTO Collection.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9235: Fix opening and ending tag mismatch in Samba3-HOWTO.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 9225: Fix return code for deleted DNS records.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9223: Fix uninitialized variable in the cldap server.
+    * BUG 9268: Make tdb robust against improper CLEAR_IF_FIRST restart.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9196: Don't take 'state->te' as indication for "was_deferred".
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 9240: Remove unused variable in DNS server.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 9268: Make tdb robust against shrinking tdbs.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9244: Build pam_smbpass module only if enabled.
+    * BUG 9245: Make sure the registry is set up before we init printing.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 7826: Remove link to Using Samba.
+    * BUG 9243: Remove duplicate synonym min protocol.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 9243: Add basic documentation for 'server min protocol'.
+
+
+o   Matthias Dieter Wallnöfer <mdw@samba.org>
+    * BUG 9183: Introduce the wildcard binding feature to allow DNS to listen on
+      localhost.
 
 
 CHANGES SINCE 4.0.0rc1
