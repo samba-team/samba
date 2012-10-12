@@ -438,8 +438,14 @@ wait_until_node_has_status ()
 
 # Useful for superficially testing IP failover.
 # IPs must be on nodes matching nodeglob.
+# If the first argument is '!' then the IPs must not be on nodes
+# matching nodeglob.
 ips_are_on_nodeglob ()
 {
+    local negating=false
+    if [ "$1" = "!" ] ; then
+	negating=true ; shift
+    fi
     local nodeglob="$1" ; shift
     local ips="$*"
 
@@ -447,17 +453,23 @@ ips_are_on_nodeglob ()
 
     all_ips_on_node 1
 
-    while read ip pnn ; do
-	for check in $ips ; do
+    for check in $ips ; do
+	while read ip pnn ; do
 	    if [ "$check" = "$ip" ] ; then
 		case "$pnn" in
-		    ($nodeglob) : ;;
-		    (*) return 1  ;;
+		    ($nodeglob) if $negating ; then return 1 ; fi ;;
+		    (*) if ! $negating ; then return 1 ; fi  ;;
 		esac
 		ips="${ips/${ip}}" # Remove from list
+		break
 	    fi
-	done
-    done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+	    # If we're negating and we didn't see the address then it
+	    # isn't hosted by anyone!
+	    if $negating ; then
+		ips="${ips/${check}}"
+	    fi
+	done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+    done
 
     ips="${ips// }" # Remove any spaces.
     [ -z "$ips" ]
