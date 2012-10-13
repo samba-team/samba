@@ -104,8 +104,18 @@ struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
 	return result;
 }
 
-/* Change the granted access per each ACE */
-
+/**
+ * @brief Modify the tree to mark specified access rights as granted
+ *
+ * This function will modify the root and the child of the tree pointed by
+ * root, so that for each tree element the bits set in access_mask are
+ * marked as granted.
+ *
+ * @param[in]  root        An object_tree structure that we want to modify
+ *
+ * @param[in]  access_mask A bitfield of access right that we want to mark as
+ *                         granted in the whole tree.
+ */
 void object_tree_modify_access(struct object_tree *root,
 			       uint32_t access_mask)
 {
