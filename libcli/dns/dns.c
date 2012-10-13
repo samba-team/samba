@@ -38,6 +38,8 @@ struct dns_udp_request_state {
 	size_t reply_len;
 };
 
+#define DNS_REQUEST_TIMEOUT 2
+
 /* Declare callback functions used below. */
 static void dns_udp_request_get_reply(struct tevent_req *subreq);
 static void dns_udp_request_done(struct tevent_req *subreq);
@@ -91,6 +93,12 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	if (!tevent_req_set_endtime(req, ev,
+				timeval_current_ofs(DNS_REQUEST_TIMEOUT, 0))) {
+		return tevent_req_post(req, ev);
+	}
+
 
 	tevent_req_set_callback(subreq, dns_udp_request_get_reply, req);
 	return req;
