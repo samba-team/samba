@@ -5,6 +5,9 @@ import Logs, sys, Options
 def configure(conf):
     conf.DEFINE('HAVE_CCAN', 1)
     conf.CHECK_HEADERS('err.h')
+    conf.CHECK_HEADERS('byteswap.h')
+    conf.CHECK_FUNCS('bswap_64', link=False, headers="byteswap.h")
+
     # FIXME: if they don't have -Werror, these will all fail.  But they
     # probably will anyway...
     conf.CHECK_CODE('int __attribute__((cold)) func(int x) { return x; }',
@@ -107,6 +110,9 @@ def configure(conf):
                     define='HAVE_BUILTIN_TYPES_COMPATIBLE_P')
     conf.CHECK_CODE('int *foo = (int[]) { 1, 2, 3, 4 }; return foo[0] ? 0 : 1;',
                     define='HAVE_COMPOUND_LITERALS')
+    conf.CHECK_CODE('struct foo { unsigned int x; int arr[]; };',
+                    addmain=False, link=False,
+                    define='HAVE_FLEXIBLE_ARRAY_MEMBER')
     conf.CHECK_CODE("""#include <ctype.h>
 	  int main(void) { return isblank(' ') ? 0 : 1; }""",
                     link=True, addmain=False, add_headers=False,
@@ -120,6 +126,21 @@ def configure(conf):
 
     # backtrace could be in libexecinfo or in libc
     conf.CHECK_FUNCS_IN('backtrace backtrace_symbols', 'execinfo', checklibc=True, headers='execinfo.h')
+
+    # Only check for FILE_OFFSET_BITS=64 if off_t is normally small:
+    # use raw routines because wrappers include previous _GNU_SOURCE
+    # or _FILE_OFFSET_BITS defines.
+    conf.check(fragment="""#include <sys/types.h>
+               int main(void) { return !(sizeof(off_t) < 8); }""",
+               execute=True, msg='Checking for small off_t',
+               define_name='SMALL_OFF_T')
+    # Unreliable return value above, hence use define.
+    if conf.CONFIG_SET('SMALL_OFF_T'):
+        conf.check(fragment="""#include <sys/types.h>
+                   int main(void) { return !(sizeof(off_t) >= 8); }""",
+                   execute=True, msg='Checking for -D_FILE_OFFSET_BITS=64',
+                   ccflags='-D_FILE_OFFSET_BITS=64',
+                   define_name='HAVE_FILE_OFFSET_BITS')
 
 def ccan_module(bld, name, deps=''):
     bld.SAMBA_SUBSYSTEM('ccan-%s' % name,
