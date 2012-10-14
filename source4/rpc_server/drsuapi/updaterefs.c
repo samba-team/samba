@@ -120,9 +120,24 @@ static WERROR uref_del_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	return WERR_OK;	
 }
 
-/* 
-  drsuapi_DsReplicaUpdateRefs - a non RPC version callable from getncchanges
-*/
+/**
+ * @brief Update the references for the given NC and the destination DSA object
+ *
+ * This function is callable from non RPC functions (ie. getncchanges), it
+ * will validate the request to update reference and then will add/del a repsTo
+ * to the specified server referenced by its DSA GUID in the request.
+ *
+ * @param[in]       b_state          A bind_state object
+ *
+ * @param[in]       mem_ctx          A talloc context for memory allocation
+ *
+ * @param[in]       req              A drsuapi_DsReplicaUpdateRefsRequest1
+ *                                   object which NC, which server and which
+ *                                   action (add/delete) should be performed
+ *
+ * @return                           WERR_OK is success, different error
+ *                                   otherwise.
+ */
 WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ctx,
 			  struct drsuapi_DsReplicaUpdateRefsRequest1 *req)
 {
