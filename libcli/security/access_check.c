@@ -374,7 +374,25 @@ static const struct GUID *get_ace_object_type(struct security_ace *ace)
 	return NULL;
 }
 
-/* modified access check for the purposes of DS security
+/**
+ * @brief Perform directoryservice (DS) related access checks for a given user
+ *
+ * Perform DS access checks for the user represented by its security_token, on
+ * the provided security descriptor. If an tree associating GUID and access
+ * required is provided then object access (OA) are checked as well. *
+ * @param[in]   sd             The security descritor against which the required
+ *                             access are requested
+ *
+ * @param[in]   token          The security_token associated with the user to
+ *                             test
+ *
+ * @param[in]   access_desired A bitfield of rights that must be granted for the
+ *                             given user in the specified SD.
+ *
+ * If one
+ * of the entry in the tree grants all the requested rights for the given GUID
+ * FIXME
+ * tree can be null if not null it's the
  * Lots of code duplication, it will ve united in just one
  * function eventually */
 
