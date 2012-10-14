@@ -23,6 +23,8 @@ AC_SUBST(CCAN_CFLAGS)
 # fairly harmless.
 AC_CHECK_HEADERS(err.h)
 
+AC_CHECK_HEADERS(byteswap.h)
+
 AC_CACHE_CHECK([whether we can compile with __attribute__((cold))],
 	       samba_cv_attribute_cold,
 	       [
@@ -270,6 +272,19 @@ if test x"$samba_cv_compound_literals" = xyes ; then
 	     [whether we have compound literals])
 fi
 
+AC_CACHE_CHECK([whether we have flexible array members],
+	       samba_cv_have_flex_arr_member,
+	       [
+	         AC_COMPILE_IFELSE([AC_LANG_SOURCE(
+			[struct foo { unsigned int x; int arr@<:@@:>@; }; ])],
+			samba_cv_have_flex_arr_member=yes)
+		])
+
+if test x"$samba_cv_have_flex_arr_member" = xyes ; then
+   AC_DEFINE(HAVE_FLEXIBLE_ARRAY_MEMBER, 1,
+	     [whether we have flexible array member support])
+fi
+
 AC_CACHE_CHECK([whether we have isblank],
 	       samba_cv_have_isblank,
 	       [
@@ -331,3 +346,4 @@ if test x"$samba_cv_warn_unused_result" = xyes ; then
    AC_DEFINE(HAVE_WARN_UNUSED_RESULT, 1,
 	     [whether we have __attribute__((warn_unused_result))])
 fi
+AC_HAVE_DECL(bswap_64, [#include <byteswap.h>])
