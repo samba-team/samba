@@ -243,19 +243,24 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 
 	p = strstr_m(name, "@GMT-");
 	if (p == NULL) {
+		DEBUG(11, ("@GMT not found\n"));
 		goto no_snapshot;
 	}
 	if ((p > name) && (p[-1] != '/')) {
 		/* the GMT-token does not start a path-component */
+		DEBUG(10, ("not at start, p=%p, name=%p, p[-1]=%d\n",
+			   p, name, (int)p[-1]));
 		goto no_snapshot;
 	}
 	q = strptime(p, GMT_FORMAT, &tm);
 	if (q == NULL) {
+		DEBUG(10, ("strptime failed\n"));
 		goto no_snapshot;
 	}
 	tm.tm_isdst = -1;
 	timestamp = timegm(&tm);
 	if (timestamp == (time_t)-1) {
+		DEBUG(10, ("timestamp==-1\n"));
 		goto no_snapshot;
 	}
 	if ((p == name) && (q[0] == '\0')) {
@@ -279,6 +284,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		 * TODO: Is this correct? Or would the GMT tag as the
 		 * last component be a valid input?
 		 */
+		DEBUG(10, ("q[0] = %d\n", (int)q[0]));
 		goto no_snapshot;
 	}
 	q += 1;
@@ -301,6 +307,8 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 			   "insert string '%s'\n", name, insert));
 
 		have_insert = (strstr(name, insert+1) != NULL);
+		DEBUG(10, ("have_insert=%d, name=%s, insert+1=%s\n",
+			   (int)have_insert, name, insert+1));
 		if (have_insert) {
 			DEBUG(10, (__location__ ": insert string '%s' found in "
 				   "path '%s' found in snapdirseverywhere mode "
