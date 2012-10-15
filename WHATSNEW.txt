@@ -170,18 +170,39 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 9209: Parse of invalid SMB2 create blob can cause smbd crash.
     * BUG 9214: Bad user supplied SMB2 credit value can cause smbd to call
       smb_panic.
+    * BUG 9222: Document that signing cannot be disabled for SMB2 by design.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
     * BUG 9235: Update Samba3-HOWTO Collection.
+    * BUG 9271: samba-tool: Skip chown in sysvolreset when it would fail on
+      a GID.
+    * BUG 9274: Update Samba3-HOWTO Collection.
 
 
 o   Björn Baumbach <bb@sernet.de>
     * BUG 9235: Fix opening and ending tag mismatch in Samba3-HOWTO.
+    * BUG 9271: Fix typos in samba_backup.
+    * BUG 9274: Add delete_lost option to vfs_streams_depot.8.
 
 
 o   Kai Blin <kai@samba.org>
     * BUG 9225: Fix return code for deleted DNS records.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9177: pam_winbind: Match more return codes when wbcGetPwnam has
+    failed.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9269: Fix 64bit-portability-issue.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 5670: Apply some Solaris packaging fixes.
+    * BUG 8107: Fix poll replacement to become a msleep replacement.
+    * BUG 8344: Fix --with(out)-sendfile-support option handling.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -190,6 +211,7 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9271: Several samba-tool fixes.
     * BUG 9196: Don't take 'state->te' as indication for "was_deferred".
 
 
@@ -202,17 +224,26 @@ o   Rusty Russell <rusty@rustcorp.com.au>
 
 
 o   Andreas Schneider <asn@samba.org>
+    * BUG 8769: Fix RAW printing for normal users.
+    * BUG 9112: Increase debug level for info that the db is empty.
     * BUG 9244: Build pam_smbpass module only if enabled.
     * BUG 9245: Make sure the registry is set up before we init printing.
+    * BUG 9276: Add config for systemd-tmpfiles.
+    * BUG 9280: Add support for reloading systemd services.
 
 
 o   Karolin Seeger <kseeger@samba.org>
     * BUG 7826: Remove link to Using Samba.
+    * BUG 8802: Add basic manpages for 'samba' and 'samba-tool'.
+    * BUG 9165: Fix makerpms.sh on RHEL.
     * BUG 9243: Remove duplicate synonym min protocol.
+    * BUG 9271: Several samba-tool fixes.
 
 
 o   Jelmer Vernooij <jelmer@samba.org>
     * BUG 9243: Add basic documentation for 'server min protocol'.
+    * BUG 9271: Several samba-tool fixes.
+    * BUG 9274: Add documentation for several parameters.
 
 
 o   Matthias Dieter Wallnöfer <mdw@samba.org>
