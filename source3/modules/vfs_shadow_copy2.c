@@ -263,10 +263,10 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("timestamp==-1\n"));
 		goto no_snapshot;
 	}
-	if ((p == name) && (q[0] == '\0')) {
+	if (q[0] == '\0') {
 		/* the name consists of only the GMT token */
 		if (pstripped != NULL) {
-			stripped = talloc_strdup(mem_ctx, "");
+			stripped = talloc_strndup(mem_ctx, name, p - name);
 			if (stripped == NULL) {
 				return false;
 			}
