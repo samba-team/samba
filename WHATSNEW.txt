@@ -188,6 +188,7 @@ o   Björn Baumbach <bb@sernet.de>
 
 o   Kai Blin <kai@samba.org>
     * BUG 9225: Fix return code for deleted DNS records.
+    * BUG 8878: Time out UDP requests after DNS_REQUEST_TIMEOUT seconds.
 
 
 o   Günther Deschner <gd@samba.org>
@@ -217,6 +218,24 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   Matthieu Patou <mat@matws.net>
     * BUG 9240: Remove unused variable in DNS server.
+    * BUG 9252: Preliminary tests for dcpromo in Windows 2012 fails with
+      Samba DC.
+    * BUG 9253: Crackname returns a dns domain name even if there is no cracked
+      SID.
+    * BUG 9255: Getncchanges with exop for repl_obj returns highest_usn.
+    * BUG 9256: Getncchanges with exop for repl_obj_with_secrets should always
+      be allowed for RWDC.
+    * BUG 9257: LDAP server has at least one un-initialized variable.
+    * BUG 9258: LDAP server ignore configuration values set in the database for
+      timeout.
+    * BUG 9259: rodc join fails complaining that it can't find a RWDC.
+    * BUG 9260: kccdrs_replica_get_info returns invalid level when non
+      supported should be returned.
+    * BUG 9261: ds_replica_sync fails when specifying a name and not a guid.
+    * BUG 9264: getncchanges returns invalid_parameters when it should return
+      bad_nc.
+    * BUG 9254: DsExecuteKCC returns wrong error code if taskid != 0.
+    * BUG 9265: Bind dlz fails to start if there is a trustedanchors zone.
 
 
 o   Rusty Russell <rusty@rustcorp.com.au>
