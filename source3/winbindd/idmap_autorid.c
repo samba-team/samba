@@ -309,6 +309,8 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	   that is a deficiency in the idmap_rid design. */
 
 	map->status = ID_MAPPED;
+	map->xid.type = ID_TYPE_BOTH;
+
 	return NT_STATUS_OK;
 }
 
@@ -333,6 +335,7 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 	}
 	map->xid.id = global->minvalue +
 	    (global->rangesize * domain->domainnum)+rid;
+	map->xid.type = ID_TYPE_BOTH;
 
 	/* We **really** should have some way of validating
 	   the SID exists and is the correct type here.  But
