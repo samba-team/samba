@@ -4067,6 +4067,77 @@ static int control_clearlog(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
+/*
+  dump logs from the recovery daemon
+ */
+static int control_rdgetlog(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TDB_DATA data;
+	struct ctdb_get_log_addr log_addr;
+
+	if (argc != 1) {
+		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
+		return -1;
+	}
+
+	if (isalpha(argv[0][0]) || argv[0][0] == '-') {
+		log_addr.level = get_debug_by_desc(argv[0]);
+	} else {
+		log_addr.level = strtol(argv[0], NULL, 0);
+	}
+
+	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (log_addr.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+	log_addr.srvid = getpid();
+
+	/* register a message port for receiving the reply so that we
+	   can receive the reply
+	*/
+	ctdb_client_set_message_handler(ctdb, log_addr.srvid, log_handler, NULL);
+	data.dptr = (uint8_t *)&log_addr;
+	data.dsize = sizeof(log_addr);
+
+	ret = ctdb_client_send_message(ctdb, options.pnn, CTDB_SRVID_GETLOG, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send getlog request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	/* this loop will terminate when we have received the reply */
+	while (1) {	
+		event_loop_once(ctdb->ev);
+	}
+
+	return 0;
+}
+
+/*
+  clear logs on the recovery daemon
+ */
+static int control_rdclearlog(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	TDB_DATA data;
+	struct ctdb_get_log_addr log_addr;
+
+	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (log_addr.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+
+	ret = ctdb_client_send_message(ctdb, options.pnn, CTDB_SRVID_CLEARLOG, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send clearlog request message to %u\n", options.pnn));
+		return -1;
+	}
+	return 0;
+}
+
 
 static uint32_t reloadips_finished;
 
@@ -5784,6 +5855,8 @@ static const struct {
 	{ "getdebug",        control_getdebug,          true,	false,  "get debug level" },
 	{ "getlog",          control_getlog,            true,	false,  "get the log data from the in memory ringbuffer", "<level>" },
 	{ "clearlog",          control_clearlog,        true,	false,  "clear the log data from the in memory ringbuffer" },
+	{ "rdgetlog",        control_rdgetlog,            true,	false,  "get the log data from the in recoverd memory ringbuffer", "<level>" },
+	{ "rdclearlog",      control_rdclearlog,        true,	false,  "clear the log data from the in recoverd memory ringbuffer" },
 	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname> [persistent]" },
 	{ "dumpmemory",      control_dumpmemory,        true,	false,  "dump memory map to stdout" },
 	{ "rddumpmemory",    control_rddumpmemory,      true,	false,  "dump memory map from the recovery daemon to stdout" },
