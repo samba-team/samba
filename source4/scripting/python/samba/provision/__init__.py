@@ -241,12 +241,16 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
         names.policyid_dc = str(res8[0]["cn"]).replace("{","").replace("}","")
     else:
         names.policyid_dc = None
-    res9 = idmapdb.search(expression="(cn=%s)" %
-                            (security.SID_BUILTIN_ADMINISTRATORS),
-                            attrs=["xidNumber"])
+
+    res9 = idmapdb.search(expression="(cn=%s-%s)" %
+                          (str(names.domainsid), security.DOMAIN_RID_ADMINISTRATOR),
+                          attrs=["xidNumber", "type"])
     if len(res9) != 1:
-        raise ProvisioningError("Unable to find uid/gid for Domain Admins rid")
-    names.wheel_gid = res9[0]["xidNumber"]
+        raise ProvisioningError("Unable to find uid/gid for Domain Admins rid (%s-%s" % (str(names.domainsid), security.DOMAIN_RID_ADMINISTRATOR))
+    if res9[0]["type"][0] == "ID_TYPE_BOTH":
+        names.root_gid = res9[0]["xidNumber"][0]
+    else:
+        names.root_gid = pwd.getpwuid(int(res9[0]["xidNumber"][0])).pw_gid
     return names
 
 
@@ -692,7 +696,7 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
 
 
 def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
-                        users_gid, wheel_gid):
+                        users_gid, root_gid):
     """setup reasonable name mappings for sam names to unix names.
 
     :param samdb: SamDB object.
@@ -702,10 +706,9 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
     :param root_uid: uid of the UNIX root user.
     :param nobody_uid: uid of the UNIX nobody user.
     :param users_gid: gid of the UNIX users group.
-    :param wheel_gid: gid of the UNIX wheel group.
+    :param root_gid: gid of the UNIX root group.
     """
     idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
-    idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
 
     idmap.setup_name_mapping(sid + "-500", idmap.TYPE_UID, root_uid)
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
@@ -1649,7 +1652,7 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                            policyguid_dc)
         if not skip_sysvolacl:
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid,
-                         paths.wheel_gid, domainsid, names.dnsdomain,
+                         paths.root_gid, domainsid, names.dnsdomain,
                          names.domaindn, lp, use_ntvfs)
         else:
             logger.info("Setting acl on sysvol skipped")
@@ -1781,7 +1784,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         krbtgtpass=None, domainguid=None, policyguid=None, policyguid_dc=None,
         dns_backend=None, dns_forwarder=None, dnspass=None,
         invocationid=None, machinepass=None, ntdsguid=None,
-        root=None, nobody=None, users=None, wheel=None, backup=None, aci=None,
+        root=None, nobody=None, users=None, backup=None, aci=None,
         serverrole=None, dom_for_fun_level=None, backend_type=None,
         sitename=None, ol_mmr_urls=None, ol_olc=None, slapd_path="/bin/false",
         useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
@@ -1811,10 +1814,8 @@ def provision(logger, session_info, credentials, smbconf=None,
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])
     users_gid = findnss_gid([users or "users", 'users', 'other', 'staff'])
-    if wheel is None:
-        wheel_gid = findnss_gid(["wheel", "adm"])
-    else:
-        wheel_gid = findnss_gid([wheel])
+    root_gid = pwd.getpwuid(root_uid).pw_gid
+
     try:
         bind_gid = findnss_gid(["bind", "named"])
     except KeyError:
@@ -1877,7 +1878,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
     paths.bind_gid = bind_gid
     paths.root_uid = root_uid;
-    paths.wheel_gid = wheel_gid
+    paths.root_gid = root_gid
 
     if hostip is None:
         logger.info("Looking up IPv4 addresses")
@@ -1928,7 +1929,7 @@ def provision(logger, session_info, credentials, smbconf=None,
         file = tempfile.NamedTemporaryFile(dir=os.path.abspath(paths.sysvol))
         try:
             try:
-                smbd.set_simple_acl(file.name, 0755, wheel_gid)
+                smbd.set_simple_acl(file.name, 0755, root_gid)
             except Exception:
                 if not smbd.have_posix_acls():
                     # This clue is only strictly correct for RPM and
@@ -1938,7 +1939,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
                 raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  Try the mounting the filesystem with the 'acl' option.")
             try:
-                smbd.chown(file.name, root_uid, wheel_gid)
+                smbd.chown(file.name, root_uid, root_gid)
             except Exception:
                 raise ProvisioningError("Unable to chown a file on your filesystem.  You may not be running provision as root.")
         finally:
@@ -2002,7 +2003,7 @@ def provision(logger, session_info, credentials, smbconf=None,
 
         setup_name_mappings(idmap, sid=str(domainsid),
                             root_uid=root_uid, nobody_uid=nobody_uid,
-                            users_gid=users_gid, wheel_gid=wheel_gid)
+                            users_gid=users_gid, root_gid=root_gid)
 
         logger.info("Setting up SAM db")
         samdb = setup_samdb(paths.samdb, session_info,
@@ -2104,7 +2105,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
         serverdn=None, domain=None, hostname=None, domainsid=None,
         adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
         policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
-        dns_backend=None, root=None, nobody=None, users=None, wheel=None,
+        dns_backend=None, root=None, nobody=None, users=None,
         backup=None, serverrole=None, ldap_backend=None,
         ldap_backend_type=None, sitename=None, debuglevel=1, use_ntvfs=False):
 
