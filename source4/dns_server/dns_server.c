@@ -748,7 +748,11 @@ static void dns_task_init(struct task_server *task)
 	int ret;
 	struct ldb_result *res;
 	static const char * const attrs[] = { "name", NULL};
+	static const char * const attrs_none[] = { NULL};
 	unsigned int i;
+	struct ldb_message *dns_acc;
+	char *hostname_lower;
+	char *dns_spn;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -787,26 +791,55 @@ static void dns_task_init(struct task_server *task)
 		return;
 	}
 
-	cli_credentials_set_conf(dns->server_credentials, task->lp_ctx);
-	status = cli_credentials_set_machine_account(dns->server_credentials, task->lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task,
-			talloc_asprintf(task, "Failed to obtain server credentials, perhaps a standalone server?: %s\n",
-					nt_errstr(status)),
-			true);
+	dns->samdb = samdb_connect(dns, dns->task->event_ctx, dns->task->lp_ctx,
+			      system_session(dns->task->lp_ctx), 0);
+	if (!dns->samdb) {
+		task_server_terminate(task, "dns: samdb_connect failed", true);
 		return;
+	}
+
+	cli_credentials_set_conf(dns->server_credentials, task->lp_ctx);
+
+	hostname_lower = strlower_talloc(dns, lpcfg_netbios_name(task->lp_ctx));
+	dns_spn = talloc_asprintf(dns, "DNS/%s.%s",
+				  hostname_lower,
+				  lpcfg_dnsdomain(task->lp_ctx));
+	TALLOC_FREE(hostname_lower);
+
+	ret = dsdb_search_one(dns->samdb, dns, &dns_acc,
+			      ldb_get_default_basedn(dns->samdb), LDB_SCOPE_SUBTREE,
+			      attrs_none, 0, "(servicePrincipalName=%s)",
+			      dns_spn);
+	if (ret == LDB_SUCCESS) {
+		TALLOC_FREE(dns_acc);
+		if (!dns_spn) {
+			task_server_terminate(task, "dns: talloc_asprintf failed", true);
+			return;
+		}
+		status = cli_credentials_set_stored_principal(dns->server_credentials, task->lp_ctx, dns_spn);
+		if (!NT_STATUS_IS_OK(status)) {
+			task_server_terminate(task,
+					      talloc_asprintf(task, "Failed to obtain server credentials for DNS, "
+							      "despite finding it in the samdb! %s\n",
+							      nt_errstr(status)),
+					      true);
+			return;
+		}
+	} else {
+		TALLOC_FREE(dns_spn);
+		status = cli_credentials_set_machine_account(dns->server_credentials, task->lp_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			task_server_terminate(task,
+					      talloc_asprintf(task, "Failed to obtain server credentials, perhaps a standalone server?: %s\n",
+							      nt_errstr(status)),
+					      true);
+			return;
+		}
 	}
 
 	dns->tkeys = tkey_store_init(dns, TKEY_BUFFER_SIZE);
 	if (!dns->tkeys) {
 		task_server_terminate(task, "Failed to allocate tkey storage\n", true);
-		return;
-	}
-
-	dns->samdb = samdb_connect(dns, dns->task->event_ctx, dns->task->lp_ctx,
-			      system_session(dns->task->lp_ctx), 0);
-	if (!dns->samdb) {
-		task_server_terminate(task, "dns: samdb_connect failed", true);
 		return;
 	}
 
