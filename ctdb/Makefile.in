@@ -110,9 +110,9 @@ SBINS = bin/ctdbd
 
 DIRS = lib bin tests/bin
 
-.SUFFIXES: .c .o .h .1 .1.xml .1.html
+.SUFFIXES: .c .o .h
 
-all: showflags dirs doc $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
+all: showflags dirs $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -285,17 +285,8 @@ tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-.1.xml.1:
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
-
-.1.xml.1.html:
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
-
-doc: doc/ctdb.1 doc/ctdb.1.html \
-	doc/ctdbd.1 doc/ctdbd.1.html \
-	doc/onnode.1 doc/onnode.1.html \
-	doc/ltdbtool.1 doc/ltdbtool.1.html \
-	doc/ping_pong.1 doc/ping_pong.1.html
+manpages:
+	$(MAKE) -C doc
 
 clean:
 	rm -f *.o */*.o */*.a */*/*.o */*~
@@ -308,7 +299,7 @@ distclean: clean
 	rm -f config.log config.status config.cache config.h
 	rm -f Makefile
 
-install: all $(PMDA_INSTALL)
+install: all manpages $(PMDA_INSTALL)
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 	mkdir -p $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(sbindir)
