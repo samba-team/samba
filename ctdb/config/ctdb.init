@@ -111,21 +111,7 @@ build_ctdb_options () {
 # Log given message or stdin to either syslog or a CTDB log file
 do_log ()
 {
-    if [ "$CTDB_SYSLOG" = "yes" -o \
-	"${CTDB_OPTIONS#*--syslog}" != "$CTDB_OPTIONS" ] ; then
-
-	logger -t "ctdb.init" "$@"
-    else
-	_l="${CTDB_LOGFILE:-/var/log/log.ctdb}"
-	{
-	    date
-	    if [ -n "$*" ] ; then
-		echo "$*"
-	    else
-		cat
-	    fi
-	} >>"$_l"
-    fi
+    script_log "ctdb.init" "$@"
 }
 
 select_tdb_checker ()

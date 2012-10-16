@@ -95,10 +95,12 @@ die ()
     exit $_rc
 }
 
-# When things are run in the background in an eventscript then logging
-# output might get lost.  This is the "solution".  :-)
-background_with_logging ()
+# Log given message or stdin to either syslog or a CTDB log file
+# $1 is the tag passed to logger if syslog is in use.
+script_log ()
 {
+    _tag="$1" ; shift
+
     _using_syslog=false
     if [ "$CTDB_SYSLOG" = "yes" -o -z "$CTDB_LOGFILE" ] ; then
 	_using_syslog=true
@@ -107,13 +109,26 @@ background_with_logging ()
 	*--syslog*) _using_syslog=true ;;
     esac
 
+    if $_using_syslog ; then
+	logger -t "$_tag"
+    else
+	{
+	    if [ -n "$*" ] ; then
+		echo "$*"
+	    else
+		cat
+	    fi
+	} >>"${CTDB_LOGFILE:-/var/log/log.ctdb}"
+    fi
+}
+
+# When things are run in the background in an eventscript then logging
+# output might get lost.  This is the "solution".  :-)
+background_with_logging ()
+{
     (
 	"$@" 2>&1 </dev/null |
-	if $_using_syslog ; then
-	    logger -t "ctdbd: ${script_name}&"
-	else
-	    cat >>"$CTDB_LOGFILE"
-	fi
+	script_log "ctdbd: ${script_name}&"
     )&
 
     return 0
