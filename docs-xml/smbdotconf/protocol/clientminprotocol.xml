@@ -1,15 +1,18 @@
 <samba:parameter name="client min protocol"
-                 context="G"
-                 type="enum"
-				 developer="1"
-                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+		 context="G"
+		 type="enum"
+		 developer="1"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This setting controls the minimum protocol version that the client
-		will attempt to use.</para>
+	<para>This setting controls the minimum protocol version that the
+	client will attempt to use.</para>
 
-    <para>Normally this option should not be set as the automatic 
-    negotiation phase in the SMB protocol takes care of choosing 
-    the appropriate protocol.</para>
+	<para>Normally this option should not be set as the automatic
+	negotiation phase in the SMB protocol takes care of choosing
+	the appropriate protocol.</para>
+
+	<para>See <related>client max protocol</related> for a full list
+	of avaiable protocols</para>
 </description>
 
 <related>client max protocol</related>
