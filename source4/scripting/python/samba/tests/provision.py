@@ -104,9 +104,6 @@ class Disabled(object):
     def test_setup_samdb_partitions(self):
         raise NotImplementedError(self.test_setup_samdb_partitions)
 
-    def test_create_phpldapadmin_config(self):
-        raise NotImplementedError(self.test_create_phpldapadmin_config)
-
     def test_provision_dns(self):
         raise NotImplementedError(self.test_provision_dns)
 
@@ -184,13 +181,6 @@ class ProvisionResultTests(TestCase):
             ('INFO', 'NetBIOS Domain:        DOMEIN'),
             ('INFO', 'DNS Domain:            dnsdomein'),
             ('INFO', 'DOMAIN SID:            S1-1-1')])
-
-    def test_report_logger_phpldapadmin(self):
-        result = self.base_result()
-        result.paths.phpldapadminconfig = "/some/ldapconfig"
-        entries = self.report_logger(result)
-        self.assertEquals(entries[-1],
-            ("INFO", "A phpLDAPadmin configuration file suitable for administering the Samba 4 LDAP server has been created in /some/ldapconfig."))
 
     def test_report_logger_adminpass(self):
         result = self.base_result()
