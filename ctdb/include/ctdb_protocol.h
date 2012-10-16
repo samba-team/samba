@@ -119,6 +119,14 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_MEM_DUMP 0xF800000000000000LL
 
+/* A message id used to ask the recover daemon to send logs
+*/
+#define CTDB_SRVID_GETLOG  0xF801000000000000LL
+
+/* A message id used to ask the recover daemon to send logs
+*/
+#define CTDB_SRVID_CLEARLOG  0xF802000000000000LL
+
 /*
    a message ID to get the recovery daemon to push the node flags out
  */

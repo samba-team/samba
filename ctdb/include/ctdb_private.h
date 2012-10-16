@@ -1429,6 +1429,8 @@ struct ctdb_get_log_addr {
 
 extern int log_ringbuf_size;
 
+void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr);
+void ctdb_clear_log(struct ctdb_context *ctdb);
 int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr);
 int32_t ctdb_control_clear_log(struct ctdb_context *ctdb);
 

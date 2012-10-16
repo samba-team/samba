@@ -2068,6 +2068,46 @@ DEBUG(DEBUG_ERR, ("recovery master memory dump\n"));
 }
 
 /*
+  handler for getlog
+*/
+static void getlog_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			   TDB_DATA data, void *private_data)
+{
+	struct ctdb_get_log_addr *log_addr;
+	pid_t child;
+
+	if (data.dsize != sizeof(struct ctdb_get_log_addr)) {
+		DEBUG(DEBUG_ERR, (__location__ " Wrong size of return address.\n"));
+		return;
+	}
+	log_addr = (struct ctdb_get_log_addr *)data.dptr;
+
+	child = ctdb_fork(ctdb);
+	if (child == (pid_t)-1) {
+		DEBUG(DEBUG_ERR,("Failed to fork a log collector child\n"));
+		return;
+	}
+
+	if (child == 0) {
+		if (switch_from_server_to_client(ctdb, "recoverd-log-collector") != 0) {
+			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch log collector child into client mode.\n"));
+			_exit(1);
+		}
+		ctdb_collect_log(ctdb, log_addr);
+		_exit(0);
+	}
+}
+
+/*
+  handler for clearlog
+*/
+static void clearlog_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	ctdb_clear_log(ctdb);
+}
+
+/*
   handler for reload_nodes
 */
 static void reload_nodes_handler(struct ctdb_context *ctdb, uint64_t srvid, 
@@ -3789,6 +3829,12 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for sending memory dumps */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
+
+	/* register a message port for requesting logs */
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_GETLOG, getlog_handler, rec);
+
+	/* register a message port for clearing logs */
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_CLEARLOG, clearlog_handler, rec);
 
 	/* register a message port for recovery elections */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);

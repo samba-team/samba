@@ -87,7 +87,7 @@ void log_ringbuffer(const char *format, ...)
 
 
 
-static void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr)
+void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_addr)
 {
 	TDB_DATA data;
 	FILE *f;
@@ -174,12 +174,15 @@ int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr)
 	return 0;
 }
 
-
-int32_t ctdb_control_clear_log(struct ctdb_context *ctdb)
+void ctdb_clear_log(struct ctdb_context *ctdb)
 {
 	first_entry = 0;
 	last_entry  = 0;
+}
+
+int32_t ctdb_control_clear_log(struct ctdb_context *ctdb)
+{
+	ctdb_clear_log(ctdb);
 
 	return 0;
 }
-
