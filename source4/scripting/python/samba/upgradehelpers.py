@@ -251,7 +251,7 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
             hostname=names.netbiosname.lower(), hostip=None, hostip6=None,
             invocationid=names.invocation, adminpass=names.adminpass,
             krbtgtpass=None, machinepass=None, dnspass=None, root=None,
-            nobody=None, wheel=None, users=None,
+            nobody=None, users=None,
             serverrole="domain controller",
             backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
             slapd_path=None,
@@ -615,7 +615,7 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
 
     if resetacls:
        try:
-            setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.wheel_gid,
+            setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.root_gid,
                         names.domainsid, names.dnsdomain, names.domaindn, lp)
        except TypeError, e:
            acl_error(e)

@@ -147,7 +147,7 @@ class PosixAclMappingTests(TestCase):
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
         self.assertEquals(LA_type, idmap.ID_TYPE_UID)
         (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
-        self.assertEquals(BA_type, idmap.ID_TYPE_GID)
+        self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
         (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
         (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
@@ -194,7 +194,7 @@ class PosixAclMappingTests(TestCase):
 # user::rwx
 # user:root:rwx (selftest user actually)
 # group::rwx
-# group:wheel:rwx
+# group:Local Admins:rwx
 # group:3000000:r-x
 # group:3000001:rwx
 # group:3000002:r-x
@@ -274,7 +274,7 @@ class PosixAclMappingTests(TestCase):
         (LA_uid,LA_type) = s4_passdb.sid_to_id(LA_sid)
         self.assertEquals(LA_type, idmap.ID_TYPE_UID)
         (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
-        self.assertEquals(BA_type, idmap.ID_TYPE_GID)
+        self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
         (SO_gid,SO_type) = s4_passdb.sid_to_id(SO_sid)
         self.assertEquals(SO_type, idmap.ID_TYPE_BOTH)
         (SY_gid,SY_type) = s4_passdb.sid_to_id(SY_sid)
@@ -327,7 +327,7 @@ class PosixAclMappingTests(TestCase):
 # user::rwx
 # user:root:rwx (selftest user actually)
 # group::rwx
-# group:wheel:rwx
+# group:Local Admins:rwx
 # group:3000000:r-x
 # group:3000001:rwx
 # group:3000002:r-x

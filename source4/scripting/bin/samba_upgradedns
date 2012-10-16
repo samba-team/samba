@@ -91,7 +91,7 @@ def fix_names(pnames):
     names.domaindn = pnames.domaindn[0]
     names.configdn = pnames.configdn[0]
     names.schemadn = pnames.schemadn[0]
-    names.wheel_gid = pnames.wheel_gid[0]
+    names.root_gid = pnames.root_gid
     names.serverdn = str(pnames.serverdn)
     return names
 
