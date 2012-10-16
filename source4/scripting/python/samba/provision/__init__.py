@@ -122,7 +122,6 @@ class ProvisionPaths(object):
         self.winsdb = None
         self.private_dir = None
         self.state_dir = None
-        self.phpldapadminconfig = None
 
 
 class ProvisionNames(object):
@@ -405,12 +404,6 @@ class ProvisionResult(object):
         logger.info("DNS Domain:            %s", self.names.dnsdomain)
         logger.info("DOMAIN SID:            %s", self.domainsid)
 
-        if self.paths.phpldapadminconfig is not None:
-            logger.info(
-                "A phpLDAPadmin configuration file suitable for administering "
-                "the Samba 4 LDAP server has been created in %s.",
-                self.paths.phpldapadminconfig)
-
         if self.backend_result:
             self.backend_result.report_logger(logger)
 
@@ -478,8 +471,6 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.krb5conf = os.path.join(paths.private_dir, "krb5.conf")
     paths.winsdb = os.path.join(paths.private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(paths.private_dir, "ldapi")
-    paths.phpldapadminconfig = os.path.join(paths.private_dir,
-                                            "phpldapadmin-config.php")
     paths.hklm = "hklm.ldb"
     paths.hkcr = "hkcr.ldb"
     paths.hkcu = "hkcu.ldb"
@@ -2053,8 +2044,6 @@ def provision(logger, session_info, credentials, smbconf=None,
         backend_result = provision_backend.post_setup()
         provision_backend.shutdown()
 
-        create_phpldapadmin_config(paths.phpldapadminconfig,
-                                   ldapi_url)
     except:
         secrets_ldb.transaction_cancel()
         raise
@@ -2123,15 +2112,6 @@ def provision_become_dc(smbconf=None, targetdir=None,
         use_ntvfs=use_ntvfs)
     res.lp.set("debuglevel", str(debuglevel))
     return res
-
-
-def create_phpldapadmin_config(path, ldapi_uri):
-    """Create a PHP LDAP admin configuration file.
-
-    :param path: Path to write the configuration to.
-    """
-    setup_file(setup_path("phpldapadmin-config.php"), path,
-            {"S4_LDAPI_URI": ldapi_uri})
 
 
 def create_krb5_conf(path, dnsdomain, hostname, realm):
