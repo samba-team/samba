@@ -103,6 +103,8 @@ def install_library(self):
     if getattr(self, 'samba_realname', None):
         install_name = self.samba_realname
         install_link = None
+        if getattr(self, 'soname', ''):
+            install_link = self.soname
         if getattr(self, 'samba_type', None) == 'PYTHON':
             inst_name    = bld.make_libname(t.target, nolibprefix=True, python=True)
         else:
