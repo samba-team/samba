@@ -1,25 +1,25 @@
 #!/bin/sh
 # This script is an input filter for printcap printing on a unix machine. It
-# uses the smbclient program to print the file to the specified smb-based 
+# uses the smbclient program to print the file to the specified smb-based
 # server and service.
 # For example you could have a printcap entry like this
 #
 # smb:lp=/dev/null:sd=/usr/spool/smb:sh:if=/usr/local/samba/smbprint
 #
-# which would create a unix printer called "smb" that will print via this 
+# which would create a unix printer called "smb" that will print via this
 # script. You will need to create the spool directory /usr/spool/smb with
 # appropriate permissions and ownerships for your system.
 
-# Set these to the server and service you wish to print to 
-# In this example I have a WfWg PC called "lapland" that has a printer 
+# Set these to the server and service you wish to print to
+# In this example I have a WfWg PC called "lapland" that has a printer
 # exported called "printer" with no password.
 
 #
 # Script further altered by hamiltom@ecnz.co.nz (Michael Hamilton)
-# so that the server, service, and password can be read from 
+# so that the server, service, and password can be read from
 # a /usr/var/spool/lpd/PRINTNAME/.config file.
 #
-# In order for this to work the /etc/printcap entry must include an 
+# In order for this to work the /etc/printcap entry must include an
 # accounting file (af=...):
 #
 #   cdcolour:\
@@ -47,7 +47,7 @@
 #   Concat this with /.config to get the config file.
 #
 eval acct_file=\${$#}
-spool_dir=`dirname $acct_file` 
+spool_dir=`dirname $acct_file`
 config_file=$spool_dir/.config
 
 # Should read the following variables set in the config file:
