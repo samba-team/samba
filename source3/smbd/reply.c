@@ -590,6 +590,19 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		set_local_machine_name(name1, True);
 		set_remote_machine_name(name2, True);
 
+		if (is_ipaddress(sconn->remote_hostname)) {
+			char *p = discard_const_p(char, sconn->remote_hostname);
+
+			talloc_free(p);
+
+			sconn->remote_hostname = talloc_strdup(sconn,
+						get_remote_machine_name());
+			if (sconn->remote_hostname == NULL) {
+				exit_server_cleanly("could not copy remote name");
+			}
+			sconn->conn->remote_hostname = sconn->remote_hostname;
+		}
+
 		DEBUG(2,("netbios connect: local=%s remote=%s, name type = %x\n",
 			 get_local_machine_name(), get_remote_machine_name(),
 			 name_type2));
