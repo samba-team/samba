@@ -472,8 +472,12 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 		/* never reached ... */
 	}
 
-	path = talloc_asprintf(mem_ctx, "%s/%s", handle->conn->connectpath,
-			       name);
+	if (name[0] == 0) {
+		path = talloc_strdup(mem_ctx, handle->conn->connectpath);
+	} else {
+		path = talloc_asprintf(
+			mem_ctx, "%s/%s", handle->conn->connectpath, name);
+	}
 	if (path == NULL) {
 		errno = ENOMEM;
 		goto fail;
@@ -1676,14 +1680,6 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 	if (timestamp == 0) {
 		return SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name,
 						      mem_ctx, found_name);
-	}
-	if (stripped[0] == '\0') {
-		*found_name = talloc_strdup(mem_ctx, name);
-		if (*found_name == NULL) {
-			errno = ENOMEM;
-			return -1;
-		}
-		return 0;
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
