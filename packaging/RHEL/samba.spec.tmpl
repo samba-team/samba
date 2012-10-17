@@ -242,7 +242,7 @@ install -m644 setup/samba.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/samb
 install -m755 setup/smb.init $RPM_BUILD_ROOT%{initdir}/smb
 install -m755 setup/winbind.init $RPM_BUILD_ROOT%{initdir}/winbind
 install -m644 setup/samba.pamd $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/samba
-install -m755 setup/smbprint $RPM_BUILD_ROOT%{_bindir}
+install -m755 packaging/printing/smbprint $RPM_BUILD_ROOT%{_bindir}
 install -m644 setup/smbusers $RPM_BUILD_ROOT%{_sysconfdir}/samba/smbusers
 install -m644 setup/smb.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
 install -m755 source3/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
