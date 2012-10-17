@@ -13,6 +13,8 @@ As a special case, any eventscript that ends with a '~' character will be
 ignored since this is a common postfix that some editors will append to 
 older versions of a file.
 
+Only event scripts with executable permissions are run from CTDB. Any event
+script that does not have executable permission is ignored.
 
 The eventscripts are called with varying number of arguments.
 The first argument is the "event" and the rest of the arguments depend
