@@ -929,7 +929,7 @@ delete_ip_from_iface()
 # usage: ctdb_counter_init
 #        ctdb_counter_incr
 #        ctdb_check_counter_limit <limit>
-# ctdb_check_counter_limit succeeds when count >= <limit>
+# ctdb_check_counter_limit fails when count >= <limit>
 ########################################################
 _ctdb_counter_common () {
     _service_name="${1:-${service_name}}"
