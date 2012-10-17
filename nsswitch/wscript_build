@@ -33,6 +33,7 @@ if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
 			  source='winbind_nss_linux.c',
 			  deps='winbind-client',
 			  realname='libnss_winbind.so.2',
+			  soname='libnss_winbind.so',
 			  vnum='2')
 elif (host_os.rfind('freebsd') > -1):
 	# FreeBSD winbind client is implemented as a wrapper around
