@@ -309,10 +309,6 @@
 <listitem><para>browse lists</para></listitem>
 </varlistentry>
 
-<varlistentry><term>connections.tdb</term>
-<listitem><para>share connections (used to enforce max connections, etc...)</para></listitem>
-</varlistentry>
-
 <varlistentry><term>gencache.tdb</term>
 <listitem><para>generic caching db</para></listitem>
 </varlistentry>
@@ -357,8 +353,16 @@
 <listitem><para>Windows registry skeleton (connect via regedit.exe)</para></listitem>
 </varlistentry>
 
-<varlistentry><term>sessionid.tdb</term>
+<varlistentry><term>smbXsrv_session_global.tdb</term>
 <listitem><para>session information (e.g. support for 'utmp = yes')</para></listitem>
+</varlistentry>
+
+<varlistentry><term>smbXsrv_tcon_global.tdb</term>
+<listitem><para>share connections (used to enforce max connections, etc...)</para></listitem>
+</varlistentry>
+
+<varlistentry><term>smbXsrv_open_global.tdb</term>
+<listitem><para>open file handles (used durable handles, etc...)</para></listitem>
 </varlistentry>
 
 <varlistentry><term>share_info.tdb*</term>
