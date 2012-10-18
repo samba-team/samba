@@ -3991,28 +3991,36 @@ static void log_handler(struct ctdb_context *ctdb, uint64_t srvid,
  */
 static int control_getlog(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
-	int32_t res;
+	int ret, i;
+	bool main_daemon;
 	struct ctdb_get_log_addr log_addr;
 	TDB_DATA data;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	char *errmsg;
 	struct timeval tv;
 
-	if (argc != 1) {
-		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
-		talloc_free(tmp_ctx);
+	/* Since this can fail, do it first */
+	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (log_addr.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
 		return -1;
 	}
 
-	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	log_addr.srvid = getpid();
-	if (isalpha(argv[0][0]) || argv[0][0] == '-') { 
-		log_addr.level = get_debug_by_desc(argv[0]);
-	} else {
-		log_addr.level = strtol(argv[0], NULL, 0);
+	/* Process options */
+	main_daemon = true;
+	log_addr.level = DEBUG_NOTICE;
+	for (i = 0; i < argc; i++) {
+		if (strcmp(argv[i], "recoverd") == 0) {
+			main_daemon = false;
+		} else {
+			if (isalpha(argv[i][0]) || argv[i][0] == '-') { 
+				log_addr.level = get_debug_by_desc(argv[i]);
+			} else {
+				log_addr.level = strtol(argv[i], NULL, 0);
+			}
+		}
 	}
 
+	/* Our message port is our PID */
+	log_addr.srvid = getpid();
 
 	data.dptr = (unsigned char *)&log_addr;
 	data.dsize = sizeof(log_addr);
@@ -4024,24 +4032,36 @@ static int control_getlog(struct ctdb_context *ctdb, int argc, const char **argv
 
 	DEBUG(DEBUG_ERR,("Listen for response on %d\n", (int)log_addr.srvid));
 
-	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_GET_LOG,
-			   0, data, tmp_ctx, NULL, &res, NULL, &errmsg);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,("Failed to get logs - %s\n", errmsg));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
+	if (main_daemon) {
+		int32_t res;
+		char *errmsg;
+		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
+		ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_GET_LOG,
+				   0, data, tmp_ctx, NULL, &res, NULL, &errmsg);
+		if (ret != 0 || res != 0) {
+			DEBUG(DEBUG_ERR,("Failed to get logs - %s\n", errmsg));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+		talloc_free(tmp_ctx);
+	} else {
+		ret = ctdb_client_send_message(ctdb, options.pnn,
+					       CTDB_SRVID_GETLOG, data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to send getlog request message to %u\n", options.pnn));
+			return -1;
+		}
+	}
 
 	tv = timeval_current();
 	/* this loop will terminate when we have received the reply */
-	while (timeval_elapsed(&tv) < 3.0) {	
+	while (timeval_elapsed(&tv) < (double)options.timelimit) {
 		event_loop_once(ctdb->ev);
 	}
 
 	DEBUG(DEBUG_INFO,("Timed out waiting for log data.\n"));
 
-	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -4051,90 +4071,33 @@ static int control_getlog(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_clearlog(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	int32_t res;
-	char *errmsg;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
-	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_CLEAR_LOG,
-			   0, tdb_null, tmp_ctx, NULL, &res, NULL, &errmsg);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,("Failed to clear logs\n"));
+	if (argc == 0 || (argc >= 1 && strcmp(argv[0], "recoverd") != 0)) {
+		/* "recoverd" not given - get logs from main daemon */
+		int32_t res;
+		char *errmsg;
+		TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+		ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_CLEAR_LOG,
+				   0, tdb_null, tmp_ctx, NULL, &res, NULL, &errmsg);
+		if (ret != 0 || res != 0) {
+			DEBUG(DEBUG_ERR,("Failed to clear logs\n"));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
 		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
-/*
-  dump logs from the recovery daemon
- */
-static int control_rdgetlog(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	TDB_DATA data;
-	struct ctdb_get_log_addr log_addr;
-
-	if (argc != 1) {
-		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
-		return -1;
-	}
-
-	if (isalpha(argv[0][0]) || argv[0][0] == '-') {
-		log_addr.level = get_debug_by_desc(argv[0]);
 	} else {
-		log_addr.level = strtol(argv[0], NULL, 0);
+		TDB_DATA data; /* unused in recoverd... */
+		data.dsize = 0;
+
+		ret = ctdb_client_send_message(ctdb, options.pnn, CTDB_SRVID_CLEARLOG, data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to send clearlog request message to %u\n", options.pnn));
+			return -1;
+		}
 	}
 
-	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (log_addr.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
-	log_addr.srvid = getpid();
-
-	/* register a message port for receiving the reply so that we
-	   can receive the reply
-	*/
-	ctdb_client_set_message_handler(ctdb, log_addr.srvid, log_handler, NULL);
-	data.dptr = (uint8_t *)&log_addr;
-	data.dsize = sizeof(log_addr);
-
-	ret = ctdb_client_send_message(ctdb, options.pnn, CTDB_SRVID_GETLOG, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send getlog request message to %u\n", options.pnn));
-		return -1;
-	}
-
-	/* this loop will terminate when we have received the reply */
-	while (1) {	
-		event_loop_once(ctdb->ev);
-	}
-
-	return 0;
-}
-
-/*
-  clear logs on the recovery daemon
- */
-static int control_rdclearlog(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	TDB_DATA data;
-	struct ctdb_get_log_addr log_addr;
-
-	log_addr.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (log_addr.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
-
-	ret = ctdb_client_send_message(ctdb, options.pnn, CTDB_SRVID_CLEARLOG, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send clearlog request message to %u\n", options.pnn));
-		return -1;
-	}
 	return 0;
 }
 
@@ -5853,10 +5816,8 @@ static const struct {
 	{ "enablemonitor",      control_enable_monmode, true,	false,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,	false,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
 	{ "getdebug",        control_getdebug,          true,	false,  "get debug level" },
-	{ "getlog",          control_getlog,            true,	false,  "get the log data from the in memory ringbuffer", "<level>" },
-	{ "clearlog",          control_clearlog,        true,	false,  "clear the log data from the in memory ringbuffer" },
-	{ "rdgetlog",        control_rdgetlog,            true,	false,  "get the log data from the in recoverd memory ringbuffer", "<level>" },
-	{ "rdclearlog",      control_rdclearlog,        true,	false,  "clear the log data from the in recoverd memory ringbuffer" },
+	{ "getlog",          control_getlog,            true,	false,  "get the log data from the in memory ringbuffer", "[<level>] [recoverd]" },
+	{ "clearlog",          control_clearlog,        true,	false,  "clear the log data from the in memory ringbuffer", "[recoverd]" },
 	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname> [persistent]" },
 	{ "dumpmemory",      control_dumpmemory,        true,	false,  "dump memory map to stdout" },
 	{ "rddumpmemory",    control_rddumpmemory,      true,	false,  "dump memory map from the recovery daemon to stdout" },
