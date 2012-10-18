@@ -20,7 +20,6 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "lib/smbd_shim.h"
 #include "memcache.h"
 #include "messages.h"
 #include "tdb_compat.h"
@@ -111,23 +110,8 @@ struct memcache *smbd_memcache(void)
 	return smbd_memcache_ctx;
 }
 
-static const struct smbd_shim smbd_shim_fns = 
-{
-	.cancel_pending_lock_requests_by_fid = smbd_cancel_pending_lock_requests_by_fid,
-	.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
-	.change_to_root_user = smbd_change_to_root_user,
-
-	.contend_level2_oplocks_begin = smbd_contend_level2_oplocks_begin,
-	.contend_level2_oplocks_end = smbd_contend_level2_oplocks_end,
-
-	.become_root = smbd_become_root,
-	.unbecome_root = smbd_unbecome_root
-};
-
 void smbd_init_globals(void)
 {
-	set_smbd_shim(&smbd_shim_fns);
-
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
