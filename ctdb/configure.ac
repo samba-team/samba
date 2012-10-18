@@ -71,6 +71,17 @@ if test ! -z "$LOGDIR"; then
 fi
 AC_SUBST(LOGDIR)
 
+SOCKPATH='/tmp/ctdb.socket'
+AC_ARG_WITH([socketpath],
+	[  --with-socketpath=FILE       path to CTDB daemon socket [[/tmp/ctdb.socket]]],
+	SOCKPATH=$withval)
+if test ! -z "$SOCKPATH"; then
+  if test "$SOCKPATH" = "yes" -o "$SOCKPATH" = "no"; then
+	  AC_MSG_ERROR([--with-socketpath must specify a file path])
+  fi
+fi
+AC_SUBST(SOCKPATH)
+
 AC_CONFIG_HEADER(config.h)
 
 EXTRA_OBJ=""

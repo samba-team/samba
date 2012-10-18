@@ -16,6 +16,7 @@ sbindir = @sbindir@
 mandir = @mandir@
 localstatedir = @localstatedir@
 logdir = @LOGDIR@
+sockpath = @SOCKPATH@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@:@teventdir@:
 srcdir = @srcdir@
 etcdir = @sysconfdir@
@@ -51,6 +52,7 @@ CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) 
        $(TALLOC_CFLAGS) $(TEVENT_CFLAGS) $(TDB_CFLAGS) -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
 	-DLOGDIR=\"$(logdir)\" \
+	-DSOCKPATH=\"$(sockpath)\" \
 	-DUSE_MMAP=1 -DTEVENT_DEPRECATED_QUIET=1 @CFLAGS@ -Wno-format-zero-length $(POPT_CFLAGS) \
 	-fPIC
 

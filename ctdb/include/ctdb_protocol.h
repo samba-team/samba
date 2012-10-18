@@ -20,8 +20,8 @@
 #ifndef _CTDB_PROTOCOL_H
 #define _CTDB_PROTOCOL_H
 
-/* location of daemon socket */
-#define CTDB_PATH	"/tmp/ctdb.socket"
+/* location of daemon socket, set at configure time */
+#define CTDB_PATH SOCKPATH
 
 /* default ctdb port number */
 #define CTDB_PORT 4379
