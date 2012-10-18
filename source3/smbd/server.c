@@ -44,6 +44,7 @@
 #include "lib/background.h"
 #include "lib/conn_tdb.h"
 #include "../lib/util/pidfile.h"
+#include "lib/smbd_shim.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -1053,6 +1054,18 @@ extern void build_options(bool screen);
 	struct server_id server_id;
 	struct tevent_signal *se;
 	char *np_dir = NULL;
+	static const struct smbd_shim smbd_shim_fns =
+	{
+		.cancel_pending_lock_requests_by_fid = smbd_cancel_pending_lock_requests_by_fid,
+		.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
+		.change_to_root_user = smbd_change_to_root_user,
+
+		.contend_level2_oplocks_begin = smbd_contend_level2_oplocks_begin,
+		.contend_level2_oplocks_end = smbd_contend_level2_oplocks_end,
+
+		.become_root = smbd_become_root,
+		.unbecome_root = smbd_unbecome_root,
+	};
 
 	/*
 	 * Do this before any other talloc operation
@@ -1063,6 +1076,8 @@ extern void build_options(bool screen);
 	setup_logging(argv[0], DEBUG_DEFAULT_STDOUT);
 
 	load_case_tables();
+
+	set_smbd_shim(&smbd_shim_fns);
 
 	smbd_init_globals();
 
