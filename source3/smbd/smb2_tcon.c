@@ -283,6 +283,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		TALLOC_FREE(tcon);
 		return NT_STATUS_NO_MEMORY;
 	}
+	tcon->global->session_global_id =
+		req->session->global->session_global_id;
 
 	tcon->compat = talloc_move(tcon, &compat_conn);
 

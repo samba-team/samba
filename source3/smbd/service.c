@@ -983,6 +983,8 @@ static connection_struct *make_connection_smb1(struct smbd_server_connection *sc
 		*pstatus = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
+	tcon->global->session_global_id =
+		vuser->session->global->session_global_id;
 
 	tcon->compat = talloc_move(tcon, &conn);
 	tcon->status = NT_STATUS_OK;
