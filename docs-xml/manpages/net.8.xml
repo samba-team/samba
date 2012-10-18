@@ -2112,45 +2112,6 @@ string.</member>
 </refsect2>
 
 <refsect2>
-<title>CONNECTIONS</title>
-<para>
-Manipulate Samba's connections database.
-</para>
-
-<para>The registry commands are:
-<simplelist>
-<member>net connections cleanup - Remove orphaned entries from the connections database.</member>
-</simplelist>
-</para>
-
-<refsect3>
-  <title>CONNECTIONS CLEANUP [-avT]</title>
-  <para> Remove orphaned entries from the connections database. This may be necessary if restarting smbd isn't an option.
-  <variablelist>
-    <varlistentry><term>-a|--auto</term>
-    <listitem><para>
-      Noninteractive mode, don't ask.
-    </para></listitem>
-    </varlistentry>
-
-    <varlistentry><term>-v|--verbose</term>
-      <listitem><para>
-	Produce more output.
-      </para></listitem>
-    </varlistentry>
-
-    <varlistentry><term>-T|--test</term>
-      <listitem><para>
-	Dry run, show what changes would be made but don't touch anything.
-      </para></listitem>
-    </varlistentry>
-  </variablelist>
-  </para>
-</refsect3>
-
-</refsect2>
-
-<refsect2>
 <title>EVENTLOG</title>
 
 <para>Starting with version 3.4.0 net can read, dump, import and export native
