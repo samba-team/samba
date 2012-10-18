@@ -235,6 +235,9 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	char *stripped;
 	size_t rest_len, dst_len;
 	struct shadow_copy2_config *config;
+	const char *snapdir;
+	ssize_t snapdirlen;
+	ptrdiff_t len_before_gmt;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return false);
@@ -251,6 +254,31 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("not at start, p=%p, name=%p, p[-1]=%d\n",
 			   p, name, (int)p[-1]));
 		goto no_snapshot;
+	}
+
+	/*
+	 * Figure out whether we got an already converted string. One
+	 * case where this happens is in a smb2 create call with the
+	 * mxac create blob set. We do the get_acl call on
+	 * fsp->fsp_name, which is already converted. We are converted
+	 * if we got a file name of the form ".snapshots/@GMT-",
+	 * i.e. ".snapshots/" precedes "p".
+	 */
+
+	snapdir = lp_parm_const_string(SNUM(handle->conn), "shadow", "snapdir",
+				       ".snapshots");
+	snapdirlen = strlen(snapdir);
+	len_before_gmt = p - name;
+
+	if ((len_before_gmt >= (snapdirlen + 1)) && (p[-1] == '/')) {
+		const char *parent_snapdir = p - (snapdirlen+1);
+
+		DEBUG(10, ("parent_snapdir = %s\n", parent_snapdir));
+
+		if (strncmp(parent_snapdir, snapdir, snapdirlen) == 0) {
+			DEBUG(10, ("name=%s is already converted\n", name));
+			goto no_snapshot;
+		}
 	}
 	q = strptime(p, GMT_FORMAT, &tm);
 	if (q == NULL) {
