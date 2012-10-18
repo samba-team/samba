@@ -204,6 +204,10 @@ interface smbXsrv
 		NTTIME					creation_time;
 		[charset(UTF8),string] char		share_name[];
 		boolean8				encryption_required;
+		/*
+		 * for SMB1 this is the session that the tcon was opened on
+		 */
+		uint32					session_global_id;
 	} smbXsrv_tcon_global0;
 
 	typedef union {
