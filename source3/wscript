@@ -1578,6 +1578,12 @@ main() {
             final_static_modules.remove(m)
         final_shared_modules.append(m)
 
+    if ("auth_domain" not in final_static_modules) or \
+            ("auth_builtin" not in final_static_modules) or \
+            ("auth_sam" not in final_static_modules) or \
+            ("auth_winbind" not in final_static_modules):
+        raise Utils.WafError('These auth modules MUST be configured as static modules: auth_domain, auth_builtin, auth_sam, auth_winbind')
+
     conf.env['static_modules'] = final_static_modules
     conf.env['shared_modules'] = final_shared_modules
 
