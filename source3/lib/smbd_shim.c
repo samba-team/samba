@@ -1,6 +1,6 @@
 /*
    Unix SMB/CIFS implementation.
-   RPC pipe client
+   Runtime plugin adapter for various "smbd"-functions.
 
    Copyright (C) Gerald (Jerry) Carter          2004.
    Copyright (C) Andrew Bartlett                2011.
