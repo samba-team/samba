@@ -1,13 +1,12 @@
 <samba:parameter name="afs token lifetime"
-	         context="G"
-			 type="integer"
-		 advanced="1"
-		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+                 context="G"
+                 type="integer"
+                 advanced="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This parameter controls the lifetime of tokens that the AFS fake-kaserver claims.
-		In reality these never expire but this lifetime controls when the afs client
-		will forget the token.
-	</para>
+	<para>This parameter controls the lifetime of tokens that the AFS
+		fake-kaserver claims.  In reality these never expire but this lifetime
+		controls when the afs client will forget the token.  </para>
 
 	<para>Set this parameter to 0 to get <constant>NEVERDATE</constant>.</para>
 </description>

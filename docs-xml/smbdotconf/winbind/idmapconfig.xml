@@ -1,6 +1,6 @@
 <samba:parameter name="idmap config:OPTION"
                  context="G"
-		 type="string"
+                 type="string"
                  advanced="1" developer="1" hide="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>

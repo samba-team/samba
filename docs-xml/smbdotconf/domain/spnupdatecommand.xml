@@ -1,6 +1,6 @@
 <samba:parameter name="spn update command"
                  context="G"
-				 type="string"
+                 type="string"
                  advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
