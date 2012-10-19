@@ -1,6 +1,7 @@
 <samba:parameter name="force directory security mode"
 		 context="S"
 		 type="string"
+		 removed="1"
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>

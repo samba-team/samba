@@ -1,6 +1,7 @@
 <samba:parameter name="security mask"
                  context="S"
-				 type="string"
+                 type="string"
+                 removed="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
