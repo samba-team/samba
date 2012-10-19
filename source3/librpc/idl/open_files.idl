@@ -61,5 +61,9 @@ interface open_files
 		[string,charset(UTF8)] char *base_name;
 		hyper initial_allocation_size;
 		hyper position_information;
+		boolean8 update_write_time_triggered;
+		boolean8 update_write_time_on_close;
+		boolean8 write_time_forced;
+		timespec close_write_time;
 	} vfs_default_durable_cookie;
 }
