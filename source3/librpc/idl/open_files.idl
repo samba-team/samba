@@ -52,6 +52,28 @@ interface open_files
 		"VFS_DEFAULT_DURABLE_COOKIE_MAGIC                ";
 	const uint32 VFS_DEFAULT_DURABLE_COOKIE_VERSION = 0;
 
+	/* this corresponds to struct stat_ex (SMB_STRUCT_STAT) */
+	typedef struct {
+		hyper		st_ex_dev;
+		hyper		st_ex_ino;
+		hyper		st_ex_mode;
+		hyper		st_ex_nlink;
+		hyper		st_ex_uid;
+		hyper		st_ex_gid;
+		hyper		st_ex_rdev;
+		hyper		st_ex_size;
+		timespec	st_ex_atime;
+		timespec	st_ex_mtime;
+		timespec	st_ex_ctime;
+		timespec	st_ex_btime;
+		boolean8	st_ex_calculated_birthtime;
+		hyper		st_ex_blksize;
+		hyper		st_ex_blocks;
+		uint32		st_ex_flags;
+		uint32		st_ex_mask;
+		hyper		vfs_private;
+	} vfs_default_durable_stat;
+
 	typedef [public] struct {
 		[value(VFS_DEFAULT_DURABLE_COOKIE_MAGIC),charset(DOS)] uint8 magic[0x30];
 		[value(VFS_DEFAULT_DURABLE_COOKIE_VERSION)] uint32 version;
@@ -65,5 +87,6 @@ interface open_files
 		boolean8 update_write_time_on_close;
 		boolean8 write_time_forced;
 		timespec close_write_time;
+		vfs_default_durable_stat stat_info;
 	} vfs_default_durable_cookie;
 }
