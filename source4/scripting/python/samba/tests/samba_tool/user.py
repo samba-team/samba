@@ -146,7 +146,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
             self.assertCmdSuccess(result, "Can we run setexpiry with names")
-            self.assertIn("Set expiry for user '%s' to 2 days" % user["name"], out)
+            self.assertIn("Expiry for user '%s' set to 2 days." % user["name"], out)
 
         for user in self.users:
             found = self._find_user(user["name"])
