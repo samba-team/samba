@@ -1074,7 +1074,7 @@ bool winbindd_use_cache(void)
 	return !opt_nocache;
 }
 
-void winbindd_register_handlers(bool foreground)
+static void winbindd_register_handlers(bool foreground)
 {
 	/* Setup signal handlers */
 

@@ -32,7 +32,6 @@ bool winbindd_setup_stdin_handler(bool parent, bool foreground);
 bool winbindd_setup_sig_hup_handler(const char *lfile);
 bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
-void winbindd_register_handlers(bool foreground);
 const char *get_winbind_pipe_dir(void);
 char *get_winbind_priv_pipe_dir(void);
 int main(int argc, char **argv, char **envp);
