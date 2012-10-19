@@ -187,6 +187,25 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	 */
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck != NULL) {
+		struct smb_file_time ft;
+
+		ZERO_STRUCT(ft);
+
+		if (fsp->write_time_forced) {
+			ft.mtime = lck->data->changed_write_time;
+		} else if (fsp->update_write_time_on_close) {
+			if (null_timespec(fsp->close_write_time)) {
+				ft.mtime = timespec_current();
+			} else {
+				ft.mtime = fsp->close_write_time;
+			}
+		}
+
+		if (!null_timespec(ft.mtime)) {
+			round_timespec(conn->ts_res, &ft.mtime);
+			file_ntimes(conn, fsp->fsp_name, &ft);
+		}
+
 		ok = mark_share_mode_disconnected(lck, fsp);
 		if (!ok) {
 			TALLOC_FREE(lck);
