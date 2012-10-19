@@ -60,6 +60,8 @@ def get_documented_parameters(sourcedir):
     assert p.returncode == 0, "returncode was %r" % p.returncode
     for l in out.splitlines():
         m = re.match('<samba:parameter .*?name="([^"]*?)"', l)
+        if "removed=\"1\"" in l:
+            continue
         if m:
             name = m.group(1)
             yield name
