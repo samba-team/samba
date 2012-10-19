@@ -1074,7 +1074,8 @@ bool winbindd_use_cache(void)
 	return !opt_nocache;
 }
 
-static void winbindd_register_handlers(bool foreground)
+static void winbindd_register_handlers(struct messaging_context *msg_ctx,
+				       bool foreground)
 {
 	/* Setup signal handlers */
 
@@ -1111,36 +1112,36 @@ static void winbindd_register_handlers(bool foreground)
 
 	/* React on 'smbcontrol winbindd reload-config' in the same way
 	   as to SIGHUP signal */
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_SMB_CONF_UPDATED, msg_reload_services);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_SHUTDOWN, msg_shutdown);
 
 	/* Handle online/offline messages. */
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_OFFLINE, winbind_msg_offline);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_ONLINE, winbind_msg_online);
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_ONLINESTATUS, winbind_msg_onlinestatus);
 
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_DUMP_EVENT_LIST, winbind_msg_dump_event_list);
 
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_VALIDATE_CACHE,
 			   winbind_msg_validate_cache);
 
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_DUMP_DOMAIN_LIST,
 			   winbind_msg_dump_domain_list);
 
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_WINBIND_IP_DROPPED,
 			   winbind_msg_ip_dropped_parent);
 
 	/* Register handler for MSG_DEBUG. */
-	messaging_register(winbind_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_DEBUG,
 			   winbind_msg_debug);
 
@@ -1495,7 +1496,7 @@ int main(int argc, char **argv, char **envp)
 		exit(1);
 	}
 
-	winbindd_register_handlers(!Fork);
+	winbindd_register_handlers(winbind_messaging_context(), !Fork);
 
 	status = init_system_session_info();
 	if (!NT_STATUS_IS_OK(status)) {
