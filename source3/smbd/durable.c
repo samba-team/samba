@@ -99,6 +99,10 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.base_name = fsp->fsp_name->base_name;
 	cookie.initial_allocation_size = fsp->initial_allocation_size;
 	cookie.position_information = fsp->fh->position_information;
+	cookie.update_write_time_triggered = fsp->update_write_time_triggered;
+	cookie.update_write_time_on_close = fsp->update_write_time_on_close;
+	cookie.write_time_forced = fsp->write_time_forced;
+	cookie.close_write_time = fsp->close_write_time;
 
 	ndr_err = ndr_push_struct_blob(cookie_blob, mem_ctx, &cookie,
 			(ndr_push_flags_fn_t)ndr_push_vfs_default_durable_cookie);
@@ -229,6 +233,10 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	cookie.base_name = fsp->fsp_name->base_name;
 	cookie.initial_allocation_size = fsp->initial_allocation_size;
 	cookie.position_information = fsp->fh->position_information;
+	cookie.update_write_time_triggered = fsp->update_write_time_triggered;
+	cookie.update_write_time_on_close = fsp->update_write_time_on_close;
+	cookie.write_time_forced = fsp->write_time_forced;
+	cookie.close_write_time = fsp->close_write_time;
 
 	ndr_err = ndr_push_struct_blob(&new_cookie_blob, mem_ctx, &cookie,
 			(ndr_push_flags_fn_t)ndr_push_vfs_default_durable_cookie);
@@ -453,6 +461,10 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 
 	fsp->initial_allocation_size = cookie.initial_allocation_size;
 	fsp->fh->position_information = cookie.position_information;
+	fsp->update_write_time_triggered = cookie.update_write_time_triggered;
+	fsp->update_write_time_on_close = cookie.update_write_time_on_close;
+	fsp->write_time_forced = cookie.write_time_forced;
+	fsp->close_write_time = cookie.close_write_time;
 
 	status = fsp_set_smb_fname(fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
