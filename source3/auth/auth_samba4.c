@@ -106,7 +106,7 @@ static NTSTATUS check_samba4_security(const struct auth_context *auth_context,
 }
 
 /* Hook to allow GENSEC to handle blob-based authentication
- * mechanisms, without directly linking the mechansim code */
+ * mechanisms, without directly linking the mechanism code */
 static NTSTATUS prepare_gensec(TALLOC_CTX *mem_ctx,
 			       struct gensec_security **gensec_context)
 {
