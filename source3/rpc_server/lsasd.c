@@ -261,7 +261,8 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (!serverid_register(procid_self(), FLAG_MSG_GENERAL)) {
+	if (!serverid_register(messaging_server_id(msg_ctx),
+			       FLAG_MSG_GENERAL)) {
 		return false;
 	}
 
@@ -878,9 +879,6 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	/* save the parent process id so the children can use it later */
-	parent_id = procid_self();
-
 	status = reinit_after_fork(msg_ctx,
 				   ev_ctx,
 				   true);
@@ -888,6 +886,9 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
+
+	/* save the parent process id so the children can use it later */
+	parent_id = messaging_server_id(msg_ctx);
 
 	lsasd_reopen_logs(0);
 	pfh_daemon_config(DAEMON_NAME,
@@ -920,7 +921,8 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	if (!serverid_register(procid_self(), FLAG_MSG_GENERAL)) {
+	if (!serverid_register(messaging_server_id(msg_ctx),
+			       FLAG_MSG_GENERAL)) {
 		exit(1);
 	}
 

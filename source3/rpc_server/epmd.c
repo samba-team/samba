@@ -173,7 +173,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 	epmd_setup_sig_term_handler(ev_ctx);
 	epmd_setup_sig_hup_handler(ev_ctx, msg_ctx);
 
-	ok = serverid_register(procid_self(),
+	ok = serverid_register(messaging_server_id(msg_ctx),
 			       FLAG_MSG_GENERAL |
 			       FLAG_MSG_PRINT_GENERAL);
 	if (!ok) {

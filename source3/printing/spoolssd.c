@@ -301,7 +301,7 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (!serverid_register(procid_self(),
+	if (!serverid_register(messaging_server_id(msg_ctx),
 				FLAG_MSG_GENERAL |
 				FLAG_MSG_PRINT_GENERAL)) {
 		return false;
@@ -671,7 +671,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	}
 
 	/* save the parent process id so the children can use it later */
-	parent_id = procid_self();
+	parent_id = messaging_server_id(msg_ctx);
 
 	spoolss_reopen_logs(0);
 	pfh_daemon_config(DAEMON_NAME,
@@ -717,7 +717,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	if (!serverid_register(procid_self(),
+	if (!serverid_register(messaging_server_id(msg_ctx),
 				FLAG_MSG_GENERAL |
 				FLAG_MSG_PRINT_GENERAL)) {
 		exit(1);
