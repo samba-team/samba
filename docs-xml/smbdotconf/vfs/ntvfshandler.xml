@@ -1,6 +1,6 @@
 <samba:parameter name="ntvfs handler"
                  context="S"
-		 		 type="list"
+                 type="list"
                  advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
