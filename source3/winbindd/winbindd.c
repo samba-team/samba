@@ -1102,7 +1102,7 @@ static void winbindd_register_handlers(struct messaging_context *msg_ctx,
 
 	/* get broadcast messages */
 
-	if (!serverid_register(procid_self(),
+	if (!serverid_register(messaging_server_id(msg_ctx),
 			       FLAG_MSG_GENERAL |
 			       FLAG_MSG_WINBIND |
 			       FLAG_MSG_DBWRAP)) {
