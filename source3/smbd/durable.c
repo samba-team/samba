@@ -532,7 +532,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		op->compat = NULL;
 		fsp_free(fsp);
 		return status;
-
 	}
 
 	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) {
