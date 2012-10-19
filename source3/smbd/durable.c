@@ -173,6 +173,14 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
+	/* Ensure any pending write time updates are done. */
+	if (fsp->update_write_time_event) {
+		update_write_time_handler(fsp->conn->sconn->ev_ctx,
+					fsp->update_write_time_event,
+					timeval_current(),
+					(void *)fsp);
+	}
+
 	/*
 	 * The above checks are done in mark_share_mode_disconnected() too
 	 * but we want to avoid getting the lock if possible
