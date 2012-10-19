@@ -44,10 +44,14 @@ class NoXsltProc(Exception):
 
 
 def get_documented_parameters(sourcedir):
+    path = os.path.join(sourcedir, "bin", "default", "docs-xml", "smbdotconf")
+    if not os.path.exists(os.path.join(path, "parameters.all.xml")):
+        raise Exception("Unable to find parameters.all.xml")
     try:
         p = subprocess.Popen(
-            ["xsltproc", "--xinclude", "--param", "smb.context", "ALL", "generate-context.xsl", "parameters.all.xml"],
-            stderr=subprocess.STDOUT, stdout=subprocess.PIPE, cwd=os.path.join(sourcedir, "docs-xml", "smbdotconf"))
+            ["xsltproc", "--xinclude", "--param", "smb.context", "ALL", os.path.join(sourcedir, "docs-xml", "smbdotconf", "generate-context.xsl"), "parameters.all.xml"],
+            stderr=subprocess.STDOUT, stdout=subprocess.PIPE,
+            cwd=path)
     except OSError, e:
         if e.errno == errno.ENOENT:
             raise NoXsltProc()
