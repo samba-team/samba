@@ -162,26 +162,21 @@ bool token_contains_name_in_list(const char *username,
 				 const struct security_token *token,
 				 const char **list)
 {
-	TALLOC_CTX *mem_ctx;
-
 	if (list == NULL) {
 		return False;
 	}
-
-	if ( (mem_ctx = talloc_new(NULL)) == NULL ) {
-		smb_panic("talloc_new failed");
-	}
-
 	while (*list != NULL) {
-		if (token_contains_name(mem_ctx, username, domain, sharename,
-					token, *list)) {
-			TALLOC_FREE(mem_ctx);
-			return True;
+		TALLOC_CTX *frame = talloc_stackframe();
+		bool ret;
+
+		ret = token_contains_name(frame, username, domain, sharename,
+					  token, *list);
+		TALLOC_FREE(frame);
+		if (ret) {
+			return true;
 		}
 		list += 1;
 	}
-
-	TALLOC_FREE(mem_ctx);
 	return False;
 }
 
