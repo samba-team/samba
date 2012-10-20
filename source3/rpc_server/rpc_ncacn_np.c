@@ -611,7 +611,11 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				       &result->allocation_size);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		DEBUG(0, ("tstream_npa_connect_recv  to %s for pipe %s and "
+		int l = 1;
+		if (errno == ENOENT) {
+			l = 2;
+		}
+		DEBUG(l, ("tstream_npa_connect_recv  to %s for pipe %s and "
 			  "user %s\\%s failed: %s\n",
 			  socket_np_dir, pipe_name, session_info_t->session_info->info->domain_name,
 			  session_info_t->session_info->info->account_name,
