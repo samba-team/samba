@@ -1,0 +1,8 @@
+This is the release version of CTDB, a clustered implementation of TDB
+database used by Samba and other projects to store temporary data.
+
+This software is freely distributable under the GNU public license,
+a copy of which you should have received with this software (in a file
+called COPYING).
+
+For documentation on CTDB, please visit CTDB website http://ctdb.samba.org.
