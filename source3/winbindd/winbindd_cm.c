@@ -979,6 +979,17 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
  session_setup_done:
 
+	/*
+	 * This should be a short term hack until
+	 * dynamic re-authentication is implemented.
+	 *
+	 * See Bug 9175 - winbindd doesn't recover from
+	 * NT_STATUS_NETWORK_SESSION_EXPIRED
+	 */
+	if (smbXcli_conn_protocol((*cli)->conn) >= PROTOCOL_SMB2_02) {
+		smbXcli_session_set_disconnect_expired((*cli)->smb2.session);
+	}
+
 	/* cache the server name for later connections */
 
 	saf_store(domain->name, controller);
