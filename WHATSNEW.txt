@@ -13,7 +13,63 @@ o
 Changes since 3.6.8:
 --------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 9173: Make SMB2 compound request create/delete_on_close/close work as
+      Windows.
+
+
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9016: Connection to outbound trusted domain goes offline.
+    * BUG 9147: Winbind can't fetch user or group info from AD via LDAP.
+    * BUG 9174: Empty SPNEGO packet can cause smbd to crash.
+    * BUG 9189: SMB2 Create doesn't return correct MAX ACCESS access mask in
+      blob.
+    * BUG 9209: Parse of invalid SMB2 create blob can cause smbd crash.
+    * BUG 9213: Bad ASN.1 NegTokenInit packet can cause invalid free.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 9173: Compound requests should continue processing.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9177: pam_winbind: Match more return codes when wbcGetPwnam has failed.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8146: Fix wrong test == syntax in configure.
+    * BUG 9172: Add quota support for gfs2.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9188: Fix crash bug in idmap_hash.
+
+
+o   Luca Lorenzetto <lorenzetto-luca@ubuntu-it.org>
+    * BUG 9013: Fix crash on null pam change pw response.
+
+
+o   Vladimir Marek <Vladimir.Marek@Oracle.COM>
+    * BUG 9192: Fix service control for non-internal services.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9173: Make SMB2 compound request create/delete_on_close/close work as
+      Windows.
+    * BUG 9196: Don't take 'state->te' as indication for "was_deferred".
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8632: Fix builtin forms order to match Windows again.
+    * BUG 9154: Open printers with the right access mask.
+    * BUG 9171: Remove non-existent option '-Y' from winbindd manpage.
+    * BUG 9218: Fix segfault in smbd if user specified ports out for range.
+    * BUG 9231: Fix NT_STATUS_IO_TIMEOUT during slow import of printers into
+      registry.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 9165: Fix makerpms.sh on RHEL.
 
 
 ######################################################################
