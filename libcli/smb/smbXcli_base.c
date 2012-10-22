@@ -157,6 +157,13 @@ struct smbXcli_session {
 	struct {
 		DATA_BLOB signing_key;
 	} smb2_channel;
+
+	/*
+	 * this should be a short term hack
+	 * until the upper layers have implemented
+	 * re-authentication.
+	 */
+	bool disconnect_expired;
 };
 
 struct smbXcli_tcon {
@@ -1970,6 +1977,17 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	cmd = CVAL(inhdr, HDR_COM);
 	status = smb1cli_pull_raw_error(inhdr);
 
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED) &&
+	    (state->session != NULL) && state->session->disconnect_expired)
+	{
+		/*
+		 * this should be a short term hack
+		 * until the upper layers have implemented
+		 * re-authentication.
+		 */
+		return status;
+	}
+
 	if (state->smb1.chained_requests == NULL) {
 		if (num_iov != 3) {
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -3442,6 +3460,17 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			}
 		}
 
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED) &&
+		    (session != NULL) && session->disconnect_expired)
+		{
+			/*
+			 * this should be a short term hack
+			 * until the upper layers have implemented
+			 * re-authentication.
+			 */
+			return status;
+		}
+
 		smbXcli_req_unset_pending(req);
 
 		/*
@@ -4481,6 +4510,11 @@ NTSTATUS smbXcli_session_application_key(struct smbXcli_session *session,
 	}
 
 	return NT_STATUS_OK;
+}
+
+void smbXcli_session_set_disconnect_expired(struct smbXcli_session *session)
+{
+	session->disconnect_expired = true;
 }
 
 uint16_t smb1cli_session_current_id(struct smbXcli_session *session)

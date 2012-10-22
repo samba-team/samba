@@ -253,6 +253,7 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 NTSTATUS smbXcli_session_application_key(struct smbXcli_session *session,
 					 TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *key);
+void smbXcli_session_set_disconnect_expired(struct smbXcli_session *session);
 uint16_t smb1cli_session_current_id(struct smbXcli_session* session);
 void smb1cli_session_set_id(struct smbXcli_session* session,
 			    uint16_t session_id);
