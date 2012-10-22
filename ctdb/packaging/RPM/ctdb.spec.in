@@ -127,8 +127,15 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
 
+%{_docdir}/ctdb/README
+%{_docdir}/ctdb/COPYING
 %{_docdir}/ctdb/README.eventscripts
 %{_docdir}/ctdb/recovery-process.txt
+%{_docdir}/ctdb/ctdb.1.html
+%{_docdir}/ctdb/ctdbd.1.html
+%{_docdir}/ctdb/onnode.1.html
+%{_docdir}/ctdb/ltdbtool.1.html
+%{_docdir}/ctdb/ping_pong.1.html
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/01.reclock
 %{_sysconfdir}/ctdb/events.d/10.interface

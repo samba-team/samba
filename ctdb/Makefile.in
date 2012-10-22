@@ -321,6 +321,8 @@ install: all manpages $(PMDA_INSTALL)
 	${INSTALLCMD} -m 644 include/ctdb_typesafe_cb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 644 README $(DESTDIR)$(docdir)/ctdb/README
+	${INSTALLCMD} -m 644 COPYING $(DESTDIR)$(docdir)/ctdb/COPYING
 	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(docdir)/ctdb/README.eventscripts
 	${INSTALLCMD} -m 644 doc/recovery-process.txt $(DESTDIR)$(docdir)/ctdb/recovery-process.txt
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
@@ -349,6 +351,11 @@ install: all manpages $(PMDA_INSTALL)
 	if [ -f doc/onnode.1 ];then ${INSTALLCMD} -m 644 doc/onnode.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ltdbtool.1 ]; then ${INSTALLCMD} -m 644 doc/ltdbtool.1 $(DESTDIR)$(mandir)/man1; fi
 	if [ -f doc/ping_pong.1 ];then ${INSTALLCMD} -m 644 doc/ping_pong.1 $(DESTDIR)$(mandir)/man1; fi
+	if [ -f doc/ctdb.1.html ];then ${INSTALLCMD} -m 644 doc/ctdb.1.html $(DESTDIR)$(docdir)/ctdb; fi
+	if [ -f doc/ctdbd.1.html ];then ${INSTALLCMD} -m 644 doc/ctdbd.1.html $(DESTDIR)$(docdir)/ctdb; fi
+	if [ -f doc/onnode.1.html ];then ${INSTALLCMD} -m 644 doc/onnode.1.html $(DESTDIR)$(docdir)/ctdb; fi
+	if [ -f doc/ltdbtool.1.html ];then ${INSTALLCMD} -m 644 doc/ltdbtool.1.html $(DESTDIR)$(docdir)/ctdb; fi
+	if [ -f doc/ping_pong.1.html ];then ${INSTALLCMD} -m 644 doc/ping_pong.1.html $(DESTDIR)$(docdir)/ctdb; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.sh ];then ${INSTALLCMD} -m 755 config/notify.sh $(DESTDIR)$(etcdir)/ctdb; fi
 	${INSTALLCMD} -m 755 config/debug-hung-script.sh $(DESTDIR)$(etcdir)/ctdb
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/ctdb-crash-cleanup.sh ];then ${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb; fi
