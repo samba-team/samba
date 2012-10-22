@@ -76,11 +76,18 @@ TAR_BASE="ctdb-${VERSION}"
 pushd /tmp/${TAR_PREFIX_TMP}
 ./autogen.sh
 RC=$?
-popd
 if [ $RC -ne 0 ]; then
 	echo "Error calling autogen.sh."
 	exit 1
 fi
+
+make -C doc
+RC=$?
+if [ $RC -ne 0 ]; then
+    echo "Error building docs."
+    exit 1
+fi
+popd
 
 if test "x${DEBIAN_MODE}" = "xyes" ; then
 	TAR_PREFIX="ctdb-${VERSION}.orig"
