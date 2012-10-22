@@ -52,32 +52,10 @@ mkdir -p `rpm --eval %_rpmdir`/noarch
 mkdir -p `rpm --eval %_rpmdir`/i386
 mkdir -p `rpm --eval %_rpmdir`/x86_64
 
-# We use tags and determine the version, as follows:
-# ctdb-0.9.1  (First release of 0.9).
-# ctdb-0.9.23 (23rd minor release of the 112 version)
-#
-# If we're not directly on a tag, this is a devel release; we append
-# .0.<patchnum>.<checksum>.devel to the release.
-TAG=`git describe`
-case "$TAG" in
-    ctdb-*)
-	TAG=${TAG##ctdb-}
-	case "$TAG" in
-	    *-*-g*) # 0.9-168-ge6cf0e8
-		# Not exactly on tag: devel version.
-		VERSION=`echo "$TAG" | sed 's/\([^-]\+\)-\([0-9]\+\)-\(g[0-9a-f]\+\)/\1.0.\2.\3.devel/'`
-		;;
-	    *)
-		# An actual release version
-		VERSION=$TAG
-		;;
-	esac
-	;;
-    *)
-	echo Invalid tag "$TAG" >&2
-	exit 1
-	;;
-esac
+VERSION=$(${TOPDIR}/packaging/mkversion.sh)
+if [ -z "$VERSION" ]; then
+    exit 1
+fi
 
 sed -e s/@VERSION@/$VERSION/g \
 	< ${DIRNAME}/${SPECFILE_IN} \

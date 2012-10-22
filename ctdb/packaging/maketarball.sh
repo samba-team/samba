@@ -33,15 +33,9 @@ SPECFILE_IN=${SPECFILE}.in
 
 EXTRA_SUFFIX="$1"
 
-# if no githash was specified on the commandline,
-# then use the current head
-if test x"$GITHASH" = "x" ; then
-	GITHASH="$(git log --pretty=format:%h -1)"
-fi
-
-GITHASH_SUFFIX=".${GITHASH}"
-if test "x$USE_GITHASH" = "xno" ; then
-	GITHASH_SUFFIX=""
+VERSION=$(${TOPDIR}/packaging/mkversion.sh)
+if [ -z "$VERSION" ]; then
+    exit 1
 fi
 
 if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
@@ -52,7 +46,7 @@ fi
 
 pushd ${TOPDIR}
 echo "Creating tarball ... "
-git archive --prefix=${TAR_PREFIX_TMP}/ ${GITHASH} | ( cd /tmp ; tar xf - )
+git archive --prefix=${TAR_PREFIX_TMP}/ HEAD | ( cd /tmp ; tar xf - )
 RC=$?
 popd
 if [ $RC -ne 0 ]; then
@@ -60,11 +54,9 @@ if [ $RC -ne 0 ]; then
 	exit 1
 fi
 
-sed -e s/GITHASH/${GITHASH_SUFFIX}/g \
+sed -e s/@VERSION@/${VERSION}/g \
 	< ${SPECFILE_IN} \
 	> ${SPECFILE}
-
-VERSION=$(grep ^Version ${SPECFILE} | sed -e 's/^Version:\ \+//')${GITHASH_SUFFIX}
 
 if [ "x${EXTRA_SUFFIX}" != "x" ]; then
 	VERSION="${VERSION}-${EXTRA_SUFFIX}"
