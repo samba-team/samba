@@ -289,6 +289,7 @@ utimensat vsyslog _write __write __xstat
         conf.ADD_CFLAGS('-fno-common')
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
     elif (host_os.rfind('freebsd') > -1):
+        conf.DEFINE('FREEBSD', 1)
         if conf.CHECK_HEADERS('sunacl.h'):
             conf.DEFINE('HAVE_FREEBSD_SUNACL_H', '1')
             conf.CHECK_FUNCS_IN('acl', 'sunacl')
