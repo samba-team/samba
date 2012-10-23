@@ -1543,7 +1543,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	d_printf(_("Using short domain name -- %s\n"), r->out.netbios_domain_name);
 
 	if (r->out.dns_domain_name) {
-		d_printf(_("Joined '%s' to realm '%s'\n"), r->in.machine_name,
+		d_printf(_("Joined '%s' to dns domain '%s'\n"), r->in.machine_name,
 			r->out.dns_domain_name);
 	} else {
 		d_printf(_("Joined '%s' to domain '%s'\n"), r->in.machine_name,
