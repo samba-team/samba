@@ -873,7 +873,8 @@ static void dns_task_init(struct task_server *task)
 		 * not return this zone.
 		 */
 		if ((strcmp(z->name, "RootDNSServers") == 0) ||
-			(strcmp(z->name, "..TrustAnchors") == 0)) {
+		    (strcmp(z->name, "..TrustAnchors") == 0))
+		{
 			DEBUG(10, ("Ignoring zone %s\n", z->name));
 			talloc_free(z);
 			continue;
