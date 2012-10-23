@@ -1117,7 +1117,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	if (db) {
 		if (db->persistent != persistent) {
 			DEBUG(DEBUG_ERR, ("ERROR: DB Attach %spersistent to %spersistent "
-					  "database %s", persistent ? "" : "non-",
+					  "database %s\n", persistent ? "" : "non-",
 					  db-> persistent ? "" : "non-", db_name));
 			return -1;
 		}
