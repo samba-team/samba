@@ -741,8 +741,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	/*
 	 * TODO:
 	 * Do we need to store the modified flag in the DB?
-	 * How to handle update_write_time and friends
-	 * during a disconnected client on a durable handle?
 	 */
 	fsp->modified = false;
 	/*
