@@ -298,6 +298,263 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+
+/**
+ * Check whether a cookie-stored struct info is the same
+ * as a given SMB_STRUCT_STAT, as coming with the fsp.
+ */
+static bool vfs_default_durable_reconnect_check_stat(
+				struct vfs_default_durable_stat *cookie_st,
+				SMB_STRUCT_STAT *fsp_st,
+				const char *name)
+{
+	int ret;
+
+	if (cookie_st->st_ex_dev != fsp_st->st_ex_dev) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_dev",
+			  (unsigned long long)cookie_st->st_ex_dev,
+			  (unsigned long long)fsp_st->st_ex_dev));
+		return false;
+	}
+
+	if (cookie_st->st_ex_ino != fsp_st->st_ex_ino) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_ino",
+			  (unsigned long long)cookie_st->st_ex_ino,
+			  (unsigned long long)fsp_st->st_ex_ino));
+		return false;
+	}
+
+	if (cookie_st->st_ex_mode != fsp_st->st_ex_mode) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_mode",
+			  (unsigned long long)cookie_st->st_ex_mode,
+			  (unsigned long long)fsp_st->st_ex_mode));
+		return false;
+	}
+
+	if (cookie_st->st_ex_nlink != fsp_st->st_ex_nlink) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_nlink",
+			  (unsigned long long)cookie_st->st_ex_nlink,
+			  (unsigned long long)fsp_st->st_ex_nlink));
+		return false;
+	}
+
+	if (cookie_st->st_ex_uid != fsp_st->st_ex_uid) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_uid",
+			  (unsigned long long)cookie_st->st_ex_uid,
+			  (unsigned long long)fsp_st->st_ex_uid));
+		return false;
+	}
+
+	if (cookie_st->st_ex_gid != fsp_st->st_ex_gid) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_gid",
+			  (unsigned long long)cookie_st->st_ex_gid,
+			  (unsigned long long)fsp_st->st_ex_gid));
+		return false;
+	}
+
+	if (cookie_st->st_ex_rdev != fsp_st->st_ex_rdev) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_rdev",
+			  (unsigned long long)cookie_st->st_ex_rdev,
+			  (unsigned long long)fsp_st->st_ex_rdev));
+		return false;
+	}
+
+	if (cookie_st->st_ex_size != fsp_st->st_ex_size) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_size",
+			  (unsigned long long)cookie_st->st_ex_size,
+			  (unsigned long long)fsp_st->st_ex_size));
+		return false;
+	}
+
+	ret = timespec_compare(&cookie_st->st_ex_atime,
+			       &fsp_st->st_ex_atime);
+	if (ret != 0) {
+		struct timeval tc, ts;
+		tc = convert_timespec_to_timeval(cookie_st->st_ex_atime);
+		ts = convert_timespec_to_timeval(fsp_st->st_ex_atime);
+
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:'%s' != stat:'%s', "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_atime",
+			  timeval_string(talloc_tos(), &tc, true),
+			  timeval_string(talloc_tos(), &ts, true)));
+		return false;
+	}
+
+	ret = timespec_compare(&cookie_st->st_ex_mtime,
+			       &fsp_st->st_ex_mtime);
+	if (ret != 0) {
+		struct timeval tc, ts;
+		tc = convert_timespec_to_timeval(cookie_st->st_ex_mtime);
+		ts = convert_timespec_to_timeval(fsp_st->st_ex_mtime);
+
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:'%s' != stat:'%s', "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_mtime",
+			  timeval_string(talloc_tos(), &tc, true),
+			  timeval_string(talloc_tos(), &ts, true)));
+		return false;
+	}
+
+	ret = timespec_compare(&cookie_st->st_ex_ctime,
+			       &fsp_st->st_ex_ctime);
+	if (ret != 0) {
+		struct timeval tc, ts;
+		tc = convert_timespec_to_timeval(cookie_st->st_ex_ctime);
+		ts = convert_timespec_to_timeval(fsp_st->st_ex_ctime);
+
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:'%s' != stat:'%s', "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_ctime",
+			  timeval_string(talloc_tos(), &tc, true),
+			  timeval_string(talloc_tos(), &ts, true)));
+		return false;
+	}
+
+	ret = timespec_compare(&cookie_st->st_ex_btime,
+			       &fsp_st->st_ex_btime);
+	if (ret != 0) {
+		struct timeval tc, ts;
+		tc = convert_timespec_to_timeval(cookie_st->st_ex_btime);
+		ts = convert_timespec_to_timeval(fsp_st->st_ex_btime);
+
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:'%s' != stat:'%s', "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_btime",
+			  timeval_string(talloc_tos(), &tc, true),
+			  timeval_string(talloc_tos(), &ts, true)));
+		return false;
+	}
+
+	if (cookie_st->st_ex_calculated_birthtime !=
+	    fsp_st->st_ex_calculated_birthtime)
+	{
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_calculated_birthtime",
+			  (unsigned long long)cookie_st->st_ex_calculated_birthtime,
+			  (unsigned long long)fsp_st->st_ex_calculated_birthtime));
+		return false;
+	}
+
+	if (cookie_st->st_ex_blksize != fsp_st->st_ex_blksize) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_blksize",
+			  (unsigned long long)cookie_st->st_ex_blksize,
+			  (unsigned long long)fsp_st->st_ex_blksize));
+		return false;
+	}
+
+	if (cookie_st->st_ex_blocks != fsp_st->st_ex_blocks) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_blocks",
+			  (unsigned long long)cookie_st->st_ex_blocks,
+			  (unsigned long long)fsp_st->st_ex_blocks));
+		return false;
+	}
+
+	if (cookie_st->st_ex_flags != fsp_st->st_ex_flags) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_flags",
+			  (unsigned long long)cookie_st->st_ex_flags,
+			  (unsigned long long)fsp_st->st_ex_flags));
+		return false;
+	}
+
+	if (cookie_st->st_ex_mask != fsp_st->st_ex_mask) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "st_ex_mask",
+			  (unsigned long long)cookie_st->st_ex_mask,
+			  (unsigned long long)fsp_st->st_ex_mask));
+		return false;
+	}
+
+	if (cookie_st->vfs_private != fsp_st->vfs_private) {
+		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
+			  "stat_ex.%s differs: "
+			  "cookie:%llu != stat:%llu, "
+			  "denying durable reconnect\n",
+			  name,
+			  "vfs_private",
+			  (unsigned long long)cookie_st->vfs_private,
+			  (unsigned long long)fsp_st->vfs_private));
+		return false;
+	}
+
+	return true;
+}
+
 NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 				       struct smb_request *smb1req,
 				       struct smbXsrv_open *op,
@@ -613,398 +870,10 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (cookie.stat_info.st_ex_dev != fsp->fsp_name->st.st_ex_dev) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_dev",
-			  (unsigned long long)cookie.stat_info.st_ex_dev,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_dev));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_ino != fsp->fsp_name->st.st_ex_ino) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_ino",
-			  (unsigned long long)cookie.stat_info.st_ex_ino,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_ino));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_mode != fsp->fsp_name->st.st_ex_mode) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_mode",
-			  (unsigned long long)cookie.stat_info.st_ex_mode,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_mode));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_nlink != fsp->fsp_name->st.st_ex_nlink) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_nlink",
-			  (unsigned long long)cookie.stat_info.st_ex_nlink,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_nlink));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_uid != fsp->fsp_name->st.st_ex_uid) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_uid",
-			  (unsigned long long)cookie.stat_info.st_ex_uid,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_uid));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_gid != fsp->fsp_name->st.st_ex_gid) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_gid",
-			  (unsigned long long)cookie.stat_info.st_ex_gid,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_gid));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_rdev != fsp->fsp_name->st.st_ex_rdev) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_rdev",
-			  (unsigned long long)cookie.stat_info.st_ex_rdev,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_rdev));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_size != fsp->fsp_name->st.st_ex_size) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_size",
-			  (unsigned long long)cookie.stat_info.st_ex_size,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_size));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	ret = timespec_compare(&cookie.stat_info.st_ex_atime,
-			       &fsp->fsp_name->st.st_ex_atime);
-	if (ret != 0) {
-		struct timeval tc, ts;
-		tc = convert_timespec_to_timeval(cookie.stat_info.st_ex_atime);
-		ts = convert_timespec_to_timeval(fsp->fsp_name->st.st_ex_atime);
-
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:'%s' != stat:'%s', "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_atime",
-			  timeval_string(talloc_tos(), &tc, true),
-			  timeval_string(talloc_tos(), &ts, true)));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	ret = timespec_compare(&cookie.stat_info.st_ex_mtime,
-			       &fsp->fsp_name->st.st_ex_mtime);
-	if (ret != 0) {
-		struct timeval tc, ts;
-		tc = convert_timespec_to_timeval(cookie.stat_info.st_ex_mtime);
-		ts = convert_timespec_to_timeval(fsp->fsp_name->st.st_ex_mtime);
-
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:'%s' != stat:'%s', "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_mtime",
-			  timeval_string(talloc_tos(), &tc, true),
-			  timeval_string(talloc_tos(), &ts, true)));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	ret = timespec_compare(&cookie.stat_info.st_ex_ctime,
-			       &fsp->fsp_name->st.st_ex_ctime);
-	if (ret != 0) {
-		struct timeval tc, ts;
-		tc = convert_timespec_to_timeval(cookie.stat_info.st_ex_ctime);
-		ts = convert_timespec_to_timeval(fsp->fsp_name->st.st_ex_ctime);
-
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:'%s' != stat:'%s', "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_ctime",
-			  timeval_string(talloc_tos(), &tc, true),
-			  timeval_string(talloc_tos(), &ts, true)));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	ret = timespec_compare(&cookie.stat_info.st_ex_btime,
-			       &fsp->fsp_name->st.st_ex_btime);
-	if (ret != 0) {
-		struct timeval tc, ts;
-		tc = convert_timespec_to_timeval(cookie.stat_info.st_ex_btime);
-		ts = convert_timespec_to_timeval(fsp->fsp_name->st.st_ex_btime);
-
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:'%s' != stat:'%s', "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_btime",
-			  timeval_string(talloc_tos(), &tc, true),
-			  timeval_string(talloc_tos(), &ts, true)));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_calculated_birthtime !=
-	    fsp->fsp_name->st.st_ex_calculated_birthtime)
-	{
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_calculated_birthtime",
-			  (unsigned long long)cookie.stat_info.st_ex_calculated_birthtime,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_calculated_birthtime));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_blksize != fsp->fsp_name->st.st_ex_blksize) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_blksize",
-			  (unsigned long long)cookie.stat_info.st_ex_blksize,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_blksize));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_blocks != fsp->fsp_name->st.st_ex_blocks) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_blocks",
-			  (unsigned long long)cookie.stat_info.st_ex_blocks,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_blocks));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_flags != fsp->fsp_name->st.st_ex_flags) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_flags",
-			  (unsigned long long)cookie.stat_info.st_ex_flags,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_flags));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.st_ex_mask != fsp->fsp_name->st.st_ex_mask) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "st_ex_mask",
-			  (unsigned long long)cookie.stat_info.st_ex_mask,
-			  (unsigned long long)fsp->fsp_name->st.st_ex_mask));
-		ret = SMB_VFS_CLOSE(fsp);
-		if (ret == -1) {
-			DEBUG(0, ("vfs_default_durable_reconnect: "
-				  "SMB_VFS_CLOSE failed (%s) - leaking file "
-				  "descriptor\n", strerror(errno)));
-		}
-		TALLOC_FREE(lck);
-		op->compat = NULL;
-		fsp_free(fsp);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (cookie.stat_info.vfs_private != fsp->fsp_name->st.vfs_private) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  fsp_str_dbg(fsp),
-			  "vfs_private",
-			  (unsigned long long)cookie.stat_info.vfs_private,
-			  (unsigned long long)fsp->fsp_name->st.vfs_private));
+	ok = vfs_default_durable_reconnect_check_stat(&cookie.stat_info,
+						      &fsp->fsp_name->st,
+						      fsp_str_dbg(fsp));
+	if (!ok) {
 		ret = SMB_VFS_CLOSE(fsp);
 		if (ret == -1) {
 			DEBUG(0, ("vfs_default_durable_reconnect: "
