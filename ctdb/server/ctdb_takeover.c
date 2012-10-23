@@ -2148,7 +2148,8 @@ static void noiptakeover_cb(struct ctdb_context *ctdb, uint32_t pnn, int32_t res
 /*
   make any IP alias changes for public addresses that are necessary 
  */
-int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
+		      client_async_callback fail_callback, void *callback_data)
 {
 	int i;
 	struct ctdb_public_ip ip;
@@ -2217,6 +2218,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 
+	async_data->fail_callback = fail_callback;
+	async_data->callback_data = callback_data;
+
 	for (i=0;i<nodemap->num;i++) {
 		/* don't talk to unconnected nodes, but do talk to banned nodes */
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
@@ -2274,6 +2278,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	/* tell all nodes to get their own IPs */
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
+
+	async_data->fail_callback = fail_callback;
+	async_data->callback_data = callback_data;
+
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn == -1) {
 			/* this IP won't be taken over */
@@ -2331,8 +2339,8 @@ ipreallocated:
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RUN_EVENTSCRIPTS,
 				      nodes, 0, TAKEOVER_TIMEOUT(),
 				      false, data,
-				      NULL, NULL,
-				      NULL) != 0) {
+				      NULL, fail_callback,
+				      callback_data) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to send control to run eventscripts with \"ipreallocated\"\n"));
 	}
 

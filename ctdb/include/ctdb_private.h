@@ -1195,6 +1195,8 @@ char *ctdb_get_process_name(pid_t pid);
 bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info);
 bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid);
 
+typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
+
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *iface,
@@ -1204,7 +1206,7 @@ int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir)
 int ctdb_set_debug_hung_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 void lcp2_forcerebalance(struct ctdb_context *ctdb, uint32_t pnn);
-int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap);
+int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, client_async_callback fail_callback, void *callback_data);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id, 
 				TDB_DATA indata);
@@ -1342,8 +1344,6 @@ void ctdb_unblock_signal(int signum);
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
 void ctdb_lockdown_memory(struct ctdb_context *ctdb);
-
-typedef void (*client_async_callback)(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data);
 
 struct client_async_data {
 	enum ctdb_controls opcode;

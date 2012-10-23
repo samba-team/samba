@@ -1493,6 +1493,21 @@ static int sync_recovery_lock_file_across_cluster(struct ctdb_recoverd *rec)
 
 
 /*
+ * this callback is called for every node that failed to execute ctdb_takeover_run()
+ * and set flag to re-run takeover run.
+ */
+static void takeover_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR, (__location__ " Node %u failed the takeover run. Setting it as recovery fail culprit\n", node_pnn));
+
+	ctdb_set_culprit(rec, node_pnn);
+	rec->need_takeover_run = true;
+}
+
+
+/*
   we are the recmaster, and recovery is needed - start a recovery run
  */
 static int do_recovery(struct ctdb_recoverd *rec, 
@@ -1781,7 +1796,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 	rec->need_takeover_run = false;
-	ret = ctdb_takeover_run(ctdb, nodemap);
+	ret = ctdb_takeover_run(ctdb, nodemap, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
 		rec->need_takeover_run = true;
@@ -2140,7 +2155,7 @@ static void ctdb_rebalance_timeout(struct event_context *ev, struct timed_event 
 
 	DEBUG(DEBUG_NOTICE,("Rebalance all nodes that have had ip assignment changes.\n"));
 
-	ret = ctdb_takeover_run(ctdb, rec->nodemap);
+	ret = ctdb_takeover_run(ctdb, rec->nodemap, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
 		rec->need_takeover_run = true;
@@ -2366,7 +2381,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 		rec->need_takeover_run = true;
 	}
 	if (ret == 0) {
-		ret = ctdb_takeover_run(ctdb, rec->nodemap);
+		ret = ctdb_takeover_run(ctdb, rec->nodemap, NULL, NULL);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to reallocate addresses: ctdb_takeover_run() failed.\n"));
 			rec->need_takeover_run = true;
@@ -3789,9 +3804,18 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			return;
 		}
 
-		ret = ctdb_takeover_run(ctdb, nodemap);
+		/* If takeover run fails, then the offending nodes are
+		 * assigned ban culprit counts. And we re-try takeover.
+		 * If takeover run fails repeatedly, the node would get
+		 * banned.
+		 *
+		 * If rec->need_takeover_run is not set to true at this
+		 * failure, monitoring is disabled cluster-wide (via
+		 * startrecovery eventscript) and will not get enabled.
+		 */
+		ret = ctdb_takeover_run(ctdb, nodemap, takeover_fail_callback, rec);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. Try again later\n"));
+			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. Trying again\n"));
 			return;
 		}
 
