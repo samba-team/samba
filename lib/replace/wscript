@@ -227,7 +227,6 @@ struct foo bar = { .y = 'X', .x = 1 };
                         msg="Checking correct behavior of strtoll",
                         headers = 'errno.h',
                         execute = True,
-                        define_ret = True,
                         define = 'HAVE_BSD_STRTOLL',
                         )
     conf.CHECK_FUNCS('if_nametoindex strerror_r')
