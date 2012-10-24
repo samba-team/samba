@@ -78,6 +78,8 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True):
             return ntacl.info.sd
         elif ntacl.version == 3:
             return ntacl.info.sd
+        elif ntacl.version == 4:
+            return ntacl.info.sd
     else:
         return smbd.get_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL)
 
