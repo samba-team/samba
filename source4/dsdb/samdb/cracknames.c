@@ -1067,9 +1067,13 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 
 		const struct dom_sid *sid = samdb_result_dom_sid(mem_ctx, result, "objectSid");
 		const char *_acc = "", *_dom = "";
-
-		if (samdb_find_attribute(sam_ctx, result, "objectClass", "domain")) {
-
+		if (sid == NULL) {
+			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
+			return WERR_OK;
+		} else if (samdb_find_attribute(sam_ctx, result, "objectClass", "domain")) {
+			/* This can also find a DomainDNSZones entry,
+			 * but it won't have the SID we just
+			 * checked.  */
 			ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 						     partitions_basedn,
 						     LDB_SCOPE_ONELEVEL,
