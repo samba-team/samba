@@ -55,6 +55,11 @@ bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
                     source='nfs4_acls.c',
                     deps='samba-util tdb')
 
+bld.SAMBA3_LIBRARY('non_posix_acls',
+                   source='non_posix_acls.c',
+                   deps='samba-util vfs',
+                   private_library=True)
+
 bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
                     source='vfs_aixacl_util.c',
                     enabled=False) #fixme
