@@ -527,6 +527,13 @@ static NTSTATUS smbXsrv_open_global_allocate(struct db_context *db,
 	talloc_set_destructor(global, smbXsrv_open_global_destructor);
 
 	/*
+	 * We mark every slot as invalid using 0xFF.
+	 * Valid values are masked with 0xF.
+	 */
+	memset(global->lock_sequence_array, 0xFF,
+	       sizeof(global->lock_sequence_array));
+
+	/*
 	 * Here we just randomly try the whole 32-bit space
 	 *
 	 * We use just 32-bit, because we want to reuse the
