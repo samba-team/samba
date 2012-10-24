@@ -390,53 +390,21 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	DEBUG(10, ("get_nt_acl_internal: name=%s\n", name));
 
-	/* Get the full underlying sd for the hash
-	   or to return as backup. */
-	if (fsp) {
-		status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
-						  fsp,
-						  HASH_SECURITY_INFO,
-						  mem_ctx,
-						  &pdesc_next);
-	} else {
-		status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-						 name,
-						 HASH_SECURITY_INFO,
-						 mem_ctx,
-						 &pdesc_next);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
-			"returned %s\n",
-			name,
-			nt_errstr(status)));
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	/* Ensure we don't leak psd_next if we don't choose it.
-	 *
-	 * We don't allocate it onto frame as it is preferred not to
-	 * steal from a talloc pool.
-	 */
-	talloc_steal(frame, pdesc_next);
-
 	status = get_acl_blob(frame, handle, fsp, name, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_nt_acl_internal: get_acl_blob returned %s\n",
 			nt_errstr(status)));
-		psd = pdesc_next;
+		psd = NULL;
 		goto out;
-	}
-
-	status = parse_acl_blob(&blob, mem_ctx, &psd,
-				&hash_type, &xattr_version, &hash[0], &sys_acl_hash[0]);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("parse_acl_blob returned %s\n",
-				nt_errstr(status)));
-		psd = pdesc_next;
-		goto out;
+	} else {
+		status = parse_acl_blob(&blob, mem_ctx, &psd,
+					&hash_type, &xattr_version, &hash[0], &sys_acl_hash[0]);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("parse_acl_blob returned %s\n",
+				   nt_errstr(status)));
+			psd = NULL;
+			goto out;
+		}
 	}
 
 	/* Ensure we don't leak psd if we don't choose it.
@@ -468,7 +436,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			   (unsigned int)hash_type,
 			   name));
 		TALLOC_FREE(psd);
-		psd = pdesc_next;
+		psd = NULL;
 		goto out;
 	}
 
@@ -479,7 +447,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			   (unsigned int)hash_type,
 			   name));
 		TALLOC_FREE(psd);
-		psd = pdesc_next;
+		psd = NULL;
 		goto out;
 	}
 
@@ -528,6 +496,38 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		/* Otherwise, fall though and see if the NT ACL hash matches */
 	}
 	case 3:
+		/* Get the full underlying sd for the hash
+		   or to return as backup. */
+		if (fsp) {
+			status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+							  fsp,
+							  HASH_SECURITY_INFO,
+							  mem_ctx,
+							  &pdesc_next);
+		} else {
+			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+							 name,
+							 HASH_SECURITY_INFO,
+							 mem_ctx,
+							 &pdesc_next);
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
+				   "returned %s\n",
+				   name,
+				   nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		/* Ensure we don't leak psd_next if we don't choose it.
+		 *
+		 * We don't allocate it onto frame as it is preferred not to
+		 * steal from a talloc pool.
+		 */
+		talloc_steal(frame, pdesc_next);
+
 		status = hash_sd_sha256(pdesc_next, hash_tmp);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(psd);
@@ -559,6 +559,42 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		psd = pdesc_next;
 	}
   out:
+
+	if (psd == NULL) {
+		/* Get the full underlying sd, as we failed to get the
+		 * blob for the hash, or the revision/hash type wasn't
+		 * known */
+		if (fsp) {
+			status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+							  fsp,
+							  security_info,
+							  mem_ctx,
+							  &pdesc_next);
+		} else {
+			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+							 name,
+							 security_info,
+							 mem_ctx,
+							 &pdesc_next);
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
+				   "returned %s\n",
+				   name,
+				   nt_errstr(status)));
+			TALLOC_FREE(frame);
+			return status;
+		}
+
+		/* Ensure we don't leak psd_next if we don't choose it.
+		 *
+		 * We don't allocate it onto frame as it is preferred not to
+		 * steal from a talloc pool.
+		 */
+		talloc_steal(frame, pdesc_next);
+		psd = pdesc_next;
+	}
 
 	if (psd != pdesc_next) {
 		/* We're returning the blob, throw
