@@ -207,4 +207,16 @@ interface xattr
 		uint16 version;
 		[switch_is(version)] xattr_NTACL_Info info;
 	} xattr_NTACL;
+
+	/*
+	 * A wrapper of the common information required to be in the
+	 * hash of the ACL, for the acl_xattr and acl_tdb modules.
+	 */
+	[public] typedef struct {
+		DATA_BLOB acl_as_blob;
+		uid_t owner;
+		gid_t group;
+		mode_t mode;
+	} xattr_sys_acl_hash_wrapper;
+
 }
