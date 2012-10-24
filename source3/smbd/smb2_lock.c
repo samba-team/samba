@@ -53,6 +53,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
 						 struct files_struct *in_fsp,
+						 uint32_t in_lock_sequence,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks);
 static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req);
@@ -62,6 +63,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 {
 	const uint8_t *inbody;
 	uint16_t in_lock_count;
+	uint32_t in_lock_sequence;
 	uint64_t in_file_id_persistent;
 	uint64_t in_file_id_volatile;
 	struct files_struct *in_fsp;
@@ -78,7 +80,12 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 	inbody = SMBD_SMB2_IN_BODY_PTR(req);
 
 	in_lock_count			= CVAL(inbody, 0x02);
-	/* 0x04 - 4 bytes reserved */
+	if (req->xconn->protocol >= PROTOCOL_SMB2_10) {
+		in_lock_sequence	= IVAL(inbody, 0x04);
+	} else {
+		/* 0x04 - 4 bytes reserved */
+		in_lock_sequence	= 0;
+	}
 	in_file_id_persistent		= BVAL(inbody, 0x08);
 	in_file_id_volatile		= BVAL(inbody, 0x10);
 
@@ -139,6 +146,7 @@ NTSTATUS smbd_smb2_request_process_lock(struct smbd_smb2_request *req)
 
 	subreq = smbd_smb2_lock_send(req, req->sconn->ev_ctx,
 				     req, in_fsp,
+				     in_lock_sequence,
 				     in_lock_count,
 				     in_locks);
 	if (subreq == NULL) {
@@ -199,6 +207,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
 						 struct files_struct *fsp,
+						 uint32_t in_lock_sequence,
 						 uint16_t in_lock_count,
 						 struct smbd_smb2_lock_element *in_locks)
 {
