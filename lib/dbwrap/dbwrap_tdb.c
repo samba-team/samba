@@ -42,10 +42,11 @@ static void db_tdb_log_key(const char *prefix, TDB_DATA key)
 {
 	size_t len;
 	char *keystr;
-
+	TALLOC_CTX *frame;
 	if (DEBUGLEVEL < 10) {
 		return;
 	}
+	frame = talloc_stackframe();
 	len = key.dsize;
 	if (DEBUGLEVEL == 10) {
 		/*
@@ -53,10 +54,10 @@ static void db_tdb_log_key(const char *prefix, TDB_DATA key)
 		 */
 		len = MIN(10, key.dsize);
 	}
-	keystr = hex_encode_talloc(talloc_tos(), (unsigned char *)(key.dptr),
+	keystr = hex_encode_talloc(frame, (unsigned char *)(key.dptr),
 				   len);
 	DEBUG(10, ("%s key %s\n", prefix, keystr));
-	TALLOC_FREE(keystr);
+	TALLOC_FREE(frame);
 }
 
 static int db_tdb_record_destr(struct db_record* data)
