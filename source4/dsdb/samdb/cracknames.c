@@ -1472,7 +1472,7 @@ WERROR dcesrv_drsuapi_CrackNamesByNameFormat(struct ldb_context *sam_ctx, TALLOC
 	uint32_t i, count;
 	WERROR status;
 
-	*ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
+	*ctr1 = talloc_zero(mem_ctx, struct drsuapi_DsNameCtr1);
 	W_ERROR_HAVE_NO_MEMORY(*ctr1);
 
 	count = req1->count;
