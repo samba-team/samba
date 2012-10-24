@@ -438,6 +438,7 @@ interface smbXsrv
 		DATA_BLOB				backend_cookie;
 		uint16					channel_sequence;
 		hyper					channel_generation;
+		[flag(NDR_PAHEX)] uint8			lock_sequence_array[64];
 	} smbXsrv_open_global0;
 
 	typedef union {
