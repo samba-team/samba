@@ -62,11 +62,19 @@ class dbcheck(object):
         self.ntds_dsa = samdb.get_dsServiceName()
         self.class_schemaIDGUID = {}
 
-        res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs'])
+        res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs', 'hasMasterNCs'])
         if "msDS-hasMasterNCs" in res[0]:
             self.write_ncs = res[0]["msDS-hasMasterNCs"]
         else:
-            self.write_ncs = None
+            # If the Forest Level is less than 2003 then there is no
+            # msDS-hasMasterNCs, so we fall back to hasMasterNCs
+            # no need to merge as all the NCs that are in hasMasterNCs must
+            # also be in msDS-hasMasterNCs (but not the opposite)
+            if "hasMasterNCs" in res[0]:
+                self.write_ncs = res[0]["hasMasterNCs"]
+            else:
+                self.write_ncs = None
+
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
