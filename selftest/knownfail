@@ -214,7 +214,8 @@
 ^samba3.smb2.replay.channel-sequence
 ^samba3.smb2.replay.replay3
 ^samba3.smb2.replay.replay4
-^samba3.smb2.lock.*replay
+^samba3.smb2.lock.replay_smb3_specification # This requires multi-chanel or durable handles
+^samba3.smb2.lock.*replay_broken_windows # This tests the windows behaviour
 ^samba3.smb2.lease.statopen3
 ^samba3.smb2.lease.unlink # we currently do not downgrade RH lease to R after unlink
 ^samba3.smb2.multichannel

@@ -2467,7 +2467,7 @@ sub provision($$)
 	force directory mode = 0
 	vfs objects = xattr_tdb streams_depot
 [aio]
-	copy = tmp
+	copy = durable
 	aio read size = 1
 	aio write size = 1
 
