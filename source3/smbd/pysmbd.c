@@ -158,8 +158,8 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 
 	mode_t mode = SMB_ACL_READ|SMB_ACL_WRITE;
 
-	mode_t mode_user = (chmod_mode & 0700) >> 16;
-	mode_t mode_group = (chmod_mode & 070) >> 8;
+	mode_t mode_user = (chmod_mode & 0700) >> 6;
+	mode_t mode_group = (chmod_mode & 070) >> 3;
 	mode_t mode_other = chmod_mode &  07;
 	SMB_ACL_ENTRY_T entry;
 	SMB_ACL_T acl = sys_acl_init(frame);
