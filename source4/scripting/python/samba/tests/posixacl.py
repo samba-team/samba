@@ -278,9 +278,11 @@ class PosixAclMappingTests(TestCase):
         smbd.set_simple_acl(tempf, 0750)
         try:
             facl = getntacl(lp,tempf)
+            self.assertTrue(False)
         except TypeError:
             # We don't expect the xattr to be filled in in this case
             pass
+        os.unlink(tempf)
 
     def test_setposixacl_getntacl_smbd(self):
         random.seed()
@@ -294,10 +296,10 @@ class PosixAclMappingTests(TestCase):
         user_SID = s4_passdb.uid_to_sid(os.stat(tempf).st_uid)
         smbd.set_simple_acl(tempf, 0640)
         facl = getntacl(lp, tempf, direct_db_access=False)
-        domsid = passdb.get_global_sam_sid()
         acl = "O:%sG:%sD:(A;;0x001f019f;;;%s)(A;;0x00120089;;;%s)(A;;WO;;;WD)" % (user_SID, group_SID, user_SID, group_SID)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
+        os.unlink(tempf)
 
     def test_setposixacl_group_getntacl_smbd(self):
         random.seed()
@@ -318,6 +320,7 @@ class PosixAclMappingTests(TestCase):
         acl = "O:%sG:%sD:(A;;0x001f019f;;;%s)(A;;0x00120089;;;BA)(A;;0x00120089;;;%s)(A;;WO;;;WD)" % (user_SID, group_SID, user_SID, group_SID)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
+        os.unlink(tempf)
 
     def test_setposixacl_getposixacl(self):
         random.seed()
