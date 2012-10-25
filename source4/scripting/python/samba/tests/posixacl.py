@@ -18,7 +18,7 @@
 
 """Tests for the Samba3 NT -> posix ACL layer"""
 
-from samba.ntacls import setntacl, getntacl
+from samba.ntacls import setntacl, getntacl, checkset_backend
 from samba.dcerpc import xattr, security, smb_acl, idmap
 from samba.param import LoadParm
 from samba.tests import TestCase
@@ -61,6 +61,70 @@ class PosixAclMappingTests(TestCase):
         self.assertEquals(facl.as_sddl(anysid),acl)
         os.unlink(tempf)
 
+    def test_setntacl_smbd_setposixacl_getntacl(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=True)
+
+        # This will invalidate the ACL, as we have a hook!
+        smbd.set_simple_acl(tempf, 0640)
+
+        # However, this only asks the xattr
+        try:
+            facl = getntacl(lp,tempf, direct_db_access=True)
+            self.assertTrue(False)
+        except TypeError:
+            pass
+        os.unlink(tempf)
+
+    def test_setntacl_smbd_chmod_getntacl(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=True)
+
+        # This should invalidate the ACL, as we include the posix ACL in the hash
+        (backend_obj, dbname) = checkset_backend(lp, None, None)
+        backend_obj.wrap_setxattr(dbname,
+                                  tempf, "system.fake_access_acl", "")
+
+        #however, as this is direct DB access, we do not notice it
+        facl = getntacl(lp,tempf, direct_db_access=True)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(acl, facl.as_sddl(anysid))
+        os.unlink(tempf)
+
+    def test_setntacl_smbd_chmod_getntacl_smbd(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=True)
+
+        # This should invalidate the ACL, as we include the posix ACL in the hash
+        (backend_obj, dbname) = checkset_backend(lp, None, None)
+        backend_obj.wrap_setxattr(dbname,
+                                  tempf, "system.fake_access_acl", "")
+
+        #the hash breaks, and we return an ACL based only on the mode
+        facl = getntacl(lp,tempf)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
+        os.unlink(tempf)
+
     def test_setntacl_getntacl_smbd(self):
         random.seed()
         lp = LoadParm()
@@ -87,6 +151,46 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
+        os.unlink(tempf)
+
+    def test_setntacl_smbd_setposixacl_getntacl_smbd(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;;0x001f019f;;;S-1-5-21-2212615479-2695158682-2101375467-512)(A;;0x00120089;;;S-1-5-21-2212615479-2695158682-2101375467-513)(A;;WO;;;WD)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
+        # This invalidates the hash of the NT acl just set
+        smbd.set_simple_acl(tempf, 0640)
+        facl = getntacl(lp,tempf, direct_db_access=False)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
+        os.unlink(tempf)
+
+    def test_setntacl_smbd_setposixacl_group_getntacl_smbd(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
+        simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;;0x001f019f;;;S-1-5-21-2212615479-2695158682-2101375467-512)(A;;0x00120089;;;BA)(A;;0x00120089;;;S-1-5-21-2212615479-2695158682-2101375467-513)(A;;WO;;;WD)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
+        # This invalidates the hash of the NT acl just set
+        s3conf = s3param.get_context()
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        smbd.set_simple_acl(tempf, 0640, BA_gid)
+
+        # This should re-calculate an ACL based on the posix details
+        facl = getntacl(lp,tempf, direct_db_access=False)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
         os.unlink(tempf)
 
     def test_setntacl_smbd_getntacl_smbd_gpo(self):
@@ -116,6 +220,137 @@ class PosixAclMappingTests(TestCase):
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
         posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        os.unlink(tempf)
+
+    def test_setposixacl_getposixacl(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        smbd.set_simple_acl(tempf, 0640)
+        posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        self.assertEquals(posix_acl.count, 4)
+
+        self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
+        self.assertEquals(posix_acl.acl[0].a_perm, 6)
+
+        self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[1].a_perm, 4)
+
+        self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
+        self.assertEquals(posix_acl.acl[2].a_perm, 0)
+
+        self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        os.unlink(tempf)
+
+    def test_setposixacl_getntacl(self):
+        random.seed()
+        lp = LoadParm()
+        acl = ""
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        smbd.set_simple_acl(tempf, 0750)
+        try:
+            facl = getntacl(lp,tempf)
+        except TypeError:
+            # We don't expect the xattr to be filled in in this case
+            pass
+
+    def test_setposixacl_getntacl_smbd(self):
+        random.seed()
+        lp = LoadParm()
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        s3conf = s3param.get_context()
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+        group_SID = s4_passdb.gid_to_sid(os.stat(tempf).st_gid)
+        user_SID = s4_passdb.uid_to_sid(os.stat(tempf).st_uid)
+        smbd.set_simple_acl(tempf, 0640)
+        facl = getntacl(lp, tempf, direct_db_access=False)
+        domsid = passdb.get_global_sam_sid()
+        acl = "O:%sG:%sD:(A;;0x001f019f;;;%s)(A;;0x00120089;;;%s)(A;;WO;;;WD)" % (user_SID, group_SID, user_SID, group_SID)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(acl, facl.as_sddl(anysid))
+
+    def test_setposixacl_group_getntacl_smbd(self):
+        random.seed()
+        lp = LoadParm()
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
+        s3conf = s3param.get_context()
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        group_SID = s4_passdb.gid_to_sid(os.stat(tempf).st_gid)
+        user_SID = s4_passdb.uid_to_sid(os.stat(tempf).st_uid)
+        self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
+        smbd.set_simple_acl(tempf, 0640, BA_gid)
+        facl = getntacl(lp, tempf, direct_db_access=False)
+        domsid = passdb.get_global_sam_sid()
+        acl = "O:%sG:%sD:(A;;0x001f019f;;;%s)(A;;0x00120089;;;BA)(A;;0x00120089;;;%s)(A;;WO;;;WD)" % (user_SID, group_SID, user_SID, group_SID)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(acl, facl.as_sddl(anysid))
+
+    def test_setposixacl_getposixacl(self):
+        random.seed()
+        lp = LoadParm()
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        smbd.set_simple_acl(tempf, 0640)
+        posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        self.assertEquals(posix_acl.count, 4)
+
+        self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
+        self.assertEquals(posix_acl.acl[0].a_perm, 6)
+
+        self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[1].a_perm, 4)
+
+        self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
+        self.assertEquals(posix_acl.acl[2].a_perm, 0)
+
+        self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        os.unlink(tempf)
+
+    def test_setposixacl_group_getposixacl(self):
+        random.seed()
+        lp = LoadParm()
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
+        s3conf = s3param.get_context()
+        s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
+        (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
+        self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
+        smbd.set_simple_acl(tempf, 0670, BA_gid)
+        posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+
+        self.assertEquals(posix_acl.count, 5)
+
+        self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
+        self.assertEquals(posix_acl.acl[0].a_perm, 6)
+
+        self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_GROUP_OBJ)
+        self.assertEquals(posix_acl.acl[1].a_perm, 7)
+
+        self.assertEquals(posix_acl.acl[2].a_type, smb_acl.SMB_ACL_OTHER)
+        self.assertEquals(posix_acl.acl[2].a_perm, 0)
+
+        self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_GROUP)
+        self.assertEquals(posix_acl.acl[3].a_perm, 7)
+        self.assertEquals(posix_acl.acl[3].info.gid, BA_gid)
+
+        self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_MASK)
+        self.assertEquals(posix_acl.acl[4].a_perm, 6)
         os.unlink(tempf)
 
     def test_setntacl_sysvol_check_getposixacl(self):
