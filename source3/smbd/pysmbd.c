@@ -101,6 +101,9 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	set_conn_connectpath(conn, "/");
 
 	smbd_vfs_init(conn);
+	if (!posix_locking_init(false)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	fsp = talloc_zero(frame, struct files_struct);
 	if (fsp == NULL) {
@@ -144,6 +147,8 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("set_nt_acl_no_snum: fset_nt_acl returned %s.\n", nt_errstr(status)));
 	}
+
+	SMB_VFS_CLOSE(fsp);
 
 	conn_free(conn);
 	TALLOC_FREE(frame);
