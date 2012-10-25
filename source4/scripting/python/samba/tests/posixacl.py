@@ -82,7 +82,7 @@ class PosixAclMappingTests(TestCase):
             pass
         os.unlink(tempf)
 
-    def test_setntacl_smbd_chmod_getntacl(self):
+    def test_setntacl_invalidate_getntacl(self):
         random.seed()
         lp = LoadParm()
         path = None
@@ -103,26 +103,25 @@ class PosixAclMappingTests(TestCase):
         self.assertEquals(acl, facl.as_sddl(anysid))
         os.unlink(tempf)
 
-    def test_setntacl_smbd_chmod_getntacl_smbd(self):
+    def test_setntacl_invalidate_getntacl_smbd(self):
         random.seed()
         lp = LoadParm()
         path = None
         path = os.environ['SELFTEST_PREFIX']
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
         open(tempf, 'w').write("empty")
-        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=True)
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
 
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(lp, None, None)
         backend_obj.wrap_setxattr(dbname,
                                   tempf, "system.fake_access_acl", "")
 
-        #the hash breaks, and we return an ACL based only on the mode
+        #the hash would break, and we return an ACL based only on the mode, except we set the ACL using the 'ntvfs' mode that doesn't include a hash
         facl = getntacl(lp,tempf)
         anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
+        self.assertEquals(acl, facl.as_sddl(anysid))
         os.unlink(tempf)
 
     def test_setntacl_getntacl_smbd(self):
@@ -163,7 +162,7 @@ class PosixAclMappingTests(TestCase):
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
         open(tempf, 'w').write("empty")
         setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
-        # This invalidates the hash of the NT acl just set
+        # This invalidates the hash of the NT acl just set because there is a hook in the posix ACL set code
         smbd.set_simple_acl(tempf, 0640)
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
@@ -181,7 +180,7 @@ class PosixAclMappingTests(TestCase):
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
         open(tempf, 'w').write("empty")
         setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
-        # This invalidates the hash of the NT acl just set
+        # This invalidates the hash of the NT acl just set because there is a hook in the posix ACL set code
         s3conf = s3param.get_context()
         s4_passdb = passdb.PDB(s3conf.get("passdb backend"))
         (BA_gid,BA_type) = s4_passdb.sid_to_id(BA_sid)
