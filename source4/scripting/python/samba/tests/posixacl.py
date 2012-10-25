@@ -124,6 +124,29 @@ class PosixAclMappingTests(TestCase):
         self.assertEquals(acl, facl.as_sddl(anysid))
         os.unlink(tempf)
 
+    def test_setntacl_smbd_invalidate_getntacl_smbd(self):
+        random.seed()
+        lp = LoadParm()
+        path = None
+        path = os.environ['SELFTEST_PREFIX']
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)(A;;0x001200a9;;;S-1-5-21-2212615479-2695158682-2101375467-513)(A;;WO;;;WD)"
+        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
+        open(tempf, 'w').write("empty")
+        os.chmod(tempf, 0750)
+        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
+
+        # This should invalidate the ACL, as we include the posix ACL in the hash
+        (backend_obj, dbname) = checkset_backend(lp, None, None)
+        backend_obj.wrap_setxattr(dbname,
+                                  tempf, "system.fake_access_acl", "")
+
+        #the hash will break, and we return an ACL based only on the mode
+        facl = getntacl(lp,tempf, direct_db_access=False)
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
+        os.unlink(tempf)
+
     def test_setntacl_getntacl_smbd(self):
         random.seed()
         lp = LoadParm()
