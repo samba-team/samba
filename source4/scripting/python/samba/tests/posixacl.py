@@ -45,7 +45,7 @@ class PosixAclMappingTests(TestCase):
         tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
         open(tempf, 'w').write("empty")
         setntacl(lp, tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_getntacl(self):
         random.seed()
@@ -59,7 +59,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=True)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_setposixacl_getntacl(self):
         random.seed()
@@ -80,7 +80,7 @@ class PosixAclMappingTests(TestCase):
             self.assertTrue(False)
         except TypeError:
             pass
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_invalidate_getntacl(self):
         random.seed()
@@ -101,7 +101,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=True)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_invalidate_getntacl_smbd(self):
         random.seed()
@@ -122,7 +122,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_invalidate_getntacl_smbd(self):
         random.seed()
@@ -145,7 +145,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_getntacl_smbd(self):
         random.seed()
@@ -159,7 +159,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_getntacl_smbd(self):
         random.seed()
@@ -173,7 +173,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_setposixacl_getntacl_smbd(self):
         random.seed()
@@ -190,7 +190,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_setposixacl_group_getntacl_smbd(self):
         random.seed()
@@ -213,7 +213,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_smbd_getntacl_smbd_gpo(self):
         random.seed()
@@ -227,7 +227,7 @@ class PosixAclMappingTests(TestCase):
         facl = getntacl(lp,tempf, direct_db_access=False)
         domsid = security.dom_sid("S-1-5-21-2212615479-2695158682-2101375467")
         self.assertEquals(facl.as_sddl(domsid),acl)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_getposixacl(self):
         random.seed()
@@ -242,7 +242,7 @@ class PosixAclMappingTests(TestCase):
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
         posix_acl = smbd.get_sys_acl(tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setposixacl_getposixacl(self):
         random.seed()
@@ -266,7 +266,7 @@ class PosixAclMappingTests(TestCase):
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[3].a_perm, 6)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setposixacl_getntacl(self):
         random.seed()
@@ -282,7 +282,7 @@ class PosixAclMappingTests(TestCase):
         except TypeError:
             # We don't expect the xattr to be filled in in this case
             pass
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setposixacl_getntacl_smbd(self):
         random.seed()
@@ -299,7 +299,7 @@ class PosixAclMappingTests(TestCase):
         acl = "O:%sG:%sD:(A;;0x001f019f;;;%s)(A;;0x00120089;;;%s)(A;;WO;;;WD)" % (user_SID, group_SID, user_SID, group_SID)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setposixacl_group_getntacl_smbd(self):
         random.seed()
@@ -320,7 +320,7 @@ class PosixAclMappingTests(TestCase):
         acl = "O:%sG:%sD:(A;;0x001f019f;;;%s)(A;;0x00120089;;;BA)(A;;0x00120089;;;%s)(A;;WO;;;WD)" % (user_SID, group_SID, user_SID, group_SID)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setposixacl_getposixacl(self):
         random.seed()
@@ -343,7 +343,7 @@ class PosixAclMappingTests(TestCase):
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[3].a_perm, 6)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setposixacl_group_getposixacl(self):
         random.seed()
@@ -376,7 +376,7 @@ class PosixAclMappingTests(TestCase):
 
         self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_MASK)
         self.assertEquals(posix_acl.acl[4].a_perm, 6)
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_sysvol_check_getposixacl(self):
         random.seed()
@@ -502,7 +502,7 @@ class PosixAclMappingTests(TestCase):
 
 #
 
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def test_setntacl_policies_check_getposixacl(self):
         random.seed()
@@ -640,7 +640,7 @@ class PosixAclMappingTests(TestCase):
 
 #
 
-        os.unlink(tempf)
+        smbd.unlink(tempf)
 
     def setUp(self):
         super(PosixAclMappingTests, self).setUp()

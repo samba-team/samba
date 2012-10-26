@@ -331,6 +331,71 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 }
 
 /*
+  chown a file
+ */
+static PyObject *py_smbd_unlink(PyObject *self, PyObject *args)
+{
+	connection_struct *conn;
+	NTSTATUS status = NT_STATUS_OK;
+	int ret;
+	struct smb_filename *smb_fname = NULL;
+	char *fname;
+	int uid, gid;
+	TALLOC_CTX *frame;
+	mode_t saved_umask;
+
+	if (!PyArg_ParseTuple(args, "s", &fname))
+		return NULL;
+
+	frame = talloc_stackframe();
+
+	conn = talloc_zero(frame, connection_struct);
+	if (conn == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!(conn->params = talloc(conn, struct share_params))) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	saved_umask = umask(0);
+
+	conn->params->service = -1;
+
+	set_conn_connectpath(conn, "/");
+
+	smbd_vfs_init(conn);
+
+	status = create_synthetic_smb_fname_split(frame, fname, NULL,
+						  &smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		umask(saved_umask);
+		PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	}
+
+	ret = SMB_VFS_UNLINK(conn, smb_fname);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(errno);
+		DEBUG(0,("unlink returned failure: %s\n", strerror(errno)));
+	}
+
+	umask(saved_umask);
+
+	conn_free(conn);
+
+	TALLOC_FREE(frame);
+
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
+/*
   check if we have ACL support
  */
 static PyObject *py_smbd_have_posix_acls(PyObject *self, PyObject *args)
@@ -494,6 +559,9 @@ static PyMethodDef py_smbd_methods[] = {
 		NULL },
 	{ "chown",
 		(PyCFunction)py_smbd_chown, METH_VARARGS,
+		NULL },
+	{ "unlink",
+		(PyCFunction)py_smbd_unlink, METH_VARARGS,
 		NULL },
 	{ NULL }
 };
