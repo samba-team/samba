@@ -1,0 +1,6 @@
+This directory includes files for the dispatcher of NetworkManager. The files
+need to be copied to /etc/NetworkManager/dispatcher.d/ and will be automatically
+called if a network interface goes up or down.
+
+30-winbind-systemd: This will set winbind into offline mode if you have winbind
+                    offline logon turned on.
