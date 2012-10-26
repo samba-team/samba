@@ -1559,8 +1559,9 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
     if domain_info["dns_domain"].upper() != dnsdomain.upper():
         raise ProvisioningError('Realm as seen by pdb_samba_dsdb [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
 
-    # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
+    # Ensure we can read this directly, and via the smbd VFS
     for direct_db_access in [True, False]:
+        # Check the SYSVOL_ACL on the sysvol folder and subfolder (first level)
         for dir_path in [os.path.join(sysvol, dnsdomain), netlogon]:
             fsacl = getntacl(lp, dir_path, direct_db_access=direct_db_access)
             if fsacl is None:
