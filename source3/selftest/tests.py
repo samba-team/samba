@@ -20,6 +20,7 @@
 
 import os, sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
+import selftesthelpers
 from selftesthelpers import *
 samba3srcdir = srcdir() + "/source3"
 scriptdir = os.path.join(samba3srcdir, "../script/tests")
@@ -32,33 +33,26 @@ ntlm_auth3 = binpath('ntlm_auth3')
 dbwrap_tool = binpath('dbwrap_tool')
 vfstest = binpath('vfstest')
 
-torture_options = [configuration,
-                   '--maximum-runtime=$SELFTEST_MAXTIME',
-                   '--basedir=$SELFTEST_TMPDIR',
-                   '--option="torture:winbindd_netbios_name=$SERVER"',
-                   '--option="torture:winbindd_netbios_domain=$DOMAIN"',
-                   '--option=torture:sharedelay=100000',
-                   '--option=torture:writetimeupdatedelay=500000',
-                   '--format=subunit'
-                   ]
-
-torture_options.extend(get_env_torture_options())
-
-smbtorture4 += " " + " ".join(torture_options)
+smbtorture4_options.extend([
+   '--option="torture:winbindd_netbios_name=$SERVER"',
+   '--option="torture:winbindd_netbios_domain=$DOMAIN"',
+   '--option=torture:sharedelay=100000',
+   '--option=torture:writetimeupdatedelay=500000',
+   ])
 
 smbtorture4_possible = print_smbtorture4_version()
 
-
-def plansmbtorturetestsuite(name, env, options, description=''):
-    target = "samba3"
+def plansmbtorture4testsuite(name, env, options, description=''):
     if description == '':
-        modname = "%s.%s" % (target, name)
+        modname = "samba3.%s" % (name, )
     else:
-        modname = "%s.%s %s" % (target, name, description)
+        modname = "samba3.%s %s" % (name, description)
 
-    cmdline = "%s $LISTOPT %s --target=%s %s" % (valgrindify(smbtorture4), options, target, name)
     if smbtorture4_possible:
-        plantestsuite_loadlist(modname, env, cmdline)
+        selftesthelpers.plansmbtorture4testsuite(
+            name, env, options, target='samba3', modname=modname)
+    else:
+        skiptestsuite(name, "smbtorture4 is not available")
 
 
 plantestsuite("samba3.blackbox.success", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_success.sh")])
@@ -307,49 +301,49 @@ tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclie
 
 for t in tests:
     if t == "base.delaywrite":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
     elif t == "rap.sam":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
     elif t == "winbind.pac":
-        plansmbtorturetestsuite(t, "s3member:local", '//$SERVER/tmp --realm=$REALM --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
+        plansmbtorture4testsuite(t, "s3member:local", '//$SERVER/tmp --realm=$REALM --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
     elif t == "unix.whoami":
-        plansmbtorturetestsuite(t, "member:local", '//$SERVER/tmp --machine-pass', description="machine account")
-        plansmbtorturetestsuite(t, "s3member:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
+        plansmbtorture4testsuite(t, "member:local", '//$SERVER/tmp --machine-pass', description="machine account")
+        plansmbtorture4testsuite(t, "s3member:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
         for env in ["s3dc", "member"]:
-            plansmbtorturetestsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
-            plansmbtorturetestsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
+            plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
+            plansmbtorture4testsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
         for env in ["plugin_s4_dc", "s3member"]:
-            plansmbtorturetestsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER')
-            plansmbtorturetestsuite(t, env, '//$SERVER/tmp -k yes -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER', description='kerberos connection')
-            plansmbtorturetestsuite(t, env, '//$SERVER/tmpguest -U% --option=torture:addc=$DC_SERVER', description='anonymous connection')
+            plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER')
+            plansmbtorture4testsuite(t, env, '//$SERVER/tmp -k yes -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER', description='kerberos connection')
+            plansmbtorture4testsuite(t, env, '//$SERVER/tmpguest -U% --option=torture:addc=$DC_SERVER', description='anonymous connection')
     elif t == "raw.samba3posixtimedlock":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/plugin_s4_dc/share')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/s3dc/share')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/plugin_s4_dc/share')
     elif t == "raw.chkpath":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
     elif t == "raw.samba3hide" or t == "raw.samba3checkfsp" or t ==  "raw.samba3closeerr":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "simpleserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "simpleserver", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "raw.session" or t == "smb2.session":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'plain')
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmpenc -U$USERNAME%$PASSWORD', 'enc')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k no -U$USERNAME%$PASSWORD', 'ntlm')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k yes -U$USERNAME%$PASSWORD', 'krb5')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'plain')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmpenc -U$USERNAME%$PASSWORD', 'enc')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k no -U$USERNAME%$PASSWORD', 'ntlm')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -k yes -U$USERNAME%$PASSWORD', 'krb5')
     elif t == "rpc.lsa":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
-        plansmbtorturetestsuite(t, "s3dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
+        plansmbtorture4testsuite(t, "s3dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
     elif t == "smb2.durable-open" or t == "smb2.durable-v2-open":
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
     else:
-        plansmbtorturetestsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
 
 
 test = 'rpc.lsa.lookupsids'
@@ -361,7 +355,7 @@ for s in signseal_options:
         for a in auth_options:
             binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
             options = binding_string + " -U$USERNAME%$PASSWORD"
-            plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
+            plansmbtorture4testsuite(test, "s3dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
             plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s] " % (a, s, e), "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
                                                              "none", options, configuration])
 
@@ -371,10 +365,10 @@ for s in signseal_options:
     a = ""
     binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
     options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
-    plansmbtorturetestsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
+    plansmbtorture4testsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
 
     options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-3"
-    plansmbtorturetestsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s] ' % (a, s, e))
+    plansmbtorture4testsuite(test, "ktest", options, 'krb5 ncacn_np with [%s%s%s] ' % (a, s, e))
 
     auth_options2 = ["krb5", "spnego,krb5"]
     for a in auth_options2:
@@ -416,6 +410,6 @@ for e in endianness_options:
         for s in signseal_options:
             binding_string = "ncacn_ip_tcp:$SERVER_IP[%s%s%s]" % (a, s, e)
             options = binding_string + " -U$USERNAME%$PASSWORD"
-            plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
+            plansmbtorture4testsuite(test, "s3dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
 
-plansmbtorturetestsuite('rpc.epmapper', 's3dc:local', 'ncalrpc: -U$USERNAME%$PASSWORD', 'over ncalrpc')
+plansmbtorture4testsuite('rpc.epmapper', 's3dc:local', 'ncalrpc: -U$USERNAME%$PASSWORD', 'over ncalrpc')
