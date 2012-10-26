@@ -21,7 +21,6 @@
 import os, sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 from selftesthelpers import *
-import subprocess
 samba3srcdir = srcdir() + "/source3"
 scriptdir = os.path.join(samba3srcdir, "../script/tests")
 
@@ -47,9 +46,7 @@ torture_options.extend(get_env_torture_options())
 
 smbtorture4 += " " + " ".join(torture_options)
 
-sub = subprocess.Popen("%s --version 2> /dev/null" % smbtorture4, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
-sub.communicate("")
-smbtorture4_possible = (sub.returncode == 0)
+smbtorture4_possible = print_smbtorture4_version()
 
 
 def plansmbtorturetestsuite(name, env, options, description=''):
