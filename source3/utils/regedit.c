@@ -438,7 +438,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 {
 	struct regedit *regedit;
 	struct tree_node *root;
-	int c;
+	int key;
 
 	initscr();
 	start_color();
@@ -479,15 +479,14 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 
 	update_panels();
 	doupdate();
-	while (1) {
-		c = regedit_getch();
-		if (c == 'q' || c == 'Q') {
-			break;
-		}
-		handle_main_input(regedit, c);
+
+	do {
+		key = regedit_getch();
+
+		handle_main_input(regedit, key);
 		update_panels();
 		doupdate();
-	}
+	} while (key != 'q' || key == 'Q');
 
 	endwin();
 }
