@@ -198,3 +198,14 @@ def plansmbtorture4testsuite(name, env, options, modname=None):
 
 def smbtorture4_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
+
+
+def get_env_torture_options():
+    ret = []
+    if not os.getenv("SELFTEST_VERBOSE"):
+        ret.append("--option=torture:progress=no")
+    if os.getenv("SELFTEST_QUICK"):
+        ret.append("--option=torture:quick=yes")
+    return ret
+
+
