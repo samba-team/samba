@@ -179,27 +179,6 @@ def planpythontestsuite(env, module, name=None, extra_path=[]):
     plantestsuite_idlist(name, env, args)
 
 
-samba4srcdir = source4dir()
-bbdir = os.path.join(srcdir(), "testprogs/blackbox")
-configuration = "--configfile=$SMB_CONF_PATH"
-
-smbtorture4 = binpath("smbtorture4")
-smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
-
-
-def plansmbtorture4testsuite(name, env, options, modname=None):
-    if modname is None:
-        modname = "samba4.%s" % name
-    if isinstance(options, list):
-        options = " ".join(options)
-    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smbtorture4), options, name)
-    plantestsuite_loadlist(modname, env, cmdline)
-
-
-def smbtorture4_testsuites(prefix):
-    return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
-
-
 def get_env_torture_options():
     ret = []
     if not os.getenv("SELFTEST_VERBOSE"):
@@ -209,3 +188,30 @@ def get_env_torture_options():
     return ret
 
 
+samba4srcdir = source4dir()
+bbdir = os.path.join(srcdir(), "testprogs/blackbox")
+configuration = "--configfile=$SMB_CONF_PATH"
+
+smbtorture4 = binpath("smbtorture4")
+smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
+
+smbtorture4_options = [
+    configuration,
+    "--maximum-runtime=$SELFTEST_MAXTIME",
+    "--basedir=$SELFTEST_TMPDIR",
+    "--format=subunit"
+    ] + get_env_torture_options()
+
+
+def plansmbtorture4testsuite(name, env, options, target, modname=None):
+    if modname is None:
+        modname = "samba4.%s" % name
+    if isinstance(options, list):
+        options = " ".join(options)
+    options += " " + " ".join(smbtorture4_options + ["--target=%s" % target])
+    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smbtorture4), options, name)
+    plantestsuite_loadlist(modname, env, cmdline)
+
+
+def smbtorture4_testsuites(prefix):
+    return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
