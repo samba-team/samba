@@ -533,9 +533,19 @@ const struct security_unix_token *get_current_utok(connection_struct *conn)
 	return &current_user.ut;
 }
 
+/****************************************************************************
+ Return the Windows token we are running effectively as on this connection.
+ If this is currently a NULL token as we're inside become_root() - a temporary
+ UNIX security override, then we search up the stack for the previous active
+ token.
+****************************************************************************/
+
 const struct security_token *get_current_nttok(connection_struct *conn)
 {
-	return current_user.nt_user_token;
+	if (current_user.nt_user_token) {
+		return current_user.nt_user_token;
+	}
+	return sec_ctx_active_token();
 }
 
 uint64_t get_current_vuid(connection_struct *conn)

@@ -466,3 +466,28 @@ void init_sec_ctx(void)
 	current_user.vuid = UID_FIELD_INVALID;
 	current_user.nt_user_token = NULL;
 }
+
+/*************************************************************
+ Called when we're inside a become_root() temporary escalation
+ of privileges and the nt_user_token is NULL. Return the last
+ active token on the context stack. We know there is at least
+ one valid non-NULL token on the stack so panic if we underflow.
+*************************************************************/
+
+const struct security_token *sec_ctx_active_token(void)
+{
+	int stack_index = sec_ctx_stack_ndx;
+	struct sec_ctx *ctx_p = &sec_ctx_stack[stack_index];
+
+	while (ctx_p->token == NULL) {
+		stack_index--;
+		if (stack_index < 0) {
+			DEBUG(0, ("Security context active token "
+				  "stack underflow!\n"));
+			smb_panic("Security context active token "
+				  "stack underflow!");
+		}
+		ctx_p = &sec_ctx_stack[stack_index];
+	}
+	return ctx_p->token;
+}
