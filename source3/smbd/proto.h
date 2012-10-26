@@ -952,6 +952,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, const struct 
 void set_root_sec_ctx(void);
 bool pop_sec_ctx(void);
 void init_sec_ctx(void);
+const struct security_token *sec_ctx_active_token(void);
 
 /* The following definitions come from smbd/server.c  */
 
