@@ -22,7 +22,6 @@ import os, sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 from selftesthelpers import *
 import subprocess
-smb4torture = binpath("smbtorture4")
 samba3srcdir = srcdir() + "/source3"
 configuration = "--configfile=$SMB_CONF_PATH"
 scriptdir=os.path.join(samba3srcdir, "../script/tests")
@@ -48,17 +47,12 @@ torture_options.append("--format=subunit")
 if os.getenv("SELFTEST_QUICK"):
     torture_options.append("--option=torture:quick=yes")
 
-smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
+smbtorture4 += " " + " ".join(torture_options)
 
-smb4torture += " " + " ".join(torture_options)
-
-sub = subprocess.Popen("%s --version 2> /dev/null" % smb4torture, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+sub = subprocess.Popen("%s --version 2> /dev/null" % smbtorture4, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
 sub.communicate("")
-smb4torture_possible = (sub.returncode == 0)
+smbtorture4_possible = (sub.returncode == 0)
 
-
-def smb4torture_testsuites(prefix):
-    return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
 
 def plansmbtorturetestsuite(name, env, options, description=''):
     target = "samba3"
@@ -67,8 +61,8 @@ def plansmbtorturetestsuite(name, env, options, description=''):
     else:
         modname = "%s.%s %s" % (target, name, description)
 
-    cmdline = "%s $LISTOPT %s --target=%s %s" % (valgrindify(smb4torture), options, target, name)
-    if smb4torture_possible:
+    cmdline = "%s $LISTOPT %s --target=%s %s" % (valgrindify(smbtorture4), options, target, name)
+    if smbtorture4_possible:
         plantestsuite_loadlist(modname, env, cmdline)
 
 
@@ -283,7 +277,7 @@ raw = ["raw.acls", "raw.chkpath", "raw.close", "raw.composite", "raw.context", "
        "raw.bench-oplock", "raw.bench-lock", "raw.bench-open", "raw.bench-tcon",
        "raw.samba3checkfsp", "raw.samba3closeerr", "raw.samba3oplocklogoff"]
 
-smb2 = smb4torture_testsuites("smb2.")
+smb2 = smbtorture4_testsuites("smb2.")
 
 rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sharesec",
        "rpc.samba3.spoolss", "rpc.samba3.wkssvc", "rpc.samba3.winreg",

@@ -25,8 +25,6 @@ import subprocess
 
 samba4srcdir = source4dir()
 samba4bindir = bindir()
-smbtorture4 = binpath("smbtorture4")
-smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 validate = os.getenv("VALIDATE", "")
 if validate:
     validate_list = [validate]
@@ -35,17 +33,6 @@ else:
 
 nmblookup = binpath('nmblookup4')
 smbclient = binpath('smbclient4')
-
-def plansmbtorture4testsuite(name, env, options, modname=None):
-    if modname is None:
-        modname = "samba4.%s" % name
-    if isinstance(options, list):
-        options = " ".join(options)
-    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smbtorture4), options, name)
-    plantestsuite_loadlist(modname, env, cmdline)
-
-def smbtorture4_testsuites(prefix):
-    return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
 
 subprocess.call([smbtorture4, "-V"], stdout=sys.stderr)
 
