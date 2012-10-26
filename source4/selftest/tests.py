@@ -25,8 +25,8 @@ import subprocess
 
 samba4srcdir = source4dir()
 samba4bindir = bindir()
-smb4torture = binpath("smbtorture4")
-smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
+smbtorture4 = binpath("smbtorture4")
+smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 validate = os.getenv("VALIDATE", "")
 if validate:
     validate_list = [validate]
@@ -41,13 +41,13 @@ def plansmbtorturetestsuite(name, env, options, modname=None):
         modname = "samba4.%s" % name
     if isinstance(options, list):
         options = " ".join(options)
-    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
+    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
-def smb4torture_testsuites(prefix):
-    return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
+def smbtorture4_testsuites(prefix):
+    return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
 
-subprocess.call([smb4torture, "-V"], stdout=sys.stderr)
+subprocess.call([smbtorture4, "-V"], stdout=sys.stderr)
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
@@ -57,7 +57,7 @@ if not os.getenv("SELFTEST_VERBOSE"):
 torture_options.append("--format=subunit")
 if os.getenv("SELFTEST_QUICK"):
     torture_options.append("--option=torture:quick=yes")
-smb4torture += " " + " ".join(torture_options)
+smbtorture4 += " " + " ".join(torture_options)
 
 print >>sys.stderr, "OPTIONS %s" % " ".join(torture_options)
 
@@ -87,7 +87,7 @@ for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldapi with options %s(dc:local)" % options, "dc:local",
             "%s/test_ldb.sh ldapi $PREFIX_ABS/dc/private/ldapi %s" % (bbdir, options))
 
-for t in smb4torture_testsuites("ldap."):
+for t in smbtorture4_testsuites("ldap."):
     plansmbtorturetestsuite(t, "dc", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
 
 ldbdir = os.path.join(srcdir(), "lib/ldb")
@@ -103,7 +103,7 @@ else:
 # that they stay passing
 ncacn_np_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.altercontext", "rpc.multibind", "rpc.netlogon", "rpc.handles", "rpc.samsync", "rpc.samba3-sessionkey", "rpc.samba3-getusername", "rpc.samba3-lsa", "rpc.samba3-bind", "rpc.samba3-netlogon", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"]
 ncalrpc_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.altercontext", "rpc.multibind", "rpc.netlogon", "rpc.drsuapi", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"]
-drs_rpc_tests = smb4torture_testsuites("drs.rpc")
+drs_rpc_tests = smbtorture4_testsuites("drs.rpc")
 ncacn_ip_tcp_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.multibind", "rpc.netlogon", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"] + drs_rpc_tests
 slow_ncacn_np_tests = ["rpc.samlogon", "rpc.samr.users", "rpc.samr.large-dc", "rpc.samr.users.privileges", "rpc.samr.passwords", "rpc.samr.passwords.pwdlastset"]
 slow_ncacn_ip_tcp_tests = ["rpc.samr", "rpc.cracknames"]
@@ -111,7 +111,7 @@ slow_ncacn_ip_tcp_tests = ["rpc.samr", "rpc.cracknames"]
 all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn_np_tests + slow_ncacn_ip_tcp_tests + ["rpc.lsa.secrets", "rpc.pac", "rpc.samba3-sharesec", "rpc.countcalls"]
 
 # Make sure all tests get run
-rpc_tests = smb4torture_testsuites("rpc.")
+rpc_tests = smbtorture4_testsuites("rpc.")
 auto_rpc_tests = filter(lambda t: t not in all_rpc_tests, rpc_tests)
 
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
@@ -157,12 +157,12 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
         plansmbtorturetestsuite(t, env, ["%s:$SERVER" % transport, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s" % (t, transport))
 
 # Tests for the DFS referral calls implementation
-for t in smb4torture_testsuites("dfs."):
+for t in smbtorture4_testsuites("dfs."):
     plansmbtorturetestsuite(t, "dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
     plansmbtorturetestsuite(t, "plugin_s4_dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 # Tests for the NET API (net.api.become.dc tested below against all the roles)
-net_tests = filter(lambda x: "net.api.become.dc" not in x, smb4torture_testsuites("net."))
+net_tests = filter(lambda x: "net.api.become.dc" not in x, smbtorture4_testsuites("net."))
 for t in net_tests:
     plansmbtorturetestsuite(t, "dc", '$SERVER[%s] -U$USERNAME%%$PASSWORD -W$DOMAIN' % validate)
 
@@ -232,28 +232,28 @@ plansmbtorturetestsuite('rpc.echo', "dc", ['ncacn_np:$SERVER[smb2]', '-U$USERNAM
 
 plansmbtorturetestsuite('ntp.signd', "dc:local", ['ncacn_np:$SERVER', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.ntp.signd")
 
-nbt_tests = smb4torture_testsuites("nbt.")
+nbt_tests = smbtorture4_testsuites("nbt.")
 for t in nbt_tests:
     plansmbtorturetestsuite(t, "dc", "//$SERVER/_none_ -U\"$USERNAME%$PASSWORD\"")
 
 # Tests against the NTVFS POSIX backend
 ntvfsargs = ["--option=torture:sharedelay=10000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=50000"]
 
-smb2 = smb4torture_testsuites("smb2.")
+smb2 = smbtorture4_testsuites("smb2.")
 #The QFILEINFO-IPC test needs to be on ipc$
-raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smb4torture_testsuites("raw."))
-base = smb4torture_testsuites("base.")
+raw = filter(lambda x: "raw.qfileinfo.ipc" not in x, smbtorture4_testsuites("raw."))
+base = smbtorture4_testsuites("base.")
 
-netapi = smb4torture_testsuites("netapi.")
+netapi = smbtorture4_testsuites("netapi.")
 
-libsmbclient = smb4torture_testsuites("libsmbclient.")
+libsmbclient = smbtorture4_testsuites("libsmbclient.")
 
 for t in base + raw + smb2 + netapi + libsmbclient:
     plansmbtorturetestsuite(t, "dc", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + ntvfsargs)
 
 plansmbtorturetestsuite("raw.qfileinfo.ipc", "dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
-for t in smb4torture_testsuites("rap."):
+for t in smbtorture4_testsuites("rap."):
     plansmbtorturetestsuite(t, "dc", '//$SERVER/IPC\$ -U$USERNAME%$PASSWORD')
 
 # Tests against the NTVFS CIFS backend
@@ -269,7 +269,7 @@ plansmbtorturetestsuite(t, "rpc_proxy", ['//$NETBIOSNAME/cifs_to_dc', '-U$DC_USE
 plansmbtorturetestsuite('echo.udp', 'dc:local', '//$SERVER/whatever')
 
 # Local tests
-for t in smb4torture_testsuites("local."):
+for t in smbtorture4_testsuites("local."):
     #The local.resolve test needs a name to look up using real system (not emulated) name routines
     plansmbtorturetestsuite(t, "none", "ncalrpc:localhost")
 
@@ -294,11 +294,11 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
 
 # DNS tests
 planpythontestsuite("fl2003dc", "samba.tests.dns")
-for t in smb4torture_testsuites("dns_internal."):
+for t in smbtorture4_testsuites("dns_internal."):
     plansmbtorturetestsuite(t, "dc:local", '//$SERVER/whavever')
 
 # Local tests
-for t in smb4torture_testsuites("dlz_bind9."):
+for t in smbtorture4_testsuites("dlz_bind9."):
     #The dlz_bind9 tests needs to look at the DNS database
     plansmbtorturetestsuite(t, "chgdcpass:local", "ncalrpc:localhost")
 
@@ -328,7 +328,7 @@ plantestsuite("samba4.blackbox.gentest(dc)", "dc", [os.path.join(samba4srcdir, "
 plantestsuite("samba4.blackbox.wbinfo(dc:local)", "dc:local", [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$USERNAME', '$PASSWORD', "dc"])
 plantestsuite("samba4.blackbox.wbinfo(s4member:local)", "s4member:local", [os.path.join(samba4srcdir, "../nsswitch/tests/test_wbinfo.sh"), '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', "s4member"])
 plantestsuite("samba4.blackbox.chgdcpass", "chgdcpass", [os.path.join(bbdir, "test_chgdcpass.sh"), '$SERVER', "CHGDCPASS\$", '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", '$SELFTEST_PREFIX/chgdcpass', smbclient])
-plantestsuite_loadlist("samba4.rpc.echo against NetBIOS alias", "dc", [valgrindify(smb4torture), "$LISTOPT", 'ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD', 'rpc.echo'])
+plantestsuite_loadlist("samba4.rpc.echo against NetBIOS alias", "dc", [valgrindify(smbtorture4), "$LISTOPT", 'ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD', 'rpc.echo'])
 
 # Tests using the "Simple" NTVFS backend
 for t in ["base.rw1"]:
@@ -385,8 +385,8 @@ plansmbtorturetestsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share',
 
 wb_opts = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
 
-winbind_struct_tests = smb4torture_testsuites("winbind.struct")
-winbind_ndr_tests = smb4torture_testsuites("winbind.ndr")
+winbind_struct_tests = smbtorture4_testsuites("winbind.struct")
+winbind_ndr_tests = smbtorture4_testsuites("winbind.ndr")
 for env in ["plugin_s4_dc", "dc", "s4member"]:
     for t in winbind_struct_tests:
         plansmbtorturetestsuite(t, env, wb_opts + ['//_none_/_none_'])
