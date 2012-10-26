@@ -43,7 +43,7 @@ torture_options = [configuration,
                    '--format=subunit'
                    ]
 
-torture_options.extend(env_get_torture_options())
+torture_options.extend(get_env_torture_options())
 
 smbtorture4 += " " + " ".join(torture_options)
 

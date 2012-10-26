@@ -20,8 +20,15 @@
 
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../selftest"))
+import selftesthelpers
 from selftesthelpers import *
 import subprocess
+
+print >>sys.stderr, "OPTIONS %s" % " ".join(smbtorture4_options)
+
+def plansmbtorture4testsuite(name, env, options, modname=None):
+    return selftesthelpers.plansmbtorture4testsuite(name, env, options,
+        target='samba4', modname=modname)
 
 samba4srcdir = source4dir()
 samba4bindir = bindir()
@@ -37,16 +44,6 @@ smbclient = binpath('smbclient4')
 subprocess.call([smbtorture4, "-V"], stdout=sys.stderr)
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
-
-torture_options = [configuration,
-                   "--maximum-runtime=$SELFTEST_MAXTIME",
-                   "--target=samba4",
-                   "--basedir=$SELFTEST_TMPDIR",
-                   "--format=subunit"]
-torture_options.extend(get_env_torture_options())
-smbtorture4 += " " + " ".join(torture_options)
-
-print >>sys.stderr, "OPTIONS %s" % " ".join(torture_options)
 
 # Simple tests for LDAP and CLDAP
 for options in ['-U"$USERNAME%$PASSWORD" --option=socket:testnonblock=true', '-U"$USERNAME%$PASSWORD"', '-U"$USERNAME%$PASSWORD" -k yes', '-U"$USERNAME%$PASSWORD" -k no', '-U"$USERNAME%$PASSWORD" -k no --sign', '-U"$USERNAME%$PASSWORD" -k no --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --sign']:
