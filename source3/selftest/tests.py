@@ -107,24 +107,24 @@ t = "CLEANUP3"
 plantestsuite("samba3.smbtorture_s3.plain(%s).%s" % (env, t), env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "", "-l $LOCAL_PATH"])
 
 local_tests=[
-	"LOCAL-SUBSTITUTE",
-	"LOCAL-GENCACHE",
-	"LOCAL-TALLOC-DICT",
-	"LOCAL-BASE64",
-	"LOCAL-RBTREE",
-	"LOCAL-MEMCACHE",
-	"LOCAL-STREAM-NAME",
-	"LOCAL-WBCLIENT",
-	"LOCAL-string_to_sid",
-	"LOCAL-binary_to_sid",
-	"LOCAL-DBTRANS",
-	"LOCAL-TEVENT-SELECT",
-	"LOCAL-CONVERT-STRING",
-	"LOCAL-CONV-AUTH-INFO",
-	"LOCAL-IDMAP-TDB-COMMON",
-	"LOCAL-hex_encode_buf",
-	"LOCAL-sprintf_append",
-	"LOCAL-remove_duplicate_addrs2"]
+    "LOCAL-SUBSTITUTE",
+    "LOCAL-GENCACHE",
+    "LOCAL-TALLOC-DICT",
+    "LOCAL-BASE64",
+    "LOCAL-RBTREE",
+    "LOCAL-MEMCACHE",
+    "LOCAL-STREAM-NAME",
+    "LOCAL-WBCLIENT",
+    "LOCAL-string_to_sid",
+    "LOCAL-binary_to_sid",
+    "LOCAL-DBTRANS",
+    "LOCAL-TEVENT-SELECT",
+    "LOCAL-CONVERT-STRING",
+    "LOCAL-CONV-AUTH-INFO",
+    "LOCAL-IDMAP-TDB-COMMON",
+    "LOCAL-hex_encode_buf",
+    "LOCAL-sprintf_append",
+    "LOCAL-remove_duplicate_addrs2"]
 
 for t in local_tests:
     plantestsuite("samba3.smbtorture_s3.%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "-e"])
