@@ -438,12 +438,19 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 {
 	struct regedit *regedit;
 	struct tree_node *root;
+	bool colors;
 	int key;
 
 	initscr();
-	start_color();
+
 	cbreak();
 	noecho();
+
+	colors = has_colors();
+	if (colors) {
+		start_color();
+		use_default_colors();
+	}
 
 	regedit = talloc_zero(mem_ctx, struct regedit);
 	SMB_ASSERT(regedit != NULL);
