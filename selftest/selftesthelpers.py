@@ -203,12 +203,22 @@ smbtorture4_options = [
     ] + get_env_torture_options()
 
 
+def print_smbtorture4_version():
+    """Print the version of Samba smbtorture4 comes from.
+
+    :return: Whether smbtorture4 was successfully run
+    """
+    sub = subprocess.Popen([smbtorture4, "-V"], stdout=sys.stderr)
+    sub.communicate("")
+    return (sub.returncode == 0)
+
+
 def plansmbtorture4testsuite(name, env, options, target, modname=None):
     if modname is None:
         modname = "samba4.%s" % name
     if isinstance(options, list):
         options = " ".join(options)
-    options += " " + " ".join(smbtorture4_options + ["--target=%s" % target])
+    options = " ".join(smbtorture4_options + ["--target=%s" % target]) + " " + options
     cmdline = "%s $LISTOPT %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 

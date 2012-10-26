@@ -22,7 +22,6 @@ import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../selftest"))
 import selftesthelpers
 from selftesthelpers import *
-import subprocess
 
 print >>sys.stderr, "OPTIONS %s" % " ".join(smbtorture4_options)
 
@@ -41,7 +40,7 @@ else:
 nmblookup = binpath('nmblookup4')
 smbclient = binpath('smbclient4')
 
-subprocess.call([smbtorture4, "-V"], stdout=sys.stderr)
+print_smbtorture4_version()
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
