@@ -43,6 +43,7 @@ static NTSTATUS set_sys_acl_no_snum(const char *fname,
 	connection_struct *conn;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
+	mode_t saved_umask;
 
 	conn = talloc_zero(NULL, connection_struct);
 	if (conn == NULL) {
@@ -56,6 +57,10 @@ static NTSTATUS set_sys_acl_no_snum(const char *fname,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	saved_umask = umask(0);
+
 	conn->params->service = -1;
 
 	set_conn_connectpath(conn, "/");
@@ -68,6 +73,8 @@ static NTSTATUS set_sys_acl_no_snum(const char *fname,
 		DEBUG(0,("set_sys_acl_no_snum: SMB_VFS_SYS_ACL_SET_FILE "
 			 "returned zero.\n"));
 	}
+
+	umask(saved_umask);
 
 	conn_free(conn);
 
@@ -83,9 +90,16 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
 	int flags;
+	mode_t saved_umask;
+
+	if (!posix_locking_init(false)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	conn = talloc_zero(frame, connection_struct);
 	if (conn == NULL) {
+		TALLOC_FREE(frame);
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -93,15 +107,6 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	if (!(conn->params = talloc(conn, struct share_params))) {
 		DEBUG(0,("set_nt_acl_no_snum: talloc() failed!\n"));
 		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	conn->params->service = -1;
-
-	set_conn_connectpath(conn, "/");
-
-	smbd_vfs_init(conn);
-	if (!posix_locking_init(false)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -117,10 +122,21 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	}
 	fsp->conn = conn;
 
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	saved_umask = umask(0);
+
+	conn->params->service = -1;
+
+	set_conn_connectpath(conn, "/");
+
+	smbd_vfs_init(conn);
+
 	status = create_synthetic_smb_fname_split(fsp, fname, NULL,
 						  &smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
+		umask(saved_umask);
 		return status;
 	}
 
@@ -140,6 +156,7 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(frame);
+		umask(saved_umask);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -153,6 +170,7 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	conn_free(conn);
 	TALLOC_FREE(frame);
 
+	umask(saved_umask);
 	return status;
 }
 
@@ -297,6 +315,7 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 	char *fname;
 	int uid, gid;
 	TALLOC_CTX *frame;
+	mode_t saved_umask;
 
 	if (!PyArg_ParseTuple(args, "sii", &fname, &uid, &gid))
 		return NULL;
@@ -314,6 +333,10 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	saved_umask = umask(0);
+
 	conn->params->service = -1;
 
 	set_conn_connectpath(conn, "/");
@@ -325,6 +348,8 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("chown returned failure: %s\n", strerror(errno)));
 	}
+
+	umask(saved_umask);
 
 	conn_free(conn);
 
