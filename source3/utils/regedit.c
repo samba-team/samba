@@ -509,8 +509,6 @@ int main(int argc, char **argv)
 	struct registry_context *ctx;
 	WERROR rv;
 
-	talloc_enable_leak_report_full();
-
 	frame = talloc_stackframe();
 
 	setup_logging("regedit", DEBUG_DEFAULT_STDERR);
@@ -543,8 +541,6 @@ int main(int argc, char **argv)
 	}
 
 	display_window(frame, ctx);
-
-	//talloc_report_full(frame, stdout);
 
 	TALLOC_FREE(frame);
 
