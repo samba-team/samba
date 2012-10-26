@@ -1,0 +1,20 @@
+#!/bin/sh
+
+winbind_is_active=$(/bin/systemctl is-active winbind.service)
+test "${winbind_is_active}" = "active" || exit 0
+
+winbind_offline_logon=$(testparm -s --parameter-name "winbind offline logon" 2>/dev/null)
+test "${winbind_offline_logon}" = "Yes" || exit 0
+
+case "$2" in
+	up|vpn-up)
+		nmb_is_active=$(/bin/systemctl is-active nmb.service)
+		if test "${nmb_is_active}" = "active"; then
+			/bin/systemctl try-restart nmb.service || :
+		fi
+		/usr/bin/smbcontrol winbind online || :
+	;;
+	down)
+		/usr/bin/smbcontrol winbind offline
+	;;
+esac
