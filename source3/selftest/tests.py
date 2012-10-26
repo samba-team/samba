@@ -1,21 +1,21 @@
 #!/usr/bin/python
-# This script generates a list of testsuites that should be run as part of 
+# This script generates a list of testsuites that should be run as part of
 # the Samba 3 test suite.
 
-# The output of this script is parsed by selftest.pl, which then decides 
-# which of the tests to actually run. It will, for example, skip all tests 
+# The output of this script is parsed by selftest.pl, which then decides
+# which of the tests to actually run. It will, for example, skip all tests
 # listed in selftest/skip or only run a subset during "make quicktest".
 
-# The idea is that this script outputs all of the tests of Samba 3, not 
-# just those that are known to pass, and list those that should be skipped 
-# or are known to fail in selftest/skip or selftest/samba3-knownfail. This makes it 
-# very easy to see what functionality is still missing in Samba 3 and makes 
-# it possible to run the testsuite against other servers, such as Samba 4 or 
+# The idea is that this script outputs all of the tests of Samba 3, not
+# just those that are known to pass, and list those that should be skipped
+# or are known to fail in selftest/skip or selftest/samba3-knownfail. This makes it
+# very easy to see what functionality is still missing in Samba 3 and makes
+# it possible to run the testsuite against other servers, such as Samba 4 or
 # Windows that have a different set of features.
 
-# The syntax for a testsuite is "-- TEST --" on a single line, followed 
-# by the name of the test, the environment it needs and the command to run, all 
-# three separated by newlines. All other lines in the output are considered 
+# The syntax for a testsuite is "-- TEST --" on a single line, followed
+# by the name of the test, the environment it needs and the command to run, all
+# three separated by newlines. All other lines in the output are considered
 # comments.
 
 import os, sys
@@ -23,8 +23,7 @@ sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../
 from selftesthelpers import *
 import subprocess
 samba3srcdir = srcdir() + "/source3"
-configuration = "--configfile=$SMB_CONF_PATH"
-scriptdir=os.path.join(samba3srcdir, "../script/tests")
+scriptdir = os.path.join(samba3srcdir, "../script/tests")
 
 smbclient = binpath('smbclient3')
 wbinfo = binpath('wbinfo')
@@ -34,10 +33,10 @@ ntlm_auth = binpath('ntlm_auth3')
 dbwrap_tool = binpath('dbwrap_tool')
 vfstest = binpath('vfstest')
 
-torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", 
+torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME",
                    "--basedir=$SELFTEST_TMPDIR",
                    '--option="torture:winbindd_netbios_name=$SERVER"',
-                   '--option="torture:winbindd_netbios_domain=$DOMAIN"', 
+                   '--option="torture:winbindd_netbios_domain=$DOMAIN"',
                    '--option=torture:sharedelay=100000',
                    '--option=torture:writetimeupdatedelay=500000' ]
 
@@ -178,7 +177,7 @@ for env in ["s3dc", "member", "s3member"]:
     plantestsuite(
         "samba3.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,
         [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
-        
+
     plantestsuite(
         "samba3.ntlm_auth.diagnostics(%s:local)" % env, "%s:local" % env,
         [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_diagnostics.sh"), ntlm_auth, '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
@@ -391,9 +390,9 @@ for s in signseal_options:
 
 options_list = ["", "-e"]
 for options in options_list:
-    plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local", 
+    plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_krb5.sh"),
-                   "$PREFIX/ktest/krb5_ccache-2", 
+                   "$PREFIX/ktest/krb5_ccache-2",
                    smbclient, "$SERVER", options, configuration])
 
     plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
@@ -423,9 +422,4 @@ for e in endianness_options:
             options = binding_string + " -U$USERNAME%$PASSWORD"
             plansmbtorturetestsuite(test, "s3dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
 
-test = 'rpc.epmapper'
-env = 's3dc:local'
-binding_string = 'ncalrpc:'
-options = binding_string + " -U$USERNAME%$PASSWORD"
-
-plansmbtorturetestsuite(test, env, options, 'over ncalrpc')
+plansmbtorturetestsuite('rpc.epmapper', 's3dc:local', 'ncalrpc: -U$USERNAME%$PASSWORD', 'over ncalrpc')
