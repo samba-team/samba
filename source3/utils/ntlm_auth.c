@@ -301,7 +301,7 @@ const char *get_winbind_domain(void)
 
 	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		DEBUG(0, ("could not obtain winbind domain name!\n"));
+		DEBUG(1, ("could not obtain winbind domain name!\n"));
 		return lp_workgroup();
 	}
 
@@ -327,7 +327,7 @@ const char *get_winbind_netbios_name(void)
 
 	if (winbindd_request_response(WINBINDD_NETBIOS_NAME, NULL, &response) !=
 	    NSS_STATUS_SUCCESS) {
-		DEBUG(0, ("could not obtain winbind netbios name!\n"));
+		DEBUG(1, ("could not obtain winbind netbios name!\n"));
 		return lp_netbios_name();
 	}
 
