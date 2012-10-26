@@ -34,6 +34,7 @@
 #include "messages.h"
 #include "libcli/security/security.h"
 #include "lib/smbd_shim.h"
+#include "system/filesys.h"
 
 /* List to hold groups of commands */
 static struct cmd_list {
@@ -482,6 +483,10 @@ int main(int argc, char *argv[])
 
 
 	poptFreeContext(pc);
+
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	umask(0);
 
 	lp_load_initial_only(get_dyn_CONFIGFILE());
 
