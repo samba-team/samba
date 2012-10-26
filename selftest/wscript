@@ -69,6 +69,8 @@ def set_options(opt):
     gr.add_option('--socket-wrapper-keep-pcap',
                   help=("create a pcap file for all individual test"),
                   action="store_true", dest='SOCKET_WRAPPER_KEEP_PCAP', default=False)
+    gr.add_option('--random-order', dest='RANDOM_ORDER', default=False,
+                  action="store_true", help="Run testsuites in random order")
 
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
@@ -134,6 +136,8 @@ def cmd_testonly(opt):
         env.OPTIONS += ' --socket-wrapper-pcap'
     if Options.options.SOCKET_WRAPPER_KEEP_PCAP:
         env.OPTIONS += ' --socket-wrapper-keep-pcap'
+    if Options.options.RANDOM_ORDER:
+        env.OPTIONS += ' --random-order'
     if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
         env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
     else:

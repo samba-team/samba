@@ -42,6 +42,7 @@ my $opt_quick = 0;
 my $opt_socket_wrapper = 0;
 my $opt_socket_wrapper_pcap = undef;
 my $opt_socket_wrapper_keep_pcap = undef;
+my $opt_random_order = 0;
 my $opt_one = 0;
 my @opt_exclude = ();
 my @opt_include = ();
@@ -236,8 +237,9 @@ my $result = GetOptions (
 		'ldap:s' => \$ldap,
 		'resetup-environment' => \$opt_resetup_env,
 		'testlist=s' => \@testlists,
+		'random-order' => \$opt_random_order,
 		'load-list=s' => \$opt_load_list,
-                'binary-mapping=s' => \$opt_binary_mapping
+		'binary-mapping=s' => \$opt_binary_mapping
 	    );
 
 exit(1) if (not $result);
@@ -824,6 +826,12 @@ sub teardown_env($)
 
 # This 'global' file needs to be empty when we start
 unlink("$prefix_abs/dns_host_file");
+
+if ($opt_random_order) {
+	require List::Util;
+	my @newtodo = List::Util::shuffle(@todo);
+	@todo = @newtodo;
+}
 
 if ($opt_testenv) {
 	my $testenv_name = $ENV{SELFTEST_TESTENV};
