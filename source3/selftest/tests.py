@@ -33,18 +33,17 @@ ntlm_auth = binpath('ntlm_auth3')
 dbwrap_tool = binpath('dbwrap_tool')
 vfstest = binpath('vfstest')
 
-torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME",
-                   "--basedir=$SELFTEST_TMPDIR",
+torture_options = [configuration,
+                   '--maximum-runtime=$SELFTEST_MAXTIME',
+                   '--basedir=$SELFTEST_TMPDIR',
                    '--option="torture:winbindd_netbios_name=$SERVER"',
                    '--option="torture:winbindd_netbios_domain=$DOMAIN"',
                    '--option=torture:sharedelay=100000',
-                   '--option=torture:writetimeupdatedelay=500000' ]
+                   '--option=torture:writetimeupdatedelay=500000',
+                   '--format=subunit'
+                   ]
 
-if not os.getenv("SELFTEST_VERBOSE"):
-    torture_options.append("--option=torture:progress=no")
-torture_options.append("--format=subunit")
-if os.getenv("SELFTEST_QUICK"):
-    torture_options.append("--option=torture:quick=yes")
+torture_options.extend(env_get_torture_options())
 
 smbtorture4 += " " + " ".join(torture_options)
 

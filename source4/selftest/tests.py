@@ -38,12 +38,12 @@ subprocess.call([smbtorture4, "-V"], stdout=sys.stderr)
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
-torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", "--target=samba4", "--basedir=$SELFTEST_TMPDIR"]
-if not os.getenv("SELFTEST_VERBOSE"):
-    torture_options.append("--option=torture:progress=no")
-torture_options.append("--format=subunit")
-if os.getenv("SELFTEST_QUICK"):
-    torture_options.append("--option=torture:quick=yes")
+torture_options = [configuration,
+                   "--maximum-runtime=$SELFTEST_MAXTIME",
+                   "--target=samba4",
+                   "--basedir=$SELFTEST_TMPDIR",
+                   "--format=subunit"]
+torture_options.extend(get_env_torture_options())
 smbtorture4 += " " + " ".join(torture_options)
 
 print >>sys.stderr, "OPTIONS %s" % " ".join(torture_options)
