@@ -64,15 +64,17 @@ else:
 
 python = os.getenv("PYTHON", "python")
 
-#Set a default value, overridden if we find a working one on the system
+# Set a default value, overridden if we find a working one on the system
 tap2subunit = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools %s %s/lib/subunit/filters/tap2subunit" % (srcdir(), srcdir(), python, srcdir())
 
-sub = subprocess.Popen("tap2subunit 2> /dev/null", stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+sub = subprocess.Popen("tap2subunit", stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 sub.communicate("")
 
 if sub.returncode == 0:
-    cmd = "echo -ne \"1..1\nok 1 # skip doesn't seem to work yet\n\" | tap2subunit 2> /dev/null | grep skip"
-    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    cmd = "echo -ne \"1..1\nok 1 # skip doesn't seem to work yet\n\" | tap2subunit | grep skip"
+    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE, shell=True)
     if sub.returncode == 0:
         tap2subunit = "tap2subunit"
 
