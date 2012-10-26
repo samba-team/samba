@@ -76,11 +76,12 @@ class TestCaseInTempDir(TestCase):
     def setUp(self):
         super(TestCaseInTempDir, self).setUp()
         self.tempdir = tempfile.mkdtemp()
+        self.addCleanup(self._remove_tempdir)
 
-    def tearDown(self):
-        super(TestCaseInTempDir, self).tearDown()
+    def _remove_tempdir(self):
         self.assertEquals([], os.listdir(self.tempdir))
         os.rmdir(self.tempdir)
+        self.tempdir = None
 
 
 def env_loadparm():
