@@ -243,3 +243,8 @@ smbclient3 = binpath('smbclient3')
 smbtorture3 = binpath('smbtorture3')
 ntlm_auth3 = binpath('ntlm_auth3')
 net = binpath('net')
+scriptdir = os.path.join(srcdir(), "script/tests")
+
+wbinfo = binpath('wbinfo')
+dbwrap_tool = binpath('dbwrap_tool')
+vfstest = binpath('vfstest')

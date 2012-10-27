@@ -22,12 +22,6 @@ import os, sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 import selftesthelpers
 from selftesthelpers import *
-scriptdir = os.path.join(samba3srcdir, "../script/tests")
-
-wbinfo = binpath('wbinfo')
-dbwrap_tool = binpath('dbwrap_tool')
-vfstest = binpath('vfstest')
-
 smbtorture4_options.extend([
    '--option="torture:winbindd_netbios_name=$SERVER"',
    '--option="torture:winbindd_netbios_domain=$DOMAIN"',
@@ -57,7 +51,7 @@ plantestsuite("samba3.local_s3", "s3dc:local", [os.path.join(samba3srcdir, "scri
 
 plantestsuite("samba3.blackbox.registry.upgrade", "s3dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), net, dbwrap_tool])
 
-tests=[ "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
+tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
         "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
         "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
         "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "RW-SIGNING",
@@ -84,7 +78,7 @@ tests = ["RW1", "RW2", "RW3"]
 for t in tests:
     plantestsuite("samba3.smbtorture_s3.vfs_aio_fork(simpleserver).%s" % t, "simpleserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_fork', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
-posix_tests=[ "POSIX", "POSIX-APPEND"]
+posix_tests = ["POSIX", "POSIX-APPEND"]
 
 for t in posix_tests:
     plantestsuite("samba3.smbtorture_s3.plain(s3dc).%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/posix_share', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
@@ -95,7 +89,7 @@ env = "s3dc:local"
 t = "CLEANUP3"
 plantestsuite("samba3.smbtorture_s3.plain(%s).%s" % (env, t), env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', binpath('smbtorture3'), "", "-l $LOCAL_PATH"])
 
-local_tests=[
+local_tests = [
     "LOCAL-SUBSTITUTE",
     "LOCAL-GENCACHE",
     "LOCAL-TALLOC-DICT",
@@ -118,7 +112,7 @@ local_tests=[
 for t in local_tests:
     plantestsuite("samba3.smbtorture_s3.%s" % t, "s3dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "-e"])
 
-tests=["--ping", "--separator",
+tests = ["--ping", "--separator",
        "--own-domain",
        "--all-domains",
        "--trusted-domains",
