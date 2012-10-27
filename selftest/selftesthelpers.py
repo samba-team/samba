@@ -18,6 +18,7 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
+import errno
 import os
 import subprocess
 import sys
@@ -68,7 +69,7 @@ python = os.getenv("PYTHON", "python")
 tap2subunit = "PYTHONPATH=%s/lib/subunit/python:%s/lib/testtools %s %s/lib/subunit/filters/tap2subunit" % (srcdir(), srcdir(), python, srcdir())
 
 sub = subprocess.Popen("tap2subunit", stdin=subprocess.PIPE,
-    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 sub.communicate("")
 
 if sub.returncode == 0:
@@ -210,7 +211,12 @@ def print_smbtorture4_version():
 
     :return: Whether smbtorture4 was successfully run
     """
-    sub = subprocess.Popen([smbtorture4, "-V"], stdout=sys.stderr)
+    try:
+        sub = subprocess.Popen([smbtorture4, "-V"], stdout=sys.stderr)
+    except OSError, e:
+        if e.errno == errno.ENOENT:
+            return False
+        raise
     sub.communicate("")
     return (sub.returncode == 0)
 
