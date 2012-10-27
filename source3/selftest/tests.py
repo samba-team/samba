@@ -22,14 +22,9 @@ import os, sys
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(__file__), "../../selftest")))
 import selftesthelpers
 from selftesthelpers import *
-samba3srcdir = srcdir() + "/source3"
 scriptdir = os.path.join(samba3srcdir, "../script/tests")
 
-smbclient3 = binpath('smbclient3')
 wbinfo = binpath('wbinfo')
-net = binpath('net')
-smbtorture3 = binpath('smbtorture3')
-ntlm_auth3 = binpath('ntlm_auth3')
 dbwrap_tool = binpath('dbwrap_tool')
 vfstest = binpath('vfstest')
 
@@ -218,7 +213,7 @@ plantestsuite("samba3.blackbox.net.local.registry", "s3dc:local",
                scriptdir, "$SMB_CONF_PATH", net, configuration])
 plantestsuite("samba3.blackbox.net.registry.check", "s3dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_registry_check.sh"),
-               scriptdir, "$SMB_CONF_PATH", net, configuration,dbwrap_tool])
+               scriptdir, "$SMB_CONF_PATH", net, configuration, dbwrap_tool])
 plantestsuite("samba3.blackbox.net.rpc.registry", "s3dc",
               [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
                scriptdir, "$SMB_CONF_PATH", net, configuration, 'rpc'])

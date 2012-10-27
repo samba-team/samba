@@ -29,6 +29,9 @@ def srcdir():
 def source4dir():
     return os.path.normpath(os.path.join(srcdir(), "source4"))
 
+def source3dir():
+    return os.path.normpath(os.path.join(srcdir(), "source3"))
+
 def bindir():
     return os.path.normpath(os.getenv("BINDIR", "./bin"))
 
@@ -192,6 +195,7 @@ def get_env_torture_options():
 
 
 samba4srcdir = source4dir()
+samba3srcdir = source3dir()
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 configuration = "--configfile=$SMB_CONF_PATH"
 
@@ -233,3 +237,9 @@ def plansmbtorture4testsuite(name, env, options, target, modname=None):
 
 def smbtorture4_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smbtorture4_testsuite_list)
+
+
+smbclient3 = binpath('smbclient3')
+smbtorture3 = binpath('smbtorture3')
+ntlm_auth3 = binpath('ntlm_auth3')
+net = binpath('net')
