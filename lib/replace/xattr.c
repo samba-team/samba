@@ -71,7 +71,9 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 	 * that the buffer is large enough to fit the returned value.
 	 */
 	if((retval=extattr_get_file(path, attrnamespace, attrname, NULL, 0)) >= 0) {
-		if(retval > size) {
+		if (size == 0) {
+			return retval;
+		} else if (retval > size) {
 			errno = ERANGE;
 			return -1;
 		}
@@ -88,6 +90,9 @@ ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t si
 	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
 
 	retval = attr_get(path, attrname, (char *)value, &valuelength, flags);
+	if (size == 0 && retval == -1 && errno == E2BIG) {
+		return valuelength;
+	}
 
 	return retval ? retval : valuelength;
 #elif defined(HAVE_ATTROPEN)
@@ -126,7 +131,9 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	const char *attrname = ((s=strchr(name, '.')) == NULL) ? name : s + 1;
 
 	if((retval=extattr_get_fd(filedes, attrnamespace, attrname, NULL, 0)) >= 0) {
-		if(retval > size) {
+		if (size == 0) {
+			return retval;
+		} else if (retval > size) {
 			errno = ERANGE;
 			return -1;
 		}
@@ -143,7 +150,9 @@ ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size)
 	if (strncmp(name, "system", 6) == 0) flags |= ATTR_ROOT;
 
 	retval = attr_getf(filedes, attrname, (char *)value, &valuelength, flags);
-
+	if (size == 0 && retval == -1 && errno == E2BIG) {
+		return valuelength;
+	}
 	return retval ? retval : valuelength;
 #elif defined(HAVE_ATTROPEN)
 	ssize_t ret = -1;
