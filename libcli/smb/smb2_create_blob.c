@@ -113,7 +113,7 @@ static NTSTATUS smb2_create_blob_push_one(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer
 	size_t next_pad = 0;
 	bool ok;
 
-	blob_offset = 0x14 + tag_length;
+	blob_offset = 0x10 + tag_length;
 	blob_pad = smb2_create_blob_padding(blob_offset, 8);
 	next_offset = blob_offset + blob_pad + blob->data.length;
 	if (!last) {
