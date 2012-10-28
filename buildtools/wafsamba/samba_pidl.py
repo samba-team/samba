@@ -7,7 +7,6 @@ from samba_utils import *
 def SAMBA_PIDL(bld, pname, source,
                options='',
                output_dir='.',
-               symlink=False,
                generate_tables=True):
     '''Build a IDL file using pidl.
        This will produce up to 13 output files depending on the options used'''
@@ -91,27 +90,7 @@ def SAMBA_PIDL(bld, pname, source,
 
     t.env.PIDL = os.path.join(bld.srcnode.abspath(), 'pidl/pidl')
     t.env.OPTIONS = TO_LIST(options)
-
-    # this rather convoluted set of path calculations is to cope with the possibility
-    # that gen_ndr is a symlink into the source tree. By doing this for the source3
-    # gen_ndr directory we end up generating identical output in gen_ndr for the old
-    # build system and the new one. That makes keeping things in sync much easier.
-    # eventually we should drop the gen_ndr files in git, but in the meanwhile this works
-
-    found_dir = bld.path.find_dir(output_dir)
-    if not 'abspath' in dir(found_dir):
-        Logs.error('Unable to find pidl output directory %s' %
-                   os.path.normpath(os.path.join(bld.curdir, output_dir)))
-        sys.exit(1)
-
-    outdir = bld.path.find_dir(output_dir).abspath(t.env)
-
-    if symlink and not os.path.lexists(outdir):
-        link_source = os.path.normpath(os.path.join(bld.curdir,output_dir))
-        os.symlink(link_source, outdir)
-
-    real_outputdir = os.path.realpath(outdir)
-    t.env.OUTPUTDIR = os_path_relpath(real_outputdir, os.path.dirname(bld.env.BUILD_DIRECTORY))
+    t.env.OUTPUTDIR = bld.bldnode.name + '/' + bld.path.find_dir(output_dir).bldpath(t.env)
 
     if generate_tables and table_header_idx is not None:
         pidl_headers = LOCAL_CACHE(bld, 'PIDL_HEADERS')
@@ -124,11 +103,10 @@ Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 def SAMBA_PIDL_LIST(bld, name, source,
                     options='',
                     output_dir='.',
-                    symlink=False,
                     generate_tables=True):
     '''A wrapper for building a set of IDL files'''
     for p in TO_LIST(source):
-        bld.SAMBA_PIDL(name, p, options=options, output_dir=output_dir, symlink=symlink, generate_tables=generate_tables)
+        bld.SAMBA_PIDL(name, p, options=options, output_dir=output_dir, generate_tables=generate_tables)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 
