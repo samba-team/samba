@@ -2,9 +2,9 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 7 ]; then
+if [ $# -lt 11 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT WBINFO
+Usage: test_smbclient_s3.sh SERVER SERVER_IP DOMAIN USERNAME PASSWORD USERID LOCAL_PATH PREFIX SMBCLIENT WBINFO NET
 EOF
 exit 1;
 fi
@@ -19,9 +19,10 @@ LOCAL_PATH="${7}"
 PREFIX="${8}"
 SMBCLIENT="${9}"
 WBINFO="${10}"
+NET="${11}"
 SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 WBINFO="$VALGRIND ${WBINFO}"
-shift 10
+shift 11
 ADDARGS="$*"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
@@ -489,6 +490,57 @@ EOF
     fi
 }
 
+# Test doing a directory listing with backup privilege.
+test_backup_privilege_list()
+{
+    tmpfile=$PREFIX/smbclient_backup_privilege_list
+
+    # If we don't have a DOMAIN component to the username, add it.
+    echo "$USERNAME" | grep '\\' 2>&1
+    ret=$?
+    if [ $ret != 0 ] ; then
+	priv_username="$DOMAIN\\$USERNAME"
+    else
+	priv_username=$USERNAME
+    fi
+
+    $NET sam rights grant $priv_username SeBackupPrivilege 2>&1
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "Failed to add SeBackupPrivilege to user $priv_username - $ret"
+	false
+	return
+    fi
+
+    cat > $tmpfile <<EOF
+backup
+ls
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed backup privilege list $ret"
+	false
+	return
+    fi
+
+# Now remove all privileges from this SID.
+    $NET sam rights revoke $priv_username SeBackupPrivilege 2>&1
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "failed to remove SeBackupPrivilege from user $priv_username - $ret"
+	false
+	return
+    fi
+}
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -550,6 +602,10 @@ testit "sending a message to the remote server" \
 
 testit "using an authentication file" \
     test_auth_file || \
+    failed=`expr $failed + 1`
+
+testit "list with backup privilege" \
+    test_backup_privilege_list || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
