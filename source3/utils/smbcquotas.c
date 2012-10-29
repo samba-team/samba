@@ -688,6 +688,8 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 		exit(EXIT_PARSE_ERROR);
 	}
 
+	poptFreeContext(pc);
+
 	string_replace(path, '/', '\\');
 
 	server = SMB_STRDUP(path+2);

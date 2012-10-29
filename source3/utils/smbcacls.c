@@ -1435,6 +1435,8 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		return -1;
 	}
 
+	poptFreeContext(pc);
+
 	string_replace(path,'/','\\');
 
 	server = talloc_strdup(frame, path+2);
