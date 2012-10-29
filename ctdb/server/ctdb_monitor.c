@@ -506,3 +506,10 @@ int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb)
 	return ctdb->monitor->monitoring_mode;
 }
 
+/*
+ * Check if monitoring has been stopped
+ */
+bool ctdb_stopped_monitoring(struct ctdb_context *ctdb)
+{
+	return (ctdb->monitor->monitor_context == NULL ? true : false);
+}

@@ -781,8 +781,9 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	if (ctdb->current_monitor) {
 		struct ctdb_event_script_state *ms = talloc_get_type(ctdb->current_monitor, struct ctdb_event_script_state);
 
-		/* cancel it */
-		if (ms->callback != NULL) {
+		/* Cancel current monitor callback state only if monitoring
+		 * context ctdb->monitor->monitor_context has not been freed */
+		if (ms->callback != NULL && !ctdb_stopped_monitoring(ctdb)) {
 			ms->callback->fn(ctdb, -ECANCELED, ms->callback->private_data);
 			talloc_free(ms->callback);
 		}
