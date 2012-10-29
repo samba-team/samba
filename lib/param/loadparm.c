@@ -1076,7 +1076,7 @@ static void add_to_file_list(struct loadparm_context *lp_ctx,
 bool lpcfg_file_list_changed(struct loadparm_context *lp_ctx)
 {
 	struct file_lists *f;
-	DEBUG(6, ("lp_file_list_changed()\n"));
+	DEBUG(6, ("lpcfg_file_list_changed()\n"));
 
 	for (f = lp_ctx->file_lists; f != NULL; f = f->next) {
 		char *n2;
