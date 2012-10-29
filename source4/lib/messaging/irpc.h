@@ -75,6 +75,8 @@ void irpc_binding_handle_add_security_token(struct dcerpc_binding_handle *h,
 
 NTSTATUS irpc_add_name(struct imessaging_context *msg_ctx, const char *name);
 struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx, TALLOC_CTX *mem_ctx, const char *name);
+struct irpc_name_records *irpc_all_servers(struct imessaging_context *msg_ctx,
+					   TALLOC_CTX *mem_ctx);
 void irpc_remove_name(struct imessaging_context *msg_ctx, const char *name);
 NTSTATUS irpc_send_reply(struct irpc_message *m, NTSTATUS status);
 
