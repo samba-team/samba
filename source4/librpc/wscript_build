@@ -296,6 +296,12 @@ bld.SAMBA_PYTHON('python_irpc',
 	realname='samba/dcerpc/irpc.so'
 	)
 
+bld.SAMBA_PYTHON('python_server_id',
+	source='../../librpc/gen_ndr/py_server_id.c',
+	deps='RPC_NDR_SERVER_ID pytalloc-util pyrpc_util',
+	realname='samba/dcerpc/server_id.so'
+	)
+
 bld.SAMBA_PYTHON('python_winbind',
 	source='gen_ndr/py_winbind.c',
 	deps='RPC_NDR_WINBIND pytalloc-util pyrpc_util python_netlogon',

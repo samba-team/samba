@@ -21,6 +21,7 @@
 
 from samba.messaging import Messaging
 from samba.tests import TestCase
+from samba.dcerpc.server_id import server_id
 
 class MessagingTests(TestCase):
 
@@ -36,8 +37,7 @@ class MessagingTests(TestCase):
 
     def test_assign_server_id(self):
         x = self.get_context()
-        self.assertTrue(isinstance(x.server_id, tuple))
-        self.assertEquals(3, len(x.server_id))
+        self.assertTrue(isinstance(x.server_id, server_id))
 
     def test_ping_speed(self):
         server_ctx = self.get_context((0, 1))
