@@ -178,6 +178,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 9190: Fix regression (change in behavior) of default acl masks.
       Remove "security mask", "force security mode", "directory security mask"
       "force directory" and "security mode" parameters.
+    * BUG 9329: Directory listing with SeBackup can crash smbd.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
@@ -209,6 +210,10 @@ o   Stefan Metzmacher <metze@samba.org>
 o   Andreas Schneider <asn@samba.org>
     * BUG 9295: Build standard auth modules as internal modules.
     * BUG 9301: Move 'smbprint' to a common location.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 9274: Add documentation and selftest fixes.
 
 
 CHANGES SINCE 4.0.0rc2
