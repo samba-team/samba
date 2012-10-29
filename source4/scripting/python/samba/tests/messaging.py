@@ -35,6 +35,15 @@ class MessagingTests(TestCase):
         msg_type = x.register(callback)
         x.deregister(callback, msg_type)
 
+    def test_all_servers(self):
+        x = self.get_context()
+        self.assertTrue(isinstance(x.irpc_all_servers(), list))
+
+    def test_by_name(self):
+        x = self.get_context()
+        for name in x.irpc_all_servers():
+            self.assertTrue(isinstance(x.irpc_servers_byname(name.name), list))
+
     def test_assign_server_id(self):
         x = self.get_context()
         self.assertTrue(isinstance(x.server_id, server_id))
