@@ -693,7 +693,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		goto done;
 	}
 
-	ret = ltdb_unpack_data(module, &tdb_data, msg2);
+	ret = ltdb_unpack_data(ldb_module_get_ctx(module), &tdb_data, msg2);
 	free(tdb_data.dptr);
 	if (ret == -1) {
 		ret = LDB_ERR_OTHER;

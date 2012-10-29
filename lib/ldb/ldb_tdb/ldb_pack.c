@@ -154,18 +154,16 @@ int ltdb_pack_data(struct ldb_module *module,
 
   Free with ltdb_unpack_data_free()
 */
-int ltdb_unpack_data(struct ldb_module *module,
+int ltdb_unpack_data(struct ldb_context *ldb,
 		     const TDB_DATA *data,
 		     struct ldb_message *message)
 {
-	struct ldb_context *ldb;
 	uint8_t *p;
 	unsigned int remaining;
 	unsigned int i, j;
 	unsigned format;
 	size_t len;
 
-	ldb = ldb_module_get_ctx(module);
 	message->elements = NULL;
 
 	p = data->dptr;

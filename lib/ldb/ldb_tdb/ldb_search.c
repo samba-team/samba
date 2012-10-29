@@ -244,9 +244,9 @@ static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
 {
 	struct ltdb_parse_data_unpack_ctx *ctx = private_data;
 
-	int ret = ltdb_unpack_data(ctx->module, &data, ctx->msg);
+	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
+	int ret = ltdb_unpack_data(ldb, &data, ctx->msg);
 	if (ret == -1) {
-		struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %*.*s\n",
 			  (int)key.dsize, (int)key.dsize, key.dptr);
 		return LDB_ERR_OPERATIONS_ERROR;		
@@ -440,7 +440,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* unpack the record */
-	ret = ltdb_unpack_data(ac->module, &data, msg);
+	ret = ltdb_unpack_data(ldb, &data, msg);
 	if (ret == -1) {
 		talloc_free(msg);
 		return -1;
