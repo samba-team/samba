@@ -985,6 +985,77 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 	return ret;
 }
 
+static int all_servers_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
+{
+	struct irpc_name_records *name_records = talloc_get_type(state, struct irpc_name_records);
+	struct irpc_name_record *name_record;
+	int i;
+
+	name_records->names
+		= talloc_realloc(name_records, name_records->names,
+				 struct irpc_name_record *, name_records->num_records+1);
+	if (!name_records->names) {
+		return -1;
+	}
+
+	name_records->names[name_records->num_records] = name_record
+		= talloc(name_records->names,
+			 struct irpc_name_record);
+	if (!name_record) {
+		return -1;
+	}
+
+	name_records->num_records++;
+
+	name_record->name
+		= talloc_strndup(name_record,
+				 (const char *)key.dptr, key.dsize);
+	if (!name_record->name) {
+		return -1;
+	}
+
+	name_record->count = data.dsize / sizeof(struct server_id);
+	name_record->ids = talloc_array(name_record,
+					struct server_id,
+					name_record->count);
+	if (name_record->ids == NULL) {
+		return -1;
+	}
+	for (i=0;i<name_record->count;i++) {
+		name_record->ids[i] = ((struct server_id *)data.dptr)[i];
+	}
+	return 0;
+}
+
+/*
+  return a list of server ids for a server name
+*/
+struct irpc_name_records *irpc_all_servers(struct imessaging_context *msg_ctx,
+					   TALLOC_CTX *mem_ctx)
+{
+	struct tdb_wrap *t;
+	int ret;
+	struct irpc_name_records *name_records = talloc_zero(mem_ctx, struct irpc_name_records);
+	if (name_records == NULL) {
+		return NULL;
+	}
+
+	t = irpc_namedb_open(msg_ctx);
+	if (t == NULL) {
+		return NULL;
+	}
+
+	ret = tdb_traverse_read(t->tdb, all_servers_func, name_records);
+	if (ret == -1) {
+		talloc_free(t);
+		return NULL;
+	}
+
+	talloc_free(t);
+
+	return name_records;
+}
+
 /*
   remove a name from a messaging context
 */

@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl";
+import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl", "server_id.idl";
 
 /*
   definitions for irpc primitives
@@ -28,6 +28,17 @@ import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl";
 		[subcontext(4)] irpc_creds creds;
 		[flag(NDR_ALIGN8)] DATA_BLOB _pad;
 	} irpc_header;
+
+	typedef [public] struct {
+		utf8string name;
+		uint32 count;
+		[size_is(count)] server_id ids[*];
+	} irpc_name_record;
+
+	typedef [public] struct {
+		[size_is(num_records)] irpc_name_record *names[*];
+		uint32 num_records;
+	} irpc_name_records;
 
 	/******************************************************
          uptime call - supported by all messaging servers
