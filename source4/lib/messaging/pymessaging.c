@@ -26,12 +26,14 @@
 #include "librpc/rpc/pyrpc_util.h"
 #include "librpc/ndr/libndr.h"
 #include "lib/messaging/messaging.h"
+#include "lib/messaging/irpc.h"
 #include "lib/events/events.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
 #include "param/pyparam.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/server_id.h"
+#include <pytalloc.h>
 
 void initmessaging(void);
 
@@ -40,10 +42,14 @@ extern PyTypeObject imessaging_Type;
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {
 	if (!PyTuple_Check(object)) {
-		PyErr_SetString(PyExc_ValueError, "Expected tuple");
-		return false;
-	}
+		if (!py_check_dcerpc_type(object, "server_id", "server_id")) {
 
+			PyErr_SetString(PyExc_ValueError, "Expected tuple or server_id");
+			return false;
+		}
+		*server_id = *pytalloc_get_type(object, struct server_id);
+		return true;
+	}
 	if (PyTuple_Size(object) == 3) {
 		return PyArg_ParseTuple(object, "iii", &server_id->pid, &server_id->task_id, &server_id->vnn);
 	} else {
@@ -228,10 +234,19 @@ static PyMethodDef py_imessaging_methods[] = {
 static PyObject *py_imessaging_server_id(PyObject *obj, void *closure)
 {
 	imessaging_Object *iface = (imessaging_Object *)obj;
+	PyObject *py_server_id;
 	struct server_id server_id = imessaging_get_server_id(iface->msg_ctx);
+	struct server_id *p_server_id = talloc(NULL, struct server_id);
+	if (!p_server_id) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	*p_server_id = server_id;
 
-	return Py_BuildValue("(iii)", server_id.pid, server_id.task_id,
-			     server_id.vnn);
+	py_server_id = py_return_ndr_struct("samba.dcerpc.server_id", "server_id", p_server_id, p_server_id);
+	talloc_unlink(NULL, p_server_id);
+
+	return py_server_id;
 }
 
 static PyGetSetDef py_imessaging_getset[] = {

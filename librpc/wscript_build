@@ -559,6 +559,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SCERPC',
     public_deps='dcerpc-binding NDR_SCERPC'
     )
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SERVER_ID',
+    source='gen_ndr/ndr_server_id_c.c',
+    public_deps='dcerpc-binding NDR_SERVER_ID'
+    )
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NTSVCS',
     source='gen_ndr/ndr_ntsvcs_c.c',
     public_deps='dcerpc-binding ndr-standard'
