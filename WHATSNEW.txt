@@ -8,7 +8,11 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.9 include:
 
-o  
+o  When setting a non-default ACL, don't forget to apply masks to
+   SMB_ACL_USER and SMB_ACL_GROUP entries (bug #9236).
+o  Winbind can't fetch user or group info from AD via LDAP (bug #9147).
+o  Fix segfault in smbd if user specified ports out for range (bug #9218).
+
 
 Changes since 3.6.8:
 --------------------
@@ -19,13 +23,23 @@ o   Michael Adam <obnox@samba.org>
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 8966: Fix 'net rpc share allowedusers' to work with 2008r2.
     * BUG 9016: Connection to outbound trusted domain goes offline.
+    * BUG 9117: 'smbclient' can't connect to a Windows 7 server using NTLMv2.
     * BUG 9147: Winbind can't fetch user or group info from AD via LDAP.
     * BUG 9174: Empty SPNEGO packet can cause smbd to crash.
     * BUG 9189: SMB2 Create doesn't return correct MAX ACCESS access mask in
       blob.
     * BUG 9209: Parse of invalid SMB2 create blob can cause smbd crash.
     * BUG 9213: Bad ASN.1 NegTokenInit packet can cause invalid free.
+    * BUG 9222: Signing cannot be disabled for SMB2 by design, so fix the
+      documentation instead.
+    * BUG 9236: When setting a non-default ACL, don't forget to apply masks to
+      SMB_ACL_USER and SMB_ACL_GROUP entries.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8788: Initialise ticket to ensure we do not invalid memory.
 
 
 o   Ira Cooper <ira@samba.org>
@@ -37,12 +51,16 @@ o   Günther Deschner <gd@samba.org>
 
 
 o   Björn Jacke <bj@sernet.de>
+    * BUG 3272: quota: Don't force the block size to 512.
+    * BUG 8107: Add some includes for poll.h.
     * BUG 8146: Fix wrong test == syntax in configure.
+    * BUG 8344: Fix --with(out)-sendfile-support option handling in autoconf.
     * BUG 9172: Add quota support for gfs2.
 
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 9188: Fix crash bug in idmap_hash.
+    * BUG 9268: Make tdb robust against improper CLEAR_IF_FIRST restart.
 
 
 o   Luca Lorenzetto <lorenzetto-luca@ubuntu-it.org>
@@ -57,15 +75,31 @@ o   Stefan Metzmacher <metze@samba.org>
     * BUG 9173: Make SMB2 compound request create/delete_on_close/close work as
       Windows.
     * BUG 9196: Don't take 'state->te' as indication for "was_deferred".
+    * BUG 9209: Fix unitialized padding in smb2_create_blob_push_one().
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 9259: lib-addns: ensure that allocated buffer are pre set to 0.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 9268: Make robust against shrinking tdbs.
+
+
+o   Joachim Schmitz <schmitz@hp.com>
+    * BUG 8107: Fix poll replacement to become a msleep replacement.
 
 
 o   Andreas Schneider <asn@samba.org>
     * BUG 8632: Fix builtin forms order to match Windows again.
+    * BUG 8769: Fix RAW printing for normal users.
+    * BUG 9112: Increase debug level for info that the db is empty.
     * BUG 9154: Open printers with the right access mask.
     * BUG 9171: Remove non-existent option '-Y' from winbindd manpage.
     * BUG 9218: Fix segfault in smbd if user specified ports out for range.
     * BUG 9231: Fix NT_STATUS_IO_TIMEOUT during slow import of printers into
       registry.
+    * BUG 9280: Add support for reloading systemd services.
 
 
 o   Karolin Seeger <kseeger@samba.org>
