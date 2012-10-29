@@ -1174,7 +1174,8 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 			/* make sure we get the case of the username correct */
 			/* work around 'winbind use default domain = yes' */
 
-			if ( !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
+			if ( lp_winbind_use_default_domain() &&
+			     !strchr_m( pw->pw_name, *lp_winbind_separator() ) ) {
 				char *domain;
 
 				/* split the domain and username into 2 strings */
