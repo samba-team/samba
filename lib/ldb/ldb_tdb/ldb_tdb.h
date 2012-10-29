@@ -99,7 +99,7 @@ int ltdb_pack_data(struct ldb_module *module,
 		   TDB_DATA *data);
 void ltdb_unpack_data_free(struct ldb_module *module,
 			   struct ldb_message *message);
-int ltdb_unpack_data(struct ldb_module *module,
+int ltdb_unpack_data(struct ldb_context *ldb,
 		     const TDB_DATA *data,
 		     struct ldb_message *message);
 
