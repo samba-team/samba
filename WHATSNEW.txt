@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.0.  This is *not*
+This is the fourth release candidate of Samba 4.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -58,7 +58,7 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
-Samba 4.0.0rc3 ships with two distinct file servers.  We now use the
+Samba 4.0.0rc4 ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
 default.
 
@@ -164,6 +164,45 @@ smb.conf changes
    winbindd privileged socket directory	New
    winbind sealed pipes			New
    winbindd socket directory		New
+
+
+CHANGES SINCE 4.0.0rc3
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9319: validate stat(2) information before reconnect durable handles.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9190: Fix regression (change in behavior) of default acl masks.
+      Remove "security mask", "force security mode", "directory security mask"
+      "force directory" and "security mode" parameters.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9295: Assert that auth_domain, auth_builtin, auth_sam, auth_winbind
+      are builtin.
+    * BUG 9322: Backport ldb version update.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9190: docs: Fix opening and ending tag mismatch: para.
+
+
+o   David Disseldorp <ddiss@suse.de>
+    * BUG 8564: Fix segfault in pam_sm_authenticate().
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9184: Fix loop in tdgram_bsd_recvfrom().
+    * BUG 9209: Fix unitialized padding in smb2_create_blob_push_one().
+    * BUG 9309: Avoid a level 0 DEBUG if tstream_npa_connect_recv fails.
+    * BUG 9318: Fix write time updates for durable handles.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9295: Build standard auth modules as internal modules.
+    * BUG 9301: Move 'smbprint' to a common location.
 
 
 CHANGES SINCE 4.0.0rc2
