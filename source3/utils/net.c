@@ -868,7 +868,7 @@ static struct functable net_func[] = {
 			break;
 		case 'U':
 			c->opt_user_specified = true;
-			c->opt_user_name = SMB_STRDUP(c->opt_user_name);
+			c->opt_user_name = talloc_strdup(c, c->opt_user_name);
 			p = strchr(c->opt_user_name,'%');
 			if (p) {
 				*p = 0;
