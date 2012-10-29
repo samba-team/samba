@@ -1300,7 +1300,8 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		case P_BOOL: {
 			bool b;
 			if (!set_boolean(pszParmValue, &b)) {
-				DEBUG(0,("set_variable(%s): value is not boolean!\n", pszParmValue));
+				DEBUG(0, ("set_variable(%s): value is not "
+					  "boolean!\n", pszParmValue));
 				return false;
 			}
 			*(bool *)parm_ptr = b;
@@ -1310,7 +1311,8 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		case P_BOOLREV: {
 			bool b;
 			if (!set_boolean(pszParmValue, &b)) {
-				DEBUG(0,("set_variable(%s): value is not boolean!\n", pszParmValue));
+				DEBUG(0, ("set_variable(%s): value is not "
+					  "boolean!\n", pszParmValue));
 				return false;
 			}
 			*(bool *)parm_ptr = !b;
