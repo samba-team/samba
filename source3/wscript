@@ -1305,6 +1305,9 @@ main() {
         if not conf.env.USING_SYSTEM_TDB:
             includes = includes + ' ' + srcdir + '/lib/tdb/include'
 
+        if not conf.env.USING_SYSTEM_TALLOC:
+            includes = includes + ' ' + srcdir + '/lib/talloc'
+
         have_cluster_support = True
         ctdb_broken = ""
 
