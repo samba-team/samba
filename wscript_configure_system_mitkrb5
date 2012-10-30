@@ -154,7 +154,7 @@ conf.CHECK_CODE('''
        }''',
     'HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG',
     headers='krb5.h', lib='krb5 k5crypto',
-    addmain=False, cflags='-Werror',
+    addmain=False, cflags=conf.env['WERROR_CFLAGS'],
     msg="Checking whether krb5_enctype_to_string takes size_t argument")
 
 conf.CHECK_CODE('''
@@ -167,7 +167,7 @@ conf.CHECK_CODE('''
        }''',
     'HAVE_KRB5_ENCTYPE_TO_STRING_WITH_KRB5_CONTEXT_ARG',
     headers='krb5.h stdlib.h', lib='krb5',
-    addmain=False, cflags='-Werror',
+    addmain=False, cflags=conf.env['WERROR_CFLAGS'],
     msg="Checking whether krb5_enctype_to_string takes krb5_context argument")
 conf.CHECK_CODE('''
        int main(void) {
