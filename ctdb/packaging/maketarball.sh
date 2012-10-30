@@ -20,23 +20,22 @@
 
 #
 # Create CTDB source tarball of the current git branch HEAD.
-# The version is extracted from the spec file...
-# The first extra argument will be added as an additional version.
+# The version is calculated from git tag in mkversion.sh.
+# Optional argument is the directory to which tarball is copied.
 #
 
 DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/..
 
+TARGETDIR="$1"
+if [ -z "${TARGETDIR}" ]; then
+    TARGETDIR="."
+fi
+
 TAR_PREFIX_TMP="ctdb-tmp"
 SPECFILE=/tmp/${TAR_PREFIX_TMP}/packaging/RPM/ctdb.spec
 SPECFILE_IN=${SPECFILE}.in
-
-EXTRA_SUFFIX="$1"
-
-VERSION=$(${TOPDIR}/packaging/mkversion.sh)
-if [ -z "$VERSION" ]; then
-    exit 1
-fi
+VERSION_H=/tmp/${TAR_PREFIX_TMP}/include/version.h
 
 if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
 	GZIP="gzip -9 --rsyncable"
@@ -54,13 +53,14 @@ if [ $RC -ne 0 ]; then
 	exit 1
 fi
 
+VERSION=$(${TOPDIR}/packaging/mkversion.sh ${VERSION_H})
+if [ -z "$VERSION" ]; then
+    exit 1
+fi
+
 sed -e s/@VERSION@/${VERSION}/g \
 	< ${SPECFILE_IN} \
 	> ${SPECFILE}
-
-if [ "x${EXTRA_SUFFIX}" != "x" ]; then
-	VERSION="${VERSION}-${EXTRA_SUFFIX}"
-fi
 
 TAR_PREFIX="ctdb-${VERSION}"
 TAR_BASE="ctdb-${VERSION}"
@@ -113,7 +113,7 @@ rm -rf ${TAR_PREFIX}
 
 popd
 
-mv /tmp/${TAR_GZ_BALL} .
+mv /tmp/${TAR_GZ_BALL} ${TARGETDIR}/
 
 echo "Done."
 exit 0
