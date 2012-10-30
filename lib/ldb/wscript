@@ -253,6 +253,10 @@ def build(bld):
         bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='ldb-cmdline ldb',
                          install=False)
 
+        # ldbdump doesn't get installed
+        bld.SAMBA_BINARY('ldbdump', 'tools/ldbdump.c ldb_tdb/ldb_pack.c', deps='ldb-cmdline ldb',
+                         install=False)
+
     bld.SAMBA_LIBRARY('ldb-cmdline',
                       source='tools/ldbutil.c tools/cmdline.c',
                       deps='ldb dl popt',
