@@ -1368,6 +1368,28 @@ main() {
                 #include "replace.h"
                 #include "system/wait.h"
                 #include "system/network.h"
+                #define private #error __USED_RESERVED_WORD_private__
+                #include <talloc.h>
+                #include <tdb.h>
+                #include <ctdb.h>
+                #include <ctdb_protocol.h>
+
+                int main(void)
+                {
+                    return 0;
+                }
+                ''',
+                'HAVE_CTDB_PROTOCOL_H',
+                addmain=False,
+                includes=includes,
+                msg='Checking for header ctdb_protocol.h')
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
+                #define NO_CONFIG_H
+                #include "replace.h"
+                #include "system/wait.h"
+                #include "system/network.h"
                 #include <talloc.h>
                 #include <tdb.h>
                 #include <ctdb.h>
