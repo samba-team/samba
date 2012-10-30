@@ -25,7 +25,13 @@
 #include "ctdb_conn.h"
 #include "lib/util/tevent_unix.h"
 #include "tdb.h"
+
+#ifdef HAVE_CTDB_PROTOCOL_H
 #include "ctdb_protocol.h"
+#else
+#include "ctdb_private.h"
+#endif
+
 #include "messages.h"
 
 struct ctdb_conn_test_state {
