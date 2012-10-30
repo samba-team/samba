@@ -54,7 +54,7 @@ struct foo bar = { .y = 'X', .x = 1 };
             break
 
     # Try to find the right extra flags for -Werror behaviour
-    for f in ["-Werror", "-w2", "-errwarn=%all"]:
+    for f in ["-Werror", "-w2", "-errwarn=%all", "-qhalt=w"]:
         if conf.CHECK_CFLAGS([f], '''
 '''):
             if not 'WERROR_CFLAGS' in conf.env:
