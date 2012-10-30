@@ -25,6 +25,7 @@
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 #include "include/smbprofile.h"
+#include "modules/non_posix_acls.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -807,7 +808,8 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
 				      DATA_BLOB *blob)
 {
 	struct gpfs_config_data *config;
-	SMB4ACL_T *pacl = NULL;
+	struct gpfs_opaque_acl *acl = NULL;
+	DATA_BLOB aclblob;
 	int result;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -821,15 +823,51 @@ static int gpfsacl_sys_acl_blob_get_file(vfs_handle_struct *handle,
 							  blob);
 	}
 
-	result = gpfs_get_nfs4_acl(path_p, &pacl);
-	if (result == 0) {
-		/* We don't have a way to linearlise the NFS4 ACL
-		 * right now, and it is much closer to the NT ACL
-		 * anyway */
-		errno = EINVAL;
-		return -1;
+	errno = 0;
+	acl = (struct gpfs_opaque_acl *)
+			vfs_gpfs_getacl(mem_ctx,
+					path_p,
+					true,
+					GPFS_ACL_TYPE_NFS4);
+
+	if (errno) {
+		DEBUG(5, ("vfs_gpfs_getacl finished with errno %d: %s\n",
+					errno, strerror(errno)));
+
+		/* EINVAL means POSIX ACL, bail out on other cases */
+		if (errno != EINVAL) {
+			return -1;
+		}
 	}
 
+	if (acl != NULL) {
+		/*
+		 * file has NFSv4 ACL
+		 *
+		 * we only need the actual ACL blob here
+		 * acl_version will always be NFS4 because we asked
+		 * for NFS4
+		 * acl_type is only used for POSIX ACLs
+		 */
+		aclblob.data = (uint8_t*) acl->acl_var_data;
+		aclblob.length = acl->acl_buffer_len;
+
+		*blob_description = talloc_strdup(mem_ctx, "gpfs_nfs4_acl");
+		if (!*blob_description) {
+			talloc_free(acl);
+			errno = ENOMEM;
+			return -1;
+		}
+
+		result = non_posix_sys_acl_blob_get_file_helper(handle, path_p,
+								aclblob,
+								mem_ctx, blob);
+
+		talloc_free(acl);
+		return result;
+	}
+
+	/* fall back to POSIX ACL */
 	return posix_sys_acl_blob_get_file(handle, path_p, mem_ctx,
 					   blob_description, blob);
 }
@@ -841,7 +879,8 @@ static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 				      DATA_BLOB *blob)
 {
 	struct gpfs_config_data *config;
-	SMB4ACL_T *pacl = NULL;
+	struct gpfs_opaque_acl *acl = NULL;
+	DATA_BLOB aclblob;
 	int result;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -853,15 +892,50 @@ static int gpfsacl_sys_acl_blob_get_fd(vfs_handle_struct *handle,
 							blob_description, blob);
 	}
 
-	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
-	if (result == 0) {
-		/* We don't have a way to linearlise the NFS4 ACL
-		 * right now, and it is much closer to the NT ACL
-		 * anyway */
-		errno = EINVAL;
-		return -1;
+	errno = 0;
+	acl = (struct gpfs_opaque_acl *) vfs_gpfs_getacl(mem_ctx,
+						fsp->fsp_name->base_name,
+						true,
+						GPFS_ACL_TYPE_NFS4);
+
+	if (errno) {
+		DEBUG(5, ("vfs_gpfs_getacl finished with errno %d: %s\n",
+					errno, strerror(errno)));
+
+		/* EINVAL means POSIX ACL, bail out on other cases */
+		if (errno != EINVAL) {
+			return -1;
+		}
 	}
 
+	if (acl != NULL) {
+		/*
+		 * file has NFSv4 ACL
+		 *
+		 * we only need the actual ACL blob here
+		 * acl_version will always be NFS4 because we asked
+		 * for NFS4
+		 * acl_type is only used for POSIX ACLs
+		 */
+		aclblob.data = (uint8_t*) acl->acl_var_data;
+		aclblob.length = acl->acl_buffer_len;
+
+		*blob_description = talloc_strdup(mem_ctx, "gpfs_nfs4_acl");
+		if (!*blob_description) {
+			talloc_free(acl);
+			errno = ENOMEM;
+			return -1;
+		}
+
+		result = non_posix_sys_acl_blob_get_fd_helper(handle, fsp,
+							      aclblob, mem_ctx,
+							      blob);
+
+		talloc_free(acl);
+		return result;
+	}
+
+	/* fall back to POSIX ACL */
 	return posix_sys_acl_blob_get_fd(handle, fsp, mem_ctx,
 					 blob_description, blob);
 }
