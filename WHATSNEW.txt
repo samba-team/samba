@@ -125,8 +125,6 @@ smb.conf changes
    kernel share modes			New
    kpasswd port				New
    krb5 port				New
-   max protocol				Removed
-   min protocol				Removed
    nbt client socket address		New
    nbt port				New
    nsupdate command			New
