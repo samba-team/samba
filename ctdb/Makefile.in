@@ -63,6 +63,8 @@ SHLD=${CC} ${CFLAGS} ${LDSHFLAGS} -o $@
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) $(TALLOC_LIBS) $(TEVENT_LIBS) $(TDB_LIBS) \
 		  @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
 
+CTDB_VERSION_H = include/version.h
+
 UTIL_OBJ = lib/util/idtree.o lib/util/db_wrap.o lib/util/strlist.o lib/util/util.o \
 	lib/util/util_time.o lib/util/util_file.o lib/util/fault.o lib/util/substitute.o \
 	lib/util/signal.o
@@ -112,7 +114,7 @@ DIRS = lib bin tests/bin
 
 .SUFFIXES: .c .o .h
 
-all: showflags dirs $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
+all: showflags dirs $(CTDB_VERSION_H) $(CTDB_SERVER_OBJ) $(CTDB_CLIENT_OBJ) $(CTDB_LIB_OBJ) $(BINS) $(SBINS) $(TEST_BINS)
 
 showflags:
 	@echo 'ctdb will be compiled with flags:'
@@ -137,6 +139,10 @@ showlayout::
 
 dirs:
 	@mkdir -p $(DIRS)
+
+$(CTDB_VERSION_H):
+	@echo Generating $@
+	@./packaging/mkversion.sh
 
 bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
