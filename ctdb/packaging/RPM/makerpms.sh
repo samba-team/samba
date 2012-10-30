@@ -52,7 +52,7 @@ mkdir -p `rpm --eval %_rpmdir`/noarch
 mkdir -p `rpm --eval %_rpmdir`/i386
 mkdir -p `rpm --eval %_rpmdir`/x86_64
 
-VERSION=$(${TOPDIR}/packaging/mkversion.sh)
+VERSION=$(${TOPDIR}/packaging/mkversion.sh ${TOPDIR}/include/version.h)
 if [ -z "$VERSION" ]; then
     exit 1
 fi
@@ -61,23 +61,10 @@ sed -e s/@VERSION@/$VERSION/g \
 	< ${DIRNAME}/${SPECFILE_IN} \
 	> ${DIRNAME}/${SPECFILE}
 
-VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
-
-if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
-	GZIP="gzip -9 --rsyncable"
-else
-	GZIP="gzip -9"
-fi
-
-pushd ${TOPDIR}
-echo -n "Creating ctdb-${VERSION}.tar.gz ... "
-git archive --prefix=ctdb-${VERSION}/ HEAD | ${GZIP} > ${SRCDIR}/ctdb-${VERSION}.tar.gz
-RC=$?
-popd
-echo "Done."
-if [ $RC -ne 0 ]; then
-        echo "Build failed!"
-        exit 1
+${TOPDIR}/packaging/maketarball.sh ${SRCDIR}
+if [ $? -ne 0 ]; then
+	echo "Build failed!"
+	exit 1
 fi
 
 # At this point the SPECDIR and SRCDIR vaiables must have a value!
