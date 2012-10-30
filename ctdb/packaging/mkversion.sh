@@ -22,6 +22,12 @@
 # Common code to generate CTDB version string
 #
 
+OUTPUT=$1
+
+if [ -z "$OUTPUT" ]; then
+    OUTPUT="include/version.h"
+fi
+
 # We use tags and determine the version, as follows:
 # ctdb-0.9.1  (First release of 0.9).
 # ctdb-0.9.23 (23rd minor release of the 112 version)
@@ -47,4 +53,12 @@ case "$TAG" in
 	echo Invalid tag "$TAG" >&2
 	;;
 esac
+
+cat > "$OUTPUT" <<EOF
+/* This file is auto-genrated by packaging/mkversion.sh */
+
+#define CTDB_VERSION_STRING "$VERSION"
+
+EOF
+
 echo $VERSION
