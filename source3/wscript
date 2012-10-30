@@ -43,7 +43,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('aio-support')
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
 
-    opt.SAMBA3_ADD_OPTION('cluster-support')
+    opt.SAMBA3_ADD_OPTION('cluster-support', default=None)
 
     opt.add_option('--with-ctdb-dir',
                    help=("Directory under which ctdb is installed"),
@@ -1292,7 +1292,9 @@ main() {
     #
     # checking for clustering extensions (CTDB)
     #
-    if not Options.options.with_cluster_support:
+    if Options.options.with_cluster_support == False:
+        # configure is called with --without-cluster-support,
+        # so don't check for and build w/o ctdb support.
         have_cluster_support = False
 
     else:
@@ -1520,12 +1522,14 @@ main() {
         Logs.info("building with cluster support")
         conf.DEFINE('CLUSTER_SUPPORT', 1);
     else:
-        if not Options.options.with_cluster_support:
-            Logs.info("building without cluster support")
+        if Options.options.with_cluster_support == False:
+            Logs.info("building without cluster support (--without-cluster-support)")
+        elif Options.options.with_cluster_support == True:
+            Logs.error("Cluster support not available: " + ctdb_broken)
+            conf.fatal("Cluster support not found, but --with-cluster-support was specified")
         else:
-            Logs.warn("building without cluster support: " + ctdb_broken)
+            Logs.info("building without cluster support: " + ctdb_broken)
         conf.undefine('CLUSTER_SUPPORT')
-
 
 
     conf.CHECK_CODE('__attribute__((destructor)) static void cleanup(void) { }',
