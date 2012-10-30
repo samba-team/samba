@@ -277,7 +277,7 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	if (!lp__use_sendfile(SNUM(fsp->conn)) ||
 	    smb2req->do_signing ||
 	    smb2req->do_encryption ||
-	    smb2req->in.vector_count < (2*SMBD_SMB2_NUM_IOV_PER_REQ) ||
+	    smb2req->in.vector_count >= (2*SMBD_SMB2_NUM_IOV_PER_REQ) ||
 	    (fsp->base_fsp != NULL) ||
 	    (fsp->wcp != NULL) ||
 	    (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) ||
