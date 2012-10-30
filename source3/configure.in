@@ -4969,7 +4969,7 @@ ctdb_broken="no"
 SAVED_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS} $CTDB_CPPFLAGS"
 
-AC_CHECK_HEADERS(ctdb.h ctdb_private.h,,,[
+AC_CHECK_HEADERS(ctdb.h ctdb_private.h ctdb_protocol.h ,,,[
 #include "confdefs.h"
 #define NO_CONFIG_H
 #include "replace.h"
