@@ -853,6 +853,8 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
 
 FNAME_UTIL_OBJ = lib/filename_util.o
 
+NFS4ACL_OBJ = modules/nfs4_acls.o
+
 VFS_DEFAULT_OBJ = modules/vfs_default.o
 VFS_AUDIT_OBJ = modules/vfs_audit.o
 VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
@@ -871,9 +873,9 @@ VFS_AFSACL_OBJ = modules/vfs_afsacl.o
 VFS_XATTR_TDB_OBJ = modules/vfs_xattr_tdb.o lib/xattr_tdb.o
 VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
-VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
+VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o $(NFS4ACL_OBJ)
 VFS_SOLARISACL_OBJ = modules/vfs_solarisacl.o
-VFS_ZFSACL_OBJ = modules/vfs_zfsacl.o modules/nfs4_acls.o
+VFS_ZFSACL_OBJ = modules/vfs_zfsacl.o $(NFS4ACL_OBJ)
 VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
@@ -882,7 +884,7 @@ VFS_STREAMS_DEPOT_OBJ = modules/vfs_streams_depot.o
 VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
-VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
+VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o $(NFS4ACL_OBJ)
 VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 VFS_READAHEAD_OBJ = modules/vfs_readahead.o
 VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
