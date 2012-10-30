@@ -21,8 +21,8 @@
 #include "lib/util/bitmap.h"
 
 struct bitmap {
-	uint32_t *b;
 	unsigned int n;
+	uint32_t b[1];		/* We allocate more */
 };
 
 /* these functions provide a simple way to allocate integers from a
@@ -35,16 +35,15 @@ struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n)
 {
 	struct bitmap *bm;
 
-	bm = talloc(mem_ctx, struct bitmap);
+	bm = (struct bitmap *)talloc_zero_size(
+		mem_ctx,
+		offsetof(struct bitmap, b) + sizeof(uint32_t)*((n+31)/32));
 
 	if (!bm) return NULL;
 
+	talloc_set_name_const(bm, "struct bitmap");
+
 	bm->n = n;
-	bm->b = talloc_zero_array(bm, uint32_t, (n+31)/32);
-	if (!bm->b) {
-		TALLOC_FREE(bm);
-		return NULL;
-	}
 	return bm;
 }
 
