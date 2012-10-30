@@ -25,6 +25,7 @@
 #include "system/locale.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "../include/version.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
@@ -56,15 +57,11 @@ static struct {
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
 #define LONGTIMELIMIT() timeval_current_ofs(options.timelimit*10, 0)
 
-#ifdef CTDB_VERS
 static int control_version(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-#define STR(x) #x
-#define XSTR(x) STR(x)
-	printf("CTDB version: %s\n", XSTR(CTDB_VERS));
+	printf("CTDB version: %s\n", CTDB_VERSION_STRING);
 	return 0;
 }
-#endif
 
 #define CTDB_NOMEM_ABORT(p) do { if (!(p)) {				\
 		DEBUG(DEBUG_ALERT,("ctdb fatal error: %s\n",		\
@@ -5786,9 +5783,7 @@ static const struct {
 	const char *msg;
 	const char *args;
 } ctdb_commands[] = {
-#ifdef CTDB_VERS
-	{ "version",         control_version,           true,	false,  "show version of ctdb" },
-#endif
+	{ "version",         control_version,           true,	true,   "show version of ctdb" },
 	{ "status",          control_status,            true,	false,  "show node status" },
 	{ "uptime",          control_uptime,            true,	false,  "show node uptime" },
 	{ "ping",            control_ping,              true,	false,  "ping all nodes" },

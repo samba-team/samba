@@ -71,7 +71,7 @@ export CC
 ## always run autogen.sh
 ./autogen.sh
 
-CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE -DCTDB_VERS=\"%{version}-%{release}\"" ./configure \
+CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE" ./configure \
 %if %with_included_talloc
 	--with-included-talloc \
 %endif
