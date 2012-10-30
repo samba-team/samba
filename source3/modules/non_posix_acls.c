@@ -79,10 +79,14 @@ int non_posix_sys_acl_blob_get_fd_helper(vfs_handle_struct *handle,
 
 	acl_wrapper.acl_as_blob = acl_as_blob;
 
-	ret = smb_vfs_call_fstat(handle, fsp, &sbuf);
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		ret = smb_vfs_call_fstat(handle, fsp, &sbuf);
+		if (ret == -1) {
+			TALLOC_FREE(frame);
+			return -1;
+		}
+	} else {
+		sbuf = fsp->fsp_name->st;
 	}
 
 	acl_wrapper.owner = sbuf.st_ex_uid;
