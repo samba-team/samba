@@ -4989,7 +4989,7 @@ then
 fi
 
 if test "x$have_cluster_support" = "xyes" -a \
-	"x$ac_cv_header_ctdb_h" != "xyes"
+	"x$ac_cv_header_ctdb_private_h" != "xyes"
 then
 	have_cluster_support=no
 	ctdb_broken="ctdb_private.h is required for cluster support"
