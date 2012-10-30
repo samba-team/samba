@@ -19,10 +19,7 @@
 
 /* The following definitions come from lib/bitmap.c  */
 
-struct bitmap {
-	uint32_t *b;
-	unsigned int n;
-};
+struct bitmap;
 
 struct bitmap *bitmap_talloc(TALLOC_CTX *mem_ctx, int n);
 int bitmap_copy(struct bitmap * const dst, const struct bitmap * const src);

@@ -20,6 +20,11 @@
 #include "includes.h"
 #include "lib/util/bitmap.h"
 
+struct bitmap {
+	uint32_t *b;
+	unsigned int n;
+};
+
 /* these functions provide a simple way to allocate integers from a
    pool without repetition */
 
