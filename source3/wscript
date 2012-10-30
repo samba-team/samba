@@ -1308,7 +1308,7 @@ main() {
         else:
             includes = ''
 
-	if not conf.env.USING_SYSTEM_TDB:
+        if not conf.env.USING_SYSTEM_TDB:
             includes = includes + ' ' + srcdir + '/lib/tdb/include'
 
         have_cluster_support = True
