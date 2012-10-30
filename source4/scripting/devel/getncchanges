@@ -107,6 +107,7 @@ if __name__ == "__main__":
     parser.add_option("", "--replica-flags", type='int',
                       default=drsuapi.DRSUAPI_DRS_INIT_SYNC |
                       drsuapi.DRSUAPI_DRS_PER_SYNC |
+                      drsuapi.DRSUAPI_DRS_WRIT_REP |
                       drsuapi.DRSUAPI_DRS_GET_ANC |
                       drsuapi.DRSUAPI_DRS_NEVER_SYNCED,
                       help='replica flags')
