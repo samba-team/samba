@@ -853,7 +853,7 @@ NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
 
 FNAME_UTIL_OBJ = lib/filename_util.o
 
-NFS4ACL_OBJ = modules/nfs4_acls.o
+NFS4ACL_OBJ = modules/nfs4_acls.o modules/non_posix_acls.o
 
 VFS_DEFAULT_OBJ = modules/vfs_default.o
 VFS_AUDIT_OBJ = modules/vfs_audit.o
