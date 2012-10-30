@@ -157,6 +157,21 @@
                 </para>
                 </listitem>
                 </varlistentry>
+		<varlistentry>
+		<term>shadow:snapdirseverywhere = yes/no
+		</term>
+		<listitem>
+		<para>If you enable <command moreinfo="none">
+		shadow:snapdirseverywhere </command> then this module will look
+		out for snapshot directories in the current and all parent
+		directories of the current working directory.
+		An example where this is needed are independent filesets in
+		IBM's GPFS, but other filesystems might support snapshotting
+		only particular subtrees of the filesystem as well.
+		</para>
+		</listitem>
+		</varlistentry>
+
 		</variablelist>
 </refsect1>
 
