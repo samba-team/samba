@@ -64,8 +64,11 @@ struct smb2_lease_key {
 struct smb2_lease {
 	struct smb2_lease_key lease_key;
 	uint32_t lease_state;
-	uint32_t lease_flags; /* should be 0 */
+	uint32_t lease_flags;
 	uint64_t lease_duration; /* should be 0 */
+	/* only for v2 */
+	struct smb2_lease_key parent_lease_key;
+	uint16_t lease_epoch;
 };
 
 struct smb2_lease_break {
@@ -1743,6 +1746,7 @@ union smb_open {
 			NTTIME timewarp;
 			bool   query_on_disk_id;
 			struct smb2_lease *lease_request;
+			struct smb2_lease *lease_request_v2;
 
 			struct GUID *app_instance_id;
 
@@ -1773,6 +1777,7 @@ union smb_open {
 			uint32_t maximal_access;
 			uint8_t on_disk_id[32];
 			struct smb2_lease lease_response;
+			struct smb2_lease lease_response_v2;
 			bool durable_open;
 
 			/* durable handle v2 */

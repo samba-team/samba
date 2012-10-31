@@ -226,6 +226,27 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		}
 	}
 
+	if (io->in.lease_request_v2) {
+		struct smb2_lease *ls = &io->in.lease_request_v2;
+		uint8_t data[52];
+
+		memcpy(&data[0], &ls->lease_key, 16);
+		SIVAL(data, 16, ls->lease_state);
+		SIVAL(data, 20, ls->lease_flags);
+		SBVAL(data, 24, ls->lease_duration);
+		memcpy(&data[32], &ls->parent_lease_key, 16);
+		SSVAL(data, 48, ls->lease_epoch);
+		SSVAL(data, 50, 0); /* reserved */
+
+		status = smb2_create_blob_add(req, &blobs,
+					      SMB2_CREATE_TAG_RQLS,
+					      data_blob_const(data, 52));
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(req);
+			return NULL;
+		}
+	}
+
 	if (io->in.app_instance_id) {
 		uint8_t data[20];
 		DATA_BLOB guid_blob;
@@ -342,17 +363,34 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 			memcpy(io->out.on_disk_id, io->out.blobs.blobs[i].data.data, 32);
 		}
 		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_RQLS) == 0) {
+			struct smb2_lease *ls = NULL;
 			uint8_t *data;
-			if (io->out.blobs.blobs[i].data.length != 32) {
+
+			ZERO_STRUCT(io->out.lease_response);
+			ZERO_STRUCT(io->out.lease_response_v2);
+
+			switch (io->out.blobs.blobs[i].data.length) {
+			case 32:
+				ls = &io->out.lease_response;
+				break;
+			case 52:
+				ls = &io->out.lease_response_v2;
+				break;
+			default:
 				smb2_request_destroy(req);
 				return NT_STATUS_INVALID_NETWORK_RESPONSE;
 			}
 
 			data = io->out.blobs.blobs[i].data.data;
-			memcpy(&io->out.lease_response.lease_key, data, 16);
-			io->out.lease_response.lease_state = IVAL(data, 16);
-			io->out.lease_response.lease_flags = IVAL(data, 20);
-			io->out.lease_response.lease_duration = BVAL(data, 24);
+			memcpy(&ls->lease_key, data, 16);
+			ls->lease_state = IVAL(data, 16);
+			ls->lease_flags = IVAL(data, 20);
+			ls->lease_duration = BVAL(data, 24);
+
+			if (io->out.blobs.blobs[i].data.length == 52) {
+				memcpy(&ls->parent_lease_key, data+32, 16);
+				ls->lease_epoch = SVAL(data, 48);
+			}
 		}
 		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_DHNQ) == 0) {
 			if (io->out.blobs.blobs[i].data.length != 8) {
