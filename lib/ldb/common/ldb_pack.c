@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Andrew Tridgell  2004
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -118,8 +118,8 @@ int ltdb_pack_data(struct ldb_module *module,
 	data->dsize = size;
 
 	p = data->dptr;
-	put_uint32(p, 0, LTDB_PACKING_FORMAT); 
-	put_uint32(p, 4, real_elements); 
+	put_uint32(p, 0, LTDB_PACKING_FORMAT);
+	put_uint32(p, 4, real_elements);
 	p += 8;
 
 	/* the dn needs to be packed so we can be case preserving
@@ -127,7 +127,7 @@ int ltdb_pack_data(struct ldb_module *module,
 	len = strlen(dn);
 	memcpy(p, dn, len+1);
 	p += len + 1;
-	
+
 	for (i=0;i<message->num_elements;i++) {
 		if (attribute_storable_values(&message->elements[i]) == 0) {
 			continue;
@@ -139,7 +139,7 @@ int ltdb_pack_data(struct ldb_module *module,
 		p += 4;
 		for (j=0;j<message->elements[i].num_values;j++) {
 			put_uint32(p, 0, message->elements[i].values[j].length);
-			memcpy(p+4, message->elements[i].values[j].data, 
+			memcpy(p+4, message->elements[i].values[j].data,
 			       message->elements[i].values[j].length);
 			p[4+message->elements[i].values[j].length] = 0;
 			p += 4 + message->elements[i].values[j].length + 1;
@@ -206,7 +206,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 	if (message->num_elements == 0) {
 		return 0;
 	}
-	
+
 	if (message->num_elements > remaining / 6) {
 		errno = EIO;
 		goto failed;
@@ -218,7 +218,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	memset(message->elements, 0, 
+	memset(message->elements, 0,
 	       message->num_elements * sizeof(struct ldb_message_element));
 
 	for (i=0;i<message->num_elements;i++) {
@@ -247,7 +247,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 		message->elements[i].values = NULL;
 		if (message->elements[i].num_values != 0) {
 			message->elements[i].values = talloc_array(message->elements,
-								     struct ldb_val, 
+								     struct ldb_val,
 								     message->elements[i].num_values);
 			if (!message->elements[i].values) {
 				errno = ENOMEM;
@@ -271,14 +271,14 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 			}
 			memcpy(message->elements[i].values[j].data, p+4, len);
 			message->elements[i].values[j].data[len] = 0;
-	
+
 			remaining -= len+4+1;
 			p += len+4+1;
 		}
 	}
 
 	if (remaining != 0) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, 
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Error: %d bytes unread in ltdb_unpack_data", remaining);
 	}
 
