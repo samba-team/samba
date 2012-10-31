@@ -484,7 +484,7 @@ static void notify_trigger_index_parser(TDB_DATA key, TDB_DATA data,
 	struct notify_trigger_index_state *state =
 		(struct notify_trigger_index_state *)private_data;
 	uint32_t *new_vnns;
-	size_t i, num_vnns, num_new_vnns;
+	size_t i, num_vnns, num_new_vnns, num_remote_vnns;
 
 	if ((data.dsize % sizeof(uint32_t)) != 0) {
 		DEBUG(1, ("Invalid record size in notify index db: %u\n",
@@ -493,22 +493,32 @@ static void notify_trigger_index_parser(TDB_DATA key, TDB_DATA data,
 	}
 	new_vnns = (uint32_t *)data.dptr;
 	num_new_vnns = data.dsize / sizeof(uint32_t);
-
-	num_vnns = talloc_array_length(state->vnns);
+	num_remote_vnns = num_new_vnns;
 
 	for (i=0; i<num_new_vnns; i++) {
 		if (new_vnns[i] == state->my_vnn) {
 			state->found_my_vnn = true;
+			num_remote_vnns -= 1;
 		}
 	}
+	if (num_remote_vnns == 0) {
+		return;
+	}
 
+	num_vnns = talloc_array_length(state->vnns);
 	state->vnns = talloc_realloc(state->mem_ctx, state->vnns, uint32_t,
-				     num_vnns + num_new_vnns);
-	if ((num_vnns + num_new_vnns != 0) && (state->vnns == NULL)) {
+				     num_vnns + num_remote_vnns);
+	if (state->vnns == NULL) {
 		DEBUG(1, ("talloc_realloc failed\n"));
 		return;
 	}
-	memcpy(&state->vnns[num_vnns], data.dptr, data.dsize);
+
+	for (i=0; i<num_new_vnns; i++) {
+		if (new_vnns[i] != state->my_vnn) {
+			state->vnns[num_vnns] = new_vnns[i];
+			num_vnns += 1;
+		}
+	}
 }
 
 static int vnn_cmp(const void *p1, const void *p2)
