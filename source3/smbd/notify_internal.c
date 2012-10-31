@@ -662,7 +662,12 @@ void notify_trigger(struct notify_context *notify,
 	qsort(idx_state.vnns, num_vnns, sizeof(uint32_t), vnn_cmp);
 
 	last_vnn = 0xffffffff;
-	remote_blob = NULL;
+
+	if (!notify_push_remote_blob(talloc_tos(), action, filter, path,
+				     &remote_blob, &remote_blob_len)) {
+		DEBUG(1, ("notify_push_remote_blob failed\n"));
+		goto done;
+	}
 
 	for (i=0; i<num_vnns; i++) {
 		uint32_t vnn = idx_state.vnns[i];
@@ -670,12 +675,6 @@ void notify_trigger(struct notify_context *notify,
 
 		if (vnn == last_vnn) {
 			continue;
-		}
-		if ((remote_blob == NULL) &&
-		    !notify_push_remote_blob(
-			    talloc_tos(), action, filter,
-			    path, &remote_blob, &remote_blob_len)) {
-			break;
 		}
 
 		status = ctdbd_messaging_send_blob(
