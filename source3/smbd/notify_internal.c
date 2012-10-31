@@ -649,6 +649,10 @@ void notify_trigger(struct notify_context *notify,
 		}
 	}
 
+	if (idx_state.vnns == NULL) {
+		goto done;
+	}
+
 	ctdbd_conn = messaging_ctdbd_connection();
 	if (ctdbd_conn == NULL) {
 		goto done;
