@@ -32,6 +32,7 @@
  */
 
 #include "ldb_tdb.h"
+#include "ldb_private.h"
 
 struct dn_list {
 	unsigned int count;
@@ -1509,7 +1510,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return -1;
 	}
 
-	ret = ltdb_unpack_data(ldb, &data, msg);
+	ret = ldb_unpack_data(ldb, (struct ldb_val *)&data, msg);
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
 						ldb_dn_get_linearized(msg->dn));

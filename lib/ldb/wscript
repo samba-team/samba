@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'ldb'
-VERSION = '1.1.13'
+VERSION = '1.1.14'
 
 blddir = 'bin'
 
@@ -89,7 +89,7 @@ def build(bld):
 
     COMMON_SRC = bld.SUBDIR('common',
                             '''ldb_modules.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
-                            ldb_debug.c ldb_dn.c ldb_match.c ldb_options.c
+                            ldb_debug.c ldb_dn.c ldb_match.c ldb_options.c ldb_pack.c
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
     bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
@@ -228,7 +228,7 @@ def build(bld):
 
         bld.SAMBA_MODULE('ldb_tdb',
                          bld.SUBDIR('ldb_tdb',
-                                    '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
+                                    '''ldb_tdb.c ldb_search.c ldb_index.c
                                     ldb_cache.c ldb_tdb_wrap.c'''),
                          init_function='ldb_tdb_init',
                          module_init_name='ldb_init_module',
@@ -254,7 +254,7 @@ def build(bld):
                          install=False)
 
         # ldbdump doesn't get installed
-        bld.SAMBA_BINARY('ldbdump', 'tools/ldbdump.c ldb_tdb/ldb_pack.c', deps='ldb-cmdline ldb',
+        bld.SAMBA_BINARY('ldbdump', 'tools/ldbdump.c', deps='ldb-cmdline ldb',
                          install=False)
 
     bld.SAMBA_LIBRARY('ldb-cmdline',

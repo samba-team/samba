@@ -31,13 +31,13 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_tdb.h"
+#include "ldb_private.h"
 
 /* change this if the data format ever changes */
-#define LTDB_PACKING_FORMAT 0x26011967
+#define LDB_PACKING_FORMAT 0x26011967
 
 /* old packing formats */
-#define LTDB_PACKING_FORMAT_NODN 0x26011966
+#define LDB_PACKING_FORMAT_NODN 0x26011966
 
 /* use a portable integer format */
 static void put_uint32(uint8_t *p, int ofs, unsigned int val)
@@ -65,25 +65,22 @@ static int attribute_storable_values(const struct ldb_message_element *el)
 }
 
 /*
-  pack a ldb message into a linear buffer in a TDB_DATA
+  pack a ldb message into a linear buffer in a ldb_val
 
   note that this routine avoids saving elements with zero values,
   as these are equivalent to having no element
 
   caller frees the data buffer after use
 */
-int ltdb_pack_data(struct ldb_module *module,
-		   const struct ldb_message *message,
-		   TDB_DATA *data)
+int ldb_pack_data(struct ldb_context *ldb,
+		  const struct ldb_message *message,
+		  struct ldb_val *data)
 {
-	struct ldb_context *ldb;
 	unsigned int i, j, real_elements=0;
 	size_t size;
 	const char *dn;
 	uint8_t *p;
 	size_t len;
-
-	ldb = ldb_module_get_ctx(module);
 
 	dn = ldb_dn_get_linearized(message->dn);
 	if (dn == NULL) {
@@ -110,15 +107,15 @@ int ltdb_pack_data(struct ldb_module *module,
 	}
 
 	/* allocate it */
-	data->dptr = talloc_array(ldb, uint8_t, size);
-	if (!data->dptr) {
+	data->data = talloc_array(ldb, uint8_t, size);
+	if (!data->data) {
 		errno = ENOMEM;
 		return -1;
 	}
-	data->dsize = size;
+	data->length = size;
 
-	p = data->dptr;
-	put_uint32(p, 0, LTDB_PACKING_FORMAT);
+	p = data->data;
+	put_uint32(p, 0, LDB_PACKING_FORMAT);
 	put_uint32(p, 4, real_elements);
 	p += 8;
 
@@ -150,13 +147,13 @@ int ltdb_pack_data(struct ldb_module *module,
 }
 
 /*
-  unpack a ldb message from a linear buffer in TDB_DATA
+  unpack a ldb message from a linear buffer in ldb_val
 
-  Free with ltdb_unpack_data_free()
+  Free with ldb_unpack_data_free()
 */
-int ltdb_unpack_data(struct ldb_context *ldb,
-		     const TDB_DATA *data,
-		     struct ldb_message *message)
+int ldb_unpack_data(struct ldb_context *ldb,
+		    const struct ldb_val *data,
+		    struct ldb_message *message)
 {
 	uint8_t *p;
 	unsigned int remaining;
@@ -166,8 +163,8 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 
 	message->elements = NULL;
 
-	p = data->dptr;
-	if (data->dsize < 8) {
+	p = data->data;
+	if (data->length < 8) {
 		errno = EIO;
 		goto failed;
 	}
@@ -176,14 +173,14 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 	message->num_elements = pull_uint32(p, 4);
 	p += 8;
 
-	remaining = data->dsize - 8;
+	remaining = data->length - 8;
 
 	switch (format) {
-	case LTDB_PACKING_FORMAT_NODN:
+	case LDB_PACKING_FORMAT_NODN:
 		message->dn = NULL;
 		break;
 
-	case LTDB_PACKING_FORMAT:
+	case LDB_PACKING_FORMAT:
 		len = strnlen((char *)p, remaining);
 		if (len == remaining) {
 			errno = EIO;
@@ -279,7 +276,7 @@ int ltdb_unpack_data(struct ldb_context *ldb,
 
 	if (remaining != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Error: %d bytes unread in ltdb_unpack_data", remaining);
+			  "Error: %d bytes unread in ldb_unpack_data", remaining);
 	}
 
 	return 0;

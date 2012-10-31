@@ -194,4 +194,15 @@ struct ldb_ldif *ldb_ldif_read_file_state(struct ldb_context *ldb,
 char *ldb_ldif_write_redacted_trace_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, 
 					   const struct ldb_ldif *ldif);
 
+/*
+ * these pack/unpack functions are exposed in the library for use by
+ * ldb tools like ldbdump, but are not part of the public API
+ */
+int ldb_pack_data(struct ldb_context *ldb,
+		  const struct ldb_message *message,
+		  struct ldb_val *data);
+int ldb_unpack_data(struct ldb_context *ldb,
+		    const struct ldb_val *data,
+		    struct ldb_message *message);
+
 #endif

@@ -92,15 +92,6 @@ int ltdb_index_transaction_start(struct ldb_module *module);
 int ltdb_index_transaction_commit(struct ldb_module *module);
 int ltdb_index_transaction_cancel(struct ldb_module *module);
 
-/* The following definitions come from lib/ldb/ldb_tdb/ldb_pack.c  */
-
-int ltdb_pack_data(struct ldb_module *module,
-		   const struct ldb_message *message,
-		   TDB_DATA *data);
-int ltdb_unpack_data(struct ldb_context *ldb,
-		     const TDB_DATA *data,
-		     struct ldb_message *message);
-
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_search.c  */
 
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 

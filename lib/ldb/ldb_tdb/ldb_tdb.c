@@ -50,6 +50,7 @@
  */
 
 #include "ldb_tdb.h"
+#include "ldb_private.h"
 #include <tdb.h>
 
 /*
@@ -264,7 +265,7 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 		return LDB_ERR_OTHER;
 	}
 
-	ret = ltdb_pack_data(module, msg, &tdb_data);
+	ret = ldb_pack_data(module, msg, (struct ldb_val *)&tdb_data);
 	if (ret == -1) {
 		talloc_free(tdb_key.dptr);
 		return LDB_ERR_OTHER;
@@ -693,7 +694,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		goto done;
 	}
 
-	ret = ltdb_unpack_data(ldb_module_get_ctx(module), &tdb_data, msg2);
+	ret = ldb_unpack_data(ldb_module_get_ctx(module), (struct ldb_val *)&tdb_data, msg2);
 	free(tdb_data.dptr);
 	if (ret == -1) {
 		ret = LDB_ERR_OTHER;
