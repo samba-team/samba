@@ -45,6 +45,21 @@ test_smbclient() {
 	return $status
 }
 
+test_drsbind() {
+	name="$1"
+	shift
+	echo "test: $name"
+	echo $VALGRIND $samba4bindir/samba-tool drs bind $SERVER -k yes $@
+	$VALGRIND $samba4bindir/samba-tool drs bind $SERVER -k yes $@
+	status=$?
+	if [ x$status = x0 ]; then
+		echo "success: $name"
+	else
+		echo "failure: $name"
+	fi
+	return $status
+}
+
 enctype="-e $ENCTYPE"
 
 KRB5CCNAME="$PREFIX/tmpccache"
@@ -54,15 +69,25 @@ testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.key
 
 #This is important because it puts the ticket for the old KVNO and password into a local ccache
 test_smbclient "Test login with kerberos ccache before password change" 'ls' -k yes || failed=`expr $failed + 1`
+
+#check that drs options works before we change the password (prime the ccache)
+test_drsbind "Test drs options with with kerberos ccache" || failed=`expr $failed + 1`
+
 testit "change dc password" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
 #This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC password is changed
 test_smbclient "Test login with kerberos ccache after password change" 'ls' -k yes || failed=`expr $failed + 1`
 
+#check that drs options works after we change the password
+test_drsbind "Test drs options with new password" || failed=`expr $failed + 1`
+
 testit "change dc password (2nd time)" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
 #This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC pass
 test_smbclient "Test login with kerberos ccache after 2nd password change" 'ls' -k yes || failed=`expr $failed + 1`
+
+#check that drs options works after we change the password a 2nd time
+test_drsbind "Test drs options after 2nd password change" || failed=`expr $failed + 1`
 
 #This confirms that the DC password is valid for a kinit too
 testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
