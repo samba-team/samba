@@ -167,7 +167,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	strlower_m(service);
 
-	snum = find_service(service, service);
+	snum = find_service(service);
 	if (snum < 0) {
 		DEBUG(3,("smbd_smb2_tree_connect: couldn't find service %s\n",
 			 service));

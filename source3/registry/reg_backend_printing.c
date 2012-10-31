@@ -278,7 +278,7 @@ done:
 static bool add_printers_by_registry( struct regsubkey_ctr *subkeys )
 {
 	int i, num_keys, snum;
-	char *printername_in;
+	char *printername;
 	NT_PRINTER_INFO_LEVEL_2 info2;
 	NT_PRINTER_INFO_LEVEL printer;
 	
@@ -289,9 +289,8 @@ static bool add_printers_by_registry( struct regsubkey_ctr *subkeys )
 	
 	become_root();
 	for ( i=0; i<num_keys; i++ ) {
-		fstring printername;
-		printername_in = regsubkey_ctr_specific_key( subkeys, i );
-		snum = find_service(printername_in, printername);
+		printername = regsubkey_ctr_specific_key( subkeys, i );
+		snum = find_service( printername );
 		
 		/* just verify a valied snum for now */
 		if ( snum == -1 ) {

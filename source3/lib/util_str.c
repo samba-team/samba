@@ -2301,10 +2301,6 @@ bool validate_net_name( const char *name,
 {
 	int i;
 
-	if (!name) {
-		return false;
-	}
-
 	for ( i=0; i<max_len && name[i]; i++ ) {
 		/* fail if strchr_m() finds one of the invalid characters */
 		if ( name[i] && strchr_m( invalid_chars, name[i] ) ) {
