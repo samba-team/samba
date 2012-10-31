@@ -227,7 +227,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	}
 
 	if (io->in.lease_request_v2) {
-		struct smb2_lease *ls = &io->in.lease_request_v2;
+		struct smb2_lease *ls = io->in.lease_request_v2;
 		uint8_t data[52];
 
 		memcpy(&data[0], &ls->lease_key, 16);

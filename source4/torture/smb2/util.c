@@ -729,6 +729,34 @@ void smb2_lease_create(struct smb2_create *io, struct smb2_lease *ls,
 				leasekey, leasestate);
 }
 
+void smb2_lease_v2_create_share(struct smb2_create *io,
+				struct smb2_lease *ls,
+				bool dir,
+				const char *name,
+				uint32_t share_access,
+				uint64_t leasekey,
+				const uint64_t *parentleasekey,
+				uint32_t leasestate,
+				uint16_t lease_epoch)
+{
+	smb2_generic_create_share(io, NULL, dir, name, NTCREATEX_DISP_OPEN_IF,
+				  share_access, SMB2_OPLOCK_LEVEL_LEASE, 0, 0);
+
+	if (ls) {
+		ZERO_STRUCT(*ls);
+		ls->lease_key.data[0] = leasekey;
+		ls->lease_key.data[1] = ~leasekey;
+		ls->lease_state = leasestate;
+		if (parentleasekey != NULL) {
+			ls->lease_flags |= SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET;
+			ls->parent_lease_key.data[0] = *parentleasekey;
+			ls->parent_lease_key.data[1] = ~(*parentleasekey);
+		}
+		ls->lease_epoch = lease_epoch;
+		io->in.lease_request_v2 = ls;
+	}
+}
+
 void smb2_oplock_create_share(struct smb2_create *io, const char *name,
 			      uint32_t share_access, uint8_t oplock)
 {
