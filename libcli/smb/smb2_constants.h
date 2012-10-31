@@ -183,6 +183,10 @@
 #define SMB2_LEASE_HANDLE                                0x02
 #define SMB2_LEASE_WRITE                                 0x04
 
+/* SMB2 lease flags */
+#define SMB2_LEASE_FLAG_BREAK_IN_PROGRESS                0x00000002
+#define SMB2_LEASE_FLAG_PARENT_LEASE_KEY_SET             0x00000004
+
 /* SMB2 lease break flags */
 #define SMB2_NOTIFY_BREAK_LEASE_FLAG_ACK_REQUIRED        0x01
 
