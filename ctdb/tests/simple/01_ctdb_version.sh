@@ -39,8 +39,9 @@ if ! try_command_on_node -v 0 "rpm -q ctdb" ; then
 fi
 rpm_ver="${out#ctdb-}"
 # Some version of RPM append the architecture to the version.
+# And also remove the release suffix.
 arch=$(uname -m)
-rpm_ver="${rpm_ver%.${arch}}"
+rpm_ver="${rpm_ver%-*.${arch}}"
 
 try_command_on_node -v 0 "$CTDB version"
 ctdb_ver="${out#CTDB version: }"
