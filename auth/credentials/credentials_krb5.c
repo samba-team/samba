@@ -212,6 +212,67 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 	return 0;
 }
 
+/*
+ * Indicate the we failed to log in to this service/host with these
+ * credentials.  The caller passes an unsigned int which they
+ * initialise to the number of times they would like to retry.
+ *
+ * This method is used to support re-trying with freshly fetched
+ * credentials in case a server is rebuilt while clients have
+ * non-expired tickets. When the client code gets a logon failure they
+ * throw away the existing credentials for the server and retry.
+ */
+_PUBLIC_ bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred,
+						    const char *principal,
+						    unsigned int *count)
+{
+	struct ccache_container *ccc;
+	krb5_creds creds, creds2;
+	int ret;
+
+	if (principal == NULL) {
+		/* no way to delete if we don't know the principal */
+		return false;
+	}
+
+	ccc = cred->ccache;
+	if (ccc == NULL) {
+		/* not a kerberos connection */
+		return false;
+	}
+
+	if (*count > 0) {
+		/* We have already tried discarding the credentials */
+		return false;
+	}
+	(*count)++;
+
+	ZERO_STRUCT(creds);
+	ret = krb5_parse_name(ccc->smb_krb5_context->krb5_context, principal, &creds.server);
+	if (ret != 0) {
+		return false;
+	}
+
+	ret = krb5_cc_retrieve_cred(ccc->smb_krb5_context->krb5_context, ccc->ccache, KRB5_TC_MATCH_SRV_NAMEONLY, &creds, &creds2);
+	if (ret != 0) {
+		/* don't retry - we didn't find these credentials to remove */
+		return false;
+	}
+
+	ret = krb5_cc_remove_cred(ccc->smb_krb5_context->krb5_context, ccc->ccache, KRB5_TC_MATCH_SRV_NAMEONLY, &creds);
+	krb5_free_cred_contents(ccc->smb_krb5_context->krb5_context, &creds2);
+	if (ret != 0) {
+		/* don't retry - we didn't find these credentials to
+		 * remove. Note that with the current backend this
+		 * never happens, as it always returns 0 even if the
+		 * creds don't exist, which is why we do a separate
+		 * krb5_cc_retrieve_cred() above.
+		 */
+		return false;
+	}
+	return true;
+}
+
 
 static int cli_credentials_new_ccache(struct cli_credentials *cred, 
 				      struct loadparm_context *lp_ctx,
