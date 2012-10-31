@@ -1039,13 +1039,13 @@ void ctdb_lock_blocked_handler(struct tevent_context *ev,
 		DEBUG(DEBUG_WARNING,
 		      ("Process %s (pid=%d) locked database %s (inode %lu) for %.0lf seconds\n",
 		       (process_name ? process_name : "unknown"),
-		       blocker_pid, db_name, inode,
+		       blocker_pid, db_name, (unsigned long)inode,
 		       timeval_elapsed(&lock_ctx->start_time)));
 	} else {
 		DEBUG(DEBUG_WARNING,
 		      ("Process %s (pid=%d) locked database (inode %lu) for %.0lf seconds\n",
 		       (process_name ? process_name : "unknown"),
-		       blocker_pid, inode,
+		       blocker_pid, (unsigned long)inode,
 		       timeval_elapsed(&lock_ctx->start_time)));
 	}
 
