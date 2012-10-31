@@ -25,7 +25,7 @@
 #include "system/wait.h"
 #include <tdb.h>
 #include <ldb.h>
-#include "../ldb_tdb/ldb_tdb.h"
+#include <ldb_private.h>
 
 static struct ldb_context *ldb;
 bool show_index = false;
@@ -43,7 +43,8 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *stat
 	if (!msg) {
 		return -1;
 	}
-	ret = ltdb_unpack_data(ldb, &dbuf, msg);
+
+	ret = ldb_unpack_data(ldb, &dbuf, msg);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse record %*.*s as an LDB record\n", (int)key.dsize, (int)key.dsize, (char *)key.dptr);
 		TALLOC_FREE(msg);
@@ -57,7 +58,13 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *stat
 
 	if (!show_index && ldb_dn_is_special(msg->dn)) {
 		const char *dn_lin = ldb_dn_get_linearized(msg->dn);
-		if ((strcmp(dn_lin, LTDB_BASEINFO) == 0) || (strncmp(dn_lin, LTDB_INDEX ":", strlen( LTDB_INDEX ":")) == 0)) {
+		if ((strcmp(dn_lin, "@BASEINFO") == 0) || (strncmp(dn_lin, "@INDEX:", strlen("@INDEX:")) == 0)) {
+			/*
+			  the user has asked not to show index
+			  records. Also exclude BASEINFO as it
+			  contains meta-data which will be re-created
+			  if this database is restored
+			 */
 			TALLOC_FREE(msg);
 			return 0;
 		}
@@ -154,7 +161,7 @@ static int dump_tdb(const char *fname, struct ldb_dn *dn, bool emergency)
 
 static void usage( void)
 {
-	printf( "Usage: tdbdump [options] <filename>\n\n");
+	printf( "Usage: ldbdump [options] <filename>\n\n");
 	printf( "   -h          this help message\n");
 	printf( "   -d DN       dumps DN only\n");
 	printf( "   -e          emergency dump, for corrupt databases\n");
