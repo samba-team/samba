@@ -671,9 +671,6 @@ void notify_trigger(struct notify_context *notify,
 		if (vnn == last_vnn) {
 			continue;
 		}
-		if (vnn == idx_state.my_vnn) {
-			continue;
-		}
 		if ((remote_blob == NULL) &&
 		    !notify_push_remote_blob(
 			    talloc_tos(), action, filter,
