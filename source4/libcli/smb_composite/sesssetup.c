@@ -39,6 +39,7 @@ struct sesssetup_state {
 	NTSTATUS gensec_status;
 	struct smb_composite_sesssetup *io;
 	struct smbcli_request *req;
+	unsigned int logon_retries;
 };
 
 static int sesssetup_state_destructor(struct sesssetup_state *state)
@@ -123,7 +124,7 @@ static void request_handler(struct smbcli_request *req)
 	case RAW_SESSSETUP_NT1:
 		state->io->out.vuid = state->setup.nt1.out.vuid;
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
-			/* we neet to reset the vuid for a new try */
+			/* we need to reset the vuid for a new try */
 			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_nt1(c, session, 
@@ -144,9 +145,21 @@ static void request_handler(struct smbcli_request *req)
 	case RAW_SESSSETUP_SPNEGO:
 		state->io->out.vuid = state->setup.spnego.out.vuid;
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+			const char *principal;
+
 			/* we need to reset the vuid for a new try */
 			session->vuid = 0;
-			if (cli_credentials_wrong_password(state->io->in.credentials)) {
+
+			principal = gensec_get_target_principal(session->gensec);
+			if (principal == NULL) {
+				const char *hostname = gensec_get_target_hostname(session->gensec);
+				const char *service  = gensec_get_target_service(session->gensec);
+				if (hostname != NULL && service != NULL) {
+					principal = talloc_asprintf(state, "%s/%s", service, hostname);
+				}
+			}
+			if (cli_credentials_failed_kerberos_login(state->io->in.credentials, principal, &state->logon_retries) ||
+			    cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_spnego(c, session, 
 								      state->io, 
 								      &state->req);
