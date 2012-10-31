@@ -4,7 +4,7 @@
 <H2 align="center">Building CTDB and Samba</h2>
 
 <h2>CTDB</h2>
-To build a copy of the CTDB code you should do this:
+To build a copy of CTDB code from a git tree you should do this:
 <pre>
    cd ctdb
    ./autogen.sh
@@ -13,6 +13,14 @@ To build a copy of the CTDB code you should do this:
    make install
 </pre>
 
+To build a copy of CTDB code from a tarball you should do this:
+<pre>
+   tar xf ctdb-x.y.tar.gz
+   cd ctdb-x.y
+   ./configure
+   make
+   make install
+</pre>
 You need to install ctdb on all nodes of your cluster.
 
 
