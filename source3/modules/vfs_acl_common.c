@@ -195,9 +195,21 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 	mode_t dir_mode;
 	mode_t file_mode;
 	mode_t mode;
-	struct security_ace *new_ace_list = talloc_zero_array(talloc_tos(),
-						struct security_ace,
-						num_aces + 3);
+	struct security_ace *new_ace_list;
+
+	if (psd->dacl) {
+		new_ace_list = talloc_zero_array(psd->dacl,
+						 struct security_ace,
+						 num_aces + 3);
+	} else {
+		/*
+		 * make_sec_acl() at the bottom of this function
+		 * dupliates new_ace_list
+		 */
+		new_ace_list = talloc_zero_array(talloc_tos(),
+						 struct security_ace,
+						 num_aces + 3);
+	}
 
 	if (new_ace_list == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -256,7 +268,7 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 		psd->dacl->aces = new_ace_list;
 		psd->dacl->num_aces += 3;
 	} else {
-		psd->dacl = make_sec_acl(talloc_tos(),
+		psd->dacl = make_sec_acl(psd,
 				NT4_ACL_REVISION,
 				3,
 				new_ace_list);
