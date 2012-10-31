@@ -59,6 +59,11 @@ testit "change dc password" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR
 #This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC password is changed
 test_smbclient "Test login with kerberos ccache after password change" 'ls' -k yes || failed=`expr $failed + 1`
 
+testit "change dc password (2nd time)" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+
+#This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC pass
+test_smbclient "Test login with kerberos ccache after 2nd password change" 'ls' -k yes || failed=`expr $failed + 1`
+
 #This confirms that the DC password is valid for a kinit too
 testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.keytab --use-keytab $USERNAME   || failed=`expr $failed + 1`
 test_smbclient "Test login with kerberos ccache with fresh kinit" 'ls' -k yes || failed=`expr $failed + 1`
