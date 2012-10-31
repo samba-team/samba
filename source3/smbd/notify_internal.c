@@ -627,6 +627,7 @@ void notify_trigger(struct notify_context *notify,
 
 	idx_state.mem_ctx = talloc_tos();
 	idx_state.vnns = NULL;
+	idx_state.found_my_vnn = false;
 	idx_state.my_vnn = get_my_vnn();
 
 	for (p = strchr(path+1, '/'); p != NULL; p = next_p) {
@@ -636,18 +637,16 @@ void notify_trigger(struct notify_context *notify,
 		next_p = strchr(p+1, '/');
 		recursive = (next_p != NULL);
 
-		idx_state.found_my_vnn = false;
-
 		dbwrap_parse_record(
 			notify->db_index,
 			make_tdb_data(discard_const_p(uint8_t, path), path_len),
 			notify_trigger_index_parser, &idx_state);
 
-		if (!idx_state.found_my_vnn) {
-			continue;
+		if (idx_state.found_my_vnn) {
+			notify_trigger_local(notify, action, filter,
+					     path, path_len, recursive);
+			idx_state.found_my_vnn = false;
 		}
-		notify_trigger_local(notify, action, filter,
-				     path, path_len, recursive);
 	}
 
 	ctdbd_conn = messaging_ctdbd_connection();
