@@ -849,7 +849,6 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 	char *QueueName = p;
-	fstring share_name;
 	unsigned int uLevel;
 	int count=0;
 	int snum;
@@ -900,7 +899,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 		return(True);
 	}
 
-	snum = find_service(QueueName, share_name);
+	snum = find_service(QueueName);
 	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
 		return False;
 
@@ -1930,13 +1929,12 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	char *p = skip_string(param,tpscnt,netname);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int snum;
-	fstring share_name;
 
 	if (!str1 || !str2 || !netname || !p) {
 		return False;
 	}
 
-	snum = find_service(netname, share_name);
+	snum = find_service(netname);
 	if (snum < 0) {
 		return False;
 	}
@@ -2128,7 +2126,7 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 	pull_ascii_fstring(sharename,data);
-	snum = find_service(sharename, sharename);
+	snum = find_service(sharename);
 	if (snum >= 0) { /* already exists */
 		res = ERRfilexists;
 		goto error_exit;
@@ -4184,7 +4182,6 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	struct pack_desc desc;
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
-	fstring share_name;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -4214,7 +4211,7 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	snum = find_service(name, share_name);
+	snum = find_service(name);
 	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
 		return False;
 	}
@@ -4335,7 +4332,6 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 	char* PrinterName = p;
-	fstring share_name;
 	int uLevel;
 	struct pack_desc desc;
 	int snum;
@@ -4363,7 +4359,7 @@ static bool api_WPrintDestGetInfo(connection_struct *conn, uint16 vuid,
 		return False;
 	}
 
-	snum = find_service(PrinterName, share_name);
+	snum = find_service(PrinterName);
 	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) ) {
 		*rdata_len = 0;
 		desc.errcode = NERR_DestNotFound;

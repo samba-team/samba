@@ -28,7 +28,7 @@ int get_client_fd(void)
 	return -1;
 }
 
-int find_service(const char *service_in, fstring service)
+int find_service(fstring service)
 {
 	return -1;
 }
