@@ -4899,6 +4899,23 @@ static bool lp_load_ex(const char *pszFname,
 			}
 		}
 		lp_do_parameter(-1, "passdb backend", "samba_dsdb");
+
+		lp_do_parameter(-1, "rpc_server:default", "external");
+		lp_do_parameter(-1, "rpc_server:svcctl", "embedded");
+		lp_do_parameter(-1, "rpc_server:srvsvc", "embedded");
+		lp_do_parameter(-1, "rpc_server:eventlog", "embedded");
+		lp_do_parameter(-1, "rpc_server:ntsvcs", "embedded");
+		lp_do_parameter(-1, "rpc_server:winreg", "embedded");
+		lp_do_parameter(-1, "rpc_server:spoolss", "embedded");
+		lp_do_parameter(-1, "rpc_daemon:spoolssd", "embedded");
+		lp_do_parameter(-1, "rpc_server:tcpip", "no");
+
+		lp_do_parameter(-1, "map hidden", "no");
+		lp_do_parameter(-1, "map system", "no");
+		lp_do_parameter(-1, "map readonly", "no");
+		lp_do_parameter(-1, "store dos attributes", "yes");
+		lp_do_parameter(-1, "create mask", "0777");
+		lp_do_parameter(-1, "directory mask", "0777");
 	}
 
 	bAllowIncludeRegistry = true;
