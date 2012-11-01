@@ -8,12 +8,37 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.19 include:
 
-o 
+o  Connection to outbound trusted domain goes offline (bug #9016).
+o  ACL masks incorrectly applied when setting ACLs (bug #9236).
+o  Samba panics if a user specifies an invalid port number (bug #9218).
+
 
 Changes since 3.5.17:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9016: Connection to outbound trusted domain goes offline.
+    * BUG 9117: smbclient can't connect to a Windows 7 server using NTLMv2.
+    * BUG 9213: Bad ASN.1 NegTokenInit packet can cause invalid free.
+    * BUG 9236: ACL masks incorrectly applied when setting ACLs.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8788: libsmb: Initialise ticket to ensure we do not free invalid memory.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 8344: autoconf: Fix --with(out)-sendfile-support option handling.
+    * BUG 8732: Fix compile of krb5 locator on Solaris.
+    * BUG 9172: Add quota support for gfs2.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 9259: lib-addns: Ensure that allocated buffer are pre set to 0.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9218: Samba panics if a user specifies an invalid port number.
 
 
 ######################################################################
