@@ -361,7 +361,6 @@ class cmd_drs_bind(Command):
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         drsuapi_connect(self)
-        samdb_connect(self)
 
         bind_info = drsuapi.DsBindInfoCtr()
         bind_info.length = 28
