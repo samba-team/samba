@@ -221,8 +221,53 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		"supportedSASLMechanisms", 
 		NULL 
 	};
+	unsigned int logon_retries = 0;
+
+	status = ildap_search(conn, "", LDAP_SEARCH_SCOPE_BASE, "", supported_sasl_mech_attrs,
+			      false, NULL, NULL, &sasl_mechs_msgs);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: %s\n",
+			  nt_errstr(status)));
+		goto failed;
+	}
+
+	count = ildap_count_entries(conn, sasl_mechs_msgs);
+	if (count != 1) {
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of replies: %d\n",
+			  count));
+		goto failed;
+	}
+
+	tmp_ctx = talloc_new(conn);
+	if (tmp_ctx == NULL) goto failed;
+
+	search = &sasl_mechs_msgs[0]->r.SearchResultEntry;
+	if (search->num_attributes != 1) {
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of attributes: %d != 1\n",
+			  search->num_attributes));
+		goto failed;
+	}
+
+	sasl_names = talloc_array(tmp_ctx, const char *, search->attributes[0].num_values + 1);
+	if (!sasl_names) {
+		DEBUG(1, ("talloc_arry(char *, %d) failed\n",
+			  count));
+		goto failed;
+	}
+
+	for (i=0; i<search->attributes[0].num_values; i++) {
+		sasl_names[i] = (const char *)search->attributes[0].values[i].data;
+	}
+	sasl_names[i] = NULL;
 
 	gensec_init();
+
+try_logon_again:
+	/*
+	  we loop back here on a logon failure, and re-create the
+	  gensec session. The logon_retries counter ensures we don't
+	  loop forever.
+	 */
 
 	status = gensec_client_start(conn, &conn->gensec,
 				     lpcfg_gensec_settings(conn, lp_ctx));
@@ -266,43 +311,6 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		goto failed;
 	}
 
-	status = ildap_search(conn, "", LDAP_SEARCH_SCOPE_BASE, "", supported_sasl_mech_attrs, 
-			      false, NULL, NULL, &sasl_mechs_msgs);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: %s\n", 
-			  nt_errstr(status)));
-		goto failed;
-	}
-	
-	count = ildap_count_entries(conn, sasl_mechs_msgs);
-	if (count != 1) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of replies: %d\n",
-			  count));
-		goto failed;
-	}
-
-	tmp_ctx = talloc_new(conn);
-	if (tmp_ctx == NULL) goto failed;
-
-	search = &sasl_mechs_msgs[0]->r.SearchResultEntry;
-	if (search->num_attributes != 1) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of attributes: %d != 1\n",
-			  search->num_attributes));
-		goto failed;
-	}
-
-	sasl_names = talloc_array(tmp_ctx, const char *, search->attributes[0].num_values + 1);
-	if (!sasl_names) {
-		DEBUG(1, ("talloc_arry(char *, %d) failed\n",
-			  count));
-		goto failed;
-	}
-		
-	for (i=0; i<search->attributes[0].num_values; i++) {
-		sasl_names[i] = (const char *)search->attributes[0].values[i].data;
-	}
-	sasl_names[i] = NULL;
-	
 	status = gensec_start_mech_by_sasl_list(conn->gensec, sasl_names);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("None of the %d proposed SASL mechs were acceptable: %s\n",
@@ -366,6 +374,40 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 		}
 
 		result = response->r.BindResponse.response.resultcode;
+
+		if (result == LDAP_INVALID_CREDENTIALS) {
+			/*
+			  try a second time on invalid credentials, to
+			  give the user a chance to re-enter the
+			  password and to handle the case where our
+			  kerberos ticket is invalid as the server
+			  password has changed
+			*/
+			const char *principal;
+
+			principal = gensec_get_target_principal(conn->gensec);
+			if (principal == NULL) {
+				const char *hostname = gensec_get_target_hostname(conn->gensec);
+				const char *service  = gensec_get_target_service(conn->gensec);
+				if (hostname != NULL && service != NULL) {
+					principal = talloc_asprintf(tmp_ctx, "%s/%s", service, hostname);
+				}
+			}
+
+			if (cli_credentials_failed_kerberos_login(creds, principal, &logon_retries) ||
+			    cli_credentials_wrong_password(creds)) {
+				/*
+				  destroy our gensec session and loop
+				  back up to the top to retry,
+				  offering the user a chance to enter
+				  new credentials, or get a new ticket
+				  if using kerberos
+				 */
+				talloc_free(conn->gensec);
+				conn->gensec = NULL;
+				goto try_logon_again;
+			}
+		}
 
 		if (result != LDAP_SUCCESS && result != LDAP_SASL_BIND_IN_PROGRESS) {
 			status = ldap_check_response(conn, 
