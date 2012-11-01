@@ -2148,8 +2148,13 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 	if (pkt->ptype == DCERPC_PKT_FAULT) {
 		DEBUG(5,("dcerpc: alter_resp - rpc fault: %s\n",
 			 dcerpc_errstr(state, pkt->u.fault.status)));
-		state->p->last_fault_code = pkt->u.fault.status;
-		tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		if (pkt->u.fault.status == DCERPC_FAULT_ACCESS_DENIED) {
+			state->p->last_fault_code = pkt->u.fault.status;
+			tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
+		} else {
+			state->p->last_fault_code = pkt->u.fault.status;
+			tevent_req_nterror(req, NT_STATUS_NET_WRITE_FAULT);
+		}
 		return;
 	}
 
