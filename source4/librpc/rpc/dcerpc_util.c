@@ -396,7 +396,13 @@ static void continue_auth_auto(struct composite_context *ctx)
 								s->binding);
 		composite_continue(c, sec_conn_req, continue_ntlmssp_connection, c);
 		return;
-	} else if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
+	} else if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE) ||
+		   NT_STATUS_EQUAL(c->status, NT_STATUS_UNSUCCESSFUL)) {
+		/*
+		  try a second time on any error. We don't just do it
+		  on LOGON_FAILURE as some servers will give a
+		  NT_STATUS_UNSUCCESSFUL on a authentication error on RPC
+		 */
 		const char *principal;
 
 		principal = gensec_get_target_principal(s->pipe->conn->security_state.generic_state);
@@ -408,8 +414,9 @@ static void continue_auth_auto(struct composite_context *ctx)
 			}
 		}
 
-		if (cli_credentials_failed_kerberos_login(s->credentials, principal, &s->logon_retries) ||
-		    cli_credentials_wrong_password(s->credentials)) {
+		if ((cli_credentials_failed_kerberos_login(s->credentials, principal, &s->logon_retries) ||
+		     cli_credentials_wrong_password(s->credentials)) &&
+		    s->binding->endpoint != NULL) {
 			/*
 			 * Retry SPNEGO with a better password
 			 * send a request for secondary rpc connection
