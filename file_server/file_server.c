@@ -65,6 +65,8 @@ static const char *generate_smb_conf(struct task_server *task)
 	fdprintf(fd, "map system = no\n");
 	fdprintf(fd, "map readonly = no\n");
 	fdprintf(fd, "store dos attributes = yes\n");
+	fdprintf(fd, "create mask = 0777\n");
+	fdprintf(fd, "directory mask = 0777\n");
 
 	fdprintf(fd, "include = %s\n", lpcfg_configfile(lp_ctx));
 
