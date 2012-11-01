@@ -985,6 +985,7 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 					const char *pdev,
 					NTSTATUS *pstatus);
 connection_struct *make_connection(struct smbd_server_connection *sconn,
+				   NTTIME now,
 				   const char *service_in,
 				   const char *pdev, uint64_t vuid,
 				   NTSTATUS *status);

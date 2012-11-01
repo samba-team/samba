@@ -666,6 +666,7 @@ void reply_tcon(struct smb_request *req)
 	const char *p;
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smbd_server_connection *sconn = req->sconn;
+	NTTIME now = timeval_to_nttime(&req->request_time);
 
 	START_PROFILE(SMBtcon);
 
@@ -695,7 +696,7 @@ void reply_tcon(struct smb_request *req)
 		service = service_buf;
 	}
 
-	conn = make_connection(sconn,service,dev,
+	conn = make_connection(sconn, now, service, dev,
 			       req->vuid,&nt_status);
 	req->conn = conn;
 
@@ -911,7 +912,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		session_key_updated = true;
 	}
 
-	conn = make_connection(sconn, service, client_devicetype,
+	conn = make_connection(sconn, now, service, client_devicetype,
 			       req->vuid, &nt_status);
 	req->conn =conn;
 
