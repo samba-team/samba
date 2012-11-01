@@ -514,6 +514,10 @@ char *safe_strcpy_fn(const char *fn,
 		return NULL;
 	}
 
+	if (src == dest) {
+		return dest;
+	}
+
 #ifdef DEVELOPER
 	clobber_region(fn,line,dest, maxlength+1);
 #endif
