@@ -757,7 +757,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	 *
 	 * Windows also starts with the 1/16th and then grants
 	 * more later. I was only able to trigger higher
-	 * values, when using a verify high credit charge.
+	 * values, when using a very high credit charge.
 	 *
 	 * TODO: scale up depending one load, free memory
 	 *       or other stuff.
