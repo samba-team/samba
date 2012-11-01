@@ -922,13 +922,13 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 ****************************************************************************/
 
 static connection_struct *make_connection_smb1(struct smbd_server_connection *sconn,
+					NTTIME now,
 					int snum, struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
 	struct smbXsrv_tcon *tcon;
 	NTSTATUS status;
-	NTTIME now = 0;
 	struct connection_struct *conn;
 
 	status = smb1srv_tcon_create(sconn->conn, now, &tcon);
@@ -1025,6 +1025,7 @@ connection_struct *make_connection_smb2(struct smbd_server_connection *sconn,
 ****************************************************************************/
 
 connection_struct *make_connection(struct smbd_server_connection *sconn,
+				   NTTIME now,
 				   const char *service_in,
 				   const char *pdev, uint64_t vuid,
 				   NTSTATUS *status)
@@ -1078,7 +1079,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 		}
 		DEBUG(5, ("making a connection to [homes] service "
 			  "created at session setup time\n"));
-		return make_connection_smb1(sconn,
+		return make_connection_smb1(sconn, now,
 					    vuser->homes_snum,
 					    vuser,
 					    dev, status);
@@ -1087,7 +1088,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 			       lp_servicename(talloc_tos(), vuser->homes_snum))) {
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
-		return make_connection_smb1(sconn,
+		return make_connection_smb1(sconn, now,
 					    vuser->homes_snum,
 					    vuser,
 					    dev, status);
@@ -1139,7 +1140,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
-	return make_connection_smb1(sconn, snum, vuser,
+	return make_connection_smb1(sconn, now, snum, vuser,
 				    dev, status);
 }
 
