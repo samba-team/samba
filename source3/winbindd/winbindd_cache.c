@@ -1329,6 +1329,13 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	/*
+	 * We don't use the time element at this moment,
+	 * but we have to consume it, so that we don't
+	 * neet to change the disk format of the cache.
+	 */
+	(void)centry_time(centry);
+
 	/* In the salted case this isn't actually the nt_hash itself,
 	   but the MD5 of the salt + nt_hash. Let the caller
 	   sort this out. It can tell as we only return the cached_salt
