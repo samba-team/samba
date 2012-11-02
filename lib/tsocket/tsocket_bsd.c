@@ -654,12 +654,32 @@ struct tdgram_bsd {
 
 	void *event_ptr;
 	struct tevent_fd *fde;
+	bool optimize_recvfrom;
 
 	void *readable_private;
 	void (*readable_handler)(void *private_data);
 	void *writeable_private;
 	void (*writeable_handler)(void *private_data);
 };
+
+bool tdgram_bsd_optimize_recvfrom(struct tdgram_context *dgram,
+				  bool on)
+{
+	struct tdgram_bsd *bsds =
+		talloc_get_type(_tdgram_context_data(dgram),
+		struct tdgram_bsd);
+	bool old;
+
+	if (bsds == NULL) {
+		/* not a bsd socket */
+		return false;
+	}
+
+	old = bsds->optimize_recvfrom;
+	bsds->optimize_recvfrom = on;
+
+	return old;
+}
 
 static void tdgram_bsd_fde_handler(struct tevent_context *ev,
 				   struct tevent_fd *fde,
@@ -838,14 +858,25 @@ static struct tevent_req *tdgram_bsd_recvfrom_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
+
 	/*
 	 * this is a fast path, not waiting for the
 	 * socket to become explicit readable gains
 	 * about 10%-20% performance in benchmark tests.
 	 */
-	tdgram_bsd_recvfrom_handler(req);
-	if (!tevent_req_is_in_progress(req)) {
-		goto post;
+	if (bsds->optimize_recvfrom) {
+		/*
+		 * We only do the optimization on
+		 * recvfrom if the caller asked for it.
+		 *
+		 * This is needed because in most cases
+		 * we preferr to flush send buffers before
+		 * receiving incoming requests.
+		 */
+		tdgram_bsd_recvfrom_handler(req);
+		if (!tevent_req_is_in_progress(req)) {
+			goto post;
+		}
 	}
 
 	ret = tdgram_bsd_set_readable_handler(bsds, ev,
@@ -1405,12 +1436,32 @@ struct tstream_bsd {
 
 	void *event_ptr;
 	struct tevent_fd *fde;
+	bool optimize_readv;
 
 	void *readable_private;
 	void (*readable_handler)(void *private_data);
 	void *writeable_private;
 	void (*writeable_handler)(void *private_data);
 };
+
+bool tstream_bsd_optimize_readv(struct tstream_context *stream,
+				bool on)
+{
+	struct tstream_bsd *bsds =
+		talloc_get_type(_tstream_context_data(stream),
+		struct tstream_bsd);
+	bool old;
+
+	if (bsds == NULL) {
+		/* not a bsd socket */
+		return false;
+	}
+
+	old = bsds->optimize_readv;
+	bsds->optimize_readv = on;
+
+	return old;
+}
 
 static void tstream_bsd_fde_handler(struct tevent_context *ev,
 				    struct tevent_fd *fde,
@@ -1624,9 +1675,19 @@ static struct tevent_req *tstream_bsd_readv_send(TALLOC_CTX *mem_ctx,
 	 * socket to become explicit readable gains
 	 * about 10%-20% performance in benchmark tests.
 	 */
-	tstream_bsd_readv_handler(req);
-	if (!tevent_req_is_in_progress(req)) {
-		goto post;
+	if (bsds->optimize_readv) {
+		/*
+		 * We only do the optimization on
+		 * readv if the caller asked for it.
+		 *
+		 * This is needed because in most cases
+		 * we preferr to flush send buffers before
+		 * receiving incoming requests.
+		 */
+		tstream_bsd_readv_handler(req);
+		if (!tevent_req_is_in_progress(req)) {
+			goto post;
+		}
 	}
 
 	ret = tstream_bsd_set_readable_handler(bsds, ev,
