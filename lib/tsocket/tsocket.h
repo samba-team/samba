@@ -627,6 +627,27 @@ int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 char *tsocket_address_unix_path(const struct tsocket_address *addr,
 				TALLOC_CTX *mem_ctx);
 
+/**
+ * @brief Request a syscall optimization for tdgram_recvfrom_send()
+ *
+ * This function is only used to reduce the amount of syscalls and
+ * optimize performance. You should only use this if you know
+ * what you're doing.
+ *
+ * The optimization is off by default.
+ *
+ * @param[in]  dgram    The tdgram_context of a bsd socket, if this
+ *                      not a bsd socket the function does nothing.
+ *
+ * @param[in]  on       The boolean value to turn the optimization on and off.
+ *
+ * @return              The old boolean value.
+ *
+ * @see tdgram_recvfrom_send()
+ */
+bool tdgram_bsd_optimize_recvfrom(struct tdgram_context *dgram,
+				  bool on);
+
 #ifdef DOXYGEN
 /**
  * @brief Create a tdgram_context for a ipv4 or ipv6 UDP communication.
@@ -687,6 +708,27 @@ int _tdgram_unix_socket(const struct tsocket_address *local,
 #define tdgram_unix_socket(local, remote, mem_ctx, dgram) \
 	_tdgram_unix_socket(local, remote, mem_ctx, dgram, __location__)
 #endif
+
+/**
+ * @brief Request a syscall optimization for tstream_readv_send()
+ *
+ * This function is only used to reduce the amount of syscalls and
+ * optimize performance. You should only use this if you know
+ * what you're doing.
+ *
+ * The optimization is off by default.
+ *
+ * @param[in]  stream   The tstream_context of a bsd socket, if this
+ *                      not a bsd socket the function does nothing.
+ *
+ * @param[in]  on       The boolean value to turn the optimization on and off.
+ *
+ * @return              The old boolean value.
+ *
+ * @see tstream_readv_send()
+ */
+bool tstream_bsd_optimize_readv(struct tstream_context *stream,
+				bool on);
 
 /**
  * @brief Connect async to a TCP endpoint and create a tstream_context for the
