@@ -759,7 +759,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 	 * more later. I was only able to trigger higher
 	 * values, when using a very high credit charge.
 	 *
-	 * TODO: scale up depending one load, free memory
+	 * TODO: scale up depending on load, free memory
 	 *       or other stuff.
 	 *       Maybe also on the relationship between number
 	 *       of requests and the used sequence number.
