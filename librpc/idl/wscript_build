@@ -12,7 +12,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        drsblobs.idl efs.idl frstrans.idl mgmt.idl netlogon.idl
                        notify.idl
                        policyagent.idl scerpc.idl svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
-                       fsrvp.idl''',
+                       fsrvp.idl witness.idl''',
                     options='--header --ndr-parser --samba3-ndr-server --server --client --python',
                     output_dir='../gen_ndr')
 
