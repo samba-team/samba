@@ -637,6 +637,7 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 static bool vfswrap_init_asys_ctx(struct smbXsrv_connection *conn)
 {
 	int ret;
+	int fd;
 
 	if (conn->asys_ctx != NULL) {
 		return true;
@@ -646,8 +647,12 @@ static bool vfswrap_init_asys_ctx(struct smbXsrv_connection *conn)
 		DEBUG(1, ("asys_context_init failed: %s\n", strerror(ret)));
 		return false;
 	}
-	conn->asys_fde = tevent_add_fd(conn->ev_ctx, conn,
-				       asys_signalfd(conn->asys_ctx),
+
+	fd = asys_signalfd(conn->asys_ctx);
+
+	set_blocking(fd, false);
+
+	conn->asys_fde = tevent_add_fd(conn->ev_ctx, conn, fd,
 				       TEVENT_FD_READ,
 				       vfswrap_asys_finished,
 				       conn->asys_ctx);
@@ -783,24 +788,36 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 		return;
 	}
 
-	res = asys_result(asys_ctx, &ret, &err, &private_data);
-	if (res == ECANCELED) {
-		return;
+	while (true) {
+		res = asys_result(asys_ctx, &ret, &err, &private_data);
+		if (res == EINTR || res == EAGAIN) {
+			return;
+		}
+#ifdef EWOULDBLOCK
+		if (res == EWOULDBLOCK) {
+			return;
+		}
+#endif
+
+		if (res == ECANCELED) {
+			return;
+		}
+
+		if (res != 0) {
+			DEBUG(1, ("asys_result returned %s\n", strerror(res)));
+			return;
+		}
+
+		req = talloc_get_type_abort(private_data, struct tevent_req);
+		state = tevent_req_data(req, struct vfswrap_asys_state);
+
+		talloc_set_destructor(state, NULL);
+
+		state->ret = ret;
+		state->err = err;
+		tevent_req_defer_callback(req, ev);
+		tevent_req_done(req);
 	}
-
-	if (res != 0) {
-		DEBUG(1, ("asys_result returned %s\n", strerror(res)));
-		return;
-	}
-
-	req = talloc_get_type_abort(private_data, struct tevent_req);
-	state = tevent_req_data(req, struct vfswrap_asys_state);
-
-	talloc_set_destructor(state, NULL);
-
-	state->ret = ret;
-	state->err = err;
-	tevent_req_done(req);
 }
 
 static ssize_t vfswrap_asys_ssize_t_recv(struct tevent_req *req, int *err)
