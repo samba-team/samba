@@ -212,6 +212,20 @@ static void tstream_readv_pdu_ask_for_next_vector(struct tevent_req *req)
 	size_t to_read = 0;
 	size_t i;
 	struct tevent_req *subreq;
+	bool optimize = false;
+	bool save_optimize = false;
+
+	if (state->count > 0) {
+		/*
+		 * This is not the first time we asked for a vector,
+		 * which means parts of the pdu already arrived.
+		 *
+		 * In this case it make sense to enable
+		 * a syscall/performance optimization if the
+		 * low level tstream implementation supports it.
+		 */
+		optimize = true;
+	}
 
 	TALLOC_FREE(state->vector);
 	state->count = 0;
@@ -255,11 +269,26 @@ static void tstream_readv_pdu_ask_for_next_vector(struct tevent_req *req)
 		return;
 	}
 
+	if (optimize) {
+		/*
+		 * If the low level stream is a bsd socket
+		 * we will get syscall optimization.
+		 *
+		 * If it is not a bsd socket
+		 * tstream_bsd_optimize_readv() just returns.
+		 */
+		save_optimize = tstream_bsd_optimize_readv(state->caller.stream,
+							   true);
+	}
 	subreq = tstream_readv_send(state,
 				    state->caller.ev,
 				    state->caller.stream,
 				    state->vector,
 				    state->count);
+	if (optimize) {
+		tstream_bsd_optimize_readv(state->caller.stream,
+					   save_optimize);
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
