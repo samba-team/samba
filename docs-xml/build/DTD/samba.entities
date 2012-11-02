@@ -180,7 +180,7 @@ use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</para>
 
 <para>Note that specifying this parameter here will 
-override the <smbconfoption><name>log level</name></smbconfoption> parameter
+override the <smbconfoption name="log level" /> parameter
 in the &smb.conf; file.</para>
 </listitem>
 </varlistentry>'>
@@ -207,7 +207,7 @@ use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</para>
 
 <para>Note that specifying this parameter here will 
-override the <smbconfoption><name>log level</name></smbconfoption> parameter
+override the <smbconfoption name="log level" /> parameter
 in the &smb.conf; file.</para>
 </listitem>
 </varlistentry>'>
@@ -297,11 +297,13 @@ being on a locally connected subnet.
 
 <para>If this parameter is not set then the name resolve order 
 defined in the &smb.conf; file parameter  
-(<smbconfoption><name>name resolve order</name></smbconfoption>) will be used.
+(<smbconfoption name="name resolve order" />) will be used.
 </para>
 
 <para>The default order is lmhosts, host, wins, bcast. Without 
-this parameter or any entry in the <smbconfoption><name>name resolve order</name></smbconfoption> parameter of the &smb.conf; file, the name 
+this parameter or any entry in the
+<smbconfoption name="name resolve order" /> parameter of
+the &smb.conf; file, the name
 resolution methods will be attempted in this order. </para></listitem>
 </varlistentry>'>
 
@@ -310,7 +312,8 @@ resolution methods will be attempted in this order. </para></listitem>
 <term>-n|--netbiosname &lt;primary NetBIOS name&gt;</term>
 <listitem><para>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <smbconfoption><name>netbios name</name></smbconfoption> parameter in the &smb.conf; file. 
+to setting the <smbconfoption name="netbios name" /> parameter in
+the &smb.conf; file.
 However, a command
 line setting will take precedence over settings in
 &smb.conf;.</para></listitem>
