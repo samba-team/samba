@@ -288,6 +288,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 	if (gacl->acl_type != GPFS_ACL_TYPE_NFS4) {
 		DEBUG(10, ("Got non-nfsv4 acl\n"));
 		/* Retry with POSIX ACLs check */
+		talloc_free(gacl);
 		return 1;
 	}
 
