@@ -658,6 +658,9 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
 
  done:
 
+	if (pacl != NULL) {
+		talloc_free(pacl);
+	}
 	if (errno != 0) {
 		TALLOC_FREE(result);
 	}
