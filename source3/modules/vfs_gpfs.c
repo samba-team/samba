@@ -242,6 +242,7 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 		struct gpfs_acl *new_acl = (struct gpfs_acl *)TALLOC_SIZE(
 			mem_ctx, acl->acl_len + sizeof(struct gpfs_acl));
 		if (new_acl == NULL) {
+			talloc_free(acl);
 			errno = ENOMEM;
 			return NULL;
 		}
@@ -250,13 +251,14 @@ static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type
 		new_acl->acl_level = acl->acl_level;
 		new_acl->acl_version = acl->acl_version;
 		new_acl->acl_type = acl->acl_type;
+		talloc_free(acl);
 		acl = new_acl;
 
 		ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT, acl);
 	}
-	if (ret != 0)
-	{
+	if (ret != 0) {
 		DEBUG(8, ("smbd_gpfs_getacl failed with %s\n",strerror(errno)));
+		talloc_free(acl);
 		return NULL;
 	}
 
