@@ -1070,7 +1070,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		if (sid == NULL) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
 			return WERR_OK;
-		} else if (samdb_find_attribute(sam_ctx, result, "objectClass", "domain")) {
+		}
+
+		if (samdb_find_attribute(sam_ctx, result, "objectClass",
+					 "domain")) {
 			/* This can also find a DomainDNSZones entry,
 			 * but it won't have the SID we just
 			 * checked.  */
