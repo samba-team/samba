@@ -379,7 +379,8 @@ static bool b9_parse(struct dlz_bind9_data *state,
 
 	/* we should be at the end of the buffer now */
 	if (strtok_r(NULL, "\t ", &saveptr) != NULL) {
-		state->log(ISC_LOG_ERROR, "samba b9_parse: expected data at end of string for '%s'");
+		state->log(ISC_LOG_ERROR, "samba b9_parse: unexpected data at end of string for '%s'",
+		           rdatastr);
 		return false;
 	}
 
@@ -387,7 +388,7 @@ static bool b9_parse(struct dlz_bind9_data *state,
 }
 
 /*
-  send a resource recond to bind9
+  send a resource record to bind9
  */
 static isc_result_t b9_putrr(struct dlz_bind9_data *state,
 			     void *handle, struct dnsp_DnssrvRpcRecord *rec,
@@ -427,7 +428,7 @@ static isc_result_t b9_putrr(struct dlz_bind9_data *state,
 
 
 /*
-  send a named resource recond to bind9
+  send a named resource record to bind9
  */
 static isc_result_t b9_putnamedrr(struct dlz_bind9_data *state,
 				  void *handle, const char *name,
@@ -1451,7 +1452,7 @@ static bool b9_set_session_info(struct dlz_bind9_data *state, const char *name)
 		return false;
 	}
 
-	/* Do not use client credentials, if we not updating the client specified name */
+	/* Do not use client credentials, if we're not updating the client specified name */
 	if (strcmp(state->update_name, name) != 0) {
 		return true;
 	}
