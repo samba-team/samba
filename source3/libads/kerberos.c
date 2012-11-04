@@ -701,6 +701,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	char *kdc_str = print_kdc_line(mem_ctx, "", pss, kdc_name);
 
 	if (kdc_str == NULL) {
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
