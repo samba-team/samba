@@ -17,8 +17,11 @@
 from wafsamba.tests import TestCase
 
 from wafsamba.samba_abi import (
+    abi_write_vscript,
     normalise_signature,
     )
+
+from cStringIO import StringIO
 
 
 class NormaliseSignatureTests(TestCase):
@@ -51,3 +54,50 @@ class NormaliseSignatureTests(TestCase):
             'uuid = {time_low = 2324192516, time_mid = 7403, time_hi_and_version = 4553, clock_seq = "\\237\\350", node = "\\b\\000+\\020H`"}, if_version = 2',
             normalise_signature('$244 = {uuid = {time_low = 2324192516, time_mid = 7403, time_hi_and_version = 4553, clock_seq = "\\237\\350", node = "\\b\\000+\\020H`"}, if_version = 2}'))
 
+
+class WriteVscriptTests(TestCase):
+
+    def test_one(self):
+        f = StringIO()
+        abi_write_vscript(f, "MYLIB", "1.0", [], {
+            "old": "1.0",
+            "new": "1.0"}, ["*"])
+        self.assertEquals(f.getvalue(), """\
+1.0 {
+\tglobal:
+\t\t*;
+};
+""")
+
+    def test_simple(self):
+        # No restrictions.
+        f = StringIO()
+        abi_write_vscript(f, "MYLIB", "1.0", ["0.1"], {
+            "old": "0.1",
+            "new": "1.0"}, ["*"])
+        self.assertEquals(f.getvalue(), """\
+MYLIB_0.1 {
+\tglobal:
+\t\told;
+};
+
+1.0 {
+\tglobal:
+\t\t*;
+};
+""")
+
+    def test_exclude(self):
+        f = StringIO()
+        abi_write_vscript(f, "MYLIB", "1.0", [], {
+            "exc_old": "0.1",
+            "old": "0.1",
+            "new": "1.0"}, ["!exc_*"])
+        self.assertEquals(f.getvalue(), """\
+1.0 {
+\tglobal:
+\t\t*;
+\tlocal:
+\t\texc_*;
+};
+""")

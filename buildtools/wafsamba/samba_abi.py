@@ -176,7 +176,7 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
         if symver == current_version:
             break
         f.write("%s {\n" % symver)
-        if k in invmap:
+        if k in sorted(invmap.keys()):
             f.write("\tglobal:\n")
             for s in invmap.get(k, []):
                 f.write("\t\t%s;\n" % s);
