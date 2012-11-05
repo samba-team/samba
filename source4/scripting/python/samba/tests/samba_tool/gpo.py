@@ -44,6 +44,16 @@ os.environ["SERVER"])
         self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
         shutil.rmtree(os.path.join(self.tempdir, "policy"))
 
+    def test_show(self):
+        """Show a real GPO, and make sure it passes"""
+        (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"])
+        self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
+
+    def test_aclcheck(self):
+        """Check all the GPOs on the remote server have correct ACLs"""
+        (result, out, err) = self.runsubcmd("gpo", "aclcheck", "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, "Ensuring gpo checked successfully")
+
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
