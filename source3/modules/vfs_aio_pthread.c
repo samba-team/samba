@@ -74,6 +74,7 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 	struct fd_event *sock_event = NULL;
 	int ret = 0;
 	int num_threads;
+	int fd;
 
 	if (pool) {
 		return true;
@@ -85,9 +86,14 @@ static bool init_aio_threadpool(struct vfs_handle_struct *handle)
 		errno = ret;
 		return false;
 	}
+
+	fd = pthreadpool_signal_fd(pool);
+
+	set_blocking(fd, false);
+
 	sock_event = tevent_add_fd(server_event_context(),
 				NULL,
-				pthreadpool_signal_fd(pool),
+				fd,
 				TEVENT_FD_READ,
 				aio_pthread_handle_completion,
 				NULL);
@@ -290,25 +296,43 @@ static void aio_pthread_handle_completion(struct event_context *event_ctx,
 		return;
 	}
 
-	ret = pthreadpool_finished_job(pool, &jobid);
-	if (ret) {
-		smb_panic("aio_pthread_handle_completion");
-		return;
+	while (true) {
+		ret = pthreadpool_finished_job(pool, &jobid);
+
+		if (ret == EINTR || ret == EAGAIN) {
+			return;
+		}
+#ifdef EWOULDBLOCK
+		if (ret == EWOULDBLOCK) {
+			return;
+		}
+#endif
+
+		if (ret == ECANCELED) {
+			return;
+		}
+
+		if (ret) {
+			smb_panic("aio_pthread_handle_completion");
+			return;
+		}
+
+		pd = find_private_data_by_jobid(jobid);
+		if (pd == NULL) {
+			DEBUG(1, ("aio_pthread_handle_completion cannot find "
+				  "jobid %d\n", jobid));
+			return;
+		}
+
+		aio_ex = (struct aio_extra *)
+			pd->aiocb->aio_sigevent.sigev_value.sival_ptr;
+
+		smbd_aio_complete_aio_ex(aio_ex);
+
+		DEBUG(10,("aio_pthread_handle_completion: jobid %d "
+			  "completed\n", jobid ));
+		TALLOC_FREE(aio_ex);
 	}
-
-	pd = find_private_data_by_jobid(jobid);
-	if (pd == NULL) {
-		DEBUG(1, ("aio_pthread_handle_completion cannot find jobid %d\n",
-			  jobid));
-		return;
-	}
-
-	aio_ex = (struct aio_extra *)pd->aiocb->aio_sigevent.sigev_value.sival_ptr;
-	smbd_aio_complete_aio_ex(aio_ex);
-
-	DEBUG(10,("aio_pthread_handle_completion: jobid %d completed\n",
-		jobid ));
-	TALLOC_FREE(aio_ex);
 }
 
 /************************************************************************
