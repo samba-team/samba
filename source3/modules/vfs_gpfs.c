@@ -219,6 +219,79 @@ static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 	}
 }
 
+/*
+ * get the ACL from GPFS, allocated on the specified mem_ctx
+ * internally retries when initial buffer was too small
+ *
+ * caller needs to cast result to either
+ * raw = yes: struct gpfs_opaque_acl
+ * raw = no: struct gpfs_acl
+ *
+ */
+static void *vfs_gpfs_getacl(TALLOC_CTX *mem_ctx,
+			 const char *fname,
+			 const bool raw,
+			 const gpfs_aclType_t type)
+{
+
+	void *aclbuf;
+	size_t size = 512;
+	int ret, flags;
+	unsigned int *len;
+	size_t struct_size;
+
+again:
+
+	aclbuf = talloc_zero_size(mem_ctx, size);
+	if (aclbuf == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	if (raw) {
+		struct gpfs_opaque_acl *buf = (struct gpfs_opaque_acl *) aclbuf;
+		buf->acl_type = type;
+		flags = GPFS_GETACL_NATIVE;
+		len = (unsigned int *) &(buf->acl_buffer_len);
+		struct_size = sizeof(struct gpfs_opaque_acl);
+	} else {
+		struct gpfs_acl *buf = (struct gpfs_acl *) aclbuf;
+		buf->acl_type = type;
+		flags = GPFS_GETACL_STRUCT;
+		len = &(buf->acl_len);
+		struct_size = sizeof(struct gpfs_acl);
+	}
+
+	/* set the length of the buffer as input value */
+	*len = size;
+
+	errno = 0;
+	ret = smbd_gpfs_getacl((char *)fname, flags, aclbuf);
+	if ((ret != 0) && (errno == ENOSPC)) {
+		/*
+		 * get the size needed to accommodate the complete buffer
+		 *
+		 * the value returned only applies to the ACL blob in the
+		 * struct so make sure to also have headroom for the first
+		 * struct members by adding room for the complete struct
+		 * (might be a few bytes too much then)
+		 */
+		size = *len + struct_size;
+		talloc_free(aclbuf);
+		DEBUG(10, ("Increasing ACL buffer size to %zu\n", size));
+		goto again;
+	}
+
+	if (ret != 0) {
+		DEBUG(5, ("smbd_gpfs_getacl failed with %s\n",
+			  strerror(errno)));
+		talloc_free(aclbuf);
+		return NULL;
+	}
+
+	return aclbuf;
+}
+
 static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type)
 {
 	struct gpfs_acl *acl;
