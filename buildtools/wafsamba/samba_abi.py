@@ -152,22 +152,23 @@ def abi_process_file(fname, version, symmap):
             symmap[symname] = version
     f.close()
 
-def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_match):
-    '''write a vscript file for a library in --version-script format
 
-    :param vscript: Path to the vscript file
+def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
+    """Write a vscript file for a library in --version-script format.
+
+    :param f: File-like object to write to
     :param libname: Name of the library, uppercased
     :param current_version: Current version
     :param versions: Versions to consider
     :param symmap: Dictionary mapping symbols -> version
-    :param abi_match: List of symbols considered to be public in the current version
-    '''
+    :param abi_match: List of symbols considered to be public in the current
+        version
+    """
 
     invmap = {}
     for s in symmap:
         invmap.setdefault(symmap[s], []).append(s)
 
-    f = open(vscript, mode='w')
     last_key = ""
     versions = sorted(versions, key=version_key)
     for k in versions:
@@ -197,7 +198,6 @@ def abi_write_vscript(vscript, libname, current_version, versions, symmap, abi_m
     elif abi_match != ["*"]:
         f.write("\tlocal: *;\n")
     f.write("};\n")
-    f.close()
 
 
 def abi_build_vscript(task):
@@ -213,8 +213,12 @@ def abi_build_vscript(task):
         version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
         versions.append(version)
         abi_process_file(fname, version, symmap)
-    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VERSION, versions, symmap,
-                      task.env.ABI_MATCH)
+    f = open(tgt, mode='w')
+    try:
+        abi_write_vscript(f, task.env.LIBNAME, task.env.VERSION, versions,
+            symmap, task.env.ABI_MATCH)
+    finally:
+        f.close()
 
 
 def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None):
