@@ -799,7 +799,7 @@ sub provision($$$$$$$$$)
 
 [sysvol]
 	path = $ctx->{statedir}/sysvol
-	read only = yes
+	read only = no
 
 [netlogon]
 	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
