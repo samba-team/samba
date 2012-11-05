@@ -975,9 +975,9 @@ class cmd_create(Command):
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
             # Create a file system security descriptor
-            domain_sid = self.samdb.get_domain_sid()
+            domain_sid = security.dom_sid(self.samdb.get_domain_sid())
             sddl = dsacl2fsacl(ds_sd, domain_sid)
-            fs_sd = security.descriptor.from_sddl(sddl, security.dom_sid(domain_sid))
+            fs_sd = security.descriptor.from_sddl(sddl, domain_sid)
 
             # Set ACL
             sio = ( security.SECINFO_OWNER |
