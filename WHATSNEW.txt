@@ -1,4 +1,45 @@
                    ==============================
+                   Release Notes for Samba 3.5.20
+			 December 17, 2012
+                   ==============================
+
+
+This is the latest stable release of Samba 3.5.
+
+Major enhancements in Samba 3.5.20 include:
+
+o  
+
+Changes since 3.5.19:
+---------------------
+
+o   Jeremy Allison <jra@samba.org>
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.5 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.5.19
 			  November 5, 2012
                    ==============================
@@ -13,7 +54,7 @@ o  ACL masks incorrectly applied when setting ACLs (bug #9236).
 o  Samba panics if a user specifies an invalid port number (bug #9218).
 
 
-Changes since 3.5.17:
+Changes since 3.5.18:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
@@ -61,8 +102,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.5.18
