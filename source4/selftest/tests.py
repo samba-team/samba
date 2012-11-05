@@ -405,6 +405,13 @@ planpythontestsuite("dc:local", "samba.tests.dcerpc.bare")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.timecmd")
+
+# We run this test against both AD DC implemetnations because it is
+# the only test we have of GPO get/set behaviour, and this involves
+# the file server as well as the LDAP server.
+planpythontestsuite("dc:local", "samba.tests.samba_tool.gpo")
+planpythontestsuite("plugin_s4_dc:local", "samba.tests.samba_tool.gpo")
+
 planpythontestsuite("dc:local", "samba.tests.samba_tool.processes")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.user")
 planpythontestsuite("dc:local", "samba.tests.samba_tool.group")
