@@ -209,7 +209,7 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
         name=name)
 
 
-def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes='', cflags=''):
+def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
     '''define a Heimdal library'''
 
     obj_target = libname + '.objlist'
@@ -221,7 +221,6 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes='', cf
                         source         = source,
                         deps           = deps,
                         includes       = includes,
-                        cflags         = cflags,
                         group          = 'main')
 
     if not SET_TARGET_TYPE(bld, libname, "LIBRARY"):
