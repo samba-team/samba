@@ -101,3 +101,20 @@ MYLIB_0.1 {
 \t\texc_*;
 };
 """)
+
+    def test_excludes_and_includes(self):
+        f = StringIO()
+        abi_write_vscript(f, "MYLIB", "1.0", [], {
+            "pub_foo": "1.0",
+            "exc_bar": "1.0",
+            "other": "1.0"
+            }, ["pub_*", "!exc_*"])
+        self.assertEquals(f.getvalue(), """\
+1.0 {
+\tglobal:
+\t\tpub_*;
+\tlocal:
+\t\texc_*;
+\t\t*;
+};
+""")
