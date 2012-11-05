@@ -191,12 +191,12 @@ def abi_write_vscript(f, libname, current_version, versions, symmap, abi_match):
             f.write("\t\t%s;\n" % x)
     else:
         f.write("\t\t*;\n")
-    if len(local_abi) > 0:
+    if abi_match != ["*"]:
         f.write("\tlocal:\n")
         for x in local_abi:
             f.write("\t\t%s;\n" % x[1:])
-    elif abi_match != ["*"]:
-        f.write("\tlocal: *;\n")
+        if len(global_abi) > 0:
+            f.write("\t\t*;\n")
     f.write("};\n")
 
 
