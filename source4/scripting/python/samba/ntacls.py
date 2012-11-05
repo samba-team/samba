@@ -198,14 +198,13 @@ def ldapmask2filemask(ldm):
     return filemask
 
 
-def dsacl2fsacl(dssddl, domsid):
+def dsacl2fsacl(dssddl, sid):
     """
 
     This function takes an the SDDL representation of a DS
     ACL and return the SDDL representation of this ACL adapted
     for files. It's used for Policy object provision
     """
-    sid = security.dom_sid(domsid)
     ref = security.descriptor.from_sddl(dssddl, sid)
     fdescr = security.descriptor()
     fdescr.owner_sid = ref.owner_sid
