@@ -580,7 +580,6 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 
 static bool smbacl4_fill_ace4(
-	TALLOC_CTX *mem_ctx,
 	const struct smb_filename *filename,
 	smbacl4_vfs_params *params,
 	uid_t ownerUID,
@@ -701,7 +700,6 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 {
 	SMB4ACL_T *theacl;
 	uint32	i;
-	TALLOC_CTX *mem_ctx = talloc_tos();
 	const char *filename = fsp->fsp_name->base_name;
 
 	DEBUG(10, ("smbacl4_win2nfs4 invoked\n"));
@@ -714,7 +712,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 		SMB_ACE4PROP_T	ace_v4;
 		bool	addNewACE = True;
 
-		if (!smbacl4_fill_ace4(mem_ctx, fsp->fsp_name, pparams,
+		if (!smbacl4_fill_ace4(fsp->fsp_name, pparams,
 				       ownerUID, ownerGID,
 				       dacl->aces + i, &ace_v4)) {
 			DEBUG(3, ("Could not fill ace for file %s, SID %s\n",
