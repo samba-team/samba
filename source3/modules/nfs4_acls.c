@@ -161,11 +161,10 @@ SMB4ACL_T *smb_create_smb4acl(void)
 SMB4ACE_T *smb_add_ace4(SMB4ACL_T *theacl, SMB_ACE4PROP_T *prop)
 {
 	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
-	TALLOC_CTX *mem_ctx = talloc_tos();
 	SMB_ACE4_INT_T *ace;
 
 	ace = (SMB_ACE4_INT_T *)TALLOC_ZERO_SIZE(
-		mem_ctx, sizeof(SMB_ACE4_INT_T));
+		theacl, sizeof(SMB_ACE4_INT_T));
 	if (ace==NULL)
 	{
 		DEBUG(0, ("TALLOC_SIZE failed\n"));
