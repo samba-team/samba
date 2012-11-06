@@ -317,6 +317,7 @@ static bool print_tree(struct user_auth_info *user_info)
 						POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
 	poptFreeContext(pc);
+	popt_burn_cmdline_password(argc, argv);
 
 	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();

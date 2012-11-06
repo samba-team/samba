@@ -960,6 +960,7 @@ out_free:
 	}
 
 	poptFreeContext(pc);
+	popt_burn_cmdline_password(argc, argv);
 
 	if (!init_names()) {
 		result = 1;

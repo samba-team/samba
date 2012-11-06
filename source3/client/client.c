@@ -5408,6 +5408,7 @@ static int do_message_op(struct user_auth_info *a_info)
 						       poptGetArg(pc));
 		}
 
+
 		switch (opt) {
 		case 'M':
 			/* Messages are sent to NetBIOS name type 0x3
@@ -5555,6 +5556,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	}
 
 	poptFreeContext(pc);
+	popt_burn_cmdline_password(argc, argv);
 
 	DEBUG(3,("Client started (version %s).\n", samba_version_string()));
 

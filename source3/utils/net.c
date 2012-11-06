@@ -945,6 +945,8 @@ static struct functable net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
+	popt_burn_cmdline_password(argc, argv);
+
 	/* Failing to init the msg_ctx isn't a fatal error. Only
 	   root-level things (joining/leaving domains etc.) will be denied. */
 
