@@ -503,7 +503,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	/* try netsamlogon cache first */
 
-	if (winbindd_use_cache() && (user = netsamlogon_cache_get( mem_ctx, sid )) != NULL )
+	if ( (user = netsamlogon_cache_get( mem_ctx, sid )) != NULL ) 
 	{
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			 sid_string_dbg(sid)));
