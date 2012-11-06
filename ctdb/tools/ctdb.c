@@ -2255,10 +2255,12 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	}
 
 	if (ips->ips[i].pnn == options.pnn) {
-		ret = find_other_host_for_public_ip(ctdb, &addr);
-		if (ret != -1) {
+		int pnn;
+
+		pnn = find_other_host_for_public_ip(ctdb, &addr);
+		if (pnn != -1) {
 			do {
-				ret = move_ip(ctdb, &addr, ret);
+				ret = move_ip(ctdb, &addr, pnn);
 				if (ret != 0) {
 					DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Wait 3 seconds and try again.\n", options.pnn));
 					sleep(3);
