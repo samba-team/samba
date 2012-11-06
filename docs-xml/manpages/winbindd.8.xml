@@ -183,12 +183,14 @@ hosts:		files wins
 
 		<varlistentry>
 		<term>-n</term>
-		<listitem><para>Disable caching. This means winbindd will
-		always have to wait for a response from the domain controller
+		<listitem><para>Disable some caching. This means winbindd will
+		often have to wait for a response from the domain controller
 		before it can respond to a client and this thus makes things
 		slower. The results will however be more accurate, since
 		results from the cache might not be up-to-date. This
 		might also temporarily hang winbindd if the DC doesn't respond.
+		This does not disable the samlogon cache, which is required for
+		group membership tracking in trusted environments.
 		</para></listitem>
 		</varlistentry>
 
