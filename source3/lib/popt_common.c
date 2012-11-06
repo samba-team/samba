@@ -605,6 +605,53 @@ void popt_common_set_auth_info(struct user_auth_info *auth_info)
 	global_auth_info = auth_info;
 }
 
+/**
+ * @brief Burn the commandline password.
+ *
+ * This function removes the password from the command line so we
+ * don't leak the password e.g. in 'ps aux'.
+ *
+ * It should be called after processing the options and you should pass down
+ * argv from main().
+ *
+ * @param[in]  argc     The number of arguments.
+ *
+ * @param[in]  argv[]   The argument array we will find the array.
+ */
+void popt_burn_cmdline_password(int argc, char *argv[])
+{
+	bool found = false;
+	char *p = NULL;
+	int i, ulen = 0;
+
+	for (i = 0; i < argc; i++) {
+		p = argv[i];
+		if (strncmp(p, "-U", 2) == 0) {
+			ulen = 2;
+			found = true;
+		} else if (strncmp(p, "--user", 6) == 0) {
+			ulen = 6;
+			found = true;
+		}
+
+		if (found) {
+			if (p == NULL) {
+				return;
+			}
+
+			if (strlen(p) == ulen) {
+				continue;
+			}
+
+			p = strchr_m(p, '%');
+			if (p != NULL) {
+				memset(p, '\0', strlen(p));
+			}
+			found = false;
+		}
+	}
+}
+
 struct poptOption popt_common_credentials[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE,
 	  (void *)popt_common_credentials_callback, 0,

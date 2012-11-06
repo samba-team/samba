@@ -49,5 +49,6 @@ extern const struct poptOption popt_common_dynconfig[];
 #define POPT_COMMON_OPTION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_option, 0, "Common samba commandline config:", NULL },
 
 void popt_common_set_auth_info(struct user_auth_info *auth_info);
+void popt_burn_cmdline_password(int argc, char *argv[]);
 
 #endif /* _POPT_COMMON_H */
