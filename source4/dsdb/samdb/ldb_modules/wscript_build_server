@@ -205,7 +205,7 @@ bld.SAMBA_MODULE('ldb_secrets_tdb_sync',
 	init_function='ldb_secrets_tdb_sync_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc secrets3 DSDB_MODULE_HELPERS dbwrap'
+	deps='talloc secrets3 DSDB_MODULE_HELPERS dbwrap gssapi'
 	)
 
 
