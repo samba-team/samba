@@ -2,6 +2,7 @@
    A ping-pong fcntl byte range lock test
 
    Copyright (C) Andrew Tridgell 2002
+   Copyright (C) Michael Adam 2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,7 +42,7 @@
 
 static struct timeval tp1,tp2;
 
-static int do_reads, do_writes, use_mmap;
+static int do_reads, do_writes, use_mmap, do_check;
 
 static void start_timer(void)
 {
@@ -67,6 +68,36 @@ static int lock_range(int fd, int offset, int len)
 	lock.l_pid = 0;
 	
 	return fcntl(fd,F_SETLKW,&lock);
+}
+
+/* check whether we could place a lock */
+int check_lock(int fd, int offset, int len)
+{
+	struct flock lock;
+	int ret;
+
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = offset;
+	lock.l_len = len;
+	lock.l_pid = 0;
+
+	ret = fcntl(fd, F_GETLK, &lock);
+	if (ret != 0) {
+		printf("error calling fcntl F_GETLCK: %s\n", strerror(errno));
+		return -1;
+	}
+
+	if (lock.l_type == F_UNLCK) {
+		/* we would be able to place the lock */
+		return 0;
+	}
+
+	/* we would not be able to place lock */
+	printf("check_lock failed: lock held: "
+	       "pid='%d', type='%d', start='%d', len='%d'\n",
+	       (int)lock.l_pid, (int)lock.l_type, (int)lock.l_start, (int)lock.l_len);
+	return 1;
 }
 
 /* unlock a byte range in a open file */
@@ -123,6 +154,9 @@ static void ping_pong(int fd, int num_locks)
 			printf("lock at %d failed! - %s\n",
 			       (i+1) % num_locks, strerror(errno));
 		}
+		if (do_check) {
+			ret = check_lock(fd, i, 1);
+		}
 		if (do_reads) {
 			unsigned char c;
 			if (use_mmap) {
@@ -169,7 +203,7 @@ int main(int argc, char *argv[])
 	int fd, num_locks;
 	int c;
 
-	while ((c = getopt(argc, argv, "rwm")) != -1) {
+	while ((c = getopt(argc, argv, "rwmc")) != -1) {
 		switch (c){
 		case 'w':
 			do_writes = 1;
@@ -179,6 +213,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'm':
 			use_mmap = 1;
+			break;
+		case 'c':
+			do_check = 1;
 			break;
 		default:
 			fprintf(stderr, "Unknown option '%c'\n", c);
@@ -194,6 +231,7 @@ int main(int argc, char *argv[])
 		printf("           -r    do reads\n");
 		printf("           -w    do writes\n");
 		printf("           -m    use mmap\n");
+		printf("           -c    check locks\n");
 		exit(1);
 	}
 
