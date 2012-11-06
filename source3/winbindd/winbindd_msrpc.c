@@ -407,7 +407,7 @@ static NTSTATUS msrpc_query_user(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle dom_pol;
-	struct netr_SamInfo3 *user = NULL;
+	struct netr_SamInfo3 *user;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
@@ -425,9 +425,7 @@ static NTSTATUS msrpc_query_user(struct winbindd_domain *domain,
 	}
 
 	/* try netsamlogon cache first */
-	if (winbindd_use_cache()) {
-		user = netsamlogon_cache_get(tmp_ctx, user_sid);
-	}
+	user = netsamlogon_cache_get(tmp_ctx, user_sid);
 	if (user != NULL) {
 		DEBUG(5,("msrpc_query_user: Cache lookup succeeded for %s\n",
 			sid_string_dbg(user_sid)));

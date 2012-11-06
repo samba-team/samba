@@ -38,10 +38,6 @@ NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 	struct netr_SamInfo3 *info;
 	NTSTATUS status;
 
-	if (!winbindd_use_cache()) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
 	status = wcache_get_creds(domain, mem_ctx, sid, cached_nt_pass, cred_salt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

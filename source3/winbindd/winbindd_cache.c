@@ -1302,10 +1302,6 @@ NTSTATUS wcache_get_creds(struct winbindd_domain *domain,
 	uint32 rid;
 	fstring tmp;
 
-	if (!winbindd_use_cache()) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
 	if (!cache->tdb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
