@@ -3845,7 +3845,7 @@ int dsdb_replace(struct ldb_context *ldb, struct ldb_message *msg, uint32_t dsdb
  */
 int dsdb_search_dn(struct ldb_context *ldb,
 		   TALLOC_CTX *mem_ctx,
-		   struct ldb_result **_res,
+		   struct ldb_result **_result,
 		   struct ldb_dn *basedn,
 		   const char * const *attrs,
 		   uint32_t dsdb_flags)
@@ -3890,7 +3890,7 @@ int dsdb_search_dn(struct ldb_context *ldb,
 		return ret;
 	}
 
-	*_res = res;
+	*_result = res;
 	return LDB_SUCCESS;
 }
 
@@ -3900,7 +3900,7 @@ int dsdb_search_dn(struct ldb_context *ldb,
  */
 int dsdb_search_by_dn_guid(struct ldb_context *ldb,
 			   TALLOC_CTX *mem_ctx,
-			   struct ldb_result **_res,
+			   struct ldb_result **_result,
 			   const struct GUID *guid,
 			   const char * const *attrs,
 			   uint32_t dsdb_flags)
@@ -3915,7 +3915,7 @@ int dsdb_search_by_dn_guid(struct ldb_context *ldb,
 		return ldb_oom(ldb);
 	}
 
-	ret = dsdb_search_dn(ldb, mem_ctx, _res, dn, attrs, dsdb_flags);
+	ret = dsdb_search_dn(ldb, mem_ctx, _result, dn, attrs, dsdb_flags);
 	talloc_free(tmp_ctx);
 	return ret;
 }
@@ -3925,7 +3925,7 @@ int dsdb_search_by_dn_guid(struct ldb_context *ldb,
  */
 int dsdb_search(struct ldb_context *ldb,
 		TALLOC_CTX *mem_ctx,
-		struct ldb_result **_res,
+		struct ldb_result **_result,
 		struct ldb_dn *basedn,
 		enum ldb_scope scope,
 		const char * const *attrs,
@@ -4003,7 +4003,7 @@ int dsdb_search(struct ldb_context *ldb,
 		}
 	}
 
-	*_res = talloc_steal(mem_ctx, res);
+	*_result = talloc_steal(mem_ctx, res);
 	talloc_free(tmp_ctx);
 
 	return LDB_SUCCESS;
