@@ -105,3 +105,4 @@ bench # don't run benchmarks in our selftest
 ^samba4.drs.delete_object.python # flakey test
 ^samba4.rpc.unixinfo # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
+^samba.tests.samba_tool.gpo # This is flakey, but reports an error
