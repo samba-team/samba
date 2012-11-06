@@ -1,6 +1,7 @@
 # simple makefile wrapper to run waf
 
-WAF_BINARY=./buildtools/bin/waf
+PYTHON?=python
+WAF_BINARY=$(PYTHON) ./buildtools/bin/waf
 WAF=WAF_MAKE=1 $(WAF_BINARY)
 
 all:
