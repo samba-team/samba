@@ -395,7 +395,10 @@ static bool test_create_blob(struct torture_context *tctx, struct smb2_tree *tre
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Testing alloc size\n");
-	io.in.alloc_size = 4096;
+	/* FIXME We use 1M cause that's the rounded size of Samba.
+	 * We should ask the server for the cluser size and calulate it
+	 * correctly. */
+	io.in.alloc_size = 0x00100000;
 	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_EQUAL(io.out.alloc_size, io.in.alloc_size);
