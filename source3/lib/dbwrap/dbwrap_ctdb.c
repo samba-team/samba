@@ -836,7 +836,8 @@ again:
 		if (new_seqnum == old_seqnum) {
 			/* Recovery prevented all our changes: retry. */
 			goto again;
-		} else if (new_seqnum != (old_seqnum + 1)) {
+		}
+		if (new_seqnum != (old_seqnum + 1)) {
 			DEBUG(0, (__location__ " ERROR: new_seqnum[%lu] != "
 				  "old_seqnum[%lu] + (0 or 1) after failed "
 				  "TRANS3_COMMIT - this should not happen!\n",
