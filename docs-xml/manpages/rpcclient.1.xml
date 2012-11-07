@@ -430,7 +430,7 @@ Comma Separated list of Files
 	<title>FSRVP</title>
 	<variablelist>
 
-	<varlistentry><term>fss_is_path_sup</term>
+	<varlistentry><term>fss_is_path_sup &lt;share&gt;</term>
 		<listitem>
 			<para>Check whether a share supports shadow-copy
 			requests</para>
@@ -441,29 +441,36 @@ Comma Separated list of Files
 			<para>Get supported FSRVP version from server</para>
 		</listitem>
 	</varlistentry>
-	<varlistentry><term>fss_create_expose</term>
+	<varlistentry><term>fss_create_expose &lt;context&gt; &lt;[ro|rw]&gt;
+					      &lt;share1&gt;
+					      [share2] ... [shareN]</term>
 		<listitem>
-			<para>Request shadow-copy creation and exposure</para>
+			<para>Request shadow-copy creation and exposure as a
+			new share</para>
 		</listitem>
 	</varlistentry>
-	<varlistentry><term>fss_delete</term>
+	<varlistentry><term>fss_delete &lt;base_share&gt;
+				       &lt;shadow_copy_set_id&gt;
+				       &lt;shadow_copy_id&gt;</term>
 		<listitem>
 			<para>Request shadow-copy share deletion</para>
 	</listitem>
 	</varlistentry>
-	<varlistentry><term>fss_has_shadow_copy</term>
+	<varlistentry><term>fss_has_shadow_copy &lt;base_share&gt;</term>
 		<listitem>
 			<para>Check for an associated share shadow-copy</para>
 		</listitem>
 	</varlistentry>
-	<varlistentry><term>fss_get_mapping</term>
+	<varlistentry><term>fss_get_mapping &lt;base_share&gt;
+					    &lt;shadow_copy_set_id&gt;
+					    &lt;shadow_copy_id&gt;</term>
 		<listitem>
 			<para>Get shadow-copy share mapping information</para>
 		</listitem>
 	</varlistentry>
-	<varlistentry><term>fss_recovery_complete</term>
+	<varlistentry><term>fss_recovery_complete &lt;shadow_copy_set_id&gt;</term>
 		<listitem>
-			<para>Flag read-write snapshot as recovery complete,
+			<para>Flag read-write shadow-copy as recovery complete,
 			allowing further shadow-copy requests</para>
 		</listitem>
 	</varlistentry>
