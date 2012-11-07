@@ -370,7 +370,6 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args)
 	int ret;
 	struct smb_filename *smb_fname = NULL;
 	char *fname;
-	int uid, gid;
 	TALLOC_CTX *frame;
 	mode_t saved_umask;
 
