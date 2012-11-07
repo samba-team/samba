@@ -41,6 +41,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('syslog')
     opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
+    opt.SAMBA3_ADD_OPTION('dmapi', default=False, help="build with DMAPI support")
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
 
     opt.SAMBA3_ADD_OPTION('cluster-support', default=None)
@@ -161,6 +162,69 @@ main() {
         exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
 }''', 'HAVE_KERNEL_SHARE_MODES', addmain=False, execute=True,
         msg="Checking for krenel share modes")
+
+    # check for DMAPI libs
+    Logs.info("Checking for DMAPI library existence")
+    conf.env['dmapi_lib'] = ''
+    samba_dmapi_lib = ''
+    if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'dm'):
+        samba_dmapi_lib = 'dm'
+    else:
+        if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'jfsdm'):
+            samba_dmapi_lib = 'jfsdm'
+        else:
+            if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'dmapi'):
+                samba_dmapi_lib = 'dmapi'
+            else:
+                if conf.CHECK_FUNCS_IN('dm_get_eventlist', 'xdsm'):
+                    samba_dmapi_lib = 'xdsm'
+    # only bother to test headers and compilation when a candidate
+    # library has been found
+    if Options.options.with_dmapi == True and samba_dmapi_lib == '':
+        conf.fatal('DMAPI support requested, but no suitable DMAPI library found')
+    else:
+        conf.CHECK_HEADERS('sys/dmi.h xfs/dmapi.h sys/jfsdmapi.h sys/dmapi.h dmapi.h')
+        conf.CHECK_CODE('''
+#include <time.h>      /* needed by Tru64 */
+#include <sys/types.h> /* needed by AIX */
+#ifdef HAVE_XFS_DMAPI_H
+#include <xfs/dmapi.h>
+#elif defined(HAVE_SYS_DMI_H)
+#include <sys/dmi.h>
+#elif defined(HAVE_SYS_JFSDMAPI_H)
+#include <sys/jfsdmapi.h>
+#elif defined(HAVE_SYS_DMAPI_H)
+#include <sys/dmapi.h>
+#elif defined(HAVE_DMAPI_H)
+#include <dmapi.h>
+#endif
+
+/* This link test is designed to fail on IRI 6.4, but should
+ * succeed on Linux, IRIX 6.5 and AIX.
+ */
+int main(int argc, char **argv)
+{
+	char * version;
+	dm_eventset_t events;
+	/* This doesn't take an argument on IRIX 6.4. */
+	dm_init_service(&version);
+	/* IRIX 6.4 expects events to be a pointer. */
+	DMEV_ISSET(DM_EVENT_READ, events);
+
+	return 0;
+}
+''',
+        'USE_DMAPI',
+        addmain=False,
+        execute=False,
+        lib=samba_dmapi_lib,
+        msg='Checking whether DMAPI lib '+samba_dmapi_lib+' can be used')
+
+        if conf.CONFIG_SET('USE_DMAPI'):
+            conf.env['dmapi_lib'] = samba_dmapi_lib
+        else:
+            if Options.options.with_dmapi == True:
+                conf.fatal('DMAPI support requested but not found');
 
     # Check for various members of the stat structure
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_blocks', define='HAVE_STAT_ST_BLOCKS',
