@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.0.  This is *not*
+This is the fifth release candidate of Samba 4.0.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -58,7 +58,7 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
-Samba 4.0.0rc4 ships with two distinct file servers.  We now use the
+Samba 4.0.0rc5 ships with two distinct file servers.  We now use the
 file server from the Samba 3.x series 'smbd' for all file serving by
 default.
 
@@ -162,6 +162,67 @@ smb.conf changes
    winbindd privileged socket directory	New
    winbind sealed pipes			New
    winbindd socket directory		New
+
+
+CHANGES SINCE 4.0.0rc4
+======================
+
+o   Michael Ad:am <obnox@samba.org>
+    * BUG 9321: winbindd:cache: Fix offline logons with cached credentials.
+    * BUG 9339: Build and quota fixes.
+    * BUG 9353: Fix the cluster(ctdb) build without system talloc installed.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9317: Cannot easily change to internal DNS server.
+    * BUG 9338: lib/replace: Return size of xattr if size argument is 0.
+    * BUG 9339: Build and quota fixes.
+    * BUG 9340: Do not use the wheel group for 'administrators'.
+    * BUG 9347: winbind: Extend wbcAuthenticateUserEx to provide PAC.
+    * BUG 9355: Set mask values to 0777 and use fileserver.conf.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9300: vfs_streams_depot: Add delete_lost option.
+    * BUG 9348: Fix the build against older ctdb versions.
+    * BUG 9345: fix use of <smbconfoption> tag.
+    * BUG 9349: Fix check for ctdb_private.h
+    * BUG 9351: Fail "configure --with-cluster-support" if ctdb support is not
+      available.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 9339: Build and quota fixes.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7472: Check for dn_expand also in libinet.
+    * BUG 9339: Build and quota fixes.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9175: Add smbXcli_session_set_disconnect_expired().
+    * BUG 9341: Fix SMBD_SMB2_NUM_IOV_PER_REQ check for sendfile().
+    * BUG 9359: Optimization needed for SMB2 performance sensitive workloads.
+    * BUG 9360: SMB1 tree connect time is wrong.
+
+
+o   Ricky Nance <ricky.nance@weaubleau.k12.mo.us>
+    * BUG 9339: Build and quota fixes.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 9339: Build and quota fixes.
+
+
+o   Christof Schmitt <christof.schmitt@us.ibm.com>
+    * BUG 9347: winbind: Extend wbcAuthenticateUserEx to provide PAC.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9326: Fix 'net ads join' message for the dns domain.
+    * BUG 9336: Add NetworkManager dispatcher script for Winbind.
+    * BUG 9339: Build and quota fixes.
 
 
 CHANGES SINCE 4.0.0rc3
