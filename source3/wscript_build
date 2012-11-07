@@ -980,7 +980,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                     ccan-hash
                     NDR_SMB_ACL
                     netapi
-                    ''',
+                    ''' + bld.env['dmapi_lib'],
                     private_library=True,
                     vars=locals())
 
