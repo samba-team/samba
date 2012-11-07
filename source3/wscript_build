@@ -557,6 +557,7 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
                 lib/tevent_barrier.c
                 torture/test_dbwrap_watch.c
                 torture/test_idmap_tdb_common.c
+                torture/test_dbwrap_ctdb.c
                 torture/t_strappend.c'''
 
 SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}
