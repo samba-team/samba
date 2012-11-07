@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Database interface wrapper around ctdbd
    Copyright (C) Volker Lendecke 2007-2009
@@ -181,15 +181,15 @@ static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
   note that header may be NULL. If not NULL then it is included in the data portion
   of the record
  */
-static struct ctdb_rec_data *db_ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,	
-						  TDB_DATA key, 
+static struct ctdb_rec_data *db_ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32_t reqid,
+						  TDB_DATA key,
 						  struct ctdb_ltdb_header *header,
 						  TDB_DATA data)
 {
 	size_t length;
 	struct ctdb_rec_data *d;
 
-	length = offsetof(struct ctdb_rec_data, data) + key.dsize + 
+	length = offsetof(struct ctdb_rec_data, data) + key.dsize +
 		data.dsize + (header?sizeof(*header):0);
 	d = (struct ctdb_rec_data *)talloc_size(mem_ctx, length);
 	if (d == NULL) {
@@ -212,7 +212,7 @@ static struct ctdb_rec_data *db_ctdb_marshall_record(TALLOC_CTX *mem_ctx, uint32
 
 
 /* helper function for marshalling multiple records */
-static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx, 
+static struct ctdb_marshall_buffer *db_ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_marshall_buffer *m,
 					       uint64_t db_id,
 					       uint32_t reqid,
@@ -267,8 +267,8 @@ static TDB_DATA db_ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
 	return data;
 }
 
-/* 
-   loop over a marshalling buffer 
+/*
+   loop over a marshalling buffer
 
      - pass r==NULL to start
      - loop the number of times indicated by m->count
@@ -353,7 +353,7 @@ static int db_ctdb_transaction_start(struct db_context *db)
 
 	h = talloc_zero(db, struct db_ctdb_transaction_handle);
 	if (h == NULL) {
-		DEBUG(0,(__location__ " oom for transaction handle\n"));		
+		DEBUG(0,(__location__ " oom for transaction handle\n"));
 		return -1;
 	}
 
@@ -592,7 +592,7 @@ static struct db_record *db_ctdb_fetch_locked_persistent(struct db_ctdb_ctx *ctx
 
 	rec = db_ctdb_fetch_locked_transaction(ctx, mem_ctx, key);
 	if (rec == NULL) {
-		ctx->db->transaction_cancel(ctx->db);		
+		ctx->db->transaction_cancel(ctx->db);
 		return NULL;
 	}
 
@@ -677,7 +677,7 @@ static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, 
 	return status;
 }
 
-/* 
+/*
    a record delete inside a transaction
  */
 static NTSTATUS db_ctdb_delete_transaction(struct db_record *rec)
