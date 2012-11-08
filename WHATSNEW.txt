@@ -167,10 +167,14 @@ smb.conf changes
 CHANGES SINCE 4.0.0rc4
 ======================
 
-o   Michael Ad:am <obnox@samba.org>
+o   Michael Adam <obnox@samba.org>
     * BUG 9321: winbindd:cache: Fix offline logons with cached credentials.
     * BUG 9339: Build and quota fixes.
     * BUG 9353: Fix the cluster(ctdb) build without system talloc installed.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9361: Quotas management doesn't work with SMB2/3.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
