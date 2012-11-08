@@ -97,32 +97,46 @@ NTSTATUS dbwrap_store_int32_bystring(struct db_context *db, const char *keystr,
 	return status;
 }
 
+struct dbwrap_fetch_uint32_state {
+	NTSTATUS status;
+	uint32_t result;
+};
+
+static void dbwrap_fetch_uint32_parser(TDB_DATA key, TDB_DATA data,
+				       void *private_data)
+{
+	struct dbwrap_fetch_uint32_state *state =
+		(struct dbwrap_fetch_uint32_state *)private_data;
+
+	if (data.dsize != sizeof(state->result)) {
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+	state->result = IVAL(data.dptr, 0);
+	state->status = NT_STATUS_OK;
+}
+
 NTSTATUS dbwrap_fetch_uint32_bystring(struct db_context *db,
 				      const char *keystr, uint32_t *val)
 {
-	TDB_DATA dbuf;
+	struct dbwrap_fetch_uint32_state state;
 	NTSTATUS status;
 
 	if (val == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dbwrap_fetch_bystring(db, talloc_tos(), keystr, &dbuf);
+	state.status = NT_STATUS_INTERNAL_ERROR;
+
+	status = dbwrap_parse_record(db, string_term_tdb_data(keystr),
+				     dbwrap_fetch_uint32_parser, &state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	if ((dbuf.dptr == NULL) || (dbuf.dsize == 0)) {
-		return NT_STATUS_NOT_FOUND;
+	if (NT_STATUS_IS_OK(state.status)) {
+		*val = state.result;
 	}
-	if (dbuf.dsize != sizeof(uint32_t)) {
-		TALLOC_FREE(dbuf.dptr);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	*val = IVAL(dbuf.dptr, 0);
-	TALLOC_FREE(dbuf.dptr);
-	return NT_STATUS_OK;
+	return state.status;
 }
 
 NTSTATUS dbwrap_store_uint32_bystring(struct db_context *db,
