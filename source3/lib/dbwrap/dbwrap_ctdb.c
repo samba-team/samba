@@ -741,6 +741,19 @@ static NTSTATUS db_ctdb_delete_transaction(struct db_record *rec)
 	return status;
 }
 
+static void db_ctdb_fetch_db_seqnum_parser(
+	TDB_DATA key, struct ctdb_ltdb_header *header,
+	TDB_DATA data, void *private_data)
+{
+	uint64_t *seqnum = (uint64_t *)private_data;
+
+	if (data.dsize != sizeof(uint64_t)) {
+		*seqnum = 0;
+		return;
+	}
+	memcpy(seqnum, data.dptr, sizeof(*seqnum));
+}
+
 /**
  * Fetch the db sequence number of a persistent db directly from the db.
  */
@@ -748,36 +761,24 @@ static NTSTATUS db_ctdb_fetch_db_seqnum_from_db(struct db_ctdb_ctx *db,
 						uint64_t *seqnum)
 {
 	NTSTATUS status;
-	const char *keyname = CTDB_DB_SEQNUM_KEY;
 	TDB_DATA key;
-	TDB_DATA data;
-	struct ctdb_ltdb_header header;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (seqnum == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	key = string_term_tdb_data(keyname);
+	key = string_term_tdb_data(CTDB_DB_SEQNUM_KEY);
 
-	status = db_ctdb_ltdb_fetch(db, key, &header, mem_ctx, &data);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND))
-	{
-		goto done;
+	status = db_ctdb_ltdb_parse(
+		db, key, db_ctdb_fetch_db_seqnum_parser, seqnum);
+
+	if (NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_OK;
 	}
-
-	status = NT_STATUS_OK;
-
-	if (data.dsize != sizeof(uint64_t)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		*seqnum = 0;
-		goto done;
+		return NT_STATUS_OK;
 	}
-
-	*seqnum = *(uint64_t *)data.dptr;
-
-done:
-	TALLOC_FREE(mem_ctx);
 	return status;
 }
 
