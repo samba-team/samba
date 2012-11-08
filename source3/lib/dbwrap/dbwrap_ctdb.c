@@ -88,6 +88,48 @@ static NTSTATUS tdb_error_to_ntstatus(struct tdb_context *tdb)
 	return map_nt_error_from_tdb(tret);
 }
 
+struct db_ctdb_ltdb_parse_state {
+	void (*parser)(TDB_DATA key, struct ctdb_ltdb_header *header,
+		       TDB_DATA data, void *private_data);
+	void *private_data;
+};
+
+static int db_ctdb_ltdb_parser(TDB_DATA key, TDB_DATA data,
+			       void *private_data)
+{
+	struct db_ctdb_ltdb_parse_state *state =
+		(struct db_ctdb_ltdb_parse_state *)private_data;
+
+	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		return -1;
+	}
+	state->parser(
+		key, (struct ctdb_ltdb_header *)data.dptr,
+		make_tdb_data(data.dptr + sizeof(struct ctdb_ltdb_header),
+			      data.dsize - sizeof(struct ctdb_ltdb_header)),
+		state->private_data);
+	return 0;
+}
+
+static NTSTATUS db_ctdb_ltdb_parse(
+	struct db_ctdb_ctx *db, TDB_DATA key,
+	void (*parser)(TDB_DATA key, struct ctdb_ltdb_header *header,
+		       TDB_DATA data, void *private_data),
+	void *private_data)
+{
+	struct db_ctdb_ltdb_parse_state state;
+	int ret;
+
+	state.parser = parser;
+	state.private_data = private_data;
+
+	ret = tdb_parse_record(db->wtdb->tdb, key, db_ctdb_ltdb_parser,
+			       &state);
+	if (ret == -1) {
+		return NT_STATUS_NOT_FOUND;
+	}
+	return NT_STATUS_OK;
+}
 
 /**
  * fetch a record from the tdb, separating out the header
