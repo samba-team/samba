@@ -131,6 +131,39 @@ static NTSTATUS db_ctdb_ltdb_parse(
 	return NT_STATUS_OK;
 }
 
+struct db_ctdb_ltdb_fetch_state {
+	struct ctdb_ltdb_header *header;
+	TALLOC_CTX *mem_ctx;
+	TDB_DATA *data;
+	bool oom;
+};
+
+static void db_ctdb_ltdb_fetch_parser(
+	TDB_DATA key, struct ctdb_ltdb_header *header,
+	TDB_DATA data, void *private_data)
+{
+	struct db_ctdb_ltdb_fetch_state *state =
+		(struct db_ctdb_ltdb_fetch_state *)private_data;
+
+	if (state->header != NULL) {
+		memcpy(state->header, header, sizeof(struct ctdb_ltdb_header));
+	}
+	if (state->data == NULL) {
+		return;
+	}
+	state->data->dsize = data.dsize;
+	if (data.dsize == 0) {
+		state->data->dptr = NULL;
+		return;
+	}
+	state->data->dptr = talloc_memdup(state->mem_ctx, data.dptr,
+					  data.dsize);
+	if (state->data->dptr == NULL) {
+		state->oom = true;
+		return;
+	}
+}
+
 /**
  * fetch a record from the tdb, separating out the header
  * information and returning the body of the record.
@@ -141,12 +174,17 @@ static NTSTATUS db_ctdb_ltdb_fetch(struct db_ctdb_ctx *db,
 				   TALLOC_CTX *mem_ctx,
 				   TDB_DATA *data)
 {
-	TDB_DATA rec;
+	struct db_ctdb_ltdb_fetch_state state;
 	NTSTATUS status;
 
-	rec = tdb_fetch_compat(db->wtdb->tdb, key);
-	if (rec.dsize < sizeof(struct ctdb_ltdb_header)) {
-		status = NT_STATUS_NOT_FOUND;
+	state.header = header;
+	state.mem_ctx = mem_ctx;
+	state.data = data;
+	state.oom = false;
+
+	status = db_ctdb_ltdb_parse(db, key, db_ctdb_ltdb_fetch_parser,
+				    &state);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (data) {
 			ZERO_STRUCTP(data);
 		}
@@ -154,34 +192,12 @@ static NTSTATUS db_ctdb_ltdb_fetch(struct db_ctdb_ctx *db,
 			header->dmaster = (uint32_t)-1;
 			header->rsn = 0;
 		}
-		goto done;
+		return status;
 	}
-
-	if (header) {
-		*header = *(struct ctdb_ltdb_header *)rec.dptr;
+	if (state.oom) {
+		return NT_STATUS_NO_MEMORY;
 	}
-
-	if (data) {
-		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
-		if (data->dsize == 0) {
-			data->dptr = NULL;
-		} else {
-			data->dptr = (unsigned char *)talloc_memdup(mem_ctx,
-					rec.dptr
-					 + sizeof(struct ctdb_ltdb_header),
-					data->dsize);
-			if (data->dptr == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-		}
-	}
-
-	status = NT_STATUS_OK;
-
-done:
-	SAFE_FREE(rec.dptr);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*
