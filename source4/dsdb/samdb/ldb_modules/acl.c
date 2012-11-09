@@ -57,6 +57,8 @@ struct acl_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 	bool am_system;
+	bool modify_search;
+	bool constructed_attrs;
 	bool allowedAttributes;
 	bool allowedAttributesEffective;
 	bool allowedChildClasses;
@@ -88,12 +90,11 @@ static int acl_module_init(struct ldb_module *module)
 		return ldb_operr(ldb);
 	}
 
-	data = talloc(module, struct acl_private);
+	data = talloc_zero(module, struct acl_private);
 	if (data == NULL) {
 		return ldb_oom(ldb);
 	}
 
-	data->password_attrs = NULL;
 	data->acl_perform = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"),
 					 NULL, "acl", "perform", false);
 	ldb_module_set_private(module, data);
@@ -1403,11 +1404,7 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		if (ac->allowedAttributes 
-		    || ac->allowedChildClasses
-		    || ac->allowedChildClassesEffective
-		    || ac->allowedAttributesEffective
-		    || ac->sDRightsEffective) {
+		if (ac->constructed_attrs) {
 			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
 						    acl_attrs,
 						    DSDB_FLAG_NEXT_MODULE |
@@ -1415,44 +1412,65 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
-			if (ac->allowedAttributes || ac->allowedAttributesEffective) {
-				ret = acl_allowedAttributes(ac->module, ac->schema, acl_res->msgs[0], ares->message, ac);
-				if (ret != LDB_SUCCESS) {
-					return ldb_module_done(ac->req, NULL, NULL, ret);
-				}
-			}
-			if (ac->allowedChildClasses) {
-				ret = acl_childClasses(ac->module, ac->schema, acl_res->msgs[0],
-						       ares->message, "allowedChildClasses");
-				if (ret != LDB_SUCCESS) {
-					return ldb_module_done(ac->req, NULL, NULL, ret);
-				}
-			}
-			if (ac->allowedChildClassesEffective) {
-				ret = acl_childClassesEffective(ac->module, ac->schema,
-								acl_res->msgs[0], ares->message, ac);
-				if (ret != LDB_SUCCESS) {
-					return ldb_module_done(ac->req, NULL, NULL, ret);
-				}
-			}
-			if (ac->sDRightsEffective) {
-				ret = acl_sDRightsEffective(ac->module, 
-							    acl_res->msgs[0], ares->message, ac);
-				if (ret != LDB_SUCCESS) {
-					return ldb_module_done(ac->req, NULL, NULL, ret);
-				}
+		}
+
+		if (ac->allowedAttributes || ac->allowedAttributesEffective) {
+			ret = acl_allowedAttributes(ac->module, ac->schema,
+						    acl_res->msgs[0],
+						    ares->message, ac);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
 		}
-		if (data && data->password_attrs) {
-			if (!ac->am_system) {
-				for (i = 0; data->password_attrs[i]; i++) {
-					if ((!ac->userPassword) &&
-					    (ldb_attr_cmp(data->password_attrs[i],
-							  "userPassword") == 0))
-						continue;
 
-					ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
+		if (ac->allowedChildClasses) {
+			ret = acl_childClasses(ac->module, ac->schema,
+					       acl_res->msgs[0],
+					       ares->message,
+					       "allowedChildClasses");
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
+			}
+		}
+
+		if (ac->allowedChildClassesEffective) {
+			ret = acl_childClassesEffective(ac->module, ac->schema,
+							acl_res->msgs[0],
+							ares->message, ac);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
+			}
+		}
+
+		if (ac->sDRightsEffective) {
+			ret = acl_sDRightsEffective(ac->module,
+						    acl_res->msgs[0],
+						    ares->message, ac);
+			if (ret != LDB_SUCCESS) {
+				return ldb_module_done(ac->req, NULL, NULL, ret);
+			}
+		}
+
+		if (data == NULL) {
+			return ldb_module_send_entry(ac->req, ares->message,
+						     ares->controls);
+		}
+
+		if (ac->am_system) {
+			return ldb_module_send_entry(ac->req, ares->message,
+						     ares->controls);
+		}
+
+		if (data->password_attrs != NULL) {
+			for (i = 0; data->password_attrs[i]; i++) {
+				if ((!ac->userPassword) &&
+				    (ldb_attr_cmp(data->password_attrs[i],
+						  "userPassword") == 0))
+				{
+						continue;
 				}
+
+				ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
 			}
 		}
 		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
@@ -1472,6 +1490,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct acl_context *ac;
+	struct ldb_parse_tree *down_tree;
 	struct ldb_request *down_req;
 	struct acl_private *data;
 	int ret;
@@ -1488,6 +1507,8 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->module = module;
 	ac->req = req;
 	ac->am_system = dsdb_module_am_system(module);
+	ac->constructed_attrs = false;
+	ac->modify_search = true;
 	ac->allowedAttributes = ldb_attr_in_list(req->op.search.attrs, "allowedAttributes");
 	ac->allowedAttributesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedAttributesEffective");
 	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
@@ -1496,30 +1517,47 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->userPassword = dsdb_user_password_support(module, ac, req);
 	ac->schema = dsdb_get_schema(ldb, ac);
 
-	/* replace any attributes in the parse tree that are private,
-	   so we don't allow a search for 'userPassword=penguin',
-	   just as we would not allow that attribute to be returned */
-	if (!ac->am_system) {
-		/* FIXME: We should copy the tree and keep the original unmodified. */
-		/* remove password attributes */
-		if (data && data->password_attrs) {
-			for (i = 0; data->password_attrs[i]; i++) {
-				if ((!ac->userPassword) &&
-				    (ldb_attr_cmp(data->password_attrs[i],
-						  "userPassword") == 0))
-						continue;
+	ac->constructed_attrs |= ac->allowedAttributes;
+	ac->constructed_attrs |= ac->allowedChildClasses;
+	ac->constructed_attrs |= ac->allowedChildClassesEffective;
+	ac->constructed_attrs |= ac->allowedAttributesEffective;
+	ac->constructed_attrs |= ac->sDRightsEffective;
 
-				ldb_parse_tree_attr_replace(req->op.search.tree,
-							    data->password_attrs[i],
-							    "kludgeACLredactedattribute");
+	if (data == NULL) {
+		ac->modify_search = false;
+	}
+	if (ac->am_system) {
+		ac->modify_search = false;
+	}
+
+	if (!ac->constructed_attrs && !ac->modify_search) {
+		return ldb_next_request(module, req);
+	}
+
+	down_tree = ldb_parse_tree_copy_shallow(ac, req->op.search.tree);
+	if (down_tree == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	if (!ac->am_system && data->password_attrs) {
+		for (i = 0; data->password_attrs[i]; i++) {
+			if ((!ac->userPassword) &&
+			    (ldb_attr_cmp(data->password_attrs[i],
+					  "userPassword") == 0))
+			{
+				continue;
 			}
+
+			ldb_parse_tree_attr_replace(down_tree,
+						    data->password_attrs[i],
+						    "kludgeACLredactedattribute");
 		}
 	}
 	ret = ldb_build_search_req_ex(&down_req,
 				      ldb, ac,
 				      req->op.search.base,
 				      req->op.search.scope,
-				      req->op.search.tree,
+				      down_tree,
 				      req->op.search.attrs,
 				      req->controls,
 				      ac, acl_search_callback,
