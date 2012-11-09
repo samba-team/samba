@@ -1152,6 +1152,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    struct netr_SamInfo3 **info3)
 {
 	int attempts = 0;
+	int netr_attempts = 0;
 	bool retry = false;
 	NTSTATUS result;
 
@@ -1166,22 +1167,47 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 		result = cm_connect_netlogon(domain, &netlogon_pipe);
 
 		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(3,("could not open handle to NETLOGON pipe (error: %s)\n",
-				  nt_errstr(result)));
-			if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT)) {
-				if (attempts > 0) {
-					DEBUG(3, ("This is the second problem for this "
-						"particular call, forcing the close of "
-						"this connection\n"));
-					invalidate_cm_connection(&domain->conn);
-				} else {
-					DEBUG(3, ("First call to cm_connect_netlogon "
-						"has timed out, retrying\n"));
-					continue;
-				}
+			DEBUG(3,("Could not open handle to NETLOGON pipe "
+				 "(error: %s, attempts: %d)\n",
+				  nt_errstr(result), netr_attempts));
+
+			/* After the first retry always close the connection */
+			if (netr_attempts > 0) {
+				DEBUG(3, ("This is again a problem for this "
+					  "particular call, forcing the close "
+					  "of this connection\n"));
+				invalidate_cm_connection(&domain->conn);
+			}
+
+			/* After the second retry failover to the next DC */
+			if (netr_attempts > 1) {
+				/*
+				 * If the netlogon server is not reachable then
+				 * it is possible that the DC is rebuilding
+				 * sysvol and shutdown netlogon for that time.
+				 * We should failover to the next dc.
+				 */
+				DEBUG(3, ("This is the third problem for this "
+					  "particular call, adding DC to the "
+					  "negative cache list\n"));
+				add_failed_connection_entry(domain->name,
+							    domain->dcname,
+							    result);
+				saf_delete(domain->name);
+			}
+
+			/* Only allow 3 retries */
+			if (netr_attempts < 3) {
+				DEBUG(3, ("The connection to netlogon "
+					  "failed, retrying\n"));
+				netr_attempts++;
+				retry = true;
+				continue;
 			}
 			return result;
 		}
+		netr_attempts = 0;
+
 		auth = netlogon_pipe->auth;
 		if (netlogon_pipe->dc) {
 			neg_flags = netlogon_pipe->dc->negotiate_flags;
