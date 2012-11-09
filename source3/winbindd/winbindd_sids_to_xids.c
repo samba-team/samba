@@ -141,6 +141,7 @@ static bool winbindd_sids_to_xids_in_cache(struct dom_sid *sid,
 	return false;
 }
 
+static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type);
 
 static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 {
@@ -170,20 +171,7 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 		struct lsa_TranslatedName *n = &state->names->names[i];
 		struct wbint_TransID *t = &state->ids.ids[i];
 
-		switch (n->sid_type) {
-		case SID_NAME_USER:
-		case SID_NAME_COMPUTER:
-			t->type = ID_TYPE_UID;
-			break;
-		case SID_NAME_DOM_GRP:
-		case SID_NAME_ALIAS:
-		case SID_NAME_WKN_GRP:
-			t->type = ID_TYPE_GID;
-			break;
-		default:
-			t->type = ID_TYPE_NOT_SPECIFIED;
-			break;
-		};
+		t->type = lsa_SidType_to_id_type(n->sid_type);
 		t->domain_index = n->sid_index;
 		sid_peek_rid(&state->non_cached[i], &t->rid);
 		t->unix_id = (uint64_t)-1;
@@ -199,6 +187,29 @@ static void winbindd_sids_to_xids_lookupsids_done(struct tevent_req *subreq)
 	}
 	tevent_req_set_callback(subreq, winbindd_sids_to_xids_done, req);
 }
+
+static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type)
+{
+	enum id_type type;
+
+	switch(sid_type) {
+	case SID_NAME_COMPUTER:
+	case SID_NAME_USER:
+		type = ID_TYPE_UID;
+		break;
+	case SID_NAME_DOM_GRP:
+	case SID_NAME_ALIAS:
+	case SID_NAME_WKN_GRP:
+		type = ID_TYPE_GID;
+		break;
+	default:
+		type = ID_TYPE_NOT_SPECIFIED;
+		break;
+	}
+
+	return type;
+}
+
 
 static void winbindd_sids_to_xids_done(struct tevent_req *subreq)
 {
