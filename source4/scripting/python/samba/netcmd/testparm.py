@@ -82,7 +82,10 @@ class cmd_testparm(Command):
             raise CommandError("Both a DNS name and an IP address are "
                                "required for the host access check")
 
-        lp = sambaopts.get_loadparm()
+        try:
+            lp = sambaopts.get_loadparm()
+        except RuntimeError, err:
+            raise CommandError(err)
 
         # We need this to force the output
         samba.set_debug_level(2)
