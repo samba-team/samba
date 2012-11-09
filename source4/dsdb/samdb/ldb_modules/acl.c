@@ -1499,7 +1499,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	/* replace any attributes in the parse tree that are private,
 	   so we don't allow a search for 'userPassword=penguin',
 	   just as we would not allow that attribute to be returned */
-	if (ac->am_system) {
+	if (!ac->am_system) {
 		/* FIXME: We should copy the tree and keep the original unmodified. */
 		/* remove password attributes */
 		if (data && data->password_attrs) {
