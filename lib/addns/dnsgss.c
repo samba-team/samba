@@ -175,8 +175,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			 * TODO: Compare id and keyname
 			 */
 			
-			if ((resp->num_additionals != 1) ||
-			    (resp->num_answers == 0) ||
+			if ((resp->num_answers == 0) ||
 			    (resp->answers[0]->type != QTYPE_TKEY)) {
 				err = ERROR_DNS_INVALID_MESSAGE;
 				goto error;
