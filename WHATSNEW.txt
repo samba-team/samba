@@ -174,6 +174,8 @@ o   Michael Adam <obnox@samba.org>
 
 
 o   Christian Ambach <ambi@samba.org>
+    * BUG 9208: Cannot migrate files with inheritance flags to share on top of
+      NFSv4 filesystem.
     * BUG 9361: Quotas management doesn't work with SMB2/3.
 
 
@@ -183,6 +185,7 @@ o   Andrew Bartlett <abartlet@samba.org>
     * BUG 9339: Build and quota fixes.
     * BUG 9340: Do not use the wheel group for 'administrators'.
     * BUG 9347: winbind: Extend wbcAuthenticateUserEx to provide PAC.
+    * BUG 9352: Fix samba crashes with certain RPC calls.
     * BUG 9355: Set mask values to 0777 and use fileserver.conf.
 
 
@@ -202,6 +205,12 @@ o   Ira Cooper <ira@samba.org>
 o   Björn Jacke <bj@sernet.de>
     * BUG 7472: Check for dn_expand also in libinet.
     * BUG 9339: Build and quota fixes.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9208: Cannot migrate files with inheritance flags to share on top of
+      NFSv4 filesystem.
+    * BUG 9352: dsdb: Simplify DsCrackNameOneFilter a bit.
 
 
 o   Stefan Metzmacher <metze@samba.org>
