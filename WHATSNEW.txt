@@ -187,6 +187,7 @@ o   Andrew Bartlett <abartlet@samba.org>
     * BUG 9347: winbind: Extend wbcAuthenticateUserEx to provide PAC.
     * BUG 9352: Fix samba crashes with certain RPC calls.
     * BUG 9355: Set mask values to 0777 and use fileserver.conf.
+    * BUG 9357: Don't expose more symbols than specified by abi_match setting.
 
 
 o   Björn Baumbach <bb@sernet.de>
@@ -236,6 +237,10 @@ o   Andreas Schneider <asn@samba.org>
     * BUG 9326: Fix 'net ads join' message for the dns domain.
     * BUG 9336: Add NetworkManager dispatcher script for Winbind.
     * BUG 9339: Build and quota fixes.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 9357: Don't expose more symbols than specified by abi_match setting.
 
 
 CHANGES SINCE 4.0.0rc3
