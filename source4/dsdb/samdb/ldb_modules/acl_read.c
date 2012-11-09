@@ -154,6 +154,10 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				access_mask = SEC_ADS_READ_PROP;
 			}
 
+			if (attr->searchFlags & SEARCH_FLAG_CONFIDENTIAL) {
+				access_mask |= SEC_ADS_CONTROL_ACCESS;
+			}
+
 			ret = acl_check_access_on_attribute(ac->module,
 							    tmp_ctx,
 							    sd,
