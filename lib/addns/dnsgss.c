@@ -92,7 +92,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 	DNS_ERROR err;
 
 	gss_OID_desc krb5_oid_desc =
-		{ 9, (const char *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02" };
+		{ 9, discard_const("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
 
 	*ctx = GSS_C_NO_CONTEXT;
 	input_ptr = NULL;
@@ -230,7 +230,7 @@ DNS_ERROR dns_negotiate_sec_ctx( const char *target_realm,
 	gss_name_t targ_name;
 
 	gss_OID_desc nt_host_oid_desc =
-		{10, (const char *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01"};
+		{10, discard_const("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01")};
 
 	TALLOC_CTX *mem_ctx;
 
