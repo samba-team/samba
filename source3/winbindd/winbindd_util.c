@@ -1360,6 +1360,15 @@ bool is_domain_online(const struct winbindd_domain *domain)
 	return !is_domain_offline(domain);
 }
 
+/**
+ * Parse an char array into a list of sids.
+ *
+ * The input sidstr should consist of 0-terminated strings
+ * representing sids, separated by newline characters '\n'.
+ * The list is terminated by an empty string, i.e.
+ * character '\0' directly following a character '\n'
+ * (or '\0' right at the start of sidstr).
+ */
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   struct dom_sid **sids, uint32_t *num_sids)
 {
