@@ -1369,7 +1369,11 @@ static bool ensure_canon_entry_valid(connection_struct *conn,
 	for (pace = *pp_ace; pace; pace = pace->next) {
 		if (pace->type == SMB_ACL_USER_OBJ) {
 
-			if (setting_acl && !is_default_acl) {
+			if (setting_acl) {
+				/*
+				 * Ensure we have default parameters for the
+				 * user (owner) even on default ACLs.
+				 */
 				apply_default_perms(params, is_directory, pace, S_IRUSR);
 			}
 			pace_user = pace;
@@ -1452,9 +1456,11 @@ static bool ensure_canon_entry_valid(connection_struct *conn,
 					pace->perms = pace_other->perms;
 			}
 
-			if (!is_default_acl) {
-				apply_default_perms(params, is_directory, pace, S_IRUSR);
-			}
+			/*
+			 * Ensure we have default parameters for the
+			 * user (owner) even on default ACLs.
+			 */
+			apply_default_perms(params, is_directory, pace, S_IRUSR);
 		} else {
 			pace->perms = unix_perms_to_acl_perms(pst->st_ex_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 		}
