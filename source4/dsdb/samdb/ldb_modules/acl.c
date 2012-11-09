@@ -51,12 +51,17 @@ struct extended_access_check_attribute {
 struct acl_private {
 	bool acl_perform;
 	const char **password_attrs;
+	void *cached_schema_ptr;
+	uint64_t cached_schema_metadata_usn;
+	uint64_t cached_schema_loaded_usn;
+	const char **confidential_attrs;
 };
 
 struct acl_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
 	bool am_system;
+	bool am_administrator;
 	bool modify_search;
 	bool constructed_attrs;
 	bool allowedAttributes;
@@ -1377,6 +1382,55 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static int acl_search_update_confidential_attrs(struct acl_context *ac,
+						struct acl_private *data)
+{
+	struct dsdb_attribute *a;
+	uint32_t n = 0;
+
+	if ((ac->schema == data->cached_schema_ptr) &&
+	    (ac->schema->loaded_usn == data->cached_schema_loaded_usn) &&
+	    (ac->schema->metadata_usn == data->cached_schema_metadata_usn))
+	{
+		return LDB_SUCCESS;
+	}
+
+	data->cached_schema_ptr = NULL;
+	data->cached_schema_loaded_usn = 0;
+	data->cached_schema_metadata_usn = 0;
+	TALLOC_FREE(data->confidential_attrs);
+
+	if (ac->schema == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	for (a = ac->schema->attributes; a; a = a->next) {
+		const char **attrs = data->confidential_attrs;
+
+		if (!(a->searchFlags & SEARCH_FLAG_CONFIDENTIAL)) {
+			continue;
+		}
+
+		attrs = talloc_realloc(data, attrs, const char *, n + 2);
+		if (attrs == NULL) {
+			TALLOC_FREE(data->confidential_attrs);
+			return ldb_module_oom(ac->module);
+		}
+
+		attrs[n] = a->lDAPDisplayName;
+		attrs[n+1] = NULL;
+		n++;
+
+		data->confidential_attrs = attrs;
+	}
+
+	data->cached_schema_ptr = ac->schema;
+	data->cached_schema_loaded_usn = ac->schema->loaded_usn;
+	data->cached_schema_metadata_usn = ac->schema->metadata_usn;
+
+	return LDB_SUCCESS;
+}
+
 static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct acl_context *ac;
@@ -1473,6 +1527,24 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 				ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
 			}
 		}
+
+		if (ac->am_administrator) {
+			return ldb_module_send_entry(ac->req, ares->message,
+						     ares->controls);
+		}
+
+		ret = acl_search_update_confidential_attrs(ac, data);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		if (data->confidential_attrs != NULL) {
+			for (i = 0; data->confidential_attrs[i]; i++) {
+				ldb_msg_remove_attr(ares->message,
+						    data->confidential_attrs[i]);
+			}
+		}
+
 		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
@@ -1507,6 +1579,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->module = module;
 	ac->req = req;
 	ac->am_system = dsdb_module_am_system(module);
+	ac->am_administrator = dsdb_module_am_administrator(module);
 	ac->constructed_attrs = false;
 	ac->modify_search = true;
 	ac->allowedAttributes = ldb_attr_in_list(req->op.search.attrs, "allowedAttributes");
@@ -1534,6 +1607,11 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	ret = acl_search_update_confidential_attrs(ac, data);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	down_tree = ldb_parse_tree_copy_shallow(ac, req->op.search.tree);
 	if (down_tree == NULL) {
 		return ldb_oom(ldb);
@@ -1553,6 +1631,15 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 						    "kludgeACLredactedattribute");
 		}
 	}
+
+	if (!ac->am_system && !ac->am_administrator && data->confidential_attrs) {
+		for (i = 0; data->confidential_attrs[i]; i++) {
+			ldb_parse_tree_attr_replace(down_tree,
+						    data->confidential_attrs[i],
+						    "kludgeACLredactedattribute");
+		}
+	}
+
 	ret = ldb_build_search_req_ex(&down_req,
 				      ldb, ac,
 				      req->op.search.base,
