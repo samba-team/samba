@@ -164,6 +164,8 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			struct dns_request *resp;
 			struct dns_buffer *buf;
 			struct dns_tkey_record *tkey;
+			struct dns_rrec *tkey_answer = NULL;
+			uint16_t i;
 
 			err = dns_receive(mem_ctx, conn, &buf);
 			if (!ERR_DNS_IS_OK(err)) goto error;
@@ -174,9 +176,16 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			/*
 			 * TODO: Compare id and keyname
 			 */
-			
-			if ((resp->num_answers == 0) ||
-			    (resp->answers[0]->type != QTYPE_TKEY)) {
+
+			for (i=0; i < resp->num_answers; i++) {
+				if (resp->answers[i]->type != QTYPE_TKEY) {
+					continue;
+				}
+
+				tkey_answer = resp->answers[i];
+			}
+
+			if (tkey_answer == NULL) {
 				err = ERROR_DNS_INVALID_MESSAGE;
 				goto error;
 			}
