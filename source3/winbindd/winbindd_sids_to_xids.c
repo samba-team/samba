@@ -91,6 +91,11 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	/*
+	 * Extract those sids that can not be resolved from cache
+	 * into a separate list to be handed to id mapping, keeping
+	 * the same index.
+	 */
 	for (i=0; i<state->num_sids; i++) {
 
 		DEBUG(10, ("SID %d: %s\n", (int)i,
