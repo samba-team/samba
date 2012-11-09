@@ -62,7 +62,7 @@ class cmd_testparm(Command):
         Option("-v", "--verbose", action="store_true",
                default=False, help="Show default options too"),
         # We need support for smb.conf macros before this will work again
-        Option("--server", type=str, help="Set %%L macro to servername"),
+        Option("--server", type=str, help="Set %L macro to servername"),
         # These are harder to do with the new code structure
         Option("--show-all-parameters", action="store_true", default=False,
                help="Show the parameters, type, possible values")
