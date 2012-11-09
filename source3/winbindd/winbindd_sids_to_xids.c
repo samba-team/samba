@@ -240,62 +240,47 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 
 	for (i=0; i<state->num_sids; i++) {
 		char type = '\0';
-		uint32_t unix_id = UINT32_MAX;
 		bool found = true;
+		struct unixid xid;
+
+		xid.id = UINT32_MAX;
 
 		if (state->cached[i].sid != NULL) {
-			unix_id = state->cached[i].xid.id;
-
-			switch (state->cached[i].xid.type) {
-			case ID_TYPE_UID:
-				type = 'U';
-				break;
-			case ID_TYPE_GID:
-				type = 'G';
-				break;
-			case ID_TYPE_BOTH:
-				type = 'B';
-				break;
-			default:
-				found = false;
-				break;
-			}
+			xid = state->cached[i].xid;
 		} else {
-			struct unixid id;
+			xid.id = state->ids.ids[num_non_cached].unix_id;
+			xid.type = state->ids.ids[num_non_cached].type;
 
-			unix_id = state->ids.ids[num_non_cached].unix_id;
-
-			id.id = unix_id;
-			id.type = state->ids.ids[num_non_cached].type;
 			idmap_cache_set_sid2unixid(
 				&state->non_cached[num_non_cached],
-			        &id);
+				&xid);
 
-			switch (id.type) {
-			case ID_TYPE_UID:
-				type = 'U';
-				break;
-			case ID_TYPE_GID:
-				type = 'G';
-				break;
-			case ID_TYPE_BOTH:
-				type = 'B';
-				break;
-			default:
-				found = false;
-				break;
-			}
 			num_non_cached += 1;
 		}
 
-		if (unix_id == UINT32_MAX) {
+		switch (xid.type) {
+		case ID_TYPE_UID:
+			type = 'U';
+			break;
+		case ID_TYPE_GID:
+			type = 'G';
+			break;
+		case ID_TYPE_BOTH:
+			type = 'B';
+			break;
+		default:
+			found = false;
+			break;
+		}
+
+		if (xid.id == UINT32_MAX) {
 			found = false;
 		}
 
 		if (found) {
 			result = talloc_asprintf_append_buffer(
 				result, "%c%lu\n", type,
-				(unsigned long)unix_id);
+				(unsigned long)xid.id);
 		} else {
 			result = talloc_asprintf_append_buffer(result, "\n");
 		}
