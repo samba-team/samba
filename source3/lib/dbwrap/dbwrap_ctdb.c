@@ -338,43 +338,22 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next_key(
 	return r;
 }
 
-/*
-   loop over a marshalling buffer
-
-     - pass r==NULL to start
-     - loop the number of times indicated by m->count
-*/
-static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
-						     uint32_t *reqid,
-						     struct ctdb_ltdb_header *header,
-						     TDB_DATA *key, TDB_DATA *data)
+static bool db_ctdb_marshall_buf_parse(
+	struct ctdb_rec_data *r, uint32_t *reqid,
+	struct ctdb_ltdb_header **header, TDB_DATA *data)
 {
-	r = db_ctdb_marshall_loop_next_key(m, r, key);
-	if (r == NULL) {
-		return NULL;
+	if (r->datalen < sizeof(struct ctdb_ltdb_header)) {
+		return false;
 	}
 
-	if (reqid != NULL) {
-		*reqid = r->reqid;
-	}
+	*reqid = r->reqid;
 
-	if (data != NULL) {
-		data->dptr  = &r->data[r->keylen];
-		data->dsize = r->datalen;
-		if (header != NULL) {
-			data->dptr += sizeof(*header);
-			data->dsize -= sizeof(*header);
-		}
-	}
+	data->dptr  = &r->data[r->keylen] + sizeof(struct ctdb_ltdb_header);
+	data->dsize = r->datalen - sizeof(struct ctdb_ltdb_header);
 
-	if (header != NULL) {
-		if (r->datalen < sizeof(*header)) {
-			return NULL;
-		}
-		*header = *(struct ctdb_ltdb_header *)&r->data[r->keylen];
-	}
+	*header = (struct ctdb_ltdb_header *)&r->data[r->keylen];
 
-	return r;
+	return true;
 }
 
 /**
@@ -460,17 +439,13 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 					     TDB_DATA *pdata)
 {
 	struct ctdb_rec_data *rec = NULL;
-	struct ctdb_ltdb_header h;
-	bool found = false;
+	struct ctdb_ltdb_header *h = NULL;
 	TDB_DATA data;
 	int i;
 
 	if (buf == NULL) {
 		return false;
 	}
-
-	ZERO_STRUCT(h);
-	ZERO_STRUCT(data);
 
 	/*
 	 * Walk the list of records written during this
@@ -481,26 +456,24 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 	 */
 
 	for (i=0; i<buf->count; i++) {
-		TDB_DATA tkey, tdata;
+		TDB_DATA tkey;
 		uint32_t reqid;
-		struct ctdb_ltdb_header hdr;
 
-		ZERO_STRUCT(hdr);
-
-		rec = db_ctdb_marshall_loop_next(buf, rec, &reqid, &hdr, &tkey,
-						 &tdata);
+		rec = db_ctdb_marshall_loop_next_key(buf, rec, &tkey);
 		if (rec == NULL) {
 			return false;
 		}
 
-		if (tdb_data_equal(key, tkey)) {
-			found = true;
-			data = tdata;
-			h = hdr;
+		if (!tdb_data_equal(key, tkey)) {
+			continue;
+		}
+
+		if (!db_ctdb_marshall_buf_parse(rec, &reqid, &h, &data)) {
+			return false;
 		}
 	}
 
-	if (!found) {
+	if (h == NULL) {
 		return false;
 	}
 
@@ -514,7 +487,7 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 	}
 
 	if (pheader != NULL) {
-		*pheader = h;
+		*pheader = *h;
 	}
 
 	return true;
