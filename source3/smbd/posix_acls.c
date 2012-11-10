@@ -1536,7 +1536,7 @@ static bool ensure_canon_entry_valid(connection_struct *conn,
 				/* Already got one. */
 				got_duplicate_user = true;
 			} else if (pace->type == SMB_ACL_GROUP &&
-					pace->unix_ug.id == pace_user->unix_ug.id) {
+					pace->unix_ug.id == pace_group->unix_ug.id) {
 				/* Already got one. */
 				got_duplicate_group = true;
 			} else if ((pace->type == SMB_ACL_GROUP)
