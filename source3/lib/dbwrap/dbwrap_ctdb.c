@@ -339,10 +339,9 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buf
 		*reqid = r->reqid;
 	}
 
-	if (key != NULL) {
-		key->dptr   = &r->data[0];
-		key->dsize  = r->keylen;
-	}
+	key->dptr   = &r->data[0];
+	key->dsize  = r->keylen;
+
 	if (data != NULL) {
 		data->dptr  = &r->data[r->keylen];
 		data->dsize = r->datalen;
