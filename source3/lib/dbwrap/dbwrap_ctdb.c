@@ -324,10 +324,8 @@ static TDB_DATA db_ctdb_marshall_finish(struct ctdb_marshall_buffer *m)
      - pass r==NULL to start
      - loop the number of times indicated by m->count
 */
-static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
-						     uint32_t *reqid,
-						     struct ctdb_ltdb_header *header,
-						     TDB_DATA *key, TDB_DATA *data)
+static struct ctdb_rec_data *db_ctdb_marshall_loop_next_key(
+	struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r, TDB_DATA *key)
 {
 	if (r == NULL) {
 		r = (struct ctdb_rec_data *)&m->data[0];
@@ -335,12 +333,30 @@ static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buf
 		r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
 	}
 
+	key->dptr   = &r->data[0];
+	key->dsize  = r->keylen;
+	return r;
+}
+
+/*
+   loop over a marshalling buffer
+
+     - pass r==NULL to start
+     - loop the number of times indicated by m->count
+*/
+static struct ctdb_rec_data *db_ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, struct ctdb_rec_data *r,
+						     uint32_t *reqid,
+						     struct ctdb_ltdb_header *header,
+						     TDB_DATA *key, TDB_DATA *data)
+{
+	r = db_ctdb_marshall_loop_next_key(m, r, key);
+	if (r == NULL) {
+		return NULL;
+	}
+
 	if (reqid != NULL) {
 		*reqid = r->reqid;
 	}
-
-	key->dptr   = &r->data[0];
-	key->dsize  = r->keylen;
 
 	if (data != NULL) {
 		data->dptr  = &r->data[r->keylen];
@@ -1438,9 +1454,8 @@ static int db_ctdb_traverse(struct db_context *db,
 
 			for (i=0; i<mbuf->count; i++) {
 				TDB_DATA key;
-				rec =db_ctdb_marshall_loop_next(mbuf, rec,
-								NULL, NULL,
-								&key, NULL);
+				rec = db_ctdb_marshall_loop_next_key(
+					mbuf, rec, &key);
 				SMB_ASSERT(rec != NULL);
 
 				if (!tdb_exists(ltdb, key)) {
