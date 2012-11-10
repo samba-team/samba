@@ -322,7 +322,7 @@ def configure(conf):
     else:
         conf.env.HAVE_LD_VERSION_SCRIPT = False
 
-    if sys.platform == "aix5":
+    if sys.platform == "aix5" or sys.platform == "aix6":
         conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)
         # Might not be needed if ALL_SOURCE is defined
         # conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
