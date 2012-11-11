@@ -1,5 +1,6 @@
 # Unix SMB/CIFS implementation. Tests for ntacls manipulation
 # Copyright (C) Matthieu Patou <mat@matws.net> 2009-2010
+# Copyright (C) Andrew Bartlett 2012
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,70 +21,63 @@
 from samba.ntacls import setntacl, getntacl, XattrBackendError
 from samba.dcerpc import xattr, security
 from samba.param import LoadParm
-from samba.tests import TestCase, TestSkipped
+from samba.tests import TestCaseInTempDir, TestSkipped
 import random
 import os
 
-class NtaclsTests(TestCase):
+class NtaclsTests(TestCaseInTempDir):
 
     def test_setntacl(self):
-        random.seed()
         lp = LoadParm()
-        path = os.environ['SELFTEST_PREFIX']
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        open(tempf, 'w').write("empty")
-        lp.set("posix:eadb",os.path.join(path,"eadbtest.tdb"))
-        setntacl(lp, tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467")
-        os.unlink(tempf)
+        open(self.tempf, 'w').write("empty")
+        lp.set("posix:eadb",os.path.join(self.tempdir,"eadbtest.tdb"))
+        setntacl(lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467")
+        os.unlink(os.path.join(self.tempdir,"eadbtest.tdb"))
 
     def test_setntacl_getntacl(self):
-        random.seed()
         lp = LoadParm()
-        path = None
-        path = os.environ['SELFTEST_PREFIX']
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        open(tempf, 'w').write("empty")
-        lp.set("posix:eadb",os.path.join(path,"eadbtest.tdb"))
-        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467")
-        facl = getntacl(lp,tempf)
+        open(self.tempf, 'w').write("empty")
+        lp.set("posix:eadb",os.path.join(self.tempdir,"eadbtest.tdb"))
+        setntacl(lp,self.tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467")
+        facl = getntacl(lp,self.tempf)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid),acl)
-        os.unlink(tempf)
+        os.unlink(os.path.join(self.tempdir,"eadbtest.tdb"))
 
     def test_setntacl_getntacl_param(self):
-        random.seed()
         lp = LoadParm()
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        open(tempf, 'w').write("empty")
-        setntacl(lp,tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467","tdb",os.path.join(path,"eadbtest.tdb"))
-        facl=getntacl(lp,tempf,"tdb",os.path.join(path,"eadbtest.tdb"))
+        open(self.tempf, 'w').write("empty")
+        setntacl(lp,self.tempf,acl,"S-1-5-21-2212615479-2695158682-2101375467","tdb",os.path.join(self.tempdir,"eadbtest.tdb"))
+        facl=getntacl(lp,self.tempf,"tdb",os.path.join(self.tempdir,"eadbtest.tdb"))
         domsid=security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(domsid),acl)
-        os.unlink(tempf)
+        os.unlink(os.path.join(self.tempdir,"eadbtest.tdb"))
 
     def test_setntacl_invalidbackend(self):
-        random.seed()
         lp = LoadParm()
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        open(tempf, 'w').write("empty")
-        self.assertRaises(XattrBackendError, setntacl, lp, tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467","ttdb", os.path.join(path,"eadbtest.tdb"))
+        open(self.tempf, 'w').write("empty")
+        self.assertRaises(XattrBackendError, setntacl, lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467","ttdb", os.path.join(self.tempdir,"eadbtest.tdb"))
 
     def test_setntacl_forcenative(self):
         if os.getuid() == 0:
             raise TestSkipped("Running test as root, test skipped")
-        random.seed()
         lp = LoadParm()
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
-        path = os.environ['SELFTEST_PREFIX']
-        tempf = os.path.join(path,"pytests"+str(int(100000*random.random())))
-        open(tempf, 'w').write("empty")
-        lp.set("posix:eadb", os.path.join(path,"eadbtest.tdb"))
-        self.assertRaises(Exception, setntacl, lp, tempf ,acl,
+        open(self.tempf, 'w').write("empty")
+        lp.set("posix:eadb", os.path.join(self.tempdir,"eadbtest.tdb"))
+        self.assertRaises(Exception, setntacl, lp, self.tempf ,acl,
             "S-1-5-21-2212615479-2695158682-2101375467","native")
-        os.unlink(tempf)
+
+
+    def setUp(self):
+        super(NtaclsTests, self).setUp()
+        self.tempf = os.path.join(self.tempdir, "test")
+        open(self.tempf, 'w').write("empty")
+
+    def tearDown(self):
+        os.unlink(self.tempf)
+        super(NtaclsTests, self).tearDown()
