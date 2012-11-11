@@ -539,13 +539,14 @@ def get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, user, attr):
                         expression=("(&(objectClass=posixAccount)(uid=%s))"
                         % (user)), attrs=[attr])
     except ldb.LdbError, e:
-        logger.warning("Failed to retrieve attribute %s for user %s, the error is: %s", attr, user, e)
+        raise ProvisioningError("Failed to retrieve attribute %s for user %s, the error is: %s", attr, user, e)
     else:
-        if msg.count == 1:
+        if msg.count <= 1:
+            # This will raise KeyError (which is what we want) if there isn't a entry for this user
             return msg[0][attr][0]
         else:
             logger.warning("LDAP entry for user %s contains more than one %s", user, attr)
-            return None
+            raise KeyError
 
 
 def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
@@ -794,23 +795,29 @@ Please fix this account before attempting to upgrade again
     for entry in userlist:
         username = entry['account_name']
         if username in uids.keys():
-            if ldap:
-                homes[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "homeDirectory")
-                shells[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "loginShell")
-                pgids[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "gidNumber")
-            else:
-                try:
+            try:
+                if ldap:
+                    homes[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "homeDirectory")
+                else:
                     homes[username] = pwd.getpwnam(username).pw_dir
-                except KeyError:
-                    pass
-                try:
+            except KeyError:
+                pass
+
+            try:
+                if ldap:
+                    shells[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "loginShell")
+                else:
                     shells[username] = pwd.getpwnam(username).pw_shell
-                except KeyError:
-                    pass
-                try:
+            except KeyError:
+                pass
+
+            try:
+                if ldap:
+                    pgids[username] = get_posix_attr_from_ldap_backend(logger, ldb_object, base_dn, username, "gidNumber")
+                else:
                     pgids[username] = pwd.getpwnam(username).pw_gid
-                except KeyError:
-                    pass
+            except KeyError:
+                pass
 
     logger.info("Reading WINS database")
     samba3_winsdb = None
