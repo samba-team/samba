@@ -179,7 +179,7 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	mode_t mode = SMB_ACL_READ|SMB_ACL_WRITE;
+	mode_t mode = SMB_ACL_READ|SMB_ACL_WRITE|SMB_ACL_EXECUTE;
 
 	mode_t mode_user = (chmod_mode & 0700) >> 6;
 	mode_t mode_group = (chmod_mode & 070) >> 3;
