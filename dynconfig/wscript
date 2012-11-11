@@ -226,8 +226,8 @@ dynconfig = {
          'DELAY':     True,
     },
     'NTP_SIGND_SOCKET_DIR' : {
-         'STD-PATH':  '${SOCKET_DIR}/ntp_signd',
-         'FHS-PATH':  '${SOCKET_DIR}/ntp_signd',
+         'STD-PATH':  '${PRIVILEGED_SOCKET_DIR}/ntp_signd',
+         'FHS-PATH':  '${PRIVILEGED_SOCKET_DIR}/ntp_signd',
          'DELAY':     True,
     },
     'NCALRPCDIR' : {
