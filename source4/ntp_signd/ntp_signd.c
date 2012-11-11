@@ -498,7 +498,7 @@ static void ntp_signd_task_init(struct task_server *task)
 
 	const char *address;
 
-	if (!directory_create_or_exist(lpcfg_ntp_signd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
+	if (!directory_create_or_exist(lpcfg_ntp_signd_socket_directory(task->lp_ctx), geteuid(), 0750)) {
 		char *error = talloc_asprintf(task, "Cannot create NTP signd pipe directory: %s", 
 					      lpcfg_ntp_signd_socket_directory(task->lp_ctx));
 		task_server_terminate(task,
