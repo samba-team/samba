@@ -246,7 +246,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[2].a_perm, 0)
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_MASK)
-        self.assertEquals(posix_acl.acl[3].a_perm, 6)
+        self.assertEquals(posix_acl.acl[3].a_perm, 7)
 
     def test_setposixacl_group_getposixacl(self):
         lp = LoadParm()
@@ -274,7 +274,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         self.assertEquals(posix_acl.acl[3].info.gid, BA_gid)
 
         self.assertEquals(posix_acl.acl[4].a_type, smb_acl.SMB_ACL_MASK)
-        self.assertEquals(posix_acl.acl[4].a_perm, 6)
+        self.assertEquals(posix_acl.acl[4].a_perm, 7)
 
     def test_setntacl_sysvol_check_getposixacl(self):
         lp = LoadParm()
