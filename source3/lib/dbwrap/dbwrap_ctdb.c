@@ -1224,6 +1224,7 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 struct db_ctdb_parse_record_state {
 	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data);
 	void *private_data;
+	bool done;
 };
 
 static void db_ctdb_parse_record_parser(
@@ -1233,6 +1234,19 @@ static void db_ctdb_parse_record_parser(
 	struct db_ctdb_parse_record_state *state =
 		(struct db_ctdb_parse_record_state *)private_data;
 	state->parser(key, data, state->private_data);
+}
+
+static void db_ctdb_parse_record_parser_nonpersistent(
+	TDB_DATA key, struct ctdb_ltdb_header *header,
+	TDB_DATA data, void *private_data)
+{
+	struct db_ctdb_parse_record_state *state =
+		(struct db_ctdb_parse_record_state *)private_data;
+
+	if (db_ctdb_can_use_local_hdr(header, true)) {
+		state->parser(key, data, state->private_data);
+		state->done = true;
+	}
 }
 
 static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
@@ -1272,6 +1286,14 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		 */
 		return db_ctdb_ltdb_parse(
 			ctx, key, db_ctdb_parse_record_parser, &state);
+	}
+
+	state.done = false;
+
+	status = db_ctdb_ltdb_parse(
+		ctx, key, db_ctdb_parse_record_parser_nonpersistent, &state);
+	if (NT_STATUS_IS_OK(status) && state.done) {
+		return NT_STATUS_OK;
 	}
 
 	status = db_ctdb_fetch(db, talloc_tos(), key, &data);
