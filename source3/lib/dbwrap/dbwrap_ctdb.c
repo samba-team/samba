@@ -1347,14 +1347,58 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+struct db_ctdb_parse_record_state {
+	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data);
+	void *private_data;
+};
+
+static void db_ctdb_parse_record_parser(
+	TDB_DATA key, struct ctdb_ltdb_header *header,
+	TDB_DATA data, void *private_data)
+{
+	struct db_ctdb_parse_record_state *state =
+		(struct db_ctdb_parse_record_state *)private_data;
+	state->parser(key, data, state->private_data);
+}
+
 static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 				     void (*parser)(TDB_DATA key,
 						    TDB_DATA data,
 						    void *private_data),
 				     void *private_data)
 {
+	struct db_ctdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_ctdb_ctx);
+	struct db_ctdb_parse_record_state state;
 	NTSTATUS status;
 	TDB_DATA data;
+
+	state.parser = parser;
+	state.private_data = private_data;
+
+	if (ctx->transaction != NULL) {
+		struct db_ctdb_transaction_handle *h = ctx->transaction;
+		bool found;
+
+		/*
+		 * Transactions only happen for persistent db's.
+		 */
+
+		found = parse_newest_in_marshall_buffer(
+			h->m_write, key, db_ctdb_parse_record_parser, &state);
+
+		if (found) {
+			return NT_STATUS_OK;
+		}
+	}
+
+	if (db->persistent) {
+		/*
+		 * Persistent db, but not found in the transaction buffer
+		 */
+		return db_ctdb_ltdb_parse(
+			ctx, key, db_ctdb_parse_record_parser, &state);
+	}
 
 	status = db_ctdb_fetch(db, talloc_tos(), key, &data);
 	if (!NT_STATUS_IS_OK(status)) {
