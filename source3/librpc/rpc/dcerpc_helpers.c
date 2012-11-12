@@ -113,6 +113,10 @@ NTSTATUS dcerpc_pull_ncacn_packet(TALLOC_CTX *mem_ctx,
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
+	if (CVAL(blob->data, DCERPC_PFC_OFFSET) & DCERPC_PFC_FLAG_OBJECT_UUID) {
+		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+	}
+
 	ndr_err = ndr_pull_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, r);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
