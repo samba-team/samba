@@ -317,10 +317,11 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 	union smb_fileinfo fio;
 	struct smb_private_data *spdata;
 	const char *filename;
-	int sinfo = 0;
+	uint32_t sinfo = 0;
+	int access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	int fnum;
 
-	if (!PyArg_ParseTuple(args, "s|i:get_acl", &filename, &sinfo)) {
+	if (!PyArg_ParseTuple(args, "s|Ii:get_acl", &filename, &sinfo, &access_mask)) {
 		return NULL;
 	}
 
@@ -331,7 +332,7 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
 	io.ntcreatex.in.flags = 0;
-	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.access_mask = access_mask;
 	io.ntcreatex.in.create_options = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ | 

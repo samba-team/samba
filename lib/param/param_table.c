@@ -180,16 +180,6 @@ static const struct enum_list enum_kerberos_method[] = {
 	{-1, NULL}
 };
 
-
-/* ACL compatibility options. */
-static const struct enum_list enum_acl_compat_vals[] = {
-    { ACL_COMPAT_AUTO, "auto" },
-    { ACL_COMPAT_WINNT, "winnt" },
-    { ACL_COMPAT_WIN2K, "win2k" },
-    { -1, NULL}
-};
-
-
 static const struct enum_list enum_printing[] = {
 	{PRINT_SYSV, "sysv"},
 	{PRINT_AIX, "aix"},
@@ -1457,15 +1447,6 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "acl compatibility",
-		.type		= P_ENUM,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(iAclCompat),
-		.special	= NULL,
-		.enum_list	= enum_acl_compat_vals,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
 	},
 	{
 		.label		= "defer sharing violations",
