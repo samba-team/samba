@@ -183,7 +183,11 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 	struct ldb_dn *owner_dn;
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res,
-				    dn, attrs, DSDB_FLAG_NEXT_MODULE|DSDB_SEARCH_SHOW_EXTENDED_DN, parent);
+				    dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_SEARCH_SHOW_EXTENDED_DN,
+				    parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -259,7 +263,10 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		int ret;
 		const char *dns_attrs[] = { "dNSHostName", NULL };
 		ret = dsdb_module_search_dn(module, msg, &res, samdb_server_dn(ldb, msg),
-					    dns_attrs, DSDB_FLAG_NEXT_MODULE, req);
+					    dns_attrs,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_FLAG_AS_SYSTEM,
+					    req);
 		if (ret == LDB_SUCCESS) {
 			const char *hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
 			if (hostname != NULL) {
@@ -486,7 +493,9 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 		ret = dsdb_module_search_dn(module, req, &res,
 					    attr_dn, no_attrs,
-					    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_EXTENDED_DN,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_FLAG_AS_SYSTEM |
+					    DSDB_SEARCH_SHOW_EXTENDED_DN,
 					    req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);
@@ -887,7 +896,10 @@ static int rootdse_init(struct ldb_module *module)
 	*/
 	ret = dsdb_module_search(module, mem_ctx, &res,
 				 ldb_get_default_basedn(ldb),
-				 LDB_SCOPE_BASE, attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
+				 LDB_SCOPE_BASE, attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
+				 NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		int domain_behaviour_version
 			= ldb_msg_find_attr_as_int(res->msgs[0],
@@ -909,7 +921,10 @@ static int rootdse_init(struct ldb_module *module)
 
 	ret = dsdb_module_search(module, mem_ctx, &res,
 				 samdb_partitions_dn(ldb, mem_ctx),
-				 LDB_SCOPE_BASE, attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
+				 LDB_SCOPE_BASE, attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
+				 NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		int forest_behaviour_version
 			= ldb_msg_find_attr_as_int(res->msgs[0],
@@ -933,14 +948,20 @@ static int rootdse_init(struct ldb_module *module)
 	 * the @ROOTDSE record */
 	ret = dsdb_module_search(module, mem_ctx, &res,
 				 ldb_dn_new(mem_ctx, ldb, "@ROOTDSE"),
-				 LDB_SCOPE_BASE, ds_attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
+				 LDB_SCOPE_BASE, ds_attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
+				 NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		struct ldb_dn *ds_dn
 			= ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0],
 						  "dsServiceName");
 		if (ds_dn) {
 			ret = dsdb_module_search(module, mem_ctx, &res, ds_dn,
-						 LDB_SCOPE_BASE, attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
+						 LDB_SCOPE_BASE, attrs,
+						 DSDB_FLAG_NEXT_MODULE |
+						 DSDB_FLAG_AS_SYSTEM,
+						 NULL, NULL);
 			if (ret == LDB_SUCCESS && res->count == 1) {
 				int domain_controller_behaviour_version
 					= ldb_msg_find_attr_as_int(res->msgs[0],
@@ -1033,6 +1054,7 @@ static int dsdb_find_optional_feature(struct ldb_module *module, struct ldb_cont
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
 				 NULL,
 				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
 				 parent,
 				 "(&(objectClass=msDS-OptionalFeature)"
