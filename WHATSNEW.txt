@@ -188,6 +188,7 @@ o   Andrew Bartlett <abartlet@samba.org>
     * BUG 9352: Fix samba crashes with certain RPC calls.
     * BUG 9355: Set mask values to 0777 and use fileserver.conf.
     * BUG 9357: Don't expose more symbols than specified by abi_match setting.
+    * BUG 9379: ntp_signd permissions are too broad.
 
 
 o   Björn Baumbach <bb@sernet.de>
@@ -203,6 +204,16 @@ o   Ira Cooper <ira@samba.org>
     * BUG 9339: Build and quota fixes.
 
 
+o   Günther Deschner <gd@samba.org>
+    * BUG 9272: 'net ads join' does not provide AES keys in host keytab.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9125: Revert "s3-winbindd: make sure we obey the -n switch
+      also for samlogon cache access" and describe samlogon cache caveat for
+      'winbindd -n'.
+
+
 o   Björn Jacke <bj@sernet.de>
     * BUG 7472: Check for dn_expand also in libinet.
     * BUG 9339: Build and quota fixes.
@@ -215,6 +226,7 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8620: Read ACL are not enabled by default on DS.
     * BUG 9175: Add smbXcli_session_set_disconnect_expired().
     * BUG 9341: Fix SMBD_SMB2_NUM_IOV_PER_REQ check for sendfile().
     * BUG 9359: Optimization needed for SMB2 performance sensitive workloads.
