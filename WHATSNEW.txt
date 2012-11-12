@@ -167,6 +167,22 @@ smb.conf changes
 CHANGES SINCE 4.0.0rc4
 ======================
 
+With this release candidate the location of the socket samba accepts
+connections from NTPd has changed, as has the enforced permissions.
+
+This means the ntp.conf will need to change from (eg)
+
+ntpsigndsocket /usr/local/samba/var/run/ntp_signd/
+
+to
+
+ntpsigndsocket /usr/local/samba/var/lib/ntp_signd/
+
+To use the socket with ntp on a system with an ntp user and group, you must
+run:
+
+chgrp ntp /usr/local/samba/var/lib/ntp_signd/
+
 o   Michael Adam <obnox@samba.org>
     * BUG 9321: winbindd:cache: Fix offline logons with cached credentials.
     * BUG 9339: Build and quota fixes.
