@@ -432,11 +432,11 @@ static int db_ctdb_transaction_start(struct db_context *db)
 	return 0;
 }
 
-static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
-					     TDB_DATA key,
-					     struct ctdb_ltdb_header *pheader,
-					     TALLOC_CTX *mem_ctx,
-					     TDB_DATA *pdata)
+static bool parse_newest_in_marshall_buffer(
+	struct ctdb_marshall_buffer *buf, TDB_DATA key,
+	void (*parser)(TDB_DATA key, struct ctdb_ltdb_header *header,
+		       TDB_DATA data, void *private_data),
+	void *private_data)
 {
 	struct ctdb_rec_data *rec = NULL;
 	struct ctdb_ltdb_header *h = NULL;
@@ -477,19 +477,55 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 		return false;
 	}
 
-	if (pdata != NULL) {
-		data.dptr = (uint8_t *)talloc_memdup(mem_ctx, data.dptr,
-						     data.dsize);
-		if ((data.dsize != 0) && (data.dptr == NULL)) {
-			return false;
-		}
-		*pdata = data;
-	}
+	parser(key, h, data, private_data);
 
-	if (pheader != NULL) {
-		*pheader = *h;
-	}
+	return true;
+}
 
+struct pull_newest_from_marshall_buffer_state {
+	struct ctdb_ltdb_header *pheader;
+	TALLOC_CTX *mem_ctx;
+	TDB_DATA *pdata;
+};
+
+static void pull_newest_from_marshall_buffer_parser(
+	TDB_DATA key, struct ctdb_ltdb_header *header,
+	TDB_DATA data, void *private_data)
+{
+	struct pull_newest_from_marshall_buffer_state *state =
+		(struct pull_newest_from_marshall_buffer_state *)private_data;
+
+	if (state->pheader != NULL) {
+		memcpy(state->pheader, header, sizeof(*state->pheader));
+	}
+	if (state->pdata != NULL) {
+		state->pdata->dsize = data.dsize;
+		state->pdata->dptr = (uint8_t *)talloc_memdup(
+			state->mem_ctx, data.dptr, data.dsize);
+	}
+}
+
+static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
+					     TDB_DATA key,
+					     struct ctdb_ltdb_header *pheader,
+					     TALLOC_CTX *mem_ctx,
+					     TDB_DATA *pdata)
+{
+	struct pull_newest_from_marshall_buffer_state state;
+
+	state.pheader = pheader;
+	state.mem_ctx = mem_ctx;
+	state.pdata = pdata;
+
+	if (!parse_newest_in_marshall_buffer(
+		    buf, key, pull_newest_from_marshall_buffer_parser,
+		    &state)) {
+		return false;
+	}
+	if ((pdata != NULL) && (pdata->dsize != 0) && (pdata->dptr == NULL)) {
+		/* ENOMEM */
+		return false;
+	}
 	return true;
 }
 
