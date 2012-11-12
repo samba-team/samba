@@ -46,9 +46,11 @@ os.environ["SERVER"])
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
         (result, out, err) = self.runsubcmd("gpo", "create", self.gpo_name, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
-        self.gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
-
         self.assertCmdSuccess(result, "Ensuring gpo created successfully")
+        try:
+            self.gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
+        except IndexError:
+            self.fail("Failed to find GUID in output: %s" % out)
 
     def tearDown(self):
         """remove the temporary GPO to work with"""
