@@ -1167,63 +1167,10 @@ static struct db_record *db_ctdb_try_fetch_locked(struct db_context *db,
 	return fetch_locked_internal(ctx, mem_ctx, key, true);
 }
 
-/*
-  fetch (unlocked, no migration) operation on ctdb
- */
-static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
-			      TDB_DATA key, TDB_DATA *data)
-{
-	struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
-							struct db_ctdb_ctx);
-	NTSTATUS status;
-	TDB_DATA ctdb_data;
-
-	/* try a direct fetch */
-	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
-
-	/*
-	 * See if we have a valid record and we are the dmaster. If so, we can
-	 * take the shortcut and just return it.
-	 * we bypass the dmaster check for persistent databases
-	 */
-	if (db_ctdb_can_use_local_copy(ctdb_data, true)) {
-		/*
-		 * We have a valid local copy - avoid the ctdb protocol op
-		 */
-		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
-
-		data->dptr = (uint8_t *)talloc_memdup(
-			mem_ctx, ctdb_data.dptr+sizeof(struct ctdb_ltdb_header),
-			data->dsize);
-
-		SAFE_FREE(ctdb_data.dptr);
-
-		if (data->dptr == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		return NT_STATUS_OK;
-	}
-
-	SAFE_FREE(ctdb_data.dptr);
-
-	/*
-	 * We weren't able to get it locally - ask ctdb to fetch it for us.
-	 * If we already had *something*, it's probably worth making a local
-	 * read-only copy.
-	 */
-	status = ctdbd_fetch(messaging_ctdbd_connection(), ctx->db_id, key,
-			     mem_ctx, data,
-			     ctdb_data.dsize >= sizeof(struct ctdb_ltdb_header));
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("ctdbd_fetch failed: %s\n", nt_errstr(status)));
-	}
-
-	return status;
-}
-
 struct db_ctdb_parse_record_state {
 	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data);
 	void *private_data;
+	bool ask_for_readonly_copy;
 	bool done;
 };
 
@@ -1246,6 +1193,13 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 	if (db_ctdb_can_use_local_hdr(header, true)) {
 		state->parser(key, data, state->private_data);
 		state->done = true;
+	} else {
+		/*
+		 * We found something in the db, so it seems that this record,
+		 * while not usable locally right now, is popular. Ask for a
+		 * R/O copy.
+		 */
+		state->ask_for_readonly_copy = true;
 	}
 }
 
@@ -1289,6 +1243,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 	}
 
 	state.done = false;
+	state.ask_for_readonly_copy = false;
 
 	status = db_ctdb_ltdb_parse(
 		ctx, key, db_ctdb_parse_record_parser_nonpersistent, &state);
@@ -1296,7 +1251,8 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_OK;
 	}
 
-	status = db_ctdb_fetch(db, talloc_tos(), key, &data);
+	status = ctdbd_fetch(messaging_ctdbd_connection(), ctx->db_id, key,
+			     talloc_tos(), &data, state.ask_for_readonly_copy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
