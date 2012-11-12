@@ -970,18 +970,9 @@ static int db_ctdb_record_destr(struct db_record* data)
  * Check whether we have a valid local copy of the given record,
  * either for reading or for writing.
  */
-static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
+static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
+				      bool read_only)
 {
-	struct ctdb_ltdb_header *hdr;
-
-	if (ctdb_data.dptr == NULL)
-		return false;
-
-	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header))
-		return false;
-
-	hdr = (struct ctdb_ltdb_header *)ctdb_data.dptr;
-
 #ifdef HAVE_CTDB_WANT_READONLY_DECL
 	if (hdr->dmaster != get_my_vnn()) {
 		/* If we're not dmaster, it must be r/o copy. */
@@ -995,6 +986,18 @@ static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
 #else
 	return (hdr->dmaster == get_my_vnn());
 #endif
+}
+
+static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
+{
+	if (ctdb_data.dptr == NULL)
+		return false;
+
+	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header))
+		return false;
+
+	return db_ctdb_can_use_local_hdr(
+		(struct ctdb_ltdb_header *)ctdb_data.dptr, read_only);
 }
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
