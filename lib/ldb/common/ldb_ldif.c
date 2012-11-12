@@ -333,7 +333,7 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 		
 		if (in_trace && secret_attributes && ldb_attr_in_list(secret_attributes, msg->elements[i].name)) {
 			/* Deliberatly skip printing this password */
-			ret = fprintf_fn(private_data, "# %s::: REDACTED SECRET ATTRIBUTE",
+			ret = fprintf_fn(private_data, "# %s::: REDACTED SECRET ATTRIBUTE\n",
 					 msg->elements[i].name);
 			CHECK_RET;
 			continue;
