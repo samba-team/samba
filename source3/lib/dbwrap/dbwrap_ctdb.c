@@ -131,75 +131,6 @@ static NTSTATUS db_ctdb_ltdb_parse(
 	return NT_STATUS_OK;
 }
 
-struct db_ctdb_ltdb_fetch_state {
-	struct ctdb_ltdb_header *header;
-	TALLOC_CTX *mem_ctx;
-	TDB_DATA *data;
-	bool oom;
-};
-
-static void db_ctdb_ltdb_fetch_parser(
-	TDB_DATA key, struct ctdb_ltdb_header *header,
-	TDB_DATA data, void *private_data)
-{
-	struct db_ctdb_ltdb_fetch_state *state =
-		(struct db_ctdb_ltdb_fetch_state *)private_data;
-
-	if (state->header != NULL) {
-		memcpy(state->header, header, sizeof(struct ctdb_ltdb_header));
-	}
-	if (state->data == NULL) {
-		return;
-	}
-	state->data->dsize = data.dsize;
-	if (data.dsize == 0) {
-		state->data->dptr = NULL;
-		return;
-	}
-	state->data->dptr = talloc_memdup(state->mem_ctx, data.dptr,
-					  data.dsize);
-	if (state->data->dptr == NULL) {
-		state->oom = true;
-		return;
-	}
-}
-
-/**
- * fetch a record from the tdb, separating out the header
- * information and returning the body of the record.
- */
-static NTSTATUS db_ctdb_ltdb_fetch(struct db_ctdb_ctx *db,
-				   TDB_DATA key,
-				   struct ctdb_ltdb_header *header,
-				   TALLOC_CTX *mem_ctx,
-				   TDB_DATA *data)
-{
-	struct db_ctdb_ltdb_fetch_state state;
-	NTSTATUS status;
-
-	state.header = header;
-	state.mem_ctx = mem_ctx;
-	state.data = data;
-	state.oom = false;
-
-	status = db_ctdb_ltdb_parse(db, key, db_ctdb_ltdb_fetch_parser,
-				    &state);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (data) {
-			ZERO_STRUCTP(data);
-		}
-		if (header) {
-			header->dmaster = (uint32_t)-1;
-			header->rsn = 0;
-		}
-		return status;
-	}
-	if (state.oom) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 /*
  * Store a record together with the ctdb record header
  * in the local copy of the database.
@@ -527,58 +458,6 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 		return false;
 	}
 	return true;
-}
-
-/*
-  fetch a record inside a transaction
- */
-static NTSTATUS db_ctdb_transaction_fetch(struct db_ctdb_ctx *db,
-					  TALLOC_CTX *mem_ctx,
-					  TDB_DATA key, TDB_DATA *data)
-{
-	struct db_ctdb_transaction_handle *h = db->transaction;
-	NTSTATUS status;
-	bool found;
-
-	found = pull_newest_from_marshall_buffer(h->m_write, key, NULL,
-						 mem_ctx, data);
-	if (found) {
-		return NT_STATUS_OK;
-	}
-
-	status = db_ctdb_ltdb_fetch(h->ctx, key, NULL, mem_ctx, data);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		*data = tdb_null;
-	}
-
-	return status;
-}
-
-/**
- * Fetch a record from a persistent database
- * without record locking and without an active transaction.
- *
- * This just fetches from the local database copy.
- * Since the databases are kept in syc cluster-wide,
- * there is no point in doing a ctdb call to fetch the
- * record from the lmaster. It does even harm since migration
- * of records bump their RSN and hence render the persistent
- * database inconsistent.
- */
-static NTSTATUS db_ctdb_fetch_persistent(struct db_ctdb_ctx *db,
-					 TALLOC_CTX *mem_ctx,
-					 TDB_DATA key, TDB_DATA *data)
-{
-	NTSTATUS status;
-
-	status = db_ctdb_ltdb_fetch(db, key, NULL, mem_ctx, data);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		*data = tdb_null;
-	}
-
-	return status;
 }
 
 static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, int flag);
@@ -1295,14 +1174,6 @@ static NTSTATUS db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 							struct db_ctdb_ctx);
 	NTSTATUS status;
 	TDB_DATA ctdb_data;
-
-	if (ctx->transaction) {
-		return db_ctdb_transaction_fetch(ctx, mem_ctx, key, data);
-	}
-
-	if (db->persistent) {
-		return db_ctdb_fetch_persistent(ctx, mem_ctx, key, data);
-	}
 
 	/* try a direct fetch */
 	ctdb_data = tdb_fetch_compat(ctx->wtdb->tdb, key);
