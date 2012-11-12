@@ -1059,24 +1059,6 @@ static void merge_aces( canon_ace **pp_list_head, bool dir_acl)
 }
 
 /****************************************************************************
- Check if we need to return NT4.x compatible ACL entries.
-****************************************************************************/
-
-bool nt4_compatible_acls(void)
-{
-	int compat = lp_acl_compatibility();
-
-	if (compat == ACL_COMPAT_AUTO) {
-		enum remote_arch_types ra_type = get_remote_arch();
-
-		/* Automatically adapt to client */
-		return (ra_type <= RA_WINNT);
-	} else
-		return (compat == ACL_COMPAT_WINNT);
-}
-
-
-/****************************************************************************
  Map canon_ace perms to permission bits NT.
  The attr element is not used here - we only process deny entries on set,
  not get. Deny entries are implicit on get with ace->perms = 0.
@@ -1107,10 +1089,7 @@ uint32_t map_canon_ace_perms(int snum,
 		 * to be changed in the future.
 		 */
 
-		if (nt4_compatible_acls())
-			nt_mask = UNIX_ACCESS_NONE;
-		else
-			nt_mask = 0;
+		nt_mask = 0;
 	} else {
 		if (directory_ace) {
 			nt_mask |= ((perms & S_IRUSR) ? UNIX_DIRECTORY_ACCESS_R : 0 );
@@ -1953,26 +1932,6 @@ static bool create_canon_ace_lists(files_struct *fsp,
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
 			DEBUG(3,("create_canon_ace_lists: unable to set anything but an ALLOW or DENY ACE.\n"));
 			return False;
-		}
-
-		if (nt4_compatible_acls()) {
-			/*
-			 * The security mask may be UNIX_ACCESS_NONE which should map into
-			 * no permissions (we overload the WRITE_OWNER bit for this) or it
-			 * should be one of the ALL/EXECUTE/READ/WRITE bits. Arrange for this
-			 * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
-			 */
-
-			/*
-			 * Convert GENERIC bits to specific bits.
-			 */
- 
-			se_map_generic(&psa->access_mask, &file_generic_mapping);
-
-			psa->access_mask &= (UNIX_ACCESS_NONE|FILE_ALL_ACCESS);
-
-			if(psa->access_mask != UNIX_ACCESS_NONE)
-				psa->access_mask &= ~UNIX_ACCESS_NONE;
 		}
 	}
 
@@ -3164,22 +3123,6 @@ static bool set_canon_ace_list(files_struct *fsp,
 }
 
 /****************************************************************************
- Find a particular canon_ace entry.
-****************************************************************************/
-
-static struct canon_ace *canon_ace_entry_for(struct canon_ace *list, SMB_ACL_TAG_T type, struct unixid *id)
-{
-	while (list) {
-		if (list->type == type && ((type != SMB_ACL_USER && type != SMB_ACL_GROUP) ||
-				(type == SMB_ACL_USER  && id && id->id == list->unix_ug.id) ||
-				(type == SMB_ACL_GROUP && id && id->id == list->unix_ug.id)))
-			break;
-		list = list->next;
-	}
-	return list;
-}
-
-/****************************************************************************
  
 ****************************************************************************/
 
@@ -3460,55 +3403,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 		{
 			canon_ace *ace;
 			enum security_ace_type nt_acl_type;
-
-			if (nt4_compatible_acls() && dir_ace) {
-				/*
-				 * NT 4 chokes if an ACL contains an INHERIT_ONLY entry
-				 * but no non-INHERIT_ONLY entry for one SID. So we only
-				 * remove entries from the Access ACL if the
-				 * corresponding Default ACL entries have also been
-				 * removed. ACEs for CREATOR-OWNER and CREATOR-GROUP
-				 * are exceptions. We can do nothing
-				 * intelligent if the Default ACL contains entries that
-				 * are not also contained in the Access ACL, so this
-				 * case will still fail under NT 4.
-				 */
-
-				ace = canon_ace_entry_for(dir_ace, SMB_ACL_OTHER, NULL);
-				if (ace && !ace->perms) {
-					DLIST_REMOVE(dir_ace, ace);
-					TALLOC_FREE(ace);
-
-					ace = canon_ace_entry_for(file_ace, SMB_ACL_OTHER, NULL);
-					if (ace && !ace->perms) {
-						DLIST_REMOVE(file_ace, ace);
-						TALLOC_FREE(ace);
-					}
-				}
-
-				/*
-				 * WinNT doesn't usually have Creator Group
-				 * in browse lists, so we send this entry to
-				 * WinNT even if it contains no relevant
-				 * permissions. Once we can add
-				 * Creator Group to browse lists we can
-				 * re-enable this.
-				 */
-
-#if 0
-				ace = canon_ace_entry_for(dir_ace, SMB_ACL_GROUP_OBJ, NULL);
-				if (ace && !ace->perms) {
-					DLIST_REMOVE(dir_ace, ace);
-					TALLOC_FREE(ace);
-				}
-#endif
-
-				ace = canon_ace_entry_for(file_ace, SMB_ACL_GROUP_OBJ, NULL);
-				if (ace && !ace->perms) {
-					DLIST_REMOVE(file_ace, ace);
-					TALLOC_FREE(ace);
-				}
-			}
 
 			num_acls = count_canon_ace_list(file_ace);
 			num_def_acls = count_canon_ace_list(dir_ace);

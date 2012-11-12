@@ -703,7 +703,6 @@ void reply_pipe_read_and_X(struct smb_request *req);
 /* The following definitions come from smbd/posix_acls.c  */
 
 void create_file_sids(const SMB_STRUCT_STAT *psbuf, struct dom_sid *powner_sid, struct dom_sid *pgroup_sid);
-bool nt4_compatible_acls(void);
 uint32_t map_canon_ace_perms(int snum,
                                 enum security_ace_type *pacl_type,
                                 mode_t perms,
