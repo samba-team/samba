@@ -4963,30 +4963,34 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
  check.  Caller is responsible for freeing the returned security
  descriptor via TALLOC_FREE().  This is designed for dealing with 
  user space access checks in smbd outside of the VFS.  For example,
- checking access rights in OpenEventlog().
+ checking access rights in OpenEventlog() or from python.
 
- Assume we are dealing with files (for now)
 ********************************************************************/
 
-struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname, uint32 security_info_wanted)
+NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
+				uint32 security_info_wanted,
+				struct security_descriptor **sd)
 {
-	struct security_descriptor *ret_sd;
-	connection_struct *conn;
-	files_struct finfo;
-	struct fd_handle fh;
-	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
+	connection_struct *conn;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (!posix_locking_init(false)) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	conn = talloc_zero(frame, connection_struct);
 	if (conn == NULL) {
+		TALLOC_FREE(frame);
 		DEBUG(0, ("talloc failed\n"));
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!(conn->params = talloc(conn, struct share_params))) {
-		DEBUG(0,("get_nt_acl_no_snum: talloc() failed!\n"));
+		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(frame);
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	conn->params->service = -1;
@@ -4994,43 +4998,21 @@ struct security_descriptor *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fna
 	set_conn_connectpath(conn, "/");
 
 	if (!smbd_vfs_init(conn)) {
-		DEBUG(0,("get_nt_acl_no_snum: Unable to create a fake connection struct!\n"));
-		conn_free(conn);
+		DEBUG(0,("smbd_vfs_init() failed!\n"));
 		TALLOC_FREE(frame);
-		return NULL;
-        }
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
-	ZERO_STRUCT( finfo );
-	ZERO_STRUCT( fh );
-
-	finfo.fnum = FNUM_FIELD_INVALID;
-	finfo.conn = conn;
-	finfo.fh = &fh;
-	finfo.fh->fd = -1;
-
-	status = create_synthetic_smb_fname(frame, fname, NULL, NULL,
-					    &finfo.fsp_name);
+	status = SMB_VFS_GET_NT_ACL(conn, fname, security_info_wanted, ctx, sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		conn_free(conn);
-		TALLOC_FREE(frame);
-		return NULL;
+		DEBUG(0,("set_nt_acl_no_snum: fset_nt_acl returned %s.\n",
+			nt_errstr(status)));
 	}
 
-	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo,
-						  security_info_wanted,
-						  ctx, &ret_sd))) {
-		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
-		TALLOC_FREE(finfo.fsp_name);
-		conn_free(conn);
-		TALLOC_FREE(frame);
-		return NULL;
-	}
-
-	TALLOC_FREE(finfo.fsp_name);
 	conn_free(conn);
 	TALLOC_FREE(frame);
 
-	return ret_sd;
+	return status;
 }
 
 /* Stolen shamelessly from pvfs_default_acl() in source4 :-). */

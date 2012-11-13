@@ -91,12 +91,15 @@ static bool elog_check_access( EVENTLOG_INFO *info, const struct security_token 
 
 	/* get the security descriptor for the file */
 
-	sec_desc = get_nt_acl_no_snum( info, tdbname, SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
+	status = get_nt_acl_no_snum( info,
+			tdbname,
+			SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
+			&sec_desc);
 	TALLOC_FREE( tdbname );
 
-	if ( !sec_desc ) {
-		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s\n",
-			tdbname));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s: %s\n",
+			tdbname, nt_errstr(status)));
 		return False;
 	}
 

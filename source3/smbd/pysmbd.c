@@ -495,11 +495,13 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 	PyObject *py_sd;
 	struct security_descriptor *sd;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	NTSTATUS status;
 
 	if (!PyArg_ParseTuple(args, "si", &fname, &security_info_wanted))
 		return NULL;
 
-	sd = get_nt_acl_no_snum(tmp_ctx, fname, security_info_wanted);
+	status = get_nt_acl_no_snum(tmp_ctx, fname, security_info_wanted, &sd);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	py_sd = py_return_ndr_struct("samba.dcerpc.security", "descriptor", sd, sd);
 
