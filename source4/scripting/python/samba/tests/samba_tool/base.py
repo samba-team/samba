@@ -29,7 +29,7 @@ from cStringIO import StringIO
 from samba.netcmd.main import cmd_sambatool
 import samba.tests
 
-class SambaToolCmdTest(samba.tests.TestCase):
+class SambaToolCmdTest(samba.tests.TestCaseInTempDir):
 
     def getSamDB(self, *argv):
         """a convenience function to get a samdb instance so that we can query it"""
