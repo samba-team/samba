@@ -20,6 +20,7 @@
 
 import os
 from samba.tests.samba_tool.base import SambaToolCmdTest
+import shutil
 
 class GpoCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool time subcommands"""
@@ -39,13 +40,18 @@ os.environ["SERVER"])
 
     def test_fetch(self):
         """Run against a real GPO, and make sure it passes"""
-        (result, out, err) = self.runsubcmd("gpo", "fetch", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "--tmpdir", os.environ['SELFTEST_PREFIX'])
+        (result, out, err) = self.runsubcmd("gpo", "fetch", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "--tmpdir", self.tempdir)
         self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
+        shutil.rmtree(os.path.join(self.tempdir, "policy"))
 
     def setUp(self):
         """set up a temporary GPO to work with"""
         super(GpoCmdTestCase, self).setUp()
-        (result, out, err) = self.runsubcmd("gpo", "create", self.gpo_name, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
+        (result, out, err) = self.runsubcmd("gpo", "create", self.gpo_name,
+                                            "-H", "ldap://%s" % os.environ["SERVER"],
+                                            "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]),
+                                            "--tmpdir", self.tempdir)
+        shutil.rmtree(os.path.join(self.tempdir, "policy"))
         self.assertCmdSuccess(result, "Ensuring gpo created successfully")
         try:
             self.gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
