@@ -1423,7 +1423,14 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				}
 			}
 
-			access_mask = access_granted;
+			/*
+			 * If we can access the path to this file, by
+			 * default we have FILE_READ_ATTRIBUTES from the
+			 * containing directory. See the section.
+			 * "Algorithm to Check Access to an Existing File"
+			 * in MS-FSA.pdf.
+			 */
+			access_mask = access_granted | FILE_READ_ATTRIBUTES;
 		} else {
 			access_mask = FILE_GENERIC_ALL;
 		}
