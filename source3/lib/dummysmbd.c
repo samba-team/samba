@@ -44,8 +44,7 @@ void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 {
 }
 
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-				const char *dirname)
+NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 {
 	return NT_STATUS_OK;
 }
