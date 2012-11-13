@@ -26,6 +26,11 @@ cpp_quote("#define dom_sid28 dom_sid")
 cpp_quote("#define dom_sid0 dom_sid")
 
 [
+	/*
+	 * cbf7d408-2d6c-11e2-ae5b-0b5692790e18 just to make ndrdump happy
+	 */
+	uuid("cbf7d408-2d6c-11e2-ae5b-0b5692790e18"),
+	version(0.0),
 	pyhelper("librpc/ndr/py_security.c"),
 	pointer_default(unique)
 ]
@@ -571,10 +576,18 @@ interface security
 		[relative] security_acl *dacl; /* user (discretionary) ACL */
 	} security_descriptor;
 
+	[nopython] void decode_security_descriptor (
+		[in] security_descriptor sd
+		);
+
 	typedef [public] struct {
 		[range(0,0x40000),value(ndr_size_security_descriptor(sd,ndr->flags))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
+
+	[nopython] void decode_sec_desc_buf (
+		[in] sec_desc_buf sd_buf
+		);
 
 	/* This is not yet sent over the network, but is simply defined in IDL */
 	typedef [public] struct {
@@ -584,6 +597,10 @@ interface security
 		lsa_SystemAccessModeFlags rights_mask;
 	} security_token;
 
+	[nopython] void decode_security_token (
+		[in] security_token token
+		);
+
 	/* This is not yet sent over the network, but is simply defined in IDL */
 	typedef [public] struct {
 		uid_t uid;
@@ -591,6 +608,10 @@ interface security
 		uint32 ngroups;
 		[size_is(ngroups)] gid_t groups[*];
 	} security_unix_token;
+
+	[nopython] void decode_security_unix_token (
+		[in] security_unix_token unix_token
+		);
 
 	/* bits that determine which parts of a security descriptor
 	   are being queried/set */
