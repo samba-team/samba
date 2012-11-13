@@ -741,7 +741,7 @@ void *rep_memmem(const void *haystack, size_t haystacklen,
 }
 #endif
 
-#ifndef HAVE_VDPRINTF
+#if !defined(HAVE_VDPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 int rep_vdprintf(int fd, const char *format, va_list ap)
 {
 	char *s = NULL;
@@ -758,7 +758,7 @@ int rep_vdprintf(int fd, const char *format, va_list ap)
 }
 #endif
 
-#ifndef HAVE_DPRINTF
+#if !defined(HAVE_DPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 int rep_dprintf(int fd, const char *format, ...)
 {
 	int ret;
