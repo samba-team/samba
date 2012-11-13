@@ -211,7 +211,6 @@ def dsacl2fsacl(dssddl, sid):
     fdescr.group_sid = ref.group_sid
     fdescr.type = ref.type
     fdescr.revision = ref.revision
-    fdescr.sacl = ref.sacl
     aces = ref.dacl.aces
     for i in range(0, len(aces)):
         ace = aces[i]
