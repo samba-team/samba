@@ -56,6 +56,10 @@ monitor_interfaces()
 	fail=false
 	up_interfaces_found=false
 
+	# Note that this loop must not exit early.  It must process
+	# all interfaces so that the correct state for each interface
+	# is set in CTDB using mark_up/mark_down.  If there is a
+	# problem with an interface then set fail=true and continue.
 	for iface in $all_interfaces ; do
 
 	    ip addr show $iface 2>/dev/null >/dev/null || {
@@ -149,14 +153,7 @@ case "$1" in
      # called after ctdbd has done its initial recovery
      # and we start the services to become healthy
      startup)
-	# Assume all links are good initially
-	get_all_interfaces
-	for iface in $all_interfaces ; do
-		ctdb setifacelink $iface up >/dev/null 2>/dev/null
-	done
-	
 	monitor_interfaces
-
 	;;
 
 
