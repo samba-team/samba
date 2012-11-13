@@ -1256,7 +1256,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 
 #endif 
 
-#ifndef HAVE_VASPRINTF
+#if !defined(HAVE_VASPRINTF) || !defined(HAVE_C99_VSNPRINTF)
  int rep_vasprintf(char **ptr, const char *format, va_list ap)
 {
 	int ret;
@@ -1278,8 +1278,7 @@ static int add_cnk_list_entry(struct pr_chunk_x **list,
 }
 #endif
 
-
-#ifndef HAVE_ASPRINTF
+#if !defined(HAVE_ASPRINTF) || !defined(HAVE_C99_VSNPRINTF)
  int rep_asprintf(char **ptr, const char *format, ...)
 {
 	va_list ap;
