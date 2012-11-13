@@ -330,6 +330,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		sd->owner_sid = new_sd->owner_sid;
 	}
+
 	if (secinfo_flags & SECINFO_GROUP) {
 		if (!(access_mask & SEC_STD_WRITE_OWNER)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -349,19 +350,39 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		sd->group_sid = new_sd->group_sid;
 	}
+
 	if (secinfo_flags & SECINFO_DACL) {
 		if (!(access_mask & SEC_STD_WRITE_DAC)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		sd->dacl = new_sd->dacl;
 		pvfs_translate_generic_bits(sd->dacl);
+		sd->type |= SEC_DESC_DACL_PRESENT;
 	}
+
 	if (secinfo_flags & SECINFO_SACL) {
 		if (!(access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		sd->sacl = new_sd->sacl;
 		pvfs_translate_generic_bits(sd->sacl);
+		sd->type |= SEC_DESC_SACL_PRESENT;
+	}
+
+	if (secinfo_flags & SECINFO_PROTECTED_DACL) {
+		if (new_sd->type & SEC_DESC_DACL_PROTECTED) {
+			sd->type |= SEC_DESC_DACL_PROTECTED;
+		} else {
+			sd->type &= ~SEC_DESC_DACL_PROTECTED;
+		}
+	}
+
+	if (secinfo_flags & SECINFO_PROTECTED_SACL) {
+		if (new_sd->type & SEC_DESC_SACL_PROTECTED) {
+			sd->type |= SEC_DESC_SACL_PROTECTED;
+		} else {
+			sd->type &= ~SEC_DESC_SACL_PROTECTED;
+		}
 	}
 
 	if (new_uid == old_uid) {
