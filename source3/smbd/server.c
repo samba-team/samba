@@ -551,7 +551,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		return;
 
 	if (fd == -1) {
-		DEBUG(0,("open_sockets_smbd: accept: %s\n",
+		DEBUG(0,("accept: %s\n",
 			 strerror(errno)));
 		return;
 	}
