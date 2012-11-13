@@ -376,16 +376,6 @@ int rep_dlclose(void *handle);
 /* prototype is in system/network.h */
 #endif
 
-#ifndef HAVE_VDPRINTF
-#define vdprintf rep_vdprintf
-int rep_vdprintf(int fd, const char *format, va_list ap);
-#endif
-
-#ifndef HAVE_DPRINTF
-#define dprintf rep_dprintf
-int rep_dprintf(int fd, const char *format, ...);
-#endif
-
 #ifndef PRINTF_ATTRIBUTE
 #if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
@@ -406,7 +396,17 @@ int rep_dprintf(int fd, const char *format, ...);
 #endif
 #endif
 
-#ifndef HAVE_VASPRINTF
+#if !defined(HAVE_VDPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+#define vdprintf rep_vdprintf
+int rep_vdprintf(int fd, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
+#endif
+
+#if !defined(HAVE_DPRINTF) || !defined(HAVE_C99_VSNPRINTF)
+#define dprintf rep_dprintf
+int rep_dprintf(int fd, const char *format, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
+#if !defined(HAVE_VASPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define vasprintf rep_vasprintf
 int rep_vasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(2,0);
 #endif
@@ -421,9 +421,27 @@ int rep_snprintf(char *,size_t ,const char *, ...) PRINTF_ATTRIBUTE(3,4);
 int rep_vsnprintf(char *,size_t ,const char *, va_list ap) PRINTF_ATTRIBUTE(3,0);
 #endif
 
-#ifndef HAVE_ASPRINTF
+#if !defined(HAVE_ASPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 #define asprintf rep_asprintf
 int rep_asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
+#endif
+
+#if !defined(HAVE_C99_VSNPRINTF)
+#ifdef REPLACE_BROKEN_PRINTF
+/*
+ * We do not redefine printf by default
+ * as it breaks the build if system headers
+ * use __attribute__((format(printf, 3, 0)))
+ * instead of __attribute__((format(__printf__, 3, 0)))
+ */
+#define printf rep_printf
+#endif
+int rep_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
+#endif
+
+#if !defined(HAVE_C99_VSNPRINTF)
+#define fprintf rep_fprintf
+int rep_fprintf(FILE *stream, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
 #ifndef HAVE_VSYSLOG
