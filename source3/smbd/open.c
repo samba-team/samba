@@ -58,6 +58,13 @@ NTSTATUS smb1_file_se_access_check(struct connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 */
 	return se_access_check(sd,
 				token,
 				(access_desired & ~FILE_READ_ATTRIBUTES),
