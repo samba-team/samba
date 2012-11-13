@@ -89,7 +89,7 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
-	int flags;
+	int flags, ret;
 	mode_t saved_umask;
 
 	if (!posix_locking_init(false)) {
@@ -159,6 +159,29 @@ static NTSTATUS set_nt_acl_no_snum(const char *fname,
 		umask(saved_umask);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+	if (ret == -1) {
+		/* If we have an fd, this stat should succeed. */
+		DEBUG(0,("Error doing fstat on open file %s "
+			"(%s)\n",
+			smb_fname_str_dbg(smb_fname),
+			strerror(errno) ));
+		TALLOC_FREE(frame);
+		umask(saved_umask);
+		return map_nt_error_from_unix(errno);
+	}
+
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+	fsp->vuid = UID_FIELD_INVALID;
+	fsp->file_pid = 0;
+	fsp->can_lock = True;
+	fsp->can_read = True;
+	fsp->can_write = True;
+	fsp->print_file = NULL;
+	fsp->modified = False;
+	fsp->sent_oplock_break = NO_BREAK_SENT;
+	fsp->is_directory = S_ISDIR(smb_fname->st.st_ex_mode);
 
 	status = SMB_VFS_FSET_NT_ACL( fsp, security_info_sent, sd);
 	if (!NT_STATUS_IS_OK(status)) {
