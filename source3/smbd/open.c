@@ -2752,8 +2752,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	mtimespec = smb_dname->st.st_ex_mtime;
 
-	/* Temporary access mask used to open the directory fd. */
-	fsp->access_mask = FILE_READ_DATA | FILE_READ_ATTRIBUTES;
+	fsp->access_mask = access_mask;
+
 #ifdef O_DIRECTORY
 	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
 #else
