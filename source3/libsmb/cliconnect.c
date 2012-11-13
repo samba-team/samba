@@ -94,7 +94,9 @@ static NTSTATUS smb_bytes_talloc_string(struct cli_state *cli,
 
 static void cli_set_session_key (struct cli_state *cli, const DATA_BLOB session_key) 
 {
-	cli->user_session_key = data_blob(session_key.data, session_key.length);
+	cli->user_session_key = data_blob(NULL, 16);
+	data_blob_clear(&cli->user_session_key);
+	memcpy(cli->user_session_key.data, session_key.data, MIN(session_key.length, 16));
 }
 
 /****************************************************************************
