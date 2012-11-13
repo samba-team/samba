@@ -646,7 +646,22 @@ static int open_acl_common(vfs_handle_struct *handle,
 					get_current_nttok(handle->conn),
 					fsp->access_mask,
 					&access_granted);
-		if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Check if we need to override ACCESS_DENIED for DELETE_ACCESS.
+		 * Do this if we only failed open on DELETE_ACCESS, and
+		 * we have permission to delete from the parent directory.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+			(fsp->access_mask & DELETE_ACCESS) &&
+			(access_granted == DELETE_ACCESS) &&
+			can_delete_file_in_directory(handle->conn, smb_fname)) {
+				DEBUG(10,("open_acl_xattr: "
+					"overrode "
+					"DELETE_ACCESS on "
+					"file %s\n",
+					smb_fname_str_dbg(smb_fname)));
+				status = NT_STATUS_OK;
+		} else if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("open_acl_xattr: %s open "
 				"for access 0x%x (0x%x) "
 				"refused with error %s\n",
