@@ -508,7 +508,11 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 			p1->assoc_group_id);
 
 	transport	= p1->conn->transport.transport;
-	assoc_group_id	= p1->assoc_group_id;
+	/*
+	 * We use ~p1->assoc_group_id instead of p1->assoc_group_id, because
+	 * this way we are less likely to use an id which is already in use.
+	 */
+	assoc_group_id	= ~p1->assoc_group_id;
 
 	torture_comment(torture, "connect samr pipe2 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p2, &ndr_table_samr,
