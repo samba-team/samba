@@ -130,7 +130,13 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	}
 
  	/*
-	 * Never test FILE_READ_ATTRIBUTES. se_file_access_check() also takes care of
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 *
+	 * se_file_access_check() also takes care of
 	 * owner WRITE_DAC and READ_CONTROL.
 	 */
 	status = se_file_access_check(sd,
@@ -247,7 +253,13 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 	}
 
  	/*
-	 * Never test FILE_READ_ATTRIBUTES. se_file_access_check() also takes care of
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 *
+	 * se_file_access_check() also takes care of
 	 * owner WRITE_DAC and READ_CONTROL.
 	 */
 	status = se_file_access_check(parent_sd,
@@ -1693,7 +1705,13 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 	}
 
 	/*
-	 * Never test FILE_READ_ATTRIBUTES. se_file_access_check()
+	 * If we can access the path to this file, by
+	 * default we have FILE_READ_ATTRIBUTES from the
+	 * containing directory. See the section:
+	 * "Algorithm to Check Access to an Existing File"
+	 * in MS-FSA.pdf.
+	 *
+	 * se_file_access_check()
 	 * also takes care of owner WRITE_DAC and READ_CONTROL.
 	 */
 	status = se_file_access_check(sd,
