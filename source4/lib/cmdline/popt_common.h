@@ -32,9 +32,9 @@ extern struct poptOption popt_common_credentials4[];
 #define POPT_TABLEEND { NULL, '\0', 0, 0, 0, NULL, NULL }
 #endif
 
-#define POPT_COMMON_SAMBA { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_samba4, 0, "Common samba options:", NULL },
+#define POPT_COMMON_SAMBA { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_samba4, 0, "Common Samba options:", NULL },
 #define POPT_COMMON_CONNECTION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_connection4, 0, "Connection options:", NULL },
-#define POPT_COMMON_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version4, 0, "Common samba options:", NULL },
+#define POPT_COMMON_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_version4, 0, "Version options:", NULL },
 #define POPT_COMMON_CREDENTIALS { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_credentials4, 0, "Authentication options:", NULL },
 
 extern struct cli_credentials *cmdline_credentials;
