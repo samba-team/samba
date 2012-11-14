@@ -53,6 +53,13 @@ enum lock_type {
 	LOCK_ALLDB,
 };
 
+static const char * const lock_type_str[] = {
+	"lock_record",
+	"lock_db",
+	"lock_alldb_prio",
+	"lock_db",
+};
+
 struct lock_request;
 
 /* lock_context is the common part for a lock request */
@@ -567,11 +574,10 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 
 	if (locked) {
 		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
-		CTDB_UPDATE_RECLOCK_LATENCY(lock_ctx->ctdb, "lock()", locks.latency, t);
 		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.buckets[id]);
 		if (lock_ctx->ctdb_db) {
 			CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
-			CTDB_UPDATE_DB_RECLOCK_LATENCY(lock_ctx->ctdb_db, "lock()", locks.latency, t);
+			CTDB_UPDATE_DB_LATENCY(lock_ctx->ctdb_db, lock_type_str[lock_ctx->type], locks.latency, t);
 			CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.buckets[id]);
 		}
 	} else {

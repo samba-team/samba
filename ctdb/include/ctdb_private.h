@@ -365,7 +365,7 @@ struct ctdb_daemon_data {
 		}									\
 	}
 
-#define CTDB_UPDATE_DB_RECLOCK_LATENCY(ctdb_db, name, counter, value) \
+#define CTDB_UPDATE_DB_LATENCY(ctdb_db, operation, counter, value)			\
 	{										\
 		if (value > ctdb_db->statistics.counter.max)				\
 			ctdb_db->statistics.counter.max = value;			\
@@ -377,10 +377,10 @@ struct ctdb_daemon_data {
 		ctdb_db->statistics.counter.num++;					\
 											\
 		if (ctdb_db->ctdb->tunable.reclock_latency_ms != 0) {			\
-			if (value*1000 > ctdb_db->ctdb->tunable.reclock_latency_ms) {	\
+			if (value*1000 > ctdb_db->ctdb->tunable.log_latency_ms) {	\
 				DEBUG(DEBUG_ERR,					\
-				      ("High RECLOCK latency %fs for operation %s\n",	\
-				       value, name));					\
+				      ("High latency %.6fs for operation %s on database %s\n",\
+				       value, operation, ctdb_db->db_name));		\
 			}								\
 		}									\
 	}
