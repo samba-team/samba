@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2008-2012 testtools developers. See LICENSE for details.
 
 """Extensions to the standard Python unittest library."""
 
@@ -14,9 +14,12 @@ __all__ = [
     'MultiTestResult',
     'PlaceHolder',
     'run_test_with',
+    'Tagger',
     'TestCase',
     'TestCommand',
+    'TestByTestResult',
     'TestResult',
+    'TestResultDecorator',
     'TextTestResult',
     'RunTest',
     'skip',
@@ -31,7 +34,7 @@ from testtools.helpers import (
     try_import,
     try_imports,
     )
-from testtools.matchers import (
+from testtools.matchers._impl import (
     Matcher,
     )
 # Shut up, pyflakes. We are importing for documentation, not for namespacing.
@@ -55,7 +58,10 @@ from testtools.testcase import (
 from testtools.testresult import (
     ExtendedToOriginalDecorator,
     MultiTestResult,
+    Tagger,
+    TestByTestResult,
     TestResult,
+    TestResultDecorator,
     TextTestResult,
     ThreadsafeForwardingResult,
     )
@@ -80,4 +86,4 @@ from testtools.distutilscmd import (
 # If the releaselevel is 'final', then the tarball will be major.minor.micro.
 # Otherwise it is major.minor.micro~$(revno).
 
-__version__ = (0, 9, 13, 'dev', 0)
+__version__ = (0, 9, 22, 'dev', 0)

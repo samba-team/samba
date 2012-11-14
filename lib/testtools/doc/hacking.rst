@@ -8,9 +8,7 @@ Coding style
 In general, follow `PEP 8`_ except where consistency with the standard
 library's unittest_ module would suggest otherwise.
 
-testtools supports Python 2.4 and later, including Python 3, so avoid any
-2.5-only features like the ``with`` statement.
-
+testtools currently supports Python 2.6 and later, including Python 3.
 
 Copyright assignment
 --------------------
@@ -141,8 +139,9 @@ Release tasks
    #. Marks all the Fix Committed bugs as Fix Released
    #. Creates a new milestone
 #. Merge the release branch testtools-X.Y.Z into trunk. Before the commit,
-   add a NEXT heading to the top of NEWS and bump the version in __init__.py.
-   Push trunk to Launchpad
+   add a NEXT heading to the top of NEWS and bump the version in __init__.py
+   e.g. to ``(X, Y, Z+1, 'dev', 0)``.
+#. Push trunk to Launchpad
 #. If a new series has been created (e.g. 0.10.0), make the series on Launchpad.
 
 .. _PEP 8: http://www.python.org/dev/peps/pep-0008/

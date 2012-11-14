@@ -70,9 +70,9 @@ class TestFixtureSupport(TestCase):
         self.assertEqual('addSuccess', result._events[-2][0])
         details = result._events[-2][2]
         self.assertEqual(['content', 'content-1'], sorted(details.keys()))
-        self.assertEqual('foo', _u('').join(details['content'].iter_text()))
+        self.assertEqual('foo', details['content'].as_text())
         self.assertEqual('content available until cleanUp',
-            ''.join(details['content-1'].iter_text()))
+            details['content-1'].as_text())
 
     def test_useFixture_multiple_details_captured(self):
         class DetailsFixture(fixtures.Fixture):
@@ -89,8 +89,8 @@ class TestFixtureSupport(TestCase):
         self.assertEqual('addSuccess', result._events[-2][0])
         details = result._events[-2][2]
         self.assertEqual(['aaa', 'bbb'], sorted(details))
-        self.assertEqual('foo', ''.join(details['aaa'].iter_text()))
-        self.assertEqual('bar', ''.join(details['bbb'].iter_text()))
+        self.assertEqual(_u('foo'), details['aaa'].as_text())
+        self.assertEqual(_u('bar'), details['bbb'].as_text())
 
     def test_useFixture_details_captured_from_setUp(self):
         # Details added during fixture set-up are gathered even if setUp()

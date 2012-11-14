@@ -151,6 +151,14 @@ Each of the methods on ``MultiTestResult`` will return a tuple of whatever the
 component test results return.
 
 
+TestResultDecorator
+-------------------
+
+Not strictly a ``TestResult``, but something that implements the extended
+``TestResult`` interface of testtools.  It can be subclassed to create objects
+that wrap ``TestResults``.
+
+
 TextTestResult
 --------------
 

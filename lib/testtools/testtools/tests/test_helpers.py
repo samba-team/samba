@@ -1,4 +1,4 @@
-# Copyright (c) 2010-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2010-2012 testtools developers. See LICENSE for details.
 
 from testtools import TestCase
 from testtools.helpers import (
@@ -6,8 +6,6 @@ from testtools.helpers import (
     try_imports,
     )
 from testtools.matchers import (
-    AllMatch,
-    AfterPreprocessing,
     Equals,
     Is,
     Not,
@@ -193,34 +191,13 @@ class TestTryImports(TestCase):
             0, True)
 
 
-import testtools.matchers
-import testtools.runtest
-import testtools.testcase
-
-
-def StackHidden(is_hidden):
-    return AllMatch(
-        AfterPreprocessing(
-            lambda module: safe_hasattr(module, '__unittest'),
-            Equals(is_hidden)))
-
-
 class TestStackHiding(TestCase):
-
-    modules = [
-        testtools.matchers,
-        testtools.runtest,
-        testtools.testcase,
-        ]
 
     run_tests_with = FullStackRunTest
 
     def setUp(self):
         super(TestStackHiding, self).setUp()
         self.addCleanup(hide_testtools_stack, is_stack_hidden())
-
-    def test_shown_during_testtools_testsuite(self):
-        self.assertThat(self.modules, StackHidden(False))
 
     def test_is_stack_hidden_consistent_true(self):
         hide_testtools_stack(True)
@@ -229,10 +206,6 @@ class TestStackHiding(TestCase):
     def test_is_stack_hidden_consistent_false(self):
         hide_testtools_stack(False)
         self.assertEqual(False, is_stack_hidden())
-
-    def test_show_stack(self):
-        hide_testtools_stack(False)
-        self.assertThat(self.modules, StackHidden(False))
 
 
 def test_suite():

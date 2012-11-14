@@ -6,6 +6,195 @@ Changes and improvements to testtools_, grouped by release.
 NEXT
 ~~~~
 
+
+0.9.21
+~~~~~~
+
+Improvements
+------------
+
+* ``DirContains`` correctly exposed, after being accidentally hidden in the
+  great matcher re-organization of 0.9.17.  (Jonathan Lange)
+
+
+0.9.20
+~~~~~~
+
+Three new matchers that'll rock your world.
+
+Improvements
+------------
+
+* New, powerful matchers that match items in a dictionary:
+
+  - ``MatchesDict``, match every key in a dictionary with a key in a
+    dictionary of matchers.  For when the set of expected keys is equal to the
+    set of observed keys.
+
+  - ``ContainsDict``, every key in a dictionary of matchers must be
+    found in a dictionary, and the values for those keys must match.  For when
+    the set of expected keys is a subset of the set of observed keys.
+
+  - ``ContainedByDict``, every key in a dictionary must be found in
+    a dictionary of matchers.  For when the set of expected keys is a superset
+    of the set of observed keys.
+
+  The names are a little confusing, sorry.  We're still trying to figure out
+  how to present the concept in the simplest way possible.
+
+
+0.9.19
+~~~~~~
+
+How embarrassing!  Three releases in two days.
+
+We've worked out the kinks and have confirmation from our downstreams that
+this is all good.  Should be the last release for a little while.  Please
+ignore 0.9.18 and 0.9.17.
+
+Improvements
+------------
+
+* Include the matcher tests in the release, allowing the tests to run and
+  pass from the release tarball.  (Jonathan Lange)
+
+* Fix cosmetic test failures in Python 3.3, introduced during release 0.9.17.
+  (Jonathan Lange)
+
+
+0.9.18
+~~~~~~
+
+Due to an oversight, release 0.9.18 did not contain the new
+``testtools.matchers`` package and was thus completely broken.  This release
+corrects that, returning us all to normality.
+
+0.9.17
+~~~~~~
+
+This release brings better discover support and Python3.x improvements. There
+are still some test failures on Python3.3 but they are cosmetic - the library
+is as usable there as on any other Python 3 release.
+
+Changes
+-------
+
+* The ``testtools.matchers`` package has been split up.  No change to the
+  public interface.  (Jonathan Lange)
+
+Improvements
+------------
+
+* ``python -m testtools.run discover . --list`` now works. (Robert Collins)
+
+* Correctly handling of bytes vs text in JSON content type. (Martin [gz])
+
+
+0.9.16
+~~~~~~
+
+Some new matchers and a new content helper for JSON content.
+
+This is the first release of testtools to drop support for Python 2.4 and 2.5.
+If you need support for either of those versions, please use testtools 0.9.15.
+
+Improvements
+------------
+
+* New content helper, ``json_content`` (Jonathan Lange)
+
+* New matchers:
+
+  * ``ContainsAll`` for asserting one thing is a subset of another
+    (Raphaël Badin)
+
+  * ``SameMembers`` for asserting two iterators have the same members.
+    (Jonathan Lange)
+
+* Reraising of exceptions in Python 3 is more reliable. (Martin [gz])
+
+
+0.9.15
+~~~~~~
+
+This is the last release to support Python2.4 and 2.5. It brings in a slew of
+improvements to test tagging and concurrency, making running large test suites
+with partitioned workers more reliable and easier to reproduce exact test
+ordering in a given worker. See our sister project ``testrepository`` for a
+test runner that uses these features.
+
+Changes
+-------
+
+* ``PlaceHolder`` and ``ErrorHolder`` now support being given result details.
+  (Robert Collins)
+
+* ``ErrorHolder`` is now just a function - all the logic is in ``PlaceHolder``.
+  (Robert Collins)
+
+* ``TestResult`` and all other ``TestResult``-like objects in testtools
+  distinguish between global tags and test-local tags, as per the subunit
+  specification.  (Jonathan Lange)
+
+* This is the **last** release of testtools that supports Python 2.4 or 2.5.
+  These releases are no longer supported by the Python community and do not
+  receive security updates. If this affects you, you will need to either
+  stay on this release or perform your own backports.
+  (Jonathan Lange, Robert Collins)
+
+* ``ThreadsafeForwardingResult`` now forwards global tags as test-local tags,
+  making reasoning about the correctness of the multiplexed stream simpler.
+  This preserves the semantic value (what tags apply to a given test) while
+  consuming less stream size (as no negative-tag statement is needed).
+  (Robert Collins, Gary Poster, #986434)
+
+Improvements
+------------
+
+* API documentation corrections. (Raphaël Badin)
+
+* ``ConcurrentTestSuite`` now takes an optional ``wrap_result`` parameter
+  that can be used to wrap the ``ThreadsafeForwardingResult``s created by
+  the suite.  (Jonathan Lange)
+
+* ``Tagger`` added.  It's a new ``TestResult`` that tags all tests sent to
+  it with a particular set of tags.  (Jonathan Lange)
+
+* ``testresultdecorator`` brought over from subunit.  (Jonathan Lange)
+
+* All ``TestResult`` wrappers now correctly forward ``current_tags`` from
+  their wrapped results, meaning that ``current_tags`` can always be relied
+  upon to return the currently active tags on a test result.
+
+* ``TestByTestResult``, a ``TestResult`` that calls a method once per test,
+  added.  (Jonathan Lange)
+
+* ``ThreadsafeForwardingResult`` correctly forwards ``tags()`` calls where
+  only one of ``new_tags`` or ``gone_tags`` are specified.
+  (Jonathan Lange, #980263)
+
+* ``ThreadsafeForwardingResult`` no longer leaks local tags from one test
+  into all future tests run.  (Jonathan Lange, #985613)
+
+* ``ThreadsafeForwardingResult`` has many, many more tests.  (Jonathan Lange)
+
+
+0.9.14
+~~~~~~
+
+Our sister project, `subunit <https://launchpad.net/subunit>`_, was using a
+private API that was deleted in the 0.9.13 release.  This release restores
+that API in order to smooth out the upgrade path.
+
+If you don't use subunit, then this release won't matter very much to you.
+
+
+0.9.13
+~~~~~~
+
+Plenty of new matchers and quite a few critical bug fixes (especially to do
+with stack traces from failed assertions).  A net win for all.
+
 Changes
 -------
 
@@ -21,12 +210,27 @@ Improvements
   previous release promised clean stack, but now we actually provide it.
   (Jonathan Lange, #854769)
 
+* ``assertRaises`` now includes the ``repr`` of the callable that failed to raise
+  properly. (Jonathan Lange, #881052)
+
+* Asynchronous tests no longer hang when run with trial.
+  (Jonathan Lange, #926189)
+
+* ``Content`` objects now have an ``as_text`` method to convert their contents
+  to Unicode text.  (Jonathan Lange)
+
 * Failed equality assertions now line up. (Jonathan Lange, #879339)
+
+* ``FullStackRunTest`` no longer aborts the test run if a test raises an
+  error.  (Jonathan Lange)
 
 * ``MatchesAll`` and ``MatchesListwise`` both take a ``first_only`` keyword
   argument.  If True, they will report only on the first mismatch they find,
   and not continue looking for other possible mismatches.
   (Jonathan Lange)
+
+* New helper, ``Nullary`` that turns callables with arguments into ones that
+  don't take arguments.  (Jonathan Lange)
 
 * New matchers:
 
@@ -52,6 +256,15 @@ Improvements
 
   * ``TarballContains`` matches the contents of a tarball.  (Jonathan Lange)
 
+* ``MultiTestResult`` supports the ``tags`` method.
+  (Graham Binns, Francesco Banconi, #914279)
+
+* ``ThreadsafeForwardingResult`` supports the ``tags`` method.
+  (Graham Binns, Francesco Banconi, #914279)
+
+* ``ThreadsafeForwardingResult`` no longer includes semaphore acquisition time
+  in the test duration (for implicitly timed test runs).
+  (Robert Collins, #914362)
 
 0.9.12
 ~~~~~~

@@ -57,7 +57,7 @@ class SynchronousDeferredRunTest(_DeferredRunTest):
 
 def run_with_log_observers(observers, function, *args, **kwargs):
     """Run 'function' with the given Twisted log observers."""
-    real_observers = log.theLogPublisher.observers
+    real_observers = list(log.theLogPublisher.observers)
     for observer in real_observers:
         log.theLogPublisher.removeObserver(observer)
     for observer in observers:

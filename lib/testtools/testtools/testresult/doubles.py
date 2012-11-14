@@ -9,6 +9,9 @@ __all__ = [
     ]
 
 
+from testtools.tags import TagContext
+
+
 class LoggingBase(object):
     """Basic support for logging of results."""
 
@@ -67,6 +70,10 @@ class Python27TestResult(Python26TestResult):
 class ExtendedTestResult(Python27TestResult):
     """A test result like the proposed extended unittest result API."""
 
+    def __init__(self):
+        super(ExtendedTestResult, self).__init__()
+        self._tags = TagContext()
+
     def addError(self, test, err=None, details=None):
         self._was_successful = False
         self._events.append(('addError', test, err or details))
@@ -100,8 +107,22 @@ class ExtendedTestResult(Python27TestResult):
     def startTestRun(self):
         super(ExtendedTestResult, self).startTestRun()
         self._was_successful = True
+        self._tags = TagContext()
+
+    def startTest(self, test):
+        super(ExtendedTestResult, self).startTest(test)
+        self._tags = TagContext(self._tags)
+
+    def stopTest(self, test):
+        self._tags = self._tags.parent
+        super(ExtendedTestResult, self).stopTest(test)
+
+    @property
+    def current_tags(self):
+        return self._tags.get_current_tags()
 
     def tags(self, new_tags, gone_tags):
+        self._tags.change_tags(new_tags, gone_tags)
         self._events.append(('tags', new_tags, gone_tags))
 
     def time(self, time):

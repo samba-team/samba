@@ -42,7 +42,10 @@ from testtools.matchers import (
     )
 from testtools.monkey import patch
 from testtools.runtest import RunTest
-from testtools.testresult import TestResult
+from testtools.testresult import (
+    ExtendedToOriginalDecorator,
+    TestResult,
+    )
 
 wraps = try_import('functools.wraps')
 
@@ -301,9 +304,7 @@ class TestCase(unittest.TestCase):
         self.__exception_handlers.append(handler)
 
     def _add_reason(self, reason):
-        self.addDetail('reason', content.Content(
-            content.ContentType('text', 'plain'),
-            lambda: [reason.encode('utf8')]))
+        self.addDetail('reason', content.text_content(reason))
 
     def assertEqual(self, expected, observed, message=''):
         """Assert that 'expected' is equal to 'observed'.
@@ -384,8 +385,8 @@ class TestCase(unittest.TestCase):
         capture = CaptureMatchee()
         matcher = Raises(MatchesAll(ReRaiseOtherTypes(),
                 MatchesException(excClass), capture))
-
-        self.assertThat(lambda: callableObj(*args, **kwargs), matcher)
+        our_callable = Nullary(callableObj, *args, **kwargs)
+        self.assertThat(our_callable, matcher)
         return capture.matchee
     failUnlessRaises = assertRaises
 
@@ -602,21 +603,30 @@ class PlaceHolder(object):
     particularly suitable for being added to TestResults.
     """
 
-    def __init__(self, test_id, short_description=None):
+    failureException = None
+
+    def __init__(self, test_id, short_description=None, details=None,
+        outcome='addSuccess', error=None):
         """Construct a `PlaceHolder`.
 
         :param test_id: The id of the placeholder test.
         :param short_description: The short description of the place holder
             test. If not provided, the id will be used instead.
+        :param details: Outcome details as accepted by addSuccess etc.
+        :param outcome: The outcome to call. Defaults to 'addSuccess'.
         """
         self._test_id = test_id
         self._short_description = short_description
+        self._details = details or {}
+        self._outcome = outcome
+        if error is not None:
+            self._details['traceback'] = content.TracebackContent(error, self)
 
     def __call__(self, result=None):
         return self.run(result=result)
 
     def __repr__(self):
-        internal = [self._test_id]
+        internal = [self._outcome, self._test_id, self._details]
         if self._short_description is not None:
             internal.append(self._short_description)
         return "<%s.%s(%s)>" % (
@@ -636,11 +646,17 @@ class PlaceHolder(object):
     def id(self):
         return self._test_id
 
-    def run(self, result=None):
+    def _result(self, result):
         if result is None:
-            result = TestResult()
+            return TestResult()
+        else:
+            return ExtendedToOriginalDecorator(result)
+
+    def run(self, result=None):
+        result = self._result(result)
         result.startTest(self)
-        result.addSuccess(self)
+        outcome = getattr(result, self._outcome)
+        outcome(self, details=self._details)
         result.stopTest(self)
 
     def shortDescription(self):
@@ -650,37 +666,18 @@ class PlaceHolder(object):
             return self._short_description
 
 
-class ErrorHolder(PlaceHolder):
-    """A placeholder test that will error out when run."""
+def ErrorHolder(test_id, error, short_description=None, details=None):
+    """Construct an `ErrorHolder`.
 
-    failureException = None
-
-    def __init__(self, test_id, error, short_description=None):
-        """Construct an `ErrorHolder`.
-
-        :param test_id: The id of the test.
-        :param error: The exc info tuple that will be used as the test's error.
-        :param short_description: An optional short description of the test.
-        """
-        super(ErrorHolder, self).__init__(
-            test_id, short_description=short_description)
-        self._error = error
-
-    def __repr__(self):
-        internal = [self._test_id, self._error]
-        if self._short_description is not None:
-            internal.append(self._short_description)
-        return "<%s.%s(%s)>" % (
-            self.__class__.__module__,
-            self.__class__.__name__,
-            ", ".join(map(repr, internal)))
-
-    def run(self, result=None):
-        if result is None:
-            result = TestResult()
-        result.startTest(self)
-        result.addError(self, self._error)
-        result.stopTest(self)
+    :param test_id: The id of the test.
+    :param error: The exc info tuple that will be used as the test's error.
+        This is inserted into the details as 'traceback' - any existing key
+        will be overridden.
+    :param short_description: An optional short description of the test.
+    :param details: Outcome details as accepted by addSuccess etc.
+    """
+    return PlaceHolder(test_id, short_description=short_description,
+        details=details, outcome='addError', error=error)
 
 
 # Python 2.4 did not know how to copy functions.
@@ -775,6 +772,25 @@ class ExpectedException:
             if mismatch:
                 raise AssertionError(mismatch.describe())
         return True
+
+
+class Nullary(object):
+    """Turn a callable into a nullary callable.
+
+    The advantage of this over ``lambda: f(*args, **kwargs)`` is that it
+    preserves the ``repr()`` of ``f``.
+    """
+
+    def __init__(self, callable_object, *args, **kwargs):
+        self._callable_object = callable_object
+        self._args = args
+        self._kwargs = kwargs
+
+    def __call__(self):
+        return self._callable_object(*self._args, **self._kwargs)
+
+    def __repr__(self):
+        return repr(self._callable_object)
 
 
 # Signal that this is part of the testing framework, and that code from this

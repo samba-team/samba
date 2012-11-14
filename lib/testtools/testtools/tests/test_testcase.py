@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2008-2012 testtools developers. See LICENSE for details.
 
 """Tests for extensions to the base test library."""
 
@@ -23,6 +23,7 @@ from testtools.compat import (
     _b,
     _u,
     )
+from testtools.content import TracebackContent
 from testtools.matchers import (
     Annotate,
     DocTestMatches,
@@ -30,12 +31,12 @@ from testtools.matchers import (
     MatchesException,
     Raises,
     )
+from testtools.testcase import Nullary
 from testtools.testresult.doubles import (
     Python26TestResult,
     Python27TestResult,
     ExtendedTestResult,
     )
-from testtools.testresult.real import TestResult
 from testtools.tests.helpers import (
     an_exc_info,
     FullStackRunTest,
@@ -76,16 +77,21 @@ class TestPlaceHolder(TestCase):
         # repr(placeholder) shows you how the object was constructed.
         test = PlaceHolder("test id")
         self.assertEqual(
-            "<testtools.testcase.PlaceHolder(%s)>" % repr(test.id()),
-            repr(test))
+            "<testtools.testcase.PlaceHolder('addSuccess', %s, {})>" % repr(
+            test.id()), repr(test))
 
     def test_repr_with_description(self):
         # repr(placeholder) shows you how the object was constructed.
         test = PlaceHolder("test id", "description")
         self.assertEqual(
-            "<testtools.testcase.PlaceHolder(%r, %r)>" % (
-                test.id(), test.shortDescription()),
-            repr(test))
+            "<testtools.testcase.PlaceHolder('addSuccess', %r, {}, %r)>" % (
+            test.id(), test.shortDescription()), repr(test))
+
+    def test_repr_custom_outcome(self):
+        test = PlaceHolder("test id", outcome='addSkip')
+        self.assertEqual(
+            "<testtools.testcase.PlaceHolder('addSkip', %r, {})>" % (
+            test.id()), repr(test))
 
     def test_counts_as_one_test(self):
         # A placeholder test counts as one test.
@@ -105,6 +111,17 @@ class TestPlaceHolder(TestCase):
         self.assertEqual(
             [('startTest', test), ('addSuccess', test), ('stopTest', test)],
             log)
+
+    def test_supplies_details(self):
+        details = {'quux':None}
+        test = PlaceHolder('foo', details=details)
+        result = ExtendedTestResult()
+        test.run(result)
+        self.assertEqual(
+            [('startTest', test),
+             ('addSuccess', test, details),
+             ('stopTest', test)],
+            result._events)
 
     def test_call_is_run(self):
         # A PlaceHolder can be called, in which case it behaves like run.
@@ -126,6 +143,8 @@ class TestPlaceHolder(TestCase):
 
 
 class TestErrorHolder(TestCase):
+    # Note that these tests exist because ErrorHolder exists - it could be
+    # deprecated and dropped at this point.
 
     run_test_with = FullStackRunTest
 
@@ -157,23 +176,6 @@ class TestErrorHolder(TestCase):
         test = ErrorHolder("test id", self.makeException(), "description")
         self.assertEqual("description", test.shortDescription())
 
-    def test_repr_just_id(self):
-        # repr(placeholder) shows you how the object was constructed.
-        error = self.makeException()
-        test = ErrorHolder("test id", error)
-        self.assertEqual(
-            "<testtools.testcase.ErrorHolder(%r, %r)>" % (test.id(), error),
-            repr(test))
-
-    def test_repr_with_description(self):
-        # repr(placeholder) shows you how the object was constructed.
-        error = self.makeException()
-        test = ErrorHolder("test id", error, "description")
-        self.assertEqual(
-            "<testtools.testcase.ErrorHolder(%r, %r, %r)>" % (
-                test.id(), error, test.shortDescription()),
-            repr(test))
-
     def test_counts_as_one_test(self):
         # A placeholder test counts as one test.
         test = self.makePlaceHolder()
@@ -185,14 +187,15 @@ class TestErrorHolder(TestCase):
         self.assertEqual(test.id(), str(test))
 
     def test_runs_as_error(self):
-        # When run, a PlaceHolder test records a success.
+        # When run, an ErrorHolder test records an error.
         error = self.makeException()
         test = self.makePlaceHolder(error=error)
-        log = []
-        test.run(LoggingResult(log))
+        result = ExtendedTestResult()
+        log = result._events
+        test.run(result)
         self.assertEqual(
             [('startTest', test),
-             ('addError', test, error),
+             ('addError', test, test._details),
              ('stopTest', test)], log)
 
     def test_call_is_run(self):
@@ -260,7 +263,8 @@ class TestAssertions(TestCase):
         # assertRaises raises self.failureException when it's passed a
         # callable that raises no error.
         ret = ('orange', 42)
-        self.assertFails("<function <lambda> at ...> returned ('orange', 42)",
+        self.assertFails(
+            "<function ...<lambda> at ...> returned ('orange', 42)",
             self.assertRaises, RuntimeError, lambda: ret)
 
     def test_assertRaises_fails_when_different_error_raised(self):
@@ -303,11 +307,22 @@ class TestAssertions(TestCase):
         # a callable that doesn't raise an exception, then fail with an
         # appropriate error message.
         expectedExceptions = (RuntimeError, ZeroDivisionError)
-        failure = self.assertRaises(
+        self.assertRaises(
             self.failureException,
             self.assertRaises, expectedExceptions, lambda: None)
-        self.assertFails('<function <lambda> at ...> returned None',
+        self.assertFails('<function ...<lambda> at ...> returned None',
             self.assertRaises, expectedExceptions, lambda: None)
+
+    def test_assertRaises_function_repr_in_exception(self):
+        # When assertRaises fails, it includes the repr of the invoked
+        # function in the error message, so it's easy to locate the problem.
+        def foo():
+            """An arbitrary function."""
+            pass
+        self.assertThat(
+            lambda: self.assertRaises(Exception, foo),
+            Raises(
+                MatchesException(self.failureException, '.*%r.*' % (foo,))))
 
     def assertFails(self, message, function, *args, **kwargs):
         """Assert that function raises a failure with the given message."""
@@ -510,7 +525,7 @@ class TestAssertions(TestCase):
         about stack traces and formats the exception class. We don't care
         about either of these, so we take its output and parse it a little.
         """
-        error = TestResult()._exc_info_to_unicode((e.__class__, e, None), self)
+        error = TracebackContent((e.__class__, e, None), self).as_text()
         # We aren't at all interested in the traceback.
         if error.startswith('Traceback (most recent call last):\n'):
             lines = error.splitlines(True)[1:]
@@ -1072,7 +1087,7 @@ class TestSkipping(TestCase):
         case.run(result)
         self.assertEqual('addSkip', result._events[1][0])
         self.assertEqual('no reason given.',
-            ''.join(result._events[1][2]['reason'].iter_text()))
+            result._events[1][2]['reason'].as_text())
 
     def test_skipException_in_setup_calls_result_addSkip(self):
         class TestThatRaisesInSetUp(TestCase):
@@ -1281,6 +1296,38 @@ class TestTestCaseSuper(TestCase):
         test.setUp()
         test.tearDown()
         self.assertTrue(test.teardown_called)
+
+
+class TestNullary(TestCase):
+
+    def test_repr(self):
+        # The repr() of nullary is the same as the repr() of the wrapped
+        # function.
+        def foo():
+            pass
+        wrapped = Nullary(foo)
+        self.assertEqual(repr(wrapped), repr(foo))
+
+    def test_called_with_arguments(self):
+        # The function is called with the arguments given to Nullary's
+        # constructor.
+        l = []
+        def foo(*args, **kwargs):
+            l.append((args, kwargs))
+        wrapped = Nullary(foo, 1, 2, a="b")
+        wrapped()
+        self.assertEqual(l, [((1, 2), {'a': 'b'})])
+
+    def test_returns_wrapped(self):
+        # Calling Nullary returns whatever the function returns.
+        ret = object()
+        wrapped = Nullary(lambda: ret)
+        self.assertIs(ret, wrapped())
+
+    def test_raises(self):
+        # If the function raises, so does Nullary when called.
+        wrapped = Nullary(lambda: 1/0)
+        self.assertRaises(ZeroDivisionError, wrapped)
 
 
 def test_suite():

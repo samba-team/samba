@@ -746,6 +746,19 @@ class TestAssertFailsWith(NeedsTwistedTestCase):
             lambda x: self.fail("Should not have succeeded"), check_result)
 
 
+class TestRunWithLogObservers(NeedsTwistedTestCase):
+
+    def test_restores_observers(self):
+        from testtools.deferredruntest import run_with_log_observers
+        from twisted.python import log
+        # Make sure there's at least one observer.  This reproduces bug
+        # #926189.
+        log.addObserver(lambda *args: None)
+        observers = list(log.theLogPublisher.observers)
+        run_with_log_observers([], lambda: None)
+        self.assertEqual(observers, log.theLogPublisher.observers)
+
+
 def test_suite():
     from unittest import TestLoader, TestSuite
     return TestSuite(

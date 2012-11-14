@@ -13,5 +13,5 @@ __all__ = [
 
 def reraise(exc_class, exc_obj, exc_tb, _marker=object()):
     """Re-raise an exception received from sys.exc_info() or similar."""
-    raise exc_class(*exc_obj.args).with_traceback(exc_tb)
+    raise exc_obj.with_traceback(exc_tb)
 

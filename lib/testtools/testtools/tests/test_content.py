@@ -1,5 +1,6 @@
-# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2008-2012 testtools developers. See LICENSE for details.
 
+import json
 import os
 import tempfile
 import unittest
@@ -15,6 +16,8 @@ from testtools.content import (
     Content,
     content_from_file,
     content_from_stream,
+    JSON,
+    json_content,
     TracebackContent,
     text_content,
     )
@@ -87,6 +90,12 @@ class TestContent(TestCase):
         content = Content(content_type, lambda: [iso_version])
         self.assertEqual([text], list(content.iter_text()))
 
+    def test_as_text(self):
+        content_type = ContentType("text", "strange", {"charset": "utf8"})
+        content = Content(
+            content_type, lambda: [_u("bytes\xea").encode("utf8")])
+        self.assertEqual(_u("bytes\xea"), content.as_text())
+
     def test_from_file(self):
         fd, path = tempfile.mkstemp()
         self.addCleanup(os.remove, path)
@@ -130,11 +139,12 @@ class TestContent(TestCase):
     def test_from_stream_eager_loading(self):
         fd, path = tempfile.mkstemp()
         self.addCleanup(os.remove, path)
+        self.addCleanup(os.close, fd)
         os.write(fd, _b('some data'))
         stream = open(path, 'rb')
+        self.addCleanup(stream.close)
         content = content_from_stream(stream, UTF8_TEXT, buffer_now=True)
         os.write(fd, _b('more data'))
-        os.close(fd)
         self.assertThat(
             ''.join(content.iter_text()), Equals('some data'))
 
@@ -142,6 +152,11 @@ class TestContent(TestCase):
         data = _u("some data")
         expected = Content(UTF8_TEXT, lambda: [data.encode('utf8')])
         self.assertEqual(expected, text_content(data))
+
+    def test_json_content(self):
+        data = {'foo': 'bar'}
+        expected = Content(JSON, lambda: [_b('{"foo": "bar"}')])
+        self.assertEqual(expected, json_content(data))
 
 
 class TestTracebackContent(TestCase):

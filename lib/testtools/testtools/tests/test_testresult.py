@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2008-2012 testtools developers. See LICENSE for details.
 
 """Test TestResults and related things."""
 
@@ -17,8 +17,12 @@ import warnings
 from testtools import (
     ExtendedToOriginalDecorator,
     MultiTestResult,
+    PlaceHolder,
+    Tagger,
     TestCase,
     TestResult,
+    TestResultDecorator,
+    TestByTestResult,
     TextTestResult,
     ThreadsafeForwardingResult,
     testresult,
@@ -28,6 +32,7 @@ from testtools.compat import (
     _get_exception_encoding,
     _r,
     _u,
+    advance_iterator,
     str_is_unicode,
     StringIO,
     )
@@ -35,11 +40,14 @@ from testtools.content import (
     Content,
     content_from_stream,
     text_content,
+    TracebackContent,
     )
 from testtools.content_type import ContentType, UTF8_TEXT
 from testtools.matchers import (
+    Contains,
     DocTestMatches,
     Equals,
+    MatchesAny,
     MatchesException,
     Raises,
     )
@@ -56,6 +64,7 @@ from testtools.testresult.doubles import (
     )
 from testtools.testresult.real import (
     _details_to_str,
+    _merge_tags,
     utc,
     )
 
@@ -185,8 +194,82 @@ class Python27Contract(Python26Contract):
         result.stopTestRun()
 
 
-class DetailsContract(Python27Contract):
-    """Tests for the contract of TestResults."""
+class TagsContract(Python27Contract):
+    """Tests to ensure correct tagging behaviour.
+
+    See the subunit docs for guidelines on how this is supposed to work.
+    """
+
+    def test_no_tags_by_default(self):
+        # Results initially have no tags.
+        result = self.makeResult()
+        self.assertEqual(frozenset(), result.current_tags)
+
+    def test_adding_tags(self):
+        # Tags are added using 'tags' and thus become visible in
+        # 'current_tags'.
+        result = self.makeResult()
+        result.tags(set(['foo']), set())
+        self.assertEqual(set(['foo']), result.current_tags)
+
+    def test_removing_tags(self):
+        # Tags are removed using 'tags'.
+        result = self.makeResult()
+        result.tags(set(['foo']), set())
+        result.tags(set(), set(['foo']))
+        self.assertEqual(set(), result.current_tags)
+
+    def test_startTestRun_resets_tags(self):
+        # startTestRun makes a new test run, and thus clears all the tags.
+        result = self.makeResult()
+        result.tags(set(['foo']), set())
+        result.startTestRun()
+        self.assertEqual(set(), result.current_tags)
+
+    def test_add_tags_within_test(self):
+        # Tags can be added after a test has run.
+        result = self.makeResult()
+        result.startTestRun()
+        result.tags(set(['foo']), set())
+        result.startTest(self)
+        result.tags(set(['bar']), set())
+        self.assertEqual(set(['foo', 'bar']), result.current_tags)
+
+    def test_tags_added_in_test_are_reverted(self):
+        # Tags added during a test run are then reverted once that test has
+        # finished.
+        result = self.makeResult()
+        result.startTestRun()
+        result.tags(set(['foo']), set())
+        result.startTest(self)
+        result.tags(set(['bar']), set())
+        result.addSuccess(self)
+        result.stopTest(self)
+        self.assertEqual(set(['foo']), result.current_tags)
+
+    def test_tags_removed_in_test(self):
+        # Tags can be removed during tests.
+        result = self.makeResult()
+        result.startTestRun()
+        result.tags(set(['foo']), set())
+        result.startTest(self)
+        result.tags(set(), set(['foo']))
+        self.assertEqual(set(), result.current_tags)
+
+    def test_tags_removed_in_test_are_restored(self):
+        # Tags removed during tests are restored once that test has finished.
+        result = self.makeResult()
+        result.startTestRun()
+        result.tags(set(['foo']), set())
+        result.startTest(self)
+        result.tags(set(), set(['foo']))
+        result.addSuccess(self)
+        result.stopTest(self)
+        self.assertEqual(set(['foo']), result.current_tags)
+
+
+class DetailsContract(TagsContract):
+    """Tests for the details API of TestResults."""
 
     def test_addExpectedFailure_details(self):
         # Calling addExpectedFailure(test, details=xxx) completes ok.
@@ -336,6 +419,14 @@ class TestAdaptedPython27TestResultContract(TestCase, DetailsContract):
         return ExtendedToOriginalDecorator(Python27TestResult())
 
 
+class TestTestResultDecoratorContract(TestCase, StartTestRunContract):
+
+    run_test_with = FullStackRunTest
+
+    def makeResult(self):
+        return TestResultDecorator(TestResult())
+
+
 class TestTestResult(TestCase):
     """Tests for 'TestResult'."""
 
@@ -436,6 +527,18 @@ class TestTestResult(TestCase):
                 '...MismatchError: 1 != 2\n',
                 doctest.ELLIPSIS))
 
+    def test_exc_info_to_unicode(self):
+        # subunit upcalls to TestResult._exc_info_to_unicode, so we need to
+        # make sure that it's there.
+        #
+        # See <https://bugs.launchpad.net/testtools/+bug/929063>.
+        test = make_erroring_test()
+        exc_info = make_exception_info(RuntimeError, "foo")
+        result = self.makeResult()
+        text_traceback = result._exc_info_to_unicode(exc_info, test)
+        self.assertEqual(
+            TracebackContent(exc_info, test).as_text(), text_traceback)
+
 
 class TestMultiTestResult(TestCase):
     """Tests for 'MultiTestResult'."""
@@ -530,6 +633,14 @@ class TestMultiTestResult(TestCase):
         multi_result = MultiTestResult(Result([]), Result([]))
         result = multi_result.stopTestRun()
         self.assertEqual(('foo', 'foo'), result)
+
+    def test_tags(self):
+        # Calling `tags` on a `MultiTestResult` calls `tags` on all its
+        # `TestResult`s.
+        added_tags = set(['foo', 'bar'])
+        removed_tags = set(['eggs'])
+        self.multiResult.tags(added_tags, removed_tags)
+        self.assertResultLogsEqual([('tags', added_tags, removed_tags)])
 
     def test_time(self):
         # the time call is dispatched, not eaten by the base class
@@ -664,85 +775,284 @@ UNEXPECTED SUCCESS: testtools.tests.test_testresult.Test.succeeded
 class TestThreadSafeForwardingResult(TestCase):
     """Tests for `TestThreadSafeForwardingResult`."""
 
-    def setUp(self):
-        super(TestThreadSafeForwardingResult, self).setUp()
-        self.result_semaphore = threading.Semaphore(1)
-        self.target = LoggingResult([])
-        self.result1 = ThreadsafeForwardingResult(self.target,
-            self.result_semaphore)
+    def make_results(self, n):
+        events = []
+        target = LoggingResult(events)
+        semaphore = threading.Semaphore(1)
+        return [
+            ThreadsafeForwardingResult(target, semaphore)
+            for i in range(n)], events
 
     def test_nonforwarding_methods(self):
         # startTest and stopTest are not forwarded because they need to be
         # batched.
-        self.result1.startTest(self)
-        self.result1.stopTest(self)
-        self.assertEqual([], self.target._events)
+        [result], events = self.make_results(1)
+        result.startTest(self)
+        result.stopTest(self)
+        self.assertEqual([], events)
+
+    def test_tags_not_forwarded(self):
+        # Tags need to be batched for each test, so they aren't forwarded
+        # until a test runs.
+        [result], events = self.make_results(1)
+        result.tags(set(['foo']), set(['bar']))
+        self.assertEqual([], events)
+
+    def test_global_tags_simple(self):
+        # Tags specified outside of a test result are global. When a test's
+        # results are finally forwarded, we send through these global tags
+        # *as* test specific tags, because as a multiplexer there should be no
+        # way for a global tag on an input stream to affect tests from other
+        # streams - we can just always issue test local tags.
+        [result], events = self.make_results(1)
+        result.tags(set(['foo']), set())
+        result.time(1)
+        result.startTest(self)
+        result.time(2)
+        result.addSuccess(self)
+        self.assertEqual(
+            [('time', 1),
+             ('startTest', self),
+             ('time', 2),
+             ('tags', set(['foo']), set()),
+             ('addSuccess', self),
+             ('stopTest', self),
+             ], events)
+
+    def test_global_tags_complex(self):
+        # Multiple calls to tags() in a global context are buffered until the
+        # next test completes and are issued as part of of the test context,
+        # because they cannot be issued until the output result is locked.
+        # The sample data shows them being merged together, this is, strictly
+        # speaking incidental - they could be issued separately (in-order) and
+        # still be legitimate.
+        [result], events = self.make_results(1)
+        result.tags(set(['foo', 'bar']), set(['baz', 'qux']))
+        result.tags(set(['cat', 'qux']), set(['bar', 'dog']))
+        result.time(1)
+        result.startTest(self)
+        result.time(2)
+        result.addSuccess(self)
+        self.assertEqual(
+            [('time', 1),
+             ('startTest', self),
+             ('time', 2),
+             ('tags', set(['cat', 'foo', 'qux']), set(['dog', 'bar', 'baz'])),
+             ('addSuccess', self),
+             ('stopTest', self),
+             ], events)
+
+    def test_local_tags(self):
+        # Any tags set within a test context are forwarded in that test
+        # context when the result is finally forwarded.  This means that the
+        # tags for the test are part of the atomic message communicating
+        # everything about that test.
+        [result], events = self.make_results(1)
+        result.time(1)
+        result.startTest(self)
+        result.tags(set(['foo']), set([]))
+        result.tags(set(), set(['bar']))
+        result.time(2)
+        result.addSuccess(self)
+        self.assertEqual(
+            [('time', 1),
+             ('startTest', self),
+             ('time', 2),
+             ('tags', set(['foo']), set(['bar'])),
+             ('addSuccess', self),
+             ('stopTest', self),
+             ], events)
+
+    def test_local_tags_dont_leak(self):
+        # A tag set during a test is local to that test and is not set during
+        # the tests that follow.
+        [result], events = self.make_results(1)
+        a, b = PlaceHolder('a'), PlaceHolder('b')
+        result.time(1)
+        result.startTest(a)
+        result.tags(set(['foo']), set([]))
+        result.time(2)
+        result.addSuccess(a)
+        result.stopTest(a)
+        result.time(3)
+        result.startTest(b)
+        result.time(4)
+        result.addSuccess(b)
+        result.stopTest(b)
+        self.assertEqual(
+            [('time', 1),
+             ('startTest', a),
+             ('time', 2),
+             ('tags', set(['foo']), set()),
+             ('addSuccess', a),
+             ('stopTest', a),
+             ('time', 3),
+             ('startTest', b),
+             ('time', 4),
+             ('addSuccess', b),
+             ('stopTest', b),
+             ], events)
 
     def test_startTestRun(self):
-        self.result1.startTestRun()
-        self.result2 = ThreadsafeForwardingResult(self.target,
-            self.result_semaphore)
-        self.result2.startTestRun()
-        self.assertEqual(["startTestRun", "startTestRun"], self.target._events)
+        # Calls to startTestRun are not batched, because we are only
+        # interested in sending tests atomically, not the whole run.
+        [result1, result2], events = self.make_results(2)
+        result1.startTestRun()
+        result2.startTestRun()
+        self.assertEqual(["startTestRun", "startTestRun"], events)
 
     def test_stopTestRun(self):
-        self.result1.stopTestRun()
-        self.result2 = ThreadsafeForwardingResult(self.target,
-            self.result_semaphore)
-        self.result2.stopTestRun()
-        self.assertEqual(["stopTestRun", "stopTestRun"], self.target._events)
+        # Calls to stopTestRun are not batched, because we are only
+        # interested in sending tests atomically, not the whole run.
+        [result1, result2], events = self.make_results(2)
+        result1.stopTestRun()
+        result2.stopTestRun()
+        self.assertEqual(["stopTestRun", "stopTestRun"], events)
 
-    def test_forwarding_methods(self):
-        # error, failure, skip and success are forwarded in batches.
-        exc_info1 = make_exception_info(RuntimeError, 'error')
-        starttime1 = datetime.datetime.utcfromtimestamp(1.489)
-        endtime1 = datetime.datetime.utcfromtimestamp(51.476)
-        self.result1.time(starttime1)
-        self.result1.startTest(self)
-        self.result1.time(endtime1)
-        self.result1.addError(self, exc_info1)
-        exc_info2 = make_exception_info(AssertionError, 'failure')
-        starttime2 = datetime.datetime.utcfromtimestamp(2.489)
-        endtime2 = datetime.datetime.utcfromtimestamp(3.476)
-        self.result1.time(starttime2)
-        self.result1.startTest(self)
-        self.result1.time(endtime2)
-        self.result1.addFailure(self, exc_info2)
-        reason = _u("Skipped for some reason")
-        starttime3 = datetime.datetime.utcfromtimestamp(4.489)
-        endtime3 = datetime.datetime.utcfromtimestamp(5.476)
-        self.result1.time(starttime3)
-        self.result1.startTest(self)
-        self.result1.time(endtime3)
-        self.result1.addSkip(self, reason)
-        starttime4 = datetime.datetime.utcfromtimestamp(6.489)
-        endtime4 = datetime.datetime.utcfromtimestamp(7.476)
-        self.result1.time(starttime4)
-        self.result1.startTest(self)
-        self.result1.time(endtime4)
-        self.result1.addSuccess(self)
+    def test_forward_addError(self):
+        # Once we receive an addError event, we forward all of the events for
+        # that test, as we now know that test is complete.
+        [result], events = self.make_results(1)
+        exc_info = make_exception_info(RuntimeError, 'error')
+        start_time = datetime.datetime.utcfromtimestamp(1.489)
+        end_time = datetime.datetime.utcfromtimestamp(51.476)
+        result.time(start_time)
+        result.startTest(self)
+        result.time(end_time)
+        result.addError(self, exc_info)
         self.assertEqual([
-            ('time', starttime1),
+            ('time', start_time),
             ('startTest', self),
-            ('time', endtime1),
-            ('addError', self, exc_info1),
+            ('time', end_time),
+            ('addError', self, exc_info),
             ('stopTest', self),
-            ('time', starttime2),
+            ], events)
+
+    def test_forward_addFailure(self):
+        # Once we receive an addFailure event, we forward all of the events
+        # for that test, as we now know that test is complete.
+        [result], events = self.make_results(1)
+        exc_info = make_exception_info(AssertionError, 'failure')
+        start_time = datetime.datetime.utcfromtimestamp(2.489)
+        end_time = datetime.datetime.utcfromtimestamp(3.476)
+        result.time(start_time)
+        result.startTest(self)
+        result.time(end_time)
+        result.addFailure(self, exc_info)
+        self.assertEqual([
+            ('time', start_time),
             ('startTest', self),
-            ('time', endtime2),
-            ('addFailure', self, exc_info2),
+            ('time', end_time),
+            ('addFailure', self, exc_info),
             ('stopTest', self),
-            ('time', starttime3),
+            ], events)
+
+    def test_forward_addSkip(self):
+        # Once we receive an addSkip event, we forward all of the events for
+        # that test, as we now know that test is complete.
+        [result], events = self.make_results(1)
+        reason = _u("Skipped for some reason")
+        start_time = datetime.datetime.utcfromtimestamp(4.489)
+        end_time = datetime.datetime.utcfromtimestamp(5.476)
+        result.time(start_time)
+        result.startTest(self)
+        result.time(end_time)
+        result.addSkip(self, reason)
+        self.assertEqual([
+            ('time', start_time),
             ('startTest', self),
-            ('time', endtime3),
+            ('time', end_time),
             ('addSkip', self, reason),
             ('stopTest', self),
-            ('time', starttime4),
+            ], events)
+
+    def test_forward_addSuccess(self):
+        # Once we receive an addSuccess event, we forward all of the events
+        # for that test, as we now know that test is complete.
+        [result], events = self.make_results(1)
+        start_time = datetime.datetime.utcfromtimestamp(6.489)
+        end_time = datetime.datetime.utcfromtimestamp(7.476)
+        result.time(start_time)
+        result.startTest(self)
+        result.time(end_time)
+        result.addSuccess(self)
+        self.assertEqual([
+            ('time', start_time),
             ('startTest', self),
-            ('time', endtime4),
+            ('time', end_time),
             ('addSuccess', self),
             ('stopTest', self),
-            ], self.target._events)
+            ], events)
+
+    def test_only_one_test_at_a_time(self):
+        # Even if there are multiple ThreadsafeForwardingResults forwarding to
+        # the same target result, the target result only receives the complete
+        # events for one test at a time.
+        [result1, result2], events = self.make_results(2)
+        test1, test2 = self, make_test()
+        start_time1 = datetime.datetime.utcfromtimestamp(1.489)
+        end_time1 = datetime.datetime.utcfromtimestamp(2.476)
+        start_time2 = datetime.datetime.utcfromtimestamp(3.489)
+        end_time2 = datetime.datetime.utcfromtimestamp(4.489)
+        result1.time(start_time1)
+        result2.time(start_time2)
+        result1.startTest(test1)
+        result2.startTest(test2)
+        result1.time(end_time1)
+        result2.time(end_time2)
+        result2.addSuccess(test2)
+        result1.addSuccess(test1)
+        self.assertEqual([
+            # test2 finishes first, and so is flushed first.
+            ('time', start_time2),
+            ('startTest', test2),
+            ('time', end_time2),
+            ('addSuccess', test2),
+            ('stopTest', test2),
+            # test1 finishes next, and thus follows.
+            ('time', start_time1),
+            ('startTest', test1),
+            ('time', end_time1),
+            ('addSuccess', test1),
+            ('stopTest', test1),
+            ], events)
+
+
+class TestMergeTags(TestCase):
+
+    def test_merge_unseen_gone_tag(self):
+        # If an incoming "gone" tag isn't currently tagged one way or the
+        # other, add it to the "gone" tags.
+        current_tags = set(['present']), set(['missing'])
+        changing_tags = set(), set(['going'])
+        expected = set(['present']), set(['missing', 'going'])
+        self.assertEqual(
+            expected, _merge_tags(current_tags, changing_tags))
+
+    def test_merge_incoming_gone_tag_with_current_new_tag(self):
+        # If one of the incoming "gone" tags is one of the existing "new"
+        # tags, then it overrides the "new" tag, leaving it marked as "gone".
+        current_tags = set(['present', 'going']), set(['missing'])
+        changing_tags = set(), set(['going'])
+        expected = set(['present']), set(['missing', 'going'])
+        self.assertEqual(
+            expected, _merge_tags(current_tags, changing_tags))
+
+    def test_merge_unseen_new_tag(self):
+        current_tags = set(['present']), set(['missing'])
+        changing_tags = set(['coming']), set()
+        expected = set(['coming', 'present']), set(['missing'])
+        self.assertEqual(
+            expected, _merge_tags(current_tags, changing_tags))
+
+    def test_merge_incoming_new_tag_with_current_gone_tag(self):
+        # If one of the incoming "new" tags is currently marked as "gone",
+        # then it overrides the "gone" tag, leaving it marked as "new".
+        current_tags = set(['present']), set(['coming', 'missing'])
+        changing_tags = set(['coming']), set()
+        expected = set(['coming', 'present']), set(['missing'])
+        self.assertEqual(
+            expected, _merge_tags(current_tags, changing_tags))
 
 
 class TestExtendedToOriginalResultDecoratorBase(TestCase):
@@ -947,16 +1257,16 @@ class TestExtendedToOriginalResultDecorator(
 
     def test_tags_py26(self):
         self.make_26_result()
-        self.converter.tags(1, 2)
+        self.converter.tags(set([1]), set([2]))
 
     def test_tags_py27(self):
         self.make_27_result()
-        self.converter.tags(1, 2)
+        self.converter.tags(set([1]), set([2]))
 
     def test_tags_pyextended(self):
         self.make_extended_result()
-        self.converter.tags(1, 2)
-        self.assertEqual([('tags', 1, 2)], self.result._events)
+        self.converter.tags(set([1]), set([2]))
+        self.assertEqual([('tags', set([1]), set([2]))], self.result._events)
 
     def test_time_py26(self):
         self.make_26_result()
@@ -1163,8 +1473,10 @@ class TestNonAsciiResults(TestCase):
         _u("\u5357\u7121"), # In ISO 2022 encodings
         _u("\xa7\xa7\xa7"), # In ISO 8859 encodings
         )
+
+    _is_pypy = "__pypy__" in sys.builtin_module_names
     # Everything but Jython shows syntax errors on the current character
-    _error_on_character = os.name != "java"
+    _error_on_character = os.name != "java" and not _is_pypy
 
     def _run(self, stream, test):
         """Run the test, the same as in testtools.run but not to stdout"""
@@ -1264,15 +1576,21 @@ class TestNonAsciiResults(TestCase):
             self.assertNotIn, self._as_output("\a\a\a"), textoutput)
         self.assertIn(self._as_output(_u("\uFFFD\uFFFD\uFFFD")), textoutput)
 
+    def _local_os_error_matcher(self):
+        if sys.version_info > (3, 3):
+            return MatchesAny(Contains("FileExistsError: "),
+                              Contains("PermissionError: "))
+        elif os.name != "nt" or sys.version_info < (2, 5):
+            return Contains(self._as_output("OSError: "))
+        else:
+            return Contains(self._as_output("WindowsError: "))
+
     def test_os_error(self):
         """Locale error messages from the OS shouldn't break anything"""
         textoutput = self._test_external_case(
             modulelevel="import os",
             testline="os.mkdir('/')")
-        if os.name != "nt" or sys.version_info < (2, 5):
-            self.assertIn(self._as_output("OSError: "), textoutput)
-        else:
-            self.assertIn(self._as_output("WindowsError: "), textoutput)
+        self.assertThat(textoutput, self._local_os_error_matcher())
 
     def test_assertion_text_shift_jis(self):
         """A terminal raw backslash in an encoded string is weird but fine"""
@@ -1374,7 +1692,9 @@ class TestNonAsciiResults(TestCase):
         finally:
             f.close()
         textoutput = self._run_external_case()
-        self.assertIn(self._as_output("\nSyntaxError: "), textoutput)
+        matches_error = MatchesAny(
+            Contains('\nTypeError: '), Contains('\nSyntaxError: '))
+        self.assertThat(textoutput, matches_error)
 
     def test_syntax_error_line_iso_8859_1(self):
         """Syntax error on a latin-1 line shows the line decoded"""
@@ -1412,6 +1732,9 @@ class TestNonAsciiResults(TestCase):
         self._write_module("bad", "euc_jp",
             "# coding: euc_jp\n$ = 0 # %s\n" % text)
         textoutput = self._run_external_case()
+        # pypy uses cpython's multibyte codecs so has their behavior here
+        if self._is_pypy:
+            self._error_on_character = True
         self.assertIn(self._as_output(_u(
             #'bad.py", line 2\n'
             '    $ = 0 # %s\n'
@@ -1527,6 +1850,189 @@ attachment-3: {{{bar}}}
 
 traceback
 """))
+
+
+class TestByTestResultTests(TestCase):
+
+    def setUp(self):
+        super(TestByTestResultTests, self).setUp()
+        self.log = []
+        self.result = TestByTestResult(self.on_test)
+        now = iter(range(5))
+        self.result._now = lambda: advance_iterator(now)
+
+    def assertCalled(self, **kwargs):
+        defaults = {
+            'test': self,
+            'tags': set(),
+            'details': None,
+            'start_time': 0,
+            'stop_time': 1,
+            }
+        defaults.update(kwargs)
+        self.assertEqual([defaults], self.log)
+
+    def on_test(self, **kwargs):
+        self.log.append(kwargs)
+
+    def test_no_tests_nothing_reported(self):
+        self.result.startTestRun()
+        self.result.stopTestRun()
+        self.assertEqual([], self.log)
+
+    def test_add_success(self):
+        self.result.startTest(self)
+        self.result.addSuccess(self)
+        self.result.stopTest(self)
+        self.assertCalled(status='success')
+
+    def test_add_success_details(self):
+        self.result.startTest(self)
+        details = {'foo': 'bar'}
+        self.result.addSuccess(self, details=details)
+        self.result.stopTest(self)
+        self.assertCalled(status='success', details=details)
+
+    def test_global_tags(self):
+        self.result.tags(['foo'], [])
+        self.result.startTest(self)
+        self.result.addSuccess(self)
+        self.result.stopTest(self)
+        self.assertCalled(status='success', tags=set(['foo']))
+
+    def test_local_tags(self):
+        self.result.tags(['foo'], [])
+        self.result.startTest(self)
+        self.result.tags(['bar'], [])
+        self.result.addSuccess(self)
+        self.result.stopTest(self)
+        self.assertCalled(status='success', tags=set(['foo', 'bar']))
+
+    def test_add_error(self):
+        self.result.startTest(self)
+        try:
+            1/0
+        except ZeroDivisionError:
+            error = sys.exc_info()
+        self.result.addError(self, error)
+        self.result.stopTest(self)
+        self.assertCalled(
+            status='error',
+            details={'traceback': TracebackContent(error, self)})
+
+    def test_add_error_details(self):
+        self.result.startTest(self)
+        details = {"foo": text_content("bar")}
+        self.result.addError(self, details=details)
+        self.result.stopTest(self)
+        self.assertCalled(status='error', details=details)
+
+    def test_add_failure(self):
+        self.result.startTest(self)
+        try:
+            self.fail("intentional failure")
+        except self.failureException:
+            failure = sys.exc_info()
+        self.result.addFailure(self, failure)
+        self.result.stopTest(self)
+        self.assertCalled(
+            status='failure',
+            details={'traceback': TracebackContent(failure, self)})
+
+    def test_add_failure_details(self):
+        self.result.startTest(self)
+        details = {"foo": text_content("bar")}
+        self.result.addFailure(self, details=details)
+        self.result.stopTest(self)
+        self.assertCalled(status='failure', details=details)
+
+    def test_add_xfail(self):
+        self.result.startTest(self)
+        try:
+            1/0
+        except ZeroDivisionError:
+            error = sys.exc_info()
+        self.result.addExpectedFailure(self, error)
+        self.result.stopTest(self)
+        self.assertCalled(
+            status='xfail',
+            details={'traceback': TracebackContent(error, self)})
+
+    def test_add_xfail_details(self):
+        self.result.startTest(self)
+        details = {"foo": text_content("bar")}
+        self.result.addExpectedFailure(self, details=details)
+        self.result.stopTest(self)
+        self.assertCalled(status='xfail', details=details)
+
+    def test_add_unexpected_success(self):
+        self.result.startTest(self)
+        details = {'foo': 'bar'}
+        self.result.addUnexpectedSuccess(self, details=details)
+        self.result.stopTest(self)
+        self.assertCalled(status='success', details=details)
+
+    def test_add_skip_reason(self):
+        self.result.startTest(self)
+        reason = self.getUniqueString()
+        self.result.addSkip(self, reason)
+        self.result.stopTest(self)
+        self.assertCalled(
+            status='skip', details={'reason': text_content(reason)})
+
+    def test_add_skip_details(self):
+        self.result.startTest(self)
+        details = {'foo': 'bar'}
+        self.result.addSkip(self, details=details)
+        self.result.stopTest(self)
+        self.assertCalled(status='skip', details=details)
+
+    def test_twice(self):
+        self.result.startTest(self)
+        self.result.addSuccess(self, details={'foo': 'bar'})
+        self.result.stopTest(self)
+        self.result.startTest(self)
+        self.result.addSuccess(self)
+        self.result.stopTest(self)
+        self.assertEqual(
+            [{'test': self,
+              'status': 'success',
+              'start_time': 0,
+              'stop_time': 1,
+              'tags': set(),
+              'details': {'foo': 'bar'}},
+             {'test': self,
+              'status': 'success',
+              'start_time': 2,
+              'stop_time': 3,
+              'tags': set(),
+              'details': None},
+             ],
+            self.log)
+
+
+class TestTagger(TestCase):
+
+    def test_tags_tests(self):
+        result = ExtendedTestResult()
+        tagger = Tagger(result, set(['foo']), set(['bar']))
+        test1, test2 = self, make_test()
+        tagger.startTest(test1)
+        tagger.addSuccess(test1)
+        tagger.stopTest(test1)
+        tagger.startTest(test2)
+        tagger.addSuccess(test2)
+        tagger.stopTest(test2)
+        self.assertEqual(
+            [('startTest', test1),
+             ('tags', set(['foo']), set(['bar'])),
+             ('addSuccess', test1),
+             ('stopTest', test1),
+             ('startTest', test2),
+             ('tags', set(['foo']), set(['bar'])),
+             ('addSuccess', test2),
+             ('stopTest', test2),
+             ], result._events)
 
 
 def test_suite():

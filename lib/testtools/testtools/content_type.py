@@ -1,4 +1,4 @@
-# Copyright (c) 2009-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2009-2012 testtools developers. See LICENSE for details.
 
 """ContentType - a MIME Content Type."""
 
@@ -30,10 +30,12 @@ class ContentType(object):
         if self.parameters:
             params = '; '
             params += ', '.join(
-                '%s="%s"' % (k, v) for k, v in self.parameters.items())
+                sorted('%s="%s"' % (k, v) for k, v in self.parameters.items()))
         else:
             params = ''
         return "%s/%s%s" % (self.type, self.subtype, params)
 
+
+JSON = ContentType('application', 'json')
 
 UTF8_TEXT = ContentType('text', 'plain', {'charset': 'utf8'})

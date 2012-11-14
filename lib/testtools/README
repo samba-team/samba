@@ -31,7 +31,10 @@ under the same license as Python, see LICENSE for details.
 Required Dependencies
 ---------------------
 
- * Python 2.4+ or 3.0+
+ * Python 2.6+ or 3.0+
+
+If you would like to use testtools for earlier Python's, please use testtools
+0.9.15.
 
 
 Optional Dependencies

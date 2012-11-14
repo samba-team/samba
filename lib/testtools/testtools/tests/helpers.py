@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2011 testtools developers. See LICENSE for details.
+# Copyright (c) 2008-2012 testtools developers. See LICENSE for details.
 
 """Helpers for tests."""
 
@@ -11,10 +11,13 @@ import sys
 from testtools import TestResult
 from testtools.helpers import (
     safe_hasattr,
-    try_import,
     )
+from testtools.content import TracebackContent
 from testtools import runtest
 
+
+# Importing to preserve compatibility.
+safe_hasattr
 
 # GZ 2010-08-12: Don't do this, pointlessly creates an exc_info cycle
 try:
@@ -67,32 +70,22 @@ class LoggingResult(TestResult):
         self._events.append('done')
         super(LoggingResult, self).done()
 
+    def tags(self, new_tags, gone_tags):
+        self._events.append(('tags', new_tags, gone_tags))
+        super(LoggingResult, self).tags(new_tags, gone_tags)
+
     def time(self, a_datetime):
         self._events.append(('time', a_datetime))
         super(LoggingResult, self).time(a_datetime)
 
 
 def is_stack_hidden():
-    return safe_hasattr(runtest, '__unittest')
+    return TracebackContent.HIDE_INTERNAL_STACK
 
 
 def hide_testtools_stack(should_hide=True):
-    modules = [
-        'testtools.matchers',
-        'testtools.runtest',
-        'testtools.testcase',
-        ]
-    result = is_stack_hidden()
-    for module_name in modules:
-        module = try_import(module_name)
-        if should_hide:
-            setattr(module, '__unittest', True)
-        else:
-            try:
-                delattr(module, '__unittest')
-            except AttributeError:
-                # Attribute already doesn't exist. Our work here is done.
-                pass
+    result = TracebackContent.HIDE_INTERNAL_STACK
+    TracebackContent.HIDE_INTERNAL_STACK = should_hide
     return result
 
 
@@ -104,8 +97,9 @@ def run_with_stack_hidden(should_hide, f, *args, **kwargs):
         hide_testtools_stack(old_should_hide)
 
 
-
 class FullStackRunTest(runtest.RunTest):
 
     def _run_user(self, fn, *args, **kwargs):
-        return run_with_stack_hidden(False, fn, *args, **kwargs)
+        return run_with_stack_hidden(
+            False,
+            super(FullStackRunTest, self)._run_user, fn, *args, **kwargs)

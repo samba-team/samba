@@ -269,7 +269,7 @@ class TestProgram(object):
                           help="Pattern to match tests ('test*.py' default)")
         parser.add_option('-t', '--top-level-directory', dest='top', default=None,
                           help='Top level directory of project (defaults to start directory)')
-        parser.add_option('-l', '--list', dest='listtests', default=False,
+        parser.add_option('-l', '--list', dest='listtests', default=False, action="store_true",
                           help='List tests rather than running them.')
         parser.add_option('--load-list', dest='load_list', default=None,
                           help='Specify a filename containing the test ids to use.')
