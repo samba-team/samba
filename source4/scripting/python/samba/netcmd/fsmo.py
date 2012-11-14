@@ -103,7 +103,7 @@ all=all of the above"""),
         domain_dn = samdb.domain_dn()
         self.infrastructure_dn = "CN=Infrastructure," + domain_dn
         self.naming_dn = "CN=Partitions,%s" % samdb.get_config_basedn()
-        self.schema_dn = samdb.get_schema_basedn()
+        self.schema_dn = str(samdb.get_schema_basedn())
         self.rid_dn = "CN=RID Manager$,CN=System," + domain_dn
 
         m = ldb.Message()
