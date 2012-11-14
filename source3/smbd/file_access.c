@@ -226,8 +226,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
-		return can_delete_directory(fsp->conn,
-					    fsp->fsp_name->base_name);
+		return can_delete_directory_fsp(fsp);
 	}
 
 	return NT_STATUS_OK;
