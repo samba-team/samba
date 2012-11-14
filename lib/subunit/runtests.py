@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- Mode: python -*-
 #
 # Copyright (C) 2004 Canonical.com

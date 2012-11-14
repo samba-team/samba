@@ -18,9 +18,9 @@ import datetime
 import unittest
 import os
 
-from testtools import skipIf, TestCase
-from testtools.compat import _b, _u, BytesIO, StringIO
-from testtools.content import Content, TracebackContent
+from testtools import skipIf, TestCase, TestResult
+from testtools.compat import _b, _u, BytesIO
+from testtools.content import Content, TracebackContent, text_content
 from testtools.content_type import ContentType
 try:
     from testtools.testresult.doubles import (
@@ -38,6 +38,10 @@ except ImportError:
 import subunit
 from subunit import _remote_exception_str, _remote_exception_str_chunked
 import subunit.iso8601 as iso8601
+
+
+def details_to_str(details):
+    return TestResult()._err_details_to_string(None, details=details)
 
 
 class TestTestImports(unittest.TestCase):
@@ -87,11 +91,12 @@ class TestTestProtocolServerPipe(unittest.TestCase):
     def test_story(self):
         client = unittest.TestResult()
         protocol = subunit.TestProtocolServer(client)
+        traceback = "foo.c:53:ERROR invalid state\n"
         pipe = BytesIO(_b("test old mcdonald\n"
                         "success old mcdonald\n"
                         "test bing crosby\n"
                         "failure bing crosby [\n"
-                        "foo.c:53:ERROR invalid state\n"
+                        +  traceback +
                         "]\n"
                         "test an error\n"
                         "error an error\n"))
@@ -102,9 +107,8 @@ class TestTestProtocolServerPipe(unittest.TestCase):
                          [(an_error, _remote_exception_str + '\n')])
         self.assertEqual(
             client.failures,
-            [(bing, _remote_exception_str + ": Text attachment: traceback\n"
-                "------------\nfoo.c:53:ERROR invalid state\n"
-                "------------\n\n")])
+            [(bing, _remote_exception_str + ": "
+              + details_to_str({'traceback': text_content(traceback)}) + "\n")])
         self.assertEqual(client.testsRun, 3)
 
     def test_non_test_characters_forwarded_immediately(self):
@@ -559,9 +563,7 @@ class TestTestProtocolServerAddxFail(unittest.TestCase):
                 value = details
             else:
                 if error_message is not None:
-                    value = subunit.RemoteError(_u("Text attachment: traceback\n"
-                        "------------\n") + _u(error_message) +
-                        _u("------------\n"))
+                    value = subunit.RemoteError(details_to_str(details))
                 else:
                     value = subunit.RemoteError()
             self.assertEqual([
@@ -1298,6 +1300,22 @@ class TestTestProtocolClient(unittest.TestCase):
                 "Content-Type: text/plain\n"
                 "something\n"
                 "F\r\nserialised\nform0\r\n]\n" % self.test.id()))
+
+    def test_tags_empty(self):
+        self.protocol.tags(set(), set())
+        self.assertEqual(_b(""), self.io.getvalue())
+
+    def test_tags_add(self):
+        self.protocol.tags(set(['foo']), set())
+        self.assertEqual(_b("tags: foo\n"), self.io.getvalue())
+
+    def test_tags_both(self):
+        self.protocol.tags(set(['quux']), set(['bar']))
+        self.assertEqual(_b("tags: quux -bar\n"), self.io.getvalue())
+
+    def test_tags_gone(self):
+        self.protocol.tags(set(), set(['bar']))
+        self.assertEqual(_b("tags: -bar\n"), self.io.getvalue())
 
 
 def test_suite():

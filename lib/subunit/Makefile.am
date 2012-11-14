@@ -28,6 +28,7 @@ EXTRA_DIST =  \
 	python/subunit/tests/test_details.py \
 	python/subunit/tests/test_progress_model.py \
 	python/subunit/tests/test_subunit_filter.py \
+	python/subunit/tests/test_run.py \
 	python/subunit/tests/test_subunit_stats.py \
 	python/subunit/tests/test_subunit_tags.py \
 	python/subunit/tests/test_tap2subunit.py \
@@ -67,6 +68,7 @@ pkgpython_PYTHON = \
 	python/subunit/__init__.py \
 	python/subunit/chunked.py \
 	python/subunit/details.py \
+	python/subunit/filters.py \
 	python/subunit/iso8601.py \
 	python/subunit/progress_model.py \
 	python/subunit/run.py \

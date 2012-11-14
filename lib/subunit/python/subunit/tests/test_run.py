@@ -14,7 +14,7 @@
 #  limitations under that license.
 #
 
-from cStringIO import StringIO
+from testtools.compat import BytesIO
 import unittest
 
 from testtools import PlaceHolder
@@ -42,7 +42,7 @@ class TimeCollectingTestResult(unittest.TestResult):
 class TestSubunitTestRunner(unittest.TestCase):
 
     def test_includes_timing_output(self):
-        io = StringIO()
+        io = BytesIO()
         runner = SubunitTestRunner(stream=io)
         test = PlaceHolder('name')
         runner.run(test)

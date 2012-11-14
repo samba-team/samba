@@ -13,6 +13,7 @@ check: # test
 
 uninstall_distcheck:
 	rm -fr $(DESTINSTALLARCHLIB)
+	rm MYMETA.yml
 
 VPATH = @srcdir@
 .PHONY: uninstall_distcheck

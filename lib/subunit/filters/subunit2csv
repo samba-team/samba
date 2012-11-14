@@ -6,26 +6,18 @@
 #  license at the users choice. A copy of both licenses are available in the
 #  project source as Apache-2.0 and BSD. You may not use this file except in
 #  compliance with one of these two licences.
-#  
+#
 #  Unless required by applicable law or agreed to in writing, software
-#  distributed under these licenses is distributed on an "AS IS" BASIS, WITHOUT
+#  distributed under these licenses is d on an "AS IS" BASIS, WITHOUT
 #  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
 #  license you chose for the specific language governing permissions and
 #  limitations under that license.
 #
 
-"""Filter a subunit stream to get aggregate statistics."""
+"""Turn a subunit stream into a CSV"""
 
-
-import sys
 from subunit.filters import run_filter_script
-
-try:
-    from junitxml import JUnitXmlResult
-except ImportError:
-    sys.stderr.write("python-junitxml (https://launchpad.net/pyjunitxml or "
-        "http://pypi.python.org/pypi/junitxml) is required for this filter.")
-    raise
+from subunit.test_results import CsvResult
 
 
-run_filter_script(JUnitXmlResult, __doc__)
+run_filter_script(CsvResult, __doc__)

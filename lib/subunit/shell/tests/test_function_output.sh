@@ -27,7 +27,7 @@
 . ${SHELL_SHARE}subunit.sh
 
 echo 'test: subunit_start_test output'
-func_output=$(subunit_start_test "foo bar")
+func_output=$(subunit_start_test "foo bar"|grep -v 'time:')
 func_status=$?
 if [ $func_status == 0 -a "x$func_output" = "xtest: foo bar" ]; then
   echo 'success: subunit_start_test output'
@@ -40,7 +40,7 @@ else
 fi
 
 subunit_start_test "subunit_pass_test output"
-func_output=$(subunit_pass_test "foo bar")
+func_output=$(subunit_pass_test "foo bar"|grep -v 'time:')
 func_status=$?
 if [ $func_status == 0 -a "x$func_output" = "xsuccess: foo bar" ]; then
   subunit_pass_test "subunit_pass_test output"
@@ -53,12 +53,12 @@ else
 fi
 
 subunit_start_test "subunit_fail_test output"
-func_output=$(subunit_fail_test "foo bar" <<END
+func_output=$((subunit_fail_test "foo bar" <<END
 something
   wrong
 here
 END
-)
+)|grep -v 'time:')
 func_status=$?
 if [ $func_status == 0 -a "x$func_output" = "xfailure: foo bar [
 something
@@ -75,12 +75,12 @@ else
 fi
 
 subunit_start_test "subunit_error_test output"
-func_output=$(subunit_error_test "foo bar" <<END
+func_output=$((subunit_error_test "foo bar" <<END
 something
   died
 here
 END
-)
+)| grep -v 'time:')
 func_status=$?
 if [ $func_status == 0 -a "x$func_output" = "xerror: foo bar [
 something

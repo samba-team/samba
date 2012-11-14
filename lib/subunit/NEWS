@@ -5,12 +5,30 @@ subunit release notes
 NEXT (In development)
 ---------------------
 
+BUG FIXES
+~~~~~~~~~
+
+* ``python/subunit/tests/test_run.py`` and ``python/subunit/filters.py`` were
+  not included in the 0.0.8 tarball. (Robert Collins)
+
+0.0.8
+-----
+
 IMPROVEMENTS
 ~~~~~~~~~~~~
 
 * Perl module now correctly outputs "failure" instead of "fail".  (Stewart Smith)
 
-* Shell functions now output timestamps. (Stewart Smith)
+* Shell functions now output timestamps. (Stewart Smith, Robert Collins)
+
+* 'subunit2csv' script that converts subunit output to CSV format.
+  (Jonathan Lange)
+
+* ``TagCollapsingDecorator`` now correctly distinguishes between local and
+  global tags.  (Jonathan Lange)
+
+* ``TestResultFilter`` always forwards ``time:`` events.
+  (Benji York, Brad Crittenden)
 
 BUG FIXES
 ~~~~~~~~~
@@ -21,6 +39,23 @@ BUG FIXES
 * Add 'subunit -F/--only-genuine-failures' which sets all of '--no-skips',
   '--no-xfail', '--no-passthrough, '--no-success', and gives you just the
   failure stream. (John Arbash Meinel)
+
+* Python2.6 support was broken by the fixup feature.
+  (Arfrever Frehtes Taifersar Arahesis, #987490)
+
+* Python3 support regressed in trunk.
+  (Arfrever Frehtes Taifersar Arahesis, #987514)
+
+* Python3 support was insufficiently robust in detecting unicode streams.
+  (Robert Collins, Arfrever Frehtes Taifersar Arahesis)
+
+* Tag support has been implemented for TestProtocolClient.
+  (Robert Collins, #518016)
+
+* Tags can now be filtered. (Jonathan Lange, #664171)
+
+* Test suite works with latest testtools (but not older ones - formatting
+  changes only). (Robert Collins)
 
 0.0.7
 -----

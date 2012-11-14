@@ -13,19 +13,22 @@ else:
         ]
     }
 
-try:
+
+def _get_version_from_file(filename, start_of_line, split_marker):
+    """Extract version from file, giving last matching value or None"""
+    try:
+        return [x for x in open(filename)
+            if x.startswith(start_of_line)][-1].split(split_marker)[1].strip()
+    except (IOError, IndexError):
+        return None
+
+
+VERSION = (
     # Assume we are in a distribution, which has PKG-INFO
-    version_lines = [x for x in open('PKG-INFO').readlines()
-                        if x.startswith('Version:')]
-    version_line = version_lines and version_lines[-1] or 'VERSION = 0.0'
-    VERSION = version_line.split(':')[1].strip()
- 
-except IOError:
+    _get_version_from_file('PKG-INFO', 'Version:', ':')
     # Must be a development checkout, so use the Makefile
-    version_lines = [x for x in open('Makefile').readlines()
-                        if x.startswith('VERSION')]
-    version_line = version_lines and version_lines[-1] or 'VERSION = 0.0'
-    VERSION = version_line.split('=')[1].strip()
+    or _get_version_from_file('Makefile', 'VERSION', '=')
+    or "0.0")
 
 
 setup(
