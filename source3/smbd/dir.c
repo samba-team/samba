@@ -1743,16 +1743,20 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
  Is this directory empty ?
 *****************************************************************/
 
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-			      const char *dirname)
+NTSTATUS can_delete_directory_fsp(files_struct *fsp)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;
 	const char *dname = NULL;
+	const char *dirname = fsp->fsp_name->base_name;
 	char *talloced = NULL;
 	SMB_STRUCT_STAT st;
-	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
-					dirname, NULL, 0);
+	struct connection_struct *conn = fsp->conn;
+	struct smb_Dir *dir_hnd = OpenDir_fsp(talloc_tos(),
+					conn,
+					fsp,
+					NULL,
+					0);
 
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
@@ -1772,7 +1776,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 			continue;
 		}
 
-		DEBUG(10,("can_delete_directory: got name %s - can't delete\n",
+		DEBUG(10,("got name %s - can't delete\n",
 			 dname ));
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;

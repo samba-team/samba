@@ -1626,8 +1626,7 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp,
 			enum file_close_type close_type);
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
-NTSTATUS can_delete_directory(struct connection_struct *conn,
-				const char *dirname);
+NTSTATUS can_delete_directory_fsp(files_struct *fsp);
 bool change_to_root_user(void);
 void contend_level2_oplocks_begin(files_struct *fsp,
 				  enum level2_contention_type type);
