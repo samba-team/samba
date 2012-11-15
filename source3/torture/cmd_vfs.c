@@ -1642,6 +1642,49 @@ static NTSTATUS cmd_sys_acl_blob_get_file(struct vfs_state *vfs,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_sys_acl_blob_get_fd(struct vfs_state *vfs,
+					TALLOC_CTX *mem_ctx,
+					int argc, const char **argv)
+{
+	int fd;
+	char *description;
+	DATA_BLOB blob;
+	int ret;
+	size_t i;
+
+	if (argc != 2) {
+		printf("Usage: sys_acl_blob_get_fd <fd>\n");
+		return NT_STATUS_OK;
+	}
+
+	fd = atoi(argv[1]);
+	if (fd < 0 || fd >= 1024) {
+		printf("sys_acl_blob_get_fd: error=%d "
+		       "(file descriptor out of range)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+	if (vfs->files[fd] == NULL) {
+		printf("sys_acl_blob_get_fd: error=%d "
+		       "(invalid file descriptor)\n", EBADF);
+		return NT_STATUS_OK;
+	}
+
+	ret = SMB_VFS_SYS_ACL_BLOB_GET_FD(vfs->files[fd], talloc_tos(),
+					  &description, &blob);
+	if (ret != 0) {
+		printf("sys_acl_blob_get_fd failed (%s)\n", strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+	printf("Description: %s\n", description);
+	for (i = 0; i < blob.length; i++) {
+		printf("%.2x ", blob.data[i]);
+	}
+	printf("\n");
+
+	return NT_STATUS_OK;
+}
+
+
 
 static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
@@ -1723,6 +1766,8 @@ struct cmd_set vfs_commands[] = {
 	{ "sys_acl_get_fd", cmd_sys_acl_get_fd, "VFS sys_acl_get_fd()", "sys_acl_get_fd <fd>" },
 	{ "sys_acl_blob_get_file", cmd_sys_acl_blob_get_file,
 	  "VFS sys_acl_blob_get_file()", "sys_acl_blob_get_file <path>" },
+	{ "sys_acl_blob_get_fd", cmd_sys_acl_blob_get_fd,
+	  "VFS sys_acl_blob_get_fd()", "sys_acl_blob_get_fd <path>" },
 	{ "sys_acl_delete_def_file", cmd_sys_acl_delete_def_file, "VFS sys_acl_delete_def_file()", "sys_acl_delete_def_file <path>" },
 
 
