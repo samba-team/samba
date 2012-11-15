@@ -3469,12 +3469,41 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 }
 
 /***************************************************************************
- Initialize any local varients in the sDefault table.
+ Initialize any local variables in the sDefault table, after parsing a
+ [globals] section.
 ***************************************************************************/
 
 void init_locals(void)
 {
-	/* None as yet. */
+	/*
+	 * We run this check once the [globals] is parsed, to force
+	 * the VFS objects and other per-share settings we need for
+	 * the standard way a AD DC is operated.  We may change these
+	 * as our code evolves, which is why we force these settings.
+	 *
+	 * We can't do this at the end of lp_load_ex(), as by that
+	 * point the services have been loaded and they will already
+	 * have "" as their vfs objects.
+	 */
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		const char **vfs_objects = lp_vfs_objects(-1);
+		if (!vfs_objects || !vfs_objects[0]) {
+			if (lp_parm_const_string(-1, "xattr_tdb", "file", NULL)) {
+				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr xattr_tdb");
+			} else if (lp_parm_const_string(-1, "posix", "eadb", NULL)) {
+				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr posix_eadb");
+			} else {
+				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr");
+			}
+		}
+
+		lp_do_parameter(-1, "map hidden", "no");
+		lp_do_parameter(-1, "map system", "no");
+		lp_do_parameter(-1, "map readonly", "no");
+		lp_do_parameter(-1, "store dos attributes", "yes");
+		lp_do_parameter(-1, "create mask", "0777");
+		lp_do_parameter(-1, "directory mask", "0777");
+	}
 }
 
 /***************************************************************************
@@ -4887,17 +4916,13 @@ static bool lp_load_ex(const char *pszFname,
 
 	fault_configure(smb_panic_s3);
 
+	/*
+	 * We run this check once the whole smb.conf is parsed, to
+	 * force some settings for the standard way a AD DC is
+	 * operated.  We may changed these as our code evolves, which
+	 * is why we force these settings.
+	 */
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
-		const char **vfs_objects = lp_vfs_objects(-1);
-		if (!vfs_objects || !vfs_objects[0]) {
-			if (lp_parm_const_string(-1, "xattr_tdb", "file", NULL)) {
-				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr xattr_tdb");
-			} else if (lp_parm_const_string(-1, "posix", "eadb", NULL)) {
-				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr posix_eadb");
-			} else {
-				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr");
-			}
-		}
 		lp_do_parameter(-1, "passdb backend", "samba_dsdb");
 
 		lp_do_parameter(-1, "rpc_server:default", "external");
@@ -4909,13 +4934,6 @@ static bool lp_load_ex(const char *pszFname,
 		lp_do_parameter(-1, "rpc_server:spoolss", "embedded");
 		lp_do_parameter(-1, "rpc_daemon:spoolssd", "embedded");
 		lp_do_parameter(-1, "rpc_server:tcpip", "no");
-
-		lp_do_parameter(-1, "map hidden", "no");
-		lp_do_parameter(-1, "map system", "no");
-		lp_do_parameter(-1, "map readonly", "no");
-		lp_do_parameter(-1, "store dos attributes", "yes");
-		lp_do_parameter(-1, "create mask", "0777");
-		lp_do_parameter(-1, "directory mask", "0777");
 	}
 
 	bAllowIncludeRegistry = true;
