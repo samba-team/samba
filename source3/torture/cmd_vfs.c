@@ -1613,6 +1613,36 @@ static NTSTATUS cmd_sys_acl_get_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_sys_acl_blob_get_file(struct vfs_state *vfs,
+					  TALLOC_CTX *mem_ctx,
+					  int argc, const char **argv)
+{
+	char *description;
+	DATA_BLOB blob;
+	int ret;
+	size_t i;
+
+	if (argc != 2) {
+		printf("Usage: sys_acl_get_file <path>\n");
+		return NT_STATUS_OK;
+	}
+
+	ret = SMB_VFS_SYS_ACL_BLOB_GET_FILE(vfs->conn, argv[1], talloc_tos(),
+					    &description, &blob);
+	if (ret != 0) {
+		printf("sys_acl_blob_get_file failed (%s)\n", strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+	printf("Description: %s\n", description);
+	for (i = 0; i < blob.length; i++) {
+		printf("%.2x ", blob.data[i]);
+	}
+	printf("\n");
+
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
@@ -1691,6 +1721,8 @@ struct cmd_set vfs_commands[] = {
 	{ "chmod_acl",   cmd_chmod_acl,   "VFS chmod_acl()",    "chmod_acl <path> <mode>" },
 	{ "sys_acl_get_file", cmd_sys_acl_get_file, "VFS sys_acl_get_file()", "sys_acl_get_file <path>" },
 	{ "sys_acl_get_fd", cmd_sys_acl_get_fd, "VFS sys_acl_get_fd()", "sys_acl_get_fd <fd>" },
+	{ "sys_acl_blob_get_file", cmd_sys_acl_blob_get_file,
+	  "VFS sys_acl_blob_get_file()", "sys_acl_blob_get_file <path>" },
 	{ "sys_acl_delete_def_file", cmd_sys_acl_delete_def_file, "VFS sys_acl_delete_def_file()", "sys_acl_delete_def_file <path>" },
 
 
