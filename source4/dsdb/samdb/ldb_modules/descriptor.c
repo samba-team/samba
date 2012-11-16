@@ -644,12 +644,12 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 						      "instanceType",
 						      "objectClass", NULL };
 	struct ldb_control *sd_propagation_control;
+	int cmp_ret = -1;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(dn)) {
 		return ldb_next_request(module, req);
 	}
-
 
 	sd_propagation_control = ldb_request_get_control(req,
 					DSDB_CONTROL_SEC_DESC_PROPAGATION_OID);
@@ -774,9 +774,9 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	if (msg == NULL) {
 		return ldb_oom(ldb);
 	}
+	cmp_ret = data_blob_cmp(old_sd, sd);
 	if (sd_propagation_control != NULL) {
-		ret = data_blob_cmp(old_sd, sd);
-		if (ret == 0) {
+		if (cmp_ret == 0) {
 			/*
 			 * The nTSecurityDescriptor is unchanged,
 			 * which means we can stop the processing.
@@ -800,6 +800,20 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		if (ret != LDB_SUCCESS) {
 			return ldb_oom(ldb);
 		}
+	} else if (cmp_ret != 0) {
+		struct ldb_dn *nc_root;
+
+		ret = dsdb_find_nc_root(ldb, msg, dn, &nc_root);
+		if (ret != LDB_SUCCESS) {
+			return ldb_oom(ldb);
+		}
+
+		ret = dsdb_module_schedule_sd_propagation(module, nc_root,
+							  dn, false);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+		sd_element->values[0] = *sd;
 	} else {
 		sd_element->values[0] = *sd;
 	}
