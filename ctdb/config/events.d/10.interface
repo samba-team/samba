@@ -41,9 +41,9 @@ get_all_interfaces ()
     [ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"
     [ "$CTDB_NATGW_PUBLIC_IFACE" ] && all_interfaces="$CTDB_NATGW_PUBLIC_IFACE $all_interfaces"
 
-    # For all but the 1st line, get the 2nd last field with commas
-    # changes to spaces.
-    ctdb_ifaces=$(ctdb -Y ip -v | sed -e '1d' -e 's/:[^:]*:$//' -e 's/^.*://' -e 's/,/ /g')
+    # Get the configured interfaces for each IP.  That is, for all but
+    # the 1st line, get the last field with commas changed to spaces.
+    ctdb_ifaces=$(ctdb -Y ip -v | sed -e '1d' -e 's/:$//' -e 's/^.*://' -e 's/,/ /g')
 
     # Add $ctdb_interfaces and uniquify
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
