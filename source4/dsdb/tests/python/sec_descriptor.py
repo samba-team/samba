@@ -19,7 +19,7 @@ import samba.getopt as options
 from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT
 
 # For running the test unit
-from samba.ndr import ndr_pack
+from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba import gensec, sd_utils
@@ -1960,6 +1960,86 @@ class RightsAttributesTests(DescriptorTests):
         self.assertTrue("displayName" in res[0]["allowedAttributesEffective"])
         self.assertTrue("managedBy" in res[0]["allowedAttributesEffective"])
 
+class SdAutoInheritTests(DescriptorTests):
+    def deleteAll(self):
+        delete_force(self.ldb_admin, self.sub_dn)
+        delete_force(self.ldb_admin, self.ou_dn)
+
+    def setUp(self):
+        super(SdAutoInheritTests, self).setUp()
+        self.ou_dn = "OU=test_SdAutoInherit_ou," + self.base_dn
+        self.sub_dn = "OU=test_sub," + self.ou_dn
+        self.deleteAll()
+
+    def test_301(self):
+        """ Modify a descriptor with OWNER_SECURITY_INFORMATION set.
+            See that only the owner has been changed.
+        """
+        attrs = ["nTSecurityDescriptor", "replPropertyMetaData", "uSNChanged"]
+        controls=["sd_flags:1:%d" % (SECINFO_DACL)]
+        ace = "(A;CI;CC;;;NU)"
+        sub_ace = "(A;CIID;CC;;;NU)"
+        sd_sddl = "O:BAG:BAD:P(A;CI;0x000f01ff;;;AU)"
+        sd = security.descriptor.from_sddl(sd_sddl, self.domain_sid)
+
+        self.ldb_admin.create_ou(self.ou_dn,sd=sd)
+        self.ldb_admin.create_ou(self.sub_dn)
+
+        ou_res0 = self.sd_utils.ldb.search(self.ou_dn, SCOPE_BASE,
+                                           None, attrs, controls=controls)
+        sub_res0 = self.sd_utils.ldb.search(self.sub_dn, SCOPE_BASE,
+                                            None, attrs, controls=controls)
+
+        ou_sd0 = ndr_unpack(security.descriptor, ou_res0[0]["nTSecurityDescriptor"][0])
+        sub_sd0 = ndr_unpack(security.descriptor, sub_res0[0]["nTSecurityDescriptor"][0])
+
+        ou_sddl0 = ou_sd0.as_sddl(self.domain_sid)
+        sub_sddl0 = sub_sd0.as_sddl(self.domain_sid)
+
+        self.assertFalse(ace in ou_sddl0)
+        self.assertFalse(ace in sub_sddl0)
+
+        ou_sddl1 = (ou_sddl0[:ou_sddl0.index("(")] + ace +
+                    ou_sddl0[ou_sddl0.index("("):])
+
+        sub_sddl1 = (sub_sddl0[:sub_sddl0.index("(")] + ace +
+                     sub_sddl0[sub_sddl0.index("("):])
+
+        self.sd_utils.modify_sd_on_dn(self.ou_dn, ou_sddl1, controls=controls)
+
+        sub_res2 = self.sd_utils.ldb.search(self.sub_dn, SCOPE_BASE,
+                                            None, attrs, controls=controls)
+        ou_res2 = self.sd_utils.ldb.search(self.ou_dn, SCOPE_BASE,
+                                           None, attrs, controls=controls)
+
+        ou_sd2 = ndr_unpack(security.descriptor, ou_res2[0]["nTSecurityDescriptor"][0])
+        sub_sd2 = ndr_unpack(security.descriptor, sub_res2[0]["nTSecurityDescriptor"][0])
+
+        ou_sddl2 = ou_sd2.as_sddl(self.domain_sid)
+        sub_sddl2 = sub_sd2.as_sddl(self.domain_sid)
+
+        self.assertFalse(ou_sddl2 == ou_sddl0)
+        self.assertFalse(sub_sddl2 == sub_sddl0)
+
+        if ace not in ou_sddl2:
+            print "ou0: %s" % ou_sddl0
+            print "ou2: %s" % ou_sddl2
+
+        if sub_ace not in sub_sddl2:
+            print "sub0: %s" % sub_sddl0
+            print "sub2: %s" % sub_sddl2
+
+        self.assertTrue(ace in ou_sddl2)
+        self.assertTrue(sub_ace in sub_sddl2)
+
+        ou_usn0 = int(ou_res0[0]["uSNChanged"][0])
+        ou_usn2 = int(ou_res2[0]["uSNChanged"][0])
+        self.assertTrue(ou_usn2 > ou_usn0)
+
+        sub_usn0 = int(sub_res0[0]["uSNChanged"][0])
+        sub_usn2 = int(sub_res2[0]["uSNChanged"][0])
+        self.assertTrue(sub_usn2 == sub_usn0)
+
 if not "://" in host:
     if os.path.isfile(host):
         host = "tdb://%s" % host
@@ -1985,5 +2065,7 @@ if not runner.run(unittest.makeSuite(DaclDescriptorTests)).wasSuccessful():
 if not runner.run(unittest.makeSuite(SdFlagsDescriptorTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(RightsAttributesTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(SdAutoInheritTests)).wasSuccessful():
     rc = 1
 sys.exit(rc)
