@@ -3473,7 +3473,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
  [globals] section.
 ***************************************************************************/
 
-void init_locals(void)
+static void init_locals(void)
 {
 	/*
 	 * We run this check once the [globals] is parsed, to force
