@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-
-bld.SAMBA_BINARY('samba-dig',
-	source='samba-dig.c',
-        deps='samba-util NDR_DNS tevent clidns'
-	)
-

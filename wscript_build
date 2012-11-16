@@ -136,7 +136,6 @@ bld.RECURSE('libds/common')
 bld.RECURSE('source3')
 bld.RECURSE('dfs_server')
 bld.RECURSE('file_server')
-bld.RECURSE('utils')
 bld.RECURSE('lib/krb5_wrap')
 
 bld.RECURSE('testsuite/headers')
