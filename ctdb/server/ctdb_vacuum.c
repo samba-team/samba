@@ -679,7 +679,7 @@ static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 }
 
 /**
- * Proces the delete list:
+ * Process the delete list:
  * Send the records to delete to all other nodes with the
  * try_delete_records control.
  */
