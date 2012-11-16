@@ -65,7 +65,20 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	CTDB_NO_MEMORY_FATAL(ctdb, i);
 	i->name = talloc_strdup(i, iface);
 	CTDB_NO_MEMORY(ctdb, i->name);
-	i->link_up = false;
+	/*
+	 * If link_up defaults to true then IPs can be allocated to a
+	 * node during the first recovery.  However, then an interface
+	 * could have its link marked down during the startup event,
+	 * causing the IP to move almost immediately.  If link_up
+	 * defaults to false then, during normal operation, IPs added
+	 * to a new interface can't be assigned until a monitor cycle
+	 * has occurred and marked the new interfaces up.  This makes
+	 * IP allocation unpredictable.  The following is a neat
+	 * compromise: early in startup link_up defaults to false, so
+	 * IPs can't be assigned, and after startup IPs can be
+	 * assigned immediately.
+	 */
+	i->link_up = ctdb->done_startup;
 
 	DLIST_ADD(ctdb->ifaces, i);
 
