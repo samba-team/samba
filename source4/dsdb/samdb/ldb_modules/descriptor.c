@@ -860,11 +860,13 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 
 	return ldb_next_request(ac->module, down_req);
 }
-/* TODO */
+
 static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *olddn = req->op.rename.olddn;
+	struct ldb_dn *newdn = req->op.rename.newdn;
+	int ret;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.rename.olddn)) {
@@ -873,6 +875,21 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_rename: %s\n",
 		  ldb_dn_get_linearized(olddn));
+
+	if (ldb_dn_compare(olddn, newdn) != 0) {
+		struct ldb_dn *nc_root;
+
+		ret = dsdb_find_nc_root(ldb, req, newdn, &nc_root);
+		if (ret != LDB_SUCCESS) {
+			return ldb_oom(ldb);
+		}
+
+		ret = dsdb_module_schedule_sd_propagation(module, nc_root,
+							  newdn, true);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+	}
 
 	return ldb_next_request(module, req);
 }
