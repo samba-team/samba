@@ -42,6 +42,9 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
+/* shall we do talloc_report after each command? */
+static int memreports = 0;
+
 /****************************************************************************
 handle completion of commands for readline
 ****************************************************************************/
@@ -324,6 +327,9 @@ static NTSTATUS do_cmd(struct vfs_state *vfs, struct cmd_set *cmd_entry, char *c
 		SAFE_FREE(argv);
 	}
 
+	if (memreports != 0) {
+		talloc_report_full(mem_ctx, stdout);
+	}
 	TALLOC_FREE(mem_ctx);
 	return result;
 }
@@ -464,6 +470,8 @@ int main(int argc, char *argv[])
 		POPT_AUTOHELP
 		{"file",	'f', POPT_ARG_STRING,	&filename, 0, },
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 0, "Execute specified list of commands" },
+		{"memreport",	'm', POPT_ARG_INT,	&memreports, 0,
+		 "Report memory left on talloc stackframe after each command" },
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
