@@ -110,10 +110,10 @@ struct tevent_req *winbindd_sids_to_xids_send(TALLOC_CTX *mem_ctx,
 		state->num_non_cached += 1;
 	}
 
-        if (state->num_non_cached == 0) {
-                tevent_req_done(req);
-                return tevent_req_post(req, ev);
-        }
+	if (state->num_non_cached == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
 	subreq = wb_lookupsids_send(state, ev, state->non_cached,
 				    state->num_non_cached);
