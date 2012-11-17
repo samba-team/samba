@@ -465,8 +465,12 @@ class cmd_show(Command):
         except Exception:
             raise CommandError("GPO '%s' does not exist" % gpo)
 
-        secdesc_ndr = msg['nTSecurityDescriptor'][0]
-        secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
+        try:
+            secdesc_ndr = msg['nTSecurityDescriptor'][0]
+            secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
+            secdesc_sddl = secdesc.as_sddl()
+        except Exception:
+            secdesc_sddl = "<hidden>"
 
         self.outf.write("GPO          : %s\n" % msg['name'][0])
         self.outf.write("display name : %s\n" % msg['displayName'][0])
@@ -474,7 +478,7 @@ class cmd_show(Command):
         self.outf.write("dn           : %s\n" % msg.dn)
         self.outf.write("version      : %s\n" % attr_default(msg, 'versionNumber', '0'))
         self.outf.write("flags        : %s\n" % gpo_flags_string(int(attr_default(msg, 'flags', 0))))
-        self.outf.write("ACL          : %s\n" % secdesc.as_sddl())
+        self.outf.write("ACL          : %s\n" % secdesc_sddl)
         self.outf.write("\n")
 
 
