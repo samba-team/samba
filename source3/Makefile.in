@@ -1400,6 +1400,7 @@ WINBINDD_OBJ1 = \
 		winbindd/wb_sid2gid.o \
 		winbindd/wb_uid2sid.o \
 		winbindd/wb_gid2sid.o \
+		winbindd/wb_sids2xids.o \
 		winbindd/wb_queryuser.o \
 		winbindd/wb_lookupuseraliases.o \
 		winbindd/wb_lookupusergroups.o \
