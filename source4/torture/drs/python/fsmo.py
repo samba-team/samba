@@ -61,8 +61,8 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         creds = self.get_credentials()
         cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
                                          creds.get_username(), creds.get_password())
-        # bin/samba-tool fsmo transfer --role=role --url=ldap://DC:389
-        cmd_line = "%s fsmo transfer --role=%s --url=ldap://%s:389 %s" % (net_cmd, role, DC,
+        # bin/samba-tool fsmo transfer --role=role -H ldap://DC:389
+        cmd_line = "%s fsmo transfer --role=%s -H ldap://%s:389 %s" % (net_cmd, role, DC,
                                                                            cmd_line_auth)
         ret = os.system(cmd_line)
         self.assertEquals(ret, 0, "Transferring role %s to %s has failed!" % (role, DC))
