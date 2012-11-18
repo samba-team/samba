@@ -397,7 +397,7 @@ static int aclread_init(struct ldb_module *module)
 	if (p == NULL) {
 		return ldb_module_oom(module);
 	}
-	p->enabled = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"), NULL, "acl", "search", false);
+	p->enabled = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"), NULL, "acl", "search", true);
 	ldb_module_set_private(module, p);
 	return ldb_next_init(module);
 }
