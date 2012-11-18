@@ -215,6 +215,9 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 		DEBUG(10, ("sids_to_unixids returned %s\n",
 			   nt_errstr(status)));
 
+		/*
+		 * Extract the results for handing them back to the caller.
+		 */
 		for (j=0; j<num_ids; j++) {
 			struct wbint_TransID *id = &r->in.ids->ids[id_idx[j]];
 
