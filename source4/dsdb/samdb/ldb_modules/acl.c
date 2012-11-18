@@ -101,7 +101,7 @@ static int acl_module_init(struct ldb_module *module)
 	}
 
 	data->acl_search = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"),
-					NULL, "acl", "search", false);
+					NULL, "acl", "search", true);
 	ldb_module_set_private(module, data);
 
 	mem_ctx = talloc_new(module);

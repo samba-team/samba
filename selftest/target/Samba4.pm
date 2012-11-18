@@ -559,11 +559,8 @@ sub provision_raw_step1($$)
 		warn("can't open $ctx->{smb_conf}$?");
 		return undef;
 	}
-	my $acl = "false";
-	$acl = "true" if (defined $ENV{WITH_ACL});
 	print CONFFILE "
 [global]
-	acl:search = $acl
 	netbios name = $ctx->{netbiosname}
 	posix:eadb = $ctx->{statedir}/eadb.tdb
 	workgroup = $ctx->{domain}
