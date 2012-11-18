@@ -169,7 +169,8 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		t->type = lsa_SidType_to_id_type(n->sid_type);
 		t->domain_index = n->sid_index;
 		sid_peek_rid(&state->non_cached[i], &t->rid);
-		t->unix_id = (uint64_t)-1;
+		t->xid.id = UINT32_MAX;
+		t->xid.type = t->type;
 	}
 
 	child = idmap_child();
@@ -246,8 +247,7 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 		if (state->cached[i].sid != NULL) {
 			xid = state->cached[i].xid;
 		} else {
-			xid.id = state->ids.ids[num_non_cached].unix_id;
-			xid.type = state->ids.ids[num_non_cached].type;
+			xid = state->ids.ids[num_non_cached].xid;
 
 			idmap_cache_set_sid2unixid(
 				&state->non_cached[num_non_cached],

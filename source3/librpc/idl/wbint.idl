@@ -53,7 +53,7 @@ interface wbint
 	id_type type;
 	uint32 domain_index;
 	uint32 rid;
-	hyper unix_id;
+	unixid xid;
     } wbint_TransID;
 
     typedef struct {

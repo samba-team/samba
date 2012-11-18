@@ -222,9 +222,12 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 			struct wbint_TransID *id = &r->in.ids->ids[id_idx[j]];
 
 			if (ids[j].status != ID_MAPPED) {
+				id->xid.id = UINT32_MAX;
+				id->xid.type = ID_TYPE_NOT_SPECIFIED;
 				continue;
 			}
-			id->unix_id = ids[j].xid.id;
+
+			id->xid = ids[j].xid;
 		}
 	}
 	status = NT_STATUS_OK;
