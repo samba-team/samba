@@ -189,6 +189,11 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 
 		num_ids = 0;
 
+		/*
+		 * Convert the input data into a list of
+		 * id_map structs suitable for handing in
+		 * to the idmap sids_to_unixids method.
+		 */
 		for (j=0; j<r->in.ids->num_ids; j++) {
 			struct wbint_TransID *id = &r->in.ids->ids[j];
 
