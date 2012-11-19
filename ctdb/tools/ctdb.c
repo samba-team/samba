@@ -909,6 +909,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	uint32_t recmode, recmaster, mypnn;
+	int num_deleted_nodes = 0;
 
 	if (!ctdb_getpnn(ctdb_connection, options.pnn, &mypnn)) {
 		return -1;
@@ -931,7 +932,17 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 		return 0;
 	}
 
-	printf("Number of nodes:%d\n", nodemap->num);
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
+			num_deleted_nodes++;
+		}
+	}
+	if (num_deleted_nodes == 0) {
+		printf("Number of nodes:%d\n", nodemap->num);
+	} else {
+		printf("Number of nodes:%d (including %d deleted nodes)\n",
+		       nodemap->num, num_deleted_nodes);
+	}
 	for(i=0;i<nodemap->num;i++){
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
 			continue;
