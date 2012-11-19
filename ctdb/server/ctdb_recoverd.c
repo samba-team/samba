@@ -1185,7 +1185,7 @@ static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_
 
 
 /* 
-   a traverse function for pulling all relevent records from recdb
+   a traverse function for pulling all relevant records from recdb
  */
 struct recdb_data {
 	struct ctdb_context *ctdb;
