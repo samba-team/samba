@@ -1202,8 +1202,37 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 	struct ctdb_rec_data *rec;
 	struct ctdb_ltdb_header *hdr;
 
-	/* skip empty records */
-	if (data.dsize <= sizeof(struct ctdb_ltdb_header)) {
+	/*
+	 * skip empty records - but NOT for persistent databases:
+	 *
+	 * The record-by-record mode of recovery deletes empty records.
+	 * For persistent databases, this can lead to data corruption
+	 * by deleting records that should be there:
+	 *
+	 * - Assume the cluster has been running for a while.
+	 *
+	 * - A record R in a persistent database has been created and
+	 *   deleted a couple of times, the last operation being deletion,
+	 *   leaving an empty record with a high RSN, say 10.
+	 *
+	 * - Now a node N is turned off.
+	 *
+	 * - This leaves the local database copy of D on N with the empty
+	 *   copy of R and RSN 10. On all other nodes, the recovery has deleted
+	 *   the copy of record R.
+	 *
+	 * - Now the record is created again while node N is turned off.
+	 *   This creates R with RSN = 1 on all nodes except for N.
+	 *
+	 * - Now node N is turned on again. The following recovery will chose
+	 *   the older empty copy of R due to RSN 10 > RSN 1.
+	 *
+	 * ==> Hence the record is gone after the recovery.
+	 *
+	 * On databases like Samba's registry, this can damage the higher-level
+	 * data structures built from the various tdb-level records.
+	 */
+	if (!params->persistent && data.dsize <= sizeof(struct ctdb_ltdb_header)) {
 		return 0;
 	}
 
