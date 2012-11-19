@@ -541,12 +541,8 @@ int ctdb_client_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 	memcpy(&r->data[0], data.dptr, data.dsize);
 	
 	res = ctdb_client_queue_pkt(ctdb, &r->hdr);
-	if (res != 0) {
-		return res;
-	}
-
 	talloc_free(r);
-	return 0;
+	return res;
 }
 
 
