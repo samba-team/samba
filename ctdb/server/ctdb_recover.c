@@ -824,7 +824,9 @@ static int delete_tdb_record(struct ctdb_context *ctdb, struct ctdb_db_context *
 
 	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) == 0) {
-			tdb_delete(ctdb_db->ltdb->tdb, key);
+			if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
+				DEBUG(DEBUG_CRIT,(__location__ " Failed to delete corrupt record\n"));
+			}
 			tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
 			DEBUG(DEBUG_CRIT,(__location__ " Deleted corrupt record\n"));
 		}
