@@ -123,14 +123,6 @@
 #define HAVE_SETEUID
 #endif
 
-/* force the use of the libreplace strerror_r */
-#ifndef HAVE_STRERROR_R
-#define HAVE_STRERROR_R
-#endif
-#ifndef STRERROR_R_PROTO_COMPATIBLE
-#define STRERROR_R_PROTO_COMPATIBLE
-#endif
-
 #ifndef HAVE_DIRFD
 #ifdef HAVE_DIR_DD_FD
 #define dirfd(x) ((x)->dd_fd)
