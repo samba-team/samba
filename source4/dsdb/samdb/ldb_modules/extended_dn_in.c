@@ -412,7 +412,8 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 	}
 
 	dsdb_flags = DSDB_FLAG_NEXT_MODULE |
-		DSDB_SEARCH_SHOW_DELETED |
+		DSDB_FLAG_AS_SYSTEM |
+		DSDB_SEARCH_SHOW_RECYCLED |
 		DSDB_SEARCH_SHOW_EXTENDED_DN;
 
 	if (guid_val) {
@@ -555,6 +556,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	} else {
 		/* It looks like we need to map the DN */
 		const struct ldb_val *sid_val, *guid_val, *wkguid_val;
+		uint32_t dsdb_flags = 0;
 
 		if (!ldb_dn_match_allowed(dn, req)) {
 			return ldb_error(ldb_module_get_ctx(module),
@@ -651,7 +653,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 					   base_dn_scope,
 					   base_dn_filter,
 					   base_dn_attrs,
-					   req->controls,
+					   NULL,
 					   ac, extended_base_callback,
 					   req);
 		LDB_REQ_SET_LOCATION(down_req);
@@ -659,17 +661,16 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			return ldb_operr(ldb_module_get_ctx(module));
 		}
 
+		dsdb_flags = DSDB_FLAG_AS_SYSTEM |
+			DSDB_SEARCH_SHOW_RECYCLED |
+			DSDB_SEARCH_SHOW_EXTENDED_DN;
 		if (all_partitions) {
-			struct ldb_search_options_control *control;
-			control = talloc(down_req, struct ldb_search_options_control);
-			control->search_options = 2;
-			ret = ldb_request_replace_control(down_req,
-						      LDB_CONTROL_SEARCH_OPTIONS_OID,
-						      true, control);
-			if (ret != LDB_SUCCESS) {
-				ldb_oom(ldb_module_get_ctx(module));
-				return ret;
-			}
+			dsdb_flags |= DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
+		}
+
+		ret = dsdb_request_add_controls(down_req, dsdb_flags);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 
 		/* perform the search */
