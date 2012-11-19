@@ -351,6 +351,13 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	ret = dsdb_request_add_controls(search_req,
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ac->step_fn = objectclass_do_add;
 
 	return ldb_next_request(ac->module, search_req);
@@ -797,6 +804,13 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
 
+	ret = dsdb_request_add_controls(search_req,
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_done(ac->req, NULL, NULL, ret);
+	}
+
 	ac->step_fn = objectclass_do_mod;
 
 	ret = ldb_next_request(ac->module, search_req);
@@ -1021,9 +1035,9 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	/* we have to add the show recycled control, as otherwise DRS
 	   deletes will be refused as we will think the target parent
 	   does not exist */
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
-				      false, NULL);
-
+	ret = dsdb_request_add_controls(search_req,
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1067,6 +1081,13 @@ static int objectclass_do_rename(struct oc_context *ac)
 				   ac, get_search_callback,
 				   ac->req);
 	LDB_REQ_SET_LOCATION(search_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(search_req,
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1247,6 +1268,13 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 				   ac, get_search_callback,
 				   req);
 	LDB_REQ_SET_LOCATION(search_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_request_add_controls(search_req,
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
