@@ -785,7 +785,7 @@ char *rep_get_current_dir_name(void)
 }
 #endif
 
-#if !defined(HAVE_STRERROR_R) && !defined(strerror_r)
+#ifndef HAVE_STRERROR_R
 int rep_strerror_r(int errnum, char *buf, size_t buflen)
 {
 	char *s = strerror(errnum);

@@ -408,6 +408,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/resolve.c
         lib/roken/socket.c
         lib/roken/roken_gethostby.c
+        lib/roken/strerror_r.c
     '''
 
     HEIMDAL_LIBRARY('roken',

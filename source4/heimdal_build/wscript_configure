@@ -28,6 +28,13 @@ conf.CHECK_FUNCS('''atexit cgetent getprogname setprogname gethostname
             strptime strsep strsep_copy    strtok_r strupr swab umask uname unsetenv
             closefrom err warn errx warnx flock writev''')
 
+if conf.CHECK_FUNCS('strerror_r'):
+    # Check if strerror_r is BSD compatible (default GNU implementation is not what Heimdal expects)
+    conf.CHECK_CODE('int strerror_r(int errnum, char *buf, size_t buflen);',
+                    'STRERROR_R_PROTO_COMPATIBLE',
+                    headers='string.h', addmain=False, link=False,
+                    msg="Checking for XSI (rather than GNU) prototype for strerror_r")
+
 conf.CHECK_FUNCS_IN('hstrerror', 'resolv socket nsl', checklibc=True)
 conf.CHECK_FUNCS_IN('''getnameinfo sendmsg socket getipnodebyname gethostent gethostent_r
                        sethostent endhostent getipnodebyaddr freehostent gethostbyname
