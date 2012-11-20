@@ -49,6 +49,11 @@ os.environ["SERVER"])
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"])
         self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
 
+    def test_show_as_admin(self):
+        """Show a real GPO, and make sure it passes"""
+        (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
+
     def test_aclcheck(self):
         """Check all the GPOs on the remote server have correct ACLs"""
         (result, out, err) = self.runsubcmd("gpo", "aclcheck", "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
