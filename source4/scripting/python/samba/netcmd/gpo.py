@@ -387,16 +387,17 @@ class cmd_list(Command):
                         continue
 
                     try:
+                        sd_flags=security.SECINFO_OWNER|security.SECINFO_GROUP|security.SECINFO_DACL
                         gmsg = self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE,
                                                  attrs=['name', 'displayName', 'flags',
-                                                        'nTSecurityDescriptor'])
+                                                        'nTSecurityDescriptor'],
+                                                 controls=['sd_flags:1:%d' % sd_flags])
+                        secdesc_ndr = gmsg[0]['nTSecurityDescriptor'][0]
+                        secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
                     except Exception:
-                        self.outf.write("Failed to fetch gpo object %s\n" %
+                        self.outf.write("Failed to fetch gpo object with nTSecurityDescriptor %s\n" %
                             g['dn'])
                         continue
-
-                    secdesc_ndr = gmsg[0]['nTSecurityDescriptor'][0]
-                    secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
 
                     try:
                         samba.security.access_check(secdesc, token,
