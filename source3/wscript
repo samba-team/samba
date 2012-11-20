@@ -161,7 +161,7 @@ main() {
 main() {
         exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
 }''', 'HAVE_KERNEL_SHARE_MODES', addmain=False, execute=True,
-        msg="Checking for krenel share modes")
+        msg="Checking for kernel share modes")
 
     # check for DMAPI libs
     Logs.info("Checking for DMAPI library existence")
