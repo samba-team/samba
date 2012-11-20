@@ -297,7 +297,7 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 }
 
 /*
-  pul a bunch of records from a ltdb, filtering by lmaster
+  pull a bunch of records from a ltdb, filtering by lmaster
  */
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
 {
