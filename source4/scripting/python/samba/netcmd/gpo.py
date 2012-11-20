@@ -126,7 +126,8 @@ def get_gpo_dn(samdb, gpo):
     return dn
 
 
-def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
+def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
+                 sd_flags=security.SECINFO_OWNER|security.SECINFO_GROUP|security.SECINFO_DACL|security.SECINFO_SACL):
     '''Get GPO information using gpo, displayname or dn'''
 
     policies_dn = samdb.get_default_basedn()
@@ -154,7 +155,8 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None):
                                     'flags',
                                     'name',
                                     'displayName',
-                                    'gPCFileSysPath'])
+                                    'gPCFileSysPath'],
+                            controls=['sd_flags:1:%d' % sd_flags])
     except Exception, e:
         if gpo is not None:
             mesg = "Cannot get information for GPO %s" % gpo
