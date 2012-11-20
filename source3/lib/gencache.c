@@ -127,6 +127,110 @@ static TDB_DATA last_stabilize_key(void)
 	return result;
 }
 
+struct gencache_have_val_state {
+	time_t new_timeout;
+	const DATA_BLOB *data;
+	bool gotit;
+};
+
+static void gencache_have_val_parser(time_t old_timeout, DATA_BLOB data,
+				     void *private_data)
+{
+	struct gencache_have_val_state *state =
+		(struct gencache_have_val_state *)private_data;
+	time_t now = time(NULL);
+	int cache_time_left, new_time_left, additional_time;
+
+	/*
+	 * Excuse the many variables, but these time calculations are
+	 * confusing to me. We do not want to write to gencache with a
+	 * possibly expensive transaction if we are about to write the same
+	 * value, just extending the remaining timeout by less than 10%.
+	 */
+
+	cache_time_left = old_timeout - now;
+	if (cache_time_left <= 0) {
+		/*
+		 * timed out, write new value
+		 */
+		return;
+	}
+
+	new_time_left = state->new_timeout - now;
+	if (new_time_left <= 0) {
+		/*
+		 * Huh -- no new timeout?? Write it.
+		 */
+		return;
+	}
+
+	if (new_time_left < cache_time_left) {
+		/*
+		 * Someone wants to shorten the timeout. Let it happen.
+		 */
+		return;
+	}
+
+	/*
+	 * By how much does the new timeout extend the remaining cache time?
+	 */
+	additional_time = new_time_left - cache_time_left;
+
+	if (additional_time * 10 < 0) {
+		/*
+		 * Integer overflow. We extend by so much that we have to write it.
+		 */
+		return;
+	}
+
+	/*
+	 * The comparison below is essentially equivalent to
+	 *
+	 *    new_time_left > cache_time_left * 1.10
+	 *
+	 * but without floating point calculations.
+	 */
+
+	if (additional_time * 10 > cache_time_left) {
+		/*
+		 * We extend the cache timeout by more than 10%. Do it.
+		 */
+		return;
+	}
+
+	/*
+	 * Now the more expensive data compare.
+	 */
+	if (data_blob_cmp(state->data, &data) != 0) {
+		/*
+		 * Write a new value. Certainly do it.
+		 */
+		return;
+	}
+
+	/*
+	 * Extending the timeout by less than 10% for the same cache value is
+	 * not worth the trouble writing a value into gencache under a
+	 * possibly expensive transaction.
+	 */
+	state->gotit = true;
+}
+
+static bool gencache_have_val(const char *keystr, const DATA_BLOB *data,
+			      time_t timeout)
+{
+	struct gencache_have_val_state state;
+
+	state.new_timeout = timeout;
+	state.data = data;
+	state.gotit = false;
+
+	if (!gencache_parse(keystr, gencache_have_val_parser, &state)) {
+		return false;
+	}
+	return state.gotit;
+}
+
 /**
  * Set an entry in the cache file. If there's no such
  * one, then add it.
@@ -159,6 +263,12 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	}
 
 	if (!gencache_init()) return False;
+
+	if (gencache_have_val(keystr, blob, timeout)) {
+		DEBUG(10, ("Did not store value for %s, we already got it\n",
+			   keystr));
+		return true;
+	}
 
 	val = talloc_asprintf(talloc_tos(), CACHE_DATA_FMT, (int)timeout);
 	if (val == NULL) {
