@@ -1377,9 +1377,18 @@ static int rootdse_become_master(struct ldb_module *module,
 	fsmo->ldb = ldb;
 	fsmo->req = req;
 
-	/* we send the call asynchronously, as the ldap client is
+	/*
+	 * we send the call asynchronously, as the ldap client is
 	 * expecting to get an error back if the role transfer fails
+	 *
+	 * We need more than the default 10 seconds IRPC allows, so
+	 * set a longer timeout (default ldb timeout is 300 seconds).
+	 * We send an async reply when we are done.
+	 *
+	 * We are the first module, so don't bother working out how
+	 * long we have spent so far.
 	 */
+	dcerpc_binding_handle_set_timeout(irpc_handle, req->timeout);
 
 	treq = dcerpc_drepl_takeFSMORole_send(req, ldb_get_event_context(ldb), irpc_handle, role);
 	if (treq == NULL) {
