@@ -389,13 +389,13 @@ class cmd_list(Command):
                     try:
                         gmsg = self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE,
                                                  attrs=['name', 'displayName', 'flags',
-                                                        'ntSecurityDescriptor'])
+                                                        'nTSecurityDescriptor'])
                     except Exception:
                         self.outf.write("Failed to fetch gpo object %s\n" %
                             g['dn'])
                         continue
 
-                    secdesc_ndr = gmsg[0]['ntSecurityDescriptor'][0]
+                    secdesc_ndr = gmsg[0]['nTSecurityDescriptor'][0]
                     secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
 
                     try:
@@ -465,7 +465,7 @@ class cmd_show(Command):
         except Exception:
             raise CommandError("GPO '%s' does not exist" % gpo)
 
-        secdesc_ndr = msg['ntSecurityDescriptor'][0]
+        secdesc_ndr = msg['nTSecurityDescriptor'][0]
         secdesc = ndr_unpack(security.descriptor, secdesc_ndr)
 
         self.outf.write("GPO          : %s\n" % msg['name'][0])
@@ -971,7 +971,7 @@ class cmd_create(Command):
 
             # Get new security descriptor
             msg = get_gpo_info(self.samdb, gpo=gpo)[0]
-            ds_sd_ndr = msg['ntSecurityDescriptor'][0]
+            ds_sd_ndr = msg['nTSecurityDescriptor'][0]
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
             # Create a file system security descriptor
@@ -1123,7 +1123,7 @@ class cmd_aclcheck(Command):
 
             fs_sd = conn.get_acl(sharepath, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL, security.SEC_FLAG_MAXIMUM_ALLOWED)
 
-            ds_sd_ndr = m['ntSecurityDescriptor'][0]
+            ds_sd_ndr = m['nTSecurityDescriptor'][0]
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
             # Create a file system security descriptor
