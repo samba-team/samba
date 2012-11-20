@@ -106,7 +106,10 @@ again:
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache_notrans = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+	cache_notrans = tdb_open_log(cache_fname, 0,
+				     TDB_CLEAR_IF_FIRST|
+				     TDB_INCOMPATIBLE_HASH|
+				     TDB_NOSYNC,
 				     open_flags, 0644);
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,
