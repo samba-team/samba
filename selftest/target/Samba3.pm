@@ -816,7 +816,7 @@ sub provision($$$$$$)
 
 	my ($max_uid, $max_gid);
 	my ($uid_nobody, $uid_root, $uid_pdbtest);
-	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers);
+	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers, $gid_domadmins);
 
 	if ($unix_uid < 0xffff - 2) {
 		$max_uid = 0xffff;
@@ -838,6 +838,7 @@ sub provision($$$$$$)
 	$gid_nogroup = $max_gid - 2;
 	$gid_root = $max_gid - 3;
 	$gid_domusers = $max_gid - 4;
+	$gid_domadmins = $max_gid - 5;
 
 	##
 	## create conffile
@@ -1040,6 +1041,7 @@ pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 nogroup:x:$gid_nogroup:nobody
 $unix_name-group:x:$unix_gids[0]:
 domusers:X:$gid_domusers:
+domadmins:X:$gid_domadmins:
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:";
@@ -1138,6 +1140,10 @@ sub wait_for_start($$)
 	}
 	# Ensure we have domain users mapped.
 	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
+	if ($ret != 0) {
+	    return 1;
+	}
+	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=512 unixgroup=domadmins type=domain");
 	if ($ret != 0) {
 	    return 1;
 	}
