@@ -2022,7 +2022,8 @@ allowed:
 
 		werr = drsuapi_UpdateRefs(b_state, mem_ctx, &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(0,(__location__ ": Failed UpdateRefs in DsGetNCChanges - %s\n",
+			DEBUG(0,(__location__ ": Failed UpdateRefs on %s for %s in DsGetNCChanges - %s\n",
+				 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot), ureq.dest_dsa_dns_name,
 				 win_errstr(werr)));
 		}
 	}

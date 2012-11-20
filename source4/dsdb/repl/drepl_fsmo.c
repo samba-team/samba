@@ -108,9 +108,8 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 		return NT_STATUS_OK;
 	}
 	
-	if (is_us || 
-	    (extended_op == DRSUAPI_EXOP_NONE)) {
-		DEBUG(0,("FSMO role check failed for DN %s and owner %s \n",
+	if (is_us) {
+		DEBUG(5,("FSMO role check failed, we already own DN %s with %s\n",
 			 ldb_dn_get_linearized(fsmo_role_dn),
 			 ldb_dn_get_linearized(role_owner_dn)));
 		r->out.result = WERR_OK;
