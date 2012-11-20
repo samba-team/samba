@@ -3500,6 +3500,7 @@ static void init_locals(void)
 		lp_do_parameter(-1, "map hidden", "no");
 		lp_do_parameter(-1, "map system", "no");
 		lp_do_parameter(-1, "map readonly", "no");
+		lp_do_parameter(-1, "map archive", "no");
 		lp_do_parameter(-1, "store dos attributes", "yes");
 		lp_do_parameter(-1, "create mask", "0777");
 		lp_do_parameter(-1, "directory mask", "0777");
