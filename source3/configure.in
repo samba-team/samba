@@ -202,29 +202,21 @@ AC_ARG_WITH(profiling-data,
   AC_MSG_RESULT(no)
 )
 
-dnl Checks for programs.
-AC_ARG_ENABLE(smbtorture,
-	[AS_HELP_STRING([--enable-smbtorture], [Enable building smbtorture (default=auto)])])
-
-if test x$enable_smbtorture != xno; then
-	smbtorture_possible=yes
-else
-	smbtorture_possible=no
-fi
-
 AC_PROG_INSTALL
 AC_PROG_AWK
 # Check for GNU make
 m4_include(../m4/check_make.m4)
 AC_SAMBA_GNU_MAKE([true], [true])
 
+selftest_possible="yes"
+
 # Check for perl
 m4_include(../m4/check_perl.m4)
-AC_SAMBA_PERL([true], [smbtorture_possible=no])
+AC_SAMBA_PERL([true], [selftest_possible=no])
 
 # Check for python
 m4_include(../m4/check_python.m4)
-AC_SAMBA_PYTHON_DEVEL([true], [smbtorture_possible=no])
+AC_SAMBA_PYTHON_DEVEL([true], [selftest_possible=no])
 
 AC_CHECK_TOOL(AR, ar)
 
@@ -6441,6 +6433,9 @@ AC_MSG_CHECKING(whether to enable features for selftest)
 if test x"$selftest" = x"yes"; then
 	AC_MSG_RESULT(yes)
 	AC_DEFINE(ENABLE_SELFTEST, 1, [Support features needed for selftest])
+	if test x"$selftest_possible" != xyes; then
+		AC_MSG_ERROR(selftest support only possible with python, including development headers, and perl installed)
+	fi
 else
 	AC_MSG_RESULT(no)
 fi
@@ -6518,11 +6513,6 @@ MSG
 fi
 
 m4_include(../lib/zlib/zlib.m4)
-
-if test x$smbtorture_possible = xyes; then
-	SMBTORTURE="bin/smbtorture"
-	AC_SUBST(SMBTORTURE)
-fi
 
 AC_SUBST(ZLIB_LIBS)
 AC_SUBST(ZLIB_OBJS)
