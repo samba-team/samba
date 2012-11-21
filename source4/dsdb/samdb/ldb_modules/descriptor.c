@@ -739,9 +739,20 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *sd_control;
 	struct ldb_request *down_req;
 	struct descriptor_context *ac;
+	bool show_sd = false;
 
 	sd_control = ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID);
-	if (!sd_control) {
+	if (sd_control != NULL) {
+		show_sd = true;
+	}
+
+	if (!show_sd &&
+	    ldb_attr_in_list(req->op.search.attrs, "nTSecurityDescriptor"))
+	{
+		show_sd = true;
+	}
+
+	if (!show_sd) {
 		return ldb_next_request(module, req);
 	}
 
