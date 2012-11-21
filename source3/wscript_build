@@ -562,11 +562,7 @@ SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/
 SMBTORTURE_SRC = '''${SMBTORTURE_SRC1}
         torture/wbc_async.c'''
 
-MASKTEST_SRC = '''torture/masktest.c'''
-
 MSGTEST_SRC = '''torture/msgtest.c'''
-
-LOCKTEST_SRC = '''torture/locktest.c'''
 
 PDBTEST_SRC = '''torture/pdbtest.c'''
 
@@ -1457,14 +1453,6 @@ bld.SAMBA3_BINARY('replacetort',
                  deps='replace replace-test',
                  install=False)
 
-bld.SAMBA3_BINARY('masktest' + bld.env.suffix3,
-                 source=MASKTEST_SRC,
-                 deps='''
-                 talloc
-                 param
-                 libsmb''',
-                 vars=locals())
-
 bld.SAMBA3_BINARY('msgtest',
                  source=MSGTEST_SRC,
                  deps='''
@@ -1505,15 +1493,6 @@ bld.SAMBA3_BINARY('sharesec',
                  deps='''
                  talloc
                  popt_samba3''',
-                 vars=locals())
-
-bld.SAMBA3_BINARY('locktest' + bld.env.suffix3,
-                 source=LOCKTEST_SRC,
-                 deps='''
-                 talloc
-                 param
-                 libsmb
-                 LOCKING''',
                  vars=locals())
 
 bld.SAMBA3_BINARY('pdbtest',
