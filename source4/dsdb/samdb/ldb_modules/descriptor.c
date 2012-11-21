@@ -521,7 +521,9 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 		/* we aren't any NC */
 		ret = dsdb_module_search_dn(module, req, &parent_res, parent_dn,
 					    parent_attrs,
-					    DSDB_FLAG_NEXT_MODULE,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_FLAG_AS_SYSTEM |
+					    DSDB_SEARCH_SHOW_RECYCLED,
 					    req);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: Could not find SD for %s\n",
@@ -581,7 +583,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	struct ldb_control *sd_recalculate_control, *sd_flags_control, *show_deleted_control;
+	struct ldb_control *sd_recalculate_control, *sd_flags_control;
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
 	struct ldb_result *current_res, *parent_res;
@@ -591,7 +593,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *parent_dn, *dn;
 	struct ldb_message_element *objectclass_element;
 	int ret;
-	uint32_t instanceType, sd_flags = 0, flags;
+	uint32_t instanceType, sd_flags = 0;
 	const struct dsdb_schema *schema;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
@@ -604,8 +606,6 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
 	/* This control forces the recalculation of the SD also when
 	 * no modification is performed. */
-	show_deleted_control = ldb_request_get_control(req,
-					     LDB_CONTROL_SHOW_DELETED_OID);
 	sd_recalculate_control = ldb_request_get_control(req,
 					     LDB_CONTROL_RECALCULATE_SD_OID);
 	if (!user_sd && !sd_recalculate_control) {
@@ -618,13 +618,12 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(dn)) {
 		return ldb_next_request(module, req);
 	}
-	flags = DSDB_FLAG_NEXT_MODULE;
-	if (show_deleted_control) {
-		flags |= DSDB_SEARCH_SHOW_DELETED;
-	}
+
 	ret = dsdb_module_search_dn(module, req, &current_res, dn,
 				    current_attrs,
-				    flags,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_SEARCH_SHOW_RECYCLED,
 				    req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,"descriptor_modify: Could not find %s\n",
@@ -644,7 +643,9 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 		ret = dsdb_module_search_dn(module, req, &parent_res, parent_dn,
 					    parent_attrs,
-					    DSDB_FLAG_NEXT_MODULE,
+					    DSDB_FLAG_NEXT_MODULE |
+					    DSDB_FLAG_AS_SYSTEM |
+					    DSDB_SEARCH_SHOW_RECYCLED,
 					    req);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, "descriptor_modify: Could not find SD for %s\n",
