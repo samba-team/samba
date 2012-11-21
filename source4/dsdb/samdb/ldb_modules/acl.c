@@ -112,7 +112,9 @@ static int acl_module_init(struct ldb_module *module)
 	ret = dsdb_module_search_dn(module, mem_ctx, &res,
 				    ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
 				    attrs,
-				    DSDB_FLAG_NEXT_MODULE, NULL);
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM,
+				    NULL);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -652,7 +654,9 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				    &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_DELETED, req);
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_SEARCH_SHOW_RECYCLED,
+				    req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -666,7 +670,8 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				 &netbios_res, partitions_dn,
 				 LDB_SCOPE_ONELEVEL,
 				 netbios_attrs,
-				 DSDB_FLAG_NEXT_MODULE,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
 				 req,
 				 "(ncName=%s)",
 				 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
@@ -974,7 +979,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
-				    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_SEARCH_SHOW_RECYCLED,
 				    req);
 
 	if (ret != LDB_SUCCESS) {
@@ -1257,6 +1264,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res,
 				    req->op.rename.olddn, acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
 				    DSDB_SEARCH_SHOW_RECYCLED, req);
 	/* we sould be able to find the parent */
 	if (ret != LDB_SUCCESS) {
@@ -1462,7 +1470,9 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
 						    acl_attrs,
 						    DSDB_FLAG_NEXT_MODULE |
-						    DSDB_SEARCH_SHOW_DELETED, req);
+						    DSDB_FLAG_AS_SYSTEM |
+						    DSDB_SEARCH_SHOW_RECYCLED,
+						    req);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
