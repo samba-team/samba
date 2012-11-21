@@ -203,13 +203,13 @@ AC_ARG_WITH(profiling-data,
 )
 
 dnl Checks for programs.
-AC_ARG_ENABLE(smbtorture4,
-	[AS_HELP_STRING([--enable-smbtorture4], [Enable building smbtorture4 (default=auto)])])
+AC_ARG_ENABLE(smbtorture,
+	[AS_HELP_STRING([--enable-smbtorture], [Enable building smbtorture (default=auto)])])
 
-if test x$enable_smbtorture4 != xno; then
-	smbtorture4_possible=yes
+if test x$enable_smbtorture != xno; then
+	smbtorture_possible=yes
 else
-	smbtorture4_possible=no
+	smbtorture_possible=no
 fi
 
 AC_PROG_INSTALL
@@ -220,11 +220,11 @@ AC_SAMBA_GNU_MAKE([true], [true])
 
 # Check for perl
 m4_include(../m4/check_perl.m4)
-AC_SAMBA_PERL([true], [smbtorture4_possible=no])
+AC_SAMBA_PERL([true], [smbtorture_possible=no])
 
 # Check for python
 m4_include(../m4/check_python.m4)
-AC_SAMBA_PYTHON_DEVEL([true], [smbtorture4_possible=no])
+AC_SAMBA_PYTHON_DEVEL([true], [smbtorture_possible=no])
 
 AC_CHECK_TOOL(AR, ar)
 
@@ -1710,7 +1710,7 @@ if test x"$BLDSHARED" != x"true"; then
 	SHLD="shared-libraries-disabled"
 	PICFLAG="${PIE_CFLAGS}"
 	SHLIBEXT="shared_libraries_disabled"
-	smbtorture4_possible=no
+	smbtorture_possible=no
 fi
 
 AC_MSG_CHECKING([used PICFLAG])
@@ -6525,9 +6525,9 @@ fi
 
 m4_include(../lib/zlib/zlib.m4)
 
-if test x$smbtorture4_possible = xyes; then
-	SMBTORTURE4="bin/smbtorture4"
-	AC_SUBST(SMBTORTURE4)
+if test x$smbtorture_possible = xyes; then
+	SMBTORTURE="bin/smbtorture"
+	AC_SUBST(SMBTORTURE)
 fi
 
 AC_SUBST(ZLIB_LIBS)

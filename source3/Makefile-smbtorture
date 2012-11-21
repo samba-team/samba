@@ -1,7 +1,7 @@
 WAF_BINARY=buildtools/bin/waf
 WAF=$(WAF_BINARY)
 WAF_BUILD=WAF_MAKE=1 $(WAF_BINARY)
-SAMBA4_BINARIES="smbtorture,ndrdump"
+SAMBA4_BINARIES="smbtorture"
 
 samba4-configure:
 	@(cd .. && \
@@ -10,17 +10,11 @@ samba4-configure:
 
 .PHONY: samba4-configure
 
-bin/smbtorture4: $(BINARY_PREREQS) samba4-configure samba4-config-compare
+bin/smbtorture: $(BINARY_PREREQS) samba4-configure samba4-config-compare
 	cd .. && $(WAF_BUILD) --targets=smbtorture
-	cp ../bin/smbtorture bin/smbtorture4
+	cp ../bin/smbtorture bin/smbtorture
 
-.PHONY: bin/smbtorture4
-
-bin/ndrdump4: $(BINARY_PREREQS) samba4-configure
-	cd .. && $(WAF_BUILD) --targets=ndrdump
-	cp ../bin/ndrdump bin/ndrdump4
-
-.PHONY: bin/ndrdump4
+.PHONY: bin/smbtorture
 
 samba4-config-compare: samba4-configure
 	@echo "Comparing config.h from autoconf and waf"
