@@ -35,7 +35,7 @@ def render_placeholder(environ, start_response):
     yield "<p>Welcome to this Samba web server.</p>\n"
     yield "<p>This page is a simple placeholder. You probably want to install "
     yield "SWAT. More information can be found "
-    yield "<a href='http://wiki.samba.org/index.php/SWAT'>on the wiki</a>.</p>"
+    yield "<a href='http://wiki.samba.org/index.php/SWAT2'>on the wiki</a>.</p>"
     yield "</p>\n"
     yield "</body>\n"
     yield "</html>\n"
