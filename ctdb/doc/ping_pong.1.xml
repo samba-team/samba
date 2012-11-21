@@ -25,6 +25,7 @@
 		<arg choice="opt">-r</arg>
 		<arg choice="opt">-w</arg>
 		<arg choice="opt">-m</arg>
+		<arg choice="opt">-c</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -65,6 +66,15 @@
 	  </para>
         </listitem>
       </varlistentry>
+
+      <varlistentry><term>-c</term>
+        <listitem>
+          <para>
+	    validate the locks
+	  </para>
+        </listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 
@@ -74,6 +84,13 @@
     </para>
     <screen format="linespecific">
       ping_pong test.dat N
+    </screen>
+
+    <para>
+      Testing lock coherence with lock validation
+    </para>
+    <screen format="linespecific">
+      ping_pong -c test.dat N
     </screen>
 
     <para>
