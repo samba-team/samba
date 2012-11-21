@@ -276,7 +276,9 @@ static int extended_store_replace(struct extended_dn_context *ac,
 	}
 
 	ret = dsdb_request_add_controls(os->search_req,
-					DSDB_SEARCH_SHOW_RECYCLED|DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED |
+					DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(os);
 		return ret;
