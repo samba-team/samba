@@ -287,7 +287,9 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		ret = dsdb_module_search_dn(module, req, &res, req->op.search.base,
 					    acl_attrs,
 					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_DELETED, req);
+					    DSDB_FLAG_AS_SYSTEM |
+					    DSDB_SEARCH_SHOW_RECYCLED,
+					    req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_error(ldb, ret,
 					"acl_read: Error retrieving instanceType for base.");
