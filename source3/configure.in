@@ -602,18 +602,45 @@ AC_CHECK_HEADERS(netgroup.h)
 AC_CHECK_HEADERS(linux/falloc.h)
 AC_CHECK_HEADERS(CommonCrypto/CommonDigest.h)
 
+dnl check for OS implementation of md5 conformant to rfc1321
+samba_cv_md5lib=none
+
+AC_CHECK_LIB(c, MD5Update, [samba_cv_md5lib=""])
+
+if test x"$samba_cv_md5lib" = x"none" ; then
+	AC_CHECK_LIB(md, MD5Update, [samba_cv_md5lib=md])
+fi
+
+if test x"$samba_cv_md5lib" = x"none" ; then
+	AC_CHECK_LIB(md5, MD5Update, [samba_cv_md5lib=md5])
+fi
+
+if test x"$samba_cv_md5lib" != x"none" ; then
+	AC_CHECK_HEADERS(md5.h)
+fi
+
+CRYPTO_MD5_OBJ="../lib/crypto/md5.o"
+if test x"$ac_cv_header_md5_h" = x"yes" -a \
+        x"$samba_cv_md5lib" != x"none" ; then
+	if test x"$samba_cv_md5lib" != x ; then
+		LIBS="${LIBS} -l${samba_cv_md5lib}"
+		AC_DEFINE(HAVE_LIBMD5, 1,
+				  [Whether libmd5 conformant to rfc1321 is available.])
+	fi
+	CRYPTO_MD5_OBJ=
+fi
+
+if test "x$ac_cv_header_CommonCrypto_CommonDigest_h" == "xyes"; then
+	CRYPTO_MD5_OBJ=
+fi
+
+AC_SUBST(CRYPTO_MD5_OBJ)
+
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
 #include <rpc/rpc.h>
 #endif
 ]])
-CRYPTO_MD5_OBJ=
-if test "x$ac_cv_header_CommonCrypto_CommonDigest_h" != "xyes"
-then
-	CRYPTO_MD5_OBJ="../lib/crypto/md5.o"
-fi
-AC_SUBST(CRYPTO_MD5_OBJ)
-
 ## These fail to compile on IRIX so just check for their presence
 AC_CHECK_HEADERS(sys/mode.h,,,)
 
