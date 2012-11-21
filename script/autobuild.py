@@ -39,10 +39,10 @@ tasks = {
     "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
                  ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                  ("make basics", "make basics", "text/plain"),
-                 # we split 'make -j 4', 'make bin/smbtorture4' and 'make -j 4 everything'
+                 # we split 'make -j 4', 'make bin/smbtorture' and 'make -j 4 everything'
                  # because it makes it much easier to find errors.
                  ("make", "make -j 4", "text/plain"), # don't use too many processes
-                 ("make bin/smbtorture4", "make bin/smbtorture4", "text/plain"),
+                 ("make bin/smbtorture", "make bin/smbtorture", "text/plain"),
                  ("make everything", "make -j 4 everything", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),

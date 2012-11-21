@@ -220,7 +220,7 @@ BIN_PROGS3 = bin/smbpasswd bin/rpcclient bin/smbcacls \
 	bin/profiles bin/ntlm_auth bin/sharesec \
 	bin/smbcquotas bin/eventlogadm 
 
-TORTURE_PROGS = bin/smbtorture bin/msgtest \
+TORTURE_PROGS = bin/smbtorture3 bin/msgtest \
 	bin/locktest2 bin/nsstest bin/vfstest \
 	$(TALLOCTORT) bin/replacetort \
 	$(TDBTORTURE) $(PTHREADPOOLTEST) \
@@ -1602,9 +1602,9 @@ pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
 gpext_modules:: $(GPEXT_MODULES)
 
-torture:: SHOWFLAGS basics $(TORTURE_PROGS) @SMBTORTURE4@
+torture:: SHOWFLAGS basics $(TORTURE_PROGS) @SMBTORTURE@
 
-smbtorture : SHOWFLAGS bin/smbtorture
+smbtorture3 : SHOWFLAGS bin/smbtorture3
 
 masktest : SHOWFLAGS bin/masktest
 
@@ -1955,7 +1955,7 @@ bin/nmblookup: $(BINARY_PREREQS) $(NMBLOOKUP_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LI
 	@$(CC) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(POPT_LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
-bin/smbtorture: $(BINARY_PREREQS) $(SMBTORTURE_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) $(IDMAP_UTIL_OBJ)
+bin/smbtorture3: $(BINARY_PREREQS) $(SMBTORTURE_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT) $(IDMAP_UTIL_OBJ)
 	@echo Linking $@
 	@$(CC) -o $@ $(SMBTORTURE_OBJ) $(IDMAP_UTIL_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) $(LIBTALLOC_LIBS) \
@@ -3347,13 +3347,10 @@ libnetapi_examples: libnetapi
 clean_libnetapi_examples:
 	$(MAKE) -C lib/netapi/examples clean
 
-.PHONY: bin/smbtorture4 bin/ndrdump4
+.PHONY: bin/smbtorture
 
-bin/smbtorture4: $(BINARY_PREREQS)
-	$(MAKE) -f Makefile-smbtorture4 bin/smbtorture4
-
-bin/ndrdump4: $(BINARY_PREREQS)
-	$(MAKE) -f Makefile-smbtorture4 bin/ndrdump4
+bin/smbtorture: $(BINARY_PREREQS)
+	$(MAKE) -f Makefile-smbtorture bin/smbtorture
 
 .PHONY: vfs_examples
 
