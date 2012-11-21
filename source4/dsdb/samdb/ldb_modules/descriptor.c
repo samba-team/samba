@@ -535,9 +535,15 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
+	/*
+	 * The SD_FLAG control is ignored on add
+	 * and we default to all bits set.
+	 */
+	sd_flags = 0xF;
+
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
-				user_sd, NULL, 0);
+				user_sd, NULL, sd_flags);
 	msg = ldb_msg_copy_shallow(req, req->op.add.message);
 	if (sd != NULL) {
 		if (sd_element != NULL) {
