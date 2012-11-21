@@ -202,3 +202,40 @@ const char *acl_user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module)
 			       session_info->info->domain_name,
 			       session_info->info->account_name);
 }
+
+uint32_t dsdb_request_sd_flags(struct ldb_request *req, bool *explicit)
+{
+	struct ldb_control *sd_control;
+	uint32_t sd_flags = 0;
+
+	if (explicit) {
+		*explicit = false;
+	}
+
+	sd_control = ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID);
+	if (sd_control) {
+		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
+
+		sd_flags = sdctr->secinfo_flags;
+
+		if (explicit) {
+			*explicit = true;
+		}
+
+		/* mark it as handled */
+		sd_control->critical = 0;
+	}
+
+	/* we only care for the last 4 bits */
+	sd_flags &= 0x0000000F;
+
+	/*
+	 * MS-ADTS 3.1.1.3.4.1.11 says that no bits
+	 * equals all 4 bits
+	 */
+	if (sd_flags == 0) {
+		sd_flags = 0xF;
+	}
+
+	return sd_flags;
+}
