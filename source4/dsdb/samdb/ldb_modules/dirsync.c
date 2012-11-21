@@ -705,12 +705,10 @@ static int dirsync_create_vector(struct ldb_request *req,
 	struct ldb_result *resVector;
 	const char* attrVector[] = {"replUpToDateVector", NULL };
 	uint64_t highest_usn;
-	struct ldb_dn *nc_root;
 	uint32_t count = 1;
 	int ret;
 	struct drsuapi_DsReplicaCursor *tab;
 
-	nc_root = ldb_get_default_basedn(ldb);
 	ret = ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &highest_usn);
 	if (ret != LDB_SUCCESS) {
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "Unable to get highest USN from current NC");
@@ -726,7 +724,7 @@ static int dirsync_create_vector(struct ldb_request *req,
 
 
 	ret = dsdb_module_search_dn(dsc->module, dsc, &resVector,
-			nc_root,
+			dsc->nc_root,
 			attrVector,
 			DSDB_FLAG_NEXT_MODULE, req);
 	if (ret != LDB_SUCCESS) {
