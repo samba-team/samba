@@ -6,4 +6,5 @@ bld.SAMBA3_SUBSYSTEM('LIBASYS',
 
 bld.SAMBA3_BINARY('asystest',
 		  source='tests.c',
-		  deps='LIBASYS')
+		  deps='LIBASYS',
+                  install=False)

@@ -12,9 +12,10 @@ bld.SAMBA_LIBRARY('winbind-client',
 
 
 bld.SAMBA_BINARY('nsstest',
-	source='nsstest.c',
-	deps='replace dl'
-	)
+		 source='nsstest.c',
+		 deps='replace dl',
+                 install=False
+		 )
 
 # The nss_wrapper code relies strictly on the linux implementation and
 # name, so compile but do not install a copy under this name.

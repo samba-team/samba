@@ -13,4 +13,5 @@ else:
 bld.SAMBA3_BINARY('pthreadpooltest',
                   source='tests.c',
                   deps='PTHREADPOOL',
-                  enabled=bld.env.WITH_PTHREADPOOL)
+                  enabled=bld.env.WITH_PTHREADPOOL,
+                  install=False)
