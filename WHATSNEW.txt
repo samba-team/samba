@@ -169,10 +169,13 @@ CHANGES SINCE 4.0.0rc5
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 9236: ACL masks incorrectly applied when setting ACLs.
+    * BUG 9374: Allow smb2.acls torture test to pass against smbd with a POSIX
+      ACLs backend.
 
 
 o   Christian Ambach <ambi@samba.org>
     * BUG 9178: Add DMAPI configure option and checks.
+    * BUG 9411: aio read marks the file as modified.
 
 
 o   Sumit Bose <sbose@redhat.com>
