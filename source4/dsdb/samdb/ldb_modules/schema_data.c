@@ -256,6 +256,7 @@ static int schema_data_modify(struct ldb_module *module, struct ldb_request *req
 	int cmp;
 	bool rodc = false;
 	int ret;
+	struct ldb_control *sd_propagation_control;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -271,6 +272,21 @@ static int schema_data_modify(struct ldb_module *module, struct ldb_request *req
 
 	/* dbcheck should be able to fix things */
 	if (ldb_request_get_control(req, DSDB_CONTROL_DBCHECK)) {
+		return ldb_next_request(module, req);
+	}
+
+	sd_propagation_control = ldb_request_get_control(req,
+					DSDB_CONTROL_SEC_DESC_PROPAGATION_OID);
+	if (sd_propagation_control != NULL) {
+		if (req->op.mod.message->num_elements != 1) {
+			return ldb_module_operr(module);
+		}
+		ret = strcmp(req->op.mod.message->elements[0].name,
+			     "nTSecurityDescriptor");
+		if (ret != 0) {
+			return ldb_module_operr(module);
+		}
+
 		return ldb_next_request(module, req);
 	}
 
