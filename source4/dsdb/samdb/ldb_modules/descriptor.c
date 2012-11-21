@@ -56,6 +56,7 @@ struct descriptor_context {
 	struct ldb_val *parentsd_val;
 	struct ldb_message_element *sd_element;
 	struct ldb_val *sd_val;
+	uint32_t sd_flags;
 	int (*step_fn)(struct descriptor_context *);
 };
 
@@ -384,12 +385,10 @@ static struct descriptor_context *descriptor_init_context(struct ldb_module *mod
 static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct descriptor_context *ac;
-	struct ldb_control *sd_control;
 	struct ldb_val *sd_val = NULL;
 	struct ldb_message_element *sd_el;
 	DATA_BLOB *show_sd;
 	int ret;
-	uint32_t sd_flags = 0;
 
 	ac = talloc_get_type(req->context, struct descriptor_context);
 
@@ -402,30 +401,16 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 					ares->response, ares->error);
 	}
 
-	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
-	if (sd_control) {
-		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
-		sd_flags = sdctr->secinfo_flags;
-		/* we only care for the last 4 bits */
-		sd_flags = sd_flags & 0x0000000F;
-		if (sd_flags == 0) {
-			/* MS-ADTS 3.1.1.3.4.1.11 says that no bits
-			   equals all 4 bits */
-			sd_flags = 0xF;
-		}
-	}
-
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		if (sd_flags != 0) {
-			sd_el = ldb_msg_find_element(ares->message, "nTSecurityDescriptor");
-			if (sd_el) {
-				sd_val = sd_el->values;
-			}
+		sd_el = ldb_msg_find_element(ares->message, "nTSecurityDescriptor");
+		if (sd_el) {
+			sd_val = sd_el->values;
 		}
+
 		if (sd_val) {
 			show_sd = descr_get_descriptor_to_show(ac->module, ac->req,
-							       sd_val, sd_flags);
+							       sd_val, ac->sd_flags);
 			if (!show_sd) {
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
@@ -468,6 +453,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	static const char * const parent_attrs[] = { "nTSecurityDescriptor", NULL };
 	uint32_t instanceType;
 	bool isNC = false;
+	uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
 
 	ldb = ldb_module_get_ctx(module);
 	dn = req->op.add.message->dn;
@@ -583,7 +569,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
-	struct ldb_control *sd_recalculate_control, *sd_flags_control;
+	struct ldb_control *sd_recalculate_control;
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
 	struct ldb_result *current_res, *parent_res;
@@ -593,7 +579,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *parent_dn, *dn;
 	struct ldb_message_element *objectclass_element;
 	int ret;
-	uint32_t instanceType, sd_flags = 0;
+	uint32_t instanceType;
+	uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
 	const struct dsdb_schema *schema;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
@@ -657,7 +644,6 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 		parent_sd = ldb_msg_find_ldb_val(parent_res->msgs[0], "nTSecurityDescriptor");
 	}
-	sd_flags_control = ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID);
 
 	schema = dsdb_get_schema(ldb, req);
 
@@ -672,15 +658,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	if (sd_flags_control) {
-		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_flags_control->data;
-		sd_flags = sdctr->secinfo_flags;
-		/* we only care for the last 4 bits */
-		sd_flags = sd_flags & 0x0000000F;
-	}
-	if (sd_flags != 0) {
-		old_sd = ldb_msg_find_ldb_val(current_res->msgs[0], "nTSecurityDescriptor");
-	}
+	old_sd = ldb_msg_find_ldb_val(current_res->msgs[0], "nTSecurityDescriptor");
 
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
@@ -711,9 +689,6 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* mark the controls as non-critical since we've handled them */
-	if (sd_flags_control != NULL) {
-		sd_flags_control->critical = 0;
-	}
 	if (sd_recalculate_control != NULL) {
 		sd_recalculate_control->critical = 0;
 	}
@@ -736,15 +711,11 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
 	struct ldb_context *ldb;
-	struct ldb_control *sd_control;
 	struct ldb_request *down_req;
 	struct descriptor_context *ac;
-	bool show_sd = false;
-
-	sd_control = ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID);
-	if (sd_control != NULL) {
-		show_sd = true;
-	}
+	bool explicit_sd_flags = false;
+	uint32_t sd_flags = dsdb_request_sd_flags(req, &explicit_sd_flags);
+	bool show_sd = explicit_sd_flags;
 
 	if (!show_sd &&
 	    ldb_attr_in_list(req->op.search.attrs, "nTSecurityDescriptor"))
@@ -761,6 +732,7 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	if (ac == NULL) {
 		return ldb_operr(ldb);
 	}
+	ac->sd_flags = sd_flags;
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 				      req->op.search.base,
@@ -773,10 +745,6 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}
-	/* mark it as handled */
-	if (sd_control) {
-		sd_control->critical = 0;
 	}
 
 	return ldb_next_request(ac->module, down_req);
