@@ -121,7 +121,7 @@ def cmd_testonly(opt):
                       'smbclient3:smbclient,' +
                       'smbclient4:smbclient4,' +
                       'smbtorture4:smbtorture,' + 
-                      'ntlm_auth3:ntlm_auth3')
+                      'ntlm_auth3:ntlm_auth')
 
     env.OPTIONS = '--binary-mapping=%s' % binary_mapping 
     if not Options.options.SLOWTEST:
