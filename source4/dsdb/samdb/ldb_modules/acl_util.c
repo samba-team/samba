@@ -74,6 +74,7 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 	ret = dsdb_module_search_dn(module, mem_ctx, &acl_res, dn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
 				    DSDB_SEARCH_SHOW_RECYCLED,
 				    parent);
 	if (ret != LDB_SUCCESS) {
