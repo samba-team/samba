@@ -42,6 +42,7 @@ AC_ARG_ENABLE(developer, [AS_HELP_STRING([--enable-developer], [Turn on develope
     [if eval "test x$enable_developer = xyes"; then
         debug=yes
         developer=yes
+        selftest=yes
     fi])
 
 AC_SUBST(selftest)

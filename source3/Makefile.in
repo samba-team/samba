@@ -1601,7 +1601,7 @@ pam_winbind: SHOWFLAGS bin/pam_winbind.@SHLIBEXT@
 
 gpext_modules:: $(GPEXT_MODULES)
 
-torture:: SHOWFLAGS basics $(TORTURE_PROGS) @SMBTORTURE@
+torture:: SHOWFLAGS basics $(TORTURE_PROGS)
 
 smbtorture3 : SHOWFLAGS bin/smbtorture3
 
@@ -3277,7 +3277,7 @@ test_pam_modules:: pam_modules
 ## Targets for 'make test'
 ##
 
-valgrindtest:: all torture timelimit
+valgrindtest:: all torture timelimit bin/smbtorture
 	@echo Running Test suite with valgrind
 	@$(MAKE) test \
 	 NMBD_VALGRIND="xterm -n nmbd -e valgrind -q --db-attach=yes --num-callers=30" \
@@ -3289,7 +3289,7 @@ selftestdir = ../selftest
 
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin:$$$(LIB_PATH_VAR)"
 
-test:: all torture timelimit
+test:: all torture timelimit bin/smbtorture
 	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
 		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/../nsswitch/libnss_winbind.so" \
 		SELFTESTDIR="$(selftestdir)" SELFTESTPREFIX="$(selftest_prefix)" \
