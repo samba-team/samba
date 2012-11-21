@@ -44,6 +44,7 @@ struct aclread_context {
 	struct ldb_request *req;
 	const char * const *attrs;
 	const struct dsdb_schema *schema;
+	uint32_t sd_flags;
 	bool sd;
 	bool instance_type;
 	bool object_sid;
@@ -149,13 +150,28 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			}
 			/* nTSecurityDescriptor is a special case */
 			if (is_sd) {
-				access_mask = SEC_FLAG_SYSTEM_SECURITY|SEC_STD_READ_CONTROL;
+				access_mask = 0;
+
+				if (ac->sd_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
+					access_mask |= SEC_STD_READ_CONTROL;
+				}
+				if (ac->sd_flags & SECINFO_DACL) {
+					access_mask |= SEC_STD_READ_CONTROL;
+				}
+				if (ac->sd_flags & SECINFO_SACL) {
+					access_mask |= SEC_FLAG_SYSTEM_SECURITY;
+				}
 			} else {
 				access_mask = SEC_ADS_READ_PROP;
 			}
 
 			if (attr->searchFlags & SEARCH_FLAG_CONFIDENTIAL) {
 				access_mask |= SEC_ADS_CONTROL_ACCESS;
+			}
+
+			if (access_mask == 0) {
+				aclread_mark_inaccesslible(&msg->elements[i]);
+				continue;
 			}
 
 			ret = acl_check_access_on_attribute(ac->module,
@@ -332,6 +348,8 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	 * expensive so we'd better had the ntsecuritydescriptor to the list of
 	 * searched attribute and then remove it !
 	 */
+	ac->sd_flags = dsdb_request_sd_flags(ac->req, NULL);
+
 	ac->sd = !(ldb_attr_in_list(req->op.search.attrs, "nTSecurityDescriptor"));
 	if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
 		if (!ldb_attr_in_list(req->op.search.attrs, "instanceType")) {
