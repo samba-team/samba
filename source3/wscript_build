@@ -1568,7 +1568,7 @@ bld.SAMBA3_BINARY('versiontest',
                  param''',
                  vars=locals())
 
-bld.SAMBA3_BINARY('ntlm_auth' + bld.env.suffix3,
+bld.SAMBA3_BINARY('ntlm_auth',
                  source=NTLM_AUTH_SRC,
                  deps='''
                  talloc
