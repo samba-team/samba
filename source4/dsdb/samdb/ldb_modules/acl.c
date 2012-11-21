@@ -49,6 +49,7 @@ struct extended_access_check_attribute {
 };
 
 struct acl_private {
+	bool acl_search;
 	const char **password_attrs;
 	void *cached_schema_ptr;
 	uint64_t cached_schema_metadata_usn;
@@ -99,6 +100,8 @@ static int acl_module_init(struct ldb_module *module)
 		return ldb_oom(ldb);
 	}
 
+	data->acl_search = lpcfg_parm_bool(ldb_get_opaque(ldb, "loadparm"),
+					NULL, "acl", "search", false);
 	ldb_module_set_private(module, data);
 
 	mem_ctx = talloc_new(module);
@@ -1392,6 +1395,14 @@ static int acl_search_update_confidential_attrs(struct acl_context *ac,
 {
 	struct dsdb_attribute *a;
 	uint32_t n = 0;
+
+	if (data->acl_search) {
+		/*
+		 * If acl:search is activated, the acl_read module
+		 * protects confidential attributes.
+		 */
+		return LDB_SUCCESS;
+	}
 
 	if ((ac->schema == data->cached_schema_ptr) &&
 	    (ac->schema->loaded_usn == data->cached_schema_loaded_usn) &&
