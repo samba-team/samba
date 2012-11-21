@@ -1024,8 +1024,21 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							 req->op.mod.message->elements[i].name);
 
 		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
+			uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
+			uint32_t access_mask = 0;
+
+			if (sd_flags & (SECINFO_OWNER|SECINFO_GROUP)) {
+				access_mask |= SEC_STD_WRITE_OWNER;
+			}
+			if (sd_flags & SECINFO_DACL) {
+				access_mask |= SEC_STD_WRITE_DAC;
+			}
+			if (sd_flags & SECINFO_SACL) {
+				access_mask |= SEC_FLAG_SYSTEM_SECURITY;
+			}
+
 			status = sec_access_check_ds(sd, acl_user_token(module),
-					     SEC_STD_WRITE_DAC,
+					     access_mask,
 					     &access_granted,
 					     NULL,
 					     sid);
