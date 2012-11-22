@@ -184,9 +184,12 @@ static struct cli_state *connect_one(char *share)
 	server_n = server;
 	
 	if (!got_pass) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			fstrcpy(password, pass);
+		char pwd[256] = {0};
+		int rc;
+
+		rc = samba_getpass("Password: ", pwd, sizeof(pwd), false, false);
+		if (rc == 0) {
+			fstrcpy(password, pwd);
 		}
 	}
 
