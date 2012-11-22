@@ -176,6 +176,7 @@ o   Jeremy Allison <jra@samba.org>
 o   Christian Ambach <ambi@samba.org>
     * BUG 9178: Add DMAPI configure option and checks.
     * BUG 9411: aio read marks the file as modified.
+    * BUG 9413: Fix waf build on AIX6.
 
 
 o   Sumit Bose <sbose@redhat.com>
