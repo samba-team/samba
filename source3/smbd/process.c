@@ -151,7 +151,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		}
 	}
 
-	len = smb_len(buf_out) + 4;
+	len = smb_len_large(buf_out) + 4;
 
 	ret = write_data(sconn->sock, buf_out+nwritten, len - nwritten);
 	if (ret <= 0) {
@@ -2030,7 +2030,8 @@ void chain_reply(struct smb_request *req)
 		 * example).
 		 */
 		req->chain_outbuf = TALLOC_REALLOC_ARRAY(
-			req, req->outbuf, uint8_t, smb_len(req->outbuf) + 4);
+			req, req->outbuf, uint8_t,
+			smb_len_large(req->outbuf) + 4);
 		if (req->chain_outbuf == NULL) {
 			smb_panic("talloc failed");
 		}

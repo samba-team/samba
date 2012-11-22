@@ -383,7 +383,7 @@ void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
 
 void smb_setlen(char *buf,int len)
 {
-	_smb_setlen(buf,len);
+	_smb_setlen_large(buf,len);
 
 	SCVAL(buf,4,0xFF);
 	SCVAL(buf,5,'S');
