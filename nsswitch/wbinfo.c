@@ -1435,7 +1435,8 @@ static char *wbinfo_prompt_pass(TALLOC_CTX *mem_ctx,
 				const char *username)
 {
 	char *prompt;
-	const char *ret = NULL;
+	char buf[1024] = {0};
+	int rc;
 
 	prompt = talloc_asprintf(mem_ctx, "Enter %s's ", username);
 	if (!prompt) {
@@ -1452,10 +1453,13 @@ static char *wbinfo_prompt_pass(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = getpass(prompt);
+	rc = samba_getpass(prompt, buf, sizeof(buf), false, false);
 	TALLOC_FREE(prompt);
+	if (rc < 0) {
+		return NULL;
+	}
 
-	return talloc_strdup(mem_ctx, ret);
+	return talloc_strdup(mem_ctx, buf);
 }
 
 /* Authenticate a user with a plaintext password */
@@ -1860,7 +1864,10 @@ static bool wbinfo_klog(char *username)
 		*p = '%';
 	} else {
 		fstrcpy(request.data.auth.user, username);
-		fstrcpy(request.data.auth.pass, getpass("Password: "));
+		(void) samba_getpass("Password: ",
+				     request.data.auth.pass,
+				     sizeof(request.data.auth.pass),
+				     false, false);
 	}
 
 	request.flags |= WBFLAG_PAM_AFS_TOKEN;
