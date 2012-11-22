@@ -246,7 +246,8 @@ bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_inf
 void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info)
 {
 	char *label = NULL;
-	char *pass;
+	char pwd[256] = {0};
+	int rc;
 	TALLOC_CTX *frame;
 
 	if (get_cmdline_auth_info_got_pass(auth_info) ||
@@ -258,9 +259,9 @@ void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info)
 	frame = talloc_stackframe();
 	label = talloc_asprintf(frame, "Enter %s's password: ",
 			get_cmdline_auth_info_username(auth_info));
-	pass = getpass(label);
-	if (pass) {
-		set_cmdline_auth_info_password(auth_info, pass);
+	rc = samba_getpass(label, pwd, sizeof(pwd), false, false);
+	if (rc == 0) {
+		set_cmdline_auth_info_password(auth_info, pwd);
 	}
 	TALLOC_FREE(frame);
 }
