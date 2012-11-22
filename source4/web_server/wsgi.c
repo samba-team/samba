@@ -285,7 +285,7 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	PyDict_SetItemString(env, "wsgi.version", py_val);
 	Py_DECREF(py_val);
 	PyDict_SetItemString(env, "wsgi.multithread", Py_False);
-	PyDict_SetItemString(env, "wsgi.multiprocess", Py_True);
+	PyDict_SetItemString(env, "wsgi.multiprocess", Py_False);
 	PyDict_SetItemString(env, "wsgi.run_once", Py_False);
 	py_val = PyString_FromString("HTTP/1.0");
 	if (py_val == NULL) goto error;
