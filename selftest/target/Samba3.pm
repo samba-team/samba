@@ -1096,6 +1096,7 @@ domadmins:X:$gid_domadmins:
 sub wait_for_start($$$$$)
 {
 	my ($self, $envvars, $nmbd, $winbindd, $smbd) = @_;
+	my $ret;
 
 	if ($nmbd eq "yes") {
 	    # give time for nbt server to register its names
@@ -1110,12 +1111,28 @@ sub wait_for_start($$$$$)
 	    system("$nmblookup $envvars->{CONFIGURATION} $envvars->{SERVER}");
 	}
 
+	if ($winbindd eq "yes") {
+	    print "checking for winbindd\n";
+	    my $count = 0;
+	    do {
+		$ret = system("WINBINDD_SOCKET_DIR=" . $envvars->{WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " -p");
+		if ($ret != 0) {
+		    sleep(2);
+		}
+		$count++;
+	    } while ($ret != 0 && $count < 10);
+	    if ($count == 10) {
+		print "WINBINDD not reachable after 20 seconds\n";
+		teardown_env($self, $envvars);
+		return 0;
+	    }
+	}
+
 	if ($smbd eq "yes") {
 	    # make sure smbd is also up set
 	    print "wait for smbd\n";
 
 	    my $count = 0;
-	    my $ret;
 	    do {
 		$ret = system(Samba::bindir_path($self, "smbclient3") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
 		if ($ret != 0) {
