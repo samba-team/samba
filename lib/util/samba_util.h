@@ -817,6 +817,46 @@ _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too);
 _PUBLIC_ void become_daemon(bool do_fork, bool no_process_group, bool log_stdout);
 
 /**
+ * @brief Get a password from the console.
+ *
+ * You should make sure that the buffer is an empty string!
+ *
+ * You can also use this function to ask for a username. Then you can fill the
+ * buffer with the username and it is shows to the users. If the users just
+ * presses enter the buffer will be untouched.
+ *
+ * @code
+ *   char username[128];
+ *
+ *   snprintf(username, sizeof(username), "john");
+ *
+ *   smb_getpass("Username:", username, sizeof(username), 1, 0);
+ * @endcode
+ *
+ * The prompt will look like this:
+ *
+ *   Username: [john]
+ *
+ * If you press enter then john is used as the username, or you can type it in
+ * to change it.
+ *
+ * @param[in]  prompt   The prompt to show to ask for the password.
+ *
+ * @param[out] buf    The buffer the password should be stored. It NEEDS to be
+ *                      empty or filled out.
+ *
+ * @param[in]  len      The length of the buffer.
+ *
+ * @param[in]  echo     Should we echo what you type.
+ *
+ * @param[in]  verify   Should we ask for the password twice.
+ *
+ * @return              0 on success, -1 on error.
+ */
+_PUBLIC_ int samba_getpass(const char *prompt, char *buf, size_t len,
+			   bool echo, bool verify);
+
+/**
  * Load a ini-style file.
  */
 bool pm_process( const char *fileName,

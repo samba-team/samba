@@ -434,7 +434,7 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   ../lib/util/smb_threads.o ../lib/util/util_id.o \
 		   ../lib/util/blocking.o ../lib/util/rfc1738.o \
 		   ../lib/util/select.o ../lib/util/util_pw.o ../lib/util/server_id.o \
-		   ../lib/util/setid.o ../lib/util/pidfile.o
+		   ../lib/util/setid.o ../lib/util/pidfile.o ../lib/util/getpass.o
 
 CRYPTO_OBJ = ../lib/crypto/crc32.o @CRYPTO_MD5_OBJ@ \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
