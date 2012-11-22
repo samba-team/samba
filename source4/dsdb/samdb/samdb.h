@@ -231,6 +231,18 @@ struct dsdb_fsmo_extended_op {
 	struct GUID destination_dsa_guid;
 };
 
+/*
+ * passed from the descriptor module in order to
+ * store the recalucated nTSecurityDescriptor without
+ * modifying the replPropertyMetaData.
+ */
+#define DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.4.7"
+struct dsdb_extended_sec_desc_propagation_op {
+	struct ldb_dn *nc_root;
+	struct ldb_dn *dn;
+	bool include_self;
+};
+
 #define DSDB_ACL_CHECKS_DIRSYNC_FLAG 0x1
 
 #define DSDB_METADATA_SCHEMA_SEQ_NUM	"SCHEMA_SEQ_NUM"
