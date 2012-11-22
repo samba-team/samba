@@ -325,7 +325,7 @@ static struct idmap_domain *idmap_init_default_domain(TALLOC_CTX *mem_ctx)
  * No config, passdb has its own configuration.
  */
 
-static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
+static struct idmap_domain *idmap_passdb_domain(TALLOC_CTX *mem_ctx)
 {
 	idmap_init();
 
@@ -483,7 +483,7 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 	 * Always give passdb a chance first
 	 */
 
-	dom = idmap_init_passdb_domain(NULL);
+	dom = idmap_passdb_domain(NULL);
 	if ((dom != NULL)
 	    && NT_STATUS_IS_OK(dom->methods->unixids_to_sids(dom, maps))
 	    && id->status == ID_MAPPED) {
@@ -516,7 +516,7 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
 
 		DEBUG(10, ("asking passdb...\n"));
 
-		dom = idmap_init_passdb_domain(NULL);
+		dom = idmap_passdb_domain(NULL);
 		if (dom == NULL) {
 			return NT_STATUS_NONE_MAPPED;
 		}
