@@ -31,6 +31,11 @@ from samba.ndr import ndr_pack
 
 # Descriptors of naming contexts and other important objects
 
+def get_empty_descriptor(domain_sid):
+    sddl= ""
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return ndr_pack(sec)
+
 # "get_schema_descriptor" is located in "schema.py"
 
 def get_config_descriptor(domain_sid):
