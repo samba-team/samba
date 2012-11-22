@@ -1430,11 +1430,6 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	uint32_t rid;
 	id->id = -1;
 
-	if (!sid_check_is_in_our_sam(sid)) {
-		/* Not our SID */
-		return False;
-	}
-
 	mem_ctx = talloc_new(NULL);
 
 	if (mem_ctx == NULL) {
