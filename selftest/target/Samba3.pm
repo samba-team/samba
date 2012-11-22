@@ -201,10 +201,7 @@ sub setup_s3dc($$)
 
 	$vars or return undef;
 
-	$self->check_or_start($vars,
-			       "yes", "yes", "yes");
-
-	if (not $self->wait_for_start($vars)) {
+	if (not $self->check_or_start($vars, "yes", "yes", "yes")) {
 	       return undef;
 	}
 
@@ -247,9 +244,7 @@ sub setup_member($$$)
 	    return undef;
 	}
 
-	$self->check_or_start($ret, "yes", "yes", "yes");
-
-	if (not $self->wait_for_start($ret)) {
+	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
 	       return undef;
 	}
 
@@ -320,10 +315,9 @@ sub setup_admember($$$$)
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	$self->check_or_start($ret,
-			      "yes", "yes", "yes");
-
-	$self->wait_for_start($ret);
+	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
+		return undef;
+	}
 
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
@@ -364,9 +358,7 @@ sub setup_simpleserver($$)
 
 	$vars or return undef;
 
-	$self->check_or_start($vars, "yes", "no", "yes");
-
-	if (not $self->wait_for_start($vars)) {
+	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
 	       return undef;
 	}
 
@@ -462,9 +454,7 @@ $ret->{USERNAME} = KTEST\\Administrator
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	$self->check_or_start($ret, "yes", "no", "yes");
-
-	if (not $self->wait_for_start($ret)) {
+	if (not $self->check_or_start($ret, "yes", "no", "yes")) {
 	       return undef;
 	}
 	return $ret;
@@ -487,10 +477,7 @@ map to guest = bad user
 
 	$vars or return undef;
 
-	$self->check_or_start($vars,
-			       "yes", "no", "yes");
-
-	if (not $self->wait_for_start($vars)) {
+	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
 	       return undef;
 	}
 
@@ -688,7 +675,7 @@ sub check_or_start($$$$$) {
 
 	close(STDIN_READER);
 
-	return 0;
+	return $self->wait_for_start($env_vars);
 }
 
 sub provision($$$$$$)
