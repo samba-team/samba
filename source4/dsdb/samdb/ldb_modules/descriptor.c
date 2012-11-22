@@ -87,6 +87,8 @@ static struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			dag_sid = dom_sid_dup(mem_ctx, ea_sid);
 		} else if (security_token_has_sid(token, da_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
+		} else if (security_token_is_system(token)) {
+			dag_sid = dom_sid_dup(mem_ctx, sa_sid);
 		} else {
 			dag_sid = NULL;
 		}
@@ -95,6 +97,8 @@ static struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			dag_sid = dom_sid_dup(mem_ctx, ea_sid);
 		} else if (security_token_has_sid(token, da_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
+		} else if (security_token_is_system(token)) {
+			dag_sid = dom_sid_dup(mem_ctx, ea_sid);
 		} else {
 			dag_sid = NULL;
 		}
@@ -103,6 +107,8 @@ static struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
 		} else if (security_token_has_sid(token, ea_sid)) {
 				dag_sid = dom_sid_dup(mem_ctx, ea_sid);
+		} else if (security_token_is_system(token)) {
+			dag_sid = dom_sid_dup(mem_ctx, da_sid);
 		} else {
 			dag_sid = NULL;
 		}
