@@ -91,6 +91,7 @@ struct delete_record_data {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_ltdb_header hdr;
 	TDB_DATA key;
+	uint8_t keydata[1];
 };
 
 struct delete_records_list {
@@ -108,21 +109,22 @@ static int insert_delete_record_data_into_tree(struct ctdb_context *ctdb,
 {
 	struct delete_record_data *dd;
 	uint32_t hash;
+	size_t len;
 
-	dd = talloc_zero(tree, struct delete_record_data);
+	len = offsetof(struct delete_record_data, keydata) + key.dsize;
+
+	dd = (struct delete_record_data *)talloc_size(tree, len);
 	if (dd == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;
 	}
+	talloc_set_name_const(dd, "struct delete_record_data");
 
 	dd->ctdb      = ctdb;
 	dd->ctdb_db   = ctdb_db;
 	dd->key.dsize = key.dsize;
-	dd->key.dptr  = talloc_memdup(dd, key.dptr, key.dsize);
-	if (dd->key.dptr == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return -1;
-	}
+	dd->key.dptr  = dd->keydata;
+	memcpy(dd->keydata, key.dptr, key.dsize);
 
 	dd->hdr = *hdr;
 
