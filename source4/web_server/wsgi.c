@@ -263,60 +263,91 @@ static PyObject *Py_ErrorHttpStream(void)
 static PyObject *create_environ(bool tls, int content_length, struct http_header *headers, const char *request_method, const char *servername, int serverport, PyObject *inputstream, const char *request_string)
 {
 	PyObject *env;
-	PyObject *errorstream;
 	PyObject *py_scheme;
+	PyObject *py_val;
 	struct http_header *hdr;
 	char *questionmark;
-	
+
 	env = PyDict_New();
 	if (env == NULL) {
 		return NULL;
 	}
 
-	errorstream = Py_ErrorHttpStream();
-	if (errorstream == NULL) {
-		Py_DECREF(env);
-		Py_DECREF(inputstream);
-		return NULL;
-	}
-
 	PyDict_SetItemString(env, "wsgi.input", inputstream);
-	PyDict_SetItemString(env, "wsgi.errors", errorstream);
-	PyDict_SetItemString(env, "wsgi.version", Py_BuildValue("(i,i)", 1, 0));
+
+	py_val = Py_ErrorHttpStream();
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "wsgi.errors", py_val);
+	Py_DECREF(py_val);
+
+	py_val = Py_BuildValue("(i,i)", 1, 0);
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "wsgi.version", py_val);
+	Py_DECREF(py_val);
 	PyDict_SetItemString(env, "wsgi.multithread", Py_False);
 	PyDict_SetItemString(env, "wsgi.multiprocess", Py_True);
 	PyDict_SetItemString(env, "wsgi.run_once", Py_False);
-	PyDict_SetItemString(env, "SERVER_PROTOCOL", PyString_FromString("HTTP/1.0"));
+	py_val = PyString_FromString("HTTP/1.0");
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "SERVER_PROTOCOL", py_val);
+	Py_DECREF(py_val);
 	if (content_length > 0) {
-		PyDict_SetItemString(env, "CONTENT_LENGTH", PyLong_FromLong(content_length));
+		py_val = PyLong_FromLong(content_length);
+		if (py_val == NULL) goto error;
+		PyDict_SetItemString(env, "CONTENT_LENGTH", py_val);
+		Py_DECREF(py_val);
 	}
-	PyDict_SetItemString(env, "REQUEST_METHOD", PyString_FromString(request_method));
+	py_val = PyString_FromString(request_method);
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "REQUEST_METHOD", py_val);
+	Py_DECREF(py_val);
 
 	/* There is always a single wsgi app to which all requests are redirected,
 	 * so SCRIPT_NAME will be / */
-	PyDict_SetItemString(env, "SCRIPT_NAME", PyString_FromString("/"));
+	py_val = PyString_FromString("/");
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "SCRIPT_NAME", py_val);
+	Py_DECREF(py_val);
 	questionmark = strchr(request_string, '?');
 	if (questionmark == NULL) {
-		PyDict_SetItemString(env, "PATH_INFO", PyString_FromString(request_string));
+		py_val = PyString_FromString(request_string);
+		if (py_val == NULL) goto error;
+		PyDict_SetItemString(env, "PATH_INFO", py_val);
+		Py_DECREF(py_val);
 	} else {
-		PyDict_SetItemString(env, "QUERY_STRING", PyString_FromString(questionmark+1));
-		PyDict_SetItemString(env, "PATH_INFO", PyString_FromStringAndSize(request_string, questionmark-request_string));
+		py_val = PyString_FromString(questionmark+1);
+		if (py_val == NULL) goto error;
+		PyDict_SetItemString(env, "QUERY_STRING", py_val);
+		Py_DECREF(py_val);
+		py_val = PyString_FromStringAndSize(request_string, questionmark-request_string);
+		if (py_val == NULL) goto error;
+		PyDict_SetItemString(env, "PATH_INFO", py_val);
+		Py_DECREF(py_val);
 	}
-	
-	PyDict_SetItemString(env, "SERVER_NAME", PyString_FromString(servername));
-	PyDict_SetItemString(env, "SERVER_PORT", PyString_FromFormat("%d", serverport));
+
+	py_val = PyString_FromString(servername);
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "SERVER_NAME", py_val);
+	Py_DECREF(py_val);
+	py_val = PyString_FromFormat("%d", serverport);
+	if (py_val == NULL) goto error;
+	PyDict_SetItemString(env, "SERVER_PORT", py_val);
+	Py_DECREF(py_val);
+
 	for (hdr = headers; hdr; hdr = hdr->next) {
 		char *name;
 		if (!strcasecmp(hdr->name, "Content-Type")) {
-			PyDict_SetItemString(env, "CONTENT_TYPE", PyString_FromString(hdr->value));
-		} else { 
+			py_val = PyString_FromString(hdr->value);
+			PyDict_SetItemString(env, "CONTENT_TYPE", py_val);
+			Py_DECREF(py_val);
+		} else {
 			if (asprintf(&name, "HTTP_%s", hdr->name) < 0) {
-				Py_DECREF(env);
-				Py_DECREF(inputstream);
 				PyErr_NoMemory();
-				return NULL;
+				goto error;
 			}
-			PyDict_SetItemString(env, name, PyString_FromString(hdr->value));
+			py_val = PyString_FromString(hdr->value);
+			PyDict_SetItemString(env, name, py_val);
+			Py_DECREF(py_val);
 			free(name);
 		}
 	}
@@ -326,9 +357,14 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	} else {
 		py_scheme = PyString_FromString("http");
 	}
+	if (py_scheme == NULL) goto error;
 	PyDict_SetItemString(env, "wsgi.url_scheme", py_scheme);
+	Py_DECREF(py_scheme);
 
 	return env;
+error:
+	Py_DECREF(env);
+	return NULL;
 }
 
 static void wsgi_process_http_input(struct web_server_data *wdata,
@@ -339,12 +375,25 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 	struct tsocket_address *my_address = web->conn->local_address;
 	const char *addr = "0.0.0.0";
 	uint16_t port = 0;
-	web_request_Object *py_web = PyObject_New(web_request_Object, &web_request_Type);
+	web_request_Object *py_web;
+	PyObject *py_input_stream;
+
+	py_web = PyObject_New(web_request_Object, &web_request_Type);
+	if (py_web == NULL) {
+		DEBUG(0, ("Unable to allocate web request"));
+		return;
+	}
 	py_web->web = web;
 
 	if (tsocket_address_is_inet(my_address, "ip")) {
 		addr = tsocket_address_inet_addr_string(my_address, wdata);
 		port = tsocket_address_inet_port(my_address);
+	}
+
+	py_input_stream = Py_InputHttpStream(web);
+	if (py_input_stream == NULL) {
+		DEBUG(0, ("unable to create python input stream"));
+		return;
 	}
 
 	py_environ = create_environ(tls_enabled(web->conn->socket),
@@ -353,9 +402,12 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 				    web->input.post_request?"POST":"GET",
 				    addr,
 				    port,
-				    Py_InputHttpStream(web),
+				    py_input_stream,
 				    web->input.url
 				    );
+
+	Py_DECREF(py_input_stream);
+
 	if (py_environ == NULL) {
 		DEBUG(0, ("Unable to create WSGI environment object\n"));
 		return;
