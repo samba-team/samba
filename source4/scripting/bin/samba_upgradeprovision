@@ -46,11 +46,13 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
 from samba import param, dsdb, Ldb
 from samba.common import confirm
 from samba.provision import (get_domain_descriptor, find_provision_key_parameters,
-                            get_config_descriptor,
+                            get_config_descriptor, get_empty_descriptor,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security, drsblobs
+from samba.dcerpc.security import (
+    SECINFO_OWNER, SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL)
 from samba.ndr import ndr_unpack
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  get_ldbs, findprovisionrange,
@@ -1032,7 +1034,8 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
         raise ProvisioningError(msg)
 
     changed = 0
-    controls = ["search_options:1:2", "sd_flags:1:0"]
+    sd_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL
+    controls = ["search_options:1:2", "sd_flags:1:%d" % sd_flags]
     if usns is not None:
             message(CHANGE, "Using replPropertyMetadata for change selection")
     for dn in listPresent:
@@ -1352,16 +1355,20 @@ def rebuild_sd(samdb, names):
             continue
         delta = Message()
         delta.dn = Dn(samdb, key)
+        sd_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL
         try:
             delta["whenCreated"] = MessageElement(hash[key], FLAG_MOD_REPLACE,
                                                     "whenCreated" )
-            samdb.modify(delta, ["recalculate_sd:0","relax:0"])
+            descr = get_empty_descriptor(names.domainsid)
+            delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
+                                                    "nTSecurityDescriptor")
+            samdb.modify(delta, ["sd_flags:1:%d" % sd_flags,"relax:0"])
         except LdbError, e:
             samdb.transaction_cancel()
-            res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
-                                scope=SCOPE_SUBTREE,
-                                attrs=["dn", "nTSecurityDescriptor"],
-                                controls=["search_options:1:2"])
+            res = samdb.search(expression="objectClass=*", base=str(delta.dn),
+                                scope=SCOPE_BASE,
+                                attrs=["nTSecurityDescriptor"],
+                                controls=["sd_flags:1:%d" % sd_flags])
             badsd = ndr_unpack(security.descriptor,
                         str(res[0]["nTSecurityDescriptor"]))
             message(ERROR, "On %s bad stuff %s" % (str(delta.dn),badsd.as_sddl(names.domainsid)))
