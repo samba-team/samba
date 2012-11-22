@@ -236,6 +236,11 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	char *sddl_sd;
 	struct dom_sid *default_owner;
 	struct dom_sid *default_group;
+	struct security_descriptor *default_descriptor = NULL;
+
+	if (objectclass != NULL) {
+		default_descriptor = get_sd_unpacked(module, mem_ctx, objectclass);
+	}
 
 	if (object) {
 		user_descriptor = talloc(mem_ctx, struct security_descriptor);
@@ -251,7 +256,7 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 			return NULL;
 		}
 	} else {
-		user_descriptor = get_sd_unpacked(module, mem_ctx, objectclass);
+		user_descriptor = default_descriptor;
 	}
 
 	if (old_sd) {
@@ -282,6 +287,28 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 			talloc_free(parent_descriptor);
 			return NULL;
 		}
+	}
+
+	if (user_descriptor && default_descriptor &&
+	    (user_descriptor->dacl == NULL))
+	{
+		user_descriptor->dacl = default_descriptor->dacl;
+		user_descriptor->type |= default_descriptor->type & (
+			SEC_DESC_DACL_PRESENT |
+			SEC_DESC_DACL_DEFAULTED|SEC_DESC_DACL_AUTO_INHERIT_REQ |
+			SEC_DESC_DACL_AUTO_INHERITED|SEC_DESC_DACL_PROTECTED |
+			SEC_DESC_DACL_TRUSTED);
+	}
+
+	if (user_descriptor && default_descriptor &&
+	    (user_descriptor->sacl == NULL))
+	{
+		user_descriptor->sacl = default_descriptor->sacl;
+		user_descriptor->type |= default_descriptor->type & (
+			SEC_DESC_SACL_PRESENT |
+			SEC_DESC_SACL_DEFAULTED|SEC_DESC_SACL_AUTO_INHERIT_REQ |
+			SEC_DESC_SACL_AUTO_INHERITED|SEC_DESC_SACL_PROTECTED |
+			SEC_DESC_SERVER_SECURITY);
 	}
 
 	default_owner = get_default_ag(mem_ctx, dn,
