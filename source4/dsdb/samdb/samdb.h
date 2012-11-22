@@ -128,6 +128,13 @@ struct dsdb_control_password_change {
 /* passed when importing plain text password on upgrades */
 #define DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID "1.3.6.1.4.1.7165.4.3.20"
 
+/*
+ * passed from the descriptor module in order to
+ * store the recalucated nTSecurityDescriptor without
+ * modifying the replPropertyMetaData.
+ */
+#define DSDB_CONTROL_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.3.21"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
