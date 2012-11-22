@@ -301,7 +301,7 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	}
 	
 	PyDict_SetItemString(env, "SERVER_NAME", PyString_FromString(servername));
-	PyDict_SetItemString(env, "SERVER_PORT", PyInt_FromLong(serverport));
+	PyDict_SetItemString(env, "SERVER_PORT", PyString_FromFormat("%d", serverport));
 	for (hdr = headers; hdr; hdr = hdr->next) {
 		char *name;
 		if (!strcasecmp(hdr->name, "Content-Type")) {
