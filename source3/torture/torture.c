@@ -9395,9 +9395,12 @@ static void usage(void)
 	if(use_kerberos && !gotuser) gotpass = True;
 
 	while (!gotpass) {
-		p = getpass("Password:");
-		if (p) {
-			fstrcpy(password, p);
+		char pwd[256] = {0};
+		int rc;
+
+		rc = samba_getpass("Password:", pwd, sizeof(pwd), false, false);
+		if (rc == 0) {
+			fstrcpy(password, pwd);
 			gotpass = 1;
 		}
 	}
