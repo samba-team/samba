@@ -292,12 +292,15 @@ static PyObject *create_environ(bool tls, int content_length, struct http_header
 	}
 	PyDict_SetItemString(env, "REQUEST_METHOD", PyString_FromString(request_method));
 
+	/* There is always a single wsgi app to which all requests are redirected,
+	 * so SCRIPT_NAME will be / */
+	PyDict_SetItemString(env, "SCRIPT_NAME", PyString_FromString("/"));
 	questionmark = strchr(request_string, '?');
 	if (questionmark == NULL) {
-		PyDict_SetItemString(env, "SCRIPT_NAME", PyString_FromString(request_string));
+		PyDict_SetItemString(env, "PATH_INFO", PyString_FromString(request_string));
 	} else {
 		PyDict_SetItemString(env, "QUERY_STRING", PyString_FromString(questionmark+1));
-		PyDict_SetItemString(env, "SCRIPT_NAME", PyString_FromStringAndSize(request_string, questionmark-request_string));
+		PyDict_SetItemString(env, "PATH_INFO", PyString_FromStringAndSize(request_string, questionmark-request_string));
 	}
 	
 	PyDict_SetItemString(env, "SERVER_NAME", PyString_FromString(servername));
