@@ -369,6 +369,11 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 	iter = PyObject_GetIter(result);
 	Py_DECREF(result);
 
+	if (iter == NULL) {
+		DEBUG(0, ("wsgi application did not return iterable\n"));
+		return;
+	}
+
 	/* Now, iter over all the data returned */
 
 	while ((item = PyIter_Next(iter))) {
