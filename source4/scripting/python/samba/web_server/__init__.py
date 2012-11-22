@@ -19,9 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
-
 def render_placeholder(environ, start_response):
+    """Send the user a simple placeholder about missing SWAT."""
     status = '200 OK'
     response_headers = [('Content-type', 'text/html')]
     start_response(status, response_headers)
@@ -41,7 +40,36 @@ def render_placeholder(environ, start_response):
     yield "</html>\n"
 
 
-__call__ = render_placeholder
+def __call__(environ, start_response):
+    """Handle a HTTP request."""
+    from wsgiref.util import application_uri, shift_path_info
+    from urlparse import urljoin
+
+    try:
+        import swat
+    except ImportError, e:
+        print "NO SWAT: %r" % e
+        have_swat = False
+    else:
+        have_swat = True
+
+    orig_path = environ['PATH_INFO']
+    name = shift_path_info(environ)
+
+    if name == "":
+        if have_swat:
+            start_response('301 Redirect',
+                [('Location', urljoin(application_uri(environ), 'swat')),])
+            return []
+        else:
+            return render_placeholder(environ, start_response)
+    elif have_swat and name == "swat":
+        return swat.__call__(environ, start_response)
+    else:
+        status = '404 Not found'
+        response_headers = [('Content-type', 'text/html')]
+        start_response(status, response_headers)
+        return ["The path %s (%s) was not found" % (orig_path, name)]
 
 
 if __name__ == '__main__':
