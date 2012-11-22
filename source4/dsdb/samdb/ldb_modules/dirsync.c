@@ -1121,7 +1121,7 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 		 */
 		if (ldb_attr_in_list(attrs, "*")) {
 			struct ldb_sd_flags_control *sdctr = talloc_zero(dsc, struct ldb_sd_flags_control);
-			sdctr->secinfo_flags = 0;
+			sdctr->secinfo_flags = 0xF;
 			ret = ldb_request_add_control(req, LDB_CONTROL_SD_FLAGS_OID, false, sdctr);
 			if (ret != LDB_SUCCESS) {
 				return ret;
@@ -1186,7 +1186,7 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 		}
 	} else {
 		struct ldb_sd_flags_control *sdctr = talloc_zero(dsc, struct ldb_sd_flags_control);
-		sdctr->secinfo_flags = 0;
+		sdctr->secinfo_flags = 0xF;
 		ret = ldb_request_add_control(req, LDB_CONTROL_SD_FLAGS_OID, false, sdctr);
 		attrs = talloc_array(dsc, const char*, 4);
 		if (attrs == NULL) {
