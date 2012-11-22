@@ -4357,9 +4357,12 @@ static int cmd_logon(void)
 	}
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&l_password,NULL)) {
-		char *pass = getpass("Password: ");
-		if (pass) {
-			l_password = talloc_strdup(ctx,pass);
+		char pwd[256] = {0};
+		int rc;
+
+		rc = samba_getpass("Password: ", pwd, sizeof(pwd), false, false);
+		if (rc == 0) {
+			l_password = talloc_strdup(ctx, pwd);
 		}
 	}
 	if (!l_password) {
