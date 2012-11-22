@@ -2091,6 +2091,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	const char *new_password = NULL;
 	char *chr, *prompt;
 	const char *user;
+	char pwd[256] = {0};
 	ADS_STATUS ret;
 
 	if (c->display_usage) {
@@ -2149,15 +2150,22 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	if (argv[1]) {
 		new_password = (const char *)argv[1];
 	} else {
+		int rc;
+
 		if (asprintf(&prompt, _("Enter new password for %s:"), user) == -1) {
 			return -1;
 		}
-		new_password = getpass(prompt);
+		rc = samba_getpass(prompt, pwd, sizeof(pwd), false, true);
+		if (rc < 0) {
+			return -1;
+		}
+		new_password = pwd;
 		free(prompt);
 	}
 
 	ret = kerberos_set_password(ads->auth.kdc_server, auth_principal,
 				auth_password, user, new_password, ads->auth.time_offset);
+	memset(pwd, '\0', sizeof(pwd));
 	if (!ADS_ERR_OK(ret)) {
 		d_fprintf(stderr, _("Password change failed: %s\n"), ads_errstr(ret));
 		ads_destroy(&ads);
