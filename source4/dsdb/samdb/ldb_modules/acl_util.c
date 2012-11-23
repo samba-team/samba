@@ -239,3 +239,32 @@ uint32_t dsdb_request_sd_flags(struct ldb_request *req, bool *explicit)
 
 	return sd_flags;
 }
+
+int dsdb_module_schedule_sd_propagation(struct ldb_module *module,
+					struct ldb_dn *nc_root,
+					struct ldb_dn *dn,
+					bool include_self)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_extended_sec_desc_propagation_op *op;
+	int ret;
+
+	op = talloc_zero(module, struct dsdb_extended_sec_desc_propagation_op);
+	if (op == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	op->nc_root = nc_root;
+	op->dn = dn;
+	op->include_self = include_self;
+
+	ret = dsdb_module_extended(module, op, NULL,
+				   DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID,
+				   op,
+				   DSDB_FLAG_TOP_MODULE |
+				   DSDB_FLAG_AS_SYSTEM |
+				   DSDB_FLAG_TRUSTED,
+				   NULL);
+	TALLOC_FREE(op);
+	return ret;
+}
