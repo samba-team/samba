@@ -622,7 +622,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message_element *objectclass_element, *sd_element;
 	int ret;
 	uint32_t instanceType;
-	uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
+	bool explicit_sd_flags = false;
+	uint32_t sd_flags = dsdb_request_sd_flags(req, &explicit_sd_flags);
 	const struct dsdb_schema *schema;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
@@ -630,6 +631,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	static const char * const current_attrs[] = { "nTSecurityDescriptor",
 						      "instanceType",
 						      "objectClass", NULL };
+	struct ldb_control *sd_propagation_control;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(dn)) {
@@ -637,8 +639,30 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 
+	sd_propagation_control = ldb_request_get_control(req,
+					DSDB_CONTROL_SEC_DESC_PROPAGATION_OID);
+	if (sd_propagation_control != NULL) {
+		if (sd_propagation_control->data != module) {
+			return ldb_operr(ldb);
+		}
+		if (req->op.mod.message->num_elements != 0) {
+			return ldb_operr(ldb);
+		}
+		if (explicit_sd_flags) {
+			return ldb_operr(ldb);
+		}
+		if (sd_flags != 0xF) {
+			return ldb_operr(ldb);
+		}
+		if (sd_propagation_control->critical == 0) {
+			return ldb_operr(ldb);
+		}
+
+		sd_propagation_control->critical = 0;
+	}
+
 	sd_element = ldb_msg_find_element(req->op.mod.message, "nTSecurityDescriptor");
-	if (sd_element == NULL) {
+	if (sd_propagation_control == NULL && sd_element == NULL) {
 		return ldb_next_request(module, req);
 	}
 
@@ -646,7 +670,9 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	 * nTSecurityDescriptor with DELETE is not supported yet.
 	 * TODO: handle this correctly.
 	 */
-	if (LDB_FLAG_MOD_TYPE(sd_element->flags) == LDB_FLAG_MOD_DELETE) {
+	if (sd_propagation_control == NULL &&
+	    LDB_FLAG_MOD_TYPE(sd_element->flags) == LDB_FLAG_MOD_DELETE)
+	{
 		return ldb_module_error(module,
 					LDB_ERR_UNWILLING_TO_PERFORM,
 					"MOD_DELETE for nTSecurityDescriptor "
@@ -655,7 +681,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 
 	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
 	/* nTSecurityDescriptor without a value is an error, letting through so it is handled */
-	if (user_sd == NULL) {
+	if (sd_propagation_control == NULL && user_sd == NULL) {
 		return ldb_next_request(module, req);
 	}
 
@@ -718,6 +744,14 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
+	if (sd_propagation_control != NULL) {
+		/*
+		 * This just triggers a recalculation of the
+		 * inherited aces.
+		 */
+		user_sd = old_sd;
+	}
+
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
 				user_sd, old_sd, sd_flags);
@@ -728,7 +762,35 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	if (msg == NULL) {
 		return ldb_oom(ldb);
 	}
-	sd_element->values[0] = *sd;
+	if (sd_propagation_control != NULL) {
+		ret = data_blob_cmp(old_sd, sd);
+		if (ret == 0) {
+			/*
+			 * The nTSecurityDescriptor is unchanged,
+			 * which means we can stop the processing.
+			 *
+			 * We mark the control as critical again,
+			 * as we have not processed it, so the caller
+			 * can tell that the descriptor was unchanged.
+			 */
+			sd_propagation_control->critical = 1;
+			return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+		}
+
+		ret = ldb_msg_add_empty(msg, "nTSecurityDescriptor",
+					LDB_FLAG_MOD_REPLACE,
+					&sd_element);
+		if (ret != LDB_SUCCESS) {
+			return ldb_oom(ldb);
+		}
+		ret = ldb_msg_add_value(msg, "nTSecurityDescriptor",
+					sd, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ldb_oom(ldb);
+		}
+	} else {
+		sd_element->values[0] = *sd;
+	}
 
 	ret = ldb_build_mod_req(&mod_req, ldb, req,
 				msg,
