@@ -60,7 +60,7 @@ def set_options(opt):
 
     opt.add_option('--disable-ntdb',
                    help=("disable ntdb"),
-                   action="store_true", dest='disable_ntdb', default=False)
+                   action="store_true", dest='disable_ntdb', default=True)
 
 
     opt.tool_options('python') # options for disabling pyc or pyo compilation
