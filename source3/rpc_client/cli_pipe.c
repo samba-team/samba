@@ -2420,6 +2420,7 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
  * Create an rpc pipe client struct, connecting to a tcp port.
  */
 static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
+				       const struct sockaddr_storage *ss_addr,
 				       uint16_t port,
 				       const struct ndr_syntax_id *abstract_syntax,
 				       struct rpc_pipe_client **presult)
@@ -2448,9 +2449,13 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
 	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
-	if (!resolve_name(host, &addr, NBT_NAME_SERVER, false)) {
-		status = NT_STATUS_NOT_FOUND;
-		goto fail;
+	if (ss_addr == NULL) {
+		if (!resolve_name(host, &addr, NBT_NAME_SERVER, false)) {
+			status = NT_STATUS_NOT_FOUND;
+			goto fail;
+		}
+	} else {
+		addr = *ss_addr;
 	}
 
 	status = open_socket_out(&addr, port, 60*1000, &fd);
@@ -2487,6 +2492,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
  * target host.
  */
 static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
+				      const struct sockaddr_storage *addr,
 				      const struct ndr_syntax_id *abstract_syntax,
 				      uint16_t *pport)
 {
@@ -2517,7 +2523,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	}
 
 	/* open the connection to the endpoint mapper */
-	status = rpc_pipe_open_tcp_port(tmp_ctx, host, 135,
+	status = rpc_pipe_open_tcp_port(tmp_ctx, host, addr, 135,
 					&ndr_table_epmapper.syntax_id,
 					&epm_pipe);
 
@@ -2631,18 +2637,19 @@ done:
  * host.
  */
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
+			   const struct sockaddr_storage *addr,
 			   const struct ndr_syntax_id *abstract_syntax,
 			   struct rpc_pipe_client **presult)
 {
 	NTSTATUS status;
 	uint16_t port = 0;
 
-	status = rpc_pipe_get_tcp_port(host, abstract_syntax, &port);
+	status = rpc_pipe_get_tcp_port(host, addr, abstract_syntax, &port);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	return rpc_pipe_open_tcp_port(mem_ctx, host, port,
+	return rpc_pipe_open_tcp_port(mem_ctx, host, addr, port,
 					abstract_syntax, presult);
 }
 
@@ -2816,7 +2823,9 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 {
 	switch (transport) {
 	case NCACN_IP_TCP:
-		return rpc_pipe_open_tcp(NULL, smbXcli_conn_remote_name(cli->conn),
+		return rpc_pipe_open_tcp(NULL,
+					 smbXcli_conn_remote_name(cli->conn),
+					 smbXcli_conn_remote_sockaddr(cli->conn),
 					 interface, presult);
 	case NCACN_NP:
 		return rpc_pipe_open_np(cli, interface, presult);
