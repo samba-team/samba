@@ -2448,7 +2448,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
 	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
-	if (!resolve_name(host, &addr, 0, false)) {
+	if (!resolve_name(host, &addr, NBT_NAME_SERVER, false)) {
 		status = NT_STATUS_NOT_FOUND;
 		goto fail;
 	}
