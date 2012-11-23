@@ -714,6 +714,9 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	old_sd = ldb_msg_find_ldb_val(current_res->msgs[0], "nTSecurityDescriptor");
+	if (old_sd == NULL) {
+		return ldb_operr(ldb);
+	}
 
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
