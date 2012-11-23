@@ -2188,11 +2188,6 @@ static int setup_io(struct ph_context *ac,
 		& (UF_INTERDOMAIN_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT
 			| UF_SERVER_TRUST_ACCOUNT));
 
-	if ((io->u.userAccountControl & UF_PASSWD_NOTREQD) != 0) {
-		/* see [MS-ADTS] 2.2.15 */
-		io->u.restrictions = 0;
-	}
-
 	if (ac->userPassword) {
 		ret = msg_find_old_and_new_pwd_val(orig_msg, "userPassword",
 						   ac->req->operation,
