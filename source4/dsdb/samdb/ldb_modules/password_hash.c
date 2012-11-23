@@ -2188,8 +2188,14 @@ static int setup_io(struct ph_context *ac,
 		& (UF_INTERDOMAIN_TRUST_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT
 			| UF_SERVER_TRUST_ACCOUNT));
 
-	if ((io->u.userAccountControl & UF_PASSWD_NOTREQD) != 0) {
+	if (!ldb_req_is_untrusted(ac->req) &&
+	    (io->u.userAccountControl & UF_PASSWD_NOTREQD))
+	{
 		/* see [MS-ADTS] 2.2.15 */
+		/*
+		 * This seems to only happen for SAMR
+		 * and not for LDAP clients
+		 */
 		io->u.restrictions = 0;
 	}
 
