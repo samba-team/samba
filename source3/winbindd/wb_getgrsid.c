@@ -97,7 +97,7 @@ static void wb_getgrsid_lookupsid_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = wb_sid2gid_send(state, state->ev, &state->sid);
+	subreq = wb_sids2xids_send(state, state->ev, &state->sid, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -111,12 +111,27 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 	struct wb_getgrsid_state *state = tevent_req_data(
 		req, struct wb_getgrsid_state);
 	NTSTATUS status;
+	struct unixid xid;
 
-	status = wb_sid2gid_recv(subreq, &state->gid);
+	status = wb_sids2xids_recv(subreq, &xid);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	/*
+	 * We are filtering further down in sids2xids, but that filtering
+	 * depends on the actual type of the sid handed in (as determined
+	 * by lookupsids). Here we need to filter for the type of object
+	 * actually requested, in this case uid.
+	 */
+	if (!(xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH)) {
+		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
+		return;
+	}
+
+	state->gid = (gid_t)xid.id;
+
 	subreq = wb_group_members_send(state, state->ev, &state->sid,
 				       state->type, state->max_nesting);
 	if (tevent_req_nomem(subreq, req)) {
