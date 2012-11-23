@@ -108,20 +108,6 @@ NTSTATUS _wbint_LookupName(struct pipes_struct *p, struct wbint_LookupName *r)
 	return status;
 }
 
-NTSTATUS _wbint_Sid2Uid(struct pipes_struct *p, struct wbint_Sid2Uid *r)
-{
-	uid_t uid;
-	NTSTATUS status;
-
-	status = idmap_sid_to_uid(r->in.dom_name ? r->in.dom_name : "",
-				  r->in.sid, &uid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	*r->out.uid = uid;
-	return NT_STATUS_OK;
-}
-
 NTSTATUS _wbint_Sid2Gid(struct pipes_struct *p, struct wbint_Sid2Gid *r)
 {
 	gid_t gid;
