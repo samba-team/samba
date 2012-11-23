@@ -109,13 +109,12 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 	} else if(username) strncpy(un, username, unlen-1);
 
 	if(!nonprompt && !password) {
-		char *prompt, *pass;
+		char *prompt;
 		if (asprintf(&prompt, "Password for %s at %s: ", shr, srv) == -1) {
 			return;
 		}
-		pass = getpass(prompt);
+		(void) samba_getpass(prompt, pw, pwlen, false, false);
 		free(prompt);
-		strncpy(pw, pass, pwlen-1);
 	} else if(password) strncpy(pw, password, pwlen-1);
 
 	if(workgroup)strncpy(wg, workgroup, wglen-1);
