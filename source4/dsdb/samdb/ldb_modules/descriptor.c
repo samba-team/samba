@@ -642,6 +642,17 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+	/*
+	 * nTSecurityDescriptor with DELETE is not supported yet.
+	 * TODO: handle this correctly.
+	 */
+	if (LDB_FLAG_MOD_TYPE(sd_element->flags) == LDB_FLAG_MOD_DELETE) {
+		return ldb_module_error(module,
+					LDB_ERR_UNWILLING_TO_PERFORM,
+					"MOD_DELETE for nTSecurityDescriptor "
+					"not supported yet");
+	}
+
 	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
 	/* nTSecurityDescriptor without a value is an error, letting through so it is handled */
 	if (user_sd == NULL) {
