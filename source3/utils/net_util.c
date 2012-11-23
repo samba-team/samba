@@ -482,7 +482,8 @@ done:
 const char *net_prompt_pass(struct net_context *c, const char *user)
 {
 	char *prompt = NULL;
-	const char *pass = NULL;
+	char pwd[256] = {0};
+	int rc;
 
 	if (c->opt_password) {
 		return c->opt_password;
@@ -500,10 +501,13 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 		return NULL;
 	}
 
-	pass = getpass(prompt);
+	rc = samba_getpass(prompt, pwd, sizeof(pwd), false, false);
 	SAFE_FREE(prompt);
+	if (rc < 0) {
+		return NULL;
+	}
 
-	return pass;
+	return SMB_STRDUP(pwd);
 }
 
 int net_run_function(struct net_context *c, int argc, const char **argv,
