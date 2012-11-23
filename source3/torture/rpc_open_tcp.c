@@ -94,7 +94,8 @@ int main(int argc, const char **argv)
 		return -1;
 	}
 
-	status = rpc_pipe_open_tcp(mem_ctx, argv[2], &((*table)->syntax_id),
+	status = rpc_pipe_open_tcp(mem_ctx, argv[2], NULL,
+				   &((*table)->syntax_id),
 				   &rpc_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("ERROR calling rpc_pipe_open_tcp(): %s\n",

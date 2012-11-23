@@ -66,6 +66,7 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
 
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx,
 			   const char *host,
+			   const struct sockaddr_storage *ss_addr,
 			   const struct ndr_syntax_id *abstract_syntax,
 			   struct rpc_pipe_client **presult);
 
