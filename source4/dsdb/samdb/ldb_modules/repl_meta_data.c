@@ -3654,6 +3654,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	struct ldb_val md_value;
 	unsigned int i;
 	int ret;
+	bool remote_isDeleted = false;
 
 	/*
 	 * TODO: check if the parent object exist
@@ -3707,6 +3708,9 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		}
 	}
 
+	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
+						     "isDeleted", false);
+
 	/*
 	 * the meta data array is already sorted by the caller
 	 */
@@ -3725,6 +3729,15 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	}
 
 	replmd_ldb_message_sort(msg, ar->schema);
+
+	if (!remote_isDeleted) {
+		ret = dsdb_module_schedule_sd_propagation(ar->module,
+							  ar->objs->partition_dn,
+							  msg->dn, true);
+		if (ret != LDB_SUCCESS) {
+			return replmd_replicated_request_error(ar, ret);
+		}
+	}
 
 	if (DEBUGLVL(4)) {
 		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
@@ -3920,10 +3933,13 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 					   struct ldb_message *msg,
 					   struct replPropertyMetaDataBlob *rmd,
 					   struct replPropertyMetaDataBlob *omd,
-					   struct ldb_request *parent)
+					   struct ldb_request *parent,
+					   bool *renamed)
 {
 	struct replPropertyMetaData1 *md_remote;
 	struct replPropertyMetaData1 *md_local;
+
+	*renamed = true;
 
 	if (ldb_dn_compare(msg->dn, ar->search_msg->dn) == 0) {
 		/* no rename */
@@ -4012,6 +4028,12 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	unsigned int removed_attrs = 0;
 	int ret;
 	int (*callback)(struct ldb_request *req, struct ldb_reply *ares) = replmd_op_callback;
+	bool isDeleted = false;
+	bool local_isDeleted = false;
+	bool remote_isDeleted = false;
+	bool take_remote_isDeleted = false;
+	bool sd_updated = false;
+	bool renamed = false;
 
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
@@ -4035,8 +4057,14 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
+	local_isDeleted = ldb_msg_find_attr_as_bool(ar->search_msg,
+						    "isDeleted", false);
+	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
+						     "isDeleted", false);
+
 	/* handle renames that come in over DRS */
-	ret = replmd_replicated_handle_rename(ar, msg, rmd, &omd, ar->req);
+	ret = replmd_replicated_handle_rename(ar, msg, rmd, &omd,
+					      ar->req, &renamed);
 
 	/*
 	 * This particular error code means that we already tried the
@@ -4075,6 +4103,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		/* Set the callback to one that will fix up the name to be a conflict DN */
 		callback = replmd_op_name_modify_callback;
 		msg->dn = new_dn;
+		renamed = true;
 	} else if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "replmd_replicated_request rename %s => %s failed - %s\n",
@@ -4132,6 +4161,16 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 					}
 				}
 				nmd.ctr.ctr1.array[j].local_usn = ar->seq_num;
+				switch (nmd.ctr.ctr1.array[j].attid) {
+				case DRSUAPI_ATTID_ntSecurityDescriptor:
+					sd_updated = true;
+					break;
+				case DRSUAPI_ATTID_isDeleted:
+					take_remote_isDeleted = true;
+					break;
+				default:
+					break;
+				}
 				found = true;
 				break;
 			}
@@ -4161,6 +4200,16 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 			}
 		}
 		nmd.ctr.ctr1.array[ni].local_usn = ar->seq_num;
+		switch (nmd.ctr.ctr1.array[ni].attid) {
+		case DRSUAPI_ATTID_ntSecurityDescriptor:
+			sd_updated = true;
+			break;
+		case DRSUAPI_ATTID_isDeleted:
+			take_remote_isDeleted = true;
+			break;
+		default:
+			break;
+		}
 		ni++;
 	}
 
@@ -4194,6 +4243,25 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_replicated_apply_merge[%u]: replace %u attributes\n",
 		  ar->index_current, msg->num_elements);
+
+	if (take_remote_isDeleted) {
+		isDeleted = remote_isDeleted;
+	} else {
+		isDeleted = local_isDeleted;
+	}
+
+	if (renamed) {
+		sd_updated = true;
+	}
+
+	if (sd_updated && !isDeleted) {
+		ret = dsdb_module_schedule_sd_propagation(ar->module,
+							  ar->objs->partition_dn,
+							  msg->dn, true);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
+	}
 
 	/* create the meta data value */
 	ndr_err = ndr_push_struct_blob(&nmd_value, msg, &nmd,
