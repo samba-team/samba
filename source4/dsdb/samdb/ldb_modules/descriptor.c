@@ -607,7 +607,6 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_control *sd_recalculate_control;
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
 	struct ldb_result *current_res, *parent_res;
@@ -634,11 +633,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
-	/* This control forces the recalculation of the SD also when
-	 * no modification is performed. */
-	sd_recalculate_control = ldb_request_get_control(req,
-					     LDB_CONTROL_RECALCULATE_SD_OID);
-	if (!user_sd && !sd_recalculate_control) {
+	if (!user_sd) {
 		return ldb_next_request(module, req);
 	}
 
@@ -708,27 +703,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 			sd_element = ldb_msg_find_element(msg,
 							  "nTSecurityDescriptor");
 			sd_element->values[0] = *sd;
-		} else if (sd_recalculate_control != NULL) {
-			/* In this branch we really do force the recalculation
-			 * of the SD */
-			ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
-
-			ret = ldb_msg_add_steal_value(msg,
-						      "nTSecurityDescriptor",
-						      sd);
-			if (ret != LDB_SUCCESS) {
-				return ldb_error(ldb, ret,
-					 "descriptor_modify: Could not replace SD value in message.");
-			}
-			sd_element = ldb_msg_find_element(msg,
-							  "nTSecurityDescriptor");
-			sd_element->flags = LDB_FLAG_MOD_REPLACE;
 		}
-	}
-
-	/* mark the controls as non-critical since we've handled them */
-	if (sd_recalculate_control != NULL) {
-		sd_recalculate_control->critical = 0;
 	}
 
 	ret = ldb_build_mod_req(&mod_req, ldb, req,
