@@ -605,6 +605,52 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+	uint32_t etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
+	const char *etype_list_str;
+
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+	etype_list |= ENC_HMAC_SHA1_96_AES128;
+#endif
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+	etype_list |= ENC_HMAC_SHA1_96_AES256;
+#endif
+
+	etype_list_str = talloc_asprintf(mem_ctx, "%d", etype_list);
+	if (!etype_list_str) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	/* Find our DN */
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	/* now do the mods */
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "msDS-SupportedEncryptionTypes",
+			     etype_list_str);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 				      struct libnet_JoinCtx *r)
 {
@@ -679,6 +725,7 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 						  struct libnet_JoinCtx *r)
 {
 	ADS_STATUS status;
+	uint32_t func_level = 0;
 
 	if (!r->in.ads) {
 		status = libnet_join_connect_ads(mem_ctx, r);
@@ -711,6 +758,24 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 			"failed to set machine upn: %s",
 			ads_errstr(status));
 		return status;
+	}
+
+	status = ads_domain_func_level(r->in.ads, &func_level);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to query domain controller functional level: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	if (func_level >= DS_DOMAIN_FUNCTION_2008) {
+		status = libnet_join_set_etypes(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to set machine kerberos encryption types: %s",
+				ads_errstr(status));
+			return status;
+		}
 	}
 
 	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
