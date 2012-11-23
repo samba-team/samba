@@ -2306,9 +2306,25 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	bool is_urgent = false, rodc = false;
 	unsigned int functional_level;
 	const DATA_BLOB *guid_blob;
+	struct ldb_control *sd_propagation_control;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	sd_propagation_control = ldb_request_get_control(req,
+					DSDB_CONTROL_SEC_DESC_PROPAGATION_OID);
+	if (sd_propagation_control != NULL) {
+		if (req->op.mod.message->num_elements != 1) {
+			return ldb_module_operr(module);
+		}
+		ret = strcmp(req->op.mod.message->elements[0].name,
+			     "nTSecurityDescriptor");
+		if (ret != 0) {
+			return ldb_module_operr(module);
+		}
+
 		return ldb_next_request(module, req);
 	}
 
