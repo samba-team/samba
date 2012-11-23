@@ -24,7 +24,7 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('winbind')
     opt.SAMBA3_ADD_OPTION('swat')
-    opt.SAMBA3_ADD_OPTION('ads')
+    opt.SAMBA3_ADD_OPTION('ads', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
@@ -634,55 +634,61 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.SET_TARGET_TYPE('ldap', 'EMPTY')
         conf.SET_TARGET_TYPE('lber', 'EMPTY')
 
-    if Options.options.with_ads:
-        use_ads=True
+    if Options.options.with_ads == False:
+        use_ads = False
+        use_ads_krb5 = False
+        use_ads_ldap = False
+    else:
+        use_ads = True
+        use_ads_krb5 = True
+        use_ads_ldap = True
         if not conf.CONFIG_SET('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5') and \
            not conf.CONFIG_SET('HAVE_ENCTYPE_ARCFOUR_HMAC'):
             Logs.warn("arcfour-hmac-md5 encryption type not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_MK_REQ_EXTENDED'):
             Logs.warn("krb5_mk_req_extended not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_GET_HOST_REALM'):
             Logs.warn("krb5_get_host_realm not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_FREE_HOST_REALM'):
             Logs.warn("krb5_free_host_realm not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_FWD_TGT_CREDS'):
             Logs.warn("krb5_fwd_tgt_creds found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_GET_INIT_CREDS_OPT_ALLOC'):
             Logs.warn("krb5_get_init_creds_opt_alloc not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('KRB5_CREDS_OPT_FREE_REQUIRES_CONTEXT'):
             Logs.warn("krb5_get_init_creds_opt_free was not found or was too old in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_GET_RENEWED_CREDS'):
             Logs.warn("krb5_get_renewed_creds not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL_COMPARE_ANY_REALM'):
             Logs.warn("krb5_principal_compare_any_realm not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_C_STRING_TO_KEY') and \
            not conf.CONFIG_SET('HAVE_KRB5_STRING_TO_KEY_SALT'):
             Logs.warn("krb5_c_string_to_key not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_PW_SALT'):
             Logs.warn("no CREATE_KEY_FUNCTIONS detected")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_GET_PERMITTED_ENCTYPES') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES'):
             Logs.warn("no GET_ENCTYPES_FUNCTIONS detected")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_KT_FREE_ENTRY') and \
            not conf.CONFIG_SET('HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS'):
             Logs.warn("no KT_FREE_FUNCTION detected")
-            use_ads=False
+            use_ads_krb5 = False
         if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM'):
             Logs.warn("krb5_c_verify_checksum_compare not found in -lkrb5")
-            use_ads=False
+            use_ads_krb5 = False
 
         # We don't actually use
         # gsskrb5_extract_authz_data_from_sec_context, but it is a
@@ -692,23 +698,43 @@ msg.msg_acctrightslen = sizeof(fd);
             not (conf.CONFIG_SET('HAVE_GSSKRB5_EXTRACT_AUTHZ_DATA_FROM_SEC_CONTEXT') and \
                      conf.CONFIG_SET('HAVE_GSS_INQUIRE_SEC_CONTEXT_BY_OID')):
             Logs.warn("need eiterh gss_get_name_attribute or gsskrb5_extract_authz_data_from_sec_context and gss_inquire_sec_context_by_oid in -lgssapi for PAC support")
-            use_ads=False
+            use_ads_krb5 = False
 
         if not conf.CONFIG_SET('HAVE_GSS_KRB5_EXPORT_LUCID_SEC_CONTEXT'):
             Logs.warn("need gss_krb5_export_lucid_sec_context for SPNEGO and gss_wrap support")
-            use_ads=False
+            use_ads_krb5 = False
 
-        if use_ads:
-            conf.DEFINE('WITH_ADS', '1')
+        if use_ads_krb5:
             conf.DEFINE('HAVE_KRB5', '1')
-            if conf.CONFIG_SET('HAVE_LDAP'):
-                conf.env['HAVE_ADS'] = '1'
+            conf.env['HAVE_KRB5'] = '1'
         else:
-            Logs.warn("krb5 libs don't have all features required for Active Directory support")
             conf.undefine('HAVE_KRB5_H')
             conf.undefine('HAVE_GSSAPI_H')
             conf.undefine('HAVE_GSSAPI_GSSAPI_GENERIC_H')
             conf.undefine('HAVE_GSSAPI_GSSAPI_H')
+            use_ads = False
+
+        if not conf.CONFIG_SET('HAVE_LDAP'):
+            use_ads = False
+            use_ads_ldap = False
+
+    if use_ads:
+        conf.DEFINE('WITH_ADS', '1')
+        conf.env['HAVE_ADS'] = '1'
+        Logs.info("Building with Active Directory support.")
+    elif Options.options.with_ads == False:
+        Logs.info("Building without Active Directory support (--without-ads).")
+    else:
+        if not use_ads_krb5:
+            Logs.warn("Active Directory support not available: krb5 libs don't have all required features")
+        if not use_ads_ldap:
+            Logs.warn("Active Directory support not available: LDAP support ist not available.")
+        if Options.options.with_ads:
+            conf.fatal("Active Directory support not found. Use --without-ads for building without Active Directory support.")
+        else:
+            # this is the auto-mode case
+            Logs.warn("Building without Active Directory support.")
+
 
     if Options.options.with_utmp:
         conf.env.with_utmp = True
