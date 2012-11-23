@@ -496,22 +496,12 @@ struct tevent_req *winbindd_lookupname_send(TALLOC_CTX *mem_ctx,
 NTSTATUS winbindd_lookupname_recv(struct tevent_req *req,
 				  struct winbindd_response *response);
 
-struct tevent_req *wb_sid2uid_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   const struct dom_sid *sid);
-NTSTATUS wb_sid2uid_recv(struct tevent_req *req, uid_t *uid);
-
 struct tevent_req *winbindd_sid_to_uid_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct winbindd_cli_state *cli,
 					    struct winbindd_request *request);
 NTSTATUS winbindd_sid_to_uid_recv(struct tevent_req *req,
 				  struct winbindd_response *response);
-
-struct tevent_req *wb_sid2gid_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   const struct dom_sid *sid);
-NTSTATUS wb_sid2gid_recv(struct tevent_req *req, gid_t *gid);
 
 struct tevent_req *winbindd_sid_to_gid_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
