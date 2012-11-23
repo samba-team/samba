@@ -583,16 +583,14 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	if (msg == NULL) {
 		return ldb_oom(ldb);
 	}
-	if (sd != NULL) {
-		if (sd_element != NULL) {
-			sd_element->values[0] = *sd;
-		} else {
-			ret = ldb_msg_add_steal_value(msg,
-						      "nTSecurityDescriptor",
-						      sd);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
+	if (sd_element != NULL) {
+		sd_element->values[0] = *sd;
+	} else {
+		ret = ldb_msg_add_steal_value(msg,
+					      "nTSecurityDescriptor",
+					      sd);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
 
