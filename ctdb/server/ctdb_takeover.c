@@ -85,6 +85,74 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	return 0;
 }
 
+static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
+					const char *name)
+{
+	int n;
+
+	for (n = 0; vnn->ifaces[n] != NULL; n++) {
+		if (strcmp(name, vnn->ifaces[n]) == 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/* If any interfaces now have no possible IPs then delete them.  This
+ * implementation is naive (i.e. simple) rather than clever
+ * (i.e. complex).  Given that this is run on delip and that operation
+ * is rare, this doesn't need to be efficient - it needs to be
+ * foolproof.  One alternative is reference counting, where the logic
+ * is distributed and can, therefore, be broken in multiple places.
+ * Another alternative is to build a red-black tree of interfaces that
+ * can have addresses (by walking ctdb->vnn and ctdb->single_ip_vnn
+ * once) and then walking ctdb->ifaces once and deleting those not in
+ * the tree.  Let's go to one of those if the naive implementation
+ * causes problems...  :-)
+ */
+static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
+					struct ctdb_vnn *vnn,
+					TALLOC_CTX *mem_ctx)
+{
+	struct ctdb_iface *i;
+
+	/* For each interface, check if there's an IP using it. */
+	for(i=ctdb->ifaces; i; i=i->next) {
+		struct ctdb_vnn *tv;
+		bool found;
+
+		/* Only consider interfaces named in the given VNN. */
+		if (!vnn_has_interface_with_name(vnn, i->name)) {
+			continue;
+		}
+
+		/* Is the "single IP" on this interface? */
+		if ((ctdb->single_ip_vnn != NULL) &&
+		    (ctdb->single_ip_vnn->ifaces[0] != NULL) &&
+		    (strcmp(i->name, ctdb->single_ip_vnn->ifaces[0]) == 0)) {
+			/* Found, next interface please... */
+			continue;
+		}
+		/* Search for a vnn with this interface. */
+		found = false;
+		for (tv=ctdb->vnn; tv; tv=tv->next) {
+			if (vnn_has_interface_with_name(tv, i->name)) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			/* None of the VNNs are using this interface. */
+			DLIST_REMOVE(ctdb->ifaces, i);
+			/* Caller will free mem_ctx when convenient. */
+			talloc_steal(mem_ctx, i);
+		}
+	}
+}
+
+
 static struct ctdb_iface *ctdb_find_iface(struct ctdb_context *ctdb,
 					  const char *iface)
 {
@@ -3665,20 +3733,20 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	/* walk over all public addresses until we find a match */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (ctdb_same_ip(&vnn->public_address, &pub->addr)) {
-			TALLOC_CTX *mem_ctx;
+			TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
 			DLIST_REMOVE(ctdb->vnn, vnn);
+			talloc_steal(mem_ctx, vnn);
+			ctdb_remove_orphaned_ifaces(ctdb, vnn, mem_ctx);
 			if (vnn->pnn != ctdb->pnn) {
 				if (vnn->iface != NULL) {
 					ctdb_vnn_unassign_iface(ctdb, vnn);
 				}
-				talloc_free(vnn);
+				talloc_free(mem_ctx);
 				return 0;
 			}
 			vnn->pnn = -1;
 
-			mem_ctx = talloc_new(ctdb);
-			talloc_steal(mem_ctx, vnn);
 			ret = ctdb_event_script_callback(ctdb, 
 					 mem_ctx, delete_ip_callback, mem_ctx,
 					 false,
