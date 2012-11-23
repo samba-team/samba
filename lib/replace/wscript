@@ -482,17 +482,6 @@ removeea setea
                            execute=True):
             break
 
-    if conf.CHECK_FUNCS('getpass getpassphrase'):
-        # if we have both, then we prefer getpassphrase
-        conf.DEFINE('REPLACE_GETPASS_BY_GETPASSPHRASE', 1)
-        conf.DEFINE('REPLACE_GETPASS', 1)
-    else:
-        conf.CHECK_CODE('''#include "getpass.c"
-                       int main(void) { return 0; }''',
-                    addmain=False,
-                    define='REPLACE_GETPASS',
-                    cflags='-DNO_CONFIG_H')
-
     conf.RECURSE('system')
     conf.SAMBA_CONFIG_H()
 
@@ -542,7 +531,6 @@ def build(bld):
 
     REPLACE_SOURCE = REPLACE_HOSTCC_SOURCE
 
-    if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
     if not bld.CONFIG_SET('HAVE_CRYPT'):         REPLACE_SOURCE += ' crypt.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
     if not bld.CONFIG_SET('HAVE_POLL'):          REPLACE_SOURCE += ' poll.c'

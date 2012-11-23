@@ -463,12 +463,6 @@ static int test_pwrite(void)
 	return true;
 }
 
-static int test_getpass(void)
-{
-	/* FIXME */
-	return true;
-}
-
 static int test_inet_ntoa(void)
 {
 	/* FIXME */
@@ -1089,7 +1083,6 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_mkstemp();
 	ret &= test_pread();
 	ret &= test_pwrite();
-	ret &= test_getpass();
 	ret &= test_inet_ntoa();
 	ret &= test_strtoll();
 	ret &= test_strtoull();

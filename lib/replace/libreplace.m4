@@ -381,7 +381,6 @@ fi
 m4_include(system/config.m4)
 
 m4_include(dlfcn.m4)
-m4_include(getpass.m4)
 m4_include(strptime.m4)
 m4_include(win32.m4)
 m4_include(timegm.m4)

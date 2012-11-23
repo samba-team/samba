@@ -49,7 +49,6 @@ pread
 pwrite
 chown
 lchown
-getpass
 readline (the library)
 inet_ntoa
 inet_ntop

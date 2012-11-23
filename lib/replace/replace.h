@@ -843,17 +843,6 @@ int fdatasync(int );
 /* prototype is in "system/network.h" */
 #endif
 
-#if !defined(getpass)
-#ifdef REPLACE_GETPASS
-#if defined(REPLACE_GETPASS_BY_GETPASSPHRASE)
-#define getpass(prompt) getpassphrase(prompt)
-#else
-#define getpass(prompt) rep_getpass(prompt)
-char *rep_getpass(const char *prompt);
-#endif
-#endif
-#endif
-
 #ifndef HAVE_GETPEEREID
 #define getpeereid rep_getpeereid
 int rep_getpeereid(int s, uid_t *uid, gid_t *gid);
