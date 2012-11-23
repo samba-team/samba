@@ -1137,7 +1137,13 @@ int main(int argc, const char **argv)
 	}
 
 	if (!opt_password) {
-		opt_password = getpass("password: ");
+		char pwd[256] = {0};
+		int rc;
+
+		rc = samba_getpass("Password: ", pwd, sizeof(pwd), false, false);
+		if (rc == 0) {
+			opt_password = smb_xstrdup(pwd);
+		}
 	}
 
 	{
