@@ -619,7 +619,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *user_sd;
 	struct ldb_dn *dn = req->op.mod.message->dn;
 	struct ldb_dn *parent_dn;
-	struct ldb_message_element *objectclass_element;
+	struct ldb_message_element *objectclass_element, *sd_element;
 	int ret;
 	uint32_t instanceType;
 	uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
@@ -636,8 +636,15 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
+
+	sd_element = ldb_msg_find_element(req->op.mod.message, "nTSecurityDescriptor");
+	if (sd_element == NULL) {
+		return ldb_next_request(module, req);
+	}
+
 	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
-	if (!user_sd) {
+	/* nTSecurityDescriptor without a value is an error, letting through so it is handled */
+	if (user_sd == NULL) {
 		return ldb_next_request(module, req);
 	}
 
@@ -707,14 +714,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	if (msg == NULL) {
 		return ldb_oom(ldb);
 	}
-	if (sd != NULL) {
-		struct ldb_message_element *sd_element;
-		if (user_sd != NULL) {
-			sd_element = ldb_msg_find_element(msg,
-							  "nTSecurityDescriptor");
-			sd_element->values[0] = *sd;
-		}
-	}
+	sd_element->values[0] = *sd;
 
 	ret = ldb_build_mod_req(&mod_req, ldb, req,
 				msg,
