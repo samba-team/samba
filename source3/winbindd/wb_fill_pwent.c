@@ -54,7 +54,7 @@ struct tevent_req *wb_fill_pwent_send(TALLOC_CTX *mem_ctx,
 	state->info = info;
 	state->pw = pw;
 
-	subreq = wb_sid2uid_send(state, state->ev, &state->info->user_sid);
+	subreq = wb_sids2xids_send(state, state->ev, &state->info->user_sid, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -69,14 +69,28 @@ static void wb_fill_pwent_sid2uid_done(struct tevent_req *subreq)
 	struct wb_fill_pwent_state *state = tevent_req_data(
 		req, struct wb_fill_pwent_state);
 	NTSTATUS status;
+	struct unixid xid;
 
-	status = wb_sid2uid_recv(subreq, &state->pw->pw_uid);
+	status = wb_sids2xids_recv(subreq, &xid);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	subreq = wb_sid2gid_send(state, state->ev, &state->info->group_sid);
+	/*
+	 * We are filtering further down in sids2xids, but that filtering
+	 * depends on the actual type of the sid handed in (as determined
+	 * by lookupsids). Here we need to filter for the type of object
+	 * actually requested, in this case uid.
+	 */
+	if (!(xid.type == ID_TYPE_UID || xid.type == ID_TYPE_BOTH)) {
+		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
+		return;
+	}
+
+	state->pw->pw_uid = (uid_t)xid.id;
+
+	subreq = wb_sids2xids_send(state, state->ev, &state->info->group_sid, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -94,12 +108,26 @@ static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
 	fstring user_name, output_username;
 	char *mapped_name = NULL;
 	NTSTATUS status;
+	struct unixid xid;
 
-	status = wb_sid2gid_recv(subreq, &state->pw->pw_gid);
+	status = wb_sids2xids_recv(subreq, &xid);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	/*
+	 * We are filtering further down in sids2xids, but that filtering
+	 * depends on the actual type of the sid handed in (as determined
+	 * by lookupsids). Here we need to filter for the type of object
+	 * actually requested, in this case uid.
+	 */
+	if (!(xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH)) {
+		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
+		return;
+	}
+
+	state->pw->pw_gid = (gid_t)xid.id;
 
 	domain = find_domain_from_sid_noinit(&state->info->user_sid);
 	if (domain == NULL) {
