@@ -576,7 +576,13 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
 				user_sd, NULL, sd_flags);
+	if (sd == NULL) {
+		return ldb_operr(ldb);
+	}
 	msg = ldb_msg_copy_shallow(req, req->op.add.message);
+	if (msg == NULL) {
+		return ldb_oom(ldb);
+	}
 	if (sd != NULL) {
 		if (sd_element != NULL) {
 			sd_element->values[0] = *sd;
@@ -696,7 +702,13 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
 				user_sd, old_sd, sd_flags);
+	if (sd == NULL) {
+		return ldb_operr(ldb);
+	}
 	msg = ldb_msg_copy_shallow(req, req->op.mod.message);
+	if (msg == NULL) {
+		return ldb_oom(ldb);
+	}
 	if (sd != NULL) {
 		struct ldb_message_element *sd_element;
 		if (user_sd != NULL) {
