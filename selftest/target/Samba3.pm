@@ -1157,6 +1157,30 @@ sub wait_for_start($$$$$)
 	    return 1;
 	}
 
+	if ($winbindd eq "yes") {
+	    # note: creating builtin groups requires winbindd for the
+	    # unix id allocator
+	    $ret = system("WINBINDD_SOCKET_DIR=" . $envvars->{WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Users");
+	    if ($ret != 0) {
+	        print "Failed to create BUILTIN\\Users group\n";
+	        return 0;
+	    }
+	    my $count = 0;
+	    do {
+		system(Samba::bindir_path($self, "net") . " $envvars->{CONFIGURATION} cache flush");
+		$ret = system("WINBINDD_SOCKET_DIR=" . $envvars->{WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --sid-to-gid=S-1-5-32-545");
+		if ($ret != 0) {
+		    sleep(2);
+		}
+		$count++;
+	    } while ($ret != 0 && $count < 10);
+	    if ($count == 10) {
+		print "WINBINDD not reachable after 20 seconds\n";
+		teardown_env($self, $envvars);
+		return 0;
+	    }
+	}
+
 	print $self->getlog_env($envvars);
 
 	return 1;
