@@ -471,13 +471,14 @@ fail:
 
 static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_request *add_req;
 	struct ldb_message *msg;
 	struct ldb_result *parent_res;
 	const struct ldb_val *parent_sd = NULL;
 	const struct ldb_val *user_sd;
-	struct ldb_dn *parent_dn, *dn, *nc_root;
+	struct ldb_dn *dn = req->op.add.message->dn;
+	struct ldb_dn *parent_dn, *nc_root;
 	struct ldb_message_element *objectclass_element, *sd_element;
 	int ret;
 	const struct dsdb_schema *schema;
@@ -488,8 +489,11 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	bool isNC = false;
 	uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
 
-	ldb = ldb_module_get_ctx(module);
-	dn = req->op.add.message->dn;
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(dn)) {
+		return ldb_next_request(module, req);
+	}
+
 	user_sd = ldb_msg_find_ldb_val(req->op.add.message, "nTSecurityDescriptor");
 	sd_element = ldb_msg_find_element(req->op.add.message, "nTSecurityDescriptor");
 	/* nTSecurityDescriptor without a value is an error, letting through so it is handled */
@@ -498,11 +502,6 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: %s\n", ldb_dn_get_linearized(dn));
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(dn)) {
-		return ldb_next_request(module, req);
-	}
 
 	instanceType = ldb_msg_find_attr_as_uint(req->op.add.message, "instanceType", 0);
 
@@ -607,7 +606,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 
 static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_control *sd_recalculate_control;
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
@@ -615,7 +614,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *old_sd = NULL;
 	const struct ldb_val *parent_sd = NULL;
 	const struct ldb_val *user_sd;
-	struct ldb_dn *parent_dn, *dn;
+	struct ldb_dn *dn = req->op.mod.message->dn;
+	struct ldb_dn *parent_dn;
 	struct ldb_message_element *objectclass_element;
 	int ret;
 	uint32_t instanceType;
@@ -627,8 +627,12 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	static const char * const current_attrs[] = { "nTSecurityDescriptor",
 						      "instanceType",
 						      "objectClass", NULL };
-	ldb = ldb_module_get_ctx(module);
-	dn = req->op.mod.message->dn;
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(dn)) {
+		return ldb_next_request(module, req);
+	}
+
 	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
 	/* This control forces the recalculation of the SD also when
 	 * no modification is performed. */
@@ -639,11 +643,6 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_modify: %s\n", ldb_dn_get_linearized(dn));
-
-	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(dn)) {
-		return ldb_next_request(module, req);
-	}
 
 	ret = dsdb_module_search_dn(module, req, &current_res, dn,
 				    current_attrs,
@@ -792,12 +791,15 @@ static int descriptor_search(struct ldb_module *module, struct ldb_request *req)
 static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn));
+	struct ldb_dn *olddn = req->op.rename.olddn;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.rename.olddn)) {
 		return ldb_next_request(module, req);
 	}
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_rename: %s\n",
+		  ldb_dn_get_linearized(olddn));
 
 	return ldb_next_request(module, req);
 }
