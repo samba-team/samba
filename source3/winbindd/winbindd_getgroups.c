@@ -134,8 +134,8 @@ static void winbindd_getgroups_gettoken_done(struct tevent_req *subreq)
 	state->num_gids = 0;
 	state->next_sid = 1;
 
-	subreq = wb_sid2gid_send(state, state->ev,
-				 &state->sids[state->next_sid]);
+	subreq = wb_sids2xids_send(state, state->ev,
+				   &state->sids[state->next_sid], 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -149,9 +149,18 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 	struct winbindd_getgroups_state *state = tevent_req_data(
 		req, struct winbindd_getgroups_state);
 	NTSTATUS status;
+	struct unixid xid;
 
-	status = wb_sid2gid_recv(subreq, &state->gids[state->num_gids]);
+	xid.type = ID_TYPE_NOT_SPECIFIED;
+	xid.id = UINT32_MAX;
+
+	status = wb_sids2xids_recv(subreq, &xid);
 	TALLOC_FREE(subreq);
+	if (xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH) {
+		state->gids[state->num_gids] = (gid_t)xid.id;
+	} else {
+		state->gids[state->num_gids] = (uid_t)-1;
+	}
 
 	/*
 	 * In case of failure, just continue with the next gid
@@ -166,8 +175,8 @@ static void winbindd_getgroups_sid2gid_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = wb_sid2gid_send(state, state->ev,
-				 &state->sids[state->next_sid]);
+	subreq = wb_sids2xids_send(state, state->ev,
+				   &state->sids[state->next_sid], 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
