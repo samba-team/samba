@@ -265,8 +265,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/wb_lookupsid.c
                    winbindd/wb_lookupsids.c
                    winbindd/wb_lookupname.c
-                   winbindd/wb_sid2uid.c
-                   winbindd/wb_sid2gid.c
                    winbindd/wb_uid2sid.c
                    winbindd/wb_gid2sid.c
                    winbindd/wb_sids2xids.c
