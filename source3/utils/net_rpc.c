@@ -886,13 +886,20 @@ static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 	if (argv[1]) {
 		u1003.usri1003_password = argv[1];
 	} else {
+		char pwd[256] = {0};
 		ret = asprintf(&prompt, _("Enter new password for %s:"),
 			       argv[0]);
 		if (ret == -1) {
 			return -1;
 		}
-		u1003.usri1003_password = talloc_strdup(c, getpass(prompt));
+
+		ret = samba_getpass(prompt, pwd, sizeof(pwd), false, false);
 		SAFE_FREE(prompt);
+		if (ret < 0) {
+			return -1;
+		}
+
+		u1003.usri1003_password = talloc_strdup(c, pwd);
 		if (u1003.usri1003_password == NULL) {
 			return -1;
 		}
