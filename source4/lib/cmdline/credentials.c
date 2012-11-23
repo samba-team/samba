@@ -24,19 +24,23 @@
 
 static const char *cmdline_get_userpassword(struct cli_credentials *credentials)
 {
-	char *ret;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-
 	const char *prompt_name = cli_credentials_get_unparsed_name(credentials, mem_ctx);
 	const char *prompt;
+	static char pwd[256]; /* FIXME: Return a dup pwd and free it. */
+	int rc;
 
 	prompt = talloc_asprintf(mem_ctx, "Password for [%s]:", 
 				 prompt_name);
 
-	ret = getpass(prompt);
-
+	memset(pwd, '\0', sizeof(pwd));
+	rc = samba_getpass(prompt, pwd, sizeof(pwd), false, false);
 	talloc_free(mem_ctx);
-	return ret;
+	if (rc < 0) {
+		return NULL;
+	}
+
+	return pwd;
 }
 
 bool cli_credentials_set_cmdline_callbacks(struct cli_credentials *cred)
