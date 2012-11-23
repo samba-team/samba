@@ -37,12 +37,6 @@ interface wbint
 	[out] dom_sid *sid
 	);
 
-    NTSTATUS wbint_Sid2Gid(
-	[in,unique,string,charset(UTF8)] char *dom_name,
-	[in] dom_sid *sid,
-	[out] hyper *gid
-	);
-
     typedef struct {
 	id_type type;
 	uint32 domain_index;
