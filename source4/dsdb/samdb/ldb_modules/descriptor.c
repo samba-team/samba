@@ -42,9 +42,21 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/util/binsearch.h"
+
+struct descriptor_changes {
+	struct descriptor_changes *prev, *next;
+	struct descriptor_changes *children;
+	struct ldb_dn *nc_root;
+	struct ldb_dn *dn;
+	bool force_self;
+	bool force_children;
+	struct ldb_dn *stopped_dn;
+};
 
 struct descriptor_data {
-	int _dummy;
+	TALLOC_CTX *trans_mem;
+	struct descriptor_changes *changes;
 };
 
 struct descriptor_context {
@@ -865,26 +877,401 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
+						    struct ldb_request *req)
+{
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_extended_sec_desc_propagation_op *op;
+	TALLOC_CTX *parent_mem = NULL;
+	struct descriptor_changes *parent_change = NULL;
+	struct descriptor_changes *c;
+	int ret;
+
+	op = talloc_get_type(req->op.extended.data,
+			     struct dsdb_extended_sec_desc_propagation_op);
+	if (op == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "descriptor_extended_sec_desc_propagation: "
+			  "invalid extended data\n");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	if (descriptor_private->trans_mem == NULL) {
+		return ldb_module_operr(module);
+	}
+
+	parent_mem = descriptor_private->trans_mem;
+
+	for (c = descriptor_private->changes; c; c = c->next) {
+		ret = ldb_dn_compare(c->nc_root, op->nc_root);
+		if (ret != 0) {
+			continue;
+		}
+
+		ret = ldb_dn_compare(c->dn, op->dn);
+		if (ret == 0) {
+			if (op->include_self) {
+				c->force_self = true;
+			} else {
+				c->force_children = true;
+			}
+			return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+		}
+
+		ret = ldb_dn_compare_base(c->dn, op->dn);
+		if (ret != 0) {
+			continue;
+		}
+
+		parent_mem = c;
+		parent_change = c;
+		break;
+	}
+
+	c = talloc_zero(parent_mem, struct descriptor_changes);
+	if (c == NULL) {
+		return ldb_module_oom(module);
+	}
+	c->nc_root = ldb_dn_copy(c, op->nc_root);
+	if (c->nc_root == NULL) {
+		return ldb_module_oom(module);
+	}
+	c->dn = ldb_dn_copy(c, op->dn);
+	if (c->dn == NULL) {
+		return ldb_module_oom(module);
+	}
+	if (op->include_self) {
+		c->force_self = true;
+	} else {
+		c->force_children = true;
+	}
+
+	if (parent_change != NULL) {
+		DLIST_ADD_END(parent_change->children, c, NULL);
+	} else {
+		DLIST_ADD_END(descriptor_private->changes, c, NULL);
+	}
+
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
+static int descriptor_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID) == 0) {
+		return descriptor_extended_sec_desc_propagation(module, req);
+	}
+
+	return ldb_next_request(module, req);
+}
+
 static int descriptor_init(struct ldb_module *module)
 {
-	int ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+	struct descriptor_data *descriptor_private;
+
+	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"descriptor: Unable to register control with rootdse!\n");
 		return ldb_operr(ldb);
 	}
+
+	descriptor_private = talloc_zero(module, struct descriptor_data);
+	if (descriptor_private == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ldb_module_set_private(module, descriptor_private);
+
 	return ldb_next_init(module);
 }
 
+static int descriptor_sd_propagation_object(struct ldb_module *module,
+					    struct ldb_message *msg,
+					    bool *stop)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_request *sub_req;
+	struct ldb_result *mod_res;
+	struct ldb_control *sd_propagation_control;
+	int ret;
+
+	*stop = false;
+
+	mod_res = talloc_zero(msg, struct ldb_result);
+	if (mod_res == NULL) {
+		return ldb_module_oom(module);
+	}
+
+	ret = ldb_build_mod_req(&sub_req, ldb, mod_res,
+				msg,
+				NULL,
+				mod_res,
+				ldb_modify_default_callback,
+				NULL);
+	LDB_REQ_SET_LOCATION(sub_req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_operr(module);
+	}
+
+	ldb_req_mark_trusted(sub_req);
+
+	ret = ldb_request_add_control(sub_req,
+				      DSDB_CONTROL_SEC_DESC_PROPAGATION_OID,
+				      true, module);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_operr(module);
+	}
+
+	sd_propagation_control = ldb_request_get_control(sub_req,
+					DSDB_CONTROL_SEC_DESC_PROPAGATION_OID);
+	if (sd_propagation_control == NULL) {
+		return ldb_module_operr(module);
+	}
+
+	ret = dsdb_request_add_controls(sub_req,
+					DSDB_FLAG_AS_SYSTEM |
+					DSDB_SEARCH_SHOW_RECYCLED);
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_operr(module);
+	}
+
+	ret = descriptor_modify(module, sub_req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(sub_req->handle, LDB_WAIT_ALL);
+	}
+	if (ret != LDB_SUCCESS) {
+		return ldb_module_operr(module);
+	}
+
+	if (sd_propagation_control->critical != 0) {
+		*stop = true;
+	}
+
+	talloc_free(mod_res);
+
+	return LDB_SUCCESS;
+}
+
+static int descriptor_sd_propagation_msg_sort(struct ldb_message **m1,
+					      struct ldb_message **m2)
+{
+	struct ldb_dn *dn1 = (*m1)->dn;
+	struct ldb_dn *dn2 = (*m2)->dn;
+
+	/*
+	 * This sorts in tree order, parents first
+	 */
+	return ldb_dn_compare(dn2, dn1);
+}
+
+static int descriptor_sd_propagation_dn_sort(struct ldb_dn *dn1,
+					     struct ldb_dn *dn2)
+{
+	/*
+	 * This sorts in tree order, parents first
+	 */
+	return ldb_dn_compare(dn2, dn1);
+}
+
+static int descriptor_sd_propagation_recursive(struct ldb_module *module,
+					       struct descriptor_changes *change)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *res = NULL;
+	unsigned int i;
+	const char * const no_attrs[] = { "@__NONE__", NULL };
+	struct descriptor_changes *c;
+	struct descriptor_changes *stopped_stack = NULL;
+	int ret;
+
+	/*
+	 * Note: that we do not search for deleted/recycled objects
+	 */
+	ret = dsdb_module_search(module,
+				 change,
+				 &res,
+				 change->dn,
+				 LDB_SCOPE_SUBTREE,
+				 no_attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
+				 NULL, /* parent_req */
+				 "(objectClass=*)");
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	TYPESAFE_QSORT(res->msgs, res->count,
+		       descriptor_sd_propagation_msg_sort);
+
+	for (c = change->children; c; c = c->next) {
+		struct ldb_message *msg = NULL;
+
+		BINARY_ARRAY_SEARCH_P(res->msgs, res->count, dn, c->dn,
+				      descriptor_sd_propagation_dn_sort,
+				      msg);
+
+		if (msg == NULL) {
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+				"descriptor_sd_propagation_recursive: "
+				"%s not found under %s",
+				ldb_dn_get_linearized(c->dn),
+				ldb_dn_get_linearized(change->dn));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		msg->elements = (struct ldb_message_element *)c;
+	}
+
+	DLIST_ADD(stopped_stack, change);
+
+	if (change->force_self) {
+		i = 0;
+	} else {
+		i = 1;
+	}
+
+	for (; i < res->count; i++) {
+		struct descriptor_changes *cur;
+		bool stop = false;
+
+		cur = talloc_get_type(res->msgs[i]->elements,
+				      struct descriptor_changes);
+		res->msgs[i]->elements = NULL;
+		res->msgs[i]->num_elements = 0;
+
+		if (cur != NULL) {
+			DLIST_REMOVE(change->children, cur);
+		}
+
+		for (c = stopped_stack; c; c = stopped_stack) {
+			ret = ldb_dn_compare_base(c->dn,
+						  res->msgs[i]->dn);
+			if (ret == 0) {
+				break;
+			}
+
+			c->stopped_dn = NULL;
+			DLIST_REMOVE(stopped_stack, c);
+		}
+
+		if (cur != NULL) {
+			DLIST_ADD(stopped_stack, cur);
+		}
+
+		if (stopped_stack->stopped_dn != NULL) {
+			ret = ldb_dn_compare_base(stopped_stack->stopped_dn,
+						  res->msgs[i]->dn);
+			if (ret == 0) {
+				continue;
+			}
+			stopped_stack->stopped_dn = NULL;
+		}
+
+		ret = descriptor_sd_propagation_object(module, res->msgs[i],
+						       &stop);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		if (cur != NULL && cur->force_children) {
+			continue;
+		}
+
+		if (stop) {
+			stopped_stack->stopped_dn = res->msgs[i]->dn;
+			continue;
+		}
+	}
+
+	TALLOC_FREE(res);
+	return LDB_SUCCESS;
+}
+
+static int descriptor_start_transaction(struct ldb_module *module)
+{
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+
+	if (descriptor_private->trans_mem != NULL) {
+		return ldb_module_operr(module);
+	}
+
+	descriptor_private->trans_mem = talloc_new(descriptor_private);
+	if (descriptor_private->trans_mem == NULL) {
+		return ldb_module_oom(module);
+	}
+	descriptor_private->changes = NULL;
+
+	return ldb_next_start_trans(module);
+}
+
+static int descriptor_prepare_commit(struct ldb_module *module)
+{
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+	struct descriptor_changes *c, *n;
+	int ret;
+
+	for (c = descriptor_private->changes; c; c = n) {
+		n = c->next;
+		DLIST_REMOVE(descriptor_private->changes, c);
+
+		ret = descriptor_sd_propagation_recursive(module, c);
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			continue;
+		}
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return ldb_next_prepare_commit(module);
+}
+
+static int descriptor_end_transaction(struct ldb_module *module)
+{
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+
+	TALLOC_FREE(descriptor_private->trans_mem);
+	descriptor_private->changes = NULL;
+
+	return ldb_next_end_trans(module);
+}
+
+static int descriptor_del_transaction(struct ldb_module *module)
+{
+	struct descriptor_data *descriptor_private =
+		talloc_get_type_abort(ldb_module_get_private(module),
+		struct descriptor_data);
+
+	TALLOC_FREE(descriptor_private->trans_mem);
+	descriptor_private->changes = NULL;
+
+	return ldb_next_del_trans(module);
+}
 
 static const struct ldb_module_ops ldb_descriptor_module_ops = {
-	.name	       = "descriptor",
-	.search        = descriptor_search,
-	.add           = descriptor_add,
-	.modify        = descriptor_modify,
-	.rename        = descriptor_rename,
-	.init_context  = descriptor_init
+	.name              = "descriptor",
+	.search            = descriptor_search,
+	.add               = descriptor_add,
+	.modify            = descriptor_modify,
+	.rename            = descriptor_rename,
+	.init_context      = descriptor_init,
+	.extended          = descriptor_extended,
+	.start_transaction = descriptor_start_transaction,
+	.prepare_commit    = descriptor_prepare_commit,
+	.end_transaction   = descriptor_end_transaction,
+	.del_transaction   = descriptor_del_transaction,
 };
 
 int ldb_descriptor_module_init(const char *version)
