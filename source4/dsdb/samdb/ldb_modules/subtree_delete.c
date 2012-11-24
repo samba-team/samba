@@ -79,9 +79,17 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
 	}
 
-	/* we need to start from the top since other LDB modules could
-	 * enforce constraints (eg "objectclass" and "samldb" do so). */
-	flags = DSDB_FLAG_TOP_MODULE | DSDB_TREE_DELETE;
+	/*
+	 * we need to start from the top since other LDB modules could
+	 * enforce constraints (eg "objectclass" and "samldb" do so).
+	 *
+	 * We pass DSDB_FLAG_AS_SYSTEM as the acl module above us
+	 * has already checked for SEC_ADS_DELETE_TREE.
+	 */
+	flags = DSDB_FLAG_TOP_MODULE |
+		DSDB_FLAG_AS_SYSTEM |
+		DSDB_FLAG_TRUSTED |
+		DSDB_TREE_DELETE;
 	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) != NULL) {
 		flags |= DSDB_MODIFY_RELAX;
 	}
