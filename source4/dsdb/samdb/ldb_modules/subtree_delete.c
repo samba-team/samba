@@ -61,34 +61,38 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(res);
 		return ret;
 	}
-	if (res->count > 0) {
-		if (ldb_request_get_control(req, LDB_CONTROL_TREE_DELETE_OID) == NULL) {
-			/* Do not add any DN outputs to this error string!
-			 * Some MMC consoles (eg release 2000) have a strange
-			 * bug and prevent subtree deletes afterwards. */
-			ldb_asprintf_errstring(ldb_module_get_ctx(module),
-					       "subtree_delete: Unable to "
-					       "delete a non-leaf node "
-					       "(it has %u children)!",
-					       res->count);
-			talloc_free(res);
-			return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
-		}
+	if (res->count == 0) {
+		talloc_free(res);
+		return ldb_next_request(module, req);
+	}
 
-		/* we need to start from the top since other LDB modules could
-		 * enforce constraints (eg "objectclass" and "samldb" do so). */
-		flags = DSDB_FLAG_TOP_MODULE | DSDB_TREE_DELETE;
-		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) != NULL) {
-			flags |= DSDB_MODIFY_RELAX;
-		}
+	if (ldb_request_get_control(req, LDB_CONTROL_TREE_DELETE_OID) == NULL) {
+		/* Do not add any DN outputs to this error string!
+		 * Some MMC consoles (eg release 2000) have a strange
+		 * bug and prevent subtree deletes afterwards. */
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "subtree_delete: Unable to "
+				       "delete a non-leaf node "
+				       "(it has %u children)!",
+				       res->count);
+		talloc_free(res);
+		return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
+	}
 
-		for (i = 0; i < res->count; i++) {
-			ret = dsdb_module_del(module, res->msgs[i]->dn, flags, req);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
+	/* we need to start from the top since other LDB modules could
+	 * enforce constraints (eg "objectclass" and "samldb" do so). */
+	flags = DSDB_FLAG_TOP_MODULE | DSDB_TREE_DELETE;
+	if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) != NULL) {
+		flags |= DSDB_MODIFY_RELAX;
+	}
+
+	for (i = 0; i < res->count; i++) {
+		ret = dsdb_module_del(module, res->msgs[i]->dn, flags, req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
 	}
+
 	talloc_free(res);
 
 	return ldb_next_request(module, req);
