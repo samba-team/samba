@@ -1211,7 +1211,6 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		db->private_data, struct db_ctdb_ctx);
 	struct db_ctdb_parse_record_state state;
 	NTSTATUS status;
-	TDB_DATA data;
 
 	state.parser = parser;
 	state.private_data = private_data;
@@ -1249,14 +1248,8 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_OK;
 	}
 
-	status = ctdbd_fetch(messaging_ctdbd_connection(), ctx->db_id, key,
-			     talloc_tos(), &data, state.ask_for_readonly_copy);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	parser(key, data, private_data);
-	TALLOC_FREE(data.dptr);
-	return NT_STATUS_OK;
+	return ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
+			   state.ask_for_readonly_copy, parser, private_data);
 }
 
 struct traverse_state {
