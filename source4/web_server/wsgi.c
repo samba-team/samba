@@ -410,6 +410,22 @@ error:
 	return NULL;
 }
 
+static void wsgi_serve_500(struct websrv_context *web)
+{
+	struct http_header *headers = NULL;
+	const char *contents[] = {
+		"An internal server error occurred while handling this request. ",
+		"Please refer to the server logs for more details. ",
+		NULL
+	};
+	int i;
+
+	websrv_output_headers(web, "500 Internal Server Error", headers);
+	for (i = 0; contents[i]; i++) {
+		websrv_output(web, contents[i], strlen(contents[i]));
+	}
+}
+
 static void wsgi_process_http_input(struct web_server_data *wdata,
 				    struct websrv_context *web)
 {
@@ -453,6 +469,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 
 	if (py_environ == NULL) {
 		DEBUG_Print_PyError(0, "Unable to create WSGI environment object");
+		wsgi_serve_500(web);
 		return;
 	}
 
@@ -461,6 +478,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 
 	if (result == NULL) {
 		DEBUG_Print_PyError(0, "error while handling request");
+		wsgi_serve_500(web);
 		return;
 	}
 
@@ -469,6 +487,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 
 	if (iter == NULL) {
 		DEBUG_Print_PyError(0, "application did not return iterable");
+		wsgi_serve_500(web);
 		return;
 	}
 
