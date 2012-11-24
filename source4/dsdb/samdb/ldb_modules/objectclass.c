@@ -1264,7 +1264,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 	ret = ldb_build_search_req(&search_req, ldb,
 				   ac, req->op.del.dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
-				   attrs, req->controls,
+				   attrs, NULL,
 				   ac, get_search_callback,
 				   req);
 	LDB_REQ_SET_LOCATION(search_req);
