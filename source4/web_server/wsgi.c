@@ -134,7 +134,7 @@ static PyObject *py_error_write(PyObject *self, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	DEBUG(0, ("WSGI App: %s", str));
+	DEBUG(0, ("%s", str));
 
 	Py_RETURN_NONE;
 }
@@ -147,11 +147,11 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O:writelines", discard_const_p(char *, kwnames), &seq)) {
 		return NULL;
 	}
-	
+
 	while ((item = PyIter_Next(seq))) {
 		char *str = PyString_AsString(item);
 
-		DEBUG(0, ("WSGI App: %s", str));
+		DEBUG(0, ("%s", str));
 	}
 
 	Py_RETURN_NONE;
@@ -258,6 +258,49 @@ static PyObject *Py_ErrorHttpStream(void)
 {
 	error_Stream_Object *ret = PyObject_New(error_Stream_Object, &error_Stream_Type);
 	return (PyObject *)ret;
+}
+
+static void DEBUG_Print_PyError(int level, const char *message)
+{
+	PyObject *old_stderr, *new_stderr;
+	PyObject *sys_module;
+	PyObject *ptype, *pvalue, *ptb;
+
+	PyErr_Fetch(&ptype, &pvalue, &ptb);
+
+	DEBUG(0, ("WSGI: Server exception occurred: %s\n", message));
+
+	sys_module = PyImport_ImportModule("sys");
+	if (sys_module == NULL) {
+		DEBUG(0, ("Unable to obtain sys module while printing error"));
+		return;
+	}
+
+	old_stderr = PyObject_GetAttrString(sys_module, "stderr");
+	if (old_stderr == NULL) {
+		DEBUG(0, ("Unable to obtain old stderr"));
+		Py_DECREF(sys_module);
+		return;
+	}
+
+	new_stderr = Py_ErrorHttpStream();
+	if (new_stderr == NULL) {
+		DEBUG(0, ("Unable to create error stream"));
+		Py_DECREF(sys_module);
+		Py_DECREF(old_stderr);
+		return;
+	}
+
+	PyObject_SetAttrString(sys_module, "stderr", new_stderr);
+	Py_DECREF(new_stderr);
+
+	PyErr_Restore(ptype, pvalue, ptb);
+	PyErr_Print();
+
+	PyObject_SetAttrString(sys_module, "stderr", old_stderr);
+	Py_DECREF(old_stderr);
+
+	Py_DECREF(sys_module);
 }
 
 static PyObject *create_environ(bool tls, int content_length, struct http_header *headers, const char *request_method, const char *servername, int serverport, PyObject *inputstream, const char *request_string)
@@ -380,7 +423,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 
 	py_web = PyObject_New(web_request_Object, &web_request_Type);
 	if (py_web == NULL) {
-		DEBUG(0, ("Unable to allocate web request"));
+		DEBUG_Print_PyError(0, "Unable to allocate web request");
 		return;
 	}
 	py_web->web = web;
@@ -392,7 +435,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 
 	py_input_stream = Py_InputHttpStream(web);
 	if (py_input_stream == NULL) {
-		DEBUG(0, ("unable to create python input stream"));
+		DEBUG_Print_PyError(0, "unable to create python input stream");
 		return;
 	}
 
@@ -409,7 +452,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 	Py_DECREF(py_input_stream);
 
 	if (py_environ == NULL) {
-		DEBUG(0, ("Unable to create WSGI environment object\n"));
+		DEBUG_Print_PyError(0, "Unable to create WSGI environment object");
 		return;
 	}
 
@@ -417,7 +460,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 				       py_environ, PyObject_GetAttrString((PyObject *)py_web, "start_response"));
 
 	if (result == NULL) {
-		DEBUG(0, ("error while running WSGI code\n"));
+		DEBUG_Print_PyError(0, "error while handling request");
 		return;
 	}
 
@@ -425,7 +468,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 	Py_DECREF(result);
 
 	if (iter == NULL) {
-		DEBUG(0, ("wsgi application did not return iterable\n"));
+		DEBUG_Print_PyError(0, "application did not return iterable");
 		return;
 	}
 
@@ -460,7 +503,7 @@ bool wsgi_initialize(struct web_server_data *wdata)
 	wdata->http_process_input = wsgi_process_http_input;
 	py_web_server = PyImport_ImportModule("samba.web_server");
 	if (py_web_server == NULL) {
-		DEBUG(0, ("Unable to find web server\n"));
+		DEBUG_Print_PyError(0, "Unable to find web server");
 		return false;
 	}
 	wdata->private_data = py_web_server;
