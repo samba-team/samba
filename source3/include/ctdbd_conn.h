@@ -62,9 +62,6 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn, const char *name,
 NTSTATUS ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id,
 		       TDB_DATA key);
 
-NTSTATUS ctdbd_fetch(struct ctdbd_connection *conn, uint32_t db_id,
-		     TDB_DATA key, TALLOC_CTX *mem_ctx, TDB_DATA *data,
-		     bool local_copy);
 NTSTATUS ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 		     TDB_DATA key, bool local_copy,
 		     void (*parser)(TDB_DATA key, TDB_DATA data,
