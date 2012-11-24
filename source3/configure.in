@@ -2509,7 +2509,7 @@ fi
 
 AC_CHECK_HEADER(sys/inotify.h)
 
-if test x"ac_cv_header_sys_inotify_h" = x"yes"; then
+if test x"$ac_cv_header_sys_inotify_h" = x"yes"; then
     AC_DEFINE(HAVE_INOTIFY,1,[For inotify support])
 fi
 
