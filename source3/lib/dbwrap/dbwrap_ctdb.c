@@ -912,7 +912,6 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 
 static NTSTATUS db_ctdb_delete(struct db_record *rec)
 {
-	TDB_DATA data;
 	NTSTATUS status;
 
 	/*
@@ -920,9 +919,7 @@ static NTSTATUS db_ctdb_delete(struct db_record *rec)
 	 * tdb-level cleanup
 	 */
 
-	ZERO_STRUCT(data);
-
-	status = db_ctdb_store(rec, data, 0);
+	status = db_ctdb_store(rec, tdb_null, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
