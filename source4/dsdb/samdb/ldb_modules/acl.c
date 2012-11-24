@@ -1230,6 +1230,18 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 	talloc_free(nc_root);
 
+	if (ldb_request_get_control(req, LDB_CONTROL_TREE_DELETE_OID)) {
+		ret = dsdb_module_check_access_on_dn(module, req,
+						     req->op.del.dn,
+						     SEC_ADS_DELETE_TREE, NULL,
+						     req);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		return ldb_next_request(module, req);
+	}
+
 	/* First check if we have delete object right */
 	ret = dsdb_module_check_access_on_dn(module, req, req->op.del.dn,
 					     SEC_STD_DELETE, NULL, req);
