@@ -38,6 +38,19 @@
 #include "dsdb/common/util.h"
 
 
+static int subtree_delete_sort(struct ldb_message **m1,
+			       struct ldb_message **m2,
+			       void *private_data)
+{
+	struct ldb_dn *dn1 = (*m1)->dn;
+	struct ldb_dn *dn2 = (*m2)->dn;
+
+	/*
+	 * This sorts in tree order, children first
+	 */
+	return ldb_dn_compare(dn1, dn2);
+}
+
 static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	static const char * const attrs[] = { NULL };
@@ -78,6 +91,12 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(res);
 		return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
 	}
+
+	/*
+	 * First we sort the results from the leaf to the root
+	 */
+	LDB_TYPESAFE_QSORT(res->msgs, res->count, NULL,
+			   subtree_delete_sort);
 
 	/*
 	 * we need to start from the top since other LDB modules could
