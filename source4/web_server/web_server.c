@@ -93,7 +93,7 @@ void websrv_output_headers(struct websrv_context *web, const char *status, struc
 	data_blob_free(&b);
 }
 
-void websrv_output(struct websrv_context *web, void *data, size_t length)
+void websrv_output(struct websrv_context *web, const void *data, size_t length)
 {
 	data_blob_append(web, &web->output.content, data, length);
 	TEVENT_FD_NOT_READABLE(web->conn->event.fde);
