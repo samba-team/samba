@@ -46,6 +46,8 @@
 bool is_attr_in_list(const char * const * attrs, const char *attr);
 
 #define DSDB_SECRET_ATTRIBUTES_EX(sep) \
+	"pekList" sep \
+	"msDS-ExecuteScriptPassword" sep \
 	"currentValue" sep \
 	"dBCSPwd" sep \
 	"initialAuthIncoming" sep \
