@@ -75,7 +75,6 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	uint32_t n;
 	int i;
 	unsigned int size, j;
-	uint32_t deletedattr;
 	struct ldb_val *replMetaData = NULL;
 	struct replPropertyMetaDataBlob rmd;
 	const struct dsdb_attribute *attr;
@@ -118,7 +117,6 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	*/
 	rdn = ldb_dn_get_rdn_name(msg->dn);
 
-	deletedattr = 0;
 	/*
 	 * if objectGUID is asked and we are dealing for the referrals entries and
 	 * the usn searched is 0 then we didn't count the objectGUID as an automatically
