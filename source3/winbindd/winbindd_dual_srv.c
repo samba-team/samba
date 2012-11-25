@@ -151,10 +151,10 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 		struct idmap_domain *dom;
 		uint32_t num_ids;
 
-		dom = idmap_find_domain(d->name.string);
+		dom = idmap_find_domain_with_sid(d->name.string, d->sid);
 		if (dom == NULL) {
-			DEBUG(10, ("idmap domain %s not found\n",
-				   d->name.string));
+			DEBUG(10, ("idmap domain %s:%s not found\n",
+				   d->name.string, sid_string_dbg(d->sid)));
 			continue;
 		}
 
