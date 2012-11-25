@@ -853,6 +853,7 @@ int open_udp_socket(const char *host, int port)
 	    salen = sizeof(struct sockaddr_in);
 	} else {
 		DEBUG(1, ("unknown socket family %d", ss.ss_family));
+		close(res);
 		return -1;
 	}
 
