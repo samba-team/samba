@@ -1220,7 +1220,6 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 static int rootdse_schemaupgradeinprogress(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct ldb_result *ext_res;
 	int ret = LDB_SUCCESS;
 	struct ldb_dn *schema_dn;
 
