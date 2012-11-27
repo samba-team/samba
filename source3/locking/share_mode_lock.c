@@ -389,6 +389,15 @@ fail:
 	return NULL;
 }
 
+static void fetch_share_mode_unlocked_parser(
+	TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct share_mode_lock *lck = talloc_get_type_abort(
+		private_data, struct share_mode_lock);
+
+	lck->data = parse_share_modes(lck, data);
+}
+
 /*******************************************************************
  Get a share_mode_lock without locking the database or reference
  counting. Used by smbstatus to display existing share modes.
@@ -400,25 +409,17 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 	struct share_mode_lock *lck;
 	struct file_id tmp;
 	TDB_DATA key = locking_key(&id, &tmp);
-	TDB_DATA data;
 	NTSTATUS status;
 
-	status = dbwrap_fetch(lock_db, talloc_tos(), key, &data);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Could not fetch share entry\n"));
-		return NULL;
-	}
-	if (data.dptr == NULL) {
-		return NULL;
-	}
 	lck = talloc(mem_ctx, struct share_mode_lock);
 	if (lck == NULL) {
-		TALLOC_FREE(data.dptr);
+		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
-	lck->data = parse_share_modes(lck, data);
-	TALLOC_FREE(data.dptr);
-	if (lck->data == NULL) {
+	status = dbwrap_parse_record(
+		lock_db, key, fetch_share_mode_unlocked_parser, lck);
+	if (!NT_STATUS_IS_OK(status) ||
+	    (lck->data == NULL)) {
 		TALLOC_FREE(lck);
 		return NULL;
 	}
