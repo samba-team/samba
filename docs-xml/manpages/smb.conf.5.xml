@@ -803,6 +803,9 @@ chmod 1770 /usr/local/samba/lib/usershares
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>swat</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>nmbd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>winbindd</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>samba-tool</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>nmblookup</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testparm</refentrytitle>
