@@ -1,6 +1,6 @@
 #!/bin/sh
 
-WBINFO="$VALGRIND ${NET:-$BINDIR/wbinfo} $CONFIGURATION"
+WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo} $CONFIGURATION"
 TEST_INT=`dirname $0`/test_wbinfo_sids2xids_int.py
 
 incdir=`dirname $0`/../../../testprogs/blackbox
