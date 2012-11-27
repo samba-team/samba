@@ -1942,23 +1942,11 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 	 * save it here in case we get a job submission on this handle
 	 */
 
-	 if ((Printer->printer_type != SPLHND_SERVER) &&
-	     r->in.devmode_ctr.devmode) {
+	 if ((Printer->printer_type != SPLHND_SERVER)
+	  && (r->in.devmode_ctr.devmode != NULL)) {
 		copy_devicemode(NULL, r->in.devmode_ctr.devmode,
 				&Printer->devmode);
 	 }
-
-#if 0	/* JERRY -- I'm doubtful this is really effective */
-	/* HACK ALERT!!! Sleep for 1/3 of a second to try trigger a LAN/WAN
-	   optimization in Windows 2000 clients  --jerry */
-
-	if ( (r->in.access_mask == PRINTER_ACCESS_ADMINISTER)
-		&& (RA_WIN2K == get_remote_arch()) )
-	{
-		DEBUG(10,("_spoolss_OpenPrinterEx: Enabling LAN/WAN hack for Win2k clients.\n"));
-		sys_usleep( 500000 );
-	}
-#endif
 
 	return WERR_OK;
 }
@@ -4037,8 +4025,22 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	r->cjobs		= count;
 	r->averageppm		= info2->averageppm;
 
-	copy_devicemode(mem_ctx, info2->devmode, &r->devmode);
-	if (!r->devmode) {
+	if (info2->devmode != NULL) {
+		result = copy_devicemode(mem_ctx,
+					 info2->devmode,
+					 &r->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+	} else if (lp_default_devmode(snum)) {
+		result = spoolss_create_default_devmode(mem_ctx,
+							info2->printername,
+							&r->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+	} else {
+		r->devmode = NULL;
 		DEBUG(8,("Returning NULL Devicemode!\n"));
 	}
 
@@ -4218,8 +4220,22 @@ static WERROR construct_printer_info8(TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	copy_devicemode(mem_ctx, info2->devmode, &r->devmode);
-	if (!r->devmode) {
+	if (info2->devmode != NULL) {
+		result = copy_devicemode(mem_ctx,
+					 info2->devmode,
+					 &r->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+	} else if (lp_default_devmode(snum)) {
+		result = spoolss_create_default_devmode(mem_ctx,
+							info2->printername,
+							&r->devmode);
+		if (!W_ERROR_IS_OK(result)) {
+			return result;
+		}
+	} else {
+		r->devmode = NULL;
 		DEBUG(8,("Returning NULL Devicemode!\n"));
 	}
 
