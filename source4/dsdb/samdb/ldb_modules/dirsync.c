@@ -729,6 +729,10 @@ static int dirsync_create_vector(struct ldb_request *req,
 			nc_root,
 			attrVector,
 			DSDB_FLAG_NEXT_MODULE, req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "Unable to get replUpToDateVector for current NC");
+	}
 
 	if (resVector->count != 0) {
 		DATA_BLOB blob;
