@@ -170,7 +170,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		}
 	}
 
-	len = smb_len(buf_out) + 4;
+	len = smb_len_large(buf_out) + 4;
 
 	ret = write_data(sconn->sock, buf_out+nwritten, len - nwritten);
 	if (ret <= 0) {
