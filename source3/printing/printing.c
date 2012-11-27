@@ -2728,7 +2728,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 			fstrcpy(pjob->filename, output_file);
 
 			DEBUG(3, ("print_job_spool_file:"
-				  "External spooling activated"));
+				  "External spooling activated\n"));
 
 			/* we do not open the file until spooling is done */
 			pjob->fd = -1;
