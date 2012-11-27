@@ -2,11 +2,17 @@
 
 import sys,os,subprocess
 
-if len(sys.argv) != 2:
-    print "Usage: test_wbinfo_sids2xids_int.py wbinfo"
+
+if len(sys.argv) != 3:
+    print "Usage: test_wbinfo_sids2xids_int.py wbinfo net"
     sys.exit(1)
 
 wbinfo = sys.argv[1]
+netcmd = sys.argv[2]
+
+def flush_cache():
+    os.system(netcmd + "cache flush")
+
 domain = subprocess.Popen([wbinfo, "--own-domain"],
                           stdout=subprocess.PIPE).communicate()[0].strip()
 domsid = subprocess.Popen([wbinfo, "-n", domain + "\\"],
@@ -17,6 +23,8 @@ domsid = domsid.split(' ')[0]
 #print domsid
 
 sids=[ domsid + '-512', 'S-1-5-32-545', domsid + '-513' ]
+
+flush_cache
 
 sids2xids = subprocess.Popen([wbinfo, '--sids-to-unix-ids=' +  ','.join(sids)],
                              stdout=subprocess.PIPE).communicate()[0].strip()
@@ -34,14 +42,23 @@ for line in sids2xids.split('\n'):
         gid = ''
     gids.append(gid)
 
-i=0
+# Check the list produced by the sids-to-xids call with the
+# singular variant (sid-to-gid) for each sid in turn.
+def check_singular(sids, gids):
+    i=0
+    for sid in sids:
+        gid = subprocess.Popen([wbinfo, '--sid-to-gid', sid],
+                               stdout=subprocess.PIPE).communicate()[0].strip()
+        if gid != gids[i]:
+            print "Expected %s, got %s\n", gid, gids[i]
+            sys.exit(1)
+        i+=1
 
-for sid in sids:
-    gid = subprocess.Popen([wbinfo, '--sid-to-gid', sid],
-                           stdout=subprocess.PIPE).communicate()[0].strip()
-    if gid != gids[i]:
-        print "Expected %s, got %s\n", gid, gids[i]
-        sys.exit(1)
-    i+=1
+# first round: with filled cache
+check_singular(sids, gids)
+
+# second round: with empty cache
+flush_cache
+check_singular(sids, gids)
 
 sys.exit(0)
