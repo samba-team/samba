@@ -34,8 +34,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
     def test_fetchfail(self):
         """Run against a non-existent GPO, and make sure it fails (this hard-coded UUID is very unlikely to exist"""
-        (result, out, err) = self.runsubcmd("gpo", "fetch", "c25cac17-a02a-4151-835d-fae17446ee43", "-H", "ldap://%s" %
-os.environ["SERVER"])
+        (result, out, err) = self.runsubcmd("gpo", "fetch", "c25cac17-a02a-4151-835d-fae17446ee43", "-H", "ldap://%s" % os.environ["SERVER"])
         self.assertEquals(result, -1, "check for result code")
 
     def test_fetch(self):
