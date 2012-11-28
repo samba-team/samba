@@ -1598,6 +1598,10 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 		result = cm_prepare_connection(domain, fd, domain->dcname,
 			&new_conn->cli, &retry);
+		if (!NT_STATUS_IS_OK(result)) {
+			/* Don't leak the smb connection socket */
+			close(fd);
+		}
 
 		if (!retry)
 			break;
