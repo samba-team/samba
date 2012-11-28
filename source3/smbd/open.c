@@ -3460,6 +3460,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	size_t size = 0;
 
 	if (!parent_dirname(frame, fsp->fsp_name->base_name, &parent_name, NULL)) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3469,6 +3470,7 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 				    frame,
 				    &parent_desc);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
 		return status;
 	}
 
