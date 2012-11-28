@@ -1064,16 +1064,6 @@ static NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 	return status;
 }
 
-typedef NTSTATUS (*lookup_sids_fn_t)(struct dcerpc_binding_handle *h,
-				     TALLOC_CTX *mem_ctx,
-				     struct policy_handle *pol,
-				     int num_sids,
-				     const struct dom_sid *sids,
-				     char ***pdomains,
-				     char ***pnames,
-				     enum lsa_SidType **ptypes,
-				     NTSTATUS *result);
-
 NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 			      struct winbindd_domain *domain,
 			      uint32_t num_sids,
@@ -1088,12 +1078,12 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle lsa_policy;
 	unsigned int orig_timeout;
-	lookup_sids_fn_t lookup_sids_fn = dcerpc_lsa_lookup_sids;
+	bool use_lookupsids3 = false;
 
 	if (domain->can_do_ncacn_ip_tcp) {
 		status = cm_connect_lsa_tcp(domain, mem_ctx, &cli);
 		if (NT_STATUS_IS_OK(status)) {
-			lookup_sids_fn = dcerpc_lsa_lookup_sids3;
+			use_lookupsids3 = true;
 			goto lookup;
 		}
 		domain->can_do_ncacn_ip_tcp = false;
@@ -1114,15 +1104,16 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	 */
 	orig_timeout = dcerpc_binding_handle_set_timeout(b, 35000);
 
-	status = lookup_sids_fn(b,
-				mem_ctx,
-				&lsa_policy,
-				num_sids,
-				sids,
-				domains,
-				names,
-				types,
-				&result);
+	status = dcerpc_lsa_lookup_sids_generic(b,
+						mem_ctx,
+						&lsa_policy,
+						num_sids,
+						sids,
+						domains,
+						names,
+						types,
+						use_lookupsids3,
+						&result);
 
 	/* And restore our original timeout. */
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
