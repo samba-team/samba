@@ -539,35 +539,6 @@ NTSTATUS dcerpc_lsa_lookup_sids3(struct dcerpc_binding_handle *h,
 					      result);
 }
 
-NTSTATUS rpccli_lsa_lookup_sids3(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle *pol,
-				 int num_sids,
-				 const struct dom_sid *sids,
-				 char ***pdomains,
-				 char ***pnames,
-				 enum lsa_SidType **ptypes)
-{
-	NTSTATUS status;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	status = dcerpc_lsa_lookup_sids_generic(cli->binding_handle,
-						mem_ctx,
-						pol,
-						num_sids,
-						sids,
-						pdomains,
-						pnames,
-						ptypes,
-						true,
-						&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return result;
-}
-
 /** Lookup a list of names */
 
 static NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
@@ -789,34 +760,4 @@ NTSTATUS dcerpc_lsa_lookup_names4(struct dcerpc_binding_handle *h,
 					       types,
 					       true,
 					       result);
-}
-
-NTSTATUS rpccli_lsa_lookup_names4(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx,
-				  struct policy_handle *pol,
-				  int num_names,
-				  const char **names,
-				  const char ***dom_names,
-				  int level,
-				  struct dom_sid **sids,
-				  enum lsa_SidType **types)
-{
-	NTSTATUS status;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	status = dcerpc_lsa_lookup_names4(cli->binding_handle,
-					  mem_ctx,
-					  pol,
-					  num_names,
-					  names,
-					  dom_names,
-					  level,
-					  sids,
-					  types,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return result;
 }
