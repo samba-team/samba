@@ -1980,7 +1980,7 @@ uint32_t ldb_req_get_custom_flags(struct ldb_request *req)
 
 
 /**
-   return true is a request is untrusted
+ * return true if a request is untrusted
  */
 bool ldb_req_is_untrusted(struct ldb_request *req)
 {
