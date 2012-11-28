@@ -541,17 +541,17 @@ NTSTATUS dcerpc_lsa_lookup_sids3(struct dcerpc_binding_handle *h,
 
 /** Lookup a list of names */
 
-static NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
-						TALLOC_CTX *mem_ctx,
-						struct policy_handle *pol,
-						uint32_t num_names,
-						const char **names,
-						const char ***dom_names,
-						enum lsa_LookupNamesLevel level,
-						struct dom_sid **sids,
-						enum lsa_SidType **types,
-						bool use_lookupnames4,
-						NTSTATUS *presult)
+NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *pol,
+					 uint32_t num_names,
+					 const char **names,
+					 const char ***dom_names,
+					 enum lsa_LookupNamesLevel level,
+					 struct dom_sid **sids,
+					 enum lsa_SidType **types,
+					 bool use_lookupnames4,
+					 NTSTATUS *presult)
 {
 	NTSTATUS status;
 	struct lsa_String *lsa_names = NULL;

@@ -196,6 +196,17 @@ NTSTATUS dcerpc_lsa_lookup_names4(struct dcerpc_binding_handle *h,
 				  struct dom_sid **sids,
 				  enum lsa_SidType **types,
 				  NTSTATUS *result);
+NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *pol,
+					 uint32_t num_names,
+					 const char **names,
+					 const char ***dom_names,
+					 enum lsa_LookupNamesLevel level,
+					 struct dom_sid **sids,
+					 enum lsa_SidType **types,
+					 bool use_lookupnames4,
+					 NTSTATUS *presult);
 
 bool fetch_domain_sid( char *domain, char *remote_machine, struct dom_sid *psid);
 
