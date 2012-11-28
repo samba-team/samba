@@ -1150,17 +1150,6 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-typedef NTSTATUS (*lookup_names_fn_t)(struct dcerpc_binding_handle *h,
-				      TALLOC_CTX *mem_ctx,
-				      struct policy_handle *pol,
-				      uint32_t num_names,
-				      const char **names,
-				      const char ***dom_names,
-				      enum lsa_LookupNamesLevel level,
-				      struct dom_sid **sids,
-				      enum lsa_SidType **types,
-				      NTSTATUS *result);
-
 static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 				      struct winbindd_domain *domain,
 				      uint32_t num_names,
@@ -1175,12 +1164,12 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle lsa_policy;
 	unsigned int orig_timeout = 0;
-	lookup_names_fn_t lookup_names_fn = dcerpc_lsa_lookup_names;
+	bool use_lookupnames4 = false;
 
 	if (domain->can_do_ncacn_ip_tcp) {
 		status = cm_connect_lsa_tcp(domain, mem_ctx, &cli);
 		if (NT_STATUS_IS_OK(status)) {
-			lookup_names_fn = dcerpc_lsa_lookup_names4;
+			use_lookupnames4 = true;
 			goto lookup;
 		}
 		domain->can_do_ncacn_ip_tcp = false;
@@ -1201,16 +1190,17 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	 */
 	orig_timeout = dcerpc_binding_handle_set_timeout(b, 35000);
 
-	status = lookup_names_fn(b,
-				 mem_ctx,
-				 &lsa_policy,
-				 num_names,
-				 (const char **) names,
-				 domains,
-				 1,
-				 sids,
-				 types,
-				 &result);
+	status = dcerpc_lsa_lookup_names_generic(b,
+						 mem_ctx,
+						 &lsa_policy,
+						 num_names,
+						 (const char **) names,
+						 domains,
+						 1,
+						 sids,
+						 types,
+						 use_lookupnames4,
+						 &result);
 
 	/* And restore our original timeout. */
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
