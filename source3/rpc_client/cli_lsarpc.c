@@ -330,16 +330,16 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
  * at 20480 for win2k3, but we keep it at a save 1000 for now. */
 #define LOOKUP_SIDS_HUNK_SIZE 1000
 
-static NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
-					       TALLOC_CTX *mem_ctx,
-					       struct policy_handle *pol,
-					       int num_sids,
-					       const struct dom_sid *sids,
-					       char ***pdomains,
-					       char ***pnames,
-					       enum lsa_SidType **ptypes,
-					       bool use_lookupsids3,
-					       NTSTATUS *presult)
+NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *pol,
+					int num_sids,
+					const struct dom_sid *sids,
+					char ***pdomains,
+					char ***pnames,
+					enum lsa_SidType **ptypes,
+					bool use_lookupsids3,
+					NTSTATUS *presult)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS result = NT_STATUS_OK;

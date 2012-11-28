@@ -125,7 +125,16 @@ NTSTATUS rpccli_lsa_lookup_sids(struct rpc_pipe_client *cli,
 				char ***pdomains,
 				char ***pnames,
 				enum lsa_SidType **ptypes);
-
+NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *pol,
+					int num_sids,
+					const struct dom_sid *sids,
+					char ***pdomains,
+					char ***pnames,
+					enum lsa_SidType **ptypes,
+					bool use_lookupsids3,
+					NTSTATUS *presult);
 /**
  * @brief Look up the names that correspond to an array of sids.
  *
