@@ -2,7 +2,7 @@
 
 bld.SAMBA_BINARY('ntlm_auth4',
                  source='ntlm_auth.c',
-                 manpages='man/ntlm_auth.1',
+                 manpages='man/ntlm_auth4.1',
                  deps='''samba-hostconfig samba-util popt
                  POPT_SAMBA POPT_CREDENTIALS gensec LIBCLI_RESOLVE
                  auth4 NTLMSSP_COMMON MESSAGING events service''',
