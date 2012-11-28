@@ -603,8 +603,8 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl, TALLOC_CTX *mem_ctx)
 		default:
 			DEBUG(10, ("Got invalid ace_type: %d\n",
 				   g_ace->ace_type));
-			errno = EINVAL;
 			TALLOC_FREE(result);
+			errno = EINVAL;
 			return NULL;
 		}
 
