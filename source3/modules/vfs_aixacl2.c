@@ -21,14 +21,12 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "nfs4_acls.h"
+#include "vfs_aixacl_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
 #define AIXACL2_MODULE_NAME "aixacl2"
-
-extern SMB_ACL_T aixacl_to_smbacl( struct acl *file_acl);
-extern struct acl *aixacl_smb_to_aixacl(SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
 
 typedef union aixjfs2_acl_t {
 	nfs4_acl_int_t jfs2_acl[1];
