@@ -2147,6 +2147,26 @@ static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle,
 	return sys_acl_get_fd(handle, fsp, mem_ctx);
 }
 
+static int vfswrap_sys_acl_blob_get_file(vfs_handle_struct *handle,
+					 const char *path_p,
+					 TALLOC_CTX *mem_ctx,
+					 char **blob_description,
+					 DATA_BLOB *blob)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int vfswrap_sys_acl_blob_get_fd(vfs_handle_struct *handle,
+				       files_struct *fsp,
+				       TALLOC_CTX *mem_ctx,
+				       char **blob_description,
+				       DATA_BLOB *blob)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	return sys_acl_set_file(handle, name, acltype, theacl);
@@ -2382,6 +2402,8 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	.sys_acl_get_file_fn = vfswrap_sys_acl_get_file,
 	.sys_acl_get_fd_fn = vfswrap_sys_acl_get_fd,
+	.sys_acl_blob_get_file_fn = vfswrap_sys_acl_blob_get_file,
+	.sys_acl_blob_get_fd_fn = vfswrap_sys_acl_blob_get_fd,
 	.sys_acl_set_file_fn = vfswrap_sys_acl_set_file,
 	.sys_acl_set_fd_fn = vfswrap_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = vfswrap_sys_acl_delete_def_file,
