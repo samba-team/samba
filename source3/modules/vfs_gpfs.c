@@ -575,6 +575,11 @@ static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl, TALLOC_CTX *mem_ctx)
 	result->count = pacl->acl_nace;
 	result->acl = talloc_realloc(result, result->acl, struct smb_acl_entry,
 				     result->count);
+	if (result->acl == NULL) {
+		TALLOC_FREE(result);
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	for (i=0; i<pacl->acl_nace; i++) {
 		struct smb_acl_entry *ace = &result->acl[i];
