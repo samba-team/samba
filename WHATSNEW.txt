@@ -105,6 +105,7 @@ smb.conf changes
    Parameter Name			Description
    --------------			-----------
 
+   acl compatibility			Removed
    allow dns updates			New
    announce as				Removed
    announce version			Removed
