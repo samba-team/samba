@@ -535,7 +535,11 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 
 	password = generate_random_password(tctx, 8, 255);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -566,8 +570,11 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 		 */
 		password = "";
 		encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+		} else {
+			netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+		}
 		memcpy(new_password.data, password_buf.data, 512);
 		new_password.length = IVAL(password_buf.data, 512);
 
@@ -595,8 +602,11 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	/* now try a random password */
 	password = generate_random_password(tctx, 8, 255);
 	encode_pw_buffer(password_buf.data, password, STR_UNICODE);
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
 
@@ -643,7 +653,11 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	/* now try a random stream of bytes for a password */
 	set_pw_in_buffer(password_buf.data, &new_random_pass);
 
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
 
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
@@ -678,6 +692,13 @@ static bool test_SetPassword2(struct torture_context *tctx,
 			      struct cli_credentials *machine_credentials)
 {
 	return test_SetPassword2_with_flags(tctx, p, machine_credentials, NETLOGON_NEG_AUTH2_ADS_FLAGS);
+}
+
+static bool test_SetPassword2_AES(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct cli_credentials *machine_credentials)
+{
+	return test_SetPassword2_with_flags(tctx, p, machine_credentials, NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
 }
 
 static bool test_GetPassword(struct torture_context *tctx,
@@ -3833,6 +3854,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "SamLogon", test_SamLogon);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2_AES", test_SetPassword2_AES);
 	torture_rpc_tcase_add_test_creds(tcase, "GetPassword", test_GetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "GetTrustPasswords", test_GetTrustPasswords);
 	torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo", test_GetDomainInfo);
@@ -3875,6 +3897,7 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword", test_SetPassword);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword_with_flags", test_SetPassword_with_flags);
 	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2", test_SetPassword2);
+	torture_rpc_tcase_add_test_creds(tcase, "SetPassword2_AES", test_SetPassword2_AES);
 	torture_rpc_tcase_add_test(tcase, "NetrEnumerateTrustedDomains", test_netr_NetrEnumerateTrustedDomains);
 
 	return suite;
