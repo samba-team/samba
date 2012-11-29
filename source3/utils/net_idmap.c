@@ -67,18 +67,25 @@ static int net_idmap_dump_one_entry(struct db_record *rec,
 static const char* net_idmap_dbfile(struct net_context *c)
 {
 	const char* dbfile = NULL;
+	const char *backend = NULL;
+
+	/* prefer idmap config * : backend over idmap backend parameter */
+	backend = lp_parm_const_string(-1, "idmap config *", "backend", NULL);
+	if (!backend) {
+		backend = lp_idmap_backend();
+	}
 
 	if (c->opt_db != NULL) {
 		dbfile = talloc_strdup(talloc_tos(), c->opt_db);
 		if (dbfile == NULL) {
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
-	} else if (strequal(lp_idmap_backend(), "tdb")) {
+	} else if (strequal(backend, "tdb")) {
 		dbfile = state_path("winbindd_idmap.tdb");
 		if (dbfile == NULL) {
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
-	} else if (strequal(lp_idmap_backend(), "tdb2")) {
+	} else if (strequal(backend, "tdb2")) {
 		dbfile = lp_parm_talloc_string(talloc_tos(),
 					       -1, "tdb", "idmap2.tdb", NULL);
 		if (dbfile == NULL) {
@@ -89,16 +96,16 @@ static const char* net_idmap_dbfile(struct net_context *c)
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
 	} else {
-		char* backend = talloc_strdup(talloc_tos(), lp_idmap_backend());
-		char* args = strchr(backend, ':');
+		char *_backend = talloc_strdup(talloc_tos(), backend);
+		char* args = strchr(_backend, ':');
 		if (args != NULL) {
 			*args = '\0';
 		}
 
 		d_printf(_("Sorry, 'idmap backend = %s' is currently not supported\n"),
-			 backend);
+			   _backend);
 
-		talloc_free(backend);
+		talloc_free(_backend);
 	}
 
 	return dbfile;
