@@ -35,11 +35,74 @@
 		return -1; \
 	} } while(0)
 
+enum idmap_dump_backend {
+	TDB,
+	AUTORID
+};
+
+struct idmap_dump_ctx {
+	enum idmap_dump_backend backend;
+};
+
+static int net_idmap_dump_one_autorid_entry(struct db_record *rec,
+					    void *unused)
+{
+	TDB_DATA key;
+	TDB_DATA value;
+
+	key = dbwrap_record_get_key(rec);
+	value = dbwrap_record_get_value(rec);
+
+	if (strncmp((char *)key.dptr, "CONFIG", 6) == 0) {
+		char *config = talloc_array(talloc_tos(), char, value.dsize+1);
+		memcpy(config, value.dptr, value.dsize);
+		config[value.dsize] = '\0';
+		printf("CONFIG: %s\n", config);
+		talloc_free(config);
+		return 0;
+	}
+
+	if (strncmp((char *)key.dptr, "NEXT RANGE", 10) == 0) {
+		printf("RANGE HWM: %"PRIu32"\n", IVAL(value.dptr, 0));
+		return 0;
+	}
+
+	if (strncmp((char *)key.dptr, "NEXT ALLOC UID", 14) == 0) {
+		printf("UID HWM: %"PRIu32"\n", IVAL(value.dptr, 0));
+		return 0;
+	}
+
+	if (strncmp((char *)key.dptr, "NEXT ALLOC GID", 14) == 0) {
+		printf("GID HWM: %"PRIu32"\n", IVAL(value.dptr, 0));
+		return 0;
+	}
+
+	if (strncmp((char *)key.dptr, "UID", 3) == 0 ||
+	    strncmp((char *)key.dptr, "GID", 3) == 0)
+	{
+		/* mapped entry from allocation pool */
+		printf("%s %s\n", value.dptr, key.dptr);
+		return 0;
+	}
+
+	if ((strncmp((char *)key.dptr, "S-1-5-", 6) == 0 ||
+	     strncmp((char *)key.dptr, "ALLOC", 5) == 0) &&
+	    value.dsize == sizeof(uint32_t))
+	{
+		/* this is a domain range assignment */
+		uint32_t range = IVAL(value.dptr, 0);
+		printf("RANGE %"PRIu32": %s\n", range, key.dptr);
+		return 0;
+	}
+
+	return 0;
+}
+
 /***********************************************************
  Helper function for net_idmap_dump. Dump one entry.
  **********************************************************/
-static int net_idmap_dump_one_entry(struct db_record *rec,
-				    void *unused)
+static int net_idmap_dump_one_tdb_entry(struct db_record *rec,
+					void *unused)
 {
 	TDB_DATA key;
 	TDB_DATA value;
@@ -65,7 +128,8 @@ static int net_idmap_dump_one_entry(struct db_record *rec,
 	return 0;
 }
 
-static const char* net_idmap_dbfile(struct net_context *c)
+static const char* net_idmap_dbfile(struct net_context *c,
+				    struct idmap_dump_ctx *ctx)
 {
 	const char* dbfile = NULL;
 	const char *backend = NULL;
@@ -86,12 +150,20 @@ static const char* net_idmap_dbfile(struct net_context *c)
 		if (dbfile == NULL) {
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
+		ctx->backend = TDB;
 	} else if (strequal(backend, "tdb2")) {
 		dbfile = talloc_asprintf(talloc_tos(), "%s/idmap2.tdb",
 					 lp_private_dir());
 		if (dbfile == NULL) {
 			d_fprintf(stderr, _("Out of memory!\n"));
 		}
+		ctx->backend = TDB;
+	} else if (strequal(backend, "autorid")) {
+		dbfile = state_path("autorid.tdb");
+		if (dbfile == NULL) {
+			d_fprintf(stderr, _("Out of memory!\n"));
+		}
+		ctx->backend = AUTORID;
 	} else {
 		char *_backend = talloc_strdup(talloc_tos(), backend);
 		char* args = strchr(_backend, ':');
@@ -118,6 +190,7 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 	const char* dbfile;
 	NTSTATUS status;
 	int ret = -1;
+	struct idmap_dump_ctx ctx = { .backend = TDB };
 
 	if ( argc > 1  || c->display_usage) {
 		d_printf("%s\n%s",
@@ -130,7 +203,7 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 
 	mem_ctx = talloc_stackframe();
 
-	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c);
+	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c, &ctx);
 	if (dbfile == NULL) {
 		goto done;
 	}
@@ -144,7 +217,15 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	status = dbwrap_traverse_read(db, net_idmap_dump_one_entry, NULL, NULL);
+	if (ctx.backend == AUTORID) {
+		status = dbwrap_traverse_read(db,
+					      net_idmap_dump_one_autorid_entry,
+					      NULL, NULL);
+	} else {
+		status = dbwrap_traverse_read(db,
+					      net_idmap_dump_one_tdb_entry,
+					      NULL, NULL);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("error traversing the database\n"));
 		ret = -1;
@@ -211,6 +292,7 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 	struct db_context *db;
 	const char *dbfile = NULL;
 	int ret = 0;
+	struct idmap_dump_ctx ctx = { .backend = TDB };
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
@@ -225,9 +307,16 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 
 	mem_ctx = talloc_stackframe();
 
-	dbfile = net_idmap_dbfile(c);
+	dbfile = net_idmap_dbfile(c, &ctx);
 
 	if (dbfile == NULL) {
+		ret = -1;
+		goto done;
+	}
+
+	if (ctx.backend != TDB) {
+		d_fprintf(stderr, _("Sorry, restoring of non-TDB databases is "
+				    "currently not supported\n"));
 		ret = -1;
 		goto done;
 	}
@@ -433,6 +522,7 @@ static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 	TDB_DATA key;
 	NTSTATUS status;
 	const char* dbfile;
+	struct idmap_dump_ctx ctx = { .backend = TDB };
 
 	if ( !delete_args_ok(argc,argv) || c->display_usage) {
 		d_printf("%s\n%s",
@@ -447,7 +537,7 @@ static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 
 	mem_ctx = talloc_stackframe();
 
-	dbfile = net_idmap_dbfile(c);
+	dbfile = net_idmap_dbfile(c, &ctx);
 	if (dbfile == NULL) {
 		goto done;
 	}
@@ -574,6 +664,7 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 {
 	const char* dbfile;
 	struct check_options opts;
+	struct idmap_dump_ctx ctx = { .backend = TDB };
 
 	if ( argc > 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -590,10 +681,17 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 		return c->display_usage ? 0 : -1;
 	}
 
-	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c);
+	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c, &ctx);
 	if (dbfile == NULL) {
 		return -1;
 	}
+
+	if (ctx.backend != TDB) {
+		d_fprintf(stderr, _("Sorry, checking of non-TDB databases is "
+				    "currently not supported\n"));
+		return -1;
+	}
+
 	d_fprintf(stderr, _("check database: %s\n"), dbfile);
 
 	opts = (struct check_options) {
