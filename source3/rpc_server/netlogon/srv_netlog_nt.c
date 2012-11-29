@@ -1332,7 +1332,12 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 
 	memcpy(password_buf.data, r->in.new_password->data, 512);
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_decrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
 
 	if (!extract_pw_from_buffer(p->mem_ctx, password_buf.data, &plaintext)) {
 		TALLOC_FREE(creds);
