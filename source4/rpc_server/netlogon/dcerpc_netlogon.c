@@ -487,7 +487,12 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 
 	memcpy(password_buf.data, r->in.new_password->data, 512);
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_decrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
 
 	if (!extract_pw_from_buffer(mem_ctx, password_buf.data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
