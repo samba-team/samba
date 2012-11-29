@@ -16,6 +16,8 @@ void netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *cre
 void netlogon_creds_des_encrypt(struct netlogon_creds_CredentialState *creds, struct samr_Password *pass);
 void netlogon_creds_des_decrypt(struct netlogon_creds_CredentialState *creds, struct samr_Password *pass);
 void netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len);
+void netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len);
+void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len);
 
 /*****************************************************************
 The above functions are common to the client and server interface

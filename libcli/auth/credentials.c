@@ -222,6 +222,34 @@ void netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds, 
 	data_blob_free(&session_key);
 }
 
+/*
+  AES encrypt a password buffer using the session key
+*/
+void netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
+{
+	AES_KEY key;
+	uint8_t iv[AES_BLOCK_SIZE];
+
+	AES_set_encrypt_key(creds->session_key, 128, &key);
+	ZERO_STRUCT(iv);
+
+	aes_cfb8_encrypt(data, data, len, &key, iv, AES_ENCRYPT);
+}
+
+/*
+  AES decrypt a password buffer using the session key
+*/
+void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
+{
+	AES_KEY key;
+	uint8_t iv[AES_BLOCK_SIZE];
+
+	AES_set_encrypt_key(creds->session_key, 128, &key);
+	ZERO_STRUCT(iv);
+
+	aes_cfb8_encrypt(data, data, len, &key, iv, AES_DECRYPT);
+}
+
 /*****************************************************************
 The above functions are common to the client and server interface
 next comes the client specific functions
