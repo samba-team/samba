@@ -180,7 +180,7 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	struct db_context *db;
 	struct db_cache_ctx *ctx;
 
-	db = talloc(mem_ctx, struct db_context);
+	db = talloc_zero(mem_ctx, struct db_context);
 	if (db == NULL) {
 		return NULL;
 	}
@@ -199,7 +199,6 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	}
 
 	db->fetch_locked = dbwrap_cache_fetch_locked;
-	db->try_fetch_locked = NULL;
 	db->traverse = dbwrap_cache_traverse;
 	db->traverse_read = dbwrap_cache_traverse_read;
 	db->get_seqnum = dbwrap_cache_get_seqnum;
@@ -211,9 +210,5 @@ struct db_context *db_open_cache(TALLOC_CTX *mem_ctx,
 	db->id = dbwrap_cache_id;
 	db->name = dbwrap_name(ctx->backing);
 	db->hash_size = dbwrap_hash_size(ctx->backing);
-	db->stored_callback = NULL;
-	db->wipe = NULL;
-	db->lock_order = 0;
-	db->persistent = false;
 	return db;
 }
