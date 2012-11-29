@@ -628,7 +628,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 		uint32_t old_timeout;
 
 		init_netr_CryptPassword(new_trust_pwd_cleartext,
-					cli->dc->session_key,
+					cli->dc,
 					&new_password);
 
 		old_timeout = dcerpc_binding_handle_set_timeout(b, 600000);

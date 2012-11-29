@@ -23,7 +23,7 @@
 /* The following definitions come from rpc_client/init_netlogon.c  */
 
 void init_netr_CryptPassword(const char *pwd,
-			     unsigned char session_key[16],
+			     struct netlogon_creds_CredentialState *creds,
 			     struct netr_CryptPassword *pwd_buf);
 
 #endif /* _RPC_CLIENT_INIT_NETLOGON_H_ */
