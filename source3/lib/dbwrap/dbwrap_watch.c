@@ -119,12 +119,13 @@ static NTSTATUS dbwrap_record_add_watcher(TDB_DATA w_key, struct server_id id)
 	ids = (struct server_id *)value.dptr;
 	num_ids = value.dsize / sizeof(struct server_id);
 
-	ids = talloc_realloc(talloc_tos(), ids, struct server_id,
-			     num_ids + 1);
+	ids = talloc_array(talloc_tos(), struct server_id,
+			   num_ids + 1);
 	if (ids == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
+	memcpy(ids, value.dptr, value.dsize);
 	ids[num_ids] = id;
 	num_ids += 1;
 
