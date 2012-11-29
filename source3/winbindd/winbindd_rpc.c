@@ -1057,6 +1057,7 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 				     struct winbindd_domain *domain,
+				     struct rpc_pipe_client *cli,
 				     struct lsa_SidArray *sids,
 				     struct lsa_RefDomainList **pdomains,
 				     struct lsa_TransNameArray **pnames)
@@ -1064,14 +1065,7 @@ static NTSTATUS rpc_try_lookup_sids3(TALLOC_CTX *mem_ctx,
 	struct lsa_TransNameArray2 lsa_names2;
 	struct lsa_TransNameArray *names;
 	uint32_t i, count;
-	struct rpc_pipe_client *cli;
 	NTSTATUS status, result;
-
-	status = cm_connect_lsa_tcp(domain, talloc_tos(), &cli);
-	if (!NT_STATUS_IS_OK(status)) {
-		domain->can_do_ncacn_ip_tcp = false;
-		return status;
-	}
 
 	ZERO_STRUCT(lsa_names2);
 	status = dcerpc_lsa_LookupSids3(cli->binding_handle,
@@ -1122,17 +1116,14 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 	uint32_t count;
 	NTSTATUS status, result;
 
-	if (domain->can_do_ncacn_ip_tcp) {
-		status = rpc_try_lookup_sids3(mem_ctx, domain, sids,
-					      pdomains, pnames);
-		if (!NT_STATUS_IS_ERR(status)) {
-			return status;
-		}
-	}
-
-	status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
+	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (cli->transport->transport == NCACN_IP_TCP) {
+		return rpc_try_lookup_sids3(mem_ctx, domain, cli, sids,
+					    pdomains, pnames);
 	}
 
 	names = talloc_zero(mem_ctx, struct lsa_TransNameArray);
