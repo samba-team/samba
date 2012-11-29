@@ -506,9 +506,10 @@ static DATA_BLOB netlogon_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
 /*
   try a change password for our machine account
 */
-static bool test_SetPassword2(struct torture_context *tctx,
-			      struct dcerpc_pipe *p,
-			      struct cli_credentials *machine_credentials)
+static bool test_SetPassword2_with_flags(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct cli_credentials *machine_credentials,
+					 uint32_t flags)
 {
 	struct netr_ServerPasswordSet2 r;
 	const char *password;
@@ -520,7 +521,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	struct netr_CryptPassword new_password;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+	if (!test_SetupCredentials2(p, tctx, flags, machine_credentials, cli_credentials_get_secure_channel_type(machine_credentials), &creds)) {
 		return false;
 	}
 
@@ -670,6 +671,13 @@ static bool test_SetPassword2(struct torture_context *tctx,
 		"ServerPasswordSet failed to actually change the password");
 
 	return true;
+}
+
+static bool test_SetPassword2(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct cli_credentials *machine_credentials)
+{
+	return test_SetPassword2_with_flags(tctx, p, machine_credentials, NETLOGON_NEG_AUTH2_ADS_FLAGS);
 }
 
 static bool test_GetPassword(struct torture_context *tctx,
