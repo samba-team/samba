@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
- *  Copyright (C) Guenther Deschner                  2008.
+ *  Copyright (C) Guenther Deschner                  2008,2012
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,14 +27,14 @@
  *************************************************************************/
 
 void init_netr_CryptPassword(const char *pwd,
-			     unsigned char session_key[16],
+			     struct netlogon_creds_CredentialState *creds,
 			     struct netr_CryptPassword *pwd_buf)
 {
 	struct samr_CryptPassword password_buf;
 
 	encode_pw_buffer(password_buf.data, pwd, STR_UNICODE);
 
-	arcfour_crypt(password_buf.data, session_key, 516);
+	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
 	memcpy(pwd_buf->data, password_buf.data, 512);
 	pwd_buf->length = IVAL(password_buf.data, 512);
 }
