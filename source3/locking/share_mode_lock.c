@@ -46,6 +46,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
+#include "source3/lib/dbwrap/dbwrap_watch.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -75,6 +76,8 @@ static bool locking_init_internal(bool read_only)
 
 	if (!posix_locking_init(read_only))
 		return False;
+
+	dbwrap_watch_db(lock_db, server_messaging_context());
 
 	return True;
 }

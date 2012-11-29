@@ -33,6 +33,7 @@
 #include "auth.h"
 #include "serverid.h"
 #include "messages.h"
+#include "source3/lib/dbwrap/dbwrap_watch.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -1457,6 +1458,13 @@ static bool request_timed_out(struct timeval request_time,
 	return (timeval_compare(&end_time, &now) < 0);
 }
 
+struct defer_open_state {
+	struct smbd_server_connection *sconn;
+	uint64_t mid;
+};
+
+static void defer_open_done(struct tevent_req *req);
+
 /****************************************************************************
  Handle the 1 second delay in returning a SHARING_VIOLATION error.
 ****************************************************************************/
@@ -1503,8 +1511,66 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("push_deferred_open_message_smb failed");
 	}
 	if (lck) {
-		add_deferred_open(lck, req->mid, request_time, self, state->id);
+		struct defer_open_state *watch_state;
+		struct tevent_req *watch_req;
+		bool ret;
+
+		watch_state = talloc(req->sconn, struct defer_open_state);
+		if (watch_state == NULL) {
+			exit_server("talloc failed");
+		}
+		watch_state->sconn = req->sconn;
+		watch_state->mid = req->mid;
+
+		DEBUG(10, ("defering mid %llu\n",
+			   (unsigned long long)req->mid));
+
+		watch_req = dbwrap_record_watch_send(
+			watch_state, req->sconn->ev_ctx, lck->data->record,
+			req->sconn->msg_ctx);
+		if (watch_req == NULL) {
+			exit_server("Could not watch share mode record");
+		}
+		tevent_req_set_callback(watch_req, defer_open_done,
+					watch_state);
+
+		ret = tevent_req_set_endtime(
+			watch_req, req->sconn->ev_ctx,
+			timeval_sum(&request_time, &timeout));
+		SMB_ASSERT(ret);
 	}
+}
+
+static void defer_open_done(struct tevent_req *req)
+{
+	struct defer_open_state *state = tevent_req_callback_data(
+		req, struct defer_open_state);
+	struct db_record *rec = NULL;
+	NTSTATUS status;
+	bool ret;
+
+	status = dbwrap_record_watch_recv(req, talloc_tos(), &rec);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",
+			  nt_errstr(status)));
+		/*
+		 * Even if it failed, retry anyway. TODO: We need a way to
+		 * tell a re-scheduled open about that error.
+		 */
+	}
+
+	/*
+	 * TODO: We need a version of dbwrap_record_watch_recv that does not
+	 * fetch_lock the record.
+	 */
+	TALLOC_FREE(rec);
+
+	DEBUG(10, ("scheduling mid %llu\n", (unsigned long long)state->mid));
+
+	ret = schedule_deferred_open_message_smb(state->sconn, state->mid);
+	SMB_ASSERT(ret);
+	TALLOC_FREE(state);
 }
 
 
