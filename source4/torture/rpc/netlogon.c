@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    test suite for netlogon rpc operations
@@ -7,17 +7,17 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
    Copyright (C) Tim Potter      2003
    Copyright (C) Matthias Dieter Wallnöfer            2009-2010
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -98,7 +98,7 @@ static bool test_netr_broken_binding_handle(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_LogonUasLogon(struct torture_context *tctx, 
+static bool test_LogonUasLogon(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -173,8 +173,8 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
-					   &credentials1, &credentials2, 
-					   mach_password, &credentials3, 
+					   &credentials1, &credentials2,
+					   mach_password, &credentials3,
 					   0);
 	torture_assert(tctx, creds != NULL, "memory allocation");
 
@@ -186,7 +186,7 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	/* This allows the tests to continue against the more fussy windows 2008 */
 	if (NT_STATUS_EQUAL(a.out.result, NT_STATUS_DOWNGRADE_DETECTED)) {
-		return test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+		return test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
 					      credentials,
 					      cli_credentials_get_secure_channel_type(credentials),
 					      creds_out);
@@ -194,7 +194,7 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, a.out.result, "ServerAuthenticate");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3), 
+	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3),
 		       "Credential chaining failed");
 
 	*creds_out = creds;
@@ -242,9 +242,9 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	a.out.return_credentials = &credentials3;
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
-					   a.in.computer_name, 
-					   &credentials1, &credentials2, 
-					   mach_password, &credentials3, 
+					   a.in.computer_name,
+					   &credentials1, &credentials2,
+					   mach_password, &credentials3,
 					   negotiate_flags);
 
 	torture_assert(tctx, creds != NULL, "memory allocation");
@@ -255,7 +255,7 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 		"ServerAuthenticate2 failed");
 	torture_assert_ntstatus_ok(tctx, a.out.result, "ServerAuthenticate2 failed");
 
-	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3), 
+	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3),
 		"Credential chaining failed");
 
 	torture_comment(tctx, "negotiate_flags=0x%08x\n", negotiate_flags);
@@ -310,10 +310,10 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
-					   &credentials1, &credentials2, 
+					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
 					   negotiate_flags);
-	
+
 	torture_assert(tctx, creds != NULL, "memory allocation");
 
 	torture_comment(tctx, "Testing ServerAuthenticate3\n");
@@ -324,7 +324,7 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 	torture_assert(tctx, netlogon_creds_client_check(creds, &credentials3), "Credential chaining failed");
 
 	torture_comment(tctx, "negotiate_flags=0x%08x\n", negotiate_flags);
-	
+
 	/* Prove that requesting a challenge again won't break it */
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerReqChallenge_r(b, tctx, &r),
 		"ServerReqChallenge failed");
@@ -337,7 +337,7 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 /*
   try a change password for our machine account
 */
-static bool test_SetPassword(struct torture_context *tctx, 
+static bool test_SetPassword(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
 			     struct cli_credentials *machine_credentials)
 {
@@ -366,7 +366,7 @@ static bool test_SetPassword(struct torture_context *tctx,
 	netlogon_creds_des_encrypt(creds, &new_password);
 
 	torture_comment(tctx, "Testing ServerPasswordSet on machine account\n");
-	torture_comment(tctx, "Changing machine account password to '%s'\n", 
+	torture_comment(tctx, "Changing machine account password to '%s'\n",
 			password);
 
 	netlogon_creds_client_authenticator(creds, &credential);
@@ -383,9 +383,9 @@ static bool test_SetPassword(struct torture_context *tctx,
 	   credentials chaining fully, and we verify that the server
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
-	torture_comment(tctx, 
+	torture_comment(tctx,
 		"Testing a second ServerPasswordSet on machine account\n");
-	torture_comment(tctx, 
+	torture_comment(tctx,
 		"Changing machine account password to '%s' (same as previous run)\n", password);
 
 	netlogon_creds_client_authenticator(creds, &credential);
@@ -400,8 +400,8 @@ static bool test_SetPassword(struct torture_context *tctx,
 
 	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
-	torture_assert(tctx, 
-		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+	torture_assert(tctx,
+		test_SetupCredentials(p, tctx, machine_credentials, &creds),
 		"ServerPasswordSet failed to actually change the password");
 
 	return true;
@@ -506,8 +506,8 @@ static DATA_BLOB netlogon_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
 /*
   try a change password for our machine account
 */
-static bool test_SetPassword2(struct torture_context *tctx, 
-			      struct dcerpc_pipe *p, 
+static bool test_SetPassword2(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
 			      struct cli_credentials *machine_credentials)
 {
 	struct netr_ServerPasswordSet2 r;
@@ -555,7 +555,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
 	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		torture_comment(tctx, 
+		torture_comment(tctx,
 			"Not testing ability to set password to '', enable dangerous tests to perform this test\n");
 	} else {
 		/* by changing the machine password to ""
@@ -566,29 +566,29 @@ static bool test_SetPassword2(struct torture_context *tctx,
 		password = "";
 		encode_pw_buffer(password_buf.data, password, STR_UNICODE);
 		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
-		
+
 		memcpy(new_password.data, password_buf.data, 512);
 		new_password.length = IVAL(password_buf.data, 512);
-		
-		torture_comment(tctx, 
+
+		torture_comment(tctx,
 			"Testing ServerPasswordSet2 on machine account\n");
-		torture_comment(tctx, 
+		torture_comment(tctx,
 			"Changing machine account password to '%s'\n", password);
-		
+
 		netlogon_creds_client_authenticator(creds, &credential);
-		
+
 		torture_assert_ntstatus_ok(tctx, dcerpc_netr_ServerPasswordSet2_r(b, tctx, &r),
 			"ServerPasswordSet2 failed");
 		torture_assert_ntstatus_ok(tctx, r.out.result, "ServerPasswordSet2 failed");
-		
+
 		if (!netlogon_creds_client_check(creds, &r.out.return_authenticator->cred)) {
 			torture_comment(tctx, "Credential chaining failed\n");
 		}
-		
+
 		cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 	}
 
-	torture_assert(tctx, test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+	torture_assert(tctx, test_SetupCredentials(p, tctx, machine_credentials, &creds),
 		"ServerPasswordSet failed to actually change the password");
 
 	/* now try a random password */
@@ -616,9 +616,9 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	   credentials chaining fully, and we verify that the server
 	   allows the password to be set to the same value twice in a
 	   row (match win2k3) */
-	torture_comment(tctx, 
+	torture_comment(tctx,
 		"Testing a second ServerPasswordSet2 on machine account\n");
-	torture_comment(tctx, 
+	torture_comment(tctx,
 		"Changing machine account password to '%s' (same as previous run)\n", password);
 
 	netlogon_creds_client_authenticator(creds, &credential);
@@ -633,8 +633,8 @@ static bool test_SetPassword2(struct torture_context *tctx,
 
 	cli_credentials_set_password(machine_credentials, password, CRED_SPECIFIED);
 
-	torture_assert (tctx, 
-		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+	torture_assert (tctx,
+		test_SetupCredentials(p, tctx, machine_credentials, &creds),
 		"ServerPasswordSet failed to actually change the password");
 
 	new_random_pass = netlogon_very_rand_pass(tctx, 128);
@@ -647,7 +647,7 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	memcpy(new_password.data, password_buf.data, 512);
 	new_password.length = IVAL(password_buf.data, 512);
 
-	torture_comment(tctx, 
+	torture_comment(tctx,
 		"Testing a third ServerPasswordSet2 on machine account, with a completely random password\n");
 
 	netlogon_creds_client_authenticator(creds, &credential);
@@ -665,8 +665,8 @@ static bool test_SetPassword2(struct torture_context *tctx,
 	cli_credentials_set_password(machine_credentials, NULL, CRED_UNINITIALISED);
 	cli_credentials_set_nt_hash(machine_credentials, &nt_hash, CRED_SPECIFIED);
 
-	torture_assert (tctx, 
-		test_SetupCredentials(p, tctx, machine_credentials, &creds), 
+	torture_assert (tctx,
+		test_SetupCredentials(p, tctx, machine_credentials, &creds),
 		"ServerPasswordSet failed to actually change the password");
 
 	return true;
@@ -765,7 +765,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx, 
+	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx,
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
 
@@ -773,16 +773,16 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		ninfo.identity_info.domain_name.string = NULL;
 	}
 
-	generate_random_buffer(ninfo.challenge, 
+	generate_random_buffer(ninfo.challenge,
 			       sizeof(ninfo.challenge));
-	chal = data_blob_const(ninfo.challenge, 
+	chal = data_blob_const(ninfo.challenge,
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials), 
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials),
 						cli_credentials_get_domain(credentials));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx, 
-						   &flags, 
+	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
+						   &flags,
 						   chal,
 						   names_blob,
 						   &lm_resp, &nt_resp,
@@ -812,19 +812,19 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	r.out.authoritative = &authoritative;
 
 	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
-	
+
 	for (i=2;i<=3;i++) {
 		ZERO_STRUCT(auth2);
 		netlogon_creds_client_authenticator(creds, &auth);
-		
+
 		r.in.validation_level = i;
-		
+
 		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
 			"LogonSamLogon failed");
 		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
-		
-		torture_assert(tctx, netlogon_creds_client_check(creds, 
-								 &r.out.return_authenticator->cred), 
+
+		torture_assert(tctx, netlogon_creds_client_check(creds,
+								 &r.out.return_authenticator->cred),
 			"Credential chaining failed");
 		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
 					 "LogonSamLogon invalid  *r.out.authoritative");
@@ -999,7 +999,7 @@ bool test_netlogon_capabilities(struct dcerpc_pipe *p, struct torture_context *t
 /*
   try a netlogon SamLogon
 */
-static bool test_SamLogon(struct torture_context *tctx, 
+static bool test_SamLogon(struct torture_context *tctx,
 			  struct dcerpc_pipe *p,
 			  struct cli_credentials *credentials)
 {
@@ -1031,13 +1031,13 @@ static uint64_t sequence_nums[3];
 /*
   try a netlogon DatabaseSync
 */
-static bool test_DatabaseSync(struct torture_context *tctx, 
+static bool test_DatabaseSync(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      struct cli_credentials *machine_credentials)
 {
 	struct netr_DatabaseSync r;
 	struct netlogon_creds_CredentialState *creds;
-	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS}; 
+	const uint32_t database_ids[] = {SAM_DATABASE_DOMAIN, SAM_DATABASE_BUILTIN, SAM_DATABASE_PRIVS};
 	int i;
 	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	struct netr_Authenticator credential, return_authenticator;
@@ -1090,10 +1090,10 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 			    delta_enum_array->num_deltas > 0 &&
 			    delta_enum_array->delta_enum[0].delta_type == NETR_DELTA_DOMAIN &&
 			    delta_enum_array->delta_enum[0].delta_union.domain) {
-				sequence_nums[r.in.database_id] = 
+				sequence_nums[r.in.database_id] =
 					delta_enum_array->delta_enum[0].delta_union.domain->sequence_num;
 				torture_comment(tctx, "\tsequence_nums[%d]=%llu\n",
-				       r.in.database_id, 
+				       r.in.database_id,
 				       (unsigned long long)sequence_nums[r.in.database_id]);
 			}
 		} while (NT_STATUS_EQUAL(r.out.result, STATUS_MORE_ENTRIES));
@@ -1106,7 +1106,7 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 /*
   try a netlogon DatabaseDeltas
 */
-static bool test_DatabaseDeltas(struct torture_context *tctx, 
+static bool test_DatabaseDeltas(struct torture_context *tctx,
 				struct dcerpc_pipe *p,
 				struct cli_credentials *machine_credentials)
 {
@@ -1115,7 +1115,7 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
 	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-	const uint32_t database_ids[] = {0, 1, 2}; 
+	const uint32_t database_ids[] = {0, 1, 2};
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -1138,7 +1138,7 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 
 		*r.in.sequence_num -= 1;
 
-		torture_comment(tctx, "Testing DatabaseDeltas of id %d at %llu\n", 
+		torture_comment(tctx, "Testing DatabaseDeltas of id %d at %llu\n",
 		       r.in.database_id, (unsigned long long)*r.in.sequence_num);
 
 		do {
@@ -1704,7 +1704,7 @@ static bool test_DatabaseRedo(struct torture_context *tctx,
 /*
   try a netlogon AccountDeltas
 */
-static bool test_AccountDeltas(struct torture_context *tctx, 
+static bool test_AccountDeltas(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       struct cli_credentials *machine_credentials)
 {
@@ -1749,7 +1749,7 @@ static bool test_AccountDeltas(struct torture_context *tctx,
 /*
   try a netlogon AccountSync
 */
-static bool test_AccountSync(struct torture_context *tctx, struct dcerpc_pipe *p, 
+static bool test_AccountSync(struct torture_context *tctx, struct dcerpc_pipe *p,
 			     struct cli_credentials *machine_credentials)
 {
 	struct netr_AccountSync r;
@@ -1796,7 +1796,7 @@ static bool test_AccountSync(struct torture_context *tctx, struct dcerpc_pipe *p
 /*
   try a netlogon GetDcName
 */
-static bool test_GetDcName(struct torture_context *tctx, 
+static bool test_GetDcName(struct torture_context *tctx,
 			   struct dcerpc_pipe *p)
 {
 	struct netr_GetDcName r;
@@ -1860,9 +1860,9 @@ static const char *function_code_str(TALLOC_CTX *mem_ctx,
 
 
 /*
-  try a netlogon LogonControl 
+  try a netlogon LogonControl
 */
-static bool test_LogonControl(struct torture_context *tctx, 
+static bool test_LogonControl(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      struct cli_credentials *machine_credentials)
 
@@ -1988,7 +1988,7 @@ static bool test_LogonControl(struct torture_context *tctx,
 /*
   try a netlogon GetAnyDCName
 */
-static bool test_GetAnyDCName(struct torture_context *tctx, 
+static bool test_GetAnyDCName(struct torture_context *tctx,
 			      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -2036,7 +2036,7 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
 /*
   try a netlogon LogonControl2
 */
-static bool test_LogonControl2(struct torture_context *tctx, 
+static bool test_LogonControl2(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       struct cli_credentials *machine_credentials)
 
@@ -2141,7 +2141,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 /*
   try a netlogon DatabaseSync2
 */
-static bool test_DatabaseSync2(struct torture_context *tctx, 
+static bool test_DatabaseSync2(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       struct cli_credentials *machine_credentials)
 {
@@ -2150,11 +2150,11 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 	struct netr_Authenticator return_authenticator, credential;
 
 	struct netlogon_creds_CredentialState *creds;
-	const uint32_t database_ids[] = {0, 1, 2}; 
+	const uint32_t database_ids[] = {0, 1, 2};
 	int i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_FLAGS, 
+	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_FLAGS,
 				    machine_credentials,
 				    cli_credentials_get_secure_channel_type(machine_credentials),
 				    &creds)) {
@@ -2212,7 +2212,7 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 /*
   try a netlogon LogonControl2Ex
 */
-static bool test_LogonControl2Ex(struct torture_context *tctx, 
+static bool test_LogonControl2Ex(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 struct cli_credentials *machine_credentials)
 
@@ -2235,7 +2235,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
 		       i, r.in.function_code);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
@@ -2250,7 +2250,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
 		       i, r.in.function_code);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
@@ -2265,7 +2265,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
 		       i, r.in.function_code);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
@@ -2280,7 +2280,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n", 
+		torture_comment(tctx, "Testing LogonControl2Ex level %d function %d\n",
 		       i, r.in.function_code);
 
 		status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
@@ -2332,8 +2332,8 @@ static bool test_netr_GetForestTrustInformation(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_netr_DsRGetForestTrustInformation(struct torture_context *tctx, 
-						   struct dcerpc_pipe *p, const char *trusted_domain_name) 
+static bool test_netr_DsRGetForestTrustInformation(struct torture_context *tctx,
+						   struct dcerpc_pipe *p, const char *trusted_domain_name)
 {
 	NTSTATUS status;
 	struct netr_DsRGetForestTrustInformation r;
@@ -2359,7 +2359,7 @@ static bool test_netr_DsRGetForestTrustInformation(struct torture_context *tctx,
 /*
   try a netlogon netr_DsrEnumerateDomainTrusts
 */
-static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx, 
+static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx,
 					  struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -2391,7 +2391,7 @@ static bool test_DsrEnumerateDomainTrusts(struct torture_context *tctx,
 		/* get info for transitive forest trusts */
 
 		if (r.out.trusts->array[i].trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
-			if (!test_netr_DsRGetForestTrustInformation(tctx, p, 
+			if (!test_netr_DsRGetForestTrustInformation(tctx, p,
 								    r.out.trusts->array[i].dns_name)) {
 				return false;
 			}
@@ -2439,8 +2439,8 @@ static bool test_netr_NetrEnumerateTrustedDomainsEx(struct torture_context *tctx
 
 
 static bool test_netr_DsRGetSiteName(struct dcerpc_pipe *p, struct torture_context *tctx,
-				     const char *computer_name, 
-				     const char *expected_site) 
+				     const char *computer_name,
+				     const char *expected_site)
 {
 	NTSTATUS status;
 	struct netr_DsRGetSiteName r;
@@ -2462,7 +2462,7 @@ static bool test_netr_DsRGetSiteName(struct dcerpc_pipe *p, struct torture_conte
 /*
   try a netlogon netr_DsRGetDCName
 */
-static bool test_netr_DsRGetDCName(struct torture_context *tctx, 
+static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 				   struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -2519,7 +2519,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 					 "DsRGetDCName");
 	}
 
-	return test_netr_DsRGetSiteName(p, tctx, 
+	return test_netr_DsRGetSiteName(p, tctx,
 				       info->dc_unc,
 				       info->dc_site_name);
 }
@@ -2527,7 +2527,7 @@ static bool test_netr_DsRGetDCName(struct torture_context *tctx,
 /*
   try a netlogon netr_DsRGetDCNameEx
 */
-static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx, 
+static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 				     struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -2591,7 +2591,7 @@ static bool test_netr_DsRGetDCNameEx(struct torture_context *tctx,
 /*
   try a netlogon netr_DsRGetDCNameEx2
 */
-static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx, 
+static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 				      struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -2724,7 +2724,7 @@ failed:
 	return NULL;
 }
 
-static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx, 
+static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 					    struct dcerpc_pipe *p)
 {
 	char *url;
@@ -3168,7 +3168,7 @@ static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
 }
 
 
-static bool test_GetDomainInfo(struct torture_context *tctx, 
+static bool test_GetDomainInfo(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       struct cli_credentials *machine_credentials)
 {
@@ -3196,7 +3196,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
 
-	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
 				    machine_credentials, &creds)) {
 		return false;
 	}
@@ -3261,7 +3261,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 				   "(sAMAccountName=%s$)", TEST_MACHINE_NAME);
 		old_dnsname =
 			ldb_msg_find_attr_as_string(res[0], "dNSHostName", NULL);
-		
+
 		/* Gets back the "servicePrincipalName"s in AD */
 		spn_el = ldb_msg_find_element(res[0], "servicePrincipalName");
 		if (spn_el != NULL) {
@@ -3300,11 +3300,11 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 			   the same in combination with the "servicePrincipalName"s.
 			   The DNS hostname should also be returned by our
 			   "LogonGetDomainInfo" call (in the domain info structure). */
-			
+
 			torture_assert_str_equal(tctx,
 						 ldb_msg_find_attr_as_string(res[0], "dNSHostName", NULL),
 						 old_dnsname, "'DNS hostname' was not set!");
-			
+
 			spn_el = ldb_msg_find_element(res[0], "servicePrincipalName");
 			torture_assert(tctx, ((spns != NULL) && (spn_el != NULL)),
 				       "'servicePrincipalName's not set!");
@@ -3324,15 +3324,15 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 			   the "servicePrincipalName"s should remain empty and no DNS
 			   hostname should be returned by our "LogonGetDomainInfo"
 			   call (in the domain info structure). */
-			
+
 			torture_assert(tctx,
 				       ldb_msg_find_attr_as_string(res[0], "dNSHostName", NULL) == NULL,
 				       "'DNS hostname' was set!");
-			
+
 			spn_el = ldb_msg_find_element(res[0], "servicePrincipalName");
 			torture_assert(tctx, ((spns == NULL) && (spn_el == NULL)),
 				       "'servicePrincipalName's were set!");
-			
+
 			torture_assert(tctx,
 				       info.domain_info->dns_hostname.string == NULL,
 				       "Out 'DNS host name' was set!");
@@ -3390,7 +3390,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		torture_assert_str_equal(tctx,
 					 ldb_msg_find_attr_as_string(res[0], "dNSHostName", NULL),
 					 old_dnsname, "'DNS host name' did change!");
-		
+
 		/* Find the two "servicePrincipalName"s which the DC shouldn't have been
 		   updated (HOST/<Netbios name> and HOST/<FQDN name>) - see MS-NRPC
 		   3.5.4.3.9 */
@@ -3409,7 +3409,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 				break;
 		torture_assert(tctx, i != spn_el->num_values,
 			       "'servicePrincipalName' HOST/<FQDN name> not found!");
-		
+
 		/* Check that the out DNS hostname was set properly */
 		torture_assert_str_equal(tctx, info.domain_info->dns_hostname.string,
 					 old_dnsname, "Out 'DNS hostname' doesn't match the old one!");
@@ -3623,7 +3623,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetDomainInfo_async(struct torture_context *tctx, 
+static bool test_GetDomainInfo_async(struct torture_context *tctx,
 				     struct dcerpc_pipe *p,
 				     struct cli_credentials *machine_credentials)
 {
@@ -3641,7 +3641,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
 
-	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
+	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
 				    machine_credentials, &creds)) {
 		return false;
 	}
@@ -3670,9 +3670,9 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 		creds_async[i] = (struct netlogon_creds_CredentialState *)talloc_memdup(creds, creds, sizeof(*creds));
 		req[i] = dcerpc_netr_LogonGetDomainInfo_r_send(tctx, tctx->ev, p->binding_handle, &r);
 
-		/* even with this flush per request a w2k3 server seems to 
+		/* even with this flush per request a w2k3 server seems to
 		   clag with multiple outstanding requests. bleergh. */
-		torture_assert_int_equal(tctx, tevent_loop_once(dcerpc_event_context(p)), 0, 
+		torture_assert_int_equal(tctx, tevent_loop_once(dcerpc_event_context(p)), 0,
 					 "tevent_loop_once failed");
 	}
 
@@ -3683,19 +3683,19 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 		status = dcerpc_netr_LogonGetDomainInfo_r_recv(req[i], tctx);
 
 		torture_assert_ntstatus_ok(tctx, status, "netr_LogonGetDomainInfo_async");
-		torture_assert_ntstatus_ok(tctx, r.out.result, "netr_LogonGetDomainInfo_async"); 
+		torture_assert_ntstatus_ok(tctx, r.out.result, "netr_LogonGetDomainInfo_async");
 
-		torture_assert(tctx, netlogon_creds_client_check(creds_async[i], &a.cred), 
+		torture_assert(tctx, netlogon_creds_client_check(creds_async[i], &a.cred),
 			"Credential chaining failed at async");
 	}
 
-	torture_comment(tctx, 
+	torture_comment(tctx,
 			"Testing netr_LogonGetDomainInfo - async count %d OK\n", ASYNC_COUNT);
 
 	return true;
 }
 
-static bool test_ManyGetDCName(struct torture_context *tctx, 
+static bool test_ManyGetDCName(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
