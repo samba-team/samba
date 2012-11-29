@@ -1629,7 +1629,7 @@ static char *get_driver_3_param(TALLOC_CTX *mem_ctx, char *str,
 /********************************************************************************
  fill in the members of a spoolss_AddDriverInfo3 struct using a character
  string in the form of
- 	 <Long Printer Name>:<Driver File Name>:<Data File Name>:\
+	 <Long Driver Name>:<Driver File Name>:<Data File Name>:\
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files>
  *******************************************************************************/
@@ -1710,7 +1710,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 	if (argc != 3 && argc != 4)
 	{
 		printf ("Usage: %s <Environment> \\\n", argv[0]);
-		printf ("\t<Long Printer Name>:<Driver File Name>:<Data File Name>:\\\n");
+		printf ("\t<Long Driver Name>:<Driver File Name>:<Data File Name>:\\\n");
     		printf ("\t<Config File Name>:<Help File Name>:<Language Monitor Name>:\\\n");
 	    	printf ("\t<Default Data Type>:<Comma Separated list of Files> \\\n");
 		printf ("\t[version]\n");
