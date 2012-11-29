@@ -473,7 +473,6 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->wipe = db_tdb_wipe;
 	result->id = db_tdb_id;
 	result->check = db_tdb_check;
-	result->stored_callback = NULL;
 	result->name = tdb_name(db_tdb->wtdb->tdb);
 	result->hash_size = hash_size;
 	return result;
