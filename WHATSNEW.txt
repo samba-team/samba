@@ -196,12 +196,20 @@ o   Amitay Isaacs <amitay@gmail.com>
     * BUG 9354: Fix format string vulnerability in an error message.
 
 
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9422: Large read requests cause server to issue malformed reply.
+
+
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 9373: samba-tool: Report a CommandError if loading of the config file
       fails.
     * BUG 9385: Add missing newline in the output of ldb_ldif_write_trace().
     * BUG 9390: Fix segfaults in "log level = 10" on Solaris.
     * BUG 9402: lib/addns: Fix working with a bind9 server.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 9418: Fix MD5 detection in the autoconf build.
 
 
 o   Arvid Requate <requate@univention.de>
@@ -211,6 +219,7 @@ o   Arvid Requate <requate@univention.de>
 
 o   Andreas Schneider <asn@samba.org>
     * BUG 9386: Failover if netlogon pipe is not available.
+    * BUG 9436: Fix leaking sockets of SMB connections to a DC.
 
 
 o   Karolin Seeger <kseeger@samba.org>
