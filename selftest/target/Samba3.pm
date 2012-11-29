@@ -994,6 +994,7 @@ sub provision($$$$$$)
 	copy = print1
 [print3]
 	copy = print1
+	default devmode = no
 [lp]
 	copy = print1
 [xcopy_share]
