@@ -85,8 +85,19 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True):
 
 
 def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True, skip_invalid_chown=False, passdb=None):
-    sid = security.dom_sid(domsid)
-    sd = security.descriptor.from_sddl(sddl, sid)
+    assert(isinstance(domsid, str) or isinstance(domsid, security.dom_sid))
+    if isinstance(domsid, str):
+        sid = security.dom_sid(domsid)
+    elif isinstance(domsid, security.dom_sid):
+        sid = domsid
+        domsid = str(sid)
+
+    assert(isinstance(sddl, str) or isinstance(sddl, security.descriptor))
+    if isinstance(sddl, str):
+        sd = security.descriptor.from_sddl(sddl, sid)
+    elif isinstance(sddl, security.descriptor):
+        sd = sddl
+        sddl = sd.as_sddl(sid)
 
     if not use_ntvfs and skip_invalid_chown:
         # Check if the owner can be resolved as a UID
@@ -103,7 +114,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                 if ((admin_type == idmap.ID_TYPE_UID) or (admin_type == idmap.ID_TYPE_BOTH)):
 
                     # Set it, changing the owner to 'administrator' rather than domain admins
-                    sd2 = security.descriptor.from_sddl(sddl, sid)
+                    sd2 = sd
                     sd2.owner_sid = administrator
 
                     smbd.set_nt_acl(file, security.SECINFO_OWNER |security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd2)
