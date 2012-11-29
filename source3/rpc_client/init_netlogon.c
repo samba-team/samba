@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../lib/crypto/arcfour.h"
+#include "../lib/crypto/crypto.h"
 #include "rpc_client/init_netlogon.h"
 
 /*************************************************************************
@@ -34,7 +34,11 @@ void init_netr_CryptPassword(const char *pwd,
 
 	encode_pw_buffer(password_buf.data, pwd, STR_UNICODE);
 
-	netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+	}
 	memcpy(pwd_buf->data, password_buf.data, 512);
 	pwd_buf->length = IVAL(password_buf.data, 512);
 }
