@@ -962,34 +962,25 @@ class cmd_create(Command):
             m = ldb.Message()
             m.dn = gpo_dn
             m['a01'] = ldb.MessageElement("groupPolicyContainer", ldb.FLAG_MOD_ADD, "objectClass")
-            m['a02'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_ADD, "displayName")
-            m['a03'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_ADD, "gPCFileSysPath")
-            m['a04'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "flags")
-            m['a05'] = ldb.MessageElement("0", ldb.FLAG_MOD_ADD, "versionNumber")
-            m['a06'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
-            m['a07'] = ldb.MessageElement("2", ldb.FLAG_MOD_ADD, "gpcFunctionalityVersion")
             self.samdb.add(m)
 
             # Add cn=User,cn=<guid>
             m = ldb.Message()
             m.dn = ldb.Dn(self.samdb, "CN=User,%s" % str(gpo_dn))
             m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-            m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
             self.samdb.add(m)
 
             # Add cn=Machine,cn=<guid>
             m = ldb.Message()
             m.dn = ldb.Dn(self.samdb, "CN=Machine,%s" % str(gpo_dn))
             m['a01'] = ldb.MessageElement("container", ldb.FLAG_MOD_ADD, "objectClass")
-            m['a02'] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_ADD, "showInAdvancedViewOnly")
             self.samdb.add(m)
 
-            # Copy GPO files over SMB
-            create_directory_hier(conn, sharepath)
-            copy_directory_local_to_remote(conn, gpodir, sharepath)
-
             # Get new security descriptor
-            msg = get_gpo_info(self.samdb, gpo=gpo)[0]
+            ds_sd_flags = ( security.SECINFO_OWNER |
+                            security.SECINFO_GROUP |
+                            security.SECINFO_DACL )
+            msg = get_gpo_info(self.samdb, gpo=gpo, sd_flags=ds_sd_flags)[0]
             ds_sd_ndr = msg['nTSecurityDescriptor'][0]
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
@@ -998,12 +989,28 @@ class cmd_create(Command):
             sddl = dsacl2fsacl(ds_sd, domain_sid)
             fs_sd = security.descriptor.from_sddl(sddl, domain_sid)
 
+            # Copy GPO directory
+            create_directory_hier(conn, sharepath)
+
             # Set ACL
             sio = ( security.SECINFO_OWNER |
                     security.SECINFO_GROUP |
                     security.SECINFO_DACL |
                     security.SECINFO_PROTECTED_DACL )
             conn.set_acl(sharepath, fs_sd, sio)
+
+            # Copy GPO files over SMB
+            copy_directory_local_to_remote(conn, gpodir, sharepath)
+
+            m = ldb.Message()
+            m.dn = gpo_dn
+            m['a02'] = ldb.MessageElement(displayname, ldb.FLAG_MOD_REPLACE, "displayName")
+            m['a03'] = ldb.MessageElement(unc_path, ldb.FLAG_MOD_REPLACE, "gPCFileSysPath")
+            m['a05'] = ldb.MessageElement("0", ldb.FLAG_MOD_REPLACE, "versionNumber")
+            m['a07'] = ldb.MessageElement("2", ldb.FLAG_MOD_REPLACE, "gpcFunctionalityVersion")
+            m['a04'] = ldb.MessageElement("0", ldb.FLAG_MOD_REPLACE, "flags")
+            controls=["permissive_modify:0"]
+            self.samdb.modify(m, controls=controls)
         except Exception:
             self.samdb.transaction_cancel()
             raise
