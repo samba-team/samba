@@ -42,6 +42,8 @@ from samba import policy
 from samba import smb
 import uuid
 from samba.ntacls import dsacl2fsacl
+from samba.dcerpc import nbt
+from samba.net import Net
 
 
 def samdb_connect(ctx):
@@ -892,12 +894,22 @@ class cmd_create(Command):
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
+        net = Net(creds=self.creds, lp=self.lp)
+
         # We need to know writable DC to setup SMB connection
         if H and H.startswith('ldap://'):
             dc_hostname = H[7:]
             self.url = H
+            flags = (nbt.NBT_SERVER_LDAP |
+                     nbt.NBT_SERVER_DS |
+                     nbt.NBT_SERVER_WRITABLE)
+            cldap_ret = net.finddc(address=dc_hostname, flags=flags)
         else:
-            dc_hostname = netcmd_finddc(self.lp, self.creds)
+            flags = (nbt.NBT_SERVER_LDAP |
+                     nbt.NBT_SERVER_DS |
+                     nbt.NBT_SERVER_WRITABLE)
+            cldap_ret = net.finddc(domain=self.lp.get('realm'), flags=flags)
+            dc_hostname = cldap_ret.pdc_dns_name
             self.url = dc_url(self.lp, self.creds, dc=dc_hostname)
 
         samdb_connect(self)
@@ -909,7 +921,7 @@ class cmd_create(Command):
         # Create new GUID
         guid  = str(uuid.uuid4())
         gpo = "{%s}" % guid.upper()
-        realm = self.lp.get('realm')
+        realm = cldap_ret.dns_domain
         unc_path = "\\\\%s\\sysvol\\%s\\Policies\\%s" % (realm, realm, gpo)
 
         # Create GPT
