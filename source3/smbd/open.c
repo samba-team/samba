@@ -28,6 +28,8 @@
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../librpc/gen_ndr/open_files.h"
+#include "../librpc/gen_ndr/idmap.h"
+#include "passdb/lookup_sid.h"
 #include "auth.h"
 #include "serverid.h"
 #include "messages.h"
@@ -3432,11 +3434,14 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	struct security_descriptor *parent_desc = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct security_descriptor *psd = NULL;
-	struct dom_sid *owner_sid = NULL;
-	struct dom_sid *group_sid = NULL;
+	const struct dom_sid *owner_sid = NULL;
+	const struct dom_sid *group_sid = NULL;
 	uint32_t security_info_sent = (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
+	struct security_token *token = fsp->conn->session_info->security_token;
 	bool inherit_owner = lp_inherit_owner(SNUM(fsp->conn));
 	bool inheritable_components = false;
+	bool try_builtin_administrators = false;
+	const struct dom_sid *BA_U_sid = NULL;
 	size_t size = 0;
 
 	if (!parent_dirname(frame, fsp->fsp_name->base_name, &parent_name, NULL)) {
@@ -3478,10 +3483,42 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	}
 
 	if (owner_sid == NULL) {
-		owner_sid = &fsp->conn->session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+		if (security_token_has_builtin_administrators(token)) {
+			try_builtin_administrators = true;
+		} else if (security_token_is_system(token)) {
+			try_builtin_administrators = true;
+		}
+	}
+
+	if (try_builtin_administrators) {
+		struct unixid ids;
+		bool ok;
+
+		ZERO_STRUCT(ids);
+		ok = sids_to_unixids(&global_sid_Builtin_Administrators, 1, &ids);
+		if (ok) {
+			switch (ids.type) {
+			case ID_TYPE_BOTH:
+				BA_U_sid = &global_sid_Builtin_Administrators;
+				break;
+			case ID_TYPE_UID:
+				BA_U_sid = &global_sid_Builtin_Administrators;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	if (owner_sid == NULL) {
+		owner_sid = BA_U_sid;
+	}
+
+	if (owner_sid == NULL) {
+		owner_sid = &token->sids[PRIMARY_USER_SID_INDEX];
 	}
 	if (group_sid == NULL) {
-		group_sid = &fsp->conn->session_info->security_token->sids[PRIMARY_GROUP_SID_INDEX];
+		group_sid = &token->sids[PRIMARY_GROUP_SID_INDEX];
 	}
 
 	status = se_create_child_secdesc(frame,
