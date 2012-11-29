@@ -679,6 +679,40 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 	talloc_free(frame);
 
+	/*
+	 * remove duplicates
+	 */
+	for (i=1; i < new_ace_list_ndx;) {
+		struct security_ace *ai = &new_ace_list[i];
+		unsigned int remaining, j;
+		bool remove = false;
+
+		for (j=0; j < i; j++) {
+			struct security_ace *aj = &new_ace_list[j];
+
+			if (!sec_ace_equal(ai, aj)) {
+				continue;
+			}
+
+			remove = true;
+			break;
+		}
+
+		if (!remove) {
+			i++;
+			continue;
+		}
+
+		new_ace_list_ndx--;
+		remaining = new_ace_list_ndx - i;
+		if (remaining == 0) {
+			ZERO_STRUCT(new_ace_list[i]);
+			continue;
+		}
+		memmove(&new_ace_list[i], &new_ace_list[i+1],
+			sizeof(new_ace_list[i]) * remaining);
+	}
+
 	/* Create child security descriptor to return */
 	if (new_ace_list_ndx) {
 		new_dacl = make_sec_acl(ctx,
