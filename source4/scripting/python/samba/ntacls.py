@@ -209,7 +209,7 @@ def ldapmask2filemask(ldm):
     return filemask
 
 
-def dsacl2fsacl(dssddl, sid):
+def dsacl2fsacl(dssddl, sid, as_sddl=True):
     """
 
     This function takes an the SDDL representation of a DS
@@ -233,5 +233,8 @@ def dsacl2fsacl(dssddl, sid):
                 ace.flags = ace.flags | security.SEC_ACE_FLAG_INHERIT_ONLY
             ace.access_mask =  ldapmask2filemask(ace.access_mask)
             fdescr.dacl_add(ace)
+
+    if not as_sddl:
+        return fdescr
 
     return fdescr.as_sddl(sid)
