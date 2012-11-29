@@ -4,6 +4,9 @@
   <refmeta>
     <refentrytitle>talloc</refentrytitle>
     <manvolnum>3</manvolnum>
+    <refmiscinfo class="source">Samba</refmiscinfo>
+    <refmiscinfo class="manual">System Administration tools</refmiscinfo>
+    <refmiscinfo class="version">4.0</refmiscinfo>
   </refmeta>
   <refnamediv>
     <refname>talloc</refname>
@@ -777,6 +780,15 @@ if (ptr) memcpy(ptr, p, strlen(p)+1);</programlisting>
       <ulink url="http://talloc.samba.org/"/>
     </para>
   </refsect1>
+
+  <refsect1><title>AUTHOR</title>
+    <para> The original Samba software and related utilities were
+      created by Andrew Tridgell.  Samba is now developed by the
+      Samba Team as an Open Source project similar to the way the
+      Linux kernel is developed.
+    </para>
+  </refsect1>
+
   <refsect1><title>COPYRIGHT/LICENSE</title>
     <para>
       Copyright (C) Andrew Tridgell 2004
