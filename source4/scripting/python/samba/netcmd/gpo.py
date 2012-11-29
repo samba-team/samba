@@ -1048,12 +1048,10 @@ class cmd_del(Command):
 
         # Check if valid GPO
         try:
-            get_gpo_info(self.samdb, gpo=gpo)[0]
+            msg = get_gpo_info(self.samdb, gpo=gpo)[0]
+            unc_path = msg['gPCFileSysPath'][0]
         except Exception:
             raise CommandError("GPO '%s' does not exist" % gpo)
-
-        realm = self.lp.get('realm')
-        unc_path = "\\\\%s\\sysvol\\%s\\Policies\\%s" % (realm, realm, gpo)
 
         # Connect to DC over SMB
         [dom_name, service, sharepath] = parse_unc(unc_path)
