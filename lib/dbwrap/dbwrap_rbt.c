@@ -480,7 +480,7 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 {
 	struct db_context *result;
 
-	result = talloc(mem_ctx, struct db_context);
+	result = talloc_zero(mem_ctx, struct db_context);
 
 	if (result == NULL) {
 		return NULL;
@@ -494,7 +494,6 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	}
 
 	result->fetch_locked = db_rbt_fetch_locked;
-	result->try_fetch_locked = NULL;
 	result->traverse = db_rbt_traverse;
 	result->traverse_read = db_rbt_traverse_read;
 	result->get_seqnum = db_rbt_get_seqnum;
@@ -504,11 +503,8 @@ struct db_context *db_open_rbt(TALLOC_CTX *mem_ctx)
 	result->exists = db_rbt_exists;
 	result->wipe = db_rbt_wipe;
 	result->parse_record = db_rbt_parse_record;
-	result->lock_order = 0;
 	result->id = db_rbt_id;
 	result->name = "dbwrap rbt";
-	result->hash_size = 0;
-	result->stored_callback = NULL;
 
 	return result;
 }
