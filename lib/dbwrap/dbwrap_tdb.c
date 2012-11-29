@@ -478,8 +478,6 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	return result;
 
  fail:
-	if (result != NULL) {
-		TALLOC_FREE(result);
-	}
+	TALLOC_FREE(result);
 	return NULL;
 }
