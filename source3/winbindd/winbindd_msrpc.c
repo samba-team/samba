@@ -1158,23 +1158,19 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	struct policy_handle lsa_policy;
 	unsigned int orig_timeout = 0;
 	bool use_lookupnames4 = false;
+	bool retried = false;
 
-	if (domain->can_do_ncacn_ip_tcp) {
-		status = cm_connect_lsa_tcp(domain, mem_ctx, &cli);
-		if (NT_STATUS_IS_OK(status)) {
-			use_lookupnames4 = true;
-			goto lookup;
-		}
-		domain->can_do_ncacn_ip_tcp = false;
-	}
-	status = cm_connect_lsa(domain, mem_ctx, &cli, &lsa_policy);
-
+ connect:
+	status = cm_connect_lsat(domain, mem_ctx, &cli, &lsa_policy);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
- lookup:
 	b = cli->binding_handle;
+
+	if (cli->transport->transport == NCACN_IP_TCP) {
+		use_lookupnames4 = true;
+	}
 
 	/*
 	 * This call can take a long time
@@ -1199,7 +1195,8 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 	dcerpc_binding_handle_set_timeout(b, orig_timeout);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
+	    NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_ACCESS_DENIED)) {
 		/*
 		 * This can happen if the schannel key is not
 		 * valid anymore, we need to invalidate the
@@ -1207,6 +1204,10 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 		 * a netlogon connection first.
 		 */
 		invalidate_cm_connection(&domain->conn);
+		if (!retried) {
+			retried = true;
+			goto connect;
+		}
 		status = NT_STATUS_ACCESS_DENIED;
 	}
 
