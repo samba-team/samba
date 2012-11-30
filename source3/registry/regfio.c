@@ -1067,8 +1067,8 @@ static bool hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 		if ( !hbin_contains_offset( hbin, nk->sk_off ) ) {
 			sub_hbin = lookup_hbin_block( file, nk->sk_off );
 			if ( !sub_hbin ) {
-				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing sk_offset [0x%x]\n", 
-					nk->subkeys_off));
+				DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing sk_off [0x%x]\n",
+					nk->sk_off));
 				return False;
 			}
 		}
