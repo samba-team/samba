@@ -182,7 +182,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	torture_assert_ntstatus_ok(torture, status, "create write");
 
 	if (dest_size > 0) {
-		for (i = 0; i <= src_size - 8; i += 8) {
+		for (i = 0; i <= dest_size - 8; i += 8) {
 			SBVAL(buf, i, patt_hash(i));
 		}
 		status = smb2_util_write(tree, *dest_h, buf, 0, dest_size);
