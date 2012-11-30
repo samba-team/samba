@@ -792,8 +792,17 @@ NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 
 /* The following definitions come from libsmb/clisecdesc.c  */
 
+NTSTATUS cli_query_security_descriptor(struct cli_state *cli,
+				       uint16_t fnum,
+				       uint32_t sec_info,
+				       TALLOC_CTX *mem_ctx,
+				       struct security_descriptor **sd);
 NTSTATUS cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
 			  TALLOC_CTX *mem_ctx, struct security_descriptor **sd);
+NTSTATUS cli_set_security_descriptor(struct cli_state *cli,
+				     uint16_t fnum,
+				     uint32_t sec_info,
+				     const struct security_descriptor *sd);
 NTSTATUS cli_set_secdesc(struct cli_state *cli, uint16_t fnum,
 			 const struct security_descriptor *sd);
 
