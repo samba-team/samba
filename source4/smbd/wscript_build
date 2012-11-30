@@ -19,7 +19,6 @@ bld.SAMBA_LIBRARY('process_model',
 
 bld.SAMBA_BINARY('samba',
 	source='server.c',
-	manpages='samba.8',
 	subsystem_name='service',
 	deps='''events process_model service samba-hostconfig samba-util POPT_SAMBA
                 popt gensec registry ntptr ntvfs share cluster COMMON_SCHANNEL SECRETS''',
