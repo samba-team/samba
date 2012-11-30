@@ -354,7 +354,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 	if (strcmp(realm_canonical_ex, 
 		   talloc_asprintf(mem_ctx, "%s\n", dns_domain))!= 0) {
 		err_msg = talloc_asprintf(mem_ctx, "local Round trip on canonical ex name failed: %s != %s!",
-				          realm_canonical,
+				          realm_canonical_ex,
 				          talloc_asprintf(mem_ctx, "%s\n", dns_domain));
 		torture_fail(tctx, err_msg);
 	};
