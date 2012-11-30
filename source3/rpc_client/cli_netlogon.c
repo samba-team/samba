@@ -207,7 +207,10 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 
 		nt_lm_owf_gen(password, ntpassword.hash, lmpassword.hash);
 
-		if (cli->dc->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (cli->dc->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_encrypt(cli->dc, lmpassword.hash, 16);
+			netlogon_creds_aes_encrypt(cli->dc, ntpassword.hash, 16);
+		} else if (cli->dc->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			netlogon_creds_arcfour_crypt(cli->dc, lmpassword.hash, 16);
 			netlogon_creds_arcfour_crypt(cli->dc, ntpassword.hash, 16);
 		} else {
