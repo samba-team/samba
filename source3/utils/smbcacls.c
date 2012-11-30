@@ -1371,7 +1371,6 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 	popt_common_set_auth_info(auth_info);
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
-	popt_burn_cmdline_password(argc, argv);
 
 	poptSetOtherOptionHelp(pc, "//server1/share1 filename\nACLs look like: "
 		"'ACL:user:[ALLOWED|DENIED]/flags/permissions'");

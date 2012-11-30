@@ -608,7 +608,6 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 	popt_common_set_auth_info(smbcquotas_auth_info);
 
 	pc = poptGetContext("smbcquotas", argc, argv, long_options, 0);
-	popt_burn_cmdline_password(argc, argv);
 
 	poptSetOtherOptionHelp(pc, "//server1/share1");
 
