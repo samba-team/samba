@@ -376,7 +376,7 @@ struct ctdb_daemon_data {
 		ctdb_db->statistics.counter.total += value;				\
 		ctdb_db->statistics.counter.num++;					\
 											\
-		if (ctdb_db->ctdb->tunable.reclock_latency_ms != 0) {			\
+		if (ctdb_db->ctdb->tunable.log_latency_ms != 0) {			\
 			if (value*1000 > ctdb_db->ctdb->tunable.log_latency_ms) {	\
 				DEBUG(DEBUG_ERR,					\
 				      ("High latency %.6fs for operation %s on database %s\n",\
