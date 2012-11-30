@@ -494,6 +494,13 @@ wait_until_node_has_some_ips ()
     wait_until 60 node_has_some_ips "$@"
 }
 
+ip2ipmask ()
+{
+    _ip="$1"
+
+    ip addr show to "$_ip" | awk '$1 == "inet" { print $2 }'
+}
+
 #######################################
 
 daemons_stop ()
