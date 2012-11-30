@@ -33,8 +33,8 @@
 
 	<para><command>tdbbackup</command> is a tool that may be used to backup samba .tdb
 	files. This tool may also be used to verify the integrity of the .tdb files prior
-	to samba startup or during normal operation. If it finds file damage and it finds 
-	a prior backup the backup file will be restored. 
+	to samba startup or during normal operation. If it finds file damage and it finds
+	a prior backup the backup file will be restored.
 	</para>
 </refsect1>
 
@@ -128,7 +128,7 @@
 	The original Samba software and related utilities were created by Andrew Tridgell.
 	Samba is now developed by the Samba Team as an Open Source project similar to the way
 	the Linux kernel is developed.
-	</para> 
+	</para>
 
 	<para>The tdbbackup man page was written by John H Terpstra.</para>
 </refsect1>

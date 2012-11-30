@@ -94,20 +94,20 @@ def build(bld):
 
         bld.SAMBA_BINARY('tdbrestore',
                          'tools/tdbrestore.c',
-                         'tdb', manpages='manpages/tdbrestore.8')
+                         'tdb', manpages='man/tdbrestore.8')
 
         bld.SAMBA_BINARY('tdbdump',
                          'tools/tdbdump.c',
-                         'tdb', manpages='manpages/tdbdump.8')
+                         'tdb', manpages='man/tdbdump.8')
 
         bld.SAMBA_BINARY('tdbbackup',
                          'tools/tdbbackup.c',
                          'tdb',
-                         manpages='manpages/tdbbackup.8')
+                         manpages='man/tdbbackup.8')
 
         bld.SAMBA_BINARY('tdbtool',
                          'tools/tdbtool.c',
-                         'tdb', manpages='manpages/tdbtool.8')
+                         'tdb', manpages='man/tdbtool.8')
 
         # FIXME: This hardcoded list is stupid, stupid, stupid.
         bld.SAMBA_SUBSYSTEM('tdb-test-helpers',
