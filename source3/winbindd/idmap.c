@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "idmap.h"
-#include "passdb/machine_sid.h"
+#include "lib/util_sid_passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -427,11 +427,7 @@ struct idmap_domain *idmap_find_domain_with_sid(const char *domname,
 {
 	idmap_init();
 
-	if (sid_check_is_in_builtin(sid) ||
-	    sid_check_is_builtin(sid) ||
-	    sid_check_is_in_our_sam(sid) ||
-	    sid_check_is_our_sam(sid))
-	{
+	if (sid_check_is_for_passdb(sid)) {
 		return idmap_passdb_domain(NULL);
 	}
 
