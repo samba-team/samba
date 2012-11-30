@@ -3518,7 +3518,11 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 		owner_sid = &token->sids[PRIMARY_USER_SID_INDEX];
 	}
 	if (group_sid == NULL) {
-		group_sid = &token->sids[PRIMARY_GROUP_SID_INDEX];
+		if (token->num_sids == PRIMARY_GROUP_SID_INDEX) {
+			group_sid = &token->sids[PRIMARY_USER_SID_INDEX];
+		} else {
+			group_sid = &token->sids[PRIMARY_GROUP_SID_INDEX];
+		}
 	}
 
 	status = se_create_child_secdesc(frame,
