@@ -192,6 +192,10 @@ o   Günther Deschner <gd@samba.org>
     * BUG 9426: rpc_client: lookup nametype 0x20 in rpc_pipe_open_tcp_port().
 
 
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9433: spoolss: Fix segfault when "default devmode" is disabled.
+
+
 o   Amitay Isaacs <amitay@gmail.com>
     * BUG 9354: Fix format string vulnerability in an error message.
 
@@ -224,6 +228,7 @@ o   Andreas Schneider <asn@samba.org>
 
 o   Karolin Seeger <kseeger@samba.org>
     * BUG 9425: Do not build ntdb by default.
+    * BUG 9437: Warnings when building manpages with waf.
 
 
 CHANGES SINCE 4.0.0rc4
