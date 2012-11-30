@@ -515,15 +515,6 @@ static void popt_common_credentials_callback(poptContext con,
 				exit(ENOMEM);
 			}
 			set_cmdline_auth_info_username(auth_info, puser);
-
-			if ((p = strchr_m(puser,'%'))) {
-				size_t len;
-				*p = 0;
-				len = strlen(p+1);
-				set_cmdline_auth_info_password(auth_info, p+1);
-				memset(strchr_m(getenv("USER"),'%')+1,'X',len);
-			}
-			SAFE_FREE(puser);
 		}
 
 		if (getenv("PASSWD")) {
@@ -546,13 +537,13 @@ static void popt_common_credentials_callback(poptContext con,
 
 			if ((lp=strchr_m(puser,'%'))) {
 				size_t len;
-				*lp = 0;
+				*lp = '\0';
 				set_cmdline_auth_info_username(auth_info,
 							       puser);
 				set_cmdline_auth_info_password(auth_info,
 							       lp+1);
 				len = strlen(lp+1);
-				memset(strchr_m(arg,'%')+1,'X',len);
+				memset(lp + 1, '\0', len);
 			} else {
 				set_cmdline_auth_info_username(auth_info,
 							       puser);
