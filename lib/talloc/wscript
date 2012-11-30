@@ -108,7 +108,7 @@ def build(bld):
                           pc_files='talloc.pc',
                           public_headers_install=not private_library,
                           private_library=private_library,
-                          manpages='talloc.3')
+                          manpages='man/talloc.3')
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL') and not bld.env.disable_python:
         bld.SAMBA_LIBRARY('pytalloc-util',
