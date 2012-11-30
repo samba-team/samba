@@ -3462,6 +3462,10 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	bool inheritable_components = false;
 	bool try_builtin_administrators = false;
 	const struct dom_sid *BA_U_sid = NULL;
+	const struct dom_sid *BA_G_sid = NULL;
+	bool try_system = false;
+	const struct dom_sid *SY_U_sid = NULL;
+	const struct dom_sid *SY_G_sid = NULL;
 	size_t size = 0;
 
 	if (!parent_dirname(frame, fsp->fsp_name->base_name, &parent_name, NULL)) {
@@ -3507,6 +3511,16 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 			try_builtin_administrators = true;
 		} else if (security_token_is_system(token)) {
 			try_builtin_administrators = true;
+			try_system = true;
+		}
+	}
+
+	if (group_sid == NULL &&
+	    token->num_sids == PRIMARY_GROUP_SID_INDEX)
+	{
+		if (security_token_is_system(token)) {
+			try_builtin_administrators = true;
+			try_system = true;
 		}
 	}
 
@@ -3520,9 +3534,37 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 			switch (ids.type) {
 			case ID_TYPE_BOTH:
 				BA_U_sid = &global_sid_Builtin_Administrators;
+				BA_G_sid = &global_sid_Builtin_Administrators;
 				break;
 			case ID_TYPE_UID:
 				BA_U_sid = &global_sid_Builtin_Administrators;
+				break;
+			case ID_TYPE_GID:
+				BA_G_sid = &global_sid_Builtin_Administrators;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	if (try_system) {
+		struct unixid ids;
+		bool ok;
+
+		ZERO_STRUCT(ids);
+		ok = sids_to_unixids(&global_sid_System, 1, &ids);
+		if (ok) {
+			switch (ids.type) {
+			case ID_TYPE_BOTH:
+				SY_U_sid = &global_sid_System;
+				SY_G_sid = &global_sid_System;
+				break;
+			case ID_TYPE_UID:
+				SY_U_sid = &global_sid_System;
+				break;
+			case ID_TYPE_GID:
+				SY_G_sid = &global_sid_System;
 				break;
 			default:
 				break;
@@ -3532,6 +3574,18 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 
 	if (owner_sid == NULL) {
 		owner_sid = BA_U_sid;
+	}
+
+	if (owner_sid == NULL) {
+		owner_sid = SY_U_sid;
+	}
+
+	if (group_sid == NULL) {
+		group_sid = SY_G_sid;
+	}
+
+	if (try_system && group_sid == NULL) {
+		group_sid = BA_G_sid;
 	}
 
 	if (owner_sid == NULL) {
