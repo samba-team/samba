@@ -41,6 +41,8 @@ static int test_args;
 static int numeric;
 
 static int sddl;
+static int query_sec_info = -1;
+static int set_sec_info = -1;
 
 static const char *domain_sid = NULL;
 
@@ -835,11 +837,27 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 	uint16_t fnum = (uint16_t)-1;
 	struct security_descriptor *sd;
 	NTSTATUS status;
+	uint32_t sec_info;
+	uint32_t desired_access = 0;
 
-	/* The desired access below is the only one I could find that works
-	   with NT4, W2KP and Samba */
+	if (query_sec_info == -1) {
+		sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
+	} else {
+		sec_info = query_sec_info;
+	}
 
-	status = cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
+	if (sec_info & (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL)) {
+		desired_access |= SEC_STD_READ_CONTROL;
+	}
+	if (sec_info & SECINFO_SACL) {
+		desired_access |= SEC_FLAG_SYSTEM_SECURITY;
+	}
+
+	if (desired_access == 0) {
+		desired_access |= SEC_STD_READ_CONTROL;
+	}
+
+	status = cli_ntcreate(cli, filename, 0, desired_access,
 			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
 			      FILE_OPEN, 0x0, 0x0, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -847,7 +865,8 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 		return NULL;
 	}
 
-	status = cli_query_secdesc(cli, fnum, talloc_tos(), &sd);
+	status = cli_query_security_descriptor(cli, fnum, sec_info,
+					       talloc_tos(), &sd);
 
 	cli_close(cli, fnum);
 
@@ -869,16 +888,36 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
         bool result=true;
 	NTSTATUS status;
 	uint32_t desired_access = 0;
+	uint32_t sec_info;
+
+	if (set_sec_info == -1) {
+		sec_info = 0;
+
+		if (sd->dacl || (sd->type & SEC_DESC_DACL_PRESENT)) {
+			sec_info |= SECINFO_DACL;
+		}
+		if (sd->sacl || (sd->type & SEC_DESC_SACL_PRESENT)) {
+			sec_info |= SECINFO_SACL;
+		}
+		if (sd->owner_sid) {
+			sec_info |= SECINFO_OWNER;
+		}
+		if (sd->group_sid) {
+			sec_info |= SECINFO_GROUP;
+		}
+	} else {
+		sec_info = set_sec_info;
+	}
 
 	/* Make the desired_access more specific. */
-	if (sd->dacl) {
-		desired_access |= WRITE_DAC_ACCESS;
+	if (sec_info & SECINFO_DACL) {
+		desired_access |= SEC_STD_WRITE_DAC;
 	}
-	if (sd->sacl) {
+	if (sec_info & SECINFO_SACL) {
 		desired_access |= SEC_FLAG_SYSTEM_SECURITY;
 	}
-	if (sd->owner_sid || sd->group_sid) {
-		desired_access |= WRITE_OWNER_ACCESS;
+	if (sec_info & (SECINFO_OWNER | SECINFO_GROUP)) {
+		desired_access |= SEC_STD_WRITE_OWNER;
 	}
 
 	status = cli_ntcreate(cli, filename, 0,
@@ -890,7 +929,7 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 		return false;
 	}
 
-	status = cli_set_secdesc(cli, fnum, sd);
+	status = cli_set_security_descriptor(cli, fnum, sec_info, sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: security description set failed: %s\n",
                        nt_errstr(status));
@@ -1339,6 +1378,12 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		{ "inherit", 'I', POPT_ARG_STRING, NULL, 'I', "Inherit allow|remove|copy" },
 		{ "numeric", 0, POPT_ARG_NONE, &numeric, 1, "Don't resolve sids or masks to names" },
 		{ "sddl", 0, POPT_ARG_NONE, &sddl, 1, "Output and input acls in sddl format" },
+		{ "query-security-info", 0, POPT_ARG_INT, &query_sec_info, 1,
+		  "The security-info flags for queries"
+		},
+		{ "set-security-info", 0, POPT_ARG_INT, &set_sec_info, 1,
+		  "The security-info flags for modifications"
+		},
 		{ "test-args", 't', POPT_ARG_NONE, &test_args, 1, "Test arguments"},
 		{ "domain-sid", 0, POPT_ARG_STRING, &domain_sid, 0, "Domain SID for sddl", "SID"},
 		POPT_COMMON_SAMBA
