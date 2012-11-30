@@ -825,6 +825,7 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		lib/util_wellknown.o lib/util_builtin.o passdb/pdb_compat.o \
+		lib/util_sid_passdb.o \
 		lib/util_unixsids.o passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ \
 		passdb/account_pol.o $(PRIVILEGES_OBJ) \
