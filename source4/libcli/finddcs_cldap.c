@@ -29,6 +29,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/composite/composite.h"
+#include "lib/util/util_net.h"
 
 struct finddcs_cldap_state {
 	struct tevent_context *ev;
@@ -54,6 +55,11 @@ static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
 				     struct resolve_context *resolve_ctx,
 				     struct tevent_context *event_ctx);
 static void finddcs_cldap_nbt_resolved(struct composite_context *ctx);
+static bool finddcs_cldap_name_lookup(struct finddcs_cldap_state *state,
+				      struct finddcs *io,
+				      struct resolve_context *resolve_ctx,
+				      struct tevent_context *event_ctx);
+static void finddcs_cldap_name_resolved(struct composite_context *ctx);
 static void finddcs_cldap_next_server(struct finddcs_cldap_state *state);
 static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct finddcs *io);
 
@@ -97,9 +103,17 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (io->in.server_address) {
-		DEBUG(4,("finddcs: searching for a DC by IP %s\n", io->in.server_address));
-		if (!finddcs_cldap_ipaddress(state, io)) {
-			return tevent_req_post(req, event_ctx);
+		if (is_ipaddress(io->in.server_address)) {
+			DEBUG(4,("finddcs: searching for a DC by IP %s\n",
+				 io->in.server_address));
+			if (!finddcs_cldap_ipaddress(state, io)) {
+				return tevent_req_post(req, event_ctx);
+			}
+		} else {
+			if (!finddcs_cldap_name_lookup(state, io, resolve_ctx,
+						       event_ctx)) {
+				return tevent_req_post(req, event_ctx);
+			}
 		}
 	} else if (io->in.domain_name) {
 		if (strchr(state->domain_name, '.')) {
@@ -201,6 +215,24 @@ static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
 		return false;
 	}
 	creq->async.fn = finddcs_cldap_nbt_resolved;
+	creq->async.private_data = state;
+	return true;
+}
+
+static bool finddcs_cldap_name_lookup(struct finddcs_cldap_state *state,
+				      struct finddcs *io,
+				      struct resolve_context *resolve_ctx,
+				      struct tevent_context *event_ctx)
+{
+	struct composite_context *creq;
+	struct nbt_name name;
+
+	make_nbt_name(&name, io->in.server_address, NBT_NAME_SERVER);
+	creq = resolve_name_send(resolve_ctx, state, &name, event_ctx);
+	if (tevent_req_nomem(creq, state->req)) {
+		return false;
+	}
+	creq->async.fn = finddcs_cldap_name_resolved;
 	creq->async.private_data = state;
 	return true;
 }
@@ -310,6 +342,29 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 		 state->netlogon->out.netlogon.data.nt5_ex.server_type));
 
 	tevent_req_done(state->req);
+}
+
+static void finddcs_cldap_name_resolved(struct composite_context *ctx)
+{
+	struct finddcs_cldap_state *state =
+		talloc_get_type(ctx->async.private_data, struct finddcs_cldap_state);
+	NTSTATUS status;
+	unsigned i;
+
+	status = resolve_name_multiple_recv(ctx, state, &state->srv_addresses);
+	if (tevent_req_nterror(state->req, status)) {
+		DEBUG(2,("finddcs: No matching server found\n"));
+		return;
+	}
+
+	for (i=0; state->srv_addresses[i]; i++) {
+		DEBUG(4,("finddcs: response %u at '%s'\n",
+		         i, state->srv_addresses[i]));
+	}
+
+	state->srv_address_index = 0;
+
+	finddcs_cldap_next_server(state);
 }
 
 /*
