@@ -323,6 +323,50 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 			SEC_DESC_SERVER_SECURITY);
 	}
 
+
+	if (!(sd_flags & SECINFO_OWNER) && user_descriptor) {
+		user_descriptor->owner_sid = NULL;
+
+		/*
+		 * We need the correct owner sid
+		 * when calculating the DACL or SACL
+		 */
+		if (old_descriptor) {
+			user_descriptor->owner_sid = old_descriptor->owner_sid;
+		}
+	}
+	if (!(sd_flags & SECINFO_GROUP) && user_descriptor) {
+		user_descriptor->group_sid = NULL;
+
+		/*
+		 * We need the correct group sid
+		 * when calculating the DACL or SACL
+		 */
+		if (old_descriptor) {
+			user_descriptor->group_sid = old_descriptor->group_sid;
+		}
+	}
+	if (!(sd_flags & SECINFO_DACL) && user_descriptor) {
+		user_descriptor->dacl = NULL;
+
+		/*
+		 * We add SEC_DESC_DACL_PROTECTED so that
+		 * create_security_descriptor() skips
+		 * the unused inheritance calculation
+		 */
+		user_descriptor->type |= SEC_DESC_DACL_PROTECTED;
+	}
+	if (!(sd_flags & SECINFO_SACL) && user_descriptor) {
+		user_descriptor->sacl = NULL;
+
+		/*
+		 * We add SEC_DESC_SACL_PROTECTED so that
+		 * create_security_descriptor() skips
+		 * the unused inheritance calculation
+		 */
+		user_descriptor->type |= SEC_DESC_SACL_PROTECTED;
+	}
+
 	default_owner = get_default_ag(mem_ctx, dn,
 				       session_info->security_token, ldb);
 	default_group = get_default_group(mem_ctx, ldb, default_owner);
