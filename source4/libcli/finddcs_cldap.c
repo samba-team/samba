@@ -53,7 +53,7 @@ static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
 				     struct finddcs *io,
 				     struct resolve_context *resolve_ctx,
 				     struct tevent_context *event_ctx);
-static void finddcs_cldap_name_resolved(struct composite_context *ctx);
+static void finddcs_cldap_nbt_resolved(struct composite_context *ctx);
 static void finddcs_cldap_next_server(struct finddcs_cldap_state *state);
 static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct finddcs *io);
 
@@ -200,7 +200,7 @@ static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
 	if (tevent_req_nomem(creq, state->req)) {
 		return false;
 	}
-	creq->async.fn = finddcs_cldap_name_resolved;
+	creq->async.fn = finddcs_cldap_nbt_resolved;
 	creq->async.private_data = state;
 	return true;
 }
@@ -315,27 +315,23 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 /*
    handle NBT name lookup reply
  */
-static void finddcs_cldap_name_resolved(struct composite_context *ctx)
+static void finddcs_cldap_nbt_resolved(struct composite_context *ctx)
 {
 	struct finddcs_cldap_state *state =
 		talloc_get_type(ctx->async.private_data, struct finddcs_cldap_state);
-	const char *address;
 	NTSTATUS status;
+	unsigned i;
 
-	status = resolve_name_recv(ctx, state, &address);
+	status = resolve_name_multiple_recv(ctx, state, &state->srv_addresses);
 	if (tevent_req_nterror(state->req, status)) {
 		DEBUG(2,("finddcs: No matching NBT <1c> server found\n"));
 		return;
 	}
 
-	DEBUG(4,("finddcs: Found NBT <1c> server at %s\n", address));
-
-	state->srv_addresses = talloc_array(state, const char *, 2);
-	if (tevent_req_nomem(state->srv_addresses, state->req)) {
-		return;
+	for (i=0; state->srv_addresses[i]; i++) {
+		DEBUG(4,("finddcs: NBT <1c> response %u at '%s'\n",
+		         i, state->srv_addresses[i]));
 	}
-	state->srv_addresses[0] = address;
-	state->srv_addresses[1] = NULL;
 
 	state->srv_address_index = 0;
 
