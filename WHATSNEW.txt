@@ -168,6 +168,10 @@ smb.conf changes
 CHANGES SINCE 4.0.0rc5
 ======================
 
+With this release candidate the ACLs in the Active Directory
+are also checked on searches by default. The automatic inheritance
+of ACLs is also correclty recalcucation on changes now.
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 9236: ACL masks incorrectly applied when setting ACLs.
     * BUG 9374: Allow smb2.acls torture test to pass against smbd with a POSIX
