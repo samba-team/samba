@@ -1083,45 +1083,18 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 
 static bool legacy_sid_to_unixid(const struct dom_sid *psid, struct unixid *id)
 {
-	GROUP_MAP *map;
 	bool ret;
 
 	become_root();
 	ret = pdb_sid_to_id(psid, id);
 	unbecome_root();
 
-	if (ret) {
-		goto done;
-	}
-
-	if ((sid_check_is_in_builtin(psid) ||
-	     sid_check_is_in_wellknown_domain(psid))) {
-		map = talloc_zero(NULL, GROUP_MAP);
-		if (!map) {
-			return false;
-		}
-
-		become_root();
-		ret = pdb_getgrsid(map, *psid);
-		unbecome_root();
-
-		if (ret) {
-			id->id = map->gid;
-			id->type = ID_TYPE_GID;
-			TALLOC_FREE(map);
-			goto done;
-		}
-		TALLOC_FREE(map);
+	if (!ret) {
 		DEBUG(10,("LEGACY: mapping failed for sid %s\n",
 			  sid_string_dbg(psid)));
 		return false;
 	}
 
-	DEBUG(10,("LEGACY: mapping failed for sid %s\n",
-		  sid_string_dbg(psid)));
-	return false;
-
-done:
 	return true;
 }
 
