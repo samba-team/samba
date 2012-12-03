@@ -908,6 +908,9 @@ NTSTATUS pdb_set_secret(const char *secret_name,
 			DATA_BLOB *secret_old,
 			struct security_descriptor *sd);
 NTSTATUS pdb_delete_secret(const char *secret_name);
+bool pdb_sid_to_id_unix_users_and_groups(const struct dom_sid *sid,
+					 struct unixid *id);
+
 
 /* The following definitions come from passdb/pdb_util.c  */
 

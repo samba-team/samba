@@ -1421,6 +1421,32 @@ static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
 	return true;
 }
 
+/**
+ * The "Unix User" and "Unix Group" domains have a special
+ * id mapping that is a rid-algorithm with range starting at 0.
+ */
+_PRIVATE_ bool pdb_sid_to_id_unix_users_and_groups(const struct dom_sid *sid,
+						   struct unixid *id)
+{
+	uint32_t rid;
+
+	id->id = -1;
+
+	if (sid_peek_check_rid(&global_sid_Unix_Users, sid, &rid)) {
+		id->id = rid;
+		id->type = ID_TYPE_UID;
+		return true;
+	}
+
+	if (sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid)) {
+		id->id = rid;
+		id->type = ID_TYPE_GID;
+		return true;
+	}
+
+	return false;
+}
+
 static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 				  const struct dom_sid *sid,
 				  struct unixid *id)
@@ -1467,22 +1493,12 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	/* check for "Unix User" */
-
-	if ( sid_peek_check_rid(&global_sid_Unix_Users, sid, &rid) ) {
-		id->id = rid;
-		id->type = ID_TYPE_UID;
-		ret = True;		
-		goto done;		
-	}
-
-	/* check for "Unix Group" */
-
-	if ( sid_peek_check_rid(&global_sid_Unix_Groups, sid, &rid) ) {
-		id->id = rid;
-		id->type = ID_TYPE_GID;
-		ret = True;		
-		goto done;		
+	/*
+	 * "Unix User" and "Unix Group"
+	 */
+	ret = pdb_sid_to_id_unix_users_and_groups(sid, id);
+	if (ret == true) {
+		goto done;
 	}
 
 	/* BUILTIN */
