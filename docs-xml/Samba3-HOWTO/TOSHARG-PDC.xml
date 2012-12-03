@@ -309,7 +309,7 @@ Ideally, the implementation of SSO should reduce complexity and reduce administa
 The initial goal of many network administrators is often to create and use a centralized identity management
 system. It is often assumed that such a centralized system will use a single authentication infrastructure
 that can be used by all information systems. The Microsoft Windows NT4 security domain architecture and the
-Micrsoft active directory service are often put forward as the ideal foundation for such a system. It is
+Microsoft active directory service are often put forward as the ideal foundation for such a system. It is
 conceptually simple to install an external authentication agent on each of the disparate infromation systems
 that can then use the Microsoft (NT4 domain or ads service) for user authentication and access control. The
 wonderful dream of a single centralized authentication service is commonly broken when realities are realized.
