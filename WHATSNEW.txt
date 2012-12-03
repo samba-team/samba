@@ -202,6 +202,8 @@ o   Amitay Isaacs <amitay@gmail.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 9422: Large read requests cause server to issue malformed reply.
+    * BUG 9440: Do not rely on dbwrap_record_get_value to return a talloc
+      object.
 
 
 o   Stefan Metzmacher <metze@samba.org>
