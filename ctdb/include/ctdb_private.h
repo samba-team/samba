@@ -501,7 +501,6 @@ struct ctdb_context {
 	pid_t recoverd_pid;
 	pid_t syslogd_pid;
 	bool done_startup;
-	const char *node_ip;
 	struct ctdb_monitor_state *monitor;
 	struct ctdb_log_state *log;
 	int start_as_disabled;

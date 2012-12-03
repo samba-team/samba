@@ -41,7 +41,6 @@ static struct {
 	const char *db_dir_state;
 	const char *public_interface;
 	const char *single_public_ip;
-	const char *node_ip;
 	int         valgrinding;
 	int         nosetsched;
 	int         use_syslog;
@@ -126,7 +125,6 @@ int main(int argc, const char *argv[])
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
-		{ "node-ip", 0, POPT_ARG_STRING, &options.node_ip, 0, "node ip", "ip-address"},
 		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
 		{ "debug-hung-script", 0, POPT_ARG_STRING, &options.debug_hung_script, 0, "debug script for hung eventscripts", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
@@ -246,20 +244,6 @@ int main(int argc, const char *argv[])
 
 	/* tell ctdb what nodes are available */
 	ctdb_load_nodes_file(ctdb);
-
-	/* if a node-ip was specified, verify that it exists in the
-	   nodes file
-	*/
-	if (options.node_ip != NULL) {
-		DEBUG(DEBUG_NOTICE,("IP for this node is %s\n", options.node_ip));
-		ret = ctdb_ip_to_nodeid(ctdb, options.node_ip);
-		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("The specified node-ip:%s is not a valid node address. Exiting.\n", options.node_ip));
-			exit(1);
-		}
-		ctdb->node_ip = options.node_ip;
-		DEBUG(DEBUG_NOTICE,("This is node %d\n", ret));
-	}
 
 	if (options.db_dir) {
 		ret = ctdb_set_tdb_dir(ctdb, options.db_dir);
