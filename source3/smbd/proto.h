@@ -718,9 +718,6 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  TALLOC_CTX *mem_ctx,
 			  struct security_descriptor **ppdesc);
 NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid);
-NTSTATUS append_parent_acl(files_struct *fsp,
-				const struct security_descriptor *pcsd,
-				struct security_descriptor **pp_new_sd);
 NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd);
 int get_acl_group_bits( connection_struct *conn, const char *fname, mode_t *mode );
 int chmod_acl(connection_struct *conn, const char *name, mode_t mode);
