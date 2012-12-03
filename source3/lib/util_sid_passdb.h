@@ -22,6 +22,12 @@
 #define __LIB_UTIL_SID_PASSDB_H__
 
 /**
+ * check whether this is an object-sid that should
+ * be treated by the passdb, e.g. for id-mapping.
+ */
+bool sid_check_object_is_for_passdb(const struct dom_sid *sid);
+
+/**
  * check whether this is an object- or domain-sid that should
  * be treated by the passdb, e.g. for id-mapping.
  */
