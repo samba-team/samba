@@ -1425,8 +1425,8 @@ static bool pdb_default_gid_to_sid(struct pdb_methods *methods, gid_t gid,
  * The "Unix User" and "Unix Group" domains have a special
  * id mapping that is a rid-algorithm with range starting at 0.
  */
-_PRIVATE_ bool pdb_sid_to_id_unix_users_and_groups(const struct dom_sid *sid,
-						   struct unixid *id)
+bool pdb_sid_to_id_unix_users_and_groups(const struct dom_sid *sid,
+					 struct unixid *id)
 {
 	uint32_t rid;
 
