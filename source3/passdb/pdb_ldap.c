@@ -53,6 +53,7 @@
 #include "lib/winbind_util.h"
 #include "librpc/gen_ndr/idmap.h"
 #include "lib/param/loadparm.h"
+#include "lib/util_sid_passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -4915,9 +4916,8 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	TALLOC_CTX *mem_ctx;
 
-	if (!sid_check_is_in_our_sam(sid)) {
-		/* Not our SID */
-		return False;
+	if (!sid_check_object_is_for_passdb(sid)) {
+		return false;
 	}
 
 	mem_ctx = talloc_new(NULL);
