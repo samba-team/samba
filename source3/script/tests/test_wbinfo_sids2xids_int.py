@@ -34,7 +34,7 @@ gids=[]
 for line in sids2xids.split('\n'):
     result = line.split(' ')[2:]
 
-    if result[0] == 'gid':
+    if result[0] == 'gid' or result[0] == 'uid/gid':
         gid = result[1]
     else:
         gid = ''
