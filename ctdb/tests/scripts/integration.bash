@@ -575,7 +575,7 @@ daemons_start_1 ()
     fi
 
     local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
-    local ctdb_options="--reclock=${TEST_VAR_DIR}/rec.lock --nlist $CTDB_NODES --nopublicipcheck --node-ip=${node_ip} --event-script-dir=${TEST_VAR_DIR}/events.d --logfile=${TEST_VAR_DIR}/daemon.${pnn}.log -d 3 --log-ringbuf-size=10000 --dbdir=${TEST_VAR_DIR}/test.db --dbdir-persistent=${TEST_VAR_DIR}/test.db/persistent --dbdir-state=${TEST_VAR_DIR}/test.db/state"
+    local ctdb_options="--reclock=${TEST_VAR_DIR}/rec.lock --nlist $CTDB_NODES --nopublicipcheck --listen=${node_ip} --event-script-dir=${TEST_VAR_DIR}/events.d --logfile=${TEST_VAR_DIR}/daemon.${pnn}.log -d 3 --log-ringbuf-size=10000 --dbdir=${TEST_VAR_DIR}/test.db --dbdir-persistent=${TEST_VAR_DIR}/test.db/persistent --dbdir-state=${TEST_VAR_DIR}/test.db/state"
 
     if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
         ctdb_options="$ctdb_options --public-interface=lo"
