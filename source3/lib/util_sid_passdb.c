@@ -23,6 +23,34 @@
 #include "passdb/machine_sid.h"
 
 /**
+ * check whether this is an object-sid that should
+ * be treated by the passdb, e.g. for id-mapping.
+ */
+bool sid_check_object_is_for_passdb(const struct dom_sid *sid)
+{
+	if (sid_check_is_in_our_sam(sid)) {
+		return true;
+	}
+
+	if (sid_check_is_in_builtin(sid)) {
+		return true;
+	}
+
+	if (sid_check_is_in_wellknown_domain(sid)) {
+		return true;
+	}
+
+	if (sid_check_is_in_unix_users(sid)) {
+		return true;
+	}
+
+	if (sid_check_is_in_unix_groups(sid)) {
+		return true;
+	}
+
+	return false;
+}
+/**
  * check whether this is an object- or domain-sid that should
  * be treated by the passdb, e.g. for id-mapping.
  */
