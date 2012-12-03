@@ -4920,6 +4920,11 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 		return false;
 	}
 
+	ret = pdb_sid_to_id_unix_users_and_groups(sid, id);
+	if (ret == true) {
+		return true;
+	}
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("talloc_new failed\n"));
