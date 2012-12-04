@@ -1029,6 +1029,26 @@ failed:
 	return -1;	
 }
 
+static void initialise_node_flags (struct ctdb_context *ctdb)
+{
+	if (ctdb->pnn == -1) {
+		ctdb_fatal(ctdb, "PNN is set to -1 (unknown value)");
+	}
+
+	ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_DISCONNECTED;
+
+	/* do we start out in DISABLED mode? */
+	if (ctdb->start_as_disabled != 0) {
+		DEBUG(DEBUG_INFO, ("This node is configured to start in DISABLED state\n"));
+		ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_DISABLED;
+	}
+	/* do we start out in STOPPED mode? */
+	if (ctdb->start_as_stopped != 0) {
+		DEBUG(DEBUG_INFO, ("This node is configured to start in STOPPED state\n"));
+		ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
+	}
+}
+
 static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 				      void *private_data)
 {
@@ -1189,6 +1209,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	if (ctdb->methods->initialise(ctdb) != 0) {
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
+
+	initialise_node_flags(ctdb);
+
 	if (public_address_list) {
 		ctdb->public_addresses_file = public_address_list;
 		ret = ctdb_set_public_addresses(ctdb, true);

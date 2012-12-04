@@ -242,6 +242,16 @@ int main(int argc, const char *argv[])
 		ctdb->capabilities |= CTDB_CAP_LVS;
 	}
 
+	/* Initialise this node's PNN to the unknown value.  This will
+	 * be set to the correct value by either ctdb_add_node() as
+	 * part of loading the nodes file or by
+	 * ctdb_tcp_listen_automatic() when the transport is
+	 * initialised.  At some point we should de-optimise this and
+	 * pull it out into ctdb_start_daemon() so it is done clearly
+	 * and only in one place.
+	 */
+	ctdb->pnn = -1;
+
 	/* tell ctdb what nodes are available */
 	ctdb_load_nodes_file(ctdb);
 
