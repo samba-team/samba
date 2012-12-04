@@ -160,111 +160,132 @@
 		external program to the helper are:</para>
 		<variablelist>
 		  <varlistentry>
-		  <term>Username</term>
-		  
-                <listitem><para>The username, expected to be in
-                Samba's <smbconfoption name="unix charset"/>.
-                </para>
-
-		      <para><example>Username: bob</example></para>
-		      <para><example>Username:: Ym9i</example></para>
-		    </listitem></varlistentry>
-
-		  <varlistentry>
-		  <term>NT-Domain</term>
-                <listitem><para>The user's domain, expected to be in
-                Samba's <smbconfoption name="unix charset"/>.
-                </para>
-
-		      <para><example>NT-Domain: WORKGROUP</example></para>
-		      <para><example>NT-Domain:: V09SS0dST1VQ</example></para>
-		    </listitem></varlistentry>
+		    <term>Username</term>
+		    <listitem><para>The username, expected to be in
+		    Samba's <smbconfoption name="unix charset"/>.
+		    </para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>Username: bob</para>
+		      <para>Username:: Ym9i</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
 		  <varlistentry>
-		  <term>Full-Username</term>
-                <listitem><para>The fully qualified username, expected to be in
-                Samba's <smbconfoption name="unix charset"/> and qualified with the
-                <smbconfoption name="winbind separator"/>.
-                </para>
+		    <term>NT-Domain</term>
+		    <listitem><para>The user's domain, expected to be in
+		    Samba's <smbconfoption name="unix charset"/>.
+		    </para>
 
-		      <para><example>Full-Username: WORKGROUP\bob</example></para>
-		      <para><example>Full-Username:: V09SS0dST1VQYm9i</example></para>
-		    </listitem></varlistentry>
-
-		  <varlistentry>
-		  <term>LANMAN-Challenge</term>
-		  
-                <listitem><para>The 8 byte <command>LANMAN Challenge</command> value,
-                generated randomly by the server, or (in cases such as
-                MSCHAPv2) generated in some way by both the server and
-                the client.
-                </para>	
-		      <para><example>LANMAN-Challenge: 0102030405060708</example></para>
-		    </listitem></varlistentry>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>NT-Domain: WORKGROUP</para>
+		      <para>NT-Domain:: V09SS0dST1VQ</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
 		  <varlistentry>
-		  <term>LANMAN-Response</term>
-		  
-                <listitem><para>The 24 byte <command>LANMAN Response</command> value,
-                calculated from the user's password and the supplied
-                <command>LANMAN Challenge</command>.  Typically, this
-                is provided over the network by a client wishing to authenticate.
-                </para>	
-		      <para><example>LANMAN-Response: 0102030405060708090A0B0C0D0E0F101112131415161718</example></para>
-
-		    </listitem></varlistentry>
-
-		  <varlistentry>
-		  <term>NT-Response</term>
-                <listitem><para>The >= 24 byte <command>NT Response</command>
-                calculated from the user's password and the supplied
-                <command>LANMAN Challenge</command>.  Typically, this is 
-                provided over the network by a client wishing to authenticate.
-                 </para>	
-		      <para><example>NT-Response: 0102030405060708090A0B0C0D0E0F101112131415161718</example></para>
-
-		    </listitem></varlistentry>
+		    <term>Full-Username</term>
+		    <listitem><para>The fully qualified username, expected to be
+		    in Samba's <smbconfoption name="unix charset"/> and qualified
+		    with the <smbconfoption name="winbind separator"/>.</para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>Full-Username: WORKGROUP\bob</para>
+		      <para>Full-Username:: V09SS0dST1VQYm9i</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
 		  <varlistentry>
-		  <term>Password</term>
-                <listitem><para>The user's password.  This would be
-                provided by a network client, if the helper is being
-                used in a legacy situation that exposes plaintext
-                passwords in this way.
-                 </para>	
-		      <para><example>Password: samba2</example></para>
-		      <para><example>Password:: c2FtYmEy</example></para>
-
-		    </listitem></varlistentry>
-
-		  <varlistentry>
-		  <term>Request-User-Session-Key</term>
-                <listitem><para>Upon successful authenticaiton, return
-                the user session key associated with the login.
-                 </para>	
-		      <para><example>Request-User-Session-Key: Yes</example></para>
-
-		    </listitem></varlistentry>
+		    <term>LANMAN-Challenge</term>
+		    <listitem><para>The 8 byte <command>LANMAN Challenge</command>
+		    value, generated randomly by the server, or (in cases such
+		    as MSCHAPv2) generated in some way by both the server and
+		    the client.</para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>LANMAN-Challenge: 0102030405060708</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
 		  <varlistentry>
-		  <term>Request-LanMan-Session-Key</term>
-                <listitem><para>Upon successful authenticaiton, return
-                the LANMAN session key associated with the login.
-                 </para>	
-		      <para><example>Request-LanMan-Session-Key: Yes</example></para>
+		    <term>LANMAN-Response</term>
+		    <listitem><para>The 24 byte <command>LANMAN Response</command> value,
+		    calculated from the user's password and the supplied
+		    <command>LANMAN Challenge</command>.  Typically, this
+		    is provided over the network by a client wishing to authenticate.
+		    </para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>LANMAN-Response: 0102030405060708090A0B0C0D0E0F101112131415161718</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
-		    </listitem></varlistentry>
+		  <varlistentry>
+		    <term>NT-Response</term>
+		    <listitem><para>The >= 24 byte <command>NT Response</command>
+		    calculated from the user's password and the supplied
+		    <command>LANMAN Challenge</command>.  Typically, this is
+		    provided over the network by a client wishing to authenticate.
+		    </para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>NT-Response: 0102030405060708090A0B0C0D0E0F10111213141516171</para>
+		      </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
-		<para><warning>Implementers should take care to base64 encode
-		any data (such as usernames/passwords) that may contain malicous user data, such as
-		a newline.  They may also need to decode strings from
-		the helper, which likewise may have been base64 encoded.</warning></para>
-	</variablelist>
+		  <varlistentry>
+		    <term>Password</term>
+		    <listitem><para>The user's password.  This would be
+		    provided by a network client, if the helper is being
+		    used in a legacy situation that exposes plaintext
+		    passwords in this way.</para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>Password: samba2</para>
+		      <para>Password:: c2FtYmEy</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
 
+		  <varlistentry>
+		    <term>Request-User-Session-Key</term>
+		    <listitem><para>Upon successful authenticaiton, return
+		    the user session key associated with the login.</para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>Request-User-Session-Key: Yes</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
+
+		  <varlistentry>
+		    <term>Request-LanMan-Session-Key</term>
+		    <listitem><para>Upon successful authenticaiton, return
+		    the LANMAN session key associated with the login.
+		    </para>
+		    <varlistentry>
+		      <term>Examples:</term>
+		      <para>Request-LanMan-Session-Key: Yes</para>
+		    </varlistentry>
+		    </listitem>
+		  </varlistentry>
+
+		</variablelist>
                 </listitem>
 		</varlistentry>
-	</variablelist>
-	</listitem>
+		</variablelist>
+		  <warning><para>Implementers should take care to base64 encode
+		  any data (such as usernames/passwords) that may contain malicous user data, such as
+		  a newline. They may also need to decode strings from
+		  the helper, which likewise may have been base64 encoded.</para></warning>
+		</listitem>
       </varlistentry>
       
       <varlistentry>
