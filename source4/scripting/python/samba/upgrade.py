@@ -802,6 +802,8 @@ Please fix this account before attempting to upgrade again
                     homes[username] = pwd.getpwnam(username).pw_dir
             except KeyError:
                 pass
+            except IndexError:
+                pass
 
             try:
                 if ldap:
@@ -810,6 +812,8 @@ Please fix this account before attempting to upgrade again
                     shells[username] = pwd.getpwnam(username).pw_shell
             except KeyError:
                 pass
+            except IndexError:
+                pass
 
             try:
                 if ldap:
@@ -817,6 +821,8 @@ Please fix this account before attempting to upgrade again
                 else:
                     pgids[username] = pwd.getpwnam(username).pw_gid
             except KeyError:
+                pass
+            except IndexError:
                 pass
 
     logger.info("Reading WINS database")
