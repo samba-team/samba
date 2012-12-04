@@ -1162,6 +1162,10 @@ int32_t ctdb_control_get_capabilities(struct ctdb_context *ctdb, TDB_DATA *outda
 	return 0;	
 }
 
+/* The recovery daemon will ping us at regular intervals.
+   If we havent been pinged for a while we assume the recovery
+   daemon is inoperable and we restart.
+*/
 static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
 {
 	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
@@ -1183,10 +1187,6 @@ static void ctdb_recd_ping_timeout(struct event_context *ev, struct timed_event 
 	ctdb_start_recoverd(ctdb);
 }
 
-/* The recovery daemon will ping us at regular intervals.
-   If we havent been pinged for a while we assume the recovery
-   daemon is inoperable and we shut down.
-*/
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 {
 	talloc_free(ctdb->recd_ping_count);

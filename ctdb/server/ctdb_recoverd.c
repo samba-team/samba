@@ -4018,10 +4018,14 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	if (ctdb->recoverd_pid == -1) {
 		return -1;
 	}
-	
+
 	if (ctdb->recoverd_pid != 0) {
+		talloc_free(ctdb->recd_ctx);
+		ctdb->recd_ctx = talloc_new(ctdb);
+		CTDB_NO_MEMORY(ctdb, ctdb->recd_ctx);
+
 		close(fd[0]);
-		event_add_timed(ctdb->ev, ctdb, 
+		event_add_timed(ctdb->ev, ctdb->recd_ctx,
 				timeval_current_ofs(30, 0),
 				ctdb_check_recd, ctdb);
 		return 0;
@@ -4039,7 +4043,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to recovery daemon\n", fd[0]));
 
 	fde = event_add_fd(ctdb->ev, ctdb, fd[0], EVENT_FD_READ,
-		     ctdb_recoverd_parent, &fd[0]);	
+		     ctdb_recoverd_parent, &fd[0]);
 	tevent_fd_set_auto_close(fde);
 
 	/* set up a handler to pick up sigchld */
@@ -4069,6 +4073,9 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb)
 
 	DEBUG(DEBUG_NOTICE,("Shutting down recovery daemon\n"));
 	ctdb_kill(ctdb, ctdb->recoverd_pid, SIGTERM);
+
+	TALLOC_FREE(ctdb->recd_ctx);
+	TALLOC_FREE(ctdb->recd_ping_count);
 }
 
 static void ctdb_restart_recd(struct event_context *ev, struct timed_event *te, 

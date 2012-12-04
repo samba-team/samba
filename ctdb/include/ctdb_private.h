@@ -508,6 +508,7 @@ struct ctdb_context {
 	bool valgrinding;
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	uint32_t *recd_ping_count;
+	TALLOC_CTX *recd_ctx; /* a context used to track recoverd monitoring events */
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 
 	TALLOC_CTX *event_script_ctx;
