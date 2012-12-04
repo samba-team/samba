@@ -4635,8 +4635,8 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 
 	status = SMB_VFS_GET_NT_ACL(conn, fname, security_info_wanted, ctx, sd);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("set_nt_acl_no_snum: fset_nt_acl returned %s.\n",
-			nt_errstr(status)));
+		DEBUG(0, ("get_nt_acl_no_snum: SMB_VFS_GET_NT_ACL returned %s.\n",
+			  nt_errstr(status)));
 	}
 
 	conn_free(conn);
