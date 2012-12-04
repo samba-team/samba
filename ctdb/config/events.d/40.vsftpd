@@ -15,6 +15,11 @@ service_stop ()
     service $service_name stop
 }
 
+service_reconfigure ()
+{
+    service $service_name restart
+}
+
 service_fail_limit=2
 service_tcp_ports=21
 

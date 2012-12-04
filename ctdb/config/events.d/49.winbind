@@ -31,12 +31,6 @@ service_stop ()
     service "$CTDB_SERVICE_WINBIND" stop
 }
 
-service_reconfigure ()
-{
-    # winbind automatically reloads config - no restart needed.
-    :
-}
-
 ###########################
 
 ctdb_start_stop_service

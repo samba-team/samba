@@ -1125,10 +1125,10 @@ ctdb_service_reconfigure ()
     ctdb_counter_init "$@"
 }
 
-# Default service_reconfigure() function.
+# Default service_reconfigure() function does nothing.
 service_reconfigure ()
 {
-    service "${1:-$service_name}" restart
+    :
 }
 
 ctdb_reconfigure_try_lock ()
