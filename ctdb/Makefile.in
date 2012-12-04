@@ -120,7 +120,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_takeover_tests tests/bin/ctdb_update_record \
 	tests/bin/ctdb_update_record_persistent \
 	tests/bin/ctdb_tool_libctdb tests/bin/ctdb_tool_stubby \
-	tests/bin/ctdb_porting_tests \
+	tests/bin/ctdb_porting_tests tests/bin/ctdb_lock_tdb \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool \
@@ -312,6 +312,10 @@ tests/src/ctdb_tool_stubby.o: tests/src/ctdb_tool_stubby.c tests/src/libctdb_tes
 tests/bin/ctdb_tool_stubby: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_stubby.o
 	@echo Linking $@
 	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
+
+tests/bin/ctdb_lock_tdb: tests/src/ctdb_lock_tdb.o @TDB_OBJ@
+	@echo Linking $@
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $^ $(LIB_FLAGS)
 
 tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
