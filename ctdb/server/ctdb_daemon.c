@@ -70,14 +70,9 @@ static void ctdb_start_time_tickd(struct ctdb_context *ctdb)
 }
 
 
-/* called when the "startup" event script has finished */
+/* called when CTDB is ready to process requests */
 static void ctdb_start_transport(struct ctdb_context *ctdb)
 {
-	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ALERT,(__location__ " startup event finished but transport is DOWN.\n"));
-		ctdb_fatal(ctdb, "transport is not initialized but startup completed");
-	}
-
 	/* start the transport running */
 	if (ctdb->methods->start(ctdb) != 0) {
 		DEBUG(DEBUG_ALERT,("transport failed to start!\n"));
