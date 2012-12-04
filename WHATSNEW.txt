@@ -6,6 +6,22 @@ intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
+In this release candidate, we have a significant number of improvements
+to our Access Control List (ACL) code, particularly for the Active
+Directory Domain Controller, but also in our general purpose file
+server.
+
+These changes are important, as they enable Group Policy Objects to work
+correctly, allow administrators to impose restrictions on some users
+reading certain parts of the directory and correctly propagating
+inherited ACLs down the LDAP directory tree.
+
+Users of the Active Directory Domain Controller upgrading from any
+previous release should run 'samba-tool ntacl sysvolreset' to re-sync
+ACLs on the sysvol share with those matching the GPOs in LDAP and the
+defaults from an initial provision.  This will set an underlying POSIX
+ACL if required.
+
 Samba 4.0 will be the next version of the Samba suite and incorporates
 all the technology found in both the Samba4 series and the
 stable 3.x series. The primary additional features over Samba 3.6 are
@@ -170,7 +186,13 @@ CHANGES SINCE 4.0.0rc5
 
 With this release candidate the ACLs in the Active Directory
 are also checked on searches by default. The automatic inheritance
-of ACLs is also correclty recalcucation on changes now.
+of ACLs is also correctly recalculated on changes now.
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9350: Fail "configure --with-ads" if ads support is not available.
+    * BUG 9446: Id mapping code delivers inconsistent results.
+    * BUG 9453: Fix building pdb_ldap as shared module.
+
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 9236: ACL masks incorrectly applied when setting ACLs.
@@ -180,12 +202,19 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Christian Ambach <ambi@samba.org>
     * BUG 9178: Add DMAPI configure option and checks.
+    * BUG 9274: Document shadow:snapdirseverywhere option of vfs_shadow_copy2.
+    * BUG 9339: Backport build fixes from master.
     * BUG 9411: aio read marks the file as modified.
     * BUG 9413: Fix waf build on AIX6.
 
 
 o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9121: Provide and use setproctitle replacement function for samba4
+      processes on linux.
+    * BUG 9271: samba-tool: Rework ldap attribute fetch in classicupgrade for
+      missing attributes.
     * BUG 9421: Fix several build issues.
+    * BUG 9448: Backport several crash bugs from master.
 
 
 o   Sumit Bose <sbose@redhat.com>
@@ -193,8 +222,16 @@ o   Sumit Bose <sbose@redhat.com>
       is set.
 
 
+o   Kai Blin <kai@samba.org>
+    * BUG 9399 - 'samba-tool dns serverinfo localhost' returns 'Memory
+      allocation error'.
+    * BUG 9449: Remove unused samba-dig tool.
+
+
 o   Günther Deschner <gd@samba.org>
     * BUG 9426: rpc_client: lookup nametype 0x20 in rpc_pipe_open_tcp_port().
+    * BUG 9439: Fix ncacn_ip_tcp reconnection code for lsa lookups.
+    * BUG 9451: Allow to force DNS updates using net.
 
 
 o   David Disseldorp <ddiss@samba.org>
@@ -202,6 +239,7 @@ o   David Disseldorp <ddiss@samba.org>
 
 
 o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 9265: Bind dlz fails to start if there is a trustedanchors zone.
     * BUG 9354: Fix format string vulnerability in an error message.
 
 
@@ -212,11 +250,21 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8620: Read ACL are not enabled by default on DS.
+    * BUG 8621: ACL are not recalculated if parent is changed and inherit is
+      enabled.
     * BUG 9373: samba-tool: Report a CommandError if loading of the config file
       fails.
     * BUG 9385: Add missing newline in the output of ldb_ldif_write_trace().
     * BUG 9390: Fix segfaults in "log level = 10" on Solaris.
     * BUG 9402: lib/addns: Fix working with a bind9 server.
+    * BUG 9406: ACL fixes since 4.0 rc1.
+    * BUG 9447: Backport tests from master.
+    * BUG 9448: Backport several crash bugs from master.
+
+
+o   Ricky Nance <ricky.nance@weaubleau.k12.mo.us>
+    * BUG 9449: Remove phpldapadmin inclusion.
 
 
 o   Matthieu Patou <mat@matws.net>
@@ -236,6 +284,14 @@ o   Andreas Schneider <asn@samba.org>
 o   Karolin Seeger <kseeger@samba.org>
     * BUG 9425: Do not build ntdb by default.
     * BUG 9437: Warnings when building manpages with waf.
+    * BUG 9443: Manpages of the libraries are located in different
+      subdirectories.
+    * BUG 9444: Merge both samba.8 manpages.
+    * BUG 9445: Update man 7 samba.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 9339: Backport build fixes from master.
 
 
 CHANGES SINCE 4.0.0rc4
