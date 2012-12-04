@@ -287,7 +287,7 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if (manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and
         bld.env['XSLTPROC_MANPAGES']):
-        bld.MANPAGES(manpages)
+        bld.MANPAGES(manpages, install)
 
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
@@ -383,7 +383,7 @@ def SAMBA_BINARY(bld, binname, source,
         )
 
     if manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
-        bld.MANPAGES(manpages)
+        bld.MANPAGES(manpages, install)
 
 Build.BuildContext.SAMBA_BINARY = SAMBA_BINARY
 
@@ -771,7 +771,7 @@ def INSTALL_DIRS(bld, destdir, dirs):
 Build.BuildContext.INSTALL_DIRS = INSTALL_DIRS
 
 
-def MANPAGES(bld, manpages):
+def MANPAGES(bld, manpages, install):
     '''build and install manual pages'''
     bld.env.MAN_XSL = 'http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
     for m in manpages.split():
@@ -782,7 +782,8 @@ def MANPAGES(bld, manpages):
                             group='final',
                             rule='${XSLTPROC} --xinclude -o ${TGT} --nonet ${MAN_XSL} ${SRC}'
                             )
-        bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
+        if install:
+            bld.INSTALL_FILES('${MANDIR}/man%s' % m[-1], m, flat=True)
 Build.BuildContext.MANPAGES = MANPAGES
 
 def SAMBAMANPAGES(bld, manpages):
