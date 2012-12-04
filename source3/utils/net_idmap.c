@@ -57,8 +57,9 @@ static int net_idmap_dump_one_entry(struct db_record *rec,
 		return 0;
 	}
 
-	if (strncmp((char *)key.dptr, "S-", 2) != 0)
+	if (strncmp((char *)key.dptr, "S-", 2) != 0) {
 		return 0;
+	}
 
 	printf("%s %s\n", value.dptr, key.dptr);
 	return 0;
