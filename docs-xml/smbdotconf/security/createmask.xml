@@ -26,11 +26,6 @@
 	This parameter does not affect directory masks. See the parameter <smbconfoption name="directory mask"/>
 	for details.
 	</para>
-
-    <para>
-	New in Samba 4.0.0. This mask is applied whenever permissions are changed on a file. To allow clients full control
-	over permission changes it should be set to 0777.
-	</para>
 </description>
 
 <related>force create mode</related>

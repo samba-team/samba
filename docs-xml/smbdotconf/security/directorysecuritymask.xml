@@ -5,9 +5,7 @@
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-	This parameter has been removed for Samba 4.0.0. The parameter
-	<smbconfoption name="directory mask"/> is now used instead to mask
-	any permission bit changes on directories.
+	This parameter has been removed for Samba 4.0.0.
     </para>
 </description>
 

@@ -10,12 +10,6 @@
     mode after the mask set in the <parameter moreinfo="none">create mask</parameter>
     parameter is applied.</para>
 
-    <para>
-    New in Samba 4.0.0. This mode is also 'OR'ed into the mode bits whenever
-    permissions are changed on a file, not just when the file is created.
-    This replaces the now removed <parameter moreinfo="none">force security mode</parameter>.
-    </para>
-
     <para>The example below would force all newly created files to have read and execute
     permissions set for 'group' and 'other' as well as the
     read/write/execute bits set for the 'user'.</para>

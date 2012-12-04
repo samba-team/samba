@@ -23,11 +23,6 @@
     <para>Following this Samba will bit-wise 'OR' the UNIX mode 
     created from this parameter with the value of the <smbconfoption name="force directory mode"/> parameter. 
     This parameter is set to 000 by default (i.e. no extra mode bits are added).</para>
-
-    <para>
-    New in Samba 4.0.0. This mask is applied whenever permissions are changed on a directory. To allow clients full control
-    over permission changes it should be set to 0777.
-    </para>
 </description>
 
 <related>force directory mode</related>

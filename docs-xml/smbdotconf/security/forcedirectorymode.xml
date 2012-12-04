@@ -12,12 +12,6 @@
     mask in the parameter <parameter moreinfo="none">directory mask</parameter> is 
     applied.</para>
 
-    <para>
-    New in Samba 4.0.0. This mode is also 'OR'ed into the mode bits whenever
-    permissions are changed on a directory, not just when the file is created.
-    This replaces the now removed <parameter moreinfo="none">force directory security mode</parameter>.
-    </para>
-
 	<para>The example below would force all created directories to have read and execute
     permissions set for 'group' and 'other' as well as the
     read/write/execute bits set for the 'user'.</para>
