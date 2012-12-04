@@ -16,8 +16,6 @@ service_stop ()
 }
 service_reconfigure ()
 {
-    startstop_nfs restart
-
     # if the ips have been reallocated, we must restart the lockmanager
     # across all nodes and ping all statd listeners
     [ -x $CTDB_BASE/statd-callout ] && {

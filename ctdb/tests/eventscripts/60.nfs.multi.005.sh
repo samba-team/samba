@@ -18,8 +18,6 @@ ctdb_fake_scriptstatus -8 "DISABLED" "$err"
 
 ok <<EOF
 Reconfiguring service "nfs"...
-Starting nfslock: OK
-Starting nfs: OK
 Replaying previous status for this script due to reconfigure...
 [Replay of DISABLED scriptstatus - note incorrect return code.] $err
 EOF

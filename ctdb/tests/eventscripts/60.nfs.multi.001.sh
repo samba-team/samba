@@ -14,8 +14,6 @@ simple_test_event "takeip" $public_address
 
 ok <<EOF
 Reconfiguring service "nfs"...
-Starting nfslock: OK
-Starting nfs: OK
 EOF
 
 simple_test_event "ipreallocated"

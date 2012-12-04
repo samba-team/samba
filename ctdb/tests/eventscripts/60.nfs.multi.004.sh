@@ -18,8 +18,6 @@ ctdb_fake_scriptstatus -62 "TIMEDOUT" "$err"
 
 required_result 1 <<EOF
 Reconfiguring service "nfs"...
-Starting nfslock: OK
-Starting nfs: OK
 Replaying previous status for this script due to reconfigure...
 [Replay of TIMEDOUT scriptstatus - note incorrect return code.] $err
 EOF

@@ -17,8 +17,6 @@ simple_test_event "takeip" $public_address
 # to split this into 2 tests.
 ok <<EOF
 Reconfiguring service "nfs"...
-Starting nfslock: OK
-Starting nfs: OK
 Replaying previous status for this script due to reconfigure...
 EOF
 

@@ -13,8 +13,6 @@ err=""
 
 ok <<EOF
 Reconfiguring service "nfs"...
-Starting nfslock: OK
-Starting nfs: OK
 EOF
 
 simple_test_event "reconfigure"
