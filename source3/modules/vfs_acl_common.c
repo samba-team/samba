@@ -590,6 +590,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		if (get_current_uid(handle->conn) == 0 ||
 				chown_needed == false ||
 				!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
