@@ -65,10 +65,6 @@ static int cmd_help(void);
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
 
-/* 30 second timeout on most commands */
-#define CLIENT_TIMEOUT (30*1000)
-#define SHORT_TIMEOUT (5*1000)
-
 /* value for unused fid field in trans2 secondary request */
 #define FID_UNUSED (0xFFFF)
 

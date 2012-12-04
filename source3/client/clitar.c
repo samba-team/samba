@@ -73,9 +73,6 @@ extern struct cli_state *cli;
 
 static uint16 attribute = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN;
 
-#ifndef CLIENT_TIMEOUT
-#define CLIENT_TIMEOUT (30*1000)
-#endif
 
 static char *tarbuf, *buffer_p;
 static int tp, ntarf, tbufsiz;

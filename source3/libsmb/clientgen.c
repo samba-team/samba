@@ -26,6 +26,7 @@
 #include "async_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "../librpc/ndr/libndr.h"
+#include "../include/client.h"
 
 /*******************************************************************
  Setup the word count and byte count for a client smb message.
@@ -175,7 +176,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 	}
 	cli->raw_status = NT_STATUS_INTERNAL_ERROR;
 	cli->map_dos_errors = true; /* remove this */
-	cli->timeout = 20000; /* Timeout is in milliseconds. */
+	cli->timeout = CLIENT_TIMEOUT;
 	cli->case_sensitive = false;
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test

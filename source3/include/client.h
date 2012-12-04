@@ -24,6 +24,9 @@
 
 #define CLI_BUFFER_SIZE (0xFFFF)
 
+/* default client timeout to 20 seconds on most commands */
+#define CLIENT_TIMEOUT (20 * 1000)
+
 /*
  * These definitions depend on smb.h
  */
