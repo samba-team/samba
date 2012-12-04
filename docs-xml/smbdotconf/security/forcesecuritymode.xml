@@ -5,10 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>
-	This parameter has been removed for Samba 4.0.0. The parameter
-	<smbconfoption name="force create mode"/> is now used instead to
-	force any permission changes on files to include specific UNIX
-	permission bits.
+	This parameter has been removed for Samba 4.0.0.
     </para>
 </description>
 </samba:parameter>
