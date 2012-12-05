@@ -1635,7 +1635,10 @@ bld.SAMBA3_PYTHON('pylibsmb',
 
 swat_dir = os.path.join(bld.curdir, '../swat')
 swat_files = recursive_dirlist(swat_dir, swat_dir, '*')
+swat_msg_dir = os.path.join(bld.curdir, 'po')
+swat_msg_files = recursive_dirlist(swat_msg_dir, swat_msg_dir, '*.msg')
 bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
+bld.INSTALL_FILES('${CODEPAGEDIR}', swat_msg_files, base_name='po')
 
 ########################## INCLUDES #################################
 
