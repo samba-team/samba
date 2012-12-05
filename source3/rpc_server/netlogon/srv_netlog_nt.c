@@ -2421,7 +2421,7 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	netlogon_creds_arcfour_crypt(creds, current_pw_enc->hash, sizeof(current_pw_enc->hash));
+	netlogon_creds_des_encrypt(creds, current_pw_enc);
 
 	if (trustAuth.previous.count != 0 &&
 	    trustAuth.previous.array[0].AuthType == TRUST_AUTH_TYPE_CLEAR) {
@@ -2432,7 +2432,7 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		mdfour(previous_pw_enc->hash, NULL, 0);
 	}
 
-	netlogon_creds_arcfour_crypt(creds, previous_pw_enc->hash, sizeof(previous_pw_enc->hash));
+	netlogon_creds_des_encrypt(creds, previous_pw_enc);
 
 	return NT_STATUS_OK;
 }
