@@ -597,6 +597,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 	struct netr_GetForestTrustInformation fr;
 	struct lsa_ForestTrustInformation *forest_trust_info;
 	int i;
+	struct samr_Password nt_hash;
 
 	status = dcerpc_parse_binding(tctx, binding, &b);
 	torture_assert_ntstatus_ok(tctx, status, "Bad binding string");
@@ -630,7 +631,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 		return false;
 	}
 
-	if (!test_SetupCredentials3(pipe, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+	if (!test_SetupCredentials3(pipe, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
 				    credentials, &creds)) {
 		torture_comment(tctx, "test_SetupCredentials3 failed.\n");
 		return false;
@@ -669,6 +670,16 @@ static bool test_validate_trust(struct torture_context *tctx,
 				      trust_info->data[0]);
 		return false;
 	}
+
+	E_md4hash(cli_credentials_get_password(credentials), nt_hash.hash);
+
+	netlogon_creds_des_decrypt(creds, &new_owf_password);
+
+	dump_data(1, new_owf_password.hash, 16);
+	dump_data(1, nt_hash.hash, 16);
+
+	torture_assert_mem_equal(tctx, new_owf_password.hash, nt_hash.hash, 16,
+		"received unexpected owf password\n");
 
 	netlogon_creds_client_authenticator(creds, &a);
 
