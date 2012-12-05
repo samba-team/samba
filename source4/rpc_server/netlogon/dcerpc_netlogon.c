@@ -635,7 +635,14 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonServiceInformation:
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
-		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_decrypt(creds,
+						   r->in.logon->password->lmpassword.hash,
+						   sizeof(r->in.logon->password->lmpassword.hash));
+			netlogon_creds_aes_decrypt(creds,
+						   r->in.logon->password->ntpassword.hash,
+						   sizeof(r->in.logon->password->ntpassword.hash));
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			netlogon_creds_arcfour_crypt(creds,
 					    r->in.logon->password->lmpassword.hash,
 					    sizeof(r->in.logon->password->lmpassword.hash));
@@ -698,7 +705,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 
 	case NetlogonGenericInformation:
 	{
-		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_decrypt(creds,
+					    r->in.logon->generic->data, r->in.logon->generic->length);
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			netlogon_creds_arcfour_crypt(creds,
 					    r->in.logon->generic->data, r->in.logon->generic->length);
 		} else {
@@ -811,8 +821,12 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	/* It appears that level 6 is not individually encrypted */
 	if ((r->in.validation_level != 6) &&
 	    memcmp(sam->key.key, zeros, sizeof(sam->key.key)) != 0) {
-		/* This key is sent unencrypted without the ARCFOUR flag set */
-		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		/* This key is sent unencrypted without the ARCFOUR or AES flag set */
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_encrypt(creds,
+					    sam->key.key,
+					    sizeof(sam->key.key));
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			netlogon_creds_arcfour_crypt(creds,
 					    sam->key.key,
 					    sizeof(sam->key.key));
@@ -823,7 +837,11 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	/* It appears that level 6 is not individually encrypted */
 	if ((r->in.validation_level != 6) &&
 	    memcmp(sam->LMSessKey.key, zeros, sizeof(sam->LMSessKey.key)) != 0) {
-		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_encrypt(creds,
+					    sam->LMSessKey.key,
+					    sizeof(sam->LMSessKey.key));
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			netlogon_creds_arcfour_crypt(creds,
 					    sam->LMSessKey.key,
 					    sizeof(sam->LMSessKey.key));
