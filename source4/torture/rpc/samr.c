@@ -2888,7 +2888,10 @@ static bool test_SamLogon(struct torture_context *tctx,
 		}
 		E_md4hash(cli_credentials_get_password(test_credentials), pinfo.ntpassword.hash);
 
-		if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_encrypt(creds, pinfo.lmpassword.hash, 16);
+			netlogon_creds_aes_encrypt(creds, pinfo.ntpassword.hash, 16);
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			netlogon_creds_arcfour_crypt(creds, pinfo.lmpassword.hash, 16);
 			netlogon_creds_arcfour_crypt(creds, pinfo.ntpassword.hash, 16);
 		} else {
@@ -3072,7 +3075,7 @@ static bool setup_schannel_netlogon_pipe(struct torture_context *tctx,
 	 * with INTERNAL_ERROR */
 
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
-	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_128;
+	b->flags |= DCERPC_SCHANNEL | DCERPC_SIGN | DCERPC_SCHANNEL_AUTO;
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_pipe_connect_b(tctx, p, b, &ndr_table_netlogon,
