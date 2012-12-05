@@ -4159,7 +4159,7 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 	unsigned int i;
 	unsigned int ofs = 0;
 
-	for (i = 0; i < num_streams && ofs <= max_data_bytes; i++) {
+	for (i = 0; i < num_streams; i++) {
 		unsigned int next_offset;
 		size_t namelen;
 		smb_ucs2_t *namebuf;
@@ -4178,6 +4178,16 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 
 		namelen -= 2;
 
+		/*
+		 * We cannot overflow ...
+		 */
+		if ((ofs + 24 + namelen) > max_data_bytes) {
+			DEBUG(10, ("refusing to overflow reply at stream %u\n",
+				i));
+			TALLOC_FREE(namebuf);
+			return STATUS_BUFFER_OVERFLOW;
+		}
+
 		SIVAL(data, ofs+4, namelen);
 		SOFF_T(data, ofs+8, streams[i].size);
 		SOFF_T(data, ofs+16, streams[i].alloc_size);
@@ -4192,6 +4202,14 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 		else {
 			unsigned int align = ndr_align_size(next_offset, 8);
 
+			if ((next_offset + align) > max_data_bytes) {
+				DEBUG(10, ("refusing to overflow align "
+					"reply at stream %u\n",
+					i));
+				TALLOC_FREE(namebuf);
+				return STATUS_BUFFER_OVERFLOW;
+			}
+
 			memset(data+next_offset, 0, align);
 			next_offset += align;
 
@@ -4201,6 +4219,8 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 
 		ofs = next_offset;
 	}
+
+	DEBUG(10, ("max_data: %u, data_size: %u\n", max_data_bytes, ofs));
 
 	*data_size = ofs;
 
@@ -4801,6 +4821,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(10, ("marshall_stream_info failed: %s\n",
 					   nt_errstr(status)));
+				TALLOC_FREE(streams);
 				return status;
 			}
 
