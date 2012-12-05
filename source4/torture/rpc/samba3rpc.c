@@ -1104,7 +1104,7 @@ static bool schan(struct torture_context *tctx,
 
 	for (i=2; i<4; i++) {
 		int flags;
-		DATA_BLOB chal, nt_resp, lm_resp, names_blob, session_key;
+		DATA_BLOB chal, nt_resp, lm_resp, names_blob;
 		struct netlogon_creds_CredentialState *creds_state;
 		struct netr_Authenticator netr_auth, netr_auth2;
 		struct netr_NetworkInfo ninfo;
@@ -1197,11 +1197,8 @@ static bool schan(struct torture_context *tctx,
 		ZERO_STRUCT(pinfo.lmpassword.hash);
 		E_md4hash(cli_credentials_get_password(user_creds),
 			  pinfo.ntpassword.hash);
-		session_key = data_blob_talloc(mem_ctx,
-					       creds_state->session_key, 16);
-		arcfour_crypt_blob(pinfo.ntpassword.hash,
-				   sizeof(pinfo.ntpassword.hash),
-				   &session_key);
+
+		netlogon_creds_arcfour_crypt(creds_state, pinfo.ntpassword.hash, 16);
 
 		logon.password = &pinfo;
 
