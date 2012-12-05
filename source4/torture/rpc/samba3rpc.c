@@ -399,7 +399,9 @@ static bool get_usr_handle(struct torture_context *tctx,
 
 	samr_pipe = dcerpc_pipe_init(mem_ctx, tctx->ev);
 	torture_assert(tctx, samr_pipe, "dcerpc_pipe_init failed");
-
+#if 0
+	samr_pipe->conn->flags |= DCERPC_DEBUG_PRINT_IN | DCERPC_DEBUG_PRINT_OUT;
+#endif
 	samr_handle = samr_pipe->binding_handle;
 
 	torture_assert_ntstatus_ok(tctx,
@@ -744,7 +746,7 @@ static bool join3(struct torture_context *tctx,
 		goto done;
 	}
 	samr_handle = samr_pipe->binding_handle;
-
+	ret = false;
 	{
 		struct samr_QueryUserInfo q;
 		union samr_UserInfo *info;
