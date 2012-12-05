@@ -2398,7 +2398,7 @@ NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 
 static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 					    const DATA_BLOB *trustAuth_blob,
-					    const DATA_BLOB *session_key,
+					    struct netlogon_creds_CredentialState *creds,
 					    struct samr_Password *current_pw_enc,
 					    struct samr_Password *previous_pw_enc)
 {
@@ -2421,8 +2421,7 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	arcfour_crypt_blob(current_pw_enc->hash, sizeof(current_pw_enc->hash),
-			   session_key);
+	netlogon_creds_arcfour_crypt(creds, current_pw_enc->hash, sizeof(current_pw_enc->hash));
 
 	if (trustAuth.previous.count != 0 &&
 	    trustAuth.previous.array[0].AuthType == TRUST_AUTH_TYPE_CLEAR) {
@@ -2432,8 +2431,8 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 	} else {
 		mdfour(previous_pw_enc->hash, NULL, 0);
 	}
-	arcfour_crypt_blob(previous_pw_enc->hash, sizeof(previous_pw_enc->hash),
-			   session_key);
+
+	netlogon_creds_arcfour_crypt(creds, previous_pw_enc->hash, sizeof(previous_pw_enc->hash));
 
 	return NT_STATUS_OK;
 }
@@ -2455,7 +2454,6 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	DATA_BLOB trustAuth_blob;
 	struct samr_Password *new_owf_enc;
 	struct samr_Password *old_owf_enc;
-	DATA_BLOB session_key;
 	struct loadparm_context *lp_ctx;
 
 	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
@@ -2543,10 +2541,8 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 			trustAuth_blob = td->trust_auth_outgoing;
 		}
 
-		session_key.data = creds->session_key;
-		session_key.length = sizeof(creds->session_key);
 		status = get_password_from_trustAuth(p->mem_ctx, &trustAuth_blob,
-						     &session_key,
+						     creds,
 						     new_owf_enc, old_owf_enc);
 
 		if (!NT_STATUS_IS_OK(status)) {
