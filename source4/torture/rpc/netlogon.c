@@ -3155,9 +3155,10 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
-					 struct dcerpc_pipe *p,
-					 struct cli_credentials *machine_credentials)
+static bool test_netr_ServerGetTrustInfo_flags(struct torture_context *tctx,
+					       struct dcerpc_pipe *p,
+					       struct cli_credentials *machine_credentials,
+					       uint32_t negotiate_flags)
 {
 	struct netr_ServerGetTrustInfo r;
 
@@ -3170,7 +3171,9 @@ static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+	struct samr_Password nt_hash;
+
+	if (!test_SetupCredentials3(p, tctx, negotiate_flags,
 				    machine_credentials, &creds)) {
 		return false;
 	}
@@ -3193,9 +3196,34 @@ static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result, "ServerGetTrustInfo failed");
 	torture_assert(tctx, netlogon_creds_client_check(creds, &return_authenticator.cred), "Credential chaining failed");
 
+	E_md4hash(cli_credentials_get_password(machine_credentials), nt_hash.hash);
+
+	netlogon_creds_des_decrypt(creds, &new_owf_password);
+
+	dump_data(1, new_owf_password.hash, 16);
+	dump_data(1, nt_hash.hash, 16);
+
+	torture_assert_mem_equal(tctx, new_owf_password.hash, nt_hash.hash, 16,
+		"received unexpected owf password\n");
+
 	return true;
 }
 
+static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct cli_credentials *machine_credentials)
+{
+	return test_netr_ServerGetTrustInfo_flags(tctx, p, machine_credentials,
+						  NETLOGON_NEG_AUTH2_ADS_FLAGS);
+}
+
+static bool test_netr_ServerGetTrustInfo_AES(struct torture_context *tctx,
+					     struct dcerpc_pipe *p,
+					     struct cli_credentials *machine_credentials)
+{
+	return test_netr_ServerGetTrustInfo_flags(tctx, p, machine_credentials,
+						  NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
+}
 
 static bool test_GetDomainInfo(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
@@ -3857,6 +3885,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesW", test_netr_DsRAddressToSitenamesW);
 	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesExW", test_netr_DsRAddressToSitenamesExW);
 	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo", test_netr_ServerGetTrustInfo);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo_AES", test_netr_ServerGetTrustInfo_AES);
 	torture_rpc_tcase_add_test_creds(tcase, "GetForestTrustInformation", test_netr_GetForestTrustInformation);
 
 	return suite;
