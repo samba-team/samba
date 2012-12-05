@@ -121,7 +121,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 			   struct dcerpc_pipe *p,
 			   struct cli_credentials *credentials,
 			   enum netr_SchannelType secure_channel_type,
-			   const char *test_machine_name)
+			   const char *test_machine_name,
+			   uint32_t negotiate_flags)
 {
 	NTSTATUS status;
 
@@ -152,7 +153,11 @@ static bool test_PACVerify(struct torture_context *tctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
-	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+	torture_comment(tctx,
+		"Testing PAC Verify (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
+		secure_channel_type, test_machine_name, negotiate_flags);
+
+	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
 				    credentials, secure_channel_type,
 				    &creds)) {
 		return false;
@@ -235,7 +240,11 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
 	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-	netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, pac_wrapped.data, pac_wrapped.length);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+	}
 
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
@@ -341,7 +350,11 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
 	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-	netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, pac_wrapped.data, pac_wrapped.length);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+	}
 
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
@@ -389,7 +402,11 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
 	torture_assert(tctx, (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR), "not willing to even try a PACValidate without RC4 encryption");
-	netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		netlogon_creds_aes_encrypt(creds, pac_wrapped.data, pac_wrapped.length);
+	} else {
+		netlogon_creds_arcfour_crypt(creds, pac_wrapped.data, pac_wrapped.length);
+	}
 
 	generic.length = pac_wrapped.length;
 	generic.data = pac_wrapped.data;
@@ -417,18 +434,40 @@ static bool test_PACVerify(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_PACVerify_bdc(struct torture_context *tctx,
-			       struct dcerpc_pipe *p,
-			       struct cli_credentials *credentials)
+static bool test_PACVerify_bdc_arcfour(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct cli_credentials *credentials)
 {
-	return test_PACVerify(tctx, p, credentials, SEC_CHAN_BDC, TEST_MACHINE_NAME_BDC);
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_BDC,
+			      TEST_MACHINE_NAME_BDC,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS);
 }
 
-static bool test_PACVerify_workstation(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  struct cli_credentials *credentials)
+static bool test_PACVerify_bdc_aes(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct cli_credentials *credentials)
 {
-	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA, TEST_MACHINE_NAME_WKSTA);
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_BDC,
+			      TEST_MACHINE_NAME_BDC,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
+}
+
+static bool test_PACVerify_workstation_arcfour(struct torture_context *tctx,
+					       struct dcerpc_pipe *p,
+					       struct cli_credentials *credentials)
+{
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
+			      TEST_MACHINE_NAME_WKSTA,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS);
+}
+
+static bool test_PACVerify_workstation_aes(struct torture_context *tctx,
+					   struct dcerpc_pipe *p,
+					   struct cli_credentials *credentials)
+{
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
+			      TEST_MACHINE_NAME_WKSTA,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
 }
 
 static bool test_PACVerify_workstation_des(struct torture_context *tctx,
@@ -465,7 +504,9 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result,
 		"failed to set DES into account flags");
 
-	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA, TEST_MACHINE_NAME_WKSTA_DES);
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
+			      TEST_MACHINE_NAME_WKSTA_DES,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS);
 }
 
 
@@ -668,7 +709,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
 
-	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
 				    credentials, secure_channel_type,
 				    &creds)) {
 		return false;
@@ -737,13 +778,21 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase;
 
 	/* It is important to use different names, so that old entries in our credential cache are not used */
-	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon-bdc",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-arcfour",
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_BDC);
-	torture_rpc_tcase_add_test_creds(tcase, "verify-sig", test_PACVerify_bdc);
+	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-arcfour", test_PACVerify_bdc_arcfour);
 
-	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-aes",
+							      &ndr_table_netlogon, TEST_MACHINE_NAME_BDC);
+	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-aes", test_PACVerify_bdc_aes);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-arcfour",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
-	torture_rpc_tcase_add_test_creds(tcase, "verify-sig", test_PACVerify_workstation);
+	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-arcfour", test_PACVerify_workstation_arcfour);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-aes",
+								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
+	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-aes", test_PACVerify_workstation_aes);
 
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member-des",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA_DES);
