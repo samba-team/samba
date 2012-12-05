@@ -1163,7 +1163,7 @@ static bool schan(struct torture_context *tctx,
 			cli_credentials_get_workstation(wks_creds);
 		r.in.credential = &netr_auth;
 		r.in.return_authenticator = &netr_auth2;
-		r.in.logon_level = 2;
+		r.in.logon_level = NetlogonNetworkInformation;
 		r.in.validation_level = i;
 		r.in.logon = &logon;
 		r.out.validation = &validation;
@@ -1203,7 +1203,7 @@ static bool schan(struct torture_context *tctx,
 
 		logon.password = &pinfo;
 
-		r.in.logon_level = 1;
+		r.in.logon_level = NetlogonInteractiveInformation;
 		r.in.logon = &logon;
 		r.out.return_authenticator = &return_authenticator;
 

@@ -1344,7 +1344,7 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	int i, v, l, f;
 	bool ret = true;
 	int validation_levels[] = {2,3,6};
-	int logon_levels[] = { 2, 6 };
+	int logon_levels[] = { NetlogonNetworkInformation, NetlogonNetworkTransitiveInformation };
 	int function_levels[] = {
 		NDR_NETR_LOGONSAMLOGON,
 		NDR_NETR_LOGONSAMLOGONEX,
@@ -1484,7 +1484,7 @@ bool test_InteractiveLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.computer_name = TEST_MACHINE_NAME;
 	r.in.credential = &a;
 	r.in.return_authenticator = &ra;
-	r.in.logon_level = 5;
+	r.in.logon_level = NetlogonInteractiveTransitiveInformation;
 	r.in.logon = &logon;
 	r.in.validation_level = 6;
 	r.in.flags = &flags;

@@ -835,7 +835,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
-	r.in.logon_level = 2;
+	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.logon = &logon;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
@@ -941,7 +941,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 					 "LogonSamLogon invalid  *r.out.authoritative");
 	}
 
-	r.in.logon_level = 2;
+	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.credential = &auth;
 
 	for (i=2;i<=3;i++) {
