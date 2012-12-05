@@ -1235,48 +1235,19 @@ NTSTATUS unpack_nt_owners(struct connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Ensure the enforced permissions for this share apply.
-****************************************************************************/
 
-static void apply_default_perms(const struct share_params *params,
-				const bool is_directory, canon_ace *pace,
-				mode_t type)
+static void trim_ace_perms(canon_ace *pace)
 {
-	mode_t and_bits = (mode_t)0;
-	mode_t or_bits = (mode_t)0;
+	pace->perms = pace->perms & (S_IXUSR|S_IWUSR|S_IRUSR);
+}
 
-	/* Get the initial bits to apply. */
-
+static void ensure_minimal_owner_ace_perms(const bool is_directory,
+					   canon_ace *pace)
+{
+	pace->perms |= S_IRUSR;
 	if (is_directory) {
-		and_bits = lp_dir_mask(params->service);
-		or_bits = lp_force_dir_mode(params->service);
-	} else {
-		and_bits = lp_create_mask(params->service);
-		or_bits = lp_force_create_mode(params->service);
+		pace->perms |= (S_IWUSR|S_IXUSR);
 	}
-
-	/* Now bounce them into the S_USR space. */	
-	switch(type) {
-	case S_IRUSR:
-		/* Ensure owner has read access. */
-		pace->perms |= S_IRUSR;
-		if (is_directory)
-			pace->perms |= (S_IWUSR|S_IXUSR);
-		and_bits = unix_perms_to_acl_perms(and_bits, S_IRUSR, S_IWUSR, S_IXUSR);
-		or_bits = unix_perms_to_acl_perms(or_bits, S_IRUSR, S_IWUSR, S_IXUSR);
-		break;
-	case S_IRGRP:
-		and_bits = unix_perms_to_acl_perms(and_bits, S_IRGRP, S_IWGRP, S_IXGRP);
-		or_bits = unix_perms_to_acl_perms(or_bits, S_IRGRP, S_IWGRP, S_IXGRP);
-		break;
-	case S_IROTH:
-		and_bits = unix_perms_to_acl_perms(and_bits, S_IROTH, S_IWOTH, S_IXOTH);
-		or_bits = unix_perms_to_acl_perms(or_bits, S_IROTH, S_IWOTH, S_IXOTH);
-		break;
-	}
-
-	pace->perms = ((pace->perms & and_bits)|or_bits);
 }
 
 /****************************************************************************
@@ -1429,45 +1400,14 @@ static bool ensure_canon_entry_valid_on_set(connection_struct *conn,
 	bool got_duplicate_group = false;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
+		trim_ace_perms(pace);
 		if (pace->type == SMB_ACL_USER_OBJ) {
-			/*
-			 * Ensure we have default parameters for the
-			 * user (owner) even on default ACLs.
-			 */
-			apply_default_perms(params, is_directory, pace, S_IRUSR);
+			ensure_minimal_owner_ace_perms(is_directory, pace);
 			pace_user = pace;
-
 		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
-
-			/*
-			 * Ensure create mask/force create mode is respected on set.
-			 */
-
-			if (!is_default_acl) {
-				apply_default_perms(params, is_directory, pace, S_IRGRP);
-			}
 			pace_group = pace;
-
 		} else if (pace->type == SMB_ACL_OTHER) {
-
-			/*
-			 * Ensure create mask/force create mode is respected on set.
-			 */
-
-			if (!is_default_acl) {
-				apply_default_perms(params, is_directory, pace, S_IROTH);
-			}
 			pace_other = pace;
-
-		} else if (pace->type == SMB_ACL_USER || pace->type == SMB_ACL_GROUP) {
-
-			/*
-			 * Ensure create mask/force create mode is respected on set.
-			 */
-
-			if (!is_default_acl) {
-				apply_default_perms(params, is_directory, pace, S_IRGRP);
-			}
 		}
 	}
 
@@ -1519,7 +1459,7 @@ static bool ensure_canon_entry_valid_on_set(connection_struct *conn,
 		 * Ensure we have default parameters for the
 		 * user (owner) even on default ACLs.
 		 */
-		apply_default_perms(params, is_directory, pace, S_IRUSR);
+		ensure_minimal_owner_ace_perms(is_directory, pace);
 
 		DLIST_ADD(*pp_ace, pace);
 		pace_user = pace;
@@ -1545,9 +1485,6 @@ static bool ensure_canon_entry_valid_on_set(connection_struct *conn,
 		} else {
 			pace->perms = 0;
 		}
-		if (!is_default_acl) {
-			apply_default_perms(params, is_directory, pace, S_IRGRP);
-		}
 
 		DLIST_ADD(*pp_ace, pace);
 		pace_group = pace;
@@ -1567,9 +1504,6 @@ static bool ensure_canon_entry_valid_on_set(connection_struct *conn,
 		pace->trustee = global_sid_World;
 		pace->attr = ALLOW_ACE;
 		pace->perms = 0;
-		if (!is_default_acl) {
-			apply_default_perms(params, is_directory, pace, S_IROTH);
-		}
 
 		DLIST_ADD(*pp_ace, pace);
 		pace_other = pace;
