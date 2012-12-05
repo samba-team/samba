@@ -663,7 +663,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
-	r.in.logon_level = 2;
+	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.logon = &logon;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
