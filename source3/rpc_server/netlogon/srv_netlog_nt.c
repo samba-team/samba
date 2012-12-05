@@ -1596,6 +1596,39 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	{
 		uint8_t chal[8];
 
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("lm owf password:"));
+		dump_data(100, logon->password->lmpassword.hash, 16);
+
+		DEBUG(100,("nt owf password:"));
+		dump_data(100, logon->password->ntpassword.hash, 16);
+#endif
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			netlogon_creds_aes_decrypt(creds,
+						   logon->password->lmpassword.hash,
+						   16);
+			netlogon_creds_aes_decrypt(creds,
+						   logon->password->ntpassword.hash,
+						   16);
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			netlogon_creds_arcfour_crypt(creds,
+						     logon->password->lmpassword.hash,
+						     16);
+			netlogon_creds_arcfour_crypt(creds,
+						     logon->password->ntpassword.hash,
+						     16);
+		} else {
+			netlogon_creds_des_decrypt(creds, &logon->password->lmpassword);
+			netlogon_creds_des_decrypt(creds, &logon->password->ntpassword);
+		}
+
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("decrypt of lm owf password:"));
+		dump_data(100, logon->password->lmpassword.hash, 16);
+
+		DEBUG(100,("decrypt of nt owf password:"));
+		dump_data(100, logon->password->ntpassword.hash, 16);
+#endif
 		status = make_auth_context_subsystem(talloc_tos(),
 						     &auth_context);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1611,8 +1644,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 							 logon->password->identity_info.parameter_control,
 							 chal,
 							 logon->password->lmpassword.hash,
-							 logon->password->ntpassword.hash,
-							 creds->session_key)) {
+							 logon->password->ntpassword.hash)) {
 			status = NT_STATUS_NO_MEMORY;
 		}
 		break;

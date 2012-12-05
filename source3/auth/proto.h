@@ -174,8 +174,7 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 					 uint32 logon_parameters,
 					 const uchar chal[8],
 					 const uchar lm_interactive_pwd[16],
-					 const uchar nt_interactive_pwd[16],
-					 const uchar *dc_sess_key);
+					 const uchar nt_interactive_pwd[16]);
 bool make_user_info_for_reply(struct auth_usersupplied_info **user_info,
 			      const char *smb_name,
 			      const char *client_domain,

@@ -207,47 +207,18 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 					 uint32 logon_parameters,
 					 const uchar chal[8], 
 					 const uchar lm_interactive_pwd[16], 
-					 const uchar nt_interactive_pwd[16], 
-					 const uchar *dc_sess_key)
+					 const uchar nt_interactive_pwd[16])
 {
 	struct samr_Password lm_pwd;
 	struct samr_Password nt_pwd;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
-	unsigned char key[16];
-
-	memcpy(key, dc_sess_key, 16);
 
 	if (lm_interactive_pwd)
 		memcpy(lm_pwd.hash, lm_interactive_pwd, sizeof(lm_pwd.hash));
 
 	if (nt_interactive_pwd)
 		memcpy(nt_pwd.hash, nt_interactive_pwd, sizeof(nt_pwd.hash));
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("key:"));
-	dump_data(100, key, sizeof(key));
-
-	DEBUG(100,("lm owf password:"));
-	dump_data(100, lm_pwd.hash, sizeof(lm_pwd.hash));
-
-	DEBUG(100,("nt owf password:"));
-	dump_data(100, nt_pwd.hash, sizeof(nt_pwd.hash));
-#endif
-
-	if (lm_interactive_pwd)
-		arcfour_crypt(lm_pwd.hash, key, sizeof(lm_pwd.hash));
-
-	if (nt_interactive_pwd)
-		arcfour_crypt(nt_pwd.hash, key, sizeof(nt_pwd.hash));
-
-#ifdef DEBUG_PASSWORD
-	DEBUG(100,("decrypt of lm owf password:"));
-	dump_data(100, lm_pwd.hash, sizeof(lm_pwd));
-
-	DEBUG(100,("decrypt of nt owf password:"));
-	dump_data(100, nt_pwd.hash, sizeof(nt_pwd));
-#endif
 
 	if (lm_interactive_pwd)
 		SMBOWFencrypt(lm_pwd.hash, chal,
@@ -256,9 +227,6 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 	if (nt_interactive_pwd)
 		SMBOWFencrypt(nt_pwd.hash, chal,
 			      local_nt_response);
-
-	/* Password info paranoia */
-	ZERO_STRUCT(key);
 
 	{
 		bool ret;
