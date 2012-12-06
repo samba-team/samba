@@ -176,20 +176,12 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 		       server_info->session_key.data,
 		       MIN(sizeof(info3->base.key.key),
 			   server_info->session_key.length));
-		if (pipe_session_key) {
-			arcfour_crypt(info3->base.key.key,
-				      pipe_session_key, 16);
-		}
 	}
 	if (server_info->lm_session_key.length) {
 		memcpy(info3->base.LMSessKey.key,
 		       server_info->lm_session_key.data,
 		       MIN(sizeof(info3->base.LMSessKey.key),
 			   server_info->lm_session_key.length));
-		if (pipe_session_key) {
-			arcfour_crypt(info3->base.LMSessKey.key,
-				      pipe_session_key, 8);
-		}
 	}
 
 	sam6->base = info3->base;
