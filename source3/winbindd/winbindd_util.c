@@ -303,6 +303,7 @@ static void trustdom_list_done(struct tevent_req *req)
 		struct dom_sid sid;
 		struct winbindd_domain *domain;
 		char *alternate_name = NULL;
+		bool domain_exists;
 
 		alt_name = strchr(p, '\\');
 		if (alt_name == NULL) {
@@ -336,22 +337,25 @@ static void trustdom_list_done(struct tevent_req *req)
 		if ( !strequal( alt_name, "(null)" ) )
 			alternate_name = alt_name;
 
-		/* If we have an existing domain structure, calling
- 		   add_trusted_domain() will update the SID if
- 		   necessary.  This is important because we need the
- 		   SID for sibling domains */
+		/* Check if we already have a child for the domain */
+		domain_exists = (find_domain_from_name_noinit(p) != NULL);
 
-		if ( find_domain_from_name_noinit(p) != NULL ) {
-			domain = add_trusted_domain(p, alternate_name,
-						    &cache_methods,
-						    &sid);
-		} else {
-			domain = add_trusted_domain(p, alternate_name,
-						    &cache_methods,
-						    &sid);
-			if (domain) {
-				setup_domain_child(domain);
-			}
+		/*
+		 * We always call add_trusted_domain() cause on an existing
+		 * domain structure, it will update the SID if necessary.
+		 * This is important because we need the SID for sibling
+		 * domains.
+		 */
+		domain = add_trusted_domain(p, alternate_name,
+					    &cache_methods,
+					    &sid);
+
+		/*
+		 * If the domain doesn't exist yet and got correctly added,
+		 * setup a new domain child.
+		 */
+		if (!domain_exists && domain != NULL) {
+			setup_domain_child(domain);
 		}
 		p=q;
 		if (p != NULL)
