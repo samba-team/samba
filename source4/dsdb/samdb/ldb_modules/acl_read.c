@@ -296,6 +296,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *res;
 	struct aclread_private *p;
 	bool need_sd = false;
+	bool explicit_sd_flags = false;
 	bool is_untrusted = ldb_req_is_untrusted(req);
 	static const char * const _all_attrs[] = { "*", NULL };
 	bool all_attrs = false;
@@ -383,9 +384,15 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	 * expensive so we'd better had the ntsecuritydescriptor to the list of
 	 * searched attribute and then remove it !
 	 */
-	ac->sd_flags = dsdb_request_sd_flags(ac->req, NULL);
+	ac->sd_flags = dsdb_request_sd_flags(ac->req, &explicit_sd_flags);
 
-	need_sd = !(ldb_attr_in_list(attrs, "nTSecurityDescriptor"));
+	if (ldb_attr_in_list(attrs, "nTSecurityDescriptor")) {
+		need_sd = false;
+	} else if (explicit_sd_flags && all_attrs) {
+		need_sd = false;
+	} else {
+		need_sd = true;
+	}
 
 	if (!all_attrs) {
 		if (!ldb_attr_in_list(attrs, "instanceType")) {
