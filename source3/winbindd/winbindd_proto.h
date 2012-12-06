@@ -643,6 +643,11 @@ struct tevent_req *wb_group_members_send(TALLOC_CTX *mem_ctx,
 					 int max_depth);
 NTSTATUS wb_group_members_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       struct talloc_dict **members);
+NTSTATUS add_wbint_Principal_to_dict(TALLOC_CTX *mem_ctx,
+				     struct dom_sid *sid,
+				     const char **name,
+				     enum lsa_SidType type,
+				     struct talloc_dict *dict);
 
 struct tevent_req *wb_getgrsid_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
