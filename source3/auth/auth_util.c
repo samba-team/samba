@@ -231,8 +231,8 @@ bool make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_in
 	{
 		bool ret;
 		NTSTATUS nt_status;
-		DATA_BLOB local_lm_blob;
-		DATA_BLOB local_nt_blob;
+		DATA_BLOB local_lm_blob = data_blob_null;
+		DATA_BLOB local_nt_blob = data_blob_null;
 
 		if (lm_interactive_pwd) {
 			local_lm_blob = data_blob(local_lm_response,
