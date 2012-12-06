@@ -107,7 +107,7 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 	struct getquota_rslt gq_rslt;
 	struct getquota_args gq_args;
 	const char *mnttype;
-	char *cutstr, *pathname, *host, *testpath;
+	char *cutstr, *host, *testpath;
 	int len;
 	static struct timeval timeout = {2,0};
 	enum clnt_stat clnt_stat;
@@ -136,7 +136,6 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 
 	mnttype = bdev;
 	len = strcspn(mnttype, ":");
-	pathname = strstr(mnttype, ":");
 	cutstr = (char *) SMB_MALLOC(len+1);
 	if (cutstr == NULL) {
 		errno = ENOMEM;
