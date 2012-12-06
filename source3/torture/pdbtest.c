@@ -316,7 +316,7 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 		return False;
 	}
 
-	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3_auth);
+	status = serverinfo_to_SamInfo3(server_info, info3_auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("serverinfo_to_SamInfo3 failed: %s\n",
 			  nt_errstr(status)));

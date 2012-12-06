@@ -537,7 +537,7 @@ NTSTATUS check_sam_security_info3(const DATA_BLOB *challenge,
 		goto done;
 	}
 
-	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3);
+	status = serverinfo_to_SamInfo3(server_info, info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("serverinfo_to_SamInfo3 failed: %s\n",
 			   nt_errstr(status)));
