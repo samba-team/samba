@@ -1007,7 +1007,7 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 			slprintf(header_str + hs_len,
 				 sizeof(header_str) -1 - hs_len,
 				 ", class=%s",
-				 default_classname_table[cls]);
+				 classname_table[cls]);
 		}
 
 		/* Print it all out at once to prevent split syslog output. */
