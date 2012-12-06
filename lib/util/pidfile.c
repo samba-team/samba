@@ -36,7 +36,7 @@ pid_t pidfile_pid(const char *piddir, const char *name)
 {
 	int fd;
 	char pidstr[20];
-	pid_t ret;
+	pid_t ret = -1;
 	char *pidFile;
 
 	if (asprintf(&pidFile, "%s/%s.pid", piddir, name) < 0) {
