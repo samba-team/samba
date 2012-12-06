@@ -8,12 +8,66 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.10 include:
 
-o  
+o  Respond correctly to FILE_STREAM_INFO requests (bug #9460).
+o  Fix segfault when "default devmode" is disabled (bug #9433).
+o  Fix segfaults in "log level = 10" on Solaris (bug #9390).
+
 
 Changes since 3.6.9:
 --------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9236: ACL masks incorrectly applied when setting ACLs.
+    * BUG 9374: Allow smb2.acls torture test to pass against smbd with a POSIX
+      ACLs backend.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9345: Manpages: Fix use of <smbconfoption> tag.
+
+
+o   Sumit Bose <sbose@redhat.com>
+    * BUG 9367: Use work around for 'winbind use default domain' only if it is
+      set.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9272: 'net ads join' does not provide AES keys in host keytab.
+    * BUG 9426: Lookup nametype 0x20 in rpc_pipe_open_tcp_port().
+    * BUG 9439: Fix ncacn_ip_tcp reconnection code for lsa lookups.
+    * BUG 9451: Allow to force DNS updates using net.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9433: Fix segfault when "default devmode" is disabled.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9359: Optimization needed for SMB2 performance sensitive workloads.
+    * BUG 9422: Large read requests cause server to issue malformed reply.
+    * BUG 9439: Fix ncacn_ip_tcp reconnection code for lsa lookups.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9209: Improve the smb2.create.blob test.
+    * BUG 9272: 'net ads join' does not provide AES keys in host keytab.
+    * BUG 9390: Fix segfaults in "log level = 10" on Solaris.
+    * BUG 9402: lib/addns doesn't work with a bind9 server.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 9418: Fix MD5 detection in the autoconf build.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 8564: Fix segfault in pam_sm_authenticate().
+    * BUG 9326: Fix 'net ads join' message for the dns domain.
+    * BUG 9386: Winbind: Failover if netlogon pipe is not available.
+    * BUG 9436: Fix leaking sockets of SMB connections to a DC.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 9460: Respond correctly to FILE_STREAM_INFO requests.
 
 
 ######################################################################
