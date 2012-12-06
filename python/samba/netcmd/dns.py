@@ -355,11 +355,12 @@ def print_dns_record(outf, rec):
     elif rec.wType == dnsp.DNS_TYPE_CNAME:
         mesg = 'CNAME: %s' % (rec.data.str)
     elif rec.wType == dnsp.DNS_TYPE_SOA:
-        mesg = 'SOA: serial=%d, refresh=%d, retry=%d, expire=%d, ns=%s, email=%s' % (
+        mesg = 'SOA: serial=%d, refresh=%d, retry=%d, expire=%d, minttl=%d, ns=%s, email=%s' % (
                     rec.data.dwSerialNo,
                     rec.data.dwRefresh,
                     rec.data.dwRetry,
                     rec.data.dwExpire,
+                    rec.data.dwMinimumTtl,
                     rec.data.NamePrimaryServer.str,
                     rec.data.ZoneAdministratorEmail.str)
     elif rec.wType == dnsp.DNS_TYPE_MX:
@@ -498,6 +499,7 @@ class SOARecord(dnsserver.DNS_RPC_RECORD):
         soa.dwRefresh = refresh
         soa.dwRetry = retry
         soa.dwExpire = expire
+        soa.dwMinimumTtl = minimum
         soa.NamePrimaryServer.str = self._mname
         soa.NamePrimaryServer.len = len(mname)
         soa.ZoneAdministratorEmail.str = self._rname
