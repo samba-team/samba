@@ -68,11 +68,11 @@ static int socketpair_tcp(int fd[2])
 
 	if ((fd[0] = accept(listener, (struct sockaddr *)&sock, &socklen)) == -1) goto failed;
 
-	close(listener);
 	if (connect_done == 0) {
 		if (connect(fd[1], (struct sockaddr *)&sock, socklen) != 0
 		    && errno != EISCONN) goto failed;
 	}
+	close(listener);
 
 	set_blocking(fd[1], 1);
 
