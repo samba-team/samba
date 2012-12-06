@@ -93,9 +93,10 @@ static void wait_replies(struct tevent_context *ev_ctx,
 	struct tevent_timer *te;
 	bool timed_out = False;
 
-	if (!(te = tevent_add_timer(ev_ctx, NULL,
-				    timeval_current_ofs(timeout, 0),
-				    smbcontrol_timeout, (void *)&timed_out))) {
+	te = tevent_add_timer(ev_ctx, NULL,
+			      timeval_current_ofs(timeout, 0),
+			      smbcontrol_timeout, (void *)&timed_out);
+	if (te == NULL) {
 		DEBUG(0, ("tevent_add_timer failed\n"));
 		return;
 	}
