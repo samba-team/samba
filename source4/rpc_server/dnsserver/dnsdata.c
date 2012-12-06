@@ -958,8 +958,8 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRe
 		return dns_name_equal(rec1->data.cname, rec2->data.cname);
 
 	case DNS_TYPE_SOA:
-		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) == 0 &&
-			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) == 0 &&
+		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) &&
+			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) &&
 			rec1->data.soa.serial == rec2->data.soa.serial &&
 			rec1->data.soa.refresh == rec2->data.soa.refresh &&
 			rec1->data.soa.retry == rec2->data.soa.retry &&
