@@ -189,11 +189,11 @@ static NTSTATUS libnet_RpcConnectSrv_recv(struct composite_context *c,
 					  struct libnet_RpcConnect *r)
 {
 	NTSTATUS status;
-	struct rpc_connect_srv_state *s = talloc_get_type(c->private_data,
-					  struct rpc_connect_srv_state);
 
 	status = composite_wait(c);
 	if (NT_STATUS_IS_OK(status)) {
+		struct rpc_connect_srv_state *s;
+
 		/* move the returned rpc pipe between memory contexts */
 		s = talloc_get_type(c->private_data, struct rpc_connect_srv_state);
 		r->out.dcerpc_pipe = talloc_steal(mem_ctx, s->r.out.dcerpc_pipe);
