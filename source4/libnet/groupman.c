@@ -94,10 +94,12 @@ NTSTATUS libnet_rpc_groupadd_recv(struct composite_context *c, TALLOC_CTX *mem_c
 	struct groupadd_state *s;
 	
 	status = composite_wait(c);
-	if (NT_STATUS_IS_OK(status)) {
-		s = talloc_get_type(c, struct groupadd_state);
+	if (NT_STATUS_IS_OK(status) && io) {
+		s = talloc_get_type(c->private_data, struct groupadd_state);
+		io->out.group_handle = s->group_handle;
 	}
 
+	talloc_free(c);
 	return status;
 }
 
@@ -115,8 +117,11 @@ static void continue_groupadd_created(struct tevent_req *subreq)
 	if (!composite_is_ok(c)) return;
 
 	c->status = s->creategroup.out.result;
-	if (!composite_is_ok(c)) return;
-	
+	if (!NT_STATUS_IS_OK(c->status)) {
+		composite_error(c, c->status);
+		return;
+	}
+
 	composite_done(c);
 }
 
