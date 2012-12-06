@@ -1465,21 +1465,16 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context = NULL;
-	uint8_t pipe_session_key[16];
-	bool process_creds = true;
 	const char *fn;
 
 	switch (p->opnum) {
 		case NDR_NETR_LOGONSAMLOGON:
-			process_creds = true;
 			fn = "_netr_LogonSamLogon";
 			break;
 		case NDR_NETR_LOGONSAMLOGONWITHFLAGS:
-			process_creds = true;
 			fn = "_netr_LogonSamLogonWithFlags";
 			break;
 		case NDR_NETR_LOGONSAMLOGONEX:
-			process_creds = false;
 			fn = "_netr_LogonSamLogonEx";
 			break;
 		default:
@@ -1693,33 +1688,17 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
            the SAM Local Security Authority should record that the user is
            logged in to the domain.  */
 
-	if (process_creds) {
-		/* Get the pipe session key from the creds. */
-		memcpy(pipe_session_key, creds->session_key, 16);
-	} else {
-		struct schannel_state *schannel_auth;
-		/* Get the pipe session key from the schannel. */
-		if ((p->auth.auth_type != DCERPC_AUTH_TYPE_SCHANNEL)
-		    || (p->auth.auth_ctx == NULL)) {
-			return NT_STATUS_INVALID_HANDLE;
-		}
-
-		schannel_auth = talloc_get_type_abort(p->auth.auth_ctx,
-						      struct schannel_state);
-		memcpy(pipe_session_key, schannel_auth->creds->session_key, 16);
-	}
-
 	switch (r->in.validation_level) {
 	case 2:
-		status = serverinfo_to_SamInfo2(server_info, pipe_session_key, 16,
+		status = serverinfo_to_SamInfo2(server_info, creds->session_key, 16,
 						r->out.validation->sam2);
 		break;
 	case 3:
-		status = serverinfo_to_SamInfo3(server_info, pipe_session_key, 16,
+		status = serverinfo_to_SamInfo3(server_info, creds->session_key, 16,
 						r->out.validation->sam3);
 		break;
 	case 6:
-		status = serverinfo_to_SamInfo6(server_info, pipe_session_key, 16,
+		status = serverinfo_to_SamInfo6(server_info, creds->session_key, 16,
 						r->out.validation->sam6);
 		break;
 	}
