@@ -402,7 +402,6 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
                                               struct res_rec *answers,
                                               struct in_addr from_ip)
 {
-	struct work_record *work;
 	unstring server_name;
 
 	server_name[0] = 0;
@@ -443,6 +442,8 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 			}
 
 			if(!(nb_flags & NB_GROUP) && (name_type == 0x1b)) {
+				struct work_record *work;
+
 				if( DEBUGLVL( 5 ) ) {
 					dbgtext( "get_domain_master_name_node_status_success:\n" );
 					dbgtext( "%s(%s) ", server_name, inet_ntoa(from_ip) );
@@ -455,13 +456,16 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 				 * to the workgroup list on the unicast_subnet.
 				 */
 
-				if((work = find_workgroup_on_subnet( subrec, qname)) == NULL) {
+				work = find_workgroup_on_subnet( subrec, qname);
+				if (work == NULL) {
 					struct nmb_name nmbname;
 					/* 
 					 * Add it - with an hour in the cache.
 					 */
-					if(!(work= create_workgroup_on_subnet(subrec, qname, 60*60)))
+					work = create_workgroup_on_subnet(subrec, qname, 60*60);
+					if (work == NULL) {
 						return;
+					}
 
 					/* remember who the master is */
 					strlcpy(work->local_master_browser_name,
