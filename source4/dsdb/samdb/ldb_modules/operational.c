@@ -721,9 +721,19 @@ static int operational_search_post_process(struct ldb_module *module,
 				continue;
 			}
 		case OPERATIONAL_SD_FLAGS:
-			if (controls_flags->sd ||
-			    ldb_attr_in_list(attrs_from_user, operational_remove[i].attr)) {
+			if (ldb_attr_in_list(attrs_from_user, operational_remove[i].attr)) {
 				continue;
+			}
+			if (controls_flags->sd) {
+				if (attrs_from_user == NULL) {
+					continue;
+				}
+				if (attrs_from_user[0] == NULL) {
+					continue;
+				}
+				if (ldb_attr_in_list(attrs_from_user, "*")) {
+					continue;
+				}
 			}
 			ldb_msg_remove_attr(msg, operational_remove[i].attr);
 			break;
