@@ -505,11 +505,6 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	int ret, i;
 	int serial;
 
-	serial = dnsserver_update_soa(mem_ctx, samdb, z);
-	if (serial < 0) {
-		return WERR_INTERNAL_DB_ERROR;
-	}
-
 	arec = dns_to_dnsp_copy(mem_ctx, add_record);
 	W_ERROR_HAVE_NO_MEMORY(arec);
 
@@ -519,7 +514,6 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&t, time(NULL));
 	t /= 10*1000*1000;
 
-	arec->dwSerial = serial;
 	arec->dwTimeStamp = t;
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
@@ -570,6 +564,15 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	}
 	if (i == el->num_values) {
 		return WERR_DNS_ERROR_RECORD_DOES_NOT_EXIST;
+	}
+
+	/* If updating SOA record, use specified serial, otherwise increment */
+	if (arec->wType != DNS_TYPE_SOA) {
+		serial = dnsserver_update_soa(mem_ctx, samdb, z);
+		if (serial < 0) {
+			return WERR_INTERNAL_DB_ERROR;
+		}
+		arec->dwSerial = serial;
 	}
 
 	ndr_err = ndr_push_struct_blob(&el->values[i], mem_ctx, arec,
