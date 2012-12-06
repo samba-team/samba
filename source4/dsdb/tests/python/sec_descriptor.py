@@ -1848,6 +1848,122 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertFalse("S:" in desc_sddl)
         self.assertFalse("G:" in desc_sddl)
 
+    def test_311(self):
+        sd_flags = (SECINFO_OWNER |
+                    SECINFO_GROUP |
+                    SECINFO_DACL |
+                    SECINFO_SACL)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                [], controls=None)
+        self.assertFalse("nTSecurityDescriptor" in res[0])
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["name"], controls=None)
+        self.assertFalse("nTSecurityDescriptor" in res[0])
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["name"], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertFalse("nTSecurityDescriptor" in res[0])
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                [], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["*"], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["nTSecurityDescriptor", "*"], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["*", "nTSecurityDescriptor"], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["nTSecurityDescriptor", "name"], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["name", "nTSecurityDescriptor"], controls=["sd_flags:1:%d" % (sd_flags)])
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["nTSecurityDescriptor"], controls=None)
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["name", "nTSecurityDescriptor"], controls=None)
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
+                ["nTSecurityDescriptor", "name"], controls=None)
+        self.assertTrue("nTSecurityDescriptor" in res[0])
+        tmp = res[0]["nTSecurityDescriptor"][0]
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(self.sd_utils.domain_sid)
+        self.assertTrue("O:" in sddl)
+        self.assertTrue("G:" in sddl)
+        self.assertTrue("D:" in sddl)
+        self.assertTrue("S:" in sddl)
 
 class RightsAttributesTests(DescriptorTests):
 
