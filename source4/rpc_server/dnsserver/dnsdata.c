@@ -412,9 +412,9 @@ struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RP
 
 		len = dns->data.soa.NamePrimaryServer.len;
 		if (dns->data.soa.NamePrimaryServer.str[len-1] == '.') {
-			dnsp->data.soa.mname = talloc_strdup(mem_ctx, dns->data.soa.NamePrimaryServer.str);
-		} else {
 			dnsp->data.soa.mname = talloc_strndup(mem_ctx, dns->data.soa.NamePrimaryServer.str, len-1);
+		} else {
+			dnsp->data.soa.mname = talloc_strdup(mem_ctx, dns->data.soa.NamePrimaryServer.str);
 		}
 
 		len = dns->data.soa.ZoneAdministratorEmail.len;
