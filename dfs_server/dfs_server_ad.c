@@ -278,7 +278,7 @@ static NTSTATUS get_dcs(TALLOC_CTX *ctx, struct ldb_context *ldb,
 	int ret;
 	uint32_t current_pos = 0;
 	NTSTATUS status;
-	TALLOC_CTX *subctx = talloc_new(ctx);
+	TALLOC_CTX *subctx;
 
 	*pset_list = set_list = NULL;
 
