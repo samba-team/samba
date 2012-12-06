@@ -3068,7 +3068,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 
 		status = reinit_after_fork(sconn->msg_ctx,
 					   sconn->ev_ctx,
-					   false);
+					   true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("reinit_after_fork failed: %s\n",
 				  nt_errstr(status)));
