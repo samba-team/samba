@@ -1066,11 +1066,12 @@ class cmd_update_record(Command):
          CNAME  fqdn_string
          NS     fqdn_string
          MX     "fqdn_string preference"
+         SOA    "fqdn_dns fqdn_email serial refresh retry expire minimumttl"
          SRV    "fqdn_string port priority weight"
          TXT    "'string1' 'string2' ..."
     """
 
-    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SRV|TXT> <olddata> <newdata>'
+    synopsis = '%prog <server> <zone> <name> <A|AAAA|PTR|CNAME|NS|MX|SOA|SRV|TXT> <olddata> <newdata>'
 
     takes_args = [ 'server', 'zone', 'name', 'rtype', 'olddata', 'newdata' ]
 
@@ -1083,7 +1084,7 @@ class cmd_update_record(Command):
     def run(self, server, zone, name, rtype, olddata, newdata,
                 sambaopts=None, credopts=None, versionopts=None):
 
-        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SRV','TXT'):
+        if rtype.upper() not in ('A','AAAA','PTR','CNAME','NS','MX','SOA','SRV','TXT'):
             raise CommandError('Updating record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
