@@ -45,9 +45,9 @@ struct aclread_context {
 	const char * const *attrs;
 	const struct dsdb_schema *schema;
 	uint32_t sd_flags;
-	bool sd;
-	bool instance_type;
-	bool object_sid;
+	bool added_nTSecurityDescriptor;
+	bool added_instanceType;
+	bool added_objectSid;
 	bool indirsync;
 };
 
@@ -145,15 +145,15 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			is_instancetype = ldb_attr_cmp("instanceType",
 						       msg->elements[i].name) == 0;
 			/* these attributes were added to perform access checks and must be removed */
-			if (is_objectsid && ac->object_sid) {
+			if (is_objectsid && ac->added_objectSid) {
 				aclread_mark_inaccesslible(&msg->elements[i]);
 				continue;
 			}
-			if (is_instancetype && ac->instance_type) {
+			if (is_instancetype && ac->added_instanceType) {
 				aclread_mark_inaccesslible(&msg->elements[i]);
 				continue;
 			}
-			if (is_sd && ac->sd) {
+			if (is_sd && ac->added_nTSecurityDescriptor) {
 				aclread_mark_inaccesslible(&msg->elements[i]);
 				continue;
 			}
@@ -295,6 +295,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	uint32_t flags = ldb_req_get_custom_flags(req);
 	struct ldb_result *res;
 	struct aclread_private *p;
+	bool need_sd = false;
 	bool is_untrusted = ldb_req_is_untrusted(req);
 	static const char * const _all_attrs[] = { "*", NULL };
 	bool all_attrs = false;
@@ -384,31 +385,33 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	 */
 	ac->sd_flags = dsdb_request_sd_flags(ac->req, NULL);
 
-	ac->sd = !(ldb_attr_in_list(attrs, "nTSecurityDescriptor"));
+	need_sd = !(ldb_attr_in_list(attrs, "nTSecurityDescriptor"));
 
 	if (!all_attrs) {
 		if (!ldb_attr_in_list(attrs, "instanceType")) {
-			ac->instance_type = true;
 			attrs = ldb_attr_list_copy_add(ac, attrs, "instanceType");
 			if (attrs == NULL) {
 				return ldb_oom(ldb);
 			}
+			ac->added_instanceType = true;
 		}
 		if (!ldb_attr_in_list(req->op.search.attrs, "objectSid")) {
-			ac->object_sid = true;
 			attrs = ldb_attr_list_copy_add(ac, attrs, "objectSid");
 			if (attrs == NULL) {
 				return ldb_oom(ldb);
 			}
+			ac->added_objectSid = true;
 		}
 	}
 
-	if (ac->sd) {
+	if (need_sd) {
 		attrs = ldb_attr_list_copy_add(ac, attrs, "nTSecurityDescriptor");
 		if (attrs == NULL) {
 			return ldb_oom(ldb);
 		}
+		ac->added_nTSecurityDescriptor = true;
 	}
+
 	ac->attrs = req->op.search.attrs;
 	ret = ldb_build_search_req_ex(&down_req,
 				      ldb, ac,
