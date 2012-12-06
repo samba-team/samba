@@ -91,6 +91,11 @@ static void wb_getgrsid_lookupsid_done(struct tevent_req *subreq)
 	case SID_NAME_DOM_GRP:
 	case SID_NAME_ALIAS:
 	case SID_NAME_WKN_GRP:
+	/*
+	 * also treat user-type SIDS (they might map to ID_TYPE_BOTH)
+	 */
+	case SID_NAME_USER:
+	case SID_NAME_COMPUTER:
 		break;
 	default:
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
@@ -131,6 +136,50 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 	}
 
 	state->gid = (gid_t)xid.id;
+
+	if (state->type == SID_NAME_USER || state->type == SID_NAME_COMPUTER) {
+		/*
+		 * special treatment for a user sid that is
+		 * mapped to ID_TYPE_BOTH:
+		 * create a group with the sid/xid as only member
+		 */
+		char *name;
+
+		if (xid.type != ID_TYPE_BOTH) {
+			tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
+			return;
+		}
+
+		state->members = talloc_dict_init(state);
+		if (tevent_req_nomem(state->members, req)) {
+			return;
+		}
+
+		name = fill_domain_username_talloc(talloc_tos(),
+						   state->domname,
+						   state->name,
+						   true /* can_assume */);
+		if (tevent_req_nomem(name, req)) {
+			return;
+		}
+
+		status = add_wbint_Principal_to_dict(talloc_tos(),
+						     &state->sid,
+						     &name,
+						     state->type,
+						     state->members);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return;
+		}
+
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * the "regular" case of a group type sid.
+	 */
 
 	subreq = wb_group_members_send(state, state->ev, &state->sid,
 				       state->type, state->max_nesting);
