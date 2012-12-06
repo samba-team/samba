@@ -2901,7 +2901,8 @@ static char **remote_completion(const char *text, int len)
 	info.samelen = len;
 	info.text = text;
 	info.len = len;
- 
+	info.count = 0;
+
 	if (len >= PATH_MAX)
 		return(NULL);
 
