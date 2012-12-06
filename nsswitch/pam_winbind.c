@@ -812,13 +812,11 @@ static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 {
 	struct pam_message msg, *pmsg;
 	struct pam_response *resp = NULL;
-	const char *prompt;
 	int ret;
 	bool retval = false;
-	prompt = _("Do you want to change your password now?");
 	pmsg = &msg;
 	msg.msg_style = PAM_RADIO_TYPE;
-	msg.msg = prompt;
+	msg.msg = _("Do you want to change your password now?");
 	ret = converse(ctx->pamh, 1, &pmsg, &resp);
 	if (resp == NULL) {
 		if (ret == PAM_SUCCESS) {
