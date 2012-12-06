@@ -1111,16 +1111,18 @@ NTSTATUS resolve_username_to_alias( TALLOC_CTX *mem_ctx,
 	if (!cache->tdb)
 		goto do_query;
 
-	if ( (upper_name = SMB_STRDUP(name)) == NULL )
+	upper_name = talloc_strdup(mem_ctx, name);
+	if (upper_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 	if (!strupper_m(upper_name)) {
-		SAFE_FREE(upper_name);
+		talloc_free(upper_name);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	centry = wcache_fetch(cache, domain, "NSS/NA/%s", upper_name);
 
-	SAFE_FREE( upper_name );
+	talloc_free(upper_name);
 
 	if (!centry)
 		goto do_query;
