@@ -91,7 +91,9 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		msg = ares->message;
 		ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, msg, &sd);
 		if (ret != LDB_SUCCESS || sd == NULL ) {
-			DEBUG(10, ("acl_read: cannot get descriptor\n"));
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+				      "acl_read: cannot get descriptor of %s\n",
+				      ldb_dn_get_linearized(msg->dn));
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto fail;
 		}
@@ -113,6 +115,11 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				talloc_free(tmp_ctx);
 				return LDB_SUCCESS;
 			} else if (ret != LDB_SUCCESS) {
+				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+					      "acl_read: %s check parent %s - %s\n",
+					      ldb_dn_get_linearized(msg->dn),
+					      ldb_strerror(ret),
+					      ldb_errstring(ldb));
 				goto fail;
 			}
 		}
@@ -124,8 +131,10 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 								 msg->elements[i].name);
 			if (!attr) {
-				DEBUG(2, ("acl_read: cannot find attribute %s in schema\n",
-					   msg->elements[i].name));
+				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+					      "acl_read: %s cannot find attr[%s] in of schema\n",
+					      ldb_dn_get_linearized(msg->dn),
+					      msg->elements[i].name);
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
@@ -216,6 +225,12 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 					}
 				}
 			} else if (ret != LDB_SUCCESS) {
+				ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+					      "acl_read: %s check attr[%s] gives %s - %s\n",
+					      ldb_dn_get_linearized(msg->dn),
+					      msg->elements[i].name,
+					      ldb_strerror(ret),
+					      ldb_errstring(ldb));
 				goto fail;
 			}
 		}
