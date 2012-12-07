@@ -30,7 +30,7 @@ struct winbindd_getgrnam_state {
 	struct talloc_dict *members;
 };
 
-static void winbindd_getgrnam_lookupsid_done(struct tevent_req *subreq);
+static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq);
 static void winbindd_getgrnam_done(struct tevent_req *subreq);
 
 struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
@@ -81,12 +81,12 @@ struct tevent_req *winbindd_getgrnam_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, winbindd_getgrnam_lookupsid_done,
+	tevent_req_set_callback(subreq, winbindd_getgrnam_lookupname_done,
 				req);
 	return req;
 }
 
-static void winbindd_getgrnam_lookupsid_done(struct tevent_req *subreq)
+static void winbindd_getgrnam_lookupname_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
