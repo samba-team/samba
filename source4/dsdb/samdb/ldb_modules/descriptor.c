@@ -1192,12 +1192,12 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 				      msg);
 
 		if (msg == NULL) {
-			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			ldb_debug(ldb, LDB_DEBUG_WARNING,
 				"descriptor_sd_propagation_recursive: "
 				"%s not found under %s",
 				ldb_dn_get_linearized(c->dn),
 				ldb_dn_get_linearized(change->dn));
-			return LDB_ERR_OPERATIONS_ERROR;
+			continue;
 		}
 
 		msg->elements = (struct ldb_message_element *)c;
