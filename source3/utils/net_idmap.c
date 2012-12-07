@@ -706,71 +706,6 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 	return net_idmap_check_db(dbfile, &opts);
 }
 
-static int net_idmap_aclmapset(struct net_context *c, int argc, const char **argv)
-{
-	TALLOC_CTX *mem_ctx;
-	int result = -1;
-	struct dom_sid src_sid, dst_sid;
-	char *src, *dst;
-	struct db_context *db;
-	struct db_record *rec;
-	NTSTATUS status;
-
-	if (argc != 3 || c->display_usage) {
-		d_fprintf(stderr, "%s net idmap aclmapset <tdb> "
-			  "<src-sid> <dst-sid>\n", _("Usage:"));
-		return -1;
-	}
-
-	if (!(mem_ctx = talloc_init("net idmap aclmapset"))) {
-		d_fprintf(stderr, _("talloc_init failed\n"));
-		return -1;
-	}
-
-	if (!(db = db_open(mem_ctx, argv[0], 0, TDB_DEFAULT,
-			   O_RDWR|O_CREAT, 0600,
-			   DBWRAP_LOCK_ORDER_1))) {
-		d_fprintf(stderr, _("db_open failed: %s\n"), strerror(errno));
-		goto fail;
-	}
-
-	if (!string_to_sid(&src_sid, argv[1])) {
-		d_fprintf(stderr, _("%s is not a valid sid\n"), argv[1]);
-		goto fail;
-	}
-
-	if (!string_to_sid(&dst_sid, argv[2])) {
-		d_fprintf(stderr, _("%s is not a valid sid\n"), argv[2]);
-		goto fail;
-	}
-
-	if (!(src = sid_string_talloc(mem_ctx, &src_sid))
-	    || !(dst = sid_string_talloc(mem_ctx, &dst_sid))) {
-		d_fprintf(stderr, _("talloc_strdup failed\n"));
-		goto fail;
-	}
-
-	if (!(rec = dbwrap_fetch_locked(
-		      db, mem_ctx, string_term_tdb_data(src)))) {
-		d_fprintf(stderr, _("could not fetch db record\n"));
-		goto fail;
-	}
-
-	status = dbwrap_record_store(rec, string_term_tdb_data(dst), 0);
-	TALLOC_FREE(rec);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, _("could not store record: %s\n"),
-			  nt_errstr(status));
-		goto fail;
-	}
-
-	result = 0;
-fail:
-	TALLOC_FREE(mem_ctx);
-	return result;
-}
-
 /***********************************************************
  Look at the current idmap
  **********************************************************/
@@ -816,14 +751,6 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			N_("Set secret for specified domain"),
 			N_("net idmap secret <DOMAIN> <secret>\n"
 			   "  Set secret for specified domain")
-		},
-		{
-			"aclmapset",
-			net_idmap_aclmapset,
-			NET_TRANSPORT_LOCAL,
-			N_("Set acl map"),
-			N_("net idmap aclmapset\n"
-			   "  Set acl map")
 		},
 		{
 			"check",
