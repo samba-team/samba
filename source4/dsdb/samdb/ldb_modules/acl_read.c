@@ -296,6 +296,8 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *res;
 	struct aclread_private *p;
 	bool is_untrusted = ldb_req_is_untrusted(req);
+	static const char * const _all_attrs[] = { "*", NULL };
+	bool all_attrs = false;
 	const char * const *attrs = NULL;
 	uint32_t instanceType;
 	static const char *acl_attrs[] = {
@@ -363,6 +365,18 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	if (!ac->schema) {
 		return ldb_operr(ldb);
 	}
+
+	attrs = req->op.search.attrs;
+	if (attrs == NULL) {
+		all_attrs = true;
+		attrs = _all_attrs;
+	} else if (attrs[0] == NULL) {
+		all_attrs = true;
+		attrs = _all_attrs;
+	} else if (ldb_attr_in_list(attrs, "*")) {
+		all_attrs = true;
+	}
+
 	/*
 	 * In theory we should also check for the SD control but control verification is
 	 * expensive so we'd better had the ntsecuritydescriptor to the list of
@@ -370,16 +384,15 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	 */
 	ac->sd_flags = dsdb_request_sd_flags(ac->req, NULL);
 
-	ac->sd = !(ldb_attr_in_list(req->op.search.attrs, "nTSecurityDescriptor"));
-	if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
-		if (!ldb_attr_in_list(req->op.search.attrs, "instanceType")) {
+	ac->sd = !(ldb_attr_in_list(attrs, "nTSecurityDescriptor"));
+
+	if (!all_attrs) {
+		if (!ldb_attr_in_list(attrs, "instanceType")) {
 			ac->instance_type = true;
-			attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "instanceType");
+			attrs = ldb_attr_list_copy_add(ac, attrs, "instanceType");
 			if (attrs == NULL) {
 				return ldb_oom(ldb);
 			}
-		} else {
-			attrs = req->op.search.attrs;
 		}
 		if (!ldb_attr_in_list(req->op.search.attrs, "objectSid")) {
 			ac->object_sid = true;
@@ -391,14 +404,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (ac->sd) {
-		/* avoid replacing all attributes with nTSecurityDescriptor
-		 * if attribute list is empty */
-		if (!attrs) {
-			attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "*");
-			if (attrs == NULL) {
-				return ldb_oom(ldb);
-			}
-		}
 		attrs = ldb_attr_list_copy_add(ac, attrs, "nTSecurityDescriptor");
 		if (attrs == NULL) {
 			return ldb_oom(ldb);
