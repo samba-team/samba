@@ -120,7 +120,7 @@ static void wb_fill_pwent_sid2gid_done(struct tevent_req *subreq)
 	 * We are filtering further down in sids2xids, but that filtering
 	 * depends on the actual type of the sid handed in (as determined
 	 * by lookupsids). Here we need to filter for the type of object
-	 * actually requested, in this case uid.
+	 * actually requested, in this case gid.
 	 */
 	if (!(xid.type == ID_TYPE_GID || xid.type == ID_TYPE_BOTH)) {
 		tevent_req_nterror(req, NT_STATUS_NONE_MAPPED);
