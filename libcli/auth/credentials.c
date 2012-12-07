@@ -520,6 +520,20 @@ void netlogon_creds_decrypt_samlogon(struct netlogon_creds_CredentialState *cred
 	/* find and decyrpt the session keys, return in parameters above */
 	if (validation_level == 6) {
 		/* they aren't encrypted! */
+	} else if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+		if (memcmp(base->key.key, zeros,
+			   sizeof(base->key.key)) != 0) {
+			netlogon_creds_aes_decrypt(creds,
+					    base->key.key,
+					    sizeof(base->key.key));
+		}
+
+		if (memcmp(base->LMSessKey.key, zeros,
+			   sizeof(base->LMSessKey.key)) != 0) {
+			netlogon_creds_aes_decrypt(creds,
+					    base->LMSessKey.key,
+					    sizeof(base->LMSessKey.key));
+		}
 	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		if (memcmp(base->key.key, zeros,
 			   sizeof(base->key.key)) != 0) {
