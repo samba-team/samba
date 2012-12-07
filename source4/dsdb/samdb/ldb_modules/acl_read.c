@@ -245,6 +245,11 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 					k++;
 				}
 			}
+			/*
+			 * This should not be needed, but some modules
+			 * may allocate values on the wrong context...
+			 */
+			talloc_steal(ret_msg->elements, msg);
 		} else {
 			ret_msg->elements = NULL;
 		}
