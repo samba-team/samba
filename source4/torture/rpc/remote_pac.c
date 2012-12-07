@@ -515,7 +515,8 @@ static bool test_S2U4Self(struct torture_context *tctx,
 			  struct dcerpc_pipe *p,
 			  struct cli_credentials *credentials,
 			  enum netr_SchannelType secure_channel_type,
-			  const char *test_machine_name)
+			  const char *test_machine_name,
+			  uint32_t negotiate_flags)
 {
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
@@ -549,6 +550,10 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
+
+	torture_comment(tctx,
+		"Testing S4U2SELF (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
+		secure_channel_type, test_machine_name, negotiate_flags);
 
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
@@ -709,7 +714,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
 
-	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
+	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
 				    credentials, secure_channel_type,
 				    &creds)) {
 		return false;
@@ -758,18 +763,40 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_S2U4Self_bdc(struct torture_context *tctx,
-			       struct dcerpc_pipe *p,
-			       struct cli_credentials *credentials)
+static bool test_S2U4Self_bdc_arcfour(struct torture_context *tctx,
+				      struct dcerpc_pipe *p,
+				      struct cli_credentials *credentials)
 {
-	return test_S2U4Self(tctx, p, credentials, SEC_CHAN_BDC, TEST_MACHINE_NAME_S2U4SELF_BDC);
+	return test_S2U4Self(tctx, p, credentials, SEC_CHAN_BDC,
+			     TEST_MACHINE_NAME_S2U4SELF_BDC,
+			     NETLOGON_NEG_AUTH2_ADS_FLAGS);
 }
 
-static bool test_S2U4Self_workstation(struct torture_context *tctx,
+static bool test_S2U4Self_bdc_aes(struct torture_context *tctx,
 				  struct dcerpc_pipe *p,
 				  struct cli_credentials *credentials)
 {
-	return test_S2U4Self(tctx, p, credentials, SEC_CHAN_WKSTA, TEST_MACHINE_NAME_S2U4SELF_WKSTA);
+	return test_S2U4Self(tctx, p, credentials, SEC_CHAN_BDC,
+			     TEST_MACHINE_NAME_S2U4SELF_BDC,
+			     NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
+}
+
+static bool test_S2U4Self_workstation_arcfour(struct torture_context *tctx,
+					      struct dcerpc_pipe *p,
+					      struct cli_credentials *credentials)
+{
+	return test_S2U4Self(tctx, p, credentials, SEC_CHAN_WKSTA,
+			     TEST_MACHINE_NAME_S2U4SELF_WKSTA,
+			     NETLOGON_NEG_AUTH2_ADS_FLAGS);
+}
+
+static bool test_S2U4Self_workstation_aes(struct torture_context *tctx,
+					  struct dcerpc_pipe *p,
+					  struct cli_credentials *credentials)
+{
+	return test_S2U4Self(tctx, p, credentials, SEC_CHAN_WKSTA,
+			     TEST_MACHINE_NAME_S2U4SELF_WKSTA,
+			     NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
 }
 
 struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
@@ -798,13 +825,21 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA_DES);
 	torture_rpc_tcase_add_test_join(tcase, "verify-sig", test_PACVerify_workstation_des);
 
-	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon-bdc",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-arcfour",
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_BDC);
-	torture_rpc_tcase_add_test_creds(tcase, "s2u4self", test_S2U4Self_bdc);
+	torture_rpc_tcase_add_test_creds(tcase, "s2u4self-arcfour", test_S2U4Self_bdc_arcfour);
 
-	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member",
+	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bcd-aes",
+							      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_BDC);
+	torture_rpc_tcase_add_test_creds(tcase, "s2u4self-aes", test_S2U4Self_bdc_aes);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-arcfour",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_WKSTA);
+	torture_rpc_tcase_add_test_creds(tcase, "s2u4self-arcfour", test_S2U4Self_workstation_arcfour);
 
-	torture_rpc_tcase_add_test_creds(tcase, "s2u4self", test_S2U4Self_workstation);
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-aes",
+								      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_WKSTA);
+	torture_rpc_tcase_add_test_creds(tcase, "s2u4self-aes", test_S2U4Self_workstation_aes);
+
 	return suite;
 }
