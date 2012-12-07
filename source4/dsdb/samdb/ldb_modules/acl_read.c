@@ -375,12 +375,18 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		if (!ldb_attr_in_list(req->op.search.attrs, "instanceType")) {
 			ac->instance_type = true;
 			attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "instanceType");
+			if (attrs == NULL) {
+				return ldb_oom(ldb);
+			}
 		} else {
 			attrs = req->op.search.attrs;
 		}
 		if (!ldb_attr_in_list(req->op.search.attrs, "objectSid")) {
 			ac->object_sid = true;
 			attrs = ldb_attr_list_copy_add(ac, attrs, "objectSid");
+			if (attrs == NULL) {
+				return ldb_oom(ldb);
+			}
 		}
 	}
 
@@ -389,8 +395,14 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		 * if attribute list is empty */
 		if (!attrs) {
 			attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "*");
+			if (attrs == NULL) {
+				return ldb_oom(ldb);
+			}
 		}
 		attrs = ldb_attr_list_copy_add(ac, attrs, "nTSecurityDescriptor");
+		if (attrs == NULL) {
+			return ldb_oom(ldb);
+		}
 	}
 	ac->attrs = req->op.search.attrs;
 	ret = ldb_build_search_req_ex(&down_req,
