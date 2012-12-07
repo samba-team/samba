@@ -1965,6 +1965,13 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertTrue("D:" in sddl)
         self.assertTrue("S:" in sddl)
 
+    def test_312(self):
+        """This search is done by the windows dc join..."""
+
+        res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None, ["1.1"],
+                controls=["extended_dn:1:0", "sd_flags:1:0", "search_options:1:1"])
+        self.assertFalse("nTSecurityDescriptor" in res[0])
+
 class RightsAttributesTests(DescriptorTests):
 
     def deleteAll(self):
