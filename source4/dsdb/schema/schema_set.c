@@ -676,13 +676,6 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_sche
 {
 	const char* tstring;
 	time_t ts;
-	if (samdb_find_attribute(ldb, msg,
-				 "objectclass", "attributeSchema") != NULL) {
-		return dsdb_set_attribute_from_ldb(ldb, schema, msg);
-	} else if (samdb_find_attribute(ldb, msg,
-				 "objectclass", "classSchema") != NULL) {
-		return dsdb_set_class_from_ldb(schema, msg);
-	}
 	tstring = ldb_msg_find_attr_as_string(msg, "whenChanged", NULL);
 	/* keep a trace of the ts of the most recently changed object */
 	if (tstring) {
@@ -690,6 +683,13 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_sche
 		if (ts > schema->ts_last_change) {
 			schema->ts_last_change = ts;
 		}
+	}
+	if (samdb_find_attribute(ldb, msg,
+				 "objectclass", "attributeSchema") != NULL) {
+		return dsdb_set_attribute_from_ldb(ldb, schema, msg);
+	} else if (samdb_find_attribute(ldb, msg,
+				 "objectclass", "classSchema") != NULL) {
+		return dsdb_set_class_from_ldb(schema, msg);
 	}
 	/* Don't fail on things not classes or attributes */
 	return WERR_OK;
