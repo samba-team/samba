@@ -240,7 +240,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 		talloc_steal(newmsg->elements, el->name);
 		talloc_steal(newmsg->elements, el->values);
 
-		talloc_free(msg);
+		talloc_steal(newmsg->elements, msg);
 		return ldb_module_send_entry(dsc->req, msg, controls);
 	}
 
@@ -653,6 +653,7 @@ skip_link:
 			continue;
 		}
 	}
+	talloc_steal(newmsg->elements, msg);
 
 	/*
 	 * Here we run through the list of attributes returned
@@ -685,10 +686,9 @@ skip_link:
 		if (val > dsc->highestUSN) {
 			dsc->highestUSN = val;
 		}
-		talloc_free(msg);
 		return ldb_module_send_entry(dsc->req, newmsg, controls);
 	} else {
-		talloc_free(msg);
+		talloc_free(newmsg);
 		return LDB_SUCCESS;
 	}
 }
