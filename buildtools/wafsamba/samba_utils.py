@@ -388,9 +388,17 @@ def RUN_COMMAND(cmd,
 # make sure we have md5. some systems don't have it
 try:
     from hashlib import md5
+    try:
+        foo = md5.md5('abcd')
+    except ValueError:
+        raise
 except:
     try:
         import md5
+        try:
+            foo = md5.md5('abcd')
+        except ValueError:
+            raise
     except:
         import Constants
         Constants.SIG_NIL = hash('abcd')
