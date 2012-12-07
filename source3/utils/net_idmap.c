@@ -427,63 +427,64 @@ static
 NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
 {
 	TALLOC_CTX* mem_ctx = talloc_tos();
-	struct db_record *rec1=NULL, *rec2=NULL;
-	TDB_DATA key2;
 	bool is_valid_mapping;
 	NTSTATUS status = NT_STATUS_OK;
-	TDB_DATA value;
+	TDB_DATA val1, val2;
 
-	rec1 = dbwrap_fetch_locked(db, mem_ctx, key1);
-	if (rec1 == NULL) {
+	ZERO_STRUCT(val1);
+	ZERO_STRUCT(val2);
+
+	status = dbwrap_fetch(db, mem_ctx, key1, &val1);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("failed to fetch: %.*s\n", (int)key1.dsize, key1.dptr));
-		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	key2 = dbwrap_record_get_value(rec1);
-	if (key2.dptr == NULL) {
-		DEBUG(1, ("could not find %.*s\n", (int)key1.dsize, key1.dptr));
-		status = NT_STATUS_NOT_FOUND;
+
+	if (val1.dptr == NULL) {
+		DEBUG(1, ("invalid mapping: %.*s -> empty value\n",
+			  (int)key1.dsize, key1.dptr));
+		status = NT_STATUS_FILE_INVALID;
 		goto done;
 	}
 
 	DEBUG(2, ("mapping: %.*s -> %.*s\n",
-		  (int)key1.dsize, key1.dptr, (int)key2.dsize, key2.dptr));
+		  (int)key1.dsize, key1.dptr, (int)val1.dsize, val1.dptr));
 
-	rec2 = dbwrap_fetch_locked(db, mem_ctx, key2);
-	if (rec2 == NULL) {
-		DEBUG(1, ("failed to fetch: %.*s\n", (int)key2.dsize, key2.dptr));
-		status = NT_STATUS_NO_MEMORY;
+	status = dbwrap_fetch(db, mem_ctx, val1, &val2);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("failed to fetch: %.*s\n", (int)val1.dsize, val1.dptr));
 		goto done;
 	}
 
-	value = dbwrap_record_get_value(rec2);
-	is_valid_mapping = tdb_data_equal(key1, value);
+	is_valid_mapping = tdb_data_equal(key1, val2);
 
 	if (!is_valid_mapping) {
 		DEBUG(1, ("invalid mapping: %.*s -> %.*s -> %.*s\n",
-			  (int)key1.dsize, key1.dptr, (int)key2.dsize, key2.dptr,
-			  (int)value.dsize, value.dptr ));
+			  (int)key1.dsize, key1.dptr,
+			  (int)val1.dsize, val1.dptr,
+			  (int)val2.dsize, val2.dptr));
 		if ( !force ) {
 			status = NT_STATUS_FILE_INVALID;
 			goto done;
 		}
 	}
 
-	status = dbwrap_record_delete(rec1);
+	status = dbwrap_delete(db, key1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("failed to delete: %.*s\n", (int)key1.dsize, key1.dptr));
 		goto done;
 	}
 
 	if (is_valid_mapping) {
-		status = dbwrap_record_delete(rec2);
+		status = dbwrap_delete(db, val1);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("failed to delete: %.*s\n", (int)key2.dsize, key2.dptr));
+			DEBUG(1, ("failed to delete: %.*s\n", (int)val1.dsize, val1.dptr));
 		}
 	}
+
 done:
-	TALLOC_FREE(rec1);
-	TALLOC_FREE(rec2);
+	TALLOC_FREE(val1.dptr);
+	TALLOC_FREE(val2.dptr);
 	return status;
 }
 
