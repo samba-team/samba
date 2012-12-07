@@ -405,7 +405,11 @@ static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *m
 	int ret;
 
 	for (sclass = schema->classes; sclass; sclass = sclass->next) {
-		ret = ldb_msg_add_string(msg, "objectClasses", schema_class_to_description(msg, sclass));
+		char *v = schema_class_to_description(msg, sclass);
+		if (v == NULL) {
+			return ldb_oom(ldb);
+		}
+		ret = ldb_msg_add_steal_string(msg, "objectClasses", v);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -417,9 +421,13 @@ static int generate_attributeTypes(struct ldb_context *ldb, struct ldb_message *
 {
 	const struct dsdb_attribute *attribute;
 	int ret;
-	
+
 	for (attribute = schema->attributes; attribute; attribute = attribute->next) {
-		ret = ldb_msg_add_string(msg, "attributeTypes", schema_attribute_to_description(msg, attribute));
+		char *v = schema_attribute_to_description(msg, attribute);
+		if (v == NULL) {
+			return ldb_oom(ldb);
+		}
+		ret = ldb_msg_add_steal_string(msg, "attributeTypes", v);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -461,7 +469,7 @@ static int generate_extendedAttributeInfo(struct ldb_context *ldb,
 			return ldb_oom(ldb);
 		}
 
-		ret = ldb_msg_add_string(msg, "extendedAttributeInfo", val);
+		ret = ldb_msg_add_steal_string(msg, "extendedAttributeInfo", val);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -483,7 +491,7 @@ static int generate_extendedClassInfo(struct ldb_context *ldb,
 			return ldb_oom(ldb);
 		}
 
-		ret = ldb_msg_add_string(msg, "extendedClassInfo", val);
+		ret = ldb_msg_add_steal_string(msg, "extendedClassInfo", val);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -521,7 +529,11 @@ static int generate_possibleInferiors(struct ldb_context *ldb, struct ldb_messag
 	}
 
 	for (i=0;possibleInferiors[i];i++) {
-		ret = ldb_msg_add_string(msg, "possibleInferiors", possibleInferiors[i]);
+		char *v = talloc_strdup(msg, possibleInferiors[i]);
+		if (v == NULL) {
+			return ldb_oom(ldb);
+		}
+		ret = ldb_msg_add_steal_string(msg, "possibleInferiors", v);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
