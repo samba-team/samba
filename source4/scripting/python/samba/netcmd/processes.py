@@ -62,17 +62,17 @@ class cmd_processes(Command):
         if name is not None:
             ids = msg_ctx.irpc_servers_byname(name)
             for server_id in ids:
-                print "%d\n" % server_id.pid
+                self.outf.write("%d\n" % server_id.pid)
         elif pid is not None:
             names = msg_ctx.irpc_all_servers()
             for name in names:
                 for server_id in name.ids:
                     if server_id.pid == int(pid):
-                        print "%s\n" % name.name
+                        self.outf.write("%s\n" % name.name)
         else:
             names = msg_ctx.irpc_all_servers()
+            self.outf.write(" Service:                PID \n")
+            self.outf.write("-----------------------------\n")
             for name in names:
-                print "%s: " % name.name
                 for server_id in name.ids:
-                    print "%d " % server_id.pid
-                print "\n"
+                    self.outf.write("%-16s      %6d\n" % (name.name, server_id.pid))
