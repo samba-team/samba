@@ -181,6 +181,38 @@ smb.conf changes
    winbindd socket directory		New
 
 
+CHANGES SINCE 4.0.0rc6
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9456: developer-build: Fix panic when acl_xattr fails with access
+      denied.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9462: Users can not be given write permissions any more by default.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9415: Install SWAT *.msg files with waf.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 9479: Support FIPS mode when building Samba.
+
+
+o   Tsukasa Hamano <hamano@osstech.co.jp>
+    * BUG 9471: Fix SEGV when using second vfs module.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9459: Install manpages only if we install the target.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 9460: Respond correctly to FILE_STREAM_INFO requests.
+
+
 CHANGES SINCE 4.0.0rc5
 ======================
 
