@@ -92,6 +92,14 @@ static WERROR create_response_rr(const struct dns_name_question *question,
 	case DNS_QTYPE_PTR:
 		ans[ai].rdata.ptr_record = talloc_strdup(ans, rec->data.ptr);
 		break;
+	case DNS_QTYPE_MX:
+		ans[ai].rdata.mx_record.preference = rec->data.mx.wPriority;
+		ans[ai].rdata.mx_record.exchange = talloc_strdup(
+			ans, rec->data.mx.nameTarget);
+		if (ans[ai].rdata.mx_record.exchange == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
 	case DNS_QTYPE_TXT:
 		tmp = talloc_asprintf(ans, "\"%s\"", rec->data.txt.str[0]);
 		W_ERROR_HAVE_NO_MEMORY(tmp);
