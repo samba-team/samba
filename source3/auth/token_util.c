@@ -837,16 +837,19 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		goto done;
 	}
 
+	/*
+	 * If result == NT_STATUS_OK then
+	 * we know we have a valid token. Ensure
+	 * we also have a valid username to match.
+	 */
+
 	if (*found_username == NULL) {
 		*found_username = talloc_strdup(mem_ctx, username);
+		if (*found_username == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+		}
 	}
 
-	if ((*token == NULL) || (*found_username == NULL)) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	result = NT_STATUS_OK;
 done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
