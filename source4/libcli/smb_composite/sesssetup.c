@@ -515,7 +515,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 		}
 	}
 
-	if ((const void *)chosen_oid == (const void *)GENSEC_OID_SPNEGO) {
+	if (strequal(chosen_oid, GENSEC_OID_SPNEGO)) {
 		status = gensec_update(session->gensec, state,
 				       c->event_ctx,
 				       session->transport->negotiate.secblob,
