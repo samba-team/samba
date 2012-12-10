@@ -83,6 +83,7 @@ from samba.provision.descriptor import (
     get_config_sites_descriptor,
     get_domain_descriptor,
     get_domain_infrastructure_descriptor,
+    get_domain_builtin_descriptor,
     )
 from samba.provision.common import (
     setup_path,
@@ -1298,6 +1299,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                 "DOMAINDN": names.domaindn})
         logger.info("Setting up sam.ldb data")
         infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(domainsid))
+        builtin_desc = b64encode(get_domain_builtin_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
             "CREATTIME": str(samba.unix2nttime(int(time.time()))),
             "DOMAINDN": names.domaindn,
@@ -1308,6 +1310,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
             "RIDAVAILABLESTART": str(next_rid + 600),
             "POLICYGUID_DC": policyguid_dc,
             "INFRASTRUCTURE_DESCRIPTOR": infrastructure_desc,
+            "BUILTIN_DESCRIPTOR": builtin_desc,
             })
 
         # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
