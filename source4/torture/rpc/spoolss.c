@@ -7646,11 +7646,9 @@ static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *
 			"failed to remove printer driver");
 	}
 
-	if (p) {
+	if (p && !t->wellknown) {
 		b = p->binding_handle;
-	}
 
-	if (!t->wellknown) {
 		torture_assert(tctx,
 			test_DeletePrinter(tctx, b, &t->handle),
 			"failed to delete printer");
