@@ -24,6 +24,7 @@ serverState: 1
 showInAdvancedViewOnly: FALSE
 systemFlags: -1946157056
 uASCompat: 1
+nTSecurityDescriptor:: ${BUILTIN_DESCRIPTOR}
 
 dn: CN=Deleted Objects,${DOMAINDN}
 objectClass: top
