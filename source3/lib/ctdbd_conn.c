@@ -213,7 +213,7 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, sockname, sizeof(addr.sun_path));
+	snprintf(addr.sun_path, sizeof(addr.sun_path), "%s", sockname);
 
 	salen = sizeof(struct sockaddr_un);
 	if (connect(fd, (struct sockaddr *)(void *)&addr, salen) == -1) {
