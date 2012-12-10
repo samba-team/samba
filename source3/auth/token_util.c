@@ -610,6 +610,11 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
 
+		if (found_username == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
 		/*
 		 * If the SID from lookup_name() was the guest sid, passdb knows
 		 * about the mapping of guest sid to lp_guestaccount()
@@ -700,6 +705,10 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
+		if (found_username == NULL) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	} else {
 
 		/* This user is from winbind, force the primary gid to the
@@ -737,7 +746,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		gids = gid;
 
-		/* Ensure we're returning the found_username on the right context. */
 		*found_username = NULL;
 	}
 
@@ -770,7 +778,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	*token = create_local_nt_token(mem_ctx, user_sid,
 				       is_guest, num_group_sids, group_sids);
 
-	if ((*token == NULL) || (*found_username == NULL)) {
+	if (*token == NULL) {
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
