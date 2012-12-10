@@ -93,6 +93,8 @@ SMBC_print_file_ctx(SMBCCTX *c_file,
 {
         SMBCFILE *fid1;
         SMBCFILE *fid2;
+        smbc_open_fn f_open1;
+        smbc_open_print_job_fn f_open_pj2;
         int bytes;
         int saverr;
         int tot_bytes = 0;
@@ -113,18 +115,30 @@ SMBC_print_file_ctx(SMBCCTX *c_file,
         }
 
         /* Try to open the file for reading ... */
-
-        if ((long)(fid1 = smbc_getFunctionOpen(c_file)(c_file, fname,
-                                                       O_RDONLY, 0666)) < 0) {
-                DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
+	f_open1 = smbc_getFunctionOpen(c_file);
+	if (f_open1 == NULL) {
+		errno = EINVAL;
 		TALLOC_FREE(frame);
-                return -1;  /* smbc_open sets errno */
-        }
+		return -1;
+	}
+
+	fid1 = f_open1(c_file, fname, O_RDONLY, 0666);
+	if (fid1 < 0) {
+		DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
+		TALLOC_FREE(frame);
+		return -1;  /* smbc_open sets errno */
+	}
 
         /* Now, try to open the printer file for writing */
+	f_open_pj2 = smbc_getFunctionOpenPrintJob(c_print);
+	if (f_open_pj2 == NULL) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
 
-        if ((long)(fid2 = smbc_getFunctionOpenPrintJob(c_print)(c_print,
-                                                                printq)) < 0) {
+	fid2 = f_open_pj2(c_print, printq);
+	if (fid2 < 0) {
                 saverr = errno;  /* Save errno */
                 smbc_getFunctionClose(c_file)(c_file, fid1);
                 errno = saverr;
