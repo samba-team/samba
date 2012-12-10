@@ -31,16 +31,19 @@
 #include <termios.h>
 
 static const char* get_editor(void) {
-	static const char* editor = NULL;
-	if (editor == NULL) {
-		editor = getenv("VISUAL");
-		if (editor == NULL) {
-			editor = getenv("EDITOR");
+	static char editor[64] = {0};
+
+	if (editor[0] == '\0') {
+		const char *tmp = getenv("VISUAL");
+		if (tmp == NULL) {
+			tmp = getenv("EDITOR");
 		}
-		if (editor == NULL) {
-			editor = "vi";
+		if (tmp == NULL) {
+			tmp = "vi";
 		}
+		snprintf(editor, sizeof(editor), "%s", tmp);
 	}
+
 	return editor;
 }
 
