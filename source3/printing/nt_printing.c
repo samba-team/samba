@@ -1222,7 +1222,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("printer_driver_in_use: Completed search through ntprinters.tdb...\n"));
 
 	if ( in_use ) {
-		struct spoolss_DriverInfo8 *driver;
+		struct spoolss_DriverInfo8 *driver = NULL;
 		WERROR werr;
 
 		DEBUG(5,("printer_driver_in_use: driver \"%s\" is currently in use\n", r->driver_name));
