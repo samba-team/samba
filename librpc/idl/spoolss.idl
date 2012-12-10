@@ -3013,11 +3013,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		PROTOCOL_LPR_TYPE	= 2
 	} spoolss_PortProtocol;
 
-	typedef [public] struct {
+	typedef [public,gensize] struct {
 		[charset(UTF16)] uint16 portname[64];
 		[value(0x00000001)] uint32 version;
 		spoolss_PortProtocol protocol;
-		[value(sizeof(r))] uint32 size;
+		[value(ndr_size_spoolss_PortData1(r, ndr->flags))] uint32 size;
 		uint32 reserved;
 		[charset(UTF16)] uint16 hostaddress[49];
 		[charset(UTF16)] uint16 snmpcommunity[33];
@@ -3031,11 +3031,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 snmp_dev_index;
 	} spoolss_PortData1;
 
-	typedef [public] struct {
+	typedef [public,gensize] struct {
 		[charset(UTF16)] uint16 portname[64];
 		[value(0x00000002)] uint32 version;
 		spoolss_PortProtocol protocol;
-		[value(sizeof(r))] uint32 size;
+		[value(ndr_size_spoolss_PortData2(r, ndr->flags))] uint32 size;
 		uint32 reserved;
 		[charset(UTF16)] uint16 hostaddress[128];
 		[charset(UTF16)] uint16 snmpcommunity[33];
