@@ -1018,6 +1018,7 @@ objectClass: crossRefContainer
 systemFlags: -2147483648
 msDS-Behavior-Version: ${FOREST_FUNCTIONALITY}
 showInAdvancedViewOnly: TRUE
+nTSecurityDescriptor:: ${PARTITIONS_DESCRIPTOR}
 
 # Partitions for DNS are missing here, they are added from provision_dnszones.ldif
 
