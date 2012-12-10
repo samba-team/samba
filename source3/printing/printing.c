@@ -197,13 +197,18 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 	const char *sversion = "INFO/version";
 	int services = lp_numservices();
 	int snum;
+	bool ok;
 
 	if (!printer_list_parent_init()) {
 		return false;
 	}
 
+	ok = directory_create_or_exist(cache_path("printing"), geteuid(), 0755);
+	if (!ok) {
+		return false;
+	}
+
 	unlink(cache_path("printing.tdb"));
-	mkdir(cache_path("printing"),0755);
 
 	/* handle a Samba upgrade */
 
