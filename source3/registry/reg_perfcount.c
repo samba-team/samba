@@ -48,8 +48,8 @@ static char *counters_directory(const char *dbname)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	path = state_path(PERFCOUNTDIR);
-	if (!directory_exist(path)) {
-		mkdir(path, 0755);
+	if (!directory_create_or_exist(path, geteuid(), 0755)) {
+		return NULL;
 	}
 
 	path = talloc_asprintf(ctx, "%s/%s", PERFCOUNTDIR, dbname);
