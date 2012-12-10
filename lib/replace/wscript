@@ -280,7 +280,7 @@ listxattr removexattr setxattr
 attr_get attr_getf attr_list attr_listf attropen attr_remove
 attr_removef attr_set attr_setf extattr_delete_fd extattr_delete_file
 extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file
-extattr_set_fd extattr_set_file fgetea flistea
+extattr_set_fd extattr_set_file fgetea
 fremoveea fsetea getea listea
 removeea setea
 ''', 'attr', checklibc=True, headers=xattr_headers)
