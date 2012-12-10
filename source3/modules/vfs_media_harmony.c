@@ -808,7 +808,7 @@ static DIR *mh_fdopendir(vfs_handle_struct *handle,
 		const char *mask,
 		uint32 attr)
 {
-	struct mh_dirinfo_struct *dirInfo;
+	struct mh_dirinfo_struct *dirInfo = NULL;
 	DIR *dirstream;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with fsp->fsp_name->base_name '%s'\n",
