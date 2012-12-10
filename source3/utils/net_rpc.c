@@ -4682,6 +4682,7 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 	for (i = 0; i < num_groups; i++) {
 		gid_t gid = groups[i];
 		struct dom_sid sid;
+		bool ok;
 
 		wbc_status = wbcGidToSid(gid, &wsid);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
@@ -4695,7 +4696,12 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 
 		DEBUG(3, (" %s\n", sid_str));
 
-		string_to_sid(&sid, sid_str);
+		ok = string_to_sid(&sid, sid_str);
+		if (!ok) {
+			DEBUG(1, ("Failed to convert string to SID\n"));
+			wbcFreeMemory(groups);
+			return false;
+		}
 		add_sid_to_token(token, &sid);
 	}
 	wbcFreeMemory(groups);
