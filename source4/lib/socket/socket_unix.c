@@ -113,7 +113,7 @@ static NTSTATUS unixdom_connect(struct socket_context *sock,
 		
 		ZERO_STRUCT(srv_addr);
 		srv_addr.sun_family = AF_UNIX;
-		strncpy(srv_addr.sun_path, srv_address->addr, sizeof(srv_addr.sun_path));
+		snprintf(srv_addr.sun_path, sizeof(srv_addr.sun_path), "%s", srv_address->addr);
 
 		ret = connect(sock->fd, (const struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
@@ -148,8 +148,8 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 		
 		ZERO_STRUCT(my_addr);
 		my_addr.sun_family = AF_UNIX;
-		strncpy(my_addr.sun_path, my_address->addr, sizeof(my_addr.sun_path));
-		
+		snprintf(my_addr.sun_path, sizeof(my_addr.sun_path), "%s", my_address->addr);
+
 		ret = bind(sock->fd, (struct sockaddr *)&my_addr, sizeof(my_addr));
 	}
 	if (ret == -1) {
@@ -278,8 +278,8 @@ static NTSTATUS unixdom_sendto(struct socket_context *sock,
 		
 		ZERO_STRUCT(srv_addr);
 		srv_addr.sun_family = AF_UNIX;
-		strncpy(srv_addr.sun_path, dest->addr, sizeof(srv_addr.sun_path));
-		
+		snprintf(srv_addr.sun_path, sizeof(srv_addr.sun_path), "%s", dest->addr);
+
 		len = sendto(sock->fd, blob->data, blob->length, 0, 
 			     (struct sockaddr *)&srv_addr, sizeof(srv_addr));
 	}
