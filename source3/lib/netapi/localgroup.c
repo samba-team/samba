@@ -159,6 +159,11 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
+	ZERO_STRUCT(connect_handle);
+	ZERO_STRUCT(builtin_handle);
+	ZERO_STRUCT(domain_handle);
+	ZERO_STRUCT(alias_handle);
+
 	switch (r->in.level) {
 		case 0:
 			info0 = (struct LOCALGROUP_INFO_0 *)r->in.buffer;
@@ -172,11 +177,6 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 			werr = WERR_UNKNOWN_LEVEL;
 			goto done;
 	}
-
-	ZERO_STRUCT(connect_handle);
-	ZERO_STRUCT(builtin_handle);
-	ZERO_STRUCT(domain_handle);
-	ZERO_STRUCT(alias_handle);
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
