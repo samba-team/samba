@@ -1672,7 +1672,11 @@ static bool init_drv_info_3_members(TALLOC_CTX *mem_ctx, struct spoolss_AddDrive
 	}
 
 	while (str != NULL) {
-		add_string_to_array(deps, str, &file_array, &count);
+		bool ok;
+		ok = add_string_to_array(deps, str, &file_array, &count);
+		if (!ok) {
+			return false;
+		}
 		str = strtok_r(NULL, ",", &saveptr);
 	}
 
