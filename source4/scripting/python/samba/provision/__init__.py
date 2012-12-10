@@ -80,6 +80,7 @@ from samba.provision.descriptor import (
     get_empty_descriptor,
     get_config_descriptor,
     get_config_partitions_descriptor,
+    get_config_sites_descriptor,
     get_domain_descriptor
     )
 from samba.provision.common import (
@@ -1257,6 +1258,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         if fill == FILL_FULL:
             logger.info("Setting up sam.ldb configuration data")
             partitions_descr = b64encode(get_config_partitions_descriptor(domainsid))
+            sites_descr = b64encode(get_config_sites_descriptor(domainsid))
             setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
                     "CONFIGDN": names.configdn,
                     "NETBIOSNAME": names.netbiosname,
@@ -1269,6 +1271,7 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                     "FOREST_FUNCTIONALITY": str(forestFunctionality),
                     "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
                     "PARTITIONS_DESCRIPTOR": partitions_descr,
+                    "SITES_DESCRIPTOR": sites_descr,
                     })
 
             logger.info("Setting up display specifiers")
