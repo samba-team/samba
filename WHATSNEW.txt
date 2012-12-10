@@ -201,6 +201,11 @@ o   Alexander Bokovoy <ab@samba.org>
     * BUG 9479: Support FIPS mode when building Samba.
 
 
+o   Günther Deschner <gd@samba.org>
+    * BUG 9438: Fix netr_ServerPasswordSet2, netr_LogonSamLogon with netlogon
+      AES.
+
+
 o   Tsukasa Hamano <hamano@osstech.co.jp>
     * BUG 9471: Fix SEGV when using second vfs module.
 
