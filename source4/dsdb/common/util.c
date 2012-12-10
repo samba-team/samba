@@ -1978,6 +1978,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	struct ldb_request *req;
 	struct dsdb_control_password_change_status *pwd_stat = NULL;
 	int ret;
+	bool hash_values = false;
 	NTSTATUS status = NT_STATUS_OK;
 
 #define CHECK_RET(x) \
@@ -2013,6 +2014,7 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			el = ldb_msg_find_element(msg, "unicodePwd");
 			el->flags = LDB_FLAG_MOD_REPLACE;
 		}
+		hash_values = true;
 	} else {
 		/* the password wasn't specified correctly */
 		talloc_free(msg);
@@ -2050,13 +2052,15 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
-	ret = ldb_request_add_control(req,
-				      DSDB_CONTROL_PASSWORD_HASH_VALUES_OID,
-				      true, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(req);
-		talloc_free(msg);
-		return NT_STATUS_NO_MEMORY;
+	if (hash_values) {
+		ret = ldb_request_add_control(req,
+					      DSDB_CONTROL_PASSWORD_HASH_VALUES_OID,
+					      true, NULL);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(req);
+			talloc_free(msg);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 	ret = ldb_request_add_control(req,
 				      DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID,
