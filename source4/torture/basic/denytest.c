@@ -2367,9 +2367,10 @@ static bool torture_createx_specific(struct torture_context *tctx, struct
 	}
 
 	if (data_file_fd >= 0) {
+		size_t cxd_len = sizeof(struct createx_data);
 		found = true;
-		res = write(data_file_fd, &cxd, sizeof(cxd));
-		if (res != sizeof(cxd)) {
+		res = write(data_file_fd, &cxd, cxd_len);
+		if (res != cxd_len) {
 			torture_result(tctx, TORTURE_FAIL,
 				"(%s): write failed: %s!",
 				__location__, strerror(errno));
