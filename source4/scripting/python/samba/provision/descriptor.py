@@ -75,6 +75,21 @@ def get_config_partitions_descriptor(domain_sid):
     sec = security.descriptor.from_sddl(sddl, domain_sid)
     return ndr_pack(sec)
 
+def get_config_sites_descriptor(domain_sid):
+    sddl = "D:" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(OA;CIIO;SW;d31a8757-2447-4545-8081-3bb610cacbf2;f0f8ffab-1191-11d0-a060-00aa006c33ed;ER)" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;EA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "S:" \
+    "(AU;CISA;CCDCSDDT;;;WD)" \
+    "(OU;CIIOSA;CR;;f0f8ffab-1191-11d0-a060-00aa006c33ed;WD)" \
+    "(OU;CIIOSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
+    "(OU;CIIOSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
+    "(OU;CIIOSA;WP;3e10944c-c354-11d0-aff8-0000f80367c1;b7b13124-b82e-11d0-afee-0000f80367c1;WD)"
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return ndr_pack(sec)
+
 def get_domain_descriptor(domain_sid):
     sddl= "O:BAG:BAD:AI(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
         "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
