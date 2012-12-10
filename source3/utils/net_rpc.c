@@ -369,7 +369,9 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	}
 
 	fstrcpy(trust_passwd, lp_netbios_name());
-	strlower_m(trust_passwd);
+	if (!strlower_m(trust_passwd)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/*
 	 * Machine names can be 15 characters, but the max length on
