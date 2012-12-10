@@ -853,7 +853,7 @@ done:
 }
 
 /***************************************************************************
- Build upon create_token_from_usersid:
+ Build upon create_token_from_sid:
 
  Expensive helper function to figure out whether a user given its sid is
  member of a particular group.
