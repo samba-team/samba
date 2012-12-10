@@ -845,9 +845,9 @@ done:
 }
 
 /***************************************************************************
- Build upon create_token_from_username:
+ Build upon create_token_from_usersid:
 
- Expensive helper function to figure out whether a user given its name is
+ Expensive helper function to figure out whether a user given its sid is
  member of a particular group.
 ***************************************************************************/
 
