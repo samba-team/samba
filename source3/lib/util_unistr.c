@@ -45,6 +45,7 @@ void gfree_case_tables(void)
 			unmap_file(upcase_table, 0x20000);
 		else
 			SAFE_FREE(upcase_table);
+		upcase_table = NULL;
 	}
 
 	if ( lowcase_table ) {
@@ -52,6 +53,7 @@ void gfree_case_tables(void)
 			unmap_file(lowcase_table, 0x20000);
 		else
 			SAFE_FREE(lowcase_table);
+		lowcase_table = NULL;
 	}
 
 	if ( valid_table ) {
@@ -59,6 +61,7 @@ void gfree_case_tables(void)
 			unmap_file(valid_table, 0x10000);
 		else
 			SAFE_FREE(valid_table);
+		valid_table = NULL;
 	}
 	initialized = false;
 }
