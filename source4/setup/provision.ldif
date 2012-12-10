@@ -63,6 +63,7 @@ objectClass: top
 objectClass: infrastructureUpdate
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
+nTSecurityDescriptor:: ${INFRASTRUCTURE_DESCRIPTOR}
 
 dn: CN=LostAndFound,${DOMAINDN}
 objectClass: top

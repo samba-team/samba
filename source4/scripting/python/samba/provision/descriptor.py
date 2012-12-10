@@ -143,6 +143,15 @@ def get_domain_descriptor(domain_sid):
     sec = security.descriptor.from_sddl(sddl, domain_sid)
     return ndr_pack(sec)
 
+def get_domain_infrastructure_descriptor(domain_sid):
+    sddl = "D:" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "S:" \
+    "(AU;SA;WPCR;;;WD)"
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return ndr_pack(sec)
 
 def get_dns_partition_descriptor(domainsid):
     sddl = "O:SYG:BAD:AI" \
