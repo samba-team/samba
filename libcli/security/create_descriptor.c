@@ -80,9 +80,30 @@ uint32_t map_generic_rights_ds(uint32_t access_mask)
 * and it does not seem to have any influence */
 static bool object_in_list(struct GUID *object_list, struct GUID *object)
 {
-	return true;
+	size_t i;
+
+	if (object_list == NULL) {
+		return true;
+	}
+
+	if (GUID_all_zero(object)) {
+		return true;
+	}
+
+	for (i=0; ; i++) {
+		if (GUID_all_zero(&object_list[i])) {
+			return false;
+		}
+		if (!GUID_equal(&object_list[i], object)) {
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
 }
- 
+
 /* returns true if the ACE gontains generic information
  * that needs to be processed additionally */
  
