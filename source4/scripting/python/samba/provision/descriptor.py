@@ -224,6 +224,19 @@ def get_domain_computers_descriptor(domain_sid):
     sec = security.descriptor.from_sddl(sddl, domain_sid)
     return ndr_pack(sec)
 
+def get_domain_users_descriptor(domain_sid):
+    sddl = "D:" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)" \
+    "(OA;;CCDC;bf967aba-0de6-11d0-a285-00aa003049e2;;AO)" \
+    "(OA;;CCDC;bf967a9c-0de6-11d0-a285-00aa003049e2;;AO)" \
+    "(OA;;CCDC;bf967aa8-0de6-11d0-a285-00aa003049e2;;PO)" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(OA;;CCDC;4828cc14-1437-45bc-9b07-ad6f015e5f28;;AO)" \
+    "S:"
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return ndr_pack(sec)
+
 def get_dns_partition_descriptor(domainsid):
     sddl = "O:SYG:BAD:AI" \
     "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
