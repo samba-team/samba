@@ -610,7 +610,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
 
-		if (found_username == NULL) {
+		if (*found_username == NULL) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
@@ -705,7 +705,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 		/* Ensure we're returning the found_username on the right context. */
 		*found_username = talloc_strdup(mem_ctx, pass->pw_name);
-		if (found_username == NULL) {
+		if (*found_username == NULL) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
