@@ -473,7 +473,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<varlistentry>
 		<term>%R</term>
 		<listitem><para>the selected protocol level after protocol negotiation. It can be one of CORE, COREPLUS, 
-			LANMAN1, LANMAN2 or NT1.</para></listitem>
+			LANMAN1, LANMAN2, NT1, SMB2_02, SMB2_10, SMB2_22, SMB2_24, SMB3_00 or SMB2_FF.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
