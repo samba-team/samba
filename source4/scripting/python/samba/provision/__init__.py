@@ -85,6 +85,7 @@ from samba.provision.descriptor import (
     get_domain_infrastructure_descriptor,
     get_domain_builtin_descriptor,
     get_domain_computers_descriptor,
+    get_domain_users_descriptor,
     )
 from samba.provision.common import (
     setup_path,
@@ -1286,8 +1287,11 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
             samdb.add_ldif(display_specifiers_ldif)
 
         logger.info("Adding users container")
+        users_desc = b64encode(get_domain_users_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
-                "DOMAINDN": names.domaindn})
+                "DOMAINDN": names.domaindn,
+                "USERS_DESCRIPTOR": users_desc
+                })
         logger.info("Modifying users container")
         setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
                 "DOMAINDN": names.domaindn})
