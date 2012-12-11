@@ -276,6 +276,7 @@ o   Tsukasa Hamano <hamano@osstech.co.jp>
 
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 9470: Fix MMC crashes.
+    * BUG 9481: Fix ACL on "cn=partitions,cn=configuration".
 
 
 o   Andreas Schneider <asn@samba.org>
