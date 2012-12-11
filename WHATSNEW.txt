@@ -152,7 +152,7 @@ as the internal dns server (SAMBA_INTERNAL) is the default now.
 Supported features
 ==================
 
-A whitepaper of currently (un-)supported features is available in the Wiki:
+A whitepaper of currently (un-)supported features is available on the wiki:
 
   https://wiki.samba.org/index.php/Samba_4.0_Whitepaper
 
