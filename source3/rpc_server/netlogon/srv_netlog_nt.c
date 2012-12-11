@@ -2470,8 +2470,6 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	struct netr_TrustInfo *trust_info;
 	struct pdb_trusted_domain *td;
 	DATA_BLOB trustAuth_blob;
-	struct samr_Password *new_owf_enc;
-	struct samr_Password *old_owf_enc;
 	struct loadparm_context *lp_ctx;
 
 	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
@@ -2545,12 +2543,6 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 			*r->out.trust_info = trust_info;
 		}
 
-		new_owf_enc = talloc_zero(p->mem_ctx, struct samr_Password);
-		old_owf_enc = talloc_zero(p->mem_ctx, struct samr_Password);
-		if (new_owf_enc == NULL || old_owf_enc == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 /* TODO: which trustAuth shall we use if we have in/out trust or do they have to
  * be equal ? */
 		if (td->trust_direction & NETR_TRUST_FLAG_INBOUND) {
@@ -2561,18 +2553,17 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 
 		status = get_password_from_trustAuth(p->mem_ctx, &trustAuth_blob,
 						     creds,
-						     new_owf_enc, old_owf_enc);
+						     r->out.new_owf_password,
+						     r->out.old_owf_password);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
-		r->out.new_owf_password = new_owf_enc;
-		r->out.old_owf_password = old_owf_enc;
 	} else {
 /* TODO: look for machine password */
-		r->out.new_owf_password = NULL;
-		r->out.old_owf_password = NULL;
+		ZERO_STRUCTP(r->out.new_owf_password);
+		ZERO_STRUCTP(r->out.old_owf_password);
 
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
