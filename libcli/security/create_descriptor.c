@@ -186,7 +186,13 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 
 			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
 			    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT) {
-				if (!object_in_list(object_list, &ace->object.object.type.type)) {
+				struct GUID inherited_object = GUID_zero();
+
+				if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
+					inherited_object = ace->object.object.inherited_type.inherited_type;
+				}
+
+				if (!object_in_list(object_list, &inherited_object)) {
 					tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 				}
 
