@@ -1,43 +1,151 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.0.0
+                         December 11, 2012
+                   =============================
 
-This is the sixth release candidate of Samba 4.0.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
 
-In this release candidate, we have a significant number of improvements
-to our Access Control List (ACL) code, particularly for the Active
-Directory Domain Controller, but also in our general purpose file
-server.
-
-These changes are important, as they enable Group Policy Objects to work
-correctly, allow administrators to impose restrictions on some users
-reading certain parts of the directory and correctly propagating
-inherited ACLs down the LDAP directory tree.
-
-Users of the Active Directory Domain Controller upgrading from any
-previous release should run 'samba-tool ntacl sysvolreset' to re-sync
-ACLs on the sysvol share with those matching the GPOs in LDAP and the
-defaults from an initial provision.  This will set an underlying POSIX
-ACL if required.
-
-Samba 4.0 will be the next version of the Samba suite and incorporates
-all the technology found in both the Samba4 series and the
-stable 3.x series. The primary additional features over Samba 3.6 are
-support for the Active Directory logon protocols used by Windows 2000
-and above.
+This is is the first stable release of Samba 4.0.
 
 This release contains the best of all of Samba's
 technology parts, both a file server (that you can reasonably expect
 to upgrade existing Samba 3.x releases to) and the AD domain
 controller work previously known as 'samba4'.
 
-If you are upgrading, or looking to develop, test or deploy Samba 4.0
-releases candidates, you should backup all configuration and data.
+Major enhancements in Samba 4.0.0 include:
+
+Active Directory services
+=========================
+
+Samba 4.0 supports the server-side of the Active Directory logon
+environment used by Windows 2000 and later, so we can do full domain
+join and domain logon operations with these clients.
+
+Our Domain Controller (DC) implementation includes our own built-in
+LDAP server and Kerberos Key Distribution Center (KDC) as well as the
+Samba3-like logon services provided over CIFS.  We correctly generate
+the infamous Kerberos PAC, and include it with the Kerberos tickets we
+issue.
 
 
-UPGRADING
+File Services
+=============
+
+Samba 4.0.0 ships with two distinct file servers.  We now use the
+file server from the Samba 3.x series 'smbd' for all file serving by
+default.
+
+Samba 4.0 also ships with the 'NTVFS' file server.  This file server
+is what was used in all previous releases of Samba 4.0, and is
+tuned to match the requirements of an AD domain controller.  We
+continue to support this, not only to provide continuity to
+installations that have deployed it as part of an AD DC, but also as a
+running example of the NT-FSA architecture we expect to move smbd to in
+the longer term.
+
+For pure file server work, the binaries users would expect from that
+series (nmbd, winbindd, smbpasswd) continue to be available.  When
+running an AD DC, you only need to run 'samba' (not
+nmbd/smbd/winbind), as the required services are co-coordinated by this
+master binary.
+
+
+DNS
+===
+
+As DNS is an integral part of Active Directory, we also provide two DNS
+solutions, a simple internal DNS server for 'out of the box' configurations
+and a more elaborate BIND plugin using the BIND DLZ mechanism in versions
+9.8 and 9.9. During the provision, you can select which backend to use.
+With the internal backend, your DNS server is good to go.
+If you chose the BIND_DLZ backend, a configuration file will be generated
+for bind to make it use this plugin, as well as a file explaining how to
+set up bind.
+
+
+NTP
+===
+
+To provide accurate timestamps to Windows clients, we integrate with
+the NTP project to provide secured NTP replies.  To use you need to
+start ntpd and configure it with the 'restrict ... ms-sntp' and
+ntpsigndsocket options.
+
+
+Python Scripting Interface
+==========================
+
+Finally, a new scripting interface has been added to Samba 4, allowing
+Python programs to interface to Samba's internals, and many tools and
+internal workings of the DC code is now implemented in python.
+
+
+Known Issues
+============
+
+- 'samba-tool domain classicupgrade' will fail when setting ACLs on
+  the GPO folders with NT_STATUS_INVALID_ONWER in the default
+  configuration.  This happens if, as is typical a 'domain admins'
+  group (-512) is mapped in the passdb backend being upgraded.  This
+  is because the group mapping to a GID only prevents Samba from
+  allocating a uid for that group.  The uid is needed so the 'domain
+  admins' group can own the GPO file objects.
+
+  To work around this issue, remove the 'domain admins' group before
+  upgrade, as it will be re-created automatically.  You will
+  of course need to fill in the group membership again.  A future release
+  will make this automatic, or find some other workaround.
+
+- This release makes the s3fs file server the default, as this is the
+  file server combination we will use for the Samba 4.0 release.
+
+- For similar reasons, sites with ACLs stored by the ntvfs file server
+  may wish to continue to use that file server implementation, as a
+  posix ACL will similarly not be set in this case.
+
+- Replication of DNS data from one AD server to another may not work.
+  The DNS data used by the internal DNS server and bind9_dlz is stored
+  in an application partition in our directory.  The replication of
+  this partition is not yet reliable.
+
+- Replication may fail on FreeBSD due to getaddrinfo() rejecting names
+  containing _.  A workaround will be in a future release.
+
+- samba_upgradeprovision should not be run when upgrading to this release
+  from a recent release.  No important database format changes have
+  been made since alpha16.
+
+- Installation on systems without a system iconv (and developer
+  headers at compile time) is known to cause errors when dealing with
+  non-ASCII characters.
+
+- Domain member support in the 'samba' binary is in its infancy, and
+  is not comparable to the support found in winbindd.  As such, do not
+  use the 'samba' binary (provided for the AD server) on a member
+  server.
+
+- There is no NetBIOS browsing support (network neighbourhood)
+  available for the AD domain controller.  (Support in nmbd and smbd
+  for classic domains and member/standalone servers is unchanged).
+
+- Clock Synchronisation is critical.  Many 'wrong password' errors are
+  actually due to Kerberos objecting to a clock skew between client
+  and server.  (The NTP work in the previous alphas are partly to assist
+  with this problem).
+
+- The DRS replication code may fail.  Please contact the team if you
+  experience issues with DRS replication, as we have fixed many issues
+  here in response to feedback from our production users.
+
+
+Running Samba 4.0 as an AD DC
+=============================
+
+A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
+
+  http://wiki.samba.org/index.php/Samba4/HOWTO
+
+
+Upgrading
 =========
 
 Users upgrading from Samba 3.x domain controllers and wanting to use
@@ -59,56 +167,6 @@ using the NTVFS file server).
 If you used the BIND9_FLATFILE or BIND9_DLZ features,
 you'll have to add '-dns' to the 'server services' option,
 as the internal dns server (SAMBA_INTERNAL) is the default now.
-
-
-NEW FEATURES
-============
-
-Samba 4.0 supports the server-side of the Active Directory logon
-environment used by Windows 2000 and later, so we can do full domain
-join and domain logon operations with these clients.
-
-Our Domain Controller (DC) implementation includes our own built-in
-LDAP server and Kerberos Key Distribution Center (KDC) as well as the
-Samba3-like logon services provided over CIFS.  We correctly generate
-the infamous Kerberos PAC, and include it with the Kerberos tickets we
-issue.
-
-Samba 4.0.0rc5 ships with two distinct file servers.  We now use the
-file server from the Samba 3.x series 'smbd' for all file serving by
-default.
-
-Samba 4.0 also ships with the 'NTVFS' file server.  This file server
-is what was used in all previous releases of Samba 4.0, and is
-tuned to match the requirements of an AD domain controller.  We
-continue to support this, not only to provide continuity to
-installations that have deployed it as part of an AD DC, but also as a
-running example of the NT-FSA architecture we expect to move smbd to in
-the longer term.
-
-For pure file server work, the binaries users would expect from that
-series (nmbd, winbindd, smbpasswd) continue to be available.  When
-running an AD DC, you only need to run 'samba' (not
-nmbd/smbd/winbind), as the required services are co-coordinated by this
-master binary.
-
-As DNS is an integral part of Active Directory, we also provide two DNS
-solutions, a simple internal DNS server for 'out of the box' configurations
-and a more elaborate BIND plugin using the BIND DLZ mechanism in versions
-9.8 and 9.9. During the provision, you can select which backend to use.
-With the internal backend, your DNS server is good to go.
-If you chose the BIND_DLZ backend, a configuration file will be generated
-for bind to make it use this plugin, as well as a file explaining how to
-set up bind.
-
-To provide accurate timestamps to Windows clients, we integrate with
-the NTP project to provide secured NTP replies.  To use you need to
-start ntpd and configure it with the 'restrict ... ms-sntp' and
-ntpsigndsocket options.
-
-Finally, a new scripting interface has been added to Samba 4, allowing
-Python programs to interface to Samba's internals, and many tools and
-internal workings of the DC code is now implemented in python.
 
 
 ######################################################################
@@ -181,12 +239,18 @@ smb.conf changes
    winbindd socket directory		New
 
 
+Commit Highlights
+=================
+
+
+
 CHANGES SINCE 4.0.0rc6
 ======================
 
 o   Michael Adam <obnox@samba.org>
     * BUG 9456: developer-build: Fix panic when acl_xattr fails with access
       denied.
+    * BUG 9457: Fix "map username script" with "security=ads" and Winbind.
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -210,6 +274,10 @@ o   Tsukasa Hamano <hamano@osstech.co.jp>
     * BUG 9471: Fix SEGV when using second vfs module.
 
 
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9470: Fix MMC crashes.
+
+
 o   Andreas Schneider <asn@samba.org>
     * BUG 9459: Install manpages only if we install the target.
 
@@ -221,9 +289,25 @@ o   Richard Sharpe <realrichardsharpe@gmail.com>
 CHANGES SINCE 4.0.0rc5
 ======================
 
-With this release candidate the ACLs in the Active Directory
-are also checked on searches by default. The automatic inheritance
-of ACLs is also correctly recalculated on changes now.
+In this release candidate, we have a significant number of improvements
+to our Access Control List (ACL) code, particularly for the Active
+Directory Domain Controller, but also in our general purpose file
+server.
+
+These changes are important, as they enable Group Policy Objects to work
+correctly, allow administrators to impose restrictions on some users
+reading certain parts of the directory and correctly propagating
+inherited ACLs down the LDAP directory tree.
+
+Users of the Active Directory Domain Controller upgrading from any
+previous release should run 'samba-tool ntacl sysvolreset' to re-sync
+ACLs on the sysvol share with those matching the GPOs in LDAP and the
+defaults from an initial provision.  This will set an underlying POSIX
+ACL if required.
+
+The ACLs in the Active Directory are also checked on searches by default.
+The automatic inheritance of ACLs is also correctly recalculated on
+changes now.
 
 o   Michael Adam <obnox@samba.org>
     * BUG 9350: Fail "configure --with-ads" if ads support is not available.
@@ -677,71 +761,6 @@ o   Andreas Schneider <asn@samba.org>
     * BUG 9231: Fix NT_STATUS_IO_TIMEOUT during slow import of printers into
       registry.
 
-
-KNOWN ISSUES
-============
-
-- 'samba-tool domain classicupgrade' will fail when setting ACLs on
-  the GPO folders with NT_STATUS_INVALID_ONWER in the default
-  configuration.  This happens if, as is typical a 'domain admins'
-  group (-512) is mapped in the passdb backend being upgraded.  This
-  is because the group mapping to a GID only prevents Samba from
-  allocating a uid for that group.  The uid is needed so the 'domain
-  admins' group can own the GPO file objects.
-
-  To work around this issue, remove the 'domain admins' group before
-  upgrade, as it will be re-created automatically.  You will
-  of course need to fill in the group membership again.  A future release
-  will make this automatic, or find some other workaround.
-
-- This release makes the s3fs file server the default, as this is the
-  file server combination we will use for the Samba 4.0 release.
-
-- For similar reasons, sites with ACLs stored by the ntvfs file server
-  may wish to continue to use that file server implementation, as a
-  posix ACL will similarly not be set in this case.
-
-- Replication of DNS data from one AD server to another may not work.
-  The DNS data used by the internal DNS server and bind9_dlz is stored
-  in an application partition in our directory.  The replication of
-  this partition is not yet reliable.
-
-- Replication may fail on FreeBSD due to getaddrinfo() rejecting names
-  containing _.  A workaround will be in a future release.
-
-- samba_upgradeprovision should not be run when upgrading to this release
-  from a recent release.  No important database format changes have
-  been made since alpha16.
-
-- Installation on systems without a system iconv (and developer
-  headers at compile time) is known to cause errors when dealing with
-  non-ASCII characters.
-
-- Domain member support in the 'samba' binary is in its infancy, and
-  is not comparable to the support found in winbindd.  As such, do not
-  use the 'samba' binary (provided for the AD server) on a member
-  server.
-
-- There is no NetBIOS browsing support (network neighbourhood)
-  available for the AD domain controller.  (Support in nmbd and smbd
-  for classic domains and member/standalone servers is unchanged).
-
-- Clock Synchronisation is critical.  Many 'wrong password' errors are
-  actually due to Kerberos objecting to a clock skew between client
-  and server.  (The NTP work in the previous alphas are partly to assist
-  with this problem).
-
-- The DRS replication code may fail.  Please contact the team if you
-  experience issues with DRS replication, as we have fixed many issues
-  here in response to feedback from our production users.
-
-
-RUNNING Samba 4.0 as an AD DC
-=============================
-
-A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
-
-  http://wiki.samba.org/index.php/Samba4/HOWTO
 
 #######################################
 Reporting bugs & Development Discussion
