@@ -1759,8 +1759,10 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "(%s:%s) old_password[%s] new_password[%s] status[%s]\n",
 			__location__, __FUNCTION__,
 			oldpass, newpass, nt_errstr(r.out.result));
-	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_WRONG_PASSWORD,
-		"ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM hash");
+	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_WRONG_PASSWORD,
+			"ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM hash");
+	}
 
 	/* Unbreak the LM hash */
 	hash1.hash[0]--;
@@ -1784,8 +1786,10 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "(%s:%s) old_password[%s] new_password[%s] status[%s]\n",
 			__location__, __FUNCTION__,
 			oldpass, newpass, nt_errstr(r.out.result));
-	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_WRONG_PASSWORD,
-		"expected NT_STATUS_WRONG_PASSWORD because we broke the NT hash");
+	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION)) {
+		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_WRONG_PASSWORD,
+			"expected NT_STATUS_WRONG_PASSWORD because we broke the NT hash");
+	}
 
 	/* Unbreak the NT hash */
 	hash3.hash[0]--;
@@ -1809,8 +1813,10 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "(%s:%s) old_password[%s] new_password[%s] status[%s]\n",
 			__location__, __FUNCTION__,
 			oldpass, newpass, nt_errstr(r.out.result));
-	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD)) {
-		torture_warning(tctx, "ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the LM cross-hash, got %s\n", nt_errstr(r.out.result));
+	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD) &&
+	    !NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION))
+	{
+		torture_warning(tctx, "ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD or NT_STATUS_PASSWORD_RESTRICTION because we broke the LM cross-hash, got %s\n", nt_errstr(r.out.result));
 		ret = false;
 	}
 
@@ -1836,8 +1842,10 @@ static bool test_ChangePasswordUser(struct dcerpc_binding_handle *b,
 	torture_comment(tctx, "(%s:%s) old_password[%s] new_password[%s] status[%s]\n",
 			__location__, __FUNCTION__,
 			oldpass, newpass, nt_errstr(r.out.result));
-	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD)) {
-		torture_warning(tctx, "ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD because we broke the NT cross-hash, got %s\n", nt_errstr(r.out.result));
+	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD) &&
+	    !NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION))
+	{
+		torture_warning(tctx, "ChangePasswordUser failed: expected NT_STATUS_WRONG_PASSWORD or NT_STATUS_PASSWORD_RESTRICTION because we broke the NT cross-hash, got %s\n", nt_errstr(r.out.result));
 		ret = false;
 	}
 
