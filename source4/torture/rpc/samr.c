@@ -2490,8 +2490,8 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 
 		Guenther */
 
-		if ((dominfo->min_password_age > 0) && !null_nttime(last_password_change) &&
-			   (last_password_change + dominfo->min_password_age > t)) {
+		if ((dominfo->min_password_age < 0) && !null_nttime(last_password_change) &&
+			   (last_password_change - dominfo->min_password_age > t)) {
 
 			if (reject->extendedFailureReason != SAM_PWD_CHANGE_NO_ERROR) {
 				torture_warning(tctx, "expected SAM_PWD_CHANGE_NO_ERROR (%d), got %d\n",
