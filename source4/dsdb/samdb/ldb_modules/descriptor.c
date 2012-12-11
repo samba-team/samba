@@ -249,9 +249,15 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	struct dom_sid *default_owner;
 	struct dom_sid *default_group;
 	struct security_descriptor *default_descriptor = NULL;
+	struct GUID *object_list = NULL;
 
 	if (objectclass != NULL) {
 		default_descriptor = get_sd_unpacked(module, mem_ctx, objectclass);
+		object_list = talloc_zero_array(mem_ctx, struct GUID, 2);
+		if (object_list == NULL) {
+			return NULL;
+		}
+		object_list[0] = objectclass->schemaIDGUID;
 	}
 
 	if (object) {
@@ -370,8 +376,13 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 	default_owner = get_default_ag(mem_ctx, dn,
 				       session_info->security_token, ldb);
 	default_group = get_default_group(mem_ctx, ldb, default_owner);
-	new_sd = create_security_descriptor(mem_ctx, parent_descriptor, user_descriptor, true,
-					    NULL, SEC_DACL_AUTO_INHERIT|SEC_SACL_AUTO_INHERIT,
+	new_sd = create_security_descriptor(mem_ctx,
+					    parent_descriptor,
+					    user_descriptor,
+					    true,
+					    object_list,
+					    SEC_DACL_AUTO_INHERIT |
+					    SEC_SACL_AUTO_INHERIT,
 					    session_info->security_token,
 					    default_owner, default_group,
 					    map_generic_rights_ds);
