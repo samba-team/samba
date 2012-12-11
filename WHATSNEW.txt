@@ -231,6 +231,7 @@ CHANGES SINCE 4.0.0rc6
 ======================
 
 o   Michael Adam <obnox@samba.org>
+    * BUG 9414: Honor password complexity settings.
     * BUG 9456: developer-build: Fix panic when acl_xattr fails with access
       denied.
     * BUG 9457: Fix "map username script" with "security=ads" and Winbind.
@@ -258,6 +259,7 @@ o   Tsukasa Hamano <hamano@osstech.co.jp>
 
 
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9414: Honor password complexity settings.
     * BUG 9470: Fix MMC crashes.
     * BUG 9481: Fix ACL on "cn=partitions,cn=configuration".
 
