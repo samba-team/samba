@@ -6807,6 +6807,11 @@ NTSTATUS _samr_ValidatePassword(struct pipes_struct *p,
 	struct samr_GetDomPwInfo pw;
 	struct samr_PwInfo dom_pw_info;
 
+	if (p->transport != NCACN_IP_TCP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (r->in.level < 1 || r->in.level > 3) {
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
