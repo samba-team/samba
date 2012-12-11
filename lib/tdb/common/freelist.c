@@ -45,7 +45,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
-		if (tdb->methods->tdb_write(tdb, off, rec, sizeof(*rec)) == -1)
+		if (tdb_rec_write(tdb, off, rec) == -1)
 			return -1;
 	}
 
