@@ -270,7 +270,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.lsa.privileges", "rpc.lsa.secrets",
        "rpc.samr", "rpc.samr.users", "rpc.samr.users.privileges", "rpc.samr.passwords",
        "rpc.samr.passwords.pwdlastset", "rpc.samr.large-dc", "rpc.samr.machine.auth",
-       "rpc.samr.priv",
+       "rpc.samr.priv", "rpc.samr.passwords.validate",
        "rpc.netlogon.admin",
        "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.join", "rpc.bind"]
 
@@ -326,6 +326,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
         plansmbtorture4testsuite(t, "s3dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD', 'over ncacn_np ')
+        plansmbtorture4testsuite(t, "plugin_s4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
+    elif t == "rpc.samr.passwords.validate":
+        plansmbtorture4testsuite(t, "s3dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
         plansmbtorture4testsuite(t, "plugin_s4_dc", 'ncacn_ip_tcp:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_ip_tcp ')
     elif t == "smb2.durable-open" or t == "smb2.durable-v2-open":
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
