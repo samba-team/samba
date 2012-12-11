@@ -619,7 +619,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS nt_status;
-	static const char zeros[16];
 	struct netr_SamBaseInfo *sam;
 	struct netr_SamInfo2 *sam2;
 	struct netr_SamInfo3 *sam3;
@@ -817,39 +816,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-	/* It appears that level 6 is not individually encrypted */
-	if ((r->in.validation_level != 6) &&
-	    memcmp(sam->key.key, zeros, sizeof(sam->key.key)) != 0) {
-		/* This key is sent unencrypted without the ARCFOUR or AES flag set */
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_encrypt(creds,
-					    sam->key.key,
-					    sizeof(sam->key.key));
-		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds,
-					    sam->key.key,
-					    sizeof(sam->key.key));
-		}
-	}
-
-	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-	/* It appears that level 6 is not individually encrypted */
-	if ((r->in.validation_level != 6) &&
-	    memcmp(sam->LMSessKey.key, zeros, sizeof(sam->LMSessKey.key)) != 0) {
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_encrypt(creds,
-					    sam->LMSessKey.key,
-					    sizeof(sam->LMSessKey.key));
-		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds,
-					    sam->LMSessKey.key,
-					    sizeof(sam->LMSessKey.key));
-		} else {
-			netlogon_creds_des_encrypt_LMKey(creds,
-						&sam->LMSessKey);
-		}
-	}
+	netlogon_creds_encrypt_samlogon_validation(creds,
+						   r->in.validation_level,
+						   r->out.validation);
 
 	/* TODO: Describe and deal with these flags */
 	*r->out.flags = 0;
