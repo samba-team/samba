@@ -33,9 +33,6 @@ DATE TIME [PID]:  1 [-121110] -> 192.168.20.249 -> 2 [+0]
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]: 1 [-121363] -> 192.168.20.253 -> 0 [+0]
 DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  CONSIDERING MOVES (UNASSIGNED)
-DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  CONSIDERING MOVES FROM 1 [418056]
 DATE TIME [PID]:  1 [-102557] -> 192.168.21.254 -> 0 [+14161]
 DATE TIME [PID]:  1 [-102557] -> 192.168.21.254 -> 2 [+0]
@@ -56,9 +53,6 @@ DATE TIME [PID]:  1 [-105485] -> 192.168.20.249 -> 2 [+0]
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]: 1 [-105738] -> 192.168.20.251 -> 2 [+0]
 DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  CONSIDERING MOVES (UNASSIGNED)
-DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  CONSIDERING MOVES FROM 1 [312571]
 DATE TIME [PID]:  1 [-88396] -> 192.168.21.254 -> 0 [+14161]
 DATE TIME [PID]:  1 [-88396] -> 192.168.21.254 -> 2 [+14161]
@@ -77,9 +71,6 @@ DATE TIME [PID]:  1 [-89609] -> 192.168.20.249 -> 2 [+15876]
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]: 1 [-88649] -> 192.168.21.253 -> 0 [+14161]
 DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  CONSIDERING MOVES (UNASSIGNED)
-DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  CONSIDERING MOVES FROM 1 [222962]
 DATE TIME [PID]:  1 [-72520] -> 192.168.21.254 -> 0 [+30037]
 DATE TIME [PID]:  1 [-72520] -> 192.168.21.254 -> 2 [+14161]
@@ -96,9 +87,6 @@ DATE TIME [PID]:  1 [-75448] -> 192.168.20.249 -> 2 [+15876]
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]: 1 [-75448] -> 192.168.20.254 -> 2 [+15625]
 DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  CONSIDERING MOVES (UNASSIGNED)
-DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  CONSIDERING MOVES FROM 1 [147514]
 DATE TIME [PID]:  1 [-58359] -> 192.168.21.254 -> 0 [+30037]
 DATE TIME [PID]:  1 [-58359] -> 192.168.21.254 -> 2 [+28322]
@@ -113,9 +101,6 @@ DATE TIME [PID]:  1 [-59823] -> 192.168.20.249 -> 2 [+31501]
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]: 1 [-59823] -> 192.168.20.250 -> 0 [+29786]
 DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  CONSIDERING MOVES (UNASSIGNED)
-DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  CONSIDERING MOVES FROM 1 [87691]
 DATE TIME [PID]:  1 [-44198] -> 192.168.21.254 -> 0 [+44198]
 DATE TIME [PID]:  1 [-44198] -> 192.168.21.254 -> 2 [+28322]
@@ -127,9 +112,6 @@ DATE TIME [PID]:  1 [-43947] -> 192.168.20.249 -> 0 [+45662]
 DATE TIME [PID]:  1 [-43947] -> 192.168.20.249 -> 2 [+31501]
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]: 1 [-44198] -> 192.168.21.254 -> 2 [+28322]
-DATE TIME [PID]:  ----------------------------------------
-DATE TIME [PID]:  CONSIDERING MOVES (UNASSIGNED)
-DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  ----------------------------------------
 DATE TIME [PID]:  CONSIDERING MOVES FROM 0 [43947]
 DATE TIME [PID]:  0 [-28322] -> 192.168.21.253 -> 0 [+28322]

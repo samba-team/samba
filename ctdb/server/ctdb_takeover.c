@@ -2157,8 +2157,6 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 	/* now we must redistribute all public addresses with takeover node
 	   -1 among the nodes available
 	*/
-	retries = 0;
-try_again:
 	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
 		lcp2_allocate_unassigned(ctdb, nodemap, mask, all_ips, lcp2_imbalances);
 	} else {
@@ -2177,6 +2175,8 @@ try_again:
 	/* now, try to make sure the ip adresses are evenly distributed
 	   across the node.
 	*/
+	retries = 0;
+try_again:
 	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
 		if (lcp2_failback(ctdb, nodemap, mask, all_ips, lcp2_imbalances, newly_healthy)) {
 			goto try_again;
