@@ -1673,13 +1673,6 @@ static bool basic_failback(struct ctdb_context *ctdb,
 			continue;
 		}
 
-		/* If we want deterministic IPs then dont try to reallocate 
-		   them to spread out the load.
-		*/
-		if (1 == ctdb->tunable.deterministic_public_ips) {
-			continue;
-		}
-
 		/* if the spread between the smallest and largest coverage by
 		   a node is >=2 we steal one of the ips from the node with
 		   most coverage to even things out a bit.
@@ -2174,12 +2167,11 @@ try_again:
 		basic_allocate_unassigned(ctdb, nodemap, mask, all_ips);
 	}
 
-	/* If we dont want ips to fail back after a node becomes healthy
-	   again, we wont even try to reallocat the ip addresses so that
-	   they are evenly spread out.
-	   This can NOT be used at the same time as DeterministicIPs !
-	*/
-	if (1 == ctdb->tunable.no_ip_failback) {
+	/* If we don't want IPs to fail back or if deterministic IPs
+	 * are being used, then don't rebalance IPs.
+	 */
+	if ((1 == ctdb->tunable.no_ip_failback) ||
+	    (1 == ctdb->tunable.deterministic_public_ips)) {
 		goto finished;
 	}
 
