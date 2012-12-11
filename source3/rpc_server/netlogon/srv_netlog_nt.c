@@ -1466,7 +1466,6 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context = NULL;
 	const char *fn;
-	struct netr_SamBaseInfo *base;
 
 	switch (p->opnum) {
 		case NDR_NETR_LOGONSAMLOGON:
@@ -1693,17 +1692,14 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	case 2:
 		status = serverinfo_to_SamInfo2(server_info,
 						r->out.validation->sam2);
-		base = &r->out.validation->sam2->base;
 		break;
 	case 3:
 		status = serverinfo_to_SamInfo3(server_info,
 						r->out.validation->sam3);
-		base = &r->out.validation->sam3->base;
 		break;
 	case 6:
 		status = serverinfo_to_SamInfo6(server_info,
 						r->out.validation->sam6);
-		base = &r->out.validation->sam6->base;
 		break;
 	}
 
@@ -1713,22 +1709,9 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		return status;
 	}
 
-	if (r->in.validation_level == 6) {
-		/* no further crypto to be applied - gd */
-		return NT_STATUS_OK;
-	}
-
-	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(creds, base->key.key, 16);
-		netlogon_creds_aes_encrypt(creds, base->LMSessKey.key, 8);
-	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-		netlogon_creds_arcfour_crypt(creds, base->key.key, 16);
-		netlogon_creds_arcfour_crypt(creds, base->LMSessKey.key, 8);
-	} else {
-		/* key is unencrypted when neither AES nor RC4 bits are set */
-		netlogon_creds_des_encrypt_LMKey(creds, &base->LMSessKey);
-	}
-
+	netlogon_creds_encrypt_samlogon_validation(creds,
+						   r->in.validation_level,
+						   r->out.validation);
 	return NT_STATUS_OK;
 }
 
