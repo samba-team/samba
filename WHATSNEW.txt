@@ -26,6 +26,10 @@ Samba3-like logon services provided over CIFS.  We correctly generate
 the infamous Kerberos PAC, and include it with the Kerberos tickets we
 issue.
 
+When running an AD DC, you only need to run 'samba' (not smbd/nmbd/winbindd),
+as the required services are co-coordinated by this master binary.
+The tool to administer the Active Directory services is called 'samba-tool'.
+
 
 File Services
 =============
@@ -43,9 +47,7 @@ running example of the NT-FSA architecture we expect to move smbd to in
 the longer term.
 
 For pure file server work, the binaries users would expect from that
-series (smbd, nmbd, winbindd, smbpasswd) continue to be available.  When
-running an AD DC, you only need to run 'samba' (not smbd/nmbd/winbindd),
-as the required services are co-coordinated by this master binary.
+series (smbd, nmbd, winbindd, smbpasswd) continue to be available.
 
 
 DNS
