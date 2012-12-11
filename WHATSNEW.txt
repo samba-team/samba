@@ -30,6 +30,10 @@ When running an AD DC, you only need to run 'samba' (not smbd/nmbd/winbindd),
 as the required services are co-coordinated by this master binary.
 The tool to administer the Active Directory services is called 'samba-tool'.
 
+A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
+
+  http://wiki.samba.org/index.php/Samba4/HOWTO
+
 
 File Services
 =============
@@ -121,14 +125,6 @@ Known Issues
   it (for details, please refer to bug #8850).
 
 
-Running Samba 4.0 as an AD DC
-=============================
-
-A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
-
-  http://wiki.samba.org/index.php/Samba4/HOWTO
-
-
 Upgrading
 =========
 
@@ -151,6 +147,14 @@ using the NTVFS file server).
 If you used the BIND9_FLATFILE or BIND9_DLZ features,
 you'll have to add '-dns' to the 'server services' option,
 as the internal dns server (SAMBA_INTERNAL) is the default now.
+
+
+Supported features
+==================
+
+A whitepaper of currently (un-)supported features is available in the Wiki:
+
+  https://wiki.samba.org/index.php/Samba_4.0_Whitepaper
 
 
 ######################################################################
