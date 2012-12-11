@@ -164,7 +164,14 @@ static PyObject *obj_reopen(PyTdbObject *self)
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 	ret = tdb_reopen(self->ctx);
-	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
+	if (ret != 0) {
+		self->closed = true;
+		PyErr_SetObject(PyExc_RuntimeError,
+				Py_BuildValue("(i,s)",
+					      TDB_ERR_IO,
+					      "Failed to reopen database"));
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
@@ -209,7 +216,13 @@ static PyObject *obj_close(PyTdbObject *self)
 		Py_RETURN_NONE;
 	ret = tdb_close(self->ctx);
 	self->closed = true;
-	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
+	if (ret != 0) {
+		PyErr_SetObject(PyExc_RuntimeError,
+				Py_BuildValue("(i,s)",
+					      TDB_ERR_IO,
+					      "Failed to close database"));
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
