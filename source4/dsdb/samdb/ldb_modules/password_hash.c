@@ -1954,6 +1954,19 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		return LDB_SUCCESS;
 	}
 
+	/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
+	if ((io->u.pwdLastSet - io->ac->status->domain_data.minPwdAge > io->g.last_set) &&
+	    !io->ac->pwd_reset)
+	{
+		ret = LDB_ERR_CONSTRAINT_VIOLATION;
+		ldb_asprintf_errstring(ldb,
+			"%08X: %s - check_password_restrictions: "
+			"password is too young to change!",
+			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
+			ldb_strerror(ret));
+		return ret;
+	}
+
 	/*
 	 * Fundamental password checks done by the call
 	 * "samdb_check_password".
@@ -2059,17 +2072,6 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 		ldb_asprintf_errstring(ldb,
 			"%08X: %s - check_password_restrictions: "
 			"password can't be changed on this account!",
-			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
-			ldb_strerror(ret));
-		return ret;
-	}
-
-	/* Password minimum age: yes, this is a minus. The ages are in negative 100nsec units! */
-	if (io->u.pwdLastSet - io->ac->status->domain_data.minPwdAge > io->g.last_set) {
-		ret = LDB_ERR_CONSTRAINT_VIOLATION;
-		ldb_asprintf_errstring(ldb,
-			"%08X: %s - check_password_restrictions: "
-			"password is too young to change!",
 			W_ERROR_V(WERR_PASSWORD_RESTRICTION),
 			ldb_strerror(ret));
 		return ret;
