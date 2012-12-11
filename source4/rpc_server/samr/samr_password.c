@@ -88,34 +88,22 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 	if (lm_pwd) {
 		D_P16(lm_pwd->hash, r->in.new_lm_crypted->hash, new_lmPwdHash.hash);
 		D_P16(new_lmPwdHash.hash, r->in.old_lm_crypted->hash, checkHash.hash);
-		if (memcmp(checkHash.hash, lm_pwd, 16) != 0) {
-			return NT_STATUS_WRONG_PASSWORD;
-		}
 	}
 
 	/* decrypt and check the new nt hash */
 	D_P16(nt_pwd->hash, r->in.new_nt_crypted->hash, new_ntPwdHash.hash);
 	D_P16(new_ntPwdHash.hash, r->in.old_nt_crypted->hash, checkHash.hash);
-	if (memcmp(checkHash.hash, nt_pwd, 16) != 0) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
 
 	/* The NT Cross is not required by Win2k3 R2, but if present
 	   check the nt cross hash */
 	if (r->in.cross1_present && r->in.nt_cross && lm_pwd) {
 		D_P16(lm_pwd->hash, r->in.nt_cross->hash, checkHash.hash);
-		if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
-			return NT_STATUS_WRONG_PASSWORD;
-		}
 	}
 
 	/* The LM Cross is not required by Win2k3 R2, but if present
 	   check the lm cross hash */
 	if (r->in.cross2_present && r->in.lm_cross && lm_pwd) {
 		D_P16(nt_pwd->hash, r->in.lm_cross->hash, checkHash.hash);
-		if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
-			return NT_STATUS_WRONG_PASSWORD;
-		}
 	}
 
 	/* Start a SAM with user privileges for the password change */
@@ -146,6 +134,37 @@ NTSTATUS dcesrv_samr_ChangePasswordUser(struct dcesrv_call_state *dce_call,
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
 		return status;
+	}
+
+	/* decrypt and check the new lm hash */
+	if (lm_pwd) {
+		if (memcmp(checkHash.hash, lm_pwd, 16) != 0) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+	}
+
+	if (memcmp(checkHash.hash, nt_pwd, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
+		return NT_STATUS_WRONG_PASSWORD;
+	}
+
+	/* The NT Cross is not required by Win2k3 R2, but if present
+	   check the nt cross hash */
+	if (r->in.cross1_present && r->in.nt_cross && lm_pwd) {
+		if (memcmp(checkHash.hash, new_ntPwdHash.hash, 16) != 0) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
+	}
+
+	/* The LM Cross is not required by Win2k3 R2, but if present
+	   check the lm cross hash */
+	if (r->in.cross2_present && r->in.lm_cross && lm_pwd) {
+		if (memcmp(checkHash.hash, new_lmPwdHash.hash, 16) != 0) {
+			ldb_transaction_cancel(sam_ctx);
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 	}
 
 	/* And this confirms it in a transaction commit */
@@ -256,9 +275,6 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 	E_deshash(new_pass, new_lm_hash);
 	E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
-	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
-		return NT_STATUS_WRONG_PASSWORD;
-	}
 
 	/* Connect to a SAMDB with user privileges for the password change */
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
@@ -288,6 +304,11 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
 		return status;
+	}
+
+	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* And this confirms it in a transaction commit */
@@ -379,41 +400,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	if (r->in.nt_verifier == NULL) {
-		status = NT_STATUS_WRONG_PASSWORD;
-		goto failed;
-	}
-
-	/* check NT verifier */
-	mdfour(new_nt_hash, new_password.data, new_password.length);
-
-	E_old_pw_hash(new_nt_hash, nt_pwd->hash, nt_verifier.hash);
-	if (memcmp(nt_verifier.hash, r->in.nt_verifier->hash, 16) != 0) {
-		status = NT_STATUS_WRONG_PASSWORD;
-		goto failed;
-	}
-
-	/* check LM verifier (really not needed as we just checked the
-	 * much stronger NT hash, but the RPC-SAMR test checks for
-	 * this) */
-	if (lm_pwd && r->in.lm_verifier != NULL) {
-		char *new_pass;
-		size_t converted_size = 0;
-
-		if (!convert_string_talloc_handle(mem_ctx, lpcfg_iconv_handle(dce_call->conn->dce_ctx->lp_ctx),
-					  CH_UTF16, CH_UNIX,
-					  (const char *)new_password.data,
-					  new_password.length,
-					  (void **)&new_pass, &converted_size)) {
-			E_deshash(new_pass, new_lm_hash);
-			E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
-			if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {
-				status = NT_STATUS_WRONG_PASSWORD;
-				goto failed;
-			}
-		}
-	}
-
 	/* Connect to a SAMDB with user privileges for the password change */
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
@@ -442,6 +428,38 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_transaction_cancel(sam_ctx);
 		goto failed;
+	}
+
+	/* check NT verifier */
+	mdfour(new_nt_hash, new_password.data, new_password.length);
+
+	E_old_pw_hash(new_nt_hash, nt_pwd->hash, nt_verifier.hash);
+	if (memcmp(nt_verifier.hash, r->in.nt_verifier->hash, 16) != 0) {
+		ldb_transaction_cancel(sam_ctx);
+		status = NT_STATUS_WRONG_PASSWORD;
+		goto failed;
+	}
+
+	/* check LM verifier (really not needed as we just checked the
+	 * much stronger NT hash, but the RPC-SAMR test checks for
+	 * this) */
+	if (lm_pwd && r->in.lm_verifier != NULL) {
+		char *new_pass;
+		size_t converted_size = 0;
+
+		if (!convert_string_talloc_handle(mem_ctx, lpcfg_iconv_handle(dce_call->conn->dce_ctx->lp_ctx),
+					  CH_UTF16, CH_UNIX,
+					  (const char *)new_password.data,
+					  new_password.length,
+					  (void **)&new_pass, &converted_size)) {
+			E_deshash(new_pass, new_lm_hash);
+			E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
+			if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {
+				ldb_transaction_cancel(sam_ctx);
+				status = NT_STATUS_WRONG_PASSWORD;
+				goto failed;
+			}
+		}
 	}
 
 	/* And this confirms it in a transaction commit */
