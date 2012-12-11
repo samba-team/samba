@@ -1683,12 +1683,10 @@ static bool basic_failback(struct ctdb_context *ctdb,
 		     && (*retries < (num_ips + 5)) ){
 			struct ctdb_public_ip_list *tmp;
 
-			/* mark one of maxnode's vnn's as unassigned and try
-			   again
-			*/
+			/* Reassign one of maxnode's VNNs */
 			for (tmp=all_ips;tmp;tmp=tmp->next) {
 				if (tmp->pnn == maxnode) {
-					tmp->pnn = -1;
+					(void)find_takeover_node(ctdb, nodemap, mask, tmp, all_ips);
 					(*retries)++;
 					return true;
 				}
