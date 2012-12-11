@@ -35,7 +35,7 @@ file server from the Samba 3.x series 'smbd' for all file serving by
 default.
 
 Samba 4.0 also ships with the 'NTVFS' file server.  This file server
-is what was used in all previous releases of Samba 4.0, and is
+is what was used prior to the beta2 release of Samba 4.0, and is
 tuned to match the requirements of an AD domain controller.  We
 continue to support this, not only to provide continuity to
 installations that have deployed it as part of an AD DC, but also as a
@@ -80,26 +80,6 @@ internal workings of the DC code is now implemented in python.
 
 Known Issues
 ============
-
-- 'samba-tool domain classicupgrade' will fail when setting ACLs on
-  the GPO folders with NT_STATUS_INVALID_ONWER in the default
-  configuration.  This happens if, as is typical a 'domain admins'
-  group (-512) is mapped in the passdb backend being upgraded.  This
-  is because the group mapping to a GID only prevents Samba from
-  allocating a uid for that group.  The uid is needed so the 'domain
-  admins' group can own the GPO file objects.
-
-  To work around this issue, remove the 'domain admins' group before
-  upgrade, as it will be re-created automatically.  You will
-  of course need to fill in the group membership again.  A future release
-  will make this automatic, or find some other workaround.
-
-- This release makes the s3fs file server the default, as this is the
-  file server combination we will use for the Samba 4.0 release.
-
-- For similar reasons, sites with ACLs stored by the ntvfs file server
-  may wish to continue to use that file server implementation, as a
-  posix ACL will similarly not be set in this case.
 
 - Replication of DNS data from one AD server to another may not work.
   The DNS data used by the internal DNS server and bind9_dlz is stored
