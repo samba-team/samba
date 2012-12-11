@@ -212,9 +212,12 @@ void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
  * This can be used after a fork to ensure that we have an independent seek
  * pointer from our parent and to re-establish locks.
  *
- * @param[in]  tdb      The database to reopen.
+ * @param[in]  tdb      The database to reopen. It will be free'd on error!
  *
  * @return              0 on success, -1 on error.
+ *
+ * @note Don't call tdb_error() after this function cause the tdb context will
+ *       be freed on error.
  */
 int tdb_reopen(struct tdb_context *tdb);
 
@@ -361,9 +364,12 @@ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf);
 /**
  * @brief Close a database.
  *
- * @param[in]  tdb      The database to close.
+ * @param[in]  tdb      The database to close. The context will be free'd.
  *
  * @return              0 for success, -1 on error.
+ *
+ * @note Don't call tdb_error() after this function cause the tdb context will
+ *       be freed on error.
  */
 int tdb_close(struct tdb_context *tdb);
 
