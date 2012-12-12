@@ -33,7 +33,6 @@
 struct samba_runcmd_state {
 	int stdout_log_level;
 	int stderr_log_level;
-	struct tevent_fd *fde_stdin;
 	struct tevent_fd *fde_stdout;
 	struct tevent_fd *fde_stderr;
 	int fd_stdin, fd_stdout, fd_stderr;
@@ -49,6 +48,10 @@ static int samba_runcmd_state_destructor(struct samba_runcmd_state *state)
 		kill(state->pid, SIGKILL);
 		waitpid(state->pid, NULL, 0);
 		state->pid = -1;
+	}
+
+	if (state->fd_stdin != -1) {
+		close(state->fd_stdin);
 	}
 	return 0;
 }
@@ -85,6 +88,7 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 
 	state->stdout_log_level = stdout_log_level;
 	state->stderr_log_level = stderr_log_level;
+	state->fd_stdin = -1;
 
 	state->arg0 = talloc_strdup(state, argv0[0]);
 	if (tevent_req_nomem(state->arg0, req)) {
@@ -149,7 +153,6 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(state->fde_stdout, req)) {
 			close(state->fd_stdout);
 			close(state->fd_stderr);
-			close(state->fd_stdin);
 			return tevent_req_post(req, ev);
 		}
 		tevent_fd_set_auto_close(state->fde_stdout);
@@ -161,21 +164,9 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 						  req);
 		if (tevent_req_nomem(state->fde_stdout, req)) {
 			close(state->fd_stderr);
-			close(state->fd_stdin);
 			return tevent_req_post(req, ev);
 		}
 		tevent_fd_set_auto_close(state->fde_stderr);
-
-		state->fde_stdin = tevent_add_fd(ev, state,
-						 state->fd_stdin,
-						 0,
-						 samba_runcmd_io_handler,
-						 req);
-		if (tevent_req_nomem(state->fde_stdin, req)) {
-			close(state->fd_stdin);
-			return tevent_req_post(req, ev);
-		}
-		tevent_fd_set_auto_close(state->fde_stdin);
 
 		if (!timeval_is_zero(&endtime)) {
 			tevent_req_set_endtime(req, ev, endtime);
@@ -251,14 +242,6 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 	} else if (fde == state->fde_stderr) {
 		level = state->stderr_log_level;
 		fd = state->fd_stderr;
-	} else if (fde == state->fde_stdin) {
-		char c;
-		if (read(state->fd_stdin, &c, 1) != 1) {
-			/* the child has closed its stdin */
-			talloc_free(fde);
-			state->fde_stdin = NULL;
-			return;
-		}
 	} else {
 		return;
 	}
