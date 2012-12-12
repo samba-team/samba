@@ -457,6 +457,10 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct GUID create_guid,
 			       NTTIME now,
 			       struct smbXsrv_open **_open);
+struct smbXsrv_open_global0;
+NTSTATUS smbXsrv_open_global_traverse(
+	int (*fn)(struct smbXsrv_open_global0 *, void *),
+	void *private_data);
 
 struct smbd_smb2_request {
 	struct smbd_smb2_request *prev, *next;
