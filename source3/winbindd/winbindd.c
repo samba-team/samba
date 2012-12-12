@@ -818,7 +818,7 @@ static void new_connection(int listen_sock, bool privileged)
 
 	if (sock == -1) {
 		if (errno != EINTR) {
-			DEBUG(0, ("Faild to accept socket - %s\n",
+			DEBUG(0, ("Failed to accept socket - %s\n",
 				  strerror(errno)));
 		}
 		return;
