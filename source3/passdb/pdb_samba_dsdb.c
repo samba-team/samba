@@ -384,7 +384,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 		bool changed_history = false;
 		if (need_update(sam, PDB_LMPASSWD)) {
 			struct ldb_val val;
-			val.data = pdb_get_lanman_passwd(sam);
+			val.data = discard_const_p(uint8_t, pdb_get_lanman_passwd(sam));
 			if (!val.data) {
 				samdb_msg_add_delete(state->ldb, msg, msg,
 						     "dBCSPwd");
@@ -396,7 +396,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 		}
 		if (need_update(sam, PDB_NTPASSWD)) {
 			struct ldb_val val;
-			val.data = pdb_get_nt_passwd(sam);
+			val.data = discard_const_p(uint8_t, pdb_get_nt_passwd(sam));
 			if (!val.data) {
 				samdb_msg_add_delete(state->ldb, msg, msg,
 						     "unicodePwd");
