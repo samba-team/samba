@@ -646,8 +646,14 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 		W_ERROR_HAVE_NO_MEMORY(msg);
 		msg->dn = ldb_dn_copy(msg, kd->dn);
 		W_ERROR_HAVE_NO_MEMORY(msg->dn);
-		ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+		ret = ldb_msg_add_empty(msg, "data", LDB_FLAG_MOD_DELETE, NULL);
+		if (ret != LDB_SUCCESS) {
+			return WERR_FOOBAR;
+		}
 		ldb_msg_add_empty(msg, "type", LDB_FLAG_MOD_DELETE, NULL);
+		if (ret != LDB_SUCCESS) {
+			return WERR_FOOBAR;
+		}
 
 		ret = ldb_modify(kd->ldb, msg);
 
