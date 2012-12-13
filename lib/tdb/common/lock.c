@@ -348,20 +348,20 @@ static int tdb_lock_list(struct tdb_context *tdb, int list, int ltype,
 
 	if (tdb->allrecord_lock.count) {
 		tdb->ecode = TDB_ERR_LOCK;
-		ret = -1;
-	} else {
-		/* Only check when we grab first data lock. */
-		check = !have_data_locks(tdb);
-		ret = tdb_nest_lock(tdb, lock_offset(list), ltype, waitflag);
+		return -1;
+	}
 
-		if (ret == 0 && check && tdb_needs_recovery(tdb)) {
-			tdb_nest_unlock(tdb, lock_offset(list), ltype, false);
+	/* Only check when we grab first data lock. */
+	check = !have_data_locks(tdb);
+	ret = tdb_nest_lock(tdb, lock_offset(list), ltype, waitflag);
 
-			if (tdb_lock_and_recover(tdb) == -1) {
-				return -1;
-			}
-			return tdb_lock_list(tdb, list, ltype, waitflag);
+	if (ret == 0 && check && tdb_needs_recovery(tdb)) {
+		tdb_nest_unlock(tdb, lock_offset(list), ltype, false);
+
+		if (tdb_lock_and_recover(tdb) == -1) {
+			return -1;
 		}
+		return tdb_lock_list(tdb, list, ltype, waitflag);
 	}
 	return ret;
 }
