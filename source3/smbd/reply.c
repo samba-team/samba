@@ -6485,6 +6485,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	long offset = 0;
 	int create_options = 0;
 	bool posix_pathnames = lp_posix_pathnames();
+	int rc;
 
 	/*
 	 * Split the old name into directory and last component
@@ -6577,9 +6578,13 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
 		ZERO_STRUCT(smb_fname_src->st);
 		if (posix_pathnames) {
-			SMB_VFS_LSTAT(conn, smb_fname_src);
+			rc = SMB_VFS_LSTAT(conn, smb_fname_src);
 		} else {
-			SMB_VFS_STAT(conn, smb_fname_src);
+			rc = SMB_VFS_STAT(conn, smb_fname_src);
+		}
+		if (rc == -1) {
+			status = map_nt_error_from_unix_common(errno);
+			goto out;
 		}
 
 		if (S_ISDIR(smb_fname_src->st.st_ex_mode)) {
