@@ -576,6 +576,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	struct imessaging_context *msg;
 	NTSTATUS status;
 	struct socket_address *path;
+	bool ok;
 
 	if (ev == NULL) {
 		return NULL;
@@ -603,7 +604,11 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
 
-	mkdir(msg->base_path, 0700);
+	ok = directory_create_or_exist(msg->base_path, geteuid(), 0700);
+	if (!ok) {
+		talloc_free(msg);
+		return NULL;
+	}
 
 	msg->path          = imessaging_path(msg, server_id);
 	msg->server_id     = server_id;
