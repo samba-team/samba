@@ -666,7 +666,9 @@ int prefork_listen_recv(struct tevent_req *req,
 	if (state->error) {
 		ret = state->error;
 	} else {
-		tevent_req_is_unix_error(req, &ret);
+		if (!tevent_req_is_unix_error(req, &ret)) {
+			ret = 0;
+		}
 	}
 
 	if (ret) {
