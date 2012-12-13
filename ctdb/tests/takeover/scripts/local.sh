@@ -30,7 +30,7 @@ simple_test ()
     fi
 
     _states="$1"
-    _out=$($test_prog $_states 2>&1)
+    _out=$($VALGRIND $test_prog $_states 2>&1)
 
     result_check "Algorithm: $algorithm"
 }
