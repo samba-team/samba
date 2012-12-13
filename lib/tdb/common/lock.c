@@ -341,14 +341,29 @@ static int tdb_lock_list(struct tdb_context *tdb, int list, int ltype,
 	bool check = false;
 
 	/* a allrecord lock allows us to avoid per chain locks */
-	if (tdb->allrecord_lock.count &&
-	    (ltype == tdb->allrecord_lock.ltype || ltype == F_RDLCK)) {
-		return 0;
-	}
-
 	if (tdb->allrecord_lock.count) {
-		tdb->ecode = TDB_ERR_LOCK;
-		return -1;
+
+		if (ltype == F_RDLCK) {
+			/*
+			 * The allrecord_lock is equal (F_RDLCK) or stronger
+			 * (F_WRLCK). Pass.
+			 */
+			return 0;
+		}
+
+		if (tdb->allrecord_lock.ltype == F_RDLCK) {
+			/*
+			 * We ask for ltype==F_WRLCK, but the allrecord_lock
+			 * is too weak. We can't upgrade here, so fail.
+			 */
+			tdb->ecode = TDB_ERR_LOCK;
+			return -1;
+		}
+
+		/*
+		 * Asking for F_WRLCK, allrecord is F_WRLCK as well. Pass.
+		 */
+		return 0;
 	}
 
 	/* Only check when we grab first data lock. */
