@@ -3133,14 +3133,30 @@ static bool do_connect(struct smbclient_context *ctx,
 
 	if (strncmp(specified_share, "\\\\", 2) == 0 ||
 	    strncmp(specified_share, "//", 2) == 0) {
-		smbcli_parse_unc(specified_share, ctx, &server, &share);
+		bool ok;
+
+		ok = smbcli_parse_unc(specified_share, ctx, &server, &share);
+		if (!ok) {
+			d_printf("Failed to parse UNC\n");
+			talloc_free(ctx);
+			return false;
+		}
 	} else {
 		share = talloc_strdup(ctx, specified_share);
 		server = talloc_strdup(ctx, specified_server);
+		if (share == NULL || server == NULL) {
+			d_printf("Failed to allocate memory for server and share\n");
+			talloc_free(ctx);
+			return false;
+		}
 	}
 
 	ctx->remote_cur_dir = talloc_strdup(ctx, "\\");
-	
+	if (ctx->remote_cur_dir == NULL) {
+		talloc_free(ctx);
+		return false;
+	}
+
 	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
 					share, NULL, 
 					socket_options,
