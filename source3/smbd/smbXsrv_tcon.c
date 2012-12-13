@@ -1200,6 +1200,7 @@ static int smbXsrv_tcon_global_traverse_fn(struct db_record *rec, void *data)
 		goto done;
 	}
 
+	global_blob.info.info0->db_rec = rec;
 	ret = state->fn(global_blob.info.info0, state->private_data);
 done:
 	TALLOC_FREE(frame);
