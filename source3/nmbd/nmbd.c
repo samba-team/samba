@@ -788,6 +788,7 @@ static bool open_sockets(bool isdaemon, int port)
 	};
 	TALLOC_CTX *frame;
 	NTSTATUS status;
+	bool ok;
 
 	/*
 	 * Do this before any other talloc operation
@@ -945,12 +946,18 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 #endif
 
-	if (!directory_exist(lp_lockdir())) {
-		mkdir(lp_lockdir(), 0755);
+	ok = directory_create_or_exist(lp_lockdir(), geteuid(), 0755);
+	if (!ok) {
+		DEBUG(0, ("Failed to create directory %s for lock files - %s\n",
+			  lp_lockdir(), strerror(errno)));
+		exit(1);
 	}
 
-	if (!directory_exist(lp_piddir())) {
-		mkdir(lp_piddir(), 0755);
+	ok = directory_create_or_exist(lp_piddir(), geteuid(), 0755);
+	if (!ok) {
+		DEBUG(0, ("Failed to create directory %s for pid files - %s\n",
+			  lp_piddir(), strerror(errno)));
+		exit(1);
 	}
 
 	pidfile_create(lp_piddir(), "nmbd");
