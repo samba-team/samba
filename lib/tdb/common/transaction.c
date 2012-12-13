@@ -317,7 +317,7 @@ fail:
 
 
 /*
-  write while in a transaction - this varient never expands the transaction blocks, it only
+  write while in a transaction - this variant never expands the transaction blocks, it only
   updates existing blocks. This means it cannot change the recovery size
 */
 static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off, 
