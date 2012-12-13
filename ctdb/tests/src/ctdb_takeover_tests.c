@@ -458,12 +458,9 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 		  NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
 		  all_ips, &lcp2_imbalances, &newly_healthy);
 
-try_again:
-	if (lcp2_failback(ctdb, nodemap,
-			  NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
-			  all_ips, lcp2_imbalances, newly_healthy)) {
-		goto try_again;
-	}
+	lcp2_failback(ctdb, nodemap,
+		      NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
+		      all_ips, lcp2_imbalances, newly_healthy);
 
 	print_ctdb_public_ip_list(all_ips);
 

@@ -1604,16 +1604,21 @@ static void basic_allocate_unassigned(struct ctdb_context *ctdb,
 
 /* Basic non-deterministic rebalancing algorithm.
  */
-static bool basic_failback(struct ctdb_context *ctdb,
+static void basic_failback(struct ctdb_context *ctdb,
 			   struct ctdb_node_map *nodemap,
 			   uint32_t mask,
 			   struct ctdb_public_ip_list *all_ips,
-			   int num_ips,
-			   int *retries)
+			   int num_ips)
 {
 	int i;
-	int maxnode, maxnum=0, minnode, minnum=0, num;
+	int maxnode, maxnum, minnode, minnum, num, retries;
 	struct ctdb_public_ip_list *tmp_ip;
+
+	retries = 0;
+
+try_again:
+	maxnum=0;
+	minnum=0;
 
 	/* for each ip address, loop over all nodes that can serve
 	   this ip and make sure that the difference between the node
@@ -1680,21 +1685,19 @@ static bool basic_failback(struct ctdb_context *ctdb,
 		   want to spend too much time balancing the ip coverage.
 		*/
 		if ( (maxnum > minnum+1)
-		     && (*retries < (num_ips + 5)) ){
+		     && (retries < (num_ips + 5)) ){
 			struct ctdb_public_ip_list *tmp;
 
 			/* Reassign one of maxnode's VNNs */
 			for (tmp=all_ips;tmp;tmp=tmp->next) {
 				if (tmp->pnn == maxnode) {
 					(void)find_takeover_node(ctdb, nodemap, mask, tmp, all_ips);
-					(*retries)++;
-					return true;
+					retries++;
+					goto try_again;;
 				}
 			}
 		}
 	}
-
-	return false;
 }
 
 struct ctdb_rebalancenodes {
@@ -1993,7 +1996,7 @@ static int lcp2_cmp_imbalance_pnn(const void * a, const void * b)
  * node with the highest LCP2 imbalance, and then determines the best
  * IP/destination node combination to move from the source node.
  */
-static bool lcp2_failback(struct ctdb_context *ctdb,
+static void lcp2_failback(struct ctdb_context *ctdb,
 			  struct ctdb_node_map *nodemap,
 			  uint32_t mask,
 			  struct ctdb_public_ip_list *all_ips,
@@ -2002,7 +2005,9 @@ static bool lcp2_failback(struct ctdb_context *ctdb,
 {
 	int i, num_newly_healthy;
 	struct lcp2_imbalance_pnn * lips;
-	bool ret;
+	bool again;
+
+try_again:
 
 	/* It is only worth continuing if we have suitable target
 	 * nodes to transfer IPs to.  This check is much cheaper than
@@ -2015,7 +2020,7 @@ static bool lcp2_failback(struct ctdb_context *ctdb,
 		}
 	}
 	if (num_newly_healthy == 0) {
-		return false;
+		return;
 	}
 
 	/* Put the imbalances and nodes into an array, sort them and
@@ -2030,7 +2035,7 @@ static bool lcp2_failback(struct ctdb_context *ctdb,
 	qsort(lips, nodemap->num, sizeof(struct lcp2_imbalance_pnn),
 	      lcp2_cmp_imbalance_pnn);
 
-	ret = false;
+	again = false;
 	for (i = 0; i < nodemap->num; i++) {
 		/* This means that all nodes had 0 or 1 addresses, so
 		 * can't be imbalanced.
@@ -2046,13 +2051,15 @@ static bool lcp2_failback(struct ctdb_context *ctdb,
 					    lips[i].imbalance,
 					    lcp2_imbalances,
 					    newly_healthy)) {
-			ret = true;
+			again = true;
 			break;
 		}
 	}
 
 	talloc_free(lips);
-	return ret;
+	if (again) {
+		goto try_again;
+	}
 }
 
 /* The calculation part of the IP allocation algorithm. */
@@ -2060,7 +2067,7 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_node_map *nodemap,
 				   struct ctdb_public_ip_list **all_ips_p)
 {
-	int i, num_healthy, retries, num_ips;
+	int i, num_healthy, num_ips;
 	uint32_t mask;
 	struct ctdb_public_ip_list *all_ips, *tmp_ip;
 	uint32_t *lcp2_imbalances;
@@ -2171,20 +2178,13 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 		goto finished;
 	}
 
-
 	/* now, try to make sure the ip adresses are evenly distributed
 	   across the node.
 	*/
-	retries = 0;
-try_again:
 	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		if (lcp2_failback(ctdb, nodemap, mask, all_ips, lcp2_imbalances, newly_healthy)) {
-			goto try_again;
-		}
+		lcp2_failback(ctdb, nodemap, mask, all_ips, lcp2_imbalances, newly_healthy);
 	} else {
-		if (basic_failback(ctdb, nodemap, mask, all_ips, num_ips, &retries)) {
-			goto try_again;
-		}
+		basic_failback(ctdb, nodemap, mask, all_ips, num_ips);
 	}
 
 	/* finished distributing the public addresses, now just send the 
