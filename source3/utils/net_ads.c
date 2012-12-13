@@ -2596,7 +2596,7 @@ static int net_ads_kerberos_pac(struct net_context *c, int argc, const char **ar
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
-			   "net ads kerberos pac\n"
+			   "net ads kerberos pac [impersonation_principal]\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Dump the Kerberos PAC"));
