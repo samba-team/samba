@@ -2062,6 +2062,39 @@ try_again:
 	}
 }
 
+static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
+				    struct ctdb_node_map *nodemap,
+				    struct ctdb_public_ip_list *all_ips,
+				    uint32_t mask)
+{
+	struct ctdb_public_ip_list *tmp_ip;
+
+	/* mark all public addresses with a masked node as being served by
+	   node -1
+	*/
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
+			continue;
+		}
+		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
+			tmp_ip->pnn = -1;
+		}
+	}
+
+	/* verify that the assigned nodes can serve that public ip
+	   and set it to -1 if not
+	*/
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		if (tmp_ip->pnn == -1) {
+			continue;
+		}
+		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
+			/* this node can not serve this ip. */
+			tmp_ip->pnn = -1;
+		}
+	}
+}
+
 /* The calculation part of the IP allocation algorithm. */
 static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_node_map *nodemap,
@@ -2131,31 +2164,7 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 		}
 	}
 
-
-	/* mark all public addresses with a masked node as being served by
-	   node -1
-	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
-			continue;
-		}
-		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
-			tmp_ip->pnn = -1;
-		}
-	}
-
-	/* verify that the assigned nodes can serve that public ip
-	   and set it to -1 if not
-	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
-			continue;
-		}
-		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
-			/* this node can not serve this ip. */
-			tmp_ip->pnn = -1;
-		}
-	}
+	unassign_unsuitable_ips(ctdb, nodemap, all_ips, mask);
 
         if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
 		lcp2_init(tmp_ctx, nodemap, mask, all_ips, &lcp2_imbalances, &newly_healthy);
