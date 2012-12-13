@@ -45,8 +45,26 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 MessageElement, Message, Dn, LdbError)
 from samba import param, dsdb, Ldb
 from samba.common import confirm
-from samba.provision import (get_domain_descriptor, find_provision_key_parameters,
-                            get_config_descriptor, get_empty_descriptor,
+from samba.provision import (find_provision_key_parameters,
+                            get_empty_descriptor,
+                            get_config_descriptor,
+                            get_config_partitions_descriptor,
+                            get_config_sites_descriptor,
+                            get_config_ntds_quotas_descriptor,
+                            get_config_delete_protected1_descriptor,
+                            get_config_delete_protected1wd_descriptor,
+                            get_config_delete_protected2_descriptor,
+                            get_domain_descriptor,
+                            get_domain_infrastructure_descriptor,
+                            get_domain_builtin_descriptor,
+                            get_domain_computers_descriptor,
+                            get_domain_users_descriptor,
+                            get_domain_controllers_descriptor,
+                            get_domain_delete_protected1_descriptor,
+                            get_domain_delete_protected2_descriptor,
+                            get_dns_partition_descriptor,
+                            get_dns_forest_microsoft_dns_descriptor,
+                            get_dns_domain_microsoft_dns_descriptor,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
@@ -1269,8 +1287,8 @@ def check_updated_sd(ref_sam, cur_sam, names):
 
 
 
-def fix_partition_sd(samdb, names):
-    """This function fix the SD for partition containers (basedn, configdn, ...)
+def fix_wellknown_sd(samdb, names):
+    """This function fix the SD for partition/wellknown containers (basedn, configdn, ...)
     This is needed because some provision use to have broken SD on containers
 
     :param samdb: An LDB object pointing to the sam of the current provision
@@ -1280,34 +1298,73 @@ def fix_partition_sd(samdb, names):
     if len(dnToRecalculate) == 0 and len(dnNotToRecalculate) == 0:
         alwaysRecalculate = True
 
+    list_wellknown_dns = []
 
-    # NC's DN can't be both in dnToRecalculate and dnNotToRecalculate
-    # First update the SD for the rootdn
-    if alwaysRecalculate or str(names.rootdn) in dnToRecalculate:
-        delta = Message()
-        delta.dn = Dn(samdb, str(names.rootdn))
-        descr = get_domain_descriptor(names.domainsid)
-        delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
-                                                        "nTSecurityDescriptor")
-        samdb.modify(delta)
+    # Then subcontainers
+    subcontainers = [
+        ("%s" % str(names.domaindn), get_domain_descriptor),
+        ("CN=LostAndFound,%s" % str(names.domaindn), get_domain_delete_protected2_descriptor),
+        ("CN=System,%s" % str(names.domaindn), get_domain_delete_protected1_descriptor),
+        ("CN=Infrastructure,%s" % str(names.domaindn), get_domain_infrastructure_descriptor),
+        ("CN=Builtin,%s" % str(names.domaindn), get_domain_builtin_descriptor),
+        ("CN=Computers,%s" % str(names.domaindn), get_domain_computers_descriptor),
+        ("CN=Users,%s" % str(names.domaindn), get_domain_users_descriptor),
+        ("OU=Domain Controllers,%s" % str(names.domaindn), get_domain_controllers_descriptor),
+        ("CN=MicrosoftDNS,CN=System,%s" % str(names.domaindn), get_dns_domain_microsoft_dns_descriptor),
 
-    # Then the config dn
-    if alwaysRecalculate or str(names.configdn) in dnToRecalculate:
-        delta = Message()
-        delta.dn = Dn(samdb, str(names.configdn))
-        descr = get_config_descriptor(names.domainsid)
-        delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
-                                                        "nTSecurityDescriptor" )
-        samdb.modify(delta)
+        ("%s" % str(names.configdn), get_config_descriptor),
+        ("CN=NTDS Quotas,%s" % str(names.configdn), get_config_ntds_quotas_descriptor),
+        ("CN=LostAndFoundConfig,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
+        ("CN=Services,%s" % str(names.configdn), get_config_delete_protected1_descriptor),
+        ("CN=Physical Locations,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
+        ("CN=WellKnown Security Principals,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
+        ("CN=ForestUpdates,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
+        ("CN=DisplaySpecifiers,%s" % str(names.configdn), get_config_delete_protected2_descriptor),
+        ("CN=Extended-Rights,%s" % str(names.configdn), get_config_delete_protected2_descriptor),
+        ("CN=Partitions,%s" % str(names.configdn), get_config_partitions_descriptor),
+        ("CN=Sites,%s" % str(names.configdn), get_config_sites_descriptor),
 
-    # Then the schema dn
-    if alwaysRecalculate or str(names.schemadn) in dnToRecalculate:
-        delta = Message()
-        delta.dn = Dn(samdb, str(names.schemadn))
-        descr = get_schema_descriptor(names.domainsid)
-        delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
-                                                        "nTSecurityDescriptor" )
-        samdb.modify(delta)
+        ("%s" % str(names.schemadn), get_schema_descriptor),
+    ]
+
+    if names.dnsforestdn is not None:
+        c = ("%s" % str(names.dnsforestdn), get_dns_partition_descriptor)
+        subcontainers.append(c)
+        c = ("CN=Infrastructure,%s" % str(names.dnsforestdn),
+             get_domain_delete_protected1_descriptor)
+        subcontainers.append(c)
+        c = ("CN=LostAndFound,%s" % str(names.dnsforestdn),
+             get_domain_delete_protected2_descriptor)
+        subcontainers.append(c)
+        c = ("CN=MicrosoftDNS,%s" % str(names.dnsforestdn),
+             get_dns_forest_microsoft_dns_descriptor)
+        subcontainers.append(c)
+
+    if names.dnsdomaindn is not None:
+        c = ("%s" % str(names.dnsdomaindn), get_dns_partition_descriptor)
+        subcontainers.append(c)
+        c = ("CN=Infrastructure,%s" % str(names.dnsdomaindn),
+             get_domain_delete_protected1_descriptor)
+        subcontainers.append(c)
+        c = ("CN=LostAndFound,%s" % str(names.dnsdomaindn),
+             get_domain_delete_protected2_descriptor)
+        subcontainers.append(c)
+        c = ("CN=MicrosoftDNS,%s" % str(names.dnsdomaindn),
+             get_dns_domain_microsoft_dns_descriptor)
+        subcontainers.append(c)
+
+    for [dn, descriptor_fn] in subcontainers:
+        list_wellknown_dns.append(dn)
+        if alwaysRecalculate or dn in dnToRecalculate:
+            delta = Message()
+            delta.dn = Dn(samdb, str(dn))
+            descr = descriptor_fn(names.domainsid, name_map=names.name_map)
+            delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
+                                                            "nTSecurityDescriptor" )
+            samdb.modify(delta)
+            message(CHANGESD, "nTSecurityDescriptor updated on wellknown DN: %s" % delta.dn)
+
+    return list_wellknown_dns
 
 def rebuild_sd(samdb, names):
     """Rebuild security descriptor of the current provision from scratch
@@ -1320,10 +1377,8 @@ def rebuild_sd(samdb, names):
 
     :param names: List of key provision parameters"""
 
-    fix_partition_sd(samdb, names)
+    listWellknown = fix_wellknown_sd(samdb, names)
 
-    # List of namming contexts
-    listNC = [str(names.rootdn), str(names.configdn), str(names.schemadn)]
     hash = {}
     if len(dnToRecalculate) == 0:
         res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
@@ -1350,8 +1405,9 @@ def rebuild_sd(samdb, names):
                             % (len(dnToRecalculate), len(listKeys)))
 
     for key in listKeys:
-        if (key in listNC or
-                    key in dnNotToRecalculate):
+        if key in listWellknown:
+            continue
+        if key in dnNotToRecalculate:
             continue
         delta = Message()
         delta.dn = Dn(samdb, key)
