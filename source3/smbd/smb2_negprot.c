@@ -25,6 +25,8 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../librpc/ndr/libndr.h"
 
+extern fstring remote_proto;
+
 /*
  * this is the entry point if SMB2 is selected via
  * the SMB negprot and the given dialect.
@@ -233,6 +235,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	if (get_remote_arch() != RA_SAMBA) {
 		set_remote_arch(RA_VISTA);
 	}
+
+	fstr_sprintf(remote_proto, "SMB%X_%02X",
+		     (dialect >> 8) & 0xFF, dialect & 0xFF);
+
+	reload_services(req->sconn, conn_snum_used, true);
+	DEBUG(3,("Selected protocol %s\n", remote_proto));
 
 	/* negprot_spnego() returns a the server guid in the first 16 bytes */
 	negprot_spnego_blob = negprot_spnego(req, req->sconn);
