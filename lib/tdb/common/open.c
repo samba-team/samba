@@ -1,4 +1,4 @@
- /* 
+ /*
    Unix SMB/CIFS implementation.
 
    trivial database library
@@ -119,13 +119,13 @@ static int tdb_already_open(dev_t device,
 	return 0;
 }
 
-/* open the database, creating it if necessary 
+/* open the database, creating it if necessary
 
    The open_flags and mode are passed straight to the open call on the
    database file. A flags value of O_WRONLY is invalid. The hash size
    is advisory, use zero for a default value.
 
-   Return is NULL on error, in which case errno is also set.  Don't 
+   Return is NULL on error, in which case errno is also set.  Don't
    try to call tdb_error or tdb_errname, just do strerror(errno).
 
    @param name may be NULL for internal databases. */

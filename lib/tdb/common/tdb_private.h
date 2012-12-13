@@ -1,6 +1,6 @@
 #ifndef TDB_PRIVATE_H
 #define TDB_PRIVATE_H
- /* 
+ /*
    Unix SMB/CIFS implementation.
 
    trivial database library - private includes

@@ -1,4 +1,4 @@
- /* 
+ /*
    Unix SMB/CIFS implementation.
 
    trivial database library
@@ -152,7 +152,7 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 
 	/* it could be an exact duplicate of what is there - this is
 	 * surprisingly common (eg. with a ldb re-index). */
-	if (rec.key_len == key.dsize && 
+	if (rec.key_len == key.dsize &&
 	    rec.data_len == dbuf.dsize &&
 	    rec.full_hash == hash &&
 	    tdb_parse_record(tdb, key, tdb_update_hash_cmp, &dbuf) == 0) {
@@ -258,7 +258,7 @@ _PUBLIC_ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 	return ret;
 }
 
-/* check if an entry in the database exists 
+/* check if an entry in the database exists
 
    note that 1 is returned if the key is found and 0 is returned if not found
    this doesn't match the conventions in the rest of this module, but is
@@ -777,7 +777,7 @@ _PUBLIC_ void tdb_enable_seqnum(struct tdb_context *tdb)
 
 
 /*
-  add a region of the file to the freelist. Length is the size of the region in bytes, 
+  add a region of the file to the freelist. Length is the size of the region in bytes,
   which includes the free list header that needs to be added
  */
 static int tdb_free_region(struct tdb_context *tdb, tdb_off_t offset, ssize_t length)
@@ -789,7 +789,7 @@ static int tdb_free_region(struct tdb_context *tdb, tdb_off_t offset, ssize_t le
 	}
 	if (length + offset > tdb->map_size) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_free_region: adding region beyond end of file\n"));
-		return -1;		
+		return -1;
 	}
 	memset(&rec,'\0',sizeof(rec));
 	rec.rec_len = length - sizeof(rec);
@@ -835,7 +835,7 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 		if (tdb->methods->tdb_read(tdb, recovery_head, &rec, sizeof(rec), DOCONV()) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_wipe_all: failed to read recovery record\n"));
 			return -1;
-		}	
+		}
 		recovery_size = rec.rec_len + sizeof(rec);
 	}
 
@@ -853,7 +853,7 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 		goto failed;
 	}
 
-	/* add all the rest of the file to the freelist, possibly leaving a gap 
+	/* add all the rest of the file to the freelist, possibly leaving a gap
 	   for the recovery area */
 	if (recovery_size == 0) {
 		/* the simple case - the whole file can be used as a freelist */
@@ -863,7 +863,7 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 		}
 	} else {
 		/* we need to add two freelist entries - one on either
-		   side of the recovery area 
+		   side of the recovery area
 
 		   Note that we cannot shift the recovery area during
 		   this operation. Only the transaction.c code may
@@ -942,7 +942,7 @@ _PUBLIC_ int tdb_repack(struct tdb_context *tdb)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, __location__ " Failed to traverse copying out\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
-		return -1;		
+		return -1;
 	}
 
 	if (state.error) {
@@ -966,7 +966,7 @@ _PUBLIC_ int tdb_repack(struct tdb_context *tdb)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, __location__ " Failed to traverse copying back\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
-		return -1;		
+		return -1;
 	}
 
 	if (state.error) {

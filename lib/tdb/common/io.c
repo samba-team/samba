@@ -1,4 +1,4 @@
- /* 
+ /*
    Unix SMB/CIFS implementation.
 
    trivial database library
@@ -30,7 +30,7 @@
 
 /* check for an out of bounds access - if it is out of bounds then
    see if the database has been expanded by someone else and expand
-   if necessary 
+   if necessary
 */
 static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 		   int probe)
@@ -100,7 +100,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 }
 
 /* write a lump of data at a specified offset */
-static int tdb_write(struct tdb_context *tdb, tdb_off_t off, 
+static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 		     const void *buf, tdb_len_t len)
 {
 	if (len == 0) {
@@ -162,7 +162,7 @@ void *tdb_convert(void *buf, uint32_t size)
 
 
 /* read a lump of data at a specified offset, maybe convert */
-static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf, 
+static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 		    tdb_len_t len, int cv)
 {
 	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0) {
@@ -199,7 +199,7 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 /*
   do an unlocked scan of the hash table heads to find the next non-zero head. The value
   will then be confirmed with the lock held
-*/		
+*/
 static void tdb_next_hash_chain(struct tdb_context *tdb, uint32_t *chain)
 {
 	uint32_t h = *chain;
@@ -256,8 +256,8 @@ int tdb_mmap(struct tdb_context *tdb)
 
 #ifdef HAVE_MMAP
 	if (should_mmap(tdb)) {
-		tdb->map_ptr = mmap(NULL, tdb->map_size, 
-				    PROT_READ|(tdb->read_only? 0:PROT_WRITE), 
+		tdb->map_ptr = mmap(NULL, tdb->map_size,
+				    PROT_READ|(tdb->read_only? 0:PROT_WRITE),
 				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
 
 		/*
@@ -266,7 +266,7 @@ int tdb_mmap(struct tdb_context *tdb)
 
 		if (tdb->map_ptr == MAP_FAILED) {
 			tdb->map_ptr = NULL;
-			TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_mmap failed for size %d (%s)\n", 
+			TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_mmap failed for size %d (%s)\n",
 				 tdb->map_size, strerror(errno)));
 #ifdef HAVE_INCOHERENT_MMAP
 			tdb->ecode = TDB_ERR_IO;
@@ -305,7 +305,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 			errno = ENOSPC;
 		}
 		if (written != 1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %d failed (%s)\n", 
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %d failed (%s)\n",
 				 size+addition, strerror(errno)));
 			return -1;
 		}

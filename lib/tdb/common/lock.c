@@ -1,4 +1,4 @@
- /* 
+ /*
    Unix SMB/CIFS implementation.
 
    trivial database library
@@ -129,7 +129,7 @@ static tdb_off_t lock_offset(int list)
    this functions locks/unlocks "len" byte at the specified offset.
 
    On error, errno is also set so that errors are passed back properly
-   through tdb_open(). 
+   through tdb_open().
 
    note that a len of zero means lock to end of file
 */
@@ -201,7 +201,7 @@ int tdb_brunlock(struct tdb_context *tdb,
   upgrade a read lock to a write lock. This needs to be handled in a
   special way as some OSes (such as solaris) have too conservative
   deadlock detection and claim a deadlock when progress can be
-  made. For those OSes we may loop for a while.  
+  made. For those OSes we may loop for a while.
 */
 int tdb_allrecord_upgrade(struct tdb_context *tdb)
 {
@@ -441,7 +441,7 @@ int tdb_nest_unlock(struct tdb_context *tdb, uint32_t offset, int ltype,
 	}
 
 	if (ret)
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: An error occurred unlocking!\n")); 
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: An error occurred unlocking!\n"));
 	return ret;
 }
 

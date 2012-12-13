@@ -1,4 +1,4 @@
- /* 
+ /*
    Unix SMB/CIFS implementation.
 
    trivial database library
@@ -28,7 +28,7 @@
 #include "tdb_private.h"
 
 /* 'right' merges can involve O(n^2) cost when combined with a
-   traverse, so they are disabled until we find a way to do them in 
+   traverse, so they are disabled until we find a way to do them in
    O(1) time
 */
 #define USE_RIGHT_MERGES 0
@@ -42,7 +42,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 	if (rec->magic == TDB_MAGIC) {
 		/* this happens when a app is showdown while deleting a record - we should
 		   not completely fail when this happens */
-		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%d - fixing\n", 
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%d - fixing\n",
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
 		if (tdb_rec_write(tdb, off, rec) == -1)
@@ -52,7 +52,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 	if (rec->magic != TDB_FREE_MAGIC) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_CORRUPT;
-		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read bad magic 0x%x at offset=%d\n", 
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read bad magic 0x%x at offset=%d\n",
 			   rec->magic, off));
 		return -1;
 	}
@@ -170,7 +170,7 @@ left:
 
 		/* If it's free, expand to include it. */
 		if (l.magic == TDB_FREE_MAGIC) {
-			/* we now merge the new record into the left record, rather than the other 
+			/* we now merge the new record into the left record, rather than the other
 			   way around. This makes the operation O(1) instead of O(n). This change
 			   prevents traverse from being O(n^2) after a lot of deletes */
 			l.rec_len += sizeof(*rec) + rec->rec_len;
@@ -210,7 +210,7 @@ update:
 
 
 
-/* 
+/*
    the core of tdb_allocate - called when we have decided which
    free list entry to use
 
@@ -218,7 +218,7 @@ update:
    not the beginning. This is so the left merge in a free is more likely to be
    able to free up the record without fragmentation
  */
-static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb, 
+static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb,
 				  tdb_len_t length, tdb_off_t rec_ptr,
 				  struct tdb_record *rec, tdb_off_t last_ptr)
 {
@@ -250,7 +250,7 @@ static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb,
 	}
 
 	/* and setup the new record */
-	rec_ptr += sizeof(*rec) + rec->rec_len;	
+	rec_ptr += sizeof(*rec) + rec->rec_len;
 
 	memset(rec, '\0', sizeof(*rec));
 	rec->rec_len = length;
@@ -303,7 +303,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 	bestfit.last_ptr = 0;
 	bestfit.rec_len = 0;
 
-	/* 
+	/*
 	   this is a best fit allocation strategy. Originally we used
 	   a first fit strategy, but it suffered from massive fragmentation
 	   issues when faced with a slowly increasing record size.
@@ -347,7 +347,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 			goto fail;
 		}
 
-		newrec_ptr = tdb_allocate_ofs(tdb, length, bestfit.rec_ptr, 
+		newrec_ptr = tdb_allocate_ofs(tdb, length, bestfit.rec_ptr,
 					      rec, bestfit.last_ptr);
 		tdb_unlock(tdb, -1, F_WRLCK);
 		return newrec_ptr;
@@ -364,8 +364,8 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 
 
 
-/* 
-   return the size of the freelist - used to decide if we should repack 
+/*
+   return the size of the freelist - used to decide if we should repack
 */
 _PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb)
 {
