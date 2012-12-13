@@ -340,6 +340,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 	ELOG_TDB *tdb_node = NULL;
 	char *eventlogdir;
 	TALLOC_CTX *ctx = talloc_tos();
+	bool ok;
 
 	/* check for invalid options */
 
@@ -372,8 +373,10 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 	/* make sure that the eventlog dir exists */
 
 	eventlogdir = state_path( "eventlog" );
-	if ( !directory_exist( eventlogdir ) )
-		mkdir( eventlogdir, 0755 );
+	ok = directory_create_or_exist(eventlogdir, geteuid(), 0755);
+	if (!ok) {
+		return NULL;
+	}
 
 	/* get the path on disk */
 
