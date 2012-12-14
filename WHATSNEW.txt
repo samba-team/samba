@@ -8,12 +8,27 @@ This is the latest stable release of Samba 3.5.
 
 Major enhancements in Samba 3.5.20 include:
 
-o  
+o  Fix segfaults in log level = 10 on Solaris (bug #9390).
+o  Apply ACL masks correctly when setting ACLs (bug #9236).
+
 
 Changes since 3.5.19:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 7781: Samba transforms ShareName to lowercase (sharename) when adding
+      new share via MMC.
+    * BUG 9236: Apply ACL masks correctly when setting ACLs.
+    * BUG 9455: munmap called for an address location not mapped by Samba.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9345: Fix usage of <smbconfoption> tag.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9390: Fix segfaults in log level = 10 on Solaris.
+    * BUG 9402: Fix dns updates against BIND9 (used in a Samba4 domain).
 
 
 ######################################################################
