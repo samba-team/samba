@@ -126,7 +126,7 @@ static tdb_off_t lock_offset(int list)
 }
 
 /* a byte range locking function - return 0 on success
-   this functions locks/unlocks 1 byte at the specified offset.
+   this functions locks/unlocks "len" byte at the specified offset.
 
    On error, errno is also set so that errors are passed back properly
    through tdb_open(). 
