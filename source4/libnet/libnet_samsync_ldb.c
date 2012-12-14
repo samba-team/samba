@@ -161,13 +161,22 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 			/* Update the domain sid with the incoming
 			 * domain (found on LSA pipe, database sid may
 			 * be random) */
-			samdb_msg_add_dom_sid(state->sam_ldb, mem_ctx, 
-					      msg, "objectSid", state->dom_sid[database]);
+			ret = samdb_msg_add_dom_sid(state->sam_ldb,
+						    mem_ctx,
+						    msg,
+						    "objectSid",
+						    state->dom_sid[database]);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		} else {
 			/* Well, we will have to use the one from the database */
 			state->dom_sid[database] = samdb_search_dom_sid(state->sam_ldb, state,
 									state->base_dn[database], 
 									"objectSid", NULL);
+			if (state->dom_sid[database] == NULL) {
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		}
 
 		if (state->samsync_state->domain_guid) {
@@ -179,7 +188,10 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 				return status;
 			}
 			
-			ldb_msg_add_value(msg, "objectGUID", &v, NULL);
+			ret = ldb_msg_add_value(msg, "objectGUID", &v, NULL);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		}
 	} else if (database == SAM_DATABASE_BUILTIN) {
 		/* work out the builtin_dn - useful for so many calls its worth
