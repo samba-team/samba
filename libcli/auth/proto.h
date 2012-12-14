@@ -60,6 +60,9 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 void netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						uint16_t validation_level,
 						union netr_Validation *validation);
+void netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
+						uint16_t validation_level,
+						union netr_Validation *validation);
 
 /* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/session.c  */
 
