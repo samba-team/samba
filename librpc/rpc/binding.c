@@ -424,12 +424,19 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
 	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
 	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
-	ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
-	ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version);
+	ndr_err = ndr_push_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return data_blob_null;
+	}
+	ndr_err = ndr_push_uint16(ndr, NDR_SCALARS, syntax->if_version);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return data_blob_null;
+	}
 
 	blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob.data);
