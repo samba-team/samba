@@ -210,7 +210,7 @@ out:
 
 
 /*
-  a write style traverse - temporarily marks the db read only
+  a read style traverse - temporarily marks the db read only
 */
 _PUBLIC_ int tdb_traverse_read(struct tdb_context *tdb,
 		      tdb_traverse_func fn, void *private_data)
