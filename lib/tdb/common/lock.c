@@ -374,7 +374,10 @@ static int tdb_lock_list(struct tdb_context *tdb, int list, int ltype,
 		return tdb_lock_covered_by_allrecord_lock(tdb, ltype);
 	}
 
-	/* Only check when we grab first data lock. */
+	/*
+	 * Check for recoveries: Someone might have kill -9'ed a process
+	 * during a commit.
+	 */
 	check = !have_data_locks(tdb);
 	ret = tdb_nest_lock(tdb, lock_offset(list), ltype, waitflag);
 
