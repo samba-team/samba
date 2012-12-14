@@ -893,15 +893,15 @@ bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
 	if (!smb2req) {
 		return false;
 	}
-	if (!smb2req->async) {
-		return false;
-	}
 	req = smb2req->subreq;
 	if (!req) {
 		return false;
 	}
 	state = tevent_req_data(req, struct smbd_smb2_create_state);
 	if (!state) {
+		return false;
+	}
+	if (!state->open_was_deferred) {
 		return false;
 	}
 	if (p_request_time) {
