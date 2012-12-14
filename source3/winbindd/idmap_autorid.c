@@ -248,6 +248,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	char *keystr;
 	struct dom_sid sid;
 	NTSTATUS status;
+	bool ok;
 
 	/* can this be one of our ids? */
 	if (map->xid.id < cfg->minvalue) {
@@ -297,8 +298,12 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		return idmap_autorid_map_id_to_sid(dom, map);
 	}
 
-	string_to_sid(&sid, (const char *)data.dptr);
+	ok = string_to_sid(&sid, (const char *)data.dptr);
 	TALLOC_FREE(data.dptr);
+	if (!ok) {
+		map->status = ID_UNKNOWN;
+		return NT_STATUS_OK;
+	}
 
 	sid_compose(map->sid, &sid,
 		    (map->xid.id - cfg->minvalue -
