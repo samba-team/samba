@@ -2512,6 +2512,8 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 				struct registry_value value;
 				const char *value_name = info[j].value_name;
+				bool ok;
+
 				value.type = REG_SZ;
 
 				/* although samba replies with sane data in most cases we
@@ -2519,7 +2521,11 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 				if (strequal(value_name, SPOOL_REG_PORTNAME)) {
 					/* although windows uses a multi-sz, we use a sz */
-					push_reg_sz(mem_ctx, &value.data, SAMBA_PRINTER_PORT_NAME);
+					ok = push_reg_sz(mem_ctx, &value.data, SAMBA_PRINTER_PORT_NAME);
+					if (!ok) {
+						nt_status = NT_STATUS_NO_MEMORY;
+						goto done;
+					}
 				}
 				else if (strequal(value_name, SPOOL_REG_UNCNAME)) {
 					char *unc_name;
@@ -2527,7 +2533,11 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 						nt_status = NT_STATUS_NO_MEMORY;
 						goto done;
 					}
-					push_reg_sz(mem_ctx, &value.data, unc_name);
+					ok = push_reg_sz(mem_ctx, &value.data, unc_name);
+					if (!ok) {
+						nt_status = NT_STATUS_NO_MEMORY;
+						goto done;
+					}
 					free(unc_name);
 				}
 				else if (strequal(value_name, SPOOL_REG_URL)) {
@@ -2543,10 +2553,18 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 #endif
 				}
 				else if (strequal(value_name, SPOOL_REG_SERVERNAME)) {
-					push_reg_sz(mem_ctx, &value.data, longname);
+					ok = push_reg_sz(mem_ctx, &value.data, longname);
+					if (!ok) {
+						nt_status = NT_STATUS_NO_MEMORY;
+						goto done;
+					}
 				}
 				else if (strequal(value_name, SPOOL_REG_SHORTSERVERNAME)) {
-					push_reg_sz(mem_ctx, &value.data, lp_netbios_name());
+					ok = push_reg_sz(mem_ctx, &value.data, lp_netbios_name());
+					if (!ok) {
+						nt_status = NT_STATUS_NO_MEMORY;
+						goto done;
+					}
 				}
 				else {
 					value.type = info[j].type;
