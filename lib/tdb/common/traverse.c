@@ -149,7 +149,7 @@ static int tdb_traverse_internal(struct tdb_context *tdb,
 	int ret = 0, count = 0;
 	tdb_off_t off;
 
-	/* This was in the initializaton, above, but the IRIX compiler
+	/* This was in the initialization, above, but the IRIX compiler
 	 * did not like it.  crh
 	 */
 	tl->next = tdb->travlocks.next;
