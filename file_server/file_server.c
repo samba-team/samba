@@ -67,6 +67,7 @@ static void s3fs_task_init(struct task_server *task)
 	/* start it as a child process */
 	subreq = samba_runcmd_send(task, task->event_ctx, timeval_zero(), 1, 0,
 				smbd_cmd,
+				"-D",
 				"--option=server role check:inhibit=yes",
 				"--foreground",
 				debug_get_output_is_stdout()?"--log-stdout":NULL,
