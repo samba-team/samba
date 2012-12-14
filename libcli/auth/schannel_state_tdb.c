@@ -328,7 +328,11 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tdb_transaction_commit(tdb_sc->tdb);
+	ret = tdb_transaction_commit(tdb_sc->tdb);
+	if (ret != 0) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto done;
+	}
 
 	if (creds_out) {
 		*creds_out = talloc_steal(mem_ctx, creds);
