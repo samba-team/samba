@@ -176,7 +176,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r->in.validation_level;
 
-		netlogon_creds_decrypt_samlogon(samlogon_state->creds, validation_level, r->out.validation);
+		netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
+							   validation_level,
+							   r->out.validation);
 
 		switch (validation_level) {
 		case 2:
@@ -208,7 +210,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r_ex->in.validation_level;
 
-		netlogon_creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_ex->out.validation);
+		netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
+							   validation_level,
+							   r_ex->out.validation);
 
 		switch (validation_level) {
 		case 2:
@@ -248,7 +252,9 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r_flags->in.validation_level;
 
-		netlogon_creds_decrypt_samlogon(samlogon_state->creds, validation_level, r_flags->out.validation);
+		netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
+							   validation_level,
+							   r_flags->out.validation);
 
 		switch (validation_level) {
 		case 2:

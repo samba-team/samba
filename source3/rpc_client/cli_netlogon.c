@@ -467,7 +467,8 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 		return result;
 	}
 
-	netlogon_creds_decrypt_samlogon(cli->dc, validation_level, &validation);
+	netlogon_creds_decrypt_samlogon_validation(cli->dc, validation_level,
+						   &validation);
 
 	result = map_validation_to_info3(mem_ctx, validation_level, &validation, info3);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -575,7 +576,8 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 		return result;
 	}
 
-	netlogon_creds_decrypt_samlogon(cli->dc, validation_level, &validation);
+	netlogon_creds_decrypt_samlogon_validation(cli->dc, validation_level,
+						   &validation);
 
 	result = map_validation_to_info3(mem_ctx, validation_level, &validation, info3);
 	if (!NT_STATUS_IS_OK(result)) {

@@ -208,9 +208,9 @@ static void wb_sam_logon_recv_samlogon(struct tevent_req *subreq)
 	/* Decrypt the session keys before we reform the info3, so the
 	 * person on the other end of winbindd pipe doesn't have to.
 	 * They won't have the encryption key anyway */
-	netlogon_creds_decrypt_samlogon(state->creds_state,
-					state->r.in.validation_level,
-					state->r.out.validation);
+	netlogon_creds_decrypt_samlogon_validation(state->creds_state,
+						   state->r.in.validation_level,
+						   state->r.out.validation);
 
 	/*
 	 * we do not need the netlogon_creds lock anymore
