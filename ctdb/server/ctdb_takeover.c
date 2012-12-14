@@ -2199,6 +2199,8 @@ finished:
 	   or -1 if there is no node that can cover this ip
 	*/
 
+	talloc_free(tmp_ctx);
+
 	return;
 }
 
