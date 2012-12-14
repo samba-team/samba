@@ -334,36 +334,44 @@ static bool have_data_locks(const struct tdb_context *tdb)
 	return false;
 }
 
+/*
+ * A allrecord lock allows us to avoid per chain locks. Check if the allrecord
+ * lock is strong enough.
+ */
+static int tdb_lock_covered_by_allrecord_lock(struct tdb_context *tdb,
+					      int ltype)
+{
+	if (ltype == F_RDLCK) {
+		/*
+		 * The allrecord_lock is equal (F_RDLCK) or stronger
+		 * (F_WRLCK). Pass.
+		 */
+		return 0;
+	}
+
+	if (tdb->allrecord_lock.ltype == F_RDLCK) {
+		/*
+		 * We ask for ltype==F_WRLCK, but the allrecord_lock
+		 * is too weak. We can't upgrade here, so fail.
+		 */
+		tdb->ecode = TDB_ERR_LOCK;
+		return -1;
+	}
+
+	/*
+	 * Asking for F_WRLCK, allrecord is F_WRLCK as well. Pass.
+	 */
+	return 0;
+}
+
 static int tdb_lock_list(struct tdb_context *tdb, int list, int ltype,
 			 enum tdb_lock_flags waitflag)
 {
 	int ret;
 	bool check = false;
 
-	/* a allrecord lock allows us to avoid per chain locks */
 	if (tdb->allrecord_lock.count) {
-
-		if (ltype == F_RDLCK) {
-			/*
-			 * The allrecord_lock is equal (F_RDLCK) or stronger
-			 * (F_WRLCK). Pass.
-			 */
-			return 0;
-		}
-
-		if (tdb->allrecord_lock.ltype == F_RDLCK) {
-			/*
-			 * We ask for ltype==F_WRLCK, but the allrecord_lock
-			 * is too weak. We can't upgrade here, so fail.
-			 */
-			tdb->ecode = TDB_ERR_LOCK;
-			return -1;
-		}
-
-		/*
-		 * Asking for F_WRLCK, allrecord is F_WRLCK as well. Pass.
-		 */
-		return 0;
+		return tdb_lock_covered_by_allrecord_lock(tdb, ltype);
 	}
 
 	/* Only check when we grab first data lock. */
