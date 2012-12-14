@@ -471,14 +471,8 @@ int tdb_nest_unlock(struct tdb_context *tdb, uint32_t offset, int ltype,
 _PUBLIC_ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 {
 	/* a global lock allows us to avoid per chain locks */
-	if (tdb->allrecord_lock.count &&
-	    (ltype == tdb->allrecord_lock.ltype || ltype == F_RDLCK)) {
-		return 0;
-	}
-
 	if (tdb->allrecord_lock.count) {
-		tdb->ecode = TDB_ERR_LOCK;
-		return -1;
+		return tdb_lock_covered_by_allrecord_lock(tdb, ltype);
 	}
 
 	return tdb_nest_unlock(tdb, lock_offset(list), ltype, false);
