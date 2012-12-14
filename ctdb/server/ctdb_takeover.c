@@ -2123,6 +2123,14 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 		for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
 			tmp_ip->pnn = i%nodemap->num;
 		}
+
+		/* IP failback doesn't make sense with deterministic
+		 * IPs, since the modulo step above implicitly fails
+		 * back IPs to their "home" node.
+		 */
+		if (1 == ctdb->tunable.no_ip_failback) {
+			DEBUG(DEBUG_WARNING, ("WARNING: 'NoIPFailback' set but ignored - incompatible with 'DeterministicIPs\n"));
+		}
 	}
 
 
@@ -2172,9 +2180,6 @@ try_again:
 	   This can NOT be used at the same time as DeterministicIPs !
 	*/
 	if (1 == ctdb->tunable.no_ip_failback) {
-		if (1 == ctdb->tunable.deterministic_public_ips) {
-			DEBUG(DEBUG_ERR, ("ERROR: You can not use 'DeterministicIPs' and 'NoIPFailback' at the same time\n"));
-		}
 		goto finished;
 	}
 
