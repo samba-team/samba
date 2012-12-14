@@ -1381,17 +1381,17 @@ FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
+SYSVOL_SERVICE="sysvol"
 
-
-def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb):
-    setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
+def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb, service=SYSVOL_SERVICE):
+    setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
             setntacl(lp, os.path.join(root, name), acl, domsid,
-                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
+                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
         for name in dirs:
             setntacl(lp, os.path.join(root, name), acl, domsid,
-                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
+                    use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
 
 
 def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb):
@@ -1409,7 +1409,7 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
     setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid),
-            use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb)
+            use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=SYSVOL_SERVICE)
 
     res = samdb.search(base="CN=Policies,CN=System,%s"%(domaindn),
                         attrs=["cn", "nTSecurityDescriptor"],
@@ -1473,16 +1473,22 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
         canchown = True
 
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
-    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb)
+    setntacl(lp,sysvol, SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs,
+             skip_invalid_chown=True, passdb=s4_passdb,
+             service=SYSVOL_SERVICE)
     for root, dirs, files in os.walk(sysvol, topdown=False):
         for name in files:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb)
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid),
+                     use_ntvfs=use_ntvfs, skip_invalid_chown=True,
+                     passdb=s4_passdb, service=SYSVOL_SERVICE)
         for name in dirs:
             if use_ntvfs and canchown:
                 os.chown(os.path.join(root, name), -1, gid)
-            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid), use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb)
+            setntacl(lp, os.path.join(root, name), SYSVOL_ACL, str(domainsid),
+                     use_ntvfs=use_ntvfs, skip_invalid_chown=True,
+                     passdb=s4_passdb, service=SYSVOL_SERVICE)
 
     # Set acls on Policy folder and policies folders
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, passdb=s4_passdb)
@@ -1494,14 +1500,15 @@ def acl_type(direct_db_access):
         return "VFS"
 
 def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
-    fsacl = getntacl(lp, path, direct_db_access=direct_db_access)
+    fsacl = getntacl(lp, path, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
     fsacl_sddl = fsacl.as_sddl(domainsid)
     if fsacl_sddl != acl:
         raise ProvisioningError('%s ACL on GPO directory %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), path, fsacl_sddl, acl))
 
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
-            fsacl = getntacl(lp, os.path.join(root, name), direct_db_access=direct_db_access)
+            fsacl = getntacl(lp, os.path.join(root, name),
+                             direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
             if fsacl is None:
                 raise ProvisioningError('%s ACL on GPO file %s %s not found!' % (acl_type(direct_db_access), os.path.join(root, name)))
             fsacl_sddl = fsacl.as_sddl(domainsid)
@@ -1509,7 +1516,8 @@ def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
                 raise ProvisioningError('%s ACL on GPO file %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl_sddl, acl))
 
         for name in dirs:
-            fsacl = getntacl(lp, os.path.join(root, name), direct_db_access=direct_db_access)
+            fsacl = getntacl(lp, os.path.join(root, name),
+                             direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
             if fsacl is None:
                 raise ProvisioningError('%s ACL on GPO directory %s %s not found!' % (acl_type(direct_db_access), os.path.join(root, name)))
             fsacl_sddl = fsacl.as_sddl(domainsid)
@@ -1532,7 +1540,8 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
 
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-    fsacl = getntacl(lp, root_policy_path, direct_db_access=direct_db_access)
+    fsacl = getntacl(lp, root_policy_path,
+                     direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
     if fsacl is None:
         raise ProvisioningError('DB ACL on policy root %s %s not found!' % (acl_type(direct_db_access), root_policy_path))
     fsacl_sddl = fsacl.as_sddl(domainsid)
@@ -1587,7 +1596,7 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
     for direct_db_access in [True, False]:
         # Check the SYSVOL_ACL on the sysvol folder and subfolder (first level)
         for dir_path in [os.path.join(sysvol, dnsdomain), netlogon]:
-            fsacl = getntacl(lp, dir_path, direct_db_access=direct_db_access)
+            fsacl = getntacl(lp, dir_path, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
             if fsacl is None:
                 raise ProvisioningError('%s ACL on sysvol directory %s not found!' % (acl_type(direct_db_access), dir_path))
             fsacl_sddl = fsacl.as_sddl(domainsid)
