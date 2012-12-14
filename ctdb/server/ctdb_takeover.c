@@ -2095,18 +2095,103 @@ static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 	}
 }
 
+static void ip_alloc_deterministic_ips(struct ctdb_context *ctdb,
+				       struct ctdb_node_map *nodemap,
+				       struct ctdb_public_ip_list *all_ips,
+				       uint32_t mask)
+{
+	struct ctdb_public_ip_list *tmp_ip;
+	int i;
+
+	DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
+       /* Allocate IPs to nodes in a modulo fashion so that IPs will
+        *  always be allocated the same way for a specific set of
+        *  available/unavailable nodes.
+	*/
+
+	for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
+		tmp_ip->pnn = i%nodemap->num;
+	}
+
+	/* IP failback doesn't make sense with deterministic
+	 * IPs, since the modulo step above implicitly fails
+	 * back IPs to their "home" node.
+	 */
+	if (1 == ctdb->tunable.no_ip_failback) {
+		DEBUG(DEBUG_WARNING, ("WARNING: 'NoIPFailback' set but ignored - incompatible with 'DeterministicIPs\n"));
+	}
+
+	unassign_unsuitable_ips(ctdb, nodemap, all_ips, mask);
+
+	basic_allocate_unassigned(ctdb, nodemap, mask, all_ips);
+
+	/* No failback here! */
+}
+
+static void ip_alloc_nondeterministic_ips(struct ctdb_context *ctdb,
+					  struct ctdb_node_map *nodemap,
+					  struct ctdb_public_ip_list *all_ips,
+					  uint32_t mask)
+{
+	/* This should be pushed down into basic_failback. */
+	struct ctdb_public_ip_list *tmp_ip;
+	int num_ips = 0;
+	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
+		num_ips++;
+	}
+
+	unassign_unsuitable_ips(ctdb, nodemap, all_ips, mask);
+
+	basic_allocate_unassigned(ctdb, nodemap, mask, all_ips);
+
+	/* If we don't want IPs to fail back then don't rebalance IPs. */
+	if (1 == ctdb->tunable.no_ip_failback) {
+		return;
+	}
+
+	/* Now, try to make sure the ip adresses are evenly distributed
+	   across the nodes.
+	*/
+	basic_failback(ctdb, nodemap, mask, all_ips, num_ips);
+}
+
+static void ip_alloc_lcp2(struct ctdb_context *ctdb,
+			  struct ctdb_node_map *nodemap,
+			  struct ctdb_public_ip_list *all_ips,
+			  uint32_t mask)
+{
+	uint32_t *lcp2_imbalances;
+	bool *newly_healthy;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+
+	unassign_unsuitable_ips(ctdb, nodemap, all_ips, mask);
+
+	lcp2_init(tmp_ctx, nodemap, mask, all_ips, &lcp2_imbalances, &newly_healthy);
+
+	lcp2_allocate_unassigned(ctdb, nodemap, mask, all_ips, lcp2_imbalances);
+
+	/* If we don't want IPs to fail back then don't rebalance IPs. */
+	if (1 == ctdb->tunable.no_ip_failback) {
+		goto finished;
+	}
+
+	/* Now, try to make sure the ip adresses are evenly distributed
+	   across the nodes.
+	*/
+	lcp2_failback(ctdb, nodemap, mask, all_ips, lcp2_imbalances, newly_healthy);
+
+finished:
+	talloc_free(tmp_ctx);
+}
+
 /* The calculation part of the IP allocation algorithm. */
 static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_node_map *nodemap,
 				   struct ctdb_public_ip_list **all_ips_p)
 {
-	int i, num_healthy, num_ips;
+	int i, num_healthy;
 	uint32_t mask;
-	struct ctdb_public_ip_list *all_ips, *tmp_ip;
-	uint32_t *lcp2_imbalances;
-	bool *newly_healthy;
-
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 	/* Count how many completely healthy nodes we have */
 	num_healthy = 0;
@@ -2136,74 +2221,19 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 
 	   keep the tree of ips around as ctdb->ip_tree
 	*/
-	all_ips = create_merged_ip_list(ctdb);
-	*all_ips_p = all_ips; /* minimal code changes */
-
-	/* Count how many ips we have */
-	num_ips = 0;
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		num_ips++;
-	}
-
-	/* If we want deterministic ip allocations, i.e. that the ip addresses
-	   will always be allocated the same way for a specific set of
-	   available/unavailable nodes.
-	*/
-	if (1 == ctdb->tunable.deterministic_public_ips) {		
-		DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
-		for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
-			tmp_ip->pnn = i%nodemap->num;
-		}
-
-		/* IP failback doesn't make sense with deterministic
-		 * IPs, since the modulo step above implicitly fails
-		 * back IPs to their "home" node.
-		 */
-		if (1 == ctdb->tunable.no_ip_failback) {
-			DEBUG(DEBUG_WARNING, ("WARNING: 'NoIPFailback' set but ignored - incompatible with 'DeterministicIPs\n"));
-		}
-	}
-
-	unassign_unsuitable_ips(ctdb, nodemap, all_ips, mask);
+	*all_ips_p = create_merged_ip_list(ctdb);
 
         if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		lcp2_init(tmp_ctx, nodemap, mask, all_ips, &lcp2_imbalances, &newly_healthy);
-	}
-
-	/* now we must redistribute all public addresses with takeover node
-	   -1 among the nodes available
-	*/
-	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		lcp2_allocate_unassigned(ctdb, nodemap, mask, all_ips, lcp2_imbalances);
+		ip_alloc_lcp2(ctdb, nodemap, *all_ips_p, mask);
+	} else if (1 == ctdb->tunable.deterministic_public_ips) {
+		ip_alloc_deterministic_ips(ctdb, nodemap, *all_ips_p, mask);
 	} else {
-		basic_allocate_unassigned(ctdb, nodemap, mask, all_ips);
+		ip_alloc_nondeterministic_ips(ctdb, nodemap, *all_ips_p, mask);
 	}
 
-	/* If we don't want IPs to fail back or if deterministic IPs
-	 * are being used, then don't rebalance IPs.
-	 */
-	if ((1 == ctdb->tunable.no_ip_failback) ||
-	    (1 == ctdb->tunable.deterministic_public_ips)) {
-		goto finished;
-	}
-
-	/* now, try to make sure the ip adresses are evenly distributed
-	   across the node.
-	*/
-	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		lcp2_failback(ctdb, nodemap, mask, all_ips, lcp2_imbalances, newly_healthy);
-	} else {
-		basic_failback(ctdb, nodemap, mask, all_ips, num_ips);
-	}
-
-	/* finished distributing the public addresses, now just send the 
-	   info out to the nodes */
-finished:
 	/* at this point ->pnn is the node which will own each IP
 	   or -1 if there is no node that can cover this ip
 	*/
-
-	talloc_free(tmp_ctx);
 
 	return;
 }
