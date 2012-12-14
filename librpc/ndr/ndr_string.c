@@ -559,7 +559,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_string_terminator(struct ndr_pull *ndr, uin
 	uint32_t save_offset;
 
 	save_offset = ndr->offset;
-	ndr_pull_advance(ndr, (count - 1) * element_size);
+	NDR_CHECK(ndr_pull_advance(ndr, (count - 1) * element_size));
 	NDR_PULL_NEED_BYTES(ndr, element_size);
 
 	for (i = 0; i < element_size; i++) {
