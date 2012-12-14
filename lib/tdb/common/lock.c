@@ -883,12 +883,14 @@ void tdb_release_transaction_locks(struct tdb_context *tdb)
 /* Following functions are added specifically to support CTDB. */
 
 /* Don't do actual fcntl locking, just mark tdb locked */
+int tdb_transaction_write_lock_mark(struct tdb_context *tdb);
 _PUBLIC_ int tdb_transaction_write_lock_mark(struct tdb_context *tdb)
 {
 	return tdb_transaction_lock(tdb, F_WRLCK, TDB_LOCK_MARK_ONLY);
 }
 
 /* Don't do actual fcntl unlocking, just mark tdb unlocked */
+int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
 _PUBLIC_ int tdb_transaction_write_lock_unmark(struct tdb_context *tdb)
 {
 	return tdb_nest_unlock(tdb, TRANSACTION_LOCK, F_WRLCK, true);
