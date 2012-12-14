@@ -94,10 +94,11 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 	memcpy(&tdb->header, newdb, sizeof(tdb->header));
 	/* Don't endian-convert the magic food! */
 	memcpy(newdb->magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
-	/* we still have "ret == -1" here */
-	if (tdb_write_all(tdb->fd, newdb, size))
-		ret = 0;
 
+	if (!tdb_write_all(tdb->fd, newdb, size))
+		goto fail;
+
+	ret = 0;
   fail:
 	SAFE_FREE(newdb);
 	return ret;
