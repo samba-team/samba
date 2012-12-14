@@ -605,7 +605,12 @@ int main(int argc, char **argv)
 	}
 
 	if (local_flags & LOCAL_AM_ROOT) {
-		secrets_init();
+		bool ok;
+
+		ok = secrets_init();
+		if (!ok) {
+			return 1;
+		}
 		ret = process_root(local_flags);
 	} else {
 		ret = process_nonroot(local_flags);
