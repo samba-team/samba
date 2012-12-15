@@ -700,20 +700,27 @@ static int site_res_cmp_usn_order(struct drsuapi_changed_objects *m1,
 				  struct drsuapi_changed_objects *m2,
 				  struct drsuapi_getncchanges_state *getnc_state)
 {
-	unsigned usnchanged1, usnchanged2;
-	unsigned cn1, cn2;
+	int ret;
 
-	cn1 = ldb_dn_get_comp_num(m1->dn);
-	cn2 = ldb_dn_get_comp_num(m2->dn);
-	if (cn1 != cn2) {
-		return cn1 > cn2 ? 1 : -1;
+	ret = ldb_dn_compare(getnc_state->ncRoot_dn, m1->dn);
+	if (ret == 0) {
+		return -1;
 	}
-	usnchanged1 = m1->usn;
-	usnchanged2 = m2->usn;
-	if (usnchanged1 == usnchanged2) {
-		return 0;
+
+	ret = ldb_dn_compare(getnc_state->ncRoot_dn, m2->dn);
+	if (ret == 0) {
+		return 1;
 	}
-	return usnchanged1 > usnchanged2 ? 1 : -1;
+
+	if (m1->usn == m2->usn) {
+		return ldb_dn_compare(m2->dn, m1->dn);
+	}
+
+	if (m1->usn < m2->usn) {
+		return -1;
+	}
+
+	return 1;
 }
 
 
