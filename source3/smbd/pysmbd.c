@@ -331,8 +331,9 @@ static SMB_ACL_T make_simple_acl(gid_t gid, mode_t chmod_mode)
 /*
   set a simple ACL on a file, as a test
  */
-static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
+static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "mode", "gid", "service", NULL };
 	NTSTATUS status;
 	char *fname, *service = NULL;
 	int mode, gid = -1;
@@ -340,7 +341,9 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 	TALLOC_CTX *frame;
 	connection_struct *conn;
 
-	if (!PyArg_ParseTuple(args, "si|iz", &fname, &mode, &gid, &service))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|iz",
+					 discard_const_p(char *, kwnames),
+					 &fname, &mode, &gid, &service))
 		return NULL;
 
 	acl = make_simple_acl(gid, mode);
@@ -365,8 +368,9 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args)
 /*
   chown a file
  */
-static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
+static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "uid", "gid", "service", NULL };
 	connection_struct *conn;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
@@ -376,7 +380,9 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 	TALLOC_CTX *frame;
 	mode_t saved_umask;
 
-	if (!PyArg_ParseTuple(args, "sii|z", &fname, &uid, &gid, &service))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sii|z",
+					 discard_const_p(char *, kwnames),
+					 &fname, &uid, &gid, &service))
 		return NULL;
 
 	frame = talloc_stackframe();
@@ -408,8 +414,9 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args)
 /*
   chown a file
  */
-static PyObject *py_smbd_unlink(PyObject *self, PyObject *args)
+static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "service", NULL };
 	connection_struct *conn;
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
@@ -419,7 +426,9 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args)
 
 	frame = talloc_stackframe();
 
-	if (!PyArg_ParseTuple(args, "s|z", &fname, &service)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z",
+					 discard_const_p(char *, kwnames),
+					 &fname, &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -453,7 +462,7 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args)
 /*
   check if we have ACL support
  */
-static PyObject *py_smbd_have_posix_acls(PyObject *self, PyObject *args)
+static PyObject *py_smbd_have_posix_acls(PyObject *self)
 {
 #ifdef HAVE_POSIX_ACLS
 	return PyBool_FromLong(true);
@@ -465,8 +474,9 @@ static PyObject *py_smbd_have_posix_acls(PyObject *self, PyObject *args)
 /*
   set the NT ACL on a file
  */
-static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
+static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "security_info_sent", "sd", "service", NULL };
 	NTSTATUS status;
 	char *fname, *service = NULL;
 	int security_info_sent;
@@ -477,7 +487,9 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
 
 	frame = talloc_stackframe();
 
-	if (!PyArg_ParseTuple(args, "siO|z", &fname, &security_info_sent, &py_sd, &service)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs,
+					 "siO|z", discard_const_p(char *, kwnames),
+					 &fname, &security_info_sent, &py_sd, &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -505,8 +517,9 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args)
 /*
   Return the NT ACL on a file
  */
-static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
+static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "security_info_wanted", "service", NULL };
 	char *fname, *service = NULL;
 	int security_info_wanted;
 	PyObject *py_sd;
@@ -515,7 +528,8 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 	connection_struct *conn;
 	NTSTATUS status;
 
-	if (!PyArg_ParseTuple(args, "si|z", &fname, &security_info_wanted, &service)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|z", discard_const_p(char *, kwnames),
+					 &fname, &security_info_wanted, &service)) {
 		TALLOC_FREE(tmp_ctx);
 		return NULL;
 	}
@@ -539,8 +553,9 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args)
 /*
   set the posix (or similar) ACL on a file
  */
-static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args)
+static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "acl_type", "acl", "service", NULL };
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	char *fname, *service = NULL;
@@ -549,7 +564,9 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args)
 	int acl_type;
 	connection_struct *conn;
 
-	if (!PyArg_ParseTuple(args, "siO|z", &fname, &acl_type, &py_acl, &service)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siO|z",
+					 discard_const_p(char *, kwnames),
+					 &fname, &acl_type, &py_acl, &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
@@ -577,8 +594,9 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args)
 /*
   Return the posix (or similar) ACL on a file
  */
-static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args)
+static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char * const kwnames[] = { "fname", "acl_type", "service", NULL };
 	char *fname;
 	PyObject *py_acl;
 	struct smb_acl_t *acl;
@@ -593,7 +611,9 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "si|z", &fname, &acl_type, &service)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|z",
+					 discard_const_p(char *, kwnames),
+					 &fname, &acl_type, &service)) {
 		TALLOC_FREE(frame);
 		TALLOC_FREE(tmp_ctx);
 		return NULL;
@@ -625,28 +645,28 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args)
 
 static PyMethodDef py_smbd_methods[] = {
 	{ "have_posix_acls",
-		(PyCFunction)py_smbd_have_posix_acls, METH_VARARGS,
+		(PyCFunction)py_smbd_have_posix_acls, METH_NOARGS,
 		NULL },
 	{ "set_simple_acl",
-		(PyCFunction)py_smbd_set_simple_acl, METH_VARARGS,
+		(PyCFunction)py_smbd_set_simple_acl, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "set_nt_acl",
-		(PyCFunction)py_smbd_set_nt_acl, METH_VARARGS,
+		(PyCFunction)py_smbd_set_nt_acl, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "get_nt_acl",
-		(PyCFunction)py_smbd_get_nt_acl, METH_VARARGS,
+		(PyCFunction)py_smbd_get_nt_acl, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "get_sys_acl",
-		(PyCFunction)py_smbd_get_sys_acl, METH_VARARGS,
+		(PyCFunction)py_smbd_get_sys_acl, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "set_sys_acl",
-		(PyCFunction)py_smbd_set_sys_acl, METH_VARARGS,
+		(PyCFunction)py_smbd_set_sys_acl, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "chown",
-		(PyCFunction)py_smbd_chown, METH_VARARGS,
+		(PyCFunction)py_smbd_chown, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "unlink",
-		(PyCFunction)py_smbd_unlink, METH_VARARGS,
+		(PyCFunction)py_smbd_unlink, METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ NULL }
 };

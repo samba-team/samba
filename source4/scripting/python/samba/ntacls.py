@@ -81,7 +81,7 @@ def getntacl(lp, file, backend=None, eadbfile=None, direct_db_access=True, servi
         elif ntacl.version == 4:
             return ntacl.info.sd
     else:
-        return smbd.get_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, service)
+        return smbd.get_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, service=service)
 
 
 def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True, skip_invalid_chown=False, passdb=None, service=None):
@@ -117,7 +117,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                     sd2 = sd
                     sd2.owner_sid = administrator
 
-                    smbd.set_nt_acl(file, security.SECINFO_OWNER |security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd2, service)
+                    smbd.set_nt_acl(file, security.SECINFO_OWNER |security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd2, service=service)
 
                     # and then set an NTVFS ACL (which does not set the posix ACL) to pretend the owner really was set
                     use_ntvfs = True
@@ -130,7 +130,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
                 # This won't work in test environments, as it tries a real (rather than xattr-based fake) chown
 
                 os.chown(file, 0, 0)
-                smbd.set_nt_acl(file, security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd, service)
+                smbd.set_nt_acl(file, security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd, service=service)
 
     if use_ntvfs:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
@@ -151,7 +151,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None, use_ntvfs=True
             samba.xattr_native.wrap_setxattr(file, xattr.XATTR_NTACL_NAME,
                                              ndr_pack(ntacl))
     else:
-        smbd.set_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd, service)
+        smbd.set_nt_acl(file, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL | security.SECINFO_SACL, sd, service=service)
 
 
 def ldapmask2filemask(ldm):
