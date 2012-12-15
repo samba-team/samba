@@ -56,14 +56,16 @@ class cmd_ntacl_set(Command):
                choices=["native","tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
         Option("--use-ntvfs", help="Set the ACLs directly to the TDB or xattr for use with the ntvfs file server", action="store_true"),
-        Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server via the VFS layer", action="store_true")
+        Option("--use-s3fs", help="Set the ACLs for use with the default s3fs file server via the VFS layer", action="store_true"),
+        Option("--service", help="Name of the smb.conf service to use when applying the ACLs", type="string")
         ]
 
     takes_args = ["acl","file"]
 
     def run(self, acl, file, use_ntvfs=False, use_s3fs=False,
             quiet=False,xattr_backend=None,eadb_file=None,
-            credopts=None, sambaopts=None, versionopts=None):
+            credopts=None, sambaopts=None, versionopts=None,
+            service=None):
         logger = self.get_logger()
         lp = sambaopts.get_loadparm()
         try:
@@ -87,7 +89,7 @@ class cmd_ntacl_set(Command):
         # ensure we are using the right samba_dsdb passdb backend, no matter what
         s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
-        setntacl(lp, file, acl, str(domain_sid), xattr_backend, eadb_file, use_ntvfs=use_ntvfs)
+        setntacl(lp, file, acl, str(domain_sid), xattr_backend, eadb_file, use_ntvfs=use_ntvfs, service=service)
 
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
@@ -109,14 +111,16 @@ class cmd_ntacl_get(Command):
                choices=["native","tdb"]),
         Option("--eadb-file", help="Name of the tdb file where attributes are stored", type="string"),
         Option("--use-ntvfs", help="Get the ACLs directly from the TDB or xattr used with the ntvfs file server", action="store_true"),
-        Option("--use-s3fs", help="Get the ACLs for use via the VFS layer used by the default s3fs file server", action="store_true")
+        Option("--use-s3fs", help="Get the ACLs for use via the VFS layer used by the default s3fs file server", action="store_true"),
+        Option("--service", help="Name of the smb.conf service to use when getting the ACLs", type="string")
         ]
 
     takes_args = ["file"]
 
     def run(self, file, use_ntvfs=False, use_s3fs=False,
             as_sddl=False, xattr_backend=None, eadb_file=None,
-            credopts=None, sambaopts=None, versionopts=None):
+            credopts=None, sambaopts=None, versionopts=None,
+            service=None):
         lp = sambaopts.get_loadparm()
         try:
             samdb = SamDB(session_info=system_session(),
@@ -135,7 +139,7 @@ class cmd_ntacl_get(Command):
         # ensure we are using the right samba_dsdb passdb backend, no matter what
         s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
-        acl = getntacl(lp, file, xattr_backend, eadb_file, direct_db_access=use_ntvfs)
+        acl = getntacl(lp, file, xattr_backend, eadb_file, direct_db_access=use_ntvfs, service=service)
         if as_sddl:
             try:
                 domain_sid = security.dom_sid(samdb.domain_sid)
