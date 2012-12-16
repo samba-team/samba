@@ -259,7 +259,7 @@ MACOSX_DEPLOYMENT_TARGET = %r
 
 	includes = []
 	if python_config:
-		for incstr in Utils.cmd_output("%s %s --includes" % (python, python_config)).strip().split():
+		for incstr in Utils.cmd_output("%s --includes" % (python_config,)).strip().split():
 			# strip the -I or /I
 			if (incstr.startswith('-I')
 			    or incstr.startswith('/I')):
