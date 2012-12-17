@@ -370,7 +370,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		short_princ_s = talloc_asprintf(tmpctx, "%s/%s@%s",
 						srvPrinc, machine_name,
 						lp_realm());
-		if (!princ_s) {
+		if (short_princ_s == NULL) {
 			ret = -1;
 			goto out;
 		}
