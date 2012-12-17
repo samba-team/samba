@@ -466,12 +466,7 @@ static wbcErr process_domain_info_string(struct wbcDomainInfo *info,
 	}
 
 	/* Online/Offline status */
-
 	r = s;
-	if (r == NULL) {
-		wbc_status = WBC_ERR_INVALID_RESPONSE;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
 	if ( strcmp(r, "Offline") == 0) {
 		info->domain_flags |= WBC_DOMINFO_DOMAIN_OFFLINE;
 	}
