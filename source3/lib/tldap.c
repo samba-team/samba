@@ -817,7 +817,7 @@ struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 
 	asn1_push_tag(state->out, TLDAP_REQ_BIND);
 	asn1_write_Integer(state->out, ld->ld_version);
-	asn1_write_OctetString(state->out, dn, (dn != NULL) ? strlen(dn) : 0);
+	asn1_write_OctetString(state->out, dn, strlen(dn));
 
 	if (mechanism == NULL) {
 		asn1_push_tag(state->out, ASN1_CONTEXT_SIMPLE(0));
