@@ -362,10 +362,6 @@ static NTSTATUS smb_send_request(struct dcecli_connection *c, DATA_BLOB *blob,
 	req->async.fn = smb_write_callback;
 	req->async.private_data = c;
 
-	if (trigger_read) {
-		send_read_request(c);
-	}
-
 	return NT_STATUS_OK;
 }
 
