@@ -716,7 +716,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct delete_records_list *recs;
 	TDB_DATA indata, outdata;
-	int32_t res;
 	struct ctdb_node_map *nodemap;
 	uint32_t *active_nodes;
 	int num_active_nodes;
@@ -774,6 +773,7 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	for (i = 0; i < num_active_nodes; i++) {
 		struct ctdb_marshall_buffer *records;
 		struct ctdb_rec_data *rec;
+		int32_t res;
 
 		ret = ctdb_control(ctdb, active_nodes[i], 0,
 				CTDB_CONTROL_TRY_DELETE_RECORDS, 0,
