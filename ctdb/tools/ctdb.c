@@ -3934,6 +3934,72 @@ static int control_pstore(struct ctdb_context *ctdb, int argc, const char **argv
 }
 
 /*
+ * delete a record from a persistent database
+ */
+static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	TDB_DATA key;
+	int ret;
+	bool persistent;
+
+	if (argc < 2) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	db_name = argv[0];
+
+	if (db_exists(ctdb, db_name, &persistent)) {
+		DEBUG(DEBUG_ERR, ("Database '%s' does not exist\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	if (!persistent) {
+		DEBUG(DEBUG_ERR, ("Database '%s' is not persistent\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR, ("Unable to attach to database '%s'\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to start transaction on database %s\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	key.dptr = discard_const(argv[1]);
+	key.dsize = strlen(argv[1]);
+	ret = ctdb_transaction_store(h, key, tdb_null);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to delete record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_transaction_commit(h);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to commit transaction\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
   check if a service is bound to a port or not
  */
 static int control_chktcpport(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5878,6 +5944,7 @@ static const struct {
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },
 	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
 	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
+	{ "pdelete", 	     control_pdelete,      	false,	false,  "delete a record from a persistent database", "<db> <key>" },
 	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file [-v]", "<tdb-file> <key> [<file>]" },
 	{ "tstore", 	     control_tstore,      	false,	true,  "store a record (including ltdb header)", "<tdb-file> <key> <data+header>" },
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
