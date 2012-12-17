@@ -714,134 +714,135 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 {
 	int ret, i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	struct delete_records_list *recs;
+	TDB_DATA indata, outdata;
+	int32_t res;
+	struct ctdb_node_map *nodemap;
+	uint32_t *active_nodes;
+	int num_active_nodes;
+
+	if (vdata->delete_count == 0) {
+		return 0;
+	}
 
 	vdata->delete_left = vdata->delete_count;
 
-	if (vdata->delete_count > 0) {
-		struct delete_records_list *recs;
-		TDB_DATA indata, outdata;
-		int32_t res;
-		struct ctdb_node_map *nodemap;
-		uint32_t *active_nodes;
-		int num_active_nodes;
+	recs = talloc_zero(vdata, struct delete_records_list);
+	if (recs == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+	recs->records = (struct ctdb_marshall_buffer *)
+		talloc_zero_size(vdata,
+			    offsetof(struct ctdb_marshall_buffer, data));
+	if (recs->records == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+	recs->records->db_id = ctdb_db->db_id;
 
-		recs = talloc_zero(vdata, struct delete_records_list);
-		if (recs == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+	/*
+	 * traverse the tree of all records we want to delete and
+	 * create a blob we can send to the other nodes.
+	 */
+	trbt_traversearray32(vdata->delete_list, 1,
+			     delete_marshall_traverse, recs);
+
+	indata.dsize = talloc_get_size(recs->records);
+	indata.dptr  = (void *)recs->records;
+
+	/*
+	 * now tell all the active nodes to delete all these records
+	 * (if possible)
+	 */
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(),
+				   CTDB_CURRENT_NODE,
+				   recs, /* talloc context */
+				   &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
+		return -1;
+	}
+
+	active_nodes = list_of_active_nodes(ctdb, nodemap,
+					    nodemap, /* talloc context */
+					    false /* include self */);
+	/* yuck! ;-) */
+	num_active_nodes = talloc_get_size(active_nodes)/sizeof(*active_nodes);
+
+	for (i = 0; i < num_active_nodes; i++) {
+		struct ctdb_marshall_buffer *records;
+		struct ctdb_rec_data *rec;
+
+		ret = ctdb_control(ctdb, active_nodes[i], 0,
+				CTDB_CONTROL_TRY_DELETE_RECORDS, 0,
+				indata, recs, &outdata, &res,
+				NULL, NULL);
+		if (ret != 0 || res != 0) {
+			DEBUG(DEBUG_ERR, ("Failed to delete records on "
+					  "node %u: ret[%d] res[%d]\n",
+					  active_nodes[i], ret, res));
 			return -1;
 		}
-		recs->records = (struct ctdb_marshall_buffer *)
-			talloc_zero_size(vdata, 
-				    offsetof(struct ctdb_marshall_buffer, data));
-		if (recs->records == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			return -1;
-		}
-		recs->records->db_id = ctdb_db->db_id;
 
-		/* 
-		 * traverse the tree of all records we want to delete and
-		 * create a blob we can send to the other nodes.
+		/*
+		 * outdata contains the list of records coming back
+		 * from the node: These are the records that the
+		 * remote node could not delete.
+		 *
+		 * NOTE: There is a problem here:
+		 *
+		 * When a node failed to delete the record, but
+		 * others succeeded, we may have created gaps in the
+		 * history of the record. Hence when a node dies, an
+		 * closed file handle might be resurrected or an open
+		 * file handle might be lost, leading to blocked access
+		 * or data corruption.
+		 *
+		 * TODO: This needs to be fixed!
 		 */
-		trbt_traversearray32(vdata->delete_list, 1,
-				     delete_marshall_traverse, recs);
+		records = (struct ctdb_marshall_buffer *)outdata.dptr;
+		rec = (struct ctdb_rec_data *)&records->data[0];
+		while (records->count-- > 1) {
+			TDB_DATA reckey, recdata;
+			struct ctdb_ltdb_header *rechdr;
+			struct delete_record_data *dd;
 
-		indata.dsize = talloc_get_size(recs->records);
-		indata.dptr  = (void *)recs->records;
+			reckey.dptr = &rec->data[0];
+			reckey.dsize = rec->keylen;
+			recdata.dptr = &rec->data[reckey.dsize];
+			recdata.dsize = rec->datalen;
 
-		/* 
-		 * now tell all the active nodes to delete all these records
-		 * (if possible)
-		 */
-
-		ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(),
-					   CTDB_CURRENT_NODE,
-					   recs, /* talloc context */
-					   &nodemap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
-			return -1;
-		}
-
-		active_nodes = list_of_active_nodes(ctdb, nodemap,
-						    nodemap, /* talloc context */
-						    false /* include self */);
-		/* yuck! ;-) */
-		num_active_nodes = talloc_get_size(active_nodes)/sizeof(*active_nodes);
-
-		for (i = 0; i < num_active_nodes; i++) {
-			struct ctdb_marshall_buffer *records;
-			struct ctdb_rec_data *rec;
-
-			ret = ctdb_control(ctdb, active_nodes[i], 0,
-					CTDB_CONTROL_TRY_DELETE_RECORDS, 0,
-					indata, recs, &outdata, &res,
-					NULL, NULL);
-			if (ret != 0 || res != 0) {
-				DEBUG(DEBUG_ERR, ("Failed to delete records on "
-						  "node %u: ret[%d] res[%d]\n",
-						  active_nodes[i], ret, res));
+			if (recdata.dsize < sizeof(struct ctdb_ltdb_header)) {
+				DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record\n"));
 				return -1;
 			}
+			rechdr = (struct ctdb_ltdb_header *)recdata.dptr;
+			recdata.dptr += sizeof(*rechdr);
+			recdata.dsize -= sizeof(*rechdr);
 
-			/*
-			 * outdata contains the list of records coming back
-			 * from the node: These are the records that the
-			 * remote node could not delete.
-			 *
-			 * NOTE: There is a problem here:
-			 *
-			 * When a node failed to delete the record, but
-			 * others succeeded, we may have created gaps in the
-			 * history of the record. Hence when a node dies, an
-			 * closed file handle might be resurrected or an open
-			 * file handle might be lost, leading to blocked access
-			 * or data corruption.
-			 *
-			 * TODO: This needs to be fixed!
-			 */
-			records = (struct ctdb_marshall_buffer *)outdata.dptr;
-			rec = (struct ctdb_rec_data *)&records->data[0];
-			while (records->count-- > 1) {
-				TDB_DATA reckey, recdata;
-				struct ctdb_ltdb_header *rechdr;
-				struct delete_record_data *dd;
-
-				reckey.dptr = &rec->data[0];
-				reckey.dsize = rec->keylen;
-				recdata.dptr = &rec->data[reckey.dsize];
-				recdata.dsize = rec->datalen;
-
-				if (recdata.dsize < sizeof(struct ctdb_ltdb_header)) {
-					DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record\n"));
-					return -1;
-				}
-				rechdr = (struct ctdb_ltdb_header *)recdata.dptr;
-				recdata.dptr += sizeof(*rechdr);
-				recdata.dsize -= sizeof(*rechdr);
-
-				dd = (struct delete_record_data *)trbt_lookup32(
-						vdata->delete_list,
-						ctdb_hash(&reckey));
-				if (dd != NULL) {
-					/*
-					 * The other node could not delete the
-					 * record and it is the first node that
-					 * failed. So we should remove it from
-					 * the tree and update statistics.
-					 */
-					talloc_free(dd);
-					vdata->delete_remote_error++;
-					vdata->delete_left--;
-				}
-
-				rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+			dd = (struct delete_record_data *)trbt_lookup32(
+					vdata->delete_list,
+					ctdb_hash(&reckey));
+			if (dd != NULL) {
+				/*
+				 * The other node could not delete the
+				 * record and it is the first node that
+				 * failed. So we should remove it from
+				 * the tree and update statistics.
+				 */
+				talloc_free(dd);
+				vdata->delete_remote_error++;
+				vdata->delete_left--;
 			}
-		}
 
-		/* free nodemap and active_nodes */
-		talloc_free(nodemap);
+			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
+		}
 	}
+
+	/* free nodemap and active_nodes */
+	talloc_free(nodemap);
 
 	if (vdata->delete_left > 0) {
 		/*
