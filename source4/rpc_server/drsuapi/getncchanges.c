@@ -45,6 +45,7 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *ncRoot_dn;
 	bool is_schema_nc;
 	uint64_t min_usn;
+	struct drsuapi_DsReplicaHighWaterMark last_hwm;
 	struct ldb_dn *last_dn;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
@@ -1620,6 +1621,20 @@ allowed:
 		}
 	}
 
+	if (getnc_state) {
+		ret = drsuapi_DsReplicaHighWaterMark_cmp(&getnc_state->last_hwm,
+							 &req10->highwatermark);
+		if (ret != 0) {
+			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication "
+				 "on DN %s %s highwatermark (last_dn %s)\n",
+				 ldb_dn_get_linearized(getnc_state->ncRoot_dn),
+				 (ret > 0) ? "older" : "newer",
+				 ldb_dn_get_linearized(getnc_state->last_dn)));
+			talloc_free(getnc_state);
+			getnc_state = NULL;
+		}
+	}
+
 	if (getnc_state == NULL) {
 		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
 		if (getnc_state == NULL) {
@@ -1892,6 +1907,7 @@ allowed:
 		uSN = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
 		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
 			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
+			r->out.ctr->ctr6.new_highwatermark.reserved_usn = 0;
 		}
 
 		if (obj->meta_data_ctr == NULL) {
@@ -1993,6 +2009,7 @@ allowed:
 
 		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
 		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
+		r->out.ctr->ctr6.new_highwatermark.reserved_usn = 0;
 
 		werr = get_nc_changes_udv(sam_ctx, getnc_state->ncRoot_dn,
 					  r->out.ctr->ctr6.uptodateness_vector);
@@ -2002,6 +2019,25 @@ allowed:
 
 		talloc_free(getnc_state);
 		b_state->getncchanges_state = NULL;
+	} else {
+		ret = drsuapi_DsReplicaHighWaterMark_cmp(&r->out.ctr->ctr6.old_highwatermark,
+							 &r->out.ctr->ctr6.new_highwatermark);
+		if (ret == 0) {
+			/*
+			 * We need to make sure that we never return the
+			 * same highwatermark within the same replication
+			 * cycle more than once. Otherwise we cannot detect
+			 * when the client uses an unexptected highwatermark.
+			 *
+			 * This is a HACK which is needed because our
+			 * object ordering is wrong and set tmp_highest_usn
+			 * to a value that is higher than what we already
+			 * sent to the client (destination dsa).
+			 */
+			r->out.ctr->ctr6.new_highwatermark.reserved_usn += 1;
+		}
+
+		getnc_state->last_hwm = r->out.ctr->ctr6.new_highwatermark;
 	}
 
 	if (req10->extended_op != DRSUAPI_EXOP_NONE) {
