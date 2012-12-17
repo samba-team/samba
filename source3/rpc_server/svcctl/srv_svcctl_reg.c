@@ -224,13 +224,13 @@ static bool read_init_file(TALLOC_CTX *mem_ctx,
 		p = strstr(str, "Description:");
 		if (p != NULL) {
 			char *desc;
+			size_t len = strlen(p);
 
-			p += strlen( "Description:" ) + 1;
-			if (p == NULL) {
+			if (len <= 12) {
 				break;
 			}
 
-			desc = svcctl_cleanup_string(mem_ctx, p);
+			desc = svcctl_cleanup_string(mem_ctx, p + 12);
 			if (desc != NULL) {
 				info->description = talloc_strdup(info, desc);
 			}
