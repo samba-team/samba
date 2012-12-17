@@ -77,6 +77,7 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 
 	if (in_output_buffer) {
 		output_buffer_offset = SMB2_HDR_BODY+0x38;
+		output_buffer_length = in_output_buffer->length;
 		if (input_buffer_length > 0 && output_buffer_length > 0) {
 			uint32_t tmp;
 			output_buffer_offset += input_buffer_length;
@@ -84,7 +85,6 @@ struct tevent_req *smb2cli_ioctl_send(TALLOC_CTX *mem_ctx,
 			output_buffer_offset = NDR_ROUND(output_buffer_offset, 8);
 			pad_length = output_buffer_offset - tmp;
 		}
-		output_buffer_length = in_output_buffer->length;
 	}
 
 	fixed = state->fixed;
