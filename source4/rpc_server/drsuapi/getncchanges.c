@@ -37,6 +37,23 @@
 #include "auth/session.h"
 #include "dsdb/common/util.h"
 
+/* state of a partially completed getncchanges call */
+struct drsuapi_getncchanges_state {
+	struct GUID *guids;
+	uint32_t num_records;
+	uint32_t num_processed;
+	struct ldb_dn *ncRoot_dn;
+	bool is_schema_nc;
+	uint64_t min_usn;
+	uint64_t highest_usn;
+	struct ldb_dn *last_dn;
+	struct drsuapi_DsReplicaLinkedAttribute *la_list;
+	uint32_t la_count;
+	bool la_sorted;
+	uint32_t la_idx;
+	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
+};
+
 /*
   build a DsReplicaObjectIdentifier from a ldb msg
  */
@@ -1146,23 +1163,6 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 
 	return WERR_OK;
 }
-
-/* state of a partially completed getncchanges call */
-struct drsuapi_getncchanges_state {
-	struct GUID *guids;
-	uint32_t num_records;
-	uint32_t num_processed;
-	struct ldb_dn *ncRoot_dn;
-	bool is_schema_nc;
-	uint64_t min_usn;
-	uint64_t highest_usn;
-	struct ldb_dn *last_dn;
-	struct drsuapi_DsReplicaLinkedAttribute *la_list;
-	uint32_t la_count;
-	bool la_sorted;
-	uint32_t la_idx;
-	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
-};
 
 /*
   see if this getncchanges request includes a request to reveal secret information
