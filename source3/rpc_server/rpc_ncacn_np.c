@@ -770,10 +770,12 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
-	if (cli_pipe && rpccli_is_connected(*cli_pipe)) {
-		return NT_STATUS_OK;
-	} else {
-		TALLOC_FREE(*cli_pipe);
+	if (cli_pipe != NULL) {
+		if (rpccli_is_connected(*cli_pipe)) {
+			return NT_STATUS_OK;
+		} else {
+			TALLOC_FREE(*cli_pipe);
+		}
 	}
 
 	tmp_ctx = talloc_stackframe();
@@ -827,7 +829,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 
 	status = NT_STATUS_OK;
 done:
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && cli_pipe != NULL) {
 		*cli_pipe = talloc_move(mem_ctx, &cli);
 	}
 	TALLOC_FREE(tmp_ctx);
