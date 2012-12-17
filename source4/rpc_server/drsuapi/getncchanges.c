@@ -50,7 +50,6 @@ struct drsuapi_getncchanges_state {
 	uint32_t la_count;
 	bool la_sorted;
 	uint32_t la_idx;
-	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 };
 
 /*
@@ -1730,14 +1729,6 @@ allowed:
 				       site_res_cmp_dn_usn_order);
 		}
 
-		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req10->uptodateness_vector);
-		if (getnc_state->uptodateness_vector) {
-			/* make sure its sorted */
-			TYPESAFE_QSORT(getnc_state->uptodateness_vector->cursors,
-				       getnc_state->uptodateness_vector->count,
-				       drsuapi_DsReplicaCursor_compare);
-		}
-
 		for (i=0; i < getnc_state->num_records; i++) {
 			getnc_state->guids[i] = changes[i].guid;
 			if (GUID_all_zero(&getnc_state->guids[i])) {
@@ -1749,6 +1740,13 @@ allowed:
 
 		talloc_free(search_res);
 		talloc_free(changes);
+	}
+
+	if (req10->uptodateness_vector) {
+		/* make sure its sorted */
+		TYPESAFE_QSORT(req10->uptodateness_vector->cursors,
+			       req10->uptodateness_vector->count,
+			       drsuapi_DsReplicaCursor_compare);
 	}
 
 	/* Prefix mapping */
@@ -1852,7 +1850,7 @@ allowed:
 						   schema, &session_key, getnc_state->min_usn,
 						   req10->replica_flags,
 						   req10->partial_attribute_set,
-						   getnc_state->uptodateness_vector,
+						   req10->uptodateness_vector,
 						   req10->extended_op,
 						   max_wait_reached);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -1866,7 +1864,7 @@ allowed:
 						msg,
 						&getnc_state->la_list,
 						&getnc_state->la_count,
-						getnc_state->uptodateness_vector);
+						req10->uptodateness_vector);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
