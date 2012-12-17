@@ -816,7 +816,7 @@ done:
 	krb5_context context = NULL;
 	krb5_ccache ccache = NULL;
 	krb5_principal client = NULL;
-	krb5_creds creds, creds_in, *creds_out = NULL;
+	krb5_creds creds, creds_in;
 
 	ZERO_STRUCT(creds);
 	ZERO_STRUCT(creds_in);
@@ -876,12 +876,7 @@ done:
 
 done:
 	krb5_free_cred_contents(context, &creds_in);
-
-	if (creds_out) {
-		krb5_free_creds(context, creds_out);
-	} else {
-		krb5_free_cred_contents(context, &creds);
-	}
+	krb5_free_cred_contents(context, &creds);
 
 	if (client) {
 		krb5_free_principal(context, client);
