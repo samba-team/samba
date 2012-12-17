@@ -1490,7 +1490,9 @@ static int mh_fstat(vfs_handle_struct *handle,
 out:
 	DEBUG(MH_INFO_DEBUG, ("Leaving with fsp->fsp_name->st.st_ex_mtime "
 			"%s",
-			ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec))));
+			fsp->fsp_name != NULL ?
+				ctime(&(fsp->fsp_name->st.st_ex_mtime.tv_sec)) :
+				"0"));
 	return status;
 }
 
