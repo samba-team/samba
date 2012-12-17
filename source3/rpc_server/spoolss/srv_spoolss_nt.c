@@ -4442,7 +4442,8 @@ static WERROR enum_all_printers_info_1_name(TALLOC_CTX *mem_ctx,
 
 	DEBUG(4,("enum_all_printers_info_1_name\n"));
 
-	if ((servername[0] == '\\') && (servername[1] == '\\')) {
+	if (servername != NULL &&
+	    (servername[0] == '\\') && (servername[1] == '\\')) {
 		s = servername + 2;
 	}
 
