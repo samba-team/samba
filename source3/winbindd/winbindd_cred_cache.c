@@ -846,11 +846,11 @@ static NTSTATUS store_memory_creds(struct WINBINDD_MEMORY_CREDS *memcredp,
 	DEBUG(10,("mlocked memory: %p\n", memcredp->nt_hash));
 #endif
 
-	/* Create and store the password hashes. */
-	E_md4hash(pass, memcredp->nt_hash);
-	E_deshash(pass, memcredp->lm_hash);
-
 	if (pass) {
+		/* Create and store the password hashes. */
+		E_md4hash(pass, memcredp->nt_hash);
+		E_deshash(pass, memcredp->lm_hash);
+
 		memcredp->pass = (char *)memcredp->lm_hash + LM_HASH_LEN;
 		memcpy(memcredp->pass, pass,
 		       memcredp->len - NT_HASH_LEN - LM_HASH_LEN);
