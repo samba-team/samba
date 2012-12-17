@@ -736,7 +736,8 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 			    offsetof(struct ctdb_marshall_buffer, data));
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return -1;
+		ret = -1;
+		goto done;
 	}
 	recs->records->db_id = ctdb_db->db_id;
 
@@ -761,7 +762,8 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				   &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
 	active_nodes = list_of_active_nodes(ctdb, nodemap,
@@ -784,7 +786,8 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 			DEBUG(DEBUG_ERR, ("Failed to delete records on "
 					  "node %u: ret[%d] res[%d]\n",
 					  active_nodes[i], ret, res));
-			return -1;
+			ret = -1;
+			goto done;
 		}
 
 		/*
@@ -817,7 +820,8 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 			if (recdata.dsize < sizeof(struct ctdb_ltdb_header)) {
 				DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record\n"));
-				return -1;
+				ret = -1;
+				goto done;
 			}
 			rechdr = (struct ctdb_ltdb_header *)recdata.dptr;
 			recdata.dptr += sizeof(*rechdr);
@@ -841,9 +845,6 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 			rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 		}
 	}
-
-	/* free nodemap and active_nodes */
-	talloc_free(nodemap);
 
 	if (vdata->delete_left > 0) {
 		/*
@@ -876,7 +877,13 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		       (unsigned)vdata->delete_left));
 	}
 
-	return 0;
+	ret = 0;
+
+done:
+	/* free recs / nodemap / active_nodes */
+	talloc_free(recs);
+
+	return ret;
 }
 
 /**
