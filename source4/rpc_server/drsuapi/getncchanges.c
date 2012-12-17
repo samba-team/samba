@@ -52,6 +52,26 @@ struct drsuapi_getncchanges_state {
 	uint32_t la_idx;
 };
 
+static int drsuapi_DsReplicaHighWaterMark_cmp(const struct drsuapi_DsReplicaHighWaterMark *h1,
+					      const struct drsuapi_DsReplicaHighWaterMark *h2)
+{
+	if (h1->highest_usn < h2->highest_usn) {
+		return -1;
+	} else if (h1->highest_usn > h2->highest_usn) {
+		return 1;
+	} else if (h1->tmp_highest_usn < h2->tmp_highest_usn) {
+		return -1;
+	} else if (h1->tmp_highest_usn > h2->tmp_highest_usn) {
+		return 1;
+	} else if (h1->reserved_usn < h2->reserved_usn) {
+		return -1;
+	} else if (h1->reserved_usn > h2->reserved_usn) {
+		return 1;
+	}
+
+	return 0;
+}
+
 /*
   build a DsReplicaObjectIdentifier from a ldb msg
  */
