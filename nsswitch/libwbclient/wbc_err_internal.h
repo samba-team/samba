@@ -29,7 +29,7 @@
 		if (!WBC_ERROR_IS_OK(x)) {	\
 			goto done;		\
 		}				\
-	} while(0);
+	} while(0)
 
 #define BAIL_ON_PTR_ERROR(x, status)                    \
 	do {						\
@@ -39,7 +39,7 @@
 		} else {				\
 			status = WBC_ERR_SUCCESS;	\
 		}					\
-	} while (0);
+	} while (0)
 
 
 #endif	/* _WBC_ERR_INTERNAL_H */
