@@ -45,7 +45,6 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *ncRoot_dn;
 	bool is_schema_nc;
 	uint64_t min_usn;
-	uint64_t highest_usn;
 	struct ldb_dn *last_dn;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
@@ -1875,9 +1874,6 @@ allowed:
 		uSN = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
 		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
 			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
-		}
-		if (uSN > getnc_state->highest_usn) {
-			getnc_state->highest_usn = uSN;
 		}
 
 		if (obj->meta_data_ctr == NULL) {
