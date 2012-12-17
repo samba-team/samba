@@ -1087,9 +1087,26 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 	return ret;
 }
 
-/*
-  add an index entry for one message element
-*/
+/**
+ * @brief Add a DN in the index list of a given attribute name/value pair
+ *
+ * This function will add the DN in the index list for the index for
+ * the given attribute name and value.
+ *
+ * @param[in]  module       A ldb_module structure
+ *
+ * @param[in]  dn           The string representation of the DN as it
+ *                          will be stored in the index entry
+ *
+ * @param[in]  el           A ldb_message_element array, one of the entry
+ *                          referred by the v_idx is the attribute name and
+ *                          value pair which will be used to construct the
+ *                          index name
+ *
+ * @param[in]  v_idx        The index of element in the el array to use
+ *
+ * @return                  An ldb error code
+ */
 static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 			   struct ldb_message_element *el, int v_idx)
 {
