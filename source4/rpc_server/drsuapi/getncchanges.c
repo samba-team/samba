@@ -686,8 +686,9 @@ struct drsuapi_changed_objects {
 /*
   sort the objects we send by tree order
  */
-static int site_res_cmp_parent_order(struct drsuapi_changed_objects *m1,
-					struct drsuapi_changed_objects *m2)
+static int site_res_cmp_anc_order(struct drsuapi_changed_objects *m1,
+				  struct drsuapi_changed_objects *m2,
+				  struct drsuapi_getncchanges_state *getnc_state)
 {
 	return ldb_dn_compare(m2->dn, m1->dn);
 }
@@ -695,8 +696,9 @@ static int site_res_cmp_parent_order(struct drsuapi_changed_objects *m1,
 /*
   sort the objects we send first by uSNChanged
  */
-static int site_res_cmp_dn_usn_order(struct drsuapi_changed_objects *m1,
-					struct drsuapi_changed_objects *m2)
+static int site_res_cmp_usn_order(struct drsuapi_changed_objects *m1,
+				  struct drsuapi_changed_objects *m2,
+				  struct drsuapi_getncchanges_state *getnc_state)
 {
 	unsigned usnchanged1, usnchanged2;
 	unsigned cn1, cn2;
@@ -1789,13 +1791,15 @@ allowed:
 		}
 
 		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			TYPESAFE_QSORT(changes,
-				       getnc_state->num_records,
-				       site_res_cmp_parent_order);
+			LDB_TYPESAFE_QSORT(changes,
+					   getnc_state->num_records,
+					   getnc_state,
+					   site_res_cmp_anc_order);
 		} else {
-			TYPESAFE_QSORT(changes,
-				       getnc_state->num_records,
-				       site_res_cmp_dn_usn_order);
+			LDB_TYPESAFE_QSORT(changes,
+					   getnc_state->num_records,
+					   getnc_state,
+					   site_res_cmp_usn_order);
 		}
 
 		for (i=0; i < getnc_state->num_records; i++) {
