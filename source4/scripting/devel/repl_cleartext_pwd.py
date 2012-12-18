@@ -406,4 +406,4 @@ if __name__ == "__main__":
             print "# up to usn[%d]" % (ctr.new_highwatermark.highest_usn)
             break
         print "# up to tmp_usn[%d]" % (ctr.new_highwatermark.highest_usn)
-        req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
+        req8.highwatermark = ctr.new_highwatermark
