@@ -4529,7 +4529,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 *
 	 * plus optional values from our old vector and the one from the source_dsa
 	 */
-	nuv.ctr.ctr2.count = 1 + ouv.ctr.ctr2.count;
+	nuv.ctr.ctr2.count = ouv.ctr.ctr2.count;
 	if (ruv) nuv.ctr.ctr2.count += ruv->count;
 	nuv.ctr.ctr2.cursors = talloc_array(ar,
 					    struct drsuapi_DsReplicaCursor2,
@@ -4573,43 +4573,6 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 
 		/* if it's not there yet, add it */
 		nuv.ctr.ctr2.cursors[ni] = ruv->cursors[i];
-		ni++;
-	}
-
-	/*
-	 * merge in the current highwatermark for the source_dsa
-	 */
-	found = false;
-	for (j=0; j < ni; j++) {
-		if (!GUID_equal(&ar->objs->source_dsa->source_dsa_invocation_id,
-				&nuv.ctr.ctr2.cursors[j].source_dsa_invocation_id)) {
-			continue;
-		}
-
-		found = true;
-
-		/*
-		 * here we update the highest_usn and last_sync_success time
-		 * because we're directly replicating from the source_dsa
-		 *
-		 * and use the tmp_highest_usn because this is what we have just applied
-		 * to our ldb
-		 */
-		nuv.ctr.ctr2.cursors[j].highest_usn		= ar->objs->source_dsa->highwatermark.tmp_highest_usn;
-		nuv.ctr.ctr2.cursors[j].last_sync_success	= now;
-		break;
-	}
-	if (!found) {
-		/*
-		 * here we update the highest_usn and last_sync_success time
-		 * because we're directly replicating from the source_dsa
-		 *
-		 * and use the tmp_highest_usn because this is what we have just applied
-		 * to our ldb
-		 */
-		nuv.ctr.ctr2.cursors[ni].source_dsa_invocation_id= ar->objs->source_dsa->source_dsa_invocation_id;
-		nuv.ctr.ctr2.cursors[ni].highest_usn		= ar->objs->source_dsa->highwatermark.tmp_highest_usn;
-		nuv.ctr.ctr2.cursors[ni].last_sync_success	= now;
 		ni++;
 	}
 
