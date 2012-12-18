@@ -1483,11 +1483,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	time_t start = time(NULL);
 	bool max_wait_reached = false;
 	bool has_get_all_changes = false;
+	struct GUID invocation_id;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
 	sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
+
+	invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 
 	*r->out.level_out = 6;
 	/* TODO: linked attributes*/
@@ -1605,6 +1608,18 @@ allowed:
 		/* Ignore the _in_ uptpdateness vector*/
 		req10->uptodateness_vector = NULL;
 	} 
+
+	if (GUID_all_zero(&req10->source_dsa_invocation_id)) {
+		req10->source_dsa_invocation_id = invocation_id;
+	}
+
+	if (!GUID_equal(&req10->source_dsa_invocation_id, &invocation_id)) {
+		/*
+		 * The given highwatermark is only valid relative to the
+		 * specified source_dsa_invocation_id.
+		 */
+		ZERO_STRUCT(req10->highwatermark);
+	}
 
 	getnc_state = b_state->getncchanges_state;
 
