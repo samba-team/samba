@@ -252,4 +252,4 @@ class drs_Replicate(object):
                 schema=schema, req_level=req_level, req=req)
             if ctr.more_data == 0:
                 break
-            req.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
+            req.highwatermark = ctr.new_highwatermark

@@ -177,4 +177,4 @@ if __name__ == "__main__":
         nb_iter += 1
         if ctr.more_data == 0 or opts.nb_iter == nb_iter:
             break
-        req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
+        req8.highwatermark = ctr.new_highwatermark
