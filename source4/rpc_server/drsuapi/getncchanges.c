@@ -45,8 +45,11 @@ struct drsuapi_getncchanges_state {
 	struct ldb_dn *ncRoot_dn;
 	bool is_schema_nc;
 	uint64_t min_usn;
+	uint64_t max_usn;
 	struct drsuapi_DsReplicaHighWaterMark last_hwm;
 	struct ldb_dn *last_dn;
+	struct drsuapi_DsReplicaHighWaterMark final_hwm;
+	struct drsuapi_DsReplicaCursor2CtrEx *final_udv;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
 	bool la_sorted;
@@ -1740,6 +1743,18 @@ allowed:
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
 		getnc_state->min_usn = req10->highwatermark.highest_usn;
+		getnc_state->max_usn = getnc_state->min_usn;
+
+		getnc_state->final_udv = talloc_zero(getnc_state,
+					struct drsuapi_DsReplicaCursor2CtrEx);
+		if (getnc_state->final_udv == NULL) {
+			return WERR_NOMEM;
+		}
+		werr = get_nc_changes_udv(sam_ctx, getnc_state->ncRoot_dn,
+					  getnc_state->final_udv);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
 
 		if (req10->extended_op == DRSUAPI_EXOP_NONE) {
 			werr = getncchanges_collect_objects(b_state, mem_ctx, req10,
@@ -1767,6 +1782,10 @@ allowed:
 			changes[i].dn = search_res->msgs[i]->dn;
 			changes[i].guid = samdb_result_guid(search_res->msgs[i], "objectGUID");
 			changes[i].usn = ldb_msg_find_attr_as_uint64(search_res->msgs[i], "uSNChanged", 0);
+
+			if (changes[i].usn > getnc_state->max_usn) {
+				getnc_state->max_usn = changes[i].usn;
+			}
 		}
 
 		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
@@ -1787,6 +1806,10 @@ allowed:
 				return WERR_DS_DRA_INTERNAL_ERROR;
 			}
 		}
+
+		getnc_state->final_hwm.tmp_highest_usn = getnc_state->max_usn;
+		getnc_state->final_hwm.reserved_usn = 0;
+		getnc_state->final_hwm.highest_usn = getnc_state->max_usn;
 
 		talloc_free(search_res);
 		talloc_free(changes);
@@ -1920,6 +1943,18 @@ allowed:
 		}
 
 		uSN = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
+		if (uSN > getnc_state->max_usn) {
+			/*
+			 * Only report the max_usn we had at the start
+			 * of the replication cycle.
+			 *
+			 * If this object has changed lately we better
+			 * let the destination dsa refetch the change.
+			 * This is better than the risk of loosing some
+			 * objects or linked attributes.
+			 */
+			uSN = 0;
+		}
 		if (uSN > r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn) {
 			r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn = uSN;
 			r->out.ctr->ctr6.new_highwatermark.reserved_usn = 0;
@@ -2022,15 +2057,9 @@ allowed:
 	if (!r->out.ctr->ctr6.more_data) {
 		talloc_steal(mem_ctx, getnc_state->la_list);
 
-		r->out.ctr->ctr6.uptodateness_vector = talloc(mem_ctx, struct drsuapi_DsReplicaCursor2CtrEx);
-		r->out.ctr->ctr6.new_highwatermark.highest_usn = r->out.ctr->ctr6.new_highwatermark.tmp_highest_usn;
-		r->out.ctr->ctr6.new_highwatermark.reserved_usn = 0;
-
-		werr = get_nc_changes_udv(sam_ctx, getnc_state->ncRoot_dn,
-					  r->out.ctr->ctr6.uptodateness_vector);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
-		}
+		r->out.ctr->ctr6.new_highwatermark = getnc_state->final_hwm;
+		r->out.ctr->ctr6.uptodateness_vector = talloc_move(mem_ctx,
+							&getnc_state->final_udv);
 
 		talloc_free(getnc_state);
 		b_state->getncchanges_state = NULL;
