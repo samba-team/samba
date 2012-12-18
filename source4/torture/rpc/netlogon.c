@@ -754,6 +754,7 @@ static bool test_GetPassword(struct torture_context *tctx,
 
 	status = dcerpc_netr_ServerPasswordGet_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "ServerPasswordGet");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "ServerPasswordGet");
 
 	return true;
 }

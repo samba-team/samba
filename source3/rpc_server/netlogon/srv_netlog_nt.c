@@ -2191,11 +2191,11 @@ NTSTATUS _netr_LogonGetDomainInfo(struct pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_ServerPasswordGet(struct pipes_struct *p,
-			       struct netr_ServerPasswordGet *r)
+NTSTATUS _netr_ServerPasswordGet(struct pipes_struct *p,
+				 struct netr_ServerPasswordGet *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 /****************************************************************

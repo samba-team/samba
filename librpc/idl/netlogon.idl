@@ -1450,7 +1450,7 @@ interface netlogon
 
 	/****************/
 	/* Function 0x1f */
-	WERROR netr_ServerPasswordGet(
+	NTSTATUS netr_ServerPasswordGet(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in]  [string,charset(UTF16)] uint16 *account_name,
 		[in]  netr_SchannelType secure_channel_type,
