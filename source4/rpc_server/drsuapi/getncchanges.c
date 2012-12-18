@@ -1889,10 +1889,10 @@ allowed:
 		*currentObject = obj;
 		currentObject = &obj->next_object;
 
-		talloc_free(getnc_state->last_dn);
-		getnc_state->last_dn = ldb_dn_copy(getnc_state, msg->dn);
-
 		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
+
+		talloc_free(getnc_state->last_dn);
+		getnc_state->last_dn = talloc_move(getnc_state, &msg->dn);
 
 		talloc_free(msg_res);
 		talloc_free(msg_dn);
