@@ -45,11 +45,15 @@ ssize_t transfer_file_internal(void *in_file,
 	size_t num_to_read_thistime;
 	size_t num_written = 0;
 
+	if (n == 0) {
+		return 0;
+	}
+
 	if ((buf = SMB_MALLOC_ARRAY(char, TRANSFER_BUF_SIZE)) == NULL) {
 		return -1;
 	}
 
-	while (total < n) {
+	do {
 		num_to_read_thistime = MIN((n - total), TRANSFER_BUF_SIZE);
 
 		read_ret = (*read_fn)(in_file, buf, num_to_read_thistime);
@@ -84,7 +88,7 @@ ssize_t transfer_file_internal(void *in_file,
 		}
 
 		total += (size_t)read_ret;
-	}
+	} while (total < n);
 
 	SAFE_FREE(buf);
 	return (ssize_t)total;
