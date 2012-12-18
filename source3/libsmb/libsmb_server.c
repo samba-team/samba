@@ -273,7 +273,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
          * server...
          */
         if (srv &&
-            *share != '\0' &&
+	    share != NULL && *share != '\0' &&
             smbc_getOptionOneSharePerServer(context)) {
 
                 /*
