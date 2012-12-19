@@ -3487,7 +3487,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	const struct ldb_val *ouv_value;
 	unsigned int i;
 	int ret;
-	uint64_t highest_usn;
+	uint64_t highest_usn = 0;
 	const struct GUID *our_invocation_id;
 	struct timeval now = timeval_current();
 
@@ -3530,7 +3530,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 		return ldb_operr(samdb);
 	}
 
-	ret = dsdb_load_partition_usn(samdb, dn, &highest_usn, NULL);
+	ret = ldb_sequence_number(samdb, LDB_SEQ_HIGHEST_SEQ, &highest_usn);
 	if (ret != LDB_SUCCESS) {
 		/* nothing to add - this can happen after a vampire */
 		TYPESAFE_QSORT(*cursors, *count, drsuapi_DsReplicaCursor2_compare);
