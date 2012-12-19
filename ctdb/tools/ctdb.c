@@ -4875,6 +4875,91 @@ static int control_getdbseqnum(struct ctdb_context *ctdb, int argc, const char *
 }
 
 /*
+ * set db seqnum
+ */
+static int control_setdbseqnum(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	bool ret;
+	struct ctdb_db_context *ctdb_db;
+	uint32_t db_id;
+	uint8_t flags;
+	uint64_t old_seqnum, new_seqnum;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_transaction_handle *h;
+	TDB_DATA key, data;
+	bool persistent;
+
+	if (argc != 2) {
+		talloc_free(tmp_ctx);
+		usage();
+	}
+
+	if (!db_exists(ctdb, argv[0], &db_id, &flags)) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	persistent = flags & CTDB_DB_FLAGS_PERSISTENT;
+	if (!persistent) {
+		DEBUG(DEBUG_ERR,("Database '%s' is not persistent\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_getdbseqnum(ctdb_connection, options.pnn, db_id, &old_seqnum);
+	if (!ret) {
+		DEBUG(DEBUG_ERR, ("Unable to get seqnum from node."));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	new_seqnum = strtoull(argv[1], NULL, 0);
+	if (new_seqnum <= old_seqnum) {
+		DEBUG(DEBUG_ERR, ("New sequence number is less than current sequence number\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], persistent, 0);
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	h = ctdb_transaction_start(ctdb_db, tmp_ctx);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR,("Failed to start transaction on database %s\n", argv[0]));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	key.dptr  = (uint8_t *)discard_const(CTDB_DB_SEQNUM_KEY);
+	key.dsize = strlen(key.dptr) + 1;
+
+	data.dsize = sizeof(new_seqnum);
+	data.dptr = talloc_size(tmp_ctx, data.dsize);
+	*data.dptr = new_seqnum;
+
+	ret = ctdb_transaction_store(h, key, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to store record\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ret = ctdb_transaction_commit(h);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to commit transaction\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
   run an eventscript on a node
  */
 static int control_eventscript(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5850,6 +5935,7 @@ static const struct {
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
 	{ "rebalancenode",     control_rebalancenode,	false,	false, "release a node by allowing it to takeover ips", "<pnn>"},
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbname|dbid>" },
+	{ "setdbseqnum",     control_setdbseqnum,       false,	false, "set the sequence number for a database", "<dbname|dbid> <seqnum>" },
 	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
 	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<dbname|dbid>" },
 	{ "reloadips",       control_reloadips,         false,	false, "reload the public addresses file on a node" },
