@@ -183,8 +183,8 @@ static struct dom_usr *get_domain_userlist(TALLOC_CTX *mem_ctx)
 	}
 
 	for (i=num_users=0; i<num_sessions; i++) {
-		if (!session_list[i].username
-		    || !session_list[i].remote_machine) {
+		if (session_list[i].username[0] == '\0' ||
+		    session_list[i].remote_machine[0] == '\0') {
 			continue;
 		}
 		p = strpbrk(session_list[i].remote_machine, "./");
