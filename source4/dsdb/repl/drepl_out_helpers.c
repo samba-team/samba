@@ -627,6 +627,8 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		first_object			= ctr1->first_object;
 		linked_attributes_count		= 0;
 		linked_attributes		= NULL;
+		rf1.source_dsa_obj_guid 	= ctr1->source_dsa_guid;
+		rf1.source_dsa_invocation_id	= ctr1->source_dsa_invocation_id;
 		rf1.highwatermark		= ctr1->new_highwatermark;
 		uptodateness_vector		= NULL; /* TODO: map it */
 		more_data			= ctr1->more_data;
@@ -637,6 +639,8 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		first_object			= ctr6->first_object;
 		linked_attributes_count		= ctr6->linked_attributes_count;
 		linked_attributes		= ctr6->linked_attributes;
+		rf1.source_dsa_obj_guid 	= ctr6->source_dsa_guid;
+		rf1.source_dsa_invocation_id	= ctr6->source_dsa_invocation_id;
 		rf1.highwatermark		= ctr6->new_highwatermark;
 		uptodateness_vector		= ctr6->uptodateness_vector;
 		more_data			= ctr6->more_data;
