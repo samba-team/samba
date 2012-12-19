@@ -105,8 +105,8 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
 	parms.writex.in.file.fnum = fnum;
 	parms.writex.in.wmode = write_mode;
 	parms.writex.in.remaining = 0;
-	
-	while (total < size) {
+
+	do {
 		NTSTATUS status;
 
 		block = MIN(block, size - total);
@@ -124,7 +124,7 @@ ssize_t smbcli_write(struct smbcli_tree *tree,
 		offset += parms.writex.out.nwritten;
 		total += parms.writex.out.nwritten;
 		buf += parms.writex.out.nwritten;
-	}
+	} while (total < size);
 
 	return total;
 }
