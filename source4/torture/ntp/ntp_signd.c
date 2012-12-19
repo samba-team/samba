@@ -113,6 +113,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
+					   a.in.secure_channel_type,
 					   &credentials1, &credentials2, 
 					   pwhash, &credentials3,
 					   negotiate_flags);

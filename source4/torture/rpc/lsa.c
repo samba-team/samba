@@ -2715,6 +2715,7 @@ static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
+					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
 					   negotiate_flags);

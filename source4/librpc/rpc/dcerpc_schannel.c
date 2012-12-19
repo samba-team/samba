@@ -187,6 +187,7 @@ static void continue_srv_challenge(struct tevent_req *subreq)
 	s->creds = netlogon_creds_client_init(s, 
 					      s->a.in.account_name, 
 					      s->a.in.computer_name,
+					      s->a.in.secure_channel_type,
 					      &s->credentials1, &s->credentials2,
 					      s->mach_pwd, &s->credentials3,
 					      s->local_negotiate_flags);

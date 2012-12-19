@@ -173,6 +173,7 @@ bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
+					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
 					   0);
@@ -243,6 +244,7 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
+					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   mach_password, &credentials3,
 					   negotiate_flags);
@@ -310,6 +312,7 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	creds = netlogon_creds_client_init(tctx, a.in.account_name,
 					   a.in.computer_name,
+					   a.in.secure_channel_type,
 					   &credentials1, &credentials2,
 					   &mach_password, &credentials3,
 					   negotiate_flags);
