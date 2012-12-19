@@ -4652,6 +4652,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	ZERO_STRUCT(nrf);
 	nrf.version					= 1;
 	nrf.ctr.ctr1					= *ar->objs->source_dsa;
+	nrf.ctr.ctr1.last_attempt			= now;
+	nrf.ctr.ctr1.last_success			= now;
+	nrf.ctr.ctr1.result_last_attempt 		= WERR_OK;
 
 	/*
 	 * first see if we already have a repsFrom value for the current source dsa
