@@ -68,8 +68,9 @@ static void debug_nmb_res_rec(struct res_rec *res, const char *hdr)
 		res->rr_class,
 		res->ttl ) );
 
-	if( res->rdlength == 0 || res->rdata == NULL )
+	if (res->rdlength == 0) {
 		return;
+	}
 
 	for (i = 0; i < res->rdlength; i+= MAX_NETBIOSNAME_LEN) {
 		DEBUGADD(4, ("    %s %3x char ", hdr, i));
