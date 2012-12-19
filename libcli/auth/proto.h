@@ -26,6 +26,7 @@ next comes the client specific functions
 struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *mem_ctx, 
 								  const char *client_account,
 								  const char *client_computer_name, 
+								  uint16_t secure_channel_type,
 								  const struct netr_Credential *client_challenge,
 								  const struct netr_Credential *server_challenge,
 								  const struct samr_Password *machine_password,

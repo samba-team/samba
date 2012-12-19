@@ -1015,6 +1015,7 @@ static bool auth2(struct torture_context *tctx,
 	creds_state = netlogon_creds_client_init(mem_ctx,
 						 a.in.account_name,
 						 a.in.computer_name,
+						 a.in.secure_channel_type,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
 						 &netr_cred, negotiate_flags);
@@ -2146,6 +2147,7 @@ static bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	creds_state = netlogon_creds_client_init(mem_ctx,
 						 a.in.account_name,
 						 a.in.computer_name,
+						 a.in.secure_channel_type,
 						 r.in.credentials,
 						 r.out.return_credentials, &mach_pw,
 						 &netr_cred, negotiate_flags);
