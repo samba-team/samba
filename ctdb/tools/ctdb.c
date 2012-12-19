@@ -241,30 +241,57 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 /*
  check if a database exists
 */
-static int db_exists(struct ctdb_context *ctdb, const char *db_name, bool *persistent)
+static bool db_exists(struct ctdb_context *ctdb, const char *dbarg, uint32_t *dbid, uint8_t *flags)
 {
 	int i, ret;
 	struct ctdb_dbid_map *dbmap=NULL;
+	bool dbid_given = false, found = false;
+	uint32_t id;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
-	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
+	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
-		return -1;
+		goto fail;
 	}
 
-	for(i=0;i<dbmap->num;i++){
-		const char *name;
+	if (strncmp(dbarg, "0x", 2) == 0) {
+		id = strtoul(dbarg, NULL, 0);
+		dbid_given = true;
+	}
 
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
-		if (!strcmp(name, db_name)) {
-			if (persistent) {
-				*persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+	for(i=0; i<dbmap->num; i++) {
+		if (dbid_given) {
+			if (id == dbmap->dbs[i].dbid) {
+				found = true;
+				break;
 			}
-			return 0;
+		} else {
+			const char *name;
+			ret = ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, ("Unable to get dbname from dbid %u\n", dbmap->dbs[i].dbid));
+				goto fail;
+			}
+
+			if (strcmp(name, dbarg) == 0) {
+				id = dbmap->dbs[i].dbid;
+				found = true;
+				break;
+			}
 		}
 	}
 
-	return -1;
+	if (found) {
+		if (dbid) *dbid = id;
+		if (flags) *flags = dbmap->dbs[i].flags;
+	} else {
+		DEBUG(DEBUG_ERR,("No database matching '%s' found\n", dbarg));
+	}
+
+fail:
+	talloc_free(tmp_ctx);
+	return found;
 }
 
 /*
@@ -575,35 +602,18 @@ static int control_dbstatistics(struct ctdb_context *ctdb, int argc, const char 
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ctdb_db_statistics *dbstat;
-	struct ctdb_dbid_map *dbmap=NULL;
-	int i, ret;
+	int i;
+	uint32_t db_id;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
-		return ret;
-	}
-	for(i=0;i<dbmap->num;i++){
-		const char *name;
-
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
-		if(!strcmp(argv[0], name)){
-			talloc_free(discard_const(name));
-			break;
-		}
-		talloc_free(discard_const(name));
-	}
-	if (i == dbmap->num) {
-		DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
-		talloc_free(tmp_ctx);
+	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
 		return -1;
 	}
 
-	if (!ctdb_getdbstat(ctdb_connection, options.pnn, dbmap->dbs[i].dbid, &dbstat)) {
+	if (!ctdb_getdbstat(ctdb_connection, options.pnn, db_id, &dbstat)) {
 		DEBUG(DEBUG_ERR,("Failed to read db statistics from node\n"));
 		talloc_free(tmp_ctx);
 		return -1;
@@ -3401,8 +3411,8 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
 	int ret;
-	bool persistent;
 	struct ctdb_dump_db_context c;
+	uint8_t flags;
 
 	if (argc < 1) {
 		usage();
@@ -3410,14 +3420,11 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	db_name = argv[0];
 
-
-	if (db_exists(ctdb, db_name, &persistent)) {
-		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+	if (!db_exists(ctdb, db_name, NULL, &flags)) {
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
-
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
@@ -3487,7 +3494,7 @@ static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
 	struct cattdb_data d;
-	bool persistent;
+	uint8_t flags;
 
 	if (argc < 1) {
 		usage();
@@ -3495,14 +3502,11 @@ static int control_cattdb(struct ctdb_context *ctdb, int argc, const char **argv
 
 	db_name = argv[0];
 
-
-	if (db_exists(ctdb, db_name, &persistent)) {
-		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+	if (!db_exists(ctdb, db_name, NULL, &flags)) {
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
-
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
@@ -3531,7 +3535,7 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 	struct ctdb_record_handle *h;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA key, data;
-	bool persistent;
+	uint8_t flags;
 
 	if (argc < 2) {
 		usage();
@@ -3539,13 +3543,11 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 
 	db_name = argv[0];
 
-	if (db_exists(ctdb, db_name, &persistent)) {
-		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+	if (!db_exists(ctdb, db_name, NULL, &flags)) {
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
-
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
@@ -3579,7 +3581,7 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 	struct ctdb_record_handle *h;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA key, data;
-	bool persistent;
+	uint8_t flags;
 
 	if (argc < 3) {
 		usage();
@@ -3587,13 +3589,11 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 
 	db_name = argv[0];
 
-	if (db_exists(ctdb, db_name, &persistent)) {
-		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+	if (!db_exists(ctdb, db_name, NULL, &flags)) {
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
-
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
@@ -3635,6 +3635,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	TDB_DATA key, data;
 	int fd, ret;
 	bool persistent;
+	uint8_t flags;
 
 	if (argc < 2) {
 		talloc_free(tmp_ctx);
@@ -3643,13 +3644,12 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 
 	db_name = argv[0];
 
-
-	if (db_exists(ctdb, db_name, &persistent)) {
-		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+	if (!db_exists(ctdb, db_name, NULL, &flags)) {
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	persistent = flags & CTDB_DB_FLAGS_PERSISTENT;
 	if (!persistent) {
 		DEBUG(DEBUG_ERR,("Database '%s' is not persistent\n", db_name));
 		talloc_free(tmp_ctx);
@@ -3657,7 +3657,6 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), db_name, persistent, 0);
-
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		talloc_free(tmp_ctx);
@@ -3945,6 +3944,7 @@ static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **arg
 	TDB_DATA key;
 	int ret;
 	bool persistent;
+	uint8_t flags;
 
 	if (argc < 2) {
 		talloc_free(tmp_ctx);
@@ -3953,12 +3953,12 @@ static int control_pdelete(struct ctdb_context *ctdb, int argc, const char **arg
 
 	db_name = argv[0];
 
-	if (db_exists(ctdb, db_name, &persistent)) {
-		DEBUG(DEBUG_ERR, ("Database '%s' does not exist\n", db_name));
+	if (!db_exists(ctdb, db_name, NULL, &flags)) {
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	persistent = flags & CTDB_DB_FLAGS_PERSISTENT;
 	if (!persistent) {
 		DEBUG(DEBUG_ERR, ("Database '%s' is not persistent\n", db_name));
 		talloc_free(tmp_ctx);
@@ -4330,9 +4330,11 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
  */
 static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
-	struct ctdb_dbid_map *dbmap=NULL;
 	const char *db_name;
+	uint32_t db_id;
+	uint8_t flags;
+	const char *path;
+	const char *health;
 
 	if (argc < 1) {
 		usage();
@@ -4340,40 +4342,19 @@ static int control_getdbstatus(struct ctdb_context *ctdb, int argc, const char *
 
 	db_name = argv[0];
 
-	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, ctdb, &dbmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
-		return ret;
+	if (!db_exists(ctdb, db_name, &db_id, &flags)) {
+		return -1;
 	}
 
-	for(i=0;i<dbmap->num;i++){
-		const char *path;
-		const char *name;
-		const char *health;
-		bool persistent;
-		bool readonly;
-		bool sticky;
+	ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, db_id, ctdb, &path);
+	ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, db_id, ctdb, &health);
+	printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nSTICKY: %s\nREADONLY: %s\nHEALTH: %s\n",
+	       db_id, db_name, path,
+	       (flags & CTDB_DB_FLAGS_PERSISTENT ? "yes" : "no"),
+	       (flags & CTDB_DB_FLAGS_STICKY ? "yes" : "no"),
+	       (flags & CTDB_DB_FLAGS_READONLY ? "yes" : "no"),
+	       (health ? health : "OK"));
 
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
-		if (strcmp(name, db_name) != 0) {
-			continue;
-		}
-
-		ctdb_ctrl_getdbpath(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &path);
-		ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &health);
-		persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
-		readonly   = dbmap->dbs[i].flags & CTDB_DB_FLAGS_READONLY;
-		sticky     = dbmap->dbs[i].flags & CTDB_DB_FLAGS_STICKY;
-		printf("dbid: 0x%08x\nname: %s\npath: %s\nPERSISTENT: %s\nSTICKY: %s\nREADONLY: %s\nHEALTH: %s\n",
-		       dbmap->dbs[i].dbid, name, path,
-		       persistent?"yes":"no",
-		       sticky?"yes":"no",
-		       readonly?"yes":"no",
-		       health?health:"OK");
-		return 0;
-	}
-
-	DEBUG(DEBUG_ERR, ("db %s doesn't exist on node %u\n", db_name, options.pnn));
 	return 0;
 }
 
@@ -4794,7 +4775,9 @@ static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **a
 		usage();
 	}
 
-	db_id = strtoul(argv[0], NULL, 0);
+	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+		return -1;
+	}
 
 	ret = ctdb_ctrl_get_db_priority(ctdb, TIMELIMIT(), options.pnn, db_id, &priority);
 	if (ret != 0) {
@@ -4814,38 +4797,14 @@ static int control_setdbsticky(struct ctdb_context *ctdb, int argc, const char *
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t db_id;
-	struct ctdb_dbid_map *dbmap=NULL;
-	int i, ret;
+	int ret;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	if (!strncmp(argv[0], "0x", 2)) {
-		db_id = strtoul(argv[0] + 2, NULL, 0);
-	} else {
-		ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-		for(i=0;i<dbmap->num;i++){
-			const char *name;
-
-			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
-			if(!strcmp(argv[0], name)){
-				talloc_free(discard_const(name));
-				break;
-			}
-			talloc_free(discard_const(name));
-		}
-		if (i == dbmap->num) {
-			DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
-		db_id = dbmap->dbs[i].dbid;
+	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+		return -1;
 	}
 
 	ret = ctdb_ctrl_set_db_sticky(ctdb, options.pnn, db_id);
@@ -4866,38 +4825,14 @@ static int control_setdbreadonly(struct ctdb_context *ctdb, int argc, const char
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	uint32_t db_id;
-	struct ctdb_dbid_map *dbmap=NULL;
-	int i, ret;
+	int ret;
 
 	if (argc < 1) {
 		usage();
 	}
 
-	if (!strncmp(argv[0], "0x", 2)) {
-		db_id = strtoul(argv[0] + 2, NULL, 0);
-	} else {
-		ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-		for(i=0;i<dbmap->num;i++){
-			const char *name;
-
-			ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
-			if(!strcmp(argv[0], name)){
-				talloc_free(discard_const(name));
-				break;
-			}
-			talloc_free(discard_const(name));
-		}
-		if (i == dbmap->num) {
-			DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
-			talloc_free(tmp_ctx);
-			return -1;
-		}
-		db_id = dbmap->dbs[i].dbid;
+	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+		return -1;
 	}
 
 	ret = ctdb_ctrl_set_db_readonly(ctdb, options.pnn, db_id);
@@ -4924,7 +4859,9 @@ static int control_getdbseqnum(struct ctdb_context *ctdb, int argc, const char *
 		usage();
 	}
 
-	db_id = strtoul(argv[0], NULL, 0);
+	if (!db_exists(ctdb, argv[0], &db_id, NULL)) {
+		return -1;
+	}
 
 	ret = ctdb_getdbseqnum(ctdb_connection, options.pnn, db_id, &seqnum);
 	if (!ret) {
@@ -5018,8 +4955,7 @@ static int backup_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
  */
 static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int i, ret;
-	struct ctdb_dbid_map *dbmap=NULL;
+	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct db_file_header dbhdr;
 	struct ctdb_db_context *ctdb_db;
@@ -5027,36 +4963,20 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 	int fh = -1;
 	int status = -1;
 	const char *reason = NULL;
+	uint32_t db_id;
+	uint8_t flags;
 
 	if (argc != 2) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
 		return -1;
 	}
 
-	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &dbmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n", options.pnn));
-		return ret;
-	}
-
-	for(i=0;i<dbmap->num;i++){
-		const char *name;
-
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, tmp_ctx, &name);
-		if(!strcmp(argv[0], name)){
-			talloc_free(discard_const(name));
-			break;
-		}
-		talloc_free(discard_const(name));
-	}
-	if (i == dbmap->num) {
-		DEBUG(DEBUG_ERR,("No database with name '%s' found\n", argv[0]));
-		talloc_free(tmp_ctx);
+	if (!db_exists(ctdb, argv[0], &db_id, &flags)) {
 		return -1;
 	}
 
 	ret = ctdb_ctrl_getdbhealth(ctdb, TIMELIMIT(), options.pnn,
-				    dbmap->dbs[i].dbid, tmp_ctx, &reason);
+				    db_id, tmp_ctx, &reason);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to get dbhealth for database '%s'\n",
 				 argv[0]));
@@ -5087,7 +5007,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 				     allow_unhealthy));
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", argv[0]));
 		talloc_free(tmp_ctx);
@@ -5139,7 +5059,7 @@ static int control_backupdb(struct ctdb_context *ctdb, int argc, const char **ar
 
 	dbhdr.version = DB_VERSION;
 	dbhdr.timestamp = time(NULL);
-	dbhdr.persistent = dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT;
+	dbhdr.persistent = flags & CTDB_DB_FLAGS_PERSISTENT;
 	dbhdr.size = bd->len;
 	if (strlen(argv[0]) >= MAX_DB_NAME) {
 		DEBUG(DEBUG_ERR,("Too long dbname\n"));
@@ -5462,40 +5382,18 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 	struct ctdb_control_wipe_database w;
 	uint32_t *nodes;
 	uint32_t generation;
-	struct ctdb_dbid_map *dbmap = NULL;
+	uint8_t flags;
 
 	if (argc != 1) {
 		DEBUG(DEBUG_ERR,("Invalid arguments\n"));
 		return -1;
 	}
 
-	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), options.pnn, tmp_ctx,
-				 &dbmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get dbids from node %u\n",
-				  options.pnn));
-		return ret;
-	}
-
-	for(i=0;i<dbmap->num;i++){
-		const char *name;
-
-		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn,
-				    dbmap->dbs[i].dbid, tmp_ctx, &name);
-		if(!strcmp(argv[0], name)){
-			talloc_free(discard_const(name));
-			break;
-		}
-		talloc_free(discard_const(name));
-	}
-	if (i == dbmap->num) {
-		DEBUG(DEBUG_ERR, ("No database with name '%s' found\n",
-				  argv[0]));
-		talloc_free(tmp_ctx);
+	if (!db_exists(ctdb, argv[0], NULL, &flags)) {
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], dbmap->dbs[i].flags & CTDB_DB_FLAGS_PERSISTENT, 0);
+	ctdb_db = ctdb_attach(ctdb, TIMELIMIT(), argv[0], flags & CTDB_DB_FLAGS_PERSISTENT, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR, ("Unable to attach to database '%s'\n",
 				  argv[0]));
@@ -5867,9 +5765,9 @@ static const struct {
 	{ "setifacelink",    control_setifacelink,      true,	false,  "set interface link status", "<iface> <status>" },
 	{ "process-exists",  control_process_exists,    true,	false,  "check if a process exists on a node",  "<pid>"},
 	{ "getdbmap",        control_getdbmap,          true,	false,  "show the database map" },
-	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname>" },
-	{ "catdb",           control_catdb,             true,	false,  "dump a ctdb database" ,                     "<dbname>"},
-	{ "cattdb",          control_cattdb,            true,	false,  "dump a local tdb database" ,                     "<dbname>"},
+	{ "getdbstatus",     control_getdbstatus,       true,	false,  "show the status of a database", "<dbname|dbid>" },
+	{ "catdb",           control_catdb,             true,	false,  "dump a ctdb database" ,                     "<dbname|dbid>"},
+	{ "cattdb",          control_cattdb,            true,	false,  "dump a local tdb database" ,                     "<dbname|dbid>"},
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
 	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
@@ -5920,10 +5818,10 @@ static const struct {
 	{ "addip",           control_addip,		true,	false, "add a ip address to a node", "<ip/mask> <iface>"},
 	{ "delip",           control_delip,		false,	false, "delete an ip address from a node", "<ip>"},
 	{ "eventscript",     control_eventscript,	true,	false, "run the eventscript with the given parameters on a node", "<arguments>"},
-	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<database> <file>"},
+	{ "backupdb",        control_backupdb,          false,	false, "backup the database into a file.", "<dbname|dbid> <file>"},
 	{ "restoredb",        control_restoredb,        false,	false, "restore the database from a file.", "<file> [dbname]"},
 	{ "dumpdbbackup",    control_dumpdbbackup,      false,	true,  "dump database backup from a file.", "<file>"},
-	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
+	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname|dbid>"},
 	{ "recmaster",        control_recmaster,        true,	false, "show the pnn for the recovery master."},
 	{ "scriptstatus",     control_scriptstatus,     true,	false, "show the status of the monitoring scripts (or all scripts)", "[all]"},
 	{ "enablescript",     control_enablescript,  false,	false, "enable an eventscript", "<script>"},
@@ -5935,25 +5833,25 @@ static const struct {
 	{ "setnatgwstate",    control_setnatgwstate,	false,	false, "Set NATGW state to on/off", "{on|off}"},
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
-	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbid> <prio:1-3>"},
-	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbid>"},
-	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbid>|<name>"},
-	{ "setdbsticky",      control_setdbsticky,	false,	false, "Set DB sticky-records capable", "<dbid>|<name>"},
+	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbname|dbid> <prio:1-3>"},
+	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbname|dbid>"},
+	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbname|dbid>"},
+	{ "setdbsticky",      control_setdbsticky,	false,	false, "Set DB sticky-records capable", "<dbname|dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},
 	{ "msgsend",          control_msgsend,	false,	false, "Send a message to srvid", "<srvid> <message>"},
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },
-	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
-	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
-	{ "pdelete", 	     control_pdelete,      	false,	false,  "delete a record from a persistent database", "<db> <key>" },
+	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<dbname|dbid> <key> [<file>]" },
+	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<dbname|dbid> <key> <file containing record>" },
+	{ "pdelete", 	     control_pdelete,      	false,	false,  "delete a record from a persistent database", "<dbname|dbid> <key>" },
 	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file [-v]", "<tdb-file> <key> [<file>]" },
 	{ "tstore", 	     control_tstore,      	false,	true,  "store a record (including ltdb header)", "<tdb-file> <key> <data+header>" },
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
 	{ "rebalancenode",     control_rebalancenode,	false,	false, "release a node by allowing it to takeover ips", "<pnn>"},
-	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbid>" },
+	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbname|dbid>" },
 	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status" },
-	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<db>" },
+	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<dbname|dbid>" },
 	{ "reloadips",       control_reloadips,         false,	false, "reload the public addresses file on a node" },
 	{ "ipiface",         control_ipiface,           true,	true,  "Find which interface an ip address is hsoted on", "<ip>" },
 };
