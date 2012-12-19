@@ -3489,7 +3489,8 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	int ret;
 	uint64_t highest_usn = 0;
 	const struct GUID *our_invocation_id;
-	struct timeval now = timeval_current();
+	static const struct timeval tv1970;
+	NTTIME nt1970 = timeval_to_nttime(&tv1970);
 
 	ret = ldb_search(samdb, mem_ctx, &r, dn, LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
@@ -3540,7 +3541,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	for (i=0; i<*count; i++) {
 		if (GUID_equal(our_invocation_id, &(*cursors)[i].source_dsa_invocation_id)) {
 			(*cursors)[i].highest_usn = highest_usn;
-			(*cursors)[i].last_sync_success = timeval_to_nttime(&now);
+			(*cursors)[i].last_sync_success = nt1970;
 			TYPESAFE_QSORT(*cursors, *count, drsuapi_DsReplicaCursor2_compare);
 			return LDB_SUCCESS;
 		}
@@ -3553,7 +3554,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 
 	(*cursors)[*count].source_dsa_invocation_id = *our_invocation_id;
 	(*cursors)[*count].highest_usn = highest_usn;
-	(*cursors)[*count].last_sync_success = timeval_to_nttime(&now);
+	(*cursors)[*count].last_sync_success = nt1970;
 	(*count)++;
 
 	TYPESAFE_QSORT(*cursors, *count, drsuapi_DsReplicaCursor2_compare);
