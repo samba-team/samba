@@ -144,11 +144,12 @@ static void null_log_fn(struct tdb_context *tdb, enum tdb_debug_level level, con
 }
 
 static bool check_header_hash(struct tdb_context *tdb,
+			      struct tdb_header *header,
 			      bool default_hash, uint32_t *m1, uint32_t *m2)
 {
 	tdb_header_hash(tdb, m1, m2);
-	if (tdb->header.magic1_hash == *m1 &&
-	    tdb->header.magic2_hash == *m2) {
+	if (header->magic1_hash == *m1 &&
+	    header->magic2_hash == *m2) {
 		return true;
 	}
 
@@ -161,7 +162,7 @@ static bool check_header_hash(struct tdb_context *tdb,
 		tdb->hash_fn = tdb_jenkins_hash;
 	else
 		tdb->hash_fn = tdb_old_hash;
-	return check_header_hash(tdb, false, m1, m2);
+	return check_header_hash(tdb, header, false, m1, m2);
 }
 
 _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
@@ -387,7 +388,8 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	if ((tdb->header.magic1_hash == 0) && (tdb->header.magic2_hash == 0)) {
 		/* older TDB without magic hash references */
 		tdb->hash_fn = tdb_old_hash;
-	} else if (!check_header_hash(tdb, !hash_fn, &magic1, &magic2)) {
+	} else if (!check_header_hash(tdb, &tdb->header, !hash_fn,
+				      &magic1, &magic2)) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
 			 "%s was not created with %s hash function we are using\n"
 			 "magic1_hash[0x%08X %s 0x%08X] "
