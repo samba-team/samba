@@ -51,7 +51,8 @@ void tdb_header_hash(struct tdb_context *tdb,
 }
 
 /* initialise a new database with a specified hash size */
-static int tdb_new_database(struct tdb_context *tdb, int hash_size)
+static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
+			    int hash_size)
 {
 	struct tdb_header *newdb;
 	size_t size;
@@ -78,7 +79,7 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->map_size = size;
 		tdb->map_ptr = (char *)newdb;
-		memcpy(&tdb->header, newdb, sizeof(tdb->header));
+		memcpy(header, newdb, sizeof(*header));
 		/* Convert the `ondisk' version if asked. */
 		CONVERT(*newdb);
 		return 0;
@@ -91,7 +92,7 @@ static int tdb_new_database(struct tdb_context *tdb, int hash_size)
 
 	/* This creates an endian-converted header, as if read from disk */
 	CONVERT(*newdb);
-	memcpy(&tdb->header, newdb, sizeof(tdb->header));
+	memcpy(header, newdb, sizeof(*header));
 	/* Don't endian-convert the magic food! */
 	memcpy(newdb->magic_food, TDB_MAGIC_FOOD, strlen(TDB_MAGIC_FOOD)+1);
 
@@ -286,7 +287,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->flags |= (TDB_NOLOCK | TDB_NOMMAP);
 		tdb->flags &= ~TDB_CLEAR_IF_FIRST;
-		if (tdb_new_database(tdb, hash_size) != 0) {
+		if (tdb_new_database(tdb, &tdb->header, hash_size) != 0) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: tdb_new_database failed!"));
 			goto fail;
 		}
@@ -323,7 +324,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 				 name, strerror(errno)));
 			goto fail;
 		}
-		ret = tdb_new_database(tdb, hash_size);
+		ret = tdb_new_database(tdb, &tdb->header, hash_size);
 		if (ret == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
 				 "tdb_new_database failed for %s: %s\n",
@@ -350,7 +351,8 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	errno = 0;
 	if (read(tdb->fd, &tdb->header, sizeof(tdb->header)) != sizeof(tdb->header)
 	    || strcmp(tdb->header.magic_food, TDB_MAGIC_FOOD) != 0) {
-		if (!(open_flags & O_CREAT) || tdb_new_database(tdb, hash_size) == -1) {
+		if (!(open_flags & O_CREAT) ||
+		    tdb_new_database(tdb, &tdb->header, hash_size) == -1) {
 			if (errno == 0) {
 				errno = EIO; /* ie bad format or something */
 			}
