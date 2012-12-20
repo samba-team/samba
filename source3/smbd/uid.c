@@ -271,7 +271,6 @@ static bool change_to_user_internal(connection_struct *conn,
 
 bool change_to_user(connection_struct *conn, uint64_t vuid)
 {
-	const struct auth_session_info *session_info = NULL;
 	struct user_struct *vuser;
 	int snum = SNUM(conn);
 
@@ -298,8 +297,7 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 		return false;
 	}
 
-	session_info = vuser->session_info;
-	return change_to_user_internal(conn, session_info, vuid);
+	return change_to_user_internal(conn, vuser->session_info, vuid);
 }
 
 static bool change_to_user_by_session(connection_struct *conn,
