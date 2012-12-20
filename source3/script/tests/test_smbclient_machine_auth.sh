@@ -19,3 +19,7 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
 testit "smbclient //$SERVER/tmp" $SMBCLIENT //$SERVER/tmp --machine-pass -I $SERVER_IP -p 139 -c quit $ADDARGS
+
+# Testing these here helps because we know the machine account isn't already this user/group
+testit "smbclient //$SERVER/forceuser" $SMBCLIENT //$SERVER/tmp --machine-pass -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/forcegroup" $SMBCLIENT //$SERVER/tmp --machine-pass -I $SERVER_IP -p 139 -c quit $ADDARGS

@@ -211,7 +211,7 @@ mkdir a_test_dir
 quit
 EOF
 
-    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U% //$SERVER/ro-tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT -U% //$SERVER/$1" -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
     eval echo "$cmd"
     out=`eval $cmd`
     ret=$?
@@ -529,7 +529,11 @@ testit "creating a good symlink and deleting it by path" \
    failed=`expr $failed + 1`
 
 testit "writing into a read-only directory fails" \
-   test_read_only_dir || \
+   test_read_only_dir ro-tmp || \
+   failed=`expr $failed + 1`
+
+testit "writing into a read-only share fails" \
+   test_read_only_dir valid-users-tmp || \
    failed=`expr $failed + 1`
 
 testit "Reading a owner-only file fails" \
