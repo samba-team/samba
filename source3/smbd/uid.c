@@ -90,12 +90,11 @@ static bool check_user_ok(connection_struct *conn,
 			const struct auth_session_info *session_info,
 			int snum)
 {
-	bool valid_vuid = (vuid != UID_FIELD_INVALID);
 	unsigned int i;
 	bool readonly_share;
 	bool admin_user;
 
-	if (valid_vuid) {
+	{
 		struct vuid_cache_entry *ent;
 
 		for (i=0; i<VUID_CACHE_SIZE; i++) {
@@ -145,7 +144,7 @@ static bool check_user_ok(connection_struct *conn,
 		session_info->info->domain_name,
 		NULL, session_info->security_token, lp_admin_users(snum));
 
-	if (valid_vuid) {
+	{
 		struct vuid_cache_entry *ent =
 			&conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
