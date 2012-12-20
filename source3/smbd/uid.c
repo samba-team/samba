@@ -95,15 +95,13 @@ static bool check_user_ok(connection_struct *conn,
 	bool admin_user;
 	struct vuid_cache_entry *ent = NULL;
 
-	{
-		for (i=0; i<VUID_CACHE_SIZE; i++) {
-			ent = &conn->vuid_cache.array[i];
-			if (ent->vuid == vuid) {
-				free_conn_session_info_if_unused(conn);
-				conn->session_info = ent->session_info;
-				conn->read_only = ent->read_only;
-				return(True);
-			}
+	for (i=0; i<VUID_CACHE_SIZE; i++) {
+		ent = &conn->vuid_cache.array[i];
+		if (ent->vuid == vuid) {
+			free_conn_session_info_if_unused(conn);
+			conn->session_info = ent->session_info;
+			conn->read_only = ent->read_only;
+			return(True);
 		}
 	}
 
