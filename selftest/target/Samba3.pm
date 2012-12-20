@@ -963,6 +963,13 @@ sub provision($$$$$$)
 [ro-tmp]
 	path = $ro_shrdir
 	guest ok = yes
+[write-list-tmp]
+	path = $shrdir
+        read only = yes
+	write list = $unix_name
+[valid-users-tmp]
+	path = $shrdir
+	valid users = $unix_name
 [msdfs-share]
 	path = $msdfs_shrdir
 	msdfs root = yes
