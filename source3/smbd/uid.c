@@ -93,10 +93,9 @@ static bool check_user_ok(connection_struct *conn,
 	unsigned int i;
 	bool readonly_share;
 	bool admin_user;
+	struct vuid_cache_entry *ent = NULL;
 
 	{
-		struct vuid_cache_entry *ent;
-
 		for (i=0; i<VUID_CACHE_SIZE; i++) {
 			ent = &conn->vuid_cache.array[i];
 			if (ent->vuid == vuid) {
@@ -145,8 +144,7 @@ static bool check_user_ok(connection_struct *conn,
 		NULL, session_info->security_token, lp_admin_users(snum));
 
 	{
-		struct vuid_cache_entry *ent =
-			&conn->vuid_cache.array[conn->vuid_cache.next_entry];
+		ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
 		conn->vuid_cache.next_entry =
 			(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
