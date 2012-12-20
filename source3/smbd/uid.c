@@ -68,7 +68,7 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 
 	for (i = 0; i < VUID_CACHE_SIZE; i++) {
 		struct vuid_cache_entry *ent;
-		ent = &conn->vuid_cache.array[i];
+		ent = &conn->vuid_cache->array[i];
 		if (ent->vuid != UID_FIELD_INVALID &&
 				conn->session_info == ent->session_info) {
 			return;
@@ -96,7 +96,7 @@ static bool check_user_ok(connection_struct *conn,
 	struct vuid_cache_entry *ent = NULL;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
-		ent = &conn->vuid_cache.array[i];
+		ent = &conn->vuid_cache->array[i];
 		if (ent->vuid == vuid) {
 			free_conn_session_info_if_unused(conn);
 			conn->session_info = ent->session_info;
@@ -141,10 +141,10 @@ static bool check_user_ok(connection_struct *conn,
 		session_info->info->domain_name,
 		NULL, session_info->security_token, lp_admin_users(snum));
 
-	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
+	ent = &conn->vuid_cache->array[conn->vuid_cache->next_entry];
 
-	conn->vuid_cache.next_entry =
-		(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
+	conn->vuid_cache->next_entry =
+		(conn->vuid_cache->next_entry + 1) % VUID_CACHE_SIZE;
 
 	TALLOC_FREE(ent->session_info);
 

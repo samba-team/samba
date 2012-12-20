@@ -147,7 +147,11 @@
 /* Bump to version 30 - Samba 4.0.0 will ship with interface version 30 */
 /* Leave at 30 - not yet released. Added conn->cwd to save vfs_GetWd() calls. */
 /* Leave at 30 - not yet released. Changed sys_acl_blob_get_file interface to remove type */
-#define SMB_VFS_INTERFACE_VERSION 30
+/* Bump to version 31 - Samba 4.1.0 will ship with interface version 31 */
+/* Leave at 31 - not yet released. Make struct vuid_cache_entry in
+		connection_struct a pointer. */
+
+#define SMB_VFS_INTERFACE_VERSION 31
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -306,7 +310,7 @@ typedef struct connection_struct {
 	uint32_t cnum; /* an index passed over the wire */
 	struct share_params *params;
 	bool force_user;
-	struct vuid_cache vuid_cache;
+	struct vuid_cache *vuid_cache;
 	bool printer;
 	bool ipc;
 	bool read_only; /* Attributes for the current user of the share. */

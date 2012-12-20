@@ -63,6 +63,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 
 	if (!(conn=talloc_zero(NULL, connection_struct)) ||
 	    !(conn->params = talloc(conn, struct share_params)) ||
+	    !(conn->vuid_cache = talloc_zero(conn, struct vuid_cache)) ||
 	    !(conn->connectpath = talloc_strdup(conn, "")) ||
 	    !(conn->origpath = talloc_strdup(conn, ""))) {
 		DEBUG(0,("TALLOC_ZERO() failed!\n"));
@@ -89,7 +90,7 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		struct vuid_cache_entry *ent;
 
-		ent = &conn->vuid_cache.array[i];
+		ent = &conn->vuid_cache->array[i];
 
 		if (ent->vuid == vuid) {
 			ent->vuid = UID_FIELD_INVALID;
