@@ -371,7 +371,7 @@ static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off,
 static void transaction_next_hash_chain(struct tdb_context *tdb, uint32_t *chain)
 {
 	uint32_t h = *chain;
-	for (;h < tdb->header.hash_size;h++) {
+	for (;h < tdb->hash_size;h++) {
 		/* the +1 takes account of the freelist */
 		if (0 != tdb->transaction->hash_heads[h+1]) {
 			break;
@@ -495,7 +495,7 @@ static int _tdb_transaction_start(struct tdb_context *tdb,
 	/* setup a copy of the hash table heads so the hash scan in
 	   traverse can be fast */
 	tdb->transaction->hash_heads = (uint32_t *)
-		calloc(tdb->header.hash_size+1, sizeof(uint32_t));
+		calloc(tdb->hash_size+1, sizeof(uint32_t));
 	if (tdb->transaction->hash_heads == NULL) {
 		tdb->ecode = TDB_ERR_OOM;
 		goto fail;

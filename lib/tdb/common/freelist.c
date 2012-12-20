@@ -139,7 +139,7 @@ left:
 #endif
 
 	/* Look left */
-	if (offset - sizeof(tdb_off_t) > TDB_DATA_START(tdb->header.hash_size)) {
+	if (offset - sizeof(tdb_off_t) > TDB_DATA_START(tdb->hash_size)) {
 		tdb_off_t left = offset - sizeof(tdb_off_t);
 		struct tdb_record l;
 		tdb_off_t leftsize;
@@ -158,7 +158,7 @@ left:
 		left = offset - leftsize;
 
 		if (leftsize > offset ||
-		    left < TDB_DATA_START(tdb->header.hash_size)) {
+		    left < TDB_DATA_START(tdb->hash_size)) {
 			goto update;
 		}
 

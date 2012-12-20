@@ -50,11 +50,11 @@ static bool tdb_check_header(struct tdb_context *tdb, tdb_off_t *recovery)
 	if (hdr.hash_size == 0)
 		goto corrupt;
 
-	if (hdr.hash_size != tdb->header.hash_size)
+	if (hdr.hash_size != tdb->hash_size)
 		goto corrupt;
 
 	if (hdr.recovery_start != 0 &&
-	    hdr.recovery_start < TDB_DATA_START(tdb->header.hash_size))
+	    hdr.recovery_start < TDB_DATA_START(tdb->hash_size))
 		goto corrupt;
 
 	*recovery = hdr.recovery_start;
@@ -74,7 +74,7 @@ static bool tdb_check_record(struct tdb_context *tdb,
 	tdb_off_t tailer;
 
 	/* Check rec->next: 0 or points to record offset, aligned. */
-	if (rec->next > 0 && rec->next < TDB_DATA_START(tdb->header.hash_size)){
+	if (rec->next > 0 && rec->next < TDB_DATA_START(tdb->hash_size)){
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
 			 "Record offset %d too small next %d\n",
 			 off, rec->next));
@@ -352,7 +352,7 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 		goto unlock;
 
 	/* We should have the whole header, too. */
-	if (tdb->map_size < TDB_DATA_START(tdb->header.hash_size)) {
+	if (tdb->map_size < TDB_DATA_START(tdb->hash_size)) {
 		tdb->ecode = TDB_ERR_CORRUPT;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "File too short for hashes\n"));
 		goto unlock;
@@ -360,20 +360,20 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 
 	/* One big malloc: pointers then bit arrays. */
 	hashes = (unsigned char **)calloc(
-			1, sizeof(hashes[0]) * (1+tdb->header.hash_size)
-			+ BITMAP_BITS / CHAR_BIT * (1+tdb->header.hash_size));
+			1, sizeof(hashes[0]) * (1+tdb->hash_size)
+			+ BITMAP_BITS / CHAR_BIT * (1+tdb->hash_size));
 	if (!hashes) {
 		tdb->ecode = TDB_ERR_OOM;
 		goto unlock;
 	}
 
 	/* Initialize pointers */
-	hashes[0] = (unsigned char *)(&hashes[1+tdb->header.hash_size]);
-	for (h = 1; h < 1+tdb->header.hash_size; h++)
+	hashes[0] = (unsigned char *)(&hashes[1+tdb->hash_size]);
+	for (h = 1; h < 1+tdb->hash_size; h++)
 		hashes[h] = hashes[h-1] + BITMAP_BITS / CHAR_BIT;
 
 	/* Freelist and hash headers are all in a row: read them. */
-	for (h = 0; h < 1+tdb->header.hash_size; h++) {
+	for (h = 0; h < 1+tdb->hash_size; h++) {
 		if (tdb_ofs_read(tdb, FREELIST_TOP + h*sizeof(tdb_off_t),
 				 &off) == -1)
 			goto free;
@@ -382,7 +382,7 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 	}
 
 	/* For each record, read it in and check it's ok. */
-	for (off = TDB_DATA_START(tdb->header.hash_size);
+	for (off = TDB_DATA_START(tdb->hash_size);
 	     off < tdb->map_size;
 	     off += sizeof(rec) + rec.rec_len) {
 		if (tdb->methods->tdb_read(tdb, off, &rec, sizeof(rec),
@@ -436,7 +436,7 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 
 	/* Now, hashes should all be empty: each record exists and is referred
 	 * to by one other. */
-	for (h = 0; h < 1+tdb->header.hash_size; h++) {
+	for (h = 0; h < 1+tdb->hash_size; h++) {
 		unsigned int i;
 		for (i = 0; i < BITMAP_BITS / CHAR_BIT; i++) {
 			if (hashes[h][i] != 0) {

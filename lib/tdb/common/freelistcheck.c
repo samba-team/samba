@@ -52,7 +52,7 @@ _PUBLIC_ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
 
 	*pnum_entries = 0;
 
-	mem_tdb = tdb_open("flval", tdb->header.hash_size,
+	mem_tdb = tdb_open("flval", tdb->hash_size,
 				TDB_INTERNAL, O_RDWR, 0600);
 	if (!mem_tdb) {
 		return -1;

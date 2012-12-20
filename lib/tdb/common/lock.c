@@ -259,7 +259,7 @@ int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
 {
 	struct tdb_lock_type *new_lck;
 
-	if (offset >= lock_offset(tdb->header.hash_size)) {
+	if (offset >= lock_offset(tdb->hash_size)) {
 		tdb->ecode = TDB_ERR_LOCK;
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,"tdb_lock: invalid offset %u for ltype=%d\n",
 			 offset, ltype));
@@ -422,8 +422,8 @@ int tdb_nest_unlock(struct tdb_context *tdb, uint32_t offset, int ltype,
 		return 0;
 
 	/* Sanity checks */
-	if (offset >= lock_offset(tdb->header.hash_size)) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: offset %u invalid (%d)\n", offset, tdb->header.hash_size));
+	if (offset >= lock_offset(tdb->hash_size)) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlock: offset %u invalid (%d)\n", offset, tdb->hash_size));
 		return ret;
 	}
 
@@ -588,15 +588,15 @@ int tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
 	 * It is (1) which cause the starvation problem, so we're only
 	 * gradual for that. */
 	if (tdb_chainlock_gradual(tdb, ltype, flags, FREELIST_TOP,
-				  tdb->header.hash_size * 4) == -1) {
+				  tdb->hash_size * 4) == -1) {
 		return -1;
 	}
 
 	/* Grab individual record locks. */
-	if (tdb_brlock(tdb, ltype, lock_offset(tdb->header.hash_size), 0,
+	if (tdb_brlock(tdb, ltype, lock_offset(tdb->hash_size), 0,
 		       flags) == -1) {
 		tdb_brunlock(tdb, ltype, FREELIST_TOP,
-			     tdb->header.hash_size * 4);
+			     tdb->hash_size * 4);
 		return -1;
 	}
 

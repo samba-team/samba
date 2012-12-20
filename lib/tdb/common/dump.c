@@ -83,7 +83,7 @@ static int tdb_dump_chain(struct tdb_context *tdb, int i)
 _PUBLIC_ void tdb_dump_all(struct tdb_context *tdb)
 {
 	int i;
-	for (i=0;i<tdb->header.hash_size;i++) {
+	for (i=0;i<tdb->hash_size;i++) {
 		tdb_dump_chain(tdb, i);
 	}
 	printf("freelist:\n");

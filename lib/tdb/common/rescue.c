@@ -57,7 +57,7 @@ static bool looks_like_valid_record(struct tdb_context *tdb,
 		return false;
 
 	/* Next pointer must make some sense. */
-	if (rec->next > 0 && rec->next < TDB_DATA_START(tdb->header.hash_size))
+	if (rec->next > 0 && rec->next < TDB_DATA_START(tdb->hash_size))
 		return false;
 
 	if (tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 1))
@@ -234,7 +234,7 @@ _PUBLIC_ int tdb_rescue(struct tdb_context *tdb,
 	tdb->log.log_fn = logging_suppressed;
 
 	/* Now walk entire db looking for records. */
-	for (off = TDB_DATA_START(tdb->header.hash_size);
+	for (off = TDB_DATA_START(tdb->hash_size);
 	     off < tdb->map_size;
 	     off += TDB_ALIGNMENT) {
 		if (tdb->methods->tdb_read(tdb, off, &rec, sizeof(rec),
@@ -249,7 +249,7 @@ _PUBLIC_ int tdb_rescue(struct tdb_context *tdb,
 	}
 
 	/* Walk hash chains to positive vet. */
-	for (h = 0; h < 1+tdb->header.hash_size; h++) {
+	for (h = 0; h < 1+tdb->hash_size; h++) {
 		bool slow_chase = false;
 		tdb_off_t slow_off = FREELIST_TOP + h*sizeof(tdb_off_t);
 

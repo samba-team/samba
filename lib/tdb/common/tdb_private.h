@@ -61,7 +61,7 @@ typedef uint32_t tdb_off_t;
 #define TDB_DEAD(r) ((r)->magic == TDB_DEAD_MAGIC)
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off_t))
-#define TDB_HASHTABLE_SIZE(tdb) ((tdb->header.hash_size+1)*sizeof(tdb_off_t))
+#define TDB_HASHTABLE_SIZE(tdb) ((tdb->hash_size+1)*sizeof(tdb_off_t))
 #define TDB_DATA_START(hash_size) (TDB_HASH_TOP(hash_size-1) + sizeof(tdb_off_t))
 #define TDB_RECOVERY_HEAD offsetof(struct tdb_header, recovery_start)
 #define TDB_SEQNUM_OFS    offsetof(struct tdb_header, sequence_number)
@@ -114,7 +114,7 @@ void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
 #endif
 
-#define BUCKET(hash) ((hash) % tdb->header.hash_size)
+#define BUCKET(hash) ((hash) % tdb->hash_size)
 
 #define DOCONV() (tdb->flags & TDB_CONVERT)
 #define CONVERT(x) (DOCONV() ? tdb_convert(&x, sizeof(x)) : &x)
@@ -198,7 +198,7 @@ struct tdb_context {
 	int num_lockrecs;
 	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
 	enum TDB_ERROR ecode; /* error code for last tdb error */
-	struct tdb_header header; /* a cached copy of the header */
+	uint32_t hash_size;
 	uint32_t flags; /* the flags passed to tdb_open */
 	struct tdb_traverse_lock travlocks; /* current traversal locks */
 	struct tdb_context *next; /* all tdbs to avoid multiple opens */

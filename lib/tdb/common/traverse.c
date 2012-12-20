@@ -37,7 +37,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 	int want_next = (tlock->off != 0);
 
 	/* Lock each chain from the start one. */
-	for (; tlock->hash < tdb->header.hash_size; tlock->hash++) {
+	for (; tlock->hash < tdb->hash_size; tlock->hash++) {
 		if (!tlock->off && tlock->hash != 0) {
 			/* this is an optimisation for the common case where
 			   the hash chain is empty, which is particularly
@@ -68,7 +68,7 @@ static tdb_off_t tdb_next_lock(struct tdb_context *tdb, struct tdb_traverse_lock
 			   system (testing using ldbtest).
 			*/
 			tdb->methods->next_hash_chain(tdb, &tlock->hash);
-			if (tlock->hash == tdb->header.hash_size) {
+			if (tlock->hash == tdb->hash_size) {
 				continue;
 			}
 		}

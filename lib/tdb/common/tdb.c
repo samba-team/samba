@@ -713,7 +713,7 @@ _PUBLIC_ int tdb_get_seqnum(struct tdb_context *tdb)
 
 _PUBLIC_ int tdb_hash_size(struct tdb_context *tdb)
 {
-	return tdb->header.hash_size;
+	return tdb->hash_size;
 }
 
 _PUBLIC_ size_t tdb_map_size(struct tdb_context *tdb)
@@ -840,7 +840,7 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 	}
 
 	/* wipe the hashes */
-	for (i=0;i<tdb->header.hash_size;i++) {
+	for (i=0;i<tdb->hash_size;i++) {
 		if (tdb_ofs_write(tdb, TDB_HASH_TOP(i), &offset) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write hash %d\n", i));
 			goto failed;
@@ -857,8 +857,8 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 	   for the recovery area */
 	if (recovery_size == 0) {
 		/* the simple case - the whole file can be used as a freelist */
-		data_len = (tdb->map_size - TDB_DATA_START(tdb->header.hash_size));
-		if (tdb_free_region(tdb, TDB_DATA_START(tdb->header.hash_size), data_len) != 0) {
+		data_len = (tdb->map_size - TDB_DATA_START(tdb->hash_size));
+		if (tdb_free_region(tdb, TDB_DATA_START(tdb->hash_size), data_len) != 0) {
 			goto failed;
 		}
 	} else {
@@ -870,8 +870,8 @@ _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 		   move the recovery area or we risk subtle data
 		   corruption
 		*/
-		data_len = (recovery_head - TDB_DATA_START(tdb->header.hash_size));
-		if (tdb_free_region(tdb, TDB_DATA_START(tdb->header.hash_size), data_len) != 0) {
+		data_len = (recovery_head - TDB_DATA_START(tdb->hash_size));
+		if (tdb_free_region(tdb, TDB_DATA_START(tdb->hash_size), data_len) != 0) {
 			goto failed;
 		}
 		/* and the 2nd free list entry after the recovery area - if any */
