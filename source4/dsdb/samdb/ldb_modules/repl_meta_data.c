@@ -4563,12 +4563,8 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 
 			found = true;
 
-			/*
-			 * we update only the highest_usn and not the latest_sync_success time,
-			 * because the last success stands for direct replication
-			 */
 			if (ruv->cursors[i].highest_usn > nuv.ctr.ctr2.cursors[j].highest_usn) {
-				nuv.ctr.ctr2.cursors[j].highest_usn = ruv->cursors[i].highest_usn;
+				nuv.ctr.ctr2.cursors[j] = ruv->cursors[i];
 			}
 			break;
 		}
