@@ -1253,6 +1253,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_receive_records(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA indata);
 
