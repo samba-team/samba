@@ -346,15 +346,24 @@ void ctdb_test_init(const char nodestates[],
 	/* Fake things up... */
 	(*ctdb)->num_nodes = numnodes;
 
+	/* Default to LCP2 */
+	(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
 	(*ctdb)->tunable.deterministic_public_ips = 0;
 	(*ctdb)->tunable.disable_ip_failover = 0;
 	(*ctdb)->tunable.no_ip_failback = 0;
 
-	if (getenv("CTDB_LCP2")) {
-		if (strcmp(getenv("CTDB_LCP2"), "yes") == 0) {
+	if (getenv("CTDB_IP_ALGORITHM")) {
+		if (strcmp(getenv("CTDB_IP_ALGORITHM"), "lcp2") == 0) {
 			(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
-		} else {
+		} else if (strcmp(getenv("CTDB_IP_ALGORITHM"), "nondet") == 0) {
 			(*ctdb)->tunable.lcp2_public_ip_assignment = 0;
+		} else if (strcmp(getenv("CTDB_IP_ALGORITHM"), "det") == 0) {
+			(*ctdb)->tunable.lcp2_public_ip_assignment = 0;
+			(*ctdb)->tunable.deterministic_public_ips = 1;
+		} else {
+			fprintf(stderr, "ERROR: unknown IP algorithm %s\n",
+				getenv("CTDB_IP_ALGORITHM"));
+			exit(1);
 		}
 	}
 

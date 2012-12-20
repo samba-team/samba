@@ -6,17 +6,10 @@ define_test ()
 {
     _f=$(basename "$0" ".sh")
 
-    case "$_f" in
-	nondet.*)
-	    algorithm="nondet"
-	    export CTDB_LCP2="no"
-	    ;;
-	lcp2.*)
-	    algorithm="lcp2"
-	    export CTDB_LCP2="yes"
-	    ;;
-	*)
-	    die "Unknown algorithm for testcase \"$_f\""
+    export CTDB_IP_ALGORITHM="${_f%%.*}"
+    case "$CTDB_IP_ALGORITHM" in
+	lcp2|nondet|det) : ;;
+	*) die "Unknown algorithm for testcase \"$_f\"" ;;
     esac
 
     printf "%-12s - %s\n" "$_f" "$1"
@@ -25,12 +18,12 @@ define_test ()
 simple_test ()
 {
     # Do some filtering of the output to replace date/time.
-    if [ "$algorithm" = "lcp2" -a -n "$CTDB_TEST_LOGLEVEL" ] ; then
+    if [ "$CTDB_IP_ALGORITHM" = "lcp2" -a -n "$CTDB_TEST_LOGLEVEL" ] ; then
 	OUT_FILTER='s@^.*:@DATE\ TIME\ \[PID\]:@'
     fi
 
     _states="$1"
     _out=$($VALGRIND $test_prog $_states 2>&1)
 
-    result_check "Algorithm: $algorithm"
+    result_check "Algorithm: $CTDB_IP_ALGORITHM"
 }
