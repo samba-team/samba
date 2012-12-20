@@ -141,32 +141,30 @@ static bool check_user_ok(connection_struct *conn,
 		session_info->info->domain_name,
 		NULL, session_info->security_token, lp_admin_users(snum));
 
-	{
-		ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
+	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
-		conn->vuid_cache.next_entry =
-			(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
+	conn->vuid_cache.next_entry =
+		(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
 
-		TALLOC_FREE(ent->session_info);
+	TALLOC_FREE(ent->session_info);
 
-		/*
-		 * If force_user was set, all session_info's are based on the same
-		 * username-based faked one.
-		 */
+	/*
+	 * If force_user was set, all session_info's are based on the same
+	 * username-based faked one.
+	 */
 
-		ent->session_info = copy_session_info(
-			conn, conn->force_user ? conn->session_info : session_info);
+	ent->session_info = copy_session_info(
+		conn, conn->force_user ? conn->session_info : session_info);
 
-		if (ent->session_info == NULL) {
-			ent->vuid = UID_FIELD_INVALID;
-			return false;
-		}
-
-		ent->vuid = vuid;
-		ent->read_only = readonly_share;
-		free_conn_session_info_if_unused(conn);
-		conn->session_info = ent->session_info;
+	if (ent->session_info == NULL) {
+		ent->vuid = UID_FIELD_INVALID;
+		return false;
 	}
+
+	ent->vuid = vuid;
+	ent->read_only = readonly_share;
+	free_conn_session_info_if_unused(conn);
+	conn->session_info = ent->session_info;
 
 	conn->read_only = readonly_share;
 	if (admin_user) {
