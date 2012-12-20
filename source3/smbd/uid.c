@@ -299,14 +299,6 @@ bool change_to_user(connection_struct *conn, uint64_t vuid)
 	}
 
 	session_info = vuser->session_info;
-
-	if (!conn->force_user && vuser == NULL) {
-		DEBUG(2,("Invalid vuid used %llu in accessing share %s.\n",
-			 (unsigned long long)vuid,
-			 lp_servicename(talloc_tos(), snum)));
-		return False;
-	}
-
 	return change_to_user_internal(conn, session_info, vuid);
 }
 
