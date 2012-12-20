@@ -367,6 +367,11 @@ void ctdb_test_init(const char nodestates[],
 		}
 	}
 
+	(*ctdb)->tunable.no_ip_takeover_on_disabled = 0;
+	if (getenv("CTDB_SET_NoIPTakeoverOnDisabled")) {
+		(*ctdb)->tunable.no_ip_takeover_on_disabled = (uint32_t) strtoul(getenv("CTDB_SET_NoIPTakeoverOnDisabled"), NULL, 0);
+	}
+		
 	*nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	(*nodemap)->num = numnodes;
 
