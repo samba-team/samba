@@ -515,7 +515,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
   Setup the share access mask for a connection.
 ****************************************************************************/
 
-static void create_share_access_mask(connection_struct *conn, int snum)
+void create_share_access_mask(connection_struct *conn, int snum)
 {
 	const struct security_token *token = conn->session_info->security_token;
 
