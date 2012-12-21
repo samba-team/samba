@@ -555,6 +555,12 @@ sub provision_raw_step1($$)
 
 	mkdir($_, 0777) foreach (@{$ctx->{directories}});
 
+	##
+	## lockdir and piddir must be 0755
+	##
+	chmod 0755, $ctx->{lockdir};
+	chmod 0755, $ctx->{piddir};
+
 	unless (open(CONFFILE, ">$ctx->{smb_conf}")) {
 		warn("can't open $ctx->{smb_conf}$?");
 		return undef;

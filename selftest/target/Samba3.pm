@@ -765,6 +765,13 @@ sub provision($$$$$$)
 	mkdir($_, 0777) foreach(@dirs);
 
 	##
+	## lockdir and piddir must be 0755
+	##
+	chmod 0755, $lockdir;
+	chmod 0755, $piddir;
+
+
+	##
 	## create ro and msdfs share layout
 	##
 
