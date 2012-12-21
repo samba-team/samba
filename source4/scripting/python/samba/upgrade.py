@@ -35,6 +35,7 @@ from samba.credentials import Credentials
 from samba import dsdb
 from samba.ndr import ndr_pack
 from samba import unix2nttime
+from samba import generate_random_password
 
 
 def import_sam_policy(samdb, policy, logger):
@@ -835,11 +836,19 @@ Please fix this account before attempting to upgrade again
     if not (serverrole == "ROLE_DOMAIN_BDC" or serverrole == "ROLE_DOMAIN_PDC"):
         dns_backend = "NONE"
 
+    # If we found an admin user, set a fake pw that we will override.
+    # This avoids us printing out an admin password that we won't actually
+    # set.
+    if admin_user:
+        adminpass = generate_random_password(12, 32)
+    else:
+        adminpass = None
+
     # Do full provision
     result = provision(logger, session_info, None,
                        targetdir=targetdir, realm=realm, domain=domainname,
                        domainsid=str(domainsid), next_rid=next_rid,
-                       dc_rid=machinerid,
+                       dc_rid=machinerid, adminpass = adminpass,
                        dom_for_fun_level=dsdb.DS_DOMAIN_FUNCTION_2003,
                        hostname=netbiosname.lower(), machinepass=machinepass,
                        serverrole=serverrole, samdb_fill=FILL_FULL,
