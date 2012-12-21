@@ -118,6 +118,7 @@ static void conn_clear_vuid_cache(connection_struct *conn, uint64_t vuid)
 				TALLOC_FREE(ent->session_info);
 			}
 			ent->read_only = False;
+			ent->share_access = 0;
 		}
 	}
 }

@@ -150,6 +150,7 @@
 /* Bump to version 31 - Samba 4.1.0 will ship with interface version 31 */
 /* Leave at 31 - not yet released. Make struct vuid_cache_entry in
 		connection_struct a pointer. */
+/* Leave at 31 - not yet released. Add share_access to vuid_cache_entry. */
 
 #define SMB_VFS_INTERFACE_VERSION 31
 
@@ -279,6 +280,7 @@ struct vuid_cache_entry {
 	struct auth_session_info *session_info;
 	uint64_t vuid; /* SMB2 compat */
 	bool read_only;
+	uint32_t share_access;
 };
 
 struct vuid_cache {
