@@ -515,34 +515,37 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
   Setup the share access mask for a connection.
 ****************************************************************************/
 
-void create_share_access_mask(connection_struct *conn, int snum)
+uint32_t create_share_access_mask(connection_struct *conn, int snum)
 {
 	const struct security_token *token = conn->session_info->security_token;
+	uint32_t share_access = 0;
 
 	share_access_check(token,
 			lp_servicename(talloc_tos(), snum),
 			MAXIMUM_ALLOWED_ACCESS,
-			&conn->share_access);
+			&share_access);
 
 	if (!CAN_WRITE(conn)) {
-		conn->share_access &=
+		share_access &=
 			~(SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA |
 			  SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE |
 			  SEC_DIR_DELETE_CHILD );
 	}
 
 	if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
-		conn->share_access |= SEC_FLAG_SYSTEM_SECURITY;
+		share_access |= SEC_FLAG_SYSTEM_SECURITY;
 	}
 	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		conn->share_access |= (SEC_RIGHTS_PRIV_RESTORE);
+		share_access |= (SEC_RIGHTS_PRIV_RESTORE);
 	}
 	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		conn->share_access |= (SEC_RIGHTS_PRIV_BACKUP);
+		share_access |= (SEC_RIGHTS_PRIV_BACKUP);
 	}
 	if (security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
-		conn->share_access |= (SEC_STD_WRITE_OWNER);
+		share_access |= (SEC_STD_WRITE_OWNER);
 	}
+
+	return share_access;
 }
 
 /****************************************************************************
@@ -654,7 +657,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	 *
 	 */
 
-	create_share_access_mask(conn, snum);
+	conn->share_access = create_share_access_mask(conn, snum);
 
 	if ((conn->share_access & FILE_WRITE_DATA) == 0) {
 		if ((conn->share_access & FILE_READ_DATA) == 0) {
