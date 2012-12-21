@@ -510,6 +510,12 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 		return status;
 	}
 
+	buffer = talloc_array(mem_ctx, uint8_t, bytes_needed);
+	if (buffer == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	status = dcerpc_eventlog_GetLogInformation(b, mem_ctx,
 						   &handle,
 						   0, /* level */
@@ -526,8 +532,8 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 	}
 
 	buf_size = bytes_needed;
-	buffer = talloc_array(mem_ctx, uint8_t, bytes_needed);
-	if (!buffer) {
+	buffer = talloc_realloc(mem_ctx, buffer, uint8_t, bytes_needed);
+	if (buffer == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
