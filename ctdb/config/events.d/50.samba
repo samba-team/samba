@@ -96,7 +96,7 @@ testparm_background_update() {
     # otherwise do a background update
     (
 	tmpfile="${smbconf_cache}.$$"
-	testparm -v -s > $tmpfile 2> /dev/null &
+	testparm -s > $tmpfile 2> /dev/null &
 	# remember the pid of the teamparm process
 	pid="$!"
 	# give it 10 seconds to run
