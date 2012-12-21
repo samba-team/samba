@@ -69,7 +69,7 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 			 EVENTLOG_SEQUENTIAL_READ;
 	uint32_t offset = 0;
 	uint32_t number_of_bytes = 0;
-	uint8_t *data = NULL;
+	uint8_t *data;
 	uint32_t sent_size = 0;
 	uint32_t real_size = 0;
 
@@ -84,15 +84,16 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 
 	if (argc >= 4) {
 		number_of_bytes = atoi(argv[3]);
-		data = talloc_array(mem_ctx, uint8_t, number_of_bytes);
-		if (!data) {
-			goto done;
-		}
 	}
 
 	status = get_eventlog_handle(cli, mem_ctx, argv[1], &handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	data = talloc_array(mem_ctx, uint8_t, number_of_bytes);
+	if (data == NULL) {
+		goto done;
 	}
 
 	do {
@@ -118,8 +119,8 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 		if (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL) &&
 		    real_size > 0 ) {
 			number_of_bytes = real_size;
-			data = talloc_array(mem_ctx, uint8_t, real_size);
-			if (!data) {
+			data = talloc_realloc(mem_ctx, data, uint8_t, real_size);
+			if (data == NULL) {
 				goto done;
 			}
 			status = dcerpc_eventlog_ReadEventLogW(b, mem_ctx,
