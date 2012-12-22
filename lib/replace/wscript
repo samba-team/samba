@@ -455,6 +455,20 @@ removeea setea
         conf.CHECK_HEADERS('pthread.h')
         conf.DEFINE('HAVE_PTHREAD', '1')
 
+    if conf.CONFIG_SET('HAVE_PTHREAD'):
+
+        conf.CHECK_DECLS('pthread_mutexattr_setrobust', headers='pthread.h')
+        conf.CHECK_FUNCS_IN('pthread_mutexattr_setrobust', 'pthread',
+                            checklibc=True, headers='pthread.h')
+
+        conf.CHECK_DECLS('pthread_mutexattr_setrobust_np', headers='pthread.h')
+        conf.CHECK_FUNCS_IN('pthread_mutexattr_setrobust_np', 'pthread',
+                            checklibc=True, headers='pthread.h')
+
+        if (conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST') or
+            conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST_NP')):
+            conf.DEFINE('HAVE_ROBUST_MUTEXES', 1)
+
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
 
     conf.CHECK_VARIABLE('rl_event_hook', define='HAVE_DECL_RL_EVENT_HOOK', always=True,
