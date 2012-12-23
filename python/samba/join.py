@@ -26,9 +26,12 @@ from samba.ndr import ndr_pack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, provision_fill, FILL_DRS, FILL_SUBDOMAIN
+from samba.provision.common import setup_path
 from samba.schema import Schema
 from samba.net import Net
 from samba.provision.sambadns import setup_bind9_dns
+from samba import read_and_sub_file
+from base64 import b64encode
 import logging
 import talloc
 import random
@@ -179,6 +182,19 @@ class dc_join(object):
                                        attrs=["msDS-krbTgtLink"])
                 if res:
                     ctx.del_noerror(res[0].dn, recursive=True)
+
+                res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
+                                       expression='(&(sAMAccountName=%s)(servicePrincipalName=%s))' % (ldb.binary_encode("dns-%s" % ctx.myname), ldb.binary_encode("dns/%s" % ctx.dnshostname)),
+                                       attrs=[])
+                if res:
+                    ctx.del_noerror(res[0].dn, recursive=True)
+
+                res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
+                                       expression='(sAMAccountName=%s)' % ldb.binary_encode("dns-%s" % ctx.myname),
+                                       attrs=[])
+                if res:
+                    raise RuntimeError("Not removing account %s which looks like a Samba DNS service account but does not have servicePrincipalName=%s" % (ldb.binary_encode("dns-%s" % ctx.myname), ldb.binary_encode("dns/%s" % ctx.dnshostname)))
+
             if ctx.connection_dn is not None:
                 ctx.del_noerror(ctx.connection_dn)
             if ctx.krbtgt_dn is not None:
@@ -579,6 +595,56 @@ class dc_join(object):
                                                          "userAccountControl")
             ctx.samdb.modify(m)
 
+        if ctx.dns_backend.startswith("BIND9_"):
+            ctx.dnspass = samba.generate_random_password(128, 255)
+
+            recs = ctx.samdb.parse_ldif(read_and_sub_file(setup_path("provision_dns_add_samba.ldif"),
+                                                                {"DNSDOMAIN": ctx.dnsdomain,
+                                                                 "DOMAINDN": ctx.base_dn,
+                                                                 "HOSTNAME" : ctx.myname,
+                                                                 "DNSPASS_B64": b64encode(ctx.dnspass),
+                                                                 "DNSNAME" : ctx.dnshostname}))
+            for changetype, msg in recs:
+                assert changetype == ldb.CHANGETYPE_NONE
+                print "Adding DNS account %s with dns/ SPN" % msg["dn"]
+
+                # Remove dns password (we will set it as a modify, as we can't do clearTextPassword over LDAP)
+                del msg["clearTextPassword"]
+                # Remove isCriticalSystemObject for similar reasons, it cannot be set over LDAP
+                del msg["isCriticalSystemObject"]
+                try:
+                    ctx.samdb.add(msg)
+                    dns_acct_dn = msg["dn"]
+                except ldb.LdbError, (num, _):
+                    if num != ldb.ERR_ENTRY_ALREADY_EXISTS:
+                        raise
+
+            # The account password set operation should normally be done over
+            # LDAP. Windows 2000 DCs however allow this only with SSL
+            # connections which are hard to set up and otherwise refuse with
+            # ERR_UNWILLING_TO_PERFORM. In this case we fall back to libnet
+            # over SAMR.
+            print "Setting account password for %s" % ctx.samname
+            try:
+                ctx.samdb.setpassword("(&(objectClass=user)(samAccountName=dns-%s))"
+                                      % ldb.binary_encode(ctx.myname),
+                                      ctx.dnspass,
+                                      force_change_at_next_login=False,
+                                      username=ctx.samname)
+            except ldb.LdbError, (num, _):
+                if num != ldb.ERR_UNWILLING_TO_PERFORM:
+                    pass
+                ctx.net.set_password(account_name="dns-" % ctx.myname,
+                                     domain_name=ctx.domain_name,
+                                     newpassword=ctx.dnspass)
+
+            res = ctx.samdb.search(base=dns_acct_dn, scope=ldb.SCOPE_BASE,
+                                   attrs=["msDS-KeyVersionNumber"])
+            if "msDS-KeyVersionNumber" in res[0]:
+                ctx.dns_key_version_number = int(res[0]["msDS-KeyVersionNumber"][0])
+            else:
+                ctx.dns_key_version_number = None
+
     def join_add_objects2(ctx):
         """add the various objects needed for the join, for subdomains post replication"""
 
@@ -861,13 +927,12 @@ class dc_join(object):
                             key_version_number=ctx.key_version_number)
 
         if ctx.dns_backend.startswith("BIND9_"):
-            dnspass = samba.generate_random_password(128, 255)
-
             setup_bind9_dns(ctx.local_samdb, secrets_ldb, security.dom_sid(ctx.domsid),
                             ctx.names, ctx.paths, ctx.lp, logger,
                             dns_backend=ctx.dns_backend,
-                            dnspass=dnspass, os_level=ctx.behavior_version,
-                            targetdir=ctx.targetdir)
+                            dnspass=ctx.dnspass, os_level=ctx.behavior_version,
+                            targetdir=ctx.targetdir,
+                            key_version_number=ctx.dns_key_version_number)
 
     def join_setup_trusts(ctx):
         """provision the local SAM."""

@@ -620,7 +620,7 @@ def add_dc_msdcs_records(samdb, forestdn, prefix, site, dnsforest, hostname,
 
 
 def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
-                        dnsdomain, dns_keytab_path, dnspass):
+                        dnsdomain, dns_keytab_path, dnspass, key_version_number):
     """Add DNS specific bits to a secrets database.
 
     :param secretsdb: Ldb Handle to the secrets database
@@ -632,11 +632,15 @@ def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
     except OSError:
         pass
 
+    if key_version_number is None:
+        key_version_number = 1
+
     setup_ldb(secretsdb, setup_path("secrets_dns.ldif"), {
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
             "DNS_KEYTAB": dns_keytab_path,
             "DNSPASS_B64": b64encode(dnspass),
+            "KEY_VERSION_NUMBER": str(key_version_number),
             "HOSTNAME": names.hostname,
             "DNSNAME" : '%s.%s' % (
                 names.netbiosname.lower(), names.dnsdomain.lower())
@@ -1074,7 +1078,7 @@ def setup_ad_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
 
 def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
         dns_backend, os_level, site=None, dnspass=None, hostip=None,
-        hostip6=None, targetdir=None):
+        hostip6=None, targetdir=None, key_version_number=None):
     """Provision DNS information (assuming BIND9 backend in DC role)
 
     :param samdb: LDB object connected to sam.ldb file
@@ -1107,7 +1111,8 @@ def setup_bind9_dns(samdb, secretsdb, domainsid, names, paths, lp, logger,
     secretsdb_setup_dns(secretsdb, names,
                         paths.private_dir, realm=names.realm,
                         dnsdomain=names.dnsdomain,
-                        dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+                        dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
+                        key_version_number=key_version_number)
 
     create_dns_dir(logger, paths)
 
