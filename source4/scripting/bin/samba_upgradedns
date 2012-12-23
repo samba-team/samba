@@ -284,7 +284,7 @@ if __name__ == '__main__':
                               expression='(sAMAccountName=DnsAdmins)',
                               attrs=['objectSid'])
         dnsadmins_sid = ndr_unpack(security.dom_sid, msg[0]['objectSid'][0])
-    except Exception, e:
+    except IndexError:
         logger.info("Adding DNS accounts")
         add_dns_accounts(ldbs.sam, domaindn)
         dnsadmins_sid = get_dnsadmins_sid(ldbs.sam, domaindn)
@@ -314,7 +314,7 @@ if __name__ == '__main__':
         msg = ldbs.sam.search(base=names.configdn, scope=ldb.SCOPE_DEFAULT,
                               expression=expression, attrs=['nCName'])
         ncname = msg[0]['nCName'][0]
-    except Exception, e:
+    except IndexError:
         logger.info("Creating DNS partitions")
 
         logger.info("Looking up IPv4 addresses")
@@ -415,16 +415,17 @@ if __name__ == '__main__':
             dn = 'samAccountName=dns-%s,CN=Principals' % hostname
             msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
             dnssecret = msg[0]['secret'][0]
-        except Exception:
+        except IndexError:
+
             logger.info("Adding dns-%s account" % hostname)
 
             try:
                 msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
                                       expression='(sAMAccountName=dns-%s)' % (hostname),
-                                      attrs=['clearTextPassword'])
+                                      attrs=[])
                 dn = msg[0].dn
                 ldbs.sam.delete(dn)
-            except Exception:
+            except IndexError:
                 pass
 
             dnspass = samba.generate_random_password(128, 255)
@@ -472,9 +473,9 @@ if __name__ == '__main__':
         # Check if dns-HOSTNAME account exists and delete it if required
         try:
             dn_str = 'samAccountName=dns-%s,CN=Principals' % hostname
-            msg = ldbs.secrets.search(expression='(dn=%s)' % dn_str, attrs=['secret'])
+            msg = ldbs.secrets.search(expression='(dn=%s)' % dn_str, attrs=[])
             dn = msg[0].dn
-        except Exception:
+        except IndexError:
             dn = None
 
         if dn is not None:
@@ -486,9 +487,9 @@ if __name__ == '__main__':
         try:
             msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
                                   expression='(sAMAccountName=dns-%s)' % (hostname),
-                                  attrs=['clearTextPassword'])
+                                  attrs=[])
             dn = msg[0].dn
-        except Exception:
+        except IndexError:
             dn = None
 
         if dn is not None:
