@@ -436,10 +436,19 @@ if __name__ == '__main__':
                     "DNSNAME" : dnsname }
                            )
 
+            res = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
+                                  expression='(sAMAccountName=dns-%s)' % (hostname),
+                                  attrs=["msDS-KeyVersionNumber"])
+            if "msDS-KeyVersionNumber" in res[0]:
+                dns_key_version_number = int(res[0]["msDS-KeyVersionNumber"][0])
+            else:
+                dns_key_version_number = None
+
             secretsdb_setup_dns(ldbs.secrets, names,
                                 paths.private_dir, realm=names.realm,
                                 dnsdomain=names.dnsdomain,
-                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
+                                dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
+                                key_version_number=dns_key_version_number)
         else:
             logger.info("dns-%s account already exists" % hostname)
 
