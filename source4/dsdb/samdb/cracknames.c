@@ -394,10 +394,10 @@ static WERROR get_format_functional_filtering_param(struct ldb_context *sam_ctx,
 
 		account = name;
 		s = strchr(account, '/');
+		talloc_free(domain_res);
 		while(s) {
 			s[0] = '\0';
 			s++;
-			talloc_free(domain_res);
 
 			ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 						tmp_dn,
@@ -410,18 +410,20 @@ static WERROR get_format_functional_filtering_param(struct ldb_context *sam_ctx,
 				info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
 				return WERR_OK;
 			}
+			talloc_free(tmp_dn);
 			switch (domain_res->count) {
 			case 1:
 				break;
 			case 0:
+				talloc_free(domain_res);
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 				return WERR_OK;
 			default:
+				talloc_free(domain_res);
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
 				return WERR_OK;
 			}
 
-			talloc_free(tmp_dn);
 			tmp_dn = talloc_steal(mem_ctx, domain_res->msgs[0]->dn);
 			talloc_free(domain_res);
 			search_dn = tmp_dn;
