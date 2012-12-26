@@ -236,8 +236,7 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 						      LDB_SCOPE_SUBTREE,
 						      sam_attrs, 0,
 						      "(&(|(sAMaccountType=%u)(sAMaccountType=%u)(sAMaccountType=%u))"
-						      "(uidNumber=%u)(objectSid=*)"
-						      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+						      "(uidNumber=%u)(objectSid=*))",
 						      ATYPE_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST, unixid->id);
 			} else {
 				/* If we are not to use the rfc2307 attributes, we just emulate a non-match */
@@ -274,8 +273,7 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 						      ldb_get_default_basedn(idmap_ctx->samdb),
 						      LDB_SCOPE_SUBTREE,
 						      sam_attrs, 0,
-						      "(&(|(sAMaccountType=%u)(sAMaccountType=%u))(gidNumber=%u)"
-						      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+						      "(&(|(sAMaccountType=%u)(sAMaccountType=%u))(gidNumber=%u))",
 						      ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP,
 						      unixid->id);
 			} else {
@@ -439,8 +437,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 				      "(&(objectSid=%s)"
 				      "(|(sAMaccountType=%u)(sAMaccountType=%u)(sAMaccountType=%u)"
 				      "(sAMaccountType=%u)(sAMaccountType=%u))"
-				      "(|(uidNumber=*)(gidNumber=*))"
-				      "(|(objectClass=posixAccount)(objectClass=posixGroup)))",
+				      "(|(uidNumber=*)(gidNumber=*)))",
 				      dom_sid_string(tmp_ctx, sid),
 				      ATYPE_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
 				      ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
