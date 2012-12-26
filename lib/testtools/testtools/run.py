@@ -14,7 +14,7 @@ import sys
 
 from testtools import TextTestResult
 from testtools.compat import classtypes, istext, unicode_output_stream
-from testtools.testsuite import iterate_tests
+from testtools.testsuite import iterate_tests, sorted_tests
 
 
 defaultTestLoader = unittest.defaultTestLoader
@@ -35,12 +35,19 @@ else:
 class TestToolsTestRunner(object):
     """ A thunk object to support unittest.TestProgram."""
 
-    def __init__(self, stdout):
-        self.stdout = stdout
+    def __init__(self, verbosity=None, failfast=None, buffer=None):
+        """Create a TestToolsTestRunner.
+
+        :param verbosity: Ignored.
+        :param failfast: Stop running tests at the first failure.
+        :param buffer: Ignored.
+        """
+        self.failfast = failfast
 
     def run(self, test):
         "Run the given test case or test suite."
-        result = TextTestResult(unicode_output_stream(self.stdout))
+        result = TextTestResult(
+            unicode_output_stream(sys.stdout), failfast=self.failfast)
         result.startTestRun()
         try:
             return test.run(result)
@@ -68,6 +75,8 @@ class TestToolsTestRunner(object):
 #  - --load-list has been added which can reduce the tests used (should be
 #    upstreamed).
 #  - The limitation of using getopt is declared to the user.
+#  - http://bugs.python.org/issue16709 is worked around, by sorting tests when
+#    discover is used.
 
 FAILFAST     = "  -f, --failfast   Stop on first failure\n"
 CATCHBREAK   = "  -c, --catch      Catch control-C and display results\n"
@@ -300,14 +309,24 @@ class TestProgram(object):
         top_level_dir = options.top
 
         loader = Loader()
-        self.test = loader.discover(start_dir, pattern, top_level_dir)
+        # See http://bugs.python.org/issue16709
+        # While sorting here is intrusive, its better than being random.
+        # Rules for the sort:
+        # - standard suites are flattened, and the resulting tests sorted by
+        #   id.
+        # - non-standard suites are preserved as-is, and sorted into position
+        #   by the first test found by iterating the suite.
+        # We do this by a DSU process: flatten and grab a key, sort, strip the
+        # keys.
+        loaded = loader.discover(start_dir, pattern, top_level_dir)
+        self.test = sorted_tests(loaded)
 
     def runTests(self):
         if (self.catchbreak
             and getattr(unittest, 'installHandler', None) is not None):
             unittest.installHandler()
         if self.testRunner is None:
-            self.testRunner = runner.TextTestRunner
+            self.testRunner = TestToolsTestRunner
         if isinstance(self.testRunner, classtypes()):
             try:
                 testRunner = self.testRunner(verbosity=self.verbosity,
@@ -325,8 +344,8 @@ class TestProgram(object):
 ################
 
 def main(argv, stdout):
-    runner = TestToolsTestRunner(stdout)
-    program = TestProgram(argv=argv, testRunner=runner, stdout=stdout)
+    program = TestProgram(argv=argv, testRunner=TestToolsTestRunner,
+        stdout=stdout)
 
 if __name__ == '__main__':
     main(sys.argv, sys.stdout)

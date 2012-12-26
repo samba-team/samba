@@ -12,6 +12,7 @@ import shutil
 import sys
 import tempfile
 import threading
+from unittest import TestSuite
 import warnings
 
 from testtools import (
@@ -43,6 +44,7 @@ from testtools.content import (
     TracebackContent,
     )
 from testtools.content_type import ContentType, UTF8_TEXT
+from testtools.helpers import safe_hasattr
 from testtools.matchers import (
     Contains,
     DocTestMatches,
@@ -142,6 +144,11 @@ class Python26Contract(object):
         result.stopTest(self)
         self.assertTrue(result.wasSuccessful())
 
+    def test_stop_sets_shouldStop(self):
+        result = self.makeResult()
+        result.stop()
+        self.assertTrue(result.shouldStop)
+
 
 class Python27Contract(Python26Contract):
 
@@ -192,6 +199,17 @@ class Python27Contract(Python26Contract):
         result = self.makeResult()
         result.startTestRun()
         result.stopTestRun()
+
+    def test_failfast(self):
+        result = self.makeResult()
+        result.failfast = True
+        class Failing(TestCase):
+            def test_a(self):
+                self.fail('a')
+            def test_b(self):
+                self.fail('b')
+        TestSuite([Failing('test_a'), Failing('test_b')]).run(result)
+        self.assertEqual(1, result.testsRun)
 
 
 class TagsContract(Python27Contract):
@@ -566,11 +584,35 @@ class TestMultiTestResult(TestCase):
         # `TestResult`s.
         self.assertResultLogsEqual([])
 
+    def test_failfast_get(self):
+        # Reading reads from the first one - arbitrary choice.
+        self.assertEqual(False, self.multiResult.failfast)
+        self.result1.failfast = True
+        self.assertEqual(True, self.multiResult.failfast)
+
+    def test_failfast_set(self):
+        # Writing writes to all.
+        self.multiResult.failfast = True
+        self.assertEqual(True, self.result1.failfast)
+        self.assertEqual(True, self.result2.failfast)
+
+    def test_shouldStop(self):
+        self.assertFalse(self.multiResult.shouldStop)
+        self.result2.stop()
+        # NB: result1 is not stopped: MultiTestResult has to combine the
+        # values.
+        self.assertTrue(self.multiResult.shouldStop)
+
     def test_startTest(self):
         # Calling `startTest` on a `MultiTestResult` calls `startTest` on all
         # its `TestResult`s.
         self.multiResult.startTest(self)
         self.assertResultLogsEqual([('startTest', self)])
+
+    def test_stop(self):
+        self.assertFalse(self.multiResult.shouldStop)
+        self.multiResult.stop()
+        self.assertResultLogsEqual(['stop'])
 
     def test_stopTest(self):
         # Calling `stopTest` on a `MultiTestResult` calls `stopTest` on all
@@ -1175,6 +1217,19 @@ class TestExtendedToOriginalResultDecoratorBase(TestCase):
 
 class TestExtendedToOriginalResultDecorator(
     TestExtendedToOriginalResultDecoratorBase):
+
+    def test_failfast_py26(self):
+        self.make_26_result()
+        self.assertEqual(False, self.converter.failfast)
+        self.converter.failfast = True
+        self.assertFalse(safe_hasattr(self.converter.decorated, 'failfast'))
+
+    def test_failfast_py27(self):
+        self.make_27_result()
+        self.assertEqual(False, self.converter.failfast)
+        # setting it should write it to the backing result
+        self.converter.failfast = True
+        self.assertEqual(True, self.converter.decorated.failfast)
 
     def test_progress_py26(self):
         self.make_26_result()

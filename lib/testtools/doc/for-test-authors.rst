@@ -432,7 +432,7 @@ example::
   def test_keys_equal(self):
       x = {'a': 1, 'b': 2}
       y = {'a': 2, 'b': 3}
-      self.assertThat(a, KeysEqual(b))
+      self.assertThat(x, KeysEqual(y))
 
 
 MatchesRegex

@@ -33,12 +33,16 @@ STDOUT_LINE = '\nStdout:\n%s'
 STDERR_LINE = '\nStderr:\n%s'
 
 
-def _iter_chunks(stream, chunk_size):
+def _iter_chunks(stream, chunk_size, seek_offset=None, seek_whence=0):
     """Read 'stream' in chunks of 'chunk_size'.
 
     :param stream: A file-like object to read from.
     :param chunk_size: The size of each read from 'stream'.
+    :param seek_offset: If non-None, seek before iterating.
+    :param seek_whence: Pass through to the seek call, if seeking.
     """
+    if seek_offset is not None:
+        stream.seek(seek_offset, seek_whence)
     chunk = stream.read(chunk_size)
     while chunk:
         yield chunk
@@ -215,7 +219,7 @@ def maybe_wrap(wrapper, func):
 
 
 def content_from_file(path, content_type=None, chunk_size=DEFAULT_CHUNK_SIZE,
-                      buffer_now=False):
+                      buffer_now=False, seek_offset=None, seek_whence=0):
     """Create a `Content` object from a file on disk.
 
     Note that unless 'read_now' is explicitly passed in as True, the file
@@ -228,6 +232,8 @@ def content_from_file(path, content_type=None, chunk_size=DEFAULT_CHUNK_SIZE,
         Defaults to ``DEFAULT_CHUNK_SIZE``.
     :param buffer_now: If True, read the file from disk now and keep it in
         memory. Otherwise, only read when the content is serialized.
+    :param seek_offset: If non-None, seek within the stream before reading it.
+    :param seek_whence: If supplied, pass to stream.seek() when seeking.
     """
     if content_type is None:
         content_type = UTF8_TEXT
@@ -236,14 +242,15 @@ def content_from_file(path, content_type=None, chunk_size=DEFAULT_CHUNK_SIZE,
         # We drop older python support we can make this use a context manager
         # for maximum simplicity.
         stream = open(path, 'rb')
-        for chunk in _iter_chunks(stream, chunk_size):
+        for chunk in _iter_chunks(stream, chunk_size, seek_offset, seek_whence):
             yield chunk
         stream.close()
     return content_from_reader(reader, content_type, buffer_now)
 
 
 def content_from_stream(stream, content_type=None,
-                        chunk_size=DEFAULT_CHUNK_SIZE, buffer_now=False):
+                        chunk_size=DEFAULT_CHUNK_SIZE, buffer_now=False,
+                        seek_offset=None, seek_whence=0):
     """Create a `Content` object from a file-like stream.
 
     Note that the stream will only be read from when ``iter_bytes`` is
@@ -257,10 +264,12 @@ def content_from_stream(stream, content_type=None,
         Defaults to ``DEFAULT_CHUNK_SIZE``.
     :param buffer_now: If True, reads from the stream right now. Otherwise,
         only reads when the content is serialized. Defaults to False.
+    :param seek_offset: If non-None, seek within the stream before reading it.
+    :param seek_whence: If supplied, pass to stream.seek() when seeking.
     """
     if content_type is None:
         content_type = UTF8_TEXT
-    reader = lambda: _iter_chunks(stream, chunk_size)
+    reader = lambda: _iter_chunks(stream, chunk_size, seek_offset, seek_whence)
     return content_from_reader(reader, content_type, buffer_now)
 
 

@@ -236,6 +236,26 @@ class AllMatch(object):
             return MismatchesAll(mismatches)
 
 
+class AnyMatch(object):
+    """Matches if any of the provided values match the given matcher."""
+
+    def __init__(self, matcher):
+        self.matcher = matcher
+
+    def __str__(self):
+        return 'AnyMatch(%s)' % (self.matcher,)
+
+    def match(self, values):
+        mismatches = []
+        for value in values:
+            mismatch = self.matcher.match(value)
+            if mismatch:
+                mismatches.append(mismatch)
+            else:
+                return None
+        return MismatchesAll(mismatches)
+
+
 class MatchesPredicate(Matcher):
     """Match if a given function returns True.
 

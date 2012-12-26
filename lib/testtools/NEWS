@@ -6,6 +6,58 @@ Changes and improvements to testtools_, grouped by release.
 NEXT
 ~~~~
 
+0.9.24
+~~~~~~
+
+Changes
+-------
+
+* ``testtools.run discover`` will now sort the tests it discovered. This is a 
+  workaround for http://bugs.python.org/issue16709. Non-standard test suites
+  are preserved, and their ``sort_tests()`` method called (if they have such an
+  attribute). ``testtools.testsuite.sorted_tests(suite, True)`` can be used by
+  such suites to do a local sort. (Robert Collins, #1091512)
+
+* ``ThreadsafeForwardingResult`` now defines a stub ``progress`` method, which
+  fixes ``testr run`` of streams containing progress markers (by discarding the 
+  progress data). (Robert Collins, #1019165)
+
+0.9.23
+~~~~~~
+
+Changes
+-------
+
+* ``run.TestToolsTestRunner`` now accepts the verbosity, buffer and failfast
+  arguments the upstream python TestProgram code wants to give it, making it
+  possible to support them in a compatible fashion. (Robert Collins)
+
+Improvements
+------------
+
+* ``testtools.run`` now supports the ``-f`` or ``--failfast`` parameter.
+  Previously it was advertised in the help but ignored.
+  (Robert Collins, #1090582)
+
+* ``AnyMatch`` added, a new matcher that matches when any item in a collection
+  matches the given matcher.  (Jonathan Lange)
+
+* Spelling corrections to documentation.  (Vincent Ladeuil)
+
+* ``TestProgram`` now has a sane default for its ``testRunner`` argument.
+  (Vincent Ladeuil)
+
+* The test suite passes on Python 3 again. (Robert Collins)
+
+0.9.22
+~~~~~~
+
+Improvements
+------------
+
+* ``content_from_file`` and ``content_from_stream`` now accept seek_offset and
+  seek_whence parameters allowing them to be used to grab less than the full
+  stream, or to be used with StringIO streams. (Robert Collins, #1088693)
 
 0.9.21
 ~~~~~~

@@ -21,6 +21,7 @@ from testtools.content import (
     text_content,
     TracebackContent,
     )
+from testtools.helpers import safe_hasattr
 from testtools.tags import TagContext
 
 # From http://docs.python.org/library/datetime.html
@@ -60,11 +61,12 @@ class TestResult(unittest.TestResult):
     :ivar skip_reasons: A dict of skip-reasons -> list of tests. See addSkip.
     """
 
-    def __init__(self):
+    def __init__(self, failfast=False):
         # startTestRun resets all attributes, and older clients don't know to
         # call startTestRun, so it is called once here.
         # Because subclasses may reasonably not expect this, we call the
         # specific version we want to run.
+        self.failfast = failfast
         TestResult.startTestRun(self)
 
     def addExpectedFailure(self, test, err=None, details=None):
@@ -89,6 +91,8 @@ class TestResult(unittest.TestResult):
         """
         self.errors.append((test,
             self._err_details_to_string(test, err, details)))
+        if self.failfast:
+            self.stop()
 
     def addFailure(self, test, err=None, details=None):
         """Called when an error has occurred. 'err' is a tuple of values as
@@ -99,6 +103,8 @@ class TestResult(unittest.TestResult):
         """
         self.failures.append((test,
             self._err_details_to_string(test, err, details)))
+        if self.failfast:
+            self.stop()
 
     def addSkip(self, test, reason=None, details=None):
         """Called when a test has been skipped rather than running.
@@ -131,6 +137,8 @@ class TestResult(unittest.TestResult):
     def addUnexpectedSuccess(self, test, details=None):
         """Called when a test was expected to fail, but succeed."""
         self.unexpectedSuccesses.append(test)
+        if self.failfast:
+            self.stop()
 
     def wasSuccessful(self):
         """Has this result been successful so far?
@@ -174,6 +182,8 @@ class TestResult(unittest.TestResult):
         pristine condition ready for use in another test run.  Note that this
         is different from Python 2.7's startTestRun, which does nothing.
         """
+        # failfast is reset by the super __init__, so stash it.
+        failfast = self.failfast
         super(TestResult, self).__init__()
         self.skip_reasons = {}
         self.__now = None
@@ -181,6 +191,7 @@ class TestResult(unittest.TestResult):
         # -- Start: As per python 2.7 --
         self.expectedFailures = []
         self.unexpectedSuccesses = []
+        self.failfast = failfast
         # -- End:   As per python 2.7 --
 
     def stopTestRun(self):
@@ -236,8 +247,9 @@ class MultiTestResult(TestResult):
     """A test result that dispatches to many test results."""
 
     def __init__(self, *results):
-        super(MultiTestResult, self).__init__()
+        # Setup _results first, as the base class __init__ assigns to failfast.
         self._results = list(map(ExtendedToOriginalDecorator, results))
+        super(MultiTestResult, self).__init__()
 
     def __repr__(self):
         return '<%s (%s)>' % (
@@ -248,9 +260,25 @@ class MultiTestResult(TestResult):
             getattr(result, message)(*args, **kwargs)
             for result in self._results)
 
+    def _get_failfast(self):
+        return getattr(self._results[0], 'failfast', False)
+    def _set_failfast(self, value):
+        self._dispatch('__setattr__', 'failfast', value)
+    failfast = property(_get_failfast, _set_failfast)
+
+    def _get_shouldStop(self):
+        return any(self._dispatch('__getattr__', 'shouldStop'))
+    def _set_shouldStop(self, value):
+        # Called because we subclass TestResult. Probably should not do that.
+        pass
+    shouldStop = property(_get_shouldStop, _set_shouldStop)
+
     def startTest(self, test):
         super(MultiTestResult, self).startTest(test)
         return self._dispatch('startTest', test)
+
+    def stop(self):
+        return self._dispatch('stop')
 
     def stopTest(self, test):
         super(MultiTestResult, self).stopTest(test)
@@ -303,9 +331,9 @@ class MultiTestResult(TestResult):
 class TextTestResult(TestResult):
     """A TestResult which outputs activity to a text stream."""
 
-    def __init__(self, stream):
+    def __init__(self, stream, failfast=False):
         """Construct a TextTestResult writing to stream."""
-        super(TextTestResult, self).__init__()
+        super(TextTestResult, self).__init__(failfast=failfast)
         self.stream = stream
         self.sep1 = '=' * 70 + '\n'
         self.sep2 = '-' * 70 + '\n'
@@ -443,11 +471,32 @@ class ThreadsafeForwardingResult(TestResult):
         self._add_result_with_semaphore(self.result.addUnexpectedSuccess,
             test, details=details)
 
+    def progress(self, offset, whence):
+        pass
+
     def startTestRun(self):
         super(ThreadsafeForwardingResult, self).startTestRun()
         self.semaphore.acquire()
         try:
             self.result.startTestRun()
+        finally:
+            self.semaphore.release()
+
+    def _get_shouldStop(self):
+        self.semaphore.acquire()
+        try:
+            return self.result.shouldStop
+        finally:
+            self.semaphore.release()
+    def _set_shouldStop(self, value):
+        # Another case where we should not subclass TestResult
+        pass
+    shouldStop = property(_get_shouldStop, _set_shouldStop)
+
+    def stop(self):
+        self.semaphore.acquire()
+        try:
+            self.result.stop()
         finally:
             self.semaphore.release()
 
@@ -507,6 +556,8 @@ class ExtendedToOriginalDecorator(object):
     def __init__(self, decorated):
         self.decorated = decorated
         self._tags = TagContext()
+        # Only used for old TestResults that do not have failfast.
+        self._failfast = False
 
     def __repr__(self):
         return '<%s %r>' % (self.__class__.__name__, self.decorated)
@@ -515,14 +566,18 @@ class ExtendedToOriginalDecorator(object):
         return getattr(self.decorated, name)
 
     def addError(self, test, err=None, details=None):
-        self._check_args(err, details)
-        if details is not None:
-            try:
-                return self.decorated.addError(test, details=details)
-            except TypeError:
-                # have to convert
-                err = self._details_to_exc_info(details)
-        return self.decorated.addError(test, err)
+        try:
+            self._check_args(err, details)
+            if details is not None:
+                try:
+                    return self.decorated.addError(test, details=details)
+                except TypeError:
+                    # have to convert
+                    err = self._details_to_exc_info(details)
+            return self.decorated.addError(test, err)
+        finally:
+            if self.failfast:
+                self.stop()
 
     def addExpectedFailure(self, test, err=None, details=None):
         self._check_args(err, details)
@@ -539,14 +594,18 @@ class ExtendedToOriginalDecorator(object):
         return addExpectedFailure(test, err)
 
     def addFailure(self, test, err=None, details=None):
-        self._check_args(err, details)
-        if details is not None:
-            try:
-                return self.decorated.addFailure(test, details=details)
-            except TypeError:
-                # have to convert
-                err = self._details_to_exc_info(details)
-        return self.decorated.addFailure(test, err)
+        try:
+            self._check_args(err, details)
+            if details is not None:
+                try:
+                    return self.decorated.addFailure(test, details=details)
+                except TypeError:
+                    # have to convert
+                    err = self._details_to_exc_info(details)
+            return self.decorated.addFailure(test, err)
+        finally:
+            if self.failfast:
+                self.stop()
 
     def addSkip(self, test, reason=None, details=None):
         self._check_args(reason, details)
@@ -565,18 +624,22 @@ class ExtendedToOriginalDecorator(object):
         return addSkip(test, reason)
 
     def addUnexpectedSuccess(self, test, details=None):
-        outcome = getattr(self.decorated, 'addUnexpectedSuccess', None)
-        if outcome is None:
-            try:
-                test.fail("")
-            except test.failureException:
-                return self.addFailure(test, sys.exc_info())
-        if details is not None:
-            try:
-                return outcome(test, details=details)
-            except TypeError:
-                pass
-        return outcome(test)
+        try:
+            outcome = getattr(self.decorated, 'addUnexpectedSuccess', None)
+            if outcome is None:
+                try:
+                    test.fail("")
+                except test.failureException:
+                    return self.addFailure(test, sys.exc_info())
+            if details is not None:
+                try:
+                    return outcome(test, details=details)
+                except TypeError:
+                    pass
+            return outcome(test)
+        finally:
+            if self.failfast:
+                self.stop()
 
     def addSuccess(self, test, details=None):
         if details is not None:
@@ -613,6 +676,15 @@ class ExtendedToOriginalDecorator(object):
             return self.decorated.done()
         except AttributeError:
             return
+
+    def _get_failfast(self):
+        return getattr(self.decorated, 'failfast', self._failfast)
+    def _set_failfast(self, value):
+        if safe_hasattr(self.decorated, 'failfast'):
+            self.decorated.failfast = value
+        else:
+            self._failfast = value
+    failfast = property(_get_failfast, _set_failfast)
 
     def progress(self, offset, whence):
         method = getattr(self.decorated, 'progress', None)

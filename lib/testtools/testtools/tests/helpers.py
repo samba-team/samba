@@ -38,6 +38,10 @@ class LoggingResult(TestResult):
         self._events.append(('startTest', test))
         super(LoggingResult, self).startTest(test)
 
+    def stop(self):
+        self._events.append('stop')
+        super(LoggingResult, self).stop()
+
     def stopTest(self, test):
         self._events.append(('stopTest', test))
         super(LoggingResult, self).stopTest(test)

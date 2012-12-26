@@ -19,6 +19,7 @@ class LoggingBase(object):
         self._events = []
         self.shouldStop = False
         self._was_successful = True
+        self.testsRun = 0
 
 
 class Python26TestResult(LoggingBase):
@@ -37,6 +38,7 @@ class Python26TestResult(LoggingBase):
 
     def startTest(self, test):
         self._events.append(('startTest', test))
+        self.testsRun += 1
 
     def stop(self):
         self.shouldStop = True
@@ -51,6 +53,20 @@ class Python26TestResult(LoggingBase):
 class Python27TestResult(Python26TestResult):
     """A precisely python 2.7 like test result, that logs."""
 
+    def __init__(self):
+        super(Python27TestResult, self).__init__()
+        self.failfast = False
+
+    def addError(self, test, err):
+        super(Python27TestResult, self).addError(test, err)
+        if self.failfast:
+            self.stop()
+
+    def addFailure(self, test, err):
+        super(Python27TestResult, self).addFailure(test, err)
+        if self.failfast:
+            self.stop()
+
     def addExpectedFailure(self, test, err):
         self._events.append(('addExpectedFailure', test, err))
 
@@ -59,6 +75,8 @@ class Python27TestResult(Python26TestResult):
 
     def addUnexpectedSuccess(self, test):
         self._events.append(('addUnexpectedSuccess', test))
+        if self.failfast:
+            self.stop()
 
     def startTestRun(self):
         self._events.append(('startTestRun',))

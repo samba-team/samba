@@ -222,6 +222,17 @@ A test suite that sets up a fixture_ before running any tests, and then tears
 it down after all of the tests are run. The fixture is *not* made available to
 any of the tests.
 
+sorted_tests
+------------
+
+Given the composite structure of TestSuite / TestCase, sorting tests is
+problematic - you can't tell what functionality is embedded into custom Suite
+implementations. In order to deliver consistent test orders when using test
+discovery (see http://bugs.python.org/issue16709), testtools flattens and
+sorts tests that have the standard TestSuite, defines a new method sort_tests,
+which can be used by non-standard TestSuites to know when they should sort
+their tests.
+
 .. _`testtools API docs`: http://mumak.net/testtools/apidocs/
 .. _unittest: http://docs.python.org/library/unittest.html
 .. _fixture: http://pypi.python.org/pypi/fixtures

@@ -2,6 +2,8 @@
 
 """Tests for the test runner logic."""
 
+from unittest import TestSuite
+
 from testtools.compat import (
     _b,
     StringIO,
@@ -11,6 +13,7 @@ fixtures = try_import('fixtures')
 
 import testtools
 from testtools import TestCase, run
+from testtools.matchers import Contains
 
 
 if fixtures:
@@ -41,9 +44,12 @@ def test_suite():
 
 class TestRun(TestCase):
 
-    def test_run_list(self):
+    def setUp(self):
+        super(TestRun, self).setUp()
         if fixtures is None:
             self.skipTest("Need fixtures")
+
+    def test_run_list(self):
         self.useFixture(SampleTestFixture())
         out = StringIO()
         run.main(['prog', '-l', 'testtools.runexample.test_suite'], out)
@@ -51,9 +57,7 @@ class TestRun(TestCase):
 testtools.runexample.TestFoo.test_quux
 """, out.getvalue())
 
-    def test_run_load_list(self):
-        if fixtures is None:
-            self.skipTest("Need fixtures")
+    def test_run_orders_tests(self):
         self.useFixture(SampleTestFixture())
         out = StringIO()
         # We load two tests - one that exists and one that doesn't, and we
@@ -73,6 +77,42 @@ testtools.runexample.missingtest
             'testtools.runexample.test_suite'], out)
         self.assertEqual("""testtools.runexample.TestFoo.test_bar
 """, out.getvalue())
+
+    def test_run_load_list(self):
+        self.useFixture(SampleTestFixture())
+        out = StringIO()
+        # We load two tests - one that exists and one that doesn't, and we
+        # should get the one that exists and neither the one that doesn't nor
+        # the unmentioned one that does.
+        tempdir = self.useFixture(fixtures.TempDir())
+        tempname = tempdir.path + '/tests.list'
+        f = open(tempname, 'wb')
+        try:
+            f.write(_b("""
+testtools.runexample.TestFoo.test_bar
+testtools.runexample.missingtest
+"""))
+        finally:
+            f.close()
+        run.main(['prog', '-l', '--load-list', tempname,
+            'testtools.runexample.test_suite'], out)
+        self.assertEqual("""testtools.runexample.TestFoo.test_bar
+""", out.getvalue())
+
+    def test_run_failfast(self):
+        stdout = self.useFixture(fixtures.StringStream('stdout'))
+
+        class Failing(TestCase):
+            def test_a(self):
+                self.fail('a')
+            def test_b(self):
+                self.fail('b')
+        runner = run.TestToolsTestRunner(failfast=True)
+        with fixtures.MonkeyPatch('sys.stdout', stdout.stream):
+            runner.run(TestSuite([Failing('test_a'), Failing('test_b')]))
+        self.assertThat(
+            stdout.getDetails()['stdout'].as_text(), Contains('Ran 1 test'))
+
 
 
 def test_suite():

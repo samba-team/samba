@@ -14,6 +14,7 @@ from testtools.matchers._higherorder import (
     AllMatch,
     Annotate,
     AnnotatedMismatch,
+    AnyMatch,
     MatchesAny,
     MatchesAll,
     MatchesPredicate,
@@ -47,6 +48,38 @@ class TestAllMatch(TestCase, TestMatchersInterface):
          ']',
          [11, 9, 10],
          AllMatch(LessThan(10))),
+        ]
+
+
+class TestAnyMatch(TestCase, TestMatchersInterface):
+
+    matches_matcher = AnyMatch(Equals('elephant'))
+    matches_matches = [
+        ['grass', 'cow', 'steak', 'milk', 'elephant'],
+        (13, 'elephant'),
+        ['elephant', 'elephant', 'elephant'],
+        set(['hippo', 'rhino', 'elephant']),
+        ]
+    matches_mismatches = [
+        [],
+        ['grass', 'cow', 'steak', 'milk'],
+        (13, 12, 10),
+        ['element', 'hephalump', 'pachyderm'],
+        set(['hippo', 'rhino', 'diplodocus']),
+        ]
+
+    str_examples = [
+        ("AnyMatch(Equals('elephant'))", AnyMatch(Equals('elephant'))),
+        ]
+
+    describe_examples = [
+        ('Differences: [\n'
+         '7 != 11\n'
+         '7 != 9\n'
+         '7 != 10\n'
+         ']',
+         [11, 9, 10],
+         AnyMatch(Equals(7))),
         ]
 
 
