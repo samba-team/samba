@@ -9,7 +9,7 @@ except ImportError:
 else:
     extra = {
         'install_requires': [
-            'testtools>=0.9.11',
+            'testtools>=0.9.23',
         ]
     }
 
@@ -38,6 +38,7 @@ setup(
     long_description=open('README').read(),
     classifiers=[
         'Intended Audience :: Developers',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python',
         'Topic :: Software Development :: Testing',
     ],
@@ -45,7 +46,7 @@ setup(
     author='Robert Collins',
     author_email='subunit-dev@lists.launchpad.net',
     url='http://launchpad.net/subunit',
-    packages=['subunit'],
+    packages=['subunit', 'subunit.tests'],
     package_dir={'subunit': 'python/subunit'},
     scripts = [
         'filters/subunit2gtk',

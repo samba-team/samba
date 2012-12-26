@@ -35,6 +35,7 @@ EXTRA_DIST =  \
 	python/subunit/tests/test_test_protocol.py \
 	python/subunit/tests/test_test_results.py \
 	runtests.py \
+	setup.py \
 	shell/README \
 	shell/share/subunit.sh \
 	shell/subunit-ui.patch \
@@ -48,8 +49,10 @@ include_subunitdir = $(includedir)/subunit
 dist_bin_SCRIPTS = \
 	filters/subunit-filter \
 	filters/subunit-ls \
+	filters/subunit-notify \
 	filters/subunit-stats \
 	filters/subunit-tags \
+	filters/subunit2csv \
 	filters/subunit2gtk \
 	filters/subunit2junitxml \
 	filters/subunit2pyunit \

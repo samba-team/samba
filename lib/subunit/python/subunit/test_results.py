@@ -78,6 +78,13 @@ class TestResultDecorator(object):
     def addUnexpectedSuccess(self, test, details=None):
         return self.decorated.addUnexpectedSuccess(test, details=details)
 
+    def _get_failfast(self):
+        return getattr(self.decorated, 'failfast', False)
+
+    def _set_failfast(self, value):
+        self.decorated.failfast = value
+    failfast = property(_get_failfast, _set_failfast)
+
     def progress(self, offset, whence):
         return self.decorated.progress(offset, whence)
 

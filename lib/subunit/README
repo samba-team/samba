@@ -43,6 +43,7 @@ A number of useful things can be done easily with subunit:
 
 Subunit supplies the following filters:
  * tap2subunit - convert perl's TestAnythingProtocol to subunit.
+ * subunit2csv - convert a subunit stream to csv.
  * subunit2pyunit - convert a subunit stream to pyunit test results.
  * subunit2gtk - show a subunit stream in GTK.
  * subunit2junitxml - convert a subunit stream to JUnit's XML format.
@@ -214,3 +215,15 @@ to indicate a test that errored in some expected fashion (also know as "TODO"
 tests in some frameworks). uxsuccess is used to indicate and unexpected success
 where a test though to be failing actually passes. It is complementary to
 xfail.
+
+Hacking on subunit
+------------------
+
+Releases
+========
+
+* Update versions in configure.ac and python/subunit/__init__.py.
+* Make PyPI and regular tarball releases. Upload the regular one to LP, the
+  PyPI one to PyPI.
+* Push a tagged commit.
+

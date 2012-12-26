@@ -61,6 +61,7 @@ class TimeCapturingResult(unittest.TestResult):
     def __init__(self):
         super(TimeCapturingResult, self).__init__()
         self._calls = []
+        self.failfast = False
 
     def time(self, a_datetime):
         self._calls.append(a_datetime)
@@ -197,6 +198,11 @@ class TestAutoTimingTestResultDecorator(unittest.TestCase):
         self.result.startTest(self)
         self.assertEqual(3, len(self.decorated._calls))
         self.assertNotEqual(None, self.decorated._calls[2])
+
+    def test_set_failfast_True(self):
+        self.assertFalse(self.decorated.failfast)
+        self.result.failfast = True
+        self.assertTrue(self.decorated.failfast)
 
 
 class TestTagCollapsingDecorator(TestCase):

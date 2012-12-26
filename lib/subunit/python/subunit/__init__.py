@@ -147,6 +147,19 @@ from testtools import testresult
 
 from subunit import chunked, details, iso8601, test_results
 
+# same format as sys.version_info: "A tuple containing the five components of
+# the version number: major, minor, micro, releaselevel, and serial. All
+# values except releaselevel are integers; the release level is 'alpha',
+# 'beta', 'candidate', or 'final'. The version_info value corresponding to the
+# Python version 2.0 is (2, 0, 0, 'final', 0)."  Additionally we use a
+# releaselevel of 'dev' for unreleased under-development code.
+#
+# If the releaselevel is 'alpha' then the major/minor/micro components are not
+# established at this point, and setup.py will use a version of next-$(revno).
+# If the releaselevel is 'final', then the tarball will be major.minor.micro.
+# Otherwise it is major.minor.micro~$(revno).
+
+__version__ = (0, 0, 9, 'final', 0)
 
 PROGRESS_SET = 0
 PROGRESS_CUR = 1
@@ -636,6 +649,8 @@ class TestProtocolClient(testresult.TestResult):
             to subunit.Content objects.
         """
         self._addOutcome("error", test, error=error, details=details)
+        if self.failfast:
+            self.stop()
 
     def addExpectedFailure(self, test, error=None, details=None):
         """Report an expected failure in test test.
@@ -666,6 +681,8 @@ class TestProtocolClient(testresult.TestResult):
             to subunit.Content objects.
         """
         self._addOutcome("failure", test, error=error, details=details)
+        if self.failfast:
+            self.stop()
 
     def _addOutcome(self, outcome, test, error=None, details=None,
         error_permitted=True):
@@ -685,7 +702,7 @@ class TestProtocolClient(testresult.TestResult):
         :param error_permitted: If True then one and only one of error or
             details must be supplied. If False then error must not be supplied
             and details is still optional.  """
-        self._stream.write(_b("%s: %s" % (outcome, test.id())))
+        self._stream.write(_b("%s: " % outcome) + self._test_id(test))
         if error_permitted:
             if error is None and details is None:
                 raise ValueError
@@ -730,11 +747,19 @@ class TestProtocolClient(testresult.TestResult):
         """
         self._addOutcome("uxsuccess", test, details=details,
             error_permitted=False)
+        if self.failfast:
+            self.stop()
+
+    def _test_id(self, test):
+        result = test.id()
+        if type(result) is not bytes:
+            result = result.encode('utf8')
+        return result
 
     def startTest(self, test):
         """Mark a test as starting its test run."""
         super(TestProtocolClient, self).startTest(test)
-        self._stream.write(_b("test: %s\n" % test.id()))
+        self._stream.write(_b("test: ") + self._test_id(test) + _b("\n"))
         self._stream.flush()
 
     def stopTest(self, test):

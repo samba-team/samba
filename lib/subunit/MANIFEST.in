@@ -16,6 +16,5 @@ exclude missing
 prune perl
 exclude py-compile
 prune shell
-prune python/iso8601
 exclude stamp-h1
 include NEWS

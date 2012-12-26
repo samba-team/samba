@@ -18,7 +18,7 @@ import datetime
 import unittest
 import os
 
-from testtools import skipIf, TestCase, TestResult
+from testtools import PlaceHolder, skipIf, TestCase, TestResult
 from testtools.compat import _b, _u, BytesIO
 from testtools.content import Content, TracebackContent, text_content
 from testtools.content_type import ContentType
@@ -1133,6 +1133,7 @@ class TestTestProtocolClient(unittest.TestCase):
     def setUp(self):
         self.io = BytesIO()
         self.protocol = subunit.TestProtocolClient(self.io)
+        self.unicode_test = PlaceHolder(_u('\u2603'))
         self.test = TestTestProtocolClient("test_start_test")
         self.sample_details = {'something':Content(
             ContentType('text', 'plain'), lambda:[_b('serialised\nform')])}
@@ -1145,6 +1146,12 @@ class TestTestProtocolClient(unittest.TestCase):
         self.protocol.startTest(self.test)
         self.assertEqual(self.io.getvalue(), _b("test: %s\n" % self.test.id()))
 
+    def test_start_test_unicode_id(self):
+        """Test startTest on a TestProtocolClient."""
+        self.protocol.startTest(self.unicode_test)
+        expected = _b("test: ") + _u('\u2603').encode('utf8') + _b("\n")
+        self.assertEqual(expected, self.io.getvalue())
+
     def test_stop_test(self):
         # stopTest doesn't output anything.
         self.protocol.stopTest(self.test)
@@ -1155,6 +1162,12 @@ class TestTestProtocolClient(unittest.TestCase):
         self.protocol.addSuccess(self.test)
         self.assertEqual(
             self.io.getvalue(), _b("successful: %s\n" % self.test.id()))
+
+    def test_add_outcome_unicode_id(self):
+        """Test addSuccess on a TestProtocolClient."""
+        self.protocol.addSuccess(self.unicode_test)
+        expected = _b("successful: ") + _u('\u2603').encode('utf8') + _b("\n")
+        self.assertEqual(expected, self.io.getvalue())
 
     def test_add_success_details(self):
         """Test addSuccess on a TestProtocolClient with details."""
