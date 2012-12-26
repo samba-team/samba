@@ -438,10 +438,10 @@ done:
 		db = tdb_open_ex(test_tdb, hash_size, TDB_DEFAULT,
 				 O_RDWR, 0, &log_ctx, NULL);
 		if (!db) {
-			fatal("db open failed");
+			fatal("db open failed\n");
 		}
 		if (tdb_check(db, NULL, NULL) == -1) {
-			printf("db check failed");
+			printf("db check failed\n");
 			exit(1);
 		}
 		tdb_close(db);
