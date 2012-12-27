@@ -1494,7 +1494,7 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
-				   undef, "server services = -dns", "",
+				   undef, "", "",
 				   $extra_provision_options);
 
 	return undef unless(defined $ret);
