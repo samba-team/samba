@@ -72,7 +72,7 @@ bool lpcfg_is_myname(struct loadparm_context *lp_ctx, const char *name)
 }
 
 static char *lpcfg_common_path(TALLOC_CTX* mem_ctx,
-			       struct loadparm_context *lp_ctx,
+			       const char *parent,
 			       const char *name)
 {
 	char *fname, *dname;
@@ -85,7 +85,7 @@ static char *lpcfg_common_path(TALLOC_CTX* mem_ctx,
 		return talloc_strdup(mem_ctx, name);
 	}
 
-	dname = talloc_strdup(mem_ctx, lpcfg_lockdir(lp_ctx));
+	dname = talloc_strdup(mem_ctx, parent);
 	if (dname == NULL) {
 		return NULL;
 	}
@@ -114,7 +114,7 @@ static char *lpcfg_common_path(TALLOC_CTX* mem_ctx,
 char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			 const char *name)
 {
-	return lpcfg_common_path(mem_ctx, lp_ctx, name);
+	return lpcfg_common_path(mem_ctx, lpcfg_lockdir(lp_ctx), name);
 }
 
 /**
@@ -123,7 +123,7 @@ char *lpcfg_lock_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 char *lpcfg_state_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 		       const char *name)
 {
-	return lpcfg_common_path(mem_ctx, lp_ctx, name);
+	return lpcfg_common_path(mem_ctx, lpcfg_statedir(lp_ctx), name);
 }
 
 /**
@@ -132,7 +132,7 @@ char *lpcfg_state_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 char *lpcfg_cache_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 		       const char *name)
 {
-	return lpcfg_common_path(mem_ctx, lp_ctx, name);
+	return lpcfg_common_path(mem_ctx, lpcfg_cachedir(lp_ctx), name);
 }
 
 /**
