@@ -201,13 +201,13 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 
 	status = zfs_get_nt_acl_common(fsp->fsp_name->base_name,
-				       mem_ctx, security_info,
+				       security_info,
 				       &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+	return smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx, ppdesc, pacl);
 }
 
 static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
