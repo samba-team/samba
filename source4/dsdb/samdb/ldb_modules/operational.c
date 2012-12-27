@@ -612,7 +612,7 @@ struct op_controls_flags {
 };
 
 static bool check_keep_control_for_attribute(struct op_controls_flags* controls_flags, const char* attr) {
-	if (ldb_attr_cmp(attr, "msDS-KeyVersionNumber") == 0 && controls_flags->bypassoperational) {
+	if (controls_flags->bypassoperational && ldb_attr_cmp(attr, "msDS-KeyVersionNumber") == 0 ) {
 		return true;
 	}
 	return false;
