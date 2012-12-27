@@ -278,27 +278,6 @@ if __name__ == '__main__':
         logger.error("Cannot create AD based DNS for OS level < 2003")
         sys.exit(1)
 
-    logger.info("Looking up IPv4 addresses")
-    hostip = interface_ips_v4(lp)
-    try:
-        hostip.remove('127.0.0.1')
-    except ValueError:
-        pass
-    if not hostip:
-        logger.error("No IPv4 addresses found")
-        sys.exit(1)
-    else:
-        hostip = hostip[0]
-        logger.debug("IPv4 addresses: %s" % hostip)
-
-    logger.info("Looking up IPv6 addresses")
-    hostip6 = interface_ips_v6(lp, linklocal=False)
-    if not hostip6:
-        hostip6 = None
-    else:
-        hostip6 = hostip6[0]
-        logger.debug("IPv6 addresses: %s" % hostip6)
-
     domaindn = names.domaindn
     forestdn = names.rootdn
 
@@ -351,6 +330,28 @@ if __name__ == '__main__':
         ncname = msg[0]['nCName'][0]
     except Exception, e:
         logger.info("Creating DNS partitions")
+
+        logger.info("Looking up IPv4 addresses")
+        hostip = interface_ips_v4(lp)
+        try:
+            hostip.remove('127.0.0.1')
+        except ValueError:
+            pass
+        if not hostip:
+            logger.error("No IPv4 addresses found")
+            sys.exit(1)
+        else:
+            hostip = hostip[0]
+            logger.debug("IPv4 addresses: %s" % hostip)
+
+        logger.info("Looking up IPv6 addresses")
+        hostip6 = interface_ips_v6(lp, linklocal=False)
+        if not hostip6:
+            hostip6 = None
+        else:
+            hostip6 = hostip6[0]
+        logger.debug("IPv6 addresses: %s" % hostip6)
+
         create_dns_partitions(ldbs.sam, domainsid, names, domaindn, forestdn,
                           dnsadmins_sid)
 
