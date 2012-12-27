@@ -3088,6 +3088,8 @@ static int py_module_request(struct ldb_module *mod, struct ldb_request *req)
 	py_result = PyObject_CallMethod(py_ldb, discard_const_p(char, "request"),
 					discard_const_p(char, ""));
 
+	Py_XDECREF(py_result);
+
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
@@ -3098,6 +3100,8 @@ static int py_module_extended(struct ldb_module *mod, struct ldb_request *req)
 
 	py_result = PyObject_CallMethod(py_ldb, discard_const_p(char, "extended"),
 					discard_const_p(char, ""));
+
+	Py_XDECREF(py_result);
 
 	return LDB_ERR_OPERATIONS_ERROR;
 }
