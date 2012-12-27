@@ -25,3 +25,4 @@
 ^samba3.raw.samba3checkfsp.samba3checkfsp\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.samba3closeerr.samba3closeerr\(plugin_s4_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba4.nss.test.*using.*winbind # fails sometimes on sn-devel
+^samba4.rpc.samr.large-dc.two.samr.many_accounts\(vampire_dc\) # often fails on sn-devel-104
