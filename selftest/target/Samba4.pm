@@ -602,6 +602,8 @@ sub provision_raw_step1($$)
 	# remove this again, when our smb2 client library
 	# supports signin on compound related requests
 	server signing = on
+
+        idmap_ldb:use rfc2307=yes
 ";
 
 	print CONFFILE "
@@ -628,6 +630,7 @@ nobody:x:65534:65533:nobody gecos:$ctx->{prefix_abs}:/bin/false
 pdbtest:x:65533:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
 ";
 	close(PWD);
+        my $uid_rfc2307test = 65533;
 
 	open(GRP, ">$ctx->{nsswrap_group}");
 	print GRP "
@@ -638,6 +641,7 @@ nobody:x:65533:
 nogroup:x:65534:nobody
 ";
 	close(GRP);
+        my $gid_rfc2307test = 65532;
 
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
@@ -680,7 +684,9 @@ nogroup:x:65534:nobody
 		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
 	        NSS_WRAPPER_WINBIND_SO_PATH => Samba::nss_wrapper_winbind_so_path($self),
-                LOCAL_PATH => $ctx->{share}
+                LOCAL_PATH => $ctx->{share},
+                UID_RFC2307TEST => $uid_rfc2307test,
+                GID_RFC2307TEST => $gid_rfc2307test
 	};
 
 	return $ret;

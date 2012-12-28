@@ -714,8 +714,11 @@ my @exported_envvars = (
 
         # nss_wrapper
         "NSS_WRAPPER_PASSWD",
-        "NSS_WRAPPER_GROUP"
+        "NSS_WRAPPER_GROUP",
 
+        # UID/GID for rfc2307 mapping tests
+        "UID_RFC2307TEST",
+        "GID_RFC2307TEST"
 );
 
 $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub { 
