@@ -22,7 +22,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
-#include "scripting/python/modules.h"
+#include "python/modules.h"
 #include <pytalloc.h>
 #include <tevent.h>
 #include "librpc/rpc/pyrpc_util.h"

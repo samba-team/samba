@@ -26,7 +26,7 @@
 #include "param/provision.h"
 #include "param/secrets.h"
 #include <pytalloc.h>
-#include "scripting/python/modules.h"
+#include "python/modules.h"
 #include "param/pyparam.h"
 #include "dynconfig/dynconfig.h"
 

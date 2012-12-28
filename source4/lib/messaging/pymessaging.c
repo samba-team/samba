@@ -21,7 +21,7 @@
 
 #include <Python.h>
 #include "includes.h"
-#include "scripting/python/modules.h"
+#include "python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc_util.h"
 #include "librpc/ndr/libndr.h"

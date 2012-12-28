@@ -20,7 +20,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "libcli/util/pyerrors.h"
-#include "scripting/python/modules.h"
+#include "python/modules.h"
 #include "../libcli/nbt/libnbt.h"
 #include "lib/events/events.h"
 
