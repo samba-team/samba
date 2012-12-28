@@ -390,6 +390,12 @@ int ldb_register_extended_match_rule(struct ldb_context *ldb,
 int ldb_pack_data(struct ldb_context *ldb,
 		  const struct ldb_message *message,
 		  struct ldb_val *data);
+int ldb_unpack_data_withlist(struct ldb_context *ldb,
+			     const struct ldb_val *data,
+			     struct ldb_message *message,
+			     const char* const * list,
+			     unsigned int list_size,
+			     unsigned int *nb_attributes_indb);
 int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message);
