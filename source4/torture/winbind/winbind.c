@@ -201,6 +201,7 @@ static bool torture_winbind_pac(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
 	status = gensec_set_target_hostname(gensec_client_context, cli_credentials_get_workstation(cmdline_credentials));
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
 
 	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
