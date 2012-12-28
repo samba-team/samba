@@ -283,7 +283,7 @@ for t in smbtorture4_testsuites("dns_internal."):
 # Local tests
 for t in smbtorture4_testsuites("dlz_bind9."):
     #The dlz_bind9 tests needs to look at the DNS database
-    plansmbtorture4testsuite(t, "chgdcpass:local", "ncalrpc:localhost")
+    plansmbtorture4testsuite(t, "chgdcpass:local", ["ncalrpc:$SERVER", '-U$USERNAME%$PASSWORD'])
 
 planpythontestsuite("s3dc", "samba.tests.libsmb_samba_internal");
 
