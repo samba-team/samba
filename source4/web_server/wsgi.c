@@ -26,7 +26,7 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/tls/tls.h"
 #include "lib/tsocket/tsocket.h"
-#include "scripting/python/modules.h"
+#include "python/modules.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5

@@ -19,7 +19,7 @@
 
 #include <Python.h>
 #include "includes.h"
-#include "scripting/python/modules.h"
+#include "python/modules.h"
 #include "dynconfig/dynconfig.h"
 
 static bool PySys_PathPrepend(PyObject *list, const char *path)

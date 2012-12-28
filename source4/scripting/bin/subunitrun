@@ -49,7 +49,7 @@ import samba.tests
 usage = 'subunitrun [options] <tests>'
 description = '''
 This runs a Samba python test suite. The tests are typically located in
-source4/scripting/python/samba/tests/*.py
+python/samba/tests/*.py
 
 To run the tests from one of those modules, specify the test as
 samba.tests.MODULE. For example, to run the tests in common.py:
