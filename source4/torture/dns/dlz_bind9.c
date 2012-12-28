@@ -26,6 +26,9 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "auth/session.h"
+#include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
+#include "lib/cmdline/popt_common.h"
 
 struct torture_context *tctx_static;
 
@@ -121,7 +124,80 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 	return true;
 }
 
+/*
+ * Test that a ticket obtained for the DNS service will be accepted on the Samba DLZ side
+ *
+ */
+static bool test_dlz_bind9_gensec(struct torture_context *tctx, const char *mech)
+{
+	NTSTATUS status;
 
+	struct gensec_security *gensec_client_context;
+
+	DATA_BLOB client_to_server, server_to_client;
+
+	void *dbdata;
+	const char *argv[] = {
+		"samba_dlz",
+		"-H",
+		lpcfg_private_path(tctx, tctx->lp_ctx, "dns/sam.ldb"),
+		NULL
+	};
+	tctx_static = tctx;
+	torture_assert_int_equal(tctx, dlz_create("samba_dlz", 3, discard_const_p(char *, argv), &dbdata,
+						  "log", dlz_bind9_log_wrapper,
+						  "writeable_zone", dlz_bind9_writeable_zone_hook, NULL),
+				 ISC_R_SUCCESS,
+				 "Failed to create samba_dlz");
+
+	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
+						     ISC_R_SUCCESS,
+				 "Failed to configure samba_dlz");
+
+	status = gensec_client_start(tctx, &gensec_client_context,
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
+
+	status = gensec_set_target_hostname(gensec_client_context, torture_setting_string(tctx, "host", NULL));
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
+
+	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
+
+	status = gensec_start_mech_by_sasl_name(gensec_client_context, mech);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
+
+	server_to_client = data_blob(NULL, 0);
+
+	/* Do one step of the client-server update dance */
+	status = gensec_update(gensec_client_context, tctx, tctx->ev, server_to_client, &client_to_server);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
+		torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
+	}
+
+	torture_assert_int_equal(tctx, dlz_ssumatch(cli_credentials_get_username(cmdline_credentials),
+						    lpcfg_dnsdomain(tctx->lp_ctx),
+						    "127.0.0.1", "type", "key",
+						    client_to_server.length,
+						    client_to_server.data,
+						    dbdata),
+				 ISC_R_SUCCESS,
+				 "Failed to check key for update rights samba_dlz");
+
+	dlz_destroy(dbdata);
+
+	return true;
+}
+
+static bool test_dlz_bind9_gssapi(struct torture_context *tctx)
+{
+	return test_dlz_bind9_gensec(tctx, "GSSAPI");
+}
+
+static bool test_dlz_bind9_spnego(struct torture_context *tctx)
+{
+	return test_dlz_bind9_gensec(tctx, "GSS-SPNEGO");
+}
 
 static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 {
@@ -132,6 +208,8 @@ static struct torture_suite *dlz_bind9_suite(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "version", test_dlz_bind9_version);
 	torture_suite_add_simple_test(suite, "create", test_dlz_bind9_create);
 	torture_suite_add_simple_test(suite, "configure", test_dlz_bind9_configure);
+	torture_suite_add_simple_test(suite, "gssapi", test_dlz_bind9_gssapi);
+	torture_suite_add_simple_test(suite, "spnego", test_dlz_bind9_spnego);
 	return suite;
 }
 
