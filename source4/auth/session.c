@@ -102,22 +102,56 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		sids[i] = user_info_dc->sids[i];
 	}
 
-	if (user_info_dc->num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &user_info_dc->sids[PRIMARY_USER_SID_INDEX])) {
+	/*
+	 * Finally add the "standard" sids.
+	 * The only difference between guest and "anonymous"
+	 * is the addition of Authenticated_Users.
+	 */
+
+	if (session_info_flags & AUTH_SESSION_INFO_DEFAULT_GROUPS) {
+		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 2);
+		NT_STATUS_HAVE_NO_MEMORY(sids);
+
+		if (!dom_sid_parse(SID_WORLD, &sids[num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		num_sids++;
+
+		if (!dom_sid_parse(SID_NT_NETWORK, &sids[num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		num_sids++;
+	}
+
+	if (session_info_flags & AUTH_SESSION_INFO_AUTHENTICATED) {
+		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 1);
+		NT_STATUS_HAVE_NO_MEMORY(sids);
+
+		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &sids[num_sids])) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		num_sids++;
+	}
+
+
+
+	if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &sids[PRIMARY_USER_SID_INDEX])) {
 		/* Don't expand nested groups of system, anonymous etc*/
-	} else if (user_info_dc->num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &user_info_dc->sids[PRIMARY_USER_SID_INDEX])) {
+	} else if (num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &sids[PRIMARY_USER_SID_INDEX])) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (sam_ctx) {
 		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
 					 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
 		/* Search for each group in the token */
-		for (i = 0; i < user_info_dc->num_sids; i++) {
+		for (i = 0; i < num_sids; i++) {
 			char *sid_string;
 			const char *sid_dn;
 			DATA_BLOB sid_blob;
-			
+			int ret;
+
 			sid_string = dom_sid_string(tmp_ctx,
-						      &user_info_dc->sids[i]);
+						      &sids[i]);
 			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_string, user_info_dc);
 			
 			sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);

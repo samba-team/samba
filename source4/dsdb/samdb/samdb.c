@@ -143,37 +143,6 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/*
-	 * Finally add the "standard" sids.
-	 * The only difference between guest and "anonymous"
-	 * is the addition of Authenticated_Users.
-	 */
-
-	if (session_info_flags & AUTH_SESSION_INFO_DEFAULT_GROUPS) {
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 2);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-		if (!dom_sid_parse(SID_WORLD, &ptoken->sids[ptoken->num_sids])) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		ptoken->num_sids++;
-
-		if (!dom_sid_parse(SID_NT_NETWORK, &ptoken->sids[ptoken->num_sids])) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		ptoken->num_sids++;
-	}
-
-	if (session_info_flags & AUTH_SESSION_INFO_AUTHENTICATED) {
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &ptoken->sids[ptoken->num_sids])) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		ptoken->num_sids++;
-	}
-
 	/* The caller may have requested simple privilages, for example if there isn't a local DB */
 	if (session_info_flags & AUTH_SESSION_INFO_SIMPLE_PRIVILEGES) {
 		/* Shortcuts to prevent recursion and avoid lookups */
