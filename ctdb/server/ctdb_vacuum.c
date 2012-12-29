@@ -847,8 +847,26 @@ static int ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 
 /**
  * Process the delete list:
- * Send the records to delete to all other nodes with the
- * try_delete_records control.
+ *
+ * This is the last step of vacuuming that consistently deletes
+ * those records that have been migrated with data and can hence
+ * not be deleted when leaving a node.
+ *
+ * In this step, the lmaster does the final deletion of those empty
+ * records that it is also dmaster for. It has ususally received
+ * at least some of these records previously from the former dmasters
+ * with the vacuum fetch message.
+ *
+ * This last step is implemented as a 3-phase process to protect from
+ * races leading to data corruption:
+ *
+ *  1) Send the lmaster's copy to all other active nodes with the
+ *     RECEIVE_RECORDS control: The remote nodes store the lmaster's copy.
+ *  2) Send the records that could successfully be stored remotely
+ *     in step #1 to all active nodes with the TRY_DELETE_RECORDS
+ *     control. The remote notes delete their local copy.
+ *  3) The lmaster locally deletes its copies of all records that
+ *     could successfully be deleted remotely in step #2.
  */
 static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 				    struct vacuum_data *vdata)
