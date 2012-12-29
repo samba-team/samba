@@ -719,17 +719,25 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	struct ctdb_node_map *nodemap;
 	uint32_t *active_nodes;
 	int num_active_nodes;
+	TALLOC_CTX *tmp_ctx;
 
 	if (vdata->delete_count == 0) {
 		return 0;
 	}
 
+	tmp_ctx = talloc_new(vdata);
+	if (tmp_ctx == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return 0;
+	}
+
 	vdata->delete_left = vdata->delete_count;
 
-	recs = talloc_zero(vdata, struct delete_records_list);
+	recs = talloc_zero(tmp_ctx, struct delete_records_list);
 	if (recs == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		return -1;
+		ret = -1;
+		goto done;
 	}
 	recs->records = (struct ctdb_marshall_buffer *)
 		talloc_zero_size(recs,
@@ -758,7 +766,7 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(),
 				   CTDB_CURRENT_NODE,
-				   recs, /* talloc context */
+				   tmp_ctx,
 				   &nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
@@ -880,8 +888,7 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 	ret = 0;
 
 done:
-	/* free recs / nodemap / active_nodes */
-	talloc_free(recs);
+	talloc_free(tmp_ctx);
 
 	return ret;
 }
