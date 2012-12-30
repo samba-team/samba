@@ -154,6 +154,11 @@ dn: cn=three,cn=t1,cn=TEST
 objectClass: oneclass
 cn: three
 test: one
+
+dn: cn=four,cn=three,cn=t1,cn=TEST
+objectClass: oneclass
+cn: four
+test: one
 EOF
 checkone 3 "cn=t1,cn=TEST" '(test=one)'
 checkone 1 "cn=t1,cn=TEST" '(cn=two)'

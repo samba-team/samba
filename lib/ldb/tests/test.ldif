@@ -195,6 +195,15 @@ description: All Alumni Assoc Staff
 cn: Alumni Assoc Staff
 objectclass: groupofnames
 
+dn: cn=Finance, cn=Alumni Assoc Staff,ou=Groups,o=University of Michigan,c=TEST
+member: cn=Manager,o=University of Michigan,c=TEST
+member: cn=Ursula Hampster,ou=Alumni Association,ou=People,o=University of Mic
+ higan,c=TEST
+owner: cn=Manager,o=University of Michigan,c=TEST
+description: Finance group
+cn: Finance
+objectclass: groupofnames
+
 dn: ou=Alumni Association,ou=People,o=University of Michigan,c=TEST
 objectclass: organizationalUnit
 ou: Alumni Association
