@@ -27,13 +27,13 @@ EOF
 $VALGRIND ldbsearch "(touchedBy=sample)" | grep "touchedBy: sample" || exit 1
 # This action are expected to fails because the sample module return an error when presented the relax control
 
-cat <<EOF | $VALGRIND ldbadd --controls "relax:0" && exit 1
+cat <<EOF | $VALGRIND ldbadd --controls "relax:0" >/dev/null 2>&1 && exit 1
 dn: dc=foobar
 dc: foobar
 someThing: someThingElse
 EOF
 
-cat <<EOF | $VALGRIND ldbmodify --controls "relax:0" && exit 1
+cat <<EOF | $VALGRIND ldbmodify --controls "relax:0" >/dev/null 2>&1 && exit 1
 dn: dc=bar
 changetype: modify
 replace someThing
@@ -41,5 +41,3 @@ someThing: someThingElseBetter
 EOF
 
 $VALGRIND ldbsearch --controls "bypassoperational:0" >/dev/null 2>&1 || exit 1
-
-set
