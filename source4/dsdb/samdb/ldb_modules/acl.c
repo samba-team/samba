@@ -1644,6 +1644,10 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	unsigned int i;
 
+	if (ldb_dn_is_special(req->op.search.base)) {
+		return ldb_next_request(module, req);
+	}
+
 	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct acl_context);
