@@ -643,6 +643,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	char *tmp_dns_name;
 	uint32_t i;
 	uint64_t seq_num;
+	bool is_exop = false;
 
 	s_dsa			= talloc_zero(s, struct repsFromTo1);
 	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
@@ -686,12 +687,21 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		req_replica_flags = 0;
 		break;
 	case 5:
+		if (c->req5->extended_op != DRSUAPI_EXOP_NONE) {
+			is_exop = true;
+		}
 		req_replica_flags = c->req5->replica_flags;
 		break;
 	case 8:
+		if (c->req8->extended_op != DRSUAPI_EXOP_NONE) {
+			is_exop = true;
+		}
 		req_replica_flags = c->req8->replica_flags;
 		break;
 	case 10:
+		if (c->req10->extended_op != DRSUAPI_EXOP_NONE) {
+			is_exop = true;
+		}
 		req_replica_flags = c->req10->replica_flags;
 		break;
 	default:
@@ -728,13 +738,24 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	}
 	s->total_objects += object_count;
 
-	if (nc_object_count) {
-		DEBUG(0,("Partition[%s] objects[%u/%u] linked_values[%u/%u]\n",
-			c->partition->nc.dn, s->total_objects, nc_object_count,
-			linked_attributes_count, nc_linked_attributes_count));
+	if (is_exop) {
+		if (nc_object_count) {
+			DEBUG(0,("Exop on[%s] objects[%u/%u] linked_values[%u/%u]\n",
+				c->partition->nc.dn, s->total_objects, nc_object_count,
+				linked_attributes_count, nc_linked_attributes_count));
+		} else {
+			DEBUG(0,("Exop on[%s] objects[%u] linked_values[%u]\n",
+			c->partition->nc.dn, s->total_objects, linked_attributes_count));
+		}
 	} else {
-		DEBUG(0,("Partition[%s] objects[%u] linked_values[%u]\n",
-		c->partition->nc.dn, s->total_objects, linked_attributes_count));
+		if (nc_object_count) {
+			DEBUG(0,("Partition[%s] objects[%u/%u] linked_values[%u/%u]\n",
+				c->partition->nc.dn, s->total_objects, nc_object_count,
+				linked_attributes_count, nc_linked_attributes_count));
+		} else {
+			DEBUG(0,("Partition[%s] objects[%u] linked_values[%u]\n",
+			c->partition->nc.dn, s->total_objects, linked_attributes_count));
+		}
 	}
 
 
