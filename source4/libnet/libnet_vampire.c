@@ -288,6 +288,19 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	/* We must set these up to ensure the replMetaData is written
+	 * correctly, before our NTDS Settings entry is replicated */
+	ok = samdb_set_ntds_invocation_id(s->ldb, &c->dest_dsa->invocation_id);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds invocationId\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	ok = samdb_set_ntds_objectGUID(s->ldb, &c->dest_dsa->ntds_guid);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
 
 	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
 						  s, &pfm_remote, NULL);
@@ -491,19 +504,6 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 
 	talloc_free(s_dsa);
 	talloc_free(schema_objs);
-
-	/* We must set these up to ensure the replMetaData is written
-	 * correctly, before our NTDS Settings entry is replicated */
-	ok = samdb_set_ntds_invocation_id(s->ldb, &c->dest_dsa->invocation_id);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds invocationId\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	ok = samdb_set_ntds_objectGUID(s->ldb, &c->dest_dsa->ntds_guid);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
-		return NT_STATUS_FOOBAR;
-	}
 
 	s->schema = dsdb_get_schema(s->ldb, s);
 	if (!s->schema) {
