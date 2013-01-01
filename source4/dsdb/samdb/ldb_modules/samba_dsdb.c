@@ -150,8 +150,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	  - extended_dn_in must be before objectclass.c, as it resolves the DN
 	  - objectclass must be before password_hash and samldb since these LDB
 	    modules require the expanded "objectClass" list
-          - objectclass must be before descriptor, as descriptor assumes that 
-            objectClass values are sorted
+	  - objectclass must be before descriptor and acl, as both assume that
+	    objectClass values are sorted
 	  - objectclass_attrs must be behind operational in order to see all
 	    attributes (the operational module protects and therefore
 	    suppresses per default some important ones)
