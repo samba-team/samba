@@ -763,8 +763,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *parent;
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
-	struct ldb_message_element *oc_el;
-	const struct GUID *guid;
+	const struct dsdb_class *objectclass;
 	struct ldb_dn *nc_root;
 	struct ldb_control *as_system;
 
@@ -806,17 +805,17 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	oc_el = ldb_msg_find_element(req->op.add.message, "objectClass");
-	if (!oc_el || oc_el->num_values == 0) {
+	objectclass = dsdb_get_structural_oc_from_msg(schema, req->op.add.message);
+	if (!objectclass) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "acl: unable to find objectClass on %s\n",
+				       "acl: unable to find or validate structrual objectClass on %s\n",
 				       ldb_dn_get_linearized(req->op.add.message->dn));
 		return ldb_module_done(req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	guid = class_schemaid_guid_by_lDAPDisplayName(schema,
-						      (char *)oc_el->values[oc_el->num_values-1].data);
-	ret = dsdb_module_check_access_on_dn(module, req, parent, SEC_ADS_CREATE_CHILD, guid, req);
+	ret = dsdb_module_check_access_on_dn(module, req, parent,
+					     SEC_ADS_CREATE_CHILD,
+					     &objectclass->schemaIDGUID, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
