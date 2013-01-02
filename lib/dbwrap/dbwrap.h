@@ -84,6 +84,7 @@ NTSTATUS dbwrap_transaction_start_nonblock(struct db_context *db);
 int dbwrap_transaction_commit(struct db_context *db);
 int dbwrap_transaction_cancel(struct db_context *db);
 void dbwrap_db_id(struct db_context *db, const uint8_t **id, size_t *idlen);
+bool dbwrap_is_persistent(struct db_context *db);
 const char *dbwrap_name(struct db_context *db);
 
 /* The following definitions come from lib/dbwrap_util.c  */

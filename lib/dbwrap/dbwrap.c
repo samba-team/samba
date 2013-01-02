@@ -480,6 +480,11 @@ void dbwrap_db_id(struct db_context *db, const uint8_t **id, size_t *idlen)
 	db->id(db, id, idlen);
 }
 
+bool dbwrap_is_persistent(struct db_context *db)
+{
+	return db->persistent;
+}
+
 const char *dbwrap_name(struct db_context *db)
 {
 	return db->name;
