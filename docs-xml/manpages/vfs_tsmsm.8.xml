@@ -62,7 +62,7 @@
 			hsm script should point to a shell script which
 			accepts two arguments: operation and filepath.
 			the tsmsm module only uses "offline" for operation
-			to set set the file under filepath offline.
+			to set the file under filepath offline.
 		</para>
 		</listitem>
 
