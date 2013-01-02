@@ -1393,3 +1393,16 @@ const struct dsdb_class *dsdb_get_last_structural_class(const struct dsdb_schema
 
 	return last_class;
 }
+
+const struct dsdb_class *dsdb_get_structural_oc_from_msg(const struct dsdb_schema *schema,
+							 const struct ldb_message *msg)
+{
+	struct ldb_message_element *oc_el;
+
+	oc_el = ldb_msg_find_element(msg, "objectClass");
+	if (!oc_el) {
+		return NULL;
+	}
+
+	return dsdb_get_last_structural_class(schema, oc_el);
+}
