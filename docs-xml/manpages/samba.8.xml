@@ -188,7 +188,7 @@
 		<varlistentry>
 		<term><filename>/etc/rc</filename></term>
 		<listitem><para>or whatever initialization script your
-		system uses).</para>
+		system uses.</para>
 
 		<para>If running the server as a daemon at startup,
 		this file will need to contain an appropriate startup
