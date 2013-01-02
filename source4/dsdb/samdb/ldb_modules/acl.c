@@ -991,7 +991,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_schema *schema;
 	unsigned int i;
-	const struct GUID *guid;
+	const struct dsdb_class *objectclass;
 	uint32_t access_granted;
 	NTSTATUS status;
 	struct ldb_result *acl_res;
@@ -1061,11 +1061,11 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		goto success;
 	}
 
-	guid = get_oc_guid_from_message(schema, acl_res->msgs[0]);
-	if (!guid) {
+	objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
+	if (!objectclass) {
 		talloc_free(tmp_ctx);
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
-				 "acl_modify: Error retrieving object class GUID.");
+				 "acl_modify: Error retrieving object class for GUID.");
 	}
 	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
 	for (i=0; i < msg->num_elements; i++) {
@@ -1129,7 +1129,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							req,
 							sd,
 							sid,
-							guid,
+							&objectclass->schemaIDGUID,
 							attr);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
@@ -1146,7 +1146,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							req,
 							sd,
 							sid,
-							guid,
+							&objectclass->schemaIDGUID,
 							userPassword);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
@@ -1157,7 +1157,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					    req,
 					    sd,
 					    sid,
-					    guid,
+					    &objectclass->schemaIDGUID,
 					    attr);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
@@ -1166,7 +1166,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			struct object_tree *root = NULL;
 			struct object_tree *new_node = NULL;
 
-			if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
+			if (!insert_in_object_tree(tmp_ctx,
+						   &objectclass->schemaIDGUID,
+						   SEC_ADS_WRITE_PROP,
 						   &root, &new_node)) {
 				talloc_free(tmp_ctx);
 				return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
