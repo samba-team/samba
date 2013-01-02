@@ -136,8 +136,11 @@ static int dbwrap_tool_store_int32(struct db_context *db,
 	NTSTATUS status;
 	int32_t value = (int32_t)strtol(data, NULL, 10);
 
-	status = dbwrap_trans_store_int32_bystring(db, keyname, value);
-
+	if (dbwrap_is_persistent(db)) {
+		status = dbwrap_trans_store_int32_bystring(db, keyname, value);
+	} else {
+		status = dbwrap_store_int32_bystring(db, keyname, value);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR: could not store int32 key '%s': %s\n",
 			  keyname, nt_errstr(status));
@@ -154,8 +157,11 @@ static int dbwrap_tool_store_uint32(struct db_context *db,
 	NTSTATUS status;
 	uint32_t value = (uint32_t)strtol(data, NULL, 10);
 
-	status = dbwrap_trans_store_uint32_bystring(db, keyname, value);
-
+	if (dbwrap_is_persistent(db)) {
+		status = dbwrap_trans_store_uint32_bystring(db, keyname, value);
+	} else {
+		status = dbwrap_store_uint32_bystring(db, keyname, value);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr,
 			  "ERROR: could not store uint32 key '%s': %s\n",
@@ -171,10 +177,19 @@ static int dbwrap_tool_store_string(struct db_context *db,
 				    const char *data)
 {
 	NTSTATUS status;
+	TDB_DATA tdbdata;
 
-	status = dbwrap_trans_store_bystring(db, keyname,
-			   string_term_tdb_data(data), TDB_REPLACE);
+	tdbdata = string_term_tdb_data(data);
 
+	if (dbwrap_is_persistent(db)) {
+		status = dbwrap_trans_store_bystring(db, keyname,
+						     tdbdata,
+						     TDB_REPLACE);
+	} else {
+		status = dbwrap_store_bystring(db, keyname,
+					      tdbdata,
+					      TDB_REPLACE);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr,
 			  "ERROR: could not store string key '%s': %s\n",
@@ -206,9 +221,15 @@ static int dbwrap_tool_store_hex(struct db_context *db,
 	tdbdata.dptr = (unsigned char *)datablob.data;
 	tdbdata.dsize = datablob.length;
 
-	status = dbwrap_trans_store_bystring(db, keyname,
-					     tdbdata,
-					     TDB_REPLACE);
+	if (dbwrap_is_persistent(db)) {
+		status = dbwrap_trans_store_bystring(db, keyname,
+						     tdbdata,
+						     TDB_REPLACE);
+	} else {
+		status = dbwrap_store_bystring(db, keyname,
+					       tdbdata,
+					       TDB_REPLACE);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr,
 			  "ERROR: could not store string key '%s': %s\n",
@@ -227,7 +248,11 @@ static int dbwrap_tool_delete(struct db_context *db,
 {
 	NTSTATUS status;
 
-	status = dbwrap_trans_delete_bystring(db, keyname);
+	if (dbwrap_is_persistent(db)) {
+		status = dbwrap_trans_delete_bystring(db, keyname);
+	} else {
+		status = dbwrap_delete_bystring(db, keyname);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "ERROR deleting record %s : %s\n",
@@ -366,6 +391,8 @@ int main(int argc, const char **argv)
 	const char *keytype = "int32";
 	enum dbwrap_type type;
 	const char *valuestr = "0";
+	int persistent = 0;
+	int tdb_flags = TDB_DEFAULT;
 
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
@@ -374,6 +401,7 @@ int main(int argc, const char **argv)
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
 		POPT_COMMON_SAMBA
+		{ "persistent", 'p', POPT_ARG_NONE, &persistent, 0, "treat the database as persistent", NULL },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -407,7 +435,8 @@ int main(int argc, const char **argv)
 
 	if ((extra_argc < 2) || (extra_argc > 5)) {
 		d_fprintf(stderr,
-			  "USAGE: %s <database> <op> [<key> [<type> [<value>]]]\n"
+			  "USAGE: %s [options] <database> <op> [<key> [<type> "
+			  "[<value>]]]\n"
 			  "       ops: fetch, store, delete, erase, listkeys, "
 			  "listwatchers\n"
 			  "       types: int32, uint32, string, hex\n",
@@ -505,13 +534,17 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
+	if (persistent == 0) {
+		tdb_flags |= TDB_CLEAR_IF_FIRST;
+	}
+
 	switch (op) {
 	case OP_FETCH:
 	case OP_STORE:
 	case OP_DELETE:
 	case OP_ERASE:
 	case OP_LISTKEYS:
-		db = db_open(mem_ctx, dbname, 0, TDB_DEFAULT, O_RDWR | O_CREAT,
+		db = db_open(mem_ctx, dbname, 0, tdb_flags, O_RDWR | O_CREAT,
 			     0644, DBWRAP_LOCK_ORDER_1);
 		if (db == NULL) {
 			d_fprintf(stderr, "ERROR: could not open dbname\n");
