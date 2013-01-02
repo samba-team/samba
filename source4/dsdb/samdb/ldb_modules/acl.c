@@ -1303,6 +1303,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *oldparent;
 	struct ldb_dn *newparent;
 	const struct dsdb_schema *schema;
+	const struct dsdb_class *objectclass;
 	struct ldb_context *ldb;
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
@@ -1389,12 +1390,18 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	guid = get_oc_guid_from_message(schema, acl_res->msgs[0]);
-	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
+	objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
+	if (!objectclass) {
+		talloc_free(tmp_ctx);
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "acl_modify: Error retrieving object class for GUID.");
+	}
+
+	if (!insert_in_object_tree(tmp_ctx, &objectclass->schemaIDGUID, SEC_ADS_WRITE_PROP,
 				   &root, &new_node)) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
-	};
+	}
 
 	guid = attribute_schemaid_guid_by_lDAPDisplayName(schema,
 							  "name");
@@ -1402,7 +1409,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 				   &new_node, &new_node)) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
-	};
+	}
 
 	rdn_name = ldb_dn_get_rdn_name(req->op.rename.olddn);
 	if (rdn_name == NULL) {
@@ -1457,15 +1464,10 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	/* new parent should have create child */
 	root = NULL;
 	new_node = NULL;
-	guid = get_oc_guid_from_message(schema, acl_res->msgs[0]);
-	if (!guid) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "acl:renamed object has no object class\n");
-		talloc_free(tmp_ctx);
-		return ldb_module_done(req, NULL, NULL,  LDB_ERR_OPERATIONS_ERROR);
-	}
 
-	ret = dsdb_module_check_access_on_dn(module, req, newparent, SEC_ADS_CREATE_CHILD, guid, req);
+	ret = dsdb_module_check_access_on_dn(module, req, newparent,
+					     SEC_ADS_CREATE_CHILD,
+					     &objectclass->schemaIDGUID, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "acl:access_denied renaming %s",
