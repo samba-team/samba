@@ -107,30 +107,30 @@ int acl_check_access_on_attribute(struct ldb_module *module,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_token *token = acl_user_token(module);
 
+	if (!insert_in_object_tree(tmp_ctx,
+				   &objectclass->schemaIDGUID,
+				   access_mask, &root,
+				   &new_node)) {
+		DEBUG(10, ("acl_search: cannot add to object tree class schemaIDGUID\n"));
+		goto fail;
+	}
+
 	if (!GUID_all_zero(&attr->attributeSecurityGUID)) {
 		if (!insert_in_object_tree(tmp_ctx,
 					   &attr->attributeSecurityGUID,
-					   access_mask, &root,
+					   access_mask, &new_node,
 					   &new_node)) {
 			DEBUG(10, ("acl_search: cannot add to object tree securityGUID\n"));
 			goto fail;
 		}
+	}
 
-		if (!insert_in_object_tree(tmp_ctx,
-					   &attr->schemaIDGUID,
-					   access_mask, &new_node,
-					   &new_node)) {
-			DEBUG(10, ("acl_search: cannot add to object tree attributeGUID\n"));
-			goto fail;
-		}
-	} else {
-		if (!insert_in_object_tree(tmp_ctx,
-					   &attr->schemaIDGUID,
-					   access_mask, &root,
-					   &new_node)) {
-			DEBUG(10, ("acl_search: cannot add to object tree attributeGUID\n"));
-			goto fail;
-		}
+	if (!insert_in_object_tree(tmp_ctx,
+				   &attr->schemaIDGUID,
+				   access_mask, &new_node,
+				   &new_node)) {
+		DEBUG(10, ("acl_search: cannot add to object tree attributeGUID\n"));
+		goto fail;
 	}
 
 	status = sec_access_check_ds(sd, token,
