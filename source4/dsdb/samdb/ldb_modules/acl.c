@@ -964,25 +964,6 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static const struct GUID *get_oc_guid_from_message(const struct dsdb_schema *schema,
-						   struct ldb_message *msg)
-{
-	struct ldb_message_element *oc_el;
-	const struct dsdb_class *object_class;
-
-	oc_el = ldb_msg_find_element(msg, "objectClass");
-	if (!oc_el) {
-		return NULL;
-	}
-
-	object_class = dsdb_get_last_structural_class(schema, oc_el);
-	if (object_class == NULL) {
-		return NULL;
-	}
-
-	return &object_class->schemaIDGUID;
-}
-
 
 static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 {
