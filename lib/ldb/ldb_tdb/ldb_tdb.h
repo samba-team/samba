@@ -32,6 +32,7 @@ struct ltdb_private {
 	int read_lock_count;
 
 	bool warn_unindexed;
+	bool warn_reindex;
 };
 
 struct ltdb_context {

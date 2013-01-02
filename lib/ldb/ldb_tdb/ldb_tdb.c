@@ -229,7 +229,13 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 
 	if (ldb_dn_is_special(dn) &&
 	    (ldb_dn_check_special(dn, LTDB_INDEXLIST) ||
-	     ldb_dn_check_special(dn, LTDB_ATTRIBUTES)) ) {
+	     ldb_dn_check_special(dn, LTDB_ATTRIBUTES)) )
+	{
+		if (ltdb->warn_reindex) {
+			ldb_debug(ldb_module_get_ctx(module),
+				LDB_DEBUG_ERROR, "Reindexing %s due to modification on %s",
+				tdb_name(ltdb->tdb), ldb_dn_get_linearized(dn));
+		}
 		ret = ltdb_reindex(module);
 	}
 
@@ -1563,6 +1569,10 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	if (getenv("LDB_WARN_UNINDEXED")) {
 		ltdb->warn_unindexed = true;
+	}
+
+	if (getenv("LDB_WARN_REINDEX")) {
+		ltdb->warn_reindex = true;
 	}
 
 	ltdb->sequence_number = 0;
