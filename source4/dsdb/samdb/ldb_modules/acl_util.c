@@ -96,7 +96,8 @@ int acl_check_access_on_attribute(struct ldb_module *module,
 				  struct security_descriptor *sd,
 				  struct dom_sid *rp_sid,
 				  uint32_t access_mask,
-				  const struct dsdb_attribute *attr)
+				  const struct dsdb_attribute *attr,
+				  const struct dsdb_class *objectclass)
 {
 	int ret;
 	NTSTATUS status;

@@ -76,6 +76,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct dom_sid *sid = NULL;
 	TALLOC_CTX *tmp_ctx;
 	uint32_t instanceType;
+	const struct dsdb_class *objectclass;
 
 	ac = talloc_get_type(req->context, struct aclread_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -98,6 +99,17 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto fail;
 		}
+		/*
+		 * Get the most specific structural object class for the ACL check
+		 */
+		objectclass = dsdb_get_structural_oc_from_msg(ac->schema, msg);
+		if (objectclass == NULL) {
+			ldb_asprintf_errstring(ldb, "acl_read: Failed to find a structural class for %s",
+					       ldb_dn_get_linearized(msg->dn));
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto fail;
+		}
+
 		sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
 		/* get the object instance type */
 		instanceType = ldb_msg_find_attr_as_uint(msg,
@@ -196,7 +208,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 							    sd,
 							    sid,
 							    access_mask,
-							    attr);
+							    attr,
+							    objectclass);
 
 			/*
 			 * Dirsync control needs the replpropertymetadata attribute

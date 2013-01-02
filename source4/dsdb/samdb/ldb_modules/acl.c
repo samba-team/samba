@@ -191,6 +191,7 @@ static int acl_allowedAttributes(struct ldb_module *module,
 	TALLOC_CTX *mem_ctx;
 	const char **attr_list;
 	int i, ret;
+	const struct dsdb_class *objectclass;
 
 	/* If we don't have a schema yet, we can't do anything... */
 	if (schema == NULL) {
@@ -215,6 +216,19 @@ static int acl_allowedAttributes(struct ldb_module *module,
 		talloc_free(mem_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	/*
+	 * Get the top-most structural object class for the ACL check
+	 */
+	objectclass = dsdb_get_last_structural_class(ac->schema,
+						     oc_el);
+	if (objectclass == NULL) {
+		ldb_asprintf_errstring(ldb, "acl_read: Failed to find a structural class for %s",
+				       ldb_dn_get_linearized(sd_msg->dn));
+		talloc_free(mem_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	if (ac->allowedAttributes) {
 		for (i=0; attr_list && attr_list[i]; i++) {
 			ldb_msg_add_string(msg, "allowedAttributes", attr_list[i]);
@@ -262,7 +276,8 @@ static int acl_allowedAttributes(struct ldb_module *module,
 							    sd,
 							    sid,
 							    SEC_ADS_WRITE_PROP,
-							    attr);
+							    attr,
+							    objectclass);
 			if (ret == LDB_SUCCESS) {
 				ldb_msg_add_string(msg, "allowedAttributesEffective", attr_list[i]);
 			}
@@ -479,9 +494,14 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	}
 	if (ac->am_system || as_system) {
 		flags = SECINFO_OWNER | SECINFO_GROUP |  SECINFO_SACL |  SECINFO_DACL;
-	}
-	else {
+	} else {
+		const struct dsdb_class *objectclass;
 		const struct dsdb_attribute *attr;
+
+		objectclass = dsdb_get_structural_oc_from_msg(ac->schema, sd_msg);
+		if (objectclass == NULL) {
+			return ldb_operr(ldb);
+		}
 
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 "nTSecurityDescriptor");
@@ -500,7 +520,8 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 						    sd,
 						    sid,
 						    SEC_STD_WRITE_OWNER,
-						    attr);
+						    attr,
+						    objectclass);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_OWNER | SECINFO_GROUP;
 		}
@@ -509,7 +530,8 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 						    sd,
 						    sid,
 						    SEC_STD_WRITE_DAC,
-						    attr);
+						    attr,
+						    objectclass);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_DACL;
 		}
@@ -518,7 +540,8 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 						    sd,
 						    sid,
 						    SEC_FLAG_SYSTEM_SECURITY,
-						    attr);
+						    attr,
+						    objectclass);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_SACL;
 		}
@@ -636,8 +659,8 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 			 struct ldb_request *req,
 			 struct security_descriptor *sd,
 			 struct dom_sid *sid,
-			 const struct GUID *oc_guid,
-			 const struct dsdb_attribute *attr)
+			 const struct dsdb_attribute *attr,
+			 const struct dsdb_class *objectclass)
 {
 	int ret;
 	unsigned int i;
@@ -671,7 +694,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 					  sd,
 					  sid,
 					  SEC_ADS_WRITE_PROP,
-					  attr) == LDB_SUCCESS) {
+					  attr, objectclass) == LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
@@ -828,8 +851,8 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 				     struct ldb_request *req,
 				     struct security_descriptor *sd,
 				     struct dom_sid *sid,
-				     const struct GUID *oc_guid,
-				     const struct dsdb_attribute *attr)
+				     const struct dsdb_attribute *attr,
+				     const struct dsdb_class *objectclass)
 {
 	int ret;
 	unsigned int i;
@@ -842,7 +865,7 @@ static int acl_check_self_membership(TALLOC_CTX *mem_ctx,
 					  sd,
 					  sid,
 					  SEC_ADS_WRITE_PROP,
-					  attr) == LDB_SUCCESS) {
+					  attr, objectclass) == LDB_SUCCESS) {
 		return LDB_SUCCESS;
 	}
 	/* if we are adding/deleting ourselves, check for self membership */
@@ -884,7 +907,7 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 				     struct ldb_request *req,
 				     struct security_descriptor *sd,
 				     struct dom_sid *sid,
-				     const struct GUID *oc_guid,
+				     const struct dsdb_class *objectclass,
 				     bool userPassword)
 {
 	int ret = LDB_SUCCESS;
@@ -1109,8 +1132,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							req,
 							sd,
 							sid,
-							&objectclass->schemaIDGUID,
-							attr);
+							attr,
+							objectclass);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
@@ -1126,7 +1149,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							req,
 							sd,
 							sid,
-							&objectclass->schemaIDGUID,
+							objectclass,
 							userPassword);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
@@ -1137,8 +1160,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 					    req,
 					    sd,
 					    sid,
-					    &objectclass->schemaIDGUID,
-					    attr);
+					    attr,
+					    objectclass);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
