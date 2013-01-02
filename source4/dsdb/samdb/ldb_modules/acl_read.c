@@ -48,6 +48,7 @@ struct aclread_context {
 	bool added_nTSecurityDescriptor;
 	bool added_instanceType;
 	bool added_objectSid;
+	bool added_objectClass;
 	bool indirsync;
 };
 
@@ -123,10 +124,11 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				goto fail;
 			}
 		}
+
 		/* for every element in the message check RP */
 		for (i=0; i < msg->num_elements; i++) {
 			const struct dsdb_attribute *attr;
-			bool is_sd, is_objectsid, is_instancetype;
+			bool is_sd, is_objectsid, is_instancetype, is_objectclass;
 			uint32_t access_mask;
 			attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 								 msg->elements[i].name);
@@ -144,12 +146,18 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 						    msg->elements[i].name) == 0;
 			is_instancetype = ldb_attr_cmp("instanceType",
 						       msg->elements[i].name) == 0;
+			is_objectclass = ldb_attr_cmp("objectClass",
+						      msg->elements[i].name) == 0;
 			/* these attributes were added to perform access checks and must be removed */
 			if (is_objectsid && ac->added_objectSid) {
 				aclread_mark_inaccesslible(&msg->elements[i]);
 				continue;
 			}
 			if (is_instancetype && ac->added_instanceType) {
+				aclread_mark_inaccesslible(&msg->elements[i]);
+				continue;
+			}
+			if (is_objectclass && ac->added_objectClass) {
 				aclread_mark_inaccesslible(&msg->elements[i]);
 				continue;
 			}
@@ -408,6 +416,13 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 				return ldb_oom(ldb);
 			}
 			ac->added_objectSid = true;
+		}
+		if (!ldb_attr_in_list(req->op.search.attrs, "objectClass")) {
+			attrs = ldb_attr_list_copy_add(ac, attrs, "objectClass");
+			if (attrs == NULL) {
+				return ldb_oom(ldb);
+			}
+			ac->added_objectClass = true;
 		}
 	}
 
