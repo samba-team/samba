@@ -1,0 +1,40 @@
+#!/usr/bin/env perl
+use Time::Local ('timegm');
+my $in = STDIN;
+use strict;
+
+my $intest=0;
+my $name;
+my $start=0;
+my $end=0;
+my %hash;
+my $fh;
+if ($#ARGV >= 0) {
+	open($fh, "<", $ARGV[0]) || die "can't open ".$ARGV[0];
+} else {
+	$fh = $in;
+}
+while(<$fh>)
+{
+	if (m/^testsuite: (.*)/) {
+		$intest = 1;
+		$name = $1;
+	}
+	if (m/testsuite-\w+:/) {
+		$hash{"$name -> ".($end - $start)} = $end - $start;
+		$intest = 0;
+		$start = 0;
+	}
+	if (m/^time: (\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)/ && $intest) {
+		my $ts=timegm($6,$5,$4,$3,$2 - 1,$1 - 1900);
+		if ($start == 0) {
+			$start = $ts;
+		} else {
+			$end = $ts;
+		}
+	}
+}
+my @sorted = sort { $hash{$a}<=>$hash{$b} } keys(%hash);
+for my $l (@sorted) {
+	print $l."\n";
+}
