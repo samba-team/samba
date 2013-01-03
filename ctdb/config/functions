@@ -939,6 +939,12 @@ delete_ip_from_iface()
     # and doing anything here will affect the return code.
 }
 
+drop_all_public_ips() {
+    while read _ip _iface _rest; do
+	ip addr del $_ip dev $_iface >/dev/null 2>&1
+    done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
+}
+
 ########################################################
 # some simple logic for counting events - per eventscript
 # usage: ctdb_counter_init

@@ -219,12 +219,6 @@ wait_until_ready () {
 
 ctdbd=${CTDBD:-/usr/sbin/ctdbd}
 
-drop_all_public_ips() {
-    while read _ip _iface _rest; do
-	ip addr del $_ip dev $_iface >/dev/null 2>&1
-    done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
-}
-
 start() {
     echo -n $"Starting ctdbd service: "
 
