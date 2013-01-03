@@ -1021,8 +1021,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 
 	schema = dsdb_get_schema(ldb, tmp_ctx);
 	if (!schema) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto fail;
+		talloc_free(tmp_ctx);
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "acl_modify: Error obtaining schema.");
 	}
 
 	ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, acl_res->msgs[0], &sd);
