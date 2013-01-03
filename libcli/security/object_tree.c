@@ -97,11 +97,9 @@ struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
 		result = root;
 		return result;
 	}
-	else if (root->num_of_children > 0) {
-		for (i = 0; i < root->num_of_children; i++) {
+	for (i = 0; i < root->num_of_children; i++) {
 		if ((result = get_object_tree_by_GUID(&root->children[i], guid)))
 			break;
-		}
 	}
 	return result;
 }
@@ -111,11 +109,9 @@ struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
 void object_tree_modify_access(struct object_tree *root,
 			       uint32_t access_mask)
 {
+	int i;
 	root->remaining_access &= ~access_mask;
-	if (root->num_of_children > 0) {
-		int i;
-		for (i = 0; i < root->num_of_children; i++) {
-			object_tree_modify_access(&root->children[i], access_mask);
-		}
+	for (i = 0; i < root->num_of_children; i++) {
+		object_tree_modify_access(&root->children[i], access_mask);
 	}
 }
