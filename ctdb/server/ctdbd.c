@@ -61,7 +61,7 @@ static struct {
 	.db_dir_persistent = VARDIR "/ctdb/persistent",
 	.db_dir_state = VARDIR "/ctdb/state",
 	.script_log_level = DEBUG_ERR,
-	.debug_hung_script = "/etc/ctdb/debug-hung-script.sh",
+	.debug_hung_script = ETCDIR "/ctdb/debug-hung-script.sh",
 };
 
 int script_log_level;
