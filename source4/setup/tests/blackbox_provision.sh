@@ -32,13 +32,9 @@ rm -rf $PREFIX/simple-standalone
 testit "simple-standalone" $PYTHON $BINDIR/samba-tool domain provision --server-role="standalone" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-standalone --use-ntvfs
 rm -rf $PREFIX/blank-dc
 testit "blank-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/blank-dc --blank --use-ntvfs
-rm -rf $PREFIX/partitions-only-dc
-testit "partitions-only-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/partitions-only-dc --partitions-only --use-ntvfs
 
 reprovision() {
-        rm -rf $PREFIX/reprovision
-	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision" --use-ntvfs
-	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision" --use-ntvfs
+	$PYTHON $BINDIR/samba-tool domain provision --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/simple-default" --use-ntvfs
 }
 
 testit "reprovision" reprovision
@@ -48,6 +44,5 @@ rm -rf $PREFIX/blank-dc
 rm -rf $PREFIX/simple-member
 rm -rf $PREFIX/simple-standalone
 rm -rf $PREFIX/partitions-only-dc
-rm -rf $PREFIX/reprovision
 
 exit $failed
