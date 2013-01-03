@@ -93,7 +93,6 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
 	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
 	NTSTATUS status;
 	uint32_t access_granted;
 	int ret;
@@ -108,8 +107,8 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 	}
 	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
 	if (guid) {
-		if (!insert_in_object_tree(mem_ctx, guid, access_mask, &root,
-					   &new_node)) {
+		if (!insert_in_object_tree(mem_ctx, guid, access_mask, NULL,
+					   &root)) {
 			return ldb_operr(ldb);
 		}
 	}

@@ -38,52 +38,51 @@
  */
 
 bool insert_in_object_tree(TALLOC_CTX *mem_ctx,
-			  const struct GUID *guid,
-			  uint32_t init_access,
-			  struct object_tree **root,
-			  struct object_tree **new_node)
+			   const struct GUID *guid,
+			   uint32_t init_access,
+			   struct object_tree *root,
+			   struct object_tree **new_node_out)
 {
+	struct object_tree *new_node;
+
 	if (!guid || GUID_all_zero(guid)){
 		return true;
 	}
 
-	if (!*root){
-		*root = talloc_zero(mem_ctx, struct object_tree);
-		if (!*root) {
+	if (!root) {
+		root = talloc_zero(mem_ctx, struct object_tree);
+		if (!root) {
 			return false;
 		}
-		(*root)->guid = *guid;
-		(*root)->remaining_access = init_access;
-		*new_node = *root;
-		return true;
-	}
-
-	if (!(*root)->children) {
-		(*root)->children = talloc_array(mem_ctx, struct object_tree, 1);
-		(*root)->children[0].guid = *guid;
-		(*root)->children[0].num_of_children = 0;
-		(*root)->children[0].children = NULL;
-		(*root)->num_of_children++;
-		(*root)->children[0].remaining_access = init_access;
-		*new_node = &((*root)->children[0]);
-		return true;
-	}
-	else {
+		new_node = root;
+	} else {
 		int i;
-		for (i = 0; i < (*root)->num_of_children; i++) {
-			if (GUID_equal(&((*root)->children[i].guid), guid)) {
-				*new_node = &((*root)->children[i]);
+
+		for (i = 0; i < root->num_of_children; i++) {
+			if (GUID_equal(&root->children[i].guid, guid)) {
+				new_node = &root->children[i];
+				*new_node_out = new_node;
 				return true;
 			}
 		}
-		(*root)->children = talloc_realloc(mem_ctx, (*root)->children, struct object_tree,
-						   (*root)->num_of_children +1);
-		(*root)->children[(*root)->num_of_children].guid = *guid;
-		(*root)->children[(*root)->num_of_children].remaining_access = init_access;
-		*new_node = &((*root)->children[(*root)->num_of_children]);
-		(*root)->num_of_children++;
-		return true;
+
+		root->children = talloc_realloc(mem_ctx, root->children,
+						struct object_tree,
+						root->num_of_children + 1);
+		if (!root->children) {
+			return false;
+		}
+		new_node = &root->children[root->num_of_children];
+		root->num_of_children++;
 	}
+
+	new_node->children = NULL;
+	new_node->guid = *guid;
+	new_node->remaining_access = init_access;
+	new_node->num_of_children = 0;
+
+	*new_node_out = new_node;
+	return true;
 }
 
 /* search by GUID */

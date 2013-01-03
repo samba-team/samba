@@ -109,16 +109,17 @@ int acl_check_access_on_attribute(struct ldb_module *module,
 
 	if (!insert_in_object_tree(tmp_ctx,
 				   &objectclass->schemaIDGUID,
-				   access_mask, &root,
-				   &new_node)) {
+				   access_mask, NULL,
+				   &root)) {
 		DEBUG(10, ("acl_search: cannot add to object tree class schemaIDGUID\n"));
 		goto fail;
 	}
+	new_node = root;
 
 	if (!GUID_all_zero(&attr->attributeSecurityGUID)) {
 		if (!insert_in_object_tree(tmp_ctx,
 					   &attr->attributeSecurityGUID,
-					   access_mask, &new_node,
+					   access_mask, new_node,
 					   &new_node)) {
 			DEBUG(10, ("acl_search: cannot add to object tree securityGUID\n"));
 			goto fail;
@@ -127,7 +128,7 @@ int acl_check_access_on_attribute(struct ldb_module *module,
 
 	if (!insert_in_object_tree(tmp_ctx,
 				   &attr->schemaIDGUID,
-				   access_mask, &new_node,
+				   access_mask, new_node,
 				   &new_node)) {
 		DEBUG(10, ("acl_search: cannot add to object tree attributeGUID\n"));
 		goto fail;
@@ -162,14 +163,13 @@ int acl_check_access_on_objectclass(struct ldb_module *module,
 	NTSTATUS status;
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct security_token *token = acl_user_token(module);
 
 	if (!insert_in_object_tree(tmp_ctx,
 				   &objectclass->schemaIDGUID,
-				   access_mask, &root,
-				   &new_node)) {
+				   access_mask, NULL,
+				   &root)) {
 		DEBUG(10, ("acl_search: cannot add to object tree class schemaIDGUID\n"));
 		goto fail;
 	}
@@ -209,7 +209,7 @@ int acl_check_extended_right(TALLOC_CTX *mem_ctx,
 	GUID_from_string(ext_right, &right);
 
 	if (!insert_in_object_tree(tmp_ctx, &right, right_type,
-				   &root, &new_node)) {
+				   NULL, &root)) {
 		DEBUG(10, ("acl_ext_right: cannot add to object tree\n"));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
