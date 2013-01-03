@@ -78,7 +78,8 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_context *lctx, struct li
 	}
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
 	if (!NT_STATUS_IS_OK(status)
-	    || !search.out.netlogon.data.nt5_ex.client_site) {
+	    || search.out.netlogon.data.nt5_ex.client_site == NULL
+	    || search.out.netlogon.data.nt5_ex.client_site[0] == '\0') {
 		/*
 		  If cldap_netlogon() returns in error,
 		  default to using Default-First-Site-Name.
