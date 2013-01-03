@@ -77,10 +77,10 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			     struct dom_sid *replace_sid);
 
 bool insert_in_object_tree(TALLOC_CTX *mem_ctx,
-			  const struct GUID *guid,
-			  uint32_t init_access,
-			  struct object_tree **root,
-			   struct object_tree **new_node);
+			   const struct GUID *guid,
+			   uint32_t init_access,
+			   struct object_tree *root,
+			   struct object_tree **new_node_out);
 
 /* search by GUID */
 struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
