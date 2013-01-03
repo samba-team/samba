@@ -1,6 +1,9 @@
 #!/bin/sh
 # script to manage nfs in a clustered environment
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 
 service_name="nfs-ganesha-gpfs"

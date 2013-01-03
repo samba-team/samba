@@ -1,6 +1,9 @@
 #!/bin/sh
 # ctdb event script for checking local file system utilization
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 loadconfig
 

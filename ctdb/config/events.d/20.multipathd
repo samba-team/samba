@@ -6,6 +6,9 @@
 #   CTDB_MONITOR_MPDEVICES="device1 device2 ..."
 #
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 
 service_name="multipathd"

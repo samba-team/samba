@@ -5,6 +5,9 @@
 # available.
 #
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 loadconfig
 

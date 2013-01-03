@@ -1,6 +1,9 @@
 #!/bin/sh
 # script to manage the lvs ip multiplexer for a single public address cluster
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 
 loadconfig ctdb

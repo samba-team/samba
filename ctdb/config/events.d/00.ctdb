@@ -9,6 +9,9 @@
 #     releaseip  : called when an IP address is released
 #     recovered  : called when ctdb has finished a recovery event
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 loadconfig
 

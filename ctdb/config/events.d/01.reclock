@@ -1,6 +1,9 @@
 #!/bin/sh
 # script to check accessibility to the reclock file on a node
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 loadconfig
 

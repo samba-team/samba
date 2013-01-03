@@ -12,6 +12,9 @@
 # Example
 # bond1 10.3.3.0/24 10.0.0.1
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 loadconfig
 

@@ -1,6 +1,9 @@
 #!/bin/sh
 # ctdb event script for TGTD based iSCSI
 
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+
 . $CTDB_BASE/functions
 
 service_name="iscsi"
