@@ -6,6 +6,7 @@
 import Scripting, os, Options, Utils, Environment, optparse, sys
 from samba_utils import *
 from samba_autoconf import *
+import types
 
 def set_options(opt):
 
@@ -114,7 +115,11 @@ def cmd_testonly(opt):
     # put all command line options in the environment as TESTENV_*=*
     for o in dir(Options.options):
         if o[0:1] != '_':
-            os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
+            val = getattr(Options.options, o, '')
+            if not issubclass(type(val), types.FunctionType) \
+                    and not issubclass(type(val), types.MethodType):
+                os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
+
 
     binary_mapping = ('nmblookup3:nmblookup,' +
                       'nmblookup4:nmblookup4,' +
