@@ -5,9 +5,8 @@
 # /etc/sysconfig/nfs:
 #   STATD_HOSTNAME="myhostname -H /etc/ctdb/statd-callout"
 
-[ -z "$CTDB_BASE" ] && {
-    export CTDB_BASE="/etc/ctdb"
-}
+[ -n "$CTDB_BASE" ] || \
+    export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
 
 . $CTDB_BASE/functions
 loadconfig ctdb
