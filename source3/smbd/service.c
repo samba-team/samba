@@ -515,8 +515,8 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
   Setup the share access mask for a connection.
 ****************************************************************************/
 
-uint32_t create_share_access_mask(connection_struct *conn,
-				int snum,
+uint32_t create_share_access_mask(int snum,
+				bool readonly_share,
 				const struct security_token *token)
 {
 	uint32_t share_access = 0;
@@ -526,7 +526,7 @@ uint32_t create_share_access_mask(connection_struct *conn,
 			MAXIMUM_ALLOWED_ACCESS,
 			&share_access);
 
-	if (!CAN_WRITE(conn)) {
+	if (readonly_share) {
 		share_access &=
 			~(SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA |
 			  SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE |
@@ -658,8 +658,8 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	 *
 	 */
 
-	conn->share_access = create_share_access_mask(conn,
-					snum,
+	conn->share_access = create_share_access_mask(snum,
+					!CAN_WRITE(conn),
 					conn->session_info->security_token);
 
 	if ((conn->share_access & FILE_WRITE_DATA) == 0) {

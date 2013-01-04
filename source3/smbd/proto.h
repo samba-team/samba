@@ -962,8 +962,8 @@ void smbd_exit_server_cleanly(const char *const reason) _NORETURN_;
 
 bool set_conn_connectpath(connection_struct *conn, const char *connectpath);
 NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum);
-uint32_t create_share_access_mask(connection_struct *conn,
-			int snum,
+uint32_t create_share_access_mask(int snum,
+			bool readonly_share,
 			const struct security_token *token);
 bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
