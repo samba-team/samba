@@ -78,6 +78,44 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 	TALLOC_FREE(conn->session_info);
 }
 
+/****************************************************************************
+  Setup the share access mask for a connection.
+****************************************************************************/
+
+static uint32_t create_share_access_mask(int snum,
+				bool readonly_share,
+				const struct security_token *token)
+{
+	uint32_t share_access = 0;
+
+	share_access_check(token,
+			lp_servicename(talloc_tos(), snum),
+			MAXIMUM_ALLOWED_ACCESS,
+			&share_access);
+
+	if (readonly_share) {
+		share_access &=
+			~(SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA |
+			  SEC_FILE_WRITE_EA | SEC_FILE_WRITE_ATTRIBUTE |
+			  SEC_DIR_DELETE_CHILD );
+	}
+
+	if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
+		share_access |= SEC_FLAG_SYSTEM_SECURITY;
+	}
+	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		share_access |= (SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		share_access |= (SEC_RIGHTS_PRIV_BACKUP);
+	}
+	if (security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
+		share_access |= (SEC_STD_WRITE_OWNER);
+	}
+
+	return share_access;
+}
+
 /*******************************************************************
  Calculate access mask and if this user can access this share.
 ********************************************************************/
