@@ -147,8 +147,8 @@ static bool check_user_ok(connection_struct *conn,
 			int snum)
 {
 	unsigned int i;
-	bool readonly_share;
-	bool admin_user;
+	bool readonly_share = false;
+	bool admin_user = false;
 	struct vuid_cache_entry *ent = NULL;
 	uint32_t share_access = 0;
 
