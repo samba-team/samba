@@ -79,6 +79,62 @@ static void free_conn_session_info_if_unused(connection_struct *conn)
 }
 
 /*******************************************************************
+ Calculate access mask and if this user can access this share.
+********************************************************************/
+
+NTSTATUS check_user_share_access(connection_struct *conn,
+				const struct auth_session_info *session_info,
+				uint32_t *p_share_access,
+				bool *p_readonly_share)
+{
+	int snum = SNUM(conn);
+	uint32_t share_access = 0;
+	bool readonly_share = false;
+
+	if (!user_ok_token(session_info->unix_info->unix_name,
+			   session_info->info->domain_name,
+			   session_info->security_token, snum)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	readonly_share = is_share_read_only_for_token(
+		session_info->unix_info->unix_name,
+		session_info->info->domain_name,
+		session_info->security_token,
+		conn);
+
+	share_access = create_share_access_mask(snum,
+					readonly_share,
+					session_info->security_token);
+
+	if ((share_access & FILE_WRITE_DATA) == 0) {
+		if ((share_access & FILE_READ_DATA) == 0) {
+			/* No access, read or write. */
+			DEBUG(0,("user %s connection to %s "
+				"denied due to share security "
+				"descriptor.\n",
+				session_info->unix_info->unix_name,
+				lp_servicename(talloc_tos(), snum)));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (!readonly_share &&
+	    !(share_access & FILE_WRITE_DATA)) {
+		/* smb.conf allows r/w, but the security descriptor denies
+		 * write. Fall back to looking at readonly. */
+		readonly_share = True;
+		DEBUG(5,("falling back to read-only access-evaluation due to "
+			 "security descriptor\n"));
+	}
+
+	*p_share_access = share_access;
+	*p_readonly_share = readonly_share;
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  Check if a username is OK.
 
  This sets up conn->session_info with a copy related to this vuser that
