@@ -939,9 +939,38 @@ delete_ip_from_iface()
     # and doing anything here will affect the return code.
 }
 
-drop_all_public_ips() {
-    while read _ip _iface _rest; do
-	ip addr del $_ip dev $_iface >/dev/null 2>&1
+# If the given IP is hosted then print 2 items: maskbits and iface 
+ip_maskbits_iface ()
+{
+    _addr="$1"
+
+    ip addr show to "${_addr}/32" 2>/dev/null | \
+	awk '$1 == "inet" { print gensub(".*/", "", 1, $2), $NF }'
+}
+
+drop_ip ()
+{
+    _addr="${1%/*}"  # Remove optional maskbits
+    _log_tag="$2"
+
+    set -- $(ip_maskbits_iface $_addr)
+    if [ -n "$1" ] ; then
+	_maskbits="$1"
+	_iface="$2"
+	if [ -n "$_log_tag" ] ; then
+	    script_log "$_log_tag" \
+		"Removing public address $_addr/$_maskbits from device $_iface"
+	fi
+	ip addr del $_addr/$_maskbits dev $_iface >/dev/null 2>&1
+    fi
+}
+
+drop_all_public_ips ()
+{
+    _log_tag="$1"
+
+    while read _ip _x ; do
+	drop_ip "$_ip" "$_log_tag"
     done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
 }
 
