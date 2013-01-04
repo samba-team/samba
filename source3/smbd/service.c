@@ -651,30 +651,18 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		TALLOC_FREE(s);
 	}
 
-	/*
-	 * New code to check if there's a share security descripter
-	 * added from NT server manager. This is done after the
-	 * smb.conf checks are done as we need a uid and token. JRA.
-	 *
-	 */
+        /*
+         * Set up the share security descripter
+         */
 
-	conn->share_access = create_share_access_mask(snum,
-					!CAN_WRITE(conn),
-					conn->session_info->security_token);
-
-	if ((conn->share_access & FILE_WRITE_DATA) == 0) {
-		if ((conn->share_access & FILE_READ_DATA) == 0) {
-			/* No access, read or write. */
-			DEBUG(0,("make_connection: connection to %s "
-				 "denied due to security "
-				 "descriptor.\n",
-				 lp_servicename(talloc_tos(), snum)));
-			status = NT_STATUS_ACCESS_DENIED;
-			goto err_root_exit;
-		} else {
-			conn->read_only = True;
-		}
+	status = check_user_share_access(conn,
+					conn->session_info,
+					&conn->share_access,
+					&conn->read_only);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto err_root_exit;
 	}
+
 	/* Initialise VFS function pointers */
 
 	if (!smbd_vfs_init(conn)) {
