@@ -405,7 +405,7 @@ int rep_mkstemp(char *template)
 	mktemp(template);
 	if (template[0] == 0)
 		return -1;
-	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
+	return open(template, O_CREAT|O_EXCL|O_RDWR, 0600);
 }
 #endif
 
