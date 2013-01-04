@@ -371,8 +371,6 @@ static const struct GUID *get_ace_object_type(struct security_ace *ace)
 
         if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT)
                 type = &ace->object.object.type.type;
-        else if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT)
-                type = &ace->object.object.inherited_type.inherited_type; /* This doesn't look right. Is something wrong with the IDL? */
         else
                 type = NULL;
 
