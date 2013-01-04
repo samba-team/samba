@@ -977,7 +977,7 @@ struct server_id *irpc_servers_byname(struct imessaging_context *msg_ctx,
 	for (i=0;i<count;i++) {
 		ret[i] = ((struct server_id *)rec.dptr)[i];
 	}
-	ret[i] = cluster_id(0, 0);
+	server_id_set_disconnected(&ret[i]);
 	free(rec.dptr);
 	tdb_unlock_bystring(t->tdb, name);
 	talloc_free(t);
@@ -1414,7 +1414,7 @@ struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
 		errno = EADDRNOTAVAIL;
 		return NULL;
 	}
-	if (sids[0].pid == 0) {
+	if (server_id_is_disconnected(&sids[0])) {
 		talloc_free(sids);
 		errno = EADDRNOTAVAIL;
 		return NULL;

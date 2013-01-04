@@ -247,7 +247,7 @@ static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args, PyObject
 		return NULL;
 	}
 
-	for (i = 0; ids[i].pid != 0; i++) {
+	for (i = 0; !server_id_is_disconnected(&ids[i]); i++) {
 		/* Do nothing */
 	}
 
@@ -257,7 +257,7 @@ static PyObject *py_irpc_servers_byname(PyObject *self, PyObject *args, PyObject
 		PyErr_NoMemory();
 		return NULL;
 	}
-	for (i = 0; ids[i].pid; i++) {
+	for (i = 0; !server_id_is_disconnected(&ids[i]); i++) {
 		PyObject *py_server_id;
 		struct server_id *p_server_id = talloc(NULL, struct server_id);
 		if (!p_server_id) {
