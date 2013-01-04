@@ -151,6 +151,7 @@ static bool check_user_ok(connection_struct *conn,
 	struct vuid_cache_entry *ent = NULL;
 	uint32_t share_access = 0;
 	unsigned int share_array_index;
+	NTSTATUS status;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache.array[i];
@@ -165,41 +166,14 @@ static bool check_user_ok(connection_struct *conn,
 		}
 	}
 
-	if (!user_ok_token(session_info->unix_info->unix_name,
-			   session_info->info->domain_name,
-			   session_info->security_token, snum))
-		return(False);
-
-	readonly_share = is_share_read_only_for_token(
-		session_info->unix_info->unix_name,
-		session_info->info->domain_name,
-		session_info->security_token,
-		conn);
-
-	share_access = create_share_access_mask(snum,
-					readonly_share,
-					session_info->security_token);
-
-	if ((share_access & FILE_WRITE_DATA) == 0) {
-		if ((share_access & FILE_READ_DATA) == 0) {
-			/* No access, read or write. */
-			DEBUG(0,("user %s connection to %s "
-				"denied due to share security "
-				"descriptor.\n",
-				session_info->unix_info->unix_name,
-				lp_servicename(talloc_tos(), snum)));
-			return false;
-		}
+	status = check_user_share_access(conn,
+					session_info,
+					&share_access,
+					&readonly_share);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
 	}
 
-	if (!readonly_share &&
-	    !(share_access & FILE_WRITE_DATA)) {
-		/* smb.conf allows r/w, but the security descriptor denies
-		 * write. Fall back to looking at readonly. */
-		readonly_share = True;
-		DEBUG(5,("falling back to read-only access-evaluation due to "
-			 "security descriptor\n"));
-	}
 
 	admin_user = token_contains_name_in_list(
 		session_info->unix_info->unix_name,
