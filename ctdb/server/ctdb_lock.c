@@ -96,8 +96,12 @@ struct lock_request {
  * By default, all databases are set to priority 1. So only when priority
  * is set to 1, check for databases that need higher priority.
  */
-static bool later_db(const char *name)
+static bool later_db(struct ctdb_context *ctdb, const char *name)
 {
+	if (ctdb->tunable.samba3_hack == 0) {
+		return false;
+	}
+
 	if (strstr(name, "brlock") ||
 	    strstr(name, "g_lock") ||
 	    strstr(name, "notify_onelevel") ||
@@ -120,7 +124,7 @@ int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 		if (ctdb_db->priority != priority) {
 			continue;
 		}
-		if (later_db(ctdb_db->db_name)) {
+		if (later_db(ctdb, ctdb_db->db_name)) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
@@ -138,7 +142,7 @@ int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 	}
 
 	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (!later_db(ctdb_db->db_name)) {
+		if (!later_db(ctdb, ctdb_db->db_name)) {
 			continue;
 		}
 		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
@@ -228,7 +232,7 @@ int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 		if (ctdb_db->priority != priority) {
 			continue;
 		}
-		if (later_db(ctdb_db->db_name)) {
+		if (later_db(ctdb, ctdb_db->db_name)) {
 			continue;
 		}
 		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
@@ -246,7 +250,7 @@ int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 	}
 
 	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (!later_db(ctdb_db->db_name)) {
+		if (!later_db(ctdb, ctdb_db->db_name)) {
 			continue;
 		}
 		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {

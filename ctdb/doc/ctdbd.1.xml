@@ -1098,6 +1098,19 @@
     detection.
     </para>
     </refsect2>
+
+    <refsect2><title>Samba3AvoidDeadlock</title>
+    <para>Default: 0</para>
+    <para>
+    Enable code that prevents deadlocks with Samba (only for Samba 3.x).
+    </para>
+    <para>
+    This should be set to 1 when using Samba version 3.x to enable special
+    code in CTDB to avoid deadlock with Samba version 3.x.  This code
+    is not required for Samba version 4.x and must not be enabled for
+    Samba 4.x.
+    </para>
+    </refsect2>
   </refsect1>
 
   <refsect1><title>LVS</title>
