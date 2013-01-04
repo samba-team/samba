@@ -94,6 +94,8 @@ static bool check_user_ok(connection_struct *conn,
 	bool readonly_share;
 	bool admin_user;
 	struct vuid_cache_entry *ent = NULL;
+	uint32_t share_access = 0;
+	unsigned int share_array_index;
 
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache.array[i];
@@ -101,6 +103,9 @@ static bool check_user_ok(connection_struct *conn,
 			free_conn_session_info_if_unused(conn);
 			conn->session_info = ent->session_info;
 			conn->read_only = ent->read_only;
+			conn->share_access = get_connection_share_access_list_entry(
+							conn,
+							i);
 			return(True);
 		}
 	}
@@ -116,11 +121,24 @@ static bool check_user_ok(connection_struct *conn,
 		session_info->security_token,
 		conn);
 
+	share_access = create_share_access_mask(snum,
+					readonly_share,
+					session_info->security_token);
+
+	if ((share_access & FILE_WRITE_DATA) == 0) {
+		if ((share_access & FILE_READ_DATA) == 0) {
+			/* No access, read or write. */
+			DEBUG(0,("user %s connection to %s "
+				"denied due to share security "
+				"descriptor.\n",
+				session_info->unix_info->unix_name,
+				lp_servicename(talloc_tos(), snum)));
+			return false;
+		}
+	}
+
 	if (!readonly_share &&
-	    !share_access_check(session_info->security_token,
-				lp_servicename(talloc_tos(), snum),
-				FILE_WRITE_DATA,
-				NULL)) {
+	    !(share_access & FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
 		readonly_share = True;
@@ -128,19 +146,12 @@ static bool check_user_ok(connection_struct *conn,
 			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(session_info->security_token,
-				lp_servicename(talloc_tos(), snum),
-				readonly_share ?
-				FILE_READ_DATA : FILE_WRITE_DATA,
-				NULL)) {
-		return False;
-	}
-
 	admin_user = token_contains_name_in_list(
 		session_info->unix_info->unix_name,
 		session_info->info->domain_name,
 		NULL, session_info->security_token, lp_admin_users(snum));
 
+	share_array_index = conn->vuid_cache.next_entry;
 	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
 	conn->vuid_cache.next_entry =
@@ -163,10 +174,15 @@ static bool check_user_ok(connection_struct *conn,
 
 	ent->vuid = vuid;
 	ent->read_only = readonly_share;
+	set_connection_share_access_list_entry(conn,
+					share_array_index,
+					share_access);
 	free_conn_session_info_if_unused(conn);
 	conn->session_info = ent->session_info;
 
 	conn->read_only = readonly_share;
+	conn->share_access = share_access;
+
 	if (admin_user) {
 		DEBUG(2,("check_user_ok: user %s is an admin user. "
 			"Setting uid as %d\n",
