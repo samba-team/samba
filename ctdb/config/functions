@@ -110,7 +110,7 @@ script_log ()
     esac
 
     if $_using_syslog ; then
-	logger -t "$_tag"
+	logger -t "$_tag" "$*"
     else
 	{
 	    if [ -n "$*" ] ; then
