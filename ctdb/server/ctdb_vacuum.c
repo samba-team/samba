@@ -732,8 +732,8 @@ static int ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		return -1;
 	}
 	recs->records = (struct ctdb_marshall_buffer *)
-		talloc_zero_size(vdata,
-			    offsetof(struct ctdb_marshall_buffer, data));
+		talloc_zero_size(recs,
+				 offsetof(struct ctdb_marshall_buffer, data));
 	if (recs->records == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		ret = -1;
