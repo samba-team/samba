@@ -300,7 +300,7 @@ int solarisacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	DEBUG(10, ("entering solarisacl_sys_acl_delete_def_file.\n"));
 	
 	smb_acl = solarisacl_sys_acl_get_file(handle, path, 
-					      SMB_ACL_TYPE_ACCESS);
+					      SMB_ACL_TYPE_ACCESS, talloc_tos());
 	if (smb_acl == NULL) {
 		DEBUG(10, ("getting file acl failed!\n"));
 		goto done;
