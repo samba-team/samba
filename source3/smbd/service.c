@@ -614,7 +614,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	}
 
 	/*
-	 * Set up the share security descripter
+	 * Set up the share security descriptor
 	 */
 
 	status = check_user_share_access(conn,
