@@ -145,16 +145,13 @@ NTSTATUS check_user_share_access(connection_struct *conn,
 					readonly_share,
 					session_info->security_token);
 
-	if ((share_access & FILE_WRITE_DATA) == 0) {
-		if ((share_access & FILE_READ_DATA) == 0) {
-			/* No access, read or write. */
-			DEBUG(0,("user %s connection to %s "
-				"denied due to share security "
-				"descriptor.\n",
-				session_info->unix_info->unix_name,
-				lp_servicename(talloc_tos(), snum)));
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	if ((share_access & (FILE_READ_DATA|FILE_WRITE_DATA)) == 0) {
+		/* No access, read or write. */
+		DEBUG(0,("user %s connection to %s denied due to share "
+			 "security descriptor.\n",
+			 session_info->unix_info->unix_name,
+			 lp_servicename(talloc_tos(), snum)));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!readonly_share &&
