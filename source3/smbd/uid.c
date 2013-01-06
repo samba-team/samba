@@ -104,13 +104,13 @@ static uint32_t create_share_access_mask(int snum,
 		share_access |= SEC_FLAG_SYSTEM_SECURITY;
 	}
 	if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
-		share_access |= (SEC_RIGHTS_PRIV_RESTORE);
+		share_access |= SEC_RIGHTS_PRIV_RESTORE;
 	}
 	if (security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
-		share_access |= (SEC_RIGHTS_PRIV_BACKUP);
+		share_access |= SEC_RIGHTS_PRIV_BACKUP;
 	}
 	if (security_token_has_privilege(token, SEC_PRIV_TAKE_OWNERSHIP)) {
-		share_access |= (SEC_STD_WRITE_OWNER);
+		share_access |= SEC_STD_WRITE_OWNER;
 	}
 
 	return share_access;
