@@ -1305,7 +1305,8 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		SPOOLSS_DRIVER_VERSION_9X	= 0,
 		SPOOLSS_DRIVER_VERSION_NT35	= 1,
 		SPOOLSS_DRIVER_VERSION_NT4	= 2,
-		SPOOLSS_DRIVER_VERSION_200X	= 3
+		SPOOLSS_DRIVER_VERSION_200X	= 3,
+		SPOOLSS_DRIVER_VERSION_2012	= 4
 	} spoolss_DriverOSVersion;
 
 	typedef struct {
