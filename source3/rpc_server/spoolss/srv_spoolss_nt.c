@@ -10951,3 +10951,47 @@ WERROR _spoolss_6d(struct pipes_struct *p,
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
+
+/****************************************************************
+ _spoolss_RpcGetJobNamedPropertyValue
+****************************************************************/
+
+WERROR _spoolss_RpcGetJobNamedPropertyValue(struct pipes_struct *p,
+					    struct spoolss_RpcGetJobNamedPropertyValue *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RpcSetJobNamedProperty
+****************************************************************/
+
+WERROR _spoolss_RpcSetJobNamedProperty(struct pipes_struct *p,
+				       struct spoolss_RpcSetJobNamedProperty *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RpcDeleteJobNamedProperty
+****************************************************************/
+
+WERROR _spoolss_RpcDeleteJobNamedProperty(struct pipes_struct *p,
+					  struct spoolss_RpcDeleteJobNamedProperty *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RpcEnumJobNamedProperties
+****************************************************************/
+
+WERROR _spoolss_RpcEnumJobNamedProperties(struct pipes_struct *p,
+					  struct spoolss_RpcEnumJobNamedProperties *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}

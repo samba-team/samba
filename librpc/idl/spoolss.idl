@@ -3207,4 +3207,24 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	/* Function: 0x6d */
 	[todo] WERROR spoolss_6d(
 	);
+
+	/******************/
+	/* Function: 0x6e */
+	[todo] WERROR spoolss_RpcGetJobNamedPropertyValue(
+	);
+
+	/******************/
+	/* Function: 0x6f */
+	[todo] WERROR spoolss_RpcSetJobNamedProperty(
+	);
+
+	/******************/
+	/* Function: 0x70 */
+	[todo] WERROR spoolss_RpcDeleteJobNamedProperty(
+	);
+
+	/******************/
+	/* Function: 0x71 */
+	[todo] WERROR spoolss_RpcEnumJobNamedProperties(
+	);
 }

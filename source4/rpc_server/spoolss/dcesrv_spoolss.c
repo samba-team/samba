@@ -1722,6 +1722,43 @@ static WERROR dcesrv_spoolss_6d(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 }
 
 
+/*
+  spoolss_RpcGetJobNamedPropertyValue
+*/
+static WERROR dcesrv_spoolss_RpcGetJobNamedPropertyValue(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RpcGetJobNamedPropertyValue *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_RpcSetJobNamedProperty
+*/
+static WERROR dcesrv_spoolss_RpcSetJobNamedProperty(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RpcSetJobNamedProperty *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/*
+  spoolss_RpcDeleteJobNamedProperty
+*/
+static WERROR dcesrv_spoolss_RpcDeleteJobNamedProperty(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RpcDeleteJobNamedProperty *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  spoolss_RpcEnumJobNamedProperties
+*/
+static WERROR dcesrv_spoolss_RpcEnumJobNamedProperties(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RpcEnumJobNamedProperties *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_spoolss_s.c"
