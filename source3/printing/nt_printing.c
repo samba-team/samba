@@ -617,12 +617,12 @@ static uint32 get_correct_cversion(struct auth_session_info *session_info,
 	}
 
 	nt_status = create_conn_struct_cwd(talloc_tos(),
-				       server_event_context(),
-				       server_messaging_context(),
-				       &conn,
-				       printdollar_snum,
-				       lp_pathname(talloc_tos(), printdollar_snum),
-				       session_info, &oldcwd);
+					   server_event_context(),
+					   server_messaging_context(),
+					   &conn,
+					   printdollar_snum,
+					   lp_pathname(talloc_tos(), printdollar_snum),
+					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -1004,12 +1004,12 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 	}
 
 	nt_status = create_conn_struct_cwd(talloc_tos(),
-				       server_event_context(),
-				       server_messaging_context(),
-				       &conn,
-				       printdollar_snum,
-				       lp_pathname(talloc_tos(), printdollar_snum),
-				       session_info, &oldcwd);
+					   server_event_context(),
+					   server_messaging_context(),
+					   &conn,
+					   printdollar_snum,
+					   lp_pathname(talloc_tos(), printdollar_snum),
+					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -1540,12 +1540,12 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 	}
 
 	nt_status = create_conn_struct_cwd(talloc_tos(),
-				       server_event_context(),
-				       server_messaging_context(),
-				       &conn,
-				       printdollar_snum,
-				       lp_pathname(talloc_tos(), printdollar_snum),
-				       session_info, &oldcwd);
+					   server_event_context(),
+					   server_messaging_context(),
+					   &conn,
+					   printdollar_snum,
+					   lp_pathname(talloc_tos(), printdollar_snum),
+					   session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("delete_driver_files: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
