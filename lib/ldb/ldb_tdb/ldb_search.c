@@ -606,7 +606,7 @@ int ltdb_search(struct ltdb_context *ctx)
 				/* useful for debugging when slow performance
 				 * is caused by unindexed searches */
 				char *expression = ldb_filter_from_tree(ctx, ctx->tree);
-				ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb FULL SEARCH: %s SCOPE: %s DN: %s\n",
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb FULL SEARCH: %s SCOPE: %s DN: %s",
 							expression,
 							req->op.search.scope==LDB_SCOPE_BASE?"base":
 							req->op.search.scope==LDB_SCOPE_ONELEVEL?"one":
