@@ -35,11 +35,13 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	typedef enum {
 		PROCESSOR_ARCHITECTURE_INTEL		= 0x0000,
+		PROCESSOR_ARCHITECTURE_ARM		= 0x0005,
 		PROCESSOR_ARCHITECTURE_IA64		= 0x0006,
 		PROCESSOR_ARCHITECTURE_AMD64		= 0x0009
 	} spoolss_ProcessorArchitecture;
 
 	typedef [v1_enum] enum {
+		PROCESSOR_ARM				= 0x00000000,
 		PROCESSOR_INTEL_386			= 0x00000182,
 		PROCESSOR_INTEL_486			= 0x000001E6,
 		PROCESSOR_INTEL_PENTIUM			= 0x0000024A,
@@ -1816,6 +1818,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPL_ARCH_W32PPC		= "W32PPC";
 	const string SPL_ARCH_IA64		= "IA64";
 	const string SPL_ARCH_X64		= "x64";
+	const string SPL_ARCH_ARM		= "ARM";
 
 	const string SPOOLSS_ARCHITECTURE_ALL			= "All";
 	const string SPOOLSS_ARCHITECTURE_ALL_CLUSTER		= "AllCluster";
@@ -1823,6 +1826,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	const string SPOOLSS_ARCHITECTURE_IA_64			= "Windows IA64";
 	const string SPOOLSS_ARCHITECTURE_x64			= "Windows x64";
 	const string SPOOLSS_ARCHITECTURE_4_0			= "Windows 4.0";
+	const string SPOOLSS_ARCHITECTURE_ARM			= "Windows ARM";
 	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
 	typedef [public,gensize] struct {
