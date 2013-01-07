@@ -2038,11 +2038,11 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	}
 
 	nt_status = create_conn_struct_cwd(talloc_tos(),
-				       server_event_context(),
-				       server_messaging_context(),
-				       &conn,
-				       snum, lp_pathname(talloc_tos(), snum),
-				       p->session_info, &oldcwd);
+					   server_event_context(),
+					   server_messaging_context(),
+					   &conn,
+					   snum, lp_pathname(talloc_tos(), snum),
+					   p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
 			   nt_errstr(nt_status)));
@@ -2185,11 +2185,11 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	}
 
 	nt_status = create_conn_struct_cwd(talloc_tos(),
-				       server_event_context(),
-				       server_messaging_context(),
-				       &conn,
-				       snum, lp_pathname(talloc_tos(), snum),
-				       p->session_info, &oldcwd);
+					   server_event_context(),
+					   server_messaging_context(),
+					   &conn,
+					   snum, lp_pathname(talloc_tos(), snum),
+					   p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
 			   nt_errstr(nt_status)));

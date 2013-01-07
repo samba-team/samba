@@ -1012,10 +1012,10 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	status = create_conn_struct_cwd(ctx,
-				    server_event_context(),
-				    server_messaging_context(),
-				    &conn, snum,
-				    lp_pathname(talloc_tos(), snum), NULL, &oldpath);
+					server_event_context(),
+					server_messaging_context(),
+					&conn, snum,
+					lp_pathname(talloc_tos(), snum), NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1191,10 +1191,10 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 		return False;
 	}
 	status = create_conn_struct_cwd(talloc_tos(),
-				    server_event_context(),
-				    server_messaging_context(),
-				    conn_out,
-				    snum, lp_pathname(talloc_tos(), snum), NULL, oldpath);
+					server_event_context(),
+					server_messaging_context(),
+					conn_out,
+					snum, lp_pathname(talloc_tos(), snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1356,10 +1356,10 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 */
 
 	status = create_conn_struct_cwd(talloc_tos(),
-				    server_event_context(),
-				    server_messaging_context(),
-				    &conn,
-				    snum, connect_path, NULL, &cwd);
+					server_event_context(),
+					server_messaging_context(),
+					&conn,
+					snum, connect_path, NULL, &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
@@ -1432,10 +1432,10 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 */
 
 	status = create_conn_struct_cwd(ctx,
-				    server_event_context(),
-				    server_messaging_context(),
-				    &conn, snum, connect_path, NULL,
-				    &cwd);
+					server_event_context(),
+					server_messaging_context(),
+					&conn, snum, connect_path, NULL,
+					&cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
