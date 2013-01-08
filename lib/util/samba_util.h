@@ -631,6 +631,10 @@ _PUBLIC_ bool directory_exist(const char *dname);
 _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid, 
 			       mode_t dir_perms);
 
+_PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
+					       uid_t uid,
+					       mode_t dir_perms);
+
 /**
  Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
  else

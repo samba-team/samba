@@ -143,12 +143,13 @@ _PUBLIC_ bool directory_exist(const char *dname)
  * @retval true if the directory already existed and has the right permissions 
  * or was successfully created.
  */
-_PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid, 
-			       mode_t dir_perms)
+_PUBLIC_ bool directory_create_or_exist(const char *dname,
+					uid_t uid,
+					mode_t dir_perms)
 {
 	int ret;
-  	struct stat st;
-      
+	struct stat st;
+
 	ret = lstat(dname, &st);
 	if (ret == -1) {
 		mode_t old_umask;
@@ -179,6 +180,44 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 		}
 	}
 
+	return true;
+}
+
+/**
+ * @brief Try to create a specified directory if it doesn't exist.
+ *
+ * The function creates a directory with the given uid and permissions if it
+ * doesn't exixt. If it exists it makes sure the uid and permissions are
+ * correct and it will fail if they are different.
+ *
+ * @param[in]  dname  The directory to create.
+ *
+ * @param[in]  uid    The uid the directory needs to belong too.
+ *
+ * @param[in]  dir_perms  The expected permissions of the directory.
+ *
+ * @return True on success, false on error.
+ */
+_PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
+					       uid_t uid,
+					       mode_t dir_perms)
+{
+	struct stat st;
+	bool ok;
+	int rc;
+
+	ok = directory_create_or_exist(dname, uid, dir_perms);
+	if (!ok) {
+		return false;
+	}
+
+	rc = lstat(dname, &st);
+	if (rc == -1) {
+		DEBUG(0, ("lstat failed on created directory %s: %s\n",
+			  dname, strerror(errno)));
+		return false;
+	}
+
 	/* Check ownership and permission on existing directory */
 	if (!S_ISDIR(st.st_mode)) {
 		DEBUG(0, ("directory %s isn't a directory\n",
@@ -198,7 +237,7 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname, uid_t uid,
 	}
 
 	return true;
-}       
+}
 
 
 /**
