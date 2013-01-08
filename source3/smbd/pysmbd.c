@@ -46,6 +46,9 @@ static connection_struct *get_conn(TALLOC_CTX *mem_ctx, const char *service)
 {
 	connection_struct *conn;
 	TALLOC_CTX *frame = talloc_stackframe();
+	int snum = -1;
+	NTSTATUS status;
+
 	if (!posix_locking_init(false)) {
 		PyErr_NoMemory();
 		TALLOC_FREE(frame);
@@ -53,39 +56,22 @@ static connection_struct *get_conn(TALLOC_CTX *mem_ctx, const char *service)
 	}
 
 	if (service) {
-		NTSTATUS status;
-		int snum = lp_servicenumber(service);
+		snum = lp_servicenumber(service);
 		if (snum == -1) {
 			TALLOC_FREE(frame);
 			PyErr_SetString(PyExc_RuntimeError, "unknown service");
 			return NULL;
 		}
-		status = create_conn_struct(mem_ctx, NULL, NULL, &conn, snum, "/",
-					    NULL);
-		PyErr_NTSTATUS_IS_ERR_RAISE(status);
-	} else {
-		conn = talloc_zero(mem_ctx, connection_struct);
-		if (conn == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			TALLOC_FREE(frame);
-			PyErr_NoMemory();
-			return NULL;
-		}
-
-		if (!(conn->params = talloc(conn, struct share_params))) {
-			TALLOC_FREE(frame);
-			DEBUG(0,("get_conn: talloc() failed!\n"));
-			PyErr_NoMemory();
-			return NULL;
-		}
-		conn->params->service = -1;
-
-		set_conn_connectpath(conn, "/");
-
-		smbd_vfs_init(conn);
 	}
+
+	status = create_conn_struct(mem_ctx, NULL, NULL, &conn, snum, "/",
+					    NULL);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
 	TALLOC_FREE(frame);
+	/* Ignore read-only and share restrictions */
 	conn->read_only = false;
+	conn->share_access = SEC_RIGHTS_FILE_ALL;
 	talloc_set_destructor(conn, conn_free_wrapper);
 	return conn;
 }
