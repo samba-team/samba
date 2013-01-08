@@ -23,6 +23,10 @@
 
 */
 
+#ifndef GPFS_GETACL_NATIVE
+#define GPFS_GETACL_NATIVE 0x00000004
+#endif
+
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access);
 int set_gpfs_lease(int fd, int leasetype);
