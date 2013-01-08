@@ -234,11 +234,28 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	connection_struct *conn;
 	char *connpath;
 	const char *vfs_user;
+	struct smbd_server_connection *sconn;
 
-	conn = talloc_zero(ctx, connection_struct);
-	if (conn == NULL) {
+	sconn = talloc_zero(ctx, struct smbd_server_connection);
+	if (sconn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	sconn->ev_ctx = ev;
+	sconn->msg_ctx = msg;
+	sconn->sock = -1;
+	sconn->smb1.echo_handler.trusted_fd = -1;
+	sconn->smb1.echo_handler.socket_lock_fd = -1;
+
+	conn = conn_new(sconn);
+	if (conn == NULL) {
+		TALLOC_FREE(sconn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Now we have conn, we need to make sconn a child of conn,
+	 * for a proper talloc tree */
+	talloc_steal(conn, sconn);
 
 	connpath = talloc_strdup(conn, path);
 	if (!connpath) {
@@ -254,31 +271,10 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	conn->sconn = talloc_zero(conn, struct smbd_server_connection);
-	if (conn->sconn == NULL) {
-		TALLOC_FREE(conn);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	conn->sconn->ev_ctx = ev;
-	conn->sconn->msg_ctx = msg;
-	conn->sconn->sock = -1;
-	conn->sconn->smb1.echo_handler.trusted_fd = -1;
-	conn->sconn->smb1.echo_handler.socket_lock_fd = -1;
-
 	/* needed for smbd_vfs_init() */
-
-	if (!(conn->params = talloc_zero(conn, struct share_params))) {
-		DEBUG(0, ("TALLOC failed\n"));
-		TALLOC_FREE(conn);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	conn->params->service = snum;
 	conn->cnum = TID_FIELD_INVALID;
-
-	DLIST_ADD(conn->sconn->connections, conn);
-	conn->sconn->num_connections++;
 
 	if (session_info != NULL) {
 		conn->session_info = copy_session_info(conn, session_info);
