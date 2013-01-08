@@ -1468,7 +1468,7 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	if (!directory_create_or_exist(np_dir, geteuid(), 0700)) {
+	if (!directory_create_or_exist_strict(np_dir, geteuid(), 0700)) {
 		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
 			  np_dir, strerror(errno)));
 		return -1;

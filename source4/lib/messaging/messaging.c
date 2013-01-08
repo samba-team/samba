@@ -604,7 +604,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 
 	msg->base_path     = lpcfg_imessaging_path(msg, lp_ctx);
 
-	ok = directory_create_or_exist(msg->base_path, geteuid(), 0700);
+	ok = directory_create_or_exist_strict(msg->base_path, geteuid(), 0700);
 	if (!ok) {
 		talloc_free(msg);
 		return NULL;

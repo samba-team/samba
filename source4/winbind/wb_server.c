@@ -199,6 +199,7 @@ static void winbind_task_init(struct task_server *task)
 	struct wbsrv_listen_socket *listen_socket;
 	char *errstring;
 	struct dom_sid *primary_sid;
+	bool ok;
 
 	task_server_set_title(task, "task[winbind]");
 
@@ -213,14 +214,18 @@ static void winbind_task_init(struct task_server *task)
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
-	if (!directory_create_or_exist(lpcfg_winbindd_socket_directory(task->lp_ctx), geteuid(), 0755)) {
+	ok = directory_create_or_exist_strict(lpcfg_winbindd_socket_directory(task->lp_ctx),
+					      geteuid(), 0755);
+	if (!ok) {
 		task_server_terminate(task,
 				      "Cannot create winbindd pipe directory", true);
 		return;
 	}
 
 	/* Make sure the directory for the Samba3 socket exists, and is of the correct permissions */
-	if (!directory_create_or_exist(lpcfg_winbindd_privileged_socket_directory(task->lp_ctx), geteuid(), 0750)) {
+	ok = directory_create_or_exist_strict(lpcfg_winbindd_privileged_socket_directory(task->lp_ctx),
+			geteuid(), 0750);
+	if (!ok) {
 		task_server_terminate(task,
 				      "Cannot create winbindd privileged pipe directory", true);
 		return;
