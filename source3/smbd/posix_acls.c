@@ -4610,27 +4610,19 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	conn = talloc_zero(frame, connection_struct);
-	if (conn == NULL) {
+	status = create_conn_struct(ctx,
+				server_event_context(),
+				server_messaging_context(),
+				&conn,
+				-1,
+				"/",
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("create_conn_struct returned %s.\n",
+			nt_errstr(status)));
 		TALLOC_FREE(frame);
-		DEBUG(0, ("talloc failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!(conn->params = talloc(conn, struct share_params))) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	conn->params->service = -1;
-
-	set_conn_connectpath(conn, "/");
-
-	if (!smbd_vfs_init(conn)) {
-		DEBUG(0,("smbd_vfs_init() failed!\n"));
-		TALLOC_FREE(frame);
-		return NT_STATUS_INTERNAL_ERROR;
+		return status;
 	}
 
 	status = SMB_VFS_GET_NT_ACL(conn, fname, security_info_wanted, ctx, sd);
