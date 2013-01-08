@@ -720,10 +720,10 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
 	struct gpfs_acl *pacl;
 	SMB_ACL_T result = NULL;
 
-	pacl = gpfs_getacl_alloc(path, type);
+	pacl = vfs_gpfs_getacl(talloc_tos(), path, false, type);
 
 	if (pacl == NULL) {
-		DEBUG(10, ("gpfs_getacl failed for %s with %s\n",
+		DEBUG(10, ("vfs_gpfs_getacl failed for %s with %s\n",
 			   path, strerror(errno)));
 		if (errno == 0) {
 			errno = EINVAL;
@@ -755,7 +755,7 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type,
 	if (errno != 0) {
 		TALLOC_FREE(result);
 	}
-	return result;	
+	return result;
 }
 
 static SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
