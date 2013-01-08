@@ -79,10 +79,9 @@ case "$1" in
 
      setup)
         # Make sure CTDB daemon is ready to process requests
-        if wait_until_ready ; then
-	    # set any tunables from the config file
-	    set_ctdb_variables
-	fi || exit 1
+	wait_until_ready || die "CTDB did not become ready for setup"
+	# Set any tunables from the config file
+	set_ctdb_variables || die "Failed to set CTDB tunables"
 	;;
 
     startup)
