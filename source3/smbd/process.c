@@ -3022,7 +3022,7 @@ static void smbd_echo_got_packet(struct tevent_req *req)
 		}
 
 		iov = &state->pending[num_pending];
-		iov->iov_base = buf;
+		iov->iov_base = talloc_move(state->pending, &buf);
 		iov->iov_len = buflen;
 
 		DEBUG(10,("echo_handler[%d]: forward to main\n",
