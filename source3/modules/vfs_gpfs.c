@@ -600,16 +600,19 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 	struct gpfs_acl *acl;
 	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
 
-	acl = gpfs_getacl_alloc(fsp->fsp_name->base_name, 0);
-	if (acl == NULL)
-		return result;
+	acl = (struct gpfs_acl*) vfs_gpfs_getacl(talloc_tos(),
+						 fsp->fsp_name->base_name,
+						 false, 0);
+	if (acl == NULL) {
+		return map_nt_error_from_unix(errno);
+	}
 
-	if (acl->acl_version&GPFS_ACL_VERSION_NFS4)
-	{
+	if (acl->acl_version == GPFS_ACL_VERSION_NFS4) {
 		if (lp_parm_bool(fsp->conn->params->service, "gpfs",
 				 "refuse_dacl_protected", false)
 		    && (psd->type&SEC_DESC_DACL_PROTECTED)) {
 			DEBUG(2, ("Rejecting unsupported ACL with DACL_PROTECTED bit set\n"));
+			talloc_free(acl);
 			return NT_STATUS_NOT_SUPPORTED;
 		}
 
@@ -620,6 +623,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 		result = set_nt_acl(fsp, security_info_sent, psd);
 	}
 
+	talloc_free(acl);
 	return result;
 }
 
