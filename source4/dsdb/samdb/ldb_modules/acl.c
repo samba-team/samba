@@ -481,6 +481,14 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 		flags = SECINFO_OWNER | SECINFO_GROUP |  SECINFO_SACL |  SECINFO_DACL;
 	}
 	else {
+		const struct dsdb_attribute *attr;
+
+		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
+							 "nTSecurityDescriptor");
+		if (attr == NULL) {
+			return ldb_operr(ldb);
+		}
+
 		/* Get the security descriptor from the message */
 		ret = dsdb_get_sd_from_ldb_message(ldb, msg, sd_msg, &sd);
 		if (ret != LDB_SUCCESS) {
@@ -492,7 +500,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 						    sd,
 						    sid,
 						    SEC_STD_WRITE_OWNER,
-						    NULL);
+						    attr);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_OWNER | SECINFO_GROUP;
 		}
@@ -501,7 +509,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 						    sd,
 						    sid,
 						    SEC_STD_WRITE_DAC,
-						    NULL);
+						    attr);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_DACL;
 		}
@@ -510,7 +518,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 						    sd,
 						    sid,
 						    SEC_FLAG_SYSTEM_SECURITY,
-						    NULL);
+						    attr);
 		if (ret == LDB_SUCCESS) {
 			flags |= SECINFO_SACL;
 		}
