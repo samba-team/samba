@@ -458,6 +458,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 				 struct ldb_message *msg,
 				 struct acl_context *ac)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_message_element *rightsEffective;
 	int ret;
 	struct security_descriptor *sd;
@@ -481,7 +482,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 	}
 	else {
 		/* Get the security descriptor from the message */
-		ret = dsdb_get_sd_from_ldb_message(ldb_module_get_ctx(module), msg, sd_msg, &sd);
+		ret = dsdb_get_sd_from_ldb_message(ldb, msg, sd_msg, &sd);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
