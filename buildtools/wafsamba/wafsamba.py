@@ -798,7 +798,8 @@ def SAMBAMANPAGES(bld, manpages):
                             source=source,
                             target=m,
                             group='final',
-                            rule='''export XML_CATALOG_FILES="${SAMBA_CATALOGS}"
+                            rule='''XML_CATALOG_FILES="${SAMBA_CATALOGS}"
+                                    export XML_CATALOG_FILES
                                     ${XSLTPROC} --xinclude --stringparam noreference 0 -o ${TGT}.xml --nonet ${SAMBA_EXPAND_XSL} ${SRC}
                                     ${XSLTPROC} --nonet -o ${TGT} ${SAMBA_MAN_XSL} ${TGT}.xml'''
                             )
