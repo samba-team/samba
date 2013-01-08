@@ -351,8 +351,9 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 	struct gpfs_acl *gacl = NULL;
 	DEBUG(10, ("gpfs_get_nfs4_acl invoked for %s\n", fname));
 
-	/* First get the real acl length */
-	gacl = gpfs_getacl_alloc(fname, 0);
+	/* Get the ACL */
+	gacl = (struct gpfs_acl*) vfs_gpfs_getacl(talloc_tos(), fname,
+						  false, 0);
 	if (gacl == NULL) {
 		DEBUG(9, ("gpfs_getacl failed for %s with %s\n",
 			   fname, strerror(errno)));
@@ -422,6 +423,8 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 		smbace.aceMask = gace->aceMask;
 		smb_add_ace4(*ppacl, &smbace);
 	}
+
+	talloc_free(gacl);
 
 	return 0;
 }
