@@ -424,3 +424,17 @@ objectclass: OpenLDAPperson
 cn: Fred Bassett
 sn: Bassett
 uid: Bassett, Fred
+
+dn: o=ESCPI  ,  o=CNAM,c=TEST
+objectclass: organizationalUnit
+o: ESCPI
+o: CNAM
+
+dn: o=ESCPI  ,  uo=CNAM,c=TEST
+objectclass: organizationalUnit
+o: ESCPI
+uo: CNAM
+
+dn: cn=mat,o=ESCPI,o=CNAM,c=TEST
+objectclass: person
+cn: mat
