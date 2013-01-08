@@ -454,6 +454,7 @@ int main(int argc, char *argv[])
 	char cwd[MAXPATHLEN];
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = tevent_context_init(NULL);
+	struct auth_session_info *session_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
 	/* make sure the vars that get altered (4th field) are in
@@ -515,21 +516,32 @@ int main(int argc, char *argv[])
 	locking_init();
 	serverid_parent_init(NULL);
 	vfs = talloc_zero(NULL, struct vfs_state);
-	vfs->conn = talloc_zero(vfs, connection_struct);
+	if (vfs == NULL) {
+		return 1;
+	}
+	status = make_session_info_guest(vfs, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return 1;
+	}
+
+	status = create_conn_struct(vfs,
+				ev,
+				messaging_init(vfs, ev),
+                                &vfs->conn,
+                                -1,
+                                getcwd(cwd, sizeof(cwd)),
+                                session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return 1;
+	}
+
 	vfs->conn->share_access = FILE_GENERIC_ALL;
-	vfs->conn->params = talloc_zero(vfs->conn, struct share_params);
-	vfs->conn->sconn = talloc_zero(NULL, struct smbd_server_connection);
-	vfs->conn->sconn->msg_ctx = messaging_init(vfs->conn->sconn, ev);
-	vfs->conn->sconn->ev_ctx = ev;
+	vfs->conn->read_only = false;
+
 	serverid_register(messaging_server_id(vfs->conn->sconn->msg_ctx), 0);
-	make_session_info_guest(NULL, &vfs->conn->session_info);
 	file_init(vfs->conn->sconn);
-	set_conn_connectpath(vfs->conn, getcwd(cwd, sizeof(cwd)));
 	for (i=0; i < 1024; i++)
 		vfs->files[i] = NULL;
-
-	/* some advanced initialization stuff */
-	smbd_vfs_init(vfs->conn);
 
 	if (!posix_locking_init(false)) {
 		return 1;
