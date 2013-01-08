@@ -293,52 +293,6 @@ again:
 	return aclbuf;
 }
 
-static struct gpfs_acl *gpfs_getacl_alloc(const char *fname, gpfs_aclType_t type)
-{
-	struct gpfs_acl *acl;
-	size_t len = 200;
-	int ret;
-	TALLOC_CTX *mem_ctx = talloc_tos();
-
-	acl = (struct gpfs_acl *)TALLOC_SIZE(mem_ctx, len);
-	if (acl == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	acl->acl_len = len;
-	acl->acl_level = 0;
-	acl->acl_version = 0;
-	acl->acl_type = type;
-
-	ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT, acl);
-	if ((ret != 0) && (errno == ENOSPC)) {
-		struct gpfs_acl *new_acl = (struct gpfs_acl *)TALLOC_SIZE(
-			mem_ctx, acl->acl_len + sizeof(struct gpfs_acl));
-		if (new_acl == NULL) {
-			talloc_free(acl);
-			errno = ENOMEM;
-			return NULL;
-		}
-
-		new_acl->acl_len = acl->acl_len;
-		new_acl->acl_level = acl->acl_level;
-		new_acl->acl_version = acl->acl_version;
-		new_acl->acl_type = acl->acl_type;
-		talloc_free(acl);
-		acl = new_acl;
-
-		ret = smbd_gpfs_getacl((char *)fname, GPFS_GETACL_STRUCT, acl);
-	}
-	if (ret != 0) {
-		DEBUG(8, ("smbd_gpfs_getacl failed with %s\n",strerror(errno)));
-		talloc_free(acl);
-		return NULL;
-	}
-
-	return acl;
-}
-
 /* Tries to get nfs4 acls and returns SMB ACL allocated.
  * On failure returns 1 if it got non-NFSv4 ACL to prompt 
  * retry with POSIX ACL checks.
