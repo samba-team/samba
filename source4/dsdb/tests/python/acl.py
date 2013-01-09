@@ -389,6 +389,21 @@ url: www.samba.org"""
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
+        # Modify on attribute you do not have rights for granted while also modifying something you do have rights for
+        ldif = """
+dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
+changetype: modify
+replace: url
+url: www.samba.org
+replace: displayName
+displayName: test_changed"""
+        try:
+            self.ldb_user.modify_ldif(ldif)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
+            self.fail()
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
