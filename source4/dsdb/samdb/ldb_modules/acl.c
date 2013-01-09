@@ -977,8 +977,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	unsigned int i;
 	const struct GUID *guid;
 	uint32_t access_granted;
-	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
 	NTSTATUS status;
 	struct ldb_result *acl_res;
 	struct security_descriptor *sd;
@@ -1044,12 +1042,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				 "acl_modify: Error retrieving object class GUID.");
 	}
 	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
-	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
-				   &root, &new_node)) {
-		talloc_free(tmp_ctx);
-		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
-				 "acl_modify: Error adding new node in object tree.");
-	}
 	for (i=0; i < req->op.mod.message->num_elements; i++){
 		const struct dsdb_attribute *attr;
 		attr = dsdb_attribute_by_lDAPDisplayName(schema,
@@ -1130,6 +1122,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				goto fail;
 			}
 		} else {
+			struct object_tree *root = NULL;
+			struct object_tree *new_node = NULL;
 
 		/* This basic attribute existence check with the right errorcode
 		 * is needed since this module is the first one which requests
@@ -1144,6 +1138,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				ret =  LDB_ERR_NO_SUCH_ATTRIBUTE;
 				goto fail;
 			}
+
+			if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
+						   &root, &new_node)) {
+				talloc_free(tmp_ctx);
+				return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+						 "acl_modify: Error adding new node in object tree.");
+			}
+
 			if (!insert_in_object_tree(tmp_ctx,
 						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
 						   &new_node, &new_node)) {
@@ -1160,27 +1162,24 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				ret = LDB_ERR_OPERATIONS_ERROR;
 				goto fail;
 			}
-		}
-	}
 
-	if (root->num_of_children > 0) {
-		status = sec_access_check_ds(sd, acl_user_token(module),
-					     SEC_ADS_WRITE_PROP,
-					     &access_granted,
-					     root,
-					     sid);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module),
-					       "Object %s has no write property access\n",
-					       ldb_dn_get_linearized(req->op.mod.message->dn));
-			dsdb_acl_debug(sd,
-				       acl_user_token(module),
-				       req->op.mod.message->dn,
-				       true,
-				       10);
-			ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
-			goto fail;
+			status = sec_access_check_ds(sd, acl_user_token(module),
+						     SEC_ADS_WRITE_PROP,
+						     &access_granted,
+						     root,
+						     sid);
+			if (!NT_STATUS_IS_OK(status)) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(module),
+						       "Object %s has no write property access\n",
+						       ldb_dn_get_linearized(req->op.mod.message->dn));
+				dsdb_acl_debug(sd,
+					       acl_user_token(module),
+					       req->op.mod.message->dn,
+					       true,
+					       10);
+				ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+				goto fail;
+			}
 		}
 	}
 
