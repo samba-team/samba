@@ -1236,53 +1236,18 @@ int create_pipe_sock(const char *socket_dir,
 {
 #ifdef HAVE_UNIXSOCKET
 	struct sockaddr_un sunaddr;
-	struct stat st;
+	bool ok;
 	int sock;
-	mode_t old_umask;
 	char *path = NULL;
 
-	old_umask = umask(0);
-
-	/* Create the socket directory or reuse the existing one */
-
-	if (lstat(socket_dir, &st) == -1) {
-		if (errno == ENOENT) {
-			/* Create directory */
-			if (mkdir(socket_dir, dir_perms) == -1) {
-				DEBUG(0, ("error creating socket directory "
-					"%s: %s\n", socket_dir,
-					strerror(errno)));
-				goto out_umask;
-			}
-		} else {
-			DEBUG(0, ("lstat failed on socket directory %s: %s\n",
-				socket_dir, strerror(errno)));
-			goto out_umask;
-		}
-	} else {
-		/* Check ownership and permission on existing directory */
-		if (!S_ISDIR(st.st_mode)) {
-			DEBUG(0, ("socket directory '%s' isn't a directory\n",
-				socket_dir));
-			goto out_umask;
-		}
-		if (st.st_uid != sec_initial_uid()) {
-			DEBUG(0, ("invalid ownership on directory "
-				  "'%s'\n", socket_dir));
-			umask(old_umask);
-			goto out_umask;
-		}
-		if ((st.st_mode & 0777) != dir_perms) {
-			DEBUG(0, ("invalid permissions on directory "
-				  "'%s': has 0%o should be 0%o\n", socket_dir,
-				  (st.st_mode & 0777), dir_perms));
-			umask(old_umask);
-			goto out_umask;
-		}
+	ok = directory_create_or_exist_strict(socket_dir,
+					      sec_initial_uid(),
+					      dir_perms);
+	if (!ok) {
+		return -1;
 	}
 
 	/* Create the socket file */
-
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 
 	if (sock == -1) {
@@ -1308,7 +1273,6 @@ int create_pipe_sock(const char *socket_dir,
 
 	SAFE_FREE(path);
 
-	umask(old_umask);
 	return sock;
 
 out_close:
@@ -1316,8 +1280,6 @@ out_close:
 	if (sock != -1)
 		close(sock);
 
-out_umask:
-	umask(old_umask);
 	return -1;
 
 #else
