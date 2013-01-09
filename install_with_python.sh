@@ -36,6 +36,9 @@ if ! test -d $PREFIX/python; then
    do_install_python
 fi
 
+PYTHON=$PREFIX/python/bin/python
+export PYTHON
+
 `dirname $0`/configure --prefix=$PREFIX $@ || exit 1
 make -j || exit 1
 make install || exit 1
