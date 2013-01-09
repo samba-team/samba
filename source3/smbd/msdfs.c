@@ -235,6 +235,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	char *connpath;
 	const char *vfs_user;
 	struct smbd_server_connection *sconn;
+	const char *servicename = lp_const_servicename(snum);
 
 	sconn = talloc_zero(ctx, struct smbd_server_connection);
 	if (sconn == NULL) {
@@ -257,6 +258,10 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	 * for a proper talloc tree */
 	talloc_steal(conn, sconn);
 
+	if (snum == -1 && servicename == NULL) {
+		servicename = "Unknown Service (snum == -1)";
+	}
+
 	connpath = talloc_strdup(conn, path);
 	if (!connpath) {
 		TALLOC_FREE(conn);
@@ -265,7 +270,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	connpath = talloc_string_sub(conn,
 				     connpath,
 				     "%S",
-				     lp_servicename(talloc_tos(), snum));
+				     servicename);
 	if (!connpath) {
 		TALLOC_FREE(conn);
 		return NT_STATUS_NO_MEMORY;
@@ -299,7 +304,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	 */
 	if (conn->session_info) {
 		share_access_check(conn->session_info->security_token,
-				   lp_servicename(talloc_tos(), snum),
+				   servicename,
 				   MAXIMUM_ALLOWED_ACCESS,
 				   &conn->share_access);
 
@@ -309,7 +314,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				DEBUG(0,("create_conn_struct: connection to %s "
 					 "denied due to security "
 					 "descriptor.\n",
-					 lp_servicename(talloc_tos(), snum)));
+					 servicename));
 				conn_free(conn);
 				return NT_STATUS_ACCESS_DENIED;
 			} else {
@@ -329,7 +334,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	/* this must be the first filesystem operation that we do */
-	if (SMB_VFS_CONNECT(conn, lp_servicename(talloc_tos(), snum), vfs_user) < 0) {
+	if (SMB_VFS_CONNECT(conn, servicename, vfs_user) < 0) {
 		DEBUG(0,("VFS connect failed!\n"));
 		conn_free(conn);
 		return NT_STATUS_UNSUCCESSFUL;
