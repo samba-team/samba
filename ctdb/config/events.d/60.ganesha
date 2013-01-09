@@ -6,7 +6,10 @@
 
 . $CTDB_BASE/functions
 
-service_name="nfs-ganesha-gpfs"
+GANRECDIR="/var/lib/nfs/ganesha"
+GANRECDIR2="/var/lib/nfs/ganesha/recevents"
+GPFS_STATE="/usr/lpp/mmfs/bin/mmgetstate"
+GANRECDIR3="/var/lib/nfs/ganesha_local"
 
 
 service_start ()
@@ -29,9 +32,15 @@ service_reconfigure ()
 	$CTDB_BASE/statd-callout notify &
     } >/dev/null 2>&1
 }
+
 loadconfig "nfs"
 
-[ "$NFS_SERVER_MODE" = "ganesha" ] || exit 0
+
+[ -n "$CTDB_CLUSTER_FILESYSTEM_TYPE" ] || CTDB_CLUSTER_FILESYSTEM_TYPE="gpfs"
+
+service_name="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"
+
+[ "$NFS_SERVER_MODE" == "ganesha" ] || exit 0
 
 ctdb_setup_service_state_dir
 
@@ -43,100 +52,182 @@ statd_update_trigger="$service_state_dir/update-trigger"
 # when we get to a monitor event.
 touch "$statd_update_trigger"
 
-
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
 ctdb_service_check_reconfigure
 
+get_cluster_fs_state  ()
+{
+    case $CTDB_CLUSTER_FILESYSTEM_TYPE in
+        gpfs)
+            STATE=`$GPFS_STATE | awk 'NR <= 3 {next} {printf "%-6s", $3}'`
+            echo $STATE
+            ;;
+        *)
+            die "File system $CTDB_CLUSTER_FILESYSTEM_TYPE not supported"
+            ;;
+   esac
+}
+
+create_ganesha_recdirs ()
+{
+    if [ -z "$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)" ]; then
+      echo "startup $CTDB_CLUSTER_FILESYSTEM_TYPE not ready"
+      exit 1
+    fi
+    MNTPT=`mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE | sort | awk '{print $3}' | head -n 1`
+    mkdir -p $MNTPT/.ganesha
+    if [ -e $GANRECDIR ]; then
+        if [ ! -L $GANRECDIR ] ; then
+            rm -rf $GANRECDIR
+            if ! ln -s $MNTPT/.ganesha  $GANRECDIR ; then
+                echo "ln failed"
+            fi
+        fi
+    else
+        if ! ln -s $MNTPT/.ganesha  $GANRECDIR ; then
+            echo "ln failed"
+        fi
+    fi
+
+    mkdir -p $GANRECDIR2
+    mkdir -p $GANRECDIR3
+}
+
 case "$1" in
      init)
-       # read statd from persistent database
-       ;;
+	# read statd from persistent database
+	;;
      startup)
-       ctdb_service_start
-       ;;
+	create_ganesha_recdirs
+	ctdb_service_start
+	;;
 
      shutdown)
-       ctdb_service_stop
-       ;;
+	ctdb_service_stop
+	;;
 
      takeip)
-       ctdb_service_set_reconfigure
-       ;;
+	if [ -n "$2" ] ; then
+	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
+		gpfs)
+		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
+		    TDATE=`date +"%s"`
+		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
+		    touch $GANRECDIR2/$TOUCHTGT
+		    ;;
+	    esac
+	fi
+	ctdb_service_set_reconfigure
+	;;
 
      releaseip)
-       ctdb_service_set_reconfigure
-       ;;
+	if [ -n "$2" ] ; then
+	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
+		gpfs)
+		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
+		    TDATE=`date +"%s"`
+		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
+		    touch $GANRECDIR2/$TOUCHTGT
+		;;
+	    esac
+	fi
+	ctdb_service_set_reconfigure
+	;;
 
-      monitor)
-
-       update_tickles 2049
+     monitor)
+	update_tickles 2049
+	create_ganesha_recdirs
+	service_name=${service_name}_process
 	# check that statd responds to rpc requests
 	# if statd is not running we try to restart it
 	# we only do this IF we have a rpc.statd command.
 	# For platforms where rpc.statd does not exist, we skip
-	# the check completely
-        p="rpc.statd"
-        which $p >/dev/null 2>/dev/null && \
+        # the check completely
+	p="rpc.statd"
+	which $p >/dev/null 2>/dev/null && \
 	    nfs_check_rpc_service "statd" 1 \
-	        -ge 6 "verbose unhealthy" \
-	        -eq 4 "verbose restart" \
-		-eq 2 "restart:bs"
-       
-    PIDFILE="/var/run/ganesha.pid" 
-    RUNNING=0
-    if [ -e $PIDFILE ]
-    then
-       PID=`cat $PIDFILE`
-       GANESHA="/usr/bin/gpfs.ganesha.nfsd"
-       RUNNING=`cat /proc/$PID/cmdline | grep $GANESHA | wc -l`
-    fi
-    if [ $RUNNING != 1 ]
-    then
-        echo "Trying fast restart of NFS service"
-        startstop_ganesha restart
-    fi
-
-	# check that NFS responds to rpc requests
-	if [ "$CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK" != "yes" ] ; then
-	    nfs_check_rpc_service "ganesha" \
 		-ge 6 "verbose unhealthy" \
 		-eq 4 "verbose restart" \
 		-eq 2 "restart:bs"
+
+	PIDFILE="/var/run/ganesha.pid"
+	CUR_STATE=`get_cluster_fs_state`
+	GANESHA="/usr/bin/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.nfsd"
+	if { read PID < $PIDFILE && \
+	    grep "$GANESHA" "/proc/$PID/cmdline" ; } >/dev/null 2>&1 ; then
+		ctdb_counter_init "$service_name"
+	else
+	    if [ $CUR_STATE = "active" ]; then
+		echo "Trying fast restart of NFS service"
+		startstop_ganesha restart
+		ctdb_counter_incr "$service_name"
+		ctdb_check_counter "error" "-ge" "6" "$service_name"
+	    fi
+	fi
+
+	service_name="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"_service
+	# check that NFS is posting forward progress
+	if [ $CUR_STATE = "active" -a "$CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK" != "yes" ] ; then
+	    MAXREDS=2
+	    MAXSTALL=120
+	    RESTART=0
+
+	    NUMREDS=`ls $GANRECDIR3 | grep "red" | wc -l`
+	    LASTONE=`ls -t $GANRECDIR3 | sed 's/_/ /' | awk 'NR > 1 {next} {printf $1} '`
+	    # Beware of startup
+	    if [ -z $LASTONE ] ; then
+		LASTONE=`date +"%s"`
+	    fi
+	    TNOW=$(date +"%s")
+	    TSTALL=$(($TNOW - $LASTONE))
+	    if [ $NUMREDS -ge $MAXREDS ] ; then
+		echo restarting because of $NUMREDS red conditions
+		RESTART=1
+		ctdb_counter_incr "$service_name"
+		ctdb_check_counter "error" "-ge" "6" "$service_name"
+	    fi
+	    if [ $TSTALL -ge $MAXSTALL ] ; then
+		echo restarting because of $TSTALL second stall
+		RESTART=1
+		ctdb_counter_incr "$service_name"
+		ctdb_check_counter "error" "-ge" "6" "$service_name"
+	    fi
+	    if [ $RESTART -gt 0 ] ; then
+		startstop_ganesha restart
+	    else
+		ctdb_counter_init "$service_name"
+	    fi
 	fi
 
 
 	# rquotad is sometimes not started correctly on RHEL5
 	# not a critical service so we dont flag the node as unhealthy
-	nfs_check_rpc_service "rquotad" 1\
+	nfs_check_rpc_service "rquotad" 1 \
 	    -gt 0 "verbose restart:b"
 
+	# Check that directories for shares actually exist.
+	[ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
+	    grep Path /etc/ganesha/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.exports.conf |
+ 	    cut -f2 -d\" | ctdb_check_directories
+	} || exit $?
 
-    # Check that directories for shares actually exist.
-    [ "$CTDB_NFS_SKIP_SHARE_CHECK" = "yes" ] || {
-        grep Path /etc/ganesha/gpfs.ganesha.exports.conf |
-        cut -f2 -d\" | ctdb_check_directories
-    } || exit $?
-
-    # once every 60 seconds, update the statd state database for which
-    # clients need notifications
-    LAST_UPDATE=`stat --printf="%Y" "$statd_update_trigger" 2>/dev/null`
-    CURRENT_TIME=`date +"%s"`
-    [ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
+	# once every 60 seconds, update the statd state database for which
+	# clients need notifications
+	LAST_UPDATE=`stat --printf="%Y" "$statd_update_trigger" 2>/dev/null`
+	CURRENT_TIME=`date +"%s"`
+	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
 	    touch "$statd_update_trigger"
-        $CTDB_BASE/statd-callout updatelocal &
-        $CTDB_BASE/statd-callout updateremote &
-    }
-        ;;
+	    $CTDB_BASE/statd-callout updatelocal &
+	    $CTDB_BASE/statd-callout updateremote &
+	}
+	;;
 
-    ipreallocated)
-       ctdb_service_set_reconfigure
-       ;;
-    *)
-       ctdb_standard_event_handler "$@"
-       ;;
+     *)
+	ctdb_standard_event_handler "$@"
+        ;;
 esac
 
 exit 0

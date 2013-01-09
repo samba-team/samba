@@ -727,13 +727,7 @@ tickle_tcp_connections() {
 ########################################################
 startstop_ganesha()
 {
-    _ganesha_fsal_list="gpfs"
-    for _fsal in $_ganesha_fsal_list ; do
-        _service_name="nfs-ganesha-${_fsal}"
-	if [ -x /etc/init.d/$_service_name ] ; then
-	    break
-	fi
-    done
+    _service_name="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"
     case "$1" in
 	start)
 	    service "$_service_name" start
