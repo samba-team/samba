@@ -3971,7 +3971,7 @@ static void ctdb_check_recd(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
-	event_add_timed(ctdb->ev, ctdb, 
+	event_add_timed(ctdb->ev, ctdb->recd_ctx,
 			timeval_current_ofs(30, 0),
 			ctdb_check_recd, ctdb);
 }
