@@ -40,7 +40,11 @@ static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
 static void print_exit_message(void)
 {
-	DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
+	if (debug_extra != NULL && debug_extra[0] != '\0') {
+		DEBUG(DEBUG_NOTICE,("CTDB %s shutting down\n", debug_extra));
+	} else {
+		DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
+	}
 }
 
 
