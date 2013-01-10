@@ -1200,6 +1200,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	}
 
 	ctdb_set_child_logging(ctdb);
+	if (use_syslog) {
+		if (start_syslog_daemon(ctdb)) {
+			DEBUG(DEBUG_CRIT, ("Failed to start syslog daemon\n"));
+			exit(10);
+		}
+	}
 
 	/* initialize statistics collection */
 	ctdb_statistics_init(ctdb);
@@ -1301,13 +1307,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	if (ret != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to set up 'setup' event\n"));
 		exit(1);
-	}
-
-	if (use_syslog) {
-		if (start_syslog_daemon(ctdb)) {
-			DEBUG(DEBUG_CRIT, ("Failed to start syslog daemon\n"));
-			exit(10);
-		}
 	}
 
 	ctdb_lockdown_memory(ctdb);
