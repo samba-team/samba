@@ -14,6 +14,8 @@ shift
 
 PATH=$PREFIX/python/bin:$PATH
 export PATH
+LD_LIBRARY_PATH=$PREFIX/python/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
 
 VERSION="Python-2.6.5"
 
