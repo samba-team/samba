@@ -998,58 +998,6 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}')
 
-bld.SAMBA3_BINARY('rpcclient/rpcclient',
-                 source='''rpcclient/rpcclient.c
-                 rpcclient/cmd_lsarpc.c
-                 rpcclient/cmd_samr.c
-                 rpcclient/cmd_spoolss.c
-                 rpcclient/cmd_netlogon.c
-                 rpcclient/cmd_srvsvc.c
-                 rpcclient/cmd_dfs.c
-                 rpcclient/cmd_epmapper.c
-                 rpcclient/cmd_dssetup.c
-                 rpcclient/cmd_echo.c
-                 rpcclient/cmd_shutdown.c
-                 rpcclient/cmd_test.c
-                 rpcclient/cmd_wkssvc.c
-                 rpcclient/cmd_ntsvcs.c
-                 rpcclient/cmd_drsuapi.c
-                 rpcclient/cmd_eventlog.c
-                 rpcclient/cmd_winreg.c
-                 rpcclient/cmd_fss.c
-                 rpcclient/cmd_witness.c
-                 rpcclient/cmd_clusapi.c''',
-                 deps='''
-                 talloc
-                 popt_samba3
-                 pdb
-                 libsmb
-                 param
-                 ndr-standard
-                 msrpc3
-                 SMBREADLINE
-                 trusts_util
-                 RPC_NDR_WINREG
-                 RPC_NDR_ECHO
-                 RPC_CLIENT_SCHANNEL
-                 DCUTIL
-                 LIBCLI_SAMR
-                 libcli_lsa3
-                 libcli_netlogon3
-                 cli_spoolss
-                 RPC_NDR_SRVSVC
-                 RPC_NDR_WKSSVC
-                 RPC_NDR_DSSETUP
-                 RPC_NDR_DFS
-                 RPC_NDR_DRSUAPI
-                 RPC_NDR_NTSVCS
-                 RPC_NDR_EVENTLOG
-                 INIT_SAMR
-                 RPC_NDR_FSRVP
-                 RPC_NDR_WITNESS
-                 RPC_NDR_CLUSAPI
-                 ''')
-
 bld.SAMBA3_BINARY('client/smbclient',
                  source='''client/client.c
                  client/clitar.c
@@ -1528,6 +1476,7 @@ bld.RECURSE('../examples/VFS')
 bld.RECURSE('lib/netapi/tests')
 bld.RECURSE('lib/netapi/examples')
 bld.RECURSE('smbd/notifyd')
+bld.RECURSE('rpcclient')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
