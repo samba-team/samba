@@ -656,7 +656,7 @@ int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	if (may_recover && !ctdb->done_startup) {
+	if (may_recover && ctdb->runstate == CTDB_RUNSTATE_STARTUP) {
 		DEBUG(DEBUG_ERR, (__location__ " db %s become healthy  - force recovery for startup\n",
 				  ctdb_db->db_name));
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
@@ -794,7 +794,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 		if (ctdb->max_persistent_check_errors > 0) {
 			remaining_tries = 1;
 		}
-		if (ctdb->done_startup) {
+		if (ctdb->runstate == CTDB_RUNSTATE_RUNNING) {
 			remaining_tries = 0;
 		}
 
@@ -1086,9 +1086,9 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			return -1;
 		}
 
-		if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE
-		 && client->pid != ctdb->recoverd_pid
-		 && !ctdb->done_startup) {
+		if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE &&
+		    client->pid != ctdb->recoverd_pid &&
+		    ctdb->runstate < CTDB_RUNSTATE_RUNNING) {
 			struct ctdb_deferred_attach_context *da_ctx = talloc(client, struct ctdb_deferred_attach_context);
 
 			if (da_ctx == NULL) {

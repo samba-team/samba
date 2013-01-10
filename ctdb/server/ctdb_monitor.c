@@ -204,7 +204,7 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 		DEBUG(DEBUG_ERR,("startup event failed\n"));
 	} else if (status == 0) {
 		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
-		ctdb->done_startup = true;
+		ctdb_set_runstate(ctdb, CTDB_RUNSTATE_RUNNING);
 		ctdb->monitor->next_interval = 2;
 		ctdb_run_notification_script(ctdb, "startup");
 	}
@@ -324,14 +324,15 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	int ret = 0;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
-	    (ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED && ctdb->done_startup)) {
+	    (ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED &&
+	     ctdb->runstate == CTDB_RUNSTATE_RUNNING)) {
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 				timeval_current_ofs(ctdb->monitor->next_interval, 0), 
 				ctdb_check_health, ctdb);
 		return;
 	}
 	
-	if (!ctdb->done_startup) {
+	if (ctdb->runstate == CTDB_RUNSTATE_STARTUP) {
 		ret = ctdb_event_script_callback(ctdb, 
 						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
 						 ctdb, false,
@@ -477,7 +478,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", c->pnn, node->flags));
 
-	if (node->flags == 0 && !ctdb->done_startup) {
+	if (node->flags == 0 && ctdb->runstate == CTDB_RUNSTATE_STARTUP) {
 		DEBUG(DEBUG_ERR, (__location__ " Node %u became healthy - force recovery for startup\n",
 				  c->pnn));
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;

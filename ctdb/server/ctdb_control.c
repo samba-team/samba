@@ -325,6 +325,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SHUTDOWN:
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
+		ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
 		ctdb_stop_recoverd(ctdb);
 		ctdb_stop_keepalive(ctdb);
 		ctdb_stop_monitoring(ctdb);

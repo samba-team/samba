@@ -436,6 +436,19 @@ struct ctdb_write_record {
 
 enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
+enum ctdb_runstate {
+	CTDB_RUNSTATE_UNKNOWN,
+	CTDB_RUNSTATE_INIT,
+	CTDB_RUNSTATE_SETUP,
+	CTDB_RUNSTATE_STARTUP,
+	CTDB_RUNSTATE_RUNNING,
+	CTDB_RUNSTATE_SHUTDOWN,
+};
+
+const char *runstate_to_string(enum ctdb_runstate runstate);
+enum ctdb_runstate runstate_from_string(const char *label);
+void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate);
+
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 
@@ -505,7 +518,7 @@ struct ctdb_context {
 	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
 	pid_t syslogd_pid;
-	bool done_startup;
+	enum ctdb_runstate runstate;
 	struct ctdb_monitor_state *monitor;
 	struct ctdb_log_state *log;
 	int start_as_disabled;

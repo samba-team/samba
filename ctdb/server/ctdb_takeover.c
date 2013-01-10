@@ -84,7 +84,7 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	 * IPs can't be assigned, and after startup IPs can be
 	 * assigned immediately.
 	 */
-	i->link_up = ctdb->done_startup;
+	i->link_up = (ctdb->runstate == CTDB_RUNSTATE_RUNNING);
 
 	DLIST_ADD(ctdb->ifaces, i);
 

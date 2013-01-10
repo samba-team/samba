@@ -1054,6 +1054,8 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 	}
 	ctdb_run_notification_script(ctdb, "setup");
 
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_STARTUP);
+
 	/* tell all other nodes we've just started up */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
 				 0, CTDB_CONTROL_STARTUP, 0,
@@ -1259,6 +1261,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 		ctdb_fatal(ctdb, "Failed to attach to databases\n");
 	}
 
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_INIT);
 	ret = ctdb_event_script(ctdb, CTDB_EVENT_INIT);
 	if (ret != 0) {
 		ctdb_fatal(ctdb, "Failed to run init event\n");
@@ -1283,6 +1286,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	/* start the transport going */
 	ctdb_start_transport(ctdb);
+
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SETUP);
 
 	ret = ctdb_event_script_callback(ctdb,
 					 ctdb,
