@@ -1,4 +1,60 @@
                    =============================
+                   Release Notes for Samba 4.0.1
+                          January 15, 2013
+                   =============================
+
+
+This is a security release in order to address CVE-2013-0172.
+
+o  CVE-2013-0172:
+   Samba 4.0.0 as an AD DC may provide authenticated users with write access
+   to LDAP directory objects.
+
+   In AD, Access Control Entries can be assigned based on the objectClass
+   of the object.  If a user or a group the user is a member of has any
+   access based on the objectClass, then that user has write access to that
+   object.
+
+   Additionally, if a user has write access to any attribute on the object,
+   they may have access to write to all attributes.
+
+   An important mitigation is that anonymous access is totally disabled by
+   default.  The second important mitigation is that normal users are
+   typically only given the problematic per-objectClass right via the
+   "pre-windows 2000 compatible access" group, and Samba 4.0.0 incorrectly
+   does not make "authenticated users" part of this group.
+
+Changes since 4.0.0:
+====================
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * Bug 9554 - CVE-2013-0172 - Samba 4.0 as an AD DC may provide authenticated
+      users with write access to LDAP directory objects.
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.0
                          December 11, 2012
                    =============================
