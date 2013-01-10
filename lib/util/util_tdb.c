@@ -63,6 +63,21 @@ TDB_DATA string_term_tdb_data(const char *string)
 	return make_tdb_data((const uint8_t *)string, string ? strlen(string) + 1 : 0);
 }
 
+TDB_DATA tdb_data_talloc_copy(TALLOC_CTX* mem_ctx, TDB_DATA data) {
+	TDB_DATA ret = {
+		.dptr  = (uint8_t *)talloc_size(mem_ctx, data.dsize+1),
+		.dsize = data.dsize
+	};
+	if (ret.dptr == NULL) {
+		ret.dsize = 0;
+	} else {
+		memcpy(ret.dptr, data.dptr, data.dsize);
+		ret.dptr[ret.dsize] = '\0';
+	}
+	return ret;
+}
+
+
 /****************************************************************************
  Lock a chain by string. Return non-zero if lock failed.
 ****************************************************************************/

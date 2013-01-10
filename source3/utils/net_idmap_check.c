@@ -42,7 +42,6 @@ static int traverse_check(struct db_record *rec, void* data);
 /* TDB_DATA *******************************************************************/
 static char*    print_data(TALLOC_CTX* mem_ctx, TDB_DATA d);
 static TDB_DATA parse_data(TALLOC_CTX* mem_ctx, const char** ptr);
-static TDB_DATA talloc_copy(TALLOC_CTX* mem_ctx, TDB_DATA data);
 
 /* record *********************************************************************/
 
@@ -325,7 +324,7 @@ static int add_record(struct check_ctx* ctx, TDB_DATA key, TDB_DATA value)
 		diff = unpack_diff(recvalue);
 		talloc_free(diff.nval.dptr);
 	}
-	diff.nval = talloc_copy(ctx->diff, value);
+	diff.nval = tdb_data_talloc_copy(ctx->diff, value);
 
 	DEBUG_DIFF(2, mem, "TDB DIFF", key, diff.oval, diff.nval);
 
@@ -355,7 +354,7 @@ fetch_record(struct check_ctx* ctx, TALLOC_CTX* mem_ctx, TDB_DATA key)
 
 	if (NT_STATUS_IS_OK(status)) {
 		TDB_DATA_diff diff = unpack_diff(tmp);
-		TDB_DATA ret = talloc_copy(mem_ctx, diff.nval);
+		TDB_DATA ret = tdb_data_talloc_copy(mem_ctx, diff.nval);
 		talloc_free(tmp.dptr);
 		return ret;
 	}
@@ -548,20 +547,6 @@ void adjust_hwm(struct check_ctx* ctx, const struct record* r) {
 	}
 }
 
-TDB_DATA talloc_copy(TALLOC_CTX* mem_ctx, TDB_DATA data) {
-	TDB_DATA ret = {
-		.dptr  = (uint8_t *)talloc_size(mem_ctx, data.dsize+1),
-		.dsize = data.dsize
-	};
-	if (ret.dptr == NULL) {
-		ret.dsize = 0;
-	} else {
-		memcpy(ret.dptr, data.dptr, data.dsize);
-		ret.dptr[ret.dsize] = '\0';
-	}
-	return ret;
-}
-
 static bool is_cstr(TDB_DATA str) {
 	return !tdb_data_is_empty(str) && str.dptr[str.dsize-1] == '\0';
 }
@@ -603,8 +588,8 @@ parse_record(TALLOC_CTX* mem_ctx, TDB_DATA key, TDB_DATA val)
 		DEBUG(0, ("Out of memory.\n"));
 		return NULL;
 	}
-	ret->key = talloc_copy(ret, key);
-	ret->val = talloc_copy(ret, val);
+	ret->key = tdb_data_talloc_copy(ret, key);
+	ret->val = tdb_data_talloc_copy(ret, val);
 	if ((ret->key.dptr == NULL && key.dptr != NULL) ||
 	    (ret->val.dptr == NULL && val.dptr != NULL))
 	{
