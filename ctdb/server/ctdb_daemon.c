@@ -76,25 +76,8 @@ static void ctdb_start_time_tickd(struct ctdb_context *ctdb)
 			ctdb_time_tick, ctdb);
 }
 
-
-/* called when CTDB is ready to process requests */
-static void ctdb_start_transport(struct ctdb_context *ctdb)
+static void ctdb_start_periodic_events(struct ctdb_context *ctdb)
 {
-	/* start the transport running */
-	if (ctdb->methods->start(ctdb) != 0) {
-		DEBUG(DEBUG_ALERT,("transport failed to start!\n"));
-		ctdb_fatal(ctdb, "transport failed to start");
-	}
-
-	/* start the recovery daemon process */
-	if (ctdb_start_recoverd(ctdb) != 0) {
-		DEBUG(DEBUG_ALERT,("Failed to start recovery daemon\n"));
-		exit(11);
-	}
-
-	/* Make sure we log something when the daemon terminates */
-	atexit(print_exit_message);
-
 	/* start monitoring for connected/disconnected nodes */
 	ctdb_start_keepalive(ctdb);
 
@@ -1061,6 +1044,14 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 				 0, CTDB_CONTROL_STARTUP, 0,
 				 CTDB_CTRL_FLAG_NOREPLY,
 				 tdb_null, NULL, NULL);
+
+	/* Start the recovery daemon */
+	if (ctdb_start_recoverd(ctdb) != 0) {
+		DEBUG(DEBUG_ALERT,("Failed to start recovery daemon\n"));
+		exit(11);
+	}
+
+	ctdb_start_periodic_events(ctdb);
 }
 
 static struct timeval tevent_before_wait_ts;
@@ -1284,11 +1275,21 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 		ctdb_release_all_ips(ctdb);
 	}
 
-	/* start the transport going */
-	ctdb_start_transport(ctdb);
 
+	/* Make sure we log something when the daemon terminates */
+	atexit(print_exit_message);
+
+	/* Start the transport */
+	if (ctdb->methods->start(ctdb) != 0) {
+		DEBUG(DEBUG_ALERT,("transport failed to start!\n"));
+		ctdb_fatal(ctdb, "transport failed to start");
+	}
+
+	/* Recovery daemon and timed events are started from the
+	 * callback, only after the setup event completes
+	 * successfully.
+	 */
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SETUP);
-
 	ret = ctdb_event_script_callback(ctdb,
 					 ctdb,
 					 ctdb_setup_event_callback,
