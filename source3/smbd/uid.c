@@ -194,6 +194,13 @@ static bool check_user_ok(connection_struct *conn,
 	for (i=0; i<VUID_CACHE_SIZE; i++) {
 		ent = &conn->vuid_cache.array[i];
 		if (ent->vuid == vuid) {
+			if (vuid == UID_FIELD_INVALID) {
+				/*
+				 * Slow path, we don't care
+				 * about the array traversal.
+				 */
+				continue;
+			}
 			free_conn_session_info_if_unused(conn);
 			conn->session_info = ent->session_info;
 			conn->read_only = ent->read_only;
@@ -239,6 +246,11 @@ static bool check_user_ok(connection_struct *conn,
 		return false;
 	}
 
+	/*
+	 * It's actually OK to call check_user_ok() with
+	 * vuid == UID_FIELD_INVALID as called from change_to_user_by_session().
+	 * All this will do is throw away one entry in the cache.
+	 */
 	ent->vuid = vuid;
 	ent->read_only = readonly_share;
 	set_connection_share_access_list_entry(conn,
@@ -246,6 +258,17 @@ static bool check_user_ok(connection_struct *conn,
 					share_access);
 	free_conn_session_info_if_unused(conn);
 	conn->session_info = ent->session_info;
+	if (vuid == UID_FIELD_INVALID) {
+		/*
+		 * Not strictly needed, just make it really
+		 * clear this entry is actually an unused one.
+		 */
+		ent->read_only = false;
+		set_connection_share_access_list_entry(conn,
+					share_array_index,
+					0);
+		ent->session_info = NULL;
+	}
 
 	conn->read_only = readonly_share;
 	conn->share_access = share_access;
