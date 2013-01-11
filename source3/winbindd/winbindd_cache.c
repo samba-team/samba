@@ -4605,6 +4605,33 @@ bool wcache_tdc_add_domain( struct winbindd_domain *domain )
 	return ret;	
 }
 
+static struct winbindd_tdc_domain *wcache_tdc_dup_domain(
+	TALLOC_CTX *mem_ctx, const struct winbindd_tdc_domain *src)
+{
+	struct winbindd_tdc_domain *dst;
+
+	dst = talloc(mem_ctx, struct winbindd_tdc_domain);
+	if (dst == NULL) {
+		goto fail;
+	}
+	dst->domain_name = talloc_strdup(dst, src->domain_name);
+	if (dst->domain_name == NULL) {
+		goto fail;
+	}
+	dst->dns_name = talloc_strdup(dst, src->dns_name);
+	if (dst->dns_name == NULL) {
+		goto fail;
+	}
+	sid_copy(&dst->sid, &src->sid);
+	dst->trust_flags = src->trust_flags;
+	dst->trust_type = src->trust_type;
+	dst->trust_attribs = src->trust_attribs;
+	return dst;
+fail:
+	TALLOC_FREE(dst);
+	return NULL;
+}
+
 /*********************************************************************
  ********************************************************************/
 
@@ -4632,17 +4659,7 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 			DEBUG(10,("wcache_tdc_fetch_domain: Found domain %s\n",
 				  name));
 
-			d = talloc( ctx, struct winbindd_tdc_domain );
-			if ( !d )
-				break;			
-
-			d->domain_name = talloc_strdup( d, dom_list[i].domain_name );
-			d->dns_name = talloc_strdup( d, dom_list[i].dns_name );
-			sid_copy( &d->sid, &dom_list[i].sid );
-			d->trust_flags   = dom_list[i].trust_flags;
-			d->trust_type    = dom_list[i].trust_type;
-			d->trust_attribs = dom_list[i].trust_attribs;
-
+			d = wcache_tdc_dup_domain(ctx, &dom_list[i]);
 			break;
 		}
 	}
@@ -4682,19 +4699,7 @@ struct winbindd_tdc_domain*
 				   dom_list[i].domain_name,
 				   sid_string_dbg(sid)));
 
-			d = talloc(ctx, struct winbindd_tdc_domain);
-			if (!d)
-				break;
-
-			d->domain_name = talloc_strdup(d,
-						       dom_list[i].domain_name);
-
-			d->dns_name = talloc_strdup(d, dom_list[i].dns_name);
-			sid_copy(&d->sid, &dom_list[i].sid);
-			d->trust_flags = dom_list[i].trust_flags;
-			d->trust_type = dom_list[i].trust_type;
-			d->trust_attribs = dom_list[i].trust_attribs;
-
+			d = wcache_tdc_dup_domain(ctx, &dom_list[i]);
 			break;
 		}
 	}
