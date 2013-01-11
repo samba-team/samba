@@ -4385,6 +4385,29 @@ static int control_runstate(struct ctdb_context *ctdb, int argc, const char **ar
 		printf("Unable to get runstate response from node %u\n",
 		       options.pnn);
 		return -1;
+	} else {
+		bool found = true;
+		enum ctdb_runstate t;
+		int i;
+		for (i=0; i<argc; i++) {
+			found = false;
+			t = runstate_from_string(argv[i]);
+			if (t == CTDB_RUNSTATE_UNKNOWN) {
+				printf("Invalid run state (%s)\n", argv[i]);
+				return -1;
+			}
+
+			if (t == runstate) {
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			printf("CTDB not in required run state (got %s)\n", 
+			       runstate_to_string((enum ctdb_runstate)runstate));
+			return -1;
+		}
 	}
 
 	printf("%s\n", runstate_to_string(runstate));
@@ -5824,7 +5847,7 @@ static const struct {
 	{ "status",          control_status,            true,	false,  "show node status" },
 	{ "uptime",          control_uptime,            true,	false,  "show node uptime" },
 	{ "ping",            control_ping,              true,	false,  "ping all nodes" },
-	{ "runstate",        control_runstate,          true,	false,  "get runstate of a node" },
+	{ "runstate",        control_runstate,          true,	false,  "get/check runstate of a node", "[setup|startup|running]" },
 	{ "getvar",          control_getvar,            true,	false,  "get a tunable variable",               "<name>"},
 	{ "setvar",          control_setvar,            true,	false,  "set a tunable variable",               "<name> <value>"},
 	{ "listvars",        control_listvars,          true,	false,  "list tunable variables"},

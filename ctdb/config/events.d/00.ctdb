@@ -53,7 +53,7 @@ wait_until_ready () {
     _timeout="${1:-10}" # default is 10 seconds
 
     _count=0
-    while ! ctdb ping >/dev/null 2>&1 ; do
+    while ! ctdb runstate setup >/dev/null 2>&1 ; do
 	if [ $_count -ge $_timeout ] ; then
 	    return 1
 	fi
