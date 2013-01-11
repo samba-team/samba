@@ -4373,6 +4373,26 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 
 
 /*
+  get a node's runstate
+ */
+static int control_runstate(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	enum ctdb_runstate runstate;
+
+	ret = ctdb_ctrl_get_runstate(ctdb, TIMELIMIT(), options.pnn, &runstate);
+	if (ret == -1) {
+		printf("Unable to get runstate response from node %u\n",
+		       options.pnn);
+		return -1;
+	}
+
+	printf("%s\n", runstate_to_string(runstate));
+	return 0;
+}
+
+
+/*
   get a tunable
  */
 static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5804,6 +5824,7 @@ static const struct {
 	{ "status",          control_status,            true,	false,  "show node status" },
 	{ "uptime",          control_uptime,            true,	false,  "show node uptime" },
 	{ "ping",            control_ping,              true,	false,  "ping all nodes" },
+	{ "runstate",        control_runstate,          true,	false,  "get runstate of a node" },
 	{ "getvar",          control_getvar,            true,	false,  "get a tunable variable",               "<name>"},
 	{ "setvar",          control_setvar,            true,	false,  "set a tunable variable",               "<name> <value>"},
 	{ "listvars",        control_listvars,          true,	false,  "list tunable variables"},

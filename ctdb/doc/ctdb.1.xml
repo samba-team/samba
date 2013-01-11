@@ -382,6 +382,23 @@ response from 3 time=0.000114 sec  (2 clients)
       </screen>
     </refsect2>
 
+    <refsect2><title>runstate</title>
+      <para>
+        Print the runstate of the specified node.  Runstates are used
+        to serialise important state transitions in CTDB, particularly
+        during startup.
+      </para>
+      <para>
+	Example: ctdb runstate
+      </para>
+      <para>
+	Example output:
+      </para>
+      <screen format="linespecific">
+RUNNING
+      </screen>
+    </refsect2>
+
     <refsect2><title>ifaces</title>
       <para>
 	This command will display the list of network interfaces, which could
