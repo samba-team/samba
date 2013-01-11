@@ -452,6 +452,11 @@ int dbwrap_get_seqnum(struct db_context *db)
 
 int dbwrap_transaction_start(struct db_context *db)
 {
+	if (!db->persistent) {
+		DEBUG(1, ("transactions not supported on non-persistent "
+			  "database %s\n", db->name));
+		return -1;
+	}
 	return db->transaction_start(db);
 }
 
