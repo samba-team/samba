@@ -1112,7 +1112,7 @@ AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetg
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(getgrset)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf stat64 fstat64)
-AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64)
+AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt posix_openpt lseek64 ftruncate64 posix_fallocate posix_fallocate64)
 AC_CHECK_FUNCS(fallocate fallocate64)
 AC_CHECK_FUNCS(fseeko fseek64 fseeko64 ftell64 ftello64 setluid getpwanam)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
