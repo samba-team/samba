@@ -971,7 +971,7 @@ AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetg
 AC_CHECK_FUNCS(initgroups select rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(getgrset)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups syscall sysconf)
-AC_CHECK_FUNCS(atexit grantpt posix_fallocate)
+AC_CHECK_FUNCS(atexit grantpt posix_openpt posix_fallocate)
 AC_CHECK_FUNCS(fallocate)
 AC_CHECK_FUNCS(fseeko setluid getpwanam)
 AC_CHECK_FUNCS(fdopendir)
