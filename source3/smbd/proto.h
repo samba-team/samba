@@ -145,6 +145,11 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 
 /* The following definitions come from smbd/conn.c  */
 
+uint32_t get_connection_share_access_list_entry(connection_struct *conn,
+						unsigned int i);
+void set_connection_share_access_list_entry(connection_struct *conn,
+						unsigned int i,
+						uint32_t val);
 int conn_num_open(struct smbd_server_connection *sconn);
 bool conn_snum_used(struct smbd_server_connection *sconn, int snum);
 connection_struct *conn_new(struct smbd_server_connection *sconn);
