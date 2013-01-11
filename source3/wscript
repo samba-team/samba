@@ -123,7 +123,7 @@ def configure(conf):
     conf.CHECK_FUNCS('sigprocmask sigblock sigaction sigset innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
     conf.CHECK_FUNCS('setpriv setgidx setuidx setgroups sysconf stat64 fstat64')
-    conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt lseek64 ftruncate64 fallocate fallocate64 posix_fallocate posix_fallocate64')
+    conf.CHECK_FUNCS('lstat64 fopen64 atexit grantpt posix_openpt lseek64 ftruncate64 fallocate fallocate64 posix_fallocate posix_fallocate64')
     conf.CHECK_FUNCS('fseeko fseek64 fseeko64 ftell64 ftello64 setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
