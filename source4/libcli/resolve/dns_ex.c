@@ -140,6 +140,7 @@ static int reply_to_addrs(TALLOC_CTX *mem_ctx, uint32_t *a_num,
 			if (addr == NULL) {
 				continue;
 			}
+			break;
 		default:
 			continue;
 		}
