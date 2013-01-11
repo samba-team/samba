@@ -89,7 +89,7 @@ static bool open_db(struct idmap_tdb_common_context *ctx)
 		return false;
 	}
 
-	ctx->db = db_open(ctx, db_path, 0, TDB_DEFAULT | TDB_CLEAR_IF_FIRST,
+	ctx->db = db_open(ctx, db_path, 0, TDB_DEFAULT,
 			  O_RDWR | O_CREAT, 0600,
 			  DBWRAP_LOCK_ORDER_1);
 
