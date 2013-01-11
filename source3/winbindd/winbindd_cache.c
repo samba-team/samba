@@ -4455,7 +4455,9 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 	}
 
 	for ( i=0; i<num_domains; i++ ) {
-		len += tdb_unpack( buf+len, buflen-len, "fffddd",
+		int this_len;
+
+		this_len = tdb_unpack( buf+len, buflen-len, "fffddd",
 				   domain_name,
 				   dns_name,
 				   sid_string,
@@ -4463,11 +4465,12 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 				   &attribs,
 				   &type );
 
-		if ( len == -1 ) {
+		if ( this_len == -1 ) {
 			DEBUG(5,("unpack_tdc_domains: Failed to unpack domain array\n"));
 			TALLOC_FREE( list );			
 			return 0;
 		}
+		len += this_len;
 
 		DEBUG(11,("unpack_tdc_domains: Unpacking domain %s (%s) "
 			  "SID %s, flags = 0x%x, attribs = 0x%x, type = 0x%x\n",
