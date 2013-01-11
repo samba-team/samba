@@ -141,7 +141,9 @@ static struct la_context *linked_attributes_init(struct ldb_module *module,
 /*
   turn a DN into a GUID
  */
-static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID *guid)
+static int la_guid_from_dn(struct ldb_module *module,
+			   struct ldb_request *parent,
+			   struct ldb_dn *dn, struct GUID *guid)
 {
 	NTSTATUS status;
 	int ret;
@@ -153,10 +155,10 @@ static int la_guid_from_dn(struct la_context *ac, struct ldb_dn *dn, struct GUID
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		DEBUG(4,(__location__ ": Unable to parse GUID for dn %s\n",
 			 ldb_dn_get_linearized(dn)));
-		return ldb_operr(ldb_module_get_ctx(ac->module));
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
-	ret = dsdb_module_guid_by_dn(ac->module, dn, guid, ac->req);
+	ret = dsdb_module_guid_by_dn(module, dn, guid, parent);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(4,(__location__ ": Failed to find GUID for dn %s\n",
 			 ldb_dn_get_linearized(dn)));
@@ -193,7 +195,7 @@ static int la_store_op(struct la_context *ac,
 
 	os->op = op;
 
-	ret = la_guid_from_dn(ac, op_dn, &os->guid);
+	ret = la_guid_from_dn(ac->module, ac->req, op_dn, &os->guid);
 	talloc_free(op_dn);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT && ac->req->operation == LDB_DELETE) {
 		/* we are deleting an object, and we've found it has a
@@ -658,6 +660,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 }
 
 static int linked_attributes_fix_links(struct ldb_module *module,
+				       struct GUID self_guid,
 				       struct ldb_dn *old_dn, struct ldb_dn *new_dn,
 				       struct ldb_message_element *el, struct dsdb_schema *schema,
 				       const struct dsdb_attribute *schema_attr,
@@ -684,6 +687,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		struct ldb_result *res;
 		struct ldb_message *msg;
 		struct ldb_message_element *el2;
+		struct GUID link_guid;
 
 		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i], schema_attr->syntax->ldap_oid);
 		if (dsdb_dn == NULL) {
@@ -691,17 +695,36 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 
-		ret = dsdb_module_search_dn(module, tmp_ctx, &res, dsdb_dn->dn,
-					    attrs,
-					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_RECYCLED |
-					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
-					    DSDB_SEARCH_REVEAL_INTERNALS, parent);
+		ret = la_guid_from_dn(module, parent, dsdb_dn->dn, &link_guid);
 		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - remote not found - %s",
+			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - GUID not found - %s",
 					       el->name, target->lDAPDisplayName,
 					       ldb_dn_get_linearized(old_dn),
 					       ldb_dn_get_linearized(dsdb_dn->dn),
+					       ldb_errstring(ldb));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		/*
+		 * get the existing message from the db for the object with
+		 * this GUID, returning attribute being modified. We will then
+		 * use this msg as the basis for a modify call
+		 */
+		ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
+					 DSDB_FLAG_NEXT_MODULE |
+					 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
+					 DSDB_SEARCH_SHOW_RECYCLED |
+					 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+					 DSDB_SEARCH_REVEAL_INTERNALS,
+					 parent,
+					 "objectGUID=%s", GUID_string(tmp_ctx, &link_guid));
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - target GUID %s not found - %s",
+					       el->name, target->lDAPDisplayName,
+					       ldb_dn_get_linearized(old_dn),
+					       ldb_dn_get_linearized(dsdb_dn->dn),
+					       GUID_string(tmp_ctx, &link_guid),
 					       ldb_errstring(ldb));
 			talloc_free(tmp_ctx);
 			return ret;
@@ -729,14 +752,34 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		/* find our DN in the values */
 		for (j=0; j<el2->num_values; j++) {
 			struct dsdb_dn *dsdb_dn2;
+			struct GUID link_guid;
+
 			dsdb_dn2 = dsdb_dn_parse(msg, ldb, &el2->values[j], target->syntax->ldap_oid);
 			if (dsdb_dn2 == NULL) {
 				talloc_free(tmp_ctx);
 				return LDB_ERR_INVALID_DN_SYNTAX;
 			}
-			if (ldb_dn_compare(old_dn, dsdb_dn2->dn) != 0) {
+
+			ret = la_guid_from_dn(module, parent, dsdb_dn2->dn, &link_guid);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+
+			/*
+			 * By comparing using the GUID we ensure that
+			 * even if somehow the name has got out of
+			 * sync, this rename will fix it.
+			 *
+			 * If somehow we don't have a GUID on the DN
+			 * in the DB, the la_guid_from_dn call will be
+			 * more costly, but still give us a GUID.
+			 * dbcheck will fix this if run.
+			 */
+			if (!GUID_equal(&self_guid, &link_guid)) {
 				continue;
 			}
+
 			ret = ldb_dn_update_components(dsdb_dn2->dn, new_dn);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
@@ -783,6 +826,8 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_schema *schema;
 	int ret;
+	struct GUID guid;
+
 	/*
 	   - load the current msg
 	   - find any linked attributes
@@ -792,6 +837,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	ret = dsdb_module_search_dn(module, req, &res, req->op.rename.olddn,
 				    NULL,
 				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_EXTENDED_DN |
 				    DSDB_SEARCH_SHOW_RECYCLED, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -804,6 +850,11 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 
 	msg = res->msgs[0];
 
+	ret = la_guid_from_dn(module, req, msg->dn, &guid);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		const struct dsdb_attribute *schema_attr
@@ -811,7 +862,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 		if (!schema_attr || schema_attr->linkID == 0) {
 			continue;
 		}
-		ret = linked_attributes_fix_links(module, msg->dn, req->op.rename.newdn, el,
+		ret = linked_attributes_fix_links(module, guid, msg->dn, req->op.rename.newdn, el,
 						  schema, schema_attr, req);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(res);
