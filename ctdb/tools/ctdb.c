@@ -4935,7 +4935,7 @@ static int control_setdbseqnum(struct ctdb_context *ctdb, int argc, const char *
 	}
 
 	key.dptr  = (uint8_t *)discard_const(CTDB_DB_SEQNUM_KEY);
-	key.dsize = strlen(key.dptr) + 1;
+	key.dsize = strlen(CTDB_DB_SEQNUM_KEY) + 1;
 
 	data.dsize = sizeof(new_seqnum);
 	data.dptr = talloc_size(tmp_ctx, data.dsize);
