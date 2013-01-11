@@ -74,7 +74,8 @@ static int findpty(char **slave)
 
 #if defined(HAVE_GRANTPT)
 	/* Try to open /dev/ptmx. If that fails, fall through to old method. */
-	if ((master = sys_open("/dev/ptmx", O_RDWR, 0)) >= 0) {
+	master = sys_open("/dev/ptmx", O_RDWR, 0);
+	if (master >= 0) {
 		grantpt(master);
 		unlockpt(master);
 		line = (char *)ptsname(master);
