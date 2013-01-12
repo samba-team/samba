@@ -103,6 +103,17 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h malloc.h')
     conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h')
 
+    conf.CHECK_CODE('''
+                    #include <unistd.h>
+                    #ifdef HAVE_FCNTL_H
+                    #include <fcntl.h>
+                    #endif
+                    int main(void) { int fd = open("/dev/null", O_DIRECT); }
+                    ''',
+                    define='HAVE_OPEN_O_DIRECT',
+                    addmain=False,
+                    msg='Checking for O_DIRECT flag to open(2)')
+
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t comparison_fn_t')
     conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
     conf.CHECK_TYPE('bool', define='HAVE_BOOL')
