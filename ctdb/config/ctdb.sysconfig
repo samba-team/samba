@@ -291,7 +291,7 @@ CTDB_DEBUGLEVEL=ERR
 
 # Monitor filesystem useage.
 # when set, and the 40.fs_use eventscript is enabled, this variable
-# allows to monitor the filesystem use and flag a node as unhealthy when
+# allows one to monitor the filesystem use and flag a node as unhealthy when
 # the filesystem becomes too full.
 # This is useful for example when /var grows too big.
 # Example: monitor both / and /var and make the node unhealthy when eitehr go

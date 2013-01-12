@@ -989,7 +989,7 @@
     the node and prevented from being migrated off the node.
     </para>
     <para>
-    This setting allows to try to identify such records and stop them from 
+    This setting allows one to try to identify such records and stop them from
     migrating across the cluster so fast. This will improve performance for
     certain workloads, such as locking.tdb if many clients are opening/closing
     the same file concurrently.
