@@ -357,6 +357,16 @@ if test x"$libreplace_cv_sig_atomic_t" = x"yes"; then
 fi
 
 
+dnl Check if the C compiler understands volatile (it should, being ANSI).
+AC_CACHE_CHECK([that the C compiler understands volatile],libreplace_cv_volatile, [
+	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
+		libreplace_cv_volatile=yes,libreplace_cv_volatile=no)])
+if test x"$libreplace_cv_volatile" = x"yes"; then
+	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
+fi
+
+m4_include(system/config.m4)
+
 AC_CACHE_CHECK([for O_DIRECT flag to open(2)],libreplace_cv_HAVE_OPEN_O_DIRECT,[
 AC_TRY_COMPILE([
 #include <unistd.h>
@@ -368,17 +378,6 @@ libreplace_cv_HAVE_OPEN_O_DIRECT=yes,libreplace_cv_HAVE_OPEN_O_DIRECT=no)])
 if test x"$libreplace_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
     AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
 fi
-
-
-dnl Check if the C compiler understands volatile (it should, being ANSI).
-AC_CACHE_CHECK([that the C compiler understands volatile],libreplace_cv_volatile, [
-	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
-		libreplace_cv_volatile=yes,libreplace_cv_volatile=no)])
-if test x"$libreplace_cv_volatile" = x"yes"; then
-	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
-fi
-
-m4_include(system/config.m4)
 
 m4_include(dlfcn.m4)
 m4_include(strptime.m4)
