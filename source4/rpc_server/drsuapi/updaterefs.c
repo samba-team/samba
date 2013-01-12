@@ -172,9 +172,11 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 	W_ERROR_HAVE_NO_MEMORY(dn);
 	ret = dsdb_find_nc_root(sam_ctx, dn, dn, &nc_root);
 	if (ret != LDB_SUCCESS) {
+		DEBUG(2, ("Didn't find a nc for %s\n", ldb_dn_get_linearized(dn)));
 		return WERR_DS_DRA_BAD_NC;
 	}
 	if (ldb_dn_compare(dn, nc_root) != 0) {
+		DEBUG(2, ("dn %s is not equal to %s\n", ldb_dn_get_linearized(dn), ldb_dn_get_linearized(nc_root)));
 		return WERR_DS_DRA_BAD_NC;
 	}
 
