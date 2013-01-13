@@ -107,3 +107,4 @@ bench # don't run benchmarks in our selftest
 ^samba4.rpc.unixinfo # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 ^samba.tests.dcerpc.unix  # This contains a server-side getpwuid call which hangs the server when nss_winbindd is in use
 base.dir2 # This test spins on modern ext4, so we have to skip it
+raw.search # This test spins on modern ext4, so we have to skip it
