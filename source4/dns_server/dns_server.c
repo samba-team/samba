@@ -239,6 +239,10 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (DEBUGLVL(8)) {
+		NDR_PRINT_DEBUG(dns_name_packet, &state->out_packet);
+	}
+
 	ndr_err = ndr_push_struct_blob(
 		out, mem_ctx, &state->out_packet,
 		(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
