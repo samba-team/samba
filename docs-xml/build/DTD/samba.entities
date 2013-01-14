@@ -241,6 +241,18 @@ log.smbd, etc...). The log file is never removed by the client.
 </para></listitem>
 </varlistentry>'>
 
+<!ENTITY stdarg.option '
+<varlistentry>
+<term>--option=&lt;name&gt;=&lt;value&gt;</term>
+<listitem><para>Set the
+<citerefentry><refentrytitle>smb.conf</refentrytitle>
+<manvolnum>5</manvolnum></citerefentry>
+option "&lt;name&gt;" to value "&lt;value&gt;" from the command line.
+This overrides compiled-in defaults and options read from the configuration
+file.
+</para></listitem>
+</varlistentry>'>
+
 <!ENTITY popt.common.samba '
 &stdarg.version;
 &stdarg.configfile;
