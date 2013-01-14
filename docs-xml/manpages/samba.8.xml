@@ -126,40 +126,13 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-?|--help</term>
-		<listitem><para>Show help message.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>--usage</term>
 		<listitem><para>Display brief usage message.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-d|--debuglevel=DEBUGLEVEL</term>
-		<listitem><para>Set debug level.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
 		<term>--debug-stderr</term>
 		<listitem><para>Send debug output to STDERR.</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-s|--configfile=CONFIGFILE</term>
-		<listitem><para>Use alternative configuration file.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>--option=SMB_CONF_PARAM=VALUE</term>
-		<listitem><para>Set smb.conf option from command line.
-		</para></listitem>
-		</varlistentry>
-
-		<varlistentry>
-		<term>-l|--log-basename=LOGFILEBASE</term>
-		<listitem><para>Basename for log/debug files.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -174,10 +147,8 @@
 		</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-V|--version</term>
-		<listitem><para>Print version.</para></listitem>
-		</varlistentry>
+		&popt.common.samba.server;
+		&stdarg.help;
 	</variablelist>
 </refsect1>
 
