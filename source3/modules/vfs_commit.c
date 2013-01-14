@@ -307,10 +307,10 @@ static int commit_ftruncate(
 static struct vfs_fn_pointers vfs_commit_fns = {
         .open_fn = commit_open,
         .close_fn = commit_close,
-        .write = commit_write,
-        .pwrite = commit_pwrite,
+        .write_fn = commit_write,
+        .pwrite_fn = commit_pwrite,
         .connect_fn = commit_connect,
-        .ftruncate = commit_ftruncate
+        .ftruncate_fn = commit_ftruncate
 };
 
 NTSTATUS vfs_commit_init(void);
