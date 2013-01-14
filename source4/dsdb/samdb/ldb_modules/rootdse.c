@@ -1297,6 +1297,7 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 struct fsmo_transfer_state {
 	struct ldb_context *ldb;
 	struct ldb_request *req;
+	struct ldb_module *module;
 };
 
 /*
@@ -1307,6 +1308,7 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 	struct fsmo_transfer_state *fsmo = tevent_req_callback_data(treq, struct fsmo_transfer_state);
 	NTSTATUS status;
 	WERROR werr;
+	int ret;
 	struct ldb_request *req = fsmo->req;
 	struct ldb_context *ldb = fsmo->ldb;
 
@@ -1314,16 +1316,31 @@ static void rootdse_fsmo_transfer_callback(struct tevent_req *treq)
 	talloc_free(fsmo);
 	if (!NT_STATUS_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb, "Failed FSMO transfer: %s", nt_errstr(status));
+		/*
+		 * Now that it is failed, start the transaction up
+		 * again so the wrappers can close it without additional error
+		 */
+		ldb_next_start_trans(fsmo->module);
 		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
 		return;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		ldb_asprintf_errstring(ldb, "Failed FSMO transfer: %s", win_errstr(werr));
+		/*
+		 * Now that it is failed, start the transaction up
+		 * again so the wrappers can close it without additional error
+		 */
+		ldb_next_start_trans(fsmo->module);
 		ldb_module_done(req, NULL, NULL, LDB_ERR_UNAVAILABLE);
 		return;
 	}
 
-	ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+	/*
+	 * Now that it is done, start the transaction up again so the
+	 * wrappers can close it without error
+	 */
+	ret = ldb_next_start_trans(fsmo->module);
+	ldb_module_done(req, NULL, NULL, ret);
 }
 
 static int rootdse_become_master(struct ldb_module *module,
@@ -1358,6 +1375,13 @@ static int rootdse_become_master(struct ldb_module *module,
 				 "RODC cannot become a role master.");
 	}
 
+	/*
+	 * We always delete the transaction, not commit it, because
+	 * this gives the least supprise to this supprising action (as
+	 * we will never record anything done to this point
+	 */
+	ldb_next_del_trans(module);
+
 	msg = imessaging_client_init(tmp_ctx, lp_ctx,
 				    ldb_get_event_context(ldb));
 	if (!msg) {
@@ -1376,6 +1400,7 @@ static int rootdse_become_master(struct ldb_module *module,
 	}
 	fsmo->ldb = ldb;
 	fsmo->req = req;
+	fsmo->module = module;
 
 	/*
 	 * we send the call asynchronously, as the ldap client is

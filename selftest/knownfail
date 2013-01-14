@@ -135,7 +135,6 @@
 ^samba4.smb2.acls.*.owner
 ^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
 #^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
-^samba4.drs.fsmo.python
 ^samba4.libsmbclient.opendir.opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
 ^samba4.rpc.drsuapi.*.drsuapi.DsCrackNames\(.*\)$
