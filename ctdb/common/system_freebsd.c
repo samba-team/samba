@@ -76,7 +76,7 @@ static uint16_t tcp_checksum6(uint16_t *data, size_t n, struct ip6_hdr *ip6)
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
 	/* FIXME FreeBSD: We dont do gratuitous arp yet */
-	return 0;
+	return -1;
 }
 
 

@@ -206,8 +206,8 @@ int ctdb_sys_close_capture_socket(void *private_data)
  */
 int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 {
-	/* We dont do grat arp on aix yet */
-	return 0;
+	/* FIXME AIX: We dont do gratuitous arp yet */
+	return -1;
 }
 
 
