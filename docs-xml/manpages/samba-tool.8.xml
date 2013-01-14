@@ -47,27 +47,6 @@
 	</varlistentry>
 
 	<varlistentry>
-	<term>-s FILE|--configfile=FILE</term>
-	<listitem><para>
-	Configuration file
-	</para></listitem>
-	</varlistentry>
-
-	<varlistentry>
-	<term>-d DEBUGLEVEL|--debuglevel=DEBUGLEVEL</term>
-	<listitem><para>
-	Debug Level
-	</para></listitem>
-	</varlistentry>
-
-	<varlistentry>
-	<term>--option=OPTION</term>
-	<listitem><para>
-	Set smb.conf option from command line
-	</para></listitem>
-	</varlistentry>
-
-	<varlistentry>
 	<term>--realm=REALM</term>
 	<listitem><para>
 	Set the realm name
@@ -123,12 +102,7 @@
 	</para></listitem>
 	</varlistentry>
 
-	<varlistentry>
-	<term>-V|--version</term>
-	<listitem><para>
-	Display version number
-	</para></listitem>
-	</varlistentry>
+	&popt.common.samba.client;
 
 	</variablelist>
 </refsect1>
