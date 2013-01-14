@@ -40,6 +40,10 @@
 #include <setjmp.h>
 #endif
 
+#ifdef HAVE_SYS_UCONTEXT_H
+#include <sys/ucontext.h>
+#endif
+
 #if !defined(HAVE_SIG_ATOMIC_T_TYPE)
 typedef int sig_atomic_t;
 #endif
