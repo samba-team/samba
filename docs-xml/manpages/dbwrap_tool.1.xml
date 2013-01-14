@@ -19,6 +19,7 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>dbwrap_tool</command>
+		<arg choice="opt">--persistent</arg>
 		<arg choice="opt">-d &lt;debug level&gt;</arg>
 		<arg choice="opt">-s &lt;config file&gt;</arg>
 		<arg choice="opt">-l &lt;log file base&gt;</arg>
@@ -67,6 +68,13 @@
 	<title>OPTIONS</title>
 
 	<variablelist>
+		<varlistentry>
+			<term>--persistent</term>
+			<listitem><para>Open the database as a persistent database.
+			If this option is not specified, the database is opened as
+			non-persistent.
+			</para></listitem>
+		</varlistentry>
 		&popt.common.samba.client;
 		&stdarg.help;
 	</variablelist>
@@ -115,17 +123,17 @@
 	<title>EXAMPLES</title>
 	<variablelist>
 		<varlistentry><term>List all keys from winbindd_idmap.tdb</term>
-			<listitem><para><command>dbwrap_tool</command> winbindd_idmap.tdb listkeys</para></listitem>
+			<listitem><para><command>dbwrap_tool</command> --persistent winbindd_idmap.tdb listkeys</para></listitem>
 		</varlistentry>
 		<varlistentry><term>Fetch record with key "USER HWM" as uint32</term>
-			<listitem><para><command>dbwrap_tool</command> winbindd_idmap.tdb fetch "USER HWM" uint32</para></listitem>
+			<listitem><para><command>dbwrap_tool</command> --persistent winbindd_idmap.tdb fetch "USER HWM" uint32</para></listitem>
 		</varlistentry>
 		<varlistentry><term>Remove record with key "USER HWM"</term>
-			<listitem><para><command>dbwrap_tool</command> winbindd_idmap.tdb remove "USER HWM"</para></listitem>
+			<listitem><para><command>dbwrap_tool</command> --persistent winbindd_idmap.tdb remove "USER HWM"</para></listitem>
 		</varlistentry>
 		<varlistentry><term>Store and overwrite record "USER HWM" with value 214</term>
-			<listitem><para>uint32: <command>dbwrap_tool</command> winbindd_idmap.tdb store "USER HWM" uint32 214</para></listitem>
-			<listitem><para>hex: <command>dbwrap_tool</command> winbindd_idmap.tdb store "USER HWM" hex D6000000</para></listitem>
+			<listitem><para>uint32: <command>dbwrap_tool</command> --persistent winbindd_idmap.tdb store "USER HWM" uint32 214</para></listitem>
+			<listitem><para>hex: <command>dbwrap_tool</command> --persistent winbindd_idmap.tdb store "USER HWM" hex D6000000</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
