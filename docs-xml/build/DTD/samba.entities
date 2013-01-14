@@ -214,7 +214,7 @@ in the &smb.conf; file.</para>
 
 <!ENTITY stdarg.configfile '
 <varlistentry>
-<term>-s|--configfile &lt;configuration file&gt;</term>
+<term>-s|--configfile=&lt;configuration file&gt;</term>
 <listitem><para>The file specified contains the 
 configuration details required by the server.  The 
 information in this file includes server-specific
