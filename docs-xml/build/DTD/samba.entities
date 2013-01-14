@@ -257,6 +257,7 @@ file.
 &stdarg.version;
 &stdarg.configfile;
 &stdarg.log-basename;
+&stdarg.option;
 '>
 
 <!ENTITY stdarg.resolve.order '
