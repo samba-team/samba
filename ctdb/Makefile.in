@@ -104,6 +104,7 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_takeover_tests tests/bin/ctdb_update_record \
 	tests/bin/ctdb_update_record_persistent \
 	tests/bin/ctdb_tool_libctdb tests/bin/ctdb_tool_stubby \
+	tests/bin/ctdb_porting_tests \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool @CTDB_PMDA@
@@ -256,6 +257,10 @@ tests/bin/ctdb_randrec: $(CTDB_CLIENT_OBJ) tests/src/ctdb_randrec.o
 tests/bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_persistent.o 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+
+tests/bin/ctdb_porting_tests: $(CTDB_CLIENT_OBJ) tests/src/ctdb_porting_tests.o
+	@echo Linking $@
+	$(CC) $(CFLAGS) -o $@ tests/src/ctdb_porting_tests.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o 
 	@echo Linking $@
