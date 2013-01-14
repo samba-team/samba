@@ -2804,8 +2804,8 @@ static bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 						   servername);
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
-		r.in.level = 1;
-		r.in.userlevel.level1 = &userlevel1;
+		r.in.userlevel_ctr.level = 1;
+		r.in.userlevel_ctr.user_info.level1 = &userlevel1;
 		r.out.handle = &server_handle;
 
 		torture_assert_ntstatus_ok(torture,
@@ -2836,8 +2836,8 @@ static bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 			torture, "\\\\%s\\%s", servername, printers[0]);
 		r.in.datatype = NULL;
 		r.in.access_mask = 0;
-		r.in.level = 1;
-		r.in.userlevel.level1 = &userlevel1;
+		r.in.userlevel_ctr.level = 1;
+		r.in.userlevel_ctr.user_info.level1 = &userlevel1;
 		r.out.handle = &printer_handle;
 
 		torture_assert_ntstatus_ok(torture,

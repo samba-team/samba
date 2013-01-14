@@ -83,8 +83,8 @@ static bool test_openprinter_handle(struct torture_context *tctx,
 	r.in.datatype		= NULL;
 	r.in.devmode_ctr.devmode= NULL;
 	r.in.access_mask	= access_mask;
-	r.in.level		= 1;
-	r.in.userlevel.level1	= &level1;
+	r.in.userlevel_ctr.level = 1;
+	r.in.userlevel_ctr.user_info.level1 = &level1;
 	r.out.handle		= handle;
 
 	torture_comment(tctx, "Testing OpenPrinterEx(%s) with access_mask 0x%08x (%s)\n",

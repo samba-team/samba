@@ -1632,15 +1632,17 @@ WERROR _spoolss_OpenPrinter(struct pipes_struct *p,
 			    struct spoolss_OpenPrinter *r)
 {
 	struct spoolss_OpenPrinterEx e;
+	struct spoolss_UserLevel1 level1;
 	WERROR werr;
 
-	ZERO_STRUCT(e.in.userlevel);
+	ZERO_STRUCT(level1);
 
 	e.in.printername	= r->in.printername;
 	e.in.datatype		= r->in.datatype;
 	e.in.devmode_ctr	= r->in.devmode_ctr;
 	e.in.access_mask	= r->in.access_mask;
-	e.in.level		= 0;
+	e.in.userlevel_ctr.level		= 1;
+	e.in.userlevel_ctr.user_info.level1	= &level1;
 
 	e.out.handle		= r->out.handle;
 
@@ -1714,12 +1716,12 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.level > 3) {
+	if (r->in.userlevel_ctr.level > 3) {
 		return WERR_INVALID_PARAM;
 	}
-	if ((r->in.level == 1 && !r->in.userlevel.level1) ||
-	    (r->in.level == 2 && !r->in.userlevel.level2) ||
-	    (r->in.level == 3 && !r->in.userlevel.level3)) {
+	if ((r->in.userlevel_ctr.level == 1 && !r->in.userlevel_ctr.user_info.level1) ||
+	    (r->in.userlevel_ctr.level == 2 && !r->in.userlevel_ctr.user_info.level2) ||
+	    (r->in.userlevel_ctr.level == 3 && !r->in.userlevel_ctr.user_info.level3)) {
 		return WERR_INVALID_PARAM;
 	}
 

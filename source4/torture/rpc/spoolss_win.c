@@ -54,8 +54,8 @@ static bool test_OpenPrinterEx(struct torture_context *tctx,
 	op.in.datatype			= NULL;
 	op.in.devmode_ctr.devmode	= NULL;
 	op.in.access_mask		= access_mask;
-	op.in.level			= 1;
-	op.in.userlevel.level1		= &ul_1;
+	op.in.userlevel_ctr.level	= 1;
+	op.in.userlevel_ctr.user_info.level1 = &ul_1;
 	op.out.handle			= handle;
 
 	ul_1.size 			= 1234;
@@ -95,8 +95,8 @@ static bool test_OpenPrinterAsAdmin(struct torture_context *tctx,
 	op.in.datatype			= NULL;
 	op.in.devmode_ctr.devmode	= NULL;
 	op.in.access_mask		= SERVER_ALL_ACCESS;
-	op.in.level			= 1;
-	op.in.userlevel.level1		= &ul_1;
+	op.in.userlevel_ctr.level	= 1;
+	op.in.userlevel_ctr.user_info.level1 = &ul_1;
 	op.out.handle			= &handle;
 
 	cp.in.handle			= &handle;

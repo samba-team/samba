@@ -40,7 +40,7 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werror;
 	struct spoolss_DevmodeContainer devmode_ctr;
-	union spoolss_UserLevel userlevel;
+	struct spoolss_UserLevelCtr userlevel_ctr;
 	struct spoolss_UserLevel1 level1;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
@@ -55,15 +55,15 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	level1.minor	= 0;
 	level1.processor = 0;
 
-	userlevel.level1 = &level1;
+	userlevel_ctr.level = 1;
+	userlevel_ctr.user_info.level1 = &level1;
 
 	status = dcerpc_spoolss_OpenPrinterEx(b, mem_ctx,
 					      printername,
 					      NULL,
 					      devmode_ctr,
 					      access_desired,
-					      1, /* level */
-					      userlevel,
+					      userlevel_ctr,
 					      handle,
 					      &werror);
 

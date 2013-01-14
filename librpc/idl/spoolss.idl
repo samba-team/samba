@@ -2821,8 +2821,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[in,unique]           [string,charset(UTF16)] uint16 *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,
 		[in]	              spoolss_AccessRights access_mask,
-		[in]	              uint32 level,
-		[in,switch_is(level)] spoolss_UserLevel userlevel,
+		[in]	              spoolss_UserLevelCtr userlevel_ctr,
 		[out,ref]	      policy_handle *handle
 	);
 

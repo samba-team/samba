@@ -269,9 +269,8 @@ static WERROR dcesrv_spoolss_OpenPrinter(struct dcesrv_call_state *dce_call, TAL
 	r2->in.datatype		= r->in.datatype;
 	r2->in.devmode_ctr	= r->in.devmode_ctr;
 	r2->in.access_mask	= r->in.access_mask;
-	r2->in.level		= 1;
-	r2->in.userlevel.level1	= NULL;
-
+	r2->in.userlevel_ctr.level	= 1;
+	r2->in.userlevel_ctr.user_info.level1 = NULL;
 	r2->out.handle		= r->out.handle;
 
 	/* TODO: we should take care about async replies here,
