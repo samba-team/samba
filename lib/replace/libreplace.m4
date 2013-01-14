@@ -66,7 +66,7 @@ AC_FUNC_MEMCMP
 AC_CHECK_FUNCS([pipe strftime srandom random srand rand usleep setbuffer lstat getpgrp utime utimes])
 
 AC_CHECK_HEADERS(stdbool.h stdint.h sys/select.h)
-AC_CHECK_HEADERS(setjmp.h utime.h)
+AC_CHECK_HEADERS(setjmp.h utime.h sys/wait.h)
 
 LIBREPLACE_PROVIDE_HEADER([stdint.h])
 LIBREPLACE_PROVIDE_HEADER([stdbool.h])
