@@ -29,6 +29,9 @@
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_DNS
+
 static WERROR dns_copy_tsig(TALLOC_CTX *mem_ctx,
 			    struct dns_res_rec *old,
 			    struct dns_res_rec *new_rec)

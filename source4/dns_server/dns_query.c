@@ -37,6 +37,9 @@
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_DNS
+
 static WERROR create_response_rr(const struct dns_name_question *question,
 				 const struct dnsp_DnssrvRpcRecord *rec,
 				 struct dns_res_rec **answers, uint16_t *ancount)

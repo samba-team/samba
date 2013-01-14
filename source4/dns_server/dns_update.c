@@ -33,6 +33,9 @@
 #include "dns_server/dns_server.h"
 #include "auth/auth.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_DNS
+
 static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 			     const struct dns_res_rec *rrec,
 			     struct dnsp_DnssrvRpcRecord *r);

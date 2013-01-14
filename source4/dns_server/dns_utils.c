@@ -30,6 +30,9 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_DNS
+
 uint8_t werr_to_dns_err(WERROR werr)
 {
 	if (W_ERROR_EQUAL(WERR_OK, werr)) {

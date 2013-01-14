@@ -46,6 +46,9 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_DNS
+
 NTSTATUS server_service_dns_init(void);
 
 /* hold information about one dns socket */
