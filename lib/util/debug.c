@@ -177,6 +177,7 @@ static const char *default_classname_table[] = {
 	"dmapi",	     /* DBGC_DMAPI	  */
 	"registry",          /* DBGC_REGISTRY     */
 	"scavenger",         /* DBGC_SCAVENGER    */
+	"dns",               /* DBGC_DNS          */
 	NULL
 };
 
