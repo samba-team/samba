@@ -19,6 +19,11 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>dbwrap_tool</command>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-s &lt;config file&gt;</arg>
+		<arg choice="opt">-l &lt;log file base&gt;</arg>
+		<arg choice="opt">-V</arg>
+		<arg choice="opt">--option=&lt;name&gt;=&lt;value&gt;</arg>
 		<arg choice="req">&lt;database&gt;</arg>
 		<arg choice="req">&lt;operation&gt;</arg>
 		<arg choice="opt">&lt;key&gt;
@@ -61,11 +66,10 @@
 <refsect1>
 	<title>OPTIONS</title>
 
-	<para>None.</para>
-	<!--
 	<variablelist>
+		&popt.common.samba.client;
+		&stdarg.help;
 	</variablelist>
-	-->
 </refsect1>
 
 <refsect1>
