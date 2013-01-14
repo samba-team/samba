@@ -359,6 +359,7 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 bool ctdb_sys_check_iface_exists(const char *iface)
 {
+	/* FIXME AIX: Interface always considered present */
 	return true;
 }
 
@@ -375,18 +376,18 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 
 char *ctdb_get_process_name(pid_t pid)
 {
-	/* FIXME: not implemented */
+	/* FIXME AIX: get_process_name not implemented */
 	return NULL;
 }
 
 bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
 {
-	/* FIXME: not implemented */
+	/* FIXME AIX: get_lock_info not implemented */
 	return false;
 }
 
 bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid)
 {
-	/* FIXME: not implemented */
+	/* FIXME AIX: get_blocker_pid not implemented */
 	return false;
 }
