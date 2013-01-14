@@ -260,6 +260,17 @@ file.
 &stdarg.option;
 '>
 
+<!ENTITY popt.common.samba.client '
+&stdarg.client.debug;
+&popt.common.samba;
+'>
+
+<!ENTITY popt.common.samba.server '
+&stdarg.server.debug;
+&popt.common.samba;
+'>
+
+
 <!ENTITY stdarg.resolve.order '
 <varlistentry>
 <term>-R|--name-resolve &lt;name resolve order&gt;</term>
