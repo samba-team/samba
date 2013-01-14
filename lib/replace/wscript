@@ -76,7 +76,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('sys/id.h sys/ioctl.h sys/ipc.h sys/mman.h sys/mode.h sys/ndir.h sys/priv.h')
     conf.CHECK_HEADERS('sys/resource.h sys/security.h sys/shm.h sys/statfs.h sys/statvfs.h sys/termio.h')
     conf.CHECK_HEADERS('sys/vfs.h sys/xattr.h termio.h termios.h sys/file.h')
-    conf.CHECK_HEADERS('sys/wait.h sys/stat.h malloc.h grp.h')
+    conf.CHECK_HEADERS('sys/ucontext.h sys/wait.h sys/stat.h malloc.h grp.h')
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
     conf.CHECK_HEADERS('stdarg.h vararg.h sys/mount.h mntent.h')
     conf.CHECK_HEADERS('stropts.h unix.h string.h strings.h sys/param.h limits.h')
@@ -199,6 +199,15 @@ struct foo bar = { .y = 'X', .x = 1 };
                     define='HAVE_IPV6',
                     lib='nsl socket',
                     headers='sys/socket.h netdb.h netinet/in.h')
+
+    if conf.CONFIG_SET('HAVE_SYS_UCONTEXT_H') and conf.CONFIG_SET('HAVE_SIGNAL_H'):
+        conf.CHECK_CODE('''
+                       ucontext_t uc;
+                       sigaddset(&uc.uc_sigmask, SIGUSR1);
+                       ''',
+                       'HAVE_UCONTEXT_T',
+                       msg="Checking whether we have ucontext_t",
+                       headers='signal.h sys/ucontext.h')
 
     # these may be builtins, so we need the link=False strategy
     conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
