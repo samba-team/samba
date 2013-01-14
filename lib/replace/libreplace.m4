@@ -126,6 +126,7 @@ AC_CHECK_HEADERS(unix.h)
 AC_CHECK_HEADERS(malloc.h)
 AC_CHECK_HEADERS(syscall.h)
 AC_CHECK_HEADERS(sys/syscall.h)
+AC_CHECK_HEADERS(sys/ucontext.h)
 
 AC_CHECK_FUNCS(syscall setuid seteuid setreuid setresuid setgid setegid setregid setresgid setgroups)
 AC_CHECK_FUNCS(chroot bzero strerror strerror_r memalign posix_memalign getpagesize)
@@ -414,6 +415,18 @@ AC_CACHE_CHECK([for struct timespec type],libreplace_cv_struct_timespec, [
 	libreplace_cv_struct_timespec=yes,libreplace_cv_struct_timespec=no)])
 if test x"$libreplace_cv_struct_timespec" = x"yes"; then
    AC_DEFINE(HAVE_STRUCT_TIMESPEC,1,[Whether we have struct timespec])
+fi
+
+AC_CACHE_CHECK([for ucontext_t type],libreplace_cv_ucontext_t, [
+    AC_TRY_COMPILE([
+#include <signal.h>
+#if HAVE_SYS_UCONTEXT_H
+#include <sys/ucontext.h>
+# endif
+],[ucontext_t uc; sigaddset(&uc.uc_sigmask, SIGUSR1);],
+	libreplace_cv_ucontext_t=yes,libreplace_cv_ucontext_t=no)])
+if test x"$libreplace_cv_ucontext_t" = x"yes"; then
+   AC_DEFINE(HAVE_UCONTEXT_T,1,[Whether we have ucontext_t])
 fi
 
 AC_CHECK_FUNCS([printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
