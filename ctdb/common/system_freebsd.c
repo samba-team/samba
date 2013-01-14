@@ -372,7 +372,21 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 
 char *ctdb_get_process_name(pid_t pid)
 {
-	/* FIXME FreeBSD: get_process_name not implemented */
+	char path[32];
+	char buf[PATH_MAX];
+	char *ptr;
+	int n;
+
+	snprintf(path, sizeof(path), "/proc/%d/exe", pid);
+	n = readlink(path, buf, sizeof(buf));
+	if (n < 0) {
+		return NULL;
+	}
+
+	/* Remove any extra fields */
+	buf[n] = '\0';
+	ptr = strtok(buf, " ");
+	return strdup(ptr);
 	return NULL;
 }
 
