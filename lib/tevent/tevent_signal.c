@@ -122,10 +122,39 @@ static void tevent_common_signal_handler_info(int signum, siginfo_t *info,
 	if (count+1 == TEVENT_SA_INFO_QUEUE_COUNT) {
 		/* we've filled the info array - block this signal until
 		   these ones are delivered */
+#ifdef HAVE_UCONTEXT_T
+		/*
+		 * This is the only way for this to work.
+		 * By default signum is blocked inside this
+		 * signal handler using a temporary mask,
+		 * but what we really need to do now is
+		 * block it in the callers mask, so it
+		 * stays blocked when the temporary signal
+		 * handler mask is replaced when we return
+		 * from here. The callers mask can be found
+		 * in the ucontext_t passed in as the
+		 * void *uctx argument.
+		 */
+		ucontext_t *ucp = (ucontext_t *)uctx;
+		sigaddset(&ucp->uc_sigmask, signum);
+#else
+		/*
+		 * WARNING !!! WARNING !!!!
+		 *
+		 * This code doesn't work.
+		 * By default signum is blocked inside this
+		 * signal handler, but calling sigprocmask
+		 * modifies the temporary signal mask being
+		 * used *inside* this handler, which will be
+		 * replaced by the callers signal mask once
+		 * we return from here. See Samba
+		 * bug #9550 for details.
+		 */
 		sigset_t set;
 		sigemptyset(&set);
 		sigaddset(&set, signum);
 		sigprocmask(SIG_BLOCK, &set, NULL);
+#endif
 		TEVENT_SIG_INCREMENT(sig_state->sig_blocked[signum]);
 	}
 }
