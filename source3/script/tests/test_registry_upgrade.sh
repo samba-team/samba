@@ -13,7 +13,7 @@ SCRIPT_DIR=$(dirname $0)
 BASE_DIR="${SCRIPT_DIR}/../../.."
 
 NET="$1"
-DBWRAP_TOOL="$2"
+DBWRAP_TOOL="$2 --persistent"
 DATADIR="${BASE_DIR}/testdata/samba3"
 WORKSPACE="${PREFIX}/registry_upgrade"
 CONFIG_FILE="${WORKSPACE}/smb.conf"
