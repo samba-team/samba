@@ -1270,7 +1270,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[switch_is(level)] spoolss_SetPrinterInfo info;
 	} spoolss_SetPrinterInfoCtr;
 
-	WERROR spoolss_SetPrinter(
+	[public] WERROR spoolss_SetPrinter(
 		[in,ref] policy_handle *handle,
 		[in,ref] spoolss_SetPrinterInfoCtr *info_ctr,
 		[in,ref] spoolss_DevmodeContainer *devmode_ctr,
