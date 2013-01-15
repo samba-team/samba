@@ -973,6 +973,10 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/smb2_write.o \
 	       smbd/smb2_lock.o \
 	       smbd/smb2_ioctl.o \
+               smbd/smb2_ioctl_dfs.o \
+               smbd/smb2_ioctl_filesys.o \
+               smbd/smb2_ioctl_named_pipe.o \
+               smbd/smb2_ioctl_network_fs.o \
 	       smbd/smb2_keepalive.o \
 	       smbd/smb2_find.o \
 	       smbd/smb2_notify.o \

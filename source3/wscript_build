@@ -370,6 +370,10 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/smb2_write.c
                smbd/smb2_lock.c
                smbd/smb2_ioctl.c
+               smbd/smb2_ioctl_dfs.c
+               smbd/smb2_ioctl_filesys.c
+               smbd/smb2_ioctl_named_pipe.c
+               smbd/smb2_ioctl_network_fs.c
                smbd/smb2_keepalive.c
                smbd/smb2_find.c
                smbd/smb2_notify.c

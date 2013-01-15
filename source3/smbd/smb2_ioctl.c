@@ -23,9 +23,8 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "rpc_server/srv_pipe_hnd.h"
 #include "include/ntioctl.h"
-#include "../librpc/ndr/libndr.h"
+#include "smb2_ioctl_private.h"
 
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -328,179 +327,6 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	}
 }
 
-static NTSTATUS fsctl_dfs_get_refers(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     struct connection_struct *conn,
-				     DATA_BLOB *in_input,
-				     uint32_t in_max_output,
-				     DATA_BLOB *out_output)
-{
-	uint16_t in_max_referral_level;
-	DATA_BLOB in_file_name_buffer;
-	char *in_file_name_string;
-	size_t in_file_name_string_size;
-	bool ok;
-	bool overflow = false;
-	NTSTATUS status;
-	int dfs_size;
-	char *dfs_data = NULL;
-	DATA_BLOB output;
-
-	if (!IS_IPC(conn)) {
-		return NT_STATUS_INVALID_DEVICE_REQUEST;
-	}
-
-	if (!lp_host_msdfs()) {
-		return NT_STATUS_FS_DRIVER_REQUIRED;
-	}
-
-	if (in_input->length < (2 + 2)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	in_max_referral_level = SVAL(in_input->data, 0);
-	in_file_name_buffer.data = in_input->data + 2;
-	in_file_name_buffer.length = in_input->length - 2;
-
-	ok = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
-				   in_file_name_buffer.data,
-				   in_file_name_buffer.length,
-				   &in_file_name_string,
-				   &in_file_name_string_size);
-	if (!ok) {
-		return NT_STATUS_ILLEGAL_CHARACTER;
-	}
-
-	dfs_size = setup_dfs_referral(conn,
-				      in_file_name_string,
-				      in_max_referral_level,
-				      &dfs_data, &status);
-	if (dfs_size < 0) {
-		return status;
-	}
-
-	if (dfs_size > in_max_output) {
-		/*
-		 * TODO: we need a testsuite for this
-		 */
-		overflow = true;
-		dfs_size = in_max_output;
-	}
-
-	output = data_blob_talloc(mem_ctx, (uint8_t *)dfs_data, dfs_size);
-	SAFE_FREE(dfs_data);
-	if ((dfs_size > 0) && (output.data == NULL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	*out_output = output;
-
-	if (overflow) {
-		return STATUS_BUFFER_OVERFLOW;
-	}
-	return NT_STATUS_OK;
-}
-
-static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
-				        struct tevent_context *ev,
-				        struct smbXsrv_connection *conn,
-				        DATA_BLOB *in_input,
-				        uint32_t in_max_output,
-				        DATA_BLOB *out_output,
-					bool *disconnect)
-{
-	uint32_t in_capabilities;
-	DATA_BLOB in_guid_blob;
-	struct GUID in_guid;
-	uint16_t in_security_mode;
-	uint16_t in_num_dialects;
-	uint16_t i;
-	DATA_BLOB out_guid_blob;
-	NTSTATUS status;
-
-	if (in_input->length < 0x18) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	in_capabilities = IVAL(in_input->data, 0x00);
-	in_guid_blob = data_blob_const(in_input->data + 0x04, 16);
-	in_security_mode = SVAL(in_input->data, 0x14);
-	in_num_dialects = SVAL(in_input->data, 0x16);
-
-	if (in_input->length < (0x18 + in_num_dialects*2)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (in_max_output < 0x18) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	}
-
-	status = GUID_from_ndr_blob(&in_guid_blob, &in_guid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if (in_num_dialects != conn->smb2.client.num_dialects) {
-		*disconnect = true;
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	for (i=0; i < in_num_dialects; i++) {
-		uint16_t v = SVAL(in_input->data, 0x18 + i*2);
-
-		if (conn->smb2.client.dialects[i] != v) {
-			*disconnect = true;
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	if (GUID_compare(&in_guid, &conn->smb2.client.guid) != 0) {
-		*disconnect = true;
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (in_security_mode != conn->smb2.client.security_mode) {
-		*disconnect = true;
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (in_capabilities != conn->smb2.client.capabilities) {
-		*disconnect = true;
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	status = GUID_to_ndr_blob(&conn->smb2.server.guid, mem_ctx,
-				  &out_guid_blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*out_output = data_blob_talloc(mem_ctx, NULL, 0x18);
-	if (out_output->data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	SIVAL(out_output->data, 0x00, conn->smb2.server.capabilities);
-	memcpy(out_output->data+0x04, out_guid_blob.data, 16);
-	SIVAL(out_output->data, 0x14, conn->smb2.server.security_mode);
-	SIVAL(out_output->data, 0x16, conn->smb2.server.dialect);
-
-	return NT_STATUS_OK;
-}
-
-
-struct smbd_smb2_ioctl_state {
-	struct smbd_smb2_request *smb2req;
-	struct smb_request *smbreq;
-	files_struct *fsp;
-	DATA_BLOB in_input;
-	uint32_t in_max_output;
-	DATA_BLOB out_output;
-	bool disconnect;
-};
-
-static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq);
-static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq);
-
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct smbd_smb2_request *smb2req,
@@ -513,7 +339,6 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct smbd_smb2_ioctl_state *state;
 	struct smb_request *smbreq;
-	struct tevent_req *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_ioctl_state);
@@ -538,192 +363,32 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	}
 	state->smbreq = smbreq;
 
-	switch (in_ctl_code) {
-	case 0x00060194: /* FSCTL_DFS_GET_REFERRALS */
-	{
-		status = fsctl_dfs_get_refers(state, ev, state->smbreq->conn,
-					      &state->in_input,
-					      state->in_max_output,
-					      &state->out_output);
-		if (!tevent_req_nterror(req, status)) {
-			tevent_req_done(req);
+	switch (in_ctl_code & IOCTL_DEV_TYPE_MASK) {
+	case FSCTL_DFS:
+		return smb2_ioctl_dfs(in_ctl_code, ev, req, state);
+		break;
+	case FSCTL_FILESYSTEM:
+		return smb2_ioctl_filesys(in_ctl_code, ev, req, state);
+		break;
+	case FSCTL_NAMED_PIPE:
+		return smb2_ioctl_named_pipe(in_ctl_code, ev, req, state);
+		break;
+	case FSCTL_NETWORK_FILESYSTEM:
+		return smb2_ioctl_network_fs(in_ctl_code, ev, req, state);
+		break;
+	default:
+		if (IS_IPC(smbreq->conn)) {
+			tevent_req_nterror(req, NT_STATUS_FS_DRIVER_REQUIRED);
+		} else {
+			tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
 		}
+
 		return tevent_req_post(req, ev);
-	}
-	case 0x0011C017: /* FSCTL_PIPE_TRANSCEIVE */
-
-		if (!IS_IPC(smbreq->conn)) {
-			tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
-			return tevent_req_post(req, ev);
-		}
-
-		if (fsp == NULL) {
-			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-			return tevent_req_post(req, ev);
-		}
-
-		if (!fsp_is_np(fsp)) {
-			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-			return tevent_req_post(req, ev);
-		}
-
-		DEBUG(10,("smbd_smb2_ioctl_send: np_write_send of size %u\n",
-			(unsigned int)in_input.length ));
-
-		subreq = np_write_send(state, ev,
-				       fsp->fake_file_handle,
-				       in_input.data,
-				       in_input.length);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					smbd_smb2_ioctl_pipe_write_done,
-					req);
-		return req;
-
-	case FSCTL_VALIDATE_NEGOTIATE_INFO:
-	{
-		status = fsctl_validate_neg_info(state, ev,
-						 state->smbreq->sconn->conn,
-						 &state->in_input,
-						 state->in_max_output,
-						 &state->out_output,
-						 &state->disconnect);
-		if (!tevent_req_nterror(req, status)) {
-			tevent_req_done(req);
-		}
-		return tevent_req_post(req, ev);
-	}
-
-	default: {
-		uint8_t *out_data = NULL;
-		uint32_t out_data_len = 0;
-		NTSTATUS status;
-
-		if (fsp == NULL) {
-			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
-			return tevent_req_post(req, ev);
-		}
-
-		status = SMB_VFS_FSCTL(fsp,
-				       state,
-				       in_ctl_code,
-				       smbreq->flags2,
-				       in_input.data,
-				       in_input.length,
-				       &out_data,
-				       in_max_output,
-				       &out_data_len);
-		state->out_output = data_blob_const(out_data, out_data_len);
-		if (NT_STATUS_IS_OK(status)) {
-			tevent_req_done(req);
-			return tevent_req_post(req, ev);
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-			if (IS_IPC(smbreq->conn)) {
-				status = NT_STATUS_FS_DRIVER_REQUIRED;
-			} else {
-				status = NT_STATUS_INVALID_DEVICE_REQUEST;
-			}
-		}
-
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
+		break;
 	}
 
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	return tevent_req_post(req, ev);
-}
-
-static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(subreq,
-				 struct tevent_req);
-	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
-					      struct smbd_smb2_ioctl_state);
-	NTSTATUS status;
-	ssize_t nwritten = -1;
-
-	status = np_write_recv(subreq, &nwritten);
-
-	DEBUG(10,("smbd_smb2_ioctl_pipe_write_done: received %ld\n",
-		(long int)nwritten ));
-
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		NTSTATUS old = status;
-		status = nt_status_np_pipe(old);
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	if (nwritten != state->in_input.length) {
-		tevent_req_nterror(req, NT_STATUS_PIPE_NOT_AVAILABLE);
-		return;
-	}
-
-	state->out_output = data_blob_talloc(state, NULL, state->in_max_output);
-	if (state->in_max_output > 0 &&
-	    tevent_req_nomem(state->out_output.data, req)) {
-		return;
-	}
-
-	DEBUG(10,("smbd_smb2_ioctl_pipe_write_done: issuing np_read_send "
-		"of size %u\n",
-		(unsigned int)state->out_output.length ));
-
-	subreq = np_read_send(state->smbreq->conn,
-			      state->smb2req->sconn->ev_ctx,
-			      state->fsp->fake_file_handle,
-			      state->out_output.data,
-			      state->out_output.length);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, smbd_smb2_ioctl_pipe_read_done, req);
-}
-
-static void smbd_smb2_ioctl_pipe_read_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(subreq,
-				 struct tevent_req);
-	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
-					      struct smbd_smb2_ioctl_state);
-	NTSTATUS status;
-	NTSTATUS old;
-	ssize_t nread = -1;
-	bool is_data_outstanding = false;
-
-	status = np_read_recv(subreq, &nread, &is_data_outstanding);
-	TALLOC_FREE(subreq);
-
-	old = status;
-	status = nt_status_np_pipe(old);
-
-	DEBUG(10,("smbd_smb2_ioctl_pipe_read_done: np_read_recv nread = %d "
-		 "is_data_outstanding = %d, status = %s%s%s\n",
-		(int)nread,
-		(int)is_data_outstanding,
-		nt_errstr(old),
-		NT_STATUS_EQUAL(old, status)?"":" => ",
-		NT_STATUS_EQUAL(old, status)?"":nt_errstr(status)));
-
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	state->out_output.length = nread;
-
-	if (is_data_outstanding) {
-		tevent_req_nterror(req, STATUS_BUFFER_OVERFLOW);
-		return;
-	}
-
-	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
