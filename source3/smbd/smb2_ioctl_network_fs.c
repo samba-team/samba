@@ -505,19 +505,23 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 		uint8_t *out_data = NULL;
 		uint32_t out_data_len = 0;
 
-		status = SMB_VFS_FSCTL(state->fsp,
-				       state,
-				       ctl_code,
-				       state->smbreq->flags2,
-				       state->in_input.data,
-				       state->in_input.length,
-				       &out_data,
-				       state->in_max_output,
-				       &out_data_len);
-		state->out_output = data_blob_const(out_data, out_data_len);
-		if (NT_STATUS_IS_OK(status)) {
-			tevent_req_done(req);
-			return tevent_req_post(req, ev);
+		if (state->fsp == NULL) {
+			status = NT_STATUS_NOT_SUPPORTED;
+		} else {
+			status = SMB_VFS_FSCTL(state->fsp,
+					       state,
+					       ctl_code,
+					       state->smbreq->flags2,
+					       state->in_input.data,
+					       state->in_input.length,
+					       &out_data,
+					       state->in_max_output,
+					       &out_data_len);
+			state->out_output = data_blob_const(out_data, out_data_len);
+			if (NT_STATUS_IS_OK(status)) {
+				tevent_req_done(req);
+				return tevent_req_post(req, ev);
+			}
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
