@@ -1796,8 +1796,8 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	info2.comment		= "Created by rpcclient";
 	info2.printprocessor	= "winprint";
 	info2.datatype		= "RAW";
-	info2.devmode_ptr	= 0;
-	info2.secdesc_ptr	= 0;
+	info2.devmode_ptr	= NULL;
+	info2.secdesc_ptr	= NULL;
 	info2.attributes 	= PRINTER_ATTRIBUTE_SHARED;
 	info2.priority 		= 0;
 	info2.defaultpriority	= 0;

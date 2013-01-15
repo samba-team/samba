@@ -252,8 +252,6 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 		}
 
 		devmode_ctr.devmode = &dm;
-
-		info2.devmode_ptr = 1;
 	}
 
 	result = winreg_update_printer(mem_ctx, b,

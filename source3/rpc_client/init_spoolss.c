@@ -107,12 +107,12 @@ void spoolss_printerinfo2_to_setprinterinfo2(const struct spoolss_PrinterInfo2 *
 	s->drivername		= i->drivername;
 	s->comment		= i->comment;
 	s->location		= i->location;
-	s->devmode_ptr		= 0;
+	s->devmode_ptr		= NULL;
 	s->sepfile		= i->sepfile;
 	s->printprocessor	= i->printprocessor;
 	s->datatype		= i->datatype;
 	s->parameters		= i->parameters;
-	s->secdesc_ptr		= 0;
+	s->secdesc_ptr		= NULL;
 	s->attributes		= i->attributes;
 	s->priority		= i->priority;
 	s->defaultpriority	= i->defaultpriority;

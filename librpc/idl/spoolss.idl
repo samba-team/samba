@@ -1011,9 +1011,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *parameters;
 		[string,charset(UTF16)] uint16 *driver_name;
-		uint32 _devmode_ptr; /* pointer to truncated devicemode */
+		uint32 *_devmode_ptr; /* pointer to truncated devicemode */
 		[string,charset(UTF16)] uint16 *text_status;
-		uint32 _secdesc_ptr;
+		uint32 *_secdesc_ptr;
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
@@ -1037,9 +1037,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *parameters;
 		[string,charset(UTF16)] uint16 *driver_name;
-		uint32 _devmode_ptr; /* pointer to truncated devicemode */
+		uint32 *_devmode_ptr; /* pointer to truncated devicemode */
 		[string,charset(UTF16)] uint16 *text_status;
-		uint32 _secdesc_ptr;
+		uint32 *_secdesc_ptr;
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
@@ -1200,12 +1200,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *drivername;
 		[string,charset(UTF16)] uint16 *comment;
 		[string,charset(UTF16)] uint16 *location;
-		uint32 devmode_ptr;
+		uint32 *devmode_ptr;
 		[string,charset(UTF16)] uint16 *sepfile;
 		[string,charset(UTF16)] uint16 *printprocessor;
 		[string,charset(UTF16)] uint16 *datatype;
 		[string,charset(UTF16)] uint16 *parameters;
-		uint32 secdesc_ptr;
+		uint32 *secdesc_ptr;
 		spoolss_PrinterAttributes attributes;
 		[range(0,99)] uint32 priority;
 		uint32 defaultpriority;
@@ -1217,7 +1217,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_SetPrinterInfo2;
 
 	typedef struct {
-		uint32 sec_desc_ptr;
+		uint32 *sec_desc_ptr;
 	} spoolss_SetPrinterInfo3;
 
 	typedef struct {
@@ -1244,11 +1244,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_SetPrinterInfo7;
 
 	typedef struct {
-		uint32 devmode_ptr;
+		uint32 *devmode_ptr;
 	} spoolss_SetPrinterInfo8;
 
 	typedef struct {
-		uint32 devmode_ptr;
+		uint32 *devmode_ptr;
 	} spoolss_SetPrinterInfo9;
 
 	typedef [switch_type(uint32)] union {

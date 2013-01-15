@@ -244,12 +244,12 @@ static bool PrinterInfo_to_SetPrinterInfo(struct torture_context *tctx,
 		s->info2->drivername		= i->info2.drivername;
 		s->info2->comment		= i->info2.comment;
 		s->info2->location		= i->info2.location;
-		s->info2->devmode_ptr		= 0;
+		s->info2->devmode_ptr		= NULL;
 		s->info2->sepfile		= i->info2.sepfile;
 		s->info2->printprocessor	= i->info2.printprocessor;
 		s->info2->datatype		= i->info2.datatype;
 		s->info2->parameters		= i->info2.parameters;
-		s->info2->secdesc_ptr		= 0;
+		s->info2->secdesc_ptr		= NULL;
 		s->info2->attributes		= i->info2.attributes;
 		s->info2->priority		= i->info2.priority;
 		s->info2->defaultpriority	= i->info2.defaultpriority;
@@ -1417,8 +1417,8 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 static void clear_info2(struct spoolss_SetPrinterInfoCtr *r)
 {
 	if ((r->level == 2) && (r->info.info2)) {
-		r->info.info2->secdesc_ptr = 0;
-		r->info.info2->devmode_ptr = 0;
+		r->info.info2->secdesc_ptr = NULL;
+		r->info.info2->devmode_ptr = NULL;
 	}
 }
 
@@ -1883,7 +1883,7 @@ static bool test_sd_set_level(struct torture_context *tctx,
 	case 3: {
 		struct spoolss_SetPrinterInfo3 info3;
 
-		info3.sec_desc_ptr = 0;
+		info3.sec_desc_ptr = NULL;
 
 		info_ctr.level = 3;
 		info_ctr.info.info3 = &info3;
@@ -2054,7 +2054,7 @@ static bool test_devmode_set_level(struct torture_context *tctx,
 	case 8: {
 		struct spoolss_SetPrinterInfo8 info8;
 
-		info8.devmode_ptr = 0;
+		info8.devmode_ptr = NULL;
 
 		info_ctr.level = 8;
 		info_ctr.info.info8 = &info8;
