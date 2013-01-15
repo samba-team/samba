@@ -61,6 +61,7 @@ bool insert_in_object_tree(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < root->num_of_children; i++) {
 			if (GUID_equal(&root->children[i].guid, guid)) {
 				new_node = &root->children[i];
+				new_node->remaining_access |= init_access;
 				*new_node_out = new_node;
 				return true;
 			}
