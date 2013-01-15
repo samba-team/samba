@@ -570,6 +570,62 @@ static bool test_ioctl_copy_chunk_append(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_copy_chunk_limits(struct torture_context *torture,
+					 struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle dest_h;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   1, /* chunks */
+				   &src_h, 4096, /* src file */
+				   &dest_h, 0,	/* dest file */
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		return false;
+	}
+
+	/* send huge chunk length request */
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = UINT_MAX;
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret, "marshalling request");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_INVALID_PARAMETER,
+				      "bad oversize chunk response");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret, "unmarshalling response");
+
+	torture_comment(torture, "limit max chunks, got %u\n",
+			cc_rsp.chunks_written);
+	torture_comment(torture, "limit max chunk len, got %u\n",
+			cc_rsp.chunk_bytes_written);
+	torture_comment(torture, "limit max total bytes, got %u\n",
+			cc_rsp.total_bytes_written);
+
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
    basic testing of SMB2 ioctls
 */
@@ -591,6 +647,8 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_copy_chunk_over);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_append",
 				     test_ioctl_copy_chunk_append);
+	torture_suite_add_1smb2_test(suite, "copy_chunk_limits",
+				     test_ioctl_copy_chunk_limits);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 

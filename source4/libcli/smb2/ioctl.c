@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 /*
   send a ioctl request
@@ -61,17 +62,47 @@ struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *
 	return req;
 }
 
+/*
+ * 3.3.4.4 Sending an Error Response
+ */
+static bool smb2_ioctl_is_failure(uint32_t ctl_code, NTSTATUS status,
+				  size_t data_size)
+{
+	if (NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)
+	 && ((ctl_code == FSCTL_PIPE_TRANSCEIVE)
+	  || (ctl_code == FSCTL_PIPE_PEEK)
+	  || (ctl_code == FSCTL_DFS_GET_REFERRALS))) {
+		return false;
+	}
+
+	if (((ctl_code == FSCTL_SRV_COPYCHUNK)
+				|| (ctl_code == FSCTL_SRV_COPYCHUNK_WRITE))
+	 && (data_size == sizeof(struct srv_copychunk_rsp))) {
+		/*
+		 * copychunk responses may come with copychunk data or error
+		 * response data, independent of status.
+		 */
+		return false;
+	}
+
+	return true;
+}
 
 /*
   recv a ioctl reply
 */
-NTSTATUS smb2_ioctl_recv(struct smb2_request *req, 
+NTSTATUS smb2_ioctl_recv(struct smb2_request *req,
 			 TALLOC_CTX *mem_ctx, struct smb2_ioctl *io)
 {
 	NTSTATUS status;
 
-	if (!smb2_request_receive(req) || 
-	    smb2_request_is_error(req)) {
+	if (!smb2_request_receive(req) ||
+	    smb2_ioctl_is_failure(io->in.function, req->status,
+				  req->in.bufinfo.data_size)) {
 		return smb2_request_destroy(req);
 	}
 

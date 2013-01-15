@@ -25,6 +25,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "include/ntioctl.h"
 #include "smb2_ioctl_private.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -227,6 +228,42 @@ NTSTATUS smbd_smb2_request_process_ioctl(struct smbd_smb2_request *req)
 	return smbd_smb2_request_pending_queue(req, subreq, 1000);
 }
 
+/*
+ * 3.3.4.4 Sending an Error Response
+ * An error code other than one of the following indicates a failure:
+ */
+static bool smbd_smb2_ioctl_is_failure(uint32_t ctl_code, NTSTATUS status,
+				       size_t data_size)
+{
+	if (NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	/*
+	 * STATUS_BUFFER_OVERFLOW in a FSCTL_PIPE_TRANSCEIVE, FSCTL_PIPE_PEEK or
+	 * FSCTL_DFS_GET_REFERRALS Response specified in section 2.2.32.<153>
+	 */
+	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)
+	 && ((ctl_code == FSCTL_PIPE_TRANSCEIVE)
+	  || (ctl_code == FSCTL_PIPE_PEEK)
+	  || (ctl_code == FSCTL_DFS_GET_REFERRALS))) {
+		return false;
+	}
+
+	/*
+	 * Any status other than STATUS_SUCCESS in a FSCTL_SRV_COPYCHUNK or
+	 * FSCTL_SRV_COPYCHUNK_WRITE Response, when returning an
+	 * SRV_COPYCHUNK_RESPONSE as described in section 2.2.32.1.
+	 */
+	if (((ctl_code == FSCTL_SRV_COPYCHUNK)
+				|| (ctl_code == FSCTL_SRV_COPYCHUNK_WRITE))
+	 && (data_size == sizeof(struct srv_copychunk_rsp))) {
+		return false;
+	}
+
+	return true;
+}
+
 static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 {
 	struct smbd_smb2_request *req = tevent_req_callback_data(subreq,
@@ -261,9 +298,14 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
-		/* also ok */
-	} else if (!NT_STATUS_IS_OK(status)) {
+	inbody = SMBD_SMB2_IN_BODY_PTR(req);
+
+	in_ctl_code		= IVAL(inbody, 0x04);
+	in_file_id_persistent	= BVAL(inbody, 0x08);
+	in_file_id_volatile	= BVAL(inbody, 0x10);
+
+	if (smbd_smb2_ioctl_is_failure(in_ctl_code, status,
+				       out_output_buffer.length)) {
 		error = smbd_smb2_request_error(req, status);
 		if (!NT_STATUS_IS_OK(error)) {
 			smbd_server_connection_terminate(req->sconn,
@@ -275,12 +317,6 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 
 	out_input_offset = SMB2_HDR_BODY + 0x30;
 	out_output_offset = SMB2_HDR_BODY + 0x30;
-
-	inbody = SMBD_SMB2_IN_BODY_PTR(req);
-
-	in_ctl_code		= IVAL(inbody, 0x04);
-	in_file_id_persistent	= BVAL(inbody, 0x08);
-	in_file_id_volatile	= BVAL(inbody, 0x10);
 
 	outbody = data_blob_talloc(req->out.vector, NULL, 0x30);
 	if (outbody.data == NULL) {
@@ -399,19 +435,23 @@ static NTSTATUS smbd_smb2_ioctl_recv(struct tevent_req *req,
 	NTSTATUS status = NT_STATUS_OK;
 	struct smbd_smb2_ioctl_state *state = tevent_req_data(req,
 					      struct smbd_smb2_ioctl_state);
+	enum tevent_req_state req_state;
+	uint64_t err;
 
 	*disconnect = state->disconnect;
 
-	if (tevent_req_is_nterror(req, &status)) {
-		if (!NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
-			tevent_req_received(req);
-			return status;
-		}
+	if ((tevent_req_is_error(req, &req_state, &err) == false)
+	 || (req_state == TEVENT_REQ_USER_ERROR)) {
+		/*
+		 * Return output buffer to caller if the ioctl was successfully
+		 * processed, even if a user error occurred. Some ioctls return
+		 * data on failure.
+		 */
+		*out_output = state->out_output;
+		talloc_steal(mem_ctx, out_output->data);
 	}
 
-	*out_output = state->out_output;
-	talloc_steal(mem_ctx, out_output->data);
-
+	tevent_req_is_nterror(req, &status);
 	tevent_req_received(req);
 	return status;
 }
