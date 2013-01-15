@@ -59,6 +59,12 @@ static bool test_ioctl_get_shadow_copy(struct torture_context *torture,
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)
+	 || NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
+		torture_comment(torture,
+			"FSCTL_SRV_ENUM_SNAPS not supported, skipping\n");
+		return true;
+	}
 	torture_assert_ntstatus_ok(torture, status, "FSCTL_SRV_ENUM_SNAPS");
 
 	return true;
