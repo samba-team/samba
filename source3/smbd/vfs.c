@@ -2157,9 +2157,31 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 			    uint32_t *out_len)
 {
 	VFS_FIND(fsctl);
-	return handle->fns->fsctl_fn(handle, fsp, ctx, function, req_flags, 
-				     in_data, in_len, out_data, max_out_len, 
+	return handle->fns->fsctl_fn(handle, fsp, ctx, function, req_flags,
+				     in_data, in_len, out_data, max_out_len,
 				     out_len);
+}
+
+struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
+						TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct files_struct *src_fsp,
+						off_t src_off,
+						struct files_struct *dest_fsp,
+						off_t dest_off,
+						off_t num)
+{
+	VFS_FIND(copy_chunk_send);
+	return handle->fns->copy_chunk_send_fn(handle, mem_ctx, ev, src_fsp,
+					       src_off, dest_fsp, dest_off, num);
+}
+
+NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
+				      struct tevent_req *req,
+				      off_t *copied)
+{
+	VFS_FIND(copy_chunk_recv);
+	return handle->fns->copy_chunk_recv_fn(handle, req, copied);
 }
 
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,

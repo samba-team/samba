@@ -399,6 +399,16 @@
 #define SMB_VFS_NEXT_FSCTL(handle, fsp, ctx, function, req_flags, in_data, in_len, out_data, max_out_len, out_len) \
 	smb_vfs_call_fsctl((handle)->next, (fsp), (ctx), (function), (req_flags), (in_data), (in_len), (out_data), (max_out_len), (out_len))
 
+#define SMB_VFS_COPY_CHUNK_SEND(conn, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num) \
+	smb_vfs_call_copy_chunk_send((conn)->vfs_handles, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num))
+#define SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num) \
+	smb_vfs_call_copy_chunk_send((handle)->next, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num))
+
+#define SMB_VFS_COPY_CHUNK_RECV(conn, req, copied) \
+	smb_vfs_call_copy_chunk_recv((conn)->vfs_handles, (req), (copied))
+#define SMB_VFS_NEXT_COPY_CHUNK_RECV(handle, req, copied) \
+	smb_vfs_call_copy_chunk_recv((handle)->next, (req), (copied))
+
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, mem_ctx, ppdesc)		\
 		smb_vfs_call_fget_nt_acl((fsp)->conn->vfs_handles, (fsp), (security_info), (mem_ctx), (ppdesc))
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, mem_ctx, ppdesc) \

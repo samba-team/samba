@@ -151,6 +151,7 @@
 /* Leave at 31 - not yet released. Make struct vuid_cache_entry in
 		connection_struct a pointer. */
 /* Leave at 31 - not yet released. Add share_access to vuid_cache_entry. */
+/* Leave at 31 - not yet released. add SMB_VFS_COPY_CHUNK() */
 
 #define SMB_VFS_INTERFACE_VERSION 31
 
@@ -615,6 +616,17 @@ struct vfs_fn_pointers {
 	int (*chflags_fn)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
+	struct tevent_req *(*copy_chunk_send_fn)(struct vfs_handle_struct *handle,
+						 TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 struct files_struct *src_fsp,
+						 off_t src_off,
+						 struct files_struct *dest_fsp,
+						 off_t dest_off,
+						 off_t num);
+	NTSTATUS (*copy_chunk_recv_fn)(struct vfs_handle_struct *handle,
+				       struct tevent_req *req,
+				       off_t *copied);
 
 	NTSTATUS (*streaminfo_fn)(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
@@ -1086,7 +1098,18 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 			    uint32_t in_len,
 			    uint8_t **_out_data,
 			    uint32_t max_out_len,
-			    uint32_t *out_len); 
+			    uint32_t *out_len);
+struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
+						TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct files_struct *src_fsp,
+						off_t src_off,
+						struct files_struct *dest_fsp,
+						off_t dest_off,
+						off_t num);
+NTSTATUS smb_vfs_call_copy_chunk_recv(struct vfs_handle_struct *handle,
+				      struct tevent_req *req,
+				      off_t *copied);
 NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
 				  uint32 security_info,

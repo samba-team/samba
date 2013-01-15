@@ -23,6 +23,7 @@
 
 #include "../source3/include/includes.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /* PLEASE,PLEASE READ THE VFS MODULES CHAPTER OF THE 
    SAMBA DEVELOPERS GUIDE!!!!!!
@@ -572,6 +573,78 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 }
 
+struct skel_cc_state {
+	struct vfs_handle_struct *handle;
+	off_t copied;
+};
+static void skel_copy_chunk_done(struct tevent_req *subreq);
+
+static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct files_struct *src_fsp,
+					       off_t src_off,
+					       struct files_struct *dest_fsp,
+					       off_t dest_off,
+					       off_t num)
+{
+	struct tevent_req *req;
+	struct tevent_req *subreq;
+	struct skel_cc_state *cc_state;
+
+	req = tevent_req_create(mem_ctx, &cc_state, struct skel_cc_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	cc_state->handle = handle;
+	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, cc_state, ev,
+					      src_fsp, src_off,
+					      dest_fsp, dest_off, num);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, skel_copy_chunk_done, req);
+	return req;
+}
+
+static void skel_copy_chunk_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct skel_cc_state *cc_state
+			= tevent_req_data(req, struct skel_cc_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(cc_state->handle,
+					      subreq,
+					      &cc_state->copied);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS skel_copy_chunk_recv(struct vfs_handle_struct *handle,
+				     struct tevent_req *req,
+				     off_t *copied)
+{
+	struct skel_cc_state *cc_state
+			= tevent_req_data(req, struct skel_cc_state);
+	NTSTATUS status;
+
+	*copied = cc_state->copied;
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *fname,
@@ -898,6 +971,8 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.notify_watch_fn = skel_notify_watch,
 	.chflags_fn = skel_chflags,
 	.file_id_create_fn = skel_file_id_create,
+	.copy_chunk_send_fn = skel_copy_chunk_send,
+	.copy_chunk_recv_fn = skel_copy_chunk_recv,
 
 	.streaminfo_fn = skel_streaminfo,
 	.get_real_filename_fn = skel_get_real_filename,

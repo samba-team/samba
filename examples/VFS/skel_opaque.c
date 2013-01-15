@@ -22,6 +22,7 @@
  */
 
 #include "../source3/include/includes.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /* PLEASE,PLEASE READ THE VFS MODULES CHAPTER OF THE 
    SAMBA DEVELOPERS GUIDE!!!!!!
@@ -488,6 +489,45 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return id;
 }
 
+struct skel_cc_state {
+	uint64_t unused;
+};
+static struct tevent_req *skel_copy_chunk_send(struct vfs_handle_struct *handle,
+					       TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct files_struct *src_fsp,
+					       off_t src_off,
+					       struct files_struct *dest_fsp,
+					       off_t dest_off,
+					       off_t num)
+{
+	struct tevent_req *req;
+	struct skel_cc_state *cc_state;
+
+	req = tevent_req_create(mem_ctx, &cc_state, struct skel_cc_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	tevent_req_nterror(req, NT_STATUS_NOT_IMPLEMENTED);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS skel_copy_chunk_recv(struct vfs_handle_struct *handle,
+				     struct tevent_req *req,
+				     off_t *copied)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+	tevent_req_received(req);
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				const char *fname,
@@ -825,6 +865,8 @@ struct vfs_fn_pointers skel_opaque_fns = {
 	.notify_watch_fn = skel_notify_watch,
 	.chflags_fn = skel_chflags,
 	.file_id_create_fn = skel_file_id_create,
+	.copy_chunk_send_fn = skel_copy_chunk_send,
+	.copy_chunk_recv_fn = skel_copy_chunk_recv,
 
 	.streaminfo_fn = skel_streaminfo,
 	.get_real_filename_fn = skel_get_real_filename,

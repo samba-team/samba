@@ -161,6 +161,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STRICT_LOCK,
 	SMB_VFS_OP_STRICT_UNLOCK,
 	SMB_VFS_OP_TRANSLATE_NAME,
+	SMB_VFS_OP_COPY_CHUNK_SEND,
+	SMB_VFS_OP_COPY_CHUNK_RECV,
 
 	/* NT ACL operations. */
 
@@ -281,6 +283,8 @@ static struct {
 	{ SMB_VFS_OP_STRICT_LOCK, "strict_lock" },
 	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
+	{ SMB_VFS_OP_COPY_CHUNK_SEND,	"copy_chunk_send" },
+	{ SMB_VFS_OP_COPY_CHUNK_RECV,	"copy_chunk_recv" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1732,6 +1736,38 @@ static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static struct tevent_req *smb_full_audit_copy_chunk_send(struct vfs_handle_struct *handle,
+							 TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct files_struct *src_fsp,
+							 off_t src_off,
+							 struct files_struct *dest_fsp,
+							 off_t dest_off,
+							 off_t num)
+{
+	struct tevent_req *req;
+
+	req = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp,
+					   src_off, dest_fsp, dest_off, num);
+
+	do_log(SMB_VFS_OP_COPY_CHUNK_SEND, req, handle, "");
+
+	return req;
+}
+
+static NTSTATUS smb_full_audit_copy_chunk_recv(struct vfs_handle_struct *handle,
+					       struct tevent_req *req,
+					       off_t *copied)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_COPY_CHUNK_RECV(handle, req, copied);
+
+	do_log(SMB_VFS_OP_COPY_CHUNK_RECV, NT_STATUS_IS_OK(result), handle, "");
+
+	return result;
+}
+
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 					   uint32 security_info,
 					   TALLOC_CTX *mem_ctx,
@@ -2131,6 +2167,8 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.strict_lock_fn = smb_full_audit_strict_lock,
 	.strict_unlock_fn = smb_full_audit_strict_unlock,
 	.translate_name_fn = smb_full_audit_translate_name,
+	.copy_chunk_send_fn = smb_full_audit_copy_chunk_send,
+	.copy_chunk_recv_fn = smb_full_audit_copy_chunk_recv,
 	.fget_nt_acl_fn = smb_full_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_full_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,

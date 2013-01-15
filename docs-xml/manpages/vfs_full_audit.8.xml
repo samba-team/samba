@@ -46,6 +46,8 @@
         <member>close</member>
         <member>closedir</member>
         <member>connect</member>
+	<member>copy_chunk_send</member>
+	<member>copy_chunk_recv</member>
         <member>disconnect</member>
         <member>disk_free</member>
         <member>fchmod</member>

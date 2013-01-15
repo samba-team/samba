@@ -29,6 +29,7 @@
 #include "smbd/smbd.h"
 #include "ntioctl.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -1668,6 +1669,88 @@ static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
 	return result;
 }
 
+struct time_audit_cc_state {
+	struct timespec ts_send;
+	struct vfs_handle_struct *handle;
+	off_t copied;
+};
+static void smb_time_audit_copy_chunk_done(struct tevent_req *subreq);
+
+static struct tevent_req *smb_time_audit_copy_chunk_send(struct vfs_handle_struct *handle,
+							 TALLOC_CTX *mem_ctx,
+							 struct tevent_context *ev,
+							 struct files_struct *src_fsp,
+							 off_t src_off,
+							 struct files_struct *dest_fsp,
+							 off_t dest_off,
+							 off_t num)
+{
+	struct tevent_req *req;
+	struct tevent_req *subreq;
+	struct time_audit_cc_state *cc_state;
+
+	req = tevent_req_create(mem_ctx, &cc_state, struct time_audit_cc_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	cc_state->handle = handle;
+	clock_gettime_mono(&cc_state->ts_send);
+	subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, cc_state, ev,
+					      src_fsp, src_off,
+					      dest_fsp, dest_off, num);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, smb_time_audit_copy_chunk_done, req);
+	return req;
+}
+
+static void smb_time_audit_copy_chunk_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct time_audit_cc_state *cc_state
+			= tevent_req_data(req, struct time_audit_cc_state);
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_COPY_CHUNK_RECV(cc_state->handle,
+					      subreq,
+					      &cc_state->copied);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS smb_time_audit_copy_chunk_recv(struct vfs_handle_struct *handle,
+					       struct tevent_req *req,
+					       off_t *copied)
+{
+	struct time_audit_cc_state *cc_state
+			= tevent_req_data(req, struct time_audit_cc_state);
+	struct timespec ts_recv;
+	double timediff;
+	NTSTATUS status;
+
+	clock_gettime_mono(&ts_recv);
+	timediff = nsec_time_diff(&ts_recv, &cc_state->ts_send)*1.0e-9;
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("copy_chunk", timediff);
+	}
+
+	*copied = cc_state->copied;
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   files_struct *fsp,
 					   uint32 security_info,
@@ -2179,6 +2262,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.strict_lock_fn = smb_time_audit_strict_lock,
 	.strict_unlock_fn = smb_time_audit_strict_unlock,
 	.translate_name_fn = smb_time_audit_translate_name,
+	.copy_chunk_send_fn = smb_time_audit_copy_chunk_send,
+	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
 	.fget_nt_acl_fn = smb_time_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_time_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,
