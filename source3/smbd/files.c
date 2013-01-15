@@ -582,21 +582,14 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 	return fsp;
 }
 
-struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
-				   uint64_t persistent_id,
-				   uint64_t volatile_id)
+struct files_struct *file_fsp_get(struct smbd_smb2_request *smb2req,
+				  uint64_t persistent_id,
+				  uint64_t volatile_id)
 {
 	struct smbXsrv_open *op;
 	NTSTATUS status;
 	NTTIME now = 0;
 	struct files_struct *fsp;
-
-	if (smb2req->compat_chain_fsp != NULL) {
-		if (smb2req->compat_chain_fsp->deferred_close) {
-			return NULL;
-		}
-		return smb2req->compat_chain_fsp;
-	}
 
 	now = timeval_to_nttime(&smb2req->request_time);
 
@@ -633,6 +626,27 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
 	}
 
 	if (fsp->deferred_close) {
+		return NULL;
+	}
+
+	return fsp;
+}
+
+struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
+				   uint64_t persistent_id,
+				   uint64_t volatile_id)
+{
+	struct files_struct *fsp;
+
+	if (smb2req->compat_chain_fsp != NULL) {
+		if (smb2req->compat_chain_fsp->deferred_close) {
+			return NULL;
+		}
+		return smb2req->compat_chain_fsp;
+	}
+
+	fsp = file_fsp_get(smb2req, persistent_id, volatile_id);
+	if (fsp == NULL) {
 		return NULL;
 	}
 
