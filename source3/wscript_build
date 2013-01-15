@@ -730,7 +730,7 @@ bld.SAMBA3_LIBRARY('pdb',
 				include/passdb.h
 				passdb/machine_sid.h
 				passdb/lookup_sid.h''',
-                   abi_match=private_pdb_match + ['*'],
+                   abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
                    vnum='0',
                    vars=locals())
