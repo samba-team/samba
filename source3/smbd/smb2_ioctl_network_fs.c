@@ -62,6 +62,94 @@ static NTSTATUS copychunk_check_limits(struct srv_copychunk_copy *cc_copy)
 	return NT_STATUS_OK;
 }
 
+static void copychunk_unlock_all(struct files_struct *src_fsp,
+				 struct files_struct *dst_fsp,
+				 struct lock_struct *rd_locks,
+				 struct lock_struct *wr_locks,
+				 uint32_t num_locks)
+{
+
+	uint32_t i;
+
+	for (i = 0; i < num_locks; i++) {
+		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &rd_locks[i]);
+		SMB_VFS_STRICT_UNLOCK(dst_fsp->conn, dst_fsp, &wr_locks[i]);
+	}
+}
+
+/* request read and write locks for each chunk */
+static NTSTATUS copychunk_lock_all(TALLOC_CTX *mem_ctx,
+				   struct srv_copychunk_copy *cc_copy,
+				   struct files_struct *src_fsp,
+				   struct files_struct *dst_fsp,
+				   struct lock_struct **rd_locks,
+				   struct lock_struct **wr_locks,
+				   uint32_t *num_locks)
+{
+	NTSTATUS status;
+	uint32_t i;
+	struct lock_struct *rlocks;
+	struct lock_struct *wlocks;
+
+	rlocks = talloc_array(mem_ctx, struct lock_struct,
+			      cc_copy->chunk_count);
+	if (rlocks == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_out;
+	}
+
+	wlocks = talloc_array(mem_ctx, struct lock_struct,
+			      cc_copy->chunk_count);
+	if (wlocks == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto err_rlocks_free;
+	}
+
+	for (i = 0; i < cc_copy->chunk_count; i++) {
+		init_strict_lock_struct(src_fsp,
+					src_fsp->op->global->open_persistent_id,
+					cc_copy->chunks[i].source_off,
+					cc_copy->chunks[i].length,
+					READ_LOCK,
+					&rlocks[i]);
+		init_strict_lock_struct(dst_fsp,
+					dst_fsp->op->global->open_persistent_id,
+					cc_copy->chunks[i].target_off,
+					cc_copy->chunks[i].length,
+					WRITE_LOCK,
+					&wlocks[i]);
+
+		if (!SMB_VFS_STRICT_LOCK(src_fsp->conn, src_fsp, &rlocks[i])) {
+			status = NT_STATUS_FILE_LOCK_CONFLICT;
+			goto err_unlock;
+		}
+		if (!SMB_VFS_STRICT_LOCK(dst_fsp->conn, dst_fsp, &wlocks[i])) {
+			/* unlock last rlock, otherwise missed by cleanup */
+			SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp,
+					      &rlocks[i]);
+			status = NT_STATUS_FILE_LOCK_CONFLICT;
+			goto err_unlock;
+		}
+	}
+
+	*rd_locks = rlocks;
+	*wr_locks = wlocks;
+	*num_locks = i;
+
+	return NT_STATUS_OK;
+
+err_unlock:
+	if (i > 0) {
+		/* cleanup all locks successfully issued so far */
+		copychunk_unlock_all(src_fsp, dst_fsp, rlocks, wlocks, i);
+	}
+	talloc_free(wlocks);
+err_rlocks_free:
+	talloc_free(rlocks);
+err_out:
+	return status;
+}
+
 struct fsctl_srv_copychunk_state {
 	struct connection_struct *conn;
 	uint32_t dispatch_count;
@@ -69,6 +157,11 @@ struct fsctl_srv_copychunk_state {
 	uint32_t bad_recv_count;
 	NTSTATUS status;
 	off_t total_written;
+	struct files_struct *src_fsp;
+	struct files_struct *dst_fsp;
+	struct lock_struct *wlocks;
+	struct lock_struct *rlocks;
+	uint32_t num_locks;
 };
 static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq);
 
@@ -76,13 +169,13 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 						   struct tevent_context *ev,
 						   struct files_struct *dst_fsp,
 						   DATA_BLOB *in_input,
-						   struct smbd_server_connection *sconn)
+						   struct smbd_smb2_request *smb2req)
 {
 	struct tevent_req *req;
 	struct srv_copychunk_copy cc_copy;
 	enum ndr_err_code ndr_ret;
-	struct file_id src_file_id;
-	struct files_struct *src_fsp;
+	uint64_t src_persistent_h;
+	uint64_t src_volatile_h;
 	int i;
 	struct srv_copychunk *chunk;
 	struct fsctl_srv_copychunk_state *state;
@@ -102,21 +195,33 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	/* file id is sent as a copychunk resume key */
-	ZERO_STRUCT(src_file_id);
-	BUILD_ASSERT(ARRAY_SIZE(cc_copy.source_key) == sizeof(src_file_id));
-	memcpy(&src_file_id, cc_copy.source_key, ARRAY_SIZE(cc_copy.source_key));
-	src_fsp = file_find_di_first(sconn, src_file_id);
-	if (src_fsp == NULL) {
+	/* persistent/volatile keys sent as the resume key */
+	src_persistent_h = BVAL(cc_copy.source_key, 0);
+	src_volatile_h = BVAL(cc_copy.source_key, 8);
+	state->src_fsp = file_fsp_get(smb2req, src_persistent_h, src_volatile_h);
+	if (state->src_fsp == NULL) {
 		DEBUG(3, ("invalid resume key in copy chunk req\n"));
 		state->status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		tevent_req_nterror(req, state->status);
 		return tevent_req_post(req, ev);
 	}
 
+	state->dst_fsp = dst_fsp;
+
 	state->status = copychunk_check_limits(&cc_copy);
 	if (tevent_req_nterror(req, state->status)) {
 		DEBUG(3, ("copy chunk req exceeds limits\n"));
+		return tevent_req_post(req, ev);
+	}
+
+	state->status = copychunk_lock_all(state,
+					   &cc_copy,
+					   state->src_fsp,
+					   state->dst_fsp,
+					   &state->rlocks,
+					   &state->wlocks,
+					   &state->num_locks);
+	if (tevent_req_nterror(req, state->status)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -125,20 +230,27 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		chunk = &cc_copy.chunks[i];
 		vfs_subreq = SMB_VFS_COPY_CHUNK_SEND(dst_fsp->conn,
 						     state, ev,
-						     src_fsp, chunk->source_off,
-						     dst_fsp, chunk->target_off,
+						     state->src_fsp,
+						     chunk->source_off,
+						     state->dst_fsp,
+						     chunk->target_off,
 						     chunk->length);
 		if (vfs_subreq == NULL) {
 			DEBUG(0, ("VFS copy chunk send failed\n"));
 			state->status = NT_STATUS_NO_MEMORY;
 			if (state->dispatch_count == 0) {
 				/* nothing dispatched, return immediately */
+				copychunk_unlock_all(state->src_fsp,
+						     state->dst_fsp,
+						     state->rlocks,
+						     state->wlocks,
+						     state->num_locks);
 				tevent_req_nterror(req, state->status);
 				return tevent_req_post(req, ev);
 			} else {
 				/*
 				 * wait for dispatched to complete before
-				 * returning error
+				 * returning error, locks held.
 				 */
 				break;
 			}
@@ -148,6 +260,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		state->dispatch_count++;
 	}
 
+	/* hold locks until all dispatched requests are completed */
 	return req;
 }
 
@@ -163,6 +276,7 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 	state->recv_count++;
 	status = SMB_VFS_COPY_CHUNK_RECV(state->conn, subreq,
 					 &chunk_nwritten);
+	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("good copy chunk recv %d of %d\n",
 			   state->recv_count,
@@ -187,6 +301,12 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 	}
 
 	/* all VFS copy_chunk requests done */
+	copychunk_unlock_all(state->src_fsp,
+			     state->dst_fsp,
+			     state->rlocks,
+			     state->wlocks,
+			     state->num_locks);
+
 	if (!tevent_req_nterror(req, state->status)) {
 		tevent_req_done(req);
 	}
@@ -317,9 +437,9 @@ static NTSTATUS fsctl_srv_req_resume_key(TALLOC_CTX *mem_ctx,
 	}
 
 	ZERO_STRUCT(rkey_rsp);
-	/* use the file id as a copychunk resume key */
-	BUILD_ASSERT(ARRAY_SIZE(rkey_rsp.resume_key) == sizeof(fsp->file_id));
-	memcpy(rkey_rsp.resume_key, &fsp->file_id, sizeof(fsp->file_id));
+	/* combine persistent and volatile handles for the resume key */
+	SBVAL(rkey_rsp.resume_key, 0, fsp->op->global->open_persistent_id);
+	SBVAL(rkey_rsp.resume_key, 8, fsp->op->global->open_volatile_id);
 
 	ndr_ret = ndr_push_struct_blob(&output, mem_ctx, &rkey_rsp,
 			(ndr_push_flags_fn_t)ndr_push_req_resume_key_rsp);
@@ -351,7 +471,7 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 	case FSCTL_SRV_COPYCHUNK:
 		subreq = fsctl_srv_copychunk_send(state, ev, state->fsp,
 						  &state->in_input,
-						  state->smb2req->sconn);
+						  state->smb2req);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -430,7 +550,7 @@ static void smb2_ioctl_network_fs_copychunk_done(struct tevent_req *subreq)
 
 	ZERO_STRUCT(cc_rsp);
 	status = fsctl_srv_copychunk_recv(subreq, &cc_rsp);
-
+	TALLOC_FREE(subreq);
 	ndr_ret = ndr_push_struct_blob(&ioctl_state->out_output,
 				       ioctl_state,
 				       &cc_rsp,
