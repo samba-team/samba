@@ -29,7 +29,7 @@
    may (in certain situations) cause connections to be reset,
    or access to be denied.
 
-   This locking allows smbd's mutlithread architecture to look
+   This locking allows smbd's multithread architecture to look
    like the single-connection that NT makes. */
 
 struct named_mutex {
