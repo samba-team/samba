@@ -31,6 +31,7 @@ struct ndr_pull_test_data {
 	ndr_pull_flags_fn_t pull_fn;
 	ndr_push_flags_fn_t push_fn;
 	int ndr_flags;
+	int flags;
 };
 
 static bool wrap_ndr_pullpush_test(struct torture_context *tctx,
@@ -42,6 +43,8 @@ static bool wrap_ndr_pullpush_test(struct torture_context *tctx,
 	struct ndr_pull *ndr = ndr_pull_init_blob(&(data->data), tctx);
 	void *ds = talloc_zero_size(ndr, data->struct_size);
 	bool ret;
+
+	ndr->flags |= data->flags;
 
 	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
@@ -76,6 +79,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 	DATA_BLOB db,
 	size_t struct_size,
 	int ndr_flags,
+	int flags,
 	bool (*check_fn) (struct torture_context *ctx, void *data))
 {
 	struct torture_test *test;
@@ -93,6 +97,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 	data = talloc(test, struct ndr_pull_test_data);
 	data->data = db;
 	data->ndr_flags = ndr_flags;
+	data->flags = flags;
 	data->struct_size = struct_size;
 	data->pull_fn = pull_fn;
 	data->push_fn = push_fn;
