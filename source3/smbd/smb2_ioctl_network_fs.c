@@ -163,6 +163,11 @@ struct fsctl_srv_copychunk_state {
 	struct lock_struct *wlocks;
 	struct lock_struct *rlocks;
 	uint32_t num_locks;
+	enum {
+		COPYCHUNK_OUT_EMPTY = 0,
+		COPYCHUNK_OUT_LIMITS,
+		COPYCHUNK_OUT_RSP,
+	} out_data;
 };
 static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq);
 
@@ -236,8 +241,12 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	state->status = copychunk_check_limits(&cc_copy);
 	if (tevent_req_nterror(req, state->status)) {
 		DEBUG(3, ("copy chunk req exceeds limits\n"));
+		state->out_data = COPYCHUNK_OUT_LIMITS;
 		return tevent_req_post(req, ev);
 	}
+
+	/* any errors from here onwards should carry copychunk response data */
+	state->out_data = COPYCHUNK_OUT_RSP;
 
 	state->status = copychunk_lock_all(state,
 					   &cc_copy,
@@ -338,22 +347,32 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 }
 
 static NTSTATUS fsctl_srv_copychunk_recv(struct tevent_req *req,
-					 struct srv_copychunk_rsp *cc_rsp)
+					 struct srv_copychunk_rsp *cc_rsp,
+					 bool *pack_rsp)
 {
 	struct fsctl_srv_copychunk_state *state = tevent_req_data(req,
 					struct fsctl_srv_copychunk_state);
 	NTSTATUS status;
 
-	if (NT_STATUS_EQUAL(state->status, NT_STATUS_INVALID_PARAMETER)) {
+	switch (state->out_data) {
+	case COPYCHUNK_OUT_EMPTY:
+		*pack_rsp = false;
+		break;
+	case COPYCHUNK_OUT_LIMITS:
 		/* 2.2.32.1 - send back our maximum transfer size limits */
 		copychunk_pack_limits(cc_rsp);
-		tevent_req_received(req);
-		return NT_STATUS_INVALID_PARAMETER;
+		*pack_rsp = true;
+		break;
+	case COPYCHUNK_OUT_RSP:
+		cc_rsp->chunks_written = state->recv_count - state->bad_recv_count;
+		cc_rsp->chunk_bytes_written = 0;
+		cc_rsp->total_bytes_written = state->total_written;
+		*pack_rsp = true;
+		break;
+	default:	/* not reached */
+		assert(1);
+		break;
 	}
-
-	cc_rsp->chunks_written = state->recv_count - state->bad_recv_count;
-	cc_rsp->chunk_bytes_written = 0;
-	cc_rsp->total_bytes_written = state->total_written;
 	status = state->status;
 	tevent_req_received(req);
 
@@ -575,17 +594,20 @@ static void smb2_ioctl_network_fs_copychunk_done(struct tevent_req *subreq)
 						struct smbd_smb2_ioctl_state);
 	struct srv_copychunk_rsp cc_rsp;
 	NTSTATUS status;
-	enum ndr_err_code ndr_ret;
+	bool pack_rsp = false;
 
 	ZERO_STRUCT(cc_rsp);
-	status = fsctl_srv_copychunk_recv(subreq, &cc_rsp);
+	status = fsctl_srv_copychunk_recv(subreq, &cc_rsp, &pack_rsp);
 	TALLOC_FREE(subreq);
-	ndr_ret = ndr_push_struct_blob(&ioctl_state->out_output,
-				       ioctl_state,
-				       &cc_rsp,
-			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_rsp);
-	if (ndr_ret != NDR_ERR_SUCCESS) {
-		status = NT_STATUS_INTERNAL_ERROR;
+	if (pack_rsp == true) {
+		enum ndr_err_code ndr_ret;
+		ndr_ret = ndr_push_struct_blob(&ioctl_state->out_output,
+					       ioctl_state,
+					       &cc_rsp,
+				(ndr_push_flags_fn_t)ndr_push_srv_copychunk_rsp);
+		if (ndr_ret != NDR_ERR_SUCCESS) {
+			status = NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	if (!tevent_req_nterror(req, status)) {
