@@ -63,7 +63,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             self.fail("'drs replicate' command should have failed!")
 
     def test_ReplDisabledForced(self):
-        """Tests we cann't replicate when replication is disabled"""
+        """Tests we can force replicate when replication is disabled"""
         self._disable_inbound_repl(self.dnsname_dc1)
         out = self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
