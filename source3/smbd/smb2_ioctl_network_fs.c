@@ -23,8 +23,10 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "../lib/ccan/build_assert/build_assert.h"
 #include "include/ntioctl.h"
 #include "../librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
 
 static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
@@ -114,6 +116,41 @@ static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fsctl_srv_req_resume_key(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct files_struct *fsp,
+					 uint32_t in_max_output,
+					 DATA_BLOB *out_output)
+{
+	struct req_resume_key_rsp rkey_rsp;
+	enum ndr_err_code ndr_ret;
+	DATA_BLOB output;
+
+	if (fsp == NULL) {
+		return NT_STATUS_FILE_CLOSED;
+	}
+
+	ZERO_STRUCT(rkey_rsp);
+	/* use the file id as a copychunk resume key */
+	BUILD_ASSERT(ARRAY_SIZE(rkey_rsp.resume_key) == sizeof(fsp->file_id));
+	memcpy(rkey_rsp.resume_key, &fsp->file_id, sizeof(fsp->file_id));
+
+	ndr_ret = ndr_push_struct_blob(&output, mem_ctx, &rkey_rsp,
+			(ndr_push_flags_fn_t)ndr_push_req_resume_key_rsp);
+	if (ndr_ret != NDR_ERR_SUCCESS) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (in_max_output < output.length) {
+		DEBUG(1, ("max output %u too small for resume key rsp %ld\n",
+			  in_max_output, (long int)output.length));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	*out_output = output;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smb2_ioctl_network_fs(uint32_t ctl_code,
 			       struct tevent_context *ev,
 			       struct tevent_req *req,
@@ -123,7 +160,6 @@ NTSTATUS smb2_ioctl_network_fs(uint32_t ctl_code,
 
 	switch (ctl_code) {
 	case FSCTL_VALIDATE_NEGOTIATE_INFO:
-	{
 		status = fsctl_validate_neg_info(state, ev,
 						 state->smbreq->sconn->conn,
 						 &state->in_input,
@@ -134,7 +170,16 @@ NTSTATUS smb2_ioctl_network_fs(uint32_t ctl_code,
 			tevent_req_done(req);
 		}
 		return tevent_req_post(req, ev);
-	}
+		break;
+	case FSCTL_SRV_REQUEST_RESUME_KEY:
+		status = fsctl_srv_req_resume_key(state, ev, state->fsp,
+						  state->in_max_output,
+						  &state->out_output);
+		if (!tevent_req_nterror(req, status)) {
+			tevent_req_done(req);
+		}
+		return tevent_req_post(req, ev);
+		break;
 	default: {
 		uint8_t *out_data = NULL;
 		uint32_t out_data_len = 0;
