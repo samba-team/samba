@@ -328,6 +328,166 @@ static void smbd_smb2_request_ioctl_done(struct tevent_req *subreq)
 	}
 }
 
+static NTSTATUS fsctl_dfs_get_refers(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct connection_struct *conn,
+				     DATA_BLOB *in_input,
+				     uint32_t in_max_output,
+				     DATA_BLOB *out_output)
+{
+	uint16_t in_max_referral_level;
+	DATA_BLOB in_file_name_buffer;
+	char *in_file_name_string;
+	size_t in_file_name_string_size;
+	bool ok;
+	bool overflow = false;
+	NTSTATUS status;
+	int dfs_size;
+	char *dfs_data = NULL;
+	DATA_BLOB output;
+
+	if (!IS_IPC(conn)) {
+		return NT_STATUS_INVALID_DEVICE_REQUEST;
+	}
+
+	if (!lp_host_msdfs()) {
+		return NT_STATUS_FS_DRIVER_REQUIRED;
+	}
+
+	if (in_input->length < (2 + 2)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	in_max_referral_level = SVAL(in_input->data, 0);
+	in_file_name_buffer.data = in_input->data + 2;
+	in_file_name_buffer.length = in_input->length - 2;
+
+	ok = convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
+				   in_file_name_buffer.data,
+				   in_file_name_buffer.length,
+				   &in_file_name_string,
+				   &in_file_name_string_size);
+	if (!ok) {
+		return NT_STATUS_ILLEGAL_CHARACTER;
+	}
+
+	dfs_size = setup_dfs_referral(conn,
+				      in_file_name_string,
+				      in_max_referral_level,
+				      &dfs_data, &status);
+	if (dfs_size < 0) {
+		return status;
+	}
+
+	if (dfs_size > in_max_output) {
+		/*
+		 * TODO: we need a testsuite for this
+		 */
+		overflow = true;
+		dfs_size = in_max_output;
+	}
+
+	output = data_blob_talloc(mem_ctx, (uint8_t *)dfs_data, dfs_size);
+	SAFE_FREE(dfs_data);
+	if ((dfs_size > 0) && (output.data == NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*out_output = output;
+
+	if (overflow) {
+		return STATUS_BUFFER_OVERFLOW;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fsctl_validate_neg_info(TALLOC_CTX *mem_ctx,
+				        struct tevent_context *ev,
+				        struct smbXsrv_connection *conn,
+				        DATA_BLOB *in_input,
+				        uint32_t in_max_output,
+				        DATA_BLOB *out_output,
+					bool *disconnect)
+{
+	uint32_t in_capabilities;
+	DATA_BLOB in_guid_blob;
+	struct GUID in_guid;
+	uint16_t in_security_mode;
+	uint16_t in_num_dialects;
+	uint16_t i;
+	DATA_BLOB out_guid_blob;
+	NTSTATUS status;
+
+	if (in_input->length < 0x18) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	in_capabilities = IVAL(in_input->data, 0x00);
+	in_guid_blob = data_blob_const(in_input->data + 0x04, 16);
+	in_security_mode = SVAL(in_input->data, 0x14);
+	in_num_dialects = SVAL(in_input->data, 0x16);
+
+	if (in_input->length < (0x18 + in_num_dialects*2)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (in_max_output < 0x18) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	status = GUID_from_ndr_blob(&in_guid_blob, &in_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (in_num_dialects != conn->smb2.client.num_dialects) {
+		*disconnect = true;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	for (i=0; i < in_num_dialects; i++) {
+		uint16_t v = SVAL(in_input->data, 0x18 + i*2);
+
+		if (conn->smb2.client.dialects[i] != v) {
+			*disconnect = true;
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (GUID_compare(&in_guid, &conn->smb2.client.guid) != 0) {
+		*disconnect = true;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (in_security_mode != conn->smb2.client.security_mode) {
+		*disconnect = true;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (in_capabilities != conn->smb2.client.capabilities) {
+		*disconnect = true;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = GUID_to_ndr_blob(&conn->smb2.server.guid, mem_ctx,
+				  &out_guid_blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*out_output = data_blob_talloc(mem_ctx, NULL, 0x18);
+	if (out_output->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	SIVAL(out_output->data, 0x00, conn->smb2.server.capabilities);
+	memcpy(out_output->data+0x04, out_guid_blob.data, 16);
+	SIVAL(out_output->data, 0x14, conn->smb2.server.security_mode);
+	SIVAL(out_output->data, 0x16, conn->smb2.server.dialect);
+
+	return NT_STATUS_OK;
+}
+
+
 struct smbd_smb2_ioctl_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smbreq;
@@ -381,74 +541,11 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 	switch (in_ctl_code) {
 	case 0x00060194: /* FSCTL_DFS_GET_REFERRALS */
 	{
-		uint16_t in_max_referral_level;
-		DATA_BLOB in_file_name_buffer;
-		char *in_file_name_string;
-		size_t in_file_name_string_size;
-		bool ok;
-		bool overflow = false;
-		NTSTATUS status;
-		int dfs_size;
-		char *dfs_data = NULL;
-
-		if (!IS_IPC(smbreq->conn)) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_DEVICE_REQUEST);
-			return tevent_req_post(req, ev);
-		}
-
-		if (!lp_host_msdfs()) {
-			tevent_req_nterror(req, NT_STATUS_FS_DRIVER_REQUIRED);
-			return tevent_req_post(req, ev);
-		}
-
-		if (in_input.length < (2 + 2)) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
-		}
-
-		in_max_referral_level = SVAL(in_input.data, 0);
-		in_file_name_buffer.data = in_input.data + 2;
-		in_file_name_buffer.length = in_input.length - 2;
-
-		ok = convert_string_talloc(state, CH_UTF16, CH_UNIX,
-					   in_file_name_buffer.data,
-					   in_file_name_buffer.length,
-					   &in_file_name_string,
-					   &in_file_name_string_size);
-		if (!ok) {
-			tevent_req_nterror(req, NT_STATUS_ILLEGAL_CHARACTER);
-			return tevent_req_post(req, ev);
-		}
-
-		dfs_size = setup_dfs_referral(smbreq->conn,
-					      in_file_name_string,
-					      in_max_referral_level,
-					      &dfs_data, &status);
-		if (dfs_size < 0) {
-			tevent_req_nterror(req, status);
-			return tevent_req_post(req, ev);
-		}
-
-		if (dfs_size > in_max_output) {
-			/*
-			 * TODO: we need a testsuite for this
-			 */
-			overflow = true;
-			dfs_size = in_max_output;
-		}
-
-		state->out_output = data_blob_talloc(state,
-						     (uint8_t *)dfs_data,
-						     dfs_size);
-		SAFE_FREE(dfs_data);
-		if (dfs_size > 0 &&
-		    tevent_req_nomem(state->out_output.data, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		if (overflow) {
-			tevent_req_nterror(req, STATUS_BUFFER_OVERFLOW);
-		} else {
+		status = fsctl_dfs_get_refers(state, ev, state->smbreq->conn,
+					      &state->in_input,
+					      state->in_max_output,
+					      &state->out_output);
+		if (!tevent_req_nterror(req, status)) {
 			tevent_req_done(req);
 		}
 		return tevent_req_post(req, ev);
@@ -487,92 +584,15 @@ static struct tevent_req *smbd_smb2_ioctl_send(TALLOC_CTX *mem_ctx,
 
 	case FSCTL_VALIDATE_NEGOTIATE_INFO:
 	{
-		struct smbXsrv_connection *conn = smbreq->sconn->conn;
-		uint32_t in_capabilities;
-		DATA_BLOB in_guid_blob;
-		struct GUID in_guid;
-		uint16_t in_security_mode;
-		uint16_t in_num_dialects;
-		uint16_t i;
-		DATA_BLOB out_guid_blob;
-		NTSTATUS status;
-
-		if (in_input.length < 0x18) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
+		status = fsctl_validate_neg_info(state, ev,
+						 state->smbreq->sconn->conn,
+						 &state->in_input,
+						 state->in_max_output,
+						 &state->out_output,
+						 &state->disconnect);
+		if (!tevent_req_nterror(req, status)) {
+			tevent_req_done(req);
 		}
-
-		in_capabilities = IVAL(in_input.data, 0x00);
-		in_guid_blob = data_blob_const(in_input.data + 0x04, 16);
-		in_security_mode = SVAL(in_input.data, 0x14);
-		in_num_dialects = SVAL(in_input.data, 0x16);
-
-		if (in_input.length < (0x18 + in_num_dialects*2)) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
-		}
-
-		if (in_max_output < 0x18) {
-			tevent_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
-			return tevent_req_post(req, ev);
-		}
-
-		status = GUID_from_ndr_blob(&in_guid_blob, &in_guid);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-
-		if (in_num_dialects != conn->smb2.client.num_dialects) {
-			state->disconnect = true;
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		for (i=0; i < in_num_dialects; i++) {
-			uint16_t v = SVAL(in_input.data, 0x18 + i*2);
-
-			if (conn->smb2.client.dialects[i] != v) {
-				state->disconnect = true;
-				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-				return tevent_req_post(req, ev);
-			}
-		}
-
-		if (GUID_compare(&in_guid, &conn->smb2.client.guid) != 0) {
-			state->disconnect = true;
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		if (in_security_mode != conn->smb2.client.security_mode) {
-			state->disconnect = true;
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		if (in_capabilities != conn->smb2.client.capabilities) {
-			state->disconnect = true;
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		status = GUID_to_ndr_blob(&conn->smb2.server.guid, state,
-					  &out_guid_blob);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-
-		state->out_output = data_blob_talloc(state, NULL, 0x18);
-		if (tevent_req_nomem(state->out_output.data, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		SIVAL(state->out_output.data, 0x00, conn->smb2.server.capabilities);
-		memcpy(state->out_output.data+0x04, out_guid_blob.data, 16);
-		SIVAL(state->out_output.data, 0x14, conn->smb2.server.security_mode);
-		SIVAL(state->out_output.data, 0x16, conn->smb2.server.dialect);
-
-		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
@@ -655,7 +675,6 @@ static void smbd_smb2_ioctl_pipe_write_done(struct tevent_req *subreq)
 		"of size %u\n",
 		(unsigned int)state->out_output.length ));
 
-	TALLOC_FREE(subreq);
 	subreq = np_read_send(state->smbreq->conn,
 			      state->smb2req->sconn->ev_ctx,
 			      state->fsp->fake_file_handle,
