@@ -703,7 +703,7 @@ import "misc.idl", "security.idl", "winreg.idl", "spoolss.idl";
 
 	HRESULT winspool_SyncRegisterForRemoteNotifications(
 		[in]    PRINTER_HANDLE                  hPrinter,
-		[in]    winspool_PrintPropertiesCollectioni *pNotifyFilter,
+		[in]    winspool_PrintPropertiesCollection *pNotifyFilter,
 		[out]   RMTNTFY_HANDLE                 *phwinspool_Handle
 	);
 

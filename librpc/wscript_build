@@ -120,6 +120,11 @@ bld.SAMBA_SUBSYSTEM('NDR_SPOOLSS_BUF',
     deps='talloc'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_WINSPOOL',
+    source='gen_ndr/ndr_winspool.c',
+    public_deps='ndr NDR_SPOOLSS'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_PRINTCAP',
     source='gen_ndr/ndr_printcap.c',
     public_deps='ndr'
@@ -521,6 +526,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_BROWSER',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_SPOOLSS',
     source='gen_ndr/ndr_spoolss_c.c',
     public_deps='dcerpc-binding NDR_SPOOLSS'
+    )
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_WINSPOOL',
+    source='gen_ndr/ndr_winspool_c.c',
+    public_deps='dcerpc-binding NDR_WINSPOOL'
     )
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NBT',
