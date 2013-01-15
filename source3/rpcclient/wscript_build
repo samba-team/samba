@@ -21,6 +21,7 @@ bld.SAMBA3_BINARY('rpcclient',
                  cmd_fss.c
                  cmd_clusapi.c
                  cmd_witness.c
+		 cmd_iremotewinspool.c
 		 ''',
                  deps='''
                  talloc
@@ -51,4 +52,5 @@ bld.SAMBA3_BINARY('rpcclient',
                  RPC_NDR_FSRVP
                  RPC_NDR_CLUSAPI
                  RPC_NDR_WITNESS
+                 RPC_NDR_WINSPOOL
                  ''')
