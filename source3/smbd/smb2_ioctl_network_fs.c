@@ -175,6 +175,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 						   struct tevent_context *ev,
 						   struct files_struct *dst_fsp,
 						   DATA_BLOB *in_input,
+						   size_t in_max_output,
 						   struct smbd_smb2_request *smb2req)
 {
 	struct tevent_req *req;
@@ -192,6 +193,16 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->conn = dst_fsp->conn;
+
+	if (in_max_output < sizeof(struct srv_copychunk_rsp)) {
+		DEBUG(3, ("max output %d not large enough to hold copy chunk "
+			  "response %lu\n", (int)in_max_output,
+			  sizeof(struct srv_copychunk_rsp)));
+		state->status = NT_STATUS_INVALID_PARAMETER;
+		tevent_req_nterror(req, state->status);
+		return tevent_req_post(req, ev);
+	}
+
 	ndr_ret = ndr_pull_struct_blob(in_input, mem_ctx, &cc_copy,
 			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_copy);
 	if (ndr_ret != NDR_ERR_SUCCESS) {
@@ -515,6 +526,7 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 	case FSCTL_SRV_COPYCHUNK:
 		subreq = fsctl_srv_copychunk_send(state, ev, state->fsp,
 						  &state->in_input,
+						  state->in_max_output,
 						  state->smb2req);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
