@@ -632,6 +632,230 @@ static bool test_ioctl_copy_chunk_limits(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_copy_chunk_src_lck(struct torture_context *torture,
+					  struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle src_h2;
+	struct smb2_handle dest_h;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+	struct smb2_lock lck;
+	struct smb2_lock_element el[1];
+
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   1, /* chunks */
+				   &src_h, 4096, /* src file */
+				   &dest_h, 0,	/* dest file */
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		return false;
+	}
+
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = 4096;
+
+	/* open and lock the copychunk src file */
+	status = torture_smb2_testfile(tree, FNAME, &src_h2);
+	torture_assert_ntstatus_ok(torture, status, "2nd src open");
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= src_h2;
+	lck.in.locks		= el;
+	el[0].offset		= cc_copy.chunks[0].source_off;
+	el[0].length		= cc_copy.chunks[0].length;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok(torture, status, "lock");
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_srv_copychunk_copy");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	/*
+	 * 2k12 & Samba return lock_conflict, Windows 7 & 2k8 return success...
+	 *
+	 * Edgar Olougouna @ MS wrote:
+	 * Regarding the FSCTL_SRV_COPYCHUNK and STATUS_FILE_LOCK_CONFLICT
+	 * discrepancy observed between Windows versions, we confirm that the
+	 * behavior change is expected.
+	 *
+	 * CopyChunk in Windows Server 2012 use regular Readfile/Writefile APIs
+	 * to move the chunks from the source to the destination.
+	 * These ReadFile/WriteFile APIs go through the byte-range lock checks,
+	 * and this explains the observed STATUS_FILE_LOCK_CONFLICT error.
+	 *
+	 * Prior to Windows Server 2012, CopyChunk used mapped sections to move
+	 * the data. And byte range locks are not enforced on mapped I/O, and
+	 * this explains the STATUS_SUCCESS observed on Windows Server 2008 R2.
+	 */
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_FILE_LOCK_CONFLICT,
+				      "FSCTL_SRV_COPYCHUNK locked");
+
+	/* should get cc response data with the lock conflict status */
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_srv_copychunk_rsp");
+	ok = check_copy_chunk_rsp(torture, &cc_rsp,
+				  0,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  0);	/* total bytes written */
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000001;
+	lck.in.file.handle	= src_h2;
+	lck.in.locks		= el;
+	el[0].offset		= cc_copy.chunks[0].source_off;
+	el[0].length		= cc_copy.chunks[0].length;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok(torture, status, "unlock");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_SRV_COPYCHUNK unlocked");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_srv_copychunk_rsp");
+
+	ok = check_copy_chunk_rsp(torture, &cc_rsp,
+				  1,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  4096); /* total bytes written */
+	if (!ok) {
+		return false;
+	}
+
+	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
+	if (!ok) {
+		return false;
+	}
+
+	smb2_util_close(tree, src_h2);
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+static bool test_ioctl_copy_chunk_dest_lck(struct torture_context *torture,
+					   struct smb2_tree *tree)
+{
+	struct smb2_handle src_h;
+	struct smb2_handle dest_h;
+	struct smb2_handle dest_h2;
+	NTSTATUS status;
+	union smb_ioctl ioctl;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	struct srv_copychunk_copy cc_copy;
+	struct srv_copychunk_rsp cc_rsp;
+	enum ndr_err_code ndr_ret;
+	bool ok;
+	struct smb2_lock lck;
+	struct smb2_lock_element el[1];
+
+	ok = test_setup_copy_chunk(torture, tree, tmp_ctx,
+				   1, /* chunks */
+				   &src_h, 4096, /* src file */
+				   &dest_h, 4096,	/* dest file */
+				   &cc_copy,
+				   &ioctl);
+	if (!ok) {
+		return false;
+	}
+
+	cc_copy.chunks[0].source_off = 0;
+	cc_copy.chunks[0].target_off = 0;
+	cc_copy.chunks[0].length = 4096;
+
+	/* open and lock the copychunk dest file */
+	status = torture_smb2_testfile(tree, FNAME2, &dest_h2);
+	torture_assert_ntstatus_ok(torture, status, "2nd src open");
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000000;
+	lck.in.file.handle	= dest_h2;
+	lck.in.locks		= el;
+	el[0].offset		= cc_copy.chunks[0].target_off;
+	el[0].length		= cc_copy.chunks[0].length;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
+
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok(torture, status, "lock");
+
+	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
+				       &cc_copy,
+			(ndr_push_flags_fn_t)ndr_push_srv_copychunk_copy);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_push_srv_copychunk_copy");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_FILE_LOCK_CONFLICT,
+				      "FSCTL_SRV_COPYCHUNK locked");
+
+	lck.in.lock_count	= 0x0001;
+	lck.in.lock_sequence	= 0x00000001;
+	lck.in.file.handle	= dest_h2;
+	lck.in.locks		= el;
+	el[0].offset		= cc_copy.chunks[0].target_off;
+	el[0].length		= cc_copy.chunks[0].length;
+	el[0].reserved		= 0;
+	el[0].flags		= SMB2_LOCK_FLAG_UNLOCK;
+	status = smb2_lock(tree, &lck);
+	torture_assert_ntstatus_ok(torture, status, "unlock");
+
+	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_SRV_COPYCHUNK unlocked");
+
+	ndr_ret = ndr_pull_struct_blob(&ioctl.smb2.out.out, tmp_ctx,
+				       &cc_rsp,
+			(ndr_pull_flags_fn_t)ndr_pull_srv_copychunk_rsp);
+	torture_assert_ndr_success(torture, ndr_ret,
+				   "ndr_pull_srv_copychunk_rsp");
+
+	ok = check_copy_chunk_rsp(torture, &cc_rsp,
+				  1,	/* chunks written */
+				  0,	/* chunk bytes unsuccessfully written */
+				  4096); /* total bytes written */
+	if (!ok) {
+		return false;
+	}
+
+	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
+	if (!ok) {
+		return false;
+	}
+
+	smb2_util_close(tree, dest_h2);
+	smb2_util_close(tree, src_h);
+	smb2_util_close(tree, dest_h);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
    basic testing of SMB2 ioctls
 */
@@ -655,6 +879,10 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_copy_chunk_append);
 	torture_suite_add_1smb2_test(suite, "copy_chunk_limits",
 				     test_ioctl_copy_chunk_limits);
+	torture_suite_add_1smb2_test(suite, "copy_chunk_src_lock",
+				     test_ioctl_copy_chunk_src_lck);
+	torture_suite_add_1smb2_test(suite, "copy_chunk_dest_lock",
+				     test_ioctl_copy_chunk_dest_lck);
 
 	suite->description = talloc_strdup(suite, "SMB2-IOCTL tests");
 
