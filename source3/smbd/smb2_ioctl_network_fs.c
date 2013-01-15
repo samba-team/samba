@@ -23,6 +23,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "../libcli/security/security.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/ccan/build_assert/build_assert.h"
 #include "include/ntioctl.h"
@@ -207,6 +208,30 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->dst_fsp = dst_fsp;
+	/*
+	 * [MS-SMB2] 3.3.5.15.6 Handling a Server-Side Data Copy Request
+	 * If Open.GrantedAccess of the destination file does not
+	 * include FILE_WRITE_DATA, then the request MUST be failed with
+	 * STATUS_ACCESS_DENIED. If Open.GrantedAccess of the
+	 * destination file does not include FILE_READ_DATA access and
+	 * the CtlCode is FSCTL_SRV_COPYCHUNK, then the request MUST be
+	 * failed with STATUS_ACCESS_DENIED.
+	 */
+	if (!CHECK_WRITE(state->dst_fsp)) {
+		state->status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, state->status);
+		return tevent_req_post(req, ev);
+	}
+	if (!CHECK_READ(state->dst_fsp, smb2req->smb1req)) {
+		state->status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, state->status);
+		return tevent_req_post(req, ev);
+	}
+	if (!CHECK_READ(state->src_fsp, smb2req->smb1req)) {
+		state->status = NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, state->status);
+		return tevent_req_post(req, ev);
+	}
 
 	state->status = copychunk_check_limits(&cc_copy);
 	if (tevent_req_nterror(req, state->status)) {
