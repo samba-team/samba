@@ -61,9 +61,7 @@ static bool test_ioctl_get_shadow_copy(struct torture_context *torture,
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)
 	 || NT_STATUS_EQUAL(status, NT_STATUS_INVALID_DEVICE_REQUEST)) {
-		torture_comment(torture,
-			"FSCTL_SRV_ENUM_SNAPS not supported, skipping\n");
-		return true;
+		torture_skip(torture, "FSCTL_SRV_ENUM_SNAPS not supported\n");
 	}
 	torture_assert_ntstatus_ok(torture, status, "FSCTL_SRV_ENUM_SNAPS");
 
@@ -165,10 +163,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	enum ndr_err_code ndr_ret;
 	uint64_t i;
 	uint8_t *buf = talloc_zero_size(mem_ctx, MAX(src_size, dest_size));
-	if (buf == NULL) {
-		printf("no mem for file data buffer\n");
-		return false;
-	}
+	torture_assert(torture, (buf != NULL), "no memory for file data buf");
 
 	smb2_util_unlink(tree, FNAME);
 	smb2_util_unlink(tree, FNAME2);
@@ -225,10 +220,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	memcpy(cc_copy->source_key, res_key.resume_key, ARRAY_SIZE(cc_copy->source_key));
 	cc_copy->chunk_count = nchunks;
 	cc_copy->chunks = talloc_zero_array(mem_ctx, struct srv_copychunk, nchunks);
-	if (cc_copy->chunks == NULL) {
-		printf("not enough memory to allocate %u chunks\n", nchunks);
-		return false;
-	}
+	torture_assert(torture, (cc_copy->chunks != NULL), "no memory for chunks");
 
 	return true;
 }
@@ -269,7 +261,7 @@ static bool test_ioctl_copy_chunk_simple(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	/* copy all src file data (via a single chunk desc) */
@@ -297,12 +289,12 @@ static bool test_ioctl_copy_chunk_simple(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  4096); /* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	smb2_util_close(tree, src_h);
@@ -331,7 +323,7 @@ static bool test_ioctl_copy_chunk_multi(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	/* copy all src file data via two chunks */
@@ -363,7 +355,7 @@ static bool test_ioctl_copy_chunk_multi(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  8192);	/* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	smb2_util_close(tree, src_h);
@@ -392,7 +384,7 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	/* copy all src file data via two chunks, sub block size chunks */
@@ -424,12 +416,12 @@ static bool test_ioctl_copy_chunk_tiny(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  100);	/* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 100, 0);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	smb2_util_close(tree, src_h);
@@ -458,7 +450,7 @@ static bool test_ioctl_copy_chunk_over(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	/* first chunk overwrites existing dest data */
@@ -491,12 +483,12 @@ static bool test_ioctl_copy_chunk_over(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  8192); /* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 4096);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	smb2_util_close(tree, src_h);
@@ -525,7 +517,7 @@ static bool test_ioctl_copy_chunk_append(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	cc_copy.chunks[0].source_off = 0;
@@ -557,17 +549,17 @@ static bool test_ioctl_copy_chunk_append(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  8192); /* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 4096, 4096, 0);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	smb2_util_close(tree, src_h);
@@ -596,7 +588,7 @@ static bool test_ioctl_copy_chunk_limits(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	/* send huge chunk length request */
@@ -655,7 +647,7 @@ static bool test_ioctl_copy_chunk_src_lck(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	cc_copy.chunks[0].source_off = 0;
@@ -743,12 +735,12 @@ static bool test_ioctl_copy_chunk_src_lck(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  4096); /* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	smb2_util_close(tree, src_h2);
@@ -781,7 +773,7 @@ static bool test_ioctl_copy_chunk_dest_lck(struct torture_context *torture,
 				   &cc_copy,
 				   &ioctl);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "setup copy chunk error");
 	}
 
 	cc_copy.chunks[0].source_off = 0;
@@ -841,12 +833,12 @@ static bool test_ioctl_copy_chunk_dest_lck(struct torture_context *torture,
 				  0,	/* chunk bytes unsuccessfully written */
 				  4096); /* total bytes written */
 	if (!ok) {
-		return false;
+		torture_fail(torture, "bad copy chunk response data");
 	}
 
 	ok = check_pattern(torture, tree, tmp_ctx, dest_h, 0, 4096, 0);
 	if (!ok) {
-		return false;
+		torture_fail(torture, "inconsistent file data");
 	}
 
 	smb2_util_close(tree, dest_h2);
