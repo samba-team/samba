@@ -514,6 +514,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_driver(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_access(suite));
+	torture_suite_add_suite(suite, torture_rpc_iremotewinspool(suite));
 	torture_suite_add_simple_test(suite, "samr", torture_rpc_samr);
 	torture_suite_add_simple_test(suite, "samr.users", torture_rpc_samr_users);
 	torture_suite_add_simple_test(suite, "samr.passwords", torture_rpc_samr_passwords);
