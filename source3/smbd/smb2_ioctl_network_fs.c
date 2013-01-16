@@ -200,6 +200,28 @@ static NTSTATUS copychunk_check_handles(struct files_struct *src_fsp,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (src_fsp->is_directory) {
+		DEBUG(5, ("copy chunk no read on src directory handle (%s).\n",
+			smb_fname_str_dbg(src_fsp->fsp_name) ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (dst_fsp->is_directory) {
+		DEBUG(5, ("copy chunk no read on dst directory handle (%s).\n",
+			smb_fname_str_dbg(dst_fsp->fsp_name) ));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (IS_IPC(src_fsp->conn) || IS_IPC(dst_fsp->conn)) {
+		DEBUG(5, ("copy chunk no access on IPC$ handle.\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (IS_PRINT(src_fsp->conn) || IS_PRINT(dst_fsp->conn)) {
+		DEBUG(5, ("copy chunk no access on PRINT handle.\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	return NT_STATUS_OK;
 }
 
