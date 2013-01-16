@@ -954,8 +954,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	const struct dsdb_schema *schema;
 	unsigned int i;
 	const struct dsdb_class *objectclass;
-	uint32_t access_granted;
-	NTSTATUS status;
 	struct ldb_result *acl_res;
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
@@ -1067,13 +1065,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				access_mask |= SEC_FLAG_SYSTEM_SECURITY;
 			}
 
-			status = sec_access_check_ds(sd, acl_user_token(module),
-					     access_mask,
-					     &access_granted,
-					     NULL,
-					     sid);
-
-			if (!NT_STATUS_IS_OK(status)) {
+			ret = acl_check_access_on_attribute(module,
+							    tmp_ctx,
+							    sd,
+							    sid,
+							    access_mask,
+							    attr,
+							    objectclass);
+			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb_module_get_ctx(module),
 						       "Object %s has no write dacl access\n",
 						       ldb_dn_get_linearized(msg->dn));
@@ -1125,41 +1124,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				goto fail;
 			}
 		} else {
-			struct object_tree *root = NULL;
-			struct object_tree *new_node = NULL;
-
-			if (!insert_in_object_tree(tmp_ctx,
-						   &objectclass->schemaIDGUID,
-						   SEC_ADS_WRITE_PROP,
-						   &root, &new_node)) {
-				talloc_free(tmp_ctx);
-				return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
-						 "acl_modify: Error adding new node in object tree.");
-			}
-
-			if (!insert_in_object_tree(tmp_ctx,
-						   &attr->attributeSecurityGUID, SEC_ADS_WRITE_PROP,
-						   &new_node, &new_node)) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module),
-						       "acl_modify: cannot add to object tree securityGUID\n");
-				ret = LDB_ERR_OPERATIONS_ERROR;
-				goto fail;
-			}
-
-			if (!insert_in_object_tree(tmp_ctx,
-						   &attr->schemaIDGUID, SEC_ADS_WRITE_PROP, &new_node, &new_node)) {
-				ldb_asprintf_errstring(ldb_module_get_ctx(module),
-						       "acl_modify: cannot add to object tree attributeGUID\n");
-				ret = LDB_ERR_OPERATIONS_ERROR;
-				goto fail;
-			}
-
-			status = sec_access_check_ds(sd, acl_user_token(module),
-						     SEC_ADS_WRITE_PROP,
-						     &access_granted,
-						     root,
-						     sid);
-			if (!NT_STATUS_IS_OK(status)) {
+			ret = acl_check_access_on_attribute(module,
+							    tmp_ctx,
+							    sd,
+							    sid,
+							    SEC_ADS_WRITE_PROP,
+							    attr,
+							    objectclass);
+			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb_module_get_ctx(module),
 						       "Object %s has no write property access\n",
 						       ldb_dn_get_linearized(msg->dn));
