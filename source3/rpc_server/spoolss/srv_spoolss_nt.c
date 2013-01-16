@@ -8799,7 +8799,7 @@ done:
 WERROR _spoolss_SetForm(struct pipes_struct *p,
 			struct spoolss_SetForm *r)
 {
-	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
+	struct spoolss_AddFormInfo1 *form;
 	const char *form_name = r->in.form_name;
 	int snum = -1;
 	WERROR status = WERR_OK;
@@ -8824,6 +8824,15 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 					   SEC_PRIV_PRINT_OPERATOR)) {
 		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
+	}
+
+	if (r->in.info_ctr->level != 1) {
+		return WERR_INVALID_LEVEL;
+	}
+
+	form = r->in.info_ctr->info.info1;
+	if (!form) {
+		return WERR_INVALID_PARAM;
 	}
 
 	tmp_ctx = talloc_new(p->mem_ctx);

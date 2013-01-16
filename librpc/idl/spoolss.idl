@@ -2072,8 +2072,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	WERROR spoolss_SetForm(
 		[in,ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 form_name[],
-		[in] uint32 level,
-		[in,switch_is(level)] spoolss_AddFormInfo info
+		[in,ref] spoolss_AddFormInfoCtr *info_ctr
 	);
 
 	/******************/

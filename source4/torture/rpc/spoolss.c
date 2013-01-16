@@ -2713,14 +2713,17 @@ static bool test_SetForm(struct torture_context *tctx,
 			 union spoolss_AddFormInfo *info)
 {
 	struct spoolss_SetForm r;
+	struct spoolss_AddFormInfoCtr info_ctr;
+
+	info_ctr.level	= level;
+	info_ctr.info	= *info;
 
 	r.in.handle	= handle;
 	r.in.form_name	= form_name;
-	r.in.level	= level;
-	r.in.info	= *info;
+	r.in.info_ctr	= &info_ctr;
 
 	torture_comment(tctx, "Testing SetForm(%s) level %d\n",
-		form_name, r.in.level);
+		form_name, level);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetForm_r(b, tctx, &r),
 		"SetForm failed");
