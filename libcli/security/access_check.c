@@ -367,14 +367,14 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 
 static const struct GUID *get_ace_object_type(struct security_ace *ace)
 {
-        struct GUID *type;
+	struct GUID *type;
 
-        if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT)
-                type = &ace->object.object.type.type;
-        else
-                type = NULL;
+	if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT)
+		type = &ace->object.object.type.type;
+	else
+		type = NULL;
 
-        return type;
+	return type;
 
 }
 
@@ -389,31 +389,31 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			     struct object_tree *tree,
 			     struct dom_sid *replace_sid)
 {
-        uint32_t i;
-        uint32_t bits_remaining;
-        struct object_tree *node;
-        const struct GUID *type;
-        struct dom_sid *ps_sid = dom_sid_parse_talloc(NULL, SID_NT_SELF);
+	uint32_t i;
+	uint32_t bits_remaining;
+	struct object_tree *node;
+	const struct GUID *type;
+	struct dom_sid *ps_sid = dom_sid_parse_talloc(NULL, SID_NT_SELF);
 
-        *access_granted = access_desired;
-        bits_remaining = access_desired;
+	*access_granted = access_desired;
+	bits_remaining = access_desired;
 
-        /* handle the maximum allowed flag */
-        if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
-                access_desired |= access_check_max_allowed(sd, token);
-                access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
-                *access_granted = access_desired;
+	/* handle the maximum allowed flag */
+	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		access_desired |= access_check_max_allowed(sd, token);
+		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
+		*access_granted = access_desired;
 		bits_remaining = access_desired;
-        }
+	}
 
-        if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
-                if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
-                        bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
-                } else {
-                        talloc_free(ps_sid);
-                        return NT_STATUS_PRIVILEGE_NOT_HELD;
-                }
-        }
+	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
+		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
+			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
+		} else {
+			talloc_free(ps_sid);
+			return NT_STATUS_PRIVILEGE_NOT_HELD;
+		}
+	}
 
 	/* the owner always gets SEC_STD_WRITE_DAC and SEC_STD_READ_CONTROL */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
@@ -431,25 +431,25 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
 	}
 
-        /* a NULL dacl allows access */
-        if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
-                *access_granted = access_desired;
-                talloc_free(ps_sid);
-                return NT_STATUS_OK;
-        }
+	/* a NULL dacl allows access */
+	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
+		*access_granted = access_desired;
+		talloc_free(ps_sid);
+		return NT_STATUS_OK;
+	}
 
-        if (sd->dacl == NULL) {
-                goto done;
-        }
+	if (sd->dacl == NULL) {
+		goto done;
+	}
 
-        /* check each ace in turn. */
-        for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
+	/* check each ace in turn. */
+	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
 		struct dom_sid *trustee;
 		struct security_ace *ace = &sd->dacl->aces[i];
 
-                if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-                        continue;
-                }
+		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			continue;
+		}
 		if (dom_sid_equal(&ace->trustee, ps_sid) && replace_sid) {
 			trustee = replace_sid;
 		}
@@ -457,62 +457,64 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 		{
 			trustee = &ace->trustee;
 		}
-                if (!security_token_has_sid(token, trustee)) {
-                        continue;
-                }
+		if (!security_token_has_sid(token, trustee)) {
+			continue;
+		}
 
-                switch (ace->type) {
-                case SEC_ACE_TYPE_ACCESS_ALLOWED:
-                        if (tree)
-                                object_tree_modify_access(tree, ace->access_mask);
+		switch (ace->type) {
+		case SEC_ACE_TYPE_ACCESS_ALLOWED:
+			if (tree)
+				object_tree_modify_access(tree, ace->access_mask);
 
-                        bits_remaining &= ~ace->access_mask;
-                        break;
-                case SEC_ACE_TYPE_ACCESS_DENIED:
-                        if (bits_remaining & ace->access_mask) {
-                                talloc_free(ps_sid);
-                                return NT_STATUS_ACCESS_DENIED;
-                        }
-                        break;
-                case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
-                case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
-                        /* check only in case we have provided a tree,
-                         * the ACE has an object type and that type
-                         * is in the tree                           */
-                        type = get_ace_object_type(ace);
+			bits_remaining &= ~ace->access_mask;
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED:
+			if (bits_remaining & ace->access_mask) {
+				talloc_free(ps_sid);
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+		case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+			/*
+			 * check only in case we have provided a tree,
+			 * the ACE has an object type and that type
+			 * is in the tree
+			 */
+			type = get_ace_object_type(ace);
 
-                        if (!tree)
-                                continue;
+			if (!tree)
+				continue;
 
-                        if (!type)
-                                node = tree;
-                        else
-                                if (!(node = get_object_tree_by_GUID(tree, type)))
-                                        continue;
+			if (!type)
+				node = tree;
+			else
+				if (!(node = get_object_tree_by_GUID(tree, type)))
+					continue;
 
-                        if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
-                                object_tree_modify_access(node, ace->access_mask);
-                                if (node->remaining_access == 0) {
-                                        talloc_free(ps_sid);
-                                        return NT_STATUS_OK;
-                                }
-                        } else {
-                                if (node->remaining_access & ace->access_mask){
-                                        talloc_free(ps_sid);
-                                        return NT_STATUS_ACCESS_DENIED;
-                                }
-                        }
-                        break;
-                default:        /* Other ACE types not handled/supported */
-                        break;
-                }
-        }
+			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
+				object_tree_modify_access(node, ace->access_mask);
+				if (node->remaining_access == 0) {
+					talloc_free(ps_sid);
+					return NT_STATUS_OK;
+				}
+			} else {
+				if (node->remaining_access & ace->access_mask){
+					talloc_free(ps_sid);
+					return NT_STATUS_ACCESS_DENIED;
+				}
+			}
+			break;
+		default:	/* Other ACE types not handled/supported */
+			break;
+		}
+	}
 
 done:
-        talloc_free(ps_sid);
-        if (bits_remaining != 0) {
-                return NT_STATUS_ACCESS_DENIED;
-        }
+	talloc_free(ps_sid);
+	if (bits_remaining != 0) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
-        return NT_STATUS_OK;
+	return NT_STATUS_OK;
 }
