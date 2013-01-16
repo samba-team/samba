@@ -7662,8 +7662,8 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				continue;
 			}
 			/* Fail with sharing violation. */
-			close_file(req, fsp, NORMAL_CLOSE);
 			TALLOC_FREE(lck);
+			close_file(req, fsp, NORMAL_CLOSE);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
@@ -7677,12 +7677,12 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 						fsp,
 						smb_fname);
 
+	TALLOC_FREE(lck);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);
-		TALLOC_FREE(lck);
 		return status;
 	}
-	TALLOC_FREE(lck);
 	return close_file(req, fsp, NORMAL_CLOSE);
 }
 
