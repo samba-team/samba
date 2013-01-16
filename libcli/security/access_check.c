@@ -367,15 +367,11 @@ NTSTATUS se_file_access_check(const struct security_descriptor *sd,
 
 static const struct GUID *get_ace_object_type(struct security_ace *ace)
 {
-	struct GUID *type;
+	if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
+		return &ace->object.object.type.type;
+	}
 
-	if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT)
-		type = &ace->object.object.type.type;
-	else
-		type = NULL;
-
-	return type;
-
+	return NULL;
 }
 
 /* modified access check for the purposes of DS security
