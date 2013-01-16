@@ -434,14 +434,19 @@ static int acl_childClassesEffective(struct ldb_module *module,
 		}
 
 		for (j=0; sclass->possibleInferiors && sclass->possibleInferiors[j]; j++) {
-			ret = acl_check_access_on_class(module,
-							schema,
-							msg,
-							sd,
-							acl_user_token(module),
-							sid,
-							SEC_ADS_CREATE_CHILD,
-							sclass->possibleInferiors[j]);
+			const struct dsdb_class *sc;
+
+			sc = dsdb_class_by_lDAPDisplayName(schema,
+							   sclass->possibleInferiors[j]);
+			if (!sc) {
+				/* We don't know this class?  what is going on? */
+				continue;
+			}
+
+			ret = acl_check_access_on_objectclass(module, ac,
+							      sd, sid,
+							      SEC_ADS_CREATE_CHILD,
+							      sc);
 			if (ret == LDB_SUCCESS) {
 				ldb_msg_add_string(msg, "allowedChildClassesEffective",
 						   sclass->possibleInferiors[j]);
