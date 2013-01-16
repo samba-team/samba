@@ -340,52 +340,6 @@ static int acl_childClasses(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
-static int acl_check_access_on_class(struct ldb_module *module,
-				     const struct dsdb_schema *schema,
-				     TALLOC_CTX *mem_ctx,
-				     struct security_descriptor *sd,
-				     struct security_token *token,
-				     struct dom_sid *rp_sid,
-				     uint32_t access_mask,
-				     const char *class_name)
-{
-	int ret;
-	NTSTATUS status;
-	uint32_t access_granted;
-	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
-	const struct GUID *guid;
-
-	if (class_name != NULL) {
-		guid = class_schemaid_guid_by_lDAPDisplayName(schema, class_name);
-		if (!guid) {
-			DEBUG(10, ("acl_search: cannot find class %s\n",
-				   class_name));
-			goto fail;
-		}
-		if (!insert_in_object_tree(mem_ctx,
-					   guid, access_mask,
-					   &root, &new_node)) {
-			DEBUG(10, ("acl_search: cannot add to object tree guid\n"));
-			goto fail;
-		}
-	}
-
-	status = sec_access_check_ds(sd, token,
-				     access_mask,
-				     &access_granted,
-				     root,
-				     rp_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
-	} else {
-		ret = LDB_SUCCESS;
-	}
-	return ret;
-fail:
-	return ldb_operr(ldb_module_get_ctx(module));
-}
-
 static int acl_childClassesEffective(struct ldb_module *module,
 				     const struct dsdb_schema *schema,
 				     struct ldb_message *sd_msg,
