@@ -34,6 +34,7 @@ bool winbindd_use_idmap_cache(void);
 bool winbindd_use_cache(void);
 const char *get_winbind_pipe_dir(void);
 char *get_winbind_priv_pipe_dir(void);
+struct tevent_context *winbind_event_context(void);
 int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_ads.c  */

@@ -49,14 +49,42 @@ static bool interactive = False;
 
 extern bool override_logfile;
 
+struct tevent_context *winbind_event_context(void)
+{
+	static struct tevent_context *ev = NULL;
+
+	if (ev != NULL) {
+		return ev;
+	}
+
+	/*
+	 * Note we MUST use the NULL context here, not the autofree context,
+	 * to avoid side effects in forked children exiting.
+	 */
+	ev = tevent_context_init(NULL);
+	if (ev == NULL) {
+		smb_panic("Could not init winbindd's messaging context.\n");
+	}
+	return ev;
+}
+
 struct messaging_context *winbind_messaging_context(void)
 {
-	struct messaging_context *msg_ctx = server_messaging_context();
-	if (likely(msg_ctx != NULL)) {
-		return msg_ctx;
+	static struct messaging_context *msg = NULL;
+
+	if (msg != NULL) {
+		return msg;
 	}
-	smb_panic("Could not init winbindd's messaging context.\n");
-	return NULL;
+
+	/*
+	 * Note we MUST use the NULL context here, not the autofree context,
+	 * to avoid side effects in forked children exiting.
+	 */
+	msg = messaging_init(NULL, winbind_event_context());
+	if (msg == NULL) {
+		smb_panic("Could not init winbindd's messaging context.\n");
+	}
+	return msg;
 }
 
 /* Reload configuration */
