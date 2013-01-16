@@ -8648,7 +8648,7 @@ WERROR _spoolss_DeletePrinterData(struct pipes_struct *p,
 WERROR _spoolss_AddForm(struct pipes_struct *p,
 			struct spoolss_AddForm *r)
 {
-	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
+	struct spoolss_AddFormInfo1 *form;
 	int snum = -1;
 	WERROR status = WERR_OK;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
@@ -8671,6 +8671,15 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 					  SEC_PRIV_PRINT_OPERATOR)) {
 		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
+	}
+
+	if (r->in.info_ctr->level != 1) {
+		return WERR_INVALID_LEVEL;
+	}
+
+	form = r->in.info_ctr->info.info1;
+	if (!form) {
+		return WERR_INVALID_PARAM;
 	}
 
 	switch (form->flags) {

@@ -1789,7 +1789,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 
 		for (f = 0; f < num_forms; f++) {
 
-			union spoolss_AddFormInfo info;
+			struct spoolss_AddFormInfoCtr info_ctr;
 			NTSTATUS status;
 
 			/* only migrate FORM_PRINTER types, according to jerry
@@ -1802,16 +1802,15 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 					   "[%d]\n"),
 					f, forms[f].info1.form_name,
 					forms[f].info1.flags);
-
-			info.info1 = (struct spoolss_AddFormInfo1 *)
+			info_ctr.level = 1;
+			info_ctr.info.info1 = (struct spoolss_AddFormInfo1 *)
 				(void *)&forms[f].info1;
 
 			/* FIXME: there might be something wrong with samba's
 			   builtin-forms */
 			status = dcerpc_spoolss_AddForm(b_dst, mem_ctx,
 							&hnd_dst,
-							1,
-							info,
+							&info_ctr,
 							&result);
 			if (!NT_STATUS_IS_OK(status)) {
 				d_printf(_("\tdcerpc_spoolss_AddForm form %d: [%s] - %s\n"),

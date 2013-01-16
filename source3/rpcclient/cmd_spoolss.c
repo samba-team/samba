@@ -2104,7 +2104,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	WERROR werror;
 	NTSTATUS status;
 	const char *printername;
-	union spoolss_AddFormInfo info;
+	struct spoolss_AddFormInfoCtr info_ctr;
 	struct spoolss_AddFormInfo1 info1;
 	struct spoolss_AddFormInfo2 info2;
 	uint32_t level = 1;
@@ -2145,7 +2145,8 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 		info1.area.right	= 20;
 		info1.area.bottom	= 30;
 
-		info.info1 = &info1;
+		info_ctr.level		= 1;
+		info_ctr.info.info1	= &info1;
 
 		break;
 	case 2:
@@ -2164,7 +2165,8 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 		info2.display_name	= argv[2];
 		info2.lang_id		= 0;
 
-		info.info2 = &info2;
+		info_ctr.level		= 2;
+		info_ctr.info.info2	= &info2;
 
 		break;
 	default:
@@ -2174,11 +2176,9 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Add the form */
 
-
 	status = dcerpc_spoolss_AddForm(b, mem_ctx,
 					&handle,
-					level,
-					info,
+					&info_ctr,
 					&werror);
 	if (!NT_STATUS_IS_OK(status)) {
 		werror = ntstatus_to_werror(status);

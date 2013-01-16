@@ -2671,18 +2671,21 @@ static bool test_AddForm(struct torture_context *tctx,
 			 WERROR expected_result)
 {
 	struct spoolss_AddForm r;
+	struct spoolss_AddFormInfoCtr info_ctr;
+
+	info_ctr.level = level;
+	info_ctr.info = *info;
 
 	if (level != 1) {
 		torture_skip(tctx, "only level 1 supported");
 	}
 
 	r.in.handle	= handle;
-	r.in.level	= level;
-	r.in.info	= *info;
+	r.in.info_ctr	= &info_ctr;
 
 	torture_comment(tctx, "Testing AddForm(%s) level %d, type %d\n",
-		r.in.info.info1->form_name, r.in.level,
-		r.in.info.info1->flags);
+		r.in.info_ctr->info.info1->form_name, level,
+		r.in.info_ctr->info.info1->flags);
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
 		"AddForm failed");

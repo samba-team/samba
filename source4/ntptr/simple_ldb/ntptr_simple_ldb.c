@@ -319,21 +319,21 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 	 * }
 	 */
 
-	switch (r->in.level) {
+	switch (r->in.info_ctr->level) {
 	case 1:
-		if (!r->in.info.info1) {
+		if (!r->in.info_ctr->info.info1) {
 			return WERR_FOOBAR;
 		}
 		count = sptr_db_search(sptr_db, mem_ctx,
 				       ldb_dn_new(mem_ctx, sptr_db, "CN=Forms,CN=PrintServer"),
 				       &msgs, attrs, "(&(form-name=%s)(objectClass=form))",
-				       r->in.info.info1->form_name);
+				       r->in.info_ctr->info.info1->form_name);
 
 		if (count == 1) return WERR_FOOBAR;
 		if (count > 1) return WERR_FOOBAR;
 		if (count < 0) return WERR_GENERAL_FAILURE;
 
-		if (r->in.info.info1->flags != SPOOLSS_FORM_USER) {
+		if (r->in.info_ctr->info.info1->flags != SPOOLSS_FORM_USER) {
 			return WERR_FOOBAR;
 		}
 
@@ -341,20 +341,20 @@ static WERROR sptr_AddPrintServerForm(struct ntptr_GenericHandle *server, TALLOC
 		W_ERROR_HAVE_NO_MEMORY(msg);
 
 		/* add core elements to the ldb_message for the Form */
-		msg->dn = ldb_dn_new_fmt(msg, sptr_db, "form-name=%s,CN=Forms,CN=PrintServer", r->in.info.info1->form_name);
+		msg->dn = ldb_dn_new_fmt(msg, sptr_db, "form-name=%s,CN=Forms,CN=PrintServer", r->in.info_ctr->info.info1->form_name);
 		SET_STRING(sptr_db, msg, "objectClass", "form");
 
-		SET_UINT(sptr_db, msg, "flags", r->in.info.info1->flags);
+		SET_UINT(sptr_db, msg, "flags", r->in.info_ctr->info.info1->flags);
 
-		SET_STRING(sptr_db, msg, "form-name", r->in.info.info1->form_name);
+		SET_STRING(sptr_db, msg, "form-name", r->in.info_ctr->info.info1->form_name);
 
-		SET_UINT(sptr_db, msg, "size-width", r->in.info.info1->size.width);
-		SET_UINT(sptr_db, msg, "size-height", r->in.info.info1->size.height);
+		SET_UINT(sptr_db, msg, "size-width", r->in.info_ctr->info.info1->size.width);
+		SET_UINT(sptr_db, msg, "size-height", r->in.info_ctr->info.info1->size.height);
 
-		SET_UINT(sptr_db, msg, "area-left", r->in.info.info1->area.left);
-		SET_UINT(sptr_db, msg, "area-top", r->in.info.info1->area.top);
-		SET_UINT(sptr_db, msg, "area-right", r->in.info.info1->area.right);
-		SET_UINT(sptr_db, msg, "area-bottom", r->in.info.info1->area.bottom);
+		SET_UINT(sptr_db, msg, "area-left", r->in.info_ctr->info.info1->area.left);
+		SET_UINT(sptr_db, msg, "area-top", r->in.info_ctr->info.info1->area.top);
+		SET_UINT(sptr_db, msg, "area-right", r->in.info_ctr->info.info1->area.right);
+		SET_UINT(sptr_db, msg, "area-bottom", r->in.info_ctr->info.info1->area.bottom);
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
