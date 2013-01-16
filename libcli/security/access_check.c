@@ -450,21 +450,22 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 			continue;
 		}
+
 		if (dom_sid_equal(&ace->trustee, ps_sid) && replace_sid) {
 			trustee = replace_sid;
-		}
-		else
-		{
+		} else {
 			trustee = &ace->trustee;
 		}
+
 		if (!security_token_has_sid(token, trustee)) {
 			continue;
 		}
 
 		switch (ace->type) {
 		case SEC_ACE_TYPE_ACCESS_ALLOWED:
-			if (tree)
+			if (tree) {
 				object_tree_modify_access(tree, ace->access_mask);
+			}
 
 			bits_remaining &= ~ace->access_mask;
 			break;
@@ -483,14 +484,17 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 			 */
 			type = get_ace_object_type(ace);
 
-			if (!tree)
+			if (!tree) {
 				continue;
+			}
 
-			if (!type)
+			if (!type) {
 				node = tree;
-			else
-				if (!(node = get_object_tree_by_GUID(tree, type)))
+			} else {
+				if (!(node = get_object_tree_by_GUID(tree, type))) {
 					continue;
+				}
+			}
 
 			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
 				object_tree_modify_access(node, ace->access_mask);
