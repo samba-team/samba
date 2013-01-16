@@ -212,7 +212,7 @@ typedef struct winbindd_gr {
 #define WBFLAG_PAM_LMKEY		0x00000008
 #define WBFLAG_PAM_CONTACT_TRUSTDOM	0x00000010
 #define WBFLAG_QUERY_ONLY		0x00000020	/* not used */
-#define WBFLAG_UNUSED_1			0x00000040	/* not currently used */
+#define WBFLAG_PAM_AUTH_PAC		0x00000040
 #define WBFLAG_PAM_UNIX_NAME		0x00000080
 #define WBFLAG_PAM_AFS_TOKEN		0x00000100
 #define WBFLAG_PAM_NT_STATUS_SQUASH	0x00000200
@@ -227,8 +227,6 @@ typedef struct winbindd_gr {
 /* Flag to tell winbind the NTLMv2 blob is too big for the struct and is in the
  * extra_data field */
 #define WBFLAG_BIG_NTLMV2_BLOB		0x00010000
-/* Duplicate. FIXME !!!! */
-#define WBFLAG_PAM_AUTH_PAC		0x00010000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
