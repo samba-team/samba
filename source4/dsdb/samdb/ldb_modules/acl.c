@@ -1072,8 +1072,24 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		const struct ldb_message_element *el = &msg->elements[i];
 		const struct dsdb_attribute *attr;
 
-		attr = dsdb_attribute_by_lDAPDisplayName(schema,
-							 el->name);
+		/*
+		 * This basic attribute existence check with the right errorcode
+		 * is needed since this module is the first one which requests
+		 * schema attribute information.
+		 * The complete attribute checking is done in the
+		 * "objectclass_attrs" module behind this one.
+		 *
+		 * NOTE: "clearTextPassword" is not defined in the schema.
+		 */
+		attr = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
+		if (!attr && ldb_attr_cmp("clearTextPassword", el->name) != 0) {
+			ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' "
+					       "on entry '%s' was not found in the schema!",
+					       req->op.mod.message->elements[i].name,
+				       ldb_dn_get_linearized(req->op.mod.message->dn));
+			ret =  LDB_ERR_NO_SUCH_ATTRIBUTE;
+			goto fail;
+		}
 
 		if (ldb_attr_cmp("nTSecurityDescriptor", el->name) == 0) {
 			uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
@@ -1149,20 +1165,6 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		} else {
 			struct object_tree *root = NULL;
 			struct object_tree *new_node = NULL;
-
-		/* This basic attribute existence check with the right errorcode
-		 * is needed since this module is the first one which requests
-		 * schema attribute information.
-		 * The complete attribute checking is done in the
-		 * "objectclass_attrs" module behind this one.
-		 */
-			if (!attr) {
-				ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' on entry '%s' was not found in the schema!",
-						       el->name,
-					       ldb_dn_get_linearized(msg->dn));
-				ret =  LDB_ERR_NO_SUCH_ATTRIBUTE;
-				goto fail;
-			}
 
 			if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 						   &root, &new_node)) {
