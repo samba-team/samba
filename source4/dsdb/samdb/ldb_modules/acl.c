@@ -1238,18 +1238,14 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *newparent;
 	const struct dsdb_schema *schema;
 	const struct dsdb_class *objectclass;
+	const struct dsdb_attribute *attr = NULL;
 	struct ldb_context *ldb;
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
 	struct ldb_result *acl_res;
-	const struct GUID *guid;
 	struct ldb_dn *nc_root;
-	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
 	struct ldb_control *as_system;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
-	uint32_t access_granted;
 	const char *rdn_name;
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
@@ -1318,11 +1314,23 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ret;
 	}
 
+	ret = dsdb_get_sd_from_ldb_message(ldb, req, acl_res->msgs[0], &sd);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+	if (!sd) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
+
 	schema = dsdb_get_schema(ldb, acl_res);
 	if (!schema) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
+
+	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
 
 	objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
 	if (!objectclass) {
@@ -1331,18 +1339,27 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 				 "acl_modify: Error retrieving object class for GUID.");
 	}
 
-	if (!insert_in_object_tree(tmp_ctx, &objectclass->schemaIDGUID, SEC_ADS_WRITE_PROP,
-				   &root, &new_node)) {
+	attr = dsdb_attribute_by_lDAPDisplayName(schema, "name");
+	if (attr == NULL) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
 
-	guid = attribute_schemaid_guid_by_lDAPDisplayName(schema,
-							  "name");
-	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
-				   &new_node, &new_node)) {
+	ret = acl_check_access_on_attribute(module, tmp_ctx, sd, sid,
+					    SEC_ADS_WRITE_PROP,
+					    attr, objectclass);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "Object %s has no wp on %s\n",
+				       ldb_dn_get_linearized(req->op.rename.olddn),
+				       attr->lDAPDisplayName);
+		dsdb_acl_debug(sd,
+			  acl_user_token(module),
+			  req->op.rename.olddn,
+			  true,
+			  10);
 		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 
 	rdn_name = ldb_dn_get_rdn_name(req->op.rename.olddn);
@@ -1350,36 +1367,21 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
-	guid = attribute_schemaid_guid_by_lDAPDisplayName(schema,
-							  rdn_name);
-	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
-				   &new_node, &new_node)) {
+
+	attr = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
+	if (attr == NULL) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
-	};
+	}
 
-	ret = dsdb_get_sd_from_ldb_message(ldb, req, acl_res->msgs[0], &sd);
-
+	ret = acl_check_access_on_attribute(module, tmp_ctx, sd, sid,
+					    SEC_ADS_WRITE_PROP,
+					    attr, objectclass);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-	/* Theoretically we pass the check if the object has no sd */
-	if (!sd) {
-		talloc_free(tmp_ctx);
-		return LDB_SUCCESS;
-	}
-	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
-	status = sec_access_check_ds(sd, acl_user_token(module),
-				     SEC_ADS_WRITE_PROP,
-				     &access_granted,
-				     root,
-				     sid);
-
-	if (!NT_STATUS_IS_OK(status)) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "Object %s has no wp on name\n",
-				       ldb_dn_get_linearized(req->op.rename.olddn));
+				       "Object %s has no wp on %s\n",
+				       ldb_dn_get_linearized(req->op.rename.olddn),
+				       attr->lDAPDisplayName);
 		dsdb_acl_debug(sd,
 			  acl_user_token(module),
 			  req->op.rename.olddn,
@@ -1396,9 +1398,6 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* new parent should have create child */
-	root = NULL;
-	new_node = NULL;
-
 	ret = dsdb_module_check_access_on_dn(module, req, newparent,
 					     SEC_ADS_CREATE_CHILD,
 					     &objectclass->schemaIDGUID, req);
@@ -1409,15 +1408,12 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		talloc_free(tmp_ctx);
 		return ret;
 	}
+
 	/* do we have delete object on the object? */
-
-	status = sec_access_check_ds(sd, acl_user_token(module),
-				     SEC_STD_DELETE,
-				     &access_granted,
-				     NULL,
-				     sid);
-
-	if (NT_STATUS_IS_OK(status)) {
+	ret = acl_check_access_on_objectclass(module, tmp_ctx, sd, sid,
+					      SEC_STD_DELETE,
+					      objectclass);
+	if (ret == LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ldb_next_request(module, req);
 	}
