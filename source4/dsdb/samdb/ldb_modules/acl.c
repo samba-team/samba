@@ -1267,7 +1267,9 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	/* Nope, we don't have delete object. Lets check if we have delete
 	 * child on the parent */
 	ret = dsdb_module_check_access_on_dn(module, req, parent,
-					     SEC_ADS_DELETE_CHILD, NULL, req);
+					     SEC_ADS_DELETE_CHILD,
+					     &objectclass->schemaIDGUID,
+					     req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1462,7 +1464,10 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 	/* what about delete child on the current parent */
-	ret = dsdb_module_check_access_on_dn(module, req, oldparent, SEC_ADS_DELETE_CHILD, NULL, req);
+	ret = dsdb_module_check_access_on_dn(module, req, oldparent,
+					     SEC_ADS_DELETE_CHILD,
+					     &objectclass->schemaIDGUID,
+					     req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn));
