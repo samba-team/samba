@@ -882,7 +882,7 @@ static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
-	const char *attrs[] = { "objectSid", "description", "samAccountName", "groupType",
+	const char *attrs[] = { "objectClass", "objectSid", "description", "samAccountName", "groupType",
 				NULL };
 	struct ldb_message *msg;
 	va_list ap;
@@ -949,7 +949,7 @@ static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map
 		id_maps[1] = NULL;
 
 		status = idmap_sids_to_xids(state->idmap_ctx, tmp_ctx, id_maps);
-		talloc_free(tmp_ctx);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(tmp_ctx);
 			return status;
