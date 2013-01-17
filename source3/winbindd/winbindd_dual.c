@@ -1289,10 +1289,15 @@ struct winbindd_domain *wb_child_domain(void)
 	return child_domain;
 }
 
+struct child_handler_state {
+	struct winbindd_child *child;
+	struct winbindd_cli_state cli;
+};
+
 static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
-	struct winbindd_cli_state state;
+	struct child_handler_state state;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	struct winbindd_domain *primary_domain = NULL;
@@ -1313,9 +1318,10 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	ZERO_STRUCT(state);
-	state.pid = getpid();
-	state.request = &request;
-	state.response = &response;
+	state.child = child;
+	state.cli.pid = getpid();
+	state.cli.request = &request;
+	state.cli.response = &response;
 
 	child->pid = fork();
 
@@ -1356,12 +1362,12 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	DEBUG(10, ("Child process %d\n", (int)getpid()));
 
-	state.sock = fdpair[0];
+	state.cli.sock = fdpair[0];
 	close(fdpair[1]);
 
 	status = winbindd_reinit_after_fork(child, child->logfilename);
 
-	nwritten = sys_write(state.sock, &status, sizeof(status));
+	nwritten = sys_write(state.cli.sock, &status, sizeof(status));
 	if (nwritten != sizeof(status)) {
 		DEBUG(1, ("fork_domain_child: Could not write status: "
 			  "nwritten=%d, error=%s\n", (int)nwritten,
@@ -1490,7 +1496,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			_exit(1);
 		}
 
-		pfds->fd = state.sock;
+		pfds->fd = state.cli.sock;
 		pfds->events = POLLIN|POLLHUP;
 		num_pfds = 1;
 
@@ -1539,41 +1545,43 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 
 		/* fetch a request from the main daemon */
-		status = child_read_request(&state);
+		status = child_read_request(&state.cli);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* we lost contact with our parent */
 			_exit(0);
 		}
 
-		DEBUG(4,("child daemon request %d\n", (int)state.request->cmd));
+		DEBUG(4,("child daemon request %d\n",
+			 (int)state.cli.request->cmd));
 
-		ZERO_STRUCTP(state.response);
-		state.request->null_term = '\0';
-		state.mem_ctx = frame;
-		child_process_request(child, &state);
+		ZERO_STRUCTP(state.cli.response);
+		state.cli.request->null_term = '\0';
+		state.cli.mem_ctx = frame;
+		child_process_request(child, &state.cli);
 
 		DEBUG(4, ("Finished processing child request %d\n",
-			  (int)state.request->cmd));
+			  (int)state.cli.request->cmd));
 
-		SAFE_FREE(state.request->extra_data.data);
+		SAFE_FREE(state.cli.request->extra_data.data);
 
-		iov[0].iov_base = (void *)state.response;
+		iov[0].iov_base = (void *)state.cli.response;
 		iov[0].iov_len = sizeof(struct winbindd_response);
 		iov_count = 1;
 
-		if (state.response->length > sizeof(struct winbindd_response)) {
+		if (state.cli.response->length >
+		    sizeof(struct winbindd_response)) {
 			iov[1].iov_base =
-				(void *)state.response->extra_data.data;
-			iov[1].iov_len = state.response->length-iov[0].iov_len;
+				(void *)state.cli.response->extra_data.data;
+			iov[1].iov_len = state.cli.response->length-iov[0].iov_len;
 			iov_count = 2;
 		}
 
 		DEBUG(10, ("Writing %d bytes to parent\n",
-			   (int)state.response->length));
+			   (int)state.cli.response->length));
 
-		if (write_data_iov(state.sock, iov, iov_count) !=
-		    state.response->length) {
+		if (write_data_iov(state.cli.sock, iov, iov_count) !=
+		    state.cli.response->length) {
 			DEBUG(0, ("Could not write result\n"));
 			exit(1);
 		}
