@@ -1680,6 +1680,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (!ac->constructed_attrs && !ac->modify_search) {
+		talloc_free(ac);
 		return ldb_next_request(module, req);
 	}
 
