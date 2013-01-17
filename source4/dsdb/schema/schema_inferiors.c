@@ -141,9 +141,9 @@ static const char **schema_subclasses_recurse(const struct dsdb_schema *schema,
 
 /* Walk down the subClass tree, setting a higher index as we go down
  * each level.  top is 1, subclasses of top are 2, etc */
-void schema_subclasses_order_recurse(const struct dsdb_schema *schema,
-				     struct dsdb_class *schema_class,
-				     const int order)
+static void schema_subclasses_order_recurse(const struct dsdb_schema *schema,
+					    struct dsdb_class *schema_class,
+					    const int order)
 {
 	const char **list = schema_class->subclasses_direct;
 	unsigned int i;
