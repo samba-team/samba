@@ -203,7 +203,6 @@ int acl_check_extended_right(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	uint32_t access_granted;
 	struct object_tree *root = NULL;
-	struct object_tree *new_node = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
 	GUID_from_string(ext_right, &right);
