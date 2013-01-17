@@ -982,7 +982,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	bool userPassword = dsdb_user_password_support(module, req, req);
+	bool userPassword;
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
@@ -1016,6 +1016,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		goto fail;
 	}
+
+	userPassword = dsdb_user_password_support(module, req, req);
 
 	schema = dsdb_get_schema(ldb, tmp_ctx);
 	if (!schema) {
@@ -1661,7 +1663,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
 	ac->allowedChildClassesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedChildClassesEffective");
 	ac->sDRightsEffective = ldb_attr_in_list(req->op.search.attrs, "sDRightsEffective");
-	ac->userPassword = dsdb_user_password_support(module, ac, req);
+	ac->userPassword = true;
 	ac->schema = dsdb_get_schema(ldb, ac);
 
 	ac->constructed_attrs |= ac->allowedAttributes;
@@ -1679,6 +1681,10 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	if (!ac->constructed_attrs && !ac->modify_search) {
 		return ldb_next_request(module, req);
+	}
+
+	if (!ac->am_system) {
+		ac->userPassword = dsdb_user_password_support(module, ac, req);
 	}
 
 	ret = acl_search_update_confidential_attrs(ac, data);
