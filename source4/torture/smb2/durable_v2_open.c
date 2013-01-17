@@ -69,7 +69,6 @@ static bool torture_oplock_handler(struct smb2_transport *transport,
 				   void *private_data)
 {
 	struct smb2_tree *tree = private_data;
-	const char *name;
 	struct smb2_request *req;
 
 	break_info.count++;
