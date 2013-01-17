@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    main select loop and event handling
-   wrapper for http://liboop.org/
+   wrapper for http://git.lysator.liu.se/liboop/
 
    Copyright (C) Stefan Metzmacher 2005
 
