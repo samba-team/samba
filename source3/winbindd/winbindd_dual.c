@@ -1294,6 +1294,58 @@ struct child_handler_state {
 	struct winbindd_cli_state cli;
 };
 
+static void child_handler(struct tevent_context *ev, struct tevent_fd *fde,
+			  uint16_t flags, void *private_data)
+{
+	struct child_handler_state *state =
+		(struct child_handler_state *)private_data;
+	NTSTATUS status;
+	struct iovec iov[2];
+	int iov_count;
+
+	/* fetch a request from the main daemon */
+	status = child_read_request(&state->cli);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		/* we lost contact with our parent */
+		_exit(0);
+	}
+
+	DEBUG(4,("child daemon request %d\n",
+		 (int)state->cli.request->cmd));
+
+	ZERO_STRUCTP(state->cli.response);
+	state->cli.request->null_term = '\0';
+	state->cli.mem_ctx = talloc_tos();
+	child_process_request(state->child, &state->cli);
+
+	DEBUG(4, ("Finished processing child request %d\n",
+		  (int)state->cli.request->cmd));
+
+	SAFE_FREE(state->cli.request->extra_data.data);
+
+	iov[0].iov_base = (void *)state->cli.response;
+	iov[0].iov_len = sizeof(struct winbindd_response);
+	iov_count = 1;
+
+	if (state->cli.response->length >
+	    sizeof(struct winbindd_response)) {
+		iov[1].iov_base =
+			(void *)state->cli.response->extra_data.data;
+		iov[1].iov_len = state->cli.response->length-iov[0].iov_len;
+		iov_count = 2;
+	}
+
+	DEBUG(10, ("Writing %d bytes to parent\n",
+		   (int)state->cli.response->length));
+
+	if (write_data_iov(state->cli.sock, iov, iov_count) !=
+	    state->cli.response->length) {
+		DEBUG(0, ("Could not write result\n"));
+		exit(1);
+	}
+}
+
 static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
@@ -1303,6 +1355,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	struct winbindd_domain *primary_domain = NULL;
 	NTSTATUS status;
 	ssize_t nwritten;
+	struct tevent_fd *fde;
 
 	if (child->domain) {
 		DEBUG(10, ("fork_domain_child called for domain '%s'\n",
@@ -1465,21 +1518,23 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 	}
 
+	fde = tevent_add_fd(winbind_event_context(), NULL, state.cli.sock,
+			    TEVENT_FD_READ, child_handler, &state);
+	if (fde == NULL) {
+		DEBUG(1, ("tevent_add_fd failed\n"));
+		_exit(1);
+	}
+
 	while (1) {
 
 		int ret;
-		struct pollfd *pfds;
-		int num_pfds;
-		int timeout;
-		struct timeval t;
-		struct timeval *tp;
 		TALLOC_CTX *frame = talloc_stackframe();
-		struct iovec iov[2];
-		int iov_count;
 
-		if (run_events_poll(winbind_event_context(), 0, NULL, 0)) {
-			TALLOC_FREE(frame);
-			continue;
+		ret = tevent_loop_once(winbind_event_context());
+		if (ret != 0) {
+			DEBUG(1, ("tevent_loop_once failed: %s\n",
+				  strerror(errno)));
+			_exit(1);
 		}
 
 		if (child->domain && child->domain->startup &&
@@ -1490,101 +1545,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
-		pfds = talloc_zero(talloc_tos(), struct pollfd);
-		if (pfds == NULL) {
-			DEBUG(1, ("talloc failed\n"));
-			_exit(1);
-		}
-
-		pfds->fd = state.cli.sock;
-		pfds->events = POLLIN|POLLHUP;
-		num_pfds = 1;
-
-		timeout = INT_MAX;
-
-		if (!event_add_to_poll_args(
-			    winbind_event_context(), talloc_tos(),
-			    &pfds, &num_pfds, &timeout)) {
-			DEBUG(1, ("event_add_to_poll_args failed\n"));
-			_exit(1);
-		}
-		tp = get_timed_events_timeout(winbind_event_context(), &t);
-		if (tp) {
-			DEBUG(11,("select will use timeout of %u.%u seconds\n",
-				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));
-		}
-
-		ret = poll(pfds, num_pfds, timeout);
-
-		if (run_events_poll(winbind_event_context(), ret,
-				    pfds, num_pfds)) {
-			/* We got a signal - continue. */
-			TALLOC_FREE(frame);
-			continue;
-		}
-
-		TALLOC_FREE(pfds);
-
-		if (ret == 0) {
-			DEBUG(11,("nothing is ready yet, continue\n"));
-			TALLOC_FREE(frame);
-			continue;
-		}
-
-		if (ret == -1 && errno == EINTR) {
-			/* We got a signal - continue. */
-			TALLOC_FREE(frame);
-			continue;
-		}
-
-		if (ret == -1 && errno != EINTR) {
-			DEBUG(0,("poll error occured\n"));
-			TALLOC_FREE(frame);
-			perror("poll");
-			_exit(1);
-		}
-
-		/* fetch a request from the main daemon */
-		status = child_read_request(&state.cli);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			/* we lost contact with our parent */
-			_exit(0);
-		}
-
-		DEBUG(4,("child daemon request %d\n",
-			 (int)state.cli.request->cmd));
-
-		ZERO_STRUCTP(state.cli.response);
-		state.cli.request->null_term = '\0';
-		state.cli.mem_ctx = frame;
-		child_process_request(child, &state.cli);
-
-		DEBUG(4, ("Finished processing child request %d\n",
-			  (int)state.cli.request->cmd));
-
-		SAFE_FREE(state.cli.request->extra_data.data);
-
-		iov[0].iov_base = (void *)state.cli.response;
-		iov[0].iov_len = sizeof(struct winbindd_response);
-		iov_count = 1;
-
-		if (state.cli.response->length >
-		    sizeof(struct winbindd_response)) {
-			iov[1].iov_base =
-				(void *)state.cli.response->extra_data.data;
-			iov[1].iov_len = state.cli.response->length-iov[0].iov_len;
-			iov_count = 2;
-		}
-
-		DEBUG(10, ("Writing %d bytes to parent\n",
-			   (int)state.cli.response->length));
-
-		if (write_data_iov(state.cli.sock, iov, iov_count) !=
-		    state.cli.response->length) {
-			DEBUG(0, ("Could not write result\n"));
-			exit(1);
-		}
 		TALLOC_FREE(frame);
 	}
 }
