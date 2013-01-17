@@ -1163,6 +1163,17 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct ldb_dn *nc_root;
 	struct ldb_control *as_system;
+	const struct dsdb_schema *schema;
+	const struct dsdb_class *objectclass;
+	struct security_descriptor *sd = NULL;
+	struct dom_sid *sid = NULL;
+	struct ldb_result *acl_res;
+	static const char *acl_attrs[] = {
+		"nTSecurityDescriptor",
+		"objectClass",
+		"objectSid",
+		NULL
+	};
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
@@ -1201,11 +1212,43 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 	talloc_free(nc_root);
 
+	ret = dsdb_module_search_dn(module, req, &acl_res,
+				    req->op.del.dn, acl_attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_FLAG_AS_SYSTEM |
+				    DSDB_SEARCH_SHOW_RECYCLED, req);
+	/* we sould be able to find the parent */
+	if (ret != LDB_SUCCESS) {
+		DEBUG(10,("acl: failed to find object %s\n",
+			  ldb_dn_get_linearized(req->op.rename.olddn)));
+		return ret;
+	}
+
+	ret = dsdb_get_sd_from_ldb_message(ldb, req, acl_res->msgs[0], &sd);
+	if (ret != LDB_SUCCESS) {
+		return ldb_operr(ldb);
+	}
+	if (!sd) {
+		return ldb_operr(ldb);
+	}
+
+	schema = dsdb_get_schema(ldb, req);
+	if (!schema) {
+		return ldb_operr(ldb);
+	}
+
+	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
+
+	objectclass = dsdb_get_structural_oc_from_msg(schema, acl_res->msgs[0]);
+	if (!objectclass) {
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "acl_modify: Error retrieving object class for GUID.");
+	}
+
 	if (ldb_request_get_control(req, LDB_CONTROL_TREE_DELETE_OID)) {
-		ret = dsdb_module_check_access_on_dn(module, req,
-						     req->op.del.dn,
-						     SEC_ADS_DELETE_TREE, NULL,
-						     req);
+		ret = acl_check_access_on_objectclass(module, req, sd, sid,
+						      SEC_ADS_DELETE_TREE,
+						      objectclass);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1214,8 +1257,9 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* First check if we have delete object right */
-	ret = dsdb_module_check_access_on_dn(module, req, req->op.del.dn,
-					     SEC_STD_DELETE, NULL, req);
+	ret = acl_check_access_on_objectclass(module, req, sd, sid,
+					      SEC_STD_DELETE,
+					      objectclass);
 	if (ret == LDB_SUCCESS) {
 		return ldb_next_request(module, req);
 	}
