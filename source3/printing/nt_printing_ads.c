@@ -87,6 +87,86 @@ done:
 	talloc_free(tmp_ctx);
 }
 
+static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
+				      struct spoolss_PrinterInfo2 *info2,
+				      ADS_MODLIST *mods)
+{
+	char *info_str;
+
+	ads_mod_str(ctx, mods, SPOOL_REG_PRINTERNAME, info2->sharename);
+	ads_mod_str(ctx, mods, SPOOL_REG_SHORTSERVERNAME, global_myname());
+	ads_mod_str(ctx, mods, SPOOL_REG_SERVERNAME, get_mydnsfullname());
+
+	info_str = talloc_asprintf(ctx, "\\\\%s\\%s",
+				   get_mydnsfullname(), info2->sharename);
+	if (info_str == NULL) {
+		return WERR_NOMEM;
+	}
+	ads_mod_str(ctx, mods, SPOOL_REG_UNCNAME, info_str);
+
+	info_str = talloc_asprintf(ctx, "%d", 4);
+	if (info_str == NULL) {
+		return WERR_NOMEM;
+	}
+	ads_mod_str(ctx, mods, SPOOL_REG_VERSIONNUMBER, info_str);
+
+	/* empty strings in the mods list result in an attrubute error */
+	if (strlen(info2->drivername) != 0)
+		ads_mod_str(ctx, mods, SPOOL_REG_DRIVERNAME, info2->drivername);
+	if (strlen(info2->location) != 0)
+		ads_mod_str(ctx, mods, SPOOL_REG_LOCATION, info2->location);
+	if (strlen(info2->comment) != 0)
+		ads_mod_str(ctx, mods, SPOOL_REG_DESCRIPTION, info2->comment);
+	if (strlen(info2->portname) != 0)
+		ads_mod_str(ctx, mods, SPOOL_REG_PORTNAME, info2->portname);
+	if (strlen(info2->sepfile) != 0)
+		ads_mod_str(ctx, mods, SPOOL_REG_PRINTSEPARATORFILE, info2->sepfile);
+
+	info_str = talloc_asprintf(ctx, "%u", info2->starttime);
+	if (info_str == NULL) {
+		return WERR_NOMEM;
+	}
+	ads_mod_str(ctx, mods, SPOOL_REG_PRINTSTARTTIME, info_str);
+
+	info_str = talloc_asprintf(ctx, "%u", info2->untiltime);
+	if (info_str == NULL) {
+		return WERR_NOMEM;
+	}
+	ads_mod_str(ctx, mods, SPOOL_REG_PRINTENDTIME, info_str);
+
+	info_str = talloc_asprintf(ctx, "%u", info2->priority);
+	if (info_str == NULL) {
+		return WERR_NOMEM;
+	}
+	ads_mod_str(ctx, mods, SPOOL_REG_PRIORITY, info_str);
+
+	if (info2->attributes & PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS) {
+		ads_mod_str(ctx, mods, SPOOL_REG_PRINTKEEPPRINTEDJOBS, "TRUE");
+	} else {
+		ads_mod_str(ctx, mods, SPOOL_REG_PRINTKEEPPRINTEDJOBS, "FALSE");
+	}
+
+	switch (info2->attributes & 0x3) {
+	case 0:
+		ads_mod_str(ctx, mods, SPOOL_REG_PRINTSPOOLING,
+			    SPOOL_REGVAL_PRINTWHILESPOOLING);
+		break;
+	case 1:
+		ads_mod_str(ctx, mods, SPOOL_REG_PRINTSPOOLING,
+			    SPOOL_REGVAL_PRINTAFTERSPOOLED);
+		break;
+	case 2:
+		ads_mod_str(ctx, mods, SPOOL_REG_PRINTSPOOLING,
+			    SPOOL_REGVAL_PRINTDIRECT);
+		break;
+	default:
+		DEBUG(3, ("unsupported printer attributes %x\n",
+			  info2->attributes));
+	}
+
+	return WERR_OK;
+}
+
 static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 				     ADS_STRUCT *ads,
 				     struct spoolss_PrinterInfo2 *pinfo2)
@@ -171,7 +251,11 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 		return WERR_NOMEM;
 	}
 
-	ads_mod_str(ctx, &mods, SPOOL_REG_PRINTERNAME, printer);
+	win_rc = nt_printer_info_to_mods(ctx, pinfo2, &mods);
+	if (!W_ERROR_IS_OK(win_rc)) {
+		TALLOC_FREE(ctx);
+		return win_rc;
+	}
 
 	/* publish it */
 	ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
