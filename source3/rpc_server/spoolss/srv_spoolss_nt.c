@@ -8319,7 +8319,7 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 					  char **path)
 {
 	const char *pservername = NULL;
-	const char *long_archi = SPOOLSS_ARCHITECTURE_NT_X86;
+	const char *long_archi;
 	const char *short_archi;
 
 	*path = NULL;
@@ -8327,6 +8327,10 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 	/* environment may be empty */
 	if (environment && strlen(environment)) {
 		long_archi = environment;
+	} else {
+		long_archi = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+						  "spoolss", "architecture",
+						  SPOOLSS_ARCHITECTURE_NT_X86);
 	}
 
 	/* servername may be empty */
