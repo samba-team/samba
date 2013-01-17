@@ -9153,7 +9153,14 @@ static struct {
 	{ "LOCAL-DBWRAP-CTDB", run_local_dbwrap_ctdb, 0 },
 	{NULL, NULL, 0}};
 
-
+/*
+ * dummy function to satisfy linker dependency
+ */
+struct tevent_context *winbind_event_context(void);
+struct tevent_context *winbind_event_context(void)
+{
+	return NULL;
+}
 
 /****************************************************************************
 run a specified test or "ALL"
