@@ -751,14 +751,19 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 static int acl_add(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
-	struct ldb_dn *parent = ldb_dn_get_parent(req, req->op.add.message->dn);
+	struct ldb_dn *parent;
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
 	struct ldb_message_element *oc_el;
 	const struct GUID *guid;
 	struct ldb_dn *nc_root;
-	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+	struct ldb_control *as_system;
 
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 	if (as_system != NULL) {
 		as_system->critical = 0;
 	}
@@ -766,11 +771,13 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
-	if (ldb_dn_is_special(req->op.add.message->dn)) {
-		return ldb_next_request(module, req);
-	}
 
 	ldb = ldb_module_get_ctx(module);
+
+	parent = ldb_dn_get_parent(req, req->op.add.message->dn);
+	if (parent == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	/* Creating an NC. There is probably something we should do here,
 	 * but we will establish that later */
@@ -981,9 +988,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_result *acl_res;
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
-	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+	struct ldb_control *as_system;
 	bool userPassword;
-	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	TALLOC_CTX *tmp_ctx;
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
 		"objectClass",
@@ -991,6 +998,11 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		NULL
 	};
 
+	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 	if (as_system != NULL) {
 		as_system->critical = 0;
 	}
@@ -1003,9 +1015,12 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
-		return ldb_next_request(module, req);
+
+	tmp_ctx = talloc_new(req);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
 	}
+
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
@@ -1198,24 +1213,32 @@ fail:
 static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
-	struct ldb_dn *parent = ldb_dn_get_parent(req, req->op.del.dn);
+	struct ldb_dn *parent;
 	struct ldb_context *ldb;
 	struct ldb_dn *nc_root;
-	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+	struct ldb_control *as_system;
 
-	if (as_system != NULL) {
-		as_system->critical = 0;
-	}
-
-	DEBUG(10, ("ldb:acl_delete: %s\n", ldb_dn_get_linearized(req->op.del.dn)));
-	if (dsdb_module_am_system(module) || as_system) {
-		return ldb_next_request(module, req);
-	}
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
 	}
 
+	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
+
+	if (dsdb_module_am_system(module) || as_system) {
+		return ldb_next_request(module, req);
+	}
+
+	DEBUG(10, ("ldb:acl_delete: %s\n", ldb_dn_get_linearized(req->op.del.dn)));
+
 	ldb = ldb_module_get_ctx(module);
+
+	parent = ldb_dn_get_parent(req, req->op.del.dn);
+	if (parent == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	/* Make sure we aren't deleting a NC */
 
@@ -1265,8 +1288,8 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
-	struct ldb_dn *oldparent = ldb_dn_get_parent(req, req->op.rename.olddn);
-	struct ldb_dn *newparent = ldb_dn_get_parent(req, req->op.rename.newdn);
+	struct ldb_dn *oldparent;
+	struct ldb_dn *newparent;
 	const struct dsdb_schema *schema;
 	struct ldb_context *ldb;
 	struct security_descriptor *sd = NULL;
@@ -1276,8 +1299,8 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_dn *nc_root;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
-	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	struct ldb_control *as_system;
+	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	uint32_t access_granted;
 	const char *rdn_name;
@@ -1288,6 +1311,11 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		NULL
 	};
 
+	if (ldb_dn_is_special(req->op.rename.olddn)) {
+		return ldb_next_request(module, req);
+	}
+
+	as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 	if (as_system != NULL) {
 		as_system->critical = 0;
 	}
@@ -1296,11 +1324,22 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
-	if (ldb_dn_is_special(req->op.rename.olddn)) {
-		return ldb_next_request(module, req);
-	}
 
 	ldb = ldb_module_get_ctx(module);
+
+	tmp_ctx = talloc_new(req);
+	if (tmp_ctx == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	oldparent = ldb_dn_get_parent(tmp_ctx, req->op.rename.olddn);
+	if (oldparent == NULL) {
+		return ldb_oom(ldb);
+	}
+	newparent = ldb_dn_get_parent(tmp_ctx, req->op.rename.newdn);
+	if (newparent == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	/* Make sure we aren't renaming/moving a NC */
 
