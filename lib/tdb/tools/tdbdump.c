@@ -55,9 +55,6 @@ static void log_stderr(struct tdb_context *tdb, enum tdb_debug_level level,
 		       const char *fmt, ...)
 {
 	va_list ap;
-	char *ptr = NULL;
-	int debuglevel = 0;
-	int ret;
 	const char *name = tdb_name(tdb);
 	const char *prefix = "";
 
