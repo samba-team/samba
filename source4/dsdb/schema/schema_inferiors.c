@@ -39,8 +39,8 @@ static const char **schema_supclasses(const struct dsdb_schema *schema,
 {
 	const char **list;
 
-	if (schema_class->supclasses) {
-		return schema_class->supclasses;
+	if (schema_class->tmp.supclasses) {
+		return schema_class->tmp.supclasses;
 	}
 
 	list = const_str_list(str_list_make_empty(schema_class));
@@ -52,7 +52,7 @@ static const char **schema_supclasses(const struct dsdb_schema *schema,
 	/* Cope with 'top SUP top', i.e. top is subClassOf top */
 	if (schema_class->subClassOf &&
 	    strcmp(schema_class->lDAPDisplayName, schema_class->subClassOf) == 0) {
-		schema_class->supclasses = list;
+		schema_class->tmp.supclasses = list;
 		return list;
 	}
 
@@ -65,9 +65,9 @@ static const char **schema_supclasses(const struct dsdb_schema *schema,
 		list = str_list_append_const(list, list2);
 	}
 
-	schema_class->supclasses = str_list_unique(list);
+	schema_class->tmp.supclasses = str_list_unique(list);
 
-	return schema_class->supclasses;
+	return schema_class->tmp.supclasses;
 }
 
 /*
@@ -87,7 +87,7 @@ static const char **schema_subclasses(const struct dsdb_schema *schema,
 			DEBUG(0, ("ERROR: Unable to locate subClass: '%s'\n", oclist[i]));
 			continue;
 		}
-		list = str_list_append_const(list, schema_class->subclasses);
+		list = str_list_append_const(list, schema_class->tmp.subclasses);
 	}
 	return list;
 }
@@ -99,7 +99,7 @@ static const char **schema_subclasses(const struct dsdb_schema *schema,
 static const char **schema_posssuperiors(const struct dsdb_schema *schema,
 					 struct dsdb_class *schema_class)
 {
-	if (schema_class->posssuperiors == NULL) {
+	if (schema_class->tmp.posssuperiors == NULL) {
 		const char **list2 = const_str_list(str_list_make_empty(schema_class));
 		const char **list3;
 		unsigned int i;
@@ -118,16 +118,16 @@ static const char **schema_posssuperiors(const struct dsdb_schema *schema,
 		}
 		list2 = str_list_append_const(list2, schema_subclasses(schema, list2, list2));
 
-		schema_class->posssuperiors = str_list_unique(list2);
+		schema_class->tmp.posssuperiors = str_list_unique(list2);
 	}
 
-	return schema_class->posssuperiors;
+	return schema_class->tmp.posssuperiors;
 }
 
 static const char **schema_subclasses_recurse(const struct dsdb_schema *schema,
 					      struct dsdb_class *schema_class)
 {
-	const char **list = str_list_copy_const(schema_class, schema_class->subclasses_direct);
+	const char **list = str_list_copy_const(schema_class, schema_class->tmp.subclasses_direct);
 	unsigned int i;
 	for (i=0;list && list[i]; i++) {
 		const struct dsdb_class *schema_class2 = dsdb_class_by_lDAPDisplayName(schema, list[i]);
@@ -145,7 +145,7 @@ static void schema_subclasses_order_recurse(const struct dsdb_schema *schema,
 					    struct dsdb_class *schema_class,
 					    const int order)
 {
-	const char **list = schema_class->subclasses_direct;
+	const char **list = schema_class->tmp.subclasses_direct;
 	unsigned int i;
 	schema_class->subClass_order = order;
 	for (i=0;list && list[i]; i++) {
@@ -169,19 +169,19 @@ static int schema_create_subclasses(const struct dsdb_schema *schema)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (schema_class2 && schema_class != schema_class2) {
-			if (schema_class2->subclasses_direct == NULL) {
-				schema_class2->subclasses_direct = const_str_list(str_list_make_empty(schema_class2));
-				if (!schema_class2->subclasses_direct) {
+			if (schema_class2->tmp.subclasses_direct == NULL) {
+				schema_class2->tmp.subclasses_direct = const_str_list(str_list_make_empty(schema_class2));
+				if (!schema_class2->tmp.subclasses_direct) {
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
-			schema_class2->subclasses_direct = str_list_add_const(schema_class2->subclasses_direct,
+			schema_class2->tmp.subclasses_direct = str_list_add_const(schema_class2->tmp.subclasses_direct,
 						schema_class->lDAPDisplayName);
 		}
 	}
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
-		schema_class->subclasses = str_list_unique(schema_subclasses_recurse(schema, schema_class));
+		schema_class->tmp.subclasses = str_list_unique(schema_subclasses_recurse(schema, schema_class));
 
 		/* Initialize the subClass order, to ensure we can't have uninitialized sort on the subClass hierarchy */
 		schema_class->subClass_order = 0;
@@ -329,6 +329,11 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 	int ret;
 	struct dsdb_class *schema_class;
 
+	/* make sure we start with a clean cache */
+	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
+		ZERO_STRUCT(schema_class->tmp);
+	}
+
 	schema_fill_from_ids(schema);
 
 	ret = schema_create_subclasses(schema);
@@ -343,14 +348,10 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 
 	/* free up our internal cache elements */
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
-		talloc_free(schema_class->supclasses);
-		talloc_free(schema_class->subclasses_direct);
-		talloc_free(schema_class->subclasses);
-		talloc_free(schema_class->posssuperiors);
-		schema_class->supclasses = NULL;
-		schema_class->subclasses_direct = NULL;
-		schema_class->subclasses = NULL;
-		schema_class->posssuperiors = NULL;
+		TALLOC_FREE(schema_class->tmp.supclasses);
+		TALLOC_FREE(schema_class->tmp.subclasses_direct);
+		TALLOC_FREE(schema_class->tmp.subclasses);
+		TALLOC_FREE(schema_class->tmp.posssuperiors);
 	}
 
 	return LDB_SUCCESS;

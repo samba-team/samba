@@ -166,10 +166,6 @@ struct dsdb_class {
 	bool isDefunct;
 	bool systemOnly;
 
-	const char **supclasses;
-	const char **subclasses;
-	const char **subclasses_direct;
-	const char **posssuperiors;
 	uint32_t subClassOf_id;
 	uint32_t *systemAuxiliaryClass_ids;
 	uint32_t *auxiliaryClass_ids;
@@ -186,6 +182,13 @@ struct dsdb_class {
 	 * subClasses of top are 2, subclasses of those classes are
 	 * 3 */ 
 	uint32_t subClass_order;
+
+	struct {
+		const char **supclasses;
+		const char **subclasses;
+		const char **subclasses_direct;
+		const char **posssuperiors;
+	} tmp;
 };
 
 /**
