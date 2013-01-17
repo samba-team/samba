@@ -63,94 +63,6 @@ static NTSTATUS copychunk_check_limits(struct srv_copychunk_copy *cc_copy)
 	return NT_STATUS_OK;
 }
 
-static void copychunk_unlock_all(struct files_struct *src_fsp,
-				 struct files_struct *dst_fsp,
-				 struct lock_struct *rd_locks,
-				 struct lock_struct *wr_locks,
-				 uint32_t num_locks)
-{
-
-	uint32_t i;
-
-	for (i = 0; i < num_locks; i++) {
-		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &rd_locks[i]);
-		SMB_VFS_STRICT_UNLOCK(dst_fsp->conn, dst_fsp, &wr_locks[i]);
-	}
-}
-
-/* request read and write locks for each chunk */
-static NTSTATUS copychunk_lock_all(TALLOC_CTX *mem_ctx,
-				   struct srv_copychunk_copy *cc_copy,
-				   struct files_struct *src_fsp,
-				   struct files_struct *dst_fsp,
-				   struct lock_struct **rd_locks,
-				   struct lock_struct **wr_locks,
-				   uint32_t *num_locks)
-{
-	NTSTATUS status;
-	uint32_t i;
-	struct lock_struct *rlocks;
-	struct lock_struct *wlocks;
-
-	rlocks = talloc_array(mem_ctx, struct lock_struct,
-			      cc_copy->chunk_count);
-	if (rlocks == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_out;
-	}
-
-	wlocks = talloc_array(mem_ctx, struct lock_struct,
-			      cc_copy->chunk_count);
-	if (wlocks == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto err_rlocks_free;
-	}
-
-	for (i = 0; i < cc_copy->chunk_count; i++) {
-		init_strict_lock_struct(src_fsp,
-					src_fsp->op->global->open_persistent_id,
-					cc_copy->chunks[i].source_off,
-					cc_copy->chunks[i].length,
-					READ_LOCK,
-					&rlocks[i]);
-		init_strict_lock_struct(dst_fsp,
-					dst_fsp->op->global->open_persistent_id,
-					cc_copy->chunks[i].target_off,
-					cc_copy->chunks[i].length,
-					WRITE_LOCK,
-					&wlocks[i]);
-
-		if (!SMB_VFS_STRICT_LOCK(src_fsp->conn, src_fsp, &rlocks[i])) {
-			status = NT_STATUS_FILE_LOCK_CONFLICT;
-			goto err_unlock;
-		}
-		if (!SMB_VFS_STRICT_LOCK(dst_fsp->conn, dst_fsp, &wlocks[i])) {
-			/* unlock last rlock, otherwise missed by cleanup */
-			SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp,
-					      &rlocks[i]);
-			status = NT_STATUS_FILE_LOCK_CONFLICT;
-			goto err_unlock;
-		}
-	}
-
-	*rd_locks = rlocks;
-	*wr_locks = wlocks;
-	*num_locks = i;
-
-	return NT_STATUS_OK;
-
-err_unlock:
-	if (i > 0) {
-		/* cleanup all locks successfully issued so far */
-		copychunk_unlock_all(src_fsp, dst_fsp, rlocks, wlocks, i);
-	}
-	talloc_free(wlocks);
-err_rlocks_free:
-	talloc_free(rlocks);
-err_out:
-	return status;
-}
-
 struct fsctl_srv_copychunk_state {
 	struct connection_struct *conn;
 	uint32_t dispatch_count;
@@ -160,9 +72,6 @@ struct fsctl_srv_copychunk_state {
 	off_t total_written;
 	struct files_struct *src_fsp;
 	struct files_struct *dst_fsp;
-	struct lock_struct *wlocks;
-	struct lock_struct *rlocks;
-	uint32_t num_locks;
 	enum {
 		COPYCHUNK_OUT_EMPTY = 0,
 		COPYCHUNK_OUT_LIMITS,
@@ -297,17 +206,6 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	/* any errors from here onwards should carry copychunk response data */
 	state->out_data = COPYCHUNK_OUT_RSP;
 
-	state->status = copychunk_lock_all(state,
-					   &cc_copy,
-					   state->src_fsp,
-					   state->dst_fsp,
-					   &state->rlocks,
-					   &state->wlocks,
-					   &state->num_locks);
-	if (tevent_req_nterror(req, state->status)) {
-		return tevent_req_post(req, ev);
-	}
-
 	for (i = 0; i < cc_copy.chunk_count; i++) {
 		struct tevent_req *vfs_subreq;
 		chunk = &cc_copy.chunks[i];
@@ -323,17 +221,12 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 			state->status = NT_STATUS_NO_MEMORY;
 			if (state->dispatch_count == 0) {
 				/* nothing dispatched, return immediately */
-				copychunk_unlock_all(state->src_fsp,
-						     state->dst_fsp,
-						     state->rlocks,
-						     state->wlocks,
-						     state->num_locks);
 				tevent_req_nterror(req, state->status);
 				return tevent_req_post(req, ev);
 			} else {
 				/*
 				 * wait for dispatched to complete before
-				 * returning error, locks held.
+				 * returning error.
 				 */
 				break;
 			}
@@ -343,7 +236,6 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 		state->dispatch_count++;
 	}
 
-	/* hold locks until all dispatched requests are completed */
 	return req;
 }
 
@@ -382,13 +274,6 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 		 */
 		return;
 	}
-
-	/* all VFS copy_chunk requests done */
-	copychunk_unlock_all(state->src_fsp,
-			     state->dst_fsp,
-			     state->rlocks,
-			     state->wlocks,
-			     state->num_locks);
 
 	if (!tevent_req_nterror(req, state->status)) {
 		tevent_req_done(req);
