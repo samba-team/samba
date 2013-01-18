@@ -4466,7 +4466,8 @@ static WERROR enum_all_printers_info_1_network(TALLOC_CTX *mem_ctx,
 	   listed. Windows responds to this call with a
 	   WERR_CAN_NOT_COMPLETE so we should do the same. */
 
-	if (servername[0] == '\\' && servername[1] == '\\') {
+	if (servername != NULL &&
+	    (servername[0] == '\\') && (servername[1] == '\\')) {
 		 s = servername + 2;
 	}
 
