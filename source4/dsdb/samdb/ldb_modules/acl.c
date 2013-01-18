@@ -1000,6 +1000,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *as_system;
 	bool userPassword;
 	TALLOC_CTX *tmp_ctx;
+	const struct ldb_message *msg = req->op.mod.message;
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
 		"objectClass",
@@ -1007,7 +1008,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		NULL
 	};
 
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+	if (ldb_dn_is_special(msg->dn)) {
 		return ldb_next_request(module, req);
 	}
 
@@ -1017,9 +1018,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Don't print this debug statement if elements[0].name is going to be NULL */
-	if(req->op.mod.message->num_elements > 0)
-	{
-		DEBUG(10, ("ldb:acl_modify: %s\n", req->op.mod.message->elements[0].name));
+	if (msg->num_elements > 0) {
+		DEBUG(10, ("ldb:acl_modify: %s\n", msg->elements[0].name));
 	}
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
@@ -1030,7 +1030,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_oom(ldb);
 	}
 
-	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
+	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, msg->dn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_FLAG_AS_SYSTEM |
@@ -1068,12 +1068,12 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				 "acl_modify: Error retrieving object class GUID.");
 	}
 	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
-	for (i=0; i < req->op.mod.message->num_elements; i++){
+	for (i=0; i < msg->num_elements; i++) {
 		const struct dsdb_attribute *attr;
 		attr = dsdb_attribute_by_lDAPDisplayName(schema,
-							 req->op.mod.message->elements[i].name);
+							 msg->elements[i].name);
 
-		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
+		if (ldb_attr_cmp("nTSecurityDescriptor", msg->elements[i].name) == 0) {
 			uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
 			uint32_t access_mask = 0;
 
@@ -1096,17 +1096,17 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_asprintf_errstring(ldb_module_get_ctx(module),
 						       "Object %s has no write dacl access\n",
-						       ldb_dn_get_linearized(req->op.mod.message->dn));
+						       ldb_dn_get_linearized(msg->dn));
 				dsdb_acl_debug(sd,
 					       acl_user_token(module),
-					       req->op.mod.message->dn,
+					       msg->dn,
 					       true,
 					       10);
 				ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 				goto fail;
 			}
 		}
-		else if (ldb_attr_cmp("member", req->op.mod.message->elements[i].name) == 0) {
+		else if (ldb_attr_cmp("member", msg->elements[i].name) == 0) {
 			ret = acl_check_self_membership(tmp_ctx,
 							module,
 							req,
@@ -1118,14 +1118,14 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				goto fail;
 			}
 		}
-		else if (ldb_attr_cmp("dBCSPwd", req->op.mod.message->elements[i].name) == 0) {
+		else if (ldb_attr_cmp("dBCSPwd", msg->elements[i].name) == 0) {
 			/* this one is not affected by any rights, we should let it through
 			   so that passwords_hash returns the correct error */
 			continue;
 		}
-		else if (ldb_attr_cmp("unicodePwd", req->op.mod.message->elements[i].name) == 0 ||
-			 (userPassword && ldb_attr_cmp("userPassword", req->op.mod.message->elements[i].name) == 0) ||
-			 ldb_attr_cmp("clearTextPassword", req->op.mod.message->elements[i].name) == 0) {
+		else if (ldb_attr_cmp("unicodePwd", msg->elements[i].name) == 0 ||
+			 (userPassword && ldb_attr_cmp("userPassword", msg->elements[i].name) == 0) ||
+			 ldb_attr_cmp("clearTextPassword", msg->elements[i].name) == 0) {
 			ret = acl_check_password_rights(tmp_ctx,
 							module,
 							req,
@@ -1136,7 +1136,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
-		} else if (ldb_attr_cmp("servicePrincipalName", req->op.mod.message->elements[i].name) == 0) {
+		} else if (ldb_attr_cmp("servicePrincipalName", msg->elements[i].name) == 0) {
 			ret = acl_check_spn(tmp_ctx,
 					    module,
 					    req,
@@ -1159,8 +1159,8 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		 */
 			if (!attr) {
 				ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' on entry '%s' was not found in the schema!",
-						       req->op.mod.message->elements[i].name,
-					       ldb_dn_get_linearized(req->op.mod.message->dn));
+						       msg->elements[i].name,
+					       ldb_dn_get_linearized(msg->dn));
 				ret =  LDB_ERR_NO_SUCH_ATTRIBUTE;
 				goto fail;
 			}
@@ -1197,10 +1197,10 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_asprintf_errstring(ldb_module_get_ctx(module),
 						       "Object %s has no write property access\n",
-						       ldb_dn_get_linearized(req->op.mod.message->dn));
+						       ldb_dn_get_linearized(msg->dn));
 				dsdb_acl_debug(sd,
 					       acl_user_token(module),
-					       req->op.mod.message->dn,
+					       msg->dn,
 					       true,
 					       10);
 				ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
