@@ -269,7 +269,8 @@ static void print_header(void)
 	if (!cgi_waspost()) {
 		printf("Expires: 0\r\n");
 	}
-	printf("Content-type: text/html\r\n\r\n");
+	printf("Content-type: text/html\r\n");
+	printf("X-Frame-Options: DENY\r\n\r\n");
 
 	if (!include_html("include/header.html")) {
 		printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
