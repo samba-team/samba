@@ -10852,11 +10852,11 @@ WERROR _spoolss_60(struct pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_61
+ _spoolss_RpcSendRecvBidiData
 ****************************************************************/
 
-WERROR _spoolss_61(struct pipes_struct *p,
-		   struct spoolss_61 *r)
+WERROR _spoolss_RpcSendRecvBidiData(struct pipes_struct *p,
+				    struct spoolss_RpcSendRecvBidiData *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;

@@ -3158,7 +3158,76 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x61 */
-	[todo] WERROR spoolss_61(
+
+	const string BIDI_ACTION_ENUM_SCHEMA = "EnumSchema";
+	const string BIDI_ACTION_GET = "Get";
+	const string BIDI_ACTION_SET = "Set";
+	const string BIDI_ACTION_GET_ALL = "GetAll";
+
+	typedef enum {
+		BIDI_NULL	= 0x00000000,
+		BIDI_INT	= 0x00000001,
+		BIDI_FLOAT	= 0x00000002,
+		BIDI_BOOL	= 0x00000003,
+		BIDI_STRING	= 0x00000004,
+		BIDI_TEXT	= 0x00000005,
+		BIDI_ENUM	= 0x00000006,
+		BIDI_BLOB	= 0x00000007
+	} BIDI_TYPE;
+
+	typedef struct {
+		uint32 cbBuf;
+		[size_is(cbBuf), unique] uint8 *pszString;
+	} RPC_BINARY_CONTAINER;
+
+	typedef [ms_union,switch_type(uint32)] union {
+		[case(BIDI_NULL)]	uint32 bData;
+		[case(BIDI_BOOL)]	uint32 bData;
+		[case(BIDI_INT)] 	uint32 iData;
+		[case(BIDI_STRING)]	[unique] [string,charset(UTF16)] uint16 *sData;
+		[case(BIDI_TEXT)]	[unique] [string,charset(UTF16)] uint16 *sData;
+		[case(BIDI_ENUM)]	[unique] [string,charset(UTF16)] uint16 *sData;
+		/*[case(BIDI_FLOAT)]	float fData;*/
+		[case(BIDI_BLOB)]	RPC_BINARY_CONTAINER biData;
+	} RPC_BIDI_DATA_u;
+
+	typedef struct {
+		uint32 dwBidiType;
+		[switch_is(dwBidiType)] RPC_BIDI_DATA_u u;
+	} RPC_BIDI_DATA;
+
+	typedef struct {
+		uint32 dwReqNumber;
+		[unique] [string,charset(UTF16)] uint16 *pSchema;
+		RPC_BIDI_DATA data;
+	} RPC_BIDI_REQUEST_DATA;
+
+	typedef [public] struct {
+		[value(1)] uint32 Version;
+		uint32 Flags;
+		uint32 Count;
+		[size_is(Count), unique] RPC_BIDI_REQUEST_DATA *aData[];
+	} RPC_BIDI_REQUEST_CONTAINER;
+
+	typedef struct {
+		uint32 dwResult;
+		uint32 dwReqNumber;
+		[unique] [string,charset(UTF16)] uint16 *pSchema;
+		RPC_BIDI_DATA data;
+	} RPC_BIDI_RESPONSE_DATA;
+
+	typedef [public] struct {
+		[value(1)] uint32 Version;
+		uint32 Flags;
+		uint32 Count;
+		[size_is(Count), unique] RPC_BIDI_RESPONSE_DATA *aData[];
+	} RPC_BIDI_RESPONSE_CONTAINER;
+
+	WERROR spoolss_RpcSendRecvBidiData(
+		[in] policy_handle hPrinter,
+		[in,unique] [string,charset(UTF16)] uint16 *pAction,
+		[in] RPC_BIDI_REQUEST_CONTAINER *pReqData,
+		[out] RPC_BIDI_RESPONSE_CONTAINER **ppRespData
 	);
 
 	/******************/

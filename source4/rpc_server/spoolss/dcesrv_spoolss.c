@@ -1592,10 +1592,10 @@ static WERROR dcesrv_spoolss_60(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 
 
 /*
-  spoolss_61
+  spoolss_RpcSendRecvBidiData
 */
-static WERROR dcesrv_spoolss_61(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_61 *r)
+static WERROR dcesrv_spoolss_RpcSendRecvBidiData(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RpcSendRecvBidiData *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
