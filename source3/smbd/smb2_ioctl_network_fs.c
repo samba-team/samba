@@ -160,7 +160,7 @@ static struct tevent_req *fsctl_srv_copychunk_send(TALLOC_CTX *mem_ctx,
 	if (in_max_output < sizeof(struct srv_copychunk_rsp)) {
 		DEBUG(3, ("max output %d not large enough to hold copy chunk "
 			  "response %lu\n", (int)in_max_output,
-			  sizeof(struct srv_copychunk_rsp)));
+			  (unsigned long)sizeof(struct srv_copychunk_rsp)));
 		state->status = NT_STATUS_INVALID_PARAMETER;
 		tevent_req_nterror(req, state->status);
 		return tevent_req_post(req, ev);
@@ -253,14 +253,14 @@ static void fsctl_srv_copychunk_vfs_done(struct tevent_req *subreq)
 					 &chunk_nwritten);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("good copy chunk recv %d of %d\n",
-			   state->recv_count,
-			   state->dispatch_count));
+		DEBUG(10, ("good copy chunk recv %u of %u\n",
+			   (unsigned int)state->recv_count,
+			   (unsigned int)state->dispatch_count));
 		state->total_written += chunk_nwritten;
 	} else {
-		DEBUG(0, ("bad status in copy chunk recv %d of %d: %s\n",
-			  state->recv_count,
-			  state->dispatch_count,
+		DEBUG(0, ("bad status in copy chunk recv %u of %u: %s\n",
+			  (unsigned int)state->recv_count,
+			  (unsigned int)state->dispatch_count,
 			  nt_errstr(status)));
 		state->bad_recv_count++;
 		/* may overwrite previous failed status */
@@ -427,7 +427,7 @@ static NTSTATUS fsctl_srv_req_resume_key(TALLOC_CTX *mem_ctx,
 
 	if (in_max_output < output.length) {
 		DEBUG(1, ("max output %u too small for resume key rsp %ld\n",
-			  in_max_output, (long int)output.length));
+			  (unsigned int)in_max_output, (long int)output.length));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*out_output = output;
