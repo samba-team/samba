@@ -165,6 +165,38 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ void ndr_print_debugc_helper(struct ndr_print *ndr, const char *format, ...)
+{
+	va_list ap;
+	char *s = NULL;
+	uint32_t i;
+	int ret;
+	int dbgc_class;
+
+	va_start(ap, format);
+	ret = vasprintf(&s, format, ap);
+	va_end(ap);
+
+	if (ret == -1) {
+		return;
+	}
+
+	dbgc_class = *(int *)ndr->private_data;
+
+	if (ndr->no_newline) {
+		DEBUGADDC(dbgc_class, 1,("%s", s));
+		free(s);
+		return;
+	}
+
+	for (i=0;i<ndr->depth;i++) {
+		DEBUGADDC(dbgc_class, 1,("    "));
+	}
+
+	DEBUGADDC(dbgc_class, 1,("%s\n", s));
+	free(s);
+}
+
 _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) 
 {
 	va_list ap;
@@ -233,6 +265,25 @@ _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format,
 		ndr->private_data = talloc_asprintf_append_buffer((char *)ndr->private_data,
 								  "\n");
 	}
+}
+
+/*
+  a useful helper function for printing idl structures via DEBUGC()
+*/
+_PUBLIC_ void ndr_print_debugc(int dbgc_class, ndr_print_fn_t fn, const char *name, void *ptr)
+{
+	struct ndr_print *ndr;
+
+	DEBUGC(dbgc_class, 1,(" "));
+
+	ndr = talloc_zero(NULL, struct ndr_print);
+	if (!ndr) return;
+	ndr->private_data = &dbgc_class;
+	ndr->print = ndr_print_debugc_helper;
+	ndr->depth = 1;
+	ndr->flags = 0;
+	fn(ndr, name, ptr);
+	talloc_free(ndr);
 }
 
 /*
