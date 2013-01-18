@@ -1069,11 +1069,13 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
 	for (i=0; i < msg->num_elements; i++) {
+		const struct ldb_message_element *el = &msg->elements[i];
 		const struct dsdb_attribute *attr;
-		attr = dsdb_attribute_by_lDAPDisplayName(schema,
-							 msg->elements[i].name);
 
-		if (ldb_attr_cmp("nTSecurityDescriptor", msg->elements[i].name) == 0) {
+		attr = dsdb_attribute_by_lDAPDisplayName(schema,
+							 el->name);
+
+		if (ldb_attr_cmp("nTSecurityDescriptor", el->name) == 0) {
 			uint32_t sd_flags = dsdb_request_sd_flags(req, NULL);
 			uint32_t access_mask = 0;
 
@@ -1105,8 +1107,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 				ret = LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 				goto fail;
 			}
-		}
-		else if (ldb_attr_cmp("member", msg->elements[i].name) == 0) {
+		} else if (ldb_attr_cmp("member", el->name) == 0) {
 			ret = acl_check_self_membership(tmp_ctx,
 							module,
 							req,
@@ -1117,15 +1118,13 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
-		}
-		else if (ldb_attr_cmp("dBCSPwd", msg->elements[i].name) == 0) {
+		} else if (ldb_attr_cmp("dBCSPwd", el->name) == 0) {
 			/* this one is not affected by any rights, we should let it through
 			   so that passwords_hash returns the correct error */
 			continue;
-		}
-		else if (ldb_attr_cmp("unicodePwd", msg->elements[i].name) == 0 ||
-			 (userPassword && ldb_attr_cmp("userPassword", msg->elements[i].name) == 0) ||
-			 ldb_attr_cmp("clearTextPassword", msg->elements[i].name) == 0) {
+		} else if (ldb_attr_cmp("unicodePwd", el->name) == 0 ||
+			   (userPassword && ldb_attr_cmp("userPassword", el->name) == 0) ||
+			   ldb_attr_cmp("clearTextPassword", el->name) == 0) {
 			ret = acl_check_password_rights(tmp_ctx,
 							module,
 							req,
@@ -1136,7 +1135,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
-		} else if (ldb_attr_cmp("servicePrincipalName", msg->elements[i].name) == 0) {
+		} else if (ldb_attr_cmp("servicePrincipalName", el->name) == 0) {
 			ret = acl_check_spn(tmp_ctx,
 					    module,
 					    req,
@@ -1159,7 +1158,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 		 */
 			if (!attr) {
 				ldb_asprintf_errstring(ldb, "acl_modify: attribute '%s' on entry '%s' was not found in the schema!",
-						       msg->elements[i].name,
+						       el->name,
 					       ldb_dn_get_linearized(msg->dn));
 				ret =  LDB_ERR_NO_SUCH_ATTRIBUTE;
 				goto fail;
