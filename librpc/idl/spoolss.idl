@@ -1349,7 +1349,17 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_AddDriverInfo4;
 
 	typedef [bitmap32bit] bitmap {
-		PRINTER_DRIVER_PACKAGE_AWARE = 0x00000002
+		PRINTER_DRIVER_PACKAGE_AWARE		= 0x00000001,
+		PRINTER_DRIVER_XPS			= 0x00000002,
+		PRINTER_DRIVER_SANDBOX_ENABLED 		= 0x00000004,
+		PRINTER_DRIVER_CLASS 			= 0x00000008,
+		PRINTER_DRIVER_DERIVED 			= 0x00000010,
+		PRINTER_DRIVER_NOT_SHAREABLE 		= 0x00000020,
+		PRINTER_DRIVER_CATEGORY_FAX		= 0x00000040,
+		PRINTER_DRIVER_CATEGORY_FILE		= 0x00000080,
+		PRINTER_DRIVER_CATEGORY_VIRTUAL		= 0x00000100,
+		PRINTER_DRIVER_CATEGORY_SERVICE		= 0x00000200,
+		PRINTER_DRIVER_SOFT_RESET_REQUIRED	= 0x00000400
 	} spoolss_DriverAttributes;
 
 	typedef struct {
@@ -1411,7 +1421,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[value(((ndr_size_spoolss_StringArray(color_profiles, ndr->flags)-4)/2))] uint32 _ndr_size_color_profiles;
 		spoolss_StringArray *color_profiles;
 		[string,charset(UTF16)] uint16 *inf_path;
-		uint32 printer_driver_attributes;
+		spoolss_DriverAttributes printer_driver_attributes;
 		[value(((ndr_size_spoolss_StringArray(core_driver_dependencies, ndr->flags)-4)/2))] uint32 _ndr_size_core_driver_dependencies;
 		spoolss_StringArray *core_driver_dependencies;
 		NTTIME min_inbox_driver_ver_date;
@@ -1539,7 +1549,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[relative] nstring *vendor_setup;
 		[relative] nstring_array *color_profiles;
 		[relative] nstring *inf_path;
-		uint32 printer_driver_attributes;
+		spoolss_DriverAttributes printer_driver_attributes;
 		[relative] nstring_array *core_driver_dependencies;
 		NTTIME min_inbox_driver_ver_date;
 		hyper min_inbox_driver_ver_version;
