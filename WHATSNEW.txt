@@ -8,12 +8,29 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.11 include:
 
-o 
+o   defer_open is triggered multiple times on the same request (bug #9196).
+o   Fix SEGV wh_n using second vfs module (bug #9471).
+
 
 Changes since 3.6.10:
 --------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9196: defer_open is triggered multiple times on the same request.
+    * BUG 9550: Mask off signals the correct way from the signal handler.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9569: ntlm_auth.1: Fix format and make examples visible.
+
+
+o   Tsukasa Hamano <hamano@osstech.co.jp>
+    * BUG 9471: Fix SEGV when using second vfs module.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9548: Correctly detect O_DIRECT.
+    * BUG 9546: Fix aio_suspend detection on FreeBSD.
 
 
 ######################################################################
