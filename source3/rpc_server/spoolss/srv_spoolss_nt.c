@@ -5730,11 +5730,11 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 	}
 
-	if (r->in.level != 1) {
+	if (r->in.info_ctr->level != 1) {
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	info_1 = r->in.info.info1;
+	info_1 = r->in.info_ctr->info.info1;
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.

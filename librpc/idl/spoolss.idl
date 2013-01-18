@@ -1753,10 +1753,14 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[default];
 	} spoolss_DocumentInfo;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] spoolss_DocumentInfo info;
+	} spoolss_DocumentInfoCtr;
+
 	WERROR spoolss_StartDocPrinter(
 		[in,ref] policy_handle *handle,
-		[in] uint32 level,
-		[in,switch_is(level)] spoolss_DocumentInfo info,
+		[in,ref] spoolss_DocumentInfoCtr *info_ctr,
 		[out,ref] uint32 *job_id
 	);
 

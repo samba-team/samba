@@ -3273,6 +3273,7 @@ static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_StartDocPrinter s;
+	struct spoolss_DocumentInfoCtr info_ctr;
 	struct spoolss_DocumentInfo1 info1;
 	struct spoolss_StartPagePrinter sp;
 	struct spoolss_WritePrinter w;
@@ -3284,12 +3285,15 @@ static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
 	torture_comment(tctx, "Testing StartDocPrinter\n");
 
 	s.in.handle		= handle;
-	s.in.level		= 1;
-	s.in.info.info1		= &info1;
+	s.in.info_ctr		= &info_ctr;
 	s.out.job_id		= job_id;
+
 	info1.document_name	= document_name;
 	info1.output_file	= NULL;
 	info1.datatype		= "RAW";
+
+	info_ctr.level		= 1;
+	info_ctr.info.info1	= &info1;
 
 	status = dcerpc_spoolss_StartDocPrinter_r(b, tctx, &s);
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_StartDocPrinter failed");
