@@ -85,11 +85,13 @@ static bool print_driver_directories_init(void)
 	if (service < 0) {
 		/* We don't have a print$ share */
 		DEBUG(5, ("No print$ share has been configured.\n"));
+		talloc_free(mem_ctx);
 		return true;
 	}
 
 	driver_path = lp_pathname(mem_ctx, service);
 	if (driver_path == NULL) {
+		talloc_free(mem_ctx);
 		return false;
 	}
 
