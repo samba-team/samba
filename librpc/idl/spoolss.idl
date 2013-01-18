@@ -28,7 +28,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint16 millisecond;
 	} spoolss_Time;
 
-	typedef struct {
+	typedef [public] struct {
 		[value(ndr_size_spoolss_Time(time, ndr->flags))] uint32 size;
 		[unique] spoolss_Time *time;
 	} spoolss_TimeCtr;
@@ -885,7 +885,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x01 */
-	typedef struct {
+	typedef [public] struct {
 		[value(_ndr_size_spoolss_DeviceMode(devmode, ndr->flags))] uint32 _ndr_size;
 		[subcontext(4),subcontext_size(_ndr_size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
@@ -1061,7 +1061,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[default];
 	} spoolss_SetJobInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_SetJobInfo info;
 	} spoolss_JobInfoContainer;
@@ -1265,7 +1265,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[default];
 	} spoolss_SetPrinterInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_SetPrinterInfo info;
 	} spoolss_SetPrinterInfoCtr;
@@ -1437,7 +1437,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[case(8)] spoolss_AddDriverInfo8 *info8;
 	} spoolss_AddDriverInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_AddDriverInfo info;
 	} spoolss_AddDriverInfoCtr;
@@ -1753,7 +1753,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[default];
 	} spoolss_DocumentInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_DocumentInfo info;
 	} spoolss_DocumentInfoCtr;
@@ -2052,7 +2052,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[case(2)] spoolss_AddFormInfo2 *info2;
 	} spoolss_AddFormInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_AddFormInfo info;
 	} spoolss_AddFormInfoCtr;
@@ -2286,7 +2286,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[case(0xff)] spoolss_SetPortInfoFF *infoFF;
 	} spoolss_SetPortInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_SetPrinterInfo info;
 	} spoolss_SetPortInfoContainer;
@@ -2549,7 +2549,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	/******************/
 	/* Function: 0x3d */
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 monitor_data_size;
 		[size_is(monitor_data_size),unique] uint8 *monitor_data;
 	} spoolss_PortVarContainer;
@@ -2660,7 +2660,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		PRINTER_NOTIFY_OPTIONS_REFRESH	= 0x00000001
 	} spoolssNotifyOptionFlags;
 
-	typedef struct {
+	typedef [public] struct {
 		[value(2)] uint32 version;
 		spoolssNotifyOptionFlags flags;
 		uint32 count;
@@ -2708,7 +2708,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[switch_is(variable_type)] spoolss_NotifyData data;
 	} spoolss_Notify;
 
-	typedef struct {
+	typedef [public] struct {
 		[value(2)] uint32 version;
 		uint32 flags;
 		uint32 count;
@@ -2781,7 +2781,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[case(3)]  spoolss_UserLevel3 *level3;
 	} spoolss_UserLevel;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 level;
 		[switch_is(level)] spoolss_UserLevel user_info;
 	} spoolss_UserLevelCtr;
@@ -3252,7 +3252,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x66 */
-	typedef struct {
+	typedef [public] struct {
 		GUID core_driver_guid;
 		NTTIME driver_date;
 		hyper driver_version;
