@@ -167,7 +167,6 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	mods = ads_init_mods(ctx);
 
 	if (mods == NULL) {
-		SAFE_FREE(prt_dn);
 		TALLOC_FREE(ctx);
 		return WERR_NOMEM;
 	}
