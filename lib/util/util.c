@@ -384,6 +384,19 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 	return true;
 }
 
+struct debug_channel_level {
+	int channel;
+	int level;
+};
+
+static void debugadd_channel_cb(const char *buf, void *private_data)
+{
+	struct debug_channel_level *dcl =
+		(struct debug_channel_level *)private_data;
+
+	DEBUGADDC(dcl->channel, dcl->level,("%s", buf));
+}
+
 static void debugadd_cb(const char *buf, void *private_data)
 {
 	int *plevel = (int *)private_data;
@@ -500,6 +513,23 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
 		return;
 	}
 	dump_data_cb(buf, len, false, debugadd_cb, &level);
+}
+
+/**
+ * Write dump of binary data to the log file.
+ *
+ * The data is only written if the log level is at least level for
+ * debug class dbgc_class.
+ */
+_PUBLIC_ void dump_data_dbgc(int dbgc_class, int level, const uint8_t *buf, int len)
+{
+	struct debug_channel_level dcl = { dbgc_class, level };
+
+	if (!DEBUGLVLC(dbgc_class, level)) {
+		DEBUG(0, ("dbgc_class is %d\n", dbgc_class));
+		return;
+	}
+	dump_data_cb(buf, len, false, debugadd_channel_cb, &dcl);
 }
 
 /**

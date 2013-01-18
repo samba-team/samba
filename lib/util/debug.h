@@ -161,10 +161,17 @@ extern int  *DEBUGLEVEL_CLASS;
   ( ((level) <= MAX_DEBUG_LEVEL) && \
     unlikely(DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level)))
 
+#define CHECK_DEBUGLVLC( dbgc_class, level ) \
+  ( ((level) <= MAX_DEBUG_LEVEL) && \
+    unlikely(DEBUGLEVEL_CLASS[ dbgc_class ] >= (level)))
+
 #define DEBUGLVL( level ) \
   ( CHECK_DEBUGLVL(level) \
    && dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ ) )
 
+#define DEBUGLVLC( dbgc_class, level ) \
+  ( CHECK_DEBUGLVLC( dbgc_class, level ) \
+   && dbghdrclass( level, dbgc_class, __location__, __FUNCTION__ ) )
 
 #define DEBUG( level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \

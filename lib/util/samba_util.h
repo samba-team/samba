@@ -693,6 +693,14 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf,int len);
 /**
  * Write dump of binary data to the log file.
  *
+ * The data is only written if the log level is at least level for
+ * debug class dbgc_class.
+ */
+_PUBLIC_ void dump_data_dbgc(int dbgc_class, int level, const uint8_t *buf, int len);
+
+/**
+ * Write dump of binary data to the log file.
+ *
  * The data is only written if the log level is at least level.
  * 16 zero bytes in a row are omitted
  */
