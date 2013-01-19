@@ -2338,15 +2338,23 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
 
-		os.major		= 5;	/* Windows 2000 == 5.0 */
-		os.minor		= 0;
-		os.build		= 2195;	/* build */
+		os.major		= lp_parm_int(GLOBAL_SECTION_SNUM,
+						      "spoolss", "os_major", 5);
+						      /* Windows 2000 == 5.0 */
+		os.minor		= lp_parm_int(GLOBAL_SECTION_SNUM,
+						      "spoolss", "os_minor", 0);
+		os.build		= lp_parm_int(GLOBAL_SECTION_SNUM,
+						      "spoolss", "os_build", 2195);
 		os.extra_string		= "";	/* leave extra string empty */
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os,
 			(ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_GENERAL_FAILURE;
+		}
+
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(spoolss_OSVersion, &os);
 		}
 
 		*type = REG_BINARY;
