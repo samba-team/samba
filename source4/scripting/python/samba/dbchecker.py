@@ -21,9 +21,10 @@ import ldb
 from samba import dsdb
 from samba import common
 from samba.dcerpc import misc
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 from samba.common import dsdb_Dn
+from samba.dcerpc import security
 
 
 class dbcheck(object):
@@ -49,6 +50,7 @@ class dbcheck(object):
         self.fix_all_missing_backlinks = False
         self.fix_all_orphaned_backlinks = False
         self.fix_rmd_flags = False
+        self.fix_ntsecuritydescriptor = False
         self.seize_fsmo_role = False
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
@@ -58,6 +60,7 @@ class dbcheck(object):
         self.schema_dn = samdb.get_schema_basedn()
         self.rid_dn = ldb.Dn(samdb, "CN=RID Manager$,CN=System," + samdb.domain_dn())
         self.ntds_dsa = samdb.get_dsServiceName()
+        self.class_schemaIDGUID = {}
 
         res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs'])
         if "msDS-hasMasterNCs" in res[0]:
@@ -540,6 +543,164 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix metadata for attribute %s" % attr):
             self.report("Fixed metadata for attribute %s" % attr)
 
+    def ace_get_effective_inherited_type(self, ace):
+        if ace.flags & security.SEC_ACE_FLAG_INHERIT_ONLY:
+            return None
+
+        check = False
+        if ace.type == security.SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+            check = True
+        elif ace.type == security.SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+            check = True
+        elif ace.type == security.SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+            check = True
+        elif ace.type == security.SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+            check = True
+
+        if not check:
+            return None
+
+        if not ace.object.flags & security.SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT:
+            return None
+
+        return str(ace.object.inherited_type)
+
+    def lookup_class_schemaIDGUID(self, cls):
+        if cls in self.class_schemaIDGUID:
+            return self.class_schemaIDGUID[cls]
+
+        flt = "(&(ldapDisplayName=%s)(objectClass=classSchema))" % cls
+        res = self.samdb.search(base=self.schema_dn,
+                                expression=flt,
+                                attrs=["schemaIDGUID"])
+        t = str(ndr_unpack(misc.GUID, res[0]["schemaIDGUID"][0]))
+
+        self.class_schemaIDGUID[cls] = t
+        return t
+
+    def process_sd(self, dn, obj):
+        sd_attr = "nTSecurityDescriptor"
+        sd_val = obj[sd_attr]
+
+        sd = ndr_unpack(security.descriptor, str(sd_val))
+
+        is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
+        if is_deleted:
+            # we don't fix deleted objects
+            return (sd, None)
+
+        sd_clean = security.descriptor()
+        sd_clean.owner_sid = sd.owner_sid
+        sd_clean.group_sid = sd.group_sid
+        sd_clean.type = sd.type
+        sd_clean.revision = sd.revision
+
+        broken = False
+        last_inherited_type = None
+
+        aces = []
+        if sd.sacl is not None:
+            aces = sd.sacl.aces
+        for i in range(0, len(aces)):
+            ace = aces[i]
+
+            if not ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE:
+                sd_clean.sacl_add(ace)
+                continue
+
+            t = self.ace_get_effective_inherited_type(ace)
+            if t is None:
+                continue
+
+            if last_inherited_type is not None:
+                if t != last_inherited_type:
+                    # if it inherited from more than
+                    # one type it's very likely to be broken
+                    #
+                    # If not the recalculation will calculate
+                    # the same result.
+                    broken = True
+                continue
+
+            last_inherited_type = t
+
+        aces = []
+        if sd.dacl is not None:
+            aces = sd.dacl.aces
+        for i in range(0, len(aces)):
+            ace = aces[i]
+
+            if not ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE:
+                sd_clean.dacl_add(ace)
+                continue
+
+            t = self.ace_get_effective_inherited_type(ace)
+            if t is None:
+                continue
+
+            if last_inherited_type is not None:
+                if t != last_inherited_type:
+                    # if it inherited from more than
+                    # one type it's very likely to be broken
+                    #
+                    # If not the recalculation will calculate
+                    # the same result.
+                    broken = True
+                continue
+
+            last_inherited_type = t
+
+        if broken:
+            return (sd_clean, sd)
+
+        if last_inherited_type is None:
+            # ok
+            return (sd, None)
+
+        cls = None
+        try:
+            cls = obj["objectClass"][-1]
+        except KeyError, e:
+            pass
+
+        if cls is None:
+            res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
+                                    attrs=["isDeleted", "objectClass"],
+                                    controls=["show_recycled:1"])
+            o = res[0]
+            is_deleted = 'isDeleted' in o and o['isDeleted'][0].upper() == 'TRUE'
+            if is_deleted:
+                # we don't fix deleted objects
+                return (sd, None)
+            cls = o["objectClass"][-1]
+
+        t = self.lookup_class_schemaIDGUID(cls)
+
+        if t != last_inherited_type:
+            # broken
+            return (sd_clean, sd)
+
+        # ok
+        return (sd, None)
+
+    def err_wrong_sd(self, dn, sd, sd_broken):
+        '''re-write replPropertyMetaData elements for a single attribute for a
+        object. This is used to fix missing replPropertyMetaData elements'''
+        sd_attr = "nTSecurityDescriptor"
+        sd_val = ndr_pack(sd)
+        sd_flags = security.SECINFO_DACL | security.SECINFO_SACL
+
+        if not self.confirm_all('Fix %s on %s?' % (sd_attr, dn), 'fix_ntsecuritydescriptor'):
+            self.report('Not fixing %s on %s\n' % (sd_attr, dn))
+            return
+
+        nmsg = ldb.Message()
+        nmsg.dn = dn
+        nmsg[sd_attr] = ldb.MessageElement(sd_val, ldb.FLAG_MOD_REPLACE, sd_attr)
+        if self.do_modify(nmsg, ["sd_flags:1:%d" % sd_flags],
+                          "Failed to fix metadata for attribute %s" % sd_attr):
+            self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
+
     def is_fsmo_role(self, dn):
         if dn == self.samdb.domain_dn:
             return True
@@ -580,8 +741,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             attrs.append("replPropertyMetaData")
 
         try:
+            sd_flags = 0
+            sd_flags |= security.SECINFO_OWNER
+            sd_flags |= security.SECINFO_GROUP
+            sd_flags |= security.SECINFO_DACL
+            sd_flags |= security.SECINFO_SACL
+
             res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE,
-                                    controls=["extended_dn:1:1", "show_recycled:1", "show_deleted:1"],
+                                    controls=[
+                                        "extended_dn:1:1",
+                                        "show_recycled:1",
+                                        "show_deleted:1",
+                                        "sd_flags:1:%d" % sd_flags,
+                                    ],
                                     attrs=attrs)
         except ldb.LdbError, (enum, estr):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
@@ -606,6 +778,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if str(attrname).lower() == 'replpropertymetadata':
                 list_attrs_from_md = self.process_metadata(obj[attrname])
                 got_repl_property_meta_data = True
+                continue
+
+            if str(attrname).lower() == 'ntsecuritydescriptor':
+                (sd, sd_broken) = self.process_sd(dn, obj)
+                if sd_broken is not None:
+                    self.err_wrong_sd(dn, sd, sd_broken)
+                    error_count += 1
                 continue
 
             if str(attrname).lower() == 'objectclass':
