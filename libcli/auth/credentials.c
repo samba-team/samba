@@ -583,7 +583,7 @@ void netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_Credential
 						uint16_t validation_level,
 						union netr_Validation *validation)
 {
-	return netlogon_creds_crypt_samlogon_validation(creds, validation_level,
+	netlogon_creds_crypt_samlogon_validation(creds, validation_level,
 							validation, false);
 }
 
@@ -591,7 +591,7 @@ void netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_Credential
 						uint16_t validation_level,
 						union netr_Validation *validation)
 {
-	return netlogon_creds_crypt_samlogon_validation(creds, validation_level,
+	netlogon_creds_crypt_samlogon_validation(creds, validation_level,
 							validation, true);
 }
 
