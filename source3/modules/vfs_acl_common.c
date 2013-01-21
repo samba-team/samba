@@ -362,10 +362,10 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 *******************************************************************/
 
 static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
-				files_struct *fsp,
-				const char *name,
-			        uint32_t security_info,
-				TALLOC_CTX *mem_ctx,
+				    files_struct *fsp,
+				    const char *name,
+				    uint32_t security_info,
+				    TALLOC_CTX *mem_ctx,
 				    struct security_descriptor **ppdesc)
 {
 	DATA_BLOB blob = data_blob_null;
