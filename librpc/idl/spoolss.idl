@@ -3312,21 +3312,73 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x6e */
-	[todo] WERROR spoolss_RpcGetJobNamedPropertyValue(
+
+	const string SPLFILE_CONTENT_TYPE_PROP_NAME		= "Spool File Contents";
+	const string SPLFILE_CONTENT_TYPE_XPS_MS		= "TYPE_XPS_MS";
+	const string SPLFILE_CONTENT_TYPE_XPS_OPEN		= "TYPE_XPS_OPEN";
+	const string SPLFILE_CONTENT_TYPE_PDL_POSTSCRIPT	= "TYPE_PDL_POSTSCRIPT";
+	const string SPLFILE_CONTENT_TYPE_PDL_UNKNOWN		= "TYPE_PDL_UNKNOWN";
+
+	typedef enum {
+		kRpcPropertyTypeString	= 1,
+		kRpcPropertyTypeInt32	= 2,
+		kRpcPropertyTypeInt64	= 3,
+		kRpcPropertyTypeByte	= 4,
+		kRpcPropertyTypeBuffer	= 5
+	} RPC_EPrintPropertyType;
+
+	typedef struct {
+		uint32 cbBuf;
+		[size_is(cbBuf)] uint8 *pBuf;
+	} propertyBlob;
+
+	typedef [ms_union,switch_type(RPC_EPrintPropertyType)] union {
+		[case(kRpcPropertyTypeString)] [string,charset(UTF16)] uint16 *propertyString;
+		[case(kRpcPropertyTypeInt32)] uint32 propertyInt32;
+		[case(kRpcPropertyTypeInt64)] hyper propertyInt64;
+		[case(kRpcPropertyTypeByte)] uint8 propertyByte;
+		[case(kRpcPropertyTypeBuffer)] propertyBlob propertyBlob;
+	} RPC_PrintPropertyValueUnion;
+
+	typedef struct {
+		RPC_EPrintPropertyType ePropertyType;
+		[switch_is(ePropertyType)] RPC_PrintPropertyValueUnion value;
+	} RPC_PrintPropertyValue;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *propertyName;
+		RPC_PrintPropertyValue propertyValue;
+	} RPC_PrintNamedProperty;
+
+	WERROR spoolss_RpcGetJobNamedPropertyValue(
+		[in,ref] policy_handle *hPrinter,
+		[in] uint32 JobId,
+		[in] [string,charset(UTF16)] uint16 *pszName,
+		[out,ref] RPC_PrintPropertyValue *pValue
 	);
 
 	/******************/
 	/* Function: 0x6f */
-	[todo] WERROR spoolss_RpcSetJobNamedProperty(
+	WERROR spoolss_RpcSetJobNamedProperty(
+		[in,ref] policy_handle *hPrinter,
+		[in] uint32 JobId,
+		[in,ref] RPC_PrintNamedProperty *pProperty
 	);
 
 	/******************/
 	/* Function: 0x70 */
-	[todo] WERROR spoolss_RpcDeleteJobNamedProperty(
+	WERROR spoolss_RpcDeleteJobNamedProperty(
+		[in,ref] policy_handle *hPrinter,
+		[in] uint32 JobId,
+		[in] [string,charset(UTF16)] uint16 *pszName
 	);
 
 	/******************/
 	/* Function: 0x71 */
-	[todo] WERROR spoolss_RpcEnumJobNamedProperties(
+	WERROR spoolss_RpcEnumJobNamedProperties(
+		[in,ref] policy_handle *hPrinter,
+		[in] uint32 JobId,
+		[out,ref] uint32 *pcProperties,
+		[out,ref,size_is(,*pcProperties)] RPC_PrintNamedProperty **ppProperties
 	);
 }
