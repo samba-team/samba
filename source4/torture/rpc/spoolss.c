@@ -3267,6 +3267,107 @@ static bool test_EnumJobs_args(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_JobPropertiesEnum(struct torture_context *tctx,
+				   struct dcerpc_binding_handle *b,
+				   struct policy_handle *handle,
+				   uint32_t job_id)
+{
+	struct spoolss_RpcEnumJobNamedProperties r;
+	uint32_t pcProperties = 0;
+	struct RPC_PrintNamedProperty *ppProperties = NULL;
+
+	r.in.hPrinter = handle;
+	r.in.JobId = job_id;
+	r.out.pcProperties = &pcProperties;
+	r.out.ppProperties = &ppProperties;
+
+	torture_comment(tctx, "Testing RpcEnumJobNamedProperties(%d)\n", job_id);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_RpcEnumJobNamedProperties_r(b, tctx, &r),
+		"spoolss_RpcEnumJobNamedProperties failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"spoolss_RpcEnumJobNamedProperties failed");
+
+	return true;
+}
+
+static bool test_JobPropertySet(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
+				struct policy_handle *handle,
+				uint32_t job_id,
+				struct RPC_PrintNamedProperty *property)
+{
+	struct spoolss_RpcSetJobNamedProperty r;
+
+	r.in.hPrinter = handle;
+	r.in.JobId = job_id;
+	r.in.pProperty = property;
+
+	torture_comment(tctx, "Testing RpcSetJobNamedProperty(%d) %s - %d\n",
+		job_id, property->propertyName,
+		property->propertyValue.ePropertyType);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_RpcSetJobNamedProperty_r(b, tctx, &r),
+		"spoolss_RpcSetJobNamedProperty failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"spoolss_RpcSetJobNamedProperty failed");
+
+	return true;
+}
+
+static bool test_JobPropertyGetValue(struct torture_context *tctx,
+				     struct dcerpc_binding_handle *b,
+				     struct policy_handle *handle,
+				     uint32_t job_id,
+				     const char *property_name,
+				     struct RPC_PrintPropertyValue *value)
+{
+	struct spoolss_RpcGetJobNamedPropertyValue r;
+
+	r.in.hPrinter = handle;
+	r.in.JobId = job_id;
+	r.in.pszName = property_name;
+	r.out.pValue = value;
+
+	torture_comment(tctx, "Testing RpcGetJobNamedPropertyValue(%d) %s\n",
+		job_id, property_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_RpcGetJobNamedPropertyValue_r(b, tctx, &r),
+		"spoolss_RpcGetJobNamedPropertyValue failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"spoolss_RpcGetJobNamedPropertyValue failed");
+
+	return true;
+}
+
+static bool test_JobPropertyDelete(struct torture_context *tctx,
+				   struct dcerpc_binding_handle *b,
+				   struct policy_handle *handle,
+				   uint32_t job_id,
+				   const char *property_name)
+{
+	struct spoolss_RpcDeleteJobNamedProperty r;
+
+	r.in.hPrinter = handle;
+	r.in.JobId = job_id;
+	r.in.pszName = property_name;
+
+	torture_comment(tctx, "Testing RpcDeleteJobNamedProperty(%d) %s\n",
+		job_id, property_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_RpcDeleteJobNamedProperty_r(b, tctx, &r),
+		"spoolss_RpcDeleteJobNamedProperty failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"spoolss_RpcDeleteJobNamedProperty failed");
+
+	return true;
+}
+
+
 static bool test_DoPrintTest_add_one_job(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
@@ -3477,6 +3578,170 @@ static bool test_DoPrintTest_extended(struct torture_context *tctx,
 	}
 
 	return ret;
+}
+
+static bool test_JobPrintProperties_equal(struct torture_context *tctx,
+					  struct RPC_PrintPropertyValue *got,
+					  struct RPC_PrintNamedProperty *exp)
+{
+	torture_assert_int_equal(tctx,
+				 got->ePropertyType,
+				 exp->propertyValue.ePropertyType,
+				 "ePropertyType");
+
+	switch (exp->propertyValue.ePropertyType) {
+	case kRpcPropertyTypeString:
+		torture_assert_str_equal(tctx,
+					 got->value.propertyString,
+					 exp->propertyValue.value.propertyString,
+					 "propertyString");
+		break;
+	case kRpcPropertyTypeInt32:
+		torture_assert_int_equal(tctx,
+					 got->value.propertyInt32,
+					 exp->propertyValue.value.propertyInt32,
+					 "propertyInt32");
+		break;
+	case kRpcPropertyTypeInt64:
+		torture_assert_u64_equal(tctx,
+					 got->value.propertyInt64,
+					 exp->propertyValue.value.propertyInt64,
+					 "propertyInt64");
+		break;
+	case kRpcPropertyTypeByte:
+		torture_assert_int_equal(tctx,
+					 got->value.propertyByte,
+					 exp->propertyValue.value.propertyByte,
+					 "propertyByte");
+		break;
+	case kRpcPropertyTypeBuffer:
+		torture_assert_int_equal(tctx,
+					 got->value.propertyBlob.cbBuf,
+					 exp->propertyValue.value.propertyBlob.cbBuf,
+					 "propertyBlob.cbBuf");
+		torture_assert_mem_equal(tctx,
+					 got->value.propertyBlob.pBuf,
+					 exp->propertyValue.value.propertyBlob.pBuf,
+					 exp->propertyValue.value.propertyBlob.cbBuf,
+					 "propertyBlob.pBuf");
+
+		break;
+
+	}
+
+	return true;
+}
+
+static bool test_JobPrintProperties(struct torture_context *tctx,
+				    struct dcerpc_binding_handle *b,
+				    struct policy_handle *handle,
+				    uint32_t job_id)
+{
+	struct RPC_PrintNamedProperty in;
+	struct RPC_PrintPropertyValue out;
+	int i;
+	DATA_BLOB blob = data_blob_string_const("blob");
+	struct {
+		const char *property_name;
+		enum RPC_EPrintPropertyType type;
+		union RPC_PrintPropertyValueUnion value;
+		WERROR expected_result;
+	} tests[] = {
+		{
+			.property_name			= "torture_property_string",
+			.type				= kRpcPropertyTypeString,
+			.value.propertyString		= "torture_property_value_string",
+		},{
+			.property_name			= "torture_property_int32",
+			.type				= kRpcPropertyTypeInt32,
+			.value.propertyInt32		= 42,
+		},{
+			.property_name			= "torture_property_int64",
+			.type				= kRpcPropertyTypeInt64,
+			.value.propertyInt64		= 0xaffe,
+		},{
+			.property_name			= "torture_property_byte",
+			.type				= kRpcPropertyTypeByte,
+			.value.propertyByte		= 0xab,
+		},{
+			.property_name			= "torture_property_buffer",
+			.type				= kRpcPropertyTypeBuffer,
+			.value.propertyBlob.cbBuf	= blob.length,
+			.value.propertyBlob.pBuf	= blob.data,
+		}
+	};
+
+	torture_assert(tctx,
+		test_JobPropertiesEnum(tctx, b, handle, job_id),
+		"failed to enum properties");
+
+	for (i=0; i <ARRAY_SIZE(tests); i++) {
+
+		in.propertyName			= tests[i].property_name;
+		in.propertyValue.ePropertyType	= tests[i].type;
+		in.propertyValue.value		= tests[i].value;
+
+		torture_assert(tctx,
+			test_JobPropertySet(tctx, b, handle, job_id, &in),
+			"failed to set property");
+
+		torture_assert(tctx,
+			test_JobPropertyGetValue(tctx, b, handle, job_id, in.propertyName, &out),
+			"failed to get property");
+
+		torture_assert(tctx,
+			test_JobPrintProperties_equal(tctx, &out, &in),
+			"property unequal");
+
+		torture_assert(tctx,
+			test_JobPropertiesEnum(tctx, b, handle, job_id),
+			"failed to enum properties");
+
+		torture_assert(tctx,
+			test_JobPropertyDelete(tctx, b, handle, job_id, in.propertyName),
+			"failed to delete job property");
+	}
+
+	torture_assert(tctx,
+		test_JobPropertiesEnum(tctx, b, handle, job_id),
+		"failed to enum properties");
+
+	return true;
+}
+
+static bool test_DoPrintTest_properties(struct torture_context *tctx,
+					struct dcerpc_binding_handle *b,
+					struct policy_handle *handle)
+{
+	uint32_t num_jobs = 8;
+	uint32_t *job_ids;
+	int i;
+	torture_comment(tctx, "Testing real print operations (properties)\n");
+
+	job_ids = talloc_zero_array(tctx, uint32_t, num_jobs);
+
+	for (i=0; i < num_jobs; i++) {
+		torture_assert(tctx,
+			test_DoPrintTest_add_one_job(tctx, b, handle, "TorturePrintJob", &job_ids[i]),
+			"failed to create print job");
+	}
+
+	for (i=0; i < num_jobs; i++) {
+		torture_assert(tctx,
+			test_JobPrintProperties(tctx, b, handle, job_ids[i]),
+			"failed to test job properties");
+	}
+
+
+	for (i=0; i < num_jobs; i++) {
+		torture_assert(tctx,
+			test_SetJob(tctx, b, handle, job_ids[i], NULL, SPOOLSS_JOB_CONTROL_DELETE),
+			"failed to delete printjob");
+	}
+
+	torture_comment(tctx, "real print operations (properties) test succeeded\n\n");
+
+	return true;
 }
 
 static bool test_PausePrinter(struct torture_context *tctx,
@@ -7739,6 +8004,33 @@ static bool test_print_test_extended(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_print_test_properties(struct torture_context *tctx,
+				       void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skip printer job property tests against samba");
+	}
+
+	torture_assert(tctx,
+		test_PausePrinter(tctx, b, &t->handle),
+		"failed to pause printer");
+
+	torture_assert(tctx,
+		test_DoPrintTest_properties(tctx, b, &t->handle),
+		"failed to test print job properties");
+
+	torture_assert(tctx,
+		test_ResumePrinter(tctx, b, &t->handle),
+		"failed to resume printer");
+
+	return true;
+}
+
 /* use smbd file IO to spool a print job */
 static bool test_print_test_smbd(struct torture_context *tctx,
 				 void *private_data)
@@ -8105,6 +8397,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "print_test", test_print_test);
 	torture_tcase_add_simple_test(tcase, "print_test_extended", test_print_test_extended);
 	torture_tcase_add_simple_test(tcase, "print_test_smbd", test_print_test_smbd);
+	torture_tcase_add_simple_test(tcase, "print_test_properties", test_print_test_properties);
 	torture_tcase_add_simple_test(tcase, "printer_info", test_printer_info);
 	torture_tcase_add_simple_test(tcase, "sd", test_printer_sd);
 	torture_tcase_add_simple_test(tcase, "dm", test_printer_dm);
