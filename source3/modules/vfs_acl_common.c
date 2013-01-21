@@ -49,11 +49,28 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
  Hash a security descriptor.
 *******************************************************************/
 
+static NTSTATUS hash_blob_sha256(DATA_BLOB blob,
+				 uint8_t *hash)
+{
+	SHA256_CTX tctx;
+
+	memset(hash, '\0', XATTR_SD_HASH_SIZE);
+
+	samba_SHA256_Init(&tctx);
+	samba_SHA256_Update(&tctx, blob.data, blob.length);
+	samba_SHA256_Final(hash, &tctx);
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ Hash a security descriptor.
+*******************************************************************/
+
 static NTSTATUS hash_sd_sha256(struct security_descriptor *psd,
 			uint8_t *hash)
 {
 	DATA_BLOB blob;
-	SHA256_CTX tctx;
 	NTSTATUS status;
 
 	memset(hash, '\0', XATTR_SD_HASH_SIZE);
@@ -61,12 +78,7 @@ static NTSTATUS hash_sd_sha256(struct security_descriptor *psd,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-	samba_SHA256_Init(&tctx);
-	samba_SHA256_Update(&tctx, blob.data, blob.length);
-	samba_SHA256_Final(hash, &tctx);
-
-	return NT_STATUS_OK;
+	return hash_blob_sha256(blob, hash);
 }
 
 /*******************************************************************
