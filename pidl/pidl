@@ -469,6 +469,7 @@ my($opt_samba3_parser);
 my($opt_samba3_server);
 my($opt_samba3_ndr_client);
 my($opt_samba3_ndr_server);
+my($opt_samba3_template) = 0;
 my($opt_template) = 0;
 my($opt_client);
 my($opt_typelib);
@@ -529,6 +530,7 @@ Samba 3 output:
                             using Samba4's NDR code [cli_BASENAME.c]
  --samba3-ndr-server[=OUTF] create server call wrapper for Samba3
                             using Samba4's NDR code [srv_BASENAME.c]
+ --samba3-template          print a template for a pipe
 
 Wireshark parsers:
  --ws-parser[=OUTFILE]  create Wireshark parser and header
@@ -554,6 +556,7 @@ my $result = GetOptions (
 		'dump-ndr-tree:s' => \$opt_dump_ndr_tree,
 		'samba3-ndr-client:s' => \$opt_samba3_ndr_client,
 		'samba3-ndr-server:s' => \$opt_samba3_ndr_server,
+	    'samba3-template' => \$opt_samba3_template,
 		'header:s' => \$opt_header,
 	    'server:s' => \$opt_server,
 		'typelib:s' => \$opt_typelib,
@@ -765,6 +768,11 @@ sub process_file($)
 	if ($opt_template) {
 		require Parse::Pidl::Samba4::Template;
 		print Parse::Pidl::Samba4::Template::Parse($pidl);
+	}
+
+	if ($opt_samba3_template) {
+		require Parse::Pidl::Samba3::Template;
+		print Parse::Pidl::Samba3::Template::Parse($pidl);
 	}
 
 	if (defined($opt_samba3_ndr_client)) {
