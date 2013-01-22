@@ -214,6 +214,7 @@ struct ctdb_traverse_all_handle {
 	ctdb_traverse_fn_t callback;
 	void *private_data;
 	uint32_t null_count;
+	bool timedout;
 };
 
 /*
@@ -243,6 +244,7 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
 	DEBUG(DEBUG_ERR,(__location__ " Traverse all timeout on database:%s\n", state->ctdb_db->db_name));
 	CTDB_INCREMENT_STAT(state->ctdb, timeouts.traverse);
 
+	state->timedout = true;
 	state->callback(state->private_data, tdb_null, tdb_null);
 }
 
@@ -288,6 +290,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	state->callback     = callback;
 	state->private_data = start_state;
 	state->null_count   = 0;
+	state->timedout     = false;
 	
 	talloc_set_destructor(state, ctdb_traverse_all_destructor);
 
@@ -549,9 +552,14 @@ static void traverse_start_callback(void *p, TDB_DATA key, TDB_DATA data)
 
 	ctdb_dispatch_message(state->ctdb, state->srvid, cdata);
 	if (key.dsize == 0 && data.dsize == 0) {
-		/* end of traverse */
-		talloc_set_destructor(state, NULL);
-		talloc_free(state);
+	    	if (state->h->timedout) {
+		    	/* timed out, send TRAVERSE_KILL control */
+			talloc_free(state);
+		} else {
+			/* end of traverse */
+			talloc_set_destructor(state, NULL);
+			talloc_free(state);
+		}
 	}
 }
 
