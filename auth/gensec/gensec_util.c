@@ -42,7 +42,7 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
 
 	if (!pac_blob) {
-		if (!gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
+		if (gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
 			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access\n",
 				  principal_string));
 			return NT_STATUS_ACCESS_DENIED;
