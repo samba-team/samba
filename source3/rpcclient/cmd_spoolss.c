@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
+#include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "nt_printing.h"
@@ -831,6 +832,7 @@ static void display_printer_data(const char *v,
 	union spoolss_PrinterData r;
 	DATA_BLOB blob = data_blob_const(data, length);
 	WERROR result;
+	enum ndr_err_code ndr_err;
 
 	result = pull_spoolss_PrinterData(talloc_tos(), &blob, &r, type);
 	if (!W_ERROR_IS_OK(result)) {
@@ -861,6 +863,25 @@ static void display_printer_data(const char *v,
 		}
 		TALLOC_FREE(hex);
 		putchar('\n');
+
+		if (strequal(v, "OsVersion")) {
+			struct spoolss_OSVersion os;
+			ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &os,
+				(ndr_pull_flags_fn_t)ndr_pull_spoolss_OSVersion);
+			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				printf("%s: OsVersion:\n", v);
+				NDR_PRINT_DEBUG(spoolss_OSVersion, &os);
+			}
+		}
+		if (strequal(v, "OsVersionEx")) {
+			struct spoolss_OSVersionEx os;
+			ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &os,
+				(ndr_pull_flags_fn_t)ndr_pull_spoolss_OSVersionEx);
+			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				printf("%s: OsVersionEx:\n", v);
+				NDR_PRINT_DEBUG(spoolss_OSVersionEx, &os);
+			}
+		}
 		break;
 	}
 	case REG_MULTI_SZ:
