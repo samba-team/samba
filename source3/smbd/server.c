@@ -282,7 +282,7 @@ static bool smbd_parent_notify_init(TALLOC_CTX *mem_ctx,
 
 	state = talloc(mem_ctx, struct smbd_parent_notify_state);
 	if (state == NULL) {
-		return NULL;
+		return false;
 	}
 	state->msg = msg;
 	state->ev = ev;
