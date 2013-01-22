@@ -13,13 +13,15 @@ bld.SAMBA3_MODULE('pdb_tdbsam',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_tdbsam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_tdbsam'))
 
+# This cannot be built as a shared module cause it has two init functions. The
+# code needs to be cleaned up and split to allow this.
 bld.SAMBA3_MODULE('pdb_ldap',
                  subsystem='pdb',
                  deps='smbldap smbldaphelper',
                  source=PDB_LDAP_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ldap'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_ldap') and bld.CONFIG_SET('HAVE_LDAP'))
+                 internal_module=True,
+                 enabled=bld.CONFIG_SET('HAVE_LDAP'))
 
 bld.SAMBA3_MODULE('pdb_smbpasswd',
                  subsystem='pdb',
