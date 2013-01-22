@@ -526,7 +526,7 @@ NTSTATUS rpc_query_user(TALLOC_CTX *mem_ctx,
 	user_info->full_name = talloc_strdup(user_info,
 					info->info21.full_name.string);
 	if ((info->info21.full_name.string != NULL) &&
-	    (user_info->acct_name == NULL))
+	    (user_info->full_name == NULL))
 	{
 		return NT_STATUS_NO_MEMORY;
 	}
