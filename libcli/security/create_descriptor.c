@@ -165,6 +165,8 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 		struct security_ace *ace = &acl->aces[i];
 		if ((ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT) ||
 		    (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
+			struct GUID inherited_object = GUID_zero();
+
 			tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces,
 						       struct security_ace,
 						       tmp_acl->num_aces+1);
@@ -184,10 +186,18 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 			if (is_container && (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT))
 			    tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 
-			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
-			    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT) {
-				struct GUID inherited_object = GUID_zero();
+			switch (ace->type) {
+			case SEC_ACE_TYPE_ACCESS_ALLOWED:
+			case SEC_ACE_TYPE_ACCESS_DENIED:
+			case SEC_ACE_TYPE_SYSTEM_AUDIT:
+			case SEC_ACE_TYPE_SYSTEM_ALARM:
+			case SEC_ACE_TYPE_ALLOWED_COMPOUND:
+				break;
 
+			case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+			case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+			case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
 				if (ace->object.object.flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT) {
 					inherited_object = ace->object.object.inherited_type.inherited_type;
 				}
@@ -196,7 +206,9 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 					tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
 				}
 
+				break;
 			}
+
 			tmp_acl->num_aces++;
 			if (is_container) {
 				if (!(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) &&
