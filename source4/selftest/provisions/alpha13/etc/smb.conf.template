@@ -4,14 +4,14 @@
 	realm		= ALPHA13.SAMBA.CORP
 	server role     = domain controller
 
-	private dir = @@PREFIX@@/alpha13/private
-	lock dir = @@PREFIX@@/alpha13
-	posix:eadb = @@PREFIX@@/alpha13/private/eadb.tdb
+	private dir = @@PREFIX@@/private
+	lock dir = @@PREFIX@@/
+	posix:eadb = @@PREFIX@@/private/eadb.tdb
 
 [netlogon]
-	path = @@PREFIX@@/alpha13/sysvol/alpha13.samba.corp/scripts
+	path = @@PREFIX@@/sysvol/alpha13.samba.corp/scripts
 	read only = no
 
 [sysvol]
-	path = @@PREFIX@@/alpha13/sysvol
+	path = @@PREFIX@@/sysvol
 	read only = no
