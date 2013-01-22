@@ -631,16 +631,18 @@ static const struct {
 };
 
 
-/*
-  a list of attribute names that are hidden, but can be searched for
-  using another (non-hidden) name to produce the correct result
-*/
-static const struct {
+struct op_attributes_replace {
 	const char *attr;
 	const char *replace;
 	const char *extra_attr;
 	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
-} search_sub[] = {
+};
+
+/*
+  a list of attribute names that are hidden, but can be searched for
+  using another (non-hidden) name to produce the correct result
+*/
+static const struct op_attributes_replace search_sub[] = {
 	{ "createTimeStamp", "whenCreated", NULL , NULL },
 	{ "modifyTimeStamp", "whenChanged", NULL , construct_modifyTimeStamp},
 	{ "structuralObjectClass", "objectClass", NULL , NULL },
@@ -696,6 +698,8 @@ static int operational_search_post_process(struct ldb_module *module,
 					   struct op_controls_flags* controls_flags,
 					   struct op_attributes_operations *list,
 					   unsigned int list_size,
+					   struct op_attributes_replace *list_replace,
+					   unsigned int list_replace_size,
 					   struct ldb_request *parent)
 {
 	struct ldb_context *ldb;
@@ -709,27 +713,23 @@ static int operational_search_post_process(struct ldb_module *module,
 		ldb_msg_remove_attr(msg, list[i].attr);
 	}
 
-	for (a=0;attrs_from_user && attrs_from_user[a];a++) {
-		if (check_keep_control_for_attribute(controls_flags, attrs_from_user[a])) {
+	for (a=0; a < list_replace_size; a++) {
+		if (check_keep_control_for_attribute(controls_flags,
+						     list_replace[a].attr)) {
 			continue;
 		}
-		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-			if (ldb_attr_cmp(attrs_from_user[a], search_sub[i].attr) != 0) {
-				continue;
-			}
 
-			/* construct the new attribute, using either a supplied
-			   constructor or a simple copy */
-			constructed_attributes = true;
-			if (search_sub[i].constructor != NULL) {
-				if (search_sub[i].constructor(module, msg, scope, parent) != LDB_SUCCESS) {
-					goto failed;
-				}
-			} else if (ldb_msg_copy_attr(msg,
-						     search_sub[i].replace,
-						     search_sub[i].attr) != LDB_SUCCESS) {
+		/* construct the new attribute, using either a supplied
+			constructor or a simple copy */
+		constructed_attributes = true;
+		if (list_replace[a].constructor != NULL) {
+			if (list_replace[a].constructor(module, msg, scope, parent) != LDB_SUCCESS) {
 				goto failed;
 			}
+		} else if (ldb_msg_copy_attr(msg,
+					     list_replace[a].replace,
+					     list_replace[a].attr) != LDB_SUCCESS) {
+			goto failed;
 		}
 	}
 
@@ -738,16 +738,16 @@ static int operational_search_post_process(struct ldb_module *module,
 	 * - we aren't requesting all attributes
 	 */
 	if ((constructed_attributes) && (!ldb_attr_in_list(attrs_from_user, "*"))) {
-		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
+		for (i=0; i < list_replace_size; i++) {
 			/* remove the added search helper attributes, unless
 			 * they were asked for by the user */
-			if (search_sub[i].replace != NULL && 
-			    !ldb_attr_in_list(attrs_from_user, search_sub[i].replace)) {
-				ldb_msg_remove_attr(msg, search_sub[i].replace);
+			if (list_replace[i].replace != NULL &&
+			    !ldb_attr_in_list(attrs_from_user, list_replace[i].replace)) {
+				ldb_msg_remove_attr(msg, list_replace[i].replace);
 			}
-			if (search_sub[i].extra_attr != NULL && 
-			    !ldb_attr_in_list(attrs_from_user, search_sub[i].extra_attr)) {
-				ldb_msg_remove_attr(msg, search_sub[i].extra_attr);
+			if (list_replace[i].extra_attr != NULL &&
+			    !ldb_attr_in_list(attrs_from_user, list_replace[i].extra_attr)) {
+				ldb_msg_remove_attr(msg, list_replace[i].extra_attr);
 			}
 		}
 	}
@@ -773,6 +773,8 @@ struct operational_context {
 	struct op_controls_flags* controls_flags;
 	struct op_attributes_operations *list_operations;
 	unsigned int list_operations_size;
+	struct op_attributes_replace *attrs_to_replace;
+	unsigned int attrs_to_replace_size;
 };
 
 static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -803,6 +805,8 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 						      ac->controls_flags,
 						      ac->list_operations,
 						      ac->list_operations_size,
+						      ac->attrs_to_replace,
+						      ac->attrs_to_replace_size,
 						      req);
 		if (ret != 0) {
 			return ldb_module_done(ac->req, NULL, NULL,
@@ -935,6 +939,8 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ac->controls_flags->bypassoperational =
 		(ldb_request_get_control(req, LDB_CONTROL_BYPASS_OPERATIONAL_OID) != NULL);
 
+	ac->attrs_to_replace = NULL;
+	ac->attrs_to_replace_size = 0;
 	/* in the list of attributes we are looking for, rename any
 	   attributes to the alias for any hidden attributes that can
 	   be fetched directly using non-hidden names */
@@ -943,8 +949,18 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 			continue;
 		}
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
-			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) == 0 &&
-			    search_sub[i].replace) {
+
+			if (ldb_attr_cmp(ac->attrs[a], search_sub[i].attr) == 0 ) {
+				ac->attrs_to_replace = talloc_realloc(ac,
+								      ac->attrs_to_replace,
+								      struct op_attributes_replace,
+								      ac->attrs_to_replace_size + 1);
+
+				ac->attrs_to_replace[ac->attrs_to_replace_size] = search_sub[i];
+				ac->attrs_to_replace_size++;
+				if (!search_sub[i].replace) {
+					continue;
+				}
 
 				if (search_sub[i].extra_attr) {
 					const char **search_attrs2;
