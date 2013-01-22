@@ -201,45 +201,31 @@ static void schema_fill_possible_inferiors(const struct dsdb_schema *schema,
 					   struct dsdb_class *schema_class)
 {
 	struct dsdb_class *c2;
+	const char** poss_inf = schema_class->possibleInferiors;
+	const char** sys_poss_inf = schema_class->systemPossibleInferiors;
 
-	schema_class->possibleInferiors = NULL;
-
-	for (c2=schema->classes; c2; c2=c2->next) {
+	for (c2 = schema->classes; c2; c2 = c2->next) {
 		const char **superiors = schema_posssuperiors(schema, c2);
-		if (c2->systemOnly == false 
-		    && c2->objectClassCategory != 2 
-		    && c2->objectClassCategory != 3
-		    && str_list_check(superiors, schema_class->lDAPDisplayName)) {
-			if (schema_class->possibleInferiors == NULL) {
-				schema_class->possibleInferiors = const_str_list(str_list_make_empty(schema_class));
+		if (c2->objectClassCategory != 2 &&
+		    c2->objectClassCategory != 3 &&
+		    str_list_check(superiors, schema_class->lDAPDisplayName))
+		{
+			if (c2->systemOnly == false) {
+				if (poss_inf == NULL) {
+					poss_inf = const_str_list(str_list_make_empty(schema_class));
+				}
+				poss_inf = str_list_add_const(poss_inf,
+							      c2->lDAPDisplayName);
 			}
-			schema_class->possibleInferiors = str_list_add_const(schema_class->possibleInferiors,
-							c2->lDAPDisplayName);
+			if (sys_poss_inf == NULL) {
+				sys_poss_inf = const_str_list(str_list_make_empty(schema_class));
+			}
+			sys_poss_inf = str_list_add_const(sys_poss_inf,
+							  c2->lDAPDisplayName);
 		}
 	}
-	schema_class->possibleInferiors = str_list_unique(schema_class->possibleInferiors);
-}
-
-static void schema_fill_system_possible_inferiors(const struct dsdb_schema *schema,
-						  struct dsdb_class *schema_class)
-{
-	struct dsdb_class *c2;
-
-	schema_class->systemPossibleInferiors = NULL;
-
-	for (c2=schema->classes; c2; c2=c2->next) {
-		const char **superiors = schema_posssuperiors(schema, c2);
-		if (c2->objectClassCategory != 2
-		    && c2->objectClassCategory != 3
-		    && str_list_check(superiors, schema_class->lDAPDisplayName)) {
-			if (schema_class->systemPossibleInferiors == NULL) {
-				schema_class->systemPossibleInferiors = const_str_list(str_list_make_empty(schema_class));
-			}
-			schema_class->systemPossibleInferiors = str_list_add_const(schema_class->systemPossibleInferiors,
-							c2->lDAPDisplayName);
-		}
-	}
-	schema_class->systemPossibleInferiors = str_list_unique(schema_class->systemPossibleInferiors);
+	schema_class->systemPossibleInferiors = str_list_unique(sys_poss_inf);
+	schema_class->possibleInferiors = str_list_unique(poss_inf);
 }
 
 /*
@@ -347,7 +333,6 @@ int schema_fill_constructed(const struct dsdb_schema *schema)
 
 	for (schema_class=schema->classes; schema_class; schema_class=schema_class->next) {
 		schema_fill_possible_inferiors(schema, schema_class);
-		schema_fill_system_possible_inferiors(schema, schema_class);
 	}
 
 	/* free up our internal cache elements */
