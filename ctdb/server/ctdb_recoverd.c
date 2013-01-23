@@ -3699,7 +3699,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				  nodemap->nodes[j].pnn, 
 				  nodemap->nodes[i].pnn, 
 				  remote_nodemaps[j]->nodes[i].flags,
-				  nodemap->nodes[j].flags));
+				  nodemap->nodes[i].flags));
 				if (i == j) {
 					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
 					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, remote_nodemaps[j]->nodes[i].flags);
