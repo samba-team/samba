@@ -3733,6 +3733,108 @@ static WERROR cmd_spoolss_create_printer_ic(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_spoolss_play_gdi_script_on_printer_ic(struct rpc_pipe_client *cli,
+							TALLOC_CTX *mem_ctx, int argc,
+							const char **argv)
+{
+	WERROR result;
+	NTSTATUS status;
+	struct policy_handle handle, gdi_handle;
+	const char *printername;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	DATA_BLOB in,out;
+	uint32_t count = 0;
+
+	RPCCLIENT_PRINTERNAME(printername, cli, argv[1]);
+
+	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
+					       printername,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &handle);
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	ZERO_STRUCT(devmode_ctr);
+
+	status = dcerpc_spoolss_CreatePrinterIC(b, mem_ctx,
+						&handle,
+						&gdi_handle,
+						&devmode_ctr,
+						&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	in = data_blob_string_const("");
+	out = data_blob_talloc_zero(mem_ctx, 4);
+
+	status = dcerpc_spoolss_PlayGDIScriptOnPrinterIC(b, mem_ctx,
+							 &gdi_handle,
+							 in.data,
+							 in.length,
+							 out.data,
+							 out.length,
+							 0, /* ul */
+							 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	count = IVAL(out.data, 0);
+
+	out = data_blob_talloc_zero(mem_ctx,
+				    count * sizeof(struct UNIVERSAL_FONT_ID) + 4);
+
+	status = dcerpc_spoolss_PlayGDIScriptOnPrinterIC(b, mem_ctx,
+							 &gdi_handle,
+							 in.data,
+							 in.length,
+							 out.data,
+							 out.length,
+							 0, /* ul */
+							 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	{
+		enum ndr_err_code ndr_err;
+		struct UNIVERSAL_FONT_ID_ctr r;
+
+		ndr_err = ndr_pull_struct_blob(&out, mem_ctx, &r,
+			(ndr_pull_flags_fn_t)ndr_pull_UNIVERSAL_FONT_ID_ctr);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NDR_PRINT_DEBUG(UNIVERSAL_FONT_ID_ctr, &r);
+		}
+	}
+
+ done:
+	if (is_valid_policy_hnd(&gdi_handle)) {
+		WERROR _result;
+		dcerpc_spoolss_DeletePrinterIC(b, mem_ctx, &gdi_handle, &_result);
+	}
+	if (is_valid_policy_hnd(&handle)) {
+		WERROR _result;
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &_result);
+	}
+
+	return result;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -3774,6 +3876,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumprocdatatypes",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_proc_data_types, &ndr_table_spoolss, NULL, "Enumerate Print Processor Data Types", "" },
 	{ "enummonitors",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_monitors,      &ndr_table_spoolss, NULL, "Enumerate Print Monitors", "" },
 	{ "createprinteric",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_create_printer_ic,  &ndr_table_spoolss, NULL, "Create Printer IC", "" },
+	{ "playgdiscriptonprinteric",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_play_gdi_script_on_printer_ic,  &ndr_table_spoolss, NULL, "Create Printer IC", "" },
 
 	{ NULL }
 };
