@@ -5,7 +5,7 @@
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
    Copyright (C) Jelmer Vernooij 2007
-   Copyright (C) Guenther Deschner 2009-2011
+   Copyright (C) Guenther Deschner 2009-2011,2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -7969,6 +7969,114 @@ static bool test_printer_data_dsspooler(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printer_ic(struct torture_context *tctx,
+			    void *private_data)
+{
+	struct torture_printer_context *t =
+		talloc_get_type_abort(private_data,
+				      struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct policy_handle gdi_handle;
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skip printer information context tests against samba");
+	}
+
+	{
+		struct spoolss_CreatePrinterIC r;
+		struct spoolss_DevmodeContainer devmode_ctr;
+
+		ZERO_STRUCT(devmode_ctr);
+
+		r.in.handle = &t->handle;
+		r.in.devmode_ctr = &devmode_ctr;
+		r.out.gdi_handle = &gdi_handle;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_CreatePrinterIC_r(b, tctx, &r),
+			"CreatePrinterIC failed");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"CreatePrinterIC failed");
+	}
+
+	{
+		struct spoolss_PlayGDIScriptOnPrinterIC r;
+		DATA_BLOB in,out;
+		int i;
+		uint32_t num_fonts = 0;
+
+		in = data_blob_string_const("");
+
+		r.in.gdi_handle = &gdi_handle;
+		r.in.pIn = in.data;
+		r.in.cIn = in.length;
+		r.in.ul = 0;
+
+		for (i = 0; i < 4; i++) {
+
+			out = data_blob_talloc_zero(tctx, i);
+
+			r.in.cOut = out.length;
+			r.out.pOut = out.data;
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_spoolss_PlayGDIScriptOnPrinterIC_r(b, tctx, &r),
+				"PlayGDIScriptOnPrinterIC failed");
+			torture_assert_werr_equal(tctx, r.out.result, WERR_NOMEM,
+				"PlayGDIScriptOnPrinterIC failed");
+		}
+
+		out = data_blob_talloc_zero(tctx, 4);
+
+		r.in.cOut = out.length;
+		r.out.pOut = out.data;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_PlayGDIScriptOnPrinterIC_r(b, tctx, &r),
+			"PlayGDIScriptOnPrinterIC failed");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_OK,
+			"PlayGDIScriptOnPrinterIC failed");
+
+		/* now we should have the required length, so retry with a
+		 * buffer which is large enough to carry all font ids */
+
+		num_fonts = IVAL(r.out.pOut, 0);
+
+		torture_comment(tctx, "PlayGDIScriptOnPrinterIC gave font count of %d\n", num_fonts);
+
+		out = data_blob_talloc_zero(tctx,
+			num_fonts * sizeof(struct UNIVERSAL_FONT_ID) + 4);
+
+		r.in.cOut = out.length;
+		r.out.pOut = out.data;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_PlayGDIScriptOnPrinterIC_r(b, tctx, &r),
+			"PlayGDIScriptOnPrinterIC failed");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_OK,
+			"PlayGDIScriptOnPrinterIC failed");
+
+	}
+
+	{
+		struct spoolss_DeletePrinterIC r;
+
+		r.in.gdi_handle = &gdi_handle;
+		r.out.gdi_handle = &gdi_handle;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_DeletePrinterIC_r(b, tctx, &r),
+			"DeletePrinterIC failed");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"DeletePrinterIC failed");
+
+	}
+
+	return true;
+}
+
+
 static bool test_driver_info_winreg(struct torture_context *tctx,
 				    void *private_data)
 {
@@ -8009,6 +8117,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "printerdata_dsspooler", test_printer_data_dsspooler);
 	torture_tcase_add_simple_test(tcase, "driver_info_winreg", test_driver_info_winreg);
 	torture_tcase_add_simple_test(tcase, "printer_rename", test_printer_rename);
+	torture_tcase_add_simple_test(tcase, "printer_ic", test_printer_ic);
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
