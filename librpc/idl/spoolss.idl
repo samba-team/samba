@@ -2320,6 +2320,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x29 */
+
+	typedef struct {
+		uint32 Checksum;
+		uint32 Index;
+	} UNIVERSAL_FONT_ID;
+
 	WERROR spoolss_PlayGDIScriptOnPrinterIC(
 		[in,ref] policy_handle *gdi_handle,
 		[in,ref] [size_is(cIn)] uint8 *pIn,
