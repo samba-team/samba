@@ -81,6 +81,7 @@ from samba.provision.descriptor import (
     get_config_descriptor,
     get_config_partitions_descriptor,
     get_config_sites_descriptor,
+    get_config_ntds_quotas_descriptor,
     get_config_delete_protected1_descriptor,
     get_config_delete_protected1wd_descriptor,
     get_config_delete_protected2_descriptor,
