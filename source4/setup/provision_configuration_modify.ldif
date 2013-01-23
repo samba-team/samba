@@ -1,0 +1,6 @@
+dn: CN=DisplaySpecifiers,${CONFIGDN}
+changetype: modify
+-
+replace: nTSecurityDescriptor
+nTSecurityDescriptor:: ${DISPLAYSPECIFIERS_DESCRIPTOR}
+-

@@ -4,6 +4,7 @@ dn: CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
 objectClass: container
 systemFlags: -2147483648
+nTSecurityDescriptor:: ${WELLKNOWNPRINCIPALS_DESCRIPTOR}
 
 dn: CN=Anonymous Logon,CN=WellKnown Security Principals,${CONFIGDN}
 objectClass: top
