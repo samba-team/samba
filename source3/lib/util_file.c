@@ -38,7 +38,7 @@ static char *file_pload(const char *syscmd, size_t *size)
 	p = NULL;
 	total = 0;
 
-	while ((n = read(fd, buf, sizeof(buf))) > 0) {
+	while ((n = sys_read(fd, buf, sizeof(buf))) > 0) {
 		p = talloc_realloc(NULL, p, char, total + n + 1);
 		if (!p) {
 		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
