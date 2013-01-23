@@ -1298,8 +1298,14 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
         # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
         if fill == FILL_FULL:
             logger.info("Setting up sam.ldb configuration data")
+
             partitions_descr = b64encode(get_config_partitions_descriptor(domainsid))
             sites_descr = b64encode(get_config_sites_descriptor(domainsid))
+            ntdsquotas_descr = b64encode(get_config_ntds_quotas_descriptor(domainsid))
+            protected1_descr = b64encode(get_config_delete_protected1_descriptor(domainsid))
+            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(domainsid))
+            protected2_descr = b64encode(get_config_delete_protected2_descriptor(domainsid))
+
             setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
                     "CONFIGDN": names.configdn,
                     "NETBIOSNAME": names.netbiosname,
@@ -1311,6 +1317,12 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                     "SERVERDN": names.serverdn,
                     "FOREST_FUNCTIONALITY": str(forestFunctionality),
                     "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
+                    "NTDSQUOTAS_DESCRIPTOR": ntdsquotas_descr,
+                    "LOSTANDFOUND_DESCRIPTOR": protected1wd_descr,
+                    "SERVICES_DESCRIPTOR": protected1_descr,
+                    "PHYSICALLOCATIONS_DESCRIPTOR": protected1wd_descr,
+                    "FORESTUPDATES_DESCRIPTOR": protected1wd_descr,
+                    "EXTENDEDRIGHTS_DESCRIPTOR": protected2_descr,
                     "PARTITIONS_DESCRIPTOR": partitions_descr,
                     "SITES_DESCRIPTOR": sites_descr,
                     })
@@ -1322,6 +1334,13 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                                                      {"CONFIGDN": names.configdn})
             check_all_substituted(display_specifiers_ldif)
             samdb.add_ldif(display_specifiers_ldif)
+
+            logger.info("Modifying display specifiers")
+            setup_modify_ldif(samdb,
+                setup_path("provision_configuration_modify.ldif"), {
+                "CONFIGDN": names.configdn,
+                "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
+                })
 
         logger.info("Adding users container")
         users_desc = b64encode(get_domain_users_descriptor(domainsid))
@@ -1372,8 +1391,10 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                     "SCHEMADN": names.schemadn})
 
             logger.info("Setting up well known security principals")
+            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(domainsid))
             setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
                 "CONFIGDN": names.configdn,
+                "WELLKNOWNPRINCIPALS_DESCRIPTOR": protected1wd_descr,
                 })
 
         if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
