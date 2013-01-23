@@ -94,6 +94,8 @@ from samba.provision.descriptor import (
     get_domain_delete_protected1_descriptor,
     get_domain_delete_protected2_descriptor,
     get_dns_partition_descriptor,
+    get_dns_forest_microsoft_dns_descriptor,
+    get_dns_domain_microsoft_dns_descriptor,
     )
 from samba.provision.common import (
     setup_path,

@@ -343,3 +343,17 @@ def get_dns_partition_descriptor(domain_sid, name_map={}):
     "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
     "(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPWOWD;;;WD)"
     return sddl2binary(sddl, domain_sid, name_map)
+
+def get_dns_forest_microsoft_dns_descriptor(domain_sid, name_map={}):
+    sddl = "O:SYG:SYD:AI" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
+def get_dns_domain_microsoft_dns_descriptor(domain_sid, name_map={}):
+    sddl = "O:SYG:SYD:AI" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;DnsAdmins)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)"
+    return sddl2binary(sddl, domain_sid, name_map)
