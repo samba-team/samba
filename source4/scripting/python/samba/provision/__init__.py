@@ -81,12 +81,17 @@ from samba.provision.descriptor import (
     get_config_descriptor,
     get_config_partitions_descriptor,
     get_config_sites_descriptor,
+    get_config_delete_protected1_descriptor,
+    get_config_delete_protected1wd_descriptor,
+    get_config_delete_protected2_descriptor,
     get_domain_descriptor,
     get_domain_infrastructure_descriptor,
     get_domain_builtin_descriptor,
     get_domain_computers_descriptor,
     get_domain_users_descriptor,
     get_domain_controllers_descriptor,
+    get_domain_delete_protected1_descriptor,
+    get_domain_delete_protected2_descriptor,
     get_dns_partition_descriptor,
     )
 from samba.provision.common import (
