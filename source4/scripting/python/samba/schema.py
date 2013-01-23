@@ -32,7 +32,7 @@ from samba import dsdb
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL
 import os
 
-def get_schema_descriptor(domain_sid):
+def get_schema_descriptor(domain_sid, name_map={}):
     sddl = "O:SAG:SAD:AI(OA;;CR;e12b56b6-0a95-11d1-adbb-00c04fd8d5cd;;SA)" \
            "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
            "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
