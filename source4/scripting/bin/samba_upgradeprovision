@@ -1360,7 +1360,7 @@ def rebuild_sd(samdb, names):
             descr = get_empty_descriptor(names.domainsid)
             delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
                                                     "nTSecurityDescriptor")
-            samdb.modify(delta, ["sd_flags:1:%d" % sd_flags,"relax:0"])
+            samdb.modify(delta, ["sd_flags:1:%d" % sd_flags,"relax:0","local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK])
         except LdbError, e:
             samdb.transaction_cancel()
             res = samdb.search(expression="objectClass=*", base=str(delta.dn),
