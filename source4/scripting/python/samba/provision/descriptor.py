@@ -31,14 +31,22 @@ from samba.ndr import ndr_pack
 
 # Descriptors of naming contexts and other important objects
 
-def get_empty_descriptor(domain_sid):
-    sddl= ""
+def sddl2binary(sddl_in, domain_sid, name_map):
+    sddl = "%s" % sddl_in
+
+    for [name, sid] in name_map.items():
+        sddl = sddl.replace(name, sid)
+
     sec = security.descriptor.from_sddl(sddl, domain_sid)
     return ndr_pack(sec)
 
+def get_empty_descriptor(domain_sid, name_map={}):
+    sddl= ""
+    return sddl2binary(sddl, domain_sid, name_map)
+
 # "get_schema_descriptor" is located in "schema.py"
 
-def get_config_descriptor(domain_sid):
+def get_config_descriptor(domain_sid, name_map={}):
     sddl = "O:EAG:EAD:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
            "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
            "(OA;;CR;1131f6ac-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
@@ -54,10 +62,9 @@ def get_config_descriptor(domain_sid):
            "(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ER)" \
            "S:(AU;SA;WPWOWD;;;WD)(AU;SA;CR;;;BA)(AU;SA;CR;;;DU)" \
            "(OU;SA;CR;45ec5156-db7e-47bb-b53f-dbeb2d03c40f;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_config_partitions_descriptor(domain_sid):
+def get_config_partitions_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;LCLORC;;;AU)" \
     "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;AU)" \
@@ -72,10 +79,9 @@ def get_config_partitions_descriptor(domain_sid):
     "(OA;CIIO;WP;3df793df-9858-4417-a701-735a1ecebf74;bf967a8d-0de6-11d0-a285-00aa003049e2;BA)" \
     "S:" \
     "(AU;CISA;WPCRCCDCWOWDSDDT;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_config_sites_descriptor(domain_sid):
+def get_config_sites_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;RPLCLORC;;;AU)" \
     "(OA;CIIO;SW;d31a8757-2447-4545-8081-3bb610cacbf2;f0f8ffab-1191-11d0-a060-00aa006c33ed;ER)" \
@@ -87,10 +93,9 @@ def get_config_sites_descriptor(domain_sid):
     "(OU;CIIOSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
     "(OU;CIIOSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
     "(OU;CIIOSA;WP;3e10944c-c354-11d0-aff8-0000f80367c1;b7b13124-b82e-11d0-afee-0000f80367c1;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_domain_descriptor(domain_sid):
+def get_domain_descriptor(domain_sid, name_map={}):
     sddl= "O:BAG:BAD:AI(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
         "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
     "(OA;CIIO;RP;5f202010-79a5-11d0-9020-00c04fc2d4cf;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
@@ -140,20 +145,18 @@ def get_domain_descriptor(domain_sid):
     "S:AI(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
     "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
     "(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPWOWD;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_domain_infrastructure_descriptor(domain_sid):
+def get_domain_infrastructure_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;RPLCLORC;;;AU)" \
     "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
     "S:" \
     "(AU;SA;WPCR;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_domain_builtin_descriptor(domain_sid):
+def get_domain_builtin_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
     "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
@@ -207,10 +210,9 @@ def get_domain_builtin_descriptor(domain_sid):
     "(AU;SA;CR;;;DU)" \
     "(AU;SA;CR;;;BA)" \
     "(AU;SA;WPWOWD;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_domain_computers_descriptor(domain_sid):
+def get_domain_computers_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)" \
@@ -221,10 +223,9 @@ def get_domain_computers_descriptor(domain_sid):
     "(A;;RPLCLORC;;;AU)" \
     "(OA;;CCDC;4828cc14-1437-45bc-9b07-ad6f015e5f28;;AO)" \
     "S:"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_domain_users_descriptor(domain_sid):
+def get_domain_users_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
     "(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)" \
@@ -234,10 +235,9 @@ def get_domain_users_descriptor(domain_sid):
     "(A;;RPLCLORC;;;AU)" \
     "(OA;;CCDC;4828cc14-1437-45bc-9b07-ad6f015e5f28;;AO)" \
     "S:"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_domain_controllers_descriptor(domain_sid):
+def get_domain_controllers_descriptor(domain_sid, name_map={}):
     sddl = "D:" \
     "(A;;RPLCLORC;;;AU)" \
     "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
@@ -246,10 +246,9 @@ def get_domain_controllers_descriptor(domain_sid):
     "S:" \
     "(AU;SA;CCDCWOWDSDDT;;;WD)" \
     "(AU;CISA;WP;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domain_sid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
 
-def get_dns_partition_descriptor(domainsid):
+def get_dns_partition_descriptor(domain_sid, name_map={}):
     sddl = "O:SYG:BAD:AI" \
     "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
     "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
@@ -301,5 +300,4 @@ def get_dns_partition_descriptor(domainsid):
     "(OU;CISA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
     "(OU;CISA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)" \
     "(AU;SA;CR;;;DU)(AU;SA;CR;;;BA)(AU;SA;WPWOWD;;;WD)"
-    sec = security.descriptor.from_sddl(sddl, domainsid)
-    return ndr_pack(sec)
+    return sddl2binary(sddl, domain_sid, name_map)
