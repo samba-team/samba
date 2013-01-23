@@ -86,7 +86,8 @@ from samba.provision.descriptor import (
     get_domain_builtin_descriptor,
     get_domain_computers_descriptor,
     get_domain_users_descriptor,
-    get_domain_controllers_descriptor
+    get_domain_controllers_descriptor,
+    get_dns_partition_descriptor,
     )
 from samba.provision.common import (
     setup_path,
