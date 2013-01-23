@@ -37,7 +37,11 @@ from samba.dsdb import (
     )
 from samba.provision.descriptor import (
     get_domain_descriptor,
-    get_dns_partition_descriptor
+    get_domain_delete_protected1_descriptor,
+    get_domain_delete_protected2_descriptor,
+    get_dns_partition_descriptor,
+    get_dns_forest_microsoft_dns_descriptor,
+    get_dns_domain_microsoft_dns_descriptor
     )
 from samba.provision.common import (
     setup_path,
@@ -244,6 +248,8 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
     domainzone_dns = ldb.Dn(samdb, domainzone_dn).canonical_ex_str().strip()
     forestzone_dns = ldb.Dn(samdb, forestzone_dn).canonical_ex_str().strip()
 
+    protected1_desc = get_domain_delete_protected1_descriptor(domainsid)
+    protected2_desc = get_domain_delete_protected2_descriptor(domainsid)
     setup_add_ldif(samdb, setup_path("provision_dnszones_add.ldif"), {
         "DOMAINZONE_DN": domainzone_dn,
         "FORESTZONE_DN": forestzone_dn,
@@ -253,6 +259,8 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
         "FORESTZONE_DNS": forestzone_dns,
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
+        "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc),
+        "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc),
         })
 
     setup_modify_ldif(samdb, setup_path("provision_dnszones_modify.ldif"), {
@@ -269,18 +277,18 @@ def add_dns_accounts(samdb, domaindn):
         })
 
 
-def add_dns_container(samdb, domaindn, prefix, domainsid, dnsadmins_sid):
+def add_dns_container(samdb, domaindn, prefix, domain_sid, dnsadmins_sid, forest=False):
+    name_map = {'DnsAdmins': str(dnsadmins_sid)}
+    if forest is True:
+        sd_val = get_dns_forest_microsoft_dns_descriptor(domain_sid,
+                                                         name_map=name_map)
+    else:
+        sd_val = get_dns_domain_microsoft_dns_descriptor(domain_sid,
+                                                         name_map=name_map)
     # CN=MicrosoftDNS,<PREFIX>,<DOMAINDN>
-    sddl = "O:SYG:SYD:AI" \
-    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
-    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;%s)" \
-    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
-    "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)" \
-    "S:AI" % dnsadmins_sid
-    sec = security.descriptor.from_sddl(sddl, domainsid)
     msg = ldb.Message(ldb.Dn(samdb, "CN=MicrosoftDNS,%s,%s" % (prefix, domaindn)))
     msg["objectClass"] = ["top", "container"]
-    msg["nTSecurityDescriptor"] = ldb.MessageElement(ndr_pack(sec), ldb.FLAG_MOD_ADD,
+    msg["nTSecurityDescriptor"] = ldb.MessageElement(sd_val, ldb.FLAG_MOD_ADD,
         "nTSecurityDescriptor")
     samdb.add(msg)
 
@@ -942,7 +950,7 @@ def create_dns_partitions(samdb, domainsid, names, domaindn, forestdn,
     add_dns_container(samdb, domaindn, "DC=DomainDnsZones", domainsid,
                       dnsadmins_sid)
     add_dns_container(samdb, forestdn, "DC=ForestDnsZones", domainsid,
-                      dnsadmins_sid)
+                      dnsadmins_sid, forest=True)
 
 
 def fill_dns_data_partitions(samdb, domainsid, site, domaindn, forestdn,
