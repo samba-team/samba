@@ -150,8 +150,8 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 		}
 		talloc_free(tmp_ctx);
 
-		DEBUG(4,("Schema load pass %d: %d/%d of %d objects left to be converted.\n",
-			 pass_no, failed_obj_count, converted_obj_count, object_count));
+		DEBUG(4,("Schema load pass %d: converted %d, %d of %d objects left to be converted.\n",
+			 pass_no, converted_obj_count, failed_obj_count, object_count));
 		pass_no++;
 
 		/* check if we converted any objects in this pass */
