@@ -73,6 +73,7 @@ objectClass: lostAndFound
 description: Default container for orphaned objects
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
+nTSecurityDescriptor:: ${LOSTANDFOUND_DESCRIPTOR}
 
 dn: CN=NTDS Quotas,${DOMAINDN}
 objectClass: top
@@ -98,6 +99,7 @@ objectClass: container
 description: Builtin system settings
 systemFlags: -1946157056
 isCriticalSystemObject: TRUE
+nTSecurityDescriptor:: ${SYSTEM_DESCRIPTOR}
 
 dn: CN=AdminSDHolder,CN=System,${DOMAINDN}
 objectClass: top

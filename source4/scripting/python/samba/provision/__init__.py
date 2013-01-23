@@ -1344,6 +1344,8 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
                 "DOMAINDN": names.domaindn})
         logger.info("Setting up sam.ldb data")
         infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(domainsid))
+        lostandfound_desc = b64encode(get_domain_delete_protected2_descriptor(domainsid))
+        system_desc = b64encode(get_domain_delete_protected1_descriptor(domainsid))
         builtin_desc = b64encode(get_domain_builtin_descriptor(domainsid))
         controllers_desc = b64encode(get_domain_controllers_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
@@ -1356,6 +1358,8 @@ def fill_samdb(samdb, lp, names, logger, domainsid, domainguid, policyguid,
             "RIDAVAILABLESTART": str(next_rid + 600),
             "POLICYGUID_DC": policyguid_dc,
             "INFRASTRUCTURE_DESCRIPTOR": infrastructure_desc,
+            "LOSTANDFOUND_DESCRIPTOR": lostandfound_desc,
+            "SYSTEM_DESCRIPTOR": system_desc,
             "BUILTIN_DESCRIPTOR": builtin_desc,
             "DOMAIN_CONTROLLERS_DESCRIPTOR": controllers_desc,
             })
