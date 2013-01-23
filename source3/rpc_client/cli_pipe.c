@@ -1286,6 +1286,7 @@ struct rpc_api_pipe_req_state {
 	uint8_t op_num;
 	uint32_t call_id;
 	const DATA_BLOB *req_data;
+	const struct GUID *object_uuid;
 	uint32_t req_data_sent;
 	DATA_BLOB req_trailer;
 	uint32_t req_trailer_sent;
@@ -1305,6 +1306,7 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct rpc_pipe_client *cli,
 					 uint8_t op_num,
+					 const struct GUID *object_uuid,
 					 const DATA_BLOB *req_data)
 {
 	struct tevent_req *req, *subreq;
@@ -1320,6 +1322,7 @@ static struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 	state->op_num = op_num;
+	state->object_uuid = object_uuid;
 	state->req_data = req_data;
 	state->req_data_sent = 0;
 	state->call_id = get_rpc_call_id();
@@ -1554,6 +1557,12 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	u.request.alloc_hint	= total_left;
 	u.request.context_id	= 0;
 	u.request.opnum		= state->op_num;
+
+	if (state->object_uuid) {
+		flags |= DCERPC_PFC_FLAG_OBJECT_UUID;
+		u.request.object.object = *state->object_uuid;
+		frag_len += ndr_size_GUID(state->object_uuid, 0);
+	}
 
 	status = dcerpc_push_ncacn_packet(state,
 					  DCERPC_PKT_REQUEST,
@@ -2252,7 +2261,7 @@ static struct tevent_req *rpccli_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = rpc_api_pipe_req_send(state, ev, hs->rpc_cli,
-				       opnum, &state->in_data);
+				       opnum, object, &state->in_data);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
