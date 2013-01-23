@@ -2320,7 +2320,13 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x29 */
-	[todo] WERROR spoolss_PlayGDIScriptOnPrinterIC(
+	WERROR spoolss_PlayGDIScriptOnPrinterIC(
+		[in,ref] policy_handle *gdi_handle,
+		[in,ref] [size_is(cIn)] uint8 *pIn,
+		[in] uint32 cIn,
+		[out,ref] [size_is(cOut)] uint8 *pOut,
+		[in] uint32 cOut,
+		[in] uint32 ul
 	);
 
 	/******************/
