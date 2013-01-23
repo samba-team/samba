@@ -135,10 +135,13 @@ class ProvisionPaths(object):
 class ProvisionNames(object):
 
     def __init__(self):
+        self.ncs = None
         self.rootdn = None
         self.domaindn = None
         self.configdn = None
         self.schemadn = None
+        self.dnsforestdn = None
+        self.dnsdomaindn = None
         self.ldapmanagerdn = None
         self.dnsdomain = None
         self.realm = None
@@ -184,7 +187,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     current = samdb.search(expression="(objectClass=*)",
         base="", scope=ldb.SCOPE_BASE,
         attrs=["defaultNamingContext", "schemaNamingContext",
-               "configurationNamingContext","rootDomainNamingContext"])
+               "configurationNamingContext","rootDomainNamingContext",
+               "namingContexts"])
 
     names.configdn = current[0]["configurationNamingContext"]
     configdn = str(names.configdn)
@@ -198,6 +202,23 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
 
     names.domaindn=current[0]["defaultNamingContext"]
     names.rootdn=current[0]["rootDomainNamingContext"]
+    names.ncs=current[0]["namingContexts"]
+    names.dnsforestdn = None
+    names.dnsdomaindn = None
+
+    for i in range(0, len(names.ncs)):
+        nc = names.ncs[i]
+
+        dnsforestdn = "DC=ForestDnsZones,%s" % (str(names.rootdn))
+        if nc == dnsforestdn:
+            names.dnsforestdn = dnsforestdn
+            continue
+
+        dnsdomaindn = "DC=DomainDnsZones,%s" % (str(names.domaindn))
+        if nc == dnsdomaindn:
+            names.dnsdomaindn = dnsdomaindn
+            continue
+
     # default site name
     res3 = samdb.search(expression="(objectClass=site)",
         base="CN=Sites," + configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
