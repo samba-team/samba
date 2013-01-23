@@ -95,6 +95,13 @@ def get_config_sites_descriptor(domain_sid, name_map={}):
     "(OU;CIIOSA;WP;3e10944c-c354-11d0-aff8-0000f80367c1;b7b13124-b82e-11d0-afee-0000f80367c1;WD)"
     return sddl2binary(sddl, domain_sid, name_map)
 
+def get_config_ntds_quotas_descriptor(domain_sid, name_map={}):
+    sddl = "D:" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
+    "(A;;RPLCLORC;;;BA)" \
+    "(OA;;CR;4ecc03fe-ffc0-4947-b630-eb672a8a9dbc;;WD)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
 def get_config_delete_protected1_descriptor(domain_sid, name_map={}):
     sddl = "D:AI" \
     "(A;;RPLCLORC;;;AU)" \
