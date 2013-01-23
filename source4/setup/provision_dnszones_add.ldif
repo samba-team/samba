@@ -14,12 +14,14 @@ objectClass: top
 objectClass: lostAndFound
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
+nTSecurityDescriptor:: ${LOSTANDFOUND_DESCRIPTOR}
 
 dn: CN=Infrastructure,${DOMAINZONE_DN}
 objectClass: top
 objectClass: infrastructureUpdate
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
+nTSecurityDescriptor:: ${INFRASTRUCTURE_DESCRIPTOR}
 
 dn: CN=NTDS Quotas,${DOMAINZONE_DN}
 objectClass: top
@@ -41,12 +43,14 @@ objectClass: top
 objectClass: lostAndFound
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
+nTSecurityDescriptor:: ${LOSTANDFOUND_DESCRIPTOR}
 
 dn: CN=Infrastructure,${FORESTZONE_DN}
 objectClass: top
 objectClass: infrastructureUpdate
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
+nTSecurityDescriptor:: ${INFRASTRUCTURE_DESCRIPTOR}
 
 dn: CN=NTDS Quotas,${FORESTZONE_DN}
 objectClass: top
