@@ -103,6 +103,7 @@ from samba.provision.common import (
     setup_modify_ldif,
     )
 from samba.provision.sambadns import (
+    get_dnsadmins_sid,
     setup_ad_dns,
     create_dns_update_list
     )
@@ -289,6 +290,10 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
         names.root_gid = res9[0]["xidNumber"][0]
     else:
         names.root_gid = pwd.getpwuid(int(res9[0]["xidNumber"][0])).pw_gid
+
+    dns_admins_sid = get_dnsadmins_sid(samdb, names.domaindn)
+    names.name_map['DnsAdmins'] = str(dns_admins_sid)
+
     return names
 
 
