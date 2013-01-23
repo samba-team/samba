@@ -1357,8 +1357,6 @@ def rebuild_sd(samdb, names):
         delta.dn = Dn(samdb, key)
         sd_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL
         try:
-            delta["whenCreated"] = MessageElement(hash[key], FLAG_MOD_REPLACE,
-                                                    "whenCreated" )
             descr = get_empty_descriptor(names.domainsid)
             delta["nTSecurityDescriptor"] = MessageElement(descr, FLAG_MOD_REPLACE,
                                                     "nTSecurityDescriptor")
