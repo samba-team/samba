@@ -159,6 +159,7 @@ class ProvisionNames(object):
         self.hostname = None
         self.sitename = None
         self.smbconf = None
+        self.name_map = {}
 
 
 def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
