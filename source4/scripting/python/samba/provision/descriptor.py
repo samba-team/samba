@@ -95,6 +95,27 @@ def get_config_sites_descriptor(domain_sid, name_map={}):
     "(OU;CIIOSA;WP;3e10944c-c354-11d0-aff8-0000f80367c1;b7b13124-b82e-11d0-afee-0000f80367c1;WD)"
     return sddl2binary(sddl, domain_sid, name_map)
 
+def get_config_delete_protected1_descriptor(domain_sid, name_map={}):
+    sddl = "D:AI" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;EA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
+def get_config_delete_protected1wd_descriptor(domain_sid, name_map={}):
+    sddl = "D:AI" \
+    "(A;;RPLCLORC;;;WD)" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;EA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
+def get_config_delete_protected2_descriptor(domain_sid, name_map={}):
+    sddl = "D:AI" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSW;;;EA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
 def get_domain_descriptor(domain_sid, name_map={}):
     sddl= "O:BAG:BAD:AI(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;4828cc14-1437-45bc-9b07-ad6f015e5f28;RU)" \
         "(OA;CIIO;RP;4c164200-20c0-11d0-a768-00aa006e0529;bf967aba-0de6-11d0-a285-00aa003049e2;RU)" \
@@ -246,6 +267,20 @@ def get_domain_controllers_descriptor(domain_sid, name_map={}):
     "S:" \
     "(AU;SA;CCDCWOWDSDDT;;;WD)" \
     "(AU;CISA;WP;;;WD)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
+def get_domain_delete_protected1_descriptor(domain_sid, name_map={}):
+    sddl = "D:AI" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(A;;RPWPCRCCLCLORCWOWDSW;;;DA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
+def get_domain_delete_protected2_descriptor(domain_sid, name_map={}):
+    sddl = "D:AI" \
+    "(A;;RPLCLORC;;;AU)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSW;;;DA)" \
+    "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
     return sddl2binary(sddl, domain_sid, name_map)
 
 def get_dns_partition_descriptor(domain_sid, name_map={}):
