@@ -1522,10 +1522,7 @@ static char *xx_path(const char *name, const char *rootpath)
 			      "Error was %s\n", fname, name, strerror(errno)));
 	}
 
-	return talloc_asprintf(talloc_tos(),
-				"%s/%s",
-				fname,
-				name);
+	return talloc_asprintf_append(fname, "/%s", name);
 }
 
 /**
