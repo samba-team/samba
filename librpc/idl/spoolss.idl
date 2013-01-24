@@ -2326,6 +2326,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 Index;
 	} UNIVERSAL_FONT_ID;
 
+	typedef [public] struct {
+		uint32 count;
+		UNIVERSAL_FONT_ID fonts[count];
+	} UNIVERSAL_FONT_ID_ctr;
+
 	WERROR spoolss_PlayGDIScriptOnPrinterIC(
 		[in,ref] policy_handle *gdi_handle,
 		[in,ref] [size_is(cIn)] uint8 *pIn,
