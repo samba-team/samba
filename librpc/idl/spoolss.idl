@@ -3340,12 +3340,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[case(kRpcPropertyTypeBuffer)] propertyBlob propertyBlob;
 	} RPC_PrintPropertyValueUnion;
 
-	typedef struct {
+	typedef [public] struct {
 		RPC_EPrintPropertyType ePropertyType;
 		[switch_is(ePropertyType)] RPC_PrintPropertyValueUnion value;
 	} RPC_PrintPropertyValue;
 
-	typedef struct {
+	typedef [public] struct {
 		[string,charset(UTF16)] uint16 *propertyName;
 		RPC_PrintPropertyValue propertyValue;
 	} RPC_PrintNamedProperty;
