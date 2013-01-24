@@ -313,10 +313,10 @@ class OwnerGroupDescriptorTests(DescriptorTests):
                 "175" : "O:DAG:DA",
             },
         }
-        # Discover 'msDS-Behavior-Version'
-        res = self.ldb_admin.search(base=self.base_dn, expression="distinguishedName=%s" % self.base_dn, \
-                attrs=['msDS-Behavior-Version'])
-        res = int(res[0]['msDS-Behavior-Version'][0])
+        # Discover 'domainControllerFunctionality'
+        res = self.ldb_admin.search(base="", scope=SCOPE_BASE,
+                                    attrs=['domainControllerFunctionality'])
+        res = int(res[0]['domainControllerFunctionality'][0])
         if res < DS_DOMAIN_FUNCTION_2008:
             self.DS_BEHAVIOR = "ds_behavior_win2003"
         else:
