@@ -5,9 +5,9 @@
 <refmeta>
 	<refentrytitle>ldbdel</refentrytitle>
 	<manvolnum>1</manvolnum>
-	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="source">LDB</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">4.0</refmiscinfo>
+	<refmiscinfo class="version">1.1</refmiscinfo>
 </refmeta>
 
 
@@ -76,7 +76,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 4.0 of the Samba suite.</para>
+	<para>This man page is correct for version 1.1 of LDB.</para>
 </refsect1>
 
 <refsect1>
