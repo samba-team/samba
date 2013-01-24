@@ -31,11 +31,15 @@ static struct ldb_context *ldb;
 bool show_index = false;
 bool validate_contents = false;
 
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA _dbuf, void *state)
 {
 	int ret, i, j;
 	struct ldb_dn *dn = state;
 	struct ldb_message *msg = talloc_zero(NULL, struct ldb_message);
+	struct ldb_val dbuf = {
+		.data = _dbuf.dptr,
+		.length = _dbuf.dsize,
+	};
 	struct ldb_ldif ldif = {
 		.msg = msg,
 		.changetype = LDB_CHANGETYPE_NONE
