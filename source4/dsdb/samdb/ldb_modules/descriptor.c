@@ -153,11 +153,16 @@ static struct dom_sid *get_default_group(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *ldb,
 					 struct dom_sid *dag)
 {
-	if (dsdb_functional_level(ldb) >= DS_DOMAIN_FUNCTION_2008) {
-		return dag;
-	}
-
-	return NULL;
+	/*
+	 * This depends on the function level of the DC
+	 * which is 2008R2 in our case. Which means it is
+	 * higher than 2003 and we should use the
+	 * "default administrator group" also as owning group.
+	 *
+	 * This matches dcpromo for a 2003 domain
+	 * on a Windows 2008R2 DC.
+	 */
+	return dag;
 }
 
 static struct security_descriptor *descr_handle_sd_flags(TALLOC_CTX *mem_ctx,
