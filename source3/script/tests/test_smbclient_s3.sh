@@ -408,6 +408,187 @@ EOF
     fi
 }
 
+# Archive bits are correctly set on file/dir creation and rename.
+test_rename_archive_bit()
+{
+    prompt_file="attributes: A (20)"
+    prompt_dir="attributes: D (10)"
+    tmpfile="$PREFIX/smbclient.in.$$"
+    filename="foo.$$"
+    filename_ren="bar.$$"
+    dirname="foodir.$$"
+    dirname_ren="bardir.$$"
+    filename_path="$PREFIX/$filename"
+    local_name1="$LOCAL_PATH/$filename"
+    local_name2="$LOCAL_PATH/$filename_ren"
+    local_dir_name1="$LOCAL_PATH/$dirname"
+    local_dir_name2="$LOCAL_PATH/$dirname_ren"
+
+    rm -f $filename_path
+    rm -f $local_name1
+    rm -f $local_name2
+
+# Create a new file, ensure it has 'A' attributes.
+    touch $filename_path
+
+    cat > $tmpfile <<EOF
+lcd $PREFIX
+put $filename
+allinfo $filename
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating file $filename with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt_file" >/dev/null 2>&1
+
+    ret=$?
+
+    rm -f $filename_path
+    rm -f $local_name1
+    rm -f $local_name2
+
+    if [ $ret = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo "Attributes incorrect on new file $ret"
+	false
+    fi
+
+# Now check if we remove 'A' and rename, the A comes back.
+    touch $filename_path
+
+    cat > $tmpfile <<EOF
+lcd $PREFIX
+put $filename
+setmode $filename -a
+ren $filename $filename_ren
+allinfo $filename_ren
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating file and renaming $filename with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt_file" >/dev/null 2>&1
+
+    ret=$?
+
+    rm -f $filename_path
+    rm -f $local_name1
+    rm -f $local_name2
+
+    if [ $ret = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo "Attributes incorrect on renamed file $ret"
+	false
+    fi
+
+    rm -rf $local_dir_name1
+    rm -rf $local_dir_name2
+
+# Create a new directory, ensure it has 'D' but not 'A' attributes.
+
+    cat > $tmpfile <<EOF
+mkdir $dirname
+allinfo $dirname
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating directory $dirname with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt_dir" >/dev/null 2>&1
+
+    ret=$?
+
+    rm -rf $local_dir_name1
+    rm -rf $local_dir_name2
+
+    if [ $ret = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo "Attributes incorrect on new directory $ret"
+	false
+    fi
+
+# Now check if we rename, we still only have 'D' attributes
+
+    cat > $tmpfile <<EOF
+mkdir $dirname
+ren $dirname $dirname_ren
+allinfo $dirname_ren
+quit
+EOF
+
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating directory $dirname and renaming with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep "$prompt_dir" >/dev/null 2>&1
+
+    ret=$?
+
+    rm -f $local_name1
+    rm -f $local_name2
+
+    if [ $ret = 0 ] ; then
+	# got the correct prompt .. succeed
+	true
+    else
+	echo "$out"
+	echo "Attributes incorrect on renamed directory $ret"
+	false
+    fi
+}
+
 # Test authenticating using the winbind ccache
 test_ccache_access()
 {
@@ -489,6 +670,7 @@ EOF
     fi
 }
 
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -543,6 +725,10 @@ testit "Reading a owner-only file fails" \
 testit "Accessing an MS-DFS link" \
    test_msdfs_link || \
    failed=`expr $failed + 1`
+
+testit "Ensure archive bit is set correctly on file/dir rename" \
+    test_rename_archive_bit || \
+    failed=`expr $failed + 1`
 
 testit "ccache access works for smbclient" \
     test_ccache_access || \
