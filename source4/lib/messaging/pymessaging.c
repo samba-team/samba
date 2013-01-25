@@ -51,10 +51,10 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 		return true;
 	}
 	if (PyTuple_Size(object) == 3) {
-		return PyArg_ParseTuple(object, "iii", &server_id->pid, &server_id->task_id, &server_id->vnn);
+		return PyArg_ParseTuple(object, "KII", &server_id->pid, &server_id->task_id, &server_id->vnn);
 	} else {
 		int pid, task_id;
-		if (!PyArg_ParseTuple(object, "ii", &pid, &task_id))
+		if (!PyArg_ParseTuple(object, "KI", &pid, &task_id))
 			return false;
 		*server_id = cluster_id(pid, task_id);
 		return true;
@@ -165,7 +165,7 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg, void *privat
 {
 	PyObject *callback = (PyObject *)private_data;
 
-	PyObject_CallFunction(callback, discard_const_p(char, "i(iii)s#"), msg_type,
+	PyObject_CallFunction(callback, discard_const_p(char, "i(KII)s#"), msg_type,
 			      server_id.pid, server_id.task_id, server_id.vnn,
 			      data->data, data->length);
 }
