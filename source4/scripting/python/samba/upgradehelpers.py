@@ -242,7 +242,6 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
         shutil.rmtree(provdir)
     os.mkdir(provdir)
     logger.info("Provision stored in %s", provdir)
-    dns_backend="BIND9_DLZ"
     return provision(logger, session, creds, smbconf=smbconf,
             targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
             domain=names.domain, domainguid=names.domainguid,
@@ -255,7 +254,7 @@ def newprovision(names, creds, session, smbconf, provdir, logger):
             serverrole="domain controller",
             backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
             slapd_path=None,
-            dom_for_fun_level=names.domainlevel, dns_backend=dns_backend,
+            dom_for_fun_level=names.domainlevel, dns_backend=names.dns_backend,
             useeadb=True, use_ntvfs=True)
 
 

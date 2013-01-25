@@ -228,7 +228,7 @@ creds.set_kerberos_state(DONT_USE_KERBEROS)
 
 
 
-def check_for_DNS(refprivate, private):
+def check_for_DNS(refprivate, private, dns_backend):
     """Check if the provision has already the requirement for dynamic dns
 
     :param refprivate: The path to the private directory of the reference
@@ -238,10 +238,6 @@ def check_for_DNS(refprivate, private):
 
     spnfile = "%s/spn_update_list" % private
     dnsfile = "%s/dns_update_list" % private
-    namedfile = lp.get("dnsupdate:path")
-
-    if not namedfile:
-       namedfile = "%s/named.conf.update" % private
 
     if not os.path.exists(spnfile):
         shutil.copy("%s/spn_update_list" % refprivate, "%s" % spnfile)
@@ -249,10 +245,16 @@ def check_for_DNS(refprivate, private):
     if not os.path.exists(dnsfile):
         shutil.copy("%s/dns_update_list" % refprivate, "%s" % dnsfile)
 
-    destdir = "%s/new_dns" % private
-    dnsdir = "%s/dns" % private
+    if dns_backend not in ['BIND9_DLZ', 'BIND9_FLATFILE']:
+       return
 
+    namedfile = lp.get("dnsupdate:path")
+    if not namedfile:
+       namedfile = "%s/named.conf.update" % private
     if not os.path.exists(namedfile):
+        destdir = "%s/new_dns" % private
+        dnsdir = "%s/dns" % private
+
         if not os.path.exists(destdir):
             os.mkdir(destdir)
         if not os.path.exists(dnsdir):
@@ -1964,7 +1966,7 @@ if __name__ == '__main__':
             # 20)
             updateOEMInfo(ldbs.sam, str(names.rootdn))
             # 21)
-            check_for_DNS(newpaths.private_dir, paths.private_dir)
+            check_for_DNS(newpaths.private_dir, paths.private_dir, names.dns_backend)
             # 22)
             if lastProvisionUSNs is not None:
                 update_provision_usn(ldbs.sam, minUSN, maxUSN, names.invocation)
