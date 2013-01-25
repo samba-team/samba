@@ -163,10 +163,20 @@ static void py_msg_callback_wrapper(struct imessaging_context *msg, void *privat
 			       uint32_t msg_type, 
 			       struct server_id server_id, DATA_BLOB *data)
 {
-	PyObject *callback = (PyObject *)private_data;
+	PyObject *py_server_id, *callback = (PyObject *)private_data;
 
-	PyObject_CallFunction(callback, discard_const_p(char, "i(KII)s#"), msg_type,
-			      server_id.pid, server_id.task_id, server_id.vnn,
+	struct server_id *p_server_id = talloc(NULL, struct server_id);
+	if (!p_server_id) {
+		PyErr_NoMemory();
+		return;
+	}
+	*p_server_id = server_id;
+
+	py_server_id = py_return_ndr_struct("samba.dcerpc.server_id", "server_id", p_server_id, p_server_id);
+	talloc_unlink(NULL, p_server_id);
+
+	PyObject_CallFunction(callback, discard_const_p(char, "i(O)s#"), msg_type,
+			      py_server_id,
 			      data->data, data->length);
 }
 
