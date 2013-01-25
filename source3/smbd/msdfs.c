@@ -1031,6 +1031,19 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
 			dfs_path));
+		if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * We are in an error path here (we
+			 * know it's not a DFS path), but
+			 * dfs_path_lookup() can return
+			 * NT_STATUS_OK. Ensure we always
+			 * return a valid error code.
+			 *
+			 * #9588 - ACLs are not inherited to directories
+			 *         for DFS shares.
+			 */
+			status = NT_STATUS_NOT_FOUND;
+		}
 		goto err_exit;
 	}
 
