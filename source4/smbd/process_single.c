@@ -91,15 +91,20 @@ static void single_new_task(struct tevent_context *ev,
 			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
 			    void *private_data)
 {
-	/* start our taskids at 1, zero is reserved for the top
-	   level samba task */
-	static uint32_t taskid = 1;
+	pid_t pid = getpid();
+	/* start our taskids at MAX_INT32, the first 2^31 tasks are is reserved for fd numbers */
+	static uint32_t taskid = INT32_MAX;
        
-	/* We use 1 so we cannot collide in with cluster ids generated
-	 * in the accept connection above, and unlikly to collide with
-	 * PIDs from process model standard (don't run samba as
-	 * init) */
-	new_task(ev, lp_ctx, cluster_id(1, taskid++), private_data);
+	/*
+	 * We use the PID so we cannot collide in with cluster ids
+	 * generated in other single mode tasks, and, and won't
+	 * collide with PIDs from process model starndard because a the
+	 * combination of pid/task_id should be unique system-wide
+	 *
+	 * Using the pid unaltered makes debugging of which process
+	 * owns the messaging socket easier.
+	 */
+	new_task(ev, lp_ctx, cluster_id(pid, taskid++), private_data);
 }
 
 
