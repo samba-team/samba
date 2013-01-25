@@ -291,6 +291,32 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     else:
         names.root_gid = pwd.getpwuid(int(res9[0]["xidNumber"][0])).pw_gid
 
+    res10 = samdb.search(expression="(samaccountname=dns)",
+                         scope=ldb.SCOPE_SUBTREE, attrs=["dn"],
+                         controls=["search_options:1:2"])
+    if (len(res10) > 0):
+        has_legacy_dns_account = True
+    else:
+        has_legacy_dns_account = False
+
+    res11 = samdb.search(expression="(samaccountname=dns-%s)" % names.netbiosname,
+                         scope=ldb.SCOPE_SUBTREE, attrs=["dn"],
+                         controls=["search_options:1:2"])
+    if (len(res11) > 0):
+        has_dns_account = True
+    else:
+        has_dns_account = False
+
+    if names.dnsdomaindn is not None:
+        if has_dns_account:
+            names.dns_backend = 'BIND9_DLZ'
+        else:
+            names.dns_backend = 'SAMBA_INTERNAL'
+    elif has_dns_account or has_legacy_dns_account:
+        names.dns_backend = 'BIND9_FLATFILE'
+    else:
+        names.dns_backend = 'NONE'
+
     dns_admins_sid = get_dnsadmins_sid(samdb, names.domaindn)
     names.name_map['DnsAdmins'] = str(dns_admins_sid)
 
