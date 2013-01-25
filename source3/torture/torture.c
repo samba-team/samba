@@ -5368,6 +5368,8 @@ static bool run_simple_posix_open_test(int dummy)
 	bool correct = false;
 	NTSTATUS status;
 	size_t nread;
+	const char *fname_windows = "windows_file";
+	uint16_t fnum2 = (uint16_t)-1;
 
 	printf("Starting simple POSIX open test\n");
 
@@ -5390,6 +5392,8 @@ static bool run_simple_posix_open_test(int dummy)
 	cli_posix_unlink(cli1, hname);
 	cli_setatr(cli1, sname, 0, 0);
 	cli_posix_unlink(cli1, sname);
+	cli_setatr(cli1, fname_windows, 0, 0);
+	cli_posix_unlink(cli1, fname_windows);
 
 	/* Create a directory. */
 	status = cli_posix_mkdir(cli1, dname, 0777);
@@ -5681,6 +5685,40 @@ static bool run_simple_posix_open_test(int dummy)
 		goto out;
 	}
 
+	/*
+	 * Now create a Windows file, and attempt a POSIX unlink.
+	 * This should fail with a sharing violation but due to:
+	 *
+	 * [Bug 9571] Unlink after open causes smbd to panic
+	 *
+	 * ensure we've fixed the lock ordering violation.
+	 */
+
+	status = cli_ntcreate(cli1, fname_windows, 0,
+			FILE_READ_DATA|FILE_WRITE_DATA, 0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_CREATE,
+			0x0, 0x0, &fnum2);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Windows create of %s failed (%s)\n", fname_windows,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Now try posix_unlink. */
+	status = cli_posix_unlink(cli1, fname_windows);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		printf("POSIX unlink of %s should fail "
+			"with NT_STATUS_SHARING_VIOLATION "
+			"got %s instead !\n",
+			fname_windows,
+			nt_errstr(status));
+		goto out;
+	}
+
+	cli_close(cli1, fnum2);
+
 	printf("Simple POSIX open test passed\n");
 	correct = true;
 
@@ -5691,6 +5729,11 @@ static bool run_simple_posix_open_test(int dummy)
 		fnum1 = (uint16_t)-1;
 	}
 
+	if (fnum2 != (uint16_t)-1) {
+		cli_close(cli1, fnum2);
+		fnum2 = (uint16_t)-1;
+	}
+
 	cli_setatr(cli1, sname, 0, 0);
 	cli_posix_unlink(cli1, sname);
 	cli_setatr(cli1, hname, 0, 0);
@@ -5699,6 +5742,8 @@ static bool run_simple_posix_open_test(int dummy)
 	cli_posix_unlink(cli1, fname);
 	cli_setatr(cli1, dname, 0, 0);
 	cli_posix_rmdir(cli1, dname);
+	cli_setatr(cli1, fname_windows, 0, 0);
+	cli_posix_unlink(cli1, fname_windows);
 
 	if (!torture_close_connection(cli1)) {
 		correct = false;
