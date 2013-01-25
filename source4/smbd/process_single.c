@@ -49,6 +49,7 @@ static void single_accept_connection(struct tevent_context *ev,
 {
 	NTSTATUS status;
 	struct socket_context *connected_socket;
+	pid_t pid = getpid();
 
 	/* accept an incoming connection. */
 	status = socket_accept(listen_socket, &connected_socket);
@@ -71,10 +72,14 @@ static void single_accept_connection(struct tevent_context *ev,
 
 	talloc_steal(private_data, connected_socket);
 
-	/* The cluster_id(0, fd) cannot collide with the incrementing
-	 * task below, as the first component is 0, not 1 */
+	/*
+	 * We use the PID so we cannot collide in with cluster ids
+	 * generated in other single mode tasks, and, and won't
+	 * collide with PIDs from process model standard because a the
+	 * combination of pid/fd should be unique system-wide
+	 */
 	new_conn(ev, lp_ctx, connected_socket,
-		 cluster_id(0, socket_get_fd(connected_socket)), private_data);
+		 cluster_id(pid, socket_get_fd(connected_socket)), private_data);
 }
 
 /*
