@@ -845,7 +845,7 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 	 * (at least initially).
 	 */
 
-	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
+	if( DEBUGLVL( IS_IPC(conn) ? 3 : 2 ) ) {
 		dbgtext( "%s (%s) ", get_remote_machine_name(),
 			 tsocket_address_string(conn->sconn->remote_address,
 						talloc_tos()) );
