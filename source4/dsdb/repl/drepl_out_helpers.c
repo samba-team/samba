@@ -439,6 +439,13 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			replica_flags &= ~DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING;
 		}
 	}
+	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
+		/*
+		 * If it's an exop never set the ADD_REF even if it's in
+		 * repsFrom flags.
+		 */
+		replica_flags &= ~DRSUAPI_DRS_ADD_REF;
+	}
 
 	/* is this a full resync of all objects? */
 	if (state->op->options & DRSUAPI_DRS_FULL_SYNC_NOW) {
