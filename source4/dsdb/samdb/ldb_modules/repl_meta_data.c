@@ -3544,7 +3544,7 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 			goto failed;
 		}
 
-		DEBUG(1,(__location__ ": Resolving conflict record via incoming rename '%s' -> '%s'\n",
+		DEBUG(2,(__location__ ": Resolving conflict record via incoming rename '%s' -> '%s'\n",
 			 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
 
 		/* re-submit the request, but with a different
@@ -3579,7 +3579,7 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 			goto failed;
 		}
 
-		DEBUG(1,(__location__ ": Resolving conflict record via existing rename '%s' -> '%s'\n",
+		DEBUG(2,(__location__ ": Resolving conflict record via existing rename '%s' -> '%s'\n",
 			 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
 
 		ret = dsdb_module_rename(ar->module, conflict_dn, new_dn,
