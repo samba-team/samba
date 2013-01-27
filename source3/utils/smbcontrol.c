@@ -327,7 +327,7 @@ static int stack_trace_server(const struct server_id *id,
 			      void *priv)
 {
 	if (id->vnn == get_my_vnn()) {
-		print_stack_trace(procid_to_pid(&id->pid), (int *)priv);
+		print_stack_trace(procid_to_pid(id), (int *)priv);
 	}
 	return 0;
 }
