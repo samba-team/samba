@@ -133,9 +133,10 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 				 * (OIDs as OID strings) into schema, using
 				 * the remote prefixMap
 				 */
-				werr = dsdb_schema_set_el_from_ldb_msg(ldb,
-								       working_schema,
-								       object.msg);
+				werr = dsdb_schema_set_el_from_ldb_msg_dups(ldb,
+								working_schema,
+								object.msg,
+								true);
 				if (!W_ERROR_IS_OK(werr)) {
 					DEBUG(4,("debug: failed to convert object %s into a schema element, will try during next loop: %s\n",
 						 ldb_dn_get_linearized(object.msg->dn),
