@@ -329,6 +329,18 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 	unsigned int num_int_id;
 	int ret;
 
+	for (i=0; i < schema->classes_to_remove_size; i++) {
+		DLIST_REMOVE(schema->classes, schema->classes_to_remove[i]);
+		TALLOC_FREE(schema->classes_to_remove[i]);
+	}
+	for (i=0; i < schema->attributes_to_remove_size; i++) {
+		DLIST_REMOVE(schema->attributes, schema->attributes_to_remove[i]);
+		TALLOC_FREE(schema->attributes_to_remove[i]);
+	}
+
+	TALLOC_FREE(schema->attributes_to_remove);
+	TALLOC_FREE(schema->classes_to_remove);
+
 	/* free all caches */
 	dsdb_sorted_accessors_free(schema);
 
@@ -669,10 +681,26 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 }
 
 /**
- * Add an element to the schema (attribute or class) from an LDB message
+ * @brief Add a new element to the schema and checks if it's a duplicate
+ *
+ * This function will add a new element to the schema and checks for existing
+ * duplicates.
+ *
+ * @param[in]  ldb                A pointer to an LDB context
+ *
+ * @param[in]  schema             A pointer to the dsdb_schema where the element
+ *                                will be added.
+ *
+ * @param[in]  msg                The ldb_message object representing the element
+ *                                to add.
+ *
+ * @param[in]  checkdups          A boolean to indicate if checks for duplicates
+ *                                should be done.
+ *
+ * @return                        A WERROR code
  */
-WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_schema *schema,
-				       struct ldb_message *msg)
+WERROR dsdb_schema_set_el_from_ldb_msg_dups(struct ldb_context *ldb, struct dsdb_schema *schema,
+					    struct ldb_message *msg, bool checkdups)
 {
 	const char* tstring;
 	time_t ts;
@@ -686,13 +714,21 @@ WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb, struct dsdb_sche
 	}
 	if (samdb_find_attribute(ldb, msg,
 				 "objectclass", "attributeSchema") != NULL) {
-		return dsdb_set_attribute_from_ldb(ldb, schema, msg);
+
+		return dsdb_set_attribute_from_ldb_dups(ldb, schema, msg, checkdups);
 	} else if (samdb_find_attribute(ldb, msg,
 				 "objectclass", "classSchema") != NULL) {
-		return dsdb_set_class_from_ldb(schema, msg);
+		return dsdb_set_class_from_ldb_dups(schema, msg, checkdups);
 	}
 	/* Don't fail on things not classes or attributes */
 	return WERR_OK;
+}
+
+WERROR dsdb_schema_set_el_from_ldb_msg(struct ldb_context *ldb,
+				       struct dsdb_schema *schema,
+				       struct ldb_message *msg)
+{
+	return dsdb_schema_set_el_from_ldb_msg_dups(ldb, schema, msg, false);
 }
 
 /**

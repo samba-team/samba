@@ -221,6 +221,11 @@ struct dsdb_schema {
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
 
+	struct dsdb_attribute **attributes_to_remove;
+	uint32_t attributes_to_remove_size;
+	struct dsdb_class **classes_to_remove;
+	uint32_t classes_to_remove_size;
+
 	/* lists of classes sorted by various attributes, for faster
 	   access */
 	uint32_t num_classes;
