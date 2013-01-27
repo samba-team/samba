@@ -983,7 +983,7 @@ sub provision_rpc_proxy($$$)
 	return $ret;
 }
 
-sub provision_promoted_vampire_dc($$$)
+sub provision_promoted_dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
 	print "PROVISIONING VAMPIRE DC...";
@@ -1044,9 +1044,9 @@ sub provision_promoted_vampire_dc($$$)
 		return undef;
 	}
 
-	$ret->{PROMOTED_VAMPIRE_DC_SERVER} = $ret->{SERVER};
-	$ret->{PROMOTED_VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{PROMOTED_VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{PROMOTED_DC_SERVER} = $ret->{SERVER};
+	$ret->{PROMOTED_DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{PROMOTED_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
@@ -1620,11 +1620,11 @@ sub setup_env($$$)
 			$self->setup_dc("$path/dc");
 		}
 		return $self->setup_vampire_dc("$path/vampire_dc", $self->{vars}->{dc});
-	} elsif ($envname eq "promoted_vampire_dc") {
+	} elsif ($envname eq "promoted_dc") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
 		}
-		return $self->setup_promoted_vampire_dc("$path/promoted_vampire_dc", $self->{vars}->{dc});
+		return $self->setup_promoted_dc("$path/promoted_dc", $self->{vars}->{dc});
 	} elsif ($envname eq "subdom_dc") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -1818,18 +1818,18 @@ sub setup_vampire_dc($$$)
 	return $env;
 }
 
-sub setup_promoted_vampire_dc($$$)
+sub setup_promoted_dc($$$)
 {
 	my ($self, $path, $dc_vars) = @_;
 
-	my $env = $self->provision_promoted_vampire_dc($path, $dc_vars);
+	my $env = $self->provision_promoted_dc($path, $dc_vars);
 
 	if (defined $env) {
 		$self->check_or_start($env, "single");
 
 		$self->wait_for_start($env);
 
-		$self->{vars}->{promoted_vampire_dc} = $env;
+		$self->{vars}->{promoted_dc} = $env;
 
 		# force replicated DC to update repsTo/repsFrom
 		# for vampired partitions
