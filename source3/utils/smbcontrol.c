@@ -33,6 +33,7 @@
 #include "messages.h"
 #include "util_tdb.h"
 #include "../lib/util/pidfile.h"
+#include "serverid.h"
 
 #if HAVE_LIBUNWIND_H
 #include <libunwind.h>
