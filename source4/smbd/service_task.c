@@ -34,7 +34,7 @@ void task_server_terminate(struct task_server *task, const char *reason, bool fa
 	const struct model_ops *model_ops = task->model_ops;
 	DEBUG(0,("task_server_terminate: [%s]\n", reason));
 
-	if (fatal) {
+	if (fatal && task->msg_ctx != NULL) {
 		struct dcerpc_binding_handle *irpc_handle;
 		struct samba_terminate r;
 
