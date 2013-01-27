@@ -46,6 +46,8 @@ void task_server_terminate(struct task_server *task, const char *reason, bool fa
 		}
 	}
 
+	imessaging_cleanup(task->msg_ctx);
+
 	model_ops->terminate(event_ctx, task->lp_ctx, reason);
 	
 	/* don't free this above, it might contain the 'reason' being printed */
