@@ -6439,7 +6439,8 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
  Initialise the normal mode for pdb_ldap
  *********************************************************************/
 
-NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
+NTSTATUS pdb_ldapsam_init_common(struct pdb_methods **pdb_method,
+				 const char *location)
 {
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state = NULL;
@@ -6588,11 +6589,16 @@ NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS pdb_ldap_init(void)
+NTSTATUS pdb_ldapsam_init(void)
 {
 	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION, "ldapsam", pdb_init_ldapsam)))
+
+	nt_status = smb_register_passdb(PASSDB_INTERFACE_VERSION,
+					"ldapsam",
+					pdb_ldapsam_init_common);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
+	}
 
 	/* Let pdb_nds register backends */
 	pdb_nds_init();

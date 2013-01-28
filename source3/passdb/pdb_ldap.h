@@ -29,8 +29,8 @@
 /* The following definitions come from passdb/pdb_ldap.c  */
 
 const char** get_userattr_list( TALLOC_CTX *mem_ctx, int schema_ver );
-NTSTATUS pdb_init_ldapsam(struct pdb_methods **pdb_method, const char *location);
-NTSTATUS pdb_ldap_init(void);
+NTSTATUS pdb_ldapsam_init_common(struct pdb_methods **pdb_method, const char *location);
+NTSTATUS pdb_ldapsam_init(void);
 int ldapsam_search_suffix_by_name(struct ldapsam_privates *ldap_state,
                                   const char *user,
                                   LDAPMessage ** result,

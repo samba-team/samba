@@ -878,7 +878,7 @@ static NTSTATUS pdb_init_NDS_ldapsam_common(struct pdb_methods **pdb_method, con
 
 static NTSTATUS pdb_init_NDS_ldapsam(struct pdb_methods **pdb_method, const char *location)
 {
-	NTSTATUS nt_status = pdb_init_ldapsam(pdb_method, location);
+	NTSTATUS nt_status = pdb_ldapsam_init_common(pdb_method, location);
 
 	(*pdb_method)->name = "NDS_ldapsam";
 
