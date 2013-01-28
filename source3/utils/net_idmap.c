@@ -134,10 +134,10 @@ static const char* net_idmap_dbfile(struct net_context *c,
 	const char* dbfile = NULL;
 	const char *backend = NULL;
 
-	/* prefer idmap config * : backend over idmap backend parameter */
 	backend = lp_parm_const_string(-1, "idmap config *", "backend", NULL);
 	if (!backend) {
-		backend = lp_idmap_backend();
+		d_printf(_("Internal error: 'idmap config * : backend' is not set!\n"));
+		return NULL;
 	}
 
 	if (c->opt_db != NULL) {
