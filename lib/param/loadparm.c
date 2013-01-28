@@ -87,6 +87,7 @@ static bool defaults_saved = false;
 	char *szUsershareTemplateShare;					\
 	char *szIdmapUID;						\
 	char *szIdmapGID;						\
+	char *szIdmapBackend;						\
 	int winbindMaxDomainConnections;				\
 	int ismb2_max_credits;						\
 	char *tls_keyfile;						\
