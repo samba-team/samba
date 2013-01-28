@@ -2938,8 +2938,6 @@ static bool handle_idmap_backend(struct loadparm_context *unused, int snum, cons
 	return true;
 }
 
-/* Do some simple checks on "idmap [ug]id" parameter values */
-
 static bool handle_idmap_uid(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : range", pszParmValue);
