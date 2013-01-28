@@ -1446,7 +1446,7 @@ static NTSTATUS pdb_init_IPA_ldapsam(struct pdb_methods **pdb_method, const char
 	struct ldapsam_privates *ldap_state;
 	NTSTATUS status;
 
-	status = pdb_init_ldapsam(pdb_method, location);
+	status = pdb_ldapsam_init_common(pdb_method, location);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
