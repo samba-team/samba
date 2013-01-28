@@ -2952,6 +2952,46 @@ static bool handle_idmap_gid(struct loadparm_context *unused, int snum, const ch
 	return true;
 }
 
+bool lp_idmap_range(const char *domain_name, uint32_t *low, uint32_t *high)
+{
+	char *config_option = NULL;
+	const char *range = NULL;
+	bool ret = false;
+
+	SMB_ASSERT(low != NULL);
+	SMB_ASSERT(high != NULL);
+
+	if ((domain_name == NULL) || (domain_name[0] == '\0')) {
+		domain_name = "*";
+	}
+
+	config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
+					domain_name);
+	if (config_option == NULL) {
+		DEBUG(0, ("out of memory\n"));
+		return false;
+	}
+
+	range = lp_parm_const_string(-1, config_option, "range", NULL);
+	if (range == NULL) {
+		DEBUG(1, ("idmap range not specified for domain '%s'\n", domain_name));
+		goto done;
+	}
+
+	if (sscanf(range, "%u - %u", low, high) != 2) {
+		DEBUG(1, ("error parsing idmap range '%s' for domain '%s'\n",
+			  range, domain_name));
+		goto done;
+	}
+
+	ret = true;
+
+done:
+	talloc_free(config_option);
+	return ret;
+
+}
+
 /***************************************************************************
  Handle the DEBUG level list.
 ***************************************************************************/
