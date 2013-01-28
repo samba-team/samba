@@ -154,6 +154,7 @@ void get_xsrf_token(const char *username, const char *pass,
 	MD5_CTX md5_ctx;
 	uint8_t token[16];
 	int i;
+	char *nonce = cgi_nonce();
 
 	token_str[0] = '\0';
 	ZERO_STRUCT(md5_ctx);
@@ -167,6 +168,7 @@ void get_xsrf_token(const char *username, const char *pass,
 	if (pass != NULL) {
 		MD5Update(&md5_ctx, (uint8_t *)pass, strlen(pass));
 	}
+	MD5Update(&md5_ctx, (uint8_t *)nonce, strlen(nonce));
 
 	MD5Final(token, &md5_ctx);
 
