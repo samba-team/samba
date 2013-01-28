@@ -2885,6 +2885,10 @@ static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, c
 	return true;
 }
 
+/*
+ * idmap related parameters
+ */
+
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : backend", pszParmValue);
