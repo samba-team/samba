@@ -2992,6 +2992,11 @@ done:
 
 }
 
+bool lp_idmap_default_range(uint32_t *low, uint32_t *high)
+{
+	return lp_idmap_range("*", low, high);
+}
+
 /***************************************************************************
  Handle the DEBUG level list.
 ***************************************************************************/

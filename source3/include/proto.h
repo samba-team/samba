@@ -1084,6 +1084,7 @@ const char *lp_idmap_backend(void);
 int lp_idmap_cache_time(void);
 int lp_idmap_negative_cache_time(void);
 bool lp_idmap_range(const char *domain_name, uint32_t *low, uint32_t *high);
+bool lp_idmap_default_range(uint32_t *low, uint32_t *high);
 int lp_keepalive(void);
 bool lp_passdb_expand_explicit(void);
 char *lp_ldap_suffix(TALLOC_CTX *ctx);
