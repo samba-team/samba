@@ -758,11 +758,11 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 
 	num_gids = num_group_sids;
 	for ( i=0; i<num_gids; i++ ) {
-		gid_t high, low;
+		uint32_t high, low;
 
 		/* don't pickup anything managed by Winbind */
 
-		if ( lp_idmap_gid(&low, &high) && (gids[i] >= low) && (gids[i] <= high) )
+		if ( lp_idmap_default_range(&low, &high) && (gids[i] >= low) && (gids[i] <= high) )
 			continue;
 
 		gid_to_unix_groups_sid(gids[i], &unix_group_sid);
