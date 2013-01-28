@@ -2884,53 +2884,6 @@ static bool handle_ldap_debug_level(struct loadparm_context *unused, int snum, c
 	return true;
 }
 
-/***************************************************************************
- Handle idmap/non unix account uid and gid allocation parameters.  The format of these
- parameters is:
-
- [global]
-
-        idmap uid = 1000-1999
-        idmap gid = 700-899
-
- We only do simple parsing checks here.  The strings are parsed into useful
- structures in the idmap daemon code.
-
-***************************************************************************/
-
-/* Some lp_ routines to return idmap [ug]id information */
-
-static uid_t idmap_uid_low, idmap_uid_high;
-static gid_t idmap_gid_low, idmap_gid_high;
-
-bool lp_idmap_uid(uid_t *low, uid_t *high)
-{
-        if (idmap_uid_low == 0 || idmap_uid_high == 0)
-                return false;
-
-        if (low)
-                *low = idmap_uid_low;
-
-        if (high)
-                *high = idmap_uid_high;
-
-        return true;
-}
-
-bool lp_idmap_gid(gid_t *low, gid_t *high)
-{
-        if (idmap_gid_low == 0 || idmap_gid_high == 0)
-                return false;
-
-        if (low)
-                *low = idmap_gid_low;
-
-        if (high)
-                *high = idmap_gid_high;
-
-        return true;
-}
-
 static bool handle_idmap_backend(struct loadparm_context *unused, int snum, const char *pszParmValue, char **ptr)
 {
 	lp_do_parameter(snum, "idmap config * : backend", pszParmValue);

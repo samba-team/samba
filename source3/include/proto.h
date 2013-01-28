@@ -1394,8 +1394,6 @@ bool process_registry_shares(void);
 bool lp_config_backend_is_registry(void);
 bool lp_config_backend_is_file(void);
 bool lp_file_list_changed(void);
-bool lp_idmap_uid(uid_t *low, uid_t *high);
-bool lp_idmap_gid(gid_t *low, gid_t *high);
 const char *lp_ldap_machine_suffix(TALLOC_CTX *ctx);
 const char *lp_ldap_user_suffix(TALLOC_CTX *ctx);
 const char *lp_ldap_group_suffix(TALLOC_CTX *ctx);
