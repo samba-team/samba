@@ -45,6 +45,7 @@ static const char *baseurl;
 static char *pathinfo;
 static char *C_user;
 static char *C_pass;
+static char *C_nonce;
 static bool inetd_server;
 static bool got_request;
 
@@ -326,19 +327,7 @@ static void cgi_web_auth(void)
 	C_user = SMB_STRDUP(user);
 
 	if (!setuid(0)) {
-		C_pass = secrets_fetch_generic("root", "SWAT");
-		if (C_pass == NULL) {
-			char *tmp_pass = NULL;
-			tmp_pass = generate_random_str(talloc_tos(), 16);
-			if (tmp_pass == NULL) {
-				printf("%sFailed to create random nonce for "
-				       "SWAT session\n<br>%s\n", head, tail);
-				exit(0);
-			}
-			secrets_store_generic("root", "SWAT", tmp_pass);
-			C_pass = SMB_STRDUP(tmp_pass);
-			TALLOC_FREE(tmp_pass);
-		}
+		C_pass = SMB_STRDUP(cgi_nonce());
 	}
 	setuid(pwd->pw_uid);
 	if (geteuid() != pwd->pw_uid || getuid() != pwd->pw_uid) {
@@ -449,6 +438,30 @@ char *cgi_user_pass(void)
 {
         return(C_pass);
 }
+
+/***************************************************************************
+return a ptr to the nonce
+  ***************************************************************************/
+char *cgi_nonce(void)
+{
+	const char *head = "Content-Type: text/html\r\n\r\n<HTML><BODY><H1>SWAT installation Error</H1>\n";
+	const char *tail = "</BODY></HTML>\r\n";
+	C_nonce = secrets_fetch_generic("root", "SWAT");
+	if (C_nonce == NULL) {
+		char *tmp_pass = NULL;
+		tmp_pass = generate_random_str(talloc_tos(), 16);
+		if (tmp_pass == NULL) {
+			printf("%sFailed to create random nonce for "
+			       "SWAT session\n<br>%s\n", head, tail);
+			exit(0);
+		}
+		secrets_store_generic("root", "SWAT", tmp_pass);
+		C_nonce = SMB_STRDUP(tmp_pass);
+		TALLOC_FREE(tmp_pass);
+	}
+	return(C_nonce);
+}
+
 
 /***************************************************************************
 handle a file download
