@@ -1802,6 +1802,25 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		if (!im) {
 			return NT_STATUS_NO_MEMORY;
 		}
+
+		if (req->do_signing) {
+			/*
+			 * We sign each reply as we go along.
+			 * We can do this as smb2_calculate_credits()
+			 * grants zero credits on every part of a
+			 * compound reply except the last one,
+			 * which is signed just before calling
+			 * tstream_writev_queue_send().
+			 */
+			NTSTATUS status;
+			status = smb2_signing_sign_pdu(req->session->session_key,
+					       &req->out.vector[i], 3);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(im);
+				return status;
+			}
+		}
+
 		tevent_schedule_immediate(im,
 					req->sconn->smb2.event_ctx,
 					smbd_smb2_request_dispatch_immediate,
