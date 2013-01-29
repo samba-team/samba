@@ -427,8 +427,8 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 dwSize;
 		[value(SPOOLSS_DM_SIGNATURE_JTEXP)] spoolss_DM_Signature dwSignature;
 		[value(0)] uint32 dwVersion;
-		[value(16)] uint32 wJTHdrSize;
-		uint32 wCoreMFOSize;
+		[value(16)] uint16 wJTHdrSize;
+		uint16 wCoreMFOSize;
 		[string,charset(UTF16)] uint16 *ModelName;
 		nstring_array FeatureOptionPairs;
 	} spoolss_JTEXP;
