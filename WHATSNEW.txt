@@ -1,19 +1,44 @@
                    ==============================
                    Release Notes for Samba 3.5.21
-			 , 2013
+			 January 30, 2013
                    ==============================
 
 
-This is the latest stable release of Samba 3.5.
+This is a security release in order to address
+CVE-2013-0213 (Clickjacking issue in SWAT) and
+CVE-2013-0214 (Potential XSRF in SWAT).
 
-Major enhancements in Samba 3.5.21 include:
+o  CVE-2013-0213:
+   All current released versions of Samba are vulnerable to clickjacking in the
+   Samba Web Administration Tool (SWAT). When the SWAT pages are integrated into
+   a malicious web page via a frame or iframe and then overlaid by other content,
+   an attacker could trick an administrator to potentially change Samba settings.
 
-o  
+   In order to be vulnerable, SWAT must have been installed and enabled
+   either as a standalone server launched from inetd or xinetd, or as a
+   CGI plugin to Apache. If SWAT has not been installed or enabled (which
+   is the default install state for Samba) this advisory can be ignored.
 
-Changes since 3.5.19:
+o  CVE-2013-0214:
+   All current released versions of Samba are vulnerable to a cross-site
+   request forgery in the Samba Web Administration Tool (SWAT). By guessing a
+   user's password and then tricking a user who is authenticated with SWAT into
+   clicking a manipulated URL on a different web page, it is possible to manipulate
+   SWAT.
+
+   In order to be vulnerable, the attacker needs to know the victim's password.
+   Additionally SWAT must have been installed and enabled either as a standalone
+   server launched from inetd or xinetd, or as a CGI plugin to Apache. If SWAT has
+   not been installed or enabled (which is the default install state for Samba)
+   this advisory can be ignored.
+
+
+Changes since 3.5.20:
 ---------------------
 
-o   Jeremy Allison <jra@samba.org>
+o   Kai Blin <kai@samba.org>
+    * BUG 9576: CVE-2013-0213: Fix clickjacking issue in SWAT.
+    * BUG 9577: CVE-2013-0214: Fix potential XSRF in SWAT.
 
 
 ######################################################################
