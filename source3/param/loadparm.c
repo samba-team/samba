@@ -2982,6 +2982,11 @@ done:
 	return backend;
 }
 
+const char *lp_idmap_default_backend(void)
+{
+	return lp_idmap_backend("*");
+}
+
 /***************************************************************************
  Handle the DEBUG level list.
 ***************************************************************************/
