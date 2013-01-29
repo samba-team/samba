@@ -92,8 +92,8 @@ static bool test_compound_related1(struct torture_context *tctx,
 				0, /* capabilities */
 				0 /* maximal_access */);
 
-	tree->session->smbXcli = smbXcli_session_create(tree->session,
-							tree->session->transport->conn);
+	tree->session->smbXcli = smbXcli_session_copy(tree->session,
+							tree->session->smbXcli);
 	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
@@ -171,8 +171,8 @@ static bool test_compound_related2(struct torture_context *tctx,
 				0, /* capabilities */
 				0 /* maximal_access */);
 
-	tree->session->smbXcli = smbXcli_session_create(tree->session,
-							tree->session->transport->conn);
+	tree->session->smbXcli = smbXcli_session_copy(tree->session,
+							tree->session->smbXcli);
 	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
@@ -459,8 +459,8 @@ static bool test_compound_invalid2(struct torture_context *tctx,
 				0, /* capabilities */
 				0 /* maximal_access */);
 
-	tree->session->smbXcli = smbXcli_session_create(tree->session,
-							tree->session->transport->conn);
+	tree->session->smbXcli = smbXcli_session_copy(tree->session,
+							tree->session->smbXcli);
 	smb2cli_session_set_id_and_flags(tree->session->smbXcli, UINT64_MAX, 0);
 
 	req[1] = smb2_close_send(tree, &cl);
