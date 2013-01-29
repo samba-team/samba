@@ -2955,6 +2955,33 @@ bool lp_idmap_default_range(uint32_t *low, uint32_t *high)
 	return lp_idmap_range("*", low, high);
 }
 
+const char *lp_idmap_backend(const char *domain_name)
+{
+	char *config_option = NULL;
+	const char *backend = NULL;
+
+	if ((domain_name == NULL) || (domain_name[0] == '\0')) {
+		domain_name = "*";
+	}
+
+	config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
+					domain_name);
+	if (config_option == NULL) {
+		DEBUG(0, ("out of memory\n"));
+		return false;
+	}
+
+	backend = lp_parm_const_string(-1, config_option, "backend", NULL);
+	if (backend == NULL) {
+		DEBUG(1, ("idmap backend not specified for domain '%s'\n", domain_name));
+		goto done;
+	}
+
+done:
+	talloc_free(config_option);
+	return backend;
+}
+
 /***************************************************************************
  Handle the DEBUG level list.
 ***************************************************************************/
