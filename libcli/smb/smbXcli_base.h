@@ -260,6 +260,8 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 
 struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_conn *conn);
+struct smbXcli_session *smbXcli_session_copy(TALLOC_CTX *mem_ctx,
+					       struct smbXcli_session *src);
 NTSTATUS smbXcli_session_application_key(struct smbXcli_session *session,
 					 TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *key);
