@@ -469,6 +469,14 @@ bld.SAMBA3_MODULE('vfs_btrfs',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_btrfs'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_btrfs'))
 
+bld.SAMBA3_MODULE('vfs_shell_snap',
+                 subsystem='vfs',
+                 source='vfs_shell_snap.c',
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_shell_snap'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_shell_snap'))
+
 bld.SAMBA3_SUBSYSTEM('perfcount',
                     source='',
                      deps='smbd_base')
