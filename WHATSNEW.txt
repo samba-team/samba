@@ -1,4 +1,45 @@
                    ==============================
+                   Release Notes for Samba 3.6.13
+                           March 18, 2013
+                   ==============================
+
+
+This is is the latest stable release of Samba 3.6.
+
+Major enhancements in Samba 3.6.13 include:
+
+o   
+
+
+Changes since 3.6.12:
+--------------------
+
+o   
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 3.6.12
                           January 30, 2013
                    ==============================
@@ -60,8 +101,9 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-Release notes for older releases follow:
-----------------------------------------
+
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 3.6.11
