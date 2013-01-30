@@ -106,6 +106,23 @@ class PosixAclMappingTests(TestCaseInTempDir):
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(simple_acl_from_posix, facl.as_sddl(anysid))
 
+    def test_setntacl_smbd_dont_invalidate_getntacl_smbd(self):
+        # set an ACL on a tempfile
+        acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
+        os.chmod(self.tempf, 0750)
+        setntacl(self.lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
+
+        # now influence the POSIX ACL->SD mapping it returns something else than
+        # what was set previously
+        # this should not invalidate the hash and the complete ACL should still
+        # be returned
+        self.lp.set("profile acls", "yes")
+        # we should still get back the ACL (and not one mapped from POSIX ACL)
+        facl = getntacl(self.lp, self.tempf, direct_db_access=False)
+        self.lp.set("profile acls", "no")
+        anysid = security.dom_sid(security.SID_NT_SELF)
+        self.assertEquals(acl, facl.as_sddl(anysid))
+
     def test_setntacl_getntacl_smbd(self):
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         setntacl(self.lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=True)
