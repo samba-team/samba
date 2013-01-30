@@ -428,9 +428,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[value(SPOOLSS_DM_SIGNATURE_JTEXP)] spoolss_DM_Signature dwSignature;
 		[value(0)] uint32 dwVersion;
 		[value(16)] uint16 wJTHdrSize;
-		uint16 wCoreMFOSize;
-		[string,charset(UTF16)] uint16 *ModelName;
-		nstring_array FeatureOptionPairs;
+		uint16 wCoreMFOSize; /* must be sizeof the two following elements, must be dwSize - 16*/
+		nstring ModelName;
+		[flag(STR_UTF8|STR_NULLTERM|NDR_REMAINING)] string_array FeatureOptionPairs;
 	} spoolss_JTEXP;
 
 	/* Device Mode Extra Data: OEM_DMEXTRA */
