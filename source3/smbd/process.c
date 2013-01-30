@@ -88,7 +88,7 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 		return false;
 	}
 
-	DEBUG(10,("pid[%d] got for socket lock\n", (int)getpid()));
+	DEBUG(10,("pid[%d] got socket lock\n", (int)getpid()));
 
 	return true;
 }
