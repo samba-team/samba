@@ -1053,7 +1053,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 size_high;
 	} spoolss_SetJobInfo4;
 
-	typedef [public] union {
+	typedef [ms_union,public] union {
 		[case(1)] spoolss_SetJobInfo1 *info1;
 		[case(2)] spoolss_SetJobInfo2 *info2;
 		[case(3)] spoolss_JobInfo3    *info3;
@@ -1251,7 +1251,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 *devmode_ptr;
 	} spoolss_SetPrinterInfo9;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(0)] spoolss_SetPrinterInfo0 *info0;
 		[case(1)] spoolss_SetPrinterInfo1 *info1;
 		[case(2)] spoolss_SetPrinterInfo2 *info2;
@@ -1428,7 +1428,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		hyper min_inbox_driver_ver_version;
 	} spoolss_AddDriverInfo8;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(1)] spoolss_AddDriverInfo1 *info1;
 		[case(2)] spoolss_AddDriverInfo2 *info2;
 		[case(3)] spoolss_AddDriverInfo3 *info3;
@@ -1746,7 +1746,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *datatype;
 	} spoolss_DocumentInfo1;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(1)] spoolss_DocumentInfo1 *info1;
 		[case(2)]; /* TODO */
 		[case(3)]; /* TODO */
@@ -2047,7 +2047,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		uint32 lang_id;
 	} spoolss_AddFormInfo2;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(1)] spoolss_AddFormInfo1 *info1;
 		[case(2)] spoolss_AddFormInfo2 *info2;
 	} spoolss_AddFormInfo;
@@ -2279,7 +2279,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		DATA_BLOB monitor_data; /* relative ?? */
 	} spoolss_SetPortInfoFF;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(1)] spoolss_SetPortInfo1 *info1;
 		[case(2)] spoolss_SetPortInfo2 *info2;
 		[case(3)] spoolss_SetPortInfo3 *info3;
@@ -2692,7 +2692,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		NOTIFY_TABLE_SECURITYDESCRIPTOR = 0x0005
 	} spoolss_NotifyTable;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union, switch_type(uint32)] union {
 		[case(1)] uint32 integer[2];
 		[case(2)] spoolss_NotifyString string;
 		[case(3)] spoolss_DevmodeContainer devmode;
@@ -2715,7 +2715,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[size_is(count)] spoolss_Notify notifies[];
 	} spoolss_NotifyInfo;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(0)] spoolss_NotifyInfo *info0;
 	} spoolss_ReplyPrinterInfo;
 
@@ -2775,7 +2775,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		udlong reserved;
 	} spoolss_UserLevel3;
 
-	typedef [switch_type(uint32)] union {
+	typedef [ms_union,switch_type(uint32)] union {
 		[case(1)]  spoolss_UserLevel1 *level1;
 		[case(2)]  spoolss_UserLevel2 *level2;
 		[case(3)]  spoolss_UserLevel3 *level3;
