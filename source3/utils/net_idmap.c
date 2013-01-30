@@ -475,11 +475,13 @@ NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
 		goto done;
 	}
 
-	if (is_valid_mapping) {
-		status = dbwrap_delete(db, val1);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("failed to delete: %.*s\n", (int)val1.dsize, val1.dptr));
-		}
+	if (!is_valid_mapping) {
+		goto done;
+	}
+
+	status = dbwrap_delete(db, val1);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("failed to delete: %.*s\n", (int)val1.dsize, val1.dptr));
 	}
 
 done:
