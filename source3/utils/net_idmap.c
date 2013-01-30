@@ -426,7 +426,7 @@ done:
 static
 NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
 {
-	TALLOC_CTX* mem_ctx = talloc_tos();
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	bool is_valid_mapping;
 	NTSTATUS status = NT_STATUS_OK;
 	TDB_DATA val1, val2;
@@ -483,8 +483,7 @@ NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
 	}
 
 done:
-	TALLOC_FREE(val1.dptr);
-	TALLOC_FREE(val2.dptr);
+	talloc_free(mem_ctx);
 	return status;
 }
 
