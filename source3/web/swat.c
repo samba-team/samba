@@ -156,6 +156,7 @@ void get_xsrf_token(const char *username, const char *pass,
 	struct MD5Context md5_ctx;
 	uint8_t token[16];
 	int i;
+	char *nonce = cgi_nonce();
 
 	token_str[0] = '\0';
 	ZERO_STRUCT(md5_ctx);
@@ -169,6 +170,7 @@ void get_xsrf_token(const char *username, const char *pass,
 	if (pass != NULL) {
 		MD5Update(&md5_ctx, (uint8_t *)pass, strlen(pass));
 	}
+	MD5Update(&md5_ctx, (uint8_t *)nonce, strlen(nonce));
 
 	MD5Final(token, &md5_ctx);
 
@@ -269,7 +271,8 @@ static void print_header(void)
 	if (!cgi_waspost()) {
 		printf("Expires: 0\r\n");
 	}
-	printf("Content-type: text/html\r\n\r\n");
+	printf("Content-type: text/html\r\n");
+	printf("X-Frame-Options: DENY\r\n\r\n");
 
 	if (!include_html("include/header.html")) {
 		printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");

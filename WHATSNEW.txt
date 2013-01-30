@@ -1,4 +1,70 @@
                    =============================
+                   Release Notes for Samba 4.0.2
+                         January 30, 2013
+                   =============================
+
+
+This is a security release in order to address
+CVE-2013-0213 (Clickjacking issue in SWAT) and
+CVE-2013-0214 (Potential XSRF in SWAT).
+
+o  CVE-2013-0213:
+   All current released versions of Samba are vulnerable to clickjacking in the
+   Samba Web Administration Tool (SWAT). When the SWAT pages are integrated into
+   a malicious web page via a frame or iframe and then overlaid by other content,
+   an attacker could trick an administrator to potentially change Samba settings.
+
+   In order to be vulnerable, SWAT must have been installed and enabled
+   either as a standalone server launched from inetd or xinetd, or as a
+   CGI plugin to Apache. If SWAT has not been installed or enabled (which
+   is the default install state for Samba) this advisory can be ignored.
+
+o  CVE-2013-0214:
+   All current released versions of Samba are vulnerable to a cross-site
+   request forgery in the Samba Web Administration Tool (SWAT). By guessing a
+   user's password and then tricking a user who is authenticated with SWAT into
+   clicking a manipulated URL on a different web page, it is possible to manipulate
+   SWAT.
+
+   In order to be vulnerable, the attacker needs to know the victim's password.
+   Additionally SWAT must have been installed and enabled either as a standalone
+   server launched from inetd or xinetd, or as a CGI plugin to Apache. If SWAT has
+   not been installed or enabled (which is the default install state for Samba)
+   this advisory can be ignored.
+
+
+Changes since 4.0.1:
+====================
+
+o   Kai Blin <kai@samba.org>
+    * BUG 9576: CVE-2013-0213: Fix clickjacking issue in SWAT.
+    * BUG 9577: CVE-2013-0214: Fix potential XSRF in SWAT.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.1
                           January 15, 2013
                    =============================
@@ -51,8 +117,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.0
