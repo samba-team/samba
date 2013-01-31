@@ -57,6 +57,14 @@ struct poll_event_context {
 
 static int poll_event_context_destructor(struct poll_event_context *poll_ev)
 {
+	struct tevent_fd *fd, *fn;
+
+	for (fd = poll_ev->fresh; fd; fd = fn) {
+		fn = fd->next;
+		fd->event_ctx = NULL;
+		DLIST_REMOVE(poll_ev->fresh, fd);
+	}
+
 	if (poll_ev->signal_fd == -1) {
 		/*
 		 * Non-threaded, no signal pipe
