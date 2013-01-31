@@ -568,9 +568,9 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (!info3) return NULL;
 
-	info3->base.logon_time = info->logon_time;
-	info3->base.logoff_time = info->logoff_time;
-	info3->base.kickoff_time = info->kickoff_time;
+	unix_to_nt_time(&info3->base.logon_time, info->logon_time);
+	unix_to_nt_time(&info3->base.logoff_time, info->logoff_time);
+	unix_to_nt_time(&info3->base.kickoff_time, info->kickoff_time);
 	unix_to_nt_time(&info3->base.last_password_change, info->pass_last_set_time);
 	unix_to_nt_time(&info3->base.allow_password_change,
 			info->pass_can_change_time);
