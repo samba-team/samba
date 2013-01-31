@@ -297,10 +297,16 @@ static struct tevent_fd *poll_event_add_fd(struct tevent_context *ev,
 */
 static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
-	struct poll_event_context *poll_ev = talloc_get_type_abort(
-		fde->event_ctx->additional_data, struct poll_event_context);
+	struct tevent_context *ev = fde->event_ctx;
+	struct poll_event_context *poll_ev;
 	uint64_t idx = fde->additional_flags;
 	uint16_t pollflags;
+
+	if (ev == NULL) {
+		return;
+	}
+	poll_ev = talloc_get_type_abort(
+		ev->additional_data, struct poll_event_context);
 
 	fde->flags = flags;
 
