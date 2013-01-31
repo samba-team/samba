@@ -256,7 +256,7 @@ static struct tevent_fd *poll_event_add_fd(struct tevent_context *ev,
 	fde->private_data	= private_data;
 	fde->handler_name	= handler_name;
 	fde->location		= location;
-	fde->additional_flags	= 0;
+	fde->additional_flags	= UINT64_MAX;
 	fde->additional_data	= NULL;
 
 	DLIST_ADD(poll_ev->fresh, fde);
@@ -278,7 +278,20 @@ static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 	struct poll_event_context *poll_ev = talloc_get_type_abort(
 		fde->event_ctx->additional_data, struct poll_event_context);
 	uint64_t idx = fde->additional_flags;
-	uint16_t pollflags = 0;
+	uint16_t pollflags;
+
+	fde->flags = flags;
+
+	if (idx == UINT64_MAX) {
+		/*
+		 * poll_event_setup_fresh not yet called after this fde was
+		 * added. We don't have to do anything to transfer the changed
+		 * flags to the array passed to poll(2)
+		 */
+		return;
+	}
+
+	pollflags = 0;
 
 	if (flags & TEVENT_FD_READ) {
 		pollflags |= (POLLIN|POLLHUP);
@@ -286,10 +299,8 @@ static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 	if (flags & TEVENT_FD_WRITE) {
 		pollflags |= (POLLOUT);
 	}
-
 	poll_ev->fds[idx].events = pollflags;
 
-	fde->flags = flags;
 	poll_event_wake_pollthread(poll_ev);
 }
 
