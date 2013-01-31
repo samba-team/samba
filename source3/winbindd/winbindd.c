@@ -37,6 +37,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "../lib/util/pidfile.h"
+#include "ctdbd_conn.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1462,6 +1463,17 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0, ("server role = 'active directory domain controller' not compatible with running the winbindd binary. \n"));
 		DEBUGADD(0, ("You should start 'samba' instead, and it will control starting the internal AD DC winbindd implementation, which is not the same as this one\n"));
 		exit(1);
+	}
+
+	if (lp_clustering()) {
+		NTSTATUS status;
+
+		status = ctdbd_probe();
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("clustering=yes but ctdbd connect failed: "
+				  "%s\n", nt_errstr(status)));
+			exit(1);
+		}
 	}
 
 	/* Initialise messaging system */

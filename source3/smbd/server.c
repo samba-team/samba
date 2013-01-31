@@ -1214,6 +1214,17 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	if (lp_clustering()) {
+		NTSTATUS status;
+
+		status = ctdbd_probe();
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("clustering=yes but ctdbd connect failed: "
+				  "%s\n", nt_errstr(status)));
+			exit(1);
+		}
+	}
+
 	/* Init the security context and global current_user */
 	init_sec_ctx();
 

@@ -1822,7 +1822,31 @@ NTSTATUS ctdb_unwatch(struct ctdbd_connection *conn)
 	return status;
 }
 
+NTSTATUS ctdbd_probe(void)
+{
+	/*
+	 * Do a very early check if ctdbd is around to avoid an abort and core
+	 * later
+	 */
+	struct ctdbd_connection *conn = NULL;
+	NTSTATUS status;
+
+	status = ctdbd_messaging_connection(talloc_tos(), &conn);
+
+	/*
+	 * We only care if we can connect.
+	 */
+	TALLOC_FREE(conn);
+
+	return status;
+}
+
 #else
+
+NTSTATUS ctdbd_probe(void)
+{
+	return NT_STATUS_OK;
+}
 
 NTSTATUS ctdbd_messaging_send_blob(struct ctdbd_connection *conn,
 				   uint32_t dst_vnn, uint64_t dst_srvid,
