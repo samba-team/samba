@@ -8370,6 +8370,49 @@ static bool test_printer_ic(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printer_bidi(struct torture_context *tctx,
+			      void *private_data)
+{
+	struct torture_printer_context *t =
+		talloc_get_type_abort(private_data,
+				      struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct spoolss_RpcSendRecvBidiData r;
+	struct RPC_BIDI_REQUEST_CONTAINER bidi_req;
+	struct RPC_BIDI_RESPONSE_CONTAINER *bidi_rep = NULL;
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skip printer bidirectional tests against samba");
+	}
+
+	ZERO_STRUCT(bidi_req);
+
+	r.in.hPrinter = t->handle;
+	r.in.pAction = "foobar";
+	r.in.pReqData = &bidi_req;
+	r.out.ppRespData = &bidi_rep;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_RpcSendRecvBidiData_r(b, tctx, &r),
+		"RpcSendRecvBidiData failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
+		"RpcSendRecvBidiData failed");
+
+	if (!(t->info2.attributes & PRINTER_ATTRIBUTE_ENABLE_BIDI)) {
+		torture_skip(tctx, "skipping further tests as printer is not BIDI enabled");
+	}
+
+	r.in.pAction = BIDI_ACTION_ENUM_SCHEMA;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_RpcSendRecvBidiData_r(b, tctx, &r),
+		"RpcSendRecvBidiData failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"RpcSendRecvBidiData failed");
+
+	return true;
+}
 
 static bool test_driver_info_winreg(struct torture_context *tctx,
 				    void *private_data)
@@ -8413,6 +8456,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "driver_info_winreg", test_driver_info_winreg);
 	torture_tcase_add_simple_test(tcase, "printer_rename", test_printer_rename);
 	torture_tcase_add_simple_test(tcase, "printer_ic", test_printer_ic);
+	torture_tcase_add_simple_test(tcase, "bidi", test_printer_bidi);
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
