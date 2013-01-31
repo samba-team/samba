@@ -531,7 +531,6 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_cluster_vnn failed: %s\n", nt_errstr(status)));
-		cluster_fatal("get_cluster_vnn failed");
 		goto fail;
 	}
 
