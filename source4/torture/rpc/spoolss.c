@@ -7767,7 +7767,6 @@ static bool torture_rpc_spoolss_printer_setup_common(struct torture_context *tct
 
 	t->driver.local.driver_directory= "/usr/share/cups/drivers";
 
-	t->info2.drivername		= "Microsoft XPS Document Writer";
 	t->info2.portname		= "LPT1:";
 
 	printer_name = t->info2.printername;
@@ -7785,6 +7784,8 @@ static bool torture_rpc_spoolss_printer_setup_common(struct torture_context *tct
 					       &t->driver.local.driver_directory),
 		"failed to compose local driver directory");
 
+	t->info2.drivername		= "Microsoft XPS Document Writer";
+
 	if (test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, t->driver.remote.environment, 3, t->info2.drivername, NULL)) {
 		torture_comment(tctx, "driver '%s' (architecture: %s, version: 3) is present on server\n",
 			t->info2.drivername, t->driver.remote.environment);
@@ -7794,6 +7795,16 @@ static bool torture_rpc_spoolss_printer_setup_common(struct torture_context *tct
 
 	torture_comment(tctx, "driver '%s' (architecture: %s, version: 3) does not exist on the server\n",
 		t->info2.drivername, t->driver.remote.environment);
+
+	t->info2.drivername		= "Microsoft XPS Document Writer v4";
+
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, t->driver.remote.environment, 3, t->info2.drivername, NULL)) {
+		torture_comment(tctx, "driver '%s' (architecture: %s, version: 4) is present on server\n",
+			t->info2.drivername, t->driver.remote.environment);
+		t->have_driver = true;
+		goto try_add;
+	}
+
 	torture_comment(tctx, "trying to upload own driver\n");
 
 	if (!directory_exist(t->driver.local.driver_directory)) {
