@@ -61,6 +61,7 @@
 ^samba4.smb2.dir
 ^samba4.smb2.session
 ^samba4.smb2.compound
+^samba4.smb2.ioctl	# not supported by ntvfs
 ^samba4.ntvfs.cifs.*.base.charset
 ^samba4.ntvfs.cifs.*.base.iometer
 ^samba4.ntvfs.cifs.*.base.casetable

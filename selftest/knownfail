@@ -172,8 +172,6 @@
 ^samba3.smb2.durable-v2-open.open-lease
 ^samba3.smb2.durable-v2-open.persistent-open-lease
 ^samba3.smb2.durable-v2-open.app-instance
-^samba4.smb2.ioctl.req_resume_key\(dc\) # not supported by s4 ntvfs server
-^samba4.smb2.ioctl.copy_chunk_\w*\(dc\)	# not supported by s4 ntvfs server
 ^samba3.smb2.dir.one
 ^samba3.smb2.dir.modify
 ^samba3.smb2.lease.request
