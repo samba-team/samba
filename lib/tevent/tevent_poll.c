@@ -56,7 +56,7 @@ struct poll_event_context {
 };
 
 /*
-  create a select_event_context structure.
+  create a poll_event_context structure.
 */
 static int poll_event_context_init(struct tevent_context *ev)
 {
