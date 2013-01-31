@@ -218,8 +218,15 @@ done:
 
 static int poll_fresh_fde_destructor(struct tevent_fd *fde)
 {
-	struct poll_event_context *poll_ev = talloc_get_type_abort(
-		fde->event_ctx->additional_data, struct poll_event_context);
+	struct tevent_context *ev = fde->event_ctx;
+	struct poll_event_context *poll_ev;
+
+	if (ev == NULL) {
+		return 0;
+	}
+	poll_ev = talloc_get_type_abort(
+		ev->additional_data, struct poll_event_context);
+
 	DLIST_REMOVE(poll_ev->fresh, fde);
 	return 0;
 }
