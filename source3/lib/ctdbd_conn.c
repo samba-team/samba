@@ -152,7 +152,8 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 			       CTDB_CONTROL_GET_NODEMAP, 0, 0,
 			       tdb_null, talloc_tos(), &outdata, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
-		cluster_fatal("ctdbd_control failed\n");
+		DEBUG(1, ("ctdbd_control failed: %s\n", nt_errstr(status)));
+		return false;
 	}
 	if ((cstatus != 0) || (outdata.dptr == NULL)) {
 		DEBUG(2, ("Received invalid ctdb data\n"));
