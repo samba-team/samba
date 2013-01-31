@@ -55,12 +55,18 @@ struct poll_event_context {
 	int exit_code;
 };
 
-static int poll_event_mt_destructor(struct poll_event_context *poll_ev)
+static int poll_event_context_destructor(struct poll_event_context *poll_ev)
 {
-	if (poll_ev->signal_fd != -1) {
-		close(poll_ev->signal_fd);
-		poll_ev->signal_fd = -1;
+	if (poll_ev->signal_fd == -1) {
+		/*
+		 * Non-threaded, no signal pipe
+		 */
+		return 0;
 	}
+
+	close(poll_ev->signal_fd);
+	poll_ev->signal_fd = -1;
+
 	if (poll_ev->num_fds == 0) {
 		return 0;
 	}
@@ -85,6 +91,7 @@ static int poll_event_context_init(struct tevent_context *ev)
 	poll_ev->ev = ev;
 	poll_ev->signal_fd = -1;
 	ev->additional_data = poll_ev;
+	talloc_set_destructor(poll_ev, poll_event_context_destructor);
 	return 0;
 }
 
@@ -140,7 +147,7 @@ static int poll_event_context_init_mt(struct tevent_context *ev)
 
 	poll_ev->num_fds = 1;
 
-	talloc_set_destructor(poll_ev, poll_event_mt_destructor);
+	talloc_set_destructor(poll_ev, poll_event_context_destructor);
 
 	return 0;
 }
