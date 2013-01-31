@@ -128,7 +128,8 @@ static NTSTATUS get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 			       CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
 			       tdb_null, NULL, NULL, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
-		cluster_fatal("ctdbd_control failed\n");
+		DEBUG(1, ("ctdbd_control failed: %s\n", nt_errstr(status)));
+		return status;
 	}
 	*vnn = (uint32_t)cstatus;
 	return status;
@@ -529,6 +530,7 @@ static NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_cluster_vnn failed: %s\n", nt_errstr(status)));
+		cluster_fatal("get_cluster_vnn failed");
 		goto fail;
 	}
 
