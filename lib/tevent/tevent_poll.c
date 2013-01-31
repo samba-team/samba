@@ -55,6 +55,22 @@ struct poll_event_context {
 	int exit_code;
 };
 
+static int poll_event_mt_destructor(struct poll_event_context *poll_ev)
+{
+	if (poll_ev->signal_fd != -1) {
+		close(poll_ev->signal_fd);
+		poll_ev->signal_fd = -1;
+	}
+	if (poll_ev->num_fds == 0) {
+		return 0;
+	}
+	if (poll_ev->fds[0].fd != -1) {
+		close(poll_ev->fds[0].fd);
+		poll_ev->fds[0].fd = -1;
+	}
+	return 0;
+}
+
 /*
   create a poll_event_context structure.
 */
@@ -69,22 +85,6 @@ static int poll_event_context_init(struct tevent_context *ev)
 	poll_ev->ev = ev;
 	poll_ev->signal_fd = -1;
 	ev->additional_data = poll_ev;
-	return 0;
-}
-
-static int poll_event_mt_destructor(struct poll_event_context *poll_ev)
-{
-	if (poll_ev->signal_fd != -1) {
-		close(poll_ev->signal_fd);
-		poll_ev->signal_fd = -1;
-	}
-	if (poll_ev->num_fds == 0) {
-		return 0;
-	}
-	if (poll_ev->fds[0].fd != -1) {
-		close(poll_ev->fds[0].fd);
-		poll_ev->fds[0].fd = -1;
-	}
 	return 0;
 }
 
