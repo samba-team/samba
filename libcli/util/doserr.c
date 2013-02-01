@@ -309,6 +309,7 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_PASSWORD_RESTRICTION", WERR_PASSWORD_RESTRICTION },
 	{ "WERR_WRONG_PASSWORD", WERR_WRONG_PASSWORD },
 	{ "WERR_CLASS_NOT_REGISTERED", WERR_CLASS_NOT_REGISTERED },
+	{ "WERR_PRINT_PROCESSOR_ALREADY_INSTALLED", WERR_PRINT_PROCESSOR_ALREADY_INSTALLED },
 	/*****************************************************************************
 	 Auto-generated Win32 error from:
 	 http://msdn.microsoft.com/en-us/library/cc231199%28PROT.10%29.aspx
