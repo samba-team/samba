@@ -5823,6 +5823,106 @@ static bool test_print_processors_winreg(struct torture_context *tctx,
 	return test_PrintProcessors_winreg(tctx, b, ctx->environment);
 }
 
+static bool test_AddPrintProcessor(struct torture_context *tctx,
+				   struct dcerpc_binding_handle *b,
+				   const char *environment,
+				   const char *path_name,
+				   const char *print_processor_name,
+				   WERROR expected_error)
+{
+	struct spoolss_AddPrintProcessor r;
+
+	r.in.server = NULL;
+	r.in.architecture = environment;
+	r.in.path_name = path_name;
+	r.in.print_processor_name = print_processor_name;
+
+	torture_comment(tctx, "Testing AddPrintProcessor(%s)\n",
+		print_processor_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_AddPrintProcessor_r(b, tctx, &r),
+		"spoolss_AddPrintProcessor failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_error,
+		"spoolss_AddPrintProcessor failed");
+
+	return true;
+}
+
+static bool test_DeletePrintProcessor(struct torture_context *tctx,
+				      struct dcerpc_binding_handle *b,
+				      const char *environment,
+				      const char *print_processor_name,
+				      WERROR expected_error)
+{
+	struct spoolss_DeletePrintProcessor r;
+
+	r.in.server = NULL;
+	r.in.architecture = environment;
+	r.in.print_processor_name = print_processor_name;
+
+	torture_comment(tctx, "Testing DeletePrintProcessor(%s)\n",
+		print_processor_name);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeletePrintProcessor_r(b, tctx, &r),
+		"spoolss_DeletePrintProcessor failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_error,
+		"spoolss_DeletePrintProcessor failed");
+
+	return true;
+}
+
+static bool test_add_print_processor(struct torture_context *tctx,
+				     void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	int i;
+
+	struct {
+		const char *environment;
+		const char *path_name;
+		const char *print_processor_name;
+		WERROR expected_add_result;
+		WERROR expected_del_result;
+	} tests[] = {
+		{
+			.environment		= ctx->environment,
+			.path_name		= "",
+			.print_processor_name	= "winprint",
+			.expected_add_result	= WERR_PRINT_PROCESSOR_ALREADY_INSTALLED,
+			.expected_del_result	= WERR_CAN_NOT_COMPLETE
+		},{
+			.environment		= ctx->environment,
+			.path_name		= "",
+			.print_processor_name	= "unknown",
+			.expected_add_result	= WERR_MOD_NOT_FOUND,
+			.expected_del_result	= WERR_UNKNOWN_PRINTPROCESSOR
+		}
+	};
+
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+		torture_assert(tctx,
+			test_AddPrintProcessor(tctx, b,
+					       tests[i].environment,
+					       tests[i].path_name,
+					       tests[i].print_processor_name,
+					       tests[i].expected_add_result),
+			"add print processor failed");
+		torture_assert(tctx,
+			test_DeletePrintProcessor(tctx, b,
+						  tests[i].environment,
+						  tests[i].print_processor_name,
+						  tests[i].expected_del_result),
+			"delete print processor failed");
+	}
+
+	return true;
+}
+
 static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
@@ -8538,6 +8638,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "enum_monitors", test_EnumMonitors);
 	torture_tcase_add_simple_test(tcase, "enum_print_processors", test_EnumPrintProcessors);
 	torture_tcase_add_simple_test(tcase, "print_processors_winreg", test_print_processors_winreg);
+	torture_tcase_add_simple_test(tcase, "add_processor", test_add_print_processor);
 	torture_tcase_add_simple_test(tcase, "enum_printprocdata", test_EnumPrintProcDataTypes);
 	torture_tcase_add_simple_test(tcase, "enum_printers", test_EnumPrinters);
 	torture_tcase_add_simple_test(tcase, "enum_ports_old", test_EnumPorts_old);
