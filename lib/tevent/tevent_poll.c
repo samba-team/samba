@@ -222,13 +222,14 @@ static int poll_fresh_fde_destructor(struct tevent_fd *fde)
 	struct poll_event_context *poll_ev;
 
 	if (ev == NULL) {
-		return 0;
+		goto done;
 	}
 	poll_ev = talloc_get_type_abort(
 		ev->additional_data, struct poll_event_context);
 
 	DLIST_REMOVE(poll_ev->fresh, fde);
-	return 0;
+done:
+	return tevent_common_fd_destructor(fde);
 }
 
 static void poll_event_schedule_immediate(struct tevent_immediate *im,
