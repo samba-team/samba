@@ -518,11 +518,11 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 			}
 
 			DEBUG(0, ("Using random trust password.\n"));
-	/* FIXME: why only 8 characters work? Would it be possible to use a
-	 * random binary password? */
-			trust_pw = generate_random_str(mem_ctx, 8);
+			trust_pw = generate_random_password(mem_ctx,
+					DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
+					DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 			if (trust_pw == NULL) {
-				DEBUG(0, ("generate_random_str failed.\n"));
+				DEBUG(0, ("generate_random_password failed.\n"));
 				goto done;
 			}
 		} else {

@@ -35,8 +35,10 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 
-	new_password = generate_random_str(talloc_tos(), DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-    
+	new_password = generate_random_password(talloc_tos(),
+				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
+				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+
 	ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, host_principal, new_password, ads->auth.time_offset);
 
 	if (!ADS_ERR_OK(ret)) {
