@@ -214,6 +214,7 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	};
 	const struct ndr_interface_call_pipes *in_pipes = NULL;
 	const struct ndr_interface_call_pipes *out_pipes = NULL;
+	uint32_t highest_ofs;
 
 	ndr_table_init();
 
@@ -341,8 +342,14 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 
 		ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
 
-		if (ndr_pull->offset != ndr_pull->data_size) {
-			printf("WARNING! %d unread bytes while parsing context file\n", ndr_pull->data_size - ndr_pull->offset);
+		if (ndr_pull->offset > ndr_pull->relative_highest_offset) {
+			highest_ofs = ndr_pull->offset;
+		} else {
+			highest_ofs = ndr_pull->relative_highest_offset;
+		}
+
+		if (highest_ofs != ndr_pull->data_size) {
+			printf("WARNING! %d unread bytes while parsing context file\n", ndr_pull->data_size - highest_ofs);
 		}
 
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -392,10 +399,16 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 
 	printf("pull returned %s\n", nt_errstr(status));
 
-	if (ndr_pull->offset != ndr_pull->data_size) {
-		printf("WARNING! %d unread bytes\n", ndr_pull->data_size - ndr_pull->offset);
-		ndrdump_data(ndr_pull->data+ndr_pull->offset,
-			     ndr_pull->data_size - ndr_pull->offset,
+	if (ndr_pull->offset > ndr_pull->relative_highest_offset) {
+		highest_ofs = ndr_pull->offset;
+	} else {
+		highest_ofs = ndr_pull->relative_highest_offset;
+	}
+
+	if (highest_ofs != ndr_pull->data_size) {
+		printf("WARNING! %d unread bytes\n", ndr_pull->data_size - highest_ofs);
+		ndrdump_data(ndr_pull->data+highest_ofs,
+			     ndr_pull->data_size - highest_ofs,
 			     dumpdata);
 	}
 
