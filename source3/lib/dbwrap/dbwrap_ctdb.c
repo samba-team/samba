@@ -1520,6 +1520,13 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	result->name = talloc_strdup(result, name);
+	if (result->name == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
 	db_ctdb->transaction = NULL;
 	db_ctdb->db = result;
 
