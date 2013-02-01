@@ -475,6 +475,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 		return NULL;
 	}
 
+	result->db = ctx->db;
 	result->private_data = ctx->transaction;
 
 	result->key.dsize = key.dsize;
@@ -1401,11 +1402,12 @@ static void traverse_read_callback(TDB_DATA key, TDB_DATA data, void *private_da
 {
 	struct traverse_state *state = (struct traverse_state *)private_data;
 	struct db_record rec;
+	rec.db = state->db;
 	rec.key = key;
 	rec.value = data;
 	rec.store = db_ctdb_store_deny;
 	rec.delete_rec = db_ctdb_delete_deny;
-	rec.private_data = state->db;
+	rec.private_data = NULL;
 	state->fn(&rec, state->private_data);
 	state->count++;
 }
@@ -1426,11 +1428,12 @@ static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TD
 		return 0;
 	}
 
+	rec.db = state->db;
 	rec.key = kbuf;
 	rec.value = dbuf;
 	rec.store = db_ctdb_store_deny;
 	rec.delete_rec = db_ctdb_delete_deny;
-	rec.private_data = state->db;
+	rec.private_data = NULL;
 
 	if (rec.value.dsize <= sizeof(struct ctdb_ltdb_header)) {
 		/* a deleted record */
