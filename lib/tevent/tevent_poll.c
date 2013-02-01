@@ -92,6 +92,14 @@ static int poll_event_context_init(struct tevent_context *ev)
 {
 	struct poll_event_context *poll_ev;
 
+	/*
+	 * we might be called during tevent_re_initialise()
+	 * which means we need to free our old additional_data
+	 * in order to detach old fd events from the
+	 * poll_ev->fresh list
+	 */
+	TALLOC_FREE(ev->additional_data);
+
 	poll_ev = talloc_zero(ev, struct poll_event_context);
 	if (poll_ev == NULL) {
 		return -1;
