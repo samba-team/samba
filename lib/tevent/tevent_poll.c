@@ -547,6 +547,35 @@ static int poll_event_loop_once(struct tevent_context *ev,
 	return poll_event_loop_poll(ev, &tval);
 }
 
+static int poll_event_loop_wait(struct tevent_context *ev,
+				const char *location)
+{
+	struct poll_event_context *poll_ev = talloc_get_type_abort(
+		ev->additional_data, struct poll_event_context);
+
+	/*
+	 * loop as long as we have events pending
+	 */
+	while (ev->fd_events ||
+	       ev->timer_events ||
+	       ev->immediate_events ||
+	       ev->signal_events ||
+	       poll_ev->fresh) {
+		int ret;
+		ret = _tevent_loop_once(ev, location);
+		if (ret != 0) {
+			tevent_debug(ev, TEVENT_DEBUG_FATAL,
+				     "_tevent_loop_once() failed: %d - %s\n",
+				     ret, strerror(errno));
+			return ret;
+		}
+	}
+
+	tevent_debug(ev, TEVENT_DEBUG_WARNING,
+		     "poll_event_loop_wait() out of events\n");
+	return 0;
+}
+
 static const struct tevent_ops poll_event_ops = {
 	.context_init		= poll_event_context_init,
 	.add_fd			= poll_event_add_fd,
@@ -557,7 +586,7 @@ static const struct tevent_ops poll_event_ops = {
 	.schedule_immediate	= tevent_common_schedule_immediate,
 	.add_signal		= tevent_common_add_signal,
 	.loop_once		= poll_event_loop_once,
-	.loop_wait		= tevent_common_loop_wait,
+	.loop_wait		= poll_event_loop_wait,
 };
 
 _PRIVATE_ bool tevent_poll_init(void)
@@ -575,7 +604,7 @@ static const struct tevent_ops poll_event_mt_ops = {
 	.schedule_immediate	= poll_event_schedule_immediate,
 	.add_signal		= tevent_common_add_signal,
 	.loop_once		= poll_event_loop_once,
-	.loop_wait		= tevent_common_loop_wait,
+	.loop_wait		= poll_event_loop_wait,
 };
 
 _PRIVATE_ bool tevent_poll_mt_init(void)
