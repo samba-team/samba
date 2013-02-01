@@ -2396,7 +2396,10 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x30 */
-	[todo] WERROR spoolss_DeletePrintProcessor(
+	WERROR spoolss_DeletePrintProcessor(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *architecture,
+		[in] [string,charset(UTF16)] uint16 print_processor_name[]
 	);
 
 	/******************/
