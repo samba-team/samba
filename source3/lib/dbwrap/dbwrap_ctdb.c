@@ -1017,7 +1017,9 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	struct db_ctdb_rec *crec;
 	NTSTATUS status;
 	TDB_DATA ctdb_data;
-	int migrate_attempts = 0;
+	int migrate_attempts;
+	struct timeval migrate_start;
+	int duration_msecs;
 	int lockret;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
@@ -1043,6 +1045,9 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 		TALLOC_FREE(result);
 		return NULL;
 	}
+
+	migrate_attempts = 0;
+	GetTimeOfDay(&migrate_start);
 
 	/*
 	 * Do a blocking lock on the record
@@ -1110,13 +1115,26 @@ again:
 		goto again;
 	}
 
-	if (migrate_attempts > 10) {
+	{
+		double duration;
+		duration = timeval_elapsed(&migrate_start);
+
+		/*
+		 * Convert the duration to milliseconds to avoid a
+		 * floating-point division of
+		 * lp_parm_int("migrate_duration") by 1000.
+		 */
+		duration_msecs = duration * 1000;
+	}
+
+	if ((migrate_attempts > lp_parm_int(-1, "ctdb", "migrate_attempts", 10)) ||
+	    (duration_msecs > lp_parm_int(-1, "ctdb", "migrate_duration", 5000))) {
 		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s needed %d "
-			  "attempts\n", tdb_name(ctx->wtdb->tdb),
+			  "attempts, %d milliseconds\n", tdb_name(ctx->wtdb->tdb),
 			  hex_encode_talloc(talloc_tos(),
 					    (unsigned char *)key.dptr,
 					    key.dsize),
-			  migrate_attempts));
+			  migrate_attempts, duration_msecs));
 	}
 
 	GetTimeOfDay(&crec->lock_time);
