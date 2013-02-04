@@ -298,29 +298,127 @@ _PUBLIC_ uint32_t generate_random(void)
 
 
 /**
-  very basic password quality checker
+  Microsoft composed the following rules (among others) for quality
+  checks. This is an abridgment from
+  http://msdn.microsoft.com/en-us/subscriptions/cc786468%28v=ws.10%29.aspx:
+
+  Passwords must contain characters from three of the following five
+  categories:
+
+   - Uppercase characters of European languages (A through Z, with
+     diacritic marks, Greek and Cyrillic characters)
+   - Lowercase characters of European languages (a through z, sharp-s,
+     with diacritic marks, Greek and Cyrillic characters)
+   - Base 10 digits (0 through 9)
+   - Nonalphanumeric characters: ~!@#$%^&*_-+=`|\(){}[]:;"'<>,.?/
+   - Any Unicode character that is categorized as an alphabetic character
+     but is not uppercase or lowercase. This includes Unicode characters
+     from Asian languages.
+
+ Note: for now do not check if the unicode category is
+       alphabetic character
 **/
-_PUBLIC_ bool check_password_quality(const char *s)
+_PUBLIC_ bool check_password_quality(const char *pwd)
 {
-	int has_digit=0, has_capital=0, has_lower=0, has_special=0, has_high=0;
-	const char* reals = s;
-	while (*s) {
-		if (isdigit((unsigned char)*s)) {
-			has_digit |= 1;
-		} else if (isupper((unsigned char)*s)) {
-			has_capital |= 1;
-		} else if (islower((unsigned char)*s)) {
-			has_lower |= 1;
-		} else if (isascii((unsigned char)*s)) {
-			has_special |= 1;
-		} else {
-			has_high++;
-		}
-		s++;
+	size_t ofs = 0;
+	size_t num_chars = 0;
+	size_t num_digits = 0;
+	size_t num_upper = 0;
+	size_t num_lower = 0;
+	size_t num_nonalpha = 0;
+	size_t num_unicode = 0;
+	size_t num_categories = 0;
+
+	if (pwd == NULL) {
+		return false;
 	}
 
-	return ((has_digit + has_lower + has_capital + has_special) >= 3
-		|| (has_high > strlen(reals)/2));
+	while (true) {
+		const char *s = &pwd[ofs];
+		size_t len = 0;
+		codepoint_t c;
+
+		c = next_codepoint(s, &len);
+		if (c == INVALID_CODEPOINT) {
+			return false;
+		} else if (c == 0) {
+			break;
+		}
+		ofs += len;
+		num_chars += 1;
+
+		if (len == 1) {
+			const char *na = "~!@#$%^&*_-+=`|\\(){}[]:;\"'<>,.?/";
+
+			if (isdigit(c)) {
+				num_digits += 1;
+				continue;
+			}
+
+			if (isupper(c)) {
+				num_upper += 1;
+				continue;
+			}
+
+			if (islower(c)) {
+				num_lower += 1;
+				continue;
+			}
+
+			if (strchr(na, c)) {
+				num_nonalpha += 1;
+				continue;
+			}
+
+			/*
+			 * the rest does not belong to
+			 * a category.
+			 */
+			continue;
+		}
+
+		if (isupper_m(c)) {
+			num_upper += 1;
+			continue;
+		}
+
+		if (islower_m(c)) {
+			num_lower += 1;
+			continue;
+		}
+
+		/*
+		 * Note: for now do not check if the unicode category is
+		 *       alphabetic character
+		 *
+		 * We would have to import the details from
+		 * ftp://ftp.unicode.org/Public/6.3.0/ucd/UnicodeData-6.3.0d1.txt
+		 */
+		num_unicode += 1;
+		continue;
+	}
+
+	if (num_digits > 0) {
+		num_categories += 1;
+	}
+	if (num_upper > 0) {
+		num_categories += 1;
+	}
+	if (num_lower > 0) {
+		num_categories += 1;
+	}
+	if (num_nonalpha > 0) {
+		num_categories += 1;
+	}
+	if (num_unicode > 0) {
+		num_categories += 1;
+	}
+
+	if (num_categories >= 3) {
+		return true;
+	}
+
+	return false;
 }
 
 /**
