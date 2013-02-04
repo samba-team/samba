@@ -1906,19 +1906,30 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  *
  * Result codes from "enum samr_ValidationStatus" (consider "samr.idl")
  */
-enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *password,
+enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *utf8_blob,
 						const uint32_t pwdProperties,
 						const uint32_t minPwdLength)
 {
+	const char *utf8_pw = (const char *)utf8_blob->data;
+	size_t utf8_len = strlen_m(utf8_pw);
+
 	/* checks if the "minPwdLength" property is satisfied */
-	if (minPwdLength > password->length)
+	if (minPwdLength > utf8_len) {
 		return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
+	}
 
 	/* checks the password complexity */
-	if (((pwdProperties & DOMAIN_PASSWORD_COMPLEX) != 0)
-			&& (password->data != NULL)
-			&& (!check_password_quality((const char *) password->data)))
+	if (!(pwdProperties & DOMAIN_PASSWORD_COMPLEX)) {
+		return SAMR_VALIDATION_STATUS_SUCCESS;
+	}
+
+	if (utf8_len == 0) {
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+	}
+
+	if (!check_password_quality(utf8_pw)) {
+		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+	}
 
 	return SAMR_VALIDATION_STATUS_SUCCESS;
 }
