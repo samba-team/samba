@@ -143,7 +143,7 @@ static void wb_getgrsid_sid2gid_done(struct tevent_req *subreq)
 		 * mapped to ID_TYPE_BOTH:
 		 * create a group with the sid/xid as only member
 		 */
-		char *name;
+		const char *name;
 
 		if (xid.type != ID_TYPE_BOTH) {
 			tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
