@@ -473,12 +473,13 @@ member: %s
             if len(res) > 1:
                 raise Exception('Matched %u multiple users with filter "%s"' % (len(res), search_filter))
             user_dn = res[0].dn
+            pw = unicode('"' + password + '"', 'utf-8').encode('utf-16-le')
             setpw = """
 dn: %s
 changetype: modify
 replace: unicodePwd
 unicodePwd:: %s
-""" % (user_dn, base64.b64encode(("\"" + password + "\"").encode('utf-16-le')))
+""" % (user_dn, base64.b64encode(pw))
 
             self.modify_ldif(setpw)
 
