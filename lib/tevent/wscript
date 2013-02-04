@@ -109,7 +109,7 @@ def build(bld):
                           pc_files='tevent.pc',
                           private_library=private_library)
 
-    if not bld.CONFIG_SET('USING_SYSTEM_PYTEVENT'):
+    if not bld.CONFIG_SET('USING_SYSTEM_PYTEVENT') and not bld.env.disable_python:
         bld.SAMBA_PYTHON('pytevent',
                          'pytevent.c',
                          deps='tevent',
