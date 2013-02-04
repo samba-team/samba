@@ -480,17 +480,17 @@ It is good security practice for the administrator to use the --must-change-at-n
 The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
 
 Example1:
-samba-tool user setpassword TestUser1 passw0rd --URL=ldap://samba.samdom.example.com -Uadministrator%passw1rd
+samba-tool user setpassword TestUser1 --newpassword=passw0rd --URL=ldap://samba.samdom.example.com -Uadministrator%passw1rd
 
 Example1 shows how to set the password of user TestUser1 on a remote LDAP server.  The --URL parameter is used to specify the remote target server.  The -U option is used to pass the username and password of a user that exists on the remote server and is authorized to update the server.
 
 Example2:
-sudo samba-tool user setpassword TestUser2 passw0rd --must-change-at-next-login
+sudo samba-tool user setpassword TestUser2 --newpassword=passw0rd --must-change-at-next-login
 
 Example2 shows how an administrator would reset the TestUser2 user's password to passw0rd.  The user is running under the root userid using the sudo command.  In this example the user TestUser2 must change their password the next time they logon to the account.
 
 Example3:
-samba-tool user setpassword --filter=samaccountname=TestUser3 --password=passw0rd
+samba-tool user setpassword --filter=samaccountname=TestUser3 --newpassword=passw0rd
 
 Example3 shows how an administrator would reset TestUser3 user's password to passw0rd using the --filter= option to specify the username.
 
