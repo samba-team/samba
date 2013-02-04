@@ -1,4 +1,168 @@
                    =============================
+                   Release Notes for Samba 4.0.3
+                         February 05, 2013
+                   =============================
+
+
+This is is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.3 include:
+
+o  Fix ACL problem with delegation of privileges and deletion of accounts
+   over LDAP interface (bug #8909).
+o  Fix 'smbd' panic triggered by unlink after open (bug #9571).
+o  smbd: Fix memleak in the async echo handler (bug #9549).
+
+
+Changes since 4.0.2:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9568: Document the command line options in dbwrap_tool(1).
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9196: defer_open is triggered multiple times on the same request.
+    * BUG 9518: conn->share_access appears not be be reset between users.
+    * BUG 9550: sigprocmask does not work on FreeBSD to stop further signals in
+      a signal handler.
+    * BUG 9572: Fix file corruption during SMB1 read by Mac OSX 10.8.2 clients.
+    * BUG 9586: smbd[29175]: disk_free: sys_popen() failed" message logged in
+      /var/log/message many times.
+    * BUG 9587: Archive flag is always set on directories.
+    * BUG 9588: ACLs are not inherited to directories for DFS shares.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 8909: Fix ACL problem with delegation of privileges and deletion of
+      accounts over LDAP interface.
+    * BUG 9461: FSMO seize of naming role fails: NT_STATUS_IO_TIMEOUT.
+    * BUG 9564: Fix compilation of Solaris ACL module.
+    * BUG 9581: gensec: Allow login without a PAC by default.
+    * BUG 9596: Linked attribute handling should be by GUID.
+    * BUG 9598: Use pid,task_id as cluster_id in process_single just like
+      process_prefork.
+    * BUG 9609: ldb: Ensure to decrement the transaction_active whenever we
+      delete a transaction.
+    * BUG 9609: Add 'ldbdump' tool.
+    * BUG 9609: ldb: Remove no-longer-existing ltdb_unpack_data_free from
+      ldb_tdb.h.
+    * BUG 9609: ldb: Change ltdb_unpack_data to take an ldb_context.
+    * BUG 9610: dsdb: Make secrets_tdb_sync cope with -H secrets.ldb.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9512: wafsamba: Use additional xml catalog file.
+    * BUG 9517: samba_dnsupdate: Set KRB5_CONFIG for nsupdate command.
+    * BUG 9552: smb.conf(5): Update list of available protocols.
+    * BUG 9568: Add dbwrap_tool.1 manual page.
+    * BUG 9569: ntlm_auth(1): Fix format and make examples visible.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 9575: Duplicate flags defined in the winbindd protocol.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9474: Downgrade v4 printer driver requests to v3.
+    * BUG 9595: s3-winbind: Fix the build of idmap_ldap.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9378: Add extra attributes for AD printer publishing.
+
+
+o   Stephen Gallagher <sgallagh@redhat.com>
+    * BUG 9609: ldb: Move doxygen comments for ldb_connect to the right place.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9541: Make use of posix_openpt.
+    * BUG 9544: Fix build of vfs_commit and plug in async pwrite support.
+    * BUG 9546: Fix aio_suspend detection on FreeBSD.
+    * BUG 9548: Correctly detect O_DIRECT.
+    * BUG 9549: smbd: Fix memleak in the async echo handler.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 8909: Fix ACL problem with delegation of privileges and deletion of
+      accounts over LDAP interface.
+    * BUG 9481: samba_upgradeprovision: fix the nTSecurityDescriptor on more
+      containers.
+    * BUG 9499: s3:smb2_negprot: set the 'remote_proto' value.
+    * BUG 9508: s4:drsuapi: Make sure we report the meta data from the cycle
+      start.
+    * BUG 9540: terminate the irpc_servers_byname() result with
+      server_id_set_disconnected().
+    * BUG 9598: Fix timeouts of some IRPC calls.
+    * BUG 9609: Fix a warning by converting from TDB_DATA to struct ldb_val.
+
+
+o   Matthieu Patou <mat@matws.net>
+    * BUG 8909: Add documentation.
+    * BUG 9565: Adding additional Samba 4.0 DC to W2k8 srv AD domain (in win200
+      functional level) produces dbcheck errors.
+
+
+o   Arvid Requate <requate@univention.de>
+    * BUG 9555: s4-resolve: Fix parsing of IPv6/AAAA in dns_lookup.
+
+
+o   Rusty Russell <rusty@rustcorp.com.au>
+    * BUG 9609: tdb: Add '-e' option to tdbdump (and document it).
+    * BUG 9609: tdb: 'tdbdump' should log errors, and fail in that case.
+    * BUG 9609: tdb: Add tdb_rescue() to allow an emergency best-effort dump.
+
+
+o   Samba-JP oota <ribbon@samba.gr.jp>
+    * BUG 9528: Remove superfluous bracket in samba.8.xml.
+    * BUG 9530: Fix typo in vfs_tsmsm.8.xml.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9574: Fix a possible null pointer dereference in spoolss.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 9591: Correct meta data in ldb manpages.
+
+
+o   Pavel Shilovsky <piastry@etersoft.ru>
+    * BUG 9571: Fix 'smbd' panic triggered by unlink after open.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * BUG 9609: ldb: Fix callers for ldb_pack_data() and ldb_unpack_data().
+    * BUG 9609: ldb: move ldb_pack.c into common.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 9503: waf assumes that pythonX.Y-config is a Python script.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 3.6 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.2
                          January 30, 2013
                    =============================
@@ -61,8 +225,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.1
