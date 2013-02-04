@@ -41,7 +41,10 @@ static bool test_check_password_quality(struct torture_context *tctx)
 	torture_assert(tctx, !check_password_quality("BLA"), "multiple upcases password");
 	torture_assert(tctx, !check_password_quality("123"), "digits only");
 	torture_assert(tctx, !check_password_quality("matthiéu"), "not enough high symbols");
-	torture_assert(tctx, check_password_quality("abcdééàçè"), "valid");
+	torture_assert(tctx, !check_password_quality("abcdééàçè"), "only lower case");
+	torture_assert(tctx, !check_password_quality("abcdééàçè+"), "only lower and symbols");
+	torture_assert(tctx, check_password_quality("abcdééàçè+ढ"), "valid");
+	torture_assert(tctx, check_password_quality("ç+ढ"), "valid");
 	torture_assert(tctx, check_password_quality("A2e"), "valid");
 	torture_assert(tctx, check_password_quality("BA2eLi443"), "valid");
 	return true;
