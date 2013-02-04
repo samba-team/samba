@@ -1402,6 +1402,8 @@ static void traverse_read_callback(TDB_DATA key, TDB_DATA data, void *private_da
 {
 	struct traverse_state *state = (struct traverse_state *)private_data;
 	struct db_record rec;
+
+	ZERO_STRUCT(rec);
 	rec.db = state->db;
 	rec.key = key;
 	rec.value = data;
