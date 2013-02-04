@@ -2137,6 +2137,7 @@ def provision(logger, session_info, credentials, smbconf=None,
             adminpass = samba.generate_random_password(12, 32)
             adminpass_generated = True
         else:
+            adminpass = unicode(adminpass, 'utf-8')
             adminpass_generated = False
 
         if samdb_fill == FILL_FULL:
