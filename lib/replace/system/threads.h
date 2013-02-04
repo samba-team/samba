@@ -32,4 +32,9 @@
 #define pthread_mutexattr_setrobust pthread_mutexattr_setrobust_np
 #endif
 
+#if defined(HAVE_PTHREAD_MUTEX_CONSISTENT_NP) && \
+	!defined(HAVE_PTHREAD_MUTEX_CONSISTENT)
+#define pthread_mutex_consistent pthread_mutex_consistent_np
+#endif
+
 #endif
