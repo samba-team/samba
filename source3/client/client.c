@@ -1307,8 +1307,17 @@ static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = do_list(mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,false, true);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = do_list(mget_mask,
+			 (FILE_ATTRIBUTE_SYSTEM
+			  | FILE_ATTRIBUTE_HIDDEN
+			  | FILE_ATTRIBUTE_DIRECTORY),
+			 do_mget, false, true);
+	if (!NT_STATUS_IS_OK(status)
+	 && !NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		/*
+		 * Ignore access denied errors to ensure all permitted files are
+		 * pulled down.
+		 */
 		return status;
 	}
 
