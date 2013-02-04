@@ -2203,6 +2203,29 @@ static int setup_io(struct ph_context *ac,
 		}
 	}
 
+	if (io->n.cleartext_utf8 != NULL) {
+		struct ldb_val *cleartext_utf8_blob;
+		char *p;
+
+		cleartext_utf8_blob = talloc(io->ac, struct ldb_val);
+		if (!cleartext_utf8_blob) {
+			return ldb_oom(ldb);
+		}
+
+		*cleartext_utf8_blob = *io->n.cleartext_utf8;
+
+		/* make sure we have a null terminated string */
+		p = talloc_strndup(cleartext_utf8_blob,
+				   (const char *)io->n.cleartext_utf8->data,
+				   io->n.cleartext_utf8->length);
+		if ((p == NULL) && (io->n.cleartext_utf8->length > 0)) {
+			return ldb_oom(ldb);
+		}
+		cleartext_utf8_blob->data = (uint8_t *)p;
+
+		io->n.cleartext_utf8 = cleartext_utf8_blob;
+	}
+
 	ret = msg_find_old_and_new_pwd_val(orig_msg, "clearTextPassword",
 					   ac->req->operation,
 					   &io->n.cleartext_utf16,
