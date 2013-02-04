@@ -2429,28 +2429,26 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-
 	if (trustAuth.count != 0 && trustAuth.current.count != 0 &&
 	    trustAuth.current.array[0].AuthType == TRUST_AUTH_TYPE_CLEAR) {
-		mdfour(previous_pw_enc->hash,
+		mdfour(current_pw_enc->hash,
 		       trustAuth.current.array[0].AuthInfo.clear.password,
 		       trustAuth.current.array[0].AuthInfo.clear.size);
+		netlogon_creds_des_encrypt(creds, current_pw_enc);
 	} else {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	netlogon_creds_des_encrypt(creds, current_pw_enc);
 
 	if (trustAuth.previous.count != 0 &&
 	    trustAuth.previous.array[0].AuthType == TRUST_AUTH_TYPE_CLEAR) {
 		mdfour(previous_pw_enc->hash,
 		       trustAuth.previous.array[0].AuthInfo.clear.password,
 		       trustAuth.previous.array[0].AuthInfo.clear.size);
+		netlogon_creds_des_encrypt(creds, previous_pw_enc);
 	} else {
-		mdfour(previous_pw_enc->hash, NULL, 0);
+		ZERO_STRUCTP(previous_pw_enc);
 	}
-
-	netlogon_creds_des_encrypt(creds, previous_pw_enc);
 
 	return NT_STATUS_OK;
 }
@@ -2469,7 +2467,6 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	bool trusted;
 	struct netr_TrustInfo *trust_info;
 	struct pdb_trusted_domain *td;
-	DATA_BLOB trustAuth_blob;
 	struct loadparm_context *lp_ctx;
 
 	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
@@ -2543,15 +2540,12 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 			*r->out.trust_info = trust_info;
 		}
 
-/* TODO: which trustAuth shall we use if we have in/out trust or do they have to
- * be equal ? */
-		if (td->trust_direction & NETR_TRUST_FLAG_INBOUND) {
-			trustAuth_blob = td->trust_auth_incoming;
-		} else if (td->trust_direction & NETR_TRUST_FLAG_OUTBOUND) {
-			trustAuth_blob = td->trust_auth_outgoing;
+		if (td->trust_auth_incoming.data == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		status = get_password_from_trustAuth(p->mem_ctx, &trustAuth_blob,
+		status = get_password_from_trustAuth(p->mem_ctx,
+						     &td->trust_auth_incoming,
 						     creds,
 						     r->out.new_owf_password,
 						     r->out.old_owf_password);
