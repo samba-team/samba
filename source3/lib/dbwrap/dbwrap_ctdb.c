@@ -1430,6 +1430,7 @@ static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TD
 		return 0;
 	}
 
+	ZERO_STRUCT(rec);
 	rec.db = state->db;
 	rec.key = kbuf;
 	rec.value = dbuf;
