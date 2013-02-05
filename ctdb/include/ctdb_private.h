@@ -539,7 +539,6 @@ struct ctdb_context {
 
 	const char *public_addresses_file;
 	struct trbt_tree *child_processes; 
-	TALLOC_CTX *debug_hung_script_ctx;
 
 	/* Used for locking record/db/alldb */
 	int lock_num_current;

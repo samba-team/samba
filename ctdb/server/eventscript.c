@@ -528,9 +528,7 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_ev
 			 cmd, timeval_elapsed(&current->start), state->child));
 	talloc_free(cmd);
 
-	talloc_free(ctdb->debug_hung_script_ctx);
-	ctdb->debug_hung_script_ctx = talloc_new(ctdb);
- 	if (!ctdb_fork_with_logging(ctdb->debug_hung_script_ctx, ctdb, "Hung script", NULL, NULL, &pid)) {
+	if (!ctdb_fork_with_logging(ctdb, ctdb, "Hung script", NULL, NULL, &pid)) {
 		DEBUG(DEBUG_ERR,("Failed to fork a child process with logging to track hung event script\n"));
 		ctdb_kill(state->ctdb, state->child, SIGTERM);
 		return;
