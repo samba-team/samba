@@ -59,6 +59,9 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 			ctdb_restore_scheduler(ctdb);
 		}
 		ctdb->can_send_controls = false;
+
+		ctdb_log_ringbuffer_free();
+
 		return 0;
 	}
 
