@@ -8,6 +8,8 @@ This is is the latest stable release of Samba 4.0.
 
 Major enhancements in Samba 4.0.3 include:
 
+
+o  check_password_quality: Handle non-ASCII characters properly. (bug #9105).
 o  Fix ACL problem with delegation of privileges and deletion of accounts
    over LDAP interface (bug #8909).
 o  Fix 'smbd' panic triggered by unlink after open (bug #9571).
@@ -87,6 +89,7 @@ o   Volker Lendecke <vl@samba.org>
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 8909: Fix ACL problem with delegation of privileges and deletion of
       accounts over LDAP interface.
+    * BUG 9105: check_password_quality: Handle non-ASCII characters properly.
     * BUG 9481: samba_upgradeprovision: fix the nTSecurityDescriptor on more
       containers.
     * BUG 9499: s3:smb2_negprot: set the 'remote_proto' value.
