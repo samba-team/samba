@@ -531,22 +531,10 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_ev
 		return;
 	}
 	if (pid == 0) {
-		struct stat st;
 		char buf[200];
 
 		if (getenv("CTDB_DEBUG_HUNG_SCRIPT") != NULL) {
 			debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
-		}
-
-		if (stat(debug_hung_script, &st) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to stat the script to debug hung eventscript. Is it not installed correctly? (script:%s)\n", debug_hung_script));
-			ctdb_kill(state->ctdb, state->child, SIGTERM);
-			_exit(0);
-		}		
-		if (!(st.st_mode & S_IXUSR)) {
-			DEBUG(DEBUG_DEBUG,("Debug script %s is not executable.\n", debug_hung_script));
-			ctdb_kill(state->ctdb, state->child, SIGTERM);
-			_exit(0);
 		}
 
 		sprintf(buf, "%s %d", debug_hung_script, state->child);
