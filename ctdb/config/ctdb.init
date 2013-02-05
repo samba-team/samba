@@ -109,7 +109,7 @@ build_ctdb_options () {
 
 export_debug_variables ()
 {
-    export CTDB_DEBUG_HUNG_SCRIPT
+    export CTDB_DEBUG_HUNG_SCRIPT CTDB_EXTERNAL_TRACE
 }
 
 # Log given message or stdin to either syslog or a CTDB log file
