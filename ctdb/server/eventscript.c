@@ -531,14 +531,16 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_ev
 		return;
 	}
 	if (pid == 0) {
-		char buf[200];
+		char *buf;
 
 		if (getenv("CTDB_DEBUG_HUNG_SCRIPT") != NULL) {
 			debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
 		}
 
-		sprintf(buf, "%s %d", debug_hung_script, state->child);
+		buf = talloc_asprintf(NULL, "%s %d",
+				      debug_hung_script, state->child);
 		system(buf);
+		talloc_free(buf);
 
 		/* Now we can kill the child */
 		ctdb_kill(state->ctdb, state->child, SIGTERM);
