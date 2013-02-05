@@ -494,7 +494,6 @@ struct ctdb_context {
 	bool do_setsched;
 	void *saved_scheduler_param;
 	const char *event_script_dir;
-	const char *debug_hung_script;
 	const char *notification_script;
 	const char *default_public_interface;
 	pid_t ctdbd_pid;
@@ -1203,7 +1202,6 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *ip);
 int ctdb_set_event_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_event_script_dir(struct ctdb_context *ctdb, const char *script_dir);
-int ctdb_set_debug_hung_script(struct ctdb_context *ctdb, const char *script);
 int ctdb_set_notification_script(struct ctdb_context *ctdb, const char *script);
 void lcp2_forcerebalance(struct ctdb_context *ctdb, uint32_t pnn);
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, client_async_callback fail_callback, void *callback_data);

@@ -95,7 +95,6 @@ build_ctdb_options () {
     maybe_set "--event-script-dir"       "$CTDB_EVENT_SCRIPT_DIR"
     maybe_set "--transport"              "$CTDB_TRANSPORT"
     maybe_set "-d"                       "$CTDB_DEBUGLEVEL"
-    maybe_set "--debug-hung-script"      "$CTDB_DEBUG_HUNG_SCRIPT"
     maybe_set "--notification-script"    "$CTDB_NOTIFY_SCRIPT"
     maybe_set "--start-as-disabled"      "$CTDB_START_AS_DISABLED"    "yes"
     maybe_set "--start-as-stopped "      "$CTDB_START_AS_STOPPED"     "yes"
@@ -106,6 +105,11 @@ build_ctdb_options () {
     maybe_set "--log-ringbuf-size"       "$CTDB_LOG_RINGBUF_SIZE"
     maybe_set "--syslog"                 "$CTDB_SYSLOG"               "yes"
     maybe_set "--max-persistent-check-errors" "$CTDB_MAX_PERSISTENT_CHECK_ERRORS"
+}
+
+export_debug_variables ()
+{
+    export CTDB_DEBUG_HUNG_SCRIPT
 }
 
 # Log given message or stdin to either syslog or a CTDB log file
@@ -234,6 +238,8 @@ start() {
     pkill -9 -f "$ctdbd"
 
     build_ctdb_options
+
+    export_debug_variables
 
     # make sure we drop any ips that might still be held if previous
     # instance of ctdb got killed with -9 or similar

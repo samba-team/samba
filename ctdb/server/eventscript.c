@@ -503,21 +503,12 @@ static void ctdb_event_script_handler(struct event_context *ev, struct fd_event 
 	}
 }
 
-/*
-  setup the script to debug hung eventscripts
-*/
-int ctdb_set_debug_hung_script(struct ctdb_context *ctdb, const char *script)
-{
-	ctdb->debug_hung_script = talloc_strdup(ctdb, script);
-	CTDB_NO_MEMORY(ctdb, ctdb->debug_hung_script);
-	return 0;
-}
-
 static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_event_script_state *state)
 {
 	struct ctdb_script_wire *current = get_current_script(state);
 	char *cmd;
 	pid_t pid;
+	const char * debug_hung_script = ETCDIR "/ctdb/debug-hung-script.sh";
 
 	cmd = child_command_string(ctdb, state,
 				   state->from_user, current->name,
@@ -543,18 +534,22 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_ev
 		struct stat st;
 		char buf[200];
 
-		if (stat(ctdb->debug_hung_script, &st) != 0) {
-			DEBUG(DEBUG_ERR,("Failed to stat the script to debug hung eventscript. Is it not installed correctly? (script:%s)\n", ctdb->debug_hung_script));
+		if (getenv("CTDB_DEBUG_HUNG_SCRIPT") != NULL) {
+			debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
+		}
+
+		if (stat(debug_hung_script, &st) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to stat the script to debug hung eventscript. Is it not installed correctly? (script:%s)\n", debug_hung_script));
 			ctdb_kill(state->ctdb, state->child, SIGTERM);
 			_exit(0);
 		}		
 		if (!(st.st_mode & S_IXUSR)) {
-			DEBUG(DEBUG_DEBUG,("Debug script %s is not executable.\n", ctdb->debug_hung_script));
+			DEBUG(DEBUG_DEBUG,("Debug script %s is not executable.\n", debug_hung_script));
 			ctdb_kill(state->ctdb, state->child, SIGTERM);
 			_exit(0);
 		}
 
-		sprintf(buf, "%s %d", ctdb->debug_hung_script, state->child);
+		sprintf(buf, "%s %d", debug_hung_script, state->child);
 		system(buf);
 
 		/* Now we can kill the child */

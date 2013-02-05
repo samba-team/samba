@@ -33,7 +33,6 @@ static struct {
 	const char *public_address_list;
 	const char *event_script_dir;
 	const char *notification_script;
-	const char *debug_hung_script;
 	const char *logfile;
 	const char *recovery_lock_file;
 	const char *db_dir;
@@ -61,7 +60,6 @@ static struct {
 	.db_dir_persistent = VARDIR "/ctdb/persistent",
 	.db_dir_state = VARDIR "/ctdb/state",
 	.script_log_level = DEBUG_ERR,
-	.debug_hung_script = ETCDIR "/ctdb/debug-hung-script.sh",
 };
 
 int script_log_level;
@@ -126,7 +124,6 @@ int main(int argc, const char *argv[])
 		{ "logfile", 0, POPT_ARG_STRING, &options.logfile, 0, "log file location", "filename" },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
 		{ "notification-script", 0, POPT_ARG_STRING, &options.notification_script, 0, "notification script", "filename" },
-		{ "debug-hung-script", 0, POPT_ARG_STRING, &options.debug_hung_script, 0, "debug script for hung eventscripts", "filename" },
 		{ "listen", 0, POPT_ARG_STRING, &options.myaddress, 0, "address to listen on", "address" },
 		{ "transport", 0, POPT_ARG_STRING, &options.transport, 0, "protocol transport", NULL },
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
@@ -308,14 +305,6 @@ int main(int argc, const char *argv[])
 			DEBUG(DEBUG_ALERT,("Unable to setup notification script\n"));
 			exit(1);
 		}
-	}
-
-	if (options.debug_hung_script != NULL) {
-		ret = ctdb_set_debug_hung_script(ctdb, options.debug_hung_script);
-	}
-	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("Unable to setup script to debug hung eventscripts\n"));
-		exit(1);
 	}
 
 	ctdb->valgrinding = options.valgrinding;
