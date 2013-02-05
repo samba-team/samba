@@ -3198,11 +3198,13 @@ static bool test_AddJob(struct torture_context *tctx,
 	torture_comment(tctx, "Testing AddJob\n");
 
 	status = dcerpc_spoolss_AddJob_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "AddJob failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "AddJob failed");
 
 	r.in.level = 1;
 
 	status = dcerpc_spoolss_AddJob_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "AddJob failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM, "AddJob failed");
 
 	return true;
