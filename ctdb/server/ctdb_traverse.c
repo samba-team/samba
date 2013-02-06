@@ -263,7 +263,7 @@ struct traverse_start_state {
 /*
   setup a cluster-wide non-blocking traverse of a ctdb. The
   callback function will be called on every record in the local
-  ltdb. To stop the travserse, talloc_free() the traverse_handle.
+  ltdb. To stop the traverse, talloc_free() the traverse_handle.
 
   The traverse is finished when the callback is called with tdb_null
   for key and data
