@@ -27,7 +27,7 @@
  * This function forks a child process and drops the realtime 
  * scheduler for the child process.
  */
-pid_t ctdb_fork(struct ctdb_context *ctdb)
+pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb)
 {
 	pid_t pid;
 	char *process;
@@ -60,8 +60,6 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 		}
 		ctdb->can_send_controls = false;
 
-		ctdb_log_ringbuffer_free();
-
 		return 0;
 	}
 
@@ -75,6 +73,17 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 	return pid;
 }
 
+pid_t ctdb_fork(struct ctdb_context *ctdb)
+{
+	pid_t pid;
+
+	pid = ctdb_fork_no_free_ringbuffer(ctdb);
+	if (pid == 0) {
+		ctdb_log_ringbuffer_free();
+	}
+
+	return pid;
+}
 
 
 static void ctdb_sigchld_handler(struct tevent_context *ev,

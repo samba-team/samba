@@ -2126,7 +2126,7 @@ static void getlog_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 	log_addr = (struct ctdb_get_log_addr *)data.dptr;
 
-	child = ctdb_fork(ctdb);
+	child = ctdb_fork_no_free_ringbuffer(ctdb);
 	if (child == (pid_t)-1) {
 		DEBUG(DEBUG_ERR,("Failed to fork a log collector child\n"));
 		return;
@@ -4014,7 +4014,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	ctdb->ctdbd_pid = getpid();
 
-	ctdb->recoverd_pid = ctdb_fork(ctdb);
+	ctdb->recoverd_pid = ctdb_fork_no_free_ringbuffer(ctdb);
 	if (ctdb->recoverd_pid == -1) {
 		return -1;
 	}
@@ -4034,6 +4034,9 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	close(fd[1]);
 
 	srandom(getpid() ^ time(NULL));
+
+	/* Clear the log ringbuffer */
+	ctdb_clear_log(ctdb);
 
 	if (switch_from_server_to_client(ctdb, "recoverd") != 0) {
 		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch recovery daemon into client mode. shutting down.\n"));
