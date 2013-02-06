@@ -3021,6 +3021,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 			 uint16_t info_level,
 			 uint16_t flags2,
 			 unsigned int max_data_bytes,
+			 struct smb_filename *fname,
 			 char **ppdata,
 			 int *ret_data_len)
 {
@@ -3029,9 +3030,16 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	const char *vname = volume_label(talloc_tos(), SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(talloc_tos(), SNUM(conn));
+	char *filename = NULL;
 	uint32 additional_flags = 0;
-	struct smb_filename smb_fname_dot;
+	struct smb_filename smb_fname;
 	SMB_STRUCT_STAT st;
+
+	if (fname == NULL || fname->base_name == NULL) {
+		filename = ".";
+	} else {
+		filename = fname->base_name;
+	}
 
 	if (IS_IPC(conn)) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
@@ -3044,15 +3052,15 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 
 	DEBUG(3,("smbd_do_qfsinfo: level = %d\n", info_level));
 
-	ZERO_STRUCT(smb_fname_dot);
-	smb_fname_dot.base_name = discard_const_p(char, ".");
+	ZERO_STRUCT(smb_fname);
+	smb_fname.base_name = discard_const_p(char, filename);
 
-	if(SMB_VFS_STAT(conn, &smb_fname_dot) != 0) {
+	if(SMB_VFS_STAT(conn, &smb_fname) != 0) {
 		DEBUG(2,("stat of . failed (%s)\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
 	}
 
-	st = smb_fname_dot.st;
+	st = smb_fname.st;
 
 	*ppdata = (char *)SMB_REALLOC(
 		*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
@@ -3069,7 +3077,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 		{
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 18;
-			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
+			if (get_dfree_info(conn,filename,False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 				return map_nt_error_from_unix(errno);
 			}
 
@@ -3193,7 +3201,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 		{
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 24;
-			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
+			if (get_dfree_info(conn,filename,False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 				return map_nt_error_from_unix(errno);
 			}
 			block_size = lp_block_size(snum);
@@ -3225,7 +3233,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit,bytes_per_sector;
 			data_len = 32;
-			if (get_dfree_info(conn,".",False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
+			if (get_dfree_info(conn,filename,False,&bsize,&dfree,&dsize) == (uint64_t)-1) {
 				return map_nt_error_from_unix(errno);
 			}
 			block_size = lp_block_size(snum);
@@ -3418,7 +3426,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
-			rc = SMB_VFS_STATVFS(conn, ".", &svfs);
+			rc = SMB_VFS_STATVFS(conn, filename, &svfs);
 
 			if (!rc) {
 				data_len = 56;
@@ -3598,6 +3606,7 @@ static void call_trans2qfsinfo(connection_struct *conn,
 				 info_level,
 				 req->flags2,
 				 max_data_bytes,
+				 NULL,
 				 ppdata, &data_len);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
