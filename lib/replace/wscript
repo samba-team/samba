@@ -458,20 +458,26 @@ removeea setea
     if conf.CONFIG_SET('HAVE_PTHREAD'):
 
         conf.CHECK_DECLS('pthread_mutexattr_setrobust', headers='pthread.h')
+        if not conf.CONFIG_SET('HAVE_DECL_PTHREAD_MUTEXATTR_SETROBUST'):
+            conf.CHECK_DECLS('pthread_mutexattr_setrobust_np',
+                             headers='pthread.h')
+
         conf.CHECK_FUNCS_IN('pthread_mutexattr_setrobust', 'pthread',
                             checklibc=True, headers='pthread.h')
-
-        conf.CHECK_DECLS('pthread_mutexattr_setrobust_np', headers='pthread.h')
-        conf.CHECK_FUNCS_IN('pthread_mutexattr_setrobust_np', 'pthread',
-                            checklibc=True, headers='pthread.h')
+        if not conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST'):
+            conf.CHECK_FUNCS_IN('pthread_mutexattr_setrobust_np', 'pthread',
+                                checklibc=True, headers='pthread.h')
 
         conf.CHECK_DECLS('pthread_mutex_consistent', headers='pthread.h')
+        if not conf.CONFIG_SET('HAVE_DECL_PTHREAD_MUTEX_CONSISTENT'):
+            conf.CHECK_DECLS('pthread_mutex_consistent_np',
+                             headers='pthread.h')
+
         conf.CHECK_FUNCS_IN('pthread_mutex_consistent', 'pthread',
                             checklibc=True, headers='pthread.h')
-
-        conf.CHECK_DECLS('pthread_mutex_consistent_np', headers='pthread.h')
-        conf.CHECK_FUNCS_IN('pthread_mutex_consistent_np', 'pthread',
-                            checklibc=True, headers='pthread.h')
+        if not conf.CONFIG_SET('HAVE_PTHREAD_MUTEX_CONSISTENT'):
+            conf.CHECK_FUNCS_IN('pthread_mutex_consistent_np', 'pthread',
+                                checklibc=True, headers='pthread.h')
 
         if ((conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST') or
              conf.CONFIG_SET('HAVE_PTHREAD_MUTEXATTR_SETROBUST_NP')) and
