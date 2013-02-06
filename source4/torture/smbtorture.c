@@ -420,6 +420,8 @@ int main(int argc,char *argv[])
 
 	setlinebuf(stdout);
 
+	printf("smbtorture %s\n", samba_version_string());
+
 	/* we are never interested in SIGPIPE */
 	BlockSignals(true, SIGPIPE);
 
