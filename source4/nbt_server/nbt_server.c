@@ -48,6 +48,11 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
+	if (lpcfg_disable_netbios(task->lp_ctx)) {
+		task_server_terminate(task, "nbtd: 'disable netbios = yes' set in smb.conf, shutting down nbt server", false);
+		return;
+	}
+
 	task_server_set_title(task, "task[nbtd]");
 
 	nbtsrv = talloc(task, struct nbtd_server);

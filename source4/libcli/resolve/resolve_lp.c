@@ -32,9 +32,13 @@ struct resolve_context *lpcfg_resolve_context(struct loadparm_context *lp_ctx)
 
 	for (i = 0; methods != NULL && methods[i] != NULL; i++) {
 		if (!strcmp(methods[i], "wins")) {
-			resolve_context_add_wins_method_lp(ret, lp_ctx);
+			if (lpcfg_disable_netbios(lp_ctx) == false) {
+				resolve_context_add_wins_method_lp(ret, lp_ctx);
+			}
 		} else if (!strcmp(methods[i], "bcast")) {
-			resolve_context_add_bcast_method_lp(ret, lp_ctx);
+			if (lpcfg_disable_netbios(lp_ctx) == false) {
+				resolve_context_add_bcast_method_lp(ret, lp_ctx);
+			}
 		} else if (!strcmp(methods[i], "file")) {
 			resolve_context_add_file_method_lp(ret, lp_ctx);
 		} else if (!strcmp(methods[i], "host")) {
