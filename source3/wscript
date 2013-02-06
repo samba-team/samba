@@ -1745,6 +1745,19 @@ main() {
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
 
+    def replace_list_item(lst, item, value):
+        try:
+            idx = lst.index(item)
+            lst[idx] = value
+        except:
+            pass
+    # PDB module file name should have the same name as module registers itself
+    # In Autoconf build we export LDAP passdb module as ldapsam but WAF build
+    # was always exporting pdb_ldap. In order to support existing packages
+    # allow referring to pdb_ldapsam as pdb_ldap but use proper name internally.
+    replace_list_item(explicit_shared_modules, 'pdb_ldap', 'pdb_ldapsam')
+    replace_list_item(explicit_static_modules, 'pdb_ldap', 'pdb_ldapsam')
+
     final_static_modules = default_static_modules
     final_shared_modules = default_shared_modules
 
