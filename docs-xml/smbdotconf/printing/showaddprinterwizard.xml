@@ -15,7 +15,7 @@
     open a handle on the printer server with OpenPrinterEx() asking for
     Administrator privileges.  If the user does not have administrative
     access on the print server (i.e is not root or the priviledge
-    SePrintOperatorPrivilege, the OpenPrinterEx()
+    SePrintOperatorPrivilege), the OpenPrinterEx()
     call fails and the client makes another open call with a request for 
     a lower privilege level.  This should succeed, however the APW 
     icon will not be displayed.</para>
