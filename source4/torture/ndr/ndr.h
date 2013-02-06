@@ -70,8 +70,8 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 			 flags, flags2, \
 			 (bool (*) (struct torture_context *, void *)) check_fn);
 
-#define torture_suite_add_ndr_pullpush_test(suite,name,data_blob,check_fn) \
-		_torture_suite_add_ndr_pullpush_test(suite, #name, \
+#define torture_suite_add_ndr_pull_validate_test(suite,name,data_blob,check_fn) \
+		_torture_suite_add_ndr_pullpush_test(suite, #name "_VALIDATE", \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
 			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
 			 data_blob, \

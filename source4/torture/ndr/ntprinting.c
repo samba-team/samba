@@ -648,7 +648,7 @@ struct torture_suite *ndr_ntprinting_suite(TALLOC_CTX *ctx)
 					ntprinting_printer_check);
 
 	/* pullpush not working atm.
-	torture_suite_add_ndr_pullpush_test(suite,
+	torture_suite_add_ndr_pull_validate_test(suite,
 					    ntprinting_printer,
 					    data_blob_const(ntprinting_printer_data, sizeof(ntprinting_printer_data)),
 					    ntprinting_printer_check);

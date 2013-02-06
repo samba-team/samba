@@ -229,22 +229,22 @@ struct torture_suite *ndr_nbt_suite(TALLOC_CTX *ctx)
 					netlogon_samlogon_response_data,
 					netlogon_samlogon_response_check);
 
-	torture_suite_add_ndr_pullpush_test(suite,
+	torture_suite_add_ndr_pull_validate_test(suite,
 					    netlogon_samlogon_response,
 					    data_blob_const(netlogon_samlogon_response_data, sizeof(netlogon_samlogon_response_data)),
 					    netlogon_samlogon_response_check);
 
-	torture_suite_add_ndr_pullpush_test(suite,
+	torture_suite_add_ndr_pull_validate_test(suite,
 					    nbt_netlogon_packet,
 					    data_blob_const(nbt_netlogon_packet_data, sizeof(nbt_netlogon_packet_data)),
 					    nbt_netlogon_packet_check);
 
-	torture_suite_add_ndr_pullpush_test(suite,
+	torture_suite_add_ndr_pull_validate_test(suite,
 					    nbt_netlogon_packet,
 					    data_blob_const(nbt_netlogon_packet_logon_primary_query_data, sizeof(nbt_netlogon_packet_logon_primary_query_data)),
 					    nbt_netlogon_packet_logon_primary_query_check);
 
-	torture_suite_add_ndr_pullpush_test(suite,
+	torture_suite_add_ndr_pull_validate_test(suite,
 					    netlogon_samlogon_response,
 					    data_blob_const(netlogon_samlogon_response_data2, sizeof(netlogon_samlogon_response_data2)),
 					    netlogon_samlogon_response_check2);

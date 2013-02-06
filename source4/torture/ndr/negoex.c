@@ -92,7 +92,7 @@ struct torture_suite *ndr_negoex_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "negoex");
 
-	torture_suite_add_ndr_pullpush_test(suite, negoex_MESSAGE_ARRAY,
+	torture_suite_add_ndr_pull_validate_test(suite, negoex_MESSAGE_ARRAY,
 					    data_blob_const(negoex_MESSAGE_ARRAY_data, sizeof(negoex_MESSAGE_ARRAY_data)),
 					    negoex_MESSAGE_ARRAY_check);
 
