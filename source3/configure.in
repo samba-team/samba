@@ -3276,7 +3276,7 @@ if test x"$with_ldap_support" != x"no"; then
   if test x"$ac_cv_lib_ext_ldap_ldap_init" = x"yes"; then
     AC_DEFINE(HAVE_LDAP,1,[Whether ldap is available])
     CPPFLAGS="$CPPFLAGS -DLDAP_DEPRECATED"
-    default_static_modules="$default_static_modules pdb_ldap idmap_ldap";
+    default_static_modules="$default_static_modules pdb_ldapsam idmap_ldap";
     default_shared_modules="$default_shared_modules";
     SMBLDAP="lib/smbldap.o"
     with_ldap_support=yes
@@ -6353,13 +6353,18 @@ AC_ARG_WITH(shared-modules,
 	done
 fi ])
 
+# additionally, support pdb_ldap -> pdb_ldapsam replacement
+if test x"$MODULE_pdb_ldap" != x ; then
+	MODULE_pdb_ldapsam="$MODULE_pdb_ldap"
+fi
+
 if test x"$MODULE_DEFAULT_vfs_notify_fam" = xSTATIC -o \
 		x"$MODULE_vfs_notify_fam" = xSTATIC ; then
 	SMBD_FAM_LIBS="$SMB_FAM_LIBS"
 	AC_SUBST(SMBD_FAM_LIBS)
 fi
 
-SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o passdb/pdb_ldap_util.o,
+SMB_MODULE(pdb_ldapsam, passdb/pdb_ldap.o passdb/pdb_nds.o passdb/pdb_ipa.o passdb/pdb_ldap_util.o,
 		   "bin/ldapsam.$SHLIBEXT", PDB,
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
