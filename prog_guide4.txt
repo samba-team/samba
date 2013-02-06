@@ -267,7 +267,7 @@ parser where to find the following four variables, but they should
 In Samba3 there were unwritten rules about which variables in a
 structure a high level caller has to fill in and which ones are filled
 in by the marshalling code. In Samba4 those rules are gone, because
-the redundent artifact variables are gone. The high level caller just
+the redundant artifact variables are gone. The high level caller just
 sets up the real variables and the marshalling code worries about
 generating the right offsets.
 
@@ -286,10 +286,10 @@ read the comment in smb_interfaces.h about that now.
 
 So, here is another rule to code by. When writing an interface
 structure think carefully about what variables in the structure can be
-left out as they are redundent. If some length is effectively defined
+left out as they are redundant. If some length is effectively defined
 twice on the wire then only put it once in the packet. If a length can
 be inferred from a null termination then do that and leave the length
-out of the structure completely. Don't put redundent stuff in
+out of the structure completely. Don't put redundant stuff in
 structures!
 
 
