@@ -133,7 +133,14 @@ interface krb5pac
 	typedef [public,nopush,nopull] struct {
 		PAC_TYPE type;
 		[value(_ndr_size_PAC_INFO(info, type, 0))] uint32 _ndr_size;
-		[relative,switch_is(type),subcontext(0),subcontext_size(_subcontext_size_PAC_INFO(r, ndr->flags)),flag(NDR_ALIGN8)] PAC_INFO *info;
+		/*
+		 * We need to have two subcontexts to get the padding right,
+		 * the outer subcontext uses NDR_ROUND(_ndr_size, 8), while
+		 * the inner subcontext only uses _ndr_size.
+		 *
+		 * We do that in non-generated push/pull functions.
+		 */
+		[relative,switch_is(type),subcontext(0),subcontext_size(NDR_ROUND(_ndr_size,8)),flag(NDR_ALIGN8)] PAC_INFO *info;
 		[value(0)] uint32 _pad; /* Top half of a 64 bit pointer? */
 	} PAC_BUFFER;
 

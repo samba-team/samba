@@ -34,12 +34,6 @@ size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
 	}
 }
 
-static size_t _subcontext_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
-{
-	size_t s = ndr_size_PAC_INFO(r, level, flags);
-	return NDR_ROUND(s,8);
-}
-
 enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -61,11 +55,15 @@ enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const
 			if (r->info) {
 				NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->info));
 				{
+					struct ndr_push *_ndr_info_pad;
 					struct ndr_push *_ndr_info;
-					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info, 0, _subcontext_size_PAC_INFO(r->info,r->type,0)));
+					size_t _ndr_size = _ndr_size_PAC_INFO(r->info, r->type, 0);
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info_pad, 0, NDR_ROUND(_ndr_size, 8)));
+					NDR_CHECK(ndr_push_subcontext_start(_ndr_info_pad, &_ndr_info, 0, _ndr_size));
 					NDR_CHECK(ndr_push_set_switch_value(_ndr_info, r->info, r->type));
 					NDR_CHECK(ndr_push_PAC_INFO(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->info));
-					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info, 0, _subcontext_size_PAC_INFO(r->info,r->type,0)));
+					NDR_CHECK(ndr_push_subcontext_end(_ndr_info_pad, _ndr_info, 0, _ndr_size));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info_pad, 0, NDR_ROUND(_ndr_size, 8)));
 				}
 				NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->info));
 			}
@@ -108,11 +106,14 @@ enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struc
 				_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->info, 0);
 				{
+					struct ndr_pull *_ndr_info_pad;
 					struct ndr_pull *_ndr_info;
-					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info, 0, r->_ndr_size));
+					NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info_pad, 0, NDR_ROUND(r->_ndr_size, 8)));
+					NDR_CHECK(ndr_pull_subcontext_start(_ndr_info_pad, &_ndr_info, 0, r->_ndr_size));
 					NDR_CHECK(ndr_pull_set_switch_value(_ndr_info, r->info, r->type));
 					NDR_CHECK(ndr_pull_PAC_INFO(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->info));
-					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 0, r->_ndr_size));
+					NDR_CHECK(ndr_pull_subcontext_end(_ndr_info_pad, _ndr_info, 0, r->_ndr_size));
+					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info_pad, 0, NDR_ROUND(r->_ndr_size, 8)));
 				}
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 				if (ndr->offset > ndr->relative_highest_offset) {
