@@ -49,7 +49,7 @@ def build(bld):
     bld.SET_BUILD_GROUP('final')
     if 'POD2MAN' in bld.env and bld.env['POD2MAN'] != '':
         for src, manpage in pidl_manpages.iteritems():
-            bld(rule='${PERL} ${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
+            bld(rule='${POD2MAN} -c "Samba Documentation" ${SRC} ${TGT}',
                 shell=True,
                 source=src,
                 install_path=os.path.dirname(bld.EXPAND_VARIABLES('${MANDIR}/'+manpage)),
