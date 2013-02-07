@@ -84,7 +84,11 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         if not attrs is None:
             rec.update(attrs)
         # add it to the Schema
-        ldb_ctx.add(rec)
+        try:
+            ldb_ctx.add(rec)
+        except LdbError, (enum, estr):
+            self.fail("Adding record failed with %d/%s" % (enum, estr))
+
         self._ldap_schemaUpdateNow(ldb_ctx)
         return (rec["lDAPDisplayName"], rec["dn"])
 
