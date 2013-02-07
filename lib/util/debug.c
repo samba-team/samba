@@ -176,6 +176,7 @@ static const char *default_classname_table[] = {
 	"msdfs",	     /* DBGC_MSDFS	  */
 	"dmapi",	     /* DBGC_DMAPI	  */
 	"registry",          /* DBGC_REGISTRY     */
+	"scavenger",         /* DBGC_SCAVENGER    */
 	NULL
 };
 

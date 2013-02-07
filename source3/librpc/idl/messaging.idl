@@ -87,6 +87,7 @@ interface messaging
 
 		/* Trigger a notify cleanup run */
 		MSG_SMB_NOTIFY_CLEANUP		= 0x0314,
+		MSG_SMB_SCAVENGER		= 0x0315,
 
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
