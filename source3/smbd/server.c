@@ -45,6 +45,7 @@
 #include "lib/conn_tdb.h"
 #include "../lib/util/pidfile.h"
 #include "lib/smbd_shim.h"
+#include "scavenger.h"
 
 struct smbd_open_socket;
 struct smbd_child_pid;
@@ -1413,6 +1414,10 @@ extern void build_options(bool screen);
 	}
 
 	if (!smbd_parent_notify_init(NULL, msg_ctx, ev_ctx)) {
+		exit(1);
+	}
+
+	if (!smbd_scavenger_init(NULL, msg_ctx, ev_ctx)) {
 		exit(1);
 	}
 

@@ -386,6 +386,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/smbXsrv_open.c
                smbd/server_exit.c
                smbd/durable.c
+               smbd/scavenger.c
                ${MANGLE_SRC}'''
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}

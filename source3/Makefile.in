@@ -999,6 +999,7 @@ SMBD_OBJ_SRV = smbd/server_reload.o \
 	       smbd/smbXsrv_tcon.o \
 	       smbd/smbXsrv_open.o \
 	       smbd/durable.o \
+	       smbd/scavenger.o \
 	       autoconf/librpc/gen_ndr/ndr_ioctl.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
