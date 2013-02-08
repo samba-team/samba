@@ -404,6 +404,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					 file_info_level,
 					 STR_UNICODE,
 					 in_output_buffer_length,
+					 fsp->fsp_name,
 					 &data,
 					 &data_size);
 		if (!NT_STATUS_IS_OK(status)) {
