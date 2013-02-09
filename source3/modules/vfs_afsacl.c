@@ -700,7 +700,8 @@ static size_t afs_fto_nt_acl(struct afs_acl *afs_acl,
 		return 0;
 	}
 
-	return afs_to_nt_acl_common(afs_acl, &sbuf, security_info, ppdesc);
+	return afs_to_nt_acl_common(afs_acl, &sbuf, security_info,
+				mem_ctx, ppdesc);
 }
 
 static bool mappable_sid(const struct dom_sid *sid)
