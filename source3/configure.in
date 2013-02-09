@@ -5387,7 +5387,7 @@ int main() { struct aiocb a; return aio_cancel(1, &a); }])],
 
 			AC_MSG_CHECKING(for aio_suspend)
 			AC_LINK_IFELSE([AC_LANG_SOURCE([#include <aio.h>
-int main() { struct aiocb a; struct timespec t; return aio_suspend(&a, 1, &t); }])],
+int main() { const struct aiocb * const [a[1]]; struct timespec t; return aio_suspend(a, 1, &t); }])],
 [AC_DEFINE(HAVE_AIO_SUSPEND, 1, [Have aio_suspend]) AC_MSG_RESULT(yes)],
 [AC_MSG_RESULT(no)])
 		else

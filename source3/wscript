@@ -471,7 +471,7 @@ return acl_get_perm_np(permset_d, perm);
             conf.CHECK_CODE('struct aiocb a; return aio_return(&a);', 'HAVE_AIO_RETURN', msg='Checking for aio_return', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_error(&a);', 'HAVE_AIO_ERROR', msg='Checking for aio_error', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_cancel(1, &a);', 'HAVE_AIO_CANCEL', msg='Checking for aio_cancel', headers='aio.h', lib='aio rt')
-            conf.CHECK_CODE('struct aiocb a; struct timespec t; return aio_suspend(&a, 1, &t);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('const struct aiocb * const a[1]; struct timespec t; return aio_suspend(&a, 1, &t);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
         if not conf.CONFIG_SET('HAVE_AIO'):
             conf.DEFINE('HAVE_NO_AIO', '1')
     else:
