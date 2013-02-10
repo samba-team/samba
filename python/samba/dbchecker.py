@@ -43,6 +43,7 @@ class dbcheck(object):
         self.remove_all_empty_attributes = False
         self.fix_all_normalisation = False
         self.fix_all_DN_GUIDs = False
+        self.fix_all_binary_dn = False
         self.remove_all_deleted_DN_links = False
         self.fix_all_target_mismatch = False
         self.fix_all_metadata = False
@@ -59,7 +60,7 @@ class dbcheck(object):
         self.naming_dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
         self.schema_dn = samdb.get_schema_basedn()
         self.rid_dn = ldb.Dn(samdb, "CN=RID Manager$,CN=System," + samdb.domain_dn())
-        self.ntds_dsa = samdb.get_dsServiceName()
+        self.ntds_dsa = ldb.Dn(samdb, samdb.get_dsServiceName())
         self.class_schemaIDGUID = {}
 
         res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs', 'hasMasterNCs'])
@@ -283,6 +284,23 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix %s on attribute %s" % (errstr, attrname)):
             self.report("Fixed %s on attribute %s" % (errstr, attrname))
 
+    def err_incorrect_binary_dn(self, dn, attrname, val, dsdb_dn, errstr):
+        """handle an incorrect binary DN component"""
+        self.report("ERROR: %s binary component for %s in object %s - %s" % (errstr, attrname, dn, val))
+        controls=["extended_dn:1:1", "show_recycled:1"]
+
+        if not self.confirm_all('Change DN to %s?' % str(dsdb_dn), 'fix_all_binary_dn'):
+            self.report("Not fixing %s" % errstr)
+            return
+        m = ldb.Message()
+        m.dn = dn
+        m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
+        m['new_value'] = ldb.MessageElement(str(dsdb_dn), ldb.FLAG_MOD_ADD, attrname)
+
+        if self.do_modify(m, ["show_recycled:1"],
+                          "Failed to fix %s on attribute %s" % (errstr, attrname)):
+            self.report("Fixed %s on attribute %s" % (errstr, attrname))
+
     def err_dn_target_mismatch(self, dn, attrname, val, dsdb_dn, correct_dn, errstr):
         """handle a DN string being incorrect"""
         self.report("ERROR: incorrect DN string component for %s in object %s - %s" % (attrname, dn, val))
@@ -449,6 +467,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             guidstr = str(misc.GUID(guid))
 
             attrs = ['isDeleted']
+
+            if (str(attrname).lower() == 'msds-hasinstantiatedncs') and (obj.dn == self.ntds_dsa):
+                fixing_msDS_HasInstantiatedNCs = True
+                attrs.append("instanceType")
+            else:
+                fixing_msDS_HasInstantiatedNCs = False
+
             linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
             reverse_link_name = self.samdb_schema.get_backlink_from_lDAPDisplayName(attrname)
             if reverse_link_name is not None:
@@ -462,6 +487,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 error_count += 1
                 self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn, "incorrect GUID")
                 continue
+
+            if fixing_msDS_HasInstantiatedNCs:
+                dsdb_dn.prefix = "B:8:%08X:" % int(res[0]['instanceType'][0])
+                dsdb_dn.binary = "%08X" % int(res[0]['instanceType'][0])
+
+                if str(dsdb_dn) != val:
+                    error_count +=1
+                    self.err_incorrect_binary_dn(obj.dn, attrname, val, dsdb_dn, "incorrect instanceType part of Binary DN")
+                    continue
 
             # now we have two cases - the source object might or might not be deleted
             is_deleted = 'isDeleted' in obj and obj['isDeleted'][0].upper() == 'TRUE'
