@@ -256,6 +256,22 @@ static void poll_event_schedule_immediate(struct tevent_immediate *im,
 }
 
 /*
+  Private function called by "standard" backend fallback.
+  Note this only allows fallback to "poll" backend, not "poll-mt".
+*/
+_PRIVATE_ void tevent_poll_event_add_fd_internal(struct tevent_context *ev,
+						 struct tevent_fd *fde)
+{
+	struct poll_event_context *poll_ev = talloc_get_type_abort(
+		ev->additional_data, struct poll_event_context);
+
+	fde->additional_flags	= UINT64_MAX;
+	fde->additional_data	= NULL;
+	DLIST_ADD(poll_ev->fresh, fde);
+	talloc_set_destructor(fde, poll_fresh_fde_destructor);
+}
+
+/*
   add a fd based event
   return NULL on failure (memory allocation error)
 */
