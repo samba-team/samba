@@ -83,7 +83,7 @@ static const struct {
 	{ "DBRecordCountWarn",    100000,  offsetof(struct ctdb_tunable, db_record_count_warn), false },
 	{ "DBRecordSizeWarn",   10000000,  offsetof(struct ctdb_tunable, db_record_size_warn), false },
 	{ "DBSizeWarn",        100000000,  offsetof(struct ctdb_tunable, db_size_warn), false },
-	{ "PullDBPreallocation", 10*1024*10240,  offsetof(struct ctdb_tunable, pulldb_preallocation_size), false },
+	{ "PullDBPreallocation", 10*1024*1024,  offsetof(struct ctdb_tunable, pulldb_preallocation_size), false },
 	{ "NoIPTakeoverOnDisabled",    0,  offsetof(struct ctdb_tunable, no_ip_takeover_on_disabled), false },
 	{ "DeadlockTimeout",	300, offsetof(struct ctdb_tunable, deadlock_timeout), false },
 	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable, samba3_hack), false },
