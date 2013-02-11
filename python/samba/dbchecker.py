@@ -692,8 +692,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         return (sd, None)
 
     def err_wrong_sd(self, dn, sd, sd_broken):
-        '''re-write replPropertyMetaData elements for a single attribute for a
-        object. This is used to fix missing replPropertyMetaData elements'''
+        '''re-write the SD due to incorrect inherited ACEs'''
         sd_attr = "nTSecurityDescriptor"
         sd_val = ndr_pack(sd)
         sd_flags = security.SECINFO_DACL | security.SECINFO_SACL
