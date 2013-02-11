@@ -786,7 +786,8 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 		goto done;
 	}
 
-	DEBUG(10, ("Calling function with arguments (key=%s, timeout=%s)\n",
+	DEBUG(10, ("Calling function with arguments "
+		   "(key=[%s], timeout=[%s])\n",
 		   keystr, ctime(&timeout)));
 
 	state->fn(keystr,
