@@ -356,7 +356,7 @@ bool gencache_del(const char *keystr)
 
 	if (!gencache_init()) return False;	
 
-	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
+	DEBUG(10, ("Deleting cache entry (key=[%s])\n", keystr));
 
 	/*
 	 * We delete an element by setting its timeout to 0. This way we don't
