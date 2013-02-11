@@ -643,7 +643,7 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	 * The SD_FLAG control is ignored on add
 	 * and we default to all bits set.
 	 */
-	sd_flags = 0xF;
+	sd_flags = SECINFO_OWNER|SECINFO_GROUP|SECINFO_SACL|SECINFO_DACL;
 
 	sd = get_new_descriptor(module, dn, req,
 				objectclass, parent_sd,
