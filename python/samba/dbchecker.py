@@ -25,13 +25,15 @@ from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs
 from samba.common import dsdb_Dn
 from samba.dcerpc import security
+from samba.descriptor import get_wellknown_sds, get_diff_sds
 
 
 class dbcheck(object):
     """check a SAM database for errors"""
 
     def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False,
-                 yes=False, quiet=False, in_transaction=False):
+                 yes=False, quiet=False, in_transaction=False,
+                 reset_well_known_acls=False):
         self.samdb = samdb
         self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
@@ -55,6 +57,8 @@ class dbcheck(object):
         self.seize_fsmo_role = False
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
+        self.reset_well_known_acls = reset_well_known_acls
+        self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
         self.infrastructure_dn = ldb.Dn(samdb, "CN=Infrastructure," + samdb.domain_dn())
         self.naming_dn = ldb.Dn(samdb, "CN=Partitions,%s" % samdb.get_config_basedn())
@@ -62,6 +66,18 @@ class dbcheck(object):
         self.rid_dn = ldb.Dn(samdb, "CN=RID Manager$,CN=System," + samdb.domain_dn())
         self.ntds_dsa = ldb.Dn(samdb, samdb.get_dsServiceName())
         self.class_schemaIDGUID = {}
+        self.wellknown_sds = get_wellknown_sds(self.samdb)
+
+        self.name_map = {}
+        try:
+            res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % samdb.domain_dn(), scope=ldb.SCOPE_BASE,
+                           attrs=["objectSid"])
+            dnsadmins_sid = ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
+            self.name_map['DnsAdmins'] = str(dnsadmins_sid)
+        except ldb.LdbError, (enum, estr):
+            if enum != ldb.ERR_NO_SUCH_OBJECT:
+                raise
+            pass
 
         res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs', 'hasMasterNCs'])
         if "msDS-hasMasterNCs" in res[0]:
@@ -739,7 +755,29 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         nmsg.dn = dn
         nmsg[sd_attr] = ldb.MessageElement(sd_val, ldb.FLAG_MOD_REPLACE, sd_attr)
         if self.do_modify(nmsg, ["sd_flags:1:%d" % sd_flags],
-                          "Failed to fix metadata for attribute %s" % sd_attr):
+                          "Failed to fix attribute %s" % sd_attr):
+            self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
+
+    def err_wrong_default_sd(self, dn, sd, sd_old, diff):
+        '''re-write the SD due to not matching the default (optional mode for fixing an incorrect provision)'''
+        sd_attr = "nTSecurityDescriptor"
+        sd_val = ndr_pack(sd)
+        sd_old_val = ndr_pack(sd_old)
+        sd_flags = security.SECINFO_DACL | security.SECINFO_SACL
+        if sd.owner_sid is not None:
+            sd_flags |= security.SECINFO_OWNER
+        if sd.group_sid is not None:
+            sd_flags |= security.SECINFO_GROUP
+
+        if not self.confirm_all('Reset %s on %s back to provision default?\n%s' % (sd_attr, dn, diff), 'reset_all_well_known_acls'):
+            self.report('Not resetting %s on %s\n' % (sd_attr, dn))
+            return
+
+        m = ldb.Message()
+        m.dn = dn
+        m[sd_attr] = ldb.MessageElement(sd_val, ldb.FLAG_MOD_REPLACE, sd_attr)
+        if self.do_modify(m, ["sd_flags:1:%d" % sd_flags],
+                          "Failed to reset attribute %s" % sd_attr):
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
 
     def is_fsmo_role(self, dn):
@@ -773,6 +811,16 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             instancetype |= dsdb.INSTANCE_TYPE_WRITE
 
         return instancetype
+
+    def get_wellknown_sd(self, dn):
+        for [sd_dn, descriptor_fn] in self.wellknown_sds:
+            if dn == sd_dn:
+                domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+                return ndr_unpack(security.descriptor,
+                                  descriptor_fn(domain_sid,
+                                                name_map=self.name_map))
+
+        raise KeyError
 
     def check_object(self, dn, attrs=['*']):
         '''check one object'''
@@ -826,6 +874,22 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 if sd_broken is not None:
                     self.err_wrong_sd(dn, sd, sd_broken)
                     error_count += 1
+                    continue
+
+                if self.reset_well_known_acls:
+                    try:
+                        well_known_sd = self.get_wellknown_sd(dn)
+                    except KeyError:
+                        continue
+
+                    current_sd = ndr_unpack(security.descriptor,
+                                            str(obj[attrname][0]))
+
+                    diff = get_diff_sds(well_known_sd, current_sd, security.dom_sid(self.samdb.get_domain_sid()))
+                    if diff != "":
+                        self.err_wrong_default_sd(dn, well_known_sd, current_sd, diff)
+                        error_count += 1
+                        continue
                 continue
 
             if str(attrname).lower() == 'objectclass':

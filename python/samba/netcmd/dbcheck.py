@@ -56,6 +56,7 @@ class cmd_dbcheck(Command):
         Option("--attrs", dest="attrs", default=None, help="list of attributes to check (space separated)"),
         Option("--reindex", dest="reindex", default=False, action="store_true", help="force database re-index"),
         Option("--force-modules", dest="force_modules", default=False, action="store_true", help="force loading of Samba modules and ignore the @MODULES record (for very old databases)"),
+        Option("--reset-well-known-acls", dest="reset_well_known_acls", default=False, action="store_true", help="reset ACLs on objects with well known default ACL values to the default"),
         Option("-H", "--URL", help="LDB URL for database or target server (defaults to local SAM database)",
                type=str, metavar="URL", dest="H"),
         ]
@@ -63,7 +64,8 @@ class cmd_dbcheck(Command):
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False,
             cross_ncs=False, quiet=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None,
-            attrs=None, reindex=False, force_modules=False):
+            attrs=None, reindex=False, force_modules=False,
+            reset_well_known_acls=False):
 
         lp = sambaopts.get_loadparm()
 
@@ -114,7 +116,8 @@ class cmd_dbcheck(Command):
             started_transaction = True
         try:
             chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
-                          fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction)
+                          fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction,
+                          reset_well_known_acls=reset_well_known_acls)
 
             if reindex:
                 self.outf.write("Re-indexing...\n")
