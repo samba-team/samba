@@ -722,7 +722,7 @@ ACB_NORMAL (N, 0x%08X), ACB_WSTRUST (W 0x%08X), ACB_SVRTRUST (S 0x%08X) or ACB_D
 
 Please fix this account before attempting to upgrade again
 """
-                                    % (user.acct_flags, username,
+                                    % (username, user.acct_ctrl,
                                        samr.ACB_NORMAL, samr.ACB_WSTRUST, samr.ACB_SVRTRUST, samr.ACB_DOMTRUST))
 
         userdata[username] = user
