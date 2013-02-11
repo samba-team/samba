@@ -71,9 +71,26 @@ _PRIVATE_ bool tevent_epoll_set_panic_fallback(struct tevent_context *ev,
 static void epoll_panic(struct epoll_event_context *epoll_ev,
 			const char *reason, bool replay)
 {
-	tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
-		 "%s (%s) - calling abort()\n", reason, strerror(errno));
-	abort();
+	struct tevent_context *ev = epoll_ev->ev;
+
+	if (epoll_ev->panic_fallback == NULL) {
+		tevent_debug(ev, TEVENT_DEBUG_FATAL,
+			"%s (%s) replay[%u] - calling abort()\n",
+			reason, strerror(errno), (unsigned)replay);
+		abort();
+	}
+
+	tevent_debug(ev, TEVENT_DEBUG_WARNING,
+		     "%s (%s) replay[%u] - calling panic_fallback\n",
+		     reason, strerror(errno), (unsigned)replay);
+
+	if (!epoll_ev->panic_fallback(ev, replay)) {
+		/* Fallback failed. */
+		tevent_debug(ev, TEVENT_DEBUG_FATAL,
+			"%s (%s) replay[%u] - calling abort()\n",
+			reason, strerror(errno), (unsigned)replay);
+		abort();
+	}
 }
 
 /*
