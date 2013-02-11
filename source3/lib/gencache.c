@@ -857,7 +857,7 @@ static void gencache_iterate_fn(const char *key, DATA_BLOB value,
 	}
 
 	DEBUG(10, ("Calling function with arguments "
-		   "(key = %s, value = %s, timeout = %s)\n",
+		   "(key=[%s], value=[%s], timeout=[%s])\n",
 		   key, valstr, ctime(&timeout)));
 
 	state->fn(key, valstr, timeout, state->private_data);
