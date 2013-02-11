@@ -39,7 +39,31 @@ struct epoll_event_context {
 	int epoll_fd;
 
 	pid_t pid;
+
+	bool (*panic_fallback)(struct tevent_context *ev, bool replay);
 };
+
+/*
+  called to set the panic fallback function.
+*/
+_PRIVATE_ bool tevent_epoll_set_panic_fallback(struct tevent_context *ev,
+				bool (*panic_fallback)(struct tevent_context *ev,
+						       bool replay))
+{
+	struct epoll_event_context *epoll_ev;
+
+	if (ev->additional_data == NULL) {
+		return false;
+	}
+
+	epoll_ev = talloc_get_type(ev->additional_data,
+				struct epoll_event_context);
+	if (epoll_ev == NULL) {
+		return false;
+	}
+	epoll_ev->panic_fallback = panic_fallback;
+	return true;
+}
 
 /*
   called when a epoll call fails
