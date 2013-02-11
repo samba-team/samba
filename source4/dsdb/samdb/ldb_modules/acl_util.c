@@ -273,7 +273,7 @@ uint32_t dsdb_request_sd_flags(struct ldb_request *req, bool *explicit)
 	 * equals all 4 bits
 	 */
 	if (sd_flags == 0) {
-		sd_flags = 0xF;
+		sd_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL;
 	}
 
 	return sd_flags;
