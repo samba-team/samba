@@ -152,6 +152,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed");
+		return;
 	}
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
@@ -201,6 +202,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed");
+		return;
 	}
 
 	/* only if we want to read we want to tell the event handler about errors */
