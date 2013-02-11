@@ -181,20 +181,28 @@ static struct security_descriptor *descr_handle_sd_flags(TALLOC_CTX *mem_ctx,
 	final_sd->type = SEC_DESC_SELF_RELATIVE;
 
 	if (sd_flags & (SECINFO_OWNER)) {
-		final_sd->owner_sid = talloc_memdup(mem_ctx, new_sd->owner_sid, sizeof(struct dom_sid));
+		if (new_sd->owner_sid) {
+			final_sd->owner_sid = talloc_memdup(mem_ctx, new_sd->owner_sid, sizeof(struct dom_sid));
+		}
 		final_sd->type |= new_sd->type & SEC_DESC_OWNER_DEFAULTED;
 	}
 	else if (old_sd) {
-		final_sd->owner_sid = talloc_memdup(mem_ctx, old_sd->owner_sid, sizeof(struct dom_sid));
+		if (old_sd->owner_sid) {
+			final_sd->owner_sid = talloc_memdup(mem_ctx, old_sd->owner_sid, sizeof(struct dom_sid));
+		}
 		final_sd->type |= old_sd->type & SEC_DESC_OWNER_DEFAULTED;
 	}
 
 	if (sd_flags & (SECINFO_GROUP)) {
-		final_sd->group_sid = talloc_memdup(mem_ctx, new_sd->group_sid, sizeof(struct dom_sid));
+		if (new_sd->group_sid) {
+			final_sd->group_sid = talloc_memdup(mem_ctx, new_sd->group_sid, sizeof(struct dom_sid));
+		}
 		final_sd->type |= new_sd->type & SEC_DESC_GROUP_DEFAULTED;
 	} 
 	else if (old_sd) {
-		final_sd->group_sid = talloc_memdup(mem_ctx, old_sd->group_sid, sizeof(struct dom_sid));
+		if (old_sd->group_sid) {
+			final_sd->group_sid = talloc_memdup(mem_ctx, old_sd->group_sid, sizeof(struct dom_sid));
+		}
 		final_sd->type |= old_sd->type & SEC_DESC_GROUP_DEFAULTED;
 	}
 
