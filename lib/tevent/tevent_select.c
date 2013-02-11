@@ -47,6 +47,12 @@ static int select_event_context_init(struct tevent_context *ev)
 {
 	struct select_event_context *select_ev;
 
+	/*
+	 * We might be called during tevent_re_initialise()
+	 * which means we need to free our old additional_data.
+	 */
+	TALLOC_FREE(ev->additional_data);
+
 	select_ev = talloc_zero(ev, struct select_event_context);
 	if (!select_ev) return -1;
 	select_ev->ev = ev;

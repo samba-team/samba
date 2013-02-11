@@ -348,6 +348,12 @@ static int std_event_context_init(struct tevent_context *ev)
 {
 	struct std_event_context *std_ev;
 
+	/*
+	 * We might be called during tevent_re_initialise()
+	 * which means we need to free our old additional_data.
+	 */
+	TALLOC_FREE(ev->additional_data);
+
 	std_ev = talloc_zero(ev, struct std_event_context);
 	if (!std_ev) return -1;
 	std_ev->ev = ev;
