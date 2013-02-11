@@ -389,6 +389,12 @@ static int epoll_event_context_init(struct tevent_context *ev)
 	int ret;
 	struct epoll_event_context *epoll_ev;
 
+	/*
+	 * We might be called during tevent_re_initialise()
+	 * which means we need to free our old additional_data.
+	 */
+	TALLOC_FREE(ev->additional_data);
+
 	epoll_ev = talloc_zero(ev, struct epoll_event_context);
 	if (!epoll_ev) return -1;
 	epoll_ev->ev = ev;
