@@ -43,6 +43,24 @@ struct epoll_event_context {
 	bool (*panic_fallback)(struct tevent_context *ev, bool replay);
 };
 
+#ifdef TEST_PANIC_FALLBACK
+static int epoll_wait_panic_fallback(int epfd,
+				struct epoll_event *events,
+				int maxevents,
+				int timeout)
+{
+	/* 50% of the time, fail... */
+	if ((random() % 2) == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return epoll_wait(epfd, events, maxevents, timeout);
+}
+
+#define epoll_wait epoll_wait_panic_fallback
+#endif
+
 /*
   called to set the panic fallback function.
 */
