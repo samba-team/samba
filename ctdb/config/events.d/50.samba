@@ -68,11 +68,6 @@ service_stop ()
     fi
 }
 
-# set default samba cleanup period - in minutes
-[ -z "$SAMBA_CLEANUP_PERIOD" ] && {
-    SAMBA_CLEANUP_PERIOD=10
-}
-
 # we keep a cached copy of smb.conf here
 smbconf_cache="$service_state_dir/smb.conf.cache"
 
@@ -152,15 +147,6 @@ list_samba_shares ()
 
 
 ###########################
-# periodic cleanup function
-periodic_cleanup() {
-    # running smbstatus scrubs any dead entries from the connections
-    # and sessionid database
-    # echo "Running periodic cleanup of samba databases"
-    smbstatus -np > /dev/null 2>&1 &
-}
-
-###########################
 
 ctdb_start_stop_service
 
@@ -170,28 +156,16 @@ ctdb_service_check_reconfigure
 
 ###########################
 
-case "$1" in 
+case "$1" in
      startup)
 	ctdb_service_start
 	;;
-	
+
      shutdown)
 	ctdb_service_stop
 	;;
 
      monitor)
-	# Create a dummy file to track when we need to do periodic cleanup
-	# of samba databases
-	periodic_cleanup_file="$service_state_dir/periodic_cleanup"
-	[ -f "$periodic_cleanup_file" ] || {
-		touch "$periodic_cleanup_file"
-	}
-	[ `find "$periodic_cleanup_file" -mmin +$SAMBA_CLEANUP_PERIOD | wc -l` -eq 1 ] && {
-		# Cleanup the databases
-	    	periodic_cleanup
-		touch "$periodic_cleanup_file"
-	}
-
 	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] ; then
 	    testparm_background_update
 
@@ -200,7 +174,7 @@ case "$1" in
 		testparm_cat | egrep '^WARNING|^ERROR|^Unknown' && \
 		    die "ERROR: testparm shows smb.conf is not clean"
 	    }
-			
+
 	    list_samba_shares | ctdb_check_directories_probe || {
 		testparm_foreground_update
 		list_samba_shares |
