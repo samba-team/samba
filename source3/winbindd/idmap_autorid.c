@@ -244,7 +244,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 					struct id_map *map)
 {
 	uint32_t range;
-	TDB_DATA data;
+	TDB_DATA data = tdb_null;
 	char *keystr;
 	struct dom_sid sid;
 	NTSTATUS status;
