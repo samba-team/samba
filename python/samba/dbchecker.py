@@ -26,6 +26,7 @@ from samba.dcerpc import drsblobs
 from samba.common import dsdb_Dn
 from samba.dcerpc import security
 from samba.descriptor import get_wellknown_sds, get_diff_sds
+from samba.auth import system_session, admin_session
 
 
 class dbcheck(object):
@@ -54,6 +55,7 @@ class dbcheck(object):
         self.fix_all_orphaned_backlinks = False
         self.fix_rmd_flags = False
         self.fix_ntsecuritydescriptor = False
+        self.fix_ntsecuritydescriptor_owner_group = False
         self.seize_fsmo_role = False
         self.move_to_lost_and_found = False
         self.fix_instancetype = False
@@ -78,6 +80,9 @@ class dbcheck(object):
             if enum != ldb.ERR_NO_SUCH_OBJECT:
                 raise
             pass
+
+        self.system_session_info = system_session()
+        self.admin_session_info = admin_session(None, samdb.get_domain_sid())
 
         res = self.samdb.search(base=self.ntds_dsa, scope=ldb.SCOPE_BASE, attrs=['msDS-hasMasterNCs', 'hasMasterNCs'])
         if "msDS-hasMasterNCs" in res[0]:
@@ -780,6 +785,37 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to reset attribute %s" % sd_attr):
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
 
+    def err_missing_sd_owner(self, dn, sd):
+        '''re-write the SD due to a missing owner or group'''
+        sd_attr = "nTSecurityDescriptor"
+        sd_val = ndr_pack(sd)
+        sd_flags = security.SECINFO_OWNER | security.SECINFO_GROUP
+
+        if not self.confirm_all('Fix missing owner or group in %s on %s?' % (sd_attr, dn), 'fix_ntsecuritydescriptor_owner_group'):
+            self.report('Not fixing missing owner or group %s on %s\n' % (sd_attr, dn))
+            return
+
+        nmsg = ldb.Message()
+        nmsg.dn = dn
+        nmsg[sd_attr] = ldb.MessageElement(sd_val, ldb.FLAG_MOD_REPLACE, sd_attr)
+
+        # By setting the session_info to admin_session_info and
+        # setting the security.SECINFO_OWNER | security.SECINFO_GROUP
+        # flags we cause the descriptor module to set the correct
+        # owner and group on the SD, replacing the None/NULL values
+        # for owner_sid and group_sid currently present.
+        #
+        # The admin_session_info matches that used in provision, and
+        # is the best guess we can make for an existing object that
+        # hasn't had something specifically set.
+        #
+        # This is important for the dns related naming contexts.
+        self.samdb.set_session_info(self.admin_session_info)
+        if self.do_modify(nmsg, ["sd_flags:1:%d" % sd_flags],
+                          "Failed to fix metadata for attribute %s" % sd_attr):
+            self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
+        self.samdb.set_session_info(self.system_session_info)
+
     def is_fsmo_role(self, dn):
         if dn == self.samdb.domain_dn:
             return True
@@ -873,6 +909,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 (sd, sd_broken) = self.process_sd(dn, obj)
                 if sd_broken is not None:
                     self.err_wrong_sd(dn, sd, sd_broken)
+                    error_count += 1
+                    continue
+
+                if sd.owner_sid is None or sd.group_sid is None:
+                    self.err_missing_sd_owner(dn, sd)
                     error_count += 1
                     continue
 
