@@ -265,6 +265,7 @@ struct tevent_context {
 	} tracing;
 };
 
+const struct tevent_ops *tevent_find_ops_byname(const char *name);
 
 int tevent_common_context_destructor(struct tevent_context *ev);
 int tevent_common_loop_wait(struct tevent_context *ev,

@@ -121,6 +121,28 @@ static void tevent_backend_init(void)
 	tevent_standard_init();
 }
 
+_PRIVATE_ const struct tevent_ops *tevent_find_ops_byname(const char *name)
+{
+	struct tevent_ops_list *e;
+
+	tevent_backend_init();
+
+	if (name == NULL) {
+		name = tevent_default_backend;
+	}
+	if (name == NULL) {
+		name = "standard";
+	}
+
+	for (e = tevent_backends; e != NULL; e = e->next) {
+		if (0 == strcmp(e->name, name)) {
+			return e->ops;
+		}
+	}
+
+	return NULL;
+}
+
 /*
   list available backends
 */
