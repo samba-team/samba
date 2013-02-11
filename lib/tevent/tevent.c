@@ -115,10 +115,10 @@ static void tevent_backend_init(void)
 	tevent_select_init();
 	tevent_poll_init();
 	tevent_poll_mt_init();
-	tevent_standard_init();
 #ifdef HAVE_EPOLL
 	tevent_epoll_init();
 #endif
+	tevent_standard_init();
 }
 
 /*
