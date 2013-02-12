@@ -108,10 +108,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 		  "updated. Reloading.\n"));
 	change_to_root_user();
 	reload_services(msg, smbd_server_conn->sock, False);
-	if (am_parent) {
-		pcap_cache_reload(ev_ctx, msg,
-				  &reload_pcap_change_notify);
-	}
+	reload_printers(ev_ctx, msg);
 }
 
 /*******************************************************************
@@ -772,8 +769,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
 			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
-	messaging_register(msg_ctx, server_event_context(), MSG_PRINTER_PCAP,
-			   smb_pcap_updated);
 	brl_register_msgs(msg_ctx);
 
 	msg_idmap_register_msgs(msg_ctx);
@@ -1234,10 +1229,6 @@ extern void build_options(bool screen);
 	if (!print_backend_init(smbd_messaging_context()))
 		exit(1);
 
-	/* Publish nt printers, this requires a working winreg pipe */
-	pcap_cache_reload(server_event_context(), smbd_messaging_context(),
-			  &reload_printers);
-
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if
 	   smbd is launched via inetd and we fork a copy of 
@@ -1245,8 +1236,19 @@ extern void build_options(bool screen);
 
 	if (is_daemon && !interactive
 	    && lp_parm_bool(-1, "smbd", "backgroundqueue", true)) {
-		start_background_queue(smbd_event_context(),
-				       smbd_messaging_context());
+		/* background queue is responsible for printcap cache updates */
+		messaging_register(smbd_server_conn->msg_ctx,
+				   smbd_event_context(),
+				   MSG_PRINTER_PCAP, smb_pcap_updated);
+		start_background_queue(server_event_context(),
+				       smbd_server_conn->msg_ctx);
+	} else {
+		DEBUG(3, ("running without background printer process, dynamic "
+			  "printer updates disabled\n"));
+		/* Publish nt printers, this requires a working winreg pipe */
+		pcap_cache_reload(server_event_context(),
+				  smbd_messaging_context(),
+				  &reload_printers);
 	}
 
 	if (is_daemon && !_lp_disable_spoolss()) {
