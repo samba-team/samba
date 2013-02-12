@@ -182,7 +182,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 				    gensec_security->settings->lp_ctx,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
-		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",
+		DEBUG(1,("gensec_gssapi_start: smb_krb5_init_context failed (%s)\n",
 			 error_message(ret)));
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
@@ -211,7 +211,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	if (realm != NULL) {
 		ret = gsskrb5_set_default_realm(realm);
 		if (ret) {
-			DEBUG(1,("gensec_krb5_start: gsskrb5_set_default_realm failed\n"));
+			DEBUG(1,("gensec_gssapi_start: gsskrb5_set_default_realm failed\n"));
 			talloc_free(gensec_gssapi_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
@@ -220,7 +220,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	/* don't do DNS lookups of any kind, it might/will fail for a netbios name */
 	ret = gsskrb5_set_dns_canonicalize(gensec_setting_bool(gensec_security->settings, "krb5", "set_dns_canonicalize", false));
 	if (ret) {
-		DEBUG(1,("gensec_krb5_start: gsskrb5_set_dns_canonicalize failed\n"));
+		DEBUG(1,("gensec_gssapi_start: gsskrb5_set_dns_canonicalize failed\n"));
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -457,7 +457,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 
 			min_stat = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (min_stat) {
-				DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
+				DEBUG(1,("gensec_gssapi_update: gsskrb5_set_send_to_kdc failed\n"));
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 #endif
@@ -484,7 +484,7 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 
 			ret = gsskrb5_set_send_to_kdc(&send_to_kdc);
 			if (ret) {
-				DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
+				DEBUG(1,("gensec_gssapi_update: gsskrb5_set_send_to_kdc failed\n"));
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 #endif
@@ -999,7 +999,7 @@ static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_securi
 				       &max_input_size);
 	if (GSS_ERROR(maj_stat)) {
 		TALLOC_CTX *mem_ctx = talloc_new(NULL); 
-		DEBUG(1, ("gensec_gssapi_max_input_size: determinaing signature size with gss_wrap_size_limit failed: %s\n", 
+		DEBUG(1, ("gensec_gssapi_max_input_size: determining signature size with gss_wrap_size_limit failed: %s\n",
 			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 		talloc_free(mem_ctx);
 		return 0;
@@ -1152,7 +1152,7 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 
 	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, output_token.length);
 
-	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
+	dump_data_pw("gensec_gssapi_sign_packet: sig\n", sig->data, sig->length);
 
 	gss_release_buffer(&min_stat, &output_token);
 
@@ -1171,7 +1171,7 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 	gss_buffer_desc input_message;
 	gss_qop_t qop_state;
 
-	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
+	dump_data_pw("gensec_gssapi_check_packet: sig\n", sig->data, sig->length);
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
 		input_message.length = pdu_length;
