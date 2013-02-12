@@ -1751,6 +1751,11 @@ void start_background_queue(struct tevent_context *ev,
 			smb_panic("tevent_add_fd() failed for pause_pipe");
 		}
 
+		/* reload on startup to ensure parent smbd is refreshed */
+		pcap_cache_reload(server_event_context(),
+				  smbd_messaging_context(),
+				  &reload_pcap_change_notify);
+
 		if (!(event_add_idle(ev, NULL,
 				     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 				     "printer_housekeeping",
