@@ -905,6 +905,13 @@ static NTSTATUS check_spnego_blob_complete(struct smbd_server_connection *sconn,
 			(unsigned int)copy_len,
 			(unsigned int)pblob->length ));
 
+		if (pblob->length > pad->needed_len) {
+			DEBUG(2, ("subsequent security token data length %u "
+				  "exceeds expected length %u\n",
+				  (unsigned int)pblob->length,
+				  (unsigned int)pad->needed_len));
+		}
+
 		tmp_blob = data_blob(NULL,
 				pad->partial_data.length + copy_len);
 
@@ -1165,13 +1172,18 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	status = check_spnego_blob_complete(sconn, smbpid, vuid, &blob1);
 	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Pack error response, ensuring to fill NativeOS, NativeLanMan
+		 * & PrimaryDomain fields on NT_STATUS_MORE_PROCESSING_REQUIRED
+		 */
+		reply_outbuf(req, 4, 0);
+		reply_sesssetup_blob(req, data_blob_null, status);
 		if (!NT_STATUS_EQUAL(status,
 				NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			/* Real error - kill the intermediate vuid */
 			invalidate_vuid(sconn, vuid);
 		}
 		data_blob_free(&blob1);
-		reply_nterror(req, nt_status_squash(status));
 		return;
 	}
 
