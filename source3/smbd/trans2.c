@@ -7411,12 +7411,19 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 			/* File exists open. File not exist create. */
 			create_disp = FILE_OPEN_IF;
 			break;
+		case SMB_O_EXCL:
+			/* O_EXCL on its own without O_CREAT is undefined.
+			   We deliberately ignore it as some versions of
+			   Linux CIFSFS can send a bare O_EXCL on the
+			   wire which other filesystems in the kernel
+			   ignore. See bug 9519 for details. */
+
+			/* Fallthrough. */
+
 		case 0:
 			/* File exists open. File not exist fail. */
 			create_disp = FILE_OPEN;
 			break;
-		case SMB_O_EXCL:
-			/* O_EXCL on its own without O_CREAT is undefined. */
 		default:
 			DEBUG(5,("smb_posix_open: invalid create mode 0x%x\n",
 				(unsigned int)wire_open_mode ));
