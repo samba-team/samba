@@ -783,6 +783,17 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 			fsp->op->global->backend_cookie = new_cookie;
 
 			tmp = smbXsrv_open_close(fsp->op, now);
+			if (!NT_STATUS_IS_OK(tmp)) {
+				DEBUG(1, ("Failed to update smbXsrv_open "
+					  "record when disconnecting durable "
+					  "handle for file %s: %s - "
+					  "proceeding with normal close\n",
+					  fsp_str_dbg(fsp), nt_errstr(tmp)));
+			}
+		} else {
+			DEBUG(1, ("Failed to disconnect durable handle for "
+				  "file %s: %s - proceeding with normal "
+				  "close\n", fsp_str_dbg(fsp), nt_errstr(tmp)));
 		}
 		if (!NT_STATUS_IS_OK(tmp)) {
 			is_durable = false;
@@ -795,6 +806,9 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		 * a durable handle and closed the underlying file.
 		 * In all other cases, we proceed with a genuine close.
 		 */
+		DEBUG(10, ("%s disconnected durable handle for file %s\n",
+			   conn->session_info->unix_info->unix_name,
+			   fsp_str_dbg(fsp)));
 		file_free(req, fsp);
 		return NT_STATUS_OK;
 	}
