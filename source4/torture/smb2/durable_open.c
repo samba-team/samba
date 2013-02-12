@@ -1784,6 +1784,54 @@ done:
 	return ret;
 }
 
+/**
+ * durable open with oplock, disconnect, exit
+ */
+static bool test_durable_open_oplock_disconnect(struct torture_context *tctx,
+						struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	NTSTATUS status;
+	char fname[256];
+	bool ret = true;
+
+	snprintf(fname, 256, "durable_open_oplock_disconnect_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create(&io, fname, SMB2_OPLOCK_LEVEL_BATCH);
+	io.in.durable_open = true;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	_h = io.out.file.handle;
+	h = &_h;
+
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+
+	/* disconnect */
+	talloc_free(tree);
+	tree = NULL;
+
+done:
+	if (tree != NULL) {
+		if (h != NULL) {
+			smb2_util_close(tree, *h);
+		}
+		smb2_util_unlink(tree, fname);
+	}
+
+	return ret;
+}
+
+
 struct torture_suite *torture_smb2_durable_open_init(void)
 {
 	struct torture_suite *suite =
@@ -1816,6 +1864,21 @@ struct torture_suite *torture_smb2_durable_open_init(void)
 				     test_durable_open_read_only);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
+
+	return suite;
+}
+
+struct torture_suite *torture_smb2_durable_open_disconnect_init(void)
+{
+	struct torture_suite *suite =
+	    torture_suite_create(talloc_autofree_context(),
+				 "durable-open-disconnect");
+
+	torture_suite_add_1smb2_test(suite, "open-oplock-disconnect",
+				     test_durable_open_oplock_disconnect);
+
+	suite->description = talloc_strdup(suite,
+					"SMB2-DURABLE-OPEN-DISCONNECT tests");
 
 	return suite;
 }
