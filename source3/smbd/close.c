@@ -769,10 +769,20 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 					fsp->op,
 					&new_cookie);
 		if (NT_STATUS_IS_OK(tmp)) {
+			struct timeval tv;
+			NTTIME now;
+
+			if (req != NULL) {
+				tv = req->request_time;
+			} else {
+				tv = timeval_current();
+			}
+			now = timeval_to_nttime(&tv);
+
 			data_blob_free(&fsp->op->global->backend_cookie);
 			fsp->op->global->backend_cookie = new_cookie;
 
-			tmp = smbXsrv_open_update(fsp->op);
+			tmp = smbXsrv_open_close(fsp->op, now);
 		}
 		if (!NT_STATUS_IS_OK(tmp)) {
 			is_durable = false;
