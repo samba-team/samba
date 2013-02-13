@@ -288,7 +288,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 
 	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
 	           "[%s] (%d seconds %s)\n", keystr,
-		   ctime(&timeout),
+		   timestring(talloc_tos(), timeout),
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
