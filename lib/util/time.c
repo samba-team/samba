@@ -450,6 +450,15 @@ _PUBLIC_ char *timestring(TALLOC_CTX *mem_ctx, time_t t)
 	TimeBuf = talloc_strdup(mem_ctx, tempTime);
 #else
 	TimeBuf = talloc_strdup(mem_ctx, asctime(tm));
+	if (TimeBuf == NULL) {
+		return NULL;
+	}
+	if (TimeBuf[0] != '\0') {
+		size_t len = strlen(TimeBuf);
+		if (TimeBuf[len - 1] == '\n') {
+			TimeBuf[len - 1] = '\0';
+		}
+	}
 #endif
 
 	return TimeBuf;
