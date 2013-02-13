@@ -789,7 +789,7 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 
 	DEBUG(10, ("Calling function with arguments "
 		   "(key=[%s], timeout=[%s])\n",
-		   keystr, ctime(&timeout)));
+		   keystr, timestring(talloc_tos(), timeout)));
 
 	state->fn(keystr,
 		  data_blob_const(endptr,
