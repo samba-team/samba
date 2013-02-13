@@ -611,13 +611,15 @@ static bool test_durable_open_reopen3(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 done:
-	if (h != NULL) {
-		smb2_util_close(tree, *h);
+	if (tree != NULL) {
+		if (h != NULL) {
+			smb2_util_close(tree, *h);
+		}
+
+		smb2_util_unlink(tree2, fname);
+
+		talloc_free(tree);
 	}
-
-	smb2_util_unlink(tree2, fname);
-
-	talloc_free(tree);
 
 	talloc_free(mem_ctx);
 
