@@ -882,7 +882,7 @@ class cmd_ldapcmp(Command):
         "credopts": options.CredentialsOptionsDouble,
     }
 
-    takes_args = ["URL1", "URL2", "context1?", "context2?", "context3?"]
+    takes_args = ["URL1", "URL2", "context1?", "context2?", "context3?", "context4?", "context5?"]
 
     takes_options = [
         Option("-w", "--two", dest="two", action="store_true", default=False,
@@ -910,7 +910,7 @@ class cmd_ldapcmp(Command):
         ]
 
     def run(self, URL1, URL2,
-            context1=None, context2=None, context3=None,
+            context1=None, context2=None, context3=None, context4=None, context5=None,
             two=False, quiet=False, verbose=False, descriptor=False, sort_aces=False,
             view="section", base="", base2="", scope="SUB", filter="",
             credopts=None, sambaopts=None, versionopts=None, skip_missing_dn=False):
@@ -941,9 +941,9 @@ class cmd_ldapcmp(Command):
                 contexts = ["DOMAIN"]
             else:
                 # if no argument given, we compare all contexts
-                contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA"]
+                contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA", "DNSDOMAIN", "DNSFOREST"]
         else:
-            for c in [context1, context2, context3]:
+            for c in [context1, context2, context3, context4, context5]:
                 if c is None:
                     continue
                 if not c.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA", "DNSDOMAIN", "DNSFOREST"]:
