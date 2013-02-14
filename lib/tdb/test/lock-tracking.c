@@ -65,6 +65,17 @@ int fcntl_with_lockcheck(int fd, int cmd, ... /* arg */ )
 				}
 				break;
 			}
+			if (((*l)->off == fl->l_start)
+			    && ((*l)->len == 0)
+			    && (ret == 0)) {
+				/*
+				 * Remove a piece from the start of the
+				 * allrecord_lock
+				 */
+				old = *l;
+				(*l)->off += fl->l_len;
+				break;
+			}
 		}
 		if (!old && !suppress_lockcheck) {
 			diag("Unknown unlock %u@%u - %i",
