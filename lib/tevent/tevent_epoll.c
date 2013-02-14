@@ -44,7 +44,8 @@ struct epoll_event_context {
 /*
   called when a epoll call fails
 */
-static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
+static void epoll_panic(struct epoll_event_context *epoll_ev,
+			const char *reason, bool replay)
 {
 	tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
 		 "%s (%s) - calling abort()\n", reason, strerror(errno));
@@ -151,7 +152,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
-		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed");
+		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed", false);
 		return;
 	}
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
@@ -201,7 +202,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
-		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed");
+		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed", false);
 		return;
 	}
 
@@ -277,7 +278,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	if (ret == -1 && errno != EINTR) {
-		epoll_panic(epoll_ev, "epoll_wait() failed");
+		epoll_panic(epoll_ev, "epoll_wait() failed", true);
 		return -1;
 	}
 
@@ -293,7 +294,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		uint16_t flags = 0;
 
 		if (fde == NULL) {
-			epoll_panic(epoll_ev, "epoll_wait() gave bad data");
+			epoll_panic(epoll_ev, "epoll_wait() gave bad data", true);
 			return -1;
 		}
 		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
