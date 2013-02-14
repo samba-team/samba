@@ -4,6 +4,7 @@
    testing of the events subsystem
 
    Copyright (C) Stefan Metzmacher 2006-2009
+   Copyright (C) Jeremy Allison    2013
 
      ** NOTE! The following LGPL license applies to the tevent
      ** library. This does NOT imply that all of Samba is released
@@ -35,7 +36,7 @@
 
 static int fde_count;
 
-static void fde_handler(struct tevent_context *ev_ctx, struct tevent_fd *f, 
+static void fde_handler_read(struct tevent_context *ev_ctx, struct tevent_fd *f,
 			uint16_t flags, void *private_data)
 {
 	int *fd = (int *)private_data;
@@ -44,9 +45,36 @@ static void fde_handler(struct tevent_context *ev_ctx, struct tevent_fd *f,
 	kill(getpid(), SIGUSR1);
 #endif
 	kill(getpid(), SIGALRM);
+
 	read(fd[0], &c, 1);
-	write(fd[1], &c, 1);
 	fde_count++;
+}
+
+static void fde_handler_write(struct tevent_context *ev_ctx, struct tevent_fd *f,
+			uint16_t flags, void *private_data)
+{
+	int *fd = (int *)private_data;
+	char c = 0;
+	write(fd[1], &c, 1);
+}
+
+
+/* These should never fire... */
+static void fde_handler_read_1(struct tevent_context *ev_ctx, struct tevent_fd *f,
+			uint16_t flags, void *private_data)
+{
+	struct torture_context *test = (struct torture_context *)private_data;
+	torture_comment(test, "fde_handler_read_1 should never fire !\n");
+	abort();
+}
+
+/* These should never fire... */
+static void fde_handler_write_1(struct tevent_context *ev_ctx, struct tevent_fd *f,
+			uint16_t flags, void *private_data)
+{
+	struct torture_context *test = (struct torture_context *)private_data;
+	torture_comment(test, "fde_handler_write_1 should never fire !\n");
+	abort();
 }
 
 static void finished_handler(struct tevent_context *ev_ctx, struct tevent_timer *te,
@@ -70,7 +98,10 @@ static bool test_event_context(struct torture_context *test,
 	int fd[2] = { -1, -1 };
 	const char *backend = (const char *)test_data;
 	int alarm_count=0, info_count=0;
-	struct tevent_fd *fde;
+	struct tevent_fd *fde_read;
+	struct tevent_fd *fde_read_1;
+	struct tevent_fd *fde_write;
+	struct tevent_fd *fde_write_1;
 #ifdef SA_RESTART
 	struct tevent_signal *se1 = NULL;
 #endif
@@ -82,7 +113,6 @@ static bool test_event_context(struct torture_context *test,
 #endif
 	int finished=0;
 	struct timeval t;
-	char c = 0;
 
 	ev_ctx = tevent_context_init_byname(test, backend);
 	if (ev_ctx == NULL) {
@@ -99,9 +129,18 @@ static bool test_event_context(struct torture_context *test,
 	/* create a pipe */
 	pipe(fd);
 
-	fde = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_READ,
-			    fde_handler, fd);
-	tevent_fd_set_auto_close(fde);
+	fde_read = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_READ,
+			    fde_handler_read, fd);
+	fde_write_1 = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_WRITE,
+			    fde_handler_write_1, test);
+
+	fde_write = tevent_add_fd(ev_ctx, ev_ctx, fd[1], TEVENT_FD_WRITE,
+			    fde_handler_write, fd);
+	fde_read_1 = tevent_add_fd(ev_ctx, ev_ctx, fd[1], TEVENT_FD_READ,
+			    fde_handler_read_1, test);
+
+	tevent_fd_set_auto_close(fde_read);
+	tevent_fd_set_auto_close(fde_write);
 
 	tevent_add_timer(ev_ctx, ev_ctx, timeval_current_ofs(2,0),
 			 finished_handler, &finished);
@@ -119,8 +158,6 @@ static bool test_event_context(struct torture_context *test,
 	torture_assert(test, se3 != NULL, "failed to setup se3");
 #endif
 
-	write(fd[1], &c, 1);
-
 	t = timeval_current();
 	while (!finished) {
 		errno = 0;
@@ -130,8 +167,10 @@ static bool test_event_context(struct torture_context *test,
 		}
 	}
 
-	talloc_free(fde);
-	close(fd[1]);
+	talloc_free(fde_read);
+	talloc_free(fde_write);
+	talloc_free(fde_read_1);
+	talloc_free(fde_write_1);
 
 	while (alarm_count < fde_count+1) {
 		if (tevent_loop_once(ev_ctx) == -1) {
