@@ -112,6 +112,14 @@ void tevent_set_default_backend(const char *backend)
 */
 static void tevent_backend_init(void)
 {
+	static bool done;
+
+	if (done) {
+		return;
+	}
+
+	done = true;
+
 	tevent_select_init();
 	tevent_poll_init();
 	tevent_poll_mt_init();
