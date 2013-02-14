@@ -769,7 +769,6 @@ NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 
 /* The following definitions come from smbd/process.c  */
 
-void smbd_setup_sig_term_handler(void);
 bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
