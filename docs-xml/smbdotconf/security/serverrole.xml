@@ -65,7 +65,7 @@
     <para>This mode of operation runs a classic Samba backup domain
     controller, providing domain logon services to Windows and Samba
     clients of an NT4-like domain.  As a BDC, this allows
-    multiple Samba servers to provide rudundent logon services to a
+    multiple Samba servers to provide redundant logon services to a
     single NetBIOS scope.</para>
 
     <para><anchor id="AD-DC"/><emphasis>SERVER ROLE = ACTIVE DIRECTORY DOMAIN CONTROLLER</emphasis></para>
