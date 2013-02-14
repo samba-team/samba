@@ -401,6 +401,13 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 			mpx_fde->event_ctx = NULL;
 		}
 		return;
+	} else if (ret != 0 && errno == EEXIST && mpx_fde == NULL) {
+		ret = epoll_add_multiplex_fd(epoll_ev, fde);
+		if (ret != 0) {
+			epoll_panic(epoll_ev, "epoll_add_multiplex_fd failed",
+				    false);
+			return;
+		}
 	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed", false);
 		return;
