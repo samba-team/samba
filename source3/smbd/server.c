@@ -108,7 +108,7 @@ static void smb_conf_updated(struct messaging_context *msg,
 		  "updated. Reloading.\n"));
 	change_to_root_user();
 	reload_services(msg, smbd_server_conn->sock, False);
-	reload_printers(ev_ctx, msg);
+	/* printer reload triggered by background printing process */
 }
 
 /*******************************************************************
@@ -128,6 +128,57 @@ static void smb_pcap_updated(struct messaging_context *msg,
 	change_to_root_user();
 	reload_printers(ev_ctx, msg);
 }
+
+static void smbd_sig_term_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
+{
+	exit_server_cleanly("termination signal");
+}
+
+static void smbd_setup_sig_term_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(smbd_event_context(),
+			       smbd_event_context(),
+			       SIGTERM, 0,
+			       smbd_sig_term_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGTERM handler");
+	}
+}
+
+static void smbd_sig_hup_handler(struct tevent_context *ev,
+				 struct tevent_signal *se,
+				 int signum,
+				 int count,
+				 void *siginfo,
+				 void *private_data)
+{
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		private_data, struct messaging_context);
+	change_to_root_user();
+	DEBUG(1,("Reloading services after SIGHUP\n"));
+	reload_services(msg_ctx, smbd_server_conn->sock, false);
+}
+
+static void smbd_setup_sig_hup_handler(struct tevent_context *ev,
+				       struct messaging_context *msg_ctx)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(ev, ev, SIGHUP, 0, smbd_sig_hup_handler,
+			       msg_ctx);
+	if (!se) {
+		exit_server("failed to setup SIGHUP handler");
+	}
+}
+
 
 /*******************************************************************
  Delete a statcache entry.

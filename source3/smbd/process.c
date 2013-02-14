@@ -921,56 +921,6 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 	return result;
 }
 
-static void smbd_sig_term_handler(struct tevent_context *ev,
-				  struct tevent_signal *se,
-				  int signum,
-				  int count,
-				  void *siginfo,
-				  void *private_data)
-{
-	exit_server_cleanly("termination signal");
-}
-
-void smbd_setup_sig_term_handler(void)
-{
-	struct tevent_signal *se;
-
-	se = tevent_add_signal(smbd_event_context(),
-			       smbd_event_context(),
-			       SIGTERM, 0,
-			       smbd_sig_term_handler,
-			       NULL);
-	if (!se) {
-		exit_server("failed to setup SIGTERM handler");
-	}
-}
-
-static void smbd_sig_hup_handler(struct tevent_context *ev,
-				  struct tevent_signal *se,
-				  int signum,
-				  int count,
-				  void *siginfo,
-				  void *private_data)
-{
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		private_data, struct messaging_context);
-	change_to_root_user();
-	DEBUG(1,("Reloading services after SIGHUP\n"));
-	reload_services(msg_ctx, smbd_server_conn->sock, False);
-}
-
-void smbd_setup_sig_hup_handler(struct tevent_context *ev,
-				struct messaging_context *msg_ctx)
-{
-	struct tevent_signal *se;
-
-	se = tevent_add_signal(ev, ev, SIGHUP, 0, smbd_sig_hup_handler,
-			       msg_ctx);
-	if (!se) {
-		exit_server("failed to setup SIGHUP handler");
-	}
-}
-
 static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
 {
 	int timeout;

@@ -1717,8 +1717,21 @@ static void printing_sig_hup_handler(struct tevent_context *ev,
 		private_data, struct messaging_context);
 
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	reload_pcap_change_notify(ev, msg_ctx);
+	pcap_cache_reload(ev, msg_ctx,
+			  &reload_pcap_change_notify);
 }
+
+static void printing_conf_updated(struct messaging_context *msg,
+				  void *private_data,
+				  uint32_t msg_type,
+				  struct server_id server_id,
+				  DATA_BLOB *data)
+{
+	DEBUG(5,("Reloading printers after conf change\n"));
+	pcap_cache_reload(messaging_event_context(msg), msg,
+			  &reload_pcap_change_notify);
+}
+
 
 static pid_t background_lpq_updater_pid = -1;
 
@@ -1795,6 +1808,8 @@ void start_background_queue(struct tevent_context *ev,
 
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
 				   print_queue_receive);
+		messaging_register(msg_ctx, NULL, MSG_SMB_CONF_UPDATED,
+				   printing_conf_updated);
 
 		fde = tevent_add_fd(ev, ev, pause_pipe[1], TEVENT_FD_READ,
 				    printing_pause_fd_handler,
