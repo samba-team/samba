@@ -587,6 +587,38 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 }
 
 /*
+  Cope with epoll returning EPOLLHUP|EPOLLERR on an event.
+  Return true if there's nothing else to do, false if
+  this event needs further handling.
+*/
+static bool epoll_handle_hup_or_err(struct epoll_event_context *epoll_ev,
+				struct tevent_fd *fde)
+{
+	if (fde == NULL) {
+		/* Nothing to do if no event. */
+		return true;
+	}
+
+	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
+	/*
+	 * if we only wait for TEVENT_FD_WRITE, we should not tell the
+	 * event handler about it, and remove the epoll_event,
+	 * as we only report errors when waiting for read events,
+	 * to match the select() behavior
+	 */
+	if (!(fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR)) {
+		/*
+		 * Do the same as the poll backend and
+		 * remove the writeable flag.
+		 */
+		fde->flags &= ~TEVENT_FD_WRITE;
+		return true;
+	}
+	/* This has TEVENT_FD_READ set, we're not finished. */
+	return false;
+}
+
+/*
   event loop handling using epoll
 */
 static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval *tvalp)
