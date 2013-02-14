@@ -4,6 +4,7 @@ bld.SAMBA_LIBRARY('cmdline-credentials',
                   source='credentials.c',
                   autoproto='credentials.h',
                   public_deps='samba-credentials popt',
+                  deps='samba-util',
                   private_library=True)
 
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
