@@ -4,7 +4,8 @@
    main select loop and event handling - epoll implementation
 
    Copyright (C) Andrew Tridgell	2003-2005
-   Copyright (C) Stefan Metzmacher	2005-2009
+   Copyright (C) Stefan Metzmacher	2005-2013
+   Copyright (C) Jeremy Allison		2013
 
      ** NOTE! The following LGPL license applies to the tevent
      ** library. This does NOT imply that all of Samba is released
@@ -48,6 +49,7 @@ struct epoll_event_context {
 #define EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT	(1<<0)
 #define EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR	(1<<1)
 #define EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR	(1<<2)
+#define EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX	(1<<3)
 
 #ifdef TEST_PANIC_FALLBACK
 
@@ -261,6 +263,99 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 		}
 	}
 	epoll_ev->panic_state = NULL;
+}
+
+/*
+ epoll cannot add the same file descriptor twice, once
+ with read, once with write which is allowed by the
+ tevent backend. Multiplex the existing fde, flag it
+ as such so we can search for the correct fde on
+ event triggering.
+*/
+
+static int epoll_add_multiplex_fd(struct epoll_event_context *epoll_ev,
+				  struct tevent_fd *add_fde)
+{
+	struct epoll_event event;
+	struct tevent_fd *mpx_fde;
+	int ret;
+
+	/* Find the existing fde that caused the EEXIST error. */
+	for (mpx_fde = epoll_ev->ev->fd_events; mpx_fde; mpx_fde = mpx_fde->next) {
+		if (mpx_fde->fd != add_fde->fd) {
+			continue;
+		}
+
+		if (mpx_fde == add_fde) {
+			continue;
+		}
+
+		break;
+	}
+	if (mpx_fde == NULL) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "can't find multiplex fde for fd[%d]",
+			     add_fde->fd);
+		return -1;
+	}
+
+	if (mpx_fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX) {
+		/* Logic error. Can't have more than 2 multiplexed fde's. */
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "multiplex fde for fd[%d] is already multiplexed\n",
+			     mpx_fde->fd);
+		return -1;
+	}
+
+	/*
+	 * The multiplex fde must have the same fd, and also
+	 * already have an epoll event attached.
+	 */
+	if (!(mpx_fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT)) {
+		/* Logic error. Can't have more than 2 multiplexed fde's. */
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "multiplex fde for fd[%d] has no event\n",
+			     mpx_fde->fd);
+		return -1;
+	}
+
+	/* Modify the mpx_fde to add in the new flags. */
+	ZERO_STRUCT(event);
+	event.events = epoll_map_flags(mpx_fde->flags);
+	event.events |= epoll_map_flags(add_fde->flags);
+	event.data.ptr = mpx_fde;
+	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, mpx_fde->fd, &event);
+	if (ret != 0 && errno == EBADF) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_ERROR,
+			     "EPOLL_CTL_MOD EBADF for "
+			     "add_fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
+			     add_fde, mpx_fde, add_fde->fd);
+		DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+		mpx_fde->event_ctx = NULL;
+		DLIST_REMOVE(epoll_ev->ev->fd_events, add_fde);
+		add_fde->event_ctx = NULL;
+		return 0;
+	} else if (ret != 0) {
+		return ret;
+	}
+
+	/*
+	 * Make each fde->additional_data pointers point at each other
+	 * so we can look them up from each other. They are now paired.
+	 */
+	mpx_fde->additional_data = (struct tevent_fd *)add_fde;
+	add_fde->additional_data = (struct tevent_fd *)mpx_fde;
+
+	/* Now flag both fde's as being multiplexed. */
+	mpx_fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX;
+	add_fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX;
+
+	/* we need to keep the GOT_ERROR flag */
+	if (mpx_fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR) {
+		add_fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
+	}
+
+	return 0;
 }
 
 /*
