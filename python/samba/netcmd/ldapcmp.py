@@ -45,7 +45,7 @@ class LDAPBase(object):
     def __init__(self, host, creds, lp,
                  two=False, quiet=False, descriptor=False, sort_aces=False, verbose=False,
                  view="section", base="", scope="SUB",
-                 outf=sys.stdout, errf=sys.stderr):
+                 outf=sys.stdout, errf=sys.stderr, skip_missing_dn=True):
         ldb_options = []
         samdb_url = host
         if not "://" in host:
@@ -71,6 +71,7 @@ class LDAPBase(object):
         self.view = view
         self.verbose = verbose
         self.host = host
+        self.skip_missing_dn = skip_missing_dn
         self.base_dn = str(self.ldb.get_default_basedn())
         self.root_dn = str(self.ldb.get_root_basedn())
         self.config_dn = str(self.ldb.get_config_basedn())
@@ -686,6 +687,7 @@ class LDAPBundel(object):
         self.verbose = self.con.verbose
         self.search_base = self.con.search_base
         self.search_scope = self.con.search_scope
+        self.skip_missing_dn = self.con.skip_missing_dn
         self.summary = {}
         self.summary["unique_attrs"] = []
         self.summary["df_value_attrs"] = []
@@ -729,7 +731,8 @@ class LDAPBundel(object):
         res = True
         if self.size != other.size:
             self.log( "\n* DN lists have different size: %s != %s" % (self.size, other.size) )
-            res = False
+            if not self.skip_missing_dn:
+                res = False
         #
         # This is the case where we want to explicitly compare two objects with different DNs.
         # It does not matter if they are in the same DC, in two DC in one domain or in two
@@ -738,7 +741,7 @@ class LDAPBundel(object):
             title= "\n* DNs found only in %s:" % self.con.host
             for x in self.dn_list:
                 if not x.upper() in [q.upper() for q in other.dn_list]:
-                    if title:
+                    if title and not self.skip_missing_dn:
                         self.log( title )
                         title = None
                         res = False
@@ -749,7 +752,7 @@ class LDAPBundel(object):
             title= "\n* DNs found only in %s:" % other.con.host
             for x in other.dn_list:
                 if not x.upper() in [q.upper() for q in self.dn_list]:
-                    if title:
+                    if title and not self.skip_missing_dn:
                         self.log( title )
                         title = None
                         res = False
@@ -902,13 +905,15 @@ class cmd_ldapcmp(Command):
             help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         Option("--filter", dest="filter", default="",
             help="List of comma separated attributes to ignore in the comparision"),
+        Option("--skip-missing-dn", dest="skip_missing_dn", action="store_true", default=False,
+            help="Skip report and failure due to missing DNs in one server or another"),
         ]
 
     def run(self, URL1, URL2,
             context1=None, context2=None, context3=None,
             two=False, quiet=False, verbose=False, descriptor=False, sort_aces=False,
             view="section", base="", base2="", scope="SUB", filter="",
-            credopts=None, sambaopts=None, versionopts=None):
+            credopts=None, sambaopts=None, versionopts=None, skip_missing_dn=False):
 
         lp = sambaopts.get_loadparm()
 
