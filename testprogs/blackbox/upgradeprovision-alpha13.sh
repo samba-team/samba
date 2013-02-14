@@ -73,12 +73,28 @@ upgradeprovision_full() {
 	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/alpha13_upgrade_full/etc/smb.conf" --full --debugchange
 }
 
+samba_upgradedns() {
+        $PYTHON $BINDIR/samba_upgradedns --dns-backend=SAMBA_INTERNAL -s "$PREFIX_ABS/alpha13_upgrade_full/etc/smb.conf"
+}
+
+referenceprovision() {
+        $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=SAMBA --host-name=ares --realm=alpha13.samba.corp --targetdir=$PREFIX_ABS/alpha13_upgrade_reference --use-ntvfs
+}
+
+ldapcmp() {
+        $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/alpha13_upgrade_reference/private/sam.ldb tdb://$PREFIX_ABS/alpha13_upgrade_full/private/sam.ldb --two --filter=dNSProperty,dnsRecord,cn,displayName,versionNumber,systemFlags,msDS-HasInstantiatedNCs --skip-missing-dn
+}
+
 if [ -d $PREFIX_ABS/alpha13_upgrade ]; then
   rm -fr $PREFIX_ABS/alpha13_upgrade
 fi
 
 if [ -d $PREFIX_ABS/alpha13_upgrade_full ]; then
   rm -fr $PREFIX_ABS/alpha13_upgrade_full
+fi
+
+if [ -d $PREFIX_ABS/alpha13_upgrade_reference ]; then
+  rm -fr $PREFIX_ABS/alpha13_upgrade_reference
 fi
 
 if [ -d $alpha13_dir ]; then
@@ -91,6 +107,9 @@ if [ -d $alpha13_dir ]; then
     testit "dbcheck_clean" dbcheck_clean
     testit_expect_failure "dbcheck_full" dbcheck_full
     testit "dbcheck_full_clean" dbcheck_full_clean
+    testit "referenceprovision" referenceprovision
+    testit "samba_upgradedns" samba_upgradedns
+    testit "ldapcmp" ldapcmp
 else
     subunit_start_test "alpha13"
     subunit_skip_test "alpha13" <<EOF
@@ -128,6 +147,18 @@ no test provision
 EOF
     subunit_start_test "dbcheck_full_clean"
     subunit_skip_test "dbcheck_full_clean" <<EOF
+no test provision
+EOF
+    subunit_start_test "samba_dnsupgrade"
+    subunit_skip_test "samba_dnsupgrade" <<EOF
+no test provision
+EOF
+    subunit_start_test "referenceprovision"
+    subunit_skip_test "referenceprovision" <<EOF
+no test provision
+EOF
+    subunit_start_test "ldapcmp"
+    subunit_skip_test "ldapcmp" <<EOF
 no test provision
 EOF
 fi
