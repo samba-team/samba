@@ -957,9 +957,6 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
 	reload_services(msg_ctx, smbd_server_conn->sock, False);
-	if (am_parent) {
-		pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
-	}
 }
 
 void smbd_setup_sig_hup_handler(struct tevent_context *ev,

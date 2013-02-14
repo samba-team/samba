@@ -770,8 +770,6 @@ NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 /* The following definitions come from smbd/process.c  */
 
 void smbd_setup_sig_term_handler(void);
-void smbd_setup_sig_hup_handler(struct tevent_context *ev,
-				struct messaging_context *msg_ctx);
 bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		  bool no_signing, uint32_t seqnum,
 		  bool do_encrypt,
@@ -982,8 +980,6 @@ void reload_printers(struct tevent_context *ev,
 		     struct messaging_context *msg_ctx);
 bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 		     bool test);
-void reload_pcap_change_notify(struct tevent_context *ev,
-			       struct messaging_context *msg_ctx);
 void exit_server(const char *const explanation);
 void exit_server_cleanly(const char *const explanation);
 void exit_server_fault(void);
