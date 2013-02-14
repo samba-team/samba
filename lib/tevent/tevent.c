@@ -273,23 +273,14 @@ struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx,
 						  const char *name)
 {
-	struct tevent_ops_list *e;
+	struct tevent_ops *ops;
 
-	tevent_backend_init();
-
-	if (name == NULL) {
-		name = tevent_default_backend;
-	}
-	if (name == NULL) {
-		name = "standard";
+	ops = tevent_find_ops_byname(name);
+	if (ops == NULL) {
+		return NULL;
 	}
 
-	for (e=tevent_backends;e;e=e->next) {
-		if (strcmp(name, e->name) == 0) {
-			return tevent_context_init_ops(mem_ctx, e->ops, NULL);
-		}
-	}
-	return NULL;
+	return tevent_context_init_ops(mem_ctx, ops, NULL);
 }
 
 
