@@ -71,8 +71,21 @@ static void smb_conf_updated(struct messaging_context *msg,
 
 	DEBUG(10, ("Got message saying smb.conf was updated. Reloading.\n"));
 	change_to_root_user();
-	reload_printers(ev_ctx, msg);
 	spoolss_reopen_logs();
+}
+
+static void spoolss_pcap_updated(struct messaging_context *msg,
+				 void *private_data,
+				 uint32_t msg_type,
+				 struct server_id server_id,
+				 DATA_BLOB *data)
+{
+	struct tevent_context *ev_ctx = talloc_get_type_abort(private_data,
+							     struct tevent_context);
+
+	DEBUG(10, ("Got message saying pcap was updated. Reloading.\n"));
+	change_to_root_user();
+	reload_printers(ev_ctx, msg);
 }
 
 static void spoolss_sig_term_handler(struct tevent_context *ev,
@@ -111,7 +124,6 @@ static void spoolss_sig_hup_handler(struct tevent_context *ev,
 
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	reload_printers(ev, msg_ctx);
 	spoolss_reopen_logs();
 }
 
@@ -198,6 +210,8 @@ void start_spoolssd(struct tevent_context *ev_ctx,
 			   MSG_PRINTER_UPDATE, print_queue_receive);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
+	messaging_register(msg_ctx, ev_ctx,
+			   MSG_PRINTER_PCAP, spoolss_pcap_updated);
 
 	/*
 	 * Initialize spoolss with an init function to convert printers first.
