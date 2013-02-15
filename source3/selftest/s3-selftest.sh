@@ -45,7 +45,7 @@ else
 	                --srcdir="${SOURCEDIR}/.." \
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
-		${FILTER_XFAIL} | ${SUBUNIT_FORMATTER}
+		tee ${SELFTESTPREFIX}/subunit | ${FILTER_XFAIL} | ${SUBUNIT_FORMATTER}
 	EXIT_STATUS=$?
 
 	st_test_done
