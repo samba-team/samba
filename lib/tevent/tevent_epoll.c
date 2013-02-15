@@ -313,6 +313,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 #define MAXEVENTS 1
 	struct epoll_event events[MAXEVENTS];
 	int timeout = -1;
+	int wait_errno;
 
 	if (epoll_ev->epoll_fd == -1) return -1;
 
@@ -328,15 +329,16 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 
 	tevent_trace_point_callback(epoll_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
+	wait_errno = errno;
 	tevent_trace_point_callback(epoll_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
-	if (ret == -1 && errno == EINTR && epoll_ev->ev->signal_events) {
+	if (ret == -1 && wait_errno == EINTR && epoll_ev->ev->signal_events) {
 		if (tevent_common_check_signal(epoll_ev->ev)) {
 			return 0;
 		}
 	}
 
-	if (ret == -1 && errno != EINTR) {
+	if (ret == -1 && wait_errno != EINTR) {
 		epoll_panic(epoll_ev, "epoll_wait() failed", true);
 		return -1;
 	}

@@ -144,6 +144,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	fd_set r_fds, w_fds;
 	struct tevent_fd *fde;
 	int selrtn;
+	int select_errno;
 
 	/* we maybe need to recalculate the maxfd */
 	if (select_ev->maxfd == EVENT_INVALID_MAXFD) {
@@ -175,15 +176,16 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	tevent_trace_point_callback(select_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+	select_errno = errno;
 	tevent_trace_point_callback(select_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
-	if (selrtn == -1 && errno == EINTR && 
+	if (selrtn == -1 && select_errno == EINTR &&
 	    select_ev->ev->signal_events) {
 		tevent_common_check_signal(select_ev->ev);
 		return 0;
 	}
 
-	if (selrtn == -1 && errno == EBADF) {
+	if (selrtn == -1 && select_errno == EBADF) {
 		/* the socket is dead! this should never
 		   happen as the socket should have first been
 		   made readable and that should have removed
