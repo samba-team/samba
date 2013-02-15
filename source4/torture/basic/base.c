@@ -1938,7 +1938,7 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_smb_multi_test(suite, "bench-torture", run_torture);
 	torture_suite_add_1smb_test(suite, "scan-pipe_number", run_pipe_number);
 	torture_suite_add_1smb_test(suite, "scan-ioctl", torture_ioctl_test);
-	torture_suite_add_smb_multi_test(suite, "scan-maxfid", run_maxfidtest);
+	torture_suite_add_1smb_test(suite, "scan-maxfid", torture_maxfid_test);
 
 	suite->description = talloc_strdup(suite, 
 					"Basic SMB tests (imported from the original smbtorture)");
