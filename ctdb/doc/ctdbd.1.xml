@@ -1099,7 +1099,7 @@
     </para>
     </refsect2>
 
-    <refsect2><title>Samba3AvoidDeadlock</title>
+    <refsect2><title>Samba3AvoidDeadlocks</title>
     <para>Default: 0</para>
     <para>
     Enable code that prevents deadlocks with Samba (only for Samba 3.x).
