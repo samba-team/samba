@@ -44,11 +44,50 @@ struct epoll_event_context {
 };
 
 #ifdef TEST_PANIC_FALLBACK
-static int epoll_wait_panic_fallback(int epfd,
-				struct epoll_event *events,
-				int maxevents,
-				int timeout)
+
+static int epoll_create_panic_fallback(struct epoll_event_context *epoll_ev,
+				       int size)
 {
+	if (epoll_ev->panic_fallback == NULL) {
+		return epoll_create(size);
+	}
+
+	/* 50% of the time, fail... */
+	if ((random() % 2) == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return epoll_create(size);
+}
+
+static int epoll_ctl_panic_fallback(struct epoll_event_context *epoll_ev,
+				    int epfd, int op, int fd,
+				    struct epoll_event *event)
+{
+	if (epoll_ev->panic_fallback == NULL) {
+		return epoll_ctl(epfd, op, fd, event);
+	}
+
+	/* 50% of the time, fail... */
+	if ((random() % 2) == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return epoll_ctl(epfd, op, fd, event);
+}
+
+static int epoll_wait_panic_fallback(struct epoll_event_context *epoll_ev,
+				     int epfd,
+				     struct epoll_event *events,
+				     int maxevents,
+				     int timeout)
+{
+	if (epoll_ev->panic_fallback == NULL) {
+		return epoll_wait(epfd, events, maxevents, timeout);
+	}
+
 	/* 50% of the time, fail... */
 	if ((random() % 2) == 0) {
 		errno = EINVAL;
@@ -58,7 +97,12 @@ static int epoll_wait_panic_fallback(int epfd,
 	return epoll_wait(epfd, events, maxevents, timeout);
 }
 
-#define epoll_wait epoll_wait_panic_fallback
+#define epoll_create(_size) \
+	epoll_create_panic_fallback(epoll_ev, _size)
+#define epoll_ctl(_epfd, _op, _fd, _event) \
+	epoll_ctl_panic_fallback(epoll_ev,_epfd, _op, _fd, _event)
+#define epoll_wait(_epfd, _events, _maxevents, _timeout) \
+	epoll_wait_panic_fallback(epoll_ev, _epfd, _events, _maxevents, _timeout)
 #endif
 
 /*
