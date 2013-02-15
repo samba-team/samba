@@ -560,32 +560,9 @@ def updateOEMInfo(samdb, rootdn):
                                                         "oEMInformation" )
         samdb.modify(delta)
 
-def update_gpo(paths, samdb, names, lp, message, force=0):
+def update_gpo(paths, samdb, names, lp, message):
     """Create missing GPO file object if needed
-
-    Set ACL correctly also.
-    Check ACLs for sysvol/netlogon dirs also
     """
-    resetacls = False
-    try:
-        ntacls.checkset_backend(lp, None, None)
-        eadbname = lp.get("posix:eadb")
-        if eadbname is not None and eadbname != "":
-            try:
-                attribute = samba.xattr_tdb.wrap_getxattr(eadbname,
-                                paths.sysvol, xattr.XATTR_NTACL_NAME)
-            except Exception:
-                attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
-                                xattr.XATTR_NTACL_NAME)
-        else:
-            attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
-                                xattr.XATTR_NTACL_NAME)
-    except Exception:
-       resetacls = True
-
-    if force:
-        resetacls = True
-
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid)
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
@@ -595,30 +572,6 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
     dir = getpolicypath(paths.sysvol, names.dnsdomain, names.policyid_dc)
     if not os.path.isdir(dir):
         create_gpo_struct(dir)
-
-    def acl_error(e):
-        if os.geteuid() == 0:
-            message(ERROR, "Unable to set ACLs on policies related objects: %s" % e)
-        else:
-            message(ERROR, "Unable to set ACLs on policies related objects. "
-                    "ACLs must be set as root if file system ACLs "
-                    "(rather than posix:eadb) are used.")
-
-    # We always reinforce acls on GPO folder because they have to be in sync
-    # with the one in DS
-    try:
-        set_gpos_acl(paths.sysvol, names.dnsdomain, names.domainsid,
-            names.domaindn, samdb, lp)
-    except TypeError, e:
-        acl_error(e)
-
-    if resetacls:
-       try:
-            setsysvolacl(samdb, paths.netlogon, paths.sysvol, names.root_gid,
-                        names.domainsid, names.dnsdomain, names.domaindn, lp)
-       except TypeError, e:
-           acl_error(e)
-
 
 def increment_calculated_keyversion_number(samdb, rootdn, hashDns):
     """For a given hash associating dn and a number, this function will
