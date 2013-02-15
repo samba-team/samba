@@ -430,9 +430,21 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 {
 	struct epoll_event event;
 	int ret;
+	struct tevent_fd *mpx_fde = NULL;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+
+	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX) {
+		/*
+		 * This is a multiplexed fde, we need to modify both events.
+		 */
+		mpx_fde = talloc_get_type_abort(fde->additional_data,
+						struct tevent_fd);
+
+		mpx_fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
+		mpx_fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+	}
 
 	ZERO_STRUCT(event);
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
@@ -448,10 +460,14 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	} else if (ret != 0 && errno == EBADF) {
 		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_WARNING,
 			     "EPOLL_CTL_DEL EBADF for "
-			     "fde[%p] fd[%d] - disabling\n",
-			     fde, fde->fd);
+			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
+			     fde, mpx_fde, fde->fd);
 		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
 		fde->event_ctx = NULL;
+		if (mpx_fde != NULL) {
+			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+			mpx_fde->event_ctx = NULL;
+		}
 		return;
 	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_DEL failed", false);
