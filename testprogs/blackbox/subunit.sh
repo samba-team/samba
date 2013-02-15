@@ -54,6 +54,16 @@ subunit_error_test () {
   echo "]"
 }
 
+subunit_skip_test () {
+  # emit the current protocol skip-marker for test $1, and emit stdin as
+  # the error text.
+  # we use stdin because the failure message can be arbitrarily long, and this
+  # makes it convenient to write in scripts (using <<END syntax.
+  echo "skip: $1 ["
+  cat -
+  echo "]"
+}
+
 testit () {
 	name="$1"
 	shift
