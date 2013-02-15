@@ -1,0 +1,80 @@
+{
+key(78) = "DN=KEY=TERMINAL SERVER,KEY=CONTROL,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(111) = "g\19\01&\01\00\00\00key=Terminal Server,key=Control,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\0F\00\00\00Terminal Server\00"
+}
+{
+key(86) = "DN=KEY=PARAMETERS,KEY=ALERTER,KEY=SERVICES,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(114) = "g\19\01&\01\00\00\00key=Parameters,key=Alerter,key=Services,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\0A\00\00\00Parameters\00"
+}
+{
+key(87) = "DN=KEY=PARAMETERS,KEY=NETLOGON,KEY=SERVICES,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(115) = "g\19\01&\01\00\00\00key=Parameters,key=Netlogon,key=Services,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\0A\00\00\00Parameters\00"
+}
+{
+key(40) = "DN=KEY=MICROSOFT,KEY=SOFTWARE,HIVE=NONE\00"
+data(67) = "g\19\01&\01\00\00\00key=Microsoft,key=SOFTWARE,hive=NONE\00key\00\01\00\00\00\09\00\00\00Microsoft\00"
+}
+{
+key(74) = "DN=KEY=CURRENTVERSION,KEY=WINDOWS NT,KEY=MICROSOFT,KEY=SOFTWARE,HIVE=NONE\00"
+data(106) = "g\19\01&\01\00\00\00key=CurrentVersion,key=Windows NT,key=Microsoft,key=SOFTWARE,hive=NONE\00key\00\01\00\00\00\0E\00\00\00CurrentVersion\00"
+}
+{
+key(68) = "DN=KEY=PRINT,KEY=CONTROL,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(91) = "g\19\01&\01\00\00\00key=Print,key=Control,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\05\00\00\00Print\00"
+}
+{
+key(59) = "DN=KEY=SERVICES,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(85) = "g\19\01&\01\00\00\00key=Services,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\08\00\00\00Services\00"
+}
+{
+key(15) = "DN=@ATTRIBUTES\00"
+data(80) = "g\19\01&\02\00\00\00@ATTRIBUTES\00key\00\01\00\00\00\10\00\00\00CASE_INSENSITIVE\00value\00\01\00\00\00\10\00\00\00CASE_INSENSITIVE\00"
+}
+{
+key(46) = "DN=KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(81) = "g\19\01&\01\00\00\00key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\11\00\00\00CurrentControlSet\00"
+}
+{
+key(77) = "DN=KEY=PRODUCTOPTIONS,KEY=CONTROL,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(109) = "g\19\01&\01\00\00\00key=ProductOptions,key=Control,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\0E\00\00\00ProductOptions\00"
+}
+{
+key(71) = "DN=KEY=ALERTER,KEY=SERVICES,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(96) = "g\19\01&\01\00\00\00key=Alerter,key=Services,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\07\00\00\00Alerter\00"
+}
+{
+key(114) = "DN=VALUE=REFUSEPASSWORDCHANGE,KEY=PARAMETERS,KEY=NETLOGON,KEY=SERVICES,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(193) = "g\19\01&\03\00\00\00value=RefusePasswordChange,key=Parameters,key=Netlogon,key=Services,key=CurrentControlSet,key=SYSTEM,hive=NONE\00data\00\01\00\00\00\0A\00\00\000x00000000\00type\00\01\00\00\00\01\00\00\004\00value\00\01\00\00\00\14\00\00\00RefusePasswordChange\00"
+}
+{
+key(95) = "DN=VALUE=PRODUCTTYPE,KEY=PRODUCTOPTIONS,KEY=CONTROL,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(164) = "g\19\01&\03\00\00\00value=ProductType,key=ProductOptions,key=Control,key=CurrentControlSet,key=SYSTEM,hive=NONE\00data\00\01\00\00\00\09\00\00\00LanmanNT\00\00type\00\01\00\00\00\01\00\00\001\00value\00\01\00\00\00\0B\00\00\00ProductType\00"
+}
+{
+key(55) = "DN=KEY=WINDOWS NT,KEY=MICROSOFT,KEY=SOFTWARE,HIVE=NONE\00"
+data(83) = "g\19\01&\01\00\00\00key=Windows NT,key=Microsoft,key=SOFTWARE,hive=NONE\00key\00\01\00\00\00\0A\00\00\00Windows NT\00"
+}
+{
+key(13) = "DN=@BASEINFO\00"
+data(82) = "g\19\01&\02\00\00\00@BASEINFO\00whenChanged\00\01\00\00\00\11\00\00\0020130216005005.0Z\00sequenceNumber\00\01\00\00\00\02\00\00\0020\00"
+}
+{
+key(58) = "DN=KEY=CONTROL,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(83) = "g\19\01&\01\00\00\00key=Control,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\07\00\00\00Control\00"
+}
+{
+key(95) = "DN=VALUE=CURRENTVERSION,KEY=CURRENTVERSION,KEY=WINDOWS NT,KEY=MICROSOFT,KEY=SOFTWARE,HIVE=NONE\00"
+data(162) = "g\19\01&\03\00\00\00value=CurrentVersion,key=CurrentVersion,key=Windows NT,key=Microsoft,key=SOFTWARE,hive=NONE\00data\00\01\00\00\00\04\00\00\006.1\00\00type\00\01\00\00\00\01\00\00\001\00value\00\01\00\00\00\0E\00\00\00CurrentVersion\00"
+}
+{
+key(72) = "DN=KEY=NETLOGON,KEY=SERVICES,KEY=CURRENTCONTROLSET,KEY=SYSTEM,HIVE=NONE\00"
+data(98) = "g\19\01&\01\00\00\00key=Netlogon,key=Services,key=CurrentControlSet,key=SYSTEM,hive=NONE\00key\00\01\00\00\00\08\00\00\00Netlogon\00"
+}
+{
+key(24) = "DN=KEY=SYSTEM,HIVE=NONE\00"
+data(48) = "g\19\01&\01\00\00\00key=SYSTEM,hive=NONE\00key\00\01\00\00\00\06\00\00\00SYSTEM\00"
+}
+{
+key(26) = "DN=KEY=SOFTWARE,HIVE=NONE\00"
+data(52) = "g\19\01&\01\00\00\00key=SOFTWARE,hive=NONE\00key\00\01\00\00\00\08\00\00\00SOFTWARE\00"
+}

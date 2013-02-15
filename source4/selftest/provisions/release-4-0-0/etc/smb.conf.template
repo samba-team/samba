@@ -1,0 +1,17 @@
+[globals]
+	netbios name	= ARES
+	workgroup	= SAMBA
+	realm		= release-4-0-0.samba.corp
+	server role     = domain controller
+
+	private dir = @@PREFIX@@/private
+	lock dir = @@PREFIX@@/
+	posix:eadb = @@PREFIX@@/private/eadb.tdb
+
+[netlogon]
+	path = @@PREFIX@@/sysvol/release-4-0-0.samba.corp/scripts
+	read only = no
+
+[sysvol]
+	path = @@PREFIX@@/sysvol
+	read only = no
