@@ -9316,6 +9316,7 @@ static void usage(void)
 	setup_logging("smbtorture", DEBUG_STDOUT);
 
 	load_case_tables();
+	fault_setup();
 
 	if (is_default_dyn_CONFIGFILE()) {
 		if(getenv("SMB_CONF_PATH")) {
