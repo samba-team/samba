@@ -307,10 +307,17 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
-	if (ret != 0) {
-		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
-			     "epoll_del_event failed! probable early close bug (%s)\n",
-			     strerror(errno));
+	if (ret != 0 && errno == ENOENT) {
+		/*
+		 * This can happen after a epoll_check_reopen
+		 * within epoll_event_fd_destructor.
+		 */
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_TRACE,
+			     "EPOLL_CTL_DEL ignoring ENOENT for fd[%d]\n",
+			     fde->fd);
+	} else if (ret != 0) {
+		epoll_panic(epoll_ev, "EPOLL_CTL_DEL failed", false);
+		return;
 	}
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }
