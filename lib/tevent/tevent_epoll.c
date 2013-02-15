@@ -40,6 +40,8 @@ struct epoll_event_context {
 
 	pid_t pid;
 
+	bool panic_force_replay;
+	bool *panic_state;
 	bool (*panic_fallback)(struct tevent_context *ev, bool replay);
 };
 
@@ -134,8 +136,21 @@ static void epoll_panic(struct epoll_event_context *epoll_ev,
 			const char *reason, bool replay)
 {
 	struct tevent_context *ev = epoll_ev->ev;
+	bool (*panic_fallback)(struct tevent_context *ev, bool replay);
 
-	if (epoll_ev->panic_fallback == NULL) {
+	panic_fallback = epoll_ev->panic_fallback;
+
+	if (epoll_ev->panic_state != NULL) {
+		*epoll_ev->panic_state = true;
+	}
+
+	if (epoll_ev->panic_force_replay) {
+		replay = true;
+	}
+
+	TALLOC_FREE(ev->additional_data);
+
+	if (panic_fallback == NULL) {
 		tevent_debug(ev, TEVENT_DEBUG_FATAL,
 			"%s (%s) replay[%u] - calling abort()\n",
 			reason, strerror(errno), (unsigned)replay);
@@ -146,7 +161,7 @@ static void epoll_panic(struct epoll_event_context *epoll_ev,
 		     "%s (%s) replay[%u] - calling panic_fallback\n",
 		     reason, strerror(errno), (unsigned)replay);
 
-	if (!epoll_ev->panic_fallback(ev, replay)) {
+	if (!panic_fallback(ev, replay)) {
 		/* Fallback failed. */
 		tevent_debug(ev, TEVENT_DEBUG_FATAL,
 			"%s (%s) replay[%u] - calling abort()\n",
@@ -209,6 +224,8 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 {
 	struct tevent_fd *fde;
+	bool *caller_panic_state = epoll_ev->panic_state;
+	bool panic_triggered = false;
 
 	if (epoll_ev->pid == getpid()) {
 		return;
@@ -217,8 +234,7 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	close(epoll_ev->epoll_fd);
 	epoll_ev->epoll_fd = epoll_create(64);
 	if (epoll_ev->epoll_fd == -1) {
-		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
-			     "Failed to recreate epoll handle after fork\n");
+		epoll_panic(epoll_ev, "epoll_create() failed", false);
 		return;
 	}
 
@@ -228,9 +244,17 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	}
 
 	epoll_ev->pid = getpid();
+	epoll_ev->panic_state = &panic_triggered;
 	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(epoll_ev, fde);
+		if (panic_triggered) {
+			if (caller_panic_state != NULL) {
+				*caller_panic_state = true;
+			}
+			return;
+		}
 	}
+	epoll_ev->panic_state = NULL;
 }
 
 #define EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT	(1<<0)
@@ -463,15 +487,33 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 {
 	struct tevent_context *ev = fde->event_ctx;
 	struct epoll_event_context *epoll_ev = NULL;
+	bool panic_triggered = false;
 
-	if (ev) {
-		epoll_ev = talloc_get_type(ev->additional_data,
-					   struct epoll_event_context);
-
-		epoll_check_reopen(epoll_ev);
-
-		epoll_del_event(epoll_ev, fde);
+	if (ev == NULL) {
+		return tevent_common_fd_destructor(fde);
 	}
+
+	epoll_ev = talloc_get_type_abort(ev->additional_data,
+					 struct epoll_event_context);
+
+	/*
+	 * we must remove the event from the list
+	 * otherwise a panic fallback handler may
+	 * reuse invalid memory
+	 */
+	DLIST_REMOVE(ev->fd_events, fde);
+
+	epoll_ev->panic_state = &panic_triggered;
+	epoll_check_reopen(epoll_ev);
+	if (panic_triggered) {
+		return tevent_common_fd_destructor(fde);
+	}
+
+	epoll_del_event(epoll_ev, fde);
+	if (panic_triggered) {
+		return tevent_common_fd_destructor(fde);
+	}
+	epoll_ev->panic_state = NULL;
 
 	return tevent_common_fd_destructor(fde);
 }
@@ -490,8 +532,7 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
 	struct tevent_fd *fde;
-
-	epoll_check_reopen(epoll_ev);
+	bool panic_triggered = false;
 
 	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
 				   handler, private_data,
@@ -499,6 +540,13 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 	if (!fde) return NULL;
 
 	talloc_set_destructor(fde, epoll_event_fd_destructor);
+
+	epoll_ev->panic_state = &panic_triggered;
+	epoll_check_reopen(epoll_ev);
+	if (panic_triggered) {
+		return fde;
+	}
+	epoll_ev->panic_state = NULL;
 
 	epoll_add_event(epoll_ev, fde);
 
@@ -512,6 +560,7 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	struct tevent_context *ev;
 	struct epoll_event_context *epoll_ev;
+	bool panic_triggered = false;
 
 	if (fde->flags == flags) return;
 
@@ -520,7 +569,12 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 
 	fde->flags = flags;
 
+	epoll_ev->panic_state = &panic_triggered;
 	epoll_check_reopen(epoll_ev);
+	if (panic_triggered) {
+		return;
+	}
+	epoll_ev->panic_state = NULL;
 
 	epoll_change_event(epoll_ev, fde);
 }
@@ -533,6 +587,7 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 		 					   struct epoll_event_context);
 	struct timeval tval;
+	bool panic_triggered = false;
 
 	if (ev->signal_events &&
 	    tevent_common_check_signal(ev)) {
@@ -549,7 +604,15 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 		return 0;
 	}
 
+	epoll_ev->panic_state = &panic_triggered;
+	epoll_ev->panic_force_replay = true;
 	epoll_check_reopen(epoll_ev);
+	if (panic_triggered) {
+		errno = EINVAL;
+		return -1;
+	}
+	epoll_ev->panic_force_replay = false;
+	epoll_ev->panic_state = NULL;
 
 	return epoll_event_loop(epoll_ev, &tval);
 }
