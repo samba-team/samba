@@ -444,6 +444,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	int timeout = -1;
 	unsigned first_fd;
 	unsigned i;
+	int poll_errno;
 
 	if (ev->signal_events && tevent_common_check_signal(ev)) {
 		return 0;
@@ -462,9 +463,10 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 
 	tevent_trace_point_callback(poll_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	pollrtn = poll(poll_ev->fds, poll_ev->num_fds, timeout);
+	poll_errno = errno;
 	tevent_trace_point_callback(poll_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
-	if (pollrtn == -1 && errno == EINTR && ev->signal_events) {
+	if (pollrtn == -1 && poll_errno == EINTR && ev->signal_events) {
 		tevent_common_check_signal(ev);
 		return 0;
 	}
