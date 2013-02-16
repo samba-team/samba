@@ -198,14 +198,42 @@ int tdb_brunlock(struct tdb_context *tdb,
 }
 
 /*
-  upgrade a read lock to a write lock. This needs to be handled in a
-  special way as some OSes (such as solaris) have too conservative
-  deadlock detection and claim a deadlock when progress can be
-  made. For those OSes we may loop for a while.
+ * Do a tdb_brlock in a loop. Some OSes (such as solaris) have too
+ * conservative deadlock detection and claim a deadlock when progress can be
+ * made. For those OSes we may loop for a while.
+ */
+
+static int tdb_brlock_retry(struct tdb_context *tdb,
+			    int rw_type, tdb_off_t offset, size_t len,
+			    enum tdb_lock_flags flags)
+{
+	int count = 1000;
+
+	while (count--) {
+		struct timeval tv;
+		int ret;
+
+		ret = tdb_brlock(tdb, rw_type, offset, len, flags);
+		if (ret == 0) {
+			return 0;
+		}
+		if (errno != EDEADLK) {
+			break;
+		}
+		/* sleep for as short a time as we can - more portable than usleep() */
+		tv.tv_sec = 0;
+		tv.tv_usec = 1;
+		select(0, NULL, NULL, NULL, &tv);
+	}
+	return -1;
+}
+
+/*
+  upgrade a read lock to a write lock.
 */
 int tdb_allrecord_upgrade(struct tdb_context *tdb)
 {
-	int count = 1000;
+	int ret;
 
 	if (tdb->allrecord_lock.count != 1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
@@ -220,21 +248,12 @@ int tdb_allrecord_upgrade(struct tdb_context *tdb)
 		return -1;
 	}
 
-	while (count--) {
-		struct timeval tv;
-		if (tdb_brlock(tdb, F_WRLCK, FREELIST_TOP, 0,
-			       TDB_LOCK_WAIT|TDB_LOCK_PROBE) == 0) {
-			tdb->allrecord_lock.ltype = F_WRLCK;
-			tdb->allrecord_lock.off = 0;
-			return 0;
-		}
-		if (errno != EDEADLK) {
-			break;
-		}
-		/* sleep for as short a time as we can - more portable than usleep() */
-		tv.tv_sec = 0;
-		tv.tv_usec = 1;
-		select(0, NULL, NULL, NULL, &tv);
+	ret = tdb_brlock_retry(tdb, F_WRLCK, FREELIST_TOP, 0,
+			       TDB_LOCK_WAIT|TDB_LOCK_PROBE);
+	if (ret == 0) {
+		tdb->allrecord_lock.ltype = F_WRLCK;
+		tdb->allrecord_lock.off = 0;
+		return 0;
 	}
 	TDB_LOG((tdb, TDB_DEBUG_TRACE,"tdb_allrecord_upgrade failed\n"));
 	return -1;
