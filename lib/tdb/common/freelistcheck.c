@@ -35,12 +35,11 @@
 
 static int seen_insert(struct tdb_context *mem_tdb, tdb_off_t rec_ptr)
 {
-	TDB_DATA key, data;
+	TDB_DATA key;
 
-	memset(&data, '\0', sizeof(data));
 	key.dptr = (unsigned char *)&rec_ptr;
 	key.dsize = sizeof(rec_ptr);
-	return tdb_store(mem_tdb, key, data, TDB_INSERT);
+	return tdb_store(mem_tdb, key, tdb_null, TDB_INSERT);
 }
 
 _PUBLIC_ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
