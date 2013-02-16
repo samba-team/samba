@@ -439,6 +439,7 @@ done:
 				 O_RDWR, 0, &log_ctx, NULL);
 		if (!db) {
 			fatal("db open failed\n");
+			exit(1);
 		}
 		if (tdb_check(db, NULL, NULL) == -1) {
 			printf("db check failed\n");
