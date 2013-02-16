@@ -36,6 +36,7 @@ static int fcntl_lock(struct tdb_context *tdb,
 		      int rw, off_t off, off_t len, bool waitflag)
 {
 	struct flock fl;
+	int cmd;
 
 	fl.l_type = rw;
 	fl.l_whence = SEEK_SET;
@@ -43,10 +44,9 @@ static int fcntl_lock(struct tdb_context *tdb,
 	fl.l_len = len;
 	fl.l_pid = 0;
 
-	if (waitflag)
-		return fcntl(tdb->fd, F_SETLKW, &fl);
-	else
-		return fcntl(tdb->fd, F_SETLK, &fl);
+	cmd = waitflag ? F_SETLKW : F_SETLK;
+
+	return fcntl(tdb->fd, cmd, &fl);
 }
 
 static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
