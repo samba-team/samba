@@ -879,7 +879,7 @@ void tdb_release_transaction_locks(struct tdb_context *tdb)
 	unsigned int i, active = 0;
 
 	if (tdb->allrecord_lock.count != 0) {
-		tdb_brunlock(tdb, tdb->allrecord_lock.ltype, FREELIST_TOP, 0);
+		tdb_allrecord_unlock(tdb, tdb->allrecord_lock.ltype, false);
 		tdb->allrecord_lock.count = 0;
 	}
 
