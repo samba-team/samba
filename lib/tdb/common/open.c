@@ -215,7 +215,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 
-	/* now make a copy of the name, as the caller memory might went away */
+	/* now make a copy of the name, as the caller memory might go away */
 	if (!(tdb->name = (char *)strdup(name))) {
 		/*
 		 * set the name as the given string, so that tdb_name() will
