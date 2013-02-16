@@ -120,10 +120,7 @@ if [ -d $release_dir ]; then
     testit "upgradeprovision" upgradeprovision
     testit "upgradeprovision_full" upgradeprovision_full
     testit "reindex" reindex
-    # So far, only releases before 4.0.0rc6 need a dbcheck if upgradeprovision has already been run
-    if [ x$RELEASE != x"release-4-0-0" ]; then
-	testit_expect_failure "dbcheck" dbcheck
-    fi
+    testit_expect_failure "dbcheck" dbcheck
     testit_expect_failure "dbcheck_full" dbcheck_full
     testit "dbcheck_clean" dbcheck_clean
     testit "dbcheck_full_clean" dbcheck_full_clean

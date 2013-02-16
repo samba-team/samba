@@ -191,6 +191,8 @@ parser.add_option("--db_backup_only", action="store_true",
                   help="Do the backup of the database in the provision, skip the sysvol / netlogon shares")
 parser.add_option("--full", action="store_true",
                   help="Perform full upgrade of the samdb (schema, configuration, new objects, ...")
+parser.add_option("--very-old-pre-alpha9", action="store_true",
+                  help="Perform additional forced SD resets required for a database from before Samba 4.0.0alpha9.")
 
 opts = parser.parse_args()[0]
 
@@ -1591,9 +1593,8 @@ def sync_calculated_attributes(samdb, names):
 #    and this database has not changed between 2009 and Samba 4.0.3 in Feb 2013 (at least)
 # 10)get the oemInfo field, this field contains information about the different
 #    provision that have been done
-# 11)Depending  on whether oemInfo has the string "alpha9" or alphaxx (x as an
-#    integer) or none of this the following things are done
-#    A) When alpha9 or alphaxx is present
+# 11)Depending on if the --very-old-pre-alpha9 flag is set the following things are done
+#    A) When alpha9 or alphaxx not specified (default)
 #       The base sam.ldb file is updated by looking at the difference between
 #       referrence one and the current one. Everything is copied with the
 #       exception of lastProvisionUSN attributes.
@@ -1819,7 +1820,7 @@ if __name__ == '__main__':
         deltaattr = None
     # 11)
         message(GUESS, oem)
-        if oem is None or hasATProvision(ldbs.sam) or re.match(".*alpha((9)|(\d\d+)).*", str(oem)):
+        if oem is None or hasATProvision(ldbs.sam) or not opts.very_old_pre_alpha9:
             # 11) A
             # Starting from alpha9 we can consider that the structure is quite ok
             # and that we should do only dela
@@ -1918,7 +1919,7 @@ if __name__ == '__main__':
         # 16) SD should be created with admin but as some previous acl were so wrong
         # that admin can't modify them we have first to recreate them with the good
         # form but with system account and then give the ownership to admin ...
-        if str(oem) != "" and not re.match(r'.*alpha(9|\d\d+)', str(oem)):
+        if opts.very_old_pre_alpha9:
             message(SIMPLE, "Fixing very old provision SD")
             rebuild_sd(ldbs.sam, names)
 
