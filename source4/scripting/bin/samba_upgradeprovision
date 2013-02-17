@@ -1496,18 +1496,6 @@ def simple_update_basesamdb(newpaths, paths, names):
         os.remove(configldb)
 
 
-def update_privilege(ref_private_path, cur_private_path):
-    """Update the privilege database
-
-    :param ref_private_path: Path to the private directory of the reference
-                             provision.
-    :param cur_private_path: Path to the private directory of the current
-                             (and to be updated) provision."""
-    message(SIMPLE, "Copy privilege")
-    shutil.copy(os.path.join(ref_private_path, "privilege.ldb"),
-                os.path.join(cur_private_path, "privilege.ldb"))
-
-
 def update_samdb(ref_samdb, samdb, names, provisionUSNs, schema, prereloadfunc):
     """Upgrade the SAM DB contents for all the provision partitions
 
@@ -1594,8 +1582,9 @@ def sync_calculated_attributes(samdb, names):
 # 6) get reference provision paths
 # 7) open reference provision ldbs
 # 8) setup helpers data that will help the update process
-# 9) update the privilege ldb by copying the one of referecence provision to
-#    the current provision
+# 9) (SKIPPED) we no longer update the privilege ldb by copying the one of referecence provision to
+#    the current provision, because a shutil.copy would break the transaction locks both databases are under
+#    and this database has not changed between 2009 and Samba 4.0.3 in Feb 2013 (at least)
 # 10)get the oemInfo field, this field contains information about the different
 #    provision that have been done
 # 11)Depending  on whether oemInfo has the string "alpha9" or alphaxx (x as an
@@ -1817,8 +1806,7 @@ if __name__ == '__main__':
         populate_links(new_ldbs.sam, names.schemadn)
         # List of attribute with ASN DN synthax)
         populate_dnsyntax(new_ldbs.sam, names.schemadn)
-        # 9)
-        update_privilege(newpaths.private_dir, paths.private_dir)
+        # 9) (now skipped, was copy of privileges.ldb)
         # 10)
         oem = getOEMInfo(ldbs.sam, str(names.rootdn))
         # Do some modification on sam.ldb
