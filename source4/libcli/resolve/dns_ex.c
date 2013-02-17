@@ -400,8 +400,10 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 #ifdef EAI_NODATA
 		case EAI_NODATA:
 #endif
+		case EAI_FAIL:
+			/* Linux returns EAI_NODATA on non-RFC1034-compliant names. FreeBSD returns EAI_FAIL */
 		case EAI_NONAME:
-			/* getaddrinfo() doesn't handle CNAME records */
+			/* getaddrinfo() doesn't handle CNAME or non-RFC1034 compatible records */
 			run_child_dns_lookup(state, fd);
 			return;
 		default:
