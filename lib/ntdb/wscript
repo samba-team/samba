@@ -72,6 +72,7 @@ def configure(conf):
                                 'test/api-20-alloc-attr.c',
                                 'test/api-21-parse_record.c',
                                 'test/api-55-transaction.c',
+                                'test/api-60-noop-transaction.c',
                                 'test/api-80-tdb_fd.c',
                                 'test/api-81-seqnum.c',
                                 'test/api-82-lockattr.c',

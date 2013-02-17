@@ -453,10 +453,23 @@ static enum NTDB_ERROR transaction_sync(struct ntdb_context *ntdb,
 	return NTDB_SUCCESS;
 }
 
+static void free_transaction_blocks(struct ntdb_context *ntdb)
+{
+	int i;
+
+	/* free all the transaction blocks */
+	for (i=0;i<ntdb->transaction->num_blocks;i++) {
+		if (ntdb->transaction->blocks[i] != NULL) {
+			ntdb->free_fn(ntdb->transaction->blocks[i],
+				      ntdb->alloc_data);
+		}
+	}
+	SAFE_FREE(ntdb, ntdb->transaction->blocks);
+	ntdb->transaction->num_blocks = 0;
+}
 
 static void _ntdb_transaction_cancel(struct ntdb_context *ntdb)
 {
-	int i;
 	enum NTDB_ERROR ecode;
 
 	if (ntdb->transaction == NULL) {
@@ -473,14 +486,7 @@ static void _ntdb_transaction_cancel(struct ntdb_context *ntdb)
 
 	ntdb->file->map_size = ntdb->transaction->old_map_size;
 
-	/* free all the transaction blocks */
-	for (i=0;i<ntdb->transaction->num_blocks;i++) {
-		if (ntdb->transaction->blocks[i] != NULL) {
-			ntdb->free_fn(ntdb->transaction->blocks[i],
-				      ntdb->alloc_data);
-		}
-	}
-	SAFE_FREE(ntdb, ntdb->transaction->blocks);
+	free_transaction_blocks(ntdb);
 
 	if (ntdb->transaction->magic_offset) {
 		const struct ntdb_methods *methods = ntdb->transaction->io_methods;
@@ -875,6 +881,17 @@ static enum NTDB_ERROR transaction_setup_recovery(struct ntdb_context *ntdb)
 	if (NTDB_PTR_IS_ERR(recovery))
 		return NTDB_PTR_ERR(recovery);
 
+	/* If we didn't actually change anything we overwrote? */
+	if (recovery_size == 0) {
+		/* In theory, we could have just appended data. */
+		if (ntdb->transaction->num_blocks * NTDB_PGSIZE
+		    < ntdb->transaction->old_map_size) {
+			free_transaction_blocks(ntdb);
+		}
+		ntdb->free_fn(recovery, ntdb->alloc_data);
+		return NTDB_SUCCESS;
+	}
+
 	ecode = ntdb_recovery_area(ntdb, methods, &recovery_off, recovery);
 	if (ecode) {
 		ntdb->free_fn(recovery, ntdb->alloc_data);
@@ -1064,18 +1081,18 @@ _PUBLIC_ enum NTDB_ERROR ntdb_transaction_commit(struct ntdb_context *ntdb)
 		return NTDB_SUCCESS;
 	}
 
-	/* check for a null transaction */
-	if (ntdb->transaction->blocks == NULL) {
-		_ntdb_transaction_cancel(ntdb);
-		return NTDB_SUCCESS;
-	}
-
 	if (!ntdb->transaction->prepared) {
 		ecode = _ntdb_transaction_prepare_commit(ntdb);
 		if (ecode != NTDB_SUCCESS) {
 			_ntdb_transaction_cancel(ntdb);
 			return ecode;
 		}
+	}
+
+	/* check for a null transaction (prepare_commit may do this!) */
+	if (ntdb->transaction->blocks == NULL) {
+		_ntdb_transaction_cancel(ntdb);
+		return NTDB_SUCCESS;
 	}
 
 	methods = ntdb->transaction->io_methods;
