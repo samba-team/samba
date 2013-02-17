@@ -273,7 +273,7 @@ struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx,
 						  const char *name)
 {
-	struct tevent_ops *ops;
+	const struct tevent_ops *ops;
 
 	ops = tevent_find_ops_byname(name);
 	if (ops == NULL) {
