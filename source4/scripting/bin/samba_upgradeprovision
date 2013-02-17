@@ -1471,7 +1471,7 @@ def simple_update_basesamdb(newpaths, paths, names):
     :param names: List of key provision parameters"""
 
     message(SIMPLE, "Copy samdb")
-    shutil.copy(newpaths.samdb, paths.samdb)
+    tdb_util.tdb_copy(newpaths.samdb, paths.samdb)
 
     message(SIMPLE, "Update partitions filename if needed")
     schemaldb = os.path.join(paths.private_dir, "schema.ldb")
@@ -1483,15 +1483,15 @@ def simple_update_basesamdb(newpaths, paths, names):
         os.mkdir(samldbdir)
         os.chmod(samldbdir, 0700)
     if os.path.isfile(schemaldb):
-        shutil.copy(schemaldb, os.path.join(samldbdir,
+        tdb_util.tdb_copy(schemaldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.schemadn).upper()))
         os.remove(schemaldb)
     if os.path.isfile(usersldb):
-        shutil.copy(usersldb, os.path.join(samldbdir,
+        tdb_util.tdb_copy(usersldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.rootdn).upper()))
         os.remove(usersldb)
     if os.path.isfile(configldb):
-        shutil.copy(configldb, os.path.join(samldbdir,
+        tdb_util.tdb_copy(configldb, os.path.join(samldbdir,
                                             "%s.ldb"%str(names.configdn).upper()))
         os.remove(configldb)
 
@@ -1532,12 +1532,12 @@ def backup_provision(paths, dir, only_db):
     """
     if paths.sysvol and not only_db:
         copytree_with_xattrs(paths.sysvol, os.path.join(dir, "sysvol"))
-    shutil.copy2(paths.samdb, dir)
-    shutil.copy2(paths.secrets, dir)
-    shutil.copy2(paths.idmapdb, dir)
-    shutil.copy2(paths.privilege, dir)
+    tdb_util.tdb_copy(paths.samdb, os.path.join(dir, os.path.basename(paths.samdb)))
+    tdb_util.tdb_copy(paths.secrets, os.path.join(dir, os.path.basename(paths.secrets)))
+    tdb_util.tdb_copy(paths.idmapdb, os.path.join(dir, os.path.basename(paths.idmapdb)))
+    tdb_util.tdb_copy(paths.privilege, os.path.join(dir, os.path.basename(paths.privilege)))
     if os.path.isfile(os.path.join(paths.private_dir,"eadb.tdb")):
-        shutil.copy2(os.path.join(paths.private_dir,"eadb.tdb"), dir)
+        tdb_util.tdb_copy(os.path.join(paths.private_dir,"eadb.tdb"), os.path.join(dir, "eadb.tdb"))
     shutil.copy2(paths.smbconf, dir)
     shutil.copy2(os.path.join(paths.private_dir,"secrets.keytab"), dir)
 
@@ -1547,11 +1547,15 @@ def backup_provision(paths, dir, only_db):
         schemaldb = os.path.join(paths.private_dir, "schema.ldb")
         configldb = os.path.join(paths.private_dir, "configuration.ldb")
         usersldb = os.path.join(paths.private_dir, "users.ldb")
-        shutil.copy2(schemaldb, dir)
-        shutil.copy2(usersldb, dir)
-        shutil.copy2(configldb, dir)
+        tdb_util.tdb_copy(schemaldb, os.path.join(dir, "schema.ldb"))
+        tdb_util.tdb_copy(usersldb, os.path.join(dir, "configuration.ldb"))
+        tdb_util.tdb_copy(configldb, os.path.join(dir, "users.ldb"))
     else:
-        shutil.copytree(samldbdir, os.path.join(dir, "sam.ldb.d"))
+        os.mkdir(os.path.join(dir, "sam.ldb.d"), 0700)
+
+        for ldb in os.listdir(samldbdir):
+            tdb_util.tdb_copy(os.path.join(samldbdir, ldb),
+                              os.path.join(dir, "sam.ldb.d", ldb))
 
 
 def sync_calculated_attributes(samdb, names):
