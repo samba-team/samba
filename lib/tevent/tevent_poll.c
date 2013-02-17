@@ -443,7 +443,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	int pollrtn;
 	int timeout = -1;
 	unsigned first_fd;
-	unsigned i;
+	unsigned i, next_i;
 	int poll_errno;
 
 	if (ev->signal_events && tevent_common_check_signal(ev)) {
@@ -490,10 +490,12 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	   which ones and call the handler, being careful to allow
 	   the handler to remove itself when called */
 
-	for (i=first_fd; i<poll_ev->num_fds; i++) {
+	for (i=first_fd; i<poll_ev->num_fds; i = next_i) {
 		struct pollfd *pfd;
 		struct tevent_fd *fde;
 		uint16_t flags = 0;
+
+		next_i = i + 1;
 
 		fde = poll_ev->fdes[i];
 		if (fde == NULL) {
@@ -502,11 +504,16 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 			 * from the arrays
 			 */
 			poll_ev->num_fds -= 1;
+			if (poll_ev->num_fds == i) {
+				break;
+			}
 			poll_ev->fds[i] = poll_ev->fds[poll_ev->num_fds];
 			poll_ev->fdes[i] = poll_ev->fdes[poll_ev->num_fds];
 			if (poll_ev->fdes[i] != NULL) {
 				poll_ev->fdes[i]->additional_flags = i;
 			}
+			/* we have to reprocess position 'i' */
+			next_i = i;
 			continue;
 		}
 
