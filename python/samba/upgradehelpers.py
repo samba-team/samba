@@ -33,7 +33,7 @@ from samba.provision import (provision_paths_from_lp,
                             getpolicypath, set_gpos_acl, create_gpo_struct,
                             FILL_FULL, provision, ProvisioningError,
                             setsysvolacl, secretsdb_self_join)
-from samba.dcerpc import xattr, drsblobs
+from samba.dcerpc import xattr, drsblobs, security
 from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
@@ -346,6 +346,46 @@ def chunck_sddl(sddl):
     return hash
 
 
+def get_clean_sd(sd):
+    """Get the SD without difference between 2 sddl
+
+    This function split the textual representation of ACL into smaller
+    chunck in order to not to report a simple permutation as a difference
+
+    :param refsddl: First sddl to compare
+    :param cursddl: Second sddl to compare
+    :param checkSacl: If false we skip the sacl checks
+    :return: A string that explain difference between sddls
+    """
+
+    sd_clean = security.descriptor()
+    sd_clean.owner_sid = sd.owner_sid
+    sd_clean.group_sid = sd.group_sid
+    sd_clean.type = sd.type
+    sd_clean.revision = sd.revision
+
+    aces = []
+    if sd.sacl is not None:
+        aces = sd.sacl.aces
+    for i in range(0, len(aces)):
+        ace = aces[i]
+
+        if not ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE:
+            sd_clean.sacl_add(ace)
+            continue
+
+    aces = []
+    if sd.dacl is not None:
+        aces = sd.dacl.aces
+    for i in range(0, len(aces)):
+        ace = aces[i]
+
+        if not ace.flags & security.SEC_ACE_FLAG_INHERITED_ACE:
+            sd_clean.dacl_add(ace)
+            continue
+    return sd_clean
+
+
 def get_diff_sds(refsd, cursd, domainsid, checkSacl = True):
     """Get the difference between 2 sd
 
@@ -358,8 +398,8 @@ def get_diff_sds(refsd, cursd, domainsid, checkSacl = True):
     :return: A string that explain difference between sddls
     """
 
-    cursddl = cursd.as_sddl(domainsid)
-    refsddl = refsd.as_sddl(domainsid)
+    cursddl = get_clean_sd(cursd).as_sddl(domainsid)
+    refsddl = get_clean_sd(refsd).as_sddl(domainsid)
 
     txt = ""
     hash_cur = chunck_sddl(cursddl)

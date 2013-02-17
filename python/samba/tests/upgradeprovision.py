@@ -63,18 +63,22 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
     def test_get_diff_sds(self):
         domsid = security.dom_sid('S-1-5-21')
 
-        sddl = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
-(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
-        sddl1 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
-(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
-        sddl2 = "O:BAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
-(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
-        sddl3 = "O:SAG:BAD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
-(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
-        sddl4 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;BA)\
-(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
-        sddl5 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
-(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+        sddl = "O:SAG:DUD:AI(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)"
+        sddl1 = "O:SAG:DUD:AI(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)"
+        sddl2 = "O:BAG:DUD:AI(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)"
+        sddl3 = "O:SAG:BAD:AI(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)"
+        sddl4 = "O:SAG:DUD:AI(A;CI;RPWPCRCCLCLORCWOWDSW;;;BA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)"
+        sddl5 = "O:SAG:DUD:AI(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
+        sddl6 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)\
+(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
+(A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)(AU;CIIDSA;WP;;;WD)"
 
         self.assertEquals(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                                        security.descriptor.from_sddl(sddl1, domsid),
@@ -91,14 +95,18 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
                            security.descriptor.from_sddl(sddl4, domsid),
                            domsid)
         txtmsg = "\tPart dacl is different between reference and current here\
- is the detail:\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;BA) ACE is not present in\
- the reference\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA) ACE is not present in\
+ is the detail:\n\t\t(A;CI;RPWPCRCCLCLORCWOWDSW;;;BA) ACE is not present in\
+ the reference\n\t\t(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA) ACE is not present in\
  the current\n"
         self.assertEquals(txt, txtmsg)
+
         txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                            security.descriptor.from_sddl(sddl5, domsid),
                            domsid)
         self.assertEquals(txt, "\tCurrent ACL hasn't a sacl part\n")
+        self.assertEquals(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+                                       security.descriptor.from_sddl(sddl6, domsid),
+                                       domsid), "")
 
     def test_construct_existor_expr(self):
         res = construct_existor_expr([])
