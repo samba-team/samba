@@ -197,4 +197,16 @@ no test provision
 EOF
 fi
 
+if [ -d $PREFIX_ABS/${RELEASE}_upgrade ]; then
+  rm -fr $PREFIX_ABS/${RELEASE}_upgrade
+fi
+
+if [ -d $PREFIX_ABS/${RELEASE}_upgrade_full ]; then
+  rm -fr $PREFIX_ABS/${RELEASE}_upgrade_full
+fi
+
+if [ -d $PREFIX_ABS/${RELEASE}_upgrade_reference ]; then
+  rm -fr $PREFIX_ABS/${RELEASE}_upgrade_reference
+fi
+
 exit $failed

@@ -57,6 +57,14 @@ ldapcmp_full_sd() {
         $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX/upgradeprovision_full/private/sam.ldb tdb://$PREFIX/upgradeprovision_reference/private/sam.ldb --two --sd --skip-missing-dn
 }
 
+testit "upgradeprovision" upgradeprovision
+testit "upgradeprovision_full" upgradeprovision_full
+testit "upgradeprovision_reference" upgradeprovision_reference
+testit "ldapcmp" ldapcmp
+testit "ldapcmp_full" ldapcmp_full
+testit "ldapcmp_sd" ldapcmp_sd
+testit "ldapcmp_full_sd" ldapcmp_full_sd
+
 if [ -d $PREFIX/upgradeprovision ]; then
   rm -fr $PREFIX/upgradeprovision
 fi
@@ -65,12 +73,8 @@ if [ -d $PREFIX/upgradeprovision_full ]; then
   rm -fr $PREFIX/upgradeprovision_full
 fi
 
-testit "upgradeprovision" upgradeprovision
-testit "upgradeprovision_full" upgradeprovision_full
-testit "upgradeprovision_reference" upgradeprovision_reference
-testit "ldapcmp" ldapcmp
-testit "ldapcmp_full" ldapcmp_full
-testit "ldapcmp_sd" ldapcmp_sd
-testit "ldapcmp_full_sd" ldapcmp_full_sd
+if [ -d $PREFIX/upgradeprovision_reference ]; then
+  rm -fr $PREFIX/upgradeprovision_reference
+fi
 
 exit $failed
