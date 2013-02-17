@@ -1722,7 +1722,7 @@ static bool torture_smb2_notify_tcp_disconnect(
 	notify.smb2.in.recursive = true;
 	req = smb2_notify_send(tree, &(notify.smb2));
 	smb2_transport_idle_handler(tree->session->transport,
-				tcp_dis_handler, 250, tree);
+				tcp_dis_handler, 250000, tree);
 	tree = NULL;
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
 	CHECK_STATUS(status, NT_STATUS_LOCAL_DISCONNECT);
