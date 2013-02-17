@@ -181,6 +181,14 @@ static void idle_handler(struct tevent_context *ev,
 
 	transport->idle.func(transport, transport->idle.private_data);
 
+	if (transport->idle.func == NULL) {
+		return;
+	}
+
+	if (!smbXcli_conn_is_connected(transport->conn)) {
+		return;
+	}
+
 	next = timeval_current_ofs_usec(transport->idle.period);
 
 	transport->idle.te = tevent_add_timer(transport->ev,
@@ -200,6 +208,15 @@ _PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 				   void *private_data)
 {
 	TALLOC_FREE(transport->idle.te);
+	ZERO_STRUCT(transport->idle);
+
+	if (idle_func == NULL) {
+		return;
+	}
+
+	if (!smbXcli_conn_is_connected(transport->conn)) {
+		return;
+	}
 
 	transport->idle.func = idle_func;
 	transport->idle.private_data = private_data;
