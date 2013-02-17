@@ -75,7 +75,7 @@ from samba.dcerpc.security import (
 from samba.ndr import ndr_unpack
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  get_ldbs, findprovisionrange,
-                                 usn_in_range, identic_rename, get_diff_sddls,
+                                 usn_in_range, identic_rename, get_diff_sds,
                                  update_secrets, CHANGE, ERROR, SIMPLE,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
                                  updateOEMInfo, getOEMInfo, update_gpo,
@@ -963,12 +963,10 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
         if att == "nTSecurityDescriptor":
             cursd = ndr_unpack(security.descriptor,
                 str(current[0]["nTSecurityDescriptor"]))
-            cursddl = cursd.as_sddl(names.domainsid)
             refsd = ndr_unpack(security.descriptor,
                 str(reference[0]["nTSecurityDescriptor"]))
-            refsddl = refsd.as_sddl(names.domainsid)
 
-            diff = get_diff_sddls(refsddl, cursddl)
+            diff = get_diff_sds(refsd, cursd, names.domainsid)
             if diff == "":
                 # FIXME find a way to have it only with huge huge verbose mode
                 # message(CHANGE, "%ssd are identical" % txt)
@@ -1267,19 +1265,20 @@ def check_updated_sd(ref_sam, cur_sam, names):
                                 controls=["search_options:1:2"])
     hash = {}
     for i in range(0, len(reference)):
-        refsd = ndr_unpack(security.descriptor,
-                    str(reference[i]["nTSecurityDescriptor"]))
-        hash[str(reference[i]["dn"]).lower()] = refsd.as_sddl(names.domainsid)
+        refsd_blob = str(reference[i]["nTSecurityDescriptor"])
+        hash[str(reference[i]["dn"]).lower()] = refsd_blob
 
 
     for i in range(0, len(current)):
         key = str(current[i]["dn"]).lower()
         if hash.has_key(key):
+            cursd_blob = str(current[i]["nTSecurityDescriptor"])
             cursd = ndr_unpack(security.descriptor,
-                        str(current[i]["nTSecurityDescriptor"]))
-            sddl = cursd.as_sddl(names.domainsid)
-            if sddl != hash[key]:
-                txt = get_diff_sddls(hash[key], sddl, False)
+                               cursd_blob)
+            if cursd_blob != hash[key]:
+                refsd = ndr_unpack(security.descriptor,
+                                   hash[key])
+                txt = get_diff_sds(refsd, cursd, names.domainsid, False)
                 if txt != "":
                     message(CHANGESD, "On object %s ACL is different"
                                       " \n%s" % (current[i]["dn"], txt))

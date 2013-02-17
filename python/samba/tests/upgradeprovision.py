@@ -19,7 +19,7 @@
 
 import os
 from samba.upgradehelpers import (usn_in_range, dn_sort,
-                                  get_diff_sddls, update_secrets,
+                                  get_diff_sds, update_secrets,
                                   construct_existor_expr)
 
 from samba.tests.provision import create_dummy_secretsdb
@@ -27,6 +27,7 @@ from samba.tests import TestCaseInTempDir
 from samba import Ldb
 from ldb import SCOPE_BASE
 import samba.tests
+from samba.dcerpc import security
 
 def dummymessage(a=None, b=None):
     pass
@@ -59,7 +60,9 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         self.assertEquals(dn_sort("cn=bar, dc=toto,dc=tata",
                                     "cn=foo, dc=toto,dc=tata"), -1)
 
-    def test_get_diff_sddl(self):
+    def test_get_diff_sds(self):
+        domsid = security.dom_sid('S-1-5-21')
+
         sddl = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
 (A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CIIDSA;WP;;;WD)"
         sddl1 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
@@ -73,18 +76,28 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         sddl5 = "O:SAG:DUD:AI(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA)\
 (A;CIID;RP LCLORC;;;AU)(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)"
 
-        self.assertEquals(get_diff_sddls(sddl, sddl1), "")
-        txt = get_diff_sddls(sddl, sddl2)
+        self.assertEquals(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+                                       security.descriptor.from_sddl(sddl1, domsid),
+                                       domsid), "")
+        txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+                           security.descriptor.from_sddl(sddl2, domsid),
+                           domsid)
         self.assertEquals(txt, "\tOwner mismatch: SA (in ref) BA(in current)\n")
-        txt = get_diff_sddls(sddl, sddl3)
+        txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+                           security.descriptor.from_sddl(sddl3, domsid),
+                           domsid)
         self.assertEquals(txt, "\tGroup mismatch: DU (in ref) BA(in current)\n")
-        txt = get_diff_sddls(sddl, sddl4)
+        txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+                           security.descriptor.from_sddl(sddl4, domsid),
+                           domsid)
         txtmsg = "\tPart dacl is different between reference and current here\
  is the detail:\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;BA) ACE is not present in\
  the reference\n\t\t(A;CIID;RPWPCRCCLCLORCWOWDSW;;;SA) ACE is not present in\
  the current\n"
         self.assertEquals(txt, txtmsg)
-        txt = get_diff_sddls(sddl, sddl5)
+        txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+                           security.descriptor.from_sddl(sddl5, domsid),
+                           domsid)
         self.assertEquals(txt, "\tCurrent ACL hasn't a sacl part\n")
 
     def test_construct_existor_expr(self):

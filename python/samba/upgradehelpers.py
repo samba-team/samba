@@ -346,8 +346,8 @@ def chunck_sddl(sddl):
     return hash
 
 
-def get_diff_sddls(refsddl, cursddl, checkSacl = True):
-    """Get the difference between 2 sddl
+def get_diff_sds(refsd, cursd, domainsid, checkSacl = True):
+    """Get the difference between 2 sd
 
     This function split the textual representation of ACL into smaller
     chunck in order to not to report a simple permutation as a difference
@@ -357,6 +357,9 @@ def get_diff_sddls(refsddl, cursddl, checkSacl = True):
     :param checkSacl: If false we skip the sacl checks
     :return: A string that explain difference between sddls
     """
+
+    cursddl = cursd.as_sddl(domainsid)
+    refsddl = refsd.as_sddl(domainsid)
 
     txt = ""
     hash_cur = chunck_sddl(cursddl)
