@@ -27,7 +27,7 @@ import time
 import ldb
 from base64 import b64encode
 import samba
-import subprocess
+from samba.tdb_util import tdb_copy
 from samba.ndr import ndr_pack, ndr_unpack
 from samba import setup_file
 from samba.dcerpc import dnsp, misc, security
@@ -737,25 +737,6 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
 
     if targetdir is None:
         os.system(rndc + " unfreeze " + lp.get("realm"))
-
-
-def tdb_copy(file1, file2):
-    """Copy tdb file using tdbbackup utility and rename it
-    """
-    # Find the location of tdbbackup tool
-    dirs = ["bin", samba.param.bin_dir()] + os.getenv('PATH').split(os.pathsep)
-    for d in dirs:
-        toolpath = os.path.join(d, "tdbbackup")
-        if os.path.exists(toolpath):
-            break
-
-    tdbbackup_cmd = [toolpath, "-s", ".copy.tdb", file1]
-    status = subprocess.call(tdbbackup_cmd, close_fds=True, shell=False)
-
-    if status == 0:
-        os.rename("%s.copy.tdb" % file1, file2)
-    else:
-        raise Exception("Error copying %s" % file1)
 
 
 def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):

@@ -40,6 +40,7 @@ import samba.getopt as options
 from base64 import b64encode
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session, admin_session
+from samba import tdb_util
 from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn, LdbError)
