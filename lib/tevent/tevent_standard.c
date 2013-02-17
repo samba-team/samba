@@ -127,6 +127,22 @@ static int std_event_loop_once(struct tevent_context *ev, const char *location)
 	return glue->poll_ops->loop_once(ev, location);
 }
 
+static int std_event_loop_wait(struct tevent_context *ev, const char *location)
+{
+	void *glue_ptr = talloc_parent(ev->ops);
+	struct std_event_glue *glue =
+		talloc_get_type_abort(glue_ptr,
+		struct std_event_glue);
+	int ret;
+
+	ret = glue->epoll_ops->loop_wait(ev, location);
+	if (glue->epoll_ops != NULL) {
+		/* No fallback */
+		return ret;
+	}
+
+	return glue->poll_ops->loop_wait(ev, location);
+}
 /*
   Initialize the epoll backend and allow it to call a
   switch function if epoll fails at runtime.
@@ -183,6 +199,7 @@ static int std_event_context_init(struct tevent_context *ev)
 		*glue->glue_ops = *glue->epoll_ops;
 		glue->glue_ops->context_init = std_event_context_init;
 		glue->glue_ops->loop_once = std_event_loop_once;
+		glue->glue_ops->loop_wait = std_event_loop_wait;
 
 		ret = glue->epoll_ops->context_init(ev);
 		if (ret == -1) {
