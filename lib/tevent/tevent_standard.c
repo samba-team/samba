@@ -68,7 +68,6 @@ static bool std_fallback_to_poll(struct tevent_context *ev, bool replay)
 
 	/* First switch all the ops to poll. */
 	glue->epoll_ops = NULL;
-	TALLOC_FREE(ev->additional_data);
 
 	/*
 	 * Set custom_ops the same as poll.
