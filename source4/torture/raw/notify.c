@@ -1348,7 +1348,7 @@ static bool test_notify_tcp_dis(struct torture_context *tctx,
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 
-	smbcli_transport_idle_handler(cli->transport, tcp_dis_handler, 250, cli);
+	smbcli_transport_idle_handler(cli->transport, tcp_dis_handler, 250000, cli);
 
 	status = smb_raw_changenotify_recv(req, tctx, &notify);
 	torture_assert_ntstatus_equal_goto(tctx, status,
