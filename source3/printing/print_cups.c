@@ -488,13 +488,13 @@ static bool cups_pcap_load_async(struct tevent_context *ev,
 
 struct cups_async_cb_args {
 	int pipe_fd;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct messaging_context *msg_ctx;
-	void (*post_cache_fill_fn)(struct event_context *,
+	void (*post_cache_fill_fn)(struct tevent_context *,
 				   struct messaging_context *);
 };
 
-static void cups_async_callback(struct event_context *event_ctx,
+static void cups_async_callback(struct tevent_context *event_ctx,
 				struct fd_event *event,
 				uint16 flags,
 				void *p)
