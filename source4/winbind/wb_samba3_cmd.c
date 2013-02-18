@@ -48,7 +48,7 @@ static NTSTATUS wb_samba3_append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	info3 = talloc(mem_ctx, struct netr_SamInfo3);
 	NT_STATUS_HAVE_NO_MEMORY(info3);
 
-	/* The Samba3 protocol has a redundent 4 bytes at the start */
+	/* The Samba3 protocol has a redundant 4 bytes at the start */
 	info3b.data += 4;
 	info3b.length -= 4;
 
