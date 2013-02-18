@@ -38,7 +38,7 @@
 #define MAX_CCACHES 100
 
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
-static void krb5_ticket_gain_handler(struct event_context *,
+static void krb5_ticket_gain_handler(struct tevent_context *,
 				     struct timed_event *,
 				     struct timeval,
 				     void *);
@@ -104,7 +104,7 @@ void ccache_remove_all_after_fork(void)
  Do the work of refreshing the ticket.
 ****************************************************************/
 
-static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
+static void krb5_ticket_refresh_handler(struct tevent_context *event_ctx,
 					struct timed_event *te,
 					struct timeval now,
 					void *private_data)
@@ -297,7 +297,7 @@ done:
  Do the work of regaining a ticket when coming from offline auth.
 ****************************************************************/
 
-static void krb5_ticket_gain_handler(struct event_context *event_ctx,
+static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 				     struct timed_event *te,
 				     struct timeval now,
 				     void *private_data)

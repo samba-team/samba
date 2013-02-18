@@ -286,7 +286,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
  Handler triggered if we're offline to try and detect a DC.
 ****************************************************************/
 
-static void check_domain_online_handler(struct event_context *ctx,
+static void check_domain_online_handler(struct tevent_context *ctx,
 					struct timed_event *te,
 					struct timeval now,
 					void *private_data)
