@@ -138,7 +138,7 @@ struct aio_child {
 
 struct aio_child_list {
 	struct aio_child *children;
-	struct timed_event *cleanup_event;
+	struct tevent_timer *cleanup_event;
 };
 
 static void free_aio_children(void **p)
@@ -257,7 +257,7 @@ static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 }
 
 static void aio_child_cleanup(struct tevent_context *event_ctx,
-			      struct timed_event *te,
+			      struct tevent_timer *te,
 			      struct timeval now,
 			      void *private_data)
 {
