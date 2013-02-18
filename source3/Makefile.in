@@ -480,7 +480,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) $(LIBTSOCKET_OBJ) \
 	  ../lib/util/charset/iconv.o ../lib/util/charset/weird.o \
 	  ../lib/util/charset/charset_macosxfs.o intl/lang_tdb.o \
 	  lib/adt_tree.o lib/gencache.o \
-	  ../lib/util/modules.o lib/events.o @LIBTEVENT_OBJ0@ \
+	  ../lib/util/modules.o lib/events.o ../lib/util/tevent_debug.o @LIBTEVENT_OBJ0@ \
 	  @CCAN_OBJ@ \
 	  lib/server_contexts.o \
 	  lib/server_prefork.o \

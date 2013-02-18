@@ -960,4 +960,10 @@ void server_id_set_disconnected(struct server_id *id);
  */
 bool server_id_is_disconnected(const struct server_id *id);
 
+/*
+ * Samba code should use samba_tevent_context_init() instead of
+ * tevent_context_init() in order to get the debug output.
+ */
+struct tevent_context *samba_tevent_context_init(TALLOC_CTX *mem_ctx);
+
 #endif /* _SAMBA_UTIL_H_ */
