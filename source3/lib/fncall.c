@@ -40,7 +40,7 @@ struct fncall_context {
 	struct fncall_state **orphaned;
 	int num_orphaned;
 
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 };
 
 static void fncall_handler(struct tevent_context *ev, struct tevent_fd *fde,

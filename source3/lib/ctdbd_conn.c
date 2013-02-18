@@ -57,7 +57,7 @@ struct ctdbd_connection {
 	uint32_t our_vnn;
 	uint64_t rand_srvid;
 	struct ctdb_packet_context *pkt;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	void (*release_ip_handler)(const char *ip_addr, void *private_data);
 	void *release_ip_priv;
@@ -686,7 +686,7 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
  */
 
 static void ctdbd_socket_handler(struct tevent_context *event_ctx,
-				 struct fd_event *event,
+				 struct tevent_fd *event,
 				 uint16 flags,
 				 void *private_data)
 {
