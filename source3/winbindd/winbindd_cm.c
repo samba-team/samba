@@ -244,7 +244,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
-				   (uint8 *)domain->name,
+				   (const uint8_t *)domain->name,
 				   strlen(domain->name)+1);
 		_exit(1);
 	}
@@ -256,7 +256,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
-				   (uint8 *)domain->name,
+				   (const uint8_t *)domain->name,
 				   strlen(domain->name)+1);
 		_exit(1);
 	}
@@ -266,7 +266,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
-				   (uint8 *)domain->name,
+				   (const uint8_t *)domain->name,
 				   strlen(domain->name)+1);
 		_exit(0);
 	}
@@ -277,7 +277,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	messaging_send_buf(winbind_messaging_context(),
 			   pid_to_procid(parent_pid),
 			   MSG_WINBIND_TRY_TO_GO_ONLINE,
-			   (uint8 *)domain->name,
+			   (const uint8_t *)domain->name,
 			   strlen(domain->name)+1);
 	_exit(0);
 }
@@ -404,7 +404,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 			messaging_send_buf(winbind_messaging_context(),
 					   pid_to_procid(idmap->pid), 
 					   MSG_WINBIND_OFFLINE, 
-					   (uint8 *)domain->name, 
+					   (const uint8_t *)domain->name,
 					   strlen(domain->name)+1);
 		}			
 	}
@@ -479,7 +479,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 			messaging_send_buf(winbind_messaging_context(),
 					   pid_to_procid(idmap->pid), 
 					   MSG_WINBIND_ONLINE, 
-					   (uint8 *)domain->name, 
+					   (const uint8_t *)domain->name,
 					   strlen(domain->name)+1);
 		}			
 	}
@@ -2607,7 +2607,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	NTSTATUS result;
 
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES;
-	uint8  mach_pwd[16];
+	uint8_t  mach_pwd[16];
 	enum netr_SchannelType sec_chan_type;
 	const char *account_name;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
