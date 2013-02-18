@@ -529,7 +529,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
 			when = timeval_current_ofs_msec(lp_init_logon_delay());
 			p->locked = true;
-			event_add_timed(nmbd_event_context(),
+			tevent_add_timer(nmbd_event_context(),
 					NULL,
 					when,
 					delayed_init_logon_handler,
