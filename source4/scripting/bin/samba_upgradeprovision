@@ -1298,32 +1298,28 @@ def fix_wellknown_sd(samdb, names):
 def rebuild_sd(samdb, names):
     """Rebuild security descriptor of the current provision from scratch
 
-    During the different pre release of samba4 security descriptors (SD)
-    were notarly broken (up to alpha11 included)
-    This function allow to get them back in order, this function make the
-    assumption that nobody has modified manualy an SD
-    and so SD can be safely recalculated from scratch to get them right.
+    During the different pre release of samba4 security descriptors
+    (SD) were notarly broken (up to alpha11 included)
+
+    This function allows to get them back in order, this function works
+    only after the database comparison that --full mode uses and which
+    populates the dnToRecalculate and dnNotToRecalculate lists.
+
+    The idea is that the SD can be safely recalculated from scratch to get it right.
 
     :param names: List of key provision parameters"""
 
     listWellknown = fix_wellknown_sd(samdb, names)
 
     hash = {}
-    if len(dnToRecalculate) == 0:
-        res = samdb.search(expression="objectClass=*", base=str(names.rootdn),
-                        scope=SCOPE_SUBTREE, attrs=["dn", "whenCreated"],
-                        controls=["search_options:1:2"])
-        for obj in res:
-                hash[str(obj["dn"])] = obj["whenCreated"]
-    else:
-        for dn in dnToRecalculate:
-            if hash.has_key(dn):
-                continue
+    for dn in dnToRecalculate:
+        if hash.has_key(dn):
+            continue
             # fetch each dn to recalculate and their child within the same partition
-            res = samdb.search(expression="objectClass=*", base=dn,
-                        scope=SCOPE_SUBTREE, attrs=["dn", "whenCreated"])
-            for obj in res:
-                hash[str(obj["dn"])] = obj["whenCreated"]
+        res = samdb.search(expression="objectClass=*", base=dn,
+                           scope=SCOPE_SUBTREE, attrs=["dn", "whenCreated"])
+        for obj in res:
+            hash[str(obj["dn"])] = obj["whenCreated"]
 
     listKeys = list(set(hash.keys()))
     listKeys.sort(dn_sort)
@@ -1334,6 +1330,7 @@ def rebuild_sd(samdb, names):
                             % (len(dnToRecalculate), len(listKeys)))
 
     for key in listKeys:
+        # well known SDs have already been reset
         if key in listWellknown:
             continue
         if key in dnNotToRecalculate:
@@ -1863,7 +1860,7 @@ if __name__ == '__main__':
 
         # 18) We rebuild SD if a we have a list of DN to recalculate or if the
         # defSDmodified is set.
-        if defSDmodified or len(dnToRecalculate) >0:
+        if opts.full and (defSDmodified or len(dnToRecalculate) >0):
             message(SIMPLE, "Some (default) security descriptors (SDs) have "
                             "changed, recalculating them")
             ldbs.sam.set_session_info(adm_session)
