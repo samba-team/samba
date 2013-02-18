@@ -901,7 +901,7 @@ int tldap_sasl_bind(struct tldap_context *ld,
 	struct tevent_req *req;
 	int result;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;
@@ -1824,7 +1824,7 @@ int tldap_search(struct tldap_context *ld,
 	state.mem_ctx = mem_ctx;
 	state.rc = TLDAP_SUCCESS;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		state.rc = TLDAP_NO_MEMORY;
 		goto fail;
@@ -2141,7 +2141,7 @@ int tldap_add(struct tldap_context *ld, const char *dn,
 	struct tevent_req *req;
 	int result;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;
@@ -2241,7 +2241,7 @@ int tldap_modify(struct tldap_context *ld, const char *dn,
 	struct tevent_req *req;
 	int result;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;
@@ -2317,7 +2317,7 @@ int tldap_delete(struct tldap_context *ld, const char *dn,
 	struct tevent_req *req;
 	int result;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;

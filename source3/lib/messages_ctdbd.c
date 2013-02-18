@@ -68,9 +68,9 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 		struct event_context *ev;
 		struct messaging_context *msg;
 
-		ev = event_context_init(NULL);
+		ev = samba_tevent_context_init(NULL);
 		if (!ev) {
-			DEBUG(0,("event_context_init failed\n"));
+			DEBUG(0,("samba_tevent_context_init failed\n"));
 		}
 
 		msg = messaging_init(NULL, ev);

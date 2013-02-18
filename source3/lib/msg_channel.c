@@ -138,7 +138,7 @@ int msg_channel_init(TALLOC_CTX *mem_ctx, struct messaging_context *msg,
 	int err = ENOMEM;
 	bool ok;
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

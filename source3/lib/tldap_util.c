@@ -514,7 +514,7 @@ int tldap_fetch_rootdse(struct tldap_context *ld)
 	struct tevent_req *req;
 	int result;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		result = TLDAP_NO_MEMORY;
 		goto fail;

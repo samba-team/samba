@@ -695,7 +695,7 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

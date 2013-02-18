@@ -315,7 +315,7 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, const char *name,
 	struct timeval end;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -513,7 +513,7 @@ static bool g_lock_init_all(TALLOC_CTX *mem_ctx,
 	struct messaging_context *msg = NULL;
 	struct g_lock_ctx *g_ctx = NULL;
 
-	ev = tevent_context_init(mem_ctx);
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;
