@@ -57,7 +57,7 @@ static bool delay_logon(const char *peer_name, const char *peer_addr)
 }
 
 static void delayed_init_logon_handler(struct tevent_context *event_ctx,
-				       struct timed_event *te,
+				       struct tevent_timer *te,
 				       struct timeval now,
 				       void *private_data)
 {
