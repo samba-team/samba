@@ -1370,6 +1370,9 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 			dn++;
 
 			rule = strchr(dn, ':');
+			if (rule == NULL) {
+				return false;
+			}
 			if ((rule == dn + 1) || rule + 1 == e) {
 				/* malformed filter, contains "::" */
 				return false;
