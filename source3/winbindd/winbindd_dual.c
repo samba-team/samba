@@ -898,7 +898,7 @@ static void account_lockout_policy_handler(struct tevent_context *ctx,
 			 nt_errstr(result)));
 	}
 
-	child->lockout_policy_event = event_add_timed(winbind_event_context(), NULL,
+	child->lockout_policy_event = tevent_add_timer(winbind_event_context(), NULL,
 						      timeval_current_ofs(3600, 0),
 						      account_lockout_policy_handler,
 						      child);
@@ -1060,7 +1060,7 @@ static void machine_password_change_handler(struct tevent_context *ctx,
 	}
 
 done:
-	child->machine_password_change_event = event_add_timed(winbind_event_context(), NULL,
+	child->machine_password_change_event = tevent_add_timer(winbind_event_context(), NULL,
 							      next_change,
 							      machine_password_change_handler,
 							      child);
@@ -1497,7 +1497,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			set_domain_online_request(primary_domain);
 		}
 
-		child->lockout_policy_event = event_add_timed(
+		child->lockout_policy_event = tevent_add_timer(
 			winbind_event_context(), NULL, timeval_zero(),
 			account_lockout_policy_handler,
 			child);
@@ -1511,7 +1511,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		if (calculate_next_machine_pwd_change(child->domain->name,
 						       &next_change)) {
-			child->machine_password_change_event = event_add_timed(
+			child->machine_password_change_event = tevent_add_timer(
 				winbind_event_context(), NULL, next_change,
 				machine_password_change_handler,
 				child);

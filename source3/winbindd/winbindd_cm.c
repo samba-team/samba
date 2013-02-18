@@ -380,7 +380,7 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 	calc_new_online_timeout_check(domain);
 
-	domain->check_online_event = event_add_timed(winbind_event_context(),
+	domain->check_online_event = tevent_add_timer(winbind_event_context(),
 						NULL,
 						timeval_current_ofs(domain->check_online_timeout,0),
 						check_domain_online_handler,
@@ -536,7 +536,7 @@ void set_domain_online_request(struct winbindd_domain *domain)
 
 	TALLOC_FREE(domain->check_online_event);
 
-	domain->check_online_event = event_add_timed(winbind_event_context(),
+	domain->check_online_event = tevent_add_timer(winbind_event_context(),
 						     NULL,
 						     tev,
 						     check_domain_online_handler,
