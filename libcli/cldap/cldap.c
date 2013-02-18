@@ -850,7 +850,7 @@ NTSTATUS cldap_search(struct cldap_socket *cldap,
 
 	frame = talloc_stackframe();
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
@@ -1074,7 +1074,7 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
 
 	frame = talloc_stackframe();
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
