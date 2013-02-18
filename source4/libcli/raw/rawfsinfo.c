@@ -33,6 +33,9 @@ static struct smbcli_request *smb_raw_dskattr_send(struct smbcli_tree *tree,
 	struct smbcli_request *req; 
 
 	req = smbcli_request_setup(tree, SMBdskattr, 0, 0);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	if (!smbcli_request_send(req)) {
 		smbcli_request_destroy(req);
