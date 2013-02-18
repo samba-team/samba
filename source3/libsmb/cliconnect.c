@@ -298,7 +298,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli, const char *use
 					  const char *workgroup)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -371,7 +371,7 @@ struct cli_session_setup_guest_state {
 static void cli_session_setup_guest_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
-						  struct event_context *ev,
+						  struct tevent_context *ev,
 						  struct cli_state *cli,
 						  struct tevent_req **psmbreq)
 {
@@ -430,7 +430,7 @@ struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
 }
 
 struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
-						struct event_context *ev,
+						struct tevent_context *ev,
 						struct cli_state *cli)
 {
 	struct tevent_req *req, *subreq;
@@ -535,7 +535,7 @@ NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req)
 static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -740,7 +740,7 @@ static NTSTATUS cli_session_setup_plain(struct cli_state *cli,
 					const char *workgroup)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -1102,7 +1102,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 				      const char *workgroup)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -2244,7 +2244,7 @@ struct cli_tcon_andx_state {
 static void cli_tcon_andx_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *share, const char *dev,
 					const char *pass, int passlen,
@@ -2396,7 +2396,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 }
 
 struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      struct cli_state *cli,
 				      const char *share, const char *dev,
 				      const char *pass, int passlen)
@@ -2502,7 +2502,7 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		       const char *dev, const char *pass, int passlen)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 

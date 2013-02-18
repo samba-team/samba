@@ -384,7 +384,7 @@ NTSTATUS cli_message(struct cli_state *cli, const char *host,
 		     const char *username, const char *message)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 

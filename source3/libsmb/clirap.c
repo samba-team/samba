@@ -582,7 +582,7 @@ struct cli_qpathinfo1_state {
 static void cli_qpathinfo1_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo1_send(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
+				       struct tevent_context *ev,
 				       struct cli_state *cli,
 				       const char *fname)
 {
@@ -671,7 +671,7 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			uint16 *mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -758,7 +758,7 @@ struct cli_qpathinfo2_state {
 static void cli_qpathinfo2_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
+				       struct tevent_context *ev,
 				       struct cli_state *cli,
 				       const char *fname)
 {
@@ -846,7 +846,7 @@ NTSTATUS cli_qpathinfo2(struct cli_state *cli, const char *fname,
 			SMB_INO_T *ino)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -957,7 +957,7 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 			       struct stream_struct **pstreams)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -1183,7 +1183,7 @@ struct cli_qpathinfo_basic_state {
 static void cli_qpathinfo_basic_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
-					    struct event_context *ev,
+					    struct tevent_context *ev,
 					    struct cli_state *cli,
 					    const char *fname)
 {
@@ -1245,7 +1245,7 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 			     SMB_STRUCT_STAT *sbuf, uint32 *attributes)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 

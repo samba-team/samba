@@ -484,7 +484,7 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 				 const char *, void *), void *state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct file_info *finfo;
@@ -819,7 +819,7 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 			void *private_data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	int i, num_finfo;
 	struct file_info *finfo = NULL;
@@ -934,7 +934,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 			     void *), void *state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct file_info *finfo;

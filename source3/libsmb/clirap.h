@@ -42,7 +42,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 bool cli_oem_change_password(struct cli_state *cli, const char *user, const char *new_password,
                              const char *old_password);
 struct tevent_req *cli_qpathinfo1_send(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
+				       struct tevent_context *ev,
 				       struct cli_state *cli,
 				       const char *fname);
 NTSTATUS cli_qpathinfo1_recv(struct tevent_req *req,
@@ -65,7 +65,7 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
 			       time_t change_time,
 			       uint16 mode);
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
+				       struct tevent_context *ev,
 				       struct cli_state *cli,
 				       const char *fname);
 NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
@@ -104,7 +104,7 @@ NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 			     struct timespec *change_time,
 			     SMB_INO_T *ino);
 struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
-					    struct event_context *ev,
+					    struct tevent_context *ev,
 					    struct cli_state *cli,
 					    const char *fname);
 NTSTATUS cli_qpathinfo_basic_recv(struct tevent_req *req,
@@ -138,7 +138,7 @@ NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		       uint8_t **rdata, uint32_t *num_rdata);
 
 struct tevent_req *cli_flush_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  uint16_t fnum);
 NTSTATUS cli_flush_recv(struct tevent_req *req);

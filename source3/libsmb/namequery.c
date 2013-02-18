@@ -1877,7 +1877,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 			int *return_count)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 

@@ -460,7 +460,7 @@ struct cli_echo_state {
 
 static void cli_echo_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli, uint16_t num_echos,
 				 DATA_BLOB data)
 {
@@ -538,7 +538,7 @@ NTSTATUS cli_echo_recv(struct tevent_req *req)
 NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 

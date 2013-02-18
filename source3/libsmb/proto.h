@@ -39,11 +39,11 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *ntpass, int ntpasslen,
 			   const char *workgroup);
 struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
-						  struct event_context *ev,
+						  struct tevent_context *ev,
 						  struct cli_state *cli,
 						  struct tevent_req **psmbreq);
 struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
-						struct event_context *ev,
+						struct tevent_context *ev,
 						struct cli_state *cli);
 NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req);
 struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
@@ -52,13 +52,13 @@ struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_ulogoff_recv(struct tevent_req *req);
 NTSTATUS cli_ulogoff(struct cli_state *cli);
 struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *share, const char *dev,
 					const char *pass, int passlen,
 					struct tevent_req **psmbreq);
 struct tevent_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      struct cli_state *cli,
 				      const char *share, const char *dev,
 				      const char *pass, int passlen);
@@ -176,7 +176,7 @@ uint16_t cli_state_set_uid(struct cli_state *cli, uint16_t uid);
 bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive);
 uint32_t cli_state_available_size(struct cli_state *cli, uint32_t ofs);
 time_t cli_state_server_time(struct cli_state *cli);
-struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli, uint16_t num_echos,
 				 DATA_BLOB data);
 NTSTATUS cli_echo_recv(struct tevent_req *req);
@@ -218,7 +218,7 @@ NTSTATUS cli_setpathinfo(struct cli_state *cli,
 			 size_t data_len);
 
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *oldname,
 					const char *newname);
@@ -227,7 +227,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 			const char *oldname,
 			const char *newname);
 struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					size_t len);
@@ -236,7 +236,7 @@ NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
 NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 			char *linkpath, size_t len);
 struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *oldname,
 					const char *newname);
@@ -247,7 +247,7 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
 struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname);
 NTSTATUS cli_posix_getfacl_recv(struct tevent_req *req,
@@ -260,7 +260,7 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 			size_t *prb_size,
 			char **retbuf);
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname);
 NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
@@ -269,14 +269,14 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 			const char *fname,
 			SMB_STRUCT_STAT *sbuf);
 struct tevent_req *cli_posix_chmod_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					mode_t mode);
 NTSTATUS cli_posix_chmod_recv(struct tevent_req *req);
 NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode);
 struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					uid_t uid,
@@ -287,14 +287,14 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 			uid_t uid,
 			gid_t gid);
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
-                                struct event_context *ev,
+                                struct tevent_context *ev,
                                 struct cli_state *cli,
                                 const char *fname_src,
                                 const char *fname_dst);
 NTSTATUS cli_rename_recv(struct tevent_req *req);
 NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
-                                struct event_context *ev,
+                                struct tevent_context *ev,
                                 struct cli_state *cli,
                                 const char *fname_src,
                                 const char *fname_dst);
@@ -302,7 +302,7 @@ NTSTATUS cli_ntrename_recv(struct tevent_req *req);
 NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 
 struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
-                                struct event_context *ev,
+                                struct tevent_context *ev,
                                 struct cli_state *cli,
                                 const char *fname_src,
                                 const char *fname_dst);
@@ -310,7 +310,7 @@ NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req);
 NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 
 struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
-                                struct event_context *ev,
+                                struct tevent_context *ev,
                                 struct cli_state *cli,
                                 const char *fname,
                                 uint16_t mayhave_attrs);
@@ -318,26 +318,26 @@ NTSTATUS cli_unlink_recv(struct tevent_req *req);
 NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_attrs);
 
 struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  const char *dname);
 NTSTATUS cli_mkdir_recv(struct tevent_req *req);
 NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname);
 struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  const char *dname);
 NTSTATUS cli_rmdir_recv(struct tevent_req *req);
 NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname);
 struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					bool flag);
 NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req);
 NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag);
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     struct cli_state *cli,
 				     const char *fname,
 				     uint32_t CreatFlags,
@@ -368,27 +368,27 @@ uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
 uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
 				 const uint8_t *bytes, size_t num_bytes);
 struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
+				   struct tevent_context *ev,
 				   struct cli_state *cli, const char *fname,
 				   int flags, int share_mode,
 				   struct tevent_req **psmbreq);
-struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli, const char *fname,
 				 int flags, int share_mode);
 NTSTATUS cli_openx_recv(struct tevent_req *req, uint16_t *fnum);
 NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags, int share_mode, uint16_t *pfnum);
 NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode, uint16_t *pfnum);
 struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev,
+				    struct tevent_context *ev,
 				    struct cli_state *cli, uint16_t fnum,
 				    struct tevent_req **psubreq);
 struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli, uint16_t fnum);
 NTSTATUS cli_close_recv(struct tevent_req *req);
 NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum);
 struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					uint64_t size);
@@ -400,7 +400,7 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 NTSTATUS cli_lock32(struct cli_state *cli, uint16_t fnum, uint32_t offset,
 		    uint32_t len, int timeout, enum brl_type lock_type);
 struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
-                                struct event_context *ev,
+                                struct tevent_context *ev,
                                 struct cli_state *cli,
                                 uint16_t fnum,
                                 uint64_t offset,
@@ -411,7 +411,7 @@ NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
 		    uint64_t offset, uint64_t len, int timeout,
 		    enum brl_type lock_type);
 struct tevent_req *cli_unlock64_send(TALLOC_CTX *mem_ctx,
-                                struct event_context *ev,
+                                struct tevent_context *ev,
                                 struct cli_state *cli,
                                 uint16_t fnum,
                                 uint64_t offset,
@@ -419,7 +419,7 @@ struct tevent_req *cli_unlock64_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_unlock64_recv(struct tevent_req *req);
 NTSTATUS cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
 struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
-                                        struct event_context *ev,
+                                        struct tevent_context *ev,
                                         struct cli_state *cli,
                                         uint16_t fnum,
                                         uint64_t offset,
@@ -431,7 +431,7 @@ NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			uint64_t offset, uint64_t len,
 			bool wait_lock, enum brl_type lock_type);
 struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
-                                        struct event_context *ev,
+                                        struct tevent_context *ev,
                                         struct cli_state *cli,
                                         uint16_t fnum,
                                         uint64_t offset,
@@ -439,7 +439,7 @@ struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_posix_unlock_recv(struct tevent_req *req);
 NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
 struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
                                 uint16_t fnum);
 NTSTATUS cli_getattrE_recv(struct tevent_req *req,
@@ -456,7 +456,7 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 			time_t *access_time,
 			time_t *write_time);
 struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum,
 				time_t change_time,
@@ -469,7 +469,7 @@ NTSTATUS cli_setattrE(struct cli_state *cli,
 			time_t access_time,
 			time_t write_time);
 struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname);
 NTSTATUS cli_getatr_recv(struct tevent_req *req,
@@ -482,7 +482,7 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 			off_t *size,
 			time_t *write_time);
 struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname,
 				uint16_t attr,
@@ -493,19 +493,19 @@ NTSTATUS cli_setatr(struct cli_state *cli,
                 uint16_t attr,
                 time_t mtime);
 struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  const char *fname);
 NTSTATUS cli_chkpath_recv(struct tevent_req *req);
 NTSTATUS cli_chkpath(struct cli_state *cli, const char *path);
 struct tevent_req *cli_dskattr_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli);
 NTSTATUS cli_dskattr_recv(struct tevent_req *req, int *bsize, int *total,
 			  int *avail);
 NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *path);
 NTSTATUS cli_ctemp_recv(struct tevent_req *req,
@@ -535,7 +535,7 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list);
 struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					int flags,
@@ -544,7 +544,7 @@ NTSTATUS cli_posix_open_recv(struct tevent_req *req, uint16_t *pfnum);
 NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 			int flags, mode_t mode, uint16_t *fnum);
 struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
-                                        struct event_context *ev,
+                                        struct tevent_context *ev,
                                         struct cli_state *cli,
                                         const char *fname,
                                         mode_t mode);
@@ -552,14 +552,14 @@ NTSTATUS cli_posix_mkdir_recv(struct tevent_req *req);
 NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode);
 
 struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname);
 NTSTATUS cli_posix_unlink_recv(struct tevent_req *req);
 NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname);
 
 struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname);
 NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx);
@@ -578,7 +578,7 @@ NTSTATUS cli_notify(struct cli_state *cli, uint16_t fnum, uint32_t buffer_size,
 		    struct notify_change **pchanges);
 
 struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
+					   struct tevent_context *ev,
 					   struct cli_state *cli,
 					   const char *fname,
 					   uint32_t CreatFlags,
@@ -694,7 +694,7 @@ NTSTATUS cli_message(struct cli_state *cli, const char *host,
 /* The following definitions come from libsmb/clioplock.c  */
 
 struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
-						    struct event_context *ev,
+						    struct tevent_context *ev,
 						    struct cli_state *cli);
 NTSTATUS cli_smb_oplock_break_waiter_recv(struct tevent_req *req,
 					  uint16_t *pfnum,
@@ -730,18 +730,18 @@ NTSTATUS cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum,
 /* The following definitions come from libsmb/clireadwrite.c  */
 
 struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli, uint16_t fnum,
 					off_t offset, size_t size,
 					struct tevent_req **psmbreq);
 struct tevent_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      struct cli_state *cli, uint16_t fnum,
 				      off_t offset, size_t size);
 NTSTATUS cli_read_andx_recv(struct tevent_req *req, ssize_t *received,
 			    uint8_t **rcvbuf);
 struct tevent_req *cli_pull_send(TALLOC_CTX *mem_ctx,
-				 struct event_context *ev,
+				 struct tevent_context *ev,
 				 struct cli_state *cli,
 				 uint16_t fnum, off_t start_offset,
 				 off_t size, size_t window_size,
@@ -759,7 +759,7 @@ NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 NTSTATUS cli_smbwrite(struct cli_state *cli, uint16_t fnum, char *buf,
 		      off_t offset, size_t size1, size_t *ptotal);
 struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
+					 struct tevent_context *ev,
 					 struct cli_state *cli, uint16_t fnum,
 					 uint16_t mode, const uint8_t *buf,
 					 off_t offset, size_t size,
@@ -767,7 +767,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 					 int num_reqs_before,
 					 struct tevent_req **psmbreq);
 struct tevent_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev,
+				       struct tevent_context *ev,
 				       struct cli_state *cli, uint16_t fnum,
 				       uint16_t mode, const uint8_t *buf,
 				       off_t offset, size_t size);
@@ -777,7 +777,7 @@ NTSTATUS cli_writeall(struct cli_state *cli, uint16_t fnum, uint16_t mode,
 		      const uint8_t *buf, off_t offset, size_t size,
 		      size_t *pwritten);
 
-struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *cli_push_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli,
 				 uint16_t fnum, uint16_t mode,
 				 off_t start_offset, size_t window_size,

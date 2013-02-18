@@ -31,7 +31,7 @@ struct cli_smb_oplock_break_waiter_state {
 static void cli_smb_oplock_break_waiter_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_smb_oplock_break_waiter_send(TALLOC_CTX *mem_ctx,
-						    struct event_context *ev,
+						    struct tevent_context *ev,
 						    struct cli_state *cli)
 {
 	struct tevent_req *req, *subreq;

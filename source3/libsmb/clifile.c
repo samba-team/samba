@@ -281,7 +281,7 @@ struct cli_posix_link_internal_state {
 static void cli_posix_link_internal_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t level,
 					const char *oldname,
@@ -325,7 +325,7 @@ static void cli_posix_link_internal_done(struct tevent_req *subreq)
 ****************************************************************************/
 
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *oldname,
 					const char *newname)
@@ -344,7 +344,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 			const char *newname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -396,7 +396,7 @@ struct readlink_state {
 static void cli_posix_readlink_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					size_t len)
@@ -485,7 +485,7 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 				char *linkpath, size_t len)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -530,7 +530,7 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 ****************************************************************************/
 
 struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *oldname,
 					const char *newname)
@@ -549,7 +549,7 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 			const char *newname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -601,7 +601,7 @@ struct getfacl_state {
 static void cli_posix_getfacl_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname)
 {
@@ -661,7 +661,7 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 			char **retbuf)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -712,7 +712,7 @@ struct stat_state {
 static void cli_posix_stat_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname)
 {
@@ -792,7 +792,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 			SMB_STRUCT_STAT *sbuf)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -842,7 +842,7 @@ struct cli_posix_chown_chmod_internal_state {
 static void cli_posix_chown_chmod_internal_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_posix_chown_chmod_internal_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					uint32_t mode,
@@ -885,7 +885,7 @@ static void cli_posix_chown_chmod_internal_done(struct tevent_req *subreq)
 ****************************************************************************/
 
 struct tevent_req *cli_posix_chmod_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					mode_t mode)
@@ -905,7 +905,7 @@ NTSTATUS cli_posix_chmod_recv(struct tevent_req *req)
 NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -950,7 +950,7 @@ NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 ****************************************************************************/
 
 struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					uid_t uid,
@@ -974,7 +974,7 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 			gid_t gid)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1026,7 +1026,7 @@ struct cli_rename_state {
 };
 
 struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname_src,
 				const char *fname_dst)
@@ -1098,7 +1098,7 @@ NTSTATUS cli_rename_recv(struct tevent_req *req)
 NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1145,7 +1145,7 @@ struct cli_ntrename_internal_state {
 };
 
 static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname_src,
 				const char *fname_dst,
@@ -1218,7 +1218,7 @@ static NTSTATUS cli_ntrename_internal_recv(struct tevent_req *req)
 }
 
 struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname_src,
 				const char *fname_dst)
@@ -1239,7 +1239,7 @@ NTSTATUS cli_ntrename_recv(struct tevent_req *req)
 NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1280,7 +1280,7 @@ NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *
 ****************************************************************************/
 
 struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname_src,
 				const char *fname_dst)
@@ -1301,7 +1301,7 @@ NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req)
 NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1348,7 +1348,7 @@ struct cli_unlink_state {
 };
 
 struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname,
 				uint16_t mayhave_attrs)
@@ -1408,7 +1408,7 @@ NTSTATUS cli_unlink_recv(struct tevent_req *req)
 NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_attrs)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1455,7 +1455,7 @@ struct cli_mkdir_state {
 };
 
 struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  const char *dname)
 {
@@ -1512,7 +1512,7 @@ NTSTATUS cli_mkdir_recv(struct tevent_req *req)
 NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1559,7 +1559,7 @@ struct cli_rmdir_state {
 };
 
 struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  const char *dname)
 {
@@ -1616,7 +1616,7 @@ NTSTATUS cli_rmdir_recv(struct tevent_req *req)
 NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1670,7 +1670,7 @@ static void cli_nt_delete_on_close_done(struct tevent_req *subreq)
 }
 
 struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					bool flag)
@@ -1726,7 +1726,7 @@ NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req)
 NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1774,7 +1774,7 @@ struct cli_ntcreate_state {
 static void cli_ntcreate_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     struct cli_state *cli,
 				     const char *fname,
 				     uint32_t CreatFlags,
@@ -1889,7 +1889,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint16_t *pfid)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -1934,7 +1934,7 @@ struct cli_nttrans_create_state {
 static void cli_nttrans_create_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
+					   struct tevent_context *ev,
 					   struct cli_state *cli,
 					   const char *fname,
 					   uint32_t CreatFlags,
@@ -2074,7 +2074,7 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 			    uint16_t *pfid)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -2121,7 +2121,7 @@ struct cli_openx_state {
 static void cli_openx_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
+				   struct tevent_context *ev,
 				   struct cli_state *cli, const char *fname,
 				   int flags, int share_mode,
 				   struct tevent_req **psmbreq)
@@ -2212,7 +2212,7 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *cli_openx_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct cli_state *cli, const char *fname,
 				 int flags, int share_mode)
 {
@@ -2269,7 +2269,7 @@ NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 	     int share_mode, uint16_t *pfnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -2430,7 +2430,7 @@ struct cli_close_state {
 static void cli_close_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum,
 				struct tevent_req **psubreq)
@@ -2458,7 +2458,7 @@ struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
 }
 
 struct tevent_req *cli_close_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum)
 {
@@ -2499,7 +2499,7 @@ NTSTATUS cli_close_recv(struct tevent_req *req)
 NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -2552,7 +2552,7 @@ static void cli_ftruncate_done(struct tevent_req *subreq)
 }
 
 struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					uint64_t size)
@@ -2609,7 +2609,7 @@ NTSTATUS cli_ftruncate_recv(struct tevent_req *req)
 NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -2725,7 +2725,7 @@ struct cli_unlock_state {
 static void cli_unlock_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum,
 				uint64_t offset,
@@ -2786,7 +2786,7 @@ NTSTATUS cli_unlock(struct cli_state *cli,
 			uint32_t len)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -2890,7 +2890,7 @@ struct cli_unlock64_state {
 static void cli_unlock64_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_unlock64_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum,
 				uint64_t offset,
@@ -2951,7 +2951,7 @@ NTSTATUS cli_unlock64(struct cli_state *cli,
 				uint64_t len)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3010,7 +3010,7 @@ static void cli_posix_unlock_internal_done(struct tevent_req *subreq)
 }
 
 static struct tevent_req *cli_posix_lock_internal_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					uint64_t offset,
@@ -3093,7 +3093,7 @@ static struct tevent_req *cli_posix_lock_internal_send(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					uint64_t offset,
@@ -3115,7 +3115,7 @@ NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 			bool wait_lock, enum brl_type lock_type)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3168,7 +3168,7 @@ NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 ****************************************************************************/
 
 struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					uint16_t fnum,
 					uint64_t offset,
@@ -3186,7 +3186,7 @@ NTSTATUS cli_posix_unlock_recv(struct tevent_req *req)
 NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3244,7 +3244,7 @@ struct cli_getattrE_state {
 };
 
 struct tevent_req *cli_getattrE_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum)
 {
@@ -3336,7 +3336,7 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 			time_t *write_time)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3391,7 +3391,7 @@ struct cli_getatr_state {
 };
 
 struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname)
 {
@@ -3483,7 +3483,7 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 			time_t *write_time)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3533,7 +3533,7 @@ struct cli_setattrE_state {
 };
 
 struct tevent_req *cli_setattrE_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				uint16_t fnum,
 				time_t change_time,
@@ -3592,7 +3592,7 @@ NTSTATUS cli_setattrE(struct cli_state *cli,
 			time_t write_time)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3645,7 +3645,7 @@ struct cli_setatr_state {
 };
 
 struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname,
 				uint16_t attr,
@@ -3721,7 +3721,7 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 		time_t mtime)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3768,7 +3768,7 @@ struct cli_chkpath_state {
 };
 
 struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  const char *fname)
 {
@@ -3825,7 +3825,7 @@ NTSTATUS cli_chkpath_recv(struct tevent_req *req)
 NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	char *path2 = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -3889,7 +3889,7 @@ struct cli_dskattr_state {
 };
 
 struct tevent_req *cli_dskattr_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
@@ -3950,7 +3950,7 @@ NTSTATUS cli_dskattr_recv(struct tevent_req *req, int *bsize, int *total, int *a
 NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -3999,7 +3999,7 @@ struct ctemp_state {
 };
 
 struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *path)
 {
@@ -4103,7 +4103,7 @@ NTSTATUS cli_ctemp(struct cli_state *cli,
 			char **out_path)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -4442,7 +4442,7 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		struct ea_struct **pea_list)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -4553,7 +4553,7 @@ static void cli_posix_open_internal_done(struct tevent_req *subreq)
 }
 
 static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					int flags,
@@ -4624,7 +4624,7 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 }
 
 struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					int flags,
@@ -4655,7 +4655,7 @@ NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 {
 
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -4697,7 +4697,7 @@ NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 }
 
 struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					mode_t mode)
@@ -4714,7 +4714,7 @@ NTSTATUS cli_posix_mkdir_recv(struct tevent_req *req)
 NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -4765,7 +4765,7 @@ struct cli_posix_unlink_internal_state {
 static void cli_posix_unlink_internal_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
 					uint16_t level)
@@ -4800,7 +4800,7 @@ static void cli_posix_unlink_internal_done(struct tevent_req *subreq)
 }
 
 struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname)
 {
@@ -4820,7 +4820,7 @@ NTSTATUS cli_posix_unlink_recv(struct tevent_req *req)
 NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -4864,7 +4864,7 @@ NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname)
 ****************************************************************************/
 
 struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname)
 {
@@ -4881,7 +4881,7 @@ NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev = NULL;
+	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -5216,7 +5216,7 @@ NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		       uint8_t **rdata, uint32_t *num_rdata)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -5353,7 +5353,7 @@ NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		       uint8_t **rdata, uint32_t *num_rdata)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -5389,7 +5389,7 @@ struct cli_flush_state {
 static void cli_flush_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_flush_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct cli_state *cli,
 				  uint16_t fnum)
 {
@@ -5433,7 +5433,7 @@ NTSTATUS cli_flush_recv(struct tevent_req *req)
 NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -5578,7 +5578,7 @@ NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			      char ***pnames, int *pnum_names)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
