@@ -43,7 +43,7 @@ bool found_lm_clients = False;
 
 time_t StartupTime = 0;
 
-struct event_context *nmbd_event_context(void)
+struct tevent_context *nmbd_event_context(void)
 {
 	return server_event_context();
 }
