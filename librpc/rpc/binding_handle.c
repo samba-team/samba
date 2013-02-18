@@ -209,7 +209,7 @@ NTSTATUS dcerpc_binding_handle_raw_call(struct dcerpc_binding_handle *h,
 	if (h->sync_ev) {
 		ev = h->sync_ev;
 	} else {
-		ev = tevent_context_init(frame);
+		ev = samba_tevent_context_init(frame);
 	}
 	if (ev == NULL) {
 		talloc_free(frame);
@@ -524,7 +524,7 @@ NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
 	if (h->sync_ev) {
 		ev = h->sync_ev;
 	} else {
-		ev = tevent_context_init(frame);
+		ev = samba_tevent_context_init(frame);
 	}
 	if (ev == NULL) {
 		talloc_free(frame);
