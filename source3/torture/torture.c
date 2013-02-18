@@ -228,7 +228,7 @@ static bool cli_bad_session_request(int fd,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2985,7 +2985,7 @@ static bool run_negprot_nowait(int dummy)
 
 	printf("starting negprot nowait test\n");
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		return false;
 	}
@@ -3723,7 +3723,7 @@ static bool run_oplock4(int dummy)
 		return false;
 	}
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("tevent_context_init failed\n");
 		return false;
@@ -6604,7 +6604,7 @@ static void chain1_close_completion(struct tevent_req *req)
 static bool run_chain1(int dummy)
 {
 	struct cli_state *cli1;
-	struct event_context *evt = event_context_init(NULL);
+	struct event_context *evt = samba_tevent_context_init(NULL);
 	struct tevent_req *reqs[3], *smbreqs[3];
 	bool done = false;
 	const char *str = "foobar";
@@ -6665,7 +6665,7 @@ static void chain2_tcon_completion(struct tevent_req *req)
 static bool run_chain2(int dummy)
 {
 	struct cli_state *cli1;
-	struct event_context *evt = event_context_init(NULL);
+	struct event_context *evt = samba_tevent_context_init(NULL);
 	struct tevent_req *reqs[2], *smbreqs[2];
 	bool done = false;
 	NTSTATUS status;
@@ -7030,7 +7030,7 @@ static bool run_notify_bench(int dummy)
 		num_unc_names = 1;
 	}
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		d_printf("tevent_context_init failed\n");
 		return false;
@@ -7566,7 +7566,7 @@ static bool run_tldap(int dummy)
 	}
 	d_printf("defaultNamingContext: %s\n", basedn);
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		d_printf("tevent_context_init failed\n");
 		return false;
@@ -8595,7 +8595,7 @@ static bool run_getaddrinfo_send(int dummy)
 	struct tevent_req *reqs[4];
 	int i;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

@@ -428,9 +428,9 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	ev = event_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
-		printf("event_context_init() returned NULL\n");
+		printf("samba_tevent_context_init() returned NULL\n");
 		return false;
 	}
 
@@ -937,9 +937,9 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	ev = event_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
-		printf("event_context_init() returned NULL\n");
+		printf("samba_tevent_context_init() returned NULL\n");
 		return false;
 	}
 
@@ -1556,9 +1556,9 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	ev = event_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
-		printf("event_context_init() returned NULL\n");
+		printf("samba_tevent_context_init() returned NULL\n");
 		return false;
 	}
 

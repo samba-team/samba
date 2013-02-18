@@ -72,7 +72,7 @@ bool run_async_echo(int dummy)
 
 	printf("Starting ASYNC_ECHO\n");
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("tevent_context_init failed\n");
 		goto fail;

@@ -108,7 +108,7 @@ bool run_msg_test(int dummy)
 	struct tevent_req *req;
 	int ret;
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		fprintf(stderr, "tevent_context_init failed\n");
 		return false;

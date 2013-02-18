@@ -53,7 +53,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 
 	lp_load_global(get_dyn_CONFIGFILE());
 
-	if (!(evt_ctx = tevent_context_init(NULL)) ||
+	if (!(evt_ctx = samba_tevent_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
 		exit(1);

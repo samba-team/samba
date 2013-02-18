@@ -465,7 +465,7 @@ bool run_nbench2(int dummy)
 			strerror(errno));
 		return false;
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}

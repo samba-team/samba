@@ -37,7 +37,7 @@ bool run_dbwrap_watch1(int dummy)
 	NTSTATUS status;
 	bool ret = false;
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		fprintf(stderr, "tevent_context_init failed\n");
 		goto fail;

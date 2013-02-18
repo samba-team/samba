@@ -31,7 +31,7 @@ bool run_addrchange(int dummy)
 	NTSTATUS status;
 	int i;
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		d_fprintf(stderr, "tevent_context_init failed\n");
 		return -1;

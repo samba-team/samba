@@ -197,7 +197,7 @@ bool run_notify_bench2(int dummy)
 		return false;
 	}
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("tevent_context_create failed\n");
 		return false;
@@ -660,7 +660,7 @@ bool run_notify_bench3(int dummy)
 		return false;
 	}
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		printf("tevent_context_create failed\n");
 		return false;

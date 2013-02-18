@@ -459,7 +459,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	char cwd[MAXPATHLEN];
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev = tevent_context_init(NULL);
+	struct tevent_context *ev = samba_tevent_context_init(NULL);
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 
