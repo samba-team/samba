@@ -151,7 +151,7 @@ static bool brl_tdb_same_context(struct lock_context *ctx1, struct lock_context 
 static bool brl_tdb_overlap(struct lock_struct *lck1, 
 			    struct lock_struct *lck2)
 {
-	/* this extra check is not redundent - it copes with locks
+	/* this extra check is not redundant - it copes with locks
 	   that go beyond the end of 64 bit file space */
 	if (lck1->size != 0 &&
 	    lck1->start == lck2->start &&
