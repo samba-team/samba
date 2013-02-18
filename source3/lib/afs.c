@@ -237,7 +237,7 @@ bool afs_login(connection_struct *conn)
 	}
 
 	afs_username = talloc_sub_advanced(ctx,
-				lp_servicename(SNUM(conn)),
+				lp_servicename(ctx, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
