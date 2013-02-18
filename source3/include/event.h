@@ -21,9 +21,6 @@
 #define TEVENT_COMPAT_DEFINES
 #include <tevent.h>
 
-#undef event_context_init
-#define event_context_init(mem_ctx) s3_tevent_context_init(mem_ctx)
-
 /* The following definitions come from lib/events.c  */
 struct pollfd;
 struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
