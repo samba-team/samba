@@ -269,7 +269,7 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	talloc_set_destructor(in, inotify_destructor);
 
 	/* add a event waiting for the inotify fd to be readable */
-	event_add_fd(ctx->ev, in, in->fd, EVENT_FD_READ, inotify_handler, in);
+	tevent_add_fd(ctx->ev, in, in->fd, TEVENT_FD_READ, inotify_handler, in);
 
 	return NT_STATUS_OK;
 }

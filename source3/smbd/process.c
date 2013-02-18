@@ -3594,10 +3594,10 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("init_dptrs() failed");
 	}
 
-	sconn->smb1.fde = event_add_fd(ev_ctx,
+	sconn->smb1.fde = tevent_add_fd(ev_ctx,
 						  sconn,
 						  sconn->sock,
-						  EVENT_FD_READ,
+						  TEVENT_FD_READ,
 						  smbd_server_connection_handler,
 						  sconn);
 	if (!sconn->smb1.fde) {
