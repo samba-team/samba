@@ -649,7 +649,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 #if 0
 
     /*
-     * Currently this code is redundent as we already have a filter
+     * Currently this code is redundant as we already have a filter
      * by hostname list. What this code really needs to do is to
      * get a hosts allowed/hosts denied list from the SAM database
      * on a per user basis, and make the access decision there.
