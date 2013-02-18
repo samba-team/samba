@@ -278,7 +278,7 @@ static void free_samr_cache(DISP_INFO *disp_info)
  Idle event handler. Throw away the disp info cache.
  ********************************************************************/
 
-static void disp_info_cache_idle_timeout_handler(struct event_context *ev_ctx,
+static void disp_info_cache_idle_timeout_handler(struct tevent_context *ev_ctx,
 						 struct timed_event *te,
 						 struct timeval now,
 						 void *private_data)

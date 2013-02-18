@@ -501,7 +501,7 @@ bool np_read_in_progress(struct fake_file_handle *handle)
 }
 
 struct np_write_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct np_proxy_state *p;
 	struct iovec iov;
 	ssize_t nwritten;
@@ -509,7 +509,7 @@ struct np_write_state {
 
 static void np_write_done(struct tevent_req *subreq);
 
-struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *np_write_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct fake_file_handle *handle,
 				 const uint8_t *data, size_t len)
 {
@@ -693,7 +693,7 @@ struct np_read_state {
 
 static void np_read_done(struct tevent_req *subreq);
 
-struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct tevent_req *np_read_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct fake_file_handle *handle,
 				uint8_t *data, size_t len)
 {
