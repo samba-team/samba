@@ -67,13 +67,13 @@ static FAMConnection fam_connection;
 static bool fam_connection_initialized = False;
 
 static struct fam_watch_context *fam_notify_list;
-static void fam_handler(struct event_context *event_ctx,
+static void fam_handler(struct tevent_context *event_ctx,
 			struct fd_event *fd_event,
 			uint16 flags,
 			void *private_data);
 
 static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
-				    struct event_context *event_ctx)
+				    struct tevent_context *event_ctx)
 {
 	int res;
 	char *name;
@@ -127,7 +127,7 @@ static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
 }
 
 static void fam_reopen(FAMConnection *fam_conn,
-		       struct event_context *event_ctx,
+		       struct tevent_context *event_ctx,
 		       struct fam_watch_context *notify_list)
 {
 	struct fam_watch_context *ctx;
@@ -146,7 +146,7 @@ static void fam_reopen(FAMConnection *fam_conn,
 	}
 }
 
-static void fam_handler(struct event_context *event_ctx,
+static void fam_handler(struct tevent_context *event_ctx,
 			struct fd_event *fd_event,
 			uint16 flags,
 			void *private_data)

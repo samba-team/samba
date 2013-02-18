@@ -256,7 +256,7 @@ static ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
 	return (sendmsg(fd, &msg, 0));
 }
 
-static void aio_child_cleanup(struct event_context *event_ctx,
+static void aio_child_cleanup(struct tevent_context *event_ctx,
 			      struct timed_event *te,
 			      struct timeval now,
 			      void *private_data)

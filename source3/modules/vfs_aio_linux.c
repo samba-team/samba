@@ -33,7 +33,7 @@ static struct fd_event *aio_read_event;
 static bool used;
 static unsigned num_busy;
 
-static void aio_linux_done(struct event_context *event_ctx,
+static void aio_linux_done(struct tevent_context *event_ctx,
 			   struct fd_event *event,
 			   uint16 flags, void *private_data);
 
@@ -246,7 +246,7 @@ static struct tevent_req *aio_linux_fsync_send(
 	return req;
 }
 
-static void aio_linux_done(struct event_context *event_ctx,
+static void aio_linux_done(struct tevent_context *event_ctx,
 			   struct fd_event *event,
 			   uint16 flags, void *private_data)
 {
