@@ -115,7 +115,7 @@ static void preopen_helper_readable(struct tevent_context *ev,
 	ssize_t nread;
 	char c;
 
-	if ((flags & EVENT_FD_READ) == 0) {
+	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
 	}
 
@@ -237,8 +237,8 @@ static NTSTATUS preopen_init_helper(struct preopen_helper *h)
 	}
 	close(fdpair[1]);
 	h->fd = fdpair[0];
-	h->fde = event_add_fd(server_event_context(), h->state, h->fd,
-			      EVENT_FD_READ, preopen_helper_readable, h);
+	h->fde = tevent_add_fd(server_event_context(), h->state, h->fd,
+			      TEVENT_FD_READ, preopen_helper_readable, h);
 	if (h->fde == NULL) {
 		close(h->fd);
 		h->fd = -1;

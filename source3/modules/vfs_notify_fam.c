@@ -113,9 +113,9 @@ static NTSTATUS fam_open_connection(FAMConnection *fam_conn,
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
-	if (event_add_fd(event_ctx, event_ctx,
+	if (tevent_add_fd(event_ctx, event_ctx,
 			 FAMCONNECTION_GETFD(fam_conn),
-			 EVENT_FD_READ, fam_handler,
+			 TEVENT_FD_READ, fam_handler,
 			 (void *)fam_conn) == NULL) {
 		DEBUG(0, ("event_add_fd failed\n"));
 		FAMClose(fam_conn);

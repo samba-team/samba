@@ -162,7 +162,7 @@ static void aio_open_handle_completion(struct tevent_context *event_ctx,
 	DEBUG(10, ("aio_open_handle_completion called with flags=%d\n",
 		(int)flags));
 
-	if ((flags & EVENT_FD_READ) == 0) {
+	if ((flags & TEVENT_FD_READ) == 0) {
 		return;
 	}
 
