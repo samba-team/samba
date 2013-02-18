@@ -53,7 +53,7 @@ struct smbldap_state {
 
 	time_t last_use; /* monotonic */
 	struct tevent_context *tevent_context;
-	struct timed_event *idle_event;
+	struct tevent_timer *idle_event;
 
 	struct timeval last_rebind; /* monotonic */
 };

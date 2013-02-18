@@ -280,7 +280,7 @@ struct deferred_msg_state {
  */
 
 static void deferred_message_dispatch(struct tevent_context *event_ctx,
-				      struct timed_event *te,
+				      struct tevent_timer *te,
 				      struct timeval now,
 				      void *private_data)
 {
@@ -414,7 +414,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 	ctdb_packet_dump(hdr);
 
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
-		struct timed_event *evt;
+		struct tevent_timer *evt;
 		struct deferred_msg_state *msg_state;
 		struct ctdb_req_message *msg = (struct ctdb_req_message *)hdr;
 

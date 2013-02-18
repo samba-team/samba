@@ -1022,7 +1022,7 @@ done:
 }
 
 static void smbldap_idle_fn(struct tevent_context *tevent_ctx,
-			    struct timed_event *te,
+			    struct tevent_timer *te,
 			    struct timeval now_abs,
 			    void *private_data);
 
@@ -1633,7 +1633,7 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 }
 
 static void smbldap_idle_fn(struct tevent_context *tevent_ctx,
-			    struct timed_event *te,
+			    struct tevent_timer *te,
 			    struct timeval now_abs,
 			    void *private_data)
 {
