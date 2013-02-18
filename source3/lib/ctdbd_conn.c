@@ -476,7 +476,7 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 		 * We're waiting for a call reply, but an async message has
 		 * crossed. Defer dispatching to the toplevel event loop.
 		 */
-		evt = event_add_timed(conn->msg_ctx->event_ctx,
+		evt = tevent_add_timer(conn->msg_ctx->event_ctx,
 				      conn->msg_ctx->event_ctx,
 				      timeval_zero(),
 				      deferred_message_dispatch,
