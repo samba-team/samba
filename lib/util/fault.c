@@ -76,7 +76,7 @@ static void fault_report(int sig)
 
 	smb_panic("internal error");
 
-	/* smb_panic() never returns, so this is really redundent */
+	/* smb_panic() never returns, so this is really redundant */
 	exit(1);
 }
 
