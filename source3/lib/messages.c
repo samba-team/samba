@@ -184,7 +184,7 @@ bool message_send_all(struct messaging_context *msg_ctx,
 }
 
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
-					 struct event_context *ev)
+					 struct tevent_context *ev)
 {
 	struct messaging_context *ctx;
 	NTSTATUS status;

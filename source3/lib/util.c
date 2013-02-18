@@ -428,7 +428,7 @@ static void reinit_after_fork_pipe_handler(struct tevent_context *ev,
 
 
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
-			   struct event_context *ev_ctx,
+			   struct tevent_context *ev_ctx,
 			   bool parent_longlived)
 {
 	NTSTATUS status = NT_STATUS_OK;

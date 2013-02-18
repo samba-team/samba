@@ -502,7 +502,7 @@ int open_socket_in(int type,
 
 struct open_socket_out_state {
 	int fd;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct sockaddr_storage ss;
 	socklen_t salen;
 	uint16_t port;
@@ -524,7 +524,7 @@ static int open_socket_out_state_destructor(struct open_socket_out_state *s)
 **************************************************************************/
 
 struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					const struct sockaddr_storage *pss,
 					uint16_t port,
 					int timeout)
@@ -691,7 +691,7 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 			 int timeout, int *pfd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -715,7 +715,7 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 }
 
 struct open_socket_out_defer_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct sockaddr_storage ss;
 	uint16_t port;
 	int timeout;
@@ -726,7 +726,7 @@ static void open_socket_out_defer_waited(struct tevent_req *subreq);
 static void open_socket_out_defer_connected(struct tevent_req *subreq);
 
 struct tevent_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
+					      struct tevent_context *ev,
 					      struct timeval wait_time,
 					      const struct sockaddr_storage *pss,
 					      uint16_t port,

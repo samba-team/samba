@@ -65,7 +65,7 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 
 	if (global_ctdb_connection_pid == 0 &&
 	    global_ctdbd_connection == NULL) {
-		struct event_context *ev;
+		struct tevent_context *ev;
 		struct messaging_context *msg;
 
 		ev = samba_tevent_context_init(NULL);

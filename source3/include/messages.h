@@ -77,7 +77,7 @@ struct messaging_rec;
 
 struct messaging_context {
 	struct server_id id;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct messaging_callback *callbacks;
 
 	struct messaging_backend *local;
@@ -111,7 +111,7 @@ bool message_send_all(struct messaging_context *msg_ctx,
 		      const void *buf, size_t len,
 		      int *n_sent);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
-					 struct event_context *ev);
+					 struct tevent_context *ev);
 
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
 

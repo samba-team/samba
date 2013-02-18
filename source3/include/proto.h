@@ -392,7 +392,7 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, off_t pos);
 int set_blocking(int fd, bool set);
 NTSTATUS init_before_fork(void);
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
-			   struct event_context *ev_ctx,
+			   struct tevent_context *ev_ctx,
 			   bool parent_longlived);
 void *malloc_(size_t size);
 void *Realloc(void *p, size_t size, bool free_old_on_error);
@@ -607,13 +607,13 @@ int open_socket_in(int type,
 NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 			 int timeout, int *pfd);
 struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					const struct sockaddr_storage *pss,
 					uint16_t port,
 					int timeout);
 NTSTATUS open_socket_out_recv(struct tevent_req *req, int *pfd);
 struct tevent_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
+					      struct tevent_context *ev,
 					      struct timeval wait_time,
 					      const struct sockaddr_storage *pss,
 					      uint16_t port,

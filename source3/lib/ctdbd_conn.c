@@ -279,7 +279,7 @@ struct deferred_msg_state {
  * Timed event handler for the deferred message
  */
 
-static void deferred_message_dispatch(struct event_context *event_ctx,
+static void deferred_message_dispatch(struct tevent_context *event_ctx,
 				      struct timed_event *te,
 				      struct timeval now,
 				      void *private_data)
@@ -685,7 +685,7 @@ static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
  * The ctdbd socket is readable asynchronuously
  */
 
-static void ctdbd_socket_handler(struct event_context *event_ctx,
+static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 				 struct fd_event *event,
 				 uint16 flags,
 				 void *private_data)
