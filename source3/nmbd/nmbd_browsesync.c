@@ -194,7 +194,7 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
   /* Go through the list of names found at answers->rdata and look for
      the first SERVER<0x20> name. */
 
-	if(answers->rdata != NULL) {
+	if (answers->rdlength > 0) {
 		char *p = answers->rdata;
 		int numnames = CVAL(p, 0);
 
@@ -417,7 +417,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 	 * the first WORKGROUP<0x1b> name.
 	 */
 
-	if(answers->rdata != NULL) {
+	if (answers->rdlength > 0) {
 		char *p = answers->rdata;
 		int numnames = CVAL(p, 0);
 
