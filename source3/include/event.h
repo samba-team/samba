@@ -18,7 +18,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define TEVENT_COMPAT_DEFINES
 #include <tevent.h>
 
 /* The following definitions come from lib/events.c  */
