@@ -32,7 +32,7 @@ struct rpc_transport_np_init_state {
 static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq);
 
 struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
+					      struct tevent_context *ev,
 					      struct cli_state *cli,
 					      const struct ndr_syntax_id *abstract_syntax)
 {
@@ -113,7 +113,7 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       struct rpc_cli_transport **presult)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 

@@ -70,7 +70,7 @@ static uint32 get_rpc_call_id(void)
  ********************************************************************/
 
 struct rpc_read_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_cli_transport *transport;
 	uint8_t *data;
 	size_t size;
@@ -80,7 +80,7 @@ struct rpc_read_state {
 static void rpc_read_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_read_send(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					struct rpc_cli_transport *transport,
 					uint8_t *data, size_t size)
 {
@@ -150,7 +150,7 @@ static NTSTATUS rpc_read_recv(struct tevent_req *req)
 }
 
 struct rpc_write_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_cli_transport *transport;
 	const uint8_t *data;
 	size_t size;
@@ -160,7 +160,7 @@ struct rpc_write_state {
 static void rpc_write_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_write_send(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
+					 struct tevent_context *ev,
 					 struct rpc_cli_transport *transport,
 					 const uint8_t *data, size_t size)
 {
@@ -235,7 +235,7 @@ static NTSTATUS rpc_write_recv(struct tevent_req *req)
  ****************************************************************************/
 
 struct get_complete_frag_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_pipe_client *cli;
 	uint16_t frag_len;
 	DATA_BLOB *pdu;
@@ -245,7 +245,7 @@ static void get_complete_frag_got_header(struct tevent_req *subreq);
 static void get_complete_frag_got_rest(struct tevent_req *subreq);
 
 static struct tevent_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
-						 struct event_context *ev,
+						 struct tevent_context *ev,
 						 struct rpc_pipe_client *cli,
 						 DATA_BLOB *pdu)
 {
@@ -509,7 +509,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 struct cli_api_pipe_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_cli_transport *transport;
 	uint8_t *rdata;
 	uint32_t rdata_len;
@@ -520,7 +520,7 @@ static void cli_api_pipe_write_done(struct tevent_req *subreq);
 static void cli_api_pipe_read_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
-					    struct event_context *ev,
+					    struct tevent_context *ev,
 					    struct rpc_cli_transport *transport,
 					    uint8_t *data, size_t data_len,
 					    uint32_t max_rdata_len)
@@ -690,7 +690,7 @@ static NTSTATUS cli_api_pipe_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
  ****************************************************************************/
 
 struct rpc_api_pipe_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_pipe_client *cli;
 	uint8_t expected_pkt_type;
 
@@ -708,7 +708,7 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq);
 static void rpc_api_pipe_auth3_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
-					    struct event_context *ev,
+					    struct tevent_context *ev,
 					    struct rpc_pipe_client *cli,
 					    DATA_BLOB *data, /* Outgoing PDU */
 					    uint8_t expected_pkt_type)
@@ -1163,7 +1163,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
  ********************************************************************/
 
 struct rpc_api_pipe_req_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_pipe_client *cli;
 	uint8_t op_num;
 	uint32_t call_id;
@@ -1179,7 +1179,7 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 				  bool *is_last_frag);
 
 struct tevent_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
+					 struct tevent_context *ev,
 					 struct rpc_pipe_client *cli,
 					 uint8_t op_num,
 					 DATA_BLOB *req_data)
@@ -1540,7 +1540,7 @@ static NTSTATUS create_rpc_alter_context(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 struct rpc_pipe_bind_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_pipe_client *cli;
 	DATA_BLOB rpc_out;
 	bool auth3;
@@ -1562,7 +1562,7 @@ static NTSTATUS rpc_bind_finish_send(struct tevent_req *req,
 				     DATA_BLOB *credentials);
 
 struct tevent_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      struct rpc_pipe_client *cli,
 				      struct pipe_auth_data *auth)
 {
@@ -1957,7 +1957,7 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		       struct pipe_auth_data *auth)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_OK;
 

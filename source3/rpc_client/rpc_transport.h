@@ -36,7 +36,7 @@ struct rpc_cli_transport {
 	 * Trigger an async read from the server. May return a short read.
 	 */
 	struct tevent_req *(*read_send)(TALLOC_CTX *mem_ctx,
-					struct event_context *ev,
+					struct tevent_context *ev,
 					uint8_t *data, size_t size,
 					void *priv);
 	/**
@@ -48,7 +48,7 @@ struct rpc_cli_transport {
 	 * Trigger an async write to the server. May return a short write.
 	 */
 	struct tevent_req *(*write_send)(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
+					 struct tevent_context *ev,
 					 const uint8_t *data, size_t size,
 					 void *priv);
 	/**
@@ -63,7 +63,7 @@ struct rpc_cli_transport {
 	 * cli_pipe.c will fall back to the explicit write/read routines.
 	 */
 	struct tevent_req *(*trans_send)(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
+					 struct tevent_context *ev,
 					 uint8_t *data, size_t data_len,
 					 uint32_t max_rdata_len,
 					 void *priv);
@@ -82,7 +82,7 @@ struct rpc_cli_transport {
 /* The following definitions come from rpc_client/rpc_transport_np.c  */
 struct cli_state;
 struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
+					      struct tevent_context *ev,
 					      struct cli_state *cli,
 					      const struct ndr_syntax_id *abstract_syntax);
 NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,

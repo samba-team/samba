@@ -171,7 +171,7 @@ struct rpc_tstream_read_state {
 static void rpc_tstream_read_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_tstream_read_send(TALLOC_CTX *mem_ctx,
-					     struct event_context *ev,
+					     struct tevent_context *ev,
 					     uint8_t *data, size_t size,
 					     void *priv)
 {
@@ -250,7 +250,7 @@ static NTSTATUS rpc_tstream_read_recv(struct tevent_req *req, ssize_t *size)
 }
 
 struct rpc_tstream_write_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct rpc_tstream_state *transp;
 	struct iovec iov;
 	ssize_t nwritten;
@@ -259,7 +259,7 @@ struct rpc_tstream_write_state {
 static void rpc_tstream_write_done(struct tevent_req *subreq);
 
 static struct tevent_req *rpc_tstream_write_send(TALLOC_CTX *mem_ctx,
-					      struct event_context *ev,
+					      struct tevent_context *ev,
 					      const uint8_t *data, size_t size,
 					      void *priv)
 {
