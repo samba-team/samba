@@ -1078,6 +1078,7 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 	op->db_rec = NULL;
 
 	if (op->compat) {
+		op->compat->op = NULL;
 		file_free(NULL, op->compat);
 		op->compat = NULL;
 	}

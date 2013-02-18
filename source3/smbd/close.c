@@ -782,6 +782,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 			data_blob_free(&fsp->op->global->backend_cookie);
 			fsp->op->global->backend_cookie = new_cookie;
 
+			fsp->op->compat = NULL;
 			tmp = smbXsrv_open_close(fsp->op, now);
 			if (!NT_STATUS_IS_OK(tmp)) {
 				DEBUG(1, ("Failed to update smbXsrv_open "
