@@ -81,7 +81,7 @@ NTSTATUS libnet_samsync_init_context(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(ctx->domain_sid_str);
 	}
 
-	ctx->msg_ctx = messaging_init(ctx, event_context_init(ctx));
+	ctx->msg_ctx = messaging_init(ctx, samba_tevent_context_init(ctx));
 	NT_STATUS_HAVE_NO_MEMORY(ctx->msg_ctx);
 
 	*ctx_p = ctx;
