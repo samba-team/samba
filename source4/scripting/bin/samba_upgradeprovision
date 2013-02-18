@@ -1226,9 +1226,6 @@ def fix_wellknown_sd(samdb, names):
     :param samdb: An LDB object pointing to the sam of the current provision
     :param names: A list of key provision parameters
     """
-    alwaysRecalculate = False
-    if len(dnToRecalculate) == 0 and len(dnNotToRecalculate) == 0:
-        alwaysRecalculate = True
 
     list_wellknown_dns = []
 
@@ -1287,7 +1284,7 @@ def fix_wellknown_sd(samdb, names):
 
     for [dn, descriptor_fn] in subcontainers:
         list_wellknown_dns.append(dn)
-        if alwaysRecalculate or dn in dnToRecalculate:
+        if dn in dnToRecalculate:
             delta = Message()
             delta.dn = Dn(samdb, str(dn))
             descr = descriptor_fn(names.domainsid, name_map=names.name_map)
