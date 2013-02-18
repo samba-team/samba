@@ -1233,7 +1233,7 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
 
 NET_OBJ = $(NET_OBJ1) \
-	  $(NET_OBJ2) \
+	  $(NET_OBJ2) @FAKE_KASERVER_OBJ@ \
 	  $(LIBADDNS_OBJ0) \
 	  $(READLINE_OBJ) \
 	  $(LIBGPO_OBJ) $(INIPARSER_OBJ) $(DISPLAY_SEC_OBJ) \
