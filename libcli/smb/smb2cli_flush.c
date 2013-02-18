@@ -112,7 +112,7 @@ NTSTATUS smb2cli_flush(struct smbXcli_conn *conn,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

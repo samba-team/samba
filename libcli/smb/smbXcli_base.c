@@ -561,7 +561,7 @@ NTSTATUS smbXcli_conn_samba_suicide(struct smbXcli_conn *conn,
 		status = NT_STATUS_INVALID_PARAMETER_MIX;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -4430,7 +4430,7 @@ NTSTATUS smbXcli_negprot(struct smbXcli_conn *conn,
 		status = NT_STATUS_INVALID_PARAMETER_MIX;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
