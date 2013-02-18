@@ -28,7 +28,7 @@ WERROR com_init_ctx(struct com_context **ctx, struct tevent_context *event_ctx)
 {
 	*ctx = talloc(NULL, struct com_context);
 	if (event_ctx == NULL) {
-		event_ctx = tevent_context_init(*ctx);
+		event_ctx = samba_tevent_context_init(*ctx);
 	}
 	(*ctx)->event_ctx = event_ctx;
 	return WERR_OK;
