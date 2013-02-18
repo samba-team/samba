@@ -39,7 +39,7 @@
 
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
 static void krb5_ticket_gain_handler(struct tevent_context *,
-				     struct timed_event *,
+				     struct tevent_timer *,
 				     struct timeval,
 				     void *);
 static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *,
@@ -105,7 +105,7 @@ void ccache_remove_all_after_fork(void)
 ****************************************************************/
 
 static void krb5_ticket_refresh_handler(struct tevent_context *event_ctx,
-					struct timed_event *te,
+					struct tevent_timer *te,
 					struct timeval now,
 					void *private_data)
 {
@@ -298,7 +298,7 @@ done:
 ****************************************************************/
 
 static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
-				     struct timed_event *te,
+				     struct tevent_timer *te,
 				     struct timeval now,
 				     void *private_data)
 {
@@ -417,7 +417,7 @@ void ccache_regain_all_now(void)
 	struct timeval t = timeval_current();
 
 	for (cur = ccache_list; cur; cur = cur->next) {
-		struct timed_event *new_event;
+		struct tevent_timer *new_event;
 
 		/*
 		 * if refresh_time is 0, we know that the

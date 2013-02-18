@@ -860,7 +860,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 }
 
 static void account_lockout_policy_handler(struct tevent_context *ctx,
-					   struct timed_event *te,
+					   struct tevent_timer *te,
 					   struct timeval now,
 					   void *private_data)
 {
@@ -977,7 +977,7 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 }
 
 static void machine_password_change_handler(struct tevent_context *ctx,
-					    struct timed_event *te,
+					    struct tevent_timer *te,
 					    struct timeval now,
 					    void *private_data)
 {

@@ -287,7 +287,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 ****************************************************************/
 
 static void check_domain_online_handler(struct tevent_context *ctx,
-					struct timed_event *te,
+					struct tevent_timer *te,
 					struct timeval now,
 					void *private_data)
 {
