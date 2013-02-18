@@ -121,7 +121,7 @@ static void notify_handler(struct messaging_context *msg_ctx,
 
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg,
-				   struct event_context *ev)
+				   struct tevent_context *ev)
 {
 	struct loadparm_context *lp_ctx;
 	struct notify_context *notify;

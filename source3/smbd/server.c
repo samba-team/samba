@@ -80,7 +80,7 @@ struct smbd_child_pid {
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
 
-extern void start_lsasd(struct event_context *ev_ctx,
+extern void start_lsasd(struct tevent_context *ev_ctx,
 			struct messaging_context *msg_ctx);
 
 #ifdef WITH_DFS
@@ -394,7 +394,7 @@ static void add_child_pid(struct smbd_parent_context *parent,
   network outage).  
 */
 
-static void cleanup_timeout_fn(struct event_context *event_ctx,
+static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 				struct timed_event *te,
 				struct timeval now,
 				void *private_data)

@@ -92,7 +92,7 @@ bool cancel_smb2_aio(struct smb_request *smbreq);
 
 /* The following definitions come from smbd/blocking.c  */
 
-void brl_timeout_fn(struct event_context *event_ctx,
+void brl_timeout_fn(struct tevent_context *event_ctx,
 		struct timed_event *te,
 		struct timeval now,
 		void *private_data);
@@ -314,7 +314,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
 /* The following definitions come from smbd/fileio.c  */
 
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n);
-void update_write_time_handler(struct event_context *ctx,
+void update_write_time_handler(struct tevent_context *ctx,
                                       struct timed_event *te,
                                       struct timeval now,
                                       void *private_data);
@@ -534,7 +534,7 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 		  const char *path);
 char *notify_filter_string(TALLOC_CTX *mem_ctx, uint32 filter);
 struct sys_notify_context *sys_notify_context_create(TALLOC_CTX *mem_ctx,
-						     struct event_context *ev);
+						     struct tevent_context *ev);
 
 /* The following definitions come from smbd/notify_inotify.c  */
 
@@ -552,7 +552,7 @@ NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *messaging_ctx,
-				   struct event_context *ev);
+				   struct tevent_context *ev);
 NTSTATUS notify_add(struct notify_context *notify,
 		    const char *path, uint32_t filter, uint32_t subdir_filter,
 		    void (*callback)(void *, const struct notify_event *),

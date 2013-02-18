@@ -1343,7 +1343,7 @@ bool schedule_deferred_open_message_smb2(
  Re-process this call.
 *********************************************************/
 
-static void smb2_deferred_open_timer(struct event_context *ev,
+static void smb2_deferred_open_timer(struct tevent_context *ev,
 					struct timed_event *te,
 					struct timeval _tval,
 					void *private_data)

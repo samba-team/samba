@@ -320,7 +320,7 @@ static files_struct *initial_break_processing(
 	return fsp;
 }
 
-static void oplock_timeout_handler(struct event_context *ctx,
+static void oplock_timeout_handler(struct tevent_context *ctx,
 				   struct timed_event *te,
 				   struct timeval now,
 				   void *private_data)

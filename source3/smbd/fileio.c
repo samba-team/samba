@@ -164,7 +164,7 @@ static int wcp_file_size_change(files_struct *fsp)
 	return ret;
 }
 
-void update_write_time_handler(struct event_context *ctx,
+void update_write_time_handler(struct tevent_context *ctx,
 				      struct timed_event *te,
 				      struct timeval now,
 				      void *private_data)

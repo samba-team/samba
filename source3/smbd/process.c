@@ -581,7 +581,7 @@ static void process_smb(struct smbd_server_connection *conn,
 			uint32_t seqnum, bool encrypted,
 			struct smb_perfcount_data *deferred_pcd);
 
-static void smbd_deferred_open_timer(struct event_context *ev,
+static void smbd_deferred_open_timer(struct tevent_context *ev,
 				     struct timed_event *te,
 				     struct timeval _tval,
 				     void *private_data)
@@ -2428,7 +2428,7 @@ process:
 		    seqnum, encrypted, NULL);
 }
 
-static void smbd_server_connection_handler(struct event_context *ev,
+static void smbd_server_connection_handler(struct tevent_context *ev,
 					   struct fd_event *fde,
 					   uint16_t flags,
 					   void *private_data)
@@ -2446,7 +2446,7 @@ static void smbd_server_connection_handler(struct event_context *ev,
 	}
 }
 
-static void smbd_server_echo_handler(struct event_context *ev,
+static void smbd_server_echo_handler(struct tevent_context *ev,
 				     struct fd_event *fde,
 				     uint16_t flags,
 				     void *private_data)
