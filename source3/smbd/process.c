@@ -2436,11 +2436,11 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 	struct smbd_server_connection *conn = talloc_get_type(private_data,
 					      struct smbd_server_connection);
 
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
 		return;
 	}
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		smbd_server_connection_read_handler(conn, conn->sock);
 		return;
 	}
@@ -2454,11 +2454,11 @@ static void smbd_server_echo_handler(struct tevent_context *ev,
 	struct smbd_server_connection *conn = talloc_get_type(private_data,
 					      struct smbd_server_connection);
 
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		smbd_server_connection_write_handler(conn);
 		return;
 	}
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		smbd_server_connection_read_handler(
 			conn, conn->smb1.echo_handler.trusted_fd);
 		return;
