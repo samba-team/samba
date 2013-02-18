@@ -721,9 +721,9 @@ NTSTATUS ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 	SMB_ASSERT(conn->msg_ctx == NULL);
 	SMB_ASSERT(conn->fde == NULL);
 
-	if (!(conn->fde = event_add_fd(msg_ctx->event_ctx, conn,
+	if (!(conn->fde = tevent_add_fd(msg_ctx->event_ctx, conn,
 				       ctdb_packet_get_fd(conn->pkt),
-				       EVENT_FD_READ,
+				       TEVENT_FD_READ,
 				       ctdbd_socket_handler,
 				       conn))) {
 		DEBUG(0, ("event_add_fd failed\n"));
