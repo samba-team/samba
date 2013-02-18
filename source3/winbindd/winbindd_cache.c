@@ -4834,7 +4834,7 @@ struct winbindd_methods cache_methods = {
 	trusted_domains
 };
 
-static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, char *domain_name,
+static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, const char *domain_name,
 			   uint32_t opnum, const DATA_BLOB *req,
 			   TDB_DATA *pkey)
 {
