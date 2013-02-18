@@ -68,7 +68,7 @@ static bool fam_connection_initialized = False;
 
 static struct fam_watch_context *fam_notify_list;
 static void fam_handler(struct tevent_context *event_ctx,
-			struct fd_event *fd_event,
+			struct tevent_fd *fd_event,
 			uint16 flags,
 			void *private_data);
 
@@ -147,7 +147,7 @@ static void fam_reopen(FAMConnection *fam_conn,
 }
 
 static void fam_handler(struct tevent_context *event_ctx,
-			struct fd_event *fd_event,
+			struct tevent_fd *fd_event,
 			uint16 flags,
 			void *private_data)
 {

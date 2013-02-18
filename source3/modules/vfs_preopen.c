@@ -26,7 +26,7 @@ struct preopen_state;
 
 struct preopen_helper {
 	struct preopen_state *state;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	pid_t pid;
 	int fd;
 	bool busy;
@@ -107,7 +107,7 @@ static void preopen_queue_run(struct preopen_state *state)
 }
 
 static void preopen_helper_readable(struct tevent_context *ev,
-				    struct fd_event *fde, uint16_t flags,
+				    struct tevent_fd *fde, uint16_t flags,
 				    void *priv)
 {
 	struct preopen_helper *helper = (struct preopen_helper *)priv;
