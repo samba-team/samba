@@ -586,9 +586,9 @@ bool cups_cache_reload(struct tevent_context *ev,
 		*p_pipe_fd ));
 
 	/* Trigger an event when the pipe can be read. */
-	cache_fd_event = event_add_fd(ev,
+	cache_fd_event = tevent_add_fd(ev,
 				NULL, *p_pipe_fd,
-				EVENT_FD_READ,
+				TEVENT_FD_READ,
 				cups_async_callback,
 				(void *)cb_args);
 	if (!cache_fd_event) {
