@@ -236,7 +236,7 @@ static NTSTATUS notify_online(struct cli_state *cli,
 			      bool *got_notify)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 

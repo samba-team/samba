@@ -180,7 +180,7 @@ static bool cli_bad_session_request(int fd,
 	bool ret = false;
 	uint8_t message_type;
 	uint8_t error;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct tevent_req *req;
 
 	frame = talloc_stackframe();
@@ -6604,7 +6604,7 @@ static void chain1_close_completion(struct tevent_req *req)
 static bool run_chain1(int dummy)
 {
 	struct cli_state *cli1;
-	struct event_context *evt = samba_tevent_context_init(NULL);
+	struct tevent_context *evt = samba_tevent_context_init(NULL);
 	struct tevent_req *reqs[3], *smbreqs[3];
 	bool done = false;
 	const char *str = "foobar";
@@ -6665,7 +6665,7 @@ static void chain2_tcon_completion(struct tevent_req *req)
 static bool run_chain2(int dummy)
 {
 	struct cli_state *cli1;
-	struct event_context *evt = samba_tevent_context_init(NULL);
+	struct tevent_context *evt = samba_tevent_context_init(NULL);
 	struct tevent_req *reqs[2], *smbreqs[2];
 	bool done = false;
 	NTSTATUS status;
@@ -8518,7 +8518,7 @@ static void wbclient_done(struct tevent_req *req)
 
 static bool run_local_wbclient(int dummy)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct wb_context **wb_ctx;
 	struct winbindd_request wb_req;
 	bool result = false;
