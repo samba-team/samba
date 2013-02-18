@@ -4619,10 +4619,15 @@ static struct winbindd_tdc_domain *wcache_tdc_dup_domain(
 	if (dst->domain_name == NULL) {
 		goto fail;
 	}
-	dst->dns_name = talloc_strdup(dst, src->dns_name);
-	if (dst->dns_name == NULL) {
-		goto fail;
+
+	dst->dns_name = NULL;
+	if (src->dns_name != NULL) {
+		dst->dns_name = talloc_strdup(dst, src->dns_name);
+		if (dst->dns_name == NULL) {
+			goto fail;
+		}
 	}
+
 	sid_copy(&dst->sid, &src->sid);
 	dst->trust_flags = src->trust_flags;
 	dst->trust_type = src->trust_type;

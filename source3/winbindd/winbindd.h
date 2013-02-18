@@ -146,9 +146,9 @@ struct winbindd_child {
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
-	fstring name;                          /* Domain name (NetBIOS) */
-	fstring alt_name;                      /* alt Domain name, if any (FQDN for ADS) */
-	fstring forest_name;                   /* Name of the AD forest we're in */
+	char *name;                            /* Domain name (NetBIOS) */
+	char *alt_name;                        /* alt Domain name, if any (FQDN for ADS) */
+	char *forest_name;                     /* Name of the AD forest we're in */
 	struct dom_sid sid;                           /* SID for this domain */
 	uint32 domain_flags;                   /* Domain flags from netlogon.h */
 	uint32 domain_type;                    /* Domain type from netlogon.h */
@@ -193,7 +193,7 @@ struct winbindd_domain {
 
 	/* A working DC */
 	pid_t dc_probe_pid; /* Child we're using to detect the DC. */
-	fstring dcname;
+	char *dcname;
 	struct sockaddr_storage dcaddr;
 
 	/* Sequence number stuff */

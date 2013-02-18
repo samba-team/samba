@@ -369,8 +369,23 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 		tevent_req_error(req, EINVAL);
 		return;
 	}
-	fstrcpy(state->domain->name, response->data.domain_info.name);
-	fstrcpy(state->domain->alt_name, response->data.domain_info.alt_name);
+
+	talloc_free(state->domain->name);
+	state->domain->name = talloc_strdup(state->domain,
+					    response->data.domain_info.name);
+	if (state->domain->name == NULL) {
+		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
+	talloc_free(state->domain->alt_name);
+	state->domain->alt_name = talloc_strdup(state->domain,
+						response->data.domain_info.alt_name);
+	if (state->domain->alt_name == NULL) {
+		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
 	state->domain->native_mode = response->data.domain_info.native_mode;
 	state->domain->active_directory =
 		response->data.domain_info.active_directory;

@@ -1390,8 +1390,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 		/* add to the trusted domain cache */
 
-		fstrcpy(d.name, trust->netbios_name);
-		fstrcpy(d.alt_name, trust->dns_name);
+		d.name = discard_const_p(char, trust->netbios_name);
+		d.alt_name = discard_const_p(char, trust->dns_name);
+
 		if (trust->sid) {
 			sid_copy(&d.sid, trust->sid);
 		} else {
