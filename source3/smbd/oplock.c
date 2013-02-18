@@ -321,7 +321,7 @@ static files_struct *initial_break_processing(
 }
 
 static void oplock_timeout_handler(struct tevent_context *ctx,
-				   struct timed_event *te,
+				   struct tevent_timer *te,
 				   struct timeval now,
 				   void *private_data)
 {

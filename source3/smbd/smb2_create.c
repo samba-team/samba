@@ -378,7 +378,7 @@ struct smbd_smb2_create_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
 	bool open_was_deferred;
-	struct timed_event *te;
+	struct tevent_timer *te;
 	struct tevent_immediate *im;
 	struct timeval request_time;
 	struct file_id id;
@@ -1344,7 +1344,7 @@ bool schedule_deferred_open_message_smb2(
 *********************************************************/
 
 static void smb2_deferred_open_timer(struct tevent_context *ev,
-					struct timed_event *te,
+					struct tevent_timer *te,
 					struct timeval _tval,
 					void *private_data)
 {

@@ -93,7 +93,7 @@ bool cancel_smb2_aio(struct smb_request *smbreq);
 /* The following definitions come from smbd/blocking.c  */
 
 void brl_timeout_fn(struct tevent_context *event_ctx,
-		struct timed_event *te,
+		struct tevent_timer *te,
 		struct timeval now,
 		void *private_data);
 struct timeval timeval_brl_min(const struct timeval *tv1,
@@ -315,7 +315,7 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
 
 ssize_t read_file(files_struct *fsp,char *data,off_t pos,size_t n);
 void update_write_time_handler(struct tevent_context *ctx,
-                                      struct timed_event *te,
+                                      struct tevent_timer *te,
                                       struct timeval now,
                                       void *private_data);
 void trigger_write_time_update(struct files_struct *fsp);

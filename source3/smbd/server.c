@@ -62,7 +62,7 @@ struct smbd_parent_context {
 	struct smbd_child_pid *children;
 	size_t num_children;
 
-	struct timed_event *cleanup_te;
+	struct tevent_timer *cleanup_te;
 };
 
 struct smbd_open_socket {
@@ -395,7 +395,7 @@ static void add_child_pid(struct smbd_parent_context *parent,
 */
 
 static void cleanup_timeout_fn(struct tevent_context *event_ctx,
-				struct timed_event *te,
+				struct tevent_timer *te,
 				struct timeval now,
 				void *private_data)
 {

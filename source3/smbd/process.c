@@ -46,7 +46,7 @@ struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
 	struct smbd_server_connection *sconn;
-	struct timed_event *te;
+	struct tevent_timer *te;
 	struct smb_perfcount_data pcd;
 	uint32_t seqnum;
 	bool encrypted;
@@ -582,7 +582,7 @@ static void process_smb(struct smbd_server_connection *conn,
 			struct smb_perfcount_data *deferred_pcd);
 
 static void smbd_deferred_open_timer(struct tevent_context *ev,
-				     struct timed_event *te,
+				     struct tevent_timer *te,
 				     struct timeval _tval,
 				     void *private_data)
 {
@@ -735,7 +735,7 @@ bool schedule_deferred_open_message_smb(struct smbd_server_connection *sconn,
 			(unsigned long long)msg_mid ));
 
 		if (mid == msg_mid) {
-			struct timed_event *te;
+			struct tevent_timer *te;
 
 			if (pml->processed) {
 				/* A processed message should not be

@@ -165,7 +165,7 @@ static int wcp_file_size_change(files_struct *fsp)
 }
 
 void update_write_time_handler(struct tevent_context *ctx,
-				      struct timed_event *te,
+				      struct tevent_timer *te,
 				      struct timeval now,
 				      void *private_data)
 {

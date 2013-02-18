@@ -36,7 +36,7 @@ static void received_unlock_msg(struct messaging_context *msg,
 				DATA_BLOB *data);
 
 void brl_timeout_fn(struct tevent_context *event_ctx,
-			   struct timed_event *te,
+			   struct tevent_timer *te,
 			   struct timeval now,
 			   void *private_data)
 {
