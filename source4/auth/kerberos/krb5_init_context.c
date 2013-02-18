@@ -233,7 +233,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 
 	if (!data) {
 		/* If no event context was available, then create one for this loop */
-		ev = tevent_context_init(tmp_ctx);
+		ev = samba_tevent_context_init(tmp_ctx);
 		if (!ev) {
 			talloc_free(tmp_ctx);
 			return ENOMEM;
