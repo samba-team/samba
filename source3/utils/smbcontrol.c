@@ -1500,7 +1500,7 @@ int main(int argc, const char **argv)
          * routines mostly return True==1 for success, but
          * shell needs 0. */ 
 
-	if (!(evt_ctx = tevent_context_init(NULL)) ||
+	if (!(evt_ctx = samba_tevent_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
 		TALLOC_FREE(frame);

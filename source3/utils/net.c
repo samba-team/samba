@@ -950,7 +950,7 @@ static struct functable net_func[] = {
 	/* Failing to init the msg_ctx isn't a fatal error. Only
 	   root-level things (joining/leaving domains etc.) will be denied. */
 
-	c->msg_ctx = messaging_init(c, event_context_init(c));
+	c->msg_ctx = messaging_init(c, samba_tevent_context_init(c));
 
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 

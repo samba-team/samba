@@ -286,7 +286,7 @@ int main(int argc, const char *argv[])
 
 	lp_load_global(get_dyn_CONFIGFILE());
 
-	ev_ctx = tevent_context_init(mem_ctx);
+	ev_ctx = samba_tevent_context_init(mem_ctx);
 	if (ev_ctx == NULL) {
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto done;

@@ -31,7 +31,7 @@ static bool net_g_lock_init(TALLOC_CTX *mem_ctx,
 	struct messaging_context *msg = NULL;
 	struct g_lock_ctx *g_ctx = NULL;
 
-	ev = tevent_context_init(mem_ctx);
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto fail;

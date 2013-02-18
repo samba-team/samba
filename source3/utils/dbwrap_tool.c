@@ -522,7 +522,7 @@ int main(int argc, const char **argv)
 		goto done;
 	}
 
-	evt_ctx = tevent_context_init(mem_ctx);
+	evt_ctx = samba_tevent_context_init(mem_ctx);
 	if (evt_ctx == NULL) {
 		d_fprintf(stderr, "ERROR: could not init event context\n");
 		goto done;

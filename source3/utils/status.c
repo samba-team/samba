@@ -422,7 +422,7 @@ static void print_notify_recs(const char *path,
 		 * connection, usable by the db_open() calls further
 		 * down.
 		 */
-		msg_ctx = messaging_init(NULL, event_context_init(NULL));
+		msg_ctx = messaging_init(NULL, samba_tevent_context_init(NULL));
 		if (msg_ctx == NULL) {
 			fprintf(stderr, "messaging_init failed\n");
 			ret = -1;
