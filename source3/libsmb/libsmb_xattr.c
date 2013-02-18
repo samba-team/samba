@@ -351,7 +351,7 @@ parse_ace(struct cli_state *ipc_cli,
 		goto done;
 	}
 
-	for (v = standard_values; v->perm; v++) {
+	for (v = standard_values; v != NULL; v++) {
 		if (strcmp(tok, v->perm) == 0) {
 			amask = v->mask;
 			goto done;
@@ -363,7 +363,7 @@ parse_ace(struct cli_state *ipc_cli,
 	while(*p) {
 		bool found = False;
 
-		for (v = special_values; v->perm; v++) {
+		for (v = special_values; v != NULL; v++) {
 			if (v->perm[0] == *p) {
 				amask |= v->mask;
 				found = True;
