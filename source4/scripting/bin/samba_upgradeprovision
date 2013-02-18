@@ -832,68 +832,6 @@ def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
     return delta
 
 
-msg_elt_flag_strs = {
-    ldb.FLAG_MOD_ADD: "MOD_ADD",
-    ldb.FLAG_MOD_REPLACE: "MOD_REPLACE",
-    ldb.FLAG_MOD_DELETE: "MOD_DELETE" }
-
-def checkKeepAttributeOldMtd(delta, att, reference, current,
-                                    basedn, samdb):
-    """ Check if we should keep the attribute modification or not.
-        This function didn't use replicationMetadata to take a decision.
-
-        :param delta: A message diff object
-        :param att: An attribute
-        :param reference: A message object for the current entry comming from
-                            the reference provision.
-        :param current: A message object for the current entry commin from
-                            the current provision.
-        :param basedn: The DN of the partition
-        :param samdb: A ldb connection to the sam database of the current provision.
-
-        :return: The modified message diff.
-    """
-    # Old school way of handling things for pre alpha12 upgrade
-    global defSDmodified
-    isFirst = False
-    txt = ""
-    dn = current[0].dn
-
-    for att in list(delta):
-        msgElt = delta.get(att)
-
-        if att == "nTSecurityDescriptor":
-            defSDmodified = True
-            delta.remove(att)
-            continue
-
-        if att == "dn":
-            continue
-
-        if not hashOverwrittenAtt.has_key(att):
-            if msgElt.flags() != FLAG_MOD_ADD:
-                if not handle_special_case(att, delta, reference, current,
-                                            False, basedn, samdb):
-                    if opts.debugchange or opts.debugall:
-                        try:
-                            dump_denied_change(dn, att,
-                                msg_elt_flag_strs[msgElt.flags()],
-                                current[0][att], reference[0][att])
-                        except KeyError:
-                            dump_denied_change(dn, att,
-                                msg_elt_flag_strs[msgElt.flags()],
-                                current[0][att], None)
-                    delta.remove(att)
-                continue
-        else:
-            if hashOverwrittenAtt.get(att)&2**msgElt.flags() :
-                continue
-            elif hashOverwrittenAtt.get(att) == never:
-                delta.remove(att)
-                continue
-
-    return delta
-
 def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
                                     hash_attr_usn, basedn, usns, samdb):
     """ Check if we should keep the attribute modification or not
@@ -1051,8 +989,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
     changed = 0
     sd_flags = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL | SECINFO_SACL
     controls = ["search_options:1:2", "sd_flags:1:%d" % sd_flags]
-    if usns is not None:
-            message(CHANGE, "Using replPropertyMetadata for change selection")
+    message(CHANGE, "Using replPropertyMetadata for change selection")
     for dn in listPresent:
         reference = ref_samdb.search(expression="(distinguishedName=%s)" % (str(dn)), base=basedn,
                                         scope=SCOPE_SUBTREE,
@@ -1087,7 +1024,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
         if nb_items == 1:
             continue
 
-        if nb_items > 1 and usns is not None:
+        if nb_items > 1:
             # Fetch the replPropertyMetaData
             res = samdb.search(expression="(distinguishedName=%s)" % (str(dn)), base=basedn,
                                 scope=SCOPE_SUBTREE, controls=controls,
@@ -1105,12 +1042,9 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns):
                 else:
                     hash_attr_usn[att] = [-1, None]
 
-        if usns is not None:
-            delta = checkKeepAttributeWithMetadata(delta, att, message, reference,
-                                                    current, hash_attr_usn,
-                                                    basedn, usns, samdb)
-        else:
-            delta =  checkKeepAttributeOldMtd(delta, att, reference, current, basedn, samdb)
+        delta = checkKeepAttributeWithMetadata(delta, att, message, reference,
+                                               current, hash_attr_usn,
+                                               basedn, usns, samdb)
 
         delta.dn = dn
 
@@ -1953,8 +1887,7 @@ if __name__ == '__main__':
         # 21)
         check_for_DNS(newpaths.private_dir, paths.private_dir, names.dns_backend)
         # 22)
-        if lastProvisionUSNs is not None:
-            update_provision_usn(ldbs.sam, minUSN, maxUSN, names.invocation)
+        update_provision_usn(ldbs.sam, minUSN, maxUSN, names.invocation)
         if opts.full and (names.policyid is None or names.policyid_dc is None):
             update_policyids(names, ldbs.sam)
 
