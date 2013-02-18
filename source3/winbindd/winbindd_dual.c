@@ -612,7 +612,7 @@ void winbind_msg_offline(struct messaging_context *msg_ctx,
 
 		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
 				   MSG_WINBIND_OFFLINE,
-				   (uint8 *)child->domain->name,
+				   (const uint8_t *)child->domain->name,
 				   strlen(child->domain->name)+1);
 	}
 }
@@ -661,7 +661,7 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 				messaging_send_buf(msg_ctx,
 						   pid_to_procid(idmap->pid), 
 						   MSG_WINBIND_ONLINE,
-						   (uint8 *)domain->name,
+						   (const uint8_t *)domain->name,
 						   strlen(domain->name)+1);
 			}
 		}
@@ -686,7 +686,7 @@ void winbind_msg_online(struct messaging_context *msg_ctx,
 
 		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
 				   MSG_WINBIND_ONLINE,
-				   (uint8 *)child->domain->name,
+				   (const uint8_t *)child->domain->name,
 				   strlen(child->domain->name)+1);
 	}
 }
