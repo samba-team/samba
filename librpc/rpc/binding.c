@@ -425,7 +425,12 @@ static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct nd
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+	struct ndr_push *ndr;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (ndr == NULL) {
+		return data_blob_null;
+	}
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
