@@ -92,7 +92,7 @@ typedef struct disp_info {
 	uint32_t enum_acb_mask;
 	struct pdb_search *enum_users; /* enumusers with a mask */
 
-	struct timed_event *cache_timeout_event; /* cache idle timeout
+	struct tevent_timer *cache_timeout_event; /* cache idle timeout
 						  * handler. */
 } DISP_INFO;
 
@@ -279,7 +279,7 @@ static void free_samr_cache(DISP_INFO *disp_info)
  ********************************************************************/
 
 static void disp_info_cache_idle_timeout_handler(struct tevent_context *ev_ctx,
-						 struct timed_event *te,
+						 struct tevent_timer *te,
 						 struct timeval now,
 						 void *private_data)
 {
