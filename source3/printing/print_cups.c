@@ -428,7 +428,7 @@ static bool cups_cache_reload_async(int fd)
 	return ret;
 }
 
-static struct fd_event *cache_fd_event;
+static struct tevent_fd *cache_fd_event;
 
 static bool cups_pcap_load_async(struct tevent_context *ev,
 				 struct messaging_context *msg_ctx,
@@ -495,7 +495,7 @@ struct cups_async_cb_args {
 };
 
 static void cups_async_callback(struct tevent_context *event_ctx,
-				struct fd_event *event,
+				struct tevent_fd *event,
 				uint16 flags,
 				void *p)
 {
