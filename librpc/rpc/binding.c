@@ -424,7 +424,12 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 static DATA_BLOB dcerpc_floor_pack_lhs_data(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *syntax)
 {
 	DATA_BLOB blob;
-	struct ndr_push *ndr = ndr_push_init_ctx(mem_ctx);
+	struct ndr_push *ndr;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (ndr == NULL) {
+		return data_blob_null;
+	}
 
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
