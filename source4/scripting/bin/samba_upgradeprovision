@@ -149,7 +149,7 @@ hashOverwrittenAtt = {  "prefixMap": replace, "systemMayContain": replace,
                         "attributeDisplayNames": replace + add,
                         "versionNumber": add}
 
-dnNotToRecalculate = []
+dnNotToRecalculateFound = False
 dnToRecalculate = []
 backlinked = []
 forwardlinked = set()
@@ -919,7 +919,7 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
                     message(CHANGESD, "But the SD has been changed by someonelse "
                                     "so it's impossible to know if the difference"
                                     " cames from the modification or from a previous bug")
-                    dnNotToRecalculate.append(str(dn))
+                    dnNotToRecalculateFound = True
                 else:
                     dnToRecalculate.append(str(dn))
                 continue
@@ -1332,8 +1332,6 @@ def rebuild_sd(samdb, names):
     for key in listKeys:
         # well known SDs have already been reset
         if key in listWellknown:
-            continue
-        if key in dnNotToRecalculate:
             continue
         delta = Message()
         delta.dn = Dn(samdb, key)
@@ -1872,7 +1870,7 @@ if __name__ == '__main__':
         # as we are assured that on this DNs we will have differences !
         # Also the check must be done in a clever way as for the moment we just
         # compare SDDL
-        if len(dnNotToRecalculate) == 0 and (opts.debugchangesd or opts.debugall):
+        if dnNotToRecalculateFound == False and (opts.debugchangesd or opts.debugall):
             message(CHANGESD, "Checking recalculated SDs")
             check_updated_sd(new_ldbs.sam, ldbs.sam, names)
 
