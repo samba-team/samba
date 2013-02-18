@@ -82,7 +82,7 @@ static bool brl_overlap(const struct lock_struct *lck1,
                         const struct lock_struct *lck2)
 {
 	/* XXX Remove for Win7 compatibility. */
-	/* this extra check is not redundent - it copes with locks
+	/* this extra check is not redundant - it copes with locks
 	   that go beyond the end of 64 bit file space */
 	if (lck1->size != 0 &&
 	    lck1->start == lck2->start &&
