@@ -254,7 +254,7 @@ static int update_capabilities(struct ctdb_context *ctdb, struct ctdb_node_map *
 	tmp_ctx = talloc_new(ctdb);
 	CTDB_NO_MEMORY(ctdb, tmp_ctx);
 
-	nodes = list_of_active_nodes(ctdb, nodemap, tmp_ctx, true);
+	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_CAPABILITIES,
 					nodes, 0,
 					CONTROL_TIMEOUT(),
