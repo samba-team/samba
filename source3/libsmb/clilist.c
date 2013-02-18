@@ -497,7 +497,7 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -832,7 +832,7 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -948,7 +948,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

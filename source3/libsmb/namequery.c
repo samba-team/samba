@@ -867,7 +867,7 @@ NTSTATUS node_status_query(TALLOC_CTX *mem_ctx, struct nmb_name *name,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -1491,7 +1491,7 @@ NTSTATUS name_query(const char *name, int name_type,
 	struct timeval timeout;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -1881,7 +1881,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2225,7 +2225,7 @@ NTSTATUS resolve_wins(const char *name,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}

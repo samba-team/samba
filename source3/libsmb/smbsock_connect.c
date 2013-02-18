@@ -511,7 +511,7 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr, uint16_t port,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -760,7 +760,7 @@ NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

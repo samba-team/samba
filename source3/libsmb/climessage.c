@@ -396,7 +396,7 @@ NTSTATUS cli_message(struct cli_state *cli, const char *host,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;

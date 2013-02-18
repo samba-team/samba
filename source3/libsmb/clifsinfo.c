@@ -137,7 +137,7 @@ NTSTATUS cli_unix_extensions_version(struct cli_state *cli, uint16 *pmajor,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -245,7 +245,7 @@ NTSTATUS cli_set_unix_extensions_capabilities(struct cli_state *cli,
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -342,7 +342,7 @@ NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}

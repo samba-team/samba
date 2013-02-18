@@ -166,7 +166,7 @@ NTSTATUS smb2cli_tcon(struct cli_state *cli, const char *share)
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -264,7 +264,7 @@ NTSTATUS smb2cli_tdis(struct cli_state *cli)
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

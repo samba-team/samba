@@ -252,7 +252,7 @@ NTSTATUS cli_setpathinfo(struct cli_state *cli,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -356,7 +356,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -497,7 +497,7 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -561,7 +561,7 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -673,7 +673,7 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -804,7 +804,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -917,7 +917,7 @@ NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -986,7 +986,7 @@ NTSTATUS cli_posix_chown(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1110,7 +1110,7 @@ NTSTATUS cli_rename(struct cli_state *cli, const char *fname_src, const char *fn
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1251,7 +1251,7 @@ NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1313,7 +1313,7 @@ NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const cha
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1420,7 +1420,7 @@ NTSTATUS cli_unlink(struct cli_state *cli, const char *fname, uint16_t mayhave_a
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1524,7 +1524,7 @@ NTSTATUS cli_mkdir(struct cli_state *cli, const char *dname)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1628,7 +1628,7 @@ NTSTATUS cli_rmdir(struct cli_state *cli, const char *dname)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1738,7 +1738,7 @@ NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -1901,7 +1901,7 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2085,7 +2085,7 @@ NTSTATUS cli_nttrans_create(struct cli_state *cli,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2281,7 +2281,7 @@ NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2511,7 +2511,7 @@ NTSTATUS cli_close(struct cli_state *cli, uint16_t fnum)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2621,7 +2621,7 @@ NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2798,7 +2798,7 @@ NTSTATUS cli_unlock(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2967,7 +2967,7 @@ NTSTATUS cli_unlock64(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3132,7 +3132,7 @@ NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3198,7 +3198,7 @@ NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3348,7 +3348,7 @@ NTSTATUS cli_getattrE(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3495,7 +3495,7 @@ NTSTATUS cli_getatr(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3604,7 +3604,7 @@ NTSTATUS cli_setattrE(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3733,7 +3733,7 @@ NTSTATUS cli_setatr(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3852,7 +3852,7 @@ NTSTATUS cli_chkpath(struct cli_state *cli, const char *path)
 		}
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -3962,7 +3962,7 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -4115,7 +4115,7 @@ NTSTATUS cli_ctemp(struct cli_state *cli,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -4453,7 +4453,7 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -4667,7 +4667,7 @@ NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -4726,7 +4726,7 @@ NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -4832,7 +4832,7 @@ NTSTATUS cli_posix_unlink(struct cli_state *cli, const char *fname)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -4893,7 +4893,7 @@ NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -5089,7 +5089,7 @@ NTSTATUS cli_notify(struct cli_state *cli, uint16_t fnum, uint32_t buffer_size,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = tevent_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -5227,7 +5227,7 @@ NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -5364,7 +5364,7 @@ NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -5444,7 +5444,7 @@ NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum)
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -5589,7 +5589,7 @@ NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

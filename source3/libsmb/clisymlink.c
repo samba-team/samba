@@ -209,7 +209,7 @@ NTSTATUS cli_symlink(struct cli_state *cli, const char *oldname,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -383,7 +383,7 @@ NTSTATUS cli_readlink(struct cli_state *cli, const char *fname,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}

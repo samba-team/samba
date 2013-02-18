@@ -309,7 +309,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli, const char *use
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -547,7 +547,7 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -751,7 +751,7 @@ static NTSTATUS cli_session_setup_plain(struct cli_state *cli,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -1113,7 +1113,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -1560,7 +1560,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli,
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -1837,7 +1837,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli,
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2214,7 +2214,7 @@ NTSTATUS cli_ulogoff(struct cli_state *cli)
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
@@ -2514,7 +2514,7 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 		goto fail;
 	}
 
-	ev = event_context_init(frame);
+	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -2630,7 +2630,7 @@ NTSTATUS cli_tdis(struct cli_state *cli)
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ev = tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
