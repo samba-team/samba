@@ -2429,7 +2429,7 @@ process:
 }
 
 static void smbd_server_connection_handler(struct tevent_context *ev,
-					   struct fd_event *fde,
+					   struct tevent_fd *fde,
 					   uint16_t flags,
 					   void *private_data)
 {
@@ -2447,7 +2447,7 @@ static void smbd_server_connection_handler(struct tevent_context *ev,
 }
 
 static void smbd_server_echo_handler(struct tevent_context *ev,
-				     struct fd_event *fde,
+				     struct tevent_fd *fde,
 				     uint16_t flags,
 				     void *private_data)
 {

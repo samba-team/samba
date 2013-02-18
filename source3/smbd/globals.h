@@ -659,7 +659,7 @@ struct smbd_server_connection {
 	} oplocks;
 
 	struct {
-		struct fd_event *fde;
+		struct tevent_fd *fde;
 
 		struct {
 			/*
@@ -676,7 +676,7 @@ struct smbd_server_connection {
 			/*
 			 * fde for the trusted_fd
 			 */
-			struct fd_event *trusted_fde;
+			struct tevent_fd *trusted_fde;
 
 			/*
 			 * Reference count for the fcntl lock to

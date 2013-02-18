@@ -30,7 +30,7 @@ struct irix_oplocks_context {
 	struct smbd_server_connection *sconn;
 	int write_fd;
 	int read_fd;
-	struct fd_event *read_fde;
+	struct tevent_fd *read_fde;
 	bool pending;
 };
 
@@ -277,7 +277,7 @@ static void irix_release_kernel_oplock(struct kernel_oplocks *_ctx,
 }
 
 static void irix_oplocks_read_fde_handler(struct tevent_context *ev,
-					  struct fd_event *fde,
+					  struct tevent_fd *fde,
 					  uint16_t flags,
 					  void *private_data)
 {
