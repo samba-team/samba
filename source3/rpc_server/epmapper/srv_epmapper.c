@@ -232,7 +232,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 	return total;
 }
 
-static bool is_priviledged_pipe(struct auth_session_info *info) {
+static bool is_privileged_pipe(struct auth_session_info *info) {
 	/* If the user is not root, or has the system token, fail */
 	if ((info->unix_token->uid != sec_initial_uid()) &&
 	    !security_token_is_system(info->security_token)) {
@@ -303,9 +303,9 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	struct dcesrv_iface *iface;
 	bool add_ep;
 
-	/* If this is not a priviledged users, return */
+	/* If this is not a privileged users, return */
 	if (p->transport != NCALRPC ||
-	    !is_priviledged_pipe(p->session_info)) {
+	    !is_privileged_pipe(p->session_info)) {
 		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 		return EPMAPPER_STATUS_CANT_PERFORM_OP;
 	}
@@ -440,9 +440,9 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	DEBUG(3, ("_epm_Delete: Trying to delete %u entries.\n",
 		  r->in.num_ents));
 
-	/* If this is not a priviledged users, return */
+	/* If this is not a privileged users, return */
 	if (p->transport != NCALRPC ||
-	    !is_priviledged_pipe(p->session_info)) {
+	    !is_privileged_pipe(p->session_info)) {
 		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 		return EPMAPPER_STATUS_CANT_PERFORM_OP;
 	}
