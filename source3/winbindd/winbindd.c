@@ -61,7 +61,7 @@ struct tevent_context *winbind_event_context(void)
 	 * Note we MUST use the NULL context here, not the autofree context,
 	 * to avoid side effects in forked children exiting.
 	 */
-	ev = tevent_context_init(NULL);
+	ev = samba_tevent_context_init(NULL);
 	if (ev == NULL) {
 		smb_panic("Could not init winbindd's messaging context.\n");
 	}
