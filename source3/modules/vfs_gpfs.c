@@ -359,7 +359,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 				smbace.who.uid = gace->aceWho;
 		}
 
-		/* remove redundent deny entries */
+		/* remove redundant deny entries */
 		if (i > 0 && gace->aceType == SMB_ACE4_ACCESS_DENIED_ACE_TYPE) {
 			struct gpfs_ace_v4 *prev = &gacl->ace_v4[i-1];
 			if (prev->aceType == SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE &&
@@ -367,7 +367,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 			    prev->aceIFlags == gace->aceIFlags &&
 			    (gace->aceMask & prev->aceMask) == 0 &&
 			    gace->aceWho == prev->aceWho) {
-				/* its redundent - skip it */
+				/* it's redundant - skip it */
 				continue;
 			}                                                
 		}
