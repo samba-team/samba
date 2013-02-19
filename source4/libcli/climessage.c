@@ -33,6 +33,9 @@ bool smbcli_message_start(struct smbcli_tree *tree, const char *host, const char
 	struct smbcli_request *req; 
 	
 	req = smbcli_request_setup(tree, SMBsendstrt, 0, 0);
+	if (req == NULL) {
+		return false;
+	}
 	smbcli_req_append_string(req, username, STR_TERMINATE);
 	smbcli_req_append_string(req, host, STR_TERMINATE);
 	if (!smbcli_request_send(req) || 
@@ -57,6 +60,9 @@ bool smbcli_message_text(struct smbcli_tree *tree, char *msg, int len, int grp)
 	struct smbcli_request *req; 
 	
 	req = smbcli_request_setup(tree, SMBsendtxt, 1, 0);
+	if (req == NULL) {
+		return false;
+	}
 	SSVAL(req->out.vwv, VWV(0), grp);
 
 	smbcli_req_append_bytes(req, (const uint8_t *)msg, len);
@@ -80,6 +86,9 @@ bool smbcli_message_end(struct smbcli_tree *tree, int grp)
 	struct smbcli_request *req; 
 	
 	req = smbcli_request_setup(tree, SMBsendend, 1, 0);
+	if (req == NULL) {
+		return false;
+	}
 	SSVAL(req->out.vwv, VWV(0), grp);
 
 	if (!smbcli_request_send(req) || 
