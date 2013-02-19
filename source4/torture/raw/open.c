@@ -1395,7 +1395,7 @@ static bool test_chained(struct torture_context *tctx, struct smbcli_state *cli)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.openxreadx.out.file.fnum;
 
-	if (memcmp(buf, buf2, sizeof(buf)) != 0) {
+	if (memcmp(buf, buf2, MIN(sizeof(buf), sizeof(buf2))) != 0) {
 		torture_result(tctx, TORTURE_FAIL,
 			"wrong data in reply buffer\n");
 		ret = false;
@@ -1746,7 +1746,7 @@ static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct sm
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatexreadx.out.file.fnum;
 
-	if (memcmp(buf, buf2, sizeof(buf)) != 0) {
+	if (memcmp(buf, buf2, MIN(sizeof(buf), sizeof(buf2))) != 0) {
 		torture_result(tctx, TORTURE_FAIL,
 			"(%s): wrong data in reply buffer\n", __location__);
 		ret = false;
