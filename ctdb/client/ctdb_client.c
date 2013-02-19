@@ -3494,33 +3494,8 @@ uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 				TALLOC_CTX *mem_ctx,
 				bool include_self)
 {
-	int i, j, num_nodes;
-	uint32_t *nodes;
-
-	for (i=num_nodes=0;i<node_map->num;i++) {
-		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
-			continue;
-		}
-		num_nodes++;
-	} 
-
-	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
-	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
-
-	for (i=j=0;i<node_map->num;i++) {
-		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
-			continue;
-		}
-		nodes[j++] = node_map->nodes[i].pnn;
-	} 
-
-	return nodes;
+	return list_of_nodes(ctdb, node_map, mem_ctx, NODE_FLAGS_INACTIVE,
+			     include_self ? -1 : ctdb->pnn);
 }
 
 uint32_t *list_of_active_nodes_except_pnn(struct ctdb_context *ctdb,
@@ -3528,33 +3503,7 @@ uint32_t *list_of_active_nodes_except_pnn(struct ctdb_context *ctdb,
 				TALLOC_CTX *mem_ctx,
 				uint32_t pnn)
 {
-	int i, j, num_nodes;
-	uint32_t *nodes;
-
-	for (i=num_nodes=0;i<node_map->num;i++) {
-		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (node_map->nodes[i].pnn == pnn) {
-			continue;
-		}
-		num_nodes++;
-	} 
-
-	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
-	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
-
-	for (i=j=0;i<node_map->num;i++) {
-		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (node_map->nodes[i].pnn == pnn) {
-			continue;
-		}
-		nodes[j++] = node_map->nodes[i].pnn;
-	} 
-
-	return nodes;
+	return list_of_nodes(ctdb, node_map, mem_ctx, NODE_FLAGS_INACTIVE, pnn);
 }
 
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
@@ -3562,33 +3511,8 @@ uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
 				TALLOC_CTX *mem_ctx,
 				bool include_self)
 {
-	int i, j, num_nodes;
-	uint32_t *nodes;
-
-	for (i=num_nodes=0;i<node_map->num;i++) {
-		if (node_map->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
-			continue;
-		}
-		num_nodes++;
-	} 
-
-	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
-	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
-
-	for (i=j=0;i<node_map->num;i++) {
-		if (node_map->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
-			continue;
-		}
-		nodes[j++] = node_map->nodes[i].pnn;
-	} 
-
-	return nodes;
+	return list_of_nodes(ctdb, node_map, mem_ctx, NODE_FLAGS_DISCONNECTED,
+			     include_self ? -1 : ctdb->pnn);
 }
 
 /* 
