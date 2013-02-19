@@ -3451,6 +3451,44 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 	return nodes;
 }
 
+/* Get list of nodes not including those with flags specified by mask.
+ * If exclude_pnn is not -1 then exclude that pnn from the list.
+ */
+uint32_t *list_of_nodes(struct ctdb_context *ctdb,
+			struct ctdb_node_map *node_map,
+			TALLOC_CTX *mem_ctx,
+			uint32_t mask,
+			int exclude_pnn)
+{
+	int i, j, num_nodes;
+	uint32_t *nodes;
+
+	for (i=num_nodes=0;i<node_map->num;i++) {
+		if (node_map->nodes[i].flags & mask) {
+			continue;
+		}
+		if (node_map->nodes[i].pnn == exclude_pnn) {
+			continue;
+		}
+		num_nodes++;
+	} 
+
+	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
+	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
+
+	for (i=j=0;i<node_map->num;i++) {
+		if (node_map->nodes[i].flags & mask) {
+			continue;
+		}
+		if (node_map->nodes[i].pnn == exclude_pnn) {
+			continue;
+		}
+		nodes[j++] = node_map->nodes[i].pnn;
+	} 
+
+	return nodes;
+}
+
 uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 				struct ctdb_node_map *node_map,
 				TALLOC_CTX *mem_ctx,

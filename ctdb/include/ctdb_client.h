@@ -507,6 +507,11 @@ int ctdb_ctrl_setreclock(struct ctdb_context *ctdb,
 	const char *reclock);
 
 
+uint32_t *list_of_nodes(struct ctdb_context *ctdb,
+			struct ctdb_node_map *node_map,
+			TALLOC_CTX *mem_ctx,
+			uint32_t mask,
+			int exclude_pnn);
 uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
 				struct ctdb_node_map *node_map,
 				TALLOC_CTX *mem_ctx,
