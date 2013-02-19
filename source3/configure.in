@@ -231,7 +231,11 @@ dnl Certain versions of GNU ld the default is not to have the
 dnl --allow-shlib-undefined flag defined.  This causes a stackload of
 dnl warnings when building modules.
 if test "$ac_cv_prog_gnu_ld" = "yes"; then
-	ac_cv_gnu_ld_version=`$CC -Wl,-v /dev/null 2>&1 < /dev/null | grep "GNU ld"`
+	ac_cv_gnu_ld_version=`$CC -Wl,-v /dev/null 2> /dev/null < /dev/null | grep "GNU ld"`
+	# we need to make a 2nd (separate!) check on the output of stderr, see bug #7825:
+	if test -z ${ac_cv_gnu_ld_version} ; then
+	  ac_cv_gnu_ld_version=`$CC -Wl,-v /dev/null 2>&1 > /dev/null < /dev/null | grep "GNU ld"`
+	fi
 	AC_MSG_CHECKING(GNU ld release date)
 	changequote(,)dnl
 	ac_cv_gnu_ld_date=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*\([2-9][0-9][0-9][0-9]\)[-]*\([01][0-9]\)[-]*\([0-3][0-9]\).*$,\1\2\3,p'`
