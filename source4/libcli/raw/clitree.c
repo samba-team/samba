@@ -168,6 +168,9 @@ _PUBLIC_ NTSTATUS smb_tree_disconnect(struct smbcli_tree *tree)
 
 	if (!tree) return NT_STATUS_OK;
 	req = smbcli_request_setup(tree, SMBtdis, 0, 0);
+	if (req == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (smbcli_request_send(req)) {
 		(void) smbcli_request_receive(req);

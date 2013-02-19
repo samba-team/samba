@@ -30,6 +30,9 @@ _PUBLIC_ bool smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_
 	struct smbcli_request *req;
 
 	req = smbcli_request_setup(tree, SMBlockingX, 8, 0);
+	if (req == NULL) {
+		return false;
+	}
 
 	SSVAL(req->out.vwv,VWV(0),0xFF);
 	SSVAL(req->out.vwv,VWV(1),0);
