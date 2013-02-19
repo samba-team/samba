@@ -777,6 +777,9 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 
 	unixmode = unix_mode(conn, dosmode, smb_fname, parent_dir);
 
+	/* preserve the file type bits */
+	mask |= S_IFMT;
+
 	/* preserve the s bits */
 	mask |= (S_ISUID | S_ISGID);
 
