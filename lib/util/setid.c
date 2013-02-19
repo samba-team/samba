@@ -20,7 +20,6 @@
 #ifndef AUTOCONF_TEST
 #include "replace.h"
 #include "system/passwd.h"
-#include "include/includes.h"
 
 #ifdef UID_WRAPPER_REPLACE
 
