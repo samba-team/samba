@@ -335,6 +335,10 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 		blob.length = size;
 
 		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+		if (ndr_pull == NULL) {
+			perror("ndr_pull_init_blob");
+			exit(1);
+		}
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 		if (assume_ndr64) {
 			ndr_pull->flags |= LIBNDR_FLAG_NDR64;
@@ -377,6 +381,10 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	blob.length = size;
 
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (ndr_pull == NULL) {
+		perror("ndr_pull_init_blob");
+		exit(1);
+	}
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	if (assume_ndr64) {
 		ndr_pull->flags |= LIBNDR_FLAG_NDR64;
@@ -459,6 +467,10 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 		}
 
 		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
+		if (ndr_v_pull == NULL) {
+			perror("ndr_pull_init_blob");
+			exit(1);
+		}
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);
