@@ -891,7 +891,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	struct smb2_handle h;
 	struct smb2_find f;
 	union smb_search_data *d;
-	struct file_elem files[700] = {};
+	struct file_elem files[702] = {};
 	NTSTATUS status;
 	bool ret = true;
 	int i;
