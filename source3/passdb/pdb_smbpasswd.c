@@ -736,7 +736,8 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 	fstring user_name;
 
 	char *status;
-	char linebuf[256];
+#define LINEBUF_SIZE 255
+	char linebuf[LINEBUF_SIZE + 1];
 	char readbuf[1024];
 	int c;
 	fstring ascii_p16;
@@ -791,7 +792,7 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 
 		linebuf[0] = '\0';
 
-		status = fgets(linebuf, sizeof(linebuf), fp);
+		status = fgets(linebuf, LINEBUF_SIZE, fp);
 		if (status == NULL && ferror(fp)) {
 			pw_file_unlock(lockfd, &smbpasswd_state->pw_file_lock_depth);
 			fclose(fp);
@@ -1020,7 +1021,7 @@ This is no longer supported.!\n", pwd->smb_name));
 	dump_data(100, (uint8 *)ascii_p16, wr_len);
 #endif
 
-	if(wr_len > sizeof(linebuf)) {
+	if(wr_len > LINEBUF_SIZE) {
 		DEBUG(0, ("mod_smbfilepwd_entry: line to write (%d) is too long.\n", wr_len+1));
 		pw_file_unlock(lockfd,&smbpasswd_state->pw_file_lock_depth);
 		fclose(fp);
