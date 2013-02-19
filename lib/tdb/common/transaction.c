@@ -249,14 +249,8 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	if (tdb->transaction->num_blocks <= blk) {
 		uint8_t **new_blocks;
 		/* expand the blocks array */
-		if (tdb->transaction->blocks == NULL) {
-			new_blocks = (uint8_t **)malloc(
-				(blk+1)*sizeof(uint8_t *));
-		} else {
-			new_blocks = (uint8_t **)realloc(
-				tdb->transaction->blocks,
-				(blk+1)*sizeof(uint8_t *));
-		}
+		new_blocks = (uint8_t **)realloc(tdb->transaction->blocks,
+						 (blk+1)*sizeof(uint8_t *));
 		if (new_blocks == NULL) {
 			tdb->ecode = TDB_ERR_OOM;
 			goto fail;
