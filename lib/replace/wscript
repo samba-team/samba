@@ -53,6 +53,9 @@ struct foo bar = { .y = 'X', .x = 1 };
                 conf.ADD_CFLAGS(f)
             break
 
+    if conf.CHECK_CFLAGS(['-fstack-protector']):
+        conf.ADD_CFLAGS('-fstack-protector')
+
     # Try to find the right extra flags for -Werror behaviour
     for f in ["-Werror",       # GCC
 	      "-errwarn=%all", # Sun Studio
