@@ -8,7 +8,7 @@
 
 	<para>Valid options are:</para>
 	<itemizedlist>
-	  <listitem><para>secrets only - use only the secrets.tdb for
+	  <listitem><para>secrets only - use only the secrets.(n)tdb for
 	  ticket verification (default)</para></listitem>
 
 	  <listitem><para>system keytab - use only the system keytab
@@ -17,7 +17,7 @@
 	  <listitem><para>dedicated keytab - use a dedicated keytab
 	  for ticket verification</para></listitem>
 
-	  <listitem><para>secrets and keytab - use the secrets.tdb
+	  <listitem><para>secrets and keytab - use the secrets.(n)tdb
 	  first, then the system keytab</para></listitem>
 	</itemizedlist>
 

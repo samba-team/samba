@@ -3638,7 +3638,7 @@ static PyObject *py_set_secrets_dir(PyObject *self, PyObject *args)
 	}
 
 	/* Initialize secrets database */
-	if (!secrets_init_path(private_dir)) {
+	if (!secrets_init_path(private_dir, lp_use_ntdb())) {
 		PyErr_Format(py_pdb_error, "Cannot open secrets file database in '%s'",
 				private_dir);
 		talloc_free(frame);

@@ -474,7 +474,8 @@ static int secrets_tdb_sync_init(struct ldb_module *module)
 	struct ldb_context *ldb;
 	struct secrets_tdb_sync_private *data;
 	char *private_dir, *p;
-	const char *secrets_ldb;
+	const char *secrets_ldb, *secrets_ntdb;
+	bool use_ntdb;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -498,10 +499,16 @@ static int secrets_tdb_sync_init(struct ldb_module *module)
 	p = strrchr(private_dir, '/');
 	if (p) {
 		*p = '\0';
-		secrets_init_path(private_dir);
 	} else {
-		secrets_init_path(".");
+		private_dir = talloc_strdup(data, ".");
 	}
+
+	/* If there's an ntdb file, force code to load that. */
+	secrets_ntdb = talloc_asprintf(private_dir, "%s/secrets.ntdb",
+				       private_dir);
+	use_ntdb = file_exist(secrets_ntdb);
+
+	secrets_init_path(private_dir, use_ntdb);
 
 	TALLOC_FREE(private_dir);
 

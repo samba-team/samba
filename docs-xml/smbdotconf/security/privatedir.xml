@@ -7,7 +7,7 @@
 <description>
     <para>This parameters defines the directory
     smbd will use for storing such files as <filename moreinfo="none">smbpasswd</filename>
-    and <filename moreinfo="none">secrets.tdb</filename>.
+    and <filename moreinfo="none">secrets.tdb</filename> (or <filename moreinfo="none">secrets.ntdb</filename>).
 </para>
 </description>
 

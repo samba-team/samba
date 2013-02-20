@@ -126,7 +126,7 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
         self.assertEquals(newmodules.msgs, refmodules.msgs)
 
     def tearDown(self):
-        for name in ["ref.ldb", "secrets.ldb", "secrets.tdb"]:
+        for name in ["ref.ldb", "secrets.ldb", "secrets.tdb", "secrets.tdb.bak", "secrets.ntdb"]:
             path = os.path.join(self.tempdir, name)
             if os.path.exists(path):
                 os.unlink(path)

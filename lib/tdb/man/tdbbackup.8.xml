@@ -92,6 +92,11 @@
 	<para>tdbbackup -v [-s suffix] *.tdb</para>
 
 	<para>
+	Note that Samba 4 can use .ntdb files instead, so you should
+	use <command>ntdbbackup</command> on those files.
+	</para>
+
+	<para>
 	Samba .tdb files are stored in various locations, be sure to run backup all
 	.tdb file on the system. Important files includes:
 	</para>

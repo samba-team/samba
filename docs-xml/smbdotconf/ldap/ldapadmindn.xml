@@ -8,7 +8,7 @@
 	 <para>
 	The <smbconfoption name="ldap admin dn"/> defines the Distinguished  Name (DN) name used by Samba to contact
 	the ldap server when retreiving  user account information. The <smbconfoption name="ldap admin dn"/> is used
-	in conjunction with the admin dn password stored in the <filename moreinfo="none">private/secrets.tdb</filename>
+	in conjunction with the admin dn password stored in the <filename moreinfo="none">private/secrets.tdb</filename> (or <filename moreinfo="none">private/secrets.ntdb</filename>)
 	file.  See the <citerefentry><refentrytitle>smbpasswd</refentrytitle> <manvolnum>8</manvolnum></citerefentry>
 	man page for more information on how  to accomplish this.
 	</para>

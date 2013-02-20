@@ -129,7 +129,7 @@
 	<itemizedlist>
 		<listitem>
 		<para>
-		The data from the module may be send encrypted, with a key stored in secrets.tdb. The
+		The data from the module may be send encrypted, with a key stored in secrets.tdb (or secrets.ntdb). The
 		Receiver then has to use the same key. The module does AES block encryption over the
 		data to send.
 		</para>

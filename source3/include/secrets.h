@@ -82,7 +82,7 @@ struct afs_keyfile {
 
 /* The following definitions come from passdb/secrets.c  */
 
-bool secrets_init_path(const char *private_dir);
+bool secrets_init_path(const char *private_dir, bool use_ntdb);
 bool secrets_init(void);
 struct db_context *secrets_db_ctx(void);
 void secrets_shutdown(void);

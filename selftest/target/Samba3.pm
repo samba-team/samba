@@ -418,6 +418,9 @@ $ret->{USERNAME} = KTEST\\Administrator
 	system("cp $self->{srcdir}/source3/selftest/ktest-secrets.tdb $prefix/private/secrets.tdb");
 	chmod 0600, "$prefix/private/secrets.tdb";
 
+#Make sure there's no old ntdb file.
+	system("rm -f $prefix/private/secrets.ntdb");
+
 #This uses a pre-calculated krb5 credentials cache, obtained by running Samba4 with:
 # "--option=kdc:service ticket lifetime=239232" "--option=kdc:user ticket lifetime=239232" "--option=kdc:renewal lifetime=239232"
 #
