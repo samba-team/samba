@@ -1805,7 +1805,7 @@ static void rpc_pipe_bind_step_two_done(struct tevent_req *subreq)
 	status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, talloc_tos());
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-		if (state->cli->dc->negotiate_flags &
+		if (state->cli->dc && state->cli->dc->negotiate_flags &
 		    NETLOGON_NEG_SUPPORTS_AES) {
 			DEBUG(5, ("AES is not supported and the error was %s\n",
 				  nt_errstr(status)));
