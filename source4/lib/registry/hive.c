@@ -43,15 +43,14 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 	}
 
 	num = read(fd, peek, 20);
+	close(fd);
 	if (num == -1) {
 		return WERR_BADFILE;
 	}
 
 	if (!strncmp(peek, "regf", 4)) {
-		close(fd);
 		return reg_open_regf_file(parent_ctx, location, root);
 	} else if (!strncmp(peek, "TDB file", 8)) {
-		close(fd);
 		return reg_open_ldb_file(parent_ctx, location, session_info,
 					 credentials, ev_ctx, lp_ctx, root);
 	}
