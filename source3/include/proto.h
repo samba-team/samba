@@ -1161,6 +1161,7 @@ bool lp_client_ntlmv2_auth(void);
 bool lp_host_msdfs(void);
 bool lp_enhanced_browsing(void);
 bool lp_use_mmap(void);
+bool lp_use_ntdb(void);
 bool lp_unix_extensions(void);
 bool lp_unicode(void);
 bool lp_use_spnego(void);

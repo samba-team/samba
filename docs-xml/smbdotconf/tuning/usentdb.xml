@@ -1,0 +1,23 @@
+<samba:parameter name="use ntdb"
+                 context="G"
+				 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>Beginning in Samba 4.1, a growing number of databases can
+    use the NTDB format rather than TDB.
+    </para>
+    <para>If you enable this option these databases will defaul to a
+    <filename>.ntdb</filename> extension rather than
+    <filename>.tdb</filename>: If the <filename>.tdb</filename> file
+    exists, it will automatically be converted to NTDB and renamed to
+    <filename>.tdb.bak</filename>.
+    </para>
+    <para>Filenames explicitly specified in
+    <filename>smb.conf</filename> will be respected (ie. the format
+    will depend on the <filename>.ntdb</filename> or
+    <filename>.tdb</filename> extension).
+    </para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>

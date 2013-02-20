@@ -112,6 +112,7 @@ static const struct loadparm_s3_helpers s3_fns =
 	.unix_extensions = lp_unix_extensions,
 	.use_spnego = lp_use_spnego,
 	.use_mmap = lp_use_mmap,
+	.use_ntdb = lp_use_ntdb,
 
 	.srv_minprotocol = lp_srv_minprotocol,
 	.srv_maxprotocol = lp_srv_maxprotocol,
