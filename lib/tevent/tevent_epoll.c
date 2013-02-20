@@ -702,6 +702,16 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		if (events[i].events & EPOLLIN) flags |= TEVENT_FD_READ;
 		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 
+		if (flags & TEVENT_FD_WRITE) {
+			if (fde->flags & TEVENT_FD_WRITE) {
+				mpx_fde = NULL;
+			}
+			if (mpx_fde && mpx_fde->flags & TEVENT_FD_WRITE) {
+				fde = mpx_fde;
+				mpx_fde = NULL;
+			}
+		}
+
 		if (mpx_fde) {
 			/* Ensure we got the right fde. */
 			if ((flags & fde->flags) == 0) {
