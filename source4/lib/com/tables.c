@@ -69,6 +69,7 @@ static struct IUnknown *get_com_class_so(TALLOC_CTX *mem_ctx, const struct GUID 
 	f = dlsym(mod, "get_class_object");
 
 	if (!f) {
+		dlclose(mod);
 		return NULL;
 	}
 
