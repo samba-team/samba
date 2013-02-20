@@ -73,8 +73,10 @@ static int copy_reg(const char *source, const char *dest)
 	if((ifd = open (source, O_RDONLY, 0)) < 0)
 		return -1;
 
-	if (unlink (dest) && errno != ENOENT)
+	if (unlink (dest) && errno != ENOENT) {
+		close(ifd);
 		return -1;
+	}
 
 #ifdef O_NOFOLLOW
 	if((ofd = open (dest, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0600)) < 0 )
