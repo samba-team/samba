@@ -508,8 +508,15 @@ static char **reg_complete_key(const char *text, int start, int end)
 		} else if(W_ERROR_EQUAL(status, WERR_NO_MORE_ITEMS)) {
 			break;
 		} else {
+			int n;
+
 			printf("Error creating completion list: %s\n",
 				win_errstr(status));
+
+			for (n = j; n >= 0; n--) {
+				SAFE_FREE(matches[n]);
+			}
+			SAFE_FREE(matches);
 			talloc_free(mem_ctx);
 			return NULL;
 		}
