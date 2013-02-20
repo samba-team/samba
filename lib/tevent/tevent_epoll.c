@@ -267,6 +267,7 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
+	int ret;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
@@ -276,7 +277,8 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
-	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event) != 0) {
+	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event);
+	if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed", false);
 		return;
 	}
@@ -294,6 +296,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
+	int ret;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
@@ -303,7 +306,8 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
-	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
+	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
+	if (ret != 0) {
 		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
 			     "epoll_del_event failed! probable early close bug (%s)\n",
 			     strerror(errno));
@@ -317,13 +321,15 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
+	int ret;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
-	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event) != 0) {
+	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event);
+	if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed", false);
 		return;
 	}
