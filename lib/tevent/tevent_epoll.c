@@ -683,6 +683,7 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 	struct tevent_context *ev = fde->event_ctx;
 	struct epoll_event_context *epoll_ev = NULL;
 	bool panic_triggered = false;
+	struct tevent_fd *mpx_fde = NULL;
 	int flags = fde->flags;
 
 	if (ev == NULL) {
@@ -699,10 +700,30 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 	 */
 	DLIST_REMOVE(ev->fd_events, fde);
 
+	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX) {
+		mpx_fde = talloc_get_type_abort(fde->additional_data,
+						struct tevent_fd);
+
+		fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX;
+		mpx_fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX;
+
+		fde->additional_data = NULL;
+		mpx_fde->additional_data = NULL;
+
+		fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
+	}
+
 	epoll_ev->panic_state = &panic_triggered;
 	epoll_check_reopen(epoll_ev);
 	if (panic_triggered) {
 		return tevent_common_fd_destructor(fde);
+	}
+
+	if (mpx_fde != NULL) {
+		epoll_update_event(epoll_ev, mpx_fde);
+		if (panic_triggered) {
+			return tevent_common_fd_destructor(fde);
+		}
 	}
 
 	fde->flags = 0;
