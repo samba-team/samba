@@ -68,12 +68,11 @@ static struct mmap_area *mmap_area_init(TALLOC_CTX *mem_ctx, size_t size)
 
 	result->ptr = mmap(NULL, size, PROT_READ|PROT_WRITE,
 			   MAP_SHARED|MAP_FILE, fd, 0);
+	close(fd);
 	if (result->ptr == MAP_FAILED) {
 		DEBUG(1, ("mmap failed: %s\n", strerror(errno)));
 		goto fail;
 	}
-
-	close(fd);
 
 	result->size = size;
 	talloc_set_destructor(result, mmap_area_destructor);
