@@ -4867,8 +4867,10 @@ static WERROR string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 			     &array, &num_strings);
 	}
 
-	if (presult) {
+	if (presult != NULL) {
 		*presult = array;
+	} else {
+		talloc_free(array);
 	}
 
 	return WERR_OK;
