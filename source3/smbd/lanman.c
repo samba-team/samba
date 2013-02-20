@@ -1159,8 +1159,8 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 		}
 	}
 
-	SAFE_FREE(subcntarr);
  out:
+	SAFE_FREE(subcntarr);
 	*rdata_len = desc.usedlen;
 	*rparam_len = 8;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
