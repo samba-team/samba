@@ -268,8 +268,6 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 {
 	struct epoll_event event;
 
-	if (epoll_ev->epoll_fd == -1) return;
-
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
 	/* if we don't want events yet, don't add an epoll_event */
@@ -297,8 +295,6 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 {
 	struct epoll_event event;
 
-	if (epoll_ev->epoll_fd == -1) return;
-
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
 	/* if there's no epoll_event, we don't need to delete it */
@@ -321,7 +317,6 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
-	if (epoll_ev->epoll_fd == -1) return;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
@@ -344,8 +339,6 @@ static void epoll_change_event(struct epoll_event_context *epoll_ev, struct teve
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
 	bool want_read = (fde->flags & TEVENT_FD_READ);
 	bool want_write= (fde->flags & TEVENT_FD_WRITE);
-
-	if (epoll_ev->epoll_fd == -1) return;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
@@ -382,8 +375,6 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	struct epoll_event events[MAXEVENTS];
 	int timeout = -1;
 	int wait_errno;
-
-	if (epoll_ev->epoll_fd == -1) return -1;
 
 	if (tvalp) {
 		/* it's better to trigger timed events a bit later than too early */
