@@ -3101,6 +3101,9 @@ static bool run_randomipc(int dummy)
 		correct = False;
 	}
 
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+
 	printf("finished random ipc test\n");
 
 	return correct;
