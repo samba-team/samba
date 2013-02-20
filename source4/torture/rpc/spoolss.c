@@ -9016,6 +9016,7 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 
 	buf = talloc_array(tctx, uint8_t, maxwrite);
 	if (!buf) {
+		x_fclose(f);
 		return false;
 	}
 
