@@ -304,8 +304,6 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	if (!(fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT)) return;
 
 	ZERO_STRUCT(event);
-	event.events = epoll_map_flags(fde->flags);
-	event.data.ptr = fde;
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
 	if (ret != 0 && errno == ENOENT) {
 		/*
