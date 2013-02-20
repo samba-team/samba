@@ -243,6 +243,8 @@ static bool wbinfo_get_user_sidinfo(const char *sid_str)
 		 pwd->pw_dir,
 		 pwd->pw_shell);
 
+	wbcFreeMemory(pwd);
+
 	return true;
 }
 
@@ -1227,6 +1229,9 @@ static bool wbinfo_lookupsid(const char *sid_str)
 	d_printf("%s%c%s %d\n",
 		 domain, winbind_separator(), name, type);
 
+	wbcFreeMemory(domain);
+	wbcFreeMemory(name);
+
 	return true;
 }
 
@@ -1260,6 +1265,9 @@ static bool wbinfo_lookupsid_fullname(const char *sid_str)
 
 	d_printf("%s%c%s %d\n",
 		 domain, winbind_separator(), name, type);
+
+	wbcFreeMemory(domain);
+	wbcFreeMemory(name);
 
 	return true;
 }
