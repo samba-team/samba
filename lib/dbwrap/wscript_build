@@ -1,12 +1,12 @@
-bld.SAMBA_LIBRARY('dbwrap',
-                  source='''
-                  dbwrap.c
-                  dbwrap_util.c
-                  dbwrap_rbt.c
-                  dbwrap_cache.c
-                  dbwrap_tdb.c
-                  dbwrap_local_open.c
-                  ''',
-                  deps='samba-util util_tdb errors tdb tdb-wrap',
-                  private_library=True)
+SRC = '''dbwrap.c dbwrap_util.c dbwrap_rbt.c dbwrap_cache.c dbwrap_tdb.c
+         dbwrap_local_open.c'''
+DEPS= '''samba-util util_tdb errors tdb tdb-wrap'''
 
+if not bld.env.disable_ntdb:
+   SRC += " dbwrap_ntdb.c"
+   DEPS += " util_ntdb"
+
+bld.SAMBA_LIBRARY('dbwrap',
+                  source=SRC,
+                  deps=DEPS,
+                  private_library=True)
