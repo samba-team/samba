@@ -137,6 +137,7 @@ static int process_options(int argc, char **argv, int local_flags)
 		case 'n':
 			local_flags |= LOCAL_SET_NO_PASSWORD;
 			local_flags &= ~LOCAL_SET_PASSWORD;
+			SAFE_FREE(new_passwd);
 			new_passwd = smb_xstrdup("NO PASSWORD");
 			break;
 		case 'r':
