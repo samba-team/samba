@@ -214,6 +214,11 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 				  ntdb_flags, open_flags, mode, lock_order);
 #endif
 	} else {
+		if (!streq(ntdbname, tdbname) && file_exist(ntdbname)) {
+			DEBUG(0, ("Refusing to open '%s' when '%s' exists\n",
+				  tdbname, ntdbname));
+			goto out;
+		}
 		db = db_open_tdb(mem_ctx, lp_ctx, tdbname, hash_size,
 				 tdb_flags, open_flags, mode,
 				 lock_order);
