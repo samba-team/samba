@@ -598,7 +598,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	uint32_t i;
-	int fd;
+	int fd = -1;
 	int rc;
 	bool ok = true;
 
@@ -641,8 +641,6 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
-	(*listen_fd_size)++;
 
 	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
@@ -651,14 +649,14 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
+	listen_fd[*listen_fd_size] = fd;
+	(*listen_fd_size)++;
 
 	fd = create_named_pipe_socket("lsass");
 	if (fd < 0) {
 		ok = false;
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
-	(*listen_fd_size)++;
 
 	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
@@ -667,14 +665,14 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
+	listen_fd[*listen_fd_size] = fd;
+	(*listen_fd_size)++;
 
 	fd = create_dcerpc_ncalrpc_socket("lsarpc");
 	if (fd < 0) {
 		ok = false;
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
-	(*listen_fd_size)++;
 
 	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
@@ -683,6 +681,9 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
+	listen_fd[*listen_fd_size] = fd;
+	(*listen_fd_size)++;
+	fd = -1;
 
 	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
 	if (v == NULL) {
@@ -735,8 +736,6 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
-	(*listen_fd_size)++;
 
 	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
@@ -745,6 +744,9 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
+	listen_fd[*listen_fd_size] = fd;
+	(*listen_fd_size)++;
+	fd = -1;
 
 	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
 	if (v == NULL) {
@@ -797,16 +799,18 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		ok = false;
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
-	(*listen_fd_size)++;
 
 	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
 		DEBUG(0, ("Failed to listen on netlogon ncalrpc - %s\n",
 			  strerror(errno)));
+		close(fd);
 		ok = false;
 		goto done;
 	}
+	listen_fd[*listen_fd_size] = fd;
+	(*listen_fd_size)++;
+	fd = -1;
 
 	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
 	if (v == NULL) {
@@ -838,6 +842,9 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 done:
+	if (fd != -1) {
+		close(fd);
+	}
 	talloc_free(tmp_ctx);
 	return ok;
 }
