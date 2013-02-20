@@ -2855,17 +2855,61 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	return status;
 }
 
+static bool interfaces_have_changed(struct ctdb_context *ctdb,
+				    struct ctdb_recoverd *rec)
+{
+	struct ctdb_control_get_ifaces *ifaces = NULL;
+	TALLOC_CTX *mem_ctx;
+	bool ret = false;
+
+	mem_ctx = talloc_new(NULL);
+
+	/* Read the interfaces from the local node */
+	if (ctdb_ctrl_get_ifaces(ctdb, CONTROL_TIMEOUT(),
+				 CTDB_CURRENT_NODE, mem_ctx, &ifaces) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get interfaces from local node %u\n", ctdb->pnn));
+		/* We could return an error.  However, this will be
+		 * rare so we'll decide that the interfaces have
+		 * actually changed, just in case.
+		 */
+		talloc_free(mem_ctx);
+		return true;
+	}
+
+	if (!rec->ifaces) {
+		/* We haven't been here before so things have changed */
+		ret = true;
+	} else if (rec->ifaces->num != ifaces->num) {
+		/* Number of interfaces has changed */
+		ret = true;
+	} else {
+		/* See if interface names or link states have changed */
+		int i;
+		for (i = 0; i < rec->ifaces->num; i++) {
+			struct ctdb_control_iface_info * iface = &rec->ifaces->ifaces[i];
+			if (strcmp(iface->name, ifaces->ifaces[i].name) != 0 ||
+			    iface->link_state != ifaces->ifaces[i].link_state) {
+				ret = true;
+				break;
+			}
+		}
+	}
+
+	talloc_free(rec->ifaces);
+	rec->ifaces = talloc_steal(rec, ifaces);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
 
 /* called to check that the local allocation of public ip addresses is ok.
 */
 static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn, struct ctdb_node_map *nodemap)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct ctdb_control_get_ifaces *ifaces = NULL;
 	struct ctdb_uptime *uptime1 = NULL;
 	struct ctdb_uptime *uptime2 = NULL;
 	int ret, j;
-	bool need_iface_check = false;
 	bool need_takeover_run = false;
 
 	ret = ctdb_ctrl_uptime(ctdb, mem_ctx, CONTROL_TIMEOUT(),
@@ -2876,27 +2920,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 		return -1;
 	}
 
-
-	/* read the interfaces from the local node */
-	ret = ctdb_ctrl_get_ifaces(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ifaces);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get interfaces from local node %u\n", pnn));
-		talloc_free(mem_ctx);
-		return -1;
-	}
-
-	if (!rec->ifaces) {
-		need_iface_check = true;
-	} else if (rec->ifaces->num != ifaces->num) {
-		need_iface_check = true;
-	} else if (memcmp(rec->ifaces, ifaces, talloc_get_size(ifaces)) != 0) {
-		need_iface_check = true;
-	}
-
-	talloc_free(rec->ifaces);
-	rec->ifaces = talloc_steal(rec, ifaces);
-
-	if (need_iface_check) {
+	if (interfaces_have_changed(ctdb, rec)) {
 		DEBUG(DEBUG_NOTICE, ("The interfaces status has changed on "
 				     "local node %u - force takeover run\n",
 				     pnn));
