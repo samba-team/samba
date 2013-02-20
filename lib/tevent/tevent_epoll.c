@@ -278,7 +278,15 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_ADD, fde->fd, &event);
-	if (ret != 0) {
+	if (ret != 0 && errno == EBADF) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_ERROR,
+			     "EPOLL_CTL_ADD EBADF for "
+			     "fde[%p] fd[%d] - disabling\n",
+			     fde, fde->fd);
+		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
+		fde->event_ctx = NULL;
+		return;
+	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed", false);
 		return;
 	}
@@ -312,6 +320,14 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 			     "EPOLL_CTL_DEL ignoring ENOENT for fd[%d]\n",
 			     fde->fd);
 		return;
+	} else if (ret != 0 && errno == EBADF) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_WARNING,
+			     "EPOLL_CTL_DEL EBADF for "
+			     "fde[%p] fd[%d] - disabling\n",
+			     fde, fde->fd);
+		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
+		fde->event_ctx = NULL;
+		return;
 	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_DEL failed", false);
 		return;
@@ -333,7 +349,15 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event);
-	if (ret != 0) {
+	if (ret != 0 && errno == EBADF) {
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_ERROR,
+			     "EPOLL_CTL_MOD EBADF for "
+			     "fde[%p] fd[%d] - disabling\n",
+			     fde, fde->fd);
+		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
+		fde->event_ctx = NULL;
+		return;
+	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed", false);
 		return;
 	}
