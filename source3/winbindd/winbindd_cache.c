@@ -2140,6 +2140,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 				} else {
 					/* something's definitely wrong */
 					result = centry->status;
+					centry_free(centry);
 					goto error;
 				}
 
