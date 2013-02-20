@@ -62,6 +62,7 @@ _PUBLIC_ void close_low_fds(bool stdin_too, bool stdout_too, bool stderr_too)
 		}
 		if (fd != i) {
 			DEBUG(0,("Didn't get file descriptor %d\n",i));
+			close(fd);
 			return;
 		}
 	}
