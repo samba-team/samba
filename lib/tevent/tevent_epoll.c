@@ -345,7 +345,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	}
 }
 
-static void epoll_change_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
+static void epoll_update_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
 	bool want_read = (fde->flags & TEVENT_FD_READ);
@@ -578,7 +578,7 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 	}
 	epoll_ev->panic_state = NULL;
 
-	epoll_change_event(epoll_ev, fde);
+	epoll_update_event(epoll_ev, fde);
 }
 
 /*
