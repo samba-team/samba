@@ -179,6 +179,7 @@ FLAGS = -I. \
 	-I$(srcdir)/lib \
 	-I.. \
 	-I./../lib/ldb/include \
+	-DDISABLE_NTDB \
 	-D_SAMBA_BUILD_=3
 
 PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
