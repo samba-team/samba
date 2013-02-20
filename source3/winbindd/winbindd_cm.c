@@ -1013,6 +1013,9 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 	if ( !(*cli)->domain[0] ) {
 		result = cli_set_domain((*cli), domain->name);
 		if (!NT_STATUS_IS_OK(result)) {
+			SAFE_FREE(ipc_username);
+			SAFE_FREE(ipc_domain);
+			SAFE_FREE(ipc_password);
 			return result;
 		}
 	}
