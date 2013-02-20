@@ -63,6 +63,9 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 			fd = create_tcpip_socket(ifss, &p);
 			if (fd < 0 || p == 0) {
 				status = NT_STATUS_UNSUCCESSFUL;
+				if (fd != -1) {
+					close(fd);
+				}
 				goto done;
 			}
 			listen_fd[*listen_fd_size] = fd;
@@ -124,6 +127,9 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 			fd = create_tcpip_socket(&ss, &p);
 			if (fd < 0 || p == 0) {
 				status = NT_STATUS_UNSUCCESSFUL;
+				if (fd != -1) {
+					close(fd);
+				}
 				goto done;
 			}
 			listen_fd[*listen_fd_size] = fd;
