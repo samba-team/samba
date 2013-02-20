@@ -1130,6 +1130,7 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 		if (f && reput) {
 			if (x_tseek(f, start, SEEK_SET) == -1) {
 				d_printf("Error seeking local file\n");
+				x_fclose(f);
 				return 1;
 			}
 		}
@@ -1147,6 +1148,7 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 	buf = (uint8_t *)malloc(maxwrite);
 	if (!buf) {
 		d_printf("ERROR: Not enough memory!\n");
+		x_fclose(f);
 		return 1;
 	}
 	while (!x_feof(f)) {
