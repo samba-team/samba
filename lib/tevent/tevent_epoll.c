@@ -665,27 +665,56 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		struct tevent_fd *fde = talloc_get_type(events[i].data.ptr, 
 						       struct tevent_fd);
 		uint16_t flags = 0;
+		struct tevent_fd *mpx_fde = NULL;
 
 		if (fde == NULL) {
 			epoll_panic(epoll_ev, "epoll_wait() gave bad data", true);
 			return -1;
 		}
-		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
-			fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
+		if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX) {
 			/*
-			 * if we only wait for TEVENT_FD_WRITE, we should not tell the
-			 * event handler about it, and remove the epoll_event,
-			 * as we only report errors when waiting for read events,
-			 * to match the select() behavior
+			 * Save off the multiplexed event in case we need
+			 * to use it to call the handler function.
 			 */
-			if (!(fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR)) {
+			mpx_fde = talloc_get_type_abort(fde->additional_data,
+							struct tevent_fd);
+		}
+		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
+			bool handled_fde = epoll_handle_hup_or_err(epoll_ev, fde);
+			bool handled_mpx = epoll_handle_hup_or_err(epoll_ev, mpx_fde);
+
+			if (handled_fde && handled_mpx) {
 				epoll_update_event(epoll_ev, fde);
 				continue;
+			}
+
+			if (!handled_mpx) {
+				/*
+				 * If the mpx event was the one that needs
+				 * further handling, it's the TEVENT_FD_READ
+				 * event so switch over and call that handler.
+				 */
+				fde = mpx_fde;
+				mpx_fde = NULL;
 			}
 			flags |= TEVENT_FD_READ;
 		}
 		if (events[i].events & EPOLLIN) flags |= TEVENT_FD_READ;
 		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
+
+		if (mpx_fde) {
+			/* Ensure we got the right fde. */
+			if ((flags & fde->flags) == 0) {
+				fde = mpx_fde;
+				mpx_fde = NULL;
+			}
+		}
+
+		/*
+		 * make sure we only pass the flags
+		 * the handler is expecting.
+		 */
+		flags &= fde->flags;
 		if (flags) {
 			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
 			break;
