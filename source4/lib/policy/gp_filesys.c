@@ -392,12 +392,13 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 {
 	DIR *dir;
 	struct dirent *dirent;
-	char *entry_local_path;
-	char *entry_remote_path;
+	char *entry_local_path = NULL;
+	char *entry_remote_path = NULL;
 	int local_fd, remote_fd;
 	int buf[1024];
 	int nread, total_read;
 	struct stat s;
+	NTSTATUS status;
 
 	dir = opendir(local_path);
 	while ((dirent = readdir(dir)) != NULL) {
@@ -408,14 +409,21 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 
 		entry_local_path = talloc_asprintf(gp_ctx, "%s/%s", local_path,
 		                                   dirent->d_name);
-		NT_STATUS_HAVE_NO_MEMORY(entry_local_path);
+		if (entry_local_path == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
 		entry_remote_path = talloc_asprintf(gp_ctx, "%s\\%s",
 		                                    remote_path, dirent->d_name);
-		NT_STATUS_HAVE_NO_MEMORY(entry_remote_path);
+		if (entry_remote_path == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
 		if (stat(entry_local_path, &s) != 0) {
-			return NT_STATUS_UNSUCCESSFUL;
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		}
 		if (s.st_mode & S_IFDIR) {
 			DEBUG(6, ("Pushing directory %s to %s on sysvol\n",
@@ -433,19 +441,17 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 			                        O_WRONLY | O_CREAT,
 			                        0);
 			if (remote_fd < 0) {
-				talloc_free(entry_local_path);
-				talloc_free(entry_remote_path);
 				DEBUG(0, ("Failed to create remote file: %s\n",
 				          entry_remote_path));
-				return NT_STATUS_UNSUCCESSFUL;
+				status = NT_STATUS_UNSUCCESSFUL;
+				goto done;
 			}
 			local_fd = open(entry_local_path, O_RDONLY);
 			if (local_fd < 0) {
-				talloc_free(entry_local_path);
-				talloc_free(entry_remote_path);
 				DEBUG(0, ("Failed to open local file: %s\n",
 				          entry_local_path));
-				return NT_STATUS_UNSUCCESSFUL;
+				status = NT_STATUS_UNSUCCESSFUL;
+				goto done;
 			}
 			total_read = 0;
 			while ((nread = read(local_fd, &buf, sizeof(buf)))) {
@@ -457,12 +463,18 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 			close(local_fd);
 			smbcli_close(gp_ctx->cli->tree, remote_fd);
 		}
-		talloc_free(entry_local_path);
-		talloc_free(entry_remote_path);
+		TALLOC_FREE(entry_local_path);
+		TALLOC_FREE(entry_remote_path);
 	}
+
+	status = NT_STATUS_OK;
+done:
+	talloc_free(entry_local_path);
+	talloc_free(entry_remote_path);
+
 	closedir(dir);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 
