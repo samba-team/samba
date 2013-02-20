@@ -545,6 +545,23 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
 	bool want_read = (fde->flags & TEVENT_FD_READ);
 	bool want_write= (fde->flags & TEVENT_FD_WRITE);
+	struct tevent_fd *mpx_fde = NULL;
+
+	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX) {
+		/*
+		 * work out what the multiplexed fde wants.
+		 */
+		mpx_fde = talloc_get_type_abort(fde->additional_data,
+						struct tevent_fd);
+
+		if (mpx_fde->flags & TEVENT_FD_READ) {
+			want_read = true;
+		}
+
+		if (mpx_fde->flags & TEVENT_FD_WRITE) {
+			want_write = true;
+		}
+	}
 
 	/* there's already an event */
 	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT) {
