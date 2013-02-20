@@ -741,7 +741,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
  */
 static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 			     bool persistent, const char *unhealthy_reason,
-			     bool jenkinshash)
+			     bool jenkinshash, bool mutexes)
 {
 	struct ctdb_db_context *ctdb_db, *tmp_db;
 	int ret;
@@ -835,6 +835,9 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	tdb_flags |= TDB_DISALLOW_NESTING;
 	if (jenkinshash) {
 		tdb_flags |= TDB_INCOMPATIBLE_HASH;
+	}
+	if (mutexes) {
+		tdb_flags |= TDB_MUTEX_LOCKING;
 	}
 
 again:
@@ -1065,7 +1068,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
 	struct ctdb_client *client = NULL;
-	bool with_jenkinshash;
+	bool with_jenkinshash, with_mutexes;
 
 	if (ctdb->tunable.allow_client_db_attach == 0) {
 		DEBUG(DEBUG_ERR, ("DB Attach to database %s denied by tunable "
@@ -1118,7 +1121,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	   only allow a subset of those on the database in ctdb. Note
 	   that tdb_flags is passed in via the (otherwise unused)
 	   srvid to the attach control */
-	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH);
+	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH|TDB_MUTEX_LOCKING);
 
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
@@ -1136,9 +1139,10 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	}
 
 	with_jenkinshash = (tdb_flags & TDB_INCOMPATIBLE_HASH) ? true : false;
+	with_mutexes = (tdb_flags & TDB_MUTEX_LOCKING) ? true : false;
 
 	if (ctdb_local_attach(ctdb, db_name, persistent, NULL,
-			      with_jenkinshash) != 0) {
+			      with_jenkinshash, with_mutexes) != 0) {
 		return -1;
 	}
 
@@ -1311,7 +1315,7 @@ static int ctdb_attach_persistent(struct ctdb_context *ctdb,
 		}
 		p[4] = 0;
 
-		if (ctdb_local_attach(ctdb, s, true, unhealthy_reason, false) != 0) {
+		if (ctdb_local_attach(ctdb, s, true, unhealthy_reason, false, false) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to attach to persistent database '%s'\n", de->d_name));
 			closedir(d);
 			talloc_free(s);
