@@ -4432,6 +4432,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	/* This must be a regular file, not a symlink, directory or
 	   other strange filetype. */
 	if (!check_usershare_stat(fname, &sbuf)) {
+		close(fd);
 		goto out;
 	}
 
