@@ -5372,7 +5372,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 {
 	NET_API_STATUS status;
 	uint32 preferred_len = 0xffffffff, i;
-	const char *username=NULL;
+	char *username=NULL;
 	uint32_t total_entries = 0;
 	uint32_t entries_read = 0;
 	uint32_t resume_handle = 0;
@@ -5411,6 +5411,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 		display_file_info_3(&i3[i]);
 	}
  done:
+	SAFE_FREE(username);
 	return status;
 }
 
