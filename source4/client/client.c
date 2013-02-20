@@ -722,6 +722,7 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *p_lnam
 				start = lseek(handle, 0, SEEK_END);
 				if (start == -1) {
 					d_printf("Error seeking local file\n");
+					close(handle);
 					return 1;
 				}
 			}
@@ -741,6 +742,9 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *p_lnam
 	    NT_STATUS_IS_ERR(smbcli_getattrE(ctx->cli->tree, fnum, 
 			  &attr, &size, NULL, NULL, NULL))) {
 		d_printf("getattrib: %s\n",smbcli_errstr(ctx->cli->tree));
+		if (newhandle) {
+			close(handle);
+		}
 		return 1;
 	}
 
@@ -750,6 +754,9 @@ static int do_get(struct smbclient_context *ctx, char *rname, const char *p_lnam
 	if(!(data = (uint8_t *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
 		smbcli_close(ctx->cli->tree, fnum);
+		if (newhandle) {
+			close(handle);
+		}
 		return 1;
 	}
 
