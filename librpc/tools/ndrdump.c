@@ -117,6 +117,7 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	if (!p) {
 		printf("%s: Unable to find DCE/RPC interface table for '%s': %s\n", plugin, pipe_name, dlerror());
 		talloc_free(symbol);
+		dlclose(handle);
 		return NULL;
 	}
 
