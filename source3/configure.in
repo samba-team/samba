@@ -4512,12 +4512,15 @@ AC_ARG_WITH(syslog-facility,
   if test "$withval" = "no" ; then
     AC_MSG_ERROR([argument to --with-syslog-facility must be a string])
   else
+     AC_MSG_RESULT([$withval])
      if test "$withval" != "yes" ; then
         syslog_facility="$withval"
 	AC_DEFINE_UNQUOTED(SYSLOG_FACILITY,$syslog_facility, [syslog facility to log to])
      fi
   fi
-])
+],
+AC_MSG_RESULT(no)
+)
 
 #################################################
 # check for experimental disk-quotas support
