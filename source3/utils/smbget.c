@@ -449,6 +449,9 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 
 	readbuf = (char *)SMB_MALLOC(blocksize);
 	if (!readbuf) {
+		if (localhandle != STDOUT_FILENO) {
+			close(localhandle);
+		}
 		return 1;
 	}
 
