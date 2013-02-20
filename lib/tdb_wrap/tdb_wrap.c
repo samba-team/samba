@@ -23,6 +23,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/param/param.h"
+#include "ccan/str/str.h"
 
 /*
  Log tdb messages via DEBUG().
@@ -144,6 +145,13 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 {
 	struct tdb_wrap *result;
 	struct tdb_wrap_private *w;
+
+	/* If they specify a .ntdb extension, but the code hasn't been
+	 * converted, we want to complain. */
+	if (name && strends(name, ".ntdb")) {
+		DEBUG(2, ("tdb(%s): This code does not yet understand ntdb.  Please report.\n", name));
+		return NULL;
+	}
 
 	result = talloc(mem_ctx, struct tdb_wrap);
 	if (result == NULL) {
