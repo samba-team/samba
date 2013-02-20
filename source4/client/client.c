@@ -1085,6 +1085,8 @@ static int cmd_altname(struct smbclient_context *ctx, const char **args)
 	}
 	d_printf("%s\n", altname);
 
+	SAFE_FREE(altname);
+
 	return 0;
 }
 
