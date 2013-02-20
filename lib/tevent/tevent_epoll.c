@@ -271,10 +271,8 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	struct epoll_event event;
 	int ret;
 
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
-
-	/* if we don't want events yet, don't add an epoll_event */
-	if (fde->flags == 0) return;
 
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
@@ -284,8 +282,8 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 		epoll_panic(epoll_ev, "EPOLL_CTL_ADD failed", false);
 		return;
 	}
-	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
+	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	/* only if we want to read we want to tell the event handler about errors */
 	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
@@ -300,10 +298,8 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	struct epoll_event event;
 	int ret;
 
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
-
-	/* if there's no epoll_event, we don't need to delete it */
-	if (!(fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT)) return;
 
 	ZERO_STRUCT(event);
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event);
@@ -315,11 +311,11 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_TRACE,
 			     "EPOLL_CTL_DEL ignoring ENOENT for fd[%d]\n",
 			     fde->fd);
+		return;
 	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_DEL failed", false);
 		return;
 	}
-	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }
 
 /*
@@ -330,6 +326,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	struct epoll_event event;
 	int ret;
 
+	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
 	ZERO_STRUCT(event);
@@ -341,6 +338,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 		return;
 	}
 
+	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	/* only if we want to read we want to tell the event handler about errors */
 	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
@@ -352,8 +350,6 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
 	bool want_read = (fde->flags & TEVENT_FD_READ);
 	bool want_write= (fde->flags & TEVENT_FD_WRITE);
-
-	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
 	/* there's already an event */
 	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT) {
