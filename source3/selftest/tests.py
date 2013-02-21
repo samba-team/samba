@@ -278,6 +278,8 @@ local = ["local.nss-wrapper", "local.ndr"]
 
 winbind = ["winbind.struct", "winbind.wbclient", "winbind.pac"]
 
+idmap = [ "idmap.rfc2307" ]
+
 rap = ["rap.basic", "rap.rpc", "rap.printing", "rap.sam"]
 
 unix = ["unix.info2", "unix.whoami"]
@@ -286,7 +288,7 @@ nbt = ["nbt.dgram" ]
 
 libsmbclient = ["libsmbclient"]
 
-tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclient
+tests= base + raw + smb2 + rpc + unix + local + winbind + rap + nbt + libsmbclient + idmap
 
 for t in tests:
     if t == "base.delaywrite":
@@ -338,6 +340,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/valid-users-tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/write-list-tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+    elif t == "idmap.rfc2307":
+        plantestsuite(t, "s3member_rfc2307", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_rfc2307.sh"), '$DOMAIN', 'Administrator', '2000000', '"Domain Users"', '2000001', 'ou=idmap,dc=samba,dc=example,dc=com', '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD'])
     else:
         plansmbtorture4testsuite(t, "s3dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "plugin_s4_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
