@@ -341,7 +341,7 @@ static PyObject *py_creds_get_named_ccache(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	event_ctx = tevent_context_init(mem_ctx);
+	event_ctx = samba_tevent_context_init(mem_ctx);
 
 	ret = cli_credentials_get_named_ccache(creds, event_ctx, lp_ctx,
 					       ccache_name, &ccc, &error_string);
