@@ -2695,6 +2695,10 @@ bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ad.o
 
+bin/rfc2307.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_rfc2307.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) winbindd/idmap_rfc2307.o
+
 bin/hash.@SHLIBEXT@: $(BINARY_PREREQS) $(IDMAP_HASH_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(IDMAP_HASH_OBJ)

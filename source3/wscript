@@ -1688,7 +1688,7 @@ main() {
 				      vfs_commit
                                       vfs_crossrename vfs_linux_xfs_sgid
                                       vfs_time_audit idmap_autorid idmap_tdb2
-                                      idmap_rid idmap_hash'''))
+                                      idmap_rid idmap_hash idmap_rfc2307'''))
 
     if Options.options.developer:
         default_static_modules.extend(TO_LIST('charset_weird'))

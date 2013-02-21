@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 IDMAP_AD_SRC = '''idmap_ad.c'''
+IDMAP_RFC2307_SRC = '''idmap_rfc2307.c'''
 IDMAP_RID_SRC = '''idmap_rid.c'''
 IDMAP_PASSDB_SRC = '''idmap_passdb.c'''
 IDMAP_LDAP_SRC = '''idmap_ldap.c'''
@@ -42,6 +43,15 @@ bld.SAMBA3_MODULE('idmap_ad',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad') and bld.CONFIG_SET("HAVE_LDAP"))
+
+bld.SAMBA3_MODULE('idmap_rfc2307',
+                 subsystem='idmap',
+                 allow_undefined_symbols=True,
+                 source=IDMAP_RFC2307_SRC,
+                 init_function='',
+                 deps='ads',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_rfc2307'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_rfc2307') and bld.CONFIG_SET("HAVE_LDAP"))
 
 bld.SAMBA3_MODULE('idmap_rid',
                  subsystem='idmap',
