@@ -22,6 +22,7 @@
 		<arg choice="opt">-s suffix</arg>
 		<arg choice="opt">-v</arg>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-l</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -65,6 +66,17 @@
 		<listitem><para>
 		The <command>-v</command> will check the database for damages (corrupt data)
 		which if detected causes the backup to be restored.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-l</term>
+		<listitem><para>
+		This options disables any locking, by passing TDB_NOLOCK
+		to tdb_open_ex(). Only use this for database files which
+		are not used by any other process! And also only if it is otherwise not
+		possible to open the database, e.g. databases which were created with
+		mutex locking.
 		</para></listitem>
 		</varlistentry>
 

@@ -104,7 +104,8 @@ static int test_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
   only doing the backup if its OK
   this function is also used for restore
 */
-static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
+static int backup_tdb(const char *old_name, const char *new_name,
+		      int hash_size, int nolock)
 {
 	TDB_CONTEXT *tdb;
 	TDB_CONTEXT *tdb_new;
@@ -122,7 +123,8 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 	}
 
 	/* open the old tdb */
-	tdb = tdb_open_ex(old_name, 0, 0,
+	tdb = tdb_open_ex(old_name, 0,
+			  TDB_DEFAULT | (nolock ? TDB_NOLOCK : 0),
 			  O_RDWR, 0, &log_ctx, NULL);
 	if (!tdb) {
 		printf("Failed to open %s\n", old_name);
@@ -249,7 +251,7 @@ static int verify_tdb(const char *fname, const char *bak_name)
 	/* count is < 0 means an error */
 	if (count < 0) {
 		printf("restoring %s\n", fname);
-		return backup_tdb(bak_name, fname, 0);
+		return backup_tdb(bak_name, fname, 0, 0);
 	}
 
 	printf("%s : %d records\n", fname, count);
@@ -279,6 +281,7 @@ static void usage(void)
 	printf("   -s suffix     set the backup suffix\n");
 	printf("   -v            verify mode (restore if corrupt)\n");
 	printf("   -n hashsize   set the new hash size for the backup\n");
+	printf("   -l            open without locking to back up mutex dbs\n");
 }
 
  int main(int argc, char *argv[])
@@ -288,11 +291,12 @@ static void usage(void)
 	int c;
 	int verify = 0;
 	int hashsize = 0;
+	int nolock = 0;
 	const char *suffix = ".bak";
 
 	log_ctx.log_fn = tdb_log;
 
-	while ((c = getopt(argc, argv, "vhs:n:")) != -1) {
+	while ((c = getopt(argc, argv, "vhs:n:l")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
@@ -305,6 +309,9 @@ static void usage(void)
 			break;
 		case 'n':
 			hashsize = atoi(optarg);
+			break;
+		case 'l':
+			nolock = 1;
 			break;
 		}
 	}
@@ -329,7 +336,8 @@ static void usage(void)
 			}
 		} else {
 			if (file_newer(fname, bak_name) &&
-			    backup_tdb(fname, bak_name, hashsize) != 0) {
+			    backup_tdb(fname, bak_name, hashsize,
+				       nolock) != 0) {
 				ret = 1;
 			}
 		}
