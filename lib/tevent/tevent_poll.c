@@ -499,9 +499,8 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		ev->additional_data, struct poll_event_context);
 	int pollrtn;
 	int timeout = -1;
-	unsigned first_fd;
-	unsigned i, next_i;
 	int poll_errno;
+	struct tevent_fd *fde = NULL;
 
 	if (ev->signal_events && tevent_common_check_signal(ev)) {
 		return 0;
@@ -541,40 +540,20 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		return 0;
 	}
 
-	first_fd = (poll_ev->signal_fd != -1) ? 1 : 0;
-
 	/* at least one file descriptor is ready - check
 	   which ones and call the handler, being careful to allow
 	   the handler to remove itself when called */
 
-	for (i=first_fd; i<poll_ev->num_fds; i = next_i) {
+	for (fde = ev->fd_events; fde; fde = fde->next) {
+		unsigned idx = fde->additional_flags;
 		struct pollfd *pfd;
-		struct tevent_fd *fde;
 		uint16_t flags = 0;
 
-		next_i = i + 1;
-
-		fde = poll_ev->fdes[i];
-		if (fde == NULL) {
-			/*
-			 * This fde was talloc_free()'ed. Delete it
-			 * from the arrays
-			 */
-			poll_ev->num_fds -= 1;
-			if (poll_ev->num_fds == i) {
-				break;
-			}
-			poll_ev->fds[i] = poll_ev->fds[poll_ev->num_fds];
-			poll_ev->fdes[i] = poll_ev->fdes[poll_ev->num_fds];
-			if (poll_ev->fdes[i] != NULL) {
-				poll_ev->fdes[i]->additional_flags = i;
-			}
-			/* we have to reprocess position 'i' */
-			next_i = i;
+		if (idx == UINT64_MAX) {
 			continue;
 		}
 
-		pfd = &poll_ev->fds[i];
+		pfd = &poll_ev->fds[idx];
 
 		if (pfd->revents & (POLLHUP|POLLERR)) {
 			/* If we only wait for TEVENT_FD_WRITE, we
