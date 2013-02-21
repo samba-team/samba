@@ -41,7 +41,6 @@
 
 #define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
 
-#define IDMAP_AD_MAX_IDS 30
 #define CHECK_ALLOC_DONE(mem) do { \
      if (!mem) { \
            DEBUG(0, ("Out of memory!\n")); \
@@ -250,40 +249,6 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 }
 
 /************************************************************************
- Search up to IDMAP_AD_MAX_IDS entries in maps for a match.
- ***********************************************************************/
-
-static struct id_map *find_map_by_id(struct id_map **maps, enum id_type type, uint32_t id)
-{
-	int i;
-
-	for (i = 0; maps[i] && i<IDMAP_AD_MAX_IDS; i++) {
-		if ((maps[i]->xid.type == type) && (maps[i]->xid.id == id)) {
-			return maps[i];
-		}
-	}
-
-	return NULL;	
-}
-
-/************************************************************************
- Search up to IDMAP_AD_MAX_IDS entries in maps for a match
- ***********************************************************************/
-
-static struct id_map *find_map_by_sid(struct id_map **maps, struct dom_sid *sid)
-{
-	int i;
-
-	for (i = 0; maps[i] && i<IDMAP_AD_MAX_IDS; i++) {
-		if (dom_sid_equal(maps[i]->sid, sid)) {
-			return maps[i];
-		}
-	}
-
-	return NULL;	
-}
-
-/************************************************************************
  ***********************************************************************/
 
 static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
@@ -337,7 +302,7 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 
 again:
 	bidx = idx;
-	for (i = 0; (i < IDMAP_AD_MAX_IDS) && ids[idx]; i++, idx++) {
+	for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
 		switch (ids[idx]->xid.type) {
 		case ID_TYPE_UID:     
 			if ( ! u_filter) {
@@ -462,7 +427,7 @@ again:
 			continue;
 		}
 
-		map = find_map_by_id(&ids[bidx], type, id);
+		map = idmap_find_map_by_id(&ids[bidx], type, id);
 		if (!map) {
 			DEBUG(2, ("WARNING: couldn't match result with requested ID\n"));
 			continue;
@@ -567,7 +532,7 @@ again:
 	CHECK_ALLOC_DONE(filter);
 
 	bidx = idx;
-	for (i = 0; (i < IDMAP_AD_MAX_IDS) && ids[idx]; i++, idx++) {
+	for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
 
 		ids[idx]->status = ID_UNKNOWN;
 
@@ -617,7 +582,7 @@ again:
 			continue;
 		}
 
-		map = find_map_by_sid(&ids[bidx], &sid);
+		map = idmap_find_map_by_sid(&ids[bidx], &sid);
 		if (!map) {
 			DEBUG(2, ("WARNING: couldn't match result with requested SID\n"));
 			continue;

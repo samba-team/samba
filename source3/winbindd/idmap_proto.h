@@ -54,5 +54,11 @@ NTSTATUS idmap_tdb_init(void);
 NTSTATUS idmap_uid_to_sid(const char *domname, struct dom_sid *sid, uid_t uid);
 NTSTATUS idmap_gid_to_sid(const char *domname, struct dom_sid *sid, gid_t gid);
 bool idmap_unix_id_is_in_range(uint32_t id, struct idmap_domain *dom);
+struct id_map *idmap_find_map_by_id(struct id_map **maps, enum id_type type,
+				    uint32_t id);
+struct id_map *idmap_find_map_by_sid(struct id_map **maps, struct dom_sid *sid);
+
+/* max number of ids requested per LDAP batch query */
+#define IDMAP_LDAP_MAX_IDS 30
 
 #endif /* _WINBINDD_IDMAP_PROTO_H_ */

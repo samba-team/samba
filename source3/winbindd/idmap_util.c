@@ -172,3 +172,44 @@ bool idmap_unix_id_is_in_range(uint32_t id, struct idmap_domain *dom)
 
 	return true;
 }
+
+/**
+ * Helper for unixids_to_sids: find entry by id in mapping array,
+ * search up to IDMAP_AD_MAX_IDS entries
+ */
+struct id_map *idmap_find_map_by_id(struct id_map **maps, enum id_type type,
+				    uint32_t id)
+{
+	int i;
+
+	for (i = 0; i < IDMAP_LDAP_MAX_IDS; i++) {
+		if (maps[i] == NULL) { /* end of the run */
+			return NULL;
+		}
+		if ((maps[i]->xid.type == type) && (maps[i]->xid.id == id)) {
+			return maps[i];
+		}
+	}
+
+	return NULL;
+}
+
+/**
+ * Helper for sids_to_unix_ids: find entry by SID in mapping array,
+ * search up to IDMAP_AD_MAX_IDS entries
+ */
+struct id_map *idmap_find_map_by_sid(struct id_map **maps, struct dom_sid *sid)
+{
+	int i;
+
+	for (i = 0; i < IDMAP_LDAP_MAX_IDS; i++) {
+		if (maps[i] == NULL) { /* end of the run */
+			return NULL;
+		}
+		if (dom_sid_equal(maps[i]->sid, sid)) {
+			return maps[i];
+		}
+	}
+
+	return NULL;
+}

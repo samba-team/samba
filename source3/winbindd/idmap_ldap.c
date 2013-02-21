@@ -663,33 +663,9 @@ static NTSTATUS idmap_ldap_new_mapping(struct idmap_domain *dom, struct id_map *
 	return ret;
 }
 
-
-/* max number of ids requested per batch query */
-#define IDMAP_LDAP_MAX_IDS 30
-
 /**********************************
  lookup a set of unix ids.
 **********************************/
-
-/* this function searches up to IDMAP_LDAP_MAX_IDS entries
- * in maps for a match */
-static struct id_map *find_map_by_id(struct id_map **maps,
-				     enum id_type type,
-				     uint32_t id)
-{
-	int i;
-
-	for (i = 0; i < IDMAP_LDAP_MAX_IDS; i++) {
-		if (maps[i] == NULL) { /* end of the run */
-			return NULL;
-		}
-		if ((maps[i]->xid.type == type) && (maps[i]->xid.id == id)) {
-			return maps[i];
-		}
-	}
-
-	return NULL;
-}
 
 static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom,
 					   struct id_map **ids)
@@ -846,7 +822,7 @@ again:
 		}
 		TALLOC_FREE(tmp);
 
-		map = find_map_by_id(&ids[bidx], type, id);
+		map = idmap_find_map_by_id(&ids[bidx], type, id);
 		if (!map) {
 			DEBUG(2, ("WARNING: couldn't match sid (%s) "
 				  "with requested ids\n", sidstr));
@@ -902,24 +878,6 @@ done:
 /**********************************
  lookup a set of sids.
 **********************************/
-
-/* this function searches up to IDMAP_LDAP_MAX_IDS entries
- * in maps for a match */
-static struct id_map *find_map_by_sid(struct id_map **maps, struct dom_sid *sid)
-{
-	int i;
-
-	for (i = 0; i < IDMAP_LDAP_MAX_IDS; i++) {
-		if (maps[i] == NULL) { /* end of the run */
-			return NULL;
-		}
-		if (dom_sid_equal(maps[i]->sid, sid)) {
-			return maps[i];
-		}
-	}
-
-	return NULL;
-}
 
 static NTSTATUS idmap_ldap_sids_to_unixids(struct idmap_domain *dom,
 					   struct id_map **ids)
@@ -1053,7 +1011,7 @@ again:
 			continue;
 		}
 
-		map = find_map_by_sid(&ids[bidx], &sid);
+		map = idmap_find_map_by_sid(&ids[bidx], &sid);
 		if (!map) {
 			DEBUG(2, ("WARNING: couldn't find entry sid (%s) "
 				  "in ids", sidstr));
