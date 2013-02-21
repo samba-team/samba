@@ -99,29 +99,29 @@ static enum agent_return do_operation(enum operation op, const char *name)
 
 struct agent {
 	int cmdfd, responsefd;
+	pid_t pid;
 };
 
 /* Do this before doing any tdb stuff.  Return handle, or NULL. */
 struct agent *prepare_external_agent(void)
 {
-	int pid, ret;
+	int ret;
 	int command[2], response[2];
 	char name[1+PATH_MAX];
+	struct agent *agent = malloc(sizeof(*agent));
 
 	if (pipe(command) != 0 || pipe(response) != 0) {
 		fprintf(stderr, "pipe failed: %s\n", strerror(errno));
 		exit(1);
 	}
 
-	pid = fork();
-	if (pid < 0) {
+	agent->pid = fork();
+	if (agent->pid < 0) {
 		fprintf(stderr, "fork failed: %s\n", strerror(errno));
 		exit(1);
 	}
 
-	if (pid != 0) {
-		struct agent *agent = malloc(sizeof(*agent));
-
+	if (agent->pid != 0) {
 		close(command[0]);
 		close(response[1]);
 		agent->cmdfd = command[1];
@@ -144,6 +144,20 @@ struct agent *prepare_external_agent(void)
 			abort();
 	}
 	exit(0);
+}
+
+void shutdown_agent(struct agent *agent)
+{
+	pid_t p;
+
+	close(agent->cmdfd);
+	close(agent->responsefd);
+	p = waitpid(agent->pid, NULL, WNOHANG);
+	if (p == 0) {
+		kill(agent->pid, SIGKILL);
+	}
+	waitpid(agent->pid, NULL, 0);
+	free(agent);
 }
 
 /* Ask the external agent to try to do an operation. */
