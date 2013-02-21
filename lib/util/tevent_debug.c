@@ -65,13 +65,18 @@ static void samba_tevent_debug(void *context,
 	}
 }
 
+void samba_tevent_set_debug(struct tevent_context *ev, const char *name)
+{
+	tevent_set_debug(ev, samba_tevent_debug, name);
+}
+
 struct tevent_context *samba_tevent_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct tevent_context *ev;
 
 	ev = tevent_context_init(mem_ctx);
 	if (ev) {
-		tevent_set_debug(ev, samba_tevent_debug, NULL);
+		samba_tevent_set_debug(ev, NULL);
 	}
 
 	return ev;

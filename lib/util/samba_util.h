@@ -966,4 +966,12 @@ bool server_id_is_disconnected(const struct server_id *id);
  */
 struct tevent_context *samba_tevent_context_init(TALLOC_CTX *mem_ctx);
 
+/*
+ * if same samba code needs to use a specific tevent backend
+ * it can use something like this:
+ *
+ * samba_tevent_set_debug(ev, "pysmb_tevent");
+ */
+void samba_tevent_set_debug(struct tevent_context *ev, const char *name);
+
 #endif /* _SAMBA_UTIL_H_ */
