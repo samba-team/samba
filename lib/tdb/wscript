@@ -39,7 +39,14 @@ tdb1_unit_tests = [
     'run-transaction-expand',
     'run-traverse-in-transaction',
     'run-wronghash-fail',
-    'run-zero-append'
+    'run-zero-append',
+    'run-mutex-openflags2',
+    'run-mutex-trylock',
+    'run-mutex-allrecord-bench',
+    'run-mutex-allrecord-trylock',
+    'run-mutex-allrecord-block',
+    'run-mutex-die',
+    'run-mutex1',
 ]
 
 def set_options(opt):
