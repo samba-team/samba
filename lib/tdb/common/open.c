@@ -77,6 +77,15 @@ static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
 		newdb->rwlocks = TDB_HASH_RWLOCK_MAGIC;
 
 	/*
+	 * We create a tdb with TDB_FEATURE_FLAG_MUTEX support,
+	 * the flag combination and runtime feature checks
+	 * are done by the caller already.
+	 */
+	if (tdb->flags & TDB_MUTEX_LOCKING) {
+		newdb->feature_flags |= TDB_FEATURE_FLAG_MUTEX;
+	}
+
+	/*
 	 * If we have any features we add the FEATURE_FLAG_MAGIC, overwriting the
 	 * TDB_HASH_RWLOCK_MAGIC above.
 	 */
@@ -87,8 +96,11 @@ static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
 	/*
 	 * It's required for some following code pathes
 	 * to have the fields on 'tdb' up-to-date.
+	 *
+	 * E.g. tdb_mutex_size() requires it
 	 */
 	tdb->feature_flags = newdb->feature_flags;
+	tdb->hash_size = newdb->hash_size;
 
 	if (tdb->flags & TDB_INTERNAL) {
 		tdb->map_size = size;
@@ -104,6 +116,11 @@ static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
 	if (ftruncate(tdb->fd, 0) == -1)
 		goto fail;
 
+	if (newdb->feature_flags & TDB_FEATURE_FLAG_MUTEX) {
+		newdb->mutex_size = tdb_mutex_size(tdb);
+		tdb->hdr_ofs = newdb->mutex_size;
+	}
+
 	/* This creates an endian-converted header, as if read from disk */
 	CONVERT(*newdb);
 	memcpy(header, newdb, sizeof(*header));
@@ -112,6 +129,37 @@ static int tdb_new_database(struct tdb_context *tdb, struct tdb_header *header,
 
 	if (!tdb_write_all(tdb->fd, newdb, size))
 		goto fail;
+
+	if (newdb->feature_flags & TDB_FEATURE_FLAG_MUTEX) {
+
+		/*
+		 * Now we init the mutex area
+		 * followed by a second header.
+		 */
+
+		ret = ftruncate(
+			tdb->fd,
+			newdb->mutex_size + sizeof(struct tdb_header));
+		if (ret == -1) {
+			goto fail;
+		}
+		ret = tdb_mutex_init(tdb);
+		if (ret == -1) {
+			goto fail;
+		}
+
+		/*
+		 * Write a second header behind the mutexes. That's the area
+		 * that will be mmapp'ed.
+		 */
+		ret = lseek(tdb->fd, newdb->mutex_size, SEEK_SET);
+		if (ret == -1) {
+			goto fail;
+		}
+		if (!tdb_write_all(tdb->fd, newdb, size)) {
+			goto fail;
+		}
+	}
 
 	ret = 0;
   fail:
@@ -179,6 +227,70 @@ static bool check_header_hash(struct tdb_context *tdb,
 	return check_header_hash(tdb, header, false, m1, m2);
 }
 
+static bool tdb_mutex_open_ok(struct tdb_context *tdb,
+			      const struct tdb_header *header)
+{
+	int locked;
+
+	locked = tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK,
+			       TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
+
+	if ((locked == -1) && (tdb->ecode == TDB_ERR_LOCK)) {
+		/*
+		 * CLEAR_IF_FIRST still active. The tdb was created on this
+		 * host, so we can assume the mutex implementation is
+		 * compatible. Important for tools like tdbdump on a still
+		 * open locking.tdb.
+		 */
+		goto check_local_settings;
+	}
+
+	/*
+	 * We got the CLEAR_IF_FIRST lock. That means the database was
+	 * potentially copied from somewhere else. The mutex implementation
+	 * might be incompatible.
+	 */
+
+	if (tdb_nest_unlock(tdb, ACTIVE_LOCK, F_WRLCK, false) == -1) {
+		/*
+		 * Should not happen
+		 */
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_mutex_open_ok: "
+			 "failed to release ACTIVE_LOCK on %s: %s\n",
+			 tdb->name, strerror(errno)));
+		return false;
+	}
+
+	if (tdb->flags & TDB_NOLOCK) {
+		/*
+		 * We don't look at locks, so it does not matter to have a
+		 * compatible mutex implementation. Allow the open.
+		 */
+		return true;
+	}
+
+check_local_settings:
+
+	if (!(tdb->flags & TDB_MUTEX_LOCKING)) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_mutex_open_ok[%s]: "
+			 "Can use mutexes only with "
+			 "MUTEX_LOCKING or NOLOCK\n",
+			 tdb->name));
+		return false;
+	}
+
+	if (tdb_mutex_size(tdb) != header->mutex_size) {
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_mutex_open_ok[%s]: "
+			 "Mutex size changed from %u to %u\n.",
+			 tdb->name,
+			 (unsigned int)header->mutex_size,
+			 (unsigned int)tdb_mutex_size(tdb)));
+		return false;
+	}
+
+	return true;
+}
+
 _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 				int open_flags, mode_t mode,
 				const struct tdb_logging_context *log_ctx,
@@ -206,6 +318,9 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	tdb_io_init(tdb);
 
 	if (tdb_flags & TDB_INTERNAL) {
+		tdb_flags |= TDB_INCOMPATIBLE_HASH;
+	}
+	if (tdb_flags & TDB_MUTEX_LOCKING) {
 		tdb_flags |= TDB_INCOMPATIBLE_HASH;
 	}
 
@@ -294,6 +409,64 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 			"allow_nesting and disallow_nesting are not allowed together!"));
 		errno = EINVAL;
 		goto fail;
+	}
+
+	if (tdb->flags & TDB_MUTEX_LOCKING) {
+		/*
+		 * Here we catch bugs in the callers,
+		 * the runtime check for existing tdb's comes later.
+		 */
+
+		if (!(tdb->flags & TDB_CLEAR_IF_FIRST)) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
+				"invalid flags for %s - TDB_MUTEX_LOCKING "
+				"requires TDB_CLEAR_IF_FIRST\n", name));
+			errno = EINVAL;
+			goto fail;
+		}
+
+		if (tdb->flags & TDB_INTERNAL) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
+				"invalid flags for %s - TDB_MUTEX_LOCKING and "
+				"TDB_INTERNAL are not allowed together\n", name));
+			errno = EINVAL;
+			goto fail;
+		}
+
+		if (tdb->flags & TDB_NOMMAP) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
+				"invalid flags for %s - TDB_MUTEX_LOCKING and "
+				"TDB_NOMMAP are not allowed together\n", name));
+			errno = EINVAL;
+			goto fail;
+		}
+
+		if (tdb->read_only) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
+				"invalid flags for %s - TDB_MUTEX_LOCKING "
+				"not allowed read only\n", name));
+			errno = EINVAL;
+			goto fail;
+		}
+
+		/*
+		 * The callers should have called
+		 * tdb_runtime_check_for_robust_mutexes()
+		 * before using TDB_MUTEX_LOCKING!
+		 *
+		 * This makes sure the caller understands
+		 * that the locking may behave a bit differently
+		 * than with pure fcntl locking. E.g. multiple
+		 * read locks are not supported.
+		 */
+		if (!tdb_runtime_check_for_robust_mutexes()) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
+				"invalid flags for %s - TDB_MUTEX_LOCKING "
+				"requires support for robust_mutexes\n",
+				name));
+			errno = ENOSYS;
+			goto fail;
+		}
 	}
 
 	if (getenv("TDB_NO_FSYNC")) {
@@ -435,6 +608,21 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 
+	if (tdb->feature_flags & TDB_FEATURE_FLAG_MUTEX) {
+		if (!tdb_mutex_open_ok(tdb, &header)) {
+			errno = EINVAL;
+			goto fail;
+		}
+
+		/*
+		 * We need to remember the hdr_ofs
+		 * also for the TDB_NOLOCK case
+		 * if the current library doesn't support
+		 * mutex locking.
+		 */
+		tdb->hdr_ofs = header.mutex_size;
+	}
+
 	if ((header.magic1_hash == 0) && (header.magic2_hash == 0)) {
 		/* older TDB without magic hash references */
 		tdb->hash_fn = tdb_old_hash;
@@ -475,6 +663,15 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	if (ret == -1) {
 		errno = EIO;
 		goto fail;
+	}
+
+	if (tdb->feature_flags & TDB_FEATURE_FLAG_MUTEX) {
+		if (!(tdb->flags & TDB_NOLOCK)) {
+			ret = tdb_mutex_mmap(tdb);
+			if (ret != 0) {
+				goto fail;
+			}
+		}
 	}
 
 	if (locked) {
@@ -587,6 +784,9 @@ _PUBLIC_ int tdb_close(struct tdb_context *tdb)
 		else
 			tdb_munmap(tdb);
 	}
+
+	tdb_mutex_munmap(tdb);
+
 	SAFE_FREE(tdb->name);
 	if (tdb->fd != -1) {
 		ret = close(tdb->fd);

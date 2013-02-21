@@ -1,0 +1,136 @@
+Tdb is a hashtable database with multiple concurrent writer and external
+record lock support. For speed reasons, wherever possible tdb uses a shared
+memory mapped area for data access. In its currently released form, it uses
+fcntl byte-range locks to coordinate access to the data itself.
+
+The tdb data is organized as a hashtable. Hash collisions are dealt with by
+forming a linked list of records that share a hash value. The individual
+linked lists are protected across processes with 1-byte fcntl locks on the
+starting pointer of the linked list representing a hash value.
+
+The external locking API of tdb allows to lock individual records. Instead of
+really locking individual records, the tdb API locks a complete linked list
+with a fcntl lock.
+
+The external locking API of tdb also allows to lock the complete database, and
+ctdb uses this facility to freeze databases during a recovery. While the
+so-called allrecord lock is held, all linked lists and all individual records
+are frozen alltogether. Tdb achieves this by locking the complete file range
+with a single fcntl lock. Individual 1-byte locks for the linked lists
+conflict with this. Access to records is prevented by the one large fnctl byte
+range lock.
+
+Fcntl locks have been chosen for tdb for two reasons: First they are portable
+across all current unixes. Secondly they provide auto-cleanup. If a process
+dies while holding a fcntl lock, the lock is given up as if it was explicitly
+unlocked. Thus fcntl locks provide a very robust locking scheme, if a process
+dies for any reason the database will not stay blocked until reboot. This
+robustness is very important for long-running services, a reboot is not an
+option for most users of tdb.
+
+Unfortunately, during stress testing, fcntl locks have turned out to be a major
+problem for performance. The particular problem that was seen happens when
+ctdb on a busy server does a recovery. A recovery means that ctdb has to
+freeze all tdb databases for some time, usually a few seconds. This is done
+with the allrecord lock. During the recovery phase on a busy server many smbd
+processes try to access the tdb file with blocking fcntl calls. The specific
+test in question easily reproduces 7,000 processes piling up waiting for
+1-byte fcntl locks. When ctdb is done with the recovery, it gives up the
+allrecord lock, covering the whole file range. All 7,000 processes waiting for
+1-byte fcntl locks are woken up, trying to acquire their lock. The special
+implementation of fcntl locks in Linux (up to 2013-02-12 at least) protects
+all fcntl lock operations with a single system-wide spinlock. If 7,000 process
+waiting for the allrecord lock to become released this leads to a thundering
+herd condition, all CPUs are spinning on that single spinlock.
+
+Functionally the kernel is fine, eventually the thundering herd slows down and
+every process correctly gets his share and locking range, but the performance
+of the system while the herd is active is worse than expected.
+
+The thundering herd is only the worst case scenario for fcntl lock use. The
+single spinlock for fcntl operations is also a performance penalty for normal
+operations. In the cluster case, every read and write SMB request has to do
+two fcntl calls to provide correct SMB mandatory locks. The single spinlock
+is one source of serialization for the SMB read/write requests, limiting the
+parallelism that can be achieved in a multi-core system.
+
+While trying to tune his servers, Ira Cooper, Samba Team member, found fcntl
+locks to be a problem on Solaris as well. Ira pointed out that there is a
+potential alternative locking mechanism that might be more scalable: Process
+shared robust mutexes, as defined by Posix 2008 for example via
+
+http://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_mutexattr_setpshared.html
+http://pubs.opengroup.org/onlinepubs/9699919799/functions/pthread_mutexattr_setrobust.html
+
+Pthread mutexes provide one of the core mechanisms in posix threads to protect
+in-process data structures from concurrent access by multiple threads. In the
+Linux implementation, a pthread_mutex_t is represented by a data structure in
+user space that requires no kernel calls in the uncontended case for locking
+and unlocking. Locking and unlocking in the uncontended case is implemented
+purely in user space with atomic CPU instructions and thus are very fast.
+
+The setpshared functions indicate to the kernel that the mutex is about to be
+shared between processes in a common shared memory area.
+
+The process shared posix mutexes have the potential to replace fcntl locking
+to coordinate mmap access for tdbs. However, they are missing the criticial
+auto-cleanup property that fcntl provides when a process dies. A process that
+dies hard while holding a shared mutex has no chance to clean up the protected
+data structures and unlock the shared mutex. Thus with a pure process shared
+mutex the mutex will remain locked forever until the data structures are
+re-initialized from scratch.
+
+With the robust mutexes defined by Posix the process shared mutexes have been
+extended with a limited auto-cleanup property. If a mutex has been declared
+robust, when a process exits while holding that mutex, the next process trying
+to lock the mutex will get the special error message EOWNERDEAD. This informs
+the caller that the data structures the mutex protects are potentially corrupt
+and need to be cleaned up.
+
+The error message EOWNERDEAD when trying to lock a mutex is an extension over
+the fcntl functionality. A process that does a blocking fcntl lock call is not
+informed about whether the lock was explicitly freed by a process still alive
+or due to an unplanned process exit. At the time of this writing (February
+2013), at least Linux and OpenSolaris also implement the robustness feature of
+process-shared mutexes.
+
+Converting the tdb locking mechanism from fcntl to mutexes has to take care of
+both types of locks that are used on tdb files.
+
+The easy part is to use mutexes to replace the 1-byte linked list locks
+covering the individual hashes. Those can be represented by a mutex each.
+
+Covering the allrecord lock is more difficult. The allrecord lock uses a fcntl
+lock spanning all hash list locks simultaneously. This basic functionality is
+not easily possible with mutexes. A mutex carries 1 bit of information, a
+fcntl lock can carry an arbitrary amount of information.
+
+In order to support the allrecord lock, we have an allrecord_lock variable
+protected by an allrecord_mutex. The coordination between the allrecord lock
+and the chainlocks works like this:
+
+- Getting a chain lock works like this:
+
+  1. get chain mutex
+  2. return success if allrecord_lock is F_UNLCK (not locked)
+  3. return success if allrecord_lock is F_RDLCK (locked readonly)
+     and we only need a read lock.
+  4. release chain mutex
+  5. wait for allrecord_mutex
+  6. unlock allrecord_mutex
+  7. goto 1.
+
+- Getting the allrecord lock:
+
+  1. get the allrecord mutex
+  2. return error if allrecord_lock is not F_UNLCK (it's locked)
+  3. set allrecord_lock to the desired value.
+  4. in a loop: lock(blocking) / unlock each chain mutex.
+  5. return success.
+
+- allrecord lock upgrade:
+
+  1. check we already have the allrecord lock with F_RDLCK.
+  3. set allrecord_lock to F_WRLCK
+  4. in a loop: lock(blocking) / unlock each chain mutex.
+  5. return success.

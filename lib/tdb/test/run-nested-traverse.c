@@ -11,6 +11,7 @@
 #include "../common/open.c"
 #include "../common/check.c"
 #include "../common/hash.c"
+#include "../common/mutex.c"
 #include "tap-interface.h"
 #undef fcntl
 #include <stdlib.h>

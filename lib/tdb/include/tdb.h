@@ -80,6 +80,9 @@ extern "C" {
 #define TDB_ALLOW_NESTING 512 /** Allow transactions to nest */
 #define TDB_DISALLOW_NESTING 1024 /** Disallow transactions to nest */
 #define TDB_INCOMPATIBLE_HASH 2048 /** Better hashing: can't be opened by tdb < 1.2.6. */
+#define TDB_MUTEX_LOCKING 4096 /** optimized locking using robust mutexes if supported,
+                                   only with tdb >= 1.3.0 and TDB_CLEAR_IF_FIRST
+                                   after checking tdb_runtime_check_for_robust_mutexes() */
 
 /** The tdb error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
@@ -143,6 +146,11 @@ struct tdb_logging_context {
  *                                        default 5.\n
  *                         TDB_ALLOW_NESTING - Allow transactions to nest.\n
  *                         TDB_DISALLOW_NESTING - Disallow transactions to nest.\n
+ *                         TDB_INCOMPATIBLE_HASH - Better hashing: can't be opened by tdb < 1.2.6.\n
+ *                         TDB_MUTEX_LOCKING - Optimized locking using robust mutexes if supported,
+ *                                             can't be opened by tdb < 1.3.0.
+ *                                             Only valid in combination with TDB_CLEAR_IF_FIRST
+ *                                             after checking tdb_runtime_check_for_robust_mutexes()\n
  *
  * @param[in]  open_flags Flags for the open(2) function.
  *
@@ -179,6 +187,11 @@ struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
  *                                        default 5.\n
  *                         TDB_ALLOW_NESTING - Allow transactions to nest.\n
  *                         TDB_DISALLOW_NESTING - Disallow transactions to nest.\n
+ *                         TDB_INCOMPATIBLE_HASH - Better hashing: can't be opened by tdb < 1.2.6.\n
+ *                         TDB_MUTEX_LOCKING - Optimized locking using robust mutexes if supported,
+ *                                             can't be opened by tdb < 1.3.0.
+ *                                             Only valid in combination with TDB_CLEAR_IF_FIRST
+ *                                             after checking tdb_runtime_check_for_robust_mutexes()\n
  *
  * @param[in]  open_flags Flags for the open(2) function.
  *
@@ -841,6 +854,27 @@ int tdb_check(struct tdb_context *tdb,
 int tdb_rescue(struct tdb_context *tdb,
 	       void (*walk) (TDB_DATA key, TDB_DATA data, void *private_data),
 	       void *private_data);
+
+/**
+ * @brief Check if support for TDB_MUTEX_LOCKING is available at runtime.
+ *
+ * On some systems the API for pthread_mutexattr_setrobust() is not available.
+ * On other systems there are some bugs in the interaction between glibc and
+ * the linux kernel.
+ *
+ * This function provides a runtime check if robust mutexes are really
+ * available.
+ *
+ * This needs to be called and return true before TDB_MUTEX_LOCKING
+ * can be used at runtime.
+ *
+ * @note This calls fork(), but the SIGCHILD handling should be transparent.
+ *
+ * @return              true if supported, false otherwise.
+ *
+ * @see TDB_MUTEX_LOCKING
+ */
+bool tdb_runtime_check_for_robust_mutexes(void);
 
 /* @} ******************************************************************/
 

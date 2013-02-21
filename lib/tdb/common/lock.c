@@ -38,6 +38,15 @@ static int fcntl_lock(struct tdb_context *tdb,
 	struct flock fl;
 	int cmd;
 
+#ifdef USE_TDB_MUTEX_LOCKING
+	{
+		int ret;
+		if (tdb_mutex_lock(tdb, rw, off, len, waitflag, &ret)) {
+			return ret;
+		}
+	}
+#endif
+
 	fl.l_type = rw;
 	fl.l_whence = SEEK_SET;
 	fl.l_start = off;
@@ -108,6 +117,15 @@ static int fcntl_unlock(struct tdb_context *tdb, int rw, off_t off, off_t len)
 	}
 
 	fclose(locks);
+#endif
+
+#ifdef USE_TDB_MUTEX_LOCKING
+	{
+		int ret;
+		if (tdb_mutex_unlock(tdb, rw, off, len, &ret)) {
+			return ret;
+		}
+	}
 #endif
 
 	fl.l_type = F_UNLCK;
@@ -248,13 +266,27 @@ int tdb_allrecord_upgrade(struct tdb_context *tdb)
 		return -1;
 	}
 
-	ret = tdb_brlock_retry(tdb, F_WRLCK, FREELIST_TOP, 0,
-			       TDB_LOCK_WAIT|TDB_LOCK_PROBE);
+	if (tdb_have_mutexes(tdb)) {
+		ret = tdb_mutex_allrecord_upgrade(tdb);
+		if (ret == -1) {
+			goto fail;
+		}
+		ret = tdb_brlock_retry(tdb, F_WRLCK, lock_offset(tdb->hash_size),
+				       0, TDB_LOCK_WAIT|TDB_LOCK_PROBE);
+		if (ret == -1) {
+			tdb_mutex_allrecord_downgrade(tdb);
+		}
+	} else {
+		ret = tdb_brlock_retry(tdb, F_WRLCK, FREELIST_TOP, 0,
+				       TDB_LOCK_WAIT|TDB_LOCK_PROBE);
+	}
+
 	if (ret == 0) {
 		tdb->allrecord_lock.ltype = F_WRLCK;
 		tdb->allrecord_lock.off = 0;
 		return 0;
 	}
+fail:
 	TDB_LOG((tdb, TDB_DEBUG_TRACE,"tdb_allrecord_upgrade failed\n"));
 	return -1;
 }
@@ -593,6 +625,8 @@ static int tdb_chainlock_gradual(struct tdb_context *tdb,
 int tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
 		       enum tdb_lock_flags flags, bool upgradable)
 {
+	int ret;
+
 	switch (tdb_allrecord_check(tdb, ltype, flags, upgradable)) {
 	case -1:
 		return -1;
@@ -607,16 +641,27 @@ int tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
 	 *
 	 * It is (1) which cause the starvation problem, so we're only
 	 * gradual for that. */
-	if (tdb_chainlock_gradual(tdb, ltype, flags, FREELIST_TOP,
-				  tdb->hash_size * 4) == -1) {
+
+	if (tdb_have_mutexes(tdb)) {
+		ret = tdb_mutex_allrecord_lock(tdb, ltype, flags);
+	} else {
+		ret = tdb_chainlock_gradual(tdb, ltype, flags, FREELIST_TOP,
+					    tdb->hash_size * 4);
+	}
+
+	if (ret == -1) {
 		return -1;
 	}
 
 	/* Grab individual record locks. */
 	if (tdb_brlock(tdb, ltype, lock_offset(tdb->hash_size), 0,
 		       flags) == -1) {
-		tdb_brunlock(tdb, ltype, FREELIST_TOP,
-			     tdb->hash_size * 4);
+		if (tdb_have_mutexes(tdb)) {
+			tdb_mutex_allrecord_unlock(tdb);
+		} else {
+			tdb_brunlock(tdb, ltype, FREELIST_TOP,
+				     tdb->hash_size * 4);
+		}
 		return -1;
 	}
 
@@ -672,9 +717,25 @@ int tdb_allrecord_unlock(struct tdb_context *tdb, int ltype, bool mark_lock)
 		return 0;
 	}
 
-	if (!mark_lock && tdb_brunlock(tdb, ltype, FREELIST_TOP, 0)) {
-		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlockall failed (%s)\n", strerror(errno)));
-		return -1;
+	if (!mark_lock) {
+		int ret;
+
+		if (tdb_have_mutexes(tdb)) {
+			ret = tdb_mutex_allrecord_unlock(tdb);
+			if (ret == 0) {
+				ret = tdb_brunlock(tdb, ltype,
+						   lock_offset(tdb->hash_size),
+						   0);
+			}
+		} else {
+			ret = tdb_brunlock(tdb, ltype, FREELIST_TOP, 0);
+		}
+
+		if (ret != 0) {
+			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_unlockall failed "
+				 "(%s)\n", strerror(errno)));
+			return -1;
+		}
 	}
 
 	tdb->allrecord_lock.count = 0;

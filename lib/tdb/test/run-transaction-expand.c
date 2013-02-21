@@ -37,6 +37,7 @@ static inline int fake_fdatasync(int fd)
 #include "../common/open.c"
 #include "../common/check.c"
 #include "../common/hash.c"
+#include "../common/mutex.c"
 #include "tap-interface.h"
 #include <stdlib.h>
 #include "logging.h"

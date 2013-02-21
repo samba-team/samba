@@ -723,6 +723,15 @@ _PUBLIC_ void tdb_remove_flags(struct tdb_context *tdb, unsigned flags)
 		return;
 	}
 
+	if ((flags & TDB_NOLOCK) &&
+	    (tdb->feature_flags & TDB_FEATURE_FLAG_MUTEX) &&
+	    (tdb->mutexes == NULL)) {
+		tdb->ecode = TDB_ERR_LOCK;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_remove_flags: "
+			 "Can not remove NOLOCK flag on mutexed databases"));
+		return;
+	}
+
 	if (flags & TDB_ALLOW_NESTING) {
 		tdb->flags |= TDB_DISALLOW_NESTING;
 	}

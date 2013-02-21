@@ -29,7 +29,8 @@
 #include "tdb_private.h"
 
 /*
- * tdb->hdr_ofs is 0 for now.
+ * We prepend the mutex area, so fixup offsets. See mutex.c for details.
+ * tdb->hdr_ofs is 0 or header.mutex_size.
  *
  * Note: that we only have the 4GB limit of tdb_off_t for
  * tdb->map_size. The file size on disk can be 4GB + tdb->hdr_ofs!

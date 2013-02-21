@@ -10,6 +10,7 @@
 #include "../common/check.c"
 #include "../common/hash.c"
 #include "../common/rescue.c"
+#include "../common/mutex.c"
 #include "tap-interface.h"
 #include <stdlib.h>
 #include "logging.h"

@@ -20,6 +20,7 @@ static int ftruncate_check(int fd, off_t length);
 #include "../common/open.c"
 #include "../common/check.c"
 #include "../common/hash.c"
+#include "../common/mutex.c"
 #include "tap-interface.h"
 #include <stdlib.h>
 #include <stdbool.h>
