@@ -28,6 +28,70 @@
 
 #include "tdb_private.h"
 
+/*
+ * tdb->hdr_ofs is 0 for now.
+ *
+ * Note: that we only have the 4GB limit of tdb_off_t for
+ * tdb->map_size. The file size on disk can be 4GB + tdb->hdr_ofs!
+ */
+
+static bool tdb_adjust_offset(struct tdb_context *tdb, off_t *off)
+{
+	off_t tmp = tdb->hdr_ofs + *off;
+
+	if ((tmp < tdb->hdr_ofs) || (tmp < *off)) {
+		errno = EIO;
+		return false;
+	}
+
+	*off = tmp;
+	return true;
+}
+
+static ssize_t tdb_pwrite(struct tdb_context *tdb, const void *buf,
+			  size_t count, off_t offset)
+{
+	if (!tdb_adjust_offset(tdb, &offset)) {
+		return -1;
+	}
+	return pwrite(tdb->fd, buf, count, offset);
+}
+
+static ssize_t tdb_pread(struct tdb_context *tdb, void *buf,
+			 size_t count, off_t offset)
+{
+	if (!tdb_adjust_offset(tdb, &offset)) {
+		return -1;
+	}
+	return pread(tdb->fd, buf, count, offset);
+}
+
+static int tdb_ftruncate(struct tdb_context *tdb, off_t length)
+{
+	if (!tdb_adjust_offset(tdb, &length)) {
+		return -1;
+	}
+	return ftruncate(tdb->fd, length);
+}
+
+static int tdb_fstat(struct tdb_context *tdb, struct stat *buf)
+{
+	int ret;
+
+	ret = fstat(tdb->fd, buf);
+	if (ret == -1) {
+		return -1;
+	}
+
+	if (buf->st_size < tdb->hdr_ofs) {
+		errno = EIO;
+		return -1;
+	}
+	buf->st_size -= tdb->hdr_ofs;
+
+	return ret;
+}
+
 /* check for an out of bounds access - if it is out of bounds then
    see if the database has been expanded by someone else and expand
    if necessary
@@ -58,7 +122,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 		return -1;
 	}
 
-	if (fstat(tdb->fd, &st) == -1) {
+	if (tdb_fstat(tdb, &st) == -1) {
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
@@ -122,16 +186,18 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 #else
-		ssize_t written = pwrite(tdb->fd, buf, len, off);
+		ssize_t written;
+
+		written = tdb_pwrite(tdb, buf, len, off);
+
 		if ((written != (ssize_t)len) && (written != -1)) {
 			/* try once more */
 			tdb->ecode = TDB_ERR_IO;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_write: wrote only "
 				 "%zi of %u bytes at %u, trying once more\n",
 				 written, len, off));
-			written = pwrite(tdb->fd, (const char *)buf+written,
-					 len-written,
-					 off+written);
+			written = tdb_pwrite(tdb, (const char *)buf+written,
+					     len-written, off+written);
 		}
 		if (written == -1) {
 			/* Ensure ecode is set for log fn. */
@@ -176,7 +242,9 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 #else
-		ssize_t ret = pread(tdb->fd, buf, len, off);
+		ssize_t ret;
+
+		ret = tdb_pread(tdb, buf, len, off);
 		if (ret != (ssize_t)len) {
 			/* Ensure ecode is set for log fn. */
 			tdb->ecode = TDB_ERR_IO;
@@ -258,7 +326,8 @@ int tdb_mmap(struct tdb_context *tdb)
 	if (should_mmap(tdb)) {
 		tdb->map_ptr = mmap(NULL, tdb->map_size,
 				    PROT_READ|(tdb->read_only? 0:PROT_WRITE),
-				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
+				    MAP_SHARED|MAP_FILE, tdb->fd,
+				    tdb->hdr_ofs);
 
 		/*
 		 * NB. When mmap fails it returns MAP_FAILED *NOT* NULL !!!!
@@ -303,12 +372,12 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		return -1;
 	}
 
-	if (ftruncate(tdb->fd, new_size) == -1) {
+	if (tdb_ftruncate(tdb, new_size) == -1) {
 		char b = 0;
-		ssize_t written = pwrite(tdb->fd,  &b, 1, new_size - 1);
+		ssize_t written = tdb_pwrite(tdb, &b, 1, new_size - 1);
 		if (written == 0) {
 			/* try once more, potentially revealing errno */
-			written = pwrite(tdb->fd,  &b, 1, new_size - 1);
+			written = tdb_pwrite(tdb, &b, 1, new_size - 1);
 		}
 		if (written == 0) {
 			/* again - give up, guessing errno */
@@ -328,10 +397,10 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 	memset(buf, TDB_PAD_BYTE, sizeof(buf));
 	while (addition) {
 		size_t n = addition>sizeof(buf)?sizeof(buf):addition;
-		ssize_t written = pwrite(tdb->fd, buf, n, size);
+		ssize_t written = tdb_pwrite(tdb, buf, n, size);
 		if (written == 0) {
 			/* prevent infinite loops: try _once_ more */
-			written = pwrite(tdb->fd, buf, n, size);
+			written = tdb_pwrite(tdb, buf, n, size);
 		}
 		if (written == 0) {
 			/* give up, trying to provide a useful errno */
@@ -437,6 +506,14 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	/* must know about any previous expansions by another process */
 	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
 
+	/*
+	 * Note: that we don't care about tdb->hdr_ofs != 0 here
+	 *
+	 * The 4GB limitation is just related to tdb->map_size
+	 * and the offset calculation in the records.
+	 *
+	 * The file on disk can be up to 4GB + tdb->hdr_ofs
+	 */
 	size = tdb_expand_adjust(tdb->map_size, size, tdb->page_size);
 
 	if (!tdb_add_off_t(tdb->map_size, size, &new_size)) {

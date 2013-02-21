@@ -18,7 +18,8 @@
 #include "tdb_private.h"
 
 #define SUMMARY_FORMAT \
-	"Size of file/data: %u/%zu\n" \
+	"Size of file/data: %llu/%zu\n" \
+	"Header offset/logical size: %zu/%zu\n" \
 	"Number of records: %zu\n" \
 	"Incompatible hash: %s\n" \
 	"Active/supported feature flags: 0x%08x/0x%08x\n" \
@@ -88,6 +89,7 @@ static size_t get_hash_length(struct tdb_context *tdb, unsigned int i)
 
 _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 {
+	off_t file_size;
 	tdb_off_t off, rec_off;
 	struct tally freet, keys, data, dead, extra, hashval, uncoal;
 	struct tdb_record rec;
@@ -165,9 +167,11 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 	for (off = 0; off < tdb->hash_size; off++)
 		tally_add(&hashval, get_hash_length(tdb, off));
 
+	file_size = tdb->hdr_ofs + tdb->map_size;
 
 	len = asprintf(&ret, SUMMARY_FORMAT,
-		 tdb->map_size, keys.total+data.total,
+		 (unsigned long long)file_size, keys.total+data.total,
+		 (size_t)tdb->hdr_ofs, (size_t)tdb->map_size,
 		 keys.num,
 		 (tdb->hash_fn == tdb_jenkins_hash)?"yes":"no",
 		 (unsigned)tdb->feature_flags, TDB_SUPPORTED_FEATURE_FLAGS,
@@ -182,16 +186,16 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 		 hashval.min, tally_mean(&hashval), hashval.max,
 		 uncoal.total,
 		 uncoal.min, tally_mean(&uncoal), uncoal.max,
-		 keys.total * 100.0 / tdb->map_size,
-		 data.total * 100.0 / tdb->map_size,
-		 extra.total * 100.0 / tdb->map_size,
-		 freet.total * 100.0 / tdb->map_size,
-		 dead.total * 100.0 / tdb->map_size,
+		 keys.total * 100.0 / file_size,
+		 data.total * 100.0 / file_size,
+		 extra.total * 100.0 / file_size,
+		 freet.total * 100.0 / file_size,
+		 dead.total * 100.0 / file_size,
 		 (keys.num + freet.num + dead.num)
 		 * (sizeof(struct tdb_record) + sizeof(uint32_t))
-		 * 100.0 / tdb->map_size,
+		 * 100.0 / file_size,
 		 tdb->hash_size * sizeof(tdb_off_t)
-		 * 100.0 / tdb->map_size);
+		 * 100.0 / file_size);
 	if (len == -1) {
 		goto unlock;
 	}

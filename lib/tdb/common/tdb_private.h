@@ -202,6 +202,9 @@ struct tdb_context {
 	int num_lockrecs;
 	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
 	int lockrecs_array_length;
+
+	tdb_off_t hdr_ofs; /* this is 0 for now */
+
 	enum TDB_ERROR ecode; /* error code for last tdb error */
 	uint32_t hash_size;
 	uint32_t feature_flags;

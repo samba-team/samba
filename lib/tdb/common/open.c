@@ -194,6 +194,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	unsigned v;
 	const char *hash_alg;
 	uint32_t magic1, magic2;
+	int ret;
 
 	ZERO_STRUCT(header);
 
@@ -340,7 +341,6 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
 	    (!tdb->read_only) &&
 	    (locked = (tdb_nest_lock(tdb, ACTIVE_LOCK, F_WRLCK, TDB_LOCK_NOWAIT|TDB_LOCK_PROBE) == 0))) {
-		int ret;
 		ret = tdb_brlock(tdb, F_WRLCK, FREELIST_TOP, 0,
 				 TDB_LOCK_WAIT);
 		if (ret == -1) {
@@ -400,8 +400,18 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		tdb->flags |= TDB_CONVERT;
 		tdb_convert(&header, sizeof(header));
 	}
-	if (fstat(tdb->fd, &st) == -1)
+
+	/*
+	 * We only use st.st_dev and st.st_ino from the raw fstat()
+	 * call, everything else needs to use tdb_fstat() in order
+	 * to skip tdb->hdr_ofs!
+	 */
+	if (fstat(tdb->fd, &st) == -1) {
 		goto fail;
+	}
+	tdb->device = st.st_dev;
+	tdb->inode = st.st_ino;
+	ZERO_STRUCT(st);
 
 	if (header.rwlocks != 0 &&
 	    header.rwlocks != TDB_FEATURE_FLAG_MAGIC &&
@@ -446,28 +456,27 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	}
 
 	/* Is it already in the open list?  If so, fail. */
-	if (tdb_already_open(st.st_dev, st.st_ino)) {
+	if (tdb_already_open(tdb->device, tdb->inode)) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
 			 "%s (%d,%d) is already open in this process\n",
-			 name, (int)st.st_dev, (int)st.st_ino));
+			 name, (int)tdb->device, (int)tdb->inode));
 		errno = EBUSY;
 		goto fail;
 	}
 
-	/* Beware truncation! */
-	tdb->map_size = st.st_size;
-	if (tdb->map_size != st.st_size) {
-		/* Ensure ecode is set for log fn. */
-		tdb->ecode = TDB_ERR_IO;
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
-			 "len %llu too large!\n", (long long)st.st_size));
+	/*
+	 * We had tdb_mmap(tdb) here before,
+	 * but we need to use tdb_fstat(),
+	 * which is triggered from tdb_oob() before calling tdb_mmap().
+	 * As this skips tdb->hdr_ofs.
+	 */
+	tdb->map_size = 0;
+	ret = tdb->methods->tdb_oob(tdb, 0, 1, 0);
+	if (ret == -1) {
 		errno = EIO;
 		goto fail;
 	}
 
-	tdb->device = st.st_dev;
-	tdb->inode = st.st_ino;
-	tdb_mmap(tdb);
 	if (locked) {
 		if (tdb_nest_unlock(tdb, ACTIVE_LOCK, F_WRLCK, false) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: "
@@ -649,6 +658,11 @@ static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: open failed (%s)\n", strerror(errno)));
 		goto fail;
 	}
+	/*
+	 * We only use st.st_dev and st.st_ino from the raw fstat()
+	 * call, everything else needs to use tdb_fstat() in order
+	 * to skip tdb->hdr_ofs!
+	 */
 	if (fstat(tdb->fd, &st) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: fstat failed (%s)\n", strerror(errno)));
 		goto fail;
@@ -657,7 +671,16 @@ static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_reopen: file dev/inode has changed!\n"));
 		goto fail;
 	}
-	if (tdb_mmap(tdb) != 0) {
+	ZERO_STRUCT(st);
+
+	/*
+	 * We had tdb_mmap(tdb) here before,
+	 * but we need to use tdb_fstat(),
+	 * which is triggered from tdb_oob() before calling tdb_mmap().
+	 * As this skips tdb->hdr_ofs.
+	 */
+	tdb->map_size = 0;
+	if (tdb->methods->tdb_oob(tdb, 0, 1, 0) != 0) {
 		goto fail;
 	}
 #endif /* fake pread or pwrite */
