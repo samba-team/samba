@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="idmap_rfc2307.8">
+
+<refmeta>
+	<refentrytitle>idmap_rfc2307</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+	<refname>idmap_rfc2307</refname>
+	<refpurpose>Samba's idmap_rfc2307 Backend for Winbind</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<title>DESCRIPTION</title>
+
+	<para>The idmap_rfc2307 plugin provides a way for winbind to
+	read id mappings from records in an LDAP server as defined in
+	RFC 2307. The LDAP server can be stand-alone or the LDAP
+	server provided by the AD server. An AD server is always
+	required to provide the mapping between name and SID, and the
+	LDAP server is queried for the mapping between name and
+	uid/gid. This module implements only the &quot;idmap&quot;
+	API, and is READONLY.</para>
+
+	<para>Mappings must be provided in advance by the
+	administrator by creating the user accounts in the Active
+	Directory server and the posixAccount and posixGroup objects
+	in the LDAP server. The names in the Active Directory server
+	and in the LDAP server have to be the same.</para>
+
+	<para>This id mapping approach allows the reuse of existing
+	LDAP authentication servers that store records in the RFC 2307
+	format.</para>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>IDMAP OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+			<term>range = low - high</term>
+			<listitem><para> Defines the available
+			matching UID and GID range for which the
+			backend is authoritative. Note that the range
+			acts as a filter. If specified any UID or GID
+			stored in AD that fall outside the range is
+			ignored and the corresponding map is
+			discarded. It is intended as a way to avoid
+			accidental UID/GID overlaps between local and
+			remotely defined IDs.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>ldap_server = &lt;ad | stand-alone &gt;</term>
+			<listitem><para>Defines the type of LDAP
+			server to use. This can either be the LDAP
+			server provided by the Active Directory server
+			(ad) or a stand-alone LDAP
+			server.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>bind_path_user</term>
+			<listitem><para>Specifies the bind path where
+			user objects can be found in the LDAP
+			server.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>bind_path_group</term>
+			<listitem><para>Specifies the bind path where
+			group objects can be found in the LDAP
+			server.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>user_cn = &lt;yes | no&gt;</term>
+			<listitem><para>Query cn attribute instead of
+			uid attribute for the user name in LDAP. This
+			option is not required, the default is
+			no.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>cn_realm = &lt;yes | no&gt;</term>
+			<listitem><para>Append @realm to cn for groups
+			(and users if user_cn is set) in
+			LDAP. This option is not required, the default
+			is no.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>ldap_domain</term>
+			<listitem><para>When using the LDAP server in
+			the Active Directory server, this allows to
+			specify the domain where to access the Active
+			Directory server. This allows using trust
+			relationships while keeping all RFC 2307
+			records in one place. This parameter is
+			optional, the default is to access the AD
+			server in the current domain to query LDAP
+			records.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>ldap_url</term>
+			<listitem><para>When using a stand-alone LDAP
+			server, this parameter specifies the ldap URL
+			for accessing the LDAP
+			server.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>ldap_user_dn</term>
+			<listitem><para>Defines the user DN to be used
+			for authentication.  The secret for
+			authenticating this user should be stored with
+			net idmap secret (see
+			<citerefentry><refentrytitle>net</refentrytitle>
+			<manvolnum>8</manvolnum></citerefentry>). If
+			absent, an anonymous bind will be
+			performed.</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>ldap_realm</term>
+			<listitem><para>Defines the realm to use in
+			the user and group names. This is only
+			required when using cn_realm together with a
+			stand-alone ldap server.</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>The following example shows how to retrieve id mappings
+	from a stand-alone LDAP server.  This example also shows how
+	to leave a small non conflicting range for local id allocation
+	that may be used in internal backends like BUILTIN.</para>
+
+	<programlisting>
+	[global]
+	idmap config * : backend = tdb
+	idmap config * : range = 1000000-1999999
+
+	idmap config DOMAIN : backend = rfc2307
+	idmap config DOMAIN : range = 2000000-2999999
+	idmap config DOMAIN : ldap_server = stand-alone
+	idmap config DOMAIN : ldap_url = ldap://ldap1.example.com
+	idmap config DOMAIN : ldap_user_dn = cn=ldapmanager,dc=example,dc=com
+	idmap config DOMAIN : bind_path_user = ou=People,dc=example,dc=com
+	idmap config DOMAIN : bind_path_group = ou=Group,dc=example,dc=com
+	</programlisting>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>
+	The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.
+	</para>
+</refsect1>
+
+</refentry>
