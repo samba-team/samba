@@ -415,7 +415,7 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	in.data = (uint8_t *)PyString_AsString(py_in);
 	in.length = PyString_Size(py_in);
 
-	ev = tevent_context_init(mem_ctx);
+	ev = samba_tevent_context_init(mem_ctx);
 	if (ev == NULL) {
 		PyErr_NoMemory();
 		PyObject_Del(self);
