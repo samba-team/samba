@@ -21,40 +21,6 @@
 #include "lib/events/events.h"
 
 /*
-  this is used to catch debug messages from events
-*/
-static void ev_wrap_debug(void *context, enum tevent_debug_level level,
-			  const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
-
-static void ev_wrap_debug(void *context, enum tevent_debug_level level,
-			  const char *fmt, va_list ap)
-{
-	int samba_level = -1;
-	char *s = NULL;
-	switch (level) {
-	case TEVENT_DEBUG_FATAL:
-		samba_level = 0;
-		break;
-	case TEVENT_DEBUG_ERROR:
-		samba_level = 1;
-		break;
-	case TEVENT_DEBUG_WARNING:
-		samba_level = 2;
-		break;
-	case TEVENT_DEBUG_TRACE:
-		samba_level = 50;
-		break;
-
-	};
-	if (CHECK_DEBUGLVL(samba_level)) {
-		vasprintf(&s, fmt, ap);
-		if (!s) return;
-		DEBUG(samba_level, ("tevent: %s", s));
-		free(s);
-	}
-}
-
-/*
   create a event_context structure. This must be the first events
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
@@ -67,7 +33,7 @@ struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 
 	ev = tevent_context_init_byname(mem_ctx, NULL);
 	if (ev) {
-		tevent_set_debug(ev, ev_wrap_debug, NULL);
+		samba_tevent_set_debug(ev, "s4_tevent");
 		tevent_loop_allow_nesting(ev);
 	}
 	return ev;
