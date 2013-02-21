@@ -56,58 +56,17 @@ struct idmap_ad_context {
 /************************************************************************
  ***********************************************************************/
 
-static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
+static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
 {
-	struct idmap_ad_context *ctx;
-	char *ldap_server, *realm, *password;
-	struct winbindd_domain *wb_dom;
+	ADS_STATUS status;
+	struct idmap_ad_context * ctx;
 
 	DEBUG(10, ("ad_idmap_cached_connection: called for domain '%s'\n",
 		   dom->name));
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
 
-	ads_cached_connection_reuse(&ctx->ads);
-	if (ctx->ads != NULL) {
-		return ADS_SUCCESS;
-	}
-
-	/*
-	 * At this point we only have the NetBIOS domain name.
-	 * Check if we can get server nam and realm from SAF cache
-	 * and the domain list.
-	 */
-	ldap_server = saf_fetch(dom->name);
-	DEBUG(10, ("ldap_server from saf cache: '%s'\n", ldap_server?ldap_server:""));
-
-	wb_dom = find_domain_from_name_noinit(dom->name);
-	if (wb_dom == NULL) {
-		DEBUG(10, ("find_domain_from_name_noinit did not find domain '%s'\n",
-			   dom->name));
-		realm = NULL;
-	} else {
-		DEBUG(10, ("find_domain_from_name_noinit found realm '%s' for "
-			  " domain '%s'\n", wb_dom->alt_name, dom->name));
-		realm = wb_dom->alt_name;
-	}
-
-	/* the machine acct password might have change - fetch it every time */
-	password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	realm = SMB_STRDUP(lp_realm());
-
-	return ads_cached_connection_connect(&ctx->ads, realm, dom->name,
-					     ldap_server, password, realm, 0);
-}
-
-/************************************************************************
- ***********************************************************************/
-
-static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
-{
-	ADS_STATUS status;
-	struct idmap_ad_context * ctx;
-
-	status = ad_idmap_cached_connection_internal(dom);
+	status = ads_idmap_cached_connection(&ctx->ads, dom->name);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}

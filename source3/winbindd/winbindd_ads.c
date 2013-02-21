@@ -40,11 +40,13 @@
 
 extern struct winbindd_methods reconnect_methods;
 
+#define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
+
 /**
  * Check if cached connection can be reused. If the connection cannot
  * be reused the ADS_STRUCT is freed and the pointer is set to NULL.
  */
-void ads_cached_connection_reuse(ADS_STRUCT **adsp)
+static void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 {
 
 	ADS_STRUCT *ads = *adsp;
@@ -72,13 +74,13 @@ void ads_cached_connection_reuse(ADS_STRUCT **adsp)
 	}
 }
 
-ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
-					 const char *dom_name_alt,
-					 const char *dom_name,
-					 const char *ldap_server,
-					 char *password,
-					 char *realm,
-					 time_t renewable)
+static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
+						const char *dom_name_alt,
+						const char *dom_name,
+						const char *ldap_server,
+						char *password,
+						char *realm,
+						time_t renewable)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
@@ -129,6 +131,43 @@ ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	*adsp = ads;
 
 	return status;
+}
+
+ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name)
+{
+	char *ldap_server, *realm, *password;
+	struct winbindd_domain *wb_dom;
+
+	ads_cached_connection_reuse(adsp);
+	if (*adsp != NULL) {
+		return ADS_SUCCESS;
+	}
+
+	/*
+	 * At this point we only have the NetBIOS domain name.
+	 * Check if we can get server nam and realm from SAF cache
+	 * and the domain list.
+	 */
+	ldap_server = saf_fetch(dom_name);
+	DEBUG(10, ("ldap_server from saf cache: '%s'\n",
+		   ldap_server ? ldap_server : ""));
+
+	wb_dom = find_domain_from_name_noinit(dom_name);
+	if (wb_dom == NULL) {
+		DEBUG(10, ("could not find domain '%s'\n", dom_name));
+		realm = NULL;
+	} else {
+		DEBUG(10, ("find_domain_from_name_noinit found realm '%s' for "
+			  " domain '%s'\n", wb_dom->alt_name, dom_name));
+		realm = wb_dom->alt_name;
+	}
+
+	/* the machine acct password might have change - fetch it every time */
+	password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	realm = SMB_STRDUP(lp_realm());
+
+	return ads_cached_connection_connect(adsp, realm, dom_name, ldap_server,
+					     password, realm, 0);
 }
 
 /*
