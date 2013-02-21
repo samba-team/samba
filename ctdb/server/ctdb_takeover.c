@@ -2456,12 +2456,10 @@ ipreallocated:
 	 * IPs have moved.  Once upon a time this event only used to
 	 * update natwg.
 	 */
-	data.dptr  = discard_const("ipreallocated");
-	data.dsize = strlen((char *)data.dptr) + 1; 
 	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_RUN_EVENTSCRIPTS,
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_IPREALLOCATED,
 				      nodes, 0, TAKEOVER_TIMEOUT(),
-				      false, data,
+				      false, tdb_null,
 				      NULL, fail_callback,
 				      callback_data) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " failed to send control to run eventscripts with \"ipreallocated\"\n"));
