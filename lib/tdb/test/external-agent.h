@@ -13,6 +13,7 @@ enum operation {
 	CHECK,
 	NEEDS_RECOVERY,
 	CLOSE,
+	PING,
 };
 
 /* Do this before doing any tdb stuff.  Return handle, or -1. */

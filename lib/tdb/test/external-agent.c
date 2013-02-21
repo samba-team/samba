@@ -87,6 +87,9 @@ static enum agent_return do_operation(enum operation op, const char *name)
 		ret = tdb_close(tdb) == 0 ? SUCCESS : OTHER_FAILURE;
 		tdb = NULL;
 		break;
+	case PING:
+		ret = SUCCESS;
+		break;
 	default:
 		ret = OTHER_FAILURE;
 	}
@@ -207,6 +210,7 @@ const char *operation_name(enum operation op)
 	case CHECK: return "CHECK";
 	case NEEDS_RECOVERY: return "NEEDS_RECOVERY";
 	case CLOSE: return "CLOSE";
+	case PING: return "PING";
 	}
 	return "**INVALID**";
 }
