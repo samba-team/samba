@@ -288,7 +288,7 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 	session_info = NULL;
 
 	result = reg_open_hive(NULL, location, session_info, credentials,
-	                       tevent_context_init(NULL),
+	                       samba_tevent_context_init(NULL),
 	                       lp_ctx, &hive_key);
 	talloc_free(mem_ctx);
 	PyErr_WERROR_NOT_OK_RAISE(result);
