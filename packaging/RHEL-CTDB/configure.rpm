@@ -24,7 +24,7 @@ else
 	CC="gcc"
 fi
 
-shared_modules="idmap_rid,idmap_ad,idmap_tdb2"
+shared_modules="idmap_rid,idmap_ad,idmap_tdb2,idmap_rfc2307"
 
 if test "x$BUILD_GPFS" != "xno"; then
 	shared_modules="${shared_modules},vfs_gpfs,vfs_tsmsm"
