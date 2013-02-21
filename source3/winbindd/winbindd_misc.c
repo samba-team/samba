@@ -121,7 +121,7 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 			extra_data,
 			"%s\\%s\\%s\\%s\\%s\\%s\\%s\\%s\n",
 			d->domain_name,
-			d->dns_name ? d->dns_name : d->domain_name,
+			d->dns_name ? d->dns_name : "",
 			sid_string_talloc(state->mem_ctx, &d->sid),
 			get_trust_type_string(d),
 			trust_is_transitive(d) ? "Yes" : "No",
