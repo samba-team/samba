@@ -601,6 +601,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		 */
 		flags &= fde->flags;
 		if (flags != 0) {
+			DLIST_DEMOTE(ev->fd_events, fde, struct tevent_fd);
 			fde->handler(ev, fde, flags, fde->private_data);
 			return 0;
 		}
