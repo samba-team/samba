@@ -568,7 +568,6 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	case CTDB_EVENT_RECOVERED:
 	case CTDB_EVENT_TAKE_IP:
 	case CTDB_EVENT_RELEASE_IP:
-	case CTDB_EVENT_STOPPED:
 	case CTDB_EVENT_STATUS:
 		state->scripts->scripts[state->current].status = 0;
 		DEBUG(DEBUG_ERR,("Ignoring hung script for %s call %d\n", state->options, state->call));
@@ -666,7 +665,6 @@ static bool check_options(enum ctdb_eventscript_call call, const char *options)
 	case CTDB_EVENT_STARTUP:
 	case CTDB_EVENT_START_RECOVERY:
 	case CTDB_EVENT_RECOVERED:
-	case CTDB_EVENT_STOPPED:
 	case CTDB_EVENT_MONITOR:
 	case CTDB_EVENT_STATUS:
 	case CTDB_EVENT_SHUTDOWN:
@@ -717,7 +715,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			CTDB_EVENT_SHUTDOWN,
 			CTDB_EVENT_RELEASE_IP,
 			CTDB_EVENT_IPREALLOCATED,
-			CTDB_EVENT_STOPPED
 		};
 		int i;
 		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {

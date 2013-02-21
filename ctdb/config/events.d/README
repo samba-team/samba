@@ -146,12 +146,11 @@ recovered
 	service and also send out statd notifications to all registered 
 	clients.
 	
-stopped
-	This event is called when a node is STOPPED and can be used to
-	perform additional cleanup that is required.
-	Note that a stopped node is considered inactive, so it will not
-	be issuing the recovered event once the cluster has recovered.
-	See 91.lvs for a use of this event.
+ipreallocated
+
+	This event is triggered after releaseip and takeip events in a
+	takeover run.  It can be used to reconfigure services, update
+	routing and many other things.
 
 Additional note for takeip, releaseip, recovered:
 

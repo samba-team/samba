@@ -240,7 +240,7 @@ enum ctdb_eventscript_call {
 	CTDB_EVENT_RECOVERED,		/* CTDB recovery finished: no args. */
 	CTDB_EVENT_TAKE_IP,		/* IP taken: interface, IP address, netmask bits. */
 	CTDB_EVENT_RELEASE_IP,		/* IP released: interface, IP address, netmask bits. */
-	CTDB_EVENT_STOPPED,		/* This node is stopped: no args. */
+	CTDB_EVENT_STOPPED,		/* Deprecated, do not use. */
 	CTDB_EVENT_MONITOR,		/* Please check if service is healthy: no args. */
 	CTDB_EVENT_STATUS,		/* Report service status: no args. */
 	CTDB_EVENT_SHUTDOWN,		/* CTDB shutting down: no args. */

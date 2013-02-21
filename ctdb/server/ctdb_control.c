@@ -521,7 +521,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_STOP_NODE:
 		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_stop_node(ctdb, c, async_reply);
+		return ctdb_control_stop_node(ctdb);
 
 	case CTDB_CONTROL_CONTINUE_NODE:
 		CHECK_CONTROL_DATA_SIZE(0);

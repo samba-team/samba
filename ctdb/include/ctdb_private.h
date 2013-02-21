@@ -1415,7 +1415,7 @@ int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 int ctdb_log_event_script_output(struct ctdb_context *ctdb, char *str, uint16_t len);
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency);
 
-int32_t ctdb_control_stop_node(struct ctdb_context *ctdb, struct ctdb_req_control *c, bool *async_reply);
+int32_t ctdb_control_stop_node(struct ctdb_context *ctdb);
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
 void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
