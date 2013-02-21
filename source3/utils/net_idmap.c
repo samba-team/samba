@@ -634,9 +634,11 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	backend = talloc_strdup(ctx, lp_parm_const_string(-1, opt, "backend", "tdb"));
 	ALLOC_CHECK(backend);
 
-	if ( ( ! backend) || ( ! strequal(backend, "ldap"))) {
+	if ((!backend) || (!strequal(backend, "ldap") &&
+			   !strequal(backend, "rfc2307"))) {
 		d_fprintf(stderr,
-			  _("The only currently supported backend is LDAP\n"));
+			  _("The only currently supported backend are LDAP "
+			    "and rfc2307\n"));
 		talloc_free(ctx);
 		return -1;
 	}
