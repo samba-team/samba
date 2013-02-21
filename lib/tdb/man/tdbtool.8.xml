@@ -24,6 +24,7 @@
 
 	<cmdsynopsis>
 		<command>tdbtool</command>
+		<arg choice="opt">-l</arg>
 		<arg choice="plain">
 		<replaceable>TDBFILE</replaceable>
 		</arg>
@@ -47,6 +48,26 @@
 	provided on the command line.</para>
 
 </refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>-l</term>
+		<listitem><para>
+		This options disables any locking, by passing TDB_NOLOCK
+		to tdb_open_ex(). Only use this for database files which
+		are not used by any other process! And also only if it is otherwise not
+		possible to open the database, e.g. databases which were created with
+		mutex locking.
+		</para></listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
+
 
 
 <refsect1>

@@ -36,6 +36,7 @@ char *line;
 TDB_DATA iterate_kbuf;
 char cmdline[1024];
 static int disable_mmap;
+static int disable_lock;
 
 enum commands {
 	CMD_CREATE_TDB,
@@ -226,7 +227,10 @@ static void create_tdb(const char *tdbname)
 	log_ctx.log_fn = tdb_log;
 
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open_ex(tdbname, 0, TDB_CLEAR_IF_FIRST | (disable_mmap?TDB_NOMMAP:0),
+	tdb = tdb_open_ex(tdbname, 0,
+			  TDB_CLEAR_IF_FIRST |
+			  (disable_mmap?TDB_NOMMAP:0) |
+			  (disable_lock?TDB_NOLOCK:0),
 			  O_RDWR | O_CREAT | O_TRUNC, 0600, &log_ctx, NULL);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tdbname, strerror(errno));
@@ -239,7 +243,10 @@ static void open_tdb(const char *tdbname)
 	log_ctx.log_fn = tdb_log;
 
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open_ex(tdbname, 0, disable_mmap?TDB_NOMMAP:0, O_RDWR, 0600,
+	tdb = tdb_open_ex(tdbname, 0,
+			  (disable_mmap?TDB_NOMMAP:0) |
+			  (disable_lock?TDB_NOLOCK:0),
+			  O_RDWR, 0600,
 			  &log_ctx, NULL);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tdbname, strerror(errno));
@@ -735,6 +742,13 @@ int main(int argc, char *argv[])
 	arg1len = 0;
 	arg2 = NULL;
 	arg2len = 0;
+
+	if (argv[1] && (strcmp(argv[1], "-l") == 0)) {
+		disable_lock = 1;
+		argv[1] = argv[0];
+		argv += 1;
+		argc -= 1;
+	}
 
 	if (argv[1]) {
 		cmdname = "open";
