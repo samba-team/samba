@@ -30,7 +30,7 @@ static void samba_tevent_debug(void *context,
 			       va_list ap)
 {
 	int samba_level = -1;
-	char *s = NULL;
+
 	switch (level) {
 	case TEVENT_DEBUG_FATAL:
 		samba_level = 0;
@@ -47,10 +47,21 @@ static void samba_tevent_debug(void *context,
 	};
 
 	if (CHECK_DEBUGLVL(samba_level)) {
-		vasprintf(&s, fmt, ap);
-		if (!s) return;
-		DEBUG(samba_level, ("samba_tevent: %s", s));
-		free(s);
+		const char *name = (const char *)context;
+		char *message = NULL;
+		int ret;
+
+		ret = vasprintf(&message, fmt, ap);
+		if (ret == -1) {
+			return;
+		}
+
+		if (name == NULL) {
+			name = "samba_tevent";
+		}
+
+		DEBUG(samba_level, ("%s: %s", name, message));
+		free(message);
 	}
 }
 
