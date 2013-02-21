@@ -23,6 +23,8 @@
 #ifndef _WINBINDD_PROTO_H_
 #define _WINBINDD_PROTO_H_
 
+#include "ads.h"
+
 /* The following definitions come from winbindd/winbindd.c  */
 struct messaging_context *winbind_messaging_context(void);
 void request_error(struct winbindd_cli_state *state);
@@ -889,5 +891,9 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 				 struct winbindd_domain *domain,
 				 struct rpc_pipe_client **samr_pipe,
 				 struct policy_handle *samr_domain_hnd);
+
+/* The following definitions come from winbindd/winbindd_ads.c  */
+#define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
+void ads_cached_connection_reuse(ADS_STRUCT **ads);
 
 #endif /*  _WINBINDD_PROTO_H_  */

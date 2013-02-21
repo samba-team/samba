@@ -40,6 +40,38 @@
 
 extern struct winbindd_methods reconnect_methods;
 
+/**
+ * Check if cached connection can be reused. If the connection cannot
+ * be reused the ADS_STRUCT is freed and the pointer is set to NULL.
+ */
+void ads_cached_connection_reuse(ADS_STRUCT **adsp)
+{
+
+	ADS_STRUCT *ads = *adsp;
+
+	if (ads != NULL) {
+		time_t expire;
+		time_t now = time(NULL);
+
+		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
+
+		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time "
+			  "is now %d)\n", (uint32)expire - (uint32)now,
+			  (uint32) expire, (uint32) now));
+
+		if ( ads->config.realm && (expire > now)) {
+			return;
+		} else {
+			/* we own this ADS_STRUCT so make sure it goes away */
+			DEBUG(7,("Deleting expired krb5 credential cache\n"));
+			ads->is_mine = True;
+			ads_destroy( &ads );
+			ads_kdestroy(WINBIND_CCACHE_NAME);
+			*adsp = NULL;
+		}
+	}
+}
+
 /*
   return our ads connections structure for a domain. We keep the connection
   open to make things faster
@@ -52,30 +84,10 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 	struct sockaddr_storage dc_ss;
 
 	DEBUG(10,("ads_cached_connection\n"));
+	ads_cached_connection_reuse((ADS_STRUCT **)&domain->private_data);
 
 	if (domain->private_data) {
-
-		time_t expire;
-		time_t now = time(NULL);
-
-		/* check for a valid structure */
-		ads = (ADS_STRUCT *)domain->private_data;
-
-		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
-
-		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time is now %d)\n",
-			  (uint32)expire-(uint32)now, (uint32) expire, (uint32) now));
-
-		if ( ads->config.realm && (expire > now)) {
-			return ads;
-		} else {
-			/* we own this ADS_STRUCT so make sure it goes away */
-			DEBUG(7,("Deleting expired krb5 credential cache\n"));
-			ads->is_mine = True;
-			ads_destroy( &ads );
-			ads_kdestroy("MEMORY:winbind_ccache");
-			domain->private_data = NULL;
-		}
+		return (ADS_STRUCT *)domain->private_data;
 	}
 
 	ads = ads_init(domain->alt_name, domain->name, NULL);
@@ -1282,7 +1294,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 			ads = (ADS_STRUCT *)domain->private_data;
 			ads->is_mine = True;
 			ads_destroy(&ads);
-			ads_kdestroy("MEMORY:winbind_ccache");
+			ads_kdestroy(WINBIND_CCACHE_NAME);
 			domain->private_data = NULL;
 		}
 	}

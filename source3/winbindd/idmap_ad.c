@@ -39,8 +39,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
-#define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
-
 #define CHECK_ALLOC_DONE(mem) do { \
      if (!mem) { \
            DEBUG(0, ("Out of memory!\n")); \
@@ -74,29 +72,9 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
 
+	ads_cached_connection_reuse(&ctx->ads);
 	if (ctx->ads != NULL) {
-
-		time_t expire;
-		time_t now = time(NULL);
-
-		ads = ctx->ads;
-
-		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
-
-		/* check for a valid structure */
-		DEBUG(7, ("Current tickets expire in %d seconds (at %d, time is now %d)\n",
-			  (uint32)expire-(uint32)now, (uint32) expire, (uint32) now));
-
-		if ( ads->config.realm && (expire > time(NULL))) {
-			return ADS_SUCCESS;
-		} else {
-			/* we own this ADS_STRUCT so make sure it goes away */
-			DEBUG(7,("Deleting expired krb5 credential cache\n"));
-			ads->is_mine = True;
-			ads_destroy( &ads );
-			ads_kdestroy(WINBIND_CCACHE_NAME);
-			ctx->ads = NULL;
-		}
+		return ADS_SUCCESS;
 	}
 
 	/* we don't want this to affect the users ccache */
