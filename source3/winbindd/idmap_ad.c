@@ -58,13 +58,8 @@ struct idmap_ad_context {
 
 static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 {
-	ADS_STRUCT *ads;
-	ADS_STATUS status;
-	fstring dc_name;
-	struct sockaddr_storage dc_ip;
 	struct idmap_ad_context *ctx;
-	char *ldap_server = NULL;
-	char *realm = NULL;
+	char *ldap_server, *realm, *password;
 	struct winbindd_domain *wb_dom;
 
 	DEBUG(10, ("ad_idmap_cached_connection: called for domain '%s'\n",
@@ -76,9 +71,6 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 	if (ctx->ads != NULL) {
 		return ADS_SUCCESS;
 	}
-
-	/* we don't want this to affect the users ccache */
-	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
 	/*
 	 * At this point we only have the NetBIOS domain name.
@@ -99,35 +91,12 @@ static ADS_STATUS ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 		realm = wb_dom->alt_name;
 	}
 
-	if ( (ads = ads_init(realm, dom->name, ldap_server)) == NULL ) {
-		DEBUG(1,("ads_init failed\n"));
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
 	/* the machine acct password might have change - fetch it every time */
-	SAFE_FREE(ads->auth.password);
-	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
+	realm = SMB_STRDUP(lp_realm());
 
-	SAFE_FREE(ads->auth.realm);
-	ads->auth.realm = SMB_STRDUP(lp_realm());
-
-	/* setup server affinity */
-
-	get_dc_name(dom->name, realm, dc_name, &dc_ip );
-
-	status = ads_connect(ads);
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(1, ("ad_idmap_cached_connection_internal: failed to "
-			  "connect to AD\n"));
-		ads_destroy(&ads);
-		return status;
-	}
-
-	ads->is_mine = False;
-
-	ctx->ads = ads;
-
-	return ADS_SUCCESS;
+	return ads_cached_connection_connect(&ctx->ads, realm, dom->name,
+					     ldap_server, password, realm, 0);
 }
 
 /************************************************************************

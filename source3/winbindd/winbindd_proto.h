@@ -895,5 +895,12 @@ NTSTATUS open_internal_samr_conn(TALLOC_CTX *mem_ctx,
 /* The following definitions come from winbindd/winbindd_ads.c  */
 #define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
 void ads_cached_connection_reuse(ADS_STRUCT **ads);
+ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
+					 const char *dom_name_alt,
+					 const char *dom_name,
+					 const char *ldap_server,
+					 char *password,
+					 char *realm,
+					 time_t renewable);
 
 #endif /*  _WINBINDD_PROTO_H_  */
