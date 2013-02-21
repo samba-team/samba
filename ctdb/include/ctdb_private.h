@@ -286,10 +286,15 @@ struct ctdb_upcalls {
 
 /* list of message handlers - needs to be changed to a more efficient data
    structure so we can find a message handler given a srvid quickly */
-struct ctdb_message_list {
+struct ctdb_message_list_header {
+	struct ctdb_message_list_header *next, *prev;
 	struct ctdb_context *ctdb;
-	struct ctdb_message_list *next, *prev;
 	uint64_t srvid;
+	struct ctdb_message_list *m;
+};
+struct ctdb_message_list {
+	struct ctdb_message_list *next, *prev;
+	struct ctdb_message_list_header *h;
 	ctdb_msg_fn_t message_handler;
 	void *message_private;
 };
@@ -478,7 +483,8 @@ struct ctdb_context {
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
 	void *private_data; /* private to transport */
 	struct ctdb_db_context *db_list;
-	struct ctdb_message_list *message_list;
+	struct ctdb_message_list_header *message_list_header;
+	struct tdb_context *message_list_indexdb;
 	struct ctdb_daemon_data daemon;
 	struct ctdb_statistics statistics;
 	struct ctdb_statistics statistics_current;
@@ -1014,6 +1020,7 @@ int32_t ctdb_control_traverse_kill(struct ctdb_context *ctdb, TDB_DATA indata,
 				    TDB_DATA *outdata, uint32_t srcnode);
 
 int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA data);
+bool ctdb_check_message_handler(struct ctdb_context *ctdb, uint64_t srvid);
 
 int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_id, uint64_t srvid);
 int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void *private_data);

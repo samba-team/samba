@@ -225,13 +225,7 @@ int daemon_check_srvids(struct ctdb_context *ctdb, TDB_DATA indata,
 		return -1;
 	}
 	for (i=0; i<num_ids; i++) {
-		struct ctdb_message_list *ml;
-		for (ml=ctdb->message_list; ml; ml=ml->next) {
-			if (ml->srvid == ids[i]) {
-				break;
-			}
-		}
-		if (ml != NULL) {
+		if (ctdb_check_message_handler(ctdb, ids[i])) {
 			results[i/8] |= (1 << (i%8));
 		}
 	}
