@@ -98,7 +98,7 @@ case "$1" in
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
-    shutdown|stopped|removenatgw)
+    shutdown|removenatgw)
 	delete_all
 	;;
 

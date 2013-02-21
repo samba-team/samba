@@ -40,7 +40,7 @@ case "$1" in
 	echo 1 > /proc/sys/net/ipv4/route/flush
 	;;
 
-     recovered|stopped|ipreallocated)
+     recovered|ipreallocated)
 	# kill off any tcp connections
 	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
