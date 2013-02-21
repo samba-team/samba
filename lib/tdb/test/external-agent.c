@@ -90,6 +90,12 @@ static enum agent_return do_operation(enum operation op, const char *name)
 	case PING:
 		ret = SUCCESS;
 		break;
+	case UNMAP:
+		ret = tdb_munmap(tdb) == 0 ? SUCCESS : OTHER_FAILURE;
+		if (ret == SUCCESS) {
+			tdb->flags |= TDB_NOMMAP;
+		}
+		break;
 	default:
 		ret = OTHER_FAILURE;
 	}
@@ -211,6 +217,7 @@ const char *operation_name(enum operation op)
 	case NEEDS_RECOVERY: return "NEEDS_RECOVERY";
 	case CLOSE: return "CLOSE";
 	case PING: return "PING";
+	case UNMAP: return "UNMAP";
 	}
 	return "**INVALID**";
 }

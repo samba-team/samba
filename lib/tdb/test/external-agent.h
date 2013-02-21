@@ -14,6 +14,7 @@ enum operation {
 	NEEDS_RECOVERY,
 	CLOSE,
 	PING,
+	UNMAP,
 };
 
 /* Do this before doing any tdb stuff.  Return handle, or -1. */
