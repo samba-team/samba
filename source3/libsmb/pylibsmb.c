@@ -201,6 +201,7 @@ static bool py_cli_state_setup_ev(struct py_cli_state *self)
 	if (self->ev == NULL) {
 		goto fail;
 	}
+	samba_tevent_set_debug(self->ev, "pylibsmb_tevent_mt");
 	tevent_set_trace_callback(self->ev, py_cli_state_trace_callback, self);
 
 	self->thread_state = talloc_zero(NULL, struct py_cli_thread);
@@ -336,7 +337,13 @@ static void py_tevent_signalme(struct tevent_req *req)
 static bool py_cli_state_setup_ev(struct py_cli_state *self)
 {
 	self->ev = tevent_context_init(NULL);
-	return (self->ev != NULL);
+	if (self->ev == NULL) {
+		return false;
+	}
+
+	samba_tevent_set_debug(self->ev, "pylibsmb_tevent");
+
+	return true;
 }
 
 static int py_tevent_req_wait(struct tevent_context *ev,
