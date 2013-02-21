@@ -221,6 +221,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 				flags |= TEVENT_FD_WRITE;
 			}
 			if (flags) {
+				DLIST_DEMOTE(select_ev->ev->fd_events, fde, struct tevent_fd);
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
 				break;
 			}
