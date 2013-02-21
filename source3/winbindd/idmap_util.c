@@ -24,6 +24,7 @@
 #include "idmap.h"
 #include "idmap_cache.h"
 #include "../libcli/security/security.h"
+#include "secrets.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -212,4 +213,28 @@ struct id_map *idmap_find_map_by_sid(struct id_map **maps, struct dom_sid *sid)
 	}
 
 	return NULL;
+}
+
+char *idmap_fetch_secret(const char *backend, const char *domain,
+			 const char *identity)
+{
+	char *tmp, *ret;
+	int r;
+
+	r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
+
+	if (r < 0)
+		return NULL;
+
+	/* make sure the key is case insensitive */
+	if (!strupper_m(tmp)) {
+		SAFE_FREE(tmp);
+		return NULL;
+	}
+
+	ret = secrets_fetch_generic(tmp, identity);
+
+	SAFE_FREE(tmp);
+
+	return ret;
 }

@@ -57,6 +57,8 @@ bool idmap_unix_id_is_in_range(uint32_t id, struct idmap_domain *dom);
 struct id_map *idmap_find_map_by_id(struct id_map **maps, enum id_type type,
 				    uint32_t id);
 struct id_map *idmap_find_map_by_sid(struct id_map **maps, struct dom_sid *sid);
+char *idmap_fetch_secret(const char *backend, const char *domain,
+			 const char *identity);
 
 /* max number of ids requested per LDAP batch query */
 #define IDMAP_LDAP_MAX_IDS 30

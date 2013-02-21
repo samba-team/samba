@@ -39,30 +39,6 @@
 #include "smbldap.h"
 #include "passdb/pdb_ldap_schema.h"
 
-static char *idmap_fetch_secret(const char *backend,
-				const char *domain, const char *identity)
-{
-	char *tmp, *ret;
-	int r;
-
-	r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
-
-	if (r < 0)
-		return NULL;
-
-	/* make sure the key is case insensitive */
-	if (!strupper_m(tmp)) {
-		SAFE_FREE(tmp);
-		return NULL;
-	}
-
-	ret = secrets_fetch_generic(tmp, identity);
-
-	SAFE_FREE(tmp);
-
-	return ret;
-}
-
 struct idmap_ldap_context {
 	struct smbldap_state *smbldap_state;
 	char *url;
