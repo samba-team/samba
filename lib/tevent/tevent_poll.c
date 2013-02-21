@@ -38,6 +38,7 @@ struct poll_event_context {
 	 * picked up yet by poll_event_loop_once
 	 */
 	struct tevent_fd *fresh;
+	bool deleted;
 
 	/*
 	 * These two arrays are maintained together.
@@ -219,6 +220,7 @@ static int poll_event_fd_destructor(struct tevent_fd *fde)
 		ev->additional_data, struct poll_event_context);
 
 	poll_ev->fdes[del_idx] = NULL;
+	poll_ev->deleted = true;
 	poll_event_wake_pollthread(poll_ev);
 done:
 	return tevent_common_fd_destructor(fde);
@@ -362,6 +364,34 @@ static bool poll_event_setup_fresh(struct tevent_context *ev,
 {
 	struct tevent_fd *fde, *next;
 	unsigned num_fresh, num_fds;
+
+	if (poll_ev->deleted) {
+		unsigned first_fd = (poll_ev->signal_fd != -1) ? 1 : 0;
+		unsigned i;
+
+		for (i=first_fd; i < poll_ev->num_fds;) {
+			fde = poll_ev->fdes[i];
+			if (fde != NULL) {
+				i++;
+				continue;
+			}
+
+			/*
+			 * This fde was talloc_free()'ed. Delete it
+			 * from the arrays
+			 */
+			poll_ev->num_fds -= 1;
+			if (poll_ev->num_fds == i) {
+				break;
+			}
+			poll_ev->fds[i] = poll_ev->fds[poll_ev->num_fds];
+			poll_ev->fdes[i] = poll_ev->fdes[poll_ev->num_fds];
+			if (poll_ev->fdes[i] != NULL) {
+				poll_ev->fdes[i]->additional_flags = i;
+			}
+		}
+	}
+	poll_ev->deleted = false;
 
 	if (poll_ev->fresh == NULL) {
 		return true;
