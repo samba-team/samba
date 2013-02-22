@@ -160,7 +160,7 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 					     const char *handler_name,
 					     const char *location)
 {
-	struct tevent_timer *te, *last_te, *cur_te;
+	struct tevent_timer *te, *prev_te, *cur_te;
 
 	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
 	if (te == NULL) return NULL;
@@ -174,17 +174,33 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 	te->additional_data	= NULL;
 
 	/* keep the list ordered */
-	last_te = NULL;
-	for (cur_te = ev->timer_events; cur_te; cur_te = cur_te->next) {
-		/* if the new event comes before the current one break */
-		if (tevent_timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
-			break;
+	prev_te = NULL;
+	/*
+	 * we traverse the list from the tail
+	 * because it's much more likely that
+	 * timers are added at the end of the list
+	 */
+	for (cur_te = DLIST_TAIL(ev->timer_events);
+	     cur_te != NULL;
+	     cur_te = DLIST_PREV(cur_te))
+	{
+		int ret;
+
+		/*
+		 * if the new event comes before the current
+		 * we continue searching
+		 */
+		ret = tevent_timeval_compare(&te->next_event,
+					     &cur_te->next_event);
+		if (ret < 0) {
+			continue;
 		}
 
-		last_te = cur_te;
+		break;
 	}
+	prev_te = cur_te;
 
-	DLIST_ADD_AFTER(ev->timer_events, te, last_te);
+	DLIST_ADD_AFTER(ev->timer_events, te, prev_te);
 
 	talloc_set_destructor(te, tevent_common_timed_destructor);
 
