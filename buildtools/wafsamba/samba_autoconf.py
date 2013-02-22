@@ -323,7 +323,25 @@ def CHECK_SIZEOF(conf, vars, headers=None, define=None):
             ret = False
     return ret
 
+@conf
+def CHECK_VALUEOF(conf, v, headers=None, define=None):
+    '''check the value of a variable/define'''
+    ret = True
+    v_define = define
+    if v_define is None:
+        v_define = 'VALUEOF_%s' % v.upper().replace(' ', '_')
+    if CHECK_CODE(conf,
+                  'printf("%%u", (unsigned)(%s))' % v,
+                  define=v_define,
+                  execute=True,
+                  define_ret=True,
+                  quote=False,
+                  headers=headers,
+                  local_include=False,
+                  msg="Checking value of %s" % v):
+        return int(conf.env[v_define])
 
+    return None
 
 @conf
 def CHECK_CODE(conf, code, define,
