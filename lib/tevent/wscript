@@ -44,6 +44,23 @@ def configure(conf):
     if conf.CHECK_FUNCS('epoll_create', headers='sys/epoll.h'):
         conf.DEFINE('HAVE_EPOLL', 1)
 
+    tevent_num_signals = 64
+    v = conf.CHECK_VALUEOF('NSIG', headers='signal.h')
+    if v is not None:
+        tevent_num_signals = max(tevent_num_signals, v)
+    v = conf.CHECK_VALUEOF('_NSIG', headers='signal.h')
+    if v is not None:
+        tevent_num_signals = max(tevent_num_signals, v)
+    v = conf.CHECK_VALUEOF('SIGRTMAX', headers='signal.h')
+    if v is not None:
+        tevent_num_signals = max(tevent_num_signals, v)
+    v = conf.CHECK_VALUEOF('SIGRTMIN', headers='signal.h')
+    if v is not None:
+        tevent_num_signals = max(tevent_num_signals, v*2)
+
+    if not conf.CONFIG_SET('USING_SYSTEM_TEVENT'):
+        conf.DEFINE('TEVENT_NUM_SIGNALS', tevent_num_signals)
+
     conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
     if not conf.env.disable_python:
