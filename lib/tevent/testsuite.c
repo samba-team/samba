@@ -74,7 +74,9 @@ static bool test_event_context(struct torture_context *test,
 #ifdef SA_RESTART
 	struct tevent_signal *se1 = NULL;
 #endif
+#ifdef SA_RESETHAND
 	struct tevent_signal *se2 = NULL;
+#endif
 #ifdef SA_SIGINFO
 	struct tevent_signal *se3 = NULL;
 #endif
@@ -88,7 +90,8 @@ static bool test_event_context(struct torture_context *test,
 		return true;
 	}
 
-	torture_comment(test, "Testing event backend '%s'\n", backend);
+	torture_comment(test, "backend '%s' - %s\n",
+			backend, __FUNCTION__);
 
 	/* reset globals */
 	fde_count = 0;
@@ -105,12 +108,15 @@ static bool test_event_context(struct torture_context *test,
 
 #ifdef SA_RESTART
 	se1 = tevent_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESTART, count_handler, &alarm_count);
+	torture_assert(test, se1 != NULL, "failed to setup se1");
 #endif
 #ifdef SA_RESETHAND
 	se2 = tevent_add_signal(ev_ctx, ev_ctx, SIGALRM, SA_RESETHAND, count_handler, &alarm_count);
+	torture_assert(test, se2 != NULL, "failed to setup se2");
 #endif
 #ifdef SA_SIGINFO
 	se3 = tevent_add_signal(ev_ctx, ev_ctx, SIGUSR1, SA_SIGINFO, count_handler, &info_count);
+	torture_assert(test, se3 != NULL, "failed to setup se3");
 #endif
 
 	write(fd[1], &c, 1);
@@ -140,6 +146,14 @@ static bool test_event_context(struct torture_context *test,
 #endif
 
 	torture_assert_int_equal(test, alarm_count, 1+fde_count, "alarm count mismatch");
+
+#ifdef SA_RESETHAND
+	/*
+	 * we do not call talloc_free(se2)
+	 * because it is already gone,
+	 * after triggering the event handler.
+	 */
+#endif
 
 #ifdef SA_SIGINFO
 	talloc_free(se3);
