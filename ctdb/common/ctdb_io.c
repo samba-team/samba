@@ -45,6 +45,7 @@ struct ctdb_queue_pkt {
 
 struct ctdb_queue {
 	struct ctdb_context *ctdb;
+	struct tevent_immediate *im;
 	struct ctdb_buffer buffer; /* input buffer */
 	struct ctdb_queue_pkt *out_queue, *out_queue_tail;
 	uint32_t out_queue_length;
@@ -66,8 +67,8 @@ int ctdb_queue_length(struct ctdb_queue *queue)
 
 static void queue_process(struct ctdb_queue *queue);
 
-static void queue_process_event(struct event_context *ev, struct timed_event *te,
-				struct timeval t, void *private_data)
+static void queue_process_event(struct tevent_context *ev, struct tevent_immediate *im,
+				void *private_data)
 {
 	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
 
@@ -118,9 +119,9 @@ static void queue_process(struct ctdb_queue *queue)
 	queue->buffer.length -= pkt_size;
 
 	if (queue->buffer.length > 0) {
-		/* There is more data to be processed, setup timed event */
-		event_add_timed(queue->ctdb->ev, queue, timeval_zero(),
-				queue_process_event, queue);
+		/* There is more data to be processed, schedule an event */
+		tevent_schedule_immediate(queue->im, queue->ctdb->ev,
+					  queue_process_event, queue);
 	}
 
 	/* It is the responsibility of the callback to free 'data' */
@@ -192,8 +193,8 @@ failed:
 
 
 /* used when an event triggers a dead queue */
-static void queue_dead(struct event_context *ev, struct timed_event *te, 
-		       struct timeval t, void *private_data)
+static void queue_dead(struct event_context *ev, struct tevent_immediate *im,
+		       void *private_data)
 {
 	struct ctdb_queue *queue = talloc_get_type(private_data, struct ctdb_queue);
 	queue->callback(NULL, 0, queue->private_data);
@@ -224,8 +225,8 @@ static void queue_io_write(struct ctdb_queue *queue)
 			talloc_free(queue->fde);
 			queue->fde = NULL;
 			queue->fd = -1;
-			event_add_timed(queue->ctdb->ev, queue, timeval_zero(), 
-					queue_dead, queue);
+			tevent_schedule_immediate(queue->im, queue->ctdb->ev,
+						  queue_dead, queue);
 			return;
 		}
 		if (n <= 0) return;
@@ -291,8 +292,8 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 			talloc_free(queue->fde);
 			queue->fde = NULL;
 			queue->fd = -1;
-			event_add_timed(queue->ctdb->ev, queue, timeval_zero(), 
-					queue_dead, queue);
+			tevent_schedule_immediate(queue->im, queue->ctdb->ev,
+						  queue_dead, queue);
 			/* yes, we report success, as the dead node is 
 			   handled via a separate event */
 			return 0;
@@ -401,6 +402,9 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 	queue->name = talloc_vasprintf(mem_ctx, fmt, ap);
 	va_end(ap);
 	CTDB_NO_MEMORY_NULL(ctdb, queue->name);
+
+	queue->im= tevent_create_immediate(queue);
+	CTDB_NO_MEMORY_NULL(ctdb, queue->im);
 
 	queue->ctdb = ctdb;
 	queue->fd = fd;
