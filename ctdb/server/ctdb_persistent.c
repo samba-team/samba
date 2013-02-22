@@ -128,8 +128,9 @@ void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb)
 	struct ctdb_db_context *ctdb_db;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		DEBUG(DEBUG_INFO, ("ctdb_persistent_store_timeout: ignoring "
-				   "timeout during recovery\n"));
+		DEBUG(DEBUG_INFO, ("ctdb_persistent_finish_trans3_commits: "
+				   "skipping execution when recovery is "
+				   "active\n"));
 		return;
 	}
 
