@@ -2,7 +2,7 @@
    ctdb vacuuming events
 
    Copyright (C) Ronnie Sahlberg  2009
-   Copyright (C) Michael Adam 2010-2011
+   Copyright (C) Michael Adam 2010-2013
    Copyright (C) Stefan Metzmacher 2010-2011
 
    This program is free software; you can redistribute it and/or modify
