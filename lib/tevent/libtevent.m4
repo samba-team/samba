@@ -39,6 +39,35 @@ if test x"$ac_cv_header_sys_epoll_h" = x"yes" -a x"$ac_cv_func_epoll_create" = x
    AC_DEFINE(HAVE_EPOLL, 1, [Whether epoll available])
 fi
 
+tevent_num_signals_includes="$ac_includes_default
+#include <signal.h>
+"
+tevent_num_signals=64
+AC_CHECK_VALUEOF(NSIG, [$tevent_num_signals_includes])
+v=$ac_cv_valueof_NSIG
+test -n "$v" && test "$v" -gt "$tevent_num_signals" && {
+	tevent_num_signals=$v
+}
+AC_CHECK_VALUEOF(_NSIG, [$tevent_num_signals_includes])
+v=$ac_cv_valueof__NSIG
+test -n "$v" && test "$v" -gt "$tevent_num_signals" && {
+	tevent_num_signals=$v
+}
+AC_CHECK_VALUEOF(SIGRTMAX, [$tevent_num_signals_includes])
+v=$ac_cv_valueof_SIGRTMAX
+test -n "$v" && test "$v" -gt "$tevent_num_signals" && {
+	tevent_num_signals=$v
+}
+AC_CHECK_VALUEOF(SIGRTMIN, [$tevent_num_signals_includes])
+v=$ac_cv_valueof_SIGRTMIN
+test -n "$v" && {
+	v=`expr $v + $v`
+}
+test -n "$v" && test "$v" -gt "$tevent_num_signals" && {
+	tevent_num_signals=$v
+}
+AC_DEFINE_UNQUOTED(TEVENT_NUM_SIGNALS, $tevent_num_signals, [Max signal number value])
+
 if test x"$VERSIONSCRIPT" != "x"; then
     EXPORTSFILE=tevent.exports
     AC_SUBST(EXPORTSFILE)
