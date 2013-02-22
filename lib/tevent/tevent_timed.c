@@ -133,13 +133,18 @@ struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs)
 */
 static int tevent_common_timed_destructor(struct tevent_timer *te)
 {
+	if (te->event_ctx == NULL) {
+		return 0;
+	}
+
 	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
 		     "Destroying timer event %p \"%s\"\n",
 		     te, te->handler_name);
 
-	if (te->event_ctx) {
-		DLIST_REMOVE(te->event_ctx->timer_events, te);
+	if (te->event_ctx->last_zero_timer == te) {
+		te->event_ctx->last_zero_timer = DLIST_PREV(te);
 	}
+	DLIST_REMOVE(te->event_ctx->timer_events, te);
 
 	return 0;
 }
@@ -153,12 +158,15 @@ static int tevent_common_timed_deny_destructor(struct tevent_timer *te)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					     struct timeval next_event,
-					     tevent_timer_handler_t handler,
-					     void *private_data,
-					     const char *handler_name,
-					     const char *location)
+static struct tevent_timer *tevent_common_add_timer_internal(
+					struct tevent_context *ev,
+					TALLOC_CTX *mem_ctx,
+					struct timeval next_event,
+					tevent_timer_handler_t handler,
+					void *private_data,
+					const char *handler_name,
+					const char *location,
+					bool optimize_zero)
 {
 	struct tevent_timer *te, *prev_te, *cur_te;
 
@@ -173,32 +181,50 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 	te->location		= location;
 	te->additional_data	= NULL;
 
+	if (ev->timer_events == NULL) {
+		ev->last_zero_timer = NULL;
+	}
+
 	/* keep the list ordered */
 	prev_te = NULL;
-	/*
-	 * we traverse the list from the tail
-	 * because it's much more likely that
-	 * timers are added at the end of the list
-	 */
-	for (cur_te = DLIST_TAIL(ev->timer_events);
-	     cur_te != NULL;
-	     cur_te = DLIST_PREV(cur_te))
-	{
-		int ret;
-
+	if (optimize_zero && tevent_timeval_is_zero(&te->next_event)) {
 		/*
-		 * if the new event comes before the current
-		 * we continue searching
+		 * Some callers use zero tevent_timer
+		 * instead of tevent_immediate events.
+		 *
+		 * As these can happen very often,
+		 * we remember the last zero timer
+		 * in the list.
 		 */
-		ret = tevent_timeval_compare(&te->next_event,
-					     &cur_te->next_event);
-		if (ret < 0) {
-			continue;
+		prev_te = ev->last_zero_timer;
+		ev->last_zero_timer = te;
+	} else {
+		/*
+		 * we traverse the list from the tail
+		 * because it's much more likely that
+		 * timers are added at the end of the list
+		 */
+		for (cur_te = DLIST_TAIL(ev->timer_events);
+		     cur_te != NULL;
+		     cur_te = DLIST_PREV(cur_te))
+		{
+			int ret;
+
+			/*
+			 * if the new event comes before the current
+			 * we continue searching
+			 */
+			ret = tevent_timeval_compare(&te->next_event,
+						     &cur_te->next_event);
+			if (ret < 0) {
+				continue;
+			}
+
+			break;
 		}
 
-		break;
+		prev_te = cur_te;
 	}
-	prev_te = cur_te;
 
 	DLIST_ADD_AFTER(ev->timer_events, te, prev_te);
 
@@ -208,6 +234,44 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 		     "Added timed event \"%s\": %p\n",
 		     handler_name, te);
 	return te;
+}
+
+struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
+					     TALLOC_CTX *mem_ctx,
+					     struct timeval next_event,
+					     tevent_timer_handler_t handler,
+					     void *private_data,
+					     const char *handler_name,
+					     const char *location)
+{
+	/*
+	 * do not use optimization, there are broken Samba
+	 * versions which use tevent_common_add_timer()
+	 * without using tevent_common_loop_timer_delay(),
+	 * it just uses DLIST_REMOVE(ev->timer_events, te)
+	 * and would leave ev->last_zero_timer behind.
+	 */
+	return tevent_common_add_timer_internal(ev, mem_ctx, next_event,
+						handler, private_data,
+						handler_name, location,
+						false);
+}
+
+struct tevent_timer *tevent_common_add_timer_v2(struct tevent_context *ev,
+						TALLOC_CTX *mem_ctx,
+					        struct timeval next_event,
+					        tevent_timer_handler_t handler,
+					        void *private_data,
+					        const char *handler_name,
+					        const char *location)
+{
+	/*
+	 * Here we turn on last_zero_timer optimization
+	 */
+	return tevent_common_add_timer_internal(ev, mem_ctx, next_event,
+						handler, private_data,
+						handler_name, location,
+						true);
 }
 
 /*
@@ -258,6 +322,9 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 	/* We need to remove the timer from the list before calling the
 	 * handler because in a semi-async inner event loop called from the
 	 * handler we don't want to come across this event again -- vl */
+	if (ev->last_zero_timer == te) {
+		ev->last_zero_timer = DLIST_PREV(te);
+	}
 	DLIST_REMOVE(ev->timer_events, te);
 
 	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,

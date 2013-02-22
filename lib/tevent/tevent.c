@@ -190,6 +190,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		DLIST_REMOVE(ev->fd_events, fd);
 	}
 
+	ev->last_zero_timer = NULL;
 	for (te = ev->timer_events; te; te = tn) {
 		tn = te->next;
 		te->event_ctx = NULL;
