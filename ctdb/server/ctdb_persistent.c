@@ -121,7 +121,7 @@ static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed
  * Finish pending trans3 commit controls, i.e. send
  * reply to the client. This is called by the end-recovery
  * control to fix the situation when a recovery interrupts
- * the usual porgress of a transaction.
+ * the usual progress of a transaction.
  */
 void ctdb_persistent_finish_trans3_commits(struct ctdb_context *ctdb)
 {
