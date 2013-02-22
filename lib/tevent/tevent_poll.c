@@ -501,6 +501,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	int timeout = -1;
 	int poll_errno;
 	struct tevent_fd *fde = NULL;
+	unsigned i;
 
 	if (ev->signal_events && tevent_common_check_signal(ev)) {
 		return 0;
@@ -555,6 +556,26 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 
 		pfd = &poll_ev->fds[idx];
 
+		if (pfd->revents & POLLNVAL) {
+			/*
+			 * the socket is dead! this should never
+			 * happen as the socket should have first been
+			 * made readable and that should have removed
+			 * the event, so this must be a bug.
+			 *
+			 * We ignore it here to match the epoll
+			 * behavior.
+			 */
+			tevent_debug(ev, TEVENT_DEBUG_ERROR,
+				     "POLLNVAL on fde[%p] fd[%d] - disabling\n",
+				     fde, pfd->fd);
+			poll_ev->fdes[idx] = NULL;
+			poll_ev->deleted = true;
+			DLIST_REMOVE(ev->fd_events, fde);
+			fde->event_ctx = NULL;
+			continue;
+		}
+
 		if (pfd->revents & (POLLHUP|POLLERR)) {
 			/* If we only wait for TEVENT_FD_WRITE, we
 			   should not tell the event handler about it,
@@ -575,7 +596,29 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		}
 		if (flags != 0) {
 			fde->handler(ev, fde, flags, fde->private_data);
-			break;
+			return 0;
+		}
+	}
+
+	for (i = 0; i < poll_ev->num_fds; i++) {
+		if (poll_ev->fds[i].revents & POLLNVAL) {
+			/*
+			 * the socket is dead! this should never
+			 * happen as the socket should have first been
+			 * made readable and that should have removed
+			 * the event, so this must be a bug or
+			 * a race in the poll_mt usage.
+			 */
+			fde = poll_ev->fdes[i];
+			tevent_debug(ev, TEVENT_DEBUG_WARNING,
+				     "POLLNVAL on dangling fd[%d] fde[%p] - disabling\n",
+				     poll_ev->fds[i].fd, fde);
+			poll_ev->fdes[i] = NULL;
+			poll_ev->deleted = true;
+			if (fde != NULL) {
+				DLIST_REMOVE(ev->fd_events, fde);
+				fde->event_ctx = NULL;
+			}
 		}
 	}
 
