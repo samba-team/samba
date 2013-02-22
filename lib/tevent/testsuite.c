@@ -28,6 +28,7 @@
 #include "lib/tevent/tevent.h"
 #include "system/filesys.h"
 #include "system/select.h"
+#include "system/network.h"
 #include "torture/torture.h"
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -204,6 +205,222 @@ static bool test_event_context(struct torture_context *test,
 	return true;
 }
 
+struct test_event_fd1_state {
+	struct torture_context *tctx;
+	const char *backend;
+	struct tevent_context *ev;
+	int sock[2];
+	struct tevent_timer *te;
+	struct tevent_fd *fde0;
+	struct tevent_fd *fde1;
+	bool got_write;
+	bool got_read;
+	bool drain;
+	bool drain_done;
+	unsigned loop_count;
+	bool finished;
+	const char *error;
+};
+
+static void test_event_fd1_fde_handler(struct tevent_context *ev_ctx,
+				       struct tevent_fd *fde,
+				       uint16_t flags,
+				       void *private_data)
+{
+	struct test_event_fd1_state *state =
+		(struct test_event_fd1_state *)private_data;
+
+	if (state->drain_done) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (state->drain) {
+		ssize_t ret;
+		uint8_t c = 0;
+
+		if (!(flags & TEVENT_FD_READ)) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+
+		ret = read(state->sock[0], &c, 1);
+		if (ret == 1) {
+			return;
+		}
+
+		/*
+		 * end of test...
+		 */
+		tevent_fd_set_flags(fde, 0);
+		state->drain_done = true;
+		return;
+	}
+
+	if (!state->got_write) {
+		uint8_t c = 0;
+
+		if (flags != TEVENT_FD_WRITE) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+		state->got_write = true;
+
+		/*
+		 * we write to the other socket...
+		 */
+		write(state->sock[1], &c, 1);
+		TEVENT_FD_NOT_WRITEABLE(fde);
+		TEVENT_FD_READABLE(fde);
+		return;
+	}
+
+	if (!state->got_read) {
+		if (flags != TEVENT_FD_READ) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+		state->got_read = true;
+
+		TEVENT_FD_NOT_READABLE(fde);
+		return;
+	}
+
+	state->finished = true;
+	state->error = __location__;
+	return;
+}
+
+static void test_event_fd1_finished(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval tval,
+				    void *private_data)
+{
+	struct test_event_fd1_state *state =
+		(struct test_event_fd1_state *)private_data;
+
+	if (state->drain_done) {
+		state->finished = true;
+		return;
+	}
+
+	if (!state->got_write) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (!state->got_read) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	state->loop_count++;
+	if (state->loop_count > 3) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	state->got_write = false;
+	state->got_read = false;
+
+	tevent_fd_set_flags(state->fde0, TEVENT_FD_WRITE);
+
+	if (state->loop_count > 2) {
+		state->drain = true;
+		TALLOC_FREE(state->fde1);
+		TEVENT_FD_READABLE(state->fde0);
+	}
+
+	state->te = tevent_add_timer(state->ev, state->ev,
+				    timeval_current_ofs(0,2000),
+				    test_event_fd1_finished, state);
+}
+
+static bool test_event_fd1(struct torture_context *tctx,
+			   const void *test_data)
+{
+	struct test_event_fd1_state state;
+
+	ZERO_STRUCT(state);
+	state.tctx = tctx;
+	state.backend = (const char *)test_data;
+
+	state.ev = tevent_context_init_byname(tctx, state.backend);
+	if (state.ev == NULL) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "event backend '%s' not supported\n",
+			     state.backend));
+		return true;
+	}
+
+	tevent_set_debug_stderr(state.ev);
+	torture_comment(tctx, "backend '%s' - %s\n",
+			state.backend, __FUNCTION__);
+
+	/*
+	 * This tests the following:
+	 *
+	 * It monitors the state of state.sock[0]
+	 * with tevent_fd, but we never read/write on state.sock[0]
+	 * while state.sock[1] * is only used to write a few bytes.
+	 *
+	 * We have a loop:
+	 *   - we wait only for TEVENT_FD_WRITE on state.sock[0]
+	 *   - we write 1 byte to state.sock[1]
+	 *   - we wait only for TEVENT_FD_READ on state.sock[0]
+	 *   - we disable events on state.sock[0]
+	 *   - the timer event restarts the loop
+	 * Then we close state.sock[1]
+	 * We have a loop:
+	 *   - we wait for TEVENT_FD_READ/WRITE on state.sock[0]
+	 *   - we try to read 1 byte
+	 *   - if the read gets an error of returns 0
+	 *     we disable the event handler
+	 *   - the timer finishes the test
+	 */
+	state.sock[0] = -1;
+	state.sock[1] = -1;
+	socketpair(AF_UNIX, SOCK_STREAM, 0, state.sock);
+
+	state.te = tevent_add_timer(state.ev, state.ev,
+				    timeval_current_ofs(0,1000),
+				    test_event_fd1_finished, &state);
+	state.fde0 = tevent_add_fd(state.ev, state.ev,
+				   state.sock[0], TEVENT_FD_WRITE,
+				   test_event_fd1_fde_handler, &state);
+	/* state.fde1 is only used to auto close */
+	state.fde1 = tevent_add_fd(state.ev, state.ev,
+				   state.sock[1], 0,
+				   test_event_fd1_fde_handler, &state);
+
+	tevent_fd_set_auto_close(state.fde0);
+	tevent_fd_set_auto_close(state.fde1);
+
+	while (!state.finished) {
+		errno = 0;
+		if (tevent_loop_once(state.ev) == -1) {
+			talloc_free(state.ev);
+			torture_fail(tctx, talloc_asprintf(tctx,
+				     "Failed event loop %s\n",
+				     strerror(errno)));
+		}
+	}
+
+	talloc_free(state.ev);
+
+	torture_assert(tctx, state.error == NULL, talloc_asprintf(tctx,
+		       "%s", state.error));
+
+	return true;
+}
+
 #ifdef HAVE_PTHREAD
 
 static pthread_mutex_t threaded_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -355,6 +572,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "context",
 					       test_event_context,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "fd1",
+					       test_event_fd1,
 					       (const void *)list[i]);
 
 		torture_suite_add_suite(suite, backend_suite);
