@@ -243,6 +243,9 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		}
 	}
 
+	/* Explicitly denied bits always override */
+	bits_remaining |= explicitly_denied_bits;
+
 	/* The owner always gets owner rights as defined above. */
 	if (security_token_has_sid(token, sd->owner_sid)) {
 		if (owner_rights_default) {
@@ -257,9 +260,6 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			bits_remaining |= owner_rights_denied;
 		}
 	}
-
-	/* Explicitly denied bits always override */
-	bits_remaining |= explicitly_denied_bits;
 
 	/*
 	 * We check privileges here because they override even DENY entries.
