@@ -2365,6 +2365,27 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x2e */
+
+	typedef struct {
+		[string,charset(URF16)] uint16 *monitor_name;
+	} spoolss_AddMonitorInfo1;
+
+	typedef struct {
+		[string,charset(URF16)] uint16 *monitor_name;
+		[string,charset(URF16)] uint16 *environment;
+		[string,charset(URF16)] uint16 *dll_name;
+	} spoolss_AddMonitorInfo2;
+
+	typedef [ms_union,switch_type(uint32)] union {
+		[case(1)] spoolss_AddMonitorInfo1 *info1;
+		[case(2)] spoolss_AddMonitorInfo2 *info2;
+	} spoolss_AddMonitorInfo;
+
+	typedef [public] struct {
+		uint32 level;
+		[switch_is(level)] spoolss_MonitorInfo info;
+	} spoolss_MonitorContainer;
+
 	[todo] WERROR spoolss_AddMonitor(
 	);
 
