@@ -454,7 +454,13 @@ static void adjust_do_list_queue(void)
 static void add_to_do_list_queue(const char* entry)
 {
 	char *dlq;
-	long new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
+	long new_end;
+
+	if (entry == NULL) {
+		entry = "";
+	}
+
+	new_end = do_list_queue_end + ((long)strlen(entry)) + 1;
 	while (new_end > do_list_queue_size)
 	{
 		do_list_queue_size *= 2;
@@ -475,7 +481,7 @@ static void add_to_do_list_queue(const char* entry)
 	}
 	if (do_list_queue)
 	{
-		strlcpy(do_list_queue + do_list_queue_end, entry ? entry : "",
+		strlcpy(do_list_queue + do_list_queue_end, entry,
 			    do_list_queue_size - do_list_queue_end);
 		do_list_queue_end = new_end;
 		DEBUG(4,("added %s to do_list_queue (start=%d, end=%d)\n",
