@@ -1892,13 +1892,14 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	/* If it's new, create the vk struct, if it's old, free the old data. */
 	if (old_vk_offset == -1) {
 		vk.header = "vk";
-		vk.name_length = strlen(name);
-		if (name != NULL && name[0] != 0) {
+		if (name != NULL && name[0] != '\0') {
 			vk.flag = 1;
 			vk.data_name = name;
+			vk.name_length = strlen(name);
 		} else {
-			vk.data_name = NULL;
 			vk.flag = 0;
+			vk.data_name = NULL;
+			vk.name_length = 0;
 		}
 	} else {
 		/* Free data, if any */
