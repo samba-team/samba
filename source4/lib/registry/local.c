@@ -80,7 +80,7 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 	const char **elements = NULL;
 	int el;
 
-	if (path == NULL) {
+	if (path == NULL || path[0] == '\0') {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -103,7 +103,7 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 		el = 0;
 	}
 
-	while (curbegin != NULL && *curbegin) {
+	do {
 		if (curend != NULL)
 			*curend = '\0';
 		elements = talloc_realloc(mem_ctx, elements, const char *, el+2);
@@ -124,7 +124,7 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 			break;
 		curbegin = curend + 1;
 		curend = strchr(curbegin, '\\');
-	}
+	} while (curbegin != NULL && curbegin[0] != '\0');
 	talloc_free(orig);
 
 	*result = reg_import_hive_key(local_parent->global.context, curkey,
@@ -184,7 +184,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 	const char **elements = NULL;
 	int el;
 
-	if (path == NULL) {
+	if (path == NULL || path[0] == '\0') {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -207,7 +207,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 		el = 0;
 	}
 
-	while (curbegin != NULL && *curbegin) {
+	do {
 		if (curend != NULL)
 			*curend = '\0';
 		elements = talloc_realloc(mem_ctx, elements, const char *, el+2);
@@ -233,7 +233,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 			break;
 		curbegin = curend + 1;
 		curend = strchr(curbegin, '\\');
-	}
+	} while (curbegin != NULL && curbegin[0] != '\0');
 	talloc_free(orig);
 
 	*result = reg_import_hive_key(local_parent->global.context, curkey,
