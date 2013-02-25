@@ -940,9 +940,12 @@ static int cmd_more(struct smbclient_context *ctx, const char **args)
 	char *pager;
 	int fd;
 	int rc = 0;
+	mode_t mask;
 
 	lname = talloc_asprintf(ctx, "%s/smbmore.XXXXXX",tmpdir());
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(lname);
+	umask(mask);
 	if (fd == -1) {
 		d_printf("failed to create temporary file for more\n");
 		return 1;

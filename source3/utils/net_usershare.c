@@ -642,6 +642,7 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	uid_t myeuid = geteuid();
 	bool guest_ok = false;
 	int num_usershares;
+	mode_t mask;
 
 	us_comment = "";
 	arg_acl = "S-1-1-0:R";
@@ -895,7 +896,9 @@ static int net_usershare_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Create a temporary filename for this share. */
+	mask = umask(S_IRWXO | S_IRWXG);
 	tmpfd = mkstemp(full_path_tmp);
+	umask(mask);
 
 	if (tmpfd == -1) {
 		d_fprintf(stderr,

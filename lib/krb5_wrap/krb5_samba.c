@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "krb5_samba.h"
 #include "lib/util/asn1.h"
 
@@ -1483,6 +1484,7 @@ krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
+	mode_t mask;
 
 #if defined(HAVE_KRB5_GET_INIT_CREDS_KEYBLOCK)
 	code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal,
@@ -1500,7 +1502,9 @@ krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 	*(KRB5_KT_KEY(&entry)) = *keyblock;
 
 	memcpy(tmp_name, SMB_CREDS_KEYTAB, sizeof(SMB_CREDS_KEYTAB));
+	mask = umask(S_IRWXO | S_IRWXG);
 	mktemp(tmp_name);
+	umask(mask);
 	if (tmp_name[0] == 0) {
 		return KRB5_KT_BADNAME;
 	}

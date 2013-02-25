@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "printing.h"
 #include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
@@ -68,6 +69,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	struct spoolss_DocumentInfo1 *info1;
 	int fd = -1;
 	WERROR werr;
+	mode_t mask;
 
 	tmp_ctx = talloc_new(fsp);
 	if (!tmp_ctx) {
@@ -127,7 +129,9 @@ NTSTATUS print_spool_open(files_struct *fsp,
 		goto done;
 	}
 	errno = 0;
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(pf->filename);
+	umask(mask);
 	if (fd == -1) {
 		if (errno == EACCES) {
 			/* Common setup error, force a report. */

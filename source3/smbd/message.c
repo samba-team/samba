@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "smbprofile.h"
@@ -50,6 +51,7 @@ static void msg_deliver(struct msg_state *state)
 	ssize_t sz;
 	fstring alpha_buf;
 	char *s;
+	mode_t mask;
 
 	if (! (*lp_msg_command(frame))) {
 		DEBUG(1,("no messaging command specified\n"));
@@ -61,7 +63,9 @@ static void msg_deliver(struct msg_state *state)
 	if (!name) {
 		goto done;
 	}
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(name);
+	umask(mask);
 
 	if (fd == -1) {
 		DEBUG(1, ("can't open message file %s: %s\n", name,

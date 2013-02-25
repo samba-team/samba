@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 #include "libnet/libnet_samsync.h"
 #include "transfer_file.h"
 #include "passdb.h"
@@ -929,6 +930,8 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 	const char *add_template = "/tmp/add.ldif.XXXXXX";
 	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
 	const char *builtin_sid = "S-1-5-32";
+	mode_t mask;
+	int fd;
 
 	r = talloc_zero(mem_ctx, struct samsync_ldif_context);
 	NT_STATUS_HAVE_NO_MEMORY(r);
@@ -980,14 +983,37 @@ static NTSTATUS ldif_init_context(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* Open the add and mod ldif files */
-	if (!(r->add_file = fdopen(mkstemp(r->add_name),"w"))) {
-		DEBUG(1, ("Could not open %s\n", r->add_name));
+	mask = umask(S_IRWXO | S_IRWXG);
+	fd = mkstemp(r->add_name);
+	umask(mask);
+	if (fd < 0) {
+		DEBUG(1, ("Could not create %s\n", r->add_name));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
-	if (!(r->mod_file = fdopen(mkstemp(r->module_name),"w"))) {
+
+	/* Open the add and mod ldif files */
+	r->add_file = fdopen(fd, "w");
+	if (r->add_file == NULL) {
+		DEBUG(1, ("Could not open %s\n", r->add_name));
+		close(fd);
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	mask = umask(S_IRWXO | S_IRWXG);
+	fd = mkstemp(r->module_name);
+	umask(mask);
+	if (fd < 0) {
+		DEBUG(1, ("Could not create %s\n", r->module_name));
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	r->mod_file = fdopen(fd, "w");
+	if (r->mod_file == NULL) {
 		DEBUG(1, ("Could not open %s\n", r->module_name));
+		close(fd);
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}

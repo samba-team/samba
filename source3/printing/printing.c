@@ -2709,6 +2709,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 	SMB_STRUCT_STAT st;
 	const char *path;
 	int len;
+	mode_t mask;
 
 	/* if this file is within the printer path, it means that smbd
 	 * is spooling it and will pass us control when it is finished.
@@ -2746,7 +2747,9 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 	slprintf(pjob->filename, sizeof(pjob->filename)-1,
 		 "%s/%sXXXXXX", lp_pathname(talloc_tos(), snum),
 		 PRINT_SPOOL_PREFIX);
+	mask = umask(S_IRWXO | S_IRWXG);
 	pjob->fd = mkstemp(pjob->filename);
+	umask(mask);
 
 	if (pjob->fd == -1) {
 		werr = map_werror_from_unix(errno);

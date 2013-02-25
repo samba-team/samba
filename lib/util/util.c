@@ -63,6 +63,7 @@ int create_unlink_tmp(const char *dir)
 {
 	char *fname;
 	int fd;
+	mode_t mask;
 
 	if (!dir) {
 		dir = tmpdir();
@@ -73,7 +74,9 @@ int create_unlink_tmp(const char *dir)
 		errno = ENOMEM;
 		return -1;
 	}
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(fname);
+	umask(mask);
 	if (fd == -1) {
 		TALLOC_FREE(fname);
 		return -1;

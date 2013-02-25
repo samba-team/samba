@@ -25,6 +25,7 @@
  */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 #include "interact.h"
 
@@ -79,8 +80,12 @@ char* interact_edit(TALLOC_CTX* mem_ctx, const char* str) {
 	char buf[128];
 	char* ret = NULL;
 	FILE* file;
+	mode_t mask;
+	int fd;
 
-	int fd = mkstemp(fname);
+	mask = umask(S_IRWXO | S_IRWXG);
+	fd = mkstemp(fname);
+	umask(mask);
 	if (fd == -1) {
 		DEBUG(0, ("failed to mkstemp %s: %s\n", fname,
 			  strerror(errno)));

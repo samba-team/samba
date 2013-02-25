@@ -63,6 +63,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	size_t n = 0;
 	size_t converted_size;
+	mode_t mask;
 
 	if (!filename_out) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -81,7 +82,9 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
+	mask = umask(S_IRWXO | S_IRWXG);
 	tmp_fd = mkstemp(tmp_name);
+	umask(mask);
 	if (tmp_fd == -1) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto out;

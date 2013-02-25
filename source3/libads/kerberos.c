@@ -833,6 +833,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	char *realm_upper = NULL;
 	bool result = false;
 	char *aes_enctypes = NULL;
+	mode_t mask;
 
 	if (!lp_create_krb5_conf()) {
 		return false;
@@ -906,7 +907,9 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 	flen = strlen(file_contents);
 
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(tmpname);
+	umask(mask);
 	if (fd == -1) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
 			" for file %s. Errno %s\n",

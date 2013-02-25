@@ -1361,6 +1361,7 @@ static int cmd_more(void)
 	const char *pager;
 	int fd;
 	int rc = 0;
+	mode_t mask;
 
 	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
@@ -1371,7 +1372,9 @@ static int cmd_more(void)
 	if (!lname) {
 		return 1;
 	}
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(lname);
+	umask(mask);
 	if (fd == -1) {
 		d_printf("failed to create temporary file for more\n");
 		return 1;

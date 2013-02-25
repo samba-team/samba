@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/filesys.h"
 
 /* need to move this from here!! need some sleep ... */
 struct current_user current_user;
@@ -31,6 +32,7 @@ static int setup_out_fd(void)
 	int fd;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	char *path = NULL;
+	mode_t mask;
 
 	path = talloc_asprintf(ctx,
 				"%s/smb.XXXXXX",
@@ -42,7 +44,9 @@ static int setup_out_fd(void)
 	}
 
 	/* now create the file */
+	mask = umask(S_IRWXO | S_IRWXG);
 	fd = mkstemp(path);
+	umask(mask);
 
 	if (fd == -1) {
 		DEBUG(0,("setup_out_fd: Failed to create file %s. (%s)\n",
