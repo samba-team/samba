@@ -698,7 +698,7 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 
 	fstr_sprintf(logon_server, "\\\\%s", domain->dcname);
 	*r->out.dcname = talloc_strdup(p->mem_ctx, domain->dcname);
-	if (r->out.dcname == NULL) {
+	if (*r->out.dcname == NULL) {
 		DEBUG(2, ("Could not allocate memory\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
