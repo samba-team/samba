@@ -94,7 +94,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('security/pam_appl.h zlib.h asm/unistd.h')
     conf.CHECK_HEADERS('aio.h sys/unistd.h rpc/rpc.h rpc/nettype.h alloca.h float.h')
 
-    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/prctl.h sys/sysctl.h')
+    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/sysctl.h')
     conf.CHECK_HEADERS('sys/fileio.h sys/filesys.h sys/dustat.h sys/sysmacros.h')
     conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h')
 
@@ -105,6 +105,18 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_HEADERS('sys/extattr.h sys/ea.h sys/proplist.h sys/cdefs.h')
     conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h malloc.h')
     conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h')
+
+    # Check for process set name support
+    conf.CHECK_CODE('''
+                    #include <sys/prctl.h>
+                    int main(void) {
+                        prctl(0);
+                        return 0;
+                    }
+                    ''',
+                    'HAVE_PRCTL',
+                    headers='sys/prctl.h',
+                    msg='Checking for prctl syscall')
 
     conf.CHECK_CODE('''
                     #include <unistd.h>
@@ -225,6 +237,7 @@ struct foo bar = { .y = 'X', .x = 1 };
     conf.CHECK_FUNCS('link readlink symlink realpath snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memalign posix_memalign')
+    conf.CHECK_FUNCS('prctl')
 
     # libbsd on some platforms provides strlcpy and strlcat
     if not conf.CHECK_FUNCS('strlcpy strlcat'):

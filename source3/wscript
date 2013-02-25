@@ -317,7 +317,7 @@ _lstat __lstat lutimes
 __lxstat memalign mknod mlock mlockall munlock munlockall
 _open __open _opendir __opendir
 pathconf poll posix_fallocate
-posix_memalign prctl pread _pread __pread
+posix_memalign pread _pread __pread
 pwrite _pwrite __pwrite
 rdchk _read __read _readdir __readdir
 _seekdir __seekdir
@@ -329,14 +329,6 @@ strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
 __sys_llseek syslog _telldir __telldir textdomain timegm
 utimensat vsyslog _write __write __xstat
 ''')
-
-    conf.CHECK_CODE('''
-#ifdef HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
-int i; i = prtcl(0); 
-''', 
-                    'HAVE_PRCTL', link=False)
 
     conf.CHECK_SAMBA3_CHARSET() # see build/charset.py
 
