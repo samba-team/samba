@@ -1400,7 +1400,9 @@ krb5_error_code smb_krb5_get_credentials(krb5_context context,
 	krb5_error_code ret;
 	krb5_creds *creds = NULL;
 
-	*out_creds = NULL;
+	if (out_creds != NULL) {
+		*out_creds = NULL;
+	}
 
 	if (impersonate_princ) {
 #ifdef HAVE_KRB5_GET_CREDS_OPT_SET_IMPERSONATE /* Heimdal */
