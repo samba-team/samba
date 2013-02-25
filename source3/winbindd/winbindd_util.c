@@ -683,7 +683,7 @@ struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name)
 
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		if (strequal(domain_name, domain->name) ||
-		    (domain->alt_name[0] &&
+		    (domain->alt_name != NULL &&
 		     strequal(domain_name, domain->alt_name))) {
 			return domain;
 		}
@@ -763,7 +763,7 @@ struct winbindd_domain *find_root_domain(void)
 {
 	struct winbindd_domain *ours = find_our_domain();
 
-	if (ours->forest_name[0] == '\0') {
+	if (ours->forest_name == NULL) {
 		return NULL;
 	}
 

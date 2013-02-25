@@ -378,12 +378,15 @@ static void wb_domain_request_initialized(struct tevent_req *subreq)
 		return;
 	}
 
-	talloc_free(state->domain->alt_name);
-	state->domain->alt_name = talloc_strdup(state->domain,
-						response->data.domain_info.alt_name);
-	if (state->domain->alt_name == NULL) {
-		tevent_req_error(req, ENOMEM);
-		return;
+	if (response->data.domain_info.alt_name[0] != '\0') {
+		talloc_free(state->domain->alt_name);
+
+		state->domain->alt_name = talloc_strdup(state->domain,
+				response->data.domain_info.alt_name);
+		if (state->domain->alt_name == NULL) {
+			tevent_req_error(req, ENOMEM);
+			return;
+		}
 	}
 
 	state->domain->native_mode = response->data.domain_info.native_mode;
@@ -539,7 +542,7 @@ void winbind_child_died(pid_t pid)
 void winbindd_flush_negative_conn_cache(struct winbindd_domain *domain)
 {
 	flush_negative_conn_cache_for_domain(domain->name);
-	if (*domain->alt_name) {
+	if (domain->alt_name != NULL) {
 		flush_negative_conn_cache_for_domain(domain->alt_name);
 	}
 }

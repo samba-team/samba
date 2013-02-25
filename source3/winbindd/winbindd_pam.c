@@ -556,6 +556,10 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	*info3 = NULL;
 
+	if (domain->alt_name == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* 1st step:
 	 * prepare a krb5_cc_cache string for the user */
 
@@ -586,7 +590,11 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 
 	parse_domain_user(user, name_domain, name_user);
 
-	realm = domain->alt_name;
+	realm = talloc_strdup(mem_ctx, domain->alt_name);
+	if (realm == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (!strupper_m(realm)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -931,6 +939,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			const char *service = NULL;
 			const char *user_ccache_file;
 
+			if (domain->alt_name == NULL) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
 			uid = get_uid_from_request(state->request);
 			if (uid == -1) {
 				DEBUG(0,("winbindd_dual_pam_auth_cached: invalid uid\n"));
@@ -945,7 +957,11 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			realm = domain->alt_name;
+			realm = talloc_strdup(state->mem_ctx, domain->alt_name);
+			if (realm == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
 			if (!strupper_m(realm)) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -970,7 +986,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 							    service,
 							    state->request->data.auth.user,
 							    state->request->data.auth.pass,
-							    domain->alt_name,
+							    realm,
 							    uid,
 							    time(NULL),
 							    time(NULL) + lp_winbind_cache_time(),

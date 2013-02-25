@@ -4321,8 +4321,16 @@ static bool add_wbdomain_to_tdc_array( struct winbindd_domain *new_dom,
 	if ( !list )
 		return false;
 
-	list[idx].domain_name = talloc_strdup( list, new_dom->name );
-	list[idx].dns_name = talloc_strdup( list, new_dom->alt_name );
+	list[idx].domain_name = talloc_strdup(list, new_dom->name);
+	if (list[idx].domain_name == NULL) {
+		return false;
+	}
+	if (new_dom->alt_name != NULL) {
+		list[idx].dns_name = talloc_strdup(list, new_dom->alt_name);
+		if (list[idx].dns_name == NULL) {
+			return false;
+		}
+	}
 
 	if ( !is_null_sid( &new_dom->sid ) ) {
 		sid_copy( &list[idx].sid, &new_dom->sid );
@@ -4405,7 +4413,7 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 
 		len += tdb_pack( buffer+len, buflen-len, "fffddd",
 				 domains[i].domain_name,
-				 domains[i].dns_name,
+				 domains[i].dns_name ? domains[i].dns_name : "",
 				 sid_to_fstring(tmp, &domains[i].sid),
 				 domains[i].trust_flags,
 				 domains[i].trust_attribs,
@@ -4479,7 +4487,10 @@ static size_t unpack_tdc_domains( unsigned char *buf, int buflen,
 			  flags, attribs, type));
 
 		list[i].domain_name = talloc_strdup( list, domain_name );
-		list[i].dns_name = talloc_strdup( list, dns_name );
+		list[i].dns_name = NULL;
+		if (dns_name[0] != '\0') {
+			list[i].dns_name = talloc_strdup(list, dns_name);
+		}
 		if ( !string_to_sid( &(list[i].sid), sid_string ) ) {			
 			DEBUG(10,("unpack_tdc_domains: no SID for domain %s\n",
 				  domain_name));

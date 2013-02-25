@@ -561,7 +561,7 @@ static void winbind_add_failed_connection_entry(
 	/* If this was the saf name for the last thing we talked to,
 	   remove it. */
 	saf_delete(domain->name);
-	if (*domain->alt_name) {
+	if (domain->alt_name != NULL) {
 		add_failed_connection_entry(domain->alt_name, server, result);
 		saf_delete(domain->alt_name);
 	}
@@ -1600,7 +1600,7 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 
 		DEBUG(10,("cm_open_connection: dcname is '%s' for domain %s\n",
-			domain->dcname, domain->name ));
+			domain->dcname ? domain->dcname : "", domain->name ));
 
 		if (domain->dcname != NULL
 			&& NT_STATUS_IS_OK(check_negative_conn_cache( domain->name, domain->dcname))

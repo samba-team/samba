@@ -115,7 +115,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 		if ( !domain->primary )
 			our_domain = find_our_domain();
 
-		if ( our_domain->alt_name[0] != '\0' ) {
+		if (our_domain->alt_name != NULL) {
 			ads->auth.realm = SMB_STRDUP( our_domain->alt_name );
 			if (!strupper_m( ads->auth.realm )) {
 				ads_destroy( &ads );
