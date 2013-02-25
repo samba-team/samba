@@ -25,6 +25,8 @@
 #include "ntdomain.h"
 #include "messages.h"
 
+#include "lib/util/util_process.h"
+
 #include "librpc/rpc/dcerpc_ep.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
 #include "rpc_server/rpc_server.h"
@@ -167,6 +169,8 @@ void start_epmd(struct tevent_context *ev_ctx,
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
 	}
+
+	prctl_set_comment("epmd");
 
 	epmd_reopen_logs();
 
