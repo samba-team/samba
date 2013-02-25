@@ -111,7 +111,7 @@ static void gensec_socket_trigger_read(struct tevent_context *ev,
 	/* It may well be that, having run the recv handler, we still
 	 * have even more data waiting for us! 
 	 */
-	if (gensec_socket->read_buffer.length && gensec_socket->recv_handler) {
+	if (gensec_socket->read_buffer.length > 0) {
 		/* Schedule this funcion to run again */
 		tevent_add_timer(gensec_socket->ev, gensec_socket, timeval_zero(), 
 				gensec_socket_trigger_read, gensec_socket);
