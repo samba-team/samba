@@ -317,7 +317,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	if (epoll_ev->epoll_fd == -1) return -1;
 
 	if (tvalp) {
-		/* it's better to trigger timed events a bit later than to early */
+		/* it's better to trigger timed events a bit later than too early */
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
