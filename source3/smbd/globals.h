@@ -506,8 +506,6 @@ struct smbXsrv_connection {
 		struct smbd_smb2_request *requests;
 	} smb2;
 
-	uint64_t smbd_idle_profstamp;
-
 	/*
 	 * this session_table is used for SMB1 and SMB2,
 	 */

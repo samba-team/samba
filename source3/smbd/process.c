@@ -3495,12 +3495,16 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 	return NT_STATUS_OK;
 }
 
+struct smbd_tevent_trace_state {
+	TALLOC_CTX *frame;
+	uint64_t smbd_idle_profstamp;
+};
+
 static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 				       void *private_data)
 {
-	struct smbXsrv_connection *conn =
-		talloc_get_type_abort(private_data,
-		struct smbXsrv_connection);
+	struct smbd_tevent_trace_state *state =
+		(struct smbd_tevent_trace_state *)private_data;
 
 	switch (point) {
 	case TEVENT_TRACE_BEFORE_WAIT:
@@ -3508,18 +3512,22 @@ static void smbd_tevent_trace_callback(enum tevent_trace_point point,
 		 * This just removes compiler warning
 		 * without profile support
 		 */
-		conn->smbd_idle_profstamp = 0;
-		START_PROFILE_STAMP(smbd_idle, conn->smbd_idle_profstamp);
+		state->smbd_idle_profstamp = 0;
+		START_PROFILE_STAMP(smbd_idle, state->smbd_idle_profstamp);
 		break;
 	case TEVENT_TRACE_AFTER_WAIT:
-		END_PROFILE_STAMP(smbd_idle, conn->smbd_idle_profstamp);
+		END_PROFILE_STAMP(smbd_idle, state->smbd_idle_profstamp);
 		break;
-#ifdef TEVENT_HAS_LOOP_ONCE_TRACE_POINTS
 	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
-	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		TALLOC_FREE(state->frame);
+		state->frame = talloc_stackframe_pool(8192);
 		break;
-#endif
+	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		TALLOC_FREE(state->frame);
+		break;
 	}
+
+	errno = 0;
 }
 
 /**
@@ -3554,7 +3562,9 @@ void smbd_process(struct tevent_context *ev_ctx,
 		  int sock_fd,
 		  bool interactive)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbd_tevent_trace_state trace_state = {
+		.frame = talloc_stackframe(),
+	};
 	struct smbXsrv_client *client;
 	struct smbXsrv_connection *xconn;
 	struct smbd_server_connection *sconn;
@@ -3894,24 +3904,18 @@ void smbd_process(struct tevent_context *ev_ctx,
 	xconn->remote_hostname = sconn->remote_hostname;
 	xconn->protocol = PROTOCOL_NONE;
 
-	TALLOC_FREE(frame);
+	TALLOC_FREE(trace_state.frame);
 
-	tevent_set_trace_callback(ev_ctx, smbd_tevent_trace_callback, xconn);
+	tevent_set_trace_callback(ev_ctx, smbd_tevent_trace_callback,
+				  &trace_state);
 
-	while (True) {
-		frame = talloc_stackframe_pool(8192);
-
-		errno = 0;
-		if (tevent_loop_once(ev_ctx) == -1) {
-			if (errno != EINTR) {
-				DEBUG(3, ("tevent_loop_once failed: %s,"
-					  " exiting\n", strerror(errno) ));
-				break;
-			}
-		}
-
-		TALLOC_FREE(frame);
+	ret = tevent_loop_wait(ev_ctx);
+	if (ret != 0) {
+		DEBUG(1, ("tevent_loop_wait failed: %d, %s,"
+			  " exiting\n", ret, strerror(errno)));
 	}
+
+	TALLOC_FREE(trace_state.frame);
 
 	exit_server_cleanly(NULL);
 }
