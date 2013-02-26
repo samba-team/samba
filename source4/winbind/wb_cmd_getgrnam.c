@@ -24,6 +24,7 @@
 #include "winbind/wb_server.h"
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
+#include "param/param.h"
 
 struct cmd_getgrnam_state {
 	struct composite_context *ctx;
@@ -105,6 +106,7 @@ static void cmd_getgrnam_recv_group_info(struct composite_context *ctx)
 			ctx->async.private_data, struct cmd_getgrnam_state);
 	struct libnet_GroupInfo *group_info;
 	struct winbindd_gr *gr;
+	char *group_name_with_domain;
 
 	DEBUG(5, ("cmd_getgrnam_recv_group_info called\n"));
 
@@ -117,7 +119,15 @@ static void cmd_getgrnam_recv_group_info(struct composite_context *ctx)
 	state->ctx->status = libnet_GroupInfo_recv(ctx, state, group_info);
 	if(!composite_is_ok(state->ctx)) return;
 
-	WBSRV_SAMBA3_SET_STRING(gr->gr_name, group_info->out.group_name);
+	group_name_with_domain = talloc_asprintf(gr, "%s%s%s",
+		state->workgroup_name,
+		lpcfg_winbind_separator(state->service->task->lp_ctx),
+		group_info->out.group_name);
+	if (composite_nomem(group_name_with_domain, state->ctx)) {
+		return;
+	}
+
+	WBSRV_SAMBA3_SET_STRING(gr->gr_name, group_name_with_domain);
 	WBSRV_SAMBA3_SET_STRING(gr->gr_passwd, "*");
 	gr->num_gr_mem = group_info->out.num_members;
 	gr->gr_mem_ofs = 0;
