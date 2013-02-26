@@ -290,7 +290,7 @@ static files_struct *initial_break_processing(
 		/* The file could have been closed in the meantime - return success. */
 		if( DEBUGLVL( 3 ) ) {
 			dbgtext( "initial_break_processing: cannot find open file with " );
-			dbgtext( "file_id %s gen_id = %lu", file_id_string_tos(&id), file_id);
+			dbgtext( "file_id %s gen_id = %lu, ", file_id_string_tos(&id), file_id);
 			dbgtext( "allowing break to succeed.\n" );
 		}
 		return NULL;
