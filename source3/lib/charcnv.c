@@ -173,7 +173,7 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 	}
 
 	if (src_len == (size_t)-1) {
-		smb_panic("sec_len == -1 in pull_ascii_base_talloc");
+		smb_panic("src_len == -1 in pull_ascii_base_talloc");
 	}
 
 	if (flags & STR_TERMINATE) {
