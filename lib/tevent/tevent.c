@@ -525,7 +525,9 @@ int _tevent_loop_once(struct tevent_context *ev, const char *location)
 		}
 	}
 
+	tevent_trace_point_callback(ev, TEVENT_TRACE_BEFORE_LOOP_ONCE);
 	ret = ev->ops->loop_once(ev, location);
+	tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_LOOP_ONCE);
 
 	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {
@@ -585,7 +587,9 @@ int _tevent_loop_until(struct tevent_context *ev,
 	}
 
 	while (!finished(private_data)) {
+		tevent_trace_point_callback(ev, TEVENT_TRACE_BEFORE_LOOP_ONCE);
 		ret = ev->ops->loop_once(ev, location);
+		tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_LOOP_ONCE);
 		if (ret != 0) {
 			break;
 		}

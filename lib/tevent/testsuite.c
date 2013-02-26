@@ -194,6 +194,9 @@ static void test_event_threaded_trace(enum tevent_trace_point point,
 	case TEVENT_TRACE_AFTER_WAIT:
 		test_event_threaded_lock();
 		break;
+	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
+	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		break;
 	}
 }
 
