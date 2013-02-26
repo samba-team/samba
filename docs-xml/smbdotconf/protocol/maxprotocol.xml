@@ -35,8 +35,7 @@
 	</listitem>
 	<listitem>
 	    <para><constant>SMB2</constant>: Re-implementation of the SMB protocol.
-	    Used by Windows Vista and newer. The Samba implementation of SMB2 is
-	    currently marked experimental!</para>
+	    Used by Windows Vista and newer.</para>
 	</listitem>
     </itemizedlist>
 
