@@ -524,6 +524,17 @@ enum tevent_trace_point {
 	 * Corresponds to a trace point just after waiting
 	 */
 	TEVENT_TRACE_AFTER_WAIT,
+#define TEVENT_HAS_LOOP_ONCE_TRACE_POINTS 1
+	/**
+	 * Corresponds to a trace point just before calling
+	 * the loop_once() backend function.
+	 */
+	TEVENT_TRACE_BEFORE_LOOP_ONCE,
+	/**
+	 * Corresponds to a trace point right after the
+	 * loop_once() backend function has returned.
+	 */
+	TEVENT_TRACE_AFTER_LOOP_ONCE,
 };
 
 typedef void (*tevent_trace_callback_t)(enum tevent_trace_point,
