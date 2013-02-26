@@ -939,23 +939,55 @@ static void smbd_stdin_handler(struct tevent_context *ev,
 	}
 }
 
+struct smbd_parent_tevent_trace_state {
+	TALLOC_CTX *frame;
+};
+
+static void smbd_parent_tevent_trace_callback(enum tevent_trace_point point,
+					      void *private_data)
+{
+	struct smbd_parent_tevent_trace_state *state =
+		(struct smbd_parent_tevent_trace_state *)private_data;
+
+	switch (point) {
+	case TEVENT_TRACE_BEFORE_WAIT:
+		break;
+	case TEVENT_TRACE_AFTER_WAIT:
+		break;
+	case TEVENT_TRACE_BEFORE_LOOP_ONCE:
+		TALLOC_FREE(state->frame);
+		state->frame = talloc_stackframe();
+		break;
+	case TEVENT_TRACE_AFTER_LOOP_ONCE:
+		TALLOC_FREE(state->frame);
+		break;
+	}
+
+	errno = 0;
+}
+
 static void smbd_parent_loop(struct tevent_context *ev_ctx,
 			     struct smbd_parent_context *parent)
 {
+	struct smbd_parent_tevent_trace_state trace_state = {
+		.frame = NULL,
+	};
+	int ret = 0;
+
+	tevent_set_trace_callback(ev_ctx, smbd_parent_tevent_trace_callback,
+				  &trace_state);
+
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
 	DEBUG(2,("waiting for connections\n"));
-	while (1) {
-		int ret;
-		TALLOC_CTX *frame = talloc_stackframe();
 
-		ret = tevent_loop_once(ev_ctx);
-		if (ret != 0) {
-			exit_server_cleanly("tevent_loop_once() error");
-		}
+	ret = tevent_loop_wait(ev_ctx);
+	if (ret != 0) {
+		DEBUG(0, ("tevent_loop_wait failed: %d, %s, exiting\n",
+			  ret, strerror(errno)));
+	}
 
-		TALLOC_FREE(frame);
-	} /* end while 1 */
+	TALLOC_FREE(trace_state.frame);
 
 /* NOTREACHED	return True; */
 }
