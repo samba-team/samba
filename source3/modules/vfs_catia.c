@@ -300,7 +300,7 @@ static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
 {
 	char *name = NULL;
 	char *mapped_name;
-	NTSTATUS ret;
+	NTSTATUS status, ret;
 
 	/*
 	 * Copy the supplied name and free the memory for mapped_name,
@@ -313,12 +313,12 @@ static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
 		errno = ENOMEM;
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = catia_string_replace_allocate(handle->conn, name,
+	status = catia_string_replace_allocate(handle->conn, name,
 			&mapped_name, direction);
 
 	TALLOC_FREE(name);
-	if (!NT_STATUS_IS_OK(ret)) {
-		return ret;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	ret = SMB_VFS_NEXT_TRANSLATE_NAME(handle, mapped_name, direction,
@@ -326,6 +326,8 @@ static NTSTATUS catia_translate_name(struct vfs_handle_struct *handle,
 
 	if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
 		*pmapped_name = talloc_move(mem_ctx, &mapped_name);
+		/* we need to return the former translation result here */
+		ret = status;
 	} else {
 		TALLOC_FREE(mapped_name);
 	}
