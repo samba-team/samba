@@ -421,6 +421,244 @@ static bool test_event_fd1(struct torture_context *tctx,
 	return true;
 }
 
+struct test_event_fd2_state {
+	struct torture_context *tctx;
+	const char *backend;
+	struct tevent_context *ev;
+	struct tevent_timer *te;
+	struct test_event_fd2_sock {
+		struct test_event_fd2_state *state;
+		int fd;
+		struct tevent_fd *fde;
+		size_t num_written;
+		size_t num_read;
+		bool got_full;
+	} sock0, sock1;
+	bool finished;
+	const char *error;
+};
+
+static void test_event_fd2_sock_handler(struct tevent_context *ev_ctx,
+					struct tevent_fd *fde,
+					uint16_t flags,
+					void *private_data)
+{
+	struct test_event_fd2_sock *cur_sock =
+		(struct test_event_fd2_sock *)private_data;
+	struct test_event_fd2_state *state = cur_sock->state;
+	struct test_event_fd2_sock *oth_sock = NULL;
+	uint8_t v = 0, c;
+	ssize_t ret;
+
+	if (cur_sock == &state->sock0) {
+		oth_sock = &state->sock1;
+	} else {
+		oth_sock = &state->sock0;
+	}
+
+	if (oth_sock->num_written == 1) {
+		if (flags != (TEVENT_FD_READ | TEVENT_FD_WRITE)) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+	}
+
+	if (cur_sock->num_read == oth_sock->num_written) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (!(flags & TEVENT_FD_READ)) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+
+	if (oth_sock->num_read > 0) {
+		/*
+		 * There should be room to write a byte again
+		 */
+		if (!(flags & TEVENT_FD_WRITE)) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+	}
+
+	if ((flags & TEVENT_FD_WRITE) && !cur_sock->got_full) {
+		v = (uint8_t)cur_sock->num_written;
+		ret = write(cur_sock->fd, &v, 1);
+		if (ret != 1) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+		cur_sock->num_written++;
+		if (cur_sock->num_written > 0x80000000) {
+			state->finished = true;
+			state->error = __location__;
+			return;
+		}
+		return;
+	}
+
+	if (!cur_sock->got_full) {
+		cur_sock->got_full = true;
+
+		if (!oth_sock->got_full) {
+			/*
+			 * cur_sock is full,
+			 * lets wait for oth_sock
+			 * to be filled
+			 */
+			tevent_fd_set_flags(cur_sock->fde, 0);
+			return;
+		}
+
+		/*
+		 * oth_sock waited for cur_sock,
+		 * lets restart it
+		 */
+		tevent_fd_set_flags(oth_sock->fde,
+				    TEVENT_FD_READ|TEVENT_FD_WRITE);
+	}
+
+	ret = read(cur_sock->fd, &v, 1);
+	if (ret != 1) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+	c = (uint8_t)cur_sock->num_read;
+	if (c != v) {
+		state->finished = true;
+		state->error = __location__;
+		return;
+	}
+	cur_sock->num_read++;
+
+	if (cur_sock->num_read < oth_sock->num_written) {
+		/* there is more to read */
+		return;
+	}
+	/*
+	 * we read everything, we need to remove TEVENT_FD_WRITE
+	 * to avoid spinning
+	 */
+	TEVENT_FD_NOT_WRITEABLE(cur_sock->fde);
+
+	if (oth_sock->num_read == cur_sock->num_written) {
+		/*
+		 * both directions are finished
+		 */
+		state->finished = true;
+	}
+
+	return;
+}
+
+static void test_event_fd2_finished(struct tevent_context *ev_ctx,
+				    struct tevent_timer *te,
+				    struct timeval tval,
+				    void *private_data)
+{
+	struct test_event_fd2_state *state =
+		(struct test_event_fd2_state *)private_data;
+
+	/*
+	 * this should never be triggered
+	 */
+	state->finished = true;
+	state->error = __location__;
+}
+
+static bool test_event_fd2(struct torture_context *tctx,
+			   const void *test_data)
+{
+	struct test_event_fd2_state state;
+	int sock[2];
+	uint8_t c = 0;
+
+	ZERO_STRUCT(state);
+	state.tctx = tctx;
+	state.backend = (const char *)test_data;
+
+	state.ev = tevent_context_init_byname(tctx, state.backend);
+	if (state.ev == NULL) {
+		torture_skip(tctx, talloc_asprintf(tctx,
+			     "event backend '%s' not supported\n",
+			     state.backend));
+		return true;
+	}
+
+	tevent_set_debug_stderr(state.ev);
+	torture_comment(tctx, "backend '%s' - %s\n",
+			state.backend, __FUNCTION__);
+
+	/*
+	 * This tests the following
+	 *
+	 * - We write 1 byte to each socket
+	 * - We wait for TEVENT_FD_READ/WRITE on both sockets
+	 * - When we get TEVENT_FD_WRITE we write 1 byte
+	 *   until both socket buffers are full, which
+	 *   means both sockets only get TEVENT_FD_READ.
+	 * - Then we read 1 byte until we have consumed
+	 *   all bytes the other end has written.
+	 */
+	sock[0] = -1;
+	sock[1] = -1;
+	socketpair(AF_UNIX, SOCK_STREAM, 0, sock);
+
+	/*
+	 * the timer should never expire
+	 */
+	state.te = tevent_add_timer(state.ev, state.ev,
+				    timeval_current_ofs(600, 0),
+				    test_event_fd2_finished, &state);
+	state.sock0.state = &state;
+	state.sock0.fd = sock[0];
+	state.sock0.fde = tevent_add_fd(state.ev, state.ev,
+					state.sock0.fd,
+					TEVENT_FD_READ | TEVENT_FD_WRITE,
+					test_event_fd2_sock_handler,
+					&state.sock0);
+	state.sock1.state = &state;
+	state.sock1.fd = sock[1];
+	state.sock1.fde = tevent_add_fd(state.ev, state.ev,
+					state.sock1.fd,
+					TEVENT_FD_READ | TEVENT_FD_WRITE,
+					test_event_fd2_sock_handler,
+					&state.sock1);
+
+	tevent_fd_set_auto_close(state.sock0.fde);
+	tevent_fd_set_auto_close(state.sock1.fde);
+
+	write(state.sock0.fd, &c, 1);
+	state.sock0.num_written++;
+	write(state.sock1.fd, &c, 1);
+	state.sock1.num_written++;
+
+	while (!state.finished) {
+		errno = 0;
+		if (tevent_loop_once(state.ev) == -1) {
+			talloc_free(state.ev);
+			torture_fail(tctx, talloc_asprintf(tctx,
+				     "Failed event loop %s\n",
+				     strerror(errno)));
+		}
+	}
+
+	talloc_free(state.ev);
+
+	torture_assert(tctx, state.error == NULL, talloc_asprintf(tctx,
+		       "%s", state.error));
+
+	return true;
+}
+
 #ifdef HAVE_PTHREAD
 
 static pthread_mutex_t threaded_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -576,6 +814,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 		torture_suite_add_simple_tcase_const(backend_suite,
 					       "fd1",
 					       test_event_fd1,
+					       (const void *)list[i]);
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "fd2",
+					       test_event_fd2,
 					       (const void *)list[i]);
 
 		torture_suite_add_suite(suite, backend_suite);
