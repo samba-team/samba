@@ -1594,13 +1594,88 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 	return 0;
 }
 
+
+/* 
+ * scans all other nodes and returns a pnn for another node that can host this 
+ * ip address or -1
+ */
+static int
+find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_all_public_ips *ips;
+	struct ctdb_node_map *nodemap=NULL;
+	int i, j, ret;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (nodemap->nodes[i].pnn == options.pnn) {
+			continue;
+		}
+
+		/* read the public ip list from this node */
+		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", nodemap->nodes[i].pnn));
+			return -1;
+		}
+
+		for (j=0;j<ips->num;j++) {
+			if (ctdb_same_ip(addr, &ips->ips[j].addr)) {
+				talloc_free(tmp_ctx);
+				return nodemap->nodes[i].pnn;
+			}
+		}
+		talloc_free(ips);
+	}
+
+	talloc_free(tmp_ctx);
+	return -1;
+}
+
+/* If pnn is -1 then try to find a node to move IP to... */
+static bool try_moveip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn)
+{
+	bool pnn_specified = (pnn == -1 ? false : true);
+	int retries = 0;
+
+	while (retries < 5) {
+		if (!pnn_specified) {
+			pnn = find_other_host_for_public_ip(ctdb, addr);
+			if (pnn == -1) {
+				return false;
+			}
+			DEBUG(DEBUG_NOTICE,
+			      ("Trying to move public IP to node %u\n", pnn));
+		}
+
+		if (move_ip(ctdb, addr, pnn) == 0) {
+			return true;
+		}
+
+		sleep(3);
+		retries++;
+	}
+
+	return false;
+}
+
+
 /*
   move/failover an ip address to a specific node
  */
 static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t pnn;
-	int ret, retries = 0;
 	ctdb_sock_addr addr;
 
 	if (argc < 2) {
@@ -1619,16 +1694,8 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	do {
-		ret = move_ip(ctdb, &addr, pnn);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Wait 3 second and try again.\n", pnn));
-			sleep(3);
-			retries++;
-		}
-	} while (retries < 5 && ret != 0);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Giving up.\n", pnn));
+	if (!try_moveip(ctdb, &addr, pnn)) {
+		DEBUG(DEBUG_ERR,("Failed to move IP to node %d.\n", pnn));
 		return -1;
 	}
 
@@ -1860,53 +1927,6 @@ control_get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx, struc
 	return 0;
 }
 
-
-/* 
- * scans all other nodes and returns a pnn for another node that can host this 
- * ip address or -1
- */
-static int
-find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_all_public_ips *ips;
-	struct ctdb_node_map *nodemap=NULL;
-	int i, j, ret;
-
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	for(i=0;i<nodemap->num;i++){
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[i].pnn == options.pnn) {
-			continue;
-		}
-
-		/* read the public ip list from this node */
-		ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", nodemap->nodes[i].pnn));
-			return -1;
-		}
-
-		for (j=0;j<ips->num;j++) {
-			if (ctdb_same_ip(addr, &ips->ips[j].addr)) {
-				talloc_free(tmp_ctx);
-				return nodemap->nodes[i].pnn;
-			}
-		}
-		talloc_free(ips);
-	}
-
-	talloc_free(tmp_ctx);
-	return -1;
-}
 
 static uint32_t ipreallocate_finished;
 
@@ -2220,7 +2240,6 @@ static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **a
 static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	int retries = 0;
 	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -2264,24 +2283,12 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
+	/* This is an optimsation.  If this node is hosting the IP
+	 * then try to move it somewhere else without invoking a full
+	 * takeover run.  We don't care if this doesn't work!
+	 */
 	if (ips->ips[i].pnn == options.pnn) {
-		int pnn;
-
-		pnn = find_other_host_for_public_ip(ctdb, &addr);
-		if (pnn != -1) {
-			do {
-				ret = move_ip(ctdb, &addr, pnn);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Wait 3 seconds and try again.\n", options.pnn));
-					sleep(3);
-					retries++;
-				}
-			} while (retries < 5 && ret != 0);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Giving up.\n", options.pnn));
-				return -1;
-			}
-		}
+		(void) try_moveip(ctdb, &addr, -1);
 	}
 
 	ret = ctdb_ctrl_del_public_ip(ctdb, TIMELIMIT(), options.pnn, &pub);
