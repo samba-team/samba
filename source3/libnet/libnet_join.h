@@ -25,7 +25,8 @@
 
 NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 			const char *machine_name,
-			const char *dc_name);
+			const char *dc_name,
+			const bool use_kerberos);
 WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 			   struct libnet_JoinCtx **r);
 WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
