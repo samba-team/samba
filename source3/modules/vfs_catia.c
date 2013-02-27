@@ -29,6 +29,11 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 
+static int vfs_catia_debug_level = DBGC_VFS;
+
+#undef DBGC_CLASS
+#define DBGC_CLASS vfs_catia_debug_level
+
 #define GLOBAL_SNUM     0xFFFFFFF
 #define MAP_SIZE        0xFF
 #define MAP_NUM         0x101 /* max unicode charval / MAP_SIZE */
@@ -1020,6 +1025,23 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 NTSTATUS vfs_catia_init(void)
 {
-        return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "catia",
+	NTSTATUS ret;
+
+        ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "catia",
 				&vfs_catia_fns);
+	if (!NT_STATUS_IS_OK(ret))
+		return ret;
+
+	vfs_catia_debug_level = debug_add_class("catia");
+	if (vfs_catia_debug_level == -1) {
+		vfs_catia_debug_level = DBGC_VFS;
+		DEBUG(0, ("vfs_catia: Couldn't register custom debugging "
+			  "class!\n"));
+	} else {
+		DEBUG(10, ("vfs_catia: Debug class number of "
+			   "'catia': %d\n", vfs_catia_debug_level));
+	}
+
+	return ret;
+
 }
