@@ -210,8 +210,12 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
-			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
-			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
+			if (FD_ISSET(fde->fd, &r_fds) && (fde->flags & TEVENT_FD_READ)) {
+				flags |= TEVENT_FD_READ;
+			}
+			if (FD_ISSET(fde->fd, &w_fds) && (fde->flags & TEVENT_FD_WRITE)) {
+				flags |= TEVENT_FD_WRITE;
+			}
 			if (flags) {
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
 				break;
