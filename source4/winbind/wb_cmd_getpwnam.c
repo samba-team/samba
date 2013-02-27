@@ -84,7 +84,8 @@ static void cmd_getpwnam_recv_domain(struct composite_context *ctx)
 	user_info = talloc(state, struct libnet_UserInfo);
 	if (composite_nomem(user_info, state->ctx)) return;
 
-	ok= wb_samba3_split_username(state, state->service->task->lp_ctx, state->name, &user_dom, &user_name);
+	ok = wb_samba3_split_username(state, state->service->task->lp_ctx,
+				      state->name, &user_dom, &user_name);
 	if(!ok){
 		composite_error(state->ctx, NT_STATUS_OBJECT_NAME_INVALID);
 		return;
