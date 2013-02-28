@@ -186,6 +186,21 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 		memcpy(&ifaces[total].ip, ifptr->ifa_addr, copy_size);
 		memcpy(&ifaces[total].netmask, ifptr->ifa_netmask, copy_size);
 
+		/* calculate broadcast address */
+#if defined(HAVE_IPV6)
+		if (ifptr->ifa_addr->sa_family == AF_INET6) {
+			struct sockaddr_in6 *sin6 =
+				(struct sockaddr_in6 *)ifptr->ifa_addr;
+			struct in6_addr *in6 =
+				(struct in6_addr *)&sin6->sin6_addr;
+
+			if (IN6_IS_ADDR_LINKLOCAL(in6) || IN6_IS_ADDR_V4COMPAT(in6)) {
+				continue;
+			}
+			/* IPv6 does not have broadcast it uses multicast. */
+			memset(&ifaces[total].bcast, '\0', copy_size);
+		} else
+#endif
 		if (ifaces[total].flags & (IFF_BROADCAST|IFF_LOOPBACK)) {
 			make_bcast(&ifaces[total].bcast,
 				&ifaces[total].ip,
@@ -195,19 +210,6 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 			memcpy(&ifaces[total].bcast,
 				ifptr->ifa_dstaddr,
 				copy_size);
-#if defined(HAVE_IPV6)
-		} else if (ifptr->ifa_addr->sa_family == AF_INET6) {
-			const struct sockaddr_in6 *sin6 =
-				(const struct sockaddr_in6 *)ifptr->ifa_addr;
-			const struct in6_addr *in6 =
-				(const struct in6_addr *)&sin6->sin6_addr;
-
-			if (IN6_IS_ADDR_LINKLOCAL(in6) || IN6_IS_ADDR_V4COMPAT(in6)) {
-				continue;
-			}
-			/* IPv6 does not have broadcast it uses multicast. */
-			memset(&ifaces[total].bcast, '\0', copy_size);
-#endif
 		} else {
 			continue;
 		}
