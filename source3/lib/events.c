@@ -314,6 +314,7 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 	int timeout;
 	int num_pfds;
 	int ret;
+	int poll_errno;
 
 	timeout = INT_MAX;
 
@@ -333,7 +334,12 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 		return -1;
 	}
 
+	tevent_trace_point_callback(ev, TEVENT_TRACE_BEFORE_WAIT);
 	ret = poll(state->pfds, num_pfds, timeout);
+	poll_errno = errno;
+	tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_WAIT);
+	errno = poll_errno;
+
 	if (ret == -1 && errno != EINTR) {
 		tevent_debug(ev, TEVENT_DEBUG_FATAL,
 			     "poll() failed: %d:%s\n",
