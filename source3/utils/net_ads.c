@@ -1315,6 +1315,8 @@ static int net_ads_join_usage(struct net_context *c, int argc, const char **argv
 		   "                      E.g. \"createcomputer=Computers/Servers/Unix\"\n"
 		   "                      NB: A backslash '\\' is used as escape at multiple levels and may\n"
 		   "                          need to be doubled or even quadrupled.  It is not used as a separator.\n"));
+	d_printf(_("   machinepass=PASS   Set the machine password to a specific value during the join.\n"
+		   "                      The deault password is random.\n"));
 	d_printf(_("   osName=string      Set the operatingSystem attribute during the join.\n"));
 	d_printf(_("   osVer=string       Set the operatingSystemVersion attribute during the join.\n"
 		   "                      NB: osName and osVer must be specified together for either to take effect.\n"
@@ -1421,6 +1423,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	WERROR werr = WERR_SETUP_NOT_JOINED;
 	bool createupn = false;
 	const char *machineupn = NULL;
+	const char *machine_password = NULL;
 	const char *create_in_ou = NULL;
 	int i;
 	const char *os_name = NULL;
@@ -1482,6 +1485,13 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 				goto fail;
 			}
 		}
+		else if ( !strncasecmp_m(argv[i], "machinepass", strlen("machinepass")) ) {
+			if ( (machine_password = get_string_param(argv[i])) == NULL ) {
+				d_fprintf(stderr, _("Please supply a valid password to set as trust account password.\n"));
+				werr = WERR_INVALID_PARAM;
+				goto fail;
+			}
+		}
 		else {
 			domain = argv[i];
 		}
@@ -1511,6 +1521,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.dc_name		= c->opt_host;
 	r->in.admin_account	= c->opt_user_name;
 	r->in.admin_password	= net_prompt_pass(c, c->opt_user_name);
+	r->in.machine_password  = machine_password;
 	r->in.debug		= true;
 	r->in.use_kerberos	= c->opt_kerberos;
 	r->in.modify_config	= modify_config;
