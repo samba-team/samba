@@ -195,7 +195,7 @@ the remote server using <command>/bin/date</command>. </para>
 
 <refsect2>
 <title>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [createupn=UPN]
-[createcomputer=OU] [machinepass=PASS] [options]</title>
+[createcomputer=OU] [machinepass=PASS] [osName=string osVer=string] [options]</title>
 
 <para>
 Join a domain.  If the account already exists on the server, and 
@@ -224,6 +224,11 @@ and it is not used as a delimiter.
 <para>
 [PASS] (ADS only) Set a specific password on the computer account
 being created by the join.
+</para>
+<para>
+[osName=string osVer=String] (ADS only) Set the operatingSystem and
+operatingSystemVersion attribute during the join.  Both parameters
+must be specified for either to take effect.
 </para>
 </refsect2>
 
