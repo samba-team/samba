@@ -219,25 +219,15 @@ static int poll_event_fd_destructor(struct tevent_fd *fde)
 	poll_ev = talloc_get_type_abort(
 		ev->additional_data, struct poll_event_context);
 
+	if (del_idx == UINT64_MAX) {
+
+		DLIST_REMOVE(poll_ev->fresh, fde);
+		goto done;
+	}
+
 	poll_ev->fdes[del_idx] = NULL;
 	poll_ev->deleted = true;
 	poll_event_wake_pollthread(poll_ev);
-done:
-	return tevent_common_fd_destructor(fde);
-}
-
-static int poll_fresh_fde_destructor(struct tevent_fd *fde)
-{
-	struct tevent_context *ev = fde->event_ctx;
-	struct poll_event_context *poll_ev;
-
-	if (ev == NULL) {
-		goto done;
-	}
-	poll_ev = talloc_get_type_abort(
-		ev->additional_data, struct poll_event_context);
-
-	DLIST_REMOVE(poll_ev->fresh, fde);
 done:
 	return tevent_common_fd_destructor(fde);
 }
@@ -270,7 +260,7 @@ _PRIVATE_ void tevent_poll_event_add_fd_internal(struct tevent_context *ev,
 	fde->additional_flags	= UINT64_MAX;
 	fde->additional_data	= NULL;
 	DLIST_ADD(poll_ev->fresh, fde);
-	talloc_set_destructor(fde, poll_fresh_fde_destructor);
+	talloc_set_destructor(fde, poll_event_fd_destructor);
 }
 
 /*
@@ -453,8 +443,6 @@ static bool poll_event_setup_fresh(struct tevent_context *ev,
 		next = fde->next;
 		DLIST_REMOVE(poll_ev->fresh, fde);
 		DLIST_ADD(ev->fd_events, fde);
-
-		talloc_set_destructor(fde, poll_event_fd_destructor);
 
 		poll_ev->num_fds += 1;
 	}
