@@ -308,8 +308,7 @@ static struct tevent_fd *poll_event_add_fd(struct tevent_context *ev,
 	fde->additional_flags	= UINT64_MAX;
 	fde->additional_data	= NULL;
 
-	DLIST_ADD(poll_ev->fresh, fde);
-	talloc_set_destructor(fde, poll_fresh_fde_destructor);
+	tevent_poll_event_add_fd_internal(ev, fde);
 	poll_event_wake_pollthread(poll_ev);
 
 	/*
