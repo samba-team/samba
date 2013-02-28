@@ -348,13 +348,20 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 	int i;
 
 	for (i=0;list && list[i];i++) {
-		torture_suite_add_simple_tcase_const(suite, list[i],
+		struct torture_suite *backend_suite;
+
+		backend_suite = torture_suite_create(mem_ctx, list[i]);
+
+		torture_suite_add_simple_tcase_const(backend_suite,
+					       "context",
 					       test_event_context,
 					       (const void *)list[i]);
+
+		torture_suite_add_suite(suite, backend_suite);
 	}
 
 #ifdef HAVE_PTHREAD
-	torture_suite_add_simple_tcase_const(suite, "poll_mt_threaded",
+	torture_suite_add_simple_tcase_const(suite, "threaded_poll_mt",
 					     test_event_context_threaded,
 					     NULL);
 #endif
