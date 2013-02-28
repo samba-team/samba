@@ -157,6 +157,10 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	/* setup any fd events */
 	for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			tevent_debug(select_ev->ev, TEVENT_DEBUG_FATAL,
+				     "ERROR: EBADF fd[%d] >= %d "
+				     "select_event_loop_once\n",
+				     fde->fd, FD_SETSIZE);
 			errno = EBADF;
 			return -1;
 		}
