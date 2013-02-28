@@ -38,6 +38,13 @@ struct poll_event_context {
 	 * picked up yet by poll_event_loop_once
 	 */
 	struct tevent_fd *fresh;
+	/*
+	 * A DLIST for disabled fde's.
+	 */
+	struct tevent_fd *disabled;
+	/*
+	 * one or more events were deleted or disabled
+	 */
 	bool deleted;
 
 	/*
@@ -64,6 +71,12 @@ static int poll_event_context_destructor(struct poll_event_context *poll_ev)
 		fn = fd->next;
 		fd->event_ctx = NULL;
 		DLIST_REMOVE(poll_ev->fresh, fd);
+	}
+
+	for (fd = poll_ev->disabled; fd; fd = fn) {
+		fn = fd->next;
+		fd->event_ctx = NULL;
+		DLIST_REMOVE(poll_ev->disabled, fd);
 	}
 
 	if (poll_ev->signal_fd == -1) {
@@ -220,8 +233,10 @@ static int poll_event_fd_destructor(struct tevent_fd *fde)
 		ev->additional_data, struct poll_event_context);
 
 	if (del_idx == UINT64_MAX) {
+		struct tevent_fd **listp =
+			(struct tevent_fd **)fde->additional_data;
 
-		DLIST_REMOVE(poll_ev->fresh, fde);
+		DLIST_REMOVE((*listp), fde);
 		goto done;
 	}
 
@@ -256,10 +271,18 @@ _PRIVATE_ void tevent_poll_event_add_fd_internal(struct tevent_context *ev,
 {
 	struct poll_event_context *poll_ev = talloc_get_type_abort(
 		ev->additional_data, struct poll_event_context);
+	struct tevent_fd **listp;
+
+	if (fde->flags != 0) {
+		listp = &poll_ev->fresh;
+	} else {
+		listp = &poll_ev->disabled;
+	}
 
 	fde->additional_flags	= UINT64_MAX;
-	fde->additional_data	= NULL;
-	DLIST_ADD(poll_ev->fresh, fde);
+	fde->additional_data	= listp;
+
+	DLIST_ADD((*listp), fde);
 	talloc_set_destructor(fde, poll_event_fd_destructor);
 }
 
@@ -327,11 +350,28 @@ static void poll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 	fde->flags = flags;
 
 	if (idx == UINT64_MAX) {
+		struct tevent_fd **listp =
+			(struct tevent_fd **)fde->additional_data;
+
 		/*
-		 * poll_event_setup_fresh not yet called after this fde was
-		 * added. We don't have to do anything to transfer the changed
-		 * flags to the array passed to poll(2)
+		 * We move it between the fresh and disabled lists.
 		 */
+		DLIST_REMOVE((*listp), fde);
+		tevent_poll_event_add_fd_internal(ev, fde);
+		poll_event_wake_pollthread(poll_ev);
+		return;
+	}
+
+	if (fde->flags == 0) {
+		/*
+		 * We need to remove it from the array
+		 * and move it to the disabled list.
+		 */
+		poll_ev->fdes[idx] = NULL;
+		poll_ev->deleted = true;
+		DLIST_REMOVE(ev->fd_events, fde);
+		tevent_poll_event_add_fd_internal(ev, fde);
+		poll_event_wake_pollthread(poll_ev);
 		return;
 	}
 
@@ -602,7 +642,8 @@ static int poll_event_loop_wait(struct tevent_context *ev,
 	       ev->timer_events ||
 	       ev->immediate_events ||
 	       ev->signal_events ||
-	       poll_ev->fresh) {
+	       poll_ev->fresh ||
+	       poll_ev->disabled) {
 		int ret;
 		ret = _tevent_loop_once(ev, location);
 		if (ret != 0) {
