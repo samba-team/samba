@@ -82,6 +82,15 @@
 	<smbconfoption name="catia:mappings">0x22:0xa8,0x2a:0xa4,0x2f:0xf8,0x3a:0xf7,0x3c:0xab,0x3e:0xbb,0x3f:0xbf,0x5c:0xff,0x7c:0xa6,0x20:0xb1</smbconfoption>
 </programlisting>
 
+        <para>Unix filename to be translated (Note that the path delimiter "/" is not used here):
+	</para>
+	<para>a\a:a*a?a"a&lt;a&gt;a|a a</para>
+
+	<para>Resulting windows filename:</para>
+
+	<para>a&#x00ff;a&#x00f7;a&#x00a4;a&#x00bf;a&#x00a8;a&#x00ab;a&#x00bb;a&#x00a6;a&#x00b1;a
+	</para>
+
         <para>Note that the character mapping must work in BOTH directions
 	(unix -&gt; windows and windows -&gt; unix) to get unique and existing file names!
 	</para>
@@ -99,8 +108,8 @@
 	 <para>Assuming a unix filename "a:should_work", which is well translated
 	 to windows as "a_should_work".</para>
 	 <para>BUT the reverse mapping from windows "a_should_work" to unix
-	 will result to "a:should:work" - something like "file not found"
-	 would be returned.
+	 will result in "a:should:work" - something like "file not found"
+	 will be returned.
 	 </para>
 
 </refsect1>
@@ -119,7 +128,7 @@
 	were created by Andrew Tridgell. Samba is now developed
 	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
-	<para>Written by Guenter Kukkukk kukks@samba.org</para>
+	<para>New version written by Guenter Kukkukk kukks@samba.org</para>
 
 </refsect1>
 
