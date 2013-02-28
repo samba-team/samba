@@ -10,6 +10,7 @@
  *
  * Copyright (C) Volker Lendecke, 2005
  * Copyright (C) Aravind Srinivasan, 2009
+ * Copyright (C) Guenter Kukkukk, 2013
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
