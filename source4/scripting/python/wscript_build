@@ -32,7 +32,7 @@ bld.SAMBA_PYTHON('python_glue',
 
 
 # install out various python scripts for use by make test
-bld.SAMBA_SCRIPT('samba_python',
+bld.SAMBA_SCRIPT('samba_python_files',
                  pattern='samba/**/*.py',
                  installdir='python')
 
