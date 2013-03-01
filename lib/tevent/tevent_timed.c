@@ -244,6 +244,10 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 	 * handler we don't want to come across this event again -- vl */
 	DLIST_REMOVE(ev->timer_events, te);
 
+	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
+		     "Running timer event %p \"%s\"\n",
+		     te, te->handler_name);
+
 	/*
 	 * If the timed event was registered for a zero current_time,
 	 * then we pass a zero timeval here too! To avoid the
