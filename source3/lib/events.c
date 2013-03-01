@@ -182,7 +182,6 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 	struct tevent_poll_private *state;
 	int *pollfd_idx;
 	struct tevent_fd *fde;
-	struct timeval now;
 
 	if (ev->signal_events &&
 	    tevent_common_check_signal(ev)) {
@@ -194,37 +193,14 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 		return true;
 	}
 
-	GetTimeOfDay(&now);
-
-	if ((ev->timer_events != NULL)
-	    && (timeval_compare(&now, &ev->timer_events->next_event) >= 0)) {
-		/* this older events system did not auto-free timed
-		   events on running them, and had a race condition
-		   where the event could be called twice if the
-		   talloc_free of the te happened after the callback
-		   made a call which invoked the event loop. To avoid
-		   this while still allowing old code which frees the
-		   te, we need to create a temporary context which
-		   will be used to ensure the te is freed. We also
-		   remove the te from the timed event list before we
-		   call the handler, to ensure we can't loop */
-
-		struct tevent_timer *te = ev->timer_events;
-		TALLOC_CTX *tmp_ctx = talloc_new(ev);
-
-		DEBUG(10, ("Running timed event \"%s\" %p\n",
-			   ev->timer_events->handler_name, ev->timer_events));
-
-		DLIST_REMOVE(ev->timer_events, te);
-		talloc_steal(tmp_ctx, te);
-
-		te->handler(ev, te, now, te->private_data);
-
-		talloc_free(tmp_ctx);
-		return true;
-	}
-
 	if (pollrtn <= 0) {
+		struct timeval tval;
+
+		tval = tevent_common_loop_timer_delay(ev);
+		if (tevent_timeval_is_zero(&tval)) {
+			return true;
+		}
+
 		/*
 		 * No fd ready
 		 */
