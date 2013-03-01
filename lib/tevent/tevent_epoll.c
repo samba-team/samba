@@ -480,23 +480,43 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 */
 static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
+	struct tevent_fd *mpx_fde = NULL;
 	struct epoll_event event;
 	int ret;
 
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 
+	if (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_HAS_MPX) {
+		/*
+		 * This is a multiplexed fde, we need to include both
+		 * flags in the modified event.
+		 */
+		mpx_fde = talloc_get_type_abort(fde->additional_data,
+						struct tevent_fd);
+
+		mpx_fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
+		mpx_fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+	}
+
 	ZERO_STRUCT(event);
 	event.events = epoll_map_flags(fde->flags);
+	if (mpx_fde != NULL) {
+		event.events |= epoll_map_flags(mpx_fde->flags);
+	}
 	event.data.ptr = fde;
 	ret = epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event);
 	if (ret != 0 && errno == EBADF) {
 		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_ERROR,
 			     "EPOLL_CTL_MOD EBADF for "
-			     "fde[%p] fd[%d] - disabling\n",
-			     fde, fde->fd);
+			     "fde[%p] mpx_fde[%p] fd[%d] - disabling\n",
+			     fde, mpx_fde, fde->fd);
 		DLIST_REMOVE(epoll_ev->ev->fd_events, fde);
 		fde->event_ctx = NULL;
+		if (mpx_fde != NULL) {
+			DLIST_REMOVE(epoll_ev->ev->fd_events, mpx_fde);
+			mpx_fde->event_ctx = NULL;
+		}
 		return;
 	} else if (ret != 0) {
 		epoll_panic(epoll_ev, "EPOLL_CTL_MOD failed", false);
@@ -507,6 +527,16 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	/* only if we want to read we want to tell the event handler about errors */
 	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
+	}
+
+	if (mpx_fde == NULL) {
+		return;
+	}
+
+	mpx_fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
+	/* only if we want to read we want to tell the event handler about errors */
+	if (mpx_fde->flags & TEVENT_FD_READ) {
+		mpx_fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
 
