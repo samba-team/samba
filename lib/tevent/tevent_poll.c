@@ -594,6 +594,12 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 		if (pfd->revents & POLLOUT) {
 			flags |= TEVENT_FD_WRITE;
 		}
+		/*
+		 * Note that fde->flags could be changed when using
+		 * the poll_mt backend together with threads,
+		 * that why we need to check pfd->revents and fde->flags
+		 */
+		flags &= fde->flags;
 		if (flags != 0) {
 			fde->handler(ev, fde, flags, fde->private_data);
 			return 0;
