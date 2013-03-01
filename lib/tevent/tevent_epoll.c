@@ -163,7 +163,7 @@ static void epoll_panic(struct epoll_event_context *epoll_ev,
 		abort();
 	}
 
-	tevent_debug(ev, TEVENT_DEBUG_WARNING,
+	tevent_debug(ev, TEVENT_DEBUG_ERROR,
 		     "%s (%s) replay[%u] - calling panic_fallback\n",
 		     reason, strerror(errno), (unsigned)replay);
 
