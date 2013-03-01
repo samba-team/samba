@@ -64,10 +64,10 @@ def SAMBA_BUILD_ENV(conf):
     # this allows all of the bin/shared and bin/python targets
     # to be expressed in terms of build directory paths
     mkdir_p(os.path.join(conf.blddir, 'default'))
-    for p in ['python','shared', 'modules']:
-        link_target = os.path.join(conf.blddir, 'default/' + p)
+    for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('python', 'python_modules')]:
+        link_target = os.path.join(conf.blddir, 'default/' + target)
         if not os.path.lexists(link_target):
-            os.symlink('../' + p, link_target)
+            os.symlink('../' + source, link_target)
 
     # get perl to put the blib files in the build directory
     blib_bld = os.path.join(conf.blddir, 'default/pidl/blib')
