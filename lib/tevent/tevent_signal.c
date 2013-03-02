@@ -142,7 +142,7 @@ static void tevent_common_signal_handler_info(int signum, siginfo_t *info,
 		 * By default signum is blocked inside this
 		 * signal handler, but calling sigprocmask
 		 * modifies the temporary signal mask being
-		 * used *inside* this hander, which will be
+		 * used *inside* this handler, which will be
 		 * replaced by the callers signal mask once
 		 * we return from here. See Samba
 		 * bug #9550 for details.
