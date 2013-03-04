@@ -1102,6 +1102,32 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 		/* retry later */
 		return;
 	}
+
+	if (err == EMSGSIZE) {
+		/* round up in 1K increments */
+		int bufsize = ((state->len + 1023) & (~1023));
+
+		ret = setsockopt(bsds->fd, SOL_SOCKET, SO_SNDBUF, &bufsize,
+				 sizeof(bufsize));
+		if (ret == 0) {
+			/*
+			 * We do the rety here, rather then via the
+			 * handler, as we only want to retry once for
+			 * this condition, so if there is a mismatch
+			 * between what setsockopt() accepts and what can
+			 * actually be sent, we do not end up in a
+			 * loop.
+			 */
+
+			ret = sendto(bsds->fd, state->buf, state->len,
+				     0, sa, sa_socklen);
+			err = tsocket_bsd_error_from_errno(ret, errno, &retry);
+			if (retry) { /* retry later */
+				return;
+			}
+		}
+	}
+
 	if (tevent_req_error(req, err)) {
 		return;
 	}
