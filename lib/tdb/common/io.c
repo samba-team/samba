@@ -328,12 +328,14 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 				"returned 0 twice: giving up!\n"));
 			errno = ENOSPC;
 			return -1;
-		} else if (written == -1) {
+		}
+		if (written == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of "
 				 "%d bytes failed (%s)\n", (int)n,
 				 strerror(errno)));
 			return -1;
-		} else if (written != n) {
+		}
+		if (written != n) {
 			TDB_LOG((tdb, TDB_DEBUG_WARNING, "expand_file: wrote "
 				 "only %d of %d bytes - retrying\n", (int)written,
 				 (int)n));
