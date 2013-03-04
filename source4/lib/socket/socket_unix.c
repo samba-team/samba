@@ -295,7 +295,7 @@ static NTSTATUS unixdom_sendto(struct socket_context *sock,
 		if (setsockopt(sock->fd, SOL_SOCKET, SO_SNDBUF, &bufsize,
 			       sizeof(bufsize)) == -1)
 		{
-			return map_nt_error_from_unix_common(errno);
+			return map_nt_error_from_unix_common(EMSGSIZE);
 		}
 		len = sendto(sock->fd, blob->data, blob->length, 0, sa, sa_len);
 	}
