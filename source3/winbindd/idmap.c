@@ -285,7 +285,8 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 
 	backend = lp_parm_const_string(-1, config_option, "backend", NULL);
 	if (backend == NULL) {
-		DEBUG(1, ("no backend defined for %s\n", config_option));
+		DEBUG(10, ("no idmap backend configured for domain '%s'\n",
+			   domname));
 		goto fail;
 	}
 
