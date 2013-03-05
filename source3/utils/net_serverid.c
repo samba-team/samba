@@ -195,8 +195,9 @@ static int wipedbs_traverse_sessions(struct smbXsrv_session_global0 *session,
 	rec->val = tdb_data_talloc_copy(rec, tmp);
 
 	rec->desc = talloc_asprintf(
-		rec, "session[global: %u wire: %lu]",
-		session->session_global_id, session->session_wire_id);
+		rec, "session[global: %u wire: %llu]",
+		session->session_global_id,
+		(long long unsigned)session->session_wire_id);
 
 	if ((rec->key.dptr == NULL) || (rec->val.dptr == NULL) ||
 	    (rec->desc == NULL))
@@ -328,9 +329,10 @@ static int wipedbs_traverse_open(struct smbXsrv_open_global0 *open,
 	rec->val = tdb_data_talloc_copy(rec, tmp);
 
 	rec->desc = talloc_asprintf(
-		rec, "open[global: %u persistent: %lu volatile: %lu]",
-		open->open_global_id, open->open_persistent_id,
-		open->open_volatile_id);
+		rec, "open[global: %u persistent: %llu volatile: %llu]",
+		open->open_global_id,
+		(long long unsigned)open->open_persistent_id,
+		(long long unsigned)open->open_volatile_id);
 
 	if ((rec->key.dptr == NULL) || (rec->val.dptr == NULL) ||
 	    (rec->desc == NULL))
