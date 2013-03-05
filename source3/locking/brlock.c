@@ -1655,17 +1655,48 @@ static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 	unsigned int i;
 	unsigned int num_valid_entries = 0;
 	struct lock_struct *locks = *pplocks;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct server_id *ids;
+	bool *exists;
+
+	ids = talloc_array(frame, struct server_id, *pnum_entries);
+	if (ids == NULL) {
+		DEBUG(0, ("validate_lock_entries: "
+			  "talloc_array(struct server_id, %u) failed\n",
+			  *pnum_entries));
+		talloc_free(frame);
+		return false;
+	}
+
+	exists = talloc_array(frame, bool, *pnum_entries);
+	if (exists == NULL) {
+		DEBUG(0, ("validate_lock_entries: "
+			  "talloc_array(bool, %u) failed\n",
+			  *pnum_entries));
+		talloc_free(frame);
+		return false;
+	}
 
 	for (i = 0; i < *pnum_entries; i++) {
-		struct lock_struct *lock_data = &locks[i];
-		if (!serverid_exists(&lock_data->context.pid)) {
+		ids[i] = locks[i].context.pid;
+	}
+
+	if (!serverids_exist(ids, *pnum_entries, exists)) {
+		DEBUG(3, ("validate_lock_entries: serverids_exists failed\n"));
+		talloc_free(frame);
+		return false;
+	}
+
+	for (i = 0; i < *pnum_entries; i++) {
+		if (!exists[i]) {
 			/* This process no longer exists - mark this
 			   entry as invalid by zeroing it. */
-			ZERO_STRUCTP(lock_data);
+			ZERO_STRUCTP(&locks[i]);
 		} else {
 			num_valid_entries++;
 		}
 	}
+	TALLOC_FREE(frame);
 
 	if (num_valid_entries != *pnum_entries) {
 		struct lock_struct *new_lock_data = NULL;
