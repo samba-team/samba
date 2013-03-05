@@ -4,6 +4,23 @@
                  developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+    <para>
+        <warning>
+        <para>Modern server operating systems are tuned for high
+        network performance in the majority of situations; when you set socket
+        options you are overriding those settings.  Linux in particular has an
+        auto-tuning mechanism for buffer sizes that will be disabled if you
+        specify a socket buffer size.  This can potentially cripple your
+        TCP/IP stack.</para>
+
+        <para> Getting the socket options correct can make a big difference to
+        your performance, but getting them wrong can degrade it by just as
+        much.  As with any other low level setting, if you must make changes
+        to it, make small changes and <emphasis>test</emphasis> the effect
+        before making any large changes.</para>
+        </warning>
+    </para>
+
     <para>This option allows you to set socket options 
     to be used when talking with the client.</para>
 
