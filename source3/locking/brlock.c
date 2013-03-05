@@ -1650,7 +1650,8 @@ bool brl_reconnect_disconnected(struct files_struct *fsp)
 /****************************************************************************
  Ensure this set of lock entries is valid.
 ****************************************************************************/
-static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks)
+static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks,
+				  bool keep_disconnected)
 {
 	unsigned int i;
 	unsigned int num_valid_entries = 0;
@@ -1688,13 +1689,21 @@ static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct
 	}
 
 	for (i = 0; i < *pnum_entries; i++) {
-		if (!exists[i]) {
-			/* This process no longer exists - mark this
-			   entry as invalid by zeroing it. */
-			ZERO_STRUCTP(&locks[i]);
-		} else {
+		if (exists[i]) {
 			num_valid_entries++;
+			continue;
 		}
+
+		if (keep_disconnected &&
+		    server_id_is_disconnected(&ids[i]))
+		{
+			num_valid_entries++;
+			continue;
+		}
+
+		/* This process no longer exists - mark this
+		   entry as invalid by zeroing it. */
+		ZERO_STRUCTP(&locks[i]);
 	}
 	TALLOC_FREE(frame);
 
@@ -1770,7 +1779,7 @@ static int brl_traverse_fn(struct db_record *rec, void *state)
 
 	/* Ensure the lock db is clean of entries from invalid processes. */
 
-	if (!validate_lock_entries(&num_locks, &locks)) {
+	if (!validate_lock_entries(&num_locks, &locks, true)) {
 		SAFE_FREE(locks);
 		return -1; /* Terminate traversal */
 	}
@@ -1963,10 +1972,16 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 		 * record with this fsp. Go through and ensure all entries
 		 * are valid - remove any that don't.
 		 * This makes the lockdb self cleaning at low cost.
+		 *
+		 * Note: Disconnected entries belong to disconnected
+		 * durable handles. So at this point, we have a new
+		 * handle on the file and the disconnected durable has
+		 * already been closed (we are not a durable reconnect).
+		 * So we need to clean the disconnected brl entry.
 		 */
 
 		if (!validate_lock_entries(&br_lck->num_locks,
-					   &br_lck->lock_data)) {
+					   &br_lck->lock_data, false)) {
 			SAFE_FREE(br_lck->lock_data);
 			TALLOC_FREE(br_lck);
 			return NULL;
