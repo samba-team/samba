@@ -8,7 +8,7 @@ bld.SAMBA_LIBRARY('samba-util',
                     util_strlist.c util_paths.c idtree.c debug.c fault.c base64.c
                     util_str.c util_str_common.c substitute.c ms_fnmatch.c
                     server_id.c dprintf.c parmlist.c bitmap.c pidfile.c
-                    tevent_debug.c''',
+                    tevent_debug.c util_process.c''',
                   deps='DYNCONFIG',
                   public_deps='talloc tevent execinfo uid_wrapper pthread LIBCRYPTO charset util_setid',
                   public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h samba_util.h string_wrappers.h',
