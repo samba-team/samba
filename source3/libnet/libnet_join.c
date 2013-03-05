@@ -850,6 +850,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct samr_Ids name_types;
 	union samr_UserInfo user_info;
 	struct dcerpc_binding_handle *b = NULL;
+	unsigned int old_timeout = 0;
 
 	struct samr_CryptPassword crypt_pwd;
 	struct samr_CryptPasswordEx crypt_pwd_ex;
@@ -1061,6 +1062,12 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	/* Set password on machine account - first try level 26 */
 
+	/*
+	 * increase the timeout as password filter modules on the DC
+	 * might delay the operation for a significant amount of time
+	 */
+	old_timeout = rpccli_set_timeout(pipe_hnd, 600000);
+
 	init_samr_CryptPasswordEx(r->in.machine_password,
 				  &cli->user_session_key,
 				  &crypt_pwd_ex);
@@ -1091,6 +1098,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 						  &user_info,
 						  &result);
 	}
+
+	old_timeout = rpccli_set_timeout(pipe_hnd, old_timeout);
 
 	if (!NT_STATUS_IS_OK(status)) {
 
