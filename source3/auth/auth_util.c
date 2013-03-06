@@ -925,7 +925,11 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 	result->nss_token = true;
 	result->guest = is_guest;
 
-	status = create_local_token(result);
+	if (is_guest) {
+		status = make_server_info_guest(mem_ctx, &result);
+	} else {
+		status = create_local_token(result);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
