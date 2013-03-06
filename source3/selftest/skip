@@ -13,6 +13,7 @@ samba3.smbtorture_s3.*.mangle
 samba3.smbtorture_s3.*.utable
 samba3.smbtorture_s3.*.pipe_number
 samba3.smbtorture_s3.*.CHAIN1
+samba3.smbtorture_s3.*.DIR1 #loops on 64 bit linux with ext4
 samba3.*base.charset
 samba3.*raw.acls
 samba3.*raw.composite
