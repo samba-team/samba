@@ -1919,7 +1919,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
 	const DATA_BLOB *server_blob;
-	const char *p = NULL;
+	char *p;
 	char *account = NULL;
 	NTSTATUS status;
 
@@ -2020,8 +2020,8 @@ ntlmssp:
 	/* when falling back to ntlmssp while authenticating with a machine
 	 * account strip off the realm - gd */
 
-	if ((p = strchr_m(user, '@')) != NULL) {
-		account[PTR_DIFF(p,user)] = '\0';
+	if ((p = strchr_m(account, '@')) != NULL) {
+		*p = '\0';
 	}
 
 	status = cli_session_setup_ntlmssp(cli, account, pass, user_domain);
