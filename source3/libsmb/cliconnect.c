@@ -1858,6 +1858,50 @@ fail:
 	return status;
 }
 
+#ifdef HAVE_KRB5
+
+static char *cli_session_setup_get_principal(
+	TALLOC_CTX *mem_ctx, const char *spnego_principal,
+	const char *remote_name, const char *dest_realm)
+{
+	char *principal = NULL;
+
+	if (!lp_client_use_spnego_principal() ||
+	    strequal(principal, ADS_IGNORE_PRINCIPAL)) {
+		spnego_principal = NULL;
+	}
+	if (spnego_principal != NULL) {
+		DEBUG(3, ("cli_session_setup_spnego: using spnego provided "
+			  "principal %s\n", spnego_principal));
+		return talloc_strdup(mem_ctx, spnego_principal);
+	}
+	if (is_ipaddress(remote_name) ||
+	    strequal(remote_name, STAR_SMBSERVER)) {
+		return NULL;
+	}
+
+	DEBUG(3, ("cli_session_setup_spnego: using target "
+		  "hostname not SPNEGO principal\n"));
+
+	if (dest_realm) {
+		char *realm = strupper_talloc(talloc_tos(), dest_realm);
+		if (realm == NULL) {
+			return NULL;
+		}
+		principal = talloc_asprintf(talloc_tos(), "cifs/%s@%s",
+					    remote_name, realm);
+		TALLOC_FREE(realm);
+	} else {
+		principal = kerberos_get_principal_from_service_hostname(
+			talloc_tos(), "cifs", remote_name, lp_realm());
+	}
+	DEBUG(3, ("cli_session_setup_spnego: guessed server principal=%s\n",
+		  principal ? principal : "<null>"));
+
+	return principal;
+}
+#endif
+
 /****************************************************************************
  Do a spnego encrypted session setup.
 
@@ -1932,6 +1976,7 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	if (user && *user && cli->got_kerberos_mechanism && cli->use_kerberos) {
 		ADS_STATUS rc;
 		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
+		char *tmp;
 
 		if (pass && *pass) {
 			int ret;
@@ -1948,42 +1993,10 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 			}
 		}
 
-		/* We may not be allowed to use the server-supplied SPNEGO principal, or it may not have been supplied to us
-		 */
-		if (!lp_client_use_spnego_principal() || strequal(principal, ADS_IGNORE_PRINCIPAL)) {
-			TALLOC_FREE(principal);
-		}
-
-		if (principal == NULL &&
-			!is_ipaddress(remote_name) &&
-			!strequal(STAR_SMBSERVER,
-				  remote_name)) {
-			DEBUG(3,("cli_session_setup_spnego: using target "
-				 "hostname not SPNEGO principal\n"));
-
-			if (dest_realm) {
-				char *realm = strupper_talloc(talloc_tos(), dest_realm);
-				if (realm) {
-					principal = talloc_asprintf(talloc_tos(),
-								    "cifs/%s@%s",
-								    remote_name,
-								    realm);
-					TALLOC_FREE(realm);
-				}
-			} else {
-				principal = kerberos_get_principal_from_service_hostname(talloc_tos(),
-											 "cifs",
-											 remote_name,
-											 lp_realm());
-			}
-
-			if (!principal) {
-				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			}
-			DEBUG(3,("cli_session_setup_spnego: guessed "
-				"server principal=%s\n",
-				principal ? principal : "<null>"));
-		}
+		tmp = cli_session_setup_get_principal(
+			talloc_tos(), principal, remote_name, dest_realm);
+		TALLOC_FREE(principal);
+		principal = tmp;
 
 		if (principal) {
 			rc = cli_session_setup_kerberos(cli, principal);
