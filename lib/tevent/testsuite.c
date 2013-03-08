@@ -60,22 +60,28 @@ static void fde_handler_write(struct tevent_context *ev_ctx, struct tevent_fd *f
 }
 
 
-/* These should never fire... */
+/* This will only fire if the fd's returned from pipe() are bi-directional. */
 static void fde_handler_read_1(struct tevent_context *ev_ctx, struct tevent_fd *f,
 			uint16_t flags, void *private_data)
 {
-	struct torture_context *test = (struct torture_context *)private_data;
-	torture_comment(test, "fde_handler_read_1 should never fire !\n");
-	abort();
+	int *fd = (int *)private_data;
+	char c;
+#ifdef SA_SIGINFO
+	kill(getpid(), SIGUSR1);
+#endif
+	kill(getpid(), SIGALRM);
+
+	read(fd[1], &c, 1);
+	fde_count++;
 }
 
-/* These should never fire... */
+/* This will only fire if the fd's returned from pipe() are bi-directional. */
 static void fde_handler_write_1(struct tevent_context *ev_ctx, struct tevent_fd *f,
 			uint16_t flags, void *private_data)
 {
-	struct torture_context *test = (struct torture_context *)private_data;
-	torture_comment(test, "fde_handler_write_1 should never fire !\n");
-	abort();
+	int *fd = (int *)private_data;
+	char c = 0;
+	write(fd[0], &c, 1);
 }
 
 static void finished_handler(struct tevent_context *ev_ctx, struct tevent_timer *te,
@@ -133,12 +139,12 @@ static bool test_event_context(struct torture_context *test,
 	fde_read = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_READ,
 			    fde_handler_read, fd);
 	fde_write_1 = tevent_add_fd(ev_ctx, ev_ctx, fd[0], TEVENT_FD_WRITE,
-			    fde_handler_write_1, test);
+			    fde_handler_write_1, fd);
 
 	fde_write = tevent_add_fd(ev_ctx, ev_ctx, fd[1], TEVENT_FD_WRITE,
 			    fde_handler_write, fd);
 	fde_read_1 = tevent_add_fd(ev_ctx, ev_ctx, fd[1], TEVENT_FD_READ,
-			    fde_handler_read_1, test);
+			    fde_handler_read_1, fd);
 
 	tevent_fd_set_auto_close(fde_read);
 	tevent_fd_set_auto_close(fde_write);
