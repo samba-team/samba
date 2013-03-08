@@ -825,7 +825,7 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 			break;
 		}
 	}
-	if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS || res->count == 0) {
 		talloc_free(tmp_ctx);
 		return ISC_R_NOTFOUND;
 	}
