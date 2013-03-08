@@ -482,8 +482,13 @@ static void test_event_fd2_sock_handler(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	if (oth_sock->num_read > 0) {
+	if (oth_sock->num_read >= PIPE_BUF) {
 		/*
+		 * On Linux we become writable once we've read
+		 * one byte. On Solaris we only become writable
+		 * again once we've read 4096 bytes. PIPE_BUF
+		 * is probably a safe bet to test against.
+		 *
 		 * There should be room to write a byte again
 		 */
 		if (!(flags & TEVENT_FD_WRITE)) {
