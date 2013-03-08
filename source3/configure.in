@@ -606,6 +606,7 @@ AC_CHECK_HEADERS(xfs/libxfs.h)
 AC_CHECK_HEADERS(netgroup.h)
 AC_CHECK_HEADERS(linux/falloc.h)
 AC_CHECK_HEADERS(CommonCrypto/CommonDigest.h)
+AC_CHECK_HEADERS(linux/ioctl.h)
 
 dnl check for OS implementation of md5 conformant to rfc1321
 samba_cv_md5lib=none
@@ -6312,6 +6313,12 @@ fi
 # End
 # Checks for the vfs_fileid module
 
+# btrfs features are dependent on Linux ioctl headers
+if test x"$ac_cv_header_sys_ioctl_h" = xyes -a \
+        x"$ac_cv_header_linux_ioctl_h" = xyes; then
+    default_shared_modules="$default_shared_modules vfs_btrfs"
+fi
+# End btrfs
 
 for i in `echo $default_static_modules | sed -e 's/,/ /g'`
 do
@@ -6446,6 +6453,7 @@ SMB_MODULE(vfs_crossrename, \$(VFS_CROSSRENAME_OBJ), "bin/crossrename.$SHLIBEXT"
 SMB_MODULE(vfs_linux_xfs_sgid, \$(VFS_LINUX_XFS_SGID_OBJ), "bin/linux_xfs_sgid.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_time_audit, \$(VFS_TIME_AUDIT_OBJ), "bin/time_audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_media_harmony, \$(VFS_MEDIA_HARMONY_OBJ), "bin/media_harmony.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_btrfs, \$(VFS_BTRFS_OBJ), "bin/btrfs.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 

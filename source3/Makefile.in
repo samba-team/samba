@@ -906,6 +906,7 @@ VFS_CROSSRENAME_OBJ = modules/vfs_crossrename.o
 VFS_LINUX_XFS_SGID_OBJ = modules/vfs_linux_xfs_sgid.o
 VFS_TIME_AUDIT_OBJ = modules/vfs_time_audit.o
 VFS_MEDIA_HARMONY_OBJ = modules/vfs_media_harmony.o
+VFS_BTRFS_OBJ = modules/vfs_btrfs.o
 
 PAM_ERRORS_OBJ = ../libcli/auth/pam_errors.o
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o $(PAM_ERRORS_OBJ)
@@ -2916,6 +2917,10 @@ bin/time_audit.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TIME_AUDIT_OBJ)
 bin/media_harmony.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_MEDIA_HARMONY_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_MEDIA_HARMONY_OBJ)
+
+bin/btrfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_BTRFS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_BTRFS_OBJ)
 
 #########################################################
 ## IdMap NSS plugins

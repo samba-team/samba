@@ -49,6 +49,7 @@ VFS_CROSSRENAME_SRC = 'vfs_crossrename.c'
 VFS_LINUX_XFS_SGID_SRC = 'vfs_linux_xfs_sgid.c'
 VFS_TIME_AUDIT_SRC = 'vfs_time_audit.c'
 VFS_MEDIA_HARMONY_SRC = 'vfs_media_harmony.c'
+VFS_BTRFS_SRC = 'vfs_btrfs.c'
 
 
 bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
@@ -477,6 +478,14 @@ bld.SAMBA3_MODULE('vfs_dfs_samba4',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_dfs_samba4') and bld.AD_DC_BUILD_IS_ENABLED(),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_dfs_samba4') and bld.AD_DC_BUILD_IS_ENABLED())
+
+bld.SAMBA3_MODULE('vfs_btrfs',
+                 subsystem='vfs',
+                 source=VFS_BTRFS_SRC,
+                 deps='samba-util',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_btrfs'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_btrfs'))
 
 PERFCOUNT_TEST_SRC = 'perfcount_test.c'
 

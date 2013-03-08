@@ -1669,6 +1669,9 @@ main() {
     if conf.CHECK_HEADERS('gpfs_gpl.h'):
         conf.DEFINE('HAVE_GPFS', '1')
 
+    if conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h'):
+	    conf.DEFINE('HAVE_LINUX_IOCTL', '1')
+
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc
                                       auth_domain auth_builtin vfs_default
@@ -1729,6 +1732,9 @@ main() {
 
     if conf.CONFIG_SET('HAVE_GPFS'):
 	default_shared_modules.extend(TO_LIST('vfs_gpfs'))
+
+    if conf.CONFIG_SET('HAVE_LINUX_IOCTL'):
+	default_shared_modules.extend(TO_LIST('vfs_btrfs'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
