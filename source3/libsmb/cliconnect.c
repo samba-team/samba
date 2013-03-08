@@ -2015,7 +2015,9 @@ ntlmssp:
 		account[PTR_DIFF(p,user)] = '\0';
 	}
 
-	return ADS_ERROR_NT(cli_session_setup_ntlmssp(cli, account, pass, user_domain));
+	status = cli_session_setup_ntlmssp(cli, account, pass, user_domain);
+	TALLOC_FREE(account);
+	return ADS_ERROR_NT(status);
 }
 
 /****************************************************************************
