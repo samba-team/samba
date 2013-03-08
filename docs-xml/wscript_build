@@ -48,6 +48,7 @@ manpages='''
          manpages/vfs_aio_linux.8
          manpages/vfs_aio_pthread.8
          manpages/vfs_audit.8
+	 manpages/vfs_btrfs.8
          manpages/vfs_cacheprime.8
          manpages/vfs_cap.8
          manpages/vfs_catia.8

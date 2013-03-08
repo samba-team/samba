@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_btrfs.8">
+
+<refmeta>
+	<refentrytitle>vfs_btrfs</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_btrfs</refname>
+	<refpurpose>
+		Utilize features provided by the Btrfs filesystem
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = btrfs</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>
+		The <command>vfs_btrfs</command> VFS module exposes Btrfs
+		specific features for use by Samba.
+	</para>
+
+	<para>
+		Btrfs allows for multiple files to share the same on-disk data
+		through the use cloned ranges. When an SMB client issues a
+		request to copy duplicate data (via FSCTL_SRV_COPYCHUNK), this
+		module maps the request to a Btrfs clone range IOCTL, instead
+		of performing reads and writes required by a traditional copy.
+		Doing so saves storage capacity and greatly reduces disk IO.
+	</para>
+
+	<para>
+		This module is stackable.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>CONFIGURATION</title>
+
+	<para>
+		<command>vfs_btrfs</command> requires that the underlying share
+		path is a Btrfs filesystem.
+	</para>
+
+	<programlisting>
+		<smbconfsection name="[share]"/>
+		<smbconfoption name="vfs objects">btrfs</smbconfoption>
+	</programlisting>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>
+		This man page is correct for version 4.1.0 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
