@@ -1875,20 +1875,17 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
 	const DATA_BLOB *server_blob;
-	DATA_BLOB blob = data_blob_null;
 	const char *p = NULL;
 	char *account = NULL;
 	NTSTATUS status;
 
 	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
-	if (server_blob) {
-		blob = data_blob(server_blob->data, server_blob->length);
-	}
 
-	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n", (unsigned long)blob.length));
+	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n",
+		 (unsigned long)server_blob->length));
 
 	/* the server might not even do spnego */
-	if (blob.length == 0) {
+	if (server_blob->length == 0) {
 		DEBUG(3,("server didn't supply a full spnego negprot\n"));
 		goto ntlmssp;
 	}
@@ -1901,12 +1898,11 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	 * negprot reply. It is WRONG to depend on the principal sent in the
 	 * negprot reply, but right now we do it. If we don't receive one,
 	 * we try to best guess, then fall back to NTLM.  */
-	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &principal, NULL) ||
+	if (!spnego_parse_negTokenInit(talloc_tos(), *server_blob, OIDs,
+				       &principal, NULL) ||
 			OIDs[0] == NULL) {
-		data_blob_free(&blob);
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
-	data_blob_free(&blob);
 
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
