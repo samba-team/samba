@@ -1902,6 +1902,22 @@ static char *cli_session_setup_get_principal(
 }
 #endif
 
+static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
+					   const char *principal)
+{
+	char *account, *p;
+
+	account = talloc_strdup(mem_ctx, principal);
+	if (account == NULL) {
+		return NULL;
+	}
+	p = strchr_m(account, '@');
+	if (p != NULL) {
+		*p = '\0';
+	}
+	return account;
+}
+
 /****************************************************************************
  Do a spnego encrypted session setup.
 
@@ -1919,7 +1935,6 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
 	const DATA_BLOB *server_blob;
-	char *p;
 	char *account = NULL;
 	NTSTATUS status;
 
@@ -2012,16 +2027,9 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 
 ntlmssp:
 
-	account = talloc_strdup(talloc_tos(), user);
+	account = cli_session_setup_get_account(talloc_tos(), user);
 	if (!account) {
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
-	/* when falling back to ntlmssp while authenticating with a machine
-	 * account strip off the realm - gd */
-
-	if ((p = strchr_m(account, '@')) != NULL) {
-		*p = '\0';
 	}
 
 	status = cli_session_setup_ntlmssp(cli, account, pass, user_domain);
