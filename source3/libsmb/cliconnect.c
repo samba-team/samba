@@ -1925,18 +1925,52 @@ static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
  dest_realm: The realm we're connecting to, if NULL we use our default realm.
 ****************************************************************************/
 
-static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
-			      const char *user,
-			      const char *pass,
-			      const char *user_domain,
-			      const char * dest_realm)
+struct cli_session_setup_spnego_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *user;
+	const char *account;
+	const char *pass;
+	const char *user_domain;
+	const char *dest_realm;
+	ADS_STATUS result;
+};
+
+#ifdef HAVE_KRB5
+static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq);
+#endif
+
+static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq);
+
+static struct tevent_req *cli_session_setup_spnego_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	const char *user, const char *pass, const char *user_domain,
+	const char *dest_realm)
 {
+	struct tevent_req *req, *subreq;
+	struct cli_session_setup_spnego_state *state;
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
 	const DATA_BLOB *server_blob;
-	char *account = NULL;
 	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_session_setup_spnego_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->user = user;
+	state->pass = pass;
+	state->user_domain = user_domain;
+	state->dest_realm = dest_realm;
+
+	state->account = cli_session_setup_get_account(state, user);
+	if (tevent_req_nomem(state->account, req)) {
+		return tevent_req_post(req, ev);
+	}
 
 	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
 
@@ -1957,10 +1991,12 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	 * negprot reply. It is WRONG to depend on the principal sent in the
 	 * negprot reply, but right now we do it. If we don't receive one,
 	 * we try to best guess, then fall back to NTLM.  */
-	if (!spnego_parse_negTokenInit(talloc_tos(), *server_blob, OIDs,
+	if (!spnego_parse_negTokenInit(state, *server_blob, OIDs,
 				       &principal, NULL) ||
 			OIDs[0] == NULL) {
-		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		state->result = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	/* make sure the server understands kerberos */
@@ -1980,8 +2016,9 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 
 	status = cli_set_username(cli, user);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(principal);
-		return ADS_ERROR_NT(status);
+		state->result = ADS_ERROR_NT(status);
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 #ifdef HAVE_KRB5
@@ -1989,7 +2026,6 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 	 * and do not store results */
 
 	if (user && *user && cli->got_kerberos_mechanism && cli->use_kerberos) {
-		ADS_STATUS rc;
 		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
 		char *tmp;
 
@@ -2004,7 +2040,9 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
 				if (cli->fallback_after_kerberos)
 					goto ntlmssp;
-				return ADS_ERROR_KRB5(ret);
+				state->result = ADS_ERROR_KRB5(ret);
+				tevent_req_done(req);
+				return tevent_req_post(req, ev);
 			}
 		}
 
@@ -2014,27 +2052,111 @@ static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
 		principal = tmp;
 
 		if (principal) {
-			rc = cli_session_setup_kerberos(cli, principal);
-			if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
-				TALLOC_FREE(principal);
-				return rc;
+			subreq = cli_session_setup_kerberos_send(
+				state, ev, cli, principal);
+			if (tevent_req_nomem(subreq, req)) {
+				return tevent_req_post(req, ev);
 			}
+			tevent_req_set_callback(
+				subreq, cli_session_setup_spnego_done_krb,
+				req);
+			return req;
 		}
 	}
 #endif
 
-	TALLOC_FREE(principal);
-
 ntlmssp:
+	subreq = cli_session_setup_ntlmssp_send(
+		state, ev, cli, state->account, pass, user_domain);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(
+		subreq, cli_session_setup_spnego_done_ntlmssp, req);
+	return req;
+}
 
-	account = cli_session_setup_get_account(talloc_tos(), user);
-	if (!account) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+#ifdef HAVE_KRB5
+static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_spnego_state *state = tevent_req_data(
+		req, struct cli_session_setup_spnego_state);
+
+	state->result = cli_session_setup_kerberos_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (ADS_ERR_OK(state->result) ||
+	    !state->cli->fallback_after_kerberos) {
+		tevent_req_done(req);
+		return;
 	}
 
-	status = cli_session_setup_ntlmssp(cli, account, pass, user_domain);
-	TALLOC_FREE(account);
-	return ADS_ERROR_NT(status);
+	subreq = cli_session_setup_ntlmssp_send(
+		state, state->ev, state->cli, state->account, state->pass,
+		state->user_domain);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_spnego_done_ntlmssp,
+				req);
+}
+#endif
+
+static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_spnego_state *state = tevent_req_data(
+		req, struct cli_session_setup_spnego_state);
+	NTSTATUS status;
+
+	status = cli_session_setup_ntlmssp_recv(subreq);
+	TALLOC_FREE(subreq);
+	state->result = ADS_ERROR_NT(status);
+	tevent_req_done(req);
+}
+
+static ADS_STATUS cli_session_setup_spnego_recv(struct tevent_req *req)
+{
+	struct cli_session_setup_spnego_state *state = tevent_req_data(
+		req, struct cli_session_setup_spnego_state);
+
+	return state->result;
+}
+
+static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
+			      const char *user,
+			      const char *pass,
+			      const char *user_domain,
+			      const char * dest_realm)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	ADS_STATUS result = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	NTSTATUS status;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_session_setup_spnego_send(ev, ev, cli, user, pass,
+					    user_domain, dest_realm);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		result = ADS_ERROR_NT(status);
+		goto fail;
+	}
+	result = cli_session_setup_spnego_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	return result;
 }
 
 /****************************************************************************
