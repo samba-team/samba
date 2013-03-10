@@ -1704,6 +1704,80 @@ static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
+/* Afaik translate name was first introduced with vfs_catia, to be able
+   to translate unix file/dir-names, containing invalid windows characters,
+   to valid windows names.
+   The used translation direction is always unix --> windows
+*/
+static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	int ret;
+	struct dirent *dent = NULL;
+	SMB_STRUCT_STAT st;
+	bool found = false;
+	char *translated = NULL;
+	NTSTATUS status;
+
+	if (argc != 2) {
+		DEBUG(0, ("Usage: translate_name unix_filename\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, ".", NULL, 0);
+	if (vfs->currentdir == NULL) {
+		DEBUG(0, ("cmd_translate_name: opendir error=%d (%s)\n",
+			  errno, strerror(errno)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	while (true) {
+		dent = SMB_VFS_READDIR(vfs->conn, vfs->currentdir, &st);
+		if (dent == NULL) {
+			break;
+		}
+		if (strcmp (dent->d_name, argv[1]) == 0) {
+			found = true;
+			break;
+		}
+	};
+
+	if (!found) {
+		DEBUG(0, ("cmd_translate_name: file '%s' not found.\n", 
+			  argv[1]));
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto cleanup;
+	}
+	status = SMB_VFS_TRANSLATE_NAME(vfs->conn, dent->d_name,
+					vfs_translate_to_windows,
+					talloc_tos(), &translated);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+		DEBUG(0, ("cmd_translate_name: file '%s' cannot be "
+			  "translated\n", argv[1]));
+		TALLOC_FREE(translated);
+		goto cleanup;
+	}
+	/* translation success. But that could also mean
+	   that translating "aaa" to "aaa" was successful :-(
+	*/ 
+	DEBUG(0, ("cmd_translate_name: file '%s' --> '%s'\n", 
+		  argv[1], translated));
+
+	TALLOC_FREE(translated);
+
+cleanup:
+	ret = SMB_VFS_CLOSEDIR(vfs->conn, vfs->currentdir);
+	if (ret == -1) {
+		DEBUG(0, ("cmd_translate_name: closedir failure: %s\n",
+			  strerror(errno)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	vfs->currentdir = NULL;
+	return status;;
+}
+
+
 struct cmd_set vfs_commands[] = {
 
 	{ "VFS Commands" },
@@ -1773,5 +1847,6 @@ struct cmd_set vfs_commands[] = {
 
 	{ "test_chain", cmd_test_chain, "test chain code",
 	  "test_chain" },
+	{ "translate_name", cmd_translate_name, "VFS translate_name()", "translate_name unix_filename" },
 	{ NULL }
 };
