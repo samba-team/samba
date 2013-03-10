@@ -1399,8 +1399,7 @@ sub provision_plugin_s4_dc($$)
 
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000
-	create mask = 0777
-	directory mask = 0777
+	create mask = 755
 	dos filemode = yes
 
         dcerpc endpoint servers = -winreg -srvsvc
