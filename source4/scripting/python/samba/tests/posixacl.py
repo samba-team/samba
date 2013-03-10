@@ -210,7 +210,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         smbd.chown(self.tempdir, BA_id, SO_id)
         smbd.set_simple_acl(self.tempdir, 0750)
         facl = getntacl(self.lp, self.tempdir, direct_db_access=False)
-        acl = "O:BAG:SOD:(A;;0x001f01ff;;;BA)(A;;0x001200a9;;;SO)(A;;;;;WD)(A;OICIIO;0x001f01ff;;;CO)(A;OICIIO;0x001f01ff;;;CG)(A;OICIIO;0x001f01ff;;;WD)"
+        acl = "O:BAG:SOD:(A;;0x001f01ff;;;BA)(A;;0x001200a9;;;SO)(A;;;;;WD)(A;OICIIO;0x001f01ff;;;CO)(A;OICIIO;0x001200a9;;;CG)(A;OICIIO;0x001200a9;;;WD)"
 
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(acl, facl.as_sddl(anysid))
