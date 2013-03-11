@@ -298,10 +298,6 @@ bool status_profile_dump(bool verbose)
 	d_printf("invalid_count:                  %u\n", profile_p->SMBinvalid_count);
 	d_printf("invalid_time:                   %u\n", profile_p->SMBinvalid_time);
 
-	profile_separator("Pathworks Calls");
-	d_printf("setdir_count:                   %u\n", profile_p->pathworks_setdir_count);
-	d_printf("setdir_time:                    %u\n", profile_p->pathworks_setdir_time);
-
 	profile_separator("Trans2 Calls");
 	d_printf("open_count:                     %u\n", profile_p->Trans2_open_count);
 	d_printf("open_time:                      %u\n", profile_p->Trans2_open_time);

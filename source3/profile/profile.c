@@ -329,7 +329,6 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "SMBsendend",		/* PR_VALUE_SMBSENDEND */
 	    "SMBsendtxt",		/* PR_VALUE_SMBSENDTXT */
 	    "SMBinvalid",		/* PR_VALUE_SMBINVALID */
-	    "pathworks_setdir",		/* PR_VALUE_PATHWORKS_SETDIR */
 	    "Trans2_open",		/* PR_VALUE_TRANS2_OPEN */
 	    "Trans2_findfirst",		/* PR_VALUE_TRANS2_FINDFIRST */
 	    "Trans2_findnext",		/* PR_VALUE_TRANS2_FINDNEXT */

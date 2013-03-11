@@ -563,11 +563,6 @@ enum profile_stats_values
 #define SMBinvalid_count __profile_stats_value(PR_VALUE_SMBINVALID, count)
 #define SMBinvalid_time __profile_stats_value(PR_VALUE_SMBINVALID, time)
 
-/* Pathworks setdir command */
-	PR_VALUE_PATHWORKS_SETDIR,
-#define pathworks_setdir_count __profile_stats_value(PR_VALUE_PATHWORKS_SETDIR, count)
-#define pathworks_setdir_time __profile_stats_value(PR_VALUE_PATHWORKS_SETDIR, time)
-
 /* These are the TRANS2 sub commands */
 	PR_VALUE_TRANS2_OPEN,
 #define Trans2_open_count __profile_stats_value(PR_VALUE_TRANS2_OPEN, count)

@@ -1795,27 +1795,7 @@ panic action</title>
 </sect2>
 
 
-
-
-
-<sect2 role="" label="8.6.13" id="ch08-SECT-6.0.13">
-<indexterm id="ch08-idx-965993-0"><primary>set directory option</primary></indexterm>
-<title>
-set directory</title>
-
-
-<para>This boolean share-level option allows <indexterm id="ch08-idx-965497-0"><primary>Digital Pathworks clients, option for</primary></indexterm>Digital Pathworks clients to use the <literal>setdir</literal> command to change directories on the server. If you are not using the Digital Pathworks client, you should not need to alter this option. The default value for this option is <literal>no</literal>. You can override it per share as follows:</para>
-
-
-<programlisting>[data]
-	set directory = yes</programlisting>
-</sect2>
-
-
-
-
-
-<sect2 role="" label="8.6.14" id="ch08-SECT-6.0.14">
+<sect2 role="" label="8.6.13" id="ch08-SECT-6.0.14">
 <indexterm id="ch08-idx-965994-0"><primary>smbrun option</primary></indexterm>
 <title>
 smbrun</title>
@@ -1832,7 +1812,7 @@ smbrun</title>
 
 
 
-<sect2 role="" label="8.6.15" id="ch08-SECT-6.0.15">
+<sect2 role="" label="8.6.14" id="ch08-SECT-6.0.15">
 <indexterm id="ch08-idx-965995-0"><primary>status option</primary></indexterm>
 <title>
 status</title>
@@ -1850,7 +1830,7 @@ status</title>
 
 
 
-<sect2 role="" label="8.6.16" id="ch08-SECT-6.0.16">
+<sect2 role="" label="8.6.15" id="ch08-SECT-6.0.16">
 <indexterm id="ch08-idx-965996-0"><primary>strict sync option</primary></indexterm>
 <title>
 strict sync</title>
@@ -1867,7 +1847,7 @@ strict sync</title>
 
 
 
-<sect2 role="" label="8.6.17" id="ch08-SECT-6.0.17">
+<sect2 role="" label="8.6.16" id="ch08-SECT-6.0.17">
 <indexterm id="ch08-idx-965997-0"><primary>sync always option</primary></indexterm>
 <title>
 sync always</title>
@@ -1884,7 +1864,7 @@ sync always</title>
 
 
 
-<sect2 role="" label="8.6.18" id="ch08-SECT-6.0.18">
+<sect2 role="" label="8.6.17" id="ch08-SECT-6.0.18">
 <indexterm id="ch08-idx-965998-0"><primary>strip dot option</primary></indexterm>
 <title>
 strip dot</title>

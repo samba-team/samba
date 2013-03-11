@@ -68,7 +68,6 @@ parm_table = {
 	"USESPNEGO"              : ("use spnego", SambaParmBool, P_GLOBAL, "Yes"),
 	"FAKEOPLOCKS"            : ("fake oplocks", SambaParmBool, P_LOCAL, "No"),
 	"FORCECREATEMODE"        : ("force create mode", SambaParmString, P_LOCAL, "00"),
-	"SETDIRECTORY"           : ("set directory", SambaParmBoolRev, P_LOCAL, "No"),
 	"SMBPORTS"               : ("smb ports", SambaParmString, P_GLOBAL, "445 139"),
 	"LOCKDIR"                : ("lock directory", SambaParmString, P_GLOBAL, "/var/lib/samba"),
 	"BROWSEABLE"             : ("browseable", SambaParmBool, P_LOCAL, "Yes"),

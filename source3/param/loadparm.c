@@ -214,7 +214,6 @@ static struct loadparm_service sDefault =
 	.bAccessBasedShareEnum = false,
 	.bAvailable = true,
 	.bRead_only = true,
-	.bNo_set_dir = true,
 	.bGuest_only = false,
 	.bAdministrative_share = false,
 	.bGuest_ok = false,

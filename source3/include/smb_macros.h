@@ -72,7 +72,6 @@
 #define VALID_SNUM(snum)   (lp_snum_ok(snum))
 #define GUEST_OK(snum)     (VALID_SNUM(snum) && lp_guest_ok(snum))
 #define GUEST_ONLY(snum)   (VALID_SNUM(snum) && lp_guest_only(snum))
-#define CAN_SETDIR(snum)   (!lp_no_set_dir(snum))
 #define CAN_PRINT(conn)    ((conn) && lp_print_ok(SNUM(conn)))
 #define MAP_HIDDEN(conn)   ((conn) && lp_map_hidden(SNUM(conn)))
 #define MAP_SYSTEM(conn)   ((conn) && lp_map_system(SNUM(conn)))

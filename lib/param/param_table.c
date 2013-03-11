@@ -3726,15 +3726,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
-		.label		= "set directory",
-		.type		= P_BOOLREV,
-		.p_class	= P_LOCAL,
-		.offset		= LOCAL_VAR(bNo_set_dir),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE,
-	},
-	{
 		.label		= "allow insecure wide links",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
