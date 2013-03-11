@@ -22,6 +22,21 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_ntprinting.h"
 
+_PUBLIC_ uint32_t ndr_ntprinting_string_flags(uint32_t string_flags)
+{
+	uint32_t flags = LIBNDR_FLAG_STR_NULLTERM;
+
+	if (string_flags & LIBNDR_FLAG_STR_ASCII) {
+		flags |= LIBNDR_FLAG_STR_ASCII;
+	} else if (string_flags & LIBNDR_FLAG_STR_RAW8) {
+		flags |= LIBNDR_FLAG_STR_RAW8;
+	} else {
+		flags |= LIBNDR_FLAG_STR_UTF8;
+	}
+
+	return flags;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int ndr_flags, struct ntprinting_printer *r)
 {
 	uint32_t _ptr_devmode;
