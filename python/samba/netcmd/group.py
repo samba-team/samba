@@ -27,6 +27,7 @@ from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.dsdb import (
+    GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
     GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP,
     GTYPE_SECURITY_UNIVERSAL_GROUP,
@@ -35,8 +36,13 @@ from samba.dsdb import (
     GTYPE_DISTRIBUTION_UNIVERSAL_GROUP,
 )
 
-security_group = dict({"Domain": GTYPE_SECURITY_DOMAIN_LOCAL_GROUP, "Global": GTYPE_SECURITY_GLOBAL_GROUP, "Universal": GTYPE_SECURITY_UNIVERSAL_GROUP})
-distribution_group = dict({"Domain": GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP, "Global": GTYPE_DISTRIBUTION_GLOBAL_GROUP, "Universal": GTYPE_DISTRIBUTION_UNIVERSAL_GROUP})
+security_group = dict({"Builtin": GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+                       "Domain": GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
+                       "Global": GTYPE_SECURITY_GLOBAL_GROUP,
+                       "Universal": GTYPE_SECURITY_UNIVERSAL_GROUP})
+distribution_group = dict({"Domain": GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP,
+                           "Global": GTYPE_DISTRIBUTION_GLOBAL_GROUP,
+                           "Universal": GTYPE_DISTRIBUTION_UNIVERSAL_GROUP})
 
 
 class cmd_group_add(Command):
@@ -274,6 +280,10 @@ class cmd_group_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("-v", "--verbose",
+               help="Verbose output, showing group type and group scope.",
+               action="store_true"),
+
         ]
 
     takes_optiongroups = {
@@ -282,7 +292,8 @@ class cmd_group_list(Command):
         "versionopts": options.VersionOptions,
         }
 
-    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
+    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None,
+            verbose=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -292,13 +303,36 @@ class cmd_group_list(Command):
         domain_dn = samdb.domain_dn()
         res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
                     expression=("(objectClass=group)"),
-                    attrs=["samaccountname"])
+                    attrs=["samaccountname", "grouptype"])
         if (len(res) == 0):
             return
 
-        for msg in res:
-            self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
+        if verbose:
+            self.outf.write("Group Name                                  Group Type      Group Scope\n")
+            self.outf.write("-----------------------------------------------------------------------------\n")
 
+            for msg in res:
+                self.outf.write("%-44s" % msg.get("samaccountname", idx=0))
+                hgtype = hex(int("%s" % msg["grouptype"]) & 0x00000000FFFFFFFF)
+                if (hgtype == hex(int(security_group.get("Builtin")))):
+                    self.outf.write("Security         Builtin\n")
+                elif (hgtype == hex(int(security_group.get("Domain")))):
+                    self.outf.write("Security         Domain\n")
+                elif (hgtype == hex(int(security_group.get("Global")))):
+                    self.outf.write("Security         Global\n")
+                elif (hgtype == hex(int(security_group.get("Universal")))):
+                    self.outf.write("Security         Universal\n")
+                elif (hgtype == hex(int(distribution_group.get("Global")))):
+                    self.outf.write("Distribution     Global\n")
+                elif (hgtype == hex(int(distribution_group.get("Domain")))):
+                    self.outf.write("Distribution     Domain\n")
+                elif (hgtype == hex(int(distribution_group.get("Universal")))):
+                    self.outf.write("Distribution     Universal\n")
+                else:
+                    self.outf.write("\n")
+        else:
+            for msg in res:
+                self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
 class cmd_group_list_members(Command):
     """List all members of an AD group.
