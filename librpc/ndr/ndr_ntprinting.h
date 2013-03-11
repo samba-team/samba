@@ -22,4 +22,6 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_ntprinting.h"
 
+_PUBLIC_ uint32_t ndr_ntprinting_string_flags(uint32_t string_flags);
+
 _PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int ndr_flags, struct ntprinting_printer *r);
