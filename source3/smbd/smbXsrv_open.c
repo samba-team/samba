@@ -1372,3 +1372,80 @@ NTSTATUS smbXsrv_open_global_traverse(
 
 	return status;
 }
+
+NTSTATUS smbXsrv_open_cleanup(uint64_t persistent_id)
+{
+	NTSTATUS status;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smbXsrv_open_global0 *op = NULL;
+	uint8_t key_buf[SMBXSRV_OPEN_GLOBAL_TDB_KEY_SIZE];
+	TDB_DATA key;
+	struct db_record *rec;
+	bool delete_open = false;
+	uint32_t global_id = persistent_id & UINT32_MAX;
+
+	key = smbXsrv_open_global_id_to_key(global_id, key_buf);
+	rec = dbwrap_fetch_locked(smbXsrv_open_global_db_ctx, frame, key);
+	if (rec == NULL) {
+		status = NT_STATUS_NOT_FOUND;
+		DEBUG(1, ("smbXsrv_open_cleanup[global: 0x%08x] "
+			  "failed to fetch record from %s - %s\n",
+			   global_id, dbwrap_name(smbXsrv_open_global_db_ctx),
+			   nt_errstr(status)));
+		goto done;
+	}
+
+	status = smbXsrv_open_global_parse_record(talloc_tos(), rec, &op);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("smbXsrv_open_cleanup[global: 0x%08x] "
+			  "failed to read record: %s\n",
+			  global_id, nt_errstr(status)));
+		goto done;
+	}
+
+	if (server_id_is_disconnected(&op->server_id)) {
+		struct timeval now, disconnect_time;
+		int64_t tdiff;
+		now = timeval_current();
+		nttime_to_timeval(&disconnect_time, op->disconnect_time);
+		tdiff = usec_time_diff(&now, &disconnect_time);
+		delete_open = (tdiff >= 1000*op->durable_timeout_msec);
+
+		DEBUG(10, ("smbXsrv_open_cleanup[global: 0x%08x] "
+			   "disconnected at [%s] %us ago with "
+			   "timeout of %us -%s reached\n",
+			   global_id,
+			   nt_time_string(frame, op->disconnect_time),
+			   (unsigned)(tdiff/1000000),
+			   op->durable_timeout_msec / 1000,
+			   delete_open ? "" : " not"));
+	} else if (!serverid_exists(&op->server_id)) {
+		DEBUG(10, ("smbXsrv_open_cleanup[global: 0x%08x] "
+			   "server[%s] does not exist\n",
+			   global_id, server_id_str(frame, &op->server_id)));
+		delete_open = true;
+	}
+
+	if (!delete_open) {
+		goto done;
+	}
+
+	status = dbwrap_record_delete(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("smbXsrv_open_cleanup[global: 0x%08x] "
+			  "failed to delete record"
+			  "from %s: %s\n", global_id,
+			  dbwrap_name(smbXsrv_open_global_db_ctx),
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	DEBUG(10, ("smbXsrv_open_cleanup[global: 0x%08x] "
+		   "delete record from %s\n",
+		   global_id,
+		   dbwrap_name(smbXsrv_open_global_db_ctx)));
+
+done:
+	talloc_free(frame);
+	return status;
+}
