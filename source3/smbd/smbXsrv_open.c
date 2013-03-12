@@ -1279,21 +1279,16 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 }
 
 
-struct smbXsrv_open_global_traverse_state {
-	int (*fn)(struct smbXsrv_open_global0 *, void *);
-	void *private_data;
-};
-
-static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
+static NTSTATUS smbXsrv_open_global_parse_record(TALLOC_CTX *mem_ctx,
+						 struct db_record *rec,
+						 struct smbXsrv_open_global0 **global)
 {
-	int ret = -1;
-	struct smbXsrv_open_global_traverse_state *state =
-		(struct smbXsrv_open_global_traverse_state*)data;
 	TDB_DATA key = dbwrap_record_get_key(rec);
 	TDB_DATA val = dbwrap_record_get_value(rec);
 	DATA_BLOB blob = data_blob_const(val.dptr, val.dsize);
 	struct smbXsrv_open_globalB global_blob;
 	enum ndr_err_code ndr_err;
+	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	ndr_err = ndr_pull_struct_blob(&blob, frame, &global_blob,
@@ -1303,21 +1298,48 @@ static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
 			 "key '%s' ndr_pull_struct_blob - %s\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
 			 ndr_errstr(ndr_err)));
+		status = ndr_map_error2ntstatus(ndr_err);
 		goto done;
 	}
 
 	if (global_blob.version != SMBXSRV_VERSION_0) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		DEBUG(1,("Invalid record in smbXsrv_open_global.tdb:"
-			 "key '%s' unsuported version - %d\n",
+			 "key '%s' unsuported version - %d - %s\n",
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
-			 (int)global_blob.version));
+			 (int)global_blob.version,
+			 nt_errstr(status)));
 		goto done;
 	}
 
-	global_blob.info.info0->db_rec = rec;
-	ret = state->fn(global_blob.info.info0, state->private_data);
+	*global = talloc_move(mem_ctx, &global_blob.info.info0);
+	status = NT_STATUS_OK;
 done:
-	TALLOC_FREE(frame);
+	talloc_free(frame);
+	return status;
+}
+
+struct smbXsrv_open_global_traverse_state {
+	int (*fn)(struct smbXsrv_open_global0 *, void *);
+	void *private_data;
+};
+
+static int smbXsrv_open_global_traverse_fn(struct db_record *rec, void *data)
+{
+	struct smbXsrv_open_global_traverse_state *state =
+		(struct smbXsrv_open_global_traverse_state*)data;
+	struct smbXsrv_open_global0 *global = NULL;
+	NTSTATUS status;
+	int ret = -1;
+
+	status = smbXsrv_open_global_parse_record(talloc_tos(), rec, &global);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	global->db_rec = rec;
+	ret = state->fn(global, state->private_data);
+	talloc_free(global);
 	return ret;
 }
 
