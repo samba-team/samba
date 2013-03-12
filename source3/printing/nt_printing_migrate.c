@@ -88,7 +88,8 @@ NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 				     struct rpc_pipe_client *winreg_pipe,
 				     const char *key_name,
 				     unsigned char *data,
-				     size_t length)
+				     size_t length,
+				     bool do_string_conversion)
 {
 	struct dcerpc_binding_handle *b = winreg_pipe->binding_handle;
 	enum ndr_err_code ndr_err;
@@ -104,6 +105,10 @@ NTSTATUS printing_tdb_migrate_driver(TALLOC_CTX *mem_ctx,
 	blob = data_blob_const(data, length);
 
 	ZERO_STRUCT(r);
+
+	if (do_string_conversion) {
+		r.string_flags = LIBNDR_FLAG_STR_ASCII;
+	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 		   (ndr_pull_flags_fn_t)ndr_pull_ntprinting_driver);
@@ -150,7 +155,8 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 				      struct rpc_pipe_client *winreg_pipe,
 				      const char *key_name,
 				      unsigned char *data,
-				      size_t length)
+				      size_t length,
+				      bool do_string_conversion)
 {
 	struct dcerpc_binding_handle *b = winreg_pipe->binding_handle;
 	enum ndr_err_code ndr_err;
@@ -172,6 +178,10 @@ NTSTATUS printing_tdb_migrate_printer(TALLOC_CTX *mem_ctx,
 	blob = data_blob_const(data, length);
 
 	ZERO_STRUCT(r);
+
+	if (do_string_conversion) {
+		r.info.string_flags = LIBNDR_FLAG_STR_ASCII;
+	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 		   (ndr_pull_flags_fn_t) ndr_pull_ntprinting_printer);
