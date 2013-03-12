@@ -114,7 +114,8 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						winreg_pipe,
 						(const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
 						dbuf.dptr,
-						dbuf.dsize);
+						dbuf.dsize,
+						false);
 			SAFE_FREE(dbuf.dptr);
 			if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);
@@ -130,7 +131,8 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						 winreg_pipe,
 						 printer_name,
 						 dbuf.dptr,
-						 dbuf.dsize);
+						 dbuf.dsize,
+						 false);
 			SAFE_FREE(dbuf.dptr);
 			if (!NT_STATUS_IS_OK(status)) {
 				tdb_close(tdb);

@@ -37,6 +37,48 @@
 #define PRINTERS_PREFIX "PRINTERS/"
 #define SECDESC_PREFIX "SECDESC/"
 
+#define ARG_ENCODING "encoding="
+
+struct printing_opts {
+	const char *encoding;
+	const char *tdb;
+};
+
+static NTSTATUS printing_parse_args(TALLOC_CTX *mem_ctx,
+				    struct printing_opts **popts,
+				    int argc, const char **argv)
+{
+	size_t c;
+	struct printing_opts *o;
+
+	if (argc == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	o = talloc_zero(mem_ctx, struct printing_opts);
+	if (o == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (c = 0; c < argc; c++) {
+		if (strnequal(argv[c], ARG_ENCODING, sizeof(ARG_ENCODING) - 1)) {
+			o->encoding = talloc_strdup(o,
+					argv[c] + sizeof(ARG_ENCODING) - 1);
+			if (o->encoding == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		} else {
+			o->tdb = talloc_strdup(o, argv[c]);
+			if (o->tdb == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+	}
+
+	*popts = o;
+	return NT_STATUS_OK;
+}
+
 static void dump_form(TALLOC_CTX *mem_ctx,
 		      const char *key_name,
 		      unsigned char *data,
@@ -229,21 +271,37 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 					  int argc,
 					  const char **argv)
 {
+	struct printing_opts *o;
 	TALLOC_CTX *tmp_ctx;
 	TDB_CONTEXT *tdb;
 	TDB_DATA kbuf, newkey, dbuf;
 	NTSTATUS status;
+	const char *save_dos_charset = lp_dos_charset();
+	bool do_string_conversion = false;
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0600);
+	status = printing_parse_args(tmp_ctx, &o, argc, argv);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("failed to parse arguments\n"));
+		goto done;
+	}
+
+	tdb = tdb_open_log(o->tdb, 0, TDB_DEFAULT, O_RDONLY, 0600);
 	if (tdb == NULL) {
-		d_fprintf(stderr, _("failed to open tdb file: %s\n"), argv[0]);
+		d_fprintf(stderr, _("failed to open tdb file: %s\n"), o->tdb);
 		status = NT_STATUS_NO_SUCH_FILE;
 		goto done;
+	}
+
+	if (o->encoding != NULL) {
+		lp_set_cmdline("dos charset", o->encoding);
+		d_fprintf(stderr, _("do string conversion from %s to %s\n"),
+				    lp_dos_charset(), lp_unix_charset());
+		do_string_conversion = true;
 	}
 
 	for (kbuf = tdb_firstkey(tdb);
@@ -270,7 +328,8 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 				       winreg_pipe,
 				       (const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
 				       dbuf.dptr,
-				       dbuf.dsize);
+				       dbuf.dsize,
+				       do_string_conversion);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
@@ -280,7 +339,8 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 					winreg_pipe,
 					(const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
 					dbuf.dptr,
-					dbuf.dsize);
+					dbuf.dsize,
+					do_string_conversion);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
@@ -312,6 +372,7 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 	status = NT_STATUS_OK;
 
  done:
+	lp_set_cmdline("dos charset", save_dos_charset);
 	talloc_free(tmp_ctx);
 	return status;
 }
@@ -322,10 +383,14 @@ static int net_printing_migrate(struct net_context *c,
 {
 	if (argc < 1 || c->display_usage) {
 		d_printf(  "%s\n"
-			   "net printing migrate <file.tdb>\n"
+			   "net printing migrate [options] <file.tdb>\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Migrate tdb printing files to new storage"));
+		d_printf(_("Valid options:\n"));
+		d_printf(_("    encoding=<CP>   Set the Code Page of the tdb file.\n"
+			   "                    See iconv -l for the list of CP values\n"
+			   "                    (CP1252 is Western latin1, CP1251 is Cyrillic).\n"));
 		return 0;
 	}
 
