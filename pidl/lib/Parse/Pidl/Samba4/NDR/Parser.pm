@@ -924,7 +924,11 @@ sub ParseDataPull($$$$$$$)
 
 		$var_name = get_pointer_to($var_name);
 
-		$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_pull", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
+		if (has_property($e, "skip")) {
+			$self->pidl("/* [skip] '$var_name' */");
+		} else {
+			$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_pull", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
+		}
 
 		my $pl = GetPrevLevel($e, $l);
 
@@ -962,7 +966,11 @@ sub ParseDataPush($$$$$$$)
 			$var_name = get_pointer_to($var_name);
 		}
 
-		$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_push", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
+		if (has_property($e, "skip")) {
+			$self->pidl("/* [skip] '$var_name' */");
+		} else {
+			$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_push", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
+		}
 	} else {
 		$self->ParseTypePush($l->{DATA_TYPE}, $ndr, $var_name, $primitives, $deferred);
 	}

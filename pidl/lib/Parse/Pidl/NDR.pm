@@ -1070,6 +1070,7 @@ my %property_list = (
 	"noprint"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "ELEMENT", "PIPE"],
 	"nopython"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"todo"			=> ["FUNCTION"],
+	"skip"			=> ["ELEMENT"],
 
 	# union
 	"switch_is"		=> ["ELEMENT"],
