@@ -2283,7 +2283,7 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	/* This is an optimsation.  If this node is hosting the IP
+	/* This is an optimisation.  If this node is hosting the IP
 	 * then try to move it somewhere else without invoking a full
 	 * takeover run.  We don't care if this doesn't work!
 	 */
