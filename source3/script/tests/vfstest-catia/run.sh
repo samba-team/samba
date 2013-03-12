@@ -15,6 +15,12 @@ ADDARGS="$*"
 VFSTEST_PREFIX=vfstest
 VFSTEST_TMPDIR=$(mktemp -d ${PREFIX}/${VFSTEST_PREFIX}_XXXXXX)
 
+# We could pass in the --option=... via tests.py as ADDARGS
+# Atm i've choosen to specify them here:
+
+MYARGS1="--option=vfsobjects=catia"
+MYARGS2="--option=catia:mappings=0x22:0xa8,0x2a:0xa4,0x2f:0xf8,0x3a:0xf7,0x3c:0xab,0x3e:0xbb,0x3f:0xbf,0x5c:0xff,0x7c:0xa6,0x20:0xb1"
+
 # vars for the translation test:
 # a) here for unix-to-windows test
 UNIX_FILE="a\\a:a*a?a<a>a|a"
@@ -39,7 +45,7 @@ touch $UNIX_FILE || exit 1
 # test "translate" unix-to-windows
 test_vfstest() 
 {
-    cmd='$VFSTEST -f $TESTBASE/vfstest.cmd $ADDARGS '
+    cmd='$VFSTEST -f $TESTBASE/vfstest.cmd $MYARGS1 $MYARGS2 $ADDARGS '
     out=`eval $cmd`
     ret=$?
 
@@ -64,7 +70,7 @@ test_vfstest()
 # and then check the created unix directory name
 test_vfstest_dir() 
 {
-    cmd='$VFSTEST -f $TESTBASE/vfstest1.cmd $ADDARGS '
+    cmd='$VFSTEST -f $TESTBASE/vfstest1.cmd $MYARGS1 $MYARGS2 $ADDARGS '
     out=`eval $cmd`
     ret=$?
 
@@ -79,15 +85,15 @@ test_vfstest_dir()
     if [ $NUM -ne 1 ] ; then
 	echo "Cannot find $UNIX_DIR"
 	false
-    else 
+    else
 	true
     fi
 }
 
-testit "vfstest" test_vfstest || failed=`expr $failed + 1`
+testit "vfstest_catia" test_vfstest || failed=`expr $failed + 1`
 
 if [ $failed = 0 ] ; then
-    testit "vfstest1" test_vfstest_dir || failed=`expr $failed + 1`
+    testit "vfstest1_catia" test_vfstest_dir || failed=`expr $failed + 1`
 fi
 
 # Cleanup: remove tempdir
