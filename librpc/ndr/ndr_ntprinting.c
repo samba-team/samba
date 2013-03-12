@@ -56,6 +56,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int
 			if (r->devmode) {
 				_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
+				r->devmode->string_flags = r->info.string_flags;
 				NDR_CHECK(ndr_pull_ntprinting_devicemode(ndr, NDR_SCALARS|NDR_BUFFERS, r->devmode));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
 			}
@@ -72,6 +73,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ntprinting_printer(struct ndr_pull *ndr, int
 				}
 				r->printer_data = talloc_realloc(ndr, r->printer_data, struct ntprinting_printer_data, r->count + 1);
 				NDR_ERR_HAVE_NO_MEMORY(r->printer_data);
+				r->printer_data[r->count].string_flags = r->info.string_flags;
 				NDR_CHECK(ndr_pull_ntprinting_printer_data(ndr, NDR_SCALARS, &r->printer_data[r->count]));
 				r->count++;
 			}
