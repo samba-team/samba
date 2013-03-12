@@ -112,7 +112,8 @@ static void dump_form(TALLOC_CTX *mem_ctx,
 static void dump_driver(TALLOC_CTX *mem_ctx,
 			const char *key_name,
 			unsigned char *data,
-			size_t length)
+			size_t length,
+			bool do_string_conversion)
 {
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
@@ -124,6 +125,10 @@ static void dump_driver(TALLOC_CTX *mem_ctx,
 	blob = data_blob_const(data, length);
 
 	ZERO_STRUCT(r);
+
+	if (do_string_conversion) {
+		r.string_flags = LIBNDR_FLAG_STR_ASCII;
+	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 		   (ndr_pull_flags_fn_t)ndr_pull_ntprinting_driver);
@@ -142,7 +147,8 @@ static void dump_driver(TALLOC_CTX *mem_ctx,
 static void dump_printer(TALLOC_CTX *mem_ctx,
 			 const char *key_name,
 			 unsigned char *data,
-			 size_t length)
+			 size_t length,
+			 bool do_string_conversion)
 {
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
@@ -154,6 +160,10 @@ static void dump_printer(TALLOC_CTX *mem_ctx,
 	blob = data_blob_const(data, length);
 
 	ZERO_STRUCT(r);
+
+	if (do_string_conversion) {
+		r.info.string_flags = LIBNDR_FLAG_STR_ASCII;
+	}
 
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
 		   (ndr_pull_flags_fn_t)ndr_pull_ntprinting_printer);
@@ -207,17 +217,41 @@ static int net_printing_dump(struct net_context *c, int argc,
 	TALLOC_CTX *ctx = talloc_stackframe();
 	TDB_CONTEXT *tdb;
 	TDB_DATA kbuf, dbuf;
+	struct printing_opts *o;
+	const char *save_dos_charset = lp_dos_charset();
+	bool do_string_conversion = false;
+	NTSTATUS status;
 
 	if (argc < 1 || c->display_usage) {
-		d_fprintf(stderr, "%s\nnet printing dump <file.tdb>\n",
-			  _("Usage:"));
+		d_printf(  "%s\n"
+			   "net printing dump [options] <file.tdb>\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Dump formated printer information of the tdb."));
+		d_printf(_("Valid options:\n"));
+		d_printf(_("    encoding=<CP>   Set the Code Page of the tdb file.\n"
+			   "                    See iconv -l for the list of CP values\n"
+			   "                    (CP1252 is Western latin1, CP1251 is Cyrillic).\n"));
 		goto done;
 	}
 
-	tdb = tdb_open_log(argv[0], 0, TDB_DEFAULT, O_RDONLY, 0600);
-	if (!tdb) {
-		d_fprintf(stderr, _("failed to open tdb file: %s\n"), argv[0]);
+	status = printing_parse_args(ctx, &o, argc, argv);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("failed to parse arguments\n"));
 		goto done;
+	}
+
+	tdb = tdb_open_log(o->tdb, 0, TDB_DEFAULT, O_RDONLY, 0600);
+	if (!tdb) {
+		d_fprintf(stderr, _("failed to open tdb file: %s\n"), o->tdb);
+		goto done;
+	}
+
+	if (o->encoding != NULL) {
+		lp_set_cmdline("dos charset", o->encoding);
+		d_fprintf(stderr, _("do string conversion from %s to %s\n"),
+				    lp_dos_charset(), lp_unix_charset());
+		do_string_conversion = true;
 	}
 
 	for (kbuf = tdb_firstkey_compat(tdb);
@@ -236,13 +270,21 @@ static int net_printing_dump(struct net_context *c, int argc,
 		}
 
 		if (strncmp((const char *)kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
-			dump_driver(ctx, (const char *)kbuf.dptr+strlen(DRIVERS_PREFIX), dbuf.dptr, dbuf.dsize);
+			dump_driver(ctx,
+				    (const char *)kbuf.dptr+strlen(DRIVERS_PREFIX),
+				    dbuf.dptr,
+				    dbuf.dsize,
+				    do_string_conversion);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
 
 		if (strncmp((const char *)kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
-			dump_printer(ctx, (const char *)kbuf.dptr+strlen(PRINTERS_PREFIX), dbuf.dptr, dbuf.dsize);
+			dump_printer(ctx,
+				     (const char *)kbuf.dptr+strlen(PRINTERS_PREFIX),
+				     dbuf.dptr,
+				     dbuf.dsize,
+				     do_string_conversion);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
@@ -258,6 +300,7 @@ static int net_printing_dump(struct net_context *c, int argc,
 	ret = 0;
 
  done:
+	lp_set_cmdline("dos charset", save_dos_charset);
 	talloc_free(ctx);
 	return ret;
 }
