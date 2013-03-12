@@ -104,10 +104,9 @@ bool locking_end(void)
  Form a static locking key for a dev/inode pair.
 ******************************************************************/
 
-static TDB_DATA locking_key(const struct file_id *id, struct file_id *tmp)
+static TDB_DATA locking_key(const struct file_id *id)
 {
-	*tmp = *id;
-	return make_tdb_data((const uint8_t *)tmp, sizeof(*tmp));
+	return make_tdb_data((const uint8_t *)id, sizeof(*id));
 }
 
 /*******************************************************************
@@ -286,15 +285,14 @@ fail:
 ********************************************************************/
 
 static struct share_mode_lock *get_share_mode_lock_internal(
-	TALLOC_CTX *mem_ctx, const struct file_id id,
+	TALLOC_CTX *mem_ctx, struct file_id id,
 	const char *servicepath, const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time)
 {
 	struct share_mode_lock *lck;
 	struct share_mode_data *d;
-	struct file_id tmp;
 	struct db_record *rec;
-	TDB_DATA key = locking_key(&id, &tmp);
+	TDB_DATA key = locking_key(&id);
 	TDB_DATA value;
 
 	rec = dbwrap_fetch_locked(lock_db, mem_ctx, key);
@@ -351,7 +349,7 @@ static int the_lock_destructor(struct share_mode_lock *l)
 
 struct share_mode_lock *get_share_mode_lock(
 	TALLOC_CTX *mem_ctx,
-	const struct file_id id,
+	struct file_id id,
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time)
@@ -404,11 +402,10 @@ static void fetch_share_mode_unlocked_parser(
 ********************************************************************/
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
-						  const struct file_id id)
+						  struct file_id id)
 {
 	struct share_mode_lock *lck;
-	struct file_id tmp;
-	TDB_DATA key = locking_key(&id, &tmp);
+	TDB_DATA key = locking_key(&id);
 	NTSTATUS status;
 
 	lck = talloc(mem_ctx, struct share_mode_lock);
