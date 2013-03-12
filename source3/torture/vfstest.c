@@ -108,7 +108,12 @@ static char *next_command(TALLOC_CTX *ctx, char **cmdstr)
 	if (p)
 		*p = '\0';
 	command = talloc_strdup(ctx, *cmdstr);
-	*cmdstr = p;
+
+	/* Pass back the remaining cmdstring 
+	   (a trailing delimiter ";" does also work),
+	   or NULL at last cmdstring.
+	*/
+	*cmdstr = p ? p + 1 : p;
 
 	return command;
 }
