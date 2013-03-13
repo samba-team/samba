@@ -84,7 +84,7 @@ struct notify_context {
 	 * operations to db_index to a minimum. This is achieved by
 	 * delayed deletion. When a db_notify is initially created,
 	 * the db_index record is also created. When more notifies are
-	 * add for a path, then only the db_notify record needs to be
+	 * added for a path, then only the db_notify record needs to be
 	 * modified, the db_index record is not touched. When the last
 	 * entry from the db_notify record is deleted, the db_index
 	 * record is not immediately deleted. Instead, the db_notify
