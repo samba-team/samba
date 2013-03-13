@@ -58,6 +58,7 @@ double timeval_elapsed(struct timeval *tv);
 double timeval_delta(struct timeval *tv2, struct timeval *tv);
 char **file_lines_load(const char *fname, int *numlines, TALLOC_CTX *mem_ctx);
 char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
+uint8_t *hex_decode_talloc(TALLOC_CTX *mem_ctx, const char *hex_in, size_t *len);
 _PUBLIC_ const char **str_list_add(const char **list, const char *s);
 _PUBLIC_ int set_blocking(int fd, bool set);
 
