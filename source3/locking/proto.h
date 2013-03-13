@@ -97,6 +97,7 @@ void brl_revalidate(struct messaging_context *msg_ctx,
 		    uint32_t msg_type,
 		    struct server_id server_id,
 		    DATA_BLOB *data);
+bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id);
 
 /* The following definitions come from locking/locking.c  */
 

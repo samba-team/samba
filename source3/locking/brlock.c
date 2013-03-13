@@ -32,6 +32,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "serverid.h"
 #include "messages.h"
+#include "util_tdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -2151,4 +2152,76 @@ void brl_revalidate(struct messaging_context *msg_ctx,
  done:
 	TALLOC_FREE(state);
 	return;
+}
+
+bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id)
+{
+	bool ret = false;
+	TALLOC_CTX *frame = talloc_stackframe();
+	TDB_DATA key, val;
+	struct db_record *rec;
+	struct lock_struct *lock;
+	unsigned n, num;
+	NTSTATUS status;
+
+	key = make_tdb_data((void*)&fid, sizeof(fid));
+
+	rec = dbwrap_fetch_locked(brlock_db, frame, key);
+	if (rec == NULL) {
+		DEBUG(5, ("brl_cleanup_disconnected: failed to fetch record "
+			  "for file %s\n", file_id_string(frame, &fid)));
+		goto done;
+	}
+
+	val = dbwrap_record_get_value(rec);
+	lock = (struct lock_struct*)val.dptr;
+	num = val.dsize / sizeof(struct lock_struct);
+	if (lock == NULL) {
+		DEBUG(10, ("brl_cleanup_disconnected: no byte range locks for "
+			   "file %s\n", file_id_string(frame, &fid)));
+		ret = true;
+		goto done;
+	}
+
+	for (n=0; n<num; n++) {
+		struct lock_context *ctx = &lock[n].context;
+
+		if (!server_id_is_disconnected(&ctx->pid)) {
+			DEBUG(5, ("brl_cleanup_disconnected: byte range lock "
+				  "%s used by server %s, do not cleanup\n",
+				  file_id_string(frame, &fid),
+				  server_id_str(frame, &ctx->pid)));
+			goto done;
+		}
+
+		if (ctx->smblctx != open_persistent_id)	{
+			DEBUG(5, ("brl_cleanup_disconnected: byte range lock "
+				  "%s expected smblctx %llu but found %llu"
+				  ", do not cleanup\n",
+				  file_id_string(frame, &fid),
+				  (unsigned long long)open_persistent_id,
+				  (unsigned long long)ctx->smblctx));
+			goto done;
+		}
+	}
+
+	status = dbwrap_record_delete(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("brl_cleanup_disconnected: failed to delete record "
+			  "for file %s from %s, open %llu: %s\n",
+			  file_id_string(frame, &fid), dbwrap_name(brlock_db),
+			  (unsigned long long)open_persistent_id,
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	DEBUG(10, ("brl_cleanup_disconnected: "
+		   "file %s cleaned up %u entries from open %llu\n",
+		   file_id_string(frame, &fid), num,
+		   (unsigned long long)open_persistent_id));
+
+	ret = true;
+done:
+	talloc_free(frame);
+	return ret;
 }
