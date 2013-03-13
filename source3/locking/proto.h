@@ -202,6 +202,9 @@ bool set_write_time(struct file_id fileid, struct timespec write_time);
 int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 				 const char *, void *),
 		      void *private_data);
+bool share_mode_cleanup_disconnected(struct file_id id,
+				     uint64_t open_persistent_id);
+
 
 /* The following definitions come from locking/posix.c  */
 
