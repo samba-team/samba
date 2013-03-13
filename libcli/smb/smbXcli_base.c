@@ -1618,7 +1618,7 @@ static NTSTATUS smb1cli_inbuf_parse_chain(uint8_t *buf, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	size_t min_size = MIN_SMB_SIZE;
 
-	buflen = smb_len_nbt(buf);
+	buflen = smb_len_tcp(buf);
 	taken = 0;
 
 	hdr = buf + NBT_HDR_SIZE;
@@ -1845,7 +1845,7 @@ static NTSTATUS smb1cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 	uint16_t mid;
 	bool oplock_break;
 	uint8_t *inhdr = inbuf + NBT_HDR_SIZE;
-	size_t len = smb_len_nbt(inbuf);
+	size_t len = smb_len_tcp(inbuf);
 	struct iovec *iov = NULL;
 	int num_iov = 0;
 	struct tevent_req **chain = NULL;
