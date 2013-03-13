@@ -47,7 +47,7 @@
 
 		<varlistentry>
 		<term>-c|--command=command</term>
-		<listitem><para>Execute the specified (colon-separated) commands.
+		<listitem><para>Execute the specified (<constant>semicolon</constant>-separated) commands.
 		See below for the commands that are available.
 		</para> </listitem>
 		</varlistentry>
@@ -115,6 +115,25 @@
 		<listitem><para><command>link</command> - VFS link()</para></listitem>
 		<listitem><para><command>mknod</command> - VFS mknod()</para></listitem>
 		<listitem><para><command>realpath</command> - VFS realpath()</para></listitem>
+
+		<listitem><para><command>getxattr</command> - VFS getxattr()</para></listitem>
+		<listitem><para><command>listxattr</command> - VFS listxattr()</para></listitem>
+		<listitem><para><command>setxattr</command> - VFS setxattr()</para></listitem>
+		<listitem><para><command>removexattr</command> - VFS removexattr()</para></listitem>
+		<listitem><para><command>fget_nt_acl</command> - VFS fget_nt_acl()</para></listitem>
+		<listitem><para><command>get_nt_acl</command> - VFS get_nt_acl()</para></listitem>
+		<listitem><para><command>fset_nt_acl</command> - VFS fset_nt_acl()</para></listitem>
+		<listitem><para><command>set_nt_acl</command> - VFS open() and fset_nt_acl()</para></listitem>
+		<listitem><para><command>fchmod_acl</command> - VFS fchmod_acl()</para></listitem>
+		<listitem><para><command>chmod_acl</command> - VFS chmod_acl()</para></listitem>
+		<listitem><para><command>sys_acl_get_file</command> - VFS sys_acl_get_file()</para></listitem>
+		<listitem><para><command>sys_acl_get_fd</command> - VFS sys_acl_get_fd()</para></listitem>
+		<listitem><para><command>sys_acl_blob_get_file</command> - VFS sys_acl_blob_get_file()</para></listitem>
+		<listitem><para><command>sys_acl_blob_get_fd</command> - VFS sys_acl_blob_get_fd()</para></listitem>
+		<listitem><para><command>sys_acl_delete_def_file</command> - VFS sys_acl_delete_def_file()</para></listitem>
+		<listitem><para><command>test_chain</command> - test chain code</para></listitem>
+		<listitem><para><command>translate_name</command> - VFS translate_name()</para></listitem>
+
 	</itemizedlist>
 
 	<para><emphasis>GENERAL COMMANDS</emphasis></para>
@@ -135,7 +154,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 3 of the Samba
+	<para>This man page is correct for version 3 and 4 of the Samba
 	suite.</para>
 </refsect1>
 
@@ -147,7 +166,7 @@
 	by the Samba Team as an Open Source project similar
 	to the way the Linux kernel is developed.</para>
 
-	<para>The vfstest man page was written by Jelmer Vernooij.</para>
+	<para>The vfstest man page was written by Jelmer Vernooij. Updated version by Guenter Kukkukk.</para>
 </refsect1>
 
 </refentry>
