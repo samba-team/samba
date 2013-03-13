@@ -538,11 +538,6 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	close(old_stdout);
 	close(old_stderr);
 
-	/* Is this correct for STDOUT and STDERR ? */
-	set_close_on_exec(STDOUT_FILENO);
-	set_close_on_exec(STDERR_FILENO);
-	set_close_on_exec(p[0]);
-
 	fde = event_add_fd(ctdb->ev, ctdb->log, p[0],
 			   EVENT_FD_READ, ctdb_log_handler, ctdb->log);
 	tevent_fd_set_auto_close(fde);
