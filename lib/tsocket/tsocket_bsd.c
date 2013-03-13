@@ -60,6 +60,12 @@ static int tsocket_bsd_error_from_errno(int ret,
 		return sys_errno;
 	}
 
+	/* ENOMEM is retryable on Solaris/illumos, and possibly other systems. */
+	if (sys_errno == ENOMEM) {
+		*retry = true;
+		return sys_errno;
+	}
+
 #ifdef EWOULDBLOCK
 	if (sys_errno == EWOULDBLOCK) {
 		*retry = true;
