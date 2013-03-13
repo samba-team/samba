@@ -65,7 +65,7 @@ static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
 static bool do_encrypt;
 static const char *local_path = NULL;
-static int signing_state = SMB_SIGNING_DEFAULT;
+static enum smb_signing_setting signing_state = SMB_SIGNING_DEFAULT;
 char *test_filename;
 
 bool torture_showall = False;
@@ -7237,6 +7237,341 @@ static bool run_windows_write(int dummy)
 	return ret;
 }
 
+static size_t calc_expected_return(struct cli_state *cli, size_t len_requested)
+{
+	size_t max_pdu = 0x1FFFF;
+
+	if (cli->server_posix_capabilities & CIFS_UNIX_LARGE_READ_CAP) {
+		max_pdu = 0xFFFFFF;
+	}
+
+	if (smb1cli_conn_signing_is_active(cli->conn)) {
+		max_pdu = 0x1FFFF;
+	}
+
+	if (smb1cli_conn_encryption_on(cli->conn)) {
+		max_pdu = CLI_BUFFER_SIZE;
+	}
+
+	if ((len_requested & 0xFFFF0000) == 0xFFFF0000) {
+		len_requested &= 0xFFFF;
+	}
+
+	return MIN(len_requested, max_pdu - (MIN_SMB_SIZE + VWV(12)));
+}
+
+static bool check_read_call(struct cli_state *cli,
+			    uint16_t fnum,
+			    uint8_t *buf,
+			    size_t len_requested)
+{
+	NTSTATUS status;
+	struct tevent_req *subreq = NULL;
+	ssize_t len_read = 0;
+	size_t len_expected = 0;
+	struct tevent_context *ev = NULL;
+
+	ev = tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		return false;
+	}
+
+	subreq = cli_read_andx_send(talloc_tos(),
+				    ev,
+				    cli,
+				    fnum,
+				    0,
+				    len_requested);
+
+	if (!tevent_req_poll_ntstatus(subreq, ev, &status)) {
+		return false;
+	}
+
+	status = cli_read_andx_recv(subreq, &len_read, &buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_read_andx_recv failed: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	TALLOC_FREE(subreq);
+	TALLOC_FREE(ev);
+
+	len_expected = calc_expected_return(cli, len_requested);
+
+	if (len_expected > 0x10000 && len_read == 0x10000) {
+		/* Windows servers only return a max of 0x10000,
+		   doesn't matter if you set CAP_LARGE_READX in
+		   the client sessionsetupX call or not. */
+		d_printf("Windows server - returned 0x10000 on a read of 0x%x\n",
+			(unsigned int)len_requested);
+	} else if (len_read != len_expected) {
+		d_printf("read of 0x%x failed: got 0x%x, expected 0x%x\n",
+			(unsigned int)len_requested,
+			(unsigned int)len_read,
+			(unsigned int)len_expected);
+		return false;
+	} else {
+		d_printf("Correct read reply.\n");
+	}
+
+	return true;
+}
+
+/* Test large readX variants. */
+static bool large_readx_tests(struct cli_state *cli,
+				uint16_t fnum,
+				uint8_t *buf)
+{
+	/* A read of 0xFFFF0001 should *always* return 1 byte. */
+	if (check_read_call(cli, fnum, buf, 0xFFFF0001) == false) {
+		return false;
+	}
+	/* A read of 0x10000 should return 0x10000 bytes. */
+	if (check_read_call(cli, fnum, buf,    0x10000) == false) {
+		return false;
+	}
+	/* A read of 0x10000 should return 0x10001 bytes. */
+	if (check_read_call(cli, fnum, buf,    0x10001) == false) {
+		return false;
+	}
+	/* A read of 0x1FFFF - (MIN_SMB_SIZE + VWV(12) should return
+	   the requested number of bytes. */
+	if (check_read_call(cli, fnum, buf, 0x1FFFF - (MIN_SMB_SIZE + VWV(12))) == false) {
+		return false;
+	}
+	/* A read of 1MB should return 1MB bytes (on Samba). */
+	if (check_read_call(cli, fnum, buf,   0x100000) == false) {
+		return false;
+	}
+
+	if (check_read_call(cli, fnum, buf,    0x20001) == false) {
+		return false;
+	}
+	if (check_read_call(cli, fnum, buf, 0x22000001) == false) {
+		return false;
+	}
+	if (check_read_call(cli, fnum, buf, 0xFFFE0001) == false) {
+		return false;
+	}
+	return true;
+}
+
+static bool run_large_readx(int dummy)
+{
+	uint8_t *buf = NULL;
+	struct cli_state *cli1 = NULL;
+	struct cli_state *cli2 = NULL;
+	bool correct = false;
+	const char *fname = "\\large_readx.dat";
+	NTSTATUS status;
+	uint16_t fnum1 = UINT16_MAX;
+	uint32_t normal_caps = 0;
+	size_t file_size = 20*1024*1024;
+	TALLOC_CTX *frame = talloc_stackframe();
+	size_t i;
+	struct {
+		const char *name;
+		enum smb_signing_setting signing_setting;
+		enum protocol_types protocol;
+	} runs[] = {
+		{
+			.name = "NT1",
+			.signing_setting = SMB_SIGNING_IF_REQUIRED,
+			.protocol = PROTOCOL_NT1,
+		},{
+			.name = "NT1 - SIGNING_REQUIRED",
+			.signing_setting = SMB_SIGNING_REQUIRED,
+			.protocol = PROTOCOL_NT1,
+		},
+	};
+
+	printf("starting large_readx test\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		goto out;
+	}
+
+	normal_caps = smb1cli_conn_capabilities(cli1->conn);
+
+	if (!(normal_caps & CAP_LARGE_READX)) {
+		d_printf("Server doesn't have CAP_LARGE_READX 0x%x\n",
+			(unsigned int)normal_caps);
+		goto out;
+	}
+
+	/* Create a file of size 4MB. */
+	status = cli_ntcreate(cli1, fname, 0, GENERIC_ALL_ACCESS,
+			FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
+			0, 0, &fnum1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("open %s failed: %s\n", fname, nt_errstr(status));
+		goto out;
+	}
+
+	/* Write file_size bytes. */
+	buf = talloc_zero_array(frame, uint8_t, file_size);
+	if (buf == NULL) {
+		goto out;
+	}
+
+	status = cli_writeall(cli1,
+			      fnum1,
+			      0,
+			      buf,
+			      0,
+			      file_size,
+			      NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_writeall failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_close failed: %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	fnum1 = UINT16_MAX;
+
+	for (i=0; i < ARRAY_SIZE(runs); i++) {
+		enum smb_signing_setting saved_signing_setting = signing_state;
+		uint16_t fnum2 = -1;
+
+		if (do_encrypt &&
+		    (runs[i].signing_setting == SMB_SIGNING_REQUIRED))
+		{
+			d_printf("skip[%u] - %s\n", (unsigned)i, runs[i].name);
+			continue;
+		}
+
+		d_printf("run[%u] - %s\n", (unsigned)i, runs[i].name);
+
+		signing_state = runs[i].signing_setting;
+		cli2 = open_nbt_connection();
+		signing_state = saved_signing_setting;
+		if (cli2 == NULL) {
+			goto out;
+		}
+
+		status = smbXcli_negprot(cli2->conn,
+					 cli2->timeout,
+					 runs[i].protocol,
+					 runs[i].protocol);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		status = cli_session_setup(cli2,
+					username,
+					password,
+					strlen(password)+1,
+					password,
+					strlen(password)+1,
+					workgroup);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		status = cli_tree_connect(cli2,
+					share,
+					"?????",
+					password,
+					strlen(password)+1);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+
+		cli_set_timeout(cli2, 120000); /* set a really long timeout (2 minutes) */
+
+		normal_caps = smb1cli_conn_capabilities(cli2->conn);
+
+		if (!(normal_caps & CAP_LARGE_READX)) {
+			d_printf("Server doesn't have CAP_LARGE_READX 0x%x\n",
+				(unsigned int)normal_caps);
+			goto out;
+		}
+
+		if (do_encrypt) {
+			if (force_cli_encryption(cli2, share) == false) {
+				goto out;
+			}
+		} else if (SERVER_HAS_UNIX_CIFS(cli2)) {
+			uint16_t major, minor;
+			uint32_t caplow, caphigh;
+
+			status = cli_unix_extensions_version(cli2,
+							     &major, &minor,
+							     &caplow, &caphigh);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto out;
+			}
+		}
+
+		status = cli_ntcreate(cli2, fname, 0, FILE_READ_DATA,
+				FILE_ATTRIBUTE_NORMAL, 0, FILE_OPEN,
+				0, 0, &fnum2);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("Second open %s failed: %s\n", fname, nt_errstr(status));
+			goto out;
+		}
+
+		/* All reads must return less than file_size bytes. */
+		if (!large_readx_tests(cli2, fnum2, buf)) {
+			goto out;
+		}
+
+		status = cli_close(cli2, fnum2);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_printf("cli_close failed: %s\n", nt_errstr(status));
+			goto out;
+		}
+		fnum2 = -1;
+
+		if (!torture_close_connection(cli2)) {
+			goto out;
+		}
+		cli2 = NULL;
+	}
+
+	correct = true;
+	printf("Success on large_readx test\n");
+
+  out:
+
+	if (cli2) {
+		if (!torture_close_connection(cli2)) {
+			correct = false;
+		}
+	}
+
+	if (cli1) {
+		if (fnum1 != UINT16_MAX) {
+			status = cli_close(cli1, fnum1);
+			if (!NT_STATUS_IS_OK(status)) {
+				d_printf("cli_close failed: %s\n", nt_errstr(status));
+			}
+			fnum1 = UINT16_MAX;
+		}
+
+		status = cli_unlink(cli1, fname,
+				    FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("unlink failed (%s)\n", nt_errstr(status));
+		}
+
+		if (!torture_close_connection(cli1)) {
+			correct = false;
+		}
+	}
+
+	TALLOC_FREE(frame);
+
+	printf("finished large_readx test\n");
+	return correct;
+}
+
 static bool run_cli_echo(int dummy)
 {
 	struct cli_state *cli;
@@ -9151,6 +9486,7 @@ static struct {
 	{ "CHAIN2", run_chain2, 0},
 	{ "CHAIN3", run_chain3, 0},
 	{ "WINDOWS-WRITE", run_windows_write, 0},
+	{ "LARGE_READX", run_large_readx, 0},
 	{ "NTTRANS-CREATE", run_nttrans_create, 0},
 	{ "NTTRANS-FSCTL", run_nttrans_fsctl, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
