@@ -501,3 +501,102 @@ int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
 		return count;
 	}
 }
+
+bool share_mode_cleanup_disconnected(struct file_id fid,
+				     uint64_t open_persistent_id)
+{
+	bool ret = false;
+	TALLOC_CTX *frame = talloc_stackframe();
+	unsigned n;
+	struct share_mode_data *data;
+	struct share_mode_lock *lck;
+	bool ok;
+
+	lck = get_existing_share_mode_lock(frame, fid);
+	if (lck == NULL) {
+		DEBUG(5, ("share_mode_cleanup_disconnected: "
+			  "Could not fetch share mode entry for %s\n",
+			  file_id_string(frame, &fid)));
+		goto done;
+	}
+	data = lck->data;
+
+	for (n=0; n < data->num_share_modes; n++) {
+		struct share_mode_entry *entry = &data->share_modes[n];
+
+		if (!server_id_is_disconnected(&entry->pid)) {
+			DEBUG(5, ("share_mode_cleanup_disconnected: "
+				  "file (file-id='%s', servicepath='%s', "
+				  "base_name='%s%s%s') "
+				  "is used by server %s ==> do not cleanup\n",
+				  file_id_string(frame, &fid),
+				  data->servicepath,
+				  data->base_name,
+				  (data->stream_name == NULL)
+				  ? "" : "', stream_name='",
+				  (data->stream_name == NULL)
+				  ? "" : data->stream_name,
+				  server_id_str(frame, &entry->pid)));
+			goto done;
+		}
+		if (open_persistent_id != entry->share_file_id) {
+			DEBUG(5, ("share_mode_cleanup_disconnected: "
+				  "entry for file "
+				  "(file-id='%s', servicepath='%s', "
+				  "base_name='%s%s%s') "
+				  "has share_file_id %llu but expected %llu"
+				  "==> do not cleanup\n",
+				  file_id_string(frame, &fid),
+				  data->servicepath,
+				  data->base_name,
+				  (data->stream_name == NULL)
+				  ? "" : "', stream_name='",
+				  (data->stream_name == NULL)
+				  ? "" : data->stream_name,
+				  (unsigned long long)entry->share_file_id,
+				  (unsigned long long)open_persistent_id));
+			goto done;
+		}
+	}
+
+	ok = brl_cleanup_disconnected(fid, open_persistent_id);
+	if (!ok) {
+		DEBUG(10, ("share_mode_cleanup_disconnected: "
+			   "failed to clean up byte range locks associated "
+			   "with file (file-id='%s', servicepath='%s', "
+			   "base_name='%s%s%s') and open_persistent_id %llu "
+			   "==> do not cleanup\n",
+			   file_id_string(frame, &fid),
+			   data->servicepath,
+			   data->base_name,
+			   (data->stream_name == NULL)
+			   ? "" : "', stream_name='",
+			   (data->stream_name == NULL)
+			   ? "" : data->stream_name,
+			   (unsigned long long)open_persistent_id));
+		goto done;
+	}
+
+	DEBUG(10, ("share_mode_cleanup_disconnected: "
+		   "cleaning up %u entries for file "
+		   "(file-id='%s', servicepath='%s', "
+		   "base_name='%s%s%s') "
+		   "from open_persistent_id %llu\n",
+		   data->num_share_modes,
+		   file_id_string(frame, &fid),
+		   data->servicepath,
+		   data->base_name,
+		   (data->stream_name == NULL)
+		   ? "" : "', stream_name='",
+		   (data->stream_name == NULL)
+		   ? "" : data->stream_name,
+		   (unsigned long long)open_persistent_id));
+
+	data->num_share_modes = 0;
+	data->modified = true;
+
+	ret = true;
+done:
+	talloc_free(frame);
+	return ret;
+}
