@@ -3081,7 +3081,7 @@ bool fork_echo_handler(struct smbd_server_connection *sconn)
 	listener_pipe[1] = -1;
 	sconn->smb1.echo_handler.trusted_fd = listener_pipe[0];
 
-	DEBUG(10,("fork_echo_handler: main[%d] echo_child[%d]\n", (int)getpid(), child));
+	DEBUG(10,("fork_echo_handler: main[%d] echo_child[%d]\n", (int)getpid(), (int)child));
 
 	/*
 	 * Without smb signing this is the same as the normal smbd
