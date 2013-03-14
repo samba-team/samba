@@ -2,3 +2,20 @@ use
 	hexdump -v -e '12/1 "0x%02x, " "\n"' infile|outfile
 
 to import ndr dumps
+
+
+Or use gdb:
+
+(gdb) b dump_printer
+Breakpoint 1 at 0x49c92f: file ../source3/utils/net_printing.c, line 158.
+(gdb) cond 1 strcmp(key_name, "s0bc") == 0
+(gdb) run
+Breakpoint 1, dump_printer (mem_ctx=0x700a20, key_name=0x11fb8f9 "s0bc", data=0x18f93d0 "H\032", length=1284, do_string_conversion=true) at ../source3/utils/net_printing.c:158
+158             printf("found printer: %s\n", key_name);
+
+-> Now use x/<length in byte>bx
+
+(gdb) x/1284bx data
+
+This prints data as hex values. 1284 is the length in byte (see the length
+argument of the function). The b indicates byte.
