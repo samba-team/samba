@@ -277,7 +277,7 @@ int prefork_retire_children(struct messaging_context *msg_ctx,
 		     (pfp->pool[i].num_clients < 1)) &&
 		    (pfp->pool[i].started <= age_limit)) {
 			/* tell the child it's time to give up */
-			DEBUG(5, ("Retiring pid %d!\n", pfp->pool[i].pid));
+			DEBUG(5, ("Retiring pid %u!\n", (unsigned int)pfp->pool[i].pid));
 			pfp->pool[i].cmds = PF_SRV_MSG_EXIT;
 			messaging_send(msg_ctx,
 					pid_to_procid(pfp->pool[i].pid),
