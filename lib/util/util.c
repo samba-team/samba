@@ -235,7 +235,7 @@ _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 	if ((st.st_mode & 0777) != dir_perms) {
 		DEBUG(0, ("invalid permissions on directory "
 			  "'%s': has 0%o should be 0%o\n", dname,
-			  (st.st_mode & 0777), dir_perms));
+			  (unsigned int)(st.st_mode & 0777), (unsigned int)dir_perms));
 		return false;
 	}
 
