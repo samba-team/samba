@@ -42,7 +42,7 @@ int main(int argc, char * argv[])
         return 1;
     }
     
-    printf("\nBefore chmod: mode = %04o\n", st.st_mode);
+    printf("\nBefore chmod: mode = %04o\n", (unsigned int)st.st_mode);
     
     if (smbc_chmod(pSmbPath, mode) < 0)
     {
@@ -56,7 +56,7 @@ int main(int argc, char * argv[])
         return 1;
     }
     
-    printf("After chmod: mode = %04o\n", st.st_mode);
+    printf("After chmod: mode = %04o\n", (unsigned int)st.st_mode);
     
     return 0; 
 }
