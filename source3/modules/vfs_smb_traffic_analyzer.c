@@ -518,7 +518,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 				tm, seconds, handle, username, vfs_id_open,
 				3, ((struct open_data *) data)->filename,
 				talloc_asprintf( talloc_tos(), "%u",
-				((struct open_data *) data)->mode),
+				(unsigned int)((struct open_data *) data)->mode),
 				talloc_asprintf( talloc_tos(), "%u",
 				((struct open_data *) data)->result));
 			break;
@@ -534,7 +534,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 				tm, seconds, handle, username, vfs_id_mkdir, \
 				3, ((struct mkdir_data *) data)->path, \
 				talloc_asprintf( talloc_tos(), "%u", \
-				((struct mkdir_data *) data)->mode), \
+				(unsigned int)((struct mkdir_data *) data)->mode), \
 				talloc_asprintf( talloc_tos(), "%u", \
 				((struct mkdir_data *) data)->result ));
 			break;
