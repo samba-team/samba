@@ -57,7 +57,7 @@ static void print_counters(void)
 	int i;
 	uint32_t *old_counters;
 
-	printf("[%4u] Counters: ", getpid());
+	printf("[%4u] Counters: ", (unsigned int)getpid());
 	old_counters = (uint32_t *)old_data.dptr;
 	for (i=0; i < old_data.dsize/sizeof(uint32_t); i++) {
 		printf("%6u ", old_counters[i]);
@@ -89,7 +89,7 @@ static bool check_counters(struct db_context *db, TDB_DATA data)
 	for (i=0; i < old_data.dsize/sizeof(uint32_t); i++) {
 		if (counters[i] < old_counters[i]) {
 			printf("[%4u] ERROR: counters has decreased for node %u  From %u to %u\n",
-			       getpid(), i, old_counters[i], counters[i]);
+			       (unsigned int)getpid(), i, old_counters[i], counters[i]);
 			success = false;
 			return false;
 		}
