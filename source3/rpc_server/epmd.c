@@ -222,7 +222,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	DEBUG(1, ("Endpoint Mapper Daemon Started (%d)\n", getpid()));
+	DEBUG(1, ("Endpoint Mapper Daemon Started (%u)\n", (unsigned int)getpid()));
 
 	/* loop forever */
 	rc = tevent_loop_wait(ev_ctx);
