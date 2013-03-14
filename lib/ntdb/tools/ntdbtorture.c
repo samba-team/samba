@@ -61,7 +61,7 @@ static void ntdb_log(struct ntdb_context *ntdb,
 	{
 		char str[200];
 		signal(SIGUSR1, SIG_IGN);
-		sprintf(str,"xterm -e gdb /proc/%d/exe %d", getpid(), getpid());
+		sprintf(str,"xterm -e gdb /proc/%u/exe %u", (unsigned int)getpid(), (unsigned int)getpid());
 		system(str);
 	}
 #endif
@@ -74,7 +74,7 @@ static void segv_handler(int sig, siginfo_t *info, void *p)
 	char string[100];
 
 	sprintf(string, "%u: death at %p (map_ptr %p, map_size %zu)\n",
-		getpid(), info->si_addr, db->file->map_ptr,
+		(unsigned int)getpid(), info->si_addr, db->file->map_ptr,
 		(size_t)db->file->map_size);
 	if (write(2, string, strlen(string)) > 0)
 		sleep(60);
@@ -85,7 +85,7 @@ static void warn_on_err(enum NTDB_ERROR e, struct ntdb_context *ntdb,
 			const char *why)
 {
 	if (e != NTDB_SUCCESS) {
-		fprintf(stderr, "%u:%s:%s\n", getpid(), why,
+		fprintf(stderr, "%u:%s:%s\n", (unsigned int)getpid(), why,
 			ntdb ? ntdb_errorstr(e) : "(no ntdb)");
 		error_count++;
 	}
@@ -271,14 +271,14 @@ static int run_child(const char *filename, int i, int seed, unsigned num_loops,
 	db = ntdb_open(filename, ntdb_flags, O_RDWR | O_CREAT, 0600,
 		      &log_attr);
 	if (!db) {
-		fprintf(stderr, "%u:%s:%s\n", getpid(), filename,
+		fprintf(stderr, "%u:%s:%s\n", (unsigned int)getpid(), filename,
 			"db open failed");
 		exit(1);
 	}
 
 #if 0
 	if (i == 0) {
-		printf("pid %i\n", getpid());
+		printf("pid %u\n", (unsigned int)getpid());
 		sleep(9);
 	} else
 		sleep(10);
@@ -527,7 +527,7 @@ done:
 		db = ntdb_open(test_ntdb, NTDB_DEFAULT, O_RDWR | O_CREAT,
 			      0600, &log_attr);
 		if (!db) {
-			fprintf(stderr, "%u:%s:%s\n", getpid(), test_ntdb,
+			fprintf(stderr, "%u:%s:%s\n", (unsigned int)getpid(), test_ntdb,
 				"db open failed");
 			exit(1);
 		}

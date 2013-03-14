@@ -52,8 +52,10 @@ bool check_lock_pid(struct ntdb_context *ntdb, const char *call, bool log)
 
 	if (log) {
 		ntdb_logerr(ntdb, NTDB_ERR_LOCK, NTDB_LOG_USE_ERROR,
-			   "%s: fork() detected after lock acquisition!"
-			   " (%u vs %u)", call, ntdb->file->locker, getpid());
+			    "%s: fork() detected after lock acquisition!"
+			    " (%u vs %u)", call,
+			    (unsigned int)ntdb->file->locker,
+			    (unsigned int)getpid());
 	}
 	return false;
 }
