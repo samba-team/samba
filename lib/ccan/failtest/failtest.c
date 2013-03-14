@@ -321,7 +321,7 @@ static void PRINTF_FMT(1, 2) trace(const char *fmt, ...)
 		fprintf(tracef, "  ");
 
 	p = failpath_string();
-	fprintf(tracef, "%i: %u: %s ", idx++, getpid(), p);
+	fprintf(tracef, "%i: %u: %s ", idx++, (unsigned int)getpid(), p);
 	va_start(ap, fmt);
 	vfprintf(tracef, fmt, ap);
 	va_end(ap);
@@ -686,8 +686,8 @@ static bool should_fail(struct failtest_call *call)
 
 			/* Don't timeout. */
 			signal(SIGUSR1, SIG_IGN);
-			sprintf(str, "xterm -e gdb /proc/%d/exe %d &",
-				getpid(), getpid());
+			sprintf(str, "xterm -e gdb /proc/%u/exe %u &",
+				(unsigned int)getpid(), (unsigned int)getpid());
 			if (system(str) == 0)
 				sleep(5);
 		} else {
@@ -774,7 +774,7 @@ static bool should_fail(struct failtest_call *call)
 			else
 				p = c->file;
 			trace("%u->%u (%u.%02u): %s (%s:%u)\n",
-			      getppid(), getpid(),
+			      (unsigned int)getppid(), (unsigned int)getpid(),
 			      (int)diff.tv_sec, (int)diff.tv_usec / 10000,
 			      failpath, p, c->line);
 			free(failpath);
