@@ -1299,7 +1299,7 @@ extern void build_options(bool screen);
 		/* Publish nt printers, this requires a working winreg pipe */
 		pcap_cache_reload(server_event_context(),
 				  smbd_messaging_context(),
-				  &reload_printers);
+				  &reload_printers_full);
 	}
 
 	if (is_daemon && !_lp_disable_spoolss()) {

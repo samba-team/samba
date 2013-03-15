@@ -36,8 +36,51 @@
 void reload_printers(struct tevent_context *ev,
 		     struct messaging_context *msg_ctx)
 {
+	int n_services;
+	int pnum;
+	int snum;
+	const char *pname;
+
+	n_services = lp_numservices();
+	pnum = lp_servicenumber(PRINTERS_NAME);
+
+	DEBUG(10, ("reloading printer services from pcap cache\n"));
+
+	/*
+	 * Add default config for printers added to smb.conf file and remove
+	 * stale printers
+	 */
+	for (snum = 0; snum < n_services; snum++) {
+		/* avoid removing PRINTERS_NAME */
+		if (snum == pnum) {
+			continue;
+		}
+
+		/* skip no-printer services */
+		if (!(lp_snum_ok(snum) && lp_print_ok(snum))) {
+			continue;
+		}
+
+		pname = lp_printername(snum);
+
+		/* check printer, but avoid removing non-autoloaded printers */
+		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
+			DEBUG(3, ("removing stale printer %s\n", pname));
+			lp_killservice(snum);
+		}
+	}
+
+	/* Make sure deleted printers are gone */
+	load_printers(ev, msg_ctx);
+}
+
+/****************************************************************************
+ purge stale printers and reload from pre-populated pcap cache
+**************************************************************************/
+void reload_printers_full(struct tevent_context *ev,
+			  struct messaging_context *msg_ctx)
+{
 	struct auth_serversupplied_info *session_info = NULL;
-	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int n_services;
 	int pnum;
 	int snum;
@@ -45,17 +88,12 @@ void reload_printers(struct tevent_context *ev,
 	const char *sname;
 	NTSTATUS status;
 
-	load_printers(ev, msg_ctx);
-
 	n_services = lp_numservices();
 	pnum = lp_servicenumber(PRINTERS_NAME);
 
-	DEBUG(10, ("reloading printer services from pcap cache\n"));
-
-	status = make_session_info_system(talloc_tos(), &session_info);
+	status = make_session_info_system(talloc_new(NULL), &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("reload_printers: "
-			  "Could not create system session_info\n"));
+		DEBUG(3, ("Could not create system session_info\n"));
 		/* can't remove stale printers before we
 		 * are fully initilized */
 		return;
@@ -81,8 +119,7 @@ void reload_printers(struct tevent_context *ev,
 
 		/* check printer, but avoid removing non-autoloaded printers */
 		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {
-			DEBUG(3, ("removing stale printer %s\n", pname));
-
+			struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 			if (is_printer_published(session_info, session_info,
 						 msg_ctx,
 						 NULL, lp_servicename(snum),
@@ -96,7 +133,6 @@ void reload_printers(struct tevent_context *ev,
 			}
 			nt_printer_remove(session_info, session_info, msg_ctx,
 					  pname);
-			lp_killservice(snum);
 		} else {
 			DEBUG(8, ("Adding default registry entry for printer "
 				  "[%s], if it doesn't exist.\n", sname));
@@ -105,8 +141,8 @@ void reload_printers(struct tevent_context *ev,
 		}
 	}
 
-	/* Make sure deleted printers are gone */
-	load_printers(ev, msg_ctx);
+	/* finally, purge old snums */
+	reload_printers(ev, msg_ctx);
 
 	TALLOC_FREE(session_info);
 }
