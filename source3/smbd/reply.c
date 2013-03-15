@@ -3848,6 +3848,84 @@ nosendfile_read:
 }
 
 /****************************************************************************
+ Work out how much space we have for a read return.
+****************************************************************************/
+
+static size_t calc_max_read_pdu(const struct smb_request *req)
+{
+	if (req->sconn->conn->protocol < PROTOCOL_NT1) {
+		return req->sconn->smb1.sessions.max_send;
+	}
+
+	if (!lp_large_readwrite()) {
+		return req->sconn->smb1.sessions.max_send;
+	}
+
+	if (req_is_in_chain(req)) {
+		return req->sconn->smb1.sessions.max_send;
+	}
+
+	if (req->encrypted) {
+		/*
+		 * Don't take encrypted traffic up to the
+		 * limit. There are padding considerations
+		 * that make that tricky.
+		 */
+		return req->sconn->smb1.sessions.max_send;
+	}
+
+	if (srv_is_signing_active(req->sconn)) {
+		return 0x1FFFF;
+	}
+
+	if (!lp_unix_extensions()) {
+		return 0x1FFFF;
+	}
+
+	/*
+	 * We can do ultra-large POSIX reads.
+	 */
+	return 0xFFFFFF;
+}
+
+/****************************************************************************
+ Calculate how big a read can be. Copes with all clients. It's always
+ safe to return a short read - Windows does this.
+****************************************************************************/
+
+static size_t calc_read_size(const struct smb_request *req,
+			     size_t upper_size,
+			     size_t lower_size)
+{
+	size_t max_pdu = calc_max_read_pdu(req);
+	size_t total_size = 0;
+	size_t hdr_len = MIN_SMB_SIZE + VWV(12);
+	size_t max_len = max_pdu - hdr_len;
+
+	/*
+	 * Windows explicitly ignores upper size of 0xFFFF.
+	 * See [MS-SMB].pdf <26> Section 2.2.4.2.1:
+	 * We must do the same as these will never fit even in
+	 * an extended size NetBIOS packet.
+	 */
+	if (upper_size == 0xFFFF) {
+		upper_size = 0;
+	}
+
+	if (req->sconn->conn->protocol < PROTOCOL_NT1) {
+		upper_size = 0;
+	}
+
+	total_size = ((upper_size<<16) | lower_size);
+
+	/*
+	 * LARGE_READX test shows it's always safe to return
+	 * a short read. Windows does so.
+	 */
+	return MIN(total_size, max_len);
+}
+
+/****************************************************************************
  Reply to a read and X.
 ****************************************************************************/
 
@@ -3893,31 +3971,14 @@ void reply_read_and_X(struct smb_request *req)
 	}
 
 	upper_size = SVAL(req->vwv+7, 0);
-	if (upper_size != 0) {
-		smb_maxcnt |= (upper_size<<16);
-		if (upper_size > 1) {
-			/* Can't do this on a chained packet. */
-			if ((CVAL(req->vwv+0, 0) != 0xFF)) {
-				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
-				END_PROFILE(SMBreadX);
-				return;
-			}
-			/* We currently don't do this on signed or sealed data. */
-			if (srv_is_signing_active(req->sconn) ||
-			    is_encrypted_packet(req->sconn, req->inbuf)) {
-				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
-				END_PROFILE(SMBreadX);
-				return;
-			}
-			/* Is there room in the reply for this data ? */
-			if (smb_maxcnt > (0xFFFFFF - (smb_size -4 + 12*2)))  {
-				reply_nterror(req,
-					      NT_STATUS_INVALID_PARAMETER);
-				END_PROFILE(SMBreadX);
-				return;
-			}
-			big_readX = True;
-		}
+	smb_maxcnt = calc_read_size(req, upper_size, smb_maxcnt);
+	if (smb_maxcnt > (0x1FFFF - (MIN_SMB_SIZE + VWV(12)))) {
+		/*
+		 * This is a heuristic to avoid keeping large
+		 * outgoing buffers around over long-lived aio
+		 * requests.
+		 */
+		big_readX = True;
 	}
 
 	if (req->wct == 12) {
