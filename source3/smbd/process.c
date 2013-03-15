@@ -2563,6 +2563,32 @@ static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
 }
 #endif
 
+static void msg_kill_client_ip(struct messaging_context *msg_ctx,
+				  void *private_data, uint32_t msg_type,
+				  struct server_id server_id, DATA_BLOB *data)
+{
+	struct smbd_server_connection *sconn = talloc_get_type_abort(
+		private_data, struct smbd_server_connection);
+	const char *ip = (char *) data->data;
+	char *client_ip;
+
+	DEBUG(10, ("Got kill request for client IP %s\n", ip));
+
+	client_ip = tsocket_address_inet_addr_string(sconn->remote_address,
+						     talloc_tos());
+	if (client_ip == NULL) {
+		return;
+	}
+
+	if (strequal(ip, client_ip)) {
+		DEBUG(1, ("Got kill client message for %s - "
+			  "exiting immediately\n", ip));
+		exit_server_cleanly("Forced disconnect for client");
+	}
+
+	TALLOC_FREE(client_ip);
+}
+
 /*
  * Send keepalive packets to our client
  */
@@ -3527,6 +3553,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 			     MSG_SMB_CONF_UPDATED, sconn->ev_ctx);
 	messaging_register(sconn->msg_ctx, sconn,
 			   MSG_SMB_CONF_UPDATED, smbd_conf_updated);
+
+	messaging_deregister(sconn->msg_ctx, MSG_SMB_KILL_CLIENT_IP,
+			     NULL);
+	messaging_register(sconn->msg_ctx, sconn,
+			   MSG_SMB_KILL_CLIENT_IP,
+			   msg_kill_client_ip);
 
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting
