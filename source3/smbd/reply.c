@@ -3849,26 +3849,6 @@ nosendfile_read:
 }
 
 /****************************************************************************
- MacOSX clients send large reads without telling us they are going to do that.
- Bug #9572 - File corruption during SMB1 read by Mac OSX 10.8.2 clients
- Allow this if we are talking to a Samba client, or if we told the client
- we supported this.
-****************************************************************************/
-
-static bool server_will_accept_large_read(void)
-{
-	/* Samba client ? No problem. */
-	if (get_remote_arch() == RA_SAMBA) {
-		return true;
-	}
-	/* Need UNIX extensions. */
-	if (!lp_unix_extensions()) {
-		return false;
-	}
-	return true;
-}
-
-/****************************************************************************
  Reply to a read and X.
 ****************************************************************************/
 
@@ -3914,14 +3894,7 @@ void reply_read_and_X(struct smb_request *req)
 	}
 
 	upper_size = SVAL(req->vwv+7, 0);
-	if ((upper_size != 0) && server_will_accept_large_read()) {
-		/*
-		 * This is Samba only behavior (up to Samba 3.6)!
-		 *
-		 * Windows 2008 R2 ignores the upper_size,
-		 * so we do unless unix extentions are active
-		 * or "smbclient" is talking to us.
-		 */
+	if (upper_size != 0) {
 		smb_maxcnt |= (upper_size<<16);
 		if (upper_size > 1) {
 			/* Can't do this on a chained packet. */
