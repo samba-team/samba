@@ -89,6 +89,9 @@ interface messaging
 		MSG_SMB_NOTIFY_CLEANUP		= 0x0314,
 		MSG_SMB_SCAVENGER		= 0x0315,
 
+		/* shutdown connection for given client */
+		MSG_SMB_KILL_CLIENT_IP		= 0x0316,
+
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
 		MSG_WINBIND_FORGET_STATE	= 0x0402,
