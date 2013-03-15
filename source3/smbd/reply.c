@@ -3136,8 +3136,7 @@ void reply_readbraw(struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active(sconn) ||
-	    is_encrypted_packet(req->inbuf)) {
+	if (srv_is_signing_active(sconn) || req->encrypted) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
@@ -3561,7 +3560,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 */
 
 	if (!req_is_in_chain(req) &&
-	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
+	    !req->encrypted && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
 	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
@@ -3765,8 +3764,7 @@ void reply_read_and_X(struct smb_request *req)
 				return;
 			}
 			/* We currently don't do this on signed or sealed data. */
-			if (srv_is_signing_active(req->sconn) ||
-			    is_encrypted_packet(req->inbuf)) {
+			if (srv_is_signing_active(req->sconn) || req->encrypted) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
