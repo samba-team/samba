@@ -1669,7 +1669,7 @@ static void reload_pcap_change_notify(struct tevent_context *ev,
 	 * This will block the process for some time (~1 sec per printer), but
 	 * it doesn't block smbd's servering clients.
 	 */
-	reload_printers(ev, msg_ctx);
+	reload_printers_full(ev, msg_ctx);
 
 	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
 }
