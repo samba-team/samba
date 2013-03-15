@@ -790,6 +790,27 @@ static bool do_closeshare(struct tevent_context *ev_ctx,
 			    strlen(argv[1]) + 1);
 }
 
+/* Kill a client by IP address */
+static bool do_kill_client_by_ip(struct tevent_context *ev_ctx,
+				 struct messaging_context *msg_ctx,
+				 const struct server_id pid,
+				 const int argc, const char **argv)
+{
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> kill-client-ip "
+			"<IP address>\n");
+		return false;
+	}
+
+	if (!is_ipaddress_v4(argv[1]) && !is_ipaddress_v6(argv[1])) {
+		fprintf(stderr, "%s is not a valid IP address!\n", argv[1]);
+		return false;
+	}
+
+	return send_message(msg_ctx, pid, MSG_SMB_KILL_CLIENT_IP,
+			    argv[1], strlen(argv[1]) + 1);
+}
+
 /* Tell winbindd an IP got dropped */
 
 static bool do_ip_dropped(struct tevent_context *ev_ctx,
@@ -1287,6 +1308,8 @@ static const struct {
 	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
 	{ "printnotify", do_printnotify, "Send a print notify message" },
 	{ "close-share", do_closeshare, "Forcibly disconnect a share" },
+	{ "kill-client-ip", do_kill_client_by_ip,
+	  "Forcibly disconnect a client with a specific IP address" },
 	{ "ip-dropped", do_ip_dropped, "Tell winbind that an IP got dropped" },
 	{ "lockretry", do_lockretry, "Force a blocking lock retry" },
 	{ "brl-revalidate", do_brl_revalidate, "Revalidate all brl entries" },
