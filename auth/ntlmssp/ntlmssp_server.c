@@ -449,11 +449,11 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 							      &gensec_ntlmssp->server_returned_info,
 							      user_session_key, lm_session_key);
 	}
-	talloc_free(user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(5, (__location__ ": Checking NTLMSSP password for %s\\%s failed: %s\n", user_info->client.domain_name, user_info->client.account_name, nt_errstr(nt_status)));
 	}
+	TALLOC_FREE(user_info);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
