@@ -3294,8 +3294,7 @@ void reply_readbraw(struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active(sconn) ||
-	    is_encrypted_packet(sconn, req->inbuf)) {
+	if (srv_is_signing_active(sconn) || req->encrypted) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
@@ -3698,7 +3697,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 */
 
 	if (!req_is_in_chain(req) &&
-	    !is_encrypted_packet(req->sconn, req->inbuf) &&
+	    !req->encrypted &&
 	    (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) &&
 	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
