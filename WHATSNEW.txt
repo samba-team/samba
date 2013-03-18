@@ -401,6 +401,18 @@ For pure file server work, the binaries users would expect from that
 series (smbd, nmbd, winbindd, smbpasswd) continue to be available.
 
 
+Domain Member Support
+=====================
+
+Domain member support in the 'samba' binary is in its infancy, and
+is not comparable to the support found in 'winbindd'. As such, on
+Samba domain member servers, the binaries 'smbd', 'nmbd' and 'winbindd'
+are to be used, as known from Samba 3 domain member server setups.
+The only exceptions from this rule are the cases which explicitly
+require the 'samba' binary, namely running the ntvfs file server,
+the CIFS proxy or OpenChange on a domain member.
+
+
 DNS
 ===
 
@@ -449,11 +461,6 @@ Known Issues
 - Installation on systems without a system iconv (and developer
   headers at compile time) is known to cause errors when dealing with
   non-ASCII characters.
-
-- Domain member support in the 'samba' binary is in its infancy, and
-  is not comparable to the support found in winbindd.  As such, do not
-  use the 'samba' binary (provided for the AD server) on a member
-  server.
 
 - There is no NetBIOS browsing support (network neighbourhood)
   available for the AD domain controller.  (Support in nmbd and smbd
