@@ -579,7 +579,9 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 		}
 		r->out.info->level = r->in.info->level;
 		*r->out.entries_read = r->out.info->ctr.user0->entries_read;
-		*r->out.resume_handle = 0;
+		if (r->out.resume_handle != NULL) {
+			*r->out.resume_handle = 0;
+		}
 		break;
 	case 1:
 		r->out.info->ctr.user1 = create_enum_users1(p->mem_ctx);
@@ -588,7 +590,9 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 		}
 		r->out.info->level = r->in.info->level;
 		*r->out.entries_read = r->out.info->ctr.user1->entries_read;
-		*r->out.resume_handle = 0;
+		if (r->out.resume_handle != NULL) {
+			*r->out.resume_handle = 0;
+		}
 		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
