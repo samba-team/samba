@@ -132,11 +132,12 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	uint16_t action = 0;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	struct smbXsrv_session *session = NULL;
+	uint16_t smb_bufsize = SVAL(req->vwv+2, 0);
 	uint32_t client_caps = IVAL(req->vwv+10, 0);
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
-	if (global_client_caps == 0) {
+	if (!sconn->smb1.sessions.done_sesssetup) {
 		global_client_caps = client_caps;
 
 		if (!(global_client_caps & CAP_STATUS32)) {
@@ -377,6 +378,12 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			return;
 		}
 
+		if (!sconn->smb1.sessions.done_sesssetup) {
+			sconn->smb1.sessions.max_send =
+				MIN(sconn->smb1.sessions.max_send,smb_bufsize);
+		}
+		sconn->smb1.sessions.done_sesssetup = true;
+
 		/* current_user_info is changed on new vuid */
 		reload_services(sconn, conn_snum_used, true);
 	} else if (NT_STATUS_IS_OK(status)) {
@@ -560,7 +567,7 @@ static void setup_new_vc_session(struct smbd_server_connection *sconn)
 void reply_sesssetup_and_X(struct smb_request *req)
 {
 	uint64_t sess_vuid;
-	int smb_bufsize;
+	uint16_t smb_bufsize;
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB plaintext_password;
@@ -671,8 +678,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		const uint8_t *save_p = req->buf;
 		uint16 byte_count;
 
-
-		if(global_client_caps == 0) {
+		if (!sconn->smb1.sessions.done_sesssetup) {
 			global_client_caps = IVAL(req->vwv+11, 0);
 
 			if (!(global_client_caps & CAP_STATUS32)) {
