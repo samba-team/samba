@@ -3631,7 +3631,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 	exit_server_cleanly(NULL);
 }
 
-bool req_is_in_chain(struct smb_request *req)
+bool req_is_in_chain(const struct smb_request *req)
 {
 	if (req->vwv != (const uint16_t *)(req->inbuf+smb_vwv)) {
 		/*
