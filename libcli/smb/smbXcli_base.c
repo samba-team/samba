@@ -4046,6 +4046,15 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 		if (server_security_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED) {
 			server_signing = "supported";
 			server_allowed = true;
+		} else if (conn->mandatory_signing) {
+			/*
+			 * We have mandatory signing as client
+			 * lets assume the server will look at our
+			 * FLAGS2_SMB_SECURITY_SIGNATURES_REQUIRED
+			 * flag in the session setup
+			 */
+			server_signing = "not announced";
+			server_allowed = true;
 		}
 		if (server_security_mode & NEGOTIATE_SECURITY_SIGNATURES_REQUIRED) {
 			server_signing = "required";
