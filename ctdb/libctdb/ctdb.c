@@ -179,11 +179,11 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	if (ctdb->fd < 0)
 		goto free_fail;
 
-	set_nonblocking(ctdb->fd);
-	set_close_on_exec(ctdb->fd);
-
 	if (connect(ctdb->fd, (struct sockaddr *)&sun, sizeof(sun)) == -1)
 		goto close_fail;
+
+	set_nonblocking(ctdb->fd);
+	set_close_on_exec(ctdb->fd);
 
 	/* Immediately queue a request to get our pnn. */
 	if (!ctdb_getpnn_send(ctdb, CTDB_CURRENT_NODE, set_pnn, NULL))
