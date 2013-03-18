@@ -8,13 +8,71 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.13 include:
 
-o   
+o  Fix two resource leaks in winbindd (bug #9684).
+o  Unlink after open causes smbd to panic (bug #9571).
 
 
 Changes since 3.6.12:
 --------------------
 
-o   
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9519: Samba returns unexpected error on SMB posix open.
+    * BUG 9585: Samba 3.6.x not correctly signing any but the last response in
+      a compound request/response.
+    * BUG 9586: smbd[29175]: disk_free: sys_popen() failed" message logged in
+      /var/log/messages many times.
+    * BUG 9587: Archive flag is always set on directories.
+    * BUG 9588: ACLs are not inherited to directories for DFS shares.
+    * BUG 9637: Renaming directories as guest user in security share mode
+      doesn't work.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9568: Add dbwrap_tool.1 manual page.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 9646: Make SMB2_GETINFO multi-volume aware.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 9474: Downgrade v4 printer driver requests to v3.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9378: Add extra attributes for AD printer publishing.
+    * BUG 9658: Fix initial large PAC sess setup response.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7825: Fix GNU ld version detection with
+      old gcc releases.
+
+
+o   Daniel Kobras <d.kobras@science-computing.de>
+    * BUG 9039: 'map untrusted to domain' treats WORKSTATION as bogus domain.
+
+
+o   Guenter Kukkukk <kukks@samba.org>
+    * BUG 9701: Fix vfs_catia module.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9541: Add support for posix_openpt.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Bug 9625: wbcAuthenticateEx gives unix times.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9574: Fix a possible null pointer dereference in spoolss.
+    * BUG 9684: Fix two resource leaks in winbindd.
+    * BUG 9686: Fix a possible buffer overrun in pdb_smbpasswd.
+
+
+o   Pavel Shilovsky <piastry@etersoft.ru>
+    * Bug #9571: Unlink after open causes smbd to panic.
 
 
 ######################################################################
