@@ -861,6 +861,11 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
+	if (smbreq->unread_bytes) {
+		/* Can't do async with recvfile. */
+		return NT_STATUS_RETRY;
+	}
+
 	if (!(aio_ex = create_aio_extra(smbreq->smb2req, fsp, 0))) {
 		return NT_STATUS_NO_MEMORY;
 	}
