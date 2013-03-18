@@ -848,6 +848,7 @@ static void reply_read_and_X_send(struct ntvfs_request *ntvfs)
 void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 {
 	union smb_read *io;
+	uint16_t high_part = 0;
 
 	/* parse request */
 	if (req->in.wct != 12) {
@@ -869,13 +870,18 @@ void smbsrv_reply_read_and_X(struct smbsrv_request *req)
 		io->readx.in.read_for_execute = false;
 	}
 
-	if (req->smb_conn->negotiate.client_caps & CAP_LARGE_READX) {
-		uint32_t high_part = IVAL(req->in.vwv, VWV(7));
-		if (high_part == 1) {
-			io->readx.in.maxcnt |= high_part << 16;
-		}
+	if (req->smb_conn->negotiate.protocol == PROTOCOL_NT1) {
+		high_part = SVAL(req->in.vwv, VWV(7));
 	}
-	
+	if (high_part != UINT16_MAX) {
+		io->readx.in.maxcnt |= high_part << 16;
+	}
+
+	/*
+	 * Windows truncates the length to 0x10000
+	 */
+	io->readx.in.maxcnt = MIN(io->readx.in.maxcnt, 0x10000);
+
 	/* the 64 bit variant */
 	if (req->in.wct == 12) {
 		uint32_t offset_high = IVAL(req->in.vwv, VWV(10));
