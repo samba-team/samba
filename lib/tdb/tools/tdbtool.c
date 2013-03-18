@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba database functions
    Copyright (C) Andrew Tridgell              1999-2000
@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -113,7 +113,7 @@ static void _start_timer(void)
 static double _end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
-	return((tp2.tv_sec - tp1.tv_sec) + 
+	return((tp2.tv_sec - tp1.tv_sec) +
 	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
 }
 
@@ -160,7 +160,7 @@ static void print_data(const char *buf,int len)
 		printf("%02X ",(int)((unsigned char)buf[i]));
 		i++;
 		if (i%8 == 0) printf(" ");
-		if (i%16 == 0) {      
+		if (i%16 == 0) {
 			print_asc(&buf[i-16],8); printf(" ");
 			print_asc(&buf[i-8],8); printf("\n");
 			if (i<len) printf("[%03X] ",i);
@@ -168,18 +168,18 @@ static void print_data(const char *buf,int len)
 	}
 	if (i%16) {
 		int n;
-		
+
 		n = 16 - (i%16);
 		printf(" ");
 		if (n>8) printf(" ");
 		while (n--) printf("   ");
-		
+
 		n = i%16;
 		if (n > 8) n = 8;
 		print_asc(&buf[i-(i%16)],n); printf(" ");
 		n = (i%16) - n;
-		if (n>0) print_asc(&buf[i-n],n); 
-		printf("\n");    
+		if (n>0) print_asc(&buf[i-n],n);
+		printf("\n");
 	}
 }
 
@@ -309,11 +309,11 @@ static void show_tdb(char *keyname, size_t keylen)
 	    terror("fetch failed");
 	    return;
 	}
-	
+
 	print_rec(tdb, key, dbuf, NULL);
-	
+
 	free( dbuf.dptr );
-	
+
 	return;
 }
 
@@ -357,23 +357,23 @@ static void move_rec(char *keyname, size_t keylen, char* tdbname)
 		terror("fetch failed");
 		return;
 	}
-	
+
 	print_rec(tdb, key, dbuf, NULL);
-	
+
 	dst_tdb = tdb_open(tdbname, 0, 0, O_RDWR, 0600);
 	if ( !dst_tdb ) {
 		terror("unable to open destination tdb");
 		return;
 	}
-	
+
 	if (tdb_store( dst_tdb, key, dbuf, TDB_REPLACE ) != 0) {
 		terror("failed to move record");
 	}
 	else
 		printf("record moved\n");
-	
+
 	tdb_close( dst_tdb );
-	
+
 	return;
 }
 
@@ -520,7 +520,7 @@ static void first_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 {
 	TDB_DATA dbuf;
 	*pkey = tdb_firstkey(the_tdb);
-	
+
 	dbuf = tdb_fetch(the_tdb, *pkey);
 	if (!dbuf.dptr) terror("fetch failed");
 	else {
@@ -532,9 +532,9 @@ static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 {
 	TDB_DATA dbuf;
 	*pkey = tdb_nextkey(the_tdb, *pkey);
-	
+
 	dbuf = tdb_fetch(the_tdb, *pkey);
-	if (!dbuf.dptr) 
+	if (!dbuf.dptr)
 		terror("fetch failed");
 	else
 		print_rec(the_tdb, *pkey, dbuf, NULL);

@@ -1,5 +1,5 @@
 /* this tests tdb by doing lots of ops from several simultaneous
-   writers - that stresses the locking code. 
+   writers - that stresses the locking code.
 */
 
 #include "replace.h"
@@ -59,7 +59,7 @@ static void tdb_log(struct tdb_context *tdb, enum tdb_debug_level level, const c
 		system(ptr);
 		free(ptr);
 	}
-#endif	
+#endif
 }
 
 static void fatal(const char *why)
