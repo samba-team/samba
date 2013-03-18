@@ -786,7 +786,7 @@ bool smb1_parse_chain(TALLOC_CTX *mem_ctx, const uint8_t *buf,
 		      struct smbd_server_connection *sconn,
 		      bool encrypted, uint32_t seqnum,
 		      struct smb_request ***reqs, unsigned *num_reqs);
-bool req_is_in_chain(struct smb_request *req);
+bool req_is_in_chain(const struct smb_request *req);
 void smbd_process(struct tevent_context *ev_ctx,
 		  struct messaging_context *msg_ctx,
 		  int sock_fd,
