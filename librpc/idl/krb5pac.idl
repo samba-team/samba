@@ -10,7 +10,8 @@ import "security.idl", "lsa.idl", "netlogon.idl", "samr.idl";
   uuid("12345778-1234-abcd-0000-00000000"),
   version(0.0),
   pointer_default(unique),
-  helpstring("Active Directory KRB5 PAC")
+  helpstring("Active Directory KRB5 PAC"),
+  helper("../librpc/ndr/ndr_krb5pac.h")
 ]
 interface krb5pac
 {
@@ -129,7 +130,7 @@ interface krb5pac
 		/* [case(PAC_TYPE_UNKNOWN_12)]	PAC_UNKNOWN_12 unknown; */
 	} PAC_INFO;
 
-	typedef [public,nopush,nopull,noprint] struct {
+	typedef [public,nopush,nopull] struct {
 		PAC_TYPE type;
 		[value(_ndr_size_PAC_INFO(info, type, 0))] uint32 _ndr_size;
 		[relative,switch_is(type),subcontext(0),subcontext_size(_subcontext_size_PAC_INFO(r, ndr->flags)),flag(NDR_ALIGN8)] PAC_INFO *info;

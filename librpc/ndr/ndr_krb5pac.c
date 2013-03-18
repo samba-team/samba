@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 
-static size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
+size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
 {
 	size_t s = ndr_size_PAC_INFO(r, level, flags);
 	switch (level) {
@@ -124,21 +124,4 @@ enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struc
 		}
 	}
 	return NDR_ERR_SUCCESS;
-}
-
-void ndr_print_PAC_BUFFER(struct ndr_print *ndr, const char *name, const struct PAC_BUFFER *r)
-{
-	ndr_print_struct(ndr, name, "PAC_BUFFER");
-	ndr->depth++;
-	ndr_print_PAC_TYPE(ndr, "type", r->type);
-	ndr_print_uint32(ndr, "_ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?_ndr_size_PAC_INFO(r->info,r->type,0):r->_ndr_size);
-	ndr_print_ptr(ndr, "info", r->info);
-	ndr->depth++;
-	if (r->info) {
-		ndr_print_set_switch_value(ndr, r->info, r->type);
-		ndr_print_PAC_INFO(ndr, "info", r->info);
-	}
-	ndr->depth--;
-	ndr_print_uint32(ndr, "_pad", r->_pad);
-	ndr->depth--;
 }
