@@ -84,7 +84,7 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 	}
 	tdb->map_size = st.st_size;
 	if (tdb_mmap(tdb) != 0) {
-		return - 1;
+		return -1;
 	}
 
 	if (st.st_size < (size_t)off + len) {
