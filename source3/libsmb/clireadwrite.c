@@ -132,13 +132,6 @@ struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 	struct cli_read_andx_state *state;
 	uint8_t wct = 10;
 
-	if (size > cli_read_max_bufsize(cli)) {
-		DEBUG(0, ("cli_read_andx_send got size=%d, can only handle "
-			  "size=%d\n", (int)size,
-			  (int)cli_read_max_bufsize(cli)));
-		return NULL;
-	}
-
 	req = tevent_req_create(mem_ctx, &state, struct cli_read_andx_state);
 	if (req == NULL) {
 		return NULL;
