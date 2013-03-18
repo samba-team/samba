@@ -63,7 +63,7 @@ bld.SAMBA3_LIBRARY('non_posix_acls',
 
 bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
                     source='vfs_aixacl_util.c',
-                    enabled=False) #fixme
+                    enabled=(bld.SAMBA3_IS_ENABLED_MODULE('vfs_aixacl') or bld.SAMBA3_IS_ENABLED_MODULE('vfs_aixacl2')))
 
 bld.SAMBA3_SUBSYSTEM('vfs',
                     source='',
