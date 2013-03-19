@@ -59,6 +59,18 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 }
 
 /*********************************************************
+ Are there unread bytes for recvfile ?
+*********************************************************/
+
+size_t smbd_smb2_unread_bytes(struct smbd_smb2_request *req)
+{
+	if (req->smb1req) {
+		return req->smb1req->unread_bytes;
+	}
+	return 0;
+}
+
+/*********************************************************
  Called from file_free() to remove any chained fsp pointers.
 *********************************************************/
 
