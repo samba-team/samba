@@ -166,7 +166,9 @@ sub check_env($$)
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
-	
+
+	$ENV{ENVNAME} = $envname;
+
 	if (defined($self->{vars}->{$envname})) {
 	        return $self->{vars}->{$envname};
 	}
@@ -643,6 +645,8 @@ sub check_or_start($$$$$) {
 
 		$ENV{UID_WRAPPER} = "1";
 
+		$ENV{ENVNAME} = "$ENV{ENVNAME}.nmbd";
+
 		if ($nmbd ne "yes") {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
@@ -692,6 +696,8 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_WINBIND_SO_PATH} = $env_vars->{NSS_WRAPPER_WINBIND_SO_PATH};
 
 		$ENV{UID_WRAPPER} = "1";
+
+		$ENV{ENVNAME} = "$ENV{ENVNAME}.winbindd";
 
 		if ($winbindd ne "yes") {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
@@ -744,6 +750,8 @@ sub check_or_start($$$$$) {
 		$ENV{NSS_WRAPPER_WINBIND_SO_PATH} = $env_vars->{NSS_WRAPPER_WINBIND_SO_PATH};
 
 		$ENV{UID_WRAPPER} = "1";
+
+		$ENV{ENVNAME} = "$ENV{ENVNAME}.smbd";
 
 		if ($smbd ne "yes") {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
