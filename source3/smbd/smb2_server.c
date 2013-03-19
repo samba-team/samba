@@ -2621,10 +2621,20 @@ NTSTATUS smbd_smb2_request_error_ex(struct smbd_smb2_request *req,
 {
 	DATA_BLOB body;
 	uint8_t *outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
+	size_t unread_bytes = smbd_smb2_unread_bytes(req);
 
 	DEBUG(10,("smbd_smb2_request_error_ex: idx[%d] status[%s] |%s| at %s\n",
 		  req->current_idx, nt_errstr(status), info ? " +info" : "",
 		  location));
+
+	if (unread_bytes) {
+		/* Recvfile error. Drain incoming socket. */
+		size_t ret = drain_socket(req->sconn->sock, unread_bytes);
+		if (ret != unread_bytes) {
+			smbd_server_connection_terminate(req->sconn,
+				"Failed to drain SMB2 socket\n");
+		}
+	}
 
 	body.data = outhdr + SMB2_HDR_BODY;
 	body.length = 8;
