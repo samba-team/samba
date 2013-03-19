@@ -253,6 +253,16 @@ enum smb_signing_setting {
 #define SMB_CAP_CLIENT_MASK ( \
 	CAP_DYNAMIC_REAUTH | \
 	0)
+/*
+ * Older Samba releases (<= 3.6.x)
+ * expect the client to send CAP_LARGE_READX
+ * in order to let the client use large reads.
+ */
+#define SMB_CAP_LEGACY_CLIENT_MASK ( \
+	SMB_CAP_CLIENT_MASK | \
+	CAP_LARGE_READX | \
+	CAP_LARGE_WRITEX | \
+	0)
 
 /* Client-side offline caching policy types */
 enum csc_policy {
