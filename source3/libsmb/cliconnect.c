@@ -341,9 +341,13 @@ static uint32_t cli_session_setup_capabilities(struct cli_state *cli,
 	 * - client only flags
 	 * - flags used in both directions
 	 *
-	 * We do not echo the server only flags.
+	 * We do not echo the server only flags, except some legacy flags.
+	 *
+	 * SMB_CAP_LEGACY_CLIENT_MASK contains CAP_LARGE_READX and
+	 * CAP_LARGE_WRITEX in order to allow us to do large reads
+	 * against old Samba releases (<= 3.6.x).
 	 */
-	client_capabilities &= (SMB_CAP_BOTH_MASK | SMB_CAP_CLIENT_MASK);
+	client_capabilities &= (SMB_CAP_BOTH_MASK | SMB_CAP_LEGACY_CLIENT_MASK);
 
 	/*
 	 * Session Setup specific flags CAP_DYNAMIC_REAUTH
