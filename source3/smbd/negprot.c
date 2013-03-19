@@ -284,11 +284,10 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		capabilities |= CAP_UNIX;
 	}
 
-	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64))
+	if (lp_large_readwrite())
 		capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_W2K_SMBS;
 
-	if (SMB_OFF_T_BITS == 64)
-		capabilities |= CAP_LARGE_FILES;
+	capabilities |= CAP_LARGE_FILES;
 
 	if (lp_readraw() && lp_writeraw())
 		capabilities |= CAP_RAW_MODE;
