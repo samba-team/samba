@@ -28,9 +28,13 @@ struct smb_request *smbd_smb2_fake_smb_request(struct smbd_smb2_request *req)
 	struct smb_request *smbreq;
 	const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
-	smbreq = talloc_zero(req, struct smb_request);
-	if (smbreq == NULL) {
-		return NULL;
+	if (req->smb1req) {
+		smbreq = req->smb1req;
+	} else {
+		smbreq = talloc_zero(req, struct smb_request);
+		if (smbreq == NULL) {
+			return NULL;
+		}
 	}
 
 	smbreq->request_time = req->request_time;
