@@ -256,7 +256,7 @@ my @tests = @ARGV;
 # quick hack to disable rpc validation when using valgrind - its way too slow
 unless (defined($ENV{VALGRIND})) {
 	$ENV{VALIDATE} = "validate";
-	$ENV{MALLOC_CHECK_} = 2;
+	$ENV{MALLOC_CHECK_} = 3;
 }
 
 # make all our python scripts unbuffered
