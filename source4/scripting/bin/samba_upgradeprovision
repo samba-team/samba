@@ -46,26 +46,8 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 MessageElement, Message, Dn, LdbError)
 from samba import param, dsdb, Ldb
 from samba.common import confirm
+from samba.provision.descriptor import get_wellknown_sds, get_empty_descriptor
 from samba.provision import (find_provision_key_parameters,
-                            get_empty_descriptor,
-                            get_config_descriptor,
-                            get_config_partitions_descriptor,
-                            get_config_sites_descriptor,
-                            get_config_ntds_quotas_descriptor,
-                            get_config_delete_protected1_descriptor,
-                            get_config_delete_protected1wd_descriptor,
-                            get_config_delete_protected2_descriptor,
-                            get_domain_descriptor,
-                            get_domain_infrastructure_descriptor,
-                            get_domain_builtin_descriptor,
-                            get_domain_computers_descriptor,
-                            get_domain_users_descriptor,
-                            get_domain_controllers_descriptor,
-                            get_domain_delete_protected1_descriptor,
-                            get_domain_delete_protected2_descriptor,
-                            get_dns_partition_descriptor,
-                            get_dns_forest_microsoft_dns_descriptor,
-                            get_dns_domain_microsoft_dns_descriptor,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
@@ -1229,58 +1211,7 @@ def fix_wellknown_sd(samdb, names):
 
     list_wellknown_dns = []
 
-    # Then subcontainers
-    subcontainers = [
-        ("%s" % str(names.domaindn), get_domain_descriptor),
-        ("CN=LostAndFound,%s" % str(names.domaindn), get_domain_delete_protected2_descriptor),
-        ("CN=System,%s" % str(names.domaindn), get_domain_delete_protected1_descriptor),
-        ("CN=Infrastructure,%s" % str(names.domaindn), get_domain_infrastructure_descriptor),
-        ("CN=Builtin,%s" % str(names.domaindn), get_domain_builtin_descriptor),
-        ("CN=Computers,%s" % str(names.domaindn), get_domain_computers_descriptor),
-        ("CN=Users,%s" % str(names.domaindn), get_domain_users_descriptor),
-        ("OU=Domain Controllers,%s" % str(names.domaindn), get_domain_controllers_descriptor),
-        ("CN=MicrosoftDNS,CN=System,%s" % str(names.domaindn), get_dns_domain_microsoft_dns_descriptor),
-
-        ("%s" % str(names.configdn), get_config_descriptor),
-        ("CN=NTDS Quotas,%s" % str(names.configdn), get_config_ntds_quotas_descriptor),
-        ("CN=LostAndFoundConfig,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=Services,%s" % str(names.configdn), get_config_delete_protected1_descriptor),
-        ("CN=Physical Locations,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=WellKnown Security Principals,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=ForestUpdates,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=DisplaySpecifiers,%s" % str(names.configdn), get_config_delete_protected2_descriptor),
-        ("CN=Extended-Rights,%s" % str(names.configdn), get_config_delete_protected2_descriptor),
-        ("CN=Partitions,%s" % str(names.configdn), get_config_partitions_descriptor),
-        ("CN=Sites,%s" % str(names.configdn), get_config_sites_descriptor),
-
-        ("%s" % str(names.schemadn), get_schema_descriptor),
-    ]
-
-    if names.dnsforestdn is not None:
-        c = ("%s" % str(names.dnsforestdn), get_dns_partition_descriptor)
-        subcontainers.append(c)
-        c = ("CN=Infrastructure,%s" % str(names.dnsforestdn),
-             get_domain_delete_protected1_descriptor)
-        subcontainers.append(c)
-        c = ("CN=LostAndFound,%s" % str(names.dnsforestdn),
-             get_domain_delete_protected2_descriptor)
-        subcontainers.append(c)
-        c = ("CN=MicrosoftDNS,%s" % str(names.dnsforestdn),
-             get_dns_forest_microsoft_dns_descriptor)
-        subcontainers.append(c)
-
-    if names.dnsdomaindn is not None:
-        c = ("%s" % str(names.dnsdomaindn), get_dns_partition_descriptor)
-        subcontainers.append(c)
-        c = ("CN=Infrastructure,%s" % str(names.dnsdomaindn),
-             get_domain_delete_protected1_descriptor)
-        subcontainers.append(c)
-        c = ("CN=LostAndFound,%s" % str(names.dnsdomaindn),
-             get_domain_delete_protected2_descriptor)
-        subcontainers.append(c)
-        c = ("CN=MicrosoftDNS,%s" % str(names.dnsdomaindn),
-             get_dns_domain_microsoft_dns_descriptor)
-        subcontainers.append(c)
+    subcontainers = get_wellknown_sds(names)
 
     for [strdn, descriptor_fn] in subcontainers:
         dn = Dn(samdb, strdn)
