@@ -44,4 +44,6 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
 
 int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2);
 
+char *tdb_data_string(TALLOC_CTX *mem_ctx, TDB_DATA d);
+
 #endif /* __TDBUTIL_H__ */

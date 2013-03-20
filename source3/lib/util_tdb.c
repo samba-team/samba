@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "util_tdb.h"
+#include "cbuf.h"
 
 #undef malloc
 #undef realloc
@@ -416,5 +417,37 @@ int tdb_data_cmp(TDB_DATA t1, TDB_DATA t2)
 	if (ret == 0) {
 		return t1.dsize - t2.dsize;
 	}
+	return ret;
+}
+
+char *tdb_data_string(TALLOC_CTX *mem_ctx, TDB_DATA d)
+{
+	int len;
+	char *ret = NULL;
+	cbuf *ost = cbuf_new(mem_ctx);
+
+	if (ost == NULL) {
+		return NULL;
+	}
+
+	len = cbuf_printf(ost, "%d:");
+	if (len == -1) {
+		goto done;
+	}
+
+	if (d.dptr == NULL) {
+		len = cbuf_puts(ost, "<NULL>", -1);
+	} else {
+		len = cbuf_print_quoted(ost, (const char*)d.dptr, d.dsize);
+	}
+	if (len == -1) {
+		goto done;
+	}
+
+	cbuf_swapptr(ost, &ret, 0);
+	talloc_steal(mem_ctx, ret);
+
+done:
+	talloc_free(ost);
 	return ret;
 }
