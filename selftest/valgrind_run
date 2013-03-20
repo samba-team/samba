@@ -4,6 +4,10 @@ ENV="$1"
 
 shift 1
 
-CMD="$ENV valgrind -q --db-attach=yes --num-callers=30 $@"
+CMD="$ENV valgrind --num-callers=30
+--trace-children=yes --log-file=valgrind.%p.log
+${VALGRIND_OPT- --time-stamp=yes --track-fds=yes --read-var-info=yes --track-origins=yes --leak-check=yes}
+$@"
+
 echo $CMD
 eval $CMD
