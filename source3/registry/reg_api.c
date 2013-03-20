@@ -70,6 +70,7 @@
 #include "reg_dispatcher.h"
 #include "reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "reg_parse_internal.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -232,12 +233,17 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 		    const struct security_token *token,
 		    struct registry_key **pkey)
 {
+	const struct hive_info *hi;
 	SMB_ASSERT(hive != NULL);
-	SMB_ASSERT(hive[0] != '\0');
 	SMB_ASSERT(strchr(hive, '\\') == NULL);
 
-	return regkey_open_onelevel(mem_ctx, NULL, hive, token, desired_access,
-				    pkey);
+	hi = hive_info(hive);
+	if (hi == NULL) {
+		return WERR_BADFILE;
+	}
+
+	return regkey_open_onelevel(mem_ctx, NULL, hi->short_name, token,
+				    desired_access, pkey);
 }
 
 
