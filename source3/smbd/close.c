@@ -24,6 +24,7 @@
 #include "printing.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "smbd/scavenger.h"
 #include "fake_file.h"
 #include "transfer_file.h"
 #include "auth.h"
@@ -791,6 +792,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 					  "proceeding with normal close\n",
 					  fsp_str_dbg(fsp), nt_errstr(tmp)));
 			}
+			scavenger_schedule_disconnected(fsp);
 		} else {
 			DEBUG(1, ("Failed to disconnect durable handle for "
 				  "file %s: %s - proceeding with normal "
