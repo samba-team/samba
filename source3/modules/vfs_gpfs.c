@@ -49,6 +49,7 @@ struct gpfs_config_data {
 	bool prealloc;
 	bool acl;
 	bool settimes;
+	bool recalls;
 };
 
 
@@ -1810,6 +1811,8 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 
 	config->settimes = lp_parm_bool(SNUM(handle->conn), "gpfs",
 					"settimes", true);
+	config->recalls = lp_parm_bool(SNUM(handle->conn), "gpfs",
+				       "recalls", true);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct gpfs_config_data,
@@ -2014,6 +2017,16 @@ static int vfs_gpfs_open(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
 				return -1);
+
+	if (config->hsm && !config->recalls) {
+		if (VALID_STAT(smb_fname->st) &&
+		    (smb_fname->st.vfs_private & GPFS_WINATTR_OFFLINE)) {
+			DEBUG(10, ("Refusing access to offline file %s\n",
+				  fsp_str_dbg(fsp)));
+			errno = EACCES;
+			return -1;
+		}
+	}
 
 	if (config->syncio) {
 		flags |= O_SYNC;
