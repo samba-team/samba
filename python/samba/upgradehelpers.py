@@ -347,15 +347,10 @@ def chunck_sddl(sddl):
 
 
 def get_clean_sd(sd):
-    """Get the SD without difference between 2 sddl
+    """Get the SD without any inherited ACEs
 
-    This function split the textual representation of ACL into smaller
-    chunck in order to not to report a simple permutation as a difference
-
-    :param refsddl: First sddl to compare
-    :param cursddl: Second sddl to compare
-    :param checkSacl: If false we skip the sacl checks
-    :return: A string that explain difference between sddls
+    :param sd: SD to strip
+    :return: An SD with inherited ACEs stripped
     """
 
     sd_clean = security.descriptor()
