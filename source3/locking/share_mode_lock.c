@@ -132,7 +132,8 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_pull_struct_blob(
 		&blob, d, d, (ndr_pull_flags_fn_t)ndr_pull_share_mode_data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
+		DEBUG(1, ("ndr_pull_share_mode_lock failed: %s\n",
+			  ndr_errstr(ndr_err)));
 		goto fail;
 	}
 
