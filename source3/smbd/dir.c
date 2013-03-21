@@ -1038,12 +1038,14 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			   long *_prev_offset)
 {
 	connection_struct *conn = dirptr->conn;
-	bool needslash;
+	size_t slashlen;
+	size_t pathlen;
 
 	*_smb_fname = NULL;
 	*_mode = 0;
 
-	needslash = ( dirptr->path[strlen(dirptr->path) -1] != '/');
+	pathlen = strlen(dirptr->path);
+	slashlen = ( dirptr->path[pathlen-1] != '/') ? 1 : 0;
 
 	while (true) {
 		long cur_offset;
@@ -1087,15 +1089,26 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		pathreal = talloc_asprintf(ctx, "%s%s%s",
-					   dirptr->path,
-					   needslash?"/":"",
-					   dname);
+		/*
+		 * This used to be
+		 * pathreal = talloc_asprintf(ctx, "%s%s%s", dirptr->path,
+		 *			      needslash?"/":"", dname);
+		 * but this was measurably slower than doing the memcpy.
+		 */
+
+		pathreal = talloc_array(
+			ctx, char,
+			pathlen + slashlen + talloc_get_size(dname));
 		if (!pathreal) {
 			TALLOC_FREE(dname);
 			TALLOC_FREE(fname);
 			return false;
 		}
+
+		memcpy(pathreal, dirptr->path, pathlen);
+		pathreal[pathlen] = '/';
+		memcpy(pathreal + slashlen + pathlen, dname,
+		       talloc_get_size(dname));
 
 		/* Create smb_fname with NULL stream_name. */
 		ZERO_STRUCT(smb_fname);
