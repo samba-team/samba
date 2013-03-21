@@ -481,7 +481,7 @@ void msg_force_tdis(struct messaging_context *msg,
 	if (strcmp(sharename, "*") == 0) {
 		DEBUG(1,("Forcing close of all shares\n"));
 		conn_close_all(sconn);
-		return;
+		goto done;
 	}
 
 	if (sconn->using_smb2) {
@@ -512,4 +512,9 @@ void msg_force_tdis(struct messaging_context *msg,
 			}
 		}
 	}
+
+ done:
+
+	change_to_root_user();
+	reload_services(msg, -1, true);
 }
