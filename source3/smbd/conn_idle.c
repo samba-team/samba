@@ -142,4 +142,7 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 
 		TALLOC_FREE(tcon);
 	}
+
+	change_to_root_user();
+	reload_services(sconn, conn_snum_used, true);
 }
