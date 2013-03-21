@@ -29,6 +29,7 @@
 from samba.dcerpc import security
 from samba.ndr import ndr_pack
 from samba.schema import get_schema_descriptor
+import ldb
 
 # Descriptors of naming contexts and other important objects
 
@@ -359,58 +360,58 @@ def get_dns_domain_microsoft_dns_descriptor(domain_sid, name_map={}):
     "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)"
     return sddl2binary(sddl, domain_sid, name_map)
 
-def get_wellknown_sds(names):
+def get_wellknown_sds(names, samdb):
 
     # Then subcontainers
     subcontainers = [
-        ("%s" % str(names.domaindn), get_domain_descriptor),
-        ("CN=LostAndFound,%s" % str(names.domaindn), get_domain_delete_protected2_descriptor),
-        ("CN=System,%s" % str(names.domaindn), get_domain_delete_protected1_descriptor),
-        ("CN=Infrastructure,%s" % str(names.domaindn), get_domain_infrastructure_descriptor),
-        ("CN=Builtin,%s" % str(names.domaindn), get_domain_builtin_descriptor),
-        ("CN=Computers,%s" % str(names.domaindn), get_domain_computers_descriptor),
-        ("CN=Users,%s" % str(names.domaindn), get_domain_users_descriptor),
-        ("OU=Domain Controllers,%s" % str(names.domaindn), get_domain_controllers_descriptor),
-        ("CN=MicrosoftDNS,CN=System,%s" % str(names.domaindn), get_dns_domain_microsoft_dns_descriptor),
+        (ldb.Dn(samdb, "%s" % str(names.domaindn)), get_domain_descriptor),
+        (ldb.Dn(samdb, "CN=LostAndFound,%s" % str(names.domaindn)), get_domain_delete_protected2_descriptor),
+        (ldb.Dn(samdb, "CN=System,%s" % str(names.domaindn)), get_domain_delete_protected1_descriptor),
+        (ldb.Dn(samdb, "CN=Infrastructure,%s" % str(names.domaindn)), get_domain_infrastructure_descriptor),
+        (ldb.Dn(samdb, "CN=Builtin,%s" % str(names.domaindn)), get_domain_builtin_descriptor),
+        (ldb.Dn(samdb, "CN=Computers,%s" % str(names.domaindn)), get_domain_computers_descriptor),
+        (ldb.Dn(samdb, "CN=Users,%s" % str(names.domaindn)), get_domain_users_descriptor),
+        (ldb.Dn(samdb, "OU=Domain Controllers,%s" % str(names.domaindn)), get_domain_controllers_descriptor),
+        (ldb.Dn(samdb, "CN=MicrosoftDNS,CN=System,%s" % str(names.domaindn)), get_dns_domain_microsoft_dns_descriptor),
 
-        ("%s" % str(names.configdn), get_config_descriptor),
-        ("CN=NTDS Quotas,%s" % str(names.configdn), get_config_ntds_quotas_descriptor),
-        ("CN=LostAndFoundConfig,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=Services,%s" % str(names.configdn), get_config_delete_protected1_descriptor),
-        ("CN=Physical Locations,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=WellKnown Security Principals,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=ForestUpdates,%s" % str(names.configdn), get_config_delete_protected1wd_descriptor),
-        ("CN=DisplaySpecifiers,%s" % str(names.configdn), get_config_delete_protected2_descriptor),
-        ("CN=Extended-Rights,%s" % str(names.configdn), get_config_delete_protected2_descriptor),
-        ("CN=Partitions,%s" % str(names.configdn), get_config_partitions_descriptor),
-        ("CN=Sites,%s" % str(names.configdn), get_config_sites_descriptor),
+        (ldb.Dn(samdb, "%s" % str(names.configdn)), get_config_descriptor),
+        (ldb.Dn(samdb, "CN=NTDS Quotas,%s" % str(names.configdn)), get_config_ntds_quotas_descriptor),
+        (ldb.Dn(samdb, "CN=LostAndFoundConfig,%s" % str(names.configdn)), get_config_delete_protected1wd_descriptor),
+        (ldb.Dn(samdb, "CN=Services,%s" % str(names.configdn)), get_config_delete_protected1_descriptor),
+        (ldb.Dn(samdb, "CN=Physical Locations,%s" % str(names.configdn)), get_config_delete_protected1wd_descriptor),
+        (ldb.Dn(samdb, "CN=WellKnown Security Principals,%s" % str(names.configdn)), get_config_delete_protected1wd_descriptor),
+        (ldb.Dn(samdb, "CN=ForestUpdates,%s" % str(names.configdn)), get_config_delete_protected1wd_descriptor),
+        (ldb.Dn(samdb, "CN=DisplaySpecifiers,%s" % str(names.configdn)), get_config_delete_protected2_descriptor),
+        (ldb.Dn(samdb, "CN=Extended-Rights,%s" % str(names.configdn)), get_config_delete_protected2_descriptor),
+        (ldb.Dn(samdb, "CN=Partitions,%s" % str(names.configdn)), get_config_partitions_descriptor),
+        (ldb.Dn(samdb, "CN=Sites,%s" % str(names.configdn)), get_config_sites_descriptor),
 
-        ("%s" % str(names.schemadn), get_schema_descriptor),
+        (ldb.Dn(samdb, "%s" % str(names.schemadn)), get_schema_descriptor),
     ]
 
     if names.dnsforestdn is not None:
-        c = ("%s" % str(names.dnsforestdn), get_dns_partition_descriptor)
+        c = (ldb.Dn(samdb, "%s" % str(names.dnsforestdn)), get_dns_partition_descriptor)
         subcontainers.append(c)
-        c = ("CN=Infrastructure,%s" % str(names.dnsforestdn),
+        c = (ldb.Dn(samdb, "CN=Infrastructure,%s" % str(names.dnsforestdn)),
              get_domain_delete_protected1_descriptor)
         subcontainers.append(c)
-        c = ("CN=LostAndFound,%s" % str(names.dnsforestdn),
+        c = (ldb.Dn(samdb, "CN=LostAndFound,%s" % str(names.dnsforestdn)),
              get_domain_delete_protected2_descriptor)
         subcontainers.append(c)
-        c = ("CN=MicrosoftDNS,%s" % str(names.dnsforestdn),
+        c = (ldb.Dn(samdb, "CN=MicrosoftDNS,%s" % str(names.dnsforestdn)),
              get_dns_forest_microsoft_dns_descriptor)
         subcontainers.append(c)
 
     if names.dnsdomaindn is not None:
-        c = ("%s" % str(names.dnsdomaindn), get_dns_partition_descriptor)
+        c = (ldb.Dn(samdb, "%s" % str(names.dnsdomaindn)), get_dns_partition_descriptor)
         subcontainers.append(c)
-        c = ("CN=Infrastructure,%s" % str(names.dnsdomaindn),
+        c = (ldb.Dn(samdb, "CN=Infrastructure,%s" % str(names.dnsdomaindn)),
              get_domain_delete_protected1_descriptor)
         subcontainers.append(c)
-        c = ("CN=LostAndFound,%s" % str(names.dnsdomaindn),
+        c = (ldb.Dn(samdb, "CN=LostAndFound,%s" % str(names.dnsdomaindn)),
              get_domain_delete_protected2_descriptor)
         subcontainers.append(c)
-        c = ("CN=MicrosoftDNS,%s" % str(names.dnsdomaindn),
+        c = (ldb.Dn(samdb, "CN=MicrosoftDNS,%s" % str(names.dnsdomaindn)),
              get_dns_domain_microsoft_dns_descriptor)
         subcontainers.append(c)
 

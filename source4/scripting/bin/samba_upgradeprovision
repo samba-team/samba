@@ -1211,10 +1211,9 @@ def fix_wellknown_sd(samdb, names):
 
     list_wellknown_dns = []
 
-    subcontainers = get_wellknown_sds(names)
+    subcontainers = get_wellknown_sds(names, samdb)
 
-    for [strdn, descriptor_fn] in subcontainers:
-        dn = Dn(samdb, strdn)
+    for [dn, descriptor_fn] in subcontainers:
         list_wellknown_dns.append(dn)
         if dn in dnToRecalculate:
             delta = Message()
