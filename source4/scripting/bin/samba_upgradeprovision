@@ -46,7 +46,7 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 MessageElement, Message, Dn, LdbError)
 from samba import param, dsdb, Ldb
 from samba.common import confirm
-from samba.provision.descriptor import get_wellknown_sds, get_empty_descriptor
+from samba.descriptor import get_wellknown_sds, get_empty_descriptor
 from samba.provision import (find_provision_key_parameters,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)

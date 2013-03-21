@@ -76,7 +76,7 @@ from samba.provision.backend import (
     LDBBackend,
     OpenLDAPBackend,
     )
-from samba.provision.descriptor import (
+from samba.descriptor import (
     get_empty_descriptor,
     get_config_descriptor,
     get_config_partitions_descriptor,

@@ -36,7 +36,7 @@ from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2008_R2
     )
-from samba.provision.descriptor import (
+from samba.descriptor import (
     get_domain_descriptor,
     get_domain_delete_protected1_descriptor,
     get_domain_delete_protected2_descriptor,
