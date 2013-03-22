@@ -61,7 +61,7 @@ def SAMBA_PIDL(bld, pname, source,
     cc = ""
     if bld.CONFIG_SET("CPP"):
         if isinstance(bld.CONFIG_GET("CPP"), list):
-            cpp = 'CPP="%s"' % bld.CONFIG_GET("CPP")[0]
+            cpp = 'CPP="%s"' % " ".join(bld.CONFIG_GET("CPP"))
         else:
             cpp = 'CPP="%s"' % bld.CONFIG_GET("CPP")
 
@@ -71,7 +71,7 @@ def SAMBA_PIDL(bld, pname, source,
 
     if bld.CONFIG_SET("CC"):
         if isinstance(bld.CONFIG_GET("CC"), list):
-            cc = 'CC="%s"' % bld.CONFIG_GET("CC")[0]
+            cc = 'CC="%s"' % " ".join(bld.CONFIG_GET("CC"))
         else:
             cc = 'CC="%s"' % bld.CONFIG_GET("CC")
 
