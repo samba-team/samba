@@ -8,8 +8,17 @@ from samba_autoconf import library_flags
 
 def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
                       with_name="with", without_name="without"):
+    if default is None:
+        default_str="auto"
+    elif default == True:
+        default_str="yes"
+    elif default == False:
+        default_str="no"
+    else:
+        default_str=str(default)
+
     if help == ():
-        help = ("Build with %s support" % option)
+        help = ("Build with %s support (default=%s)" % (option, default_str))
     if dest is None:
         dest = "with_%s" % option.replace('-', '_')
 
