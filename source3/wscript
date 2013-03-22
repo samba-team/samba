@@ -41,7 +41,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('syslog')
     opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
-    opt.SAMBA3_ADD_OPTION('dmapi', default=False, help="build with DMAPI support")
+    opt.SAMBA3_ADD_OPTION('dmapi', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('fam', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
 
