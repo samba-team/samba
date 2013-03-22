@@ -83,19 +83,6 @@ def find_bind_gid():
     return None
 
 
-def fix_names(pnames):
-    """Convert elements to strings from MessageElement
-    """
-    names = pnames
-    names.rootdn = pnames.rootdn[0]
-    names.domaindn = pnames.domaindn[0]
-    names.configdn = pnames.configdn[0]
-    names.schemadn = pnames.schemadn[0]
-    names.root_gid = pnames.root_gid
-    names.serverdn = str(pnames.serverdn)
-    return names
-
-
 def convert_dns_rdata(rdata, serial=1):
     """Convert resource records in dnsRecord format
     """
@@ -270,9 +257,8 @@ if __name__ == '__main__':
     paths = get_paths(param, smbconf=lp.configfile)
     paths.bind_gid = find_bind_gid()
     ldbs = get_ldbs(paths, creds, system_session(), lp)
-    pnames = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
+    names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
                                            paths, lp.configfile, lp)
-    names = fix_names(pnames)
 
     if names.domainlevel < DS_DOMAIN_FUNCTION_2003:
         logger.error("Cannot create AD based DNS for OS level < 2003")

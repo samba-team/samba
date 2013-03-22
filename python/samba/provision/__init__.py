@@ -201,9 +201,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                "configurationNamingContext","rootDomainNamingContext",
                "namingContexts"])
 
-    names.configdn = current[0]["configurationNamingContext"]
-    configdn = str(names.configdn)
-    names.schemadn = current[0]["schemaNamingContext"]
+    names.configdn = current[0]["configurationNamingContext"][0]
+    names.schemadn = current[0]["schemaNamingContext"][0]
     if not (ldb.Dn(samdb, basedn) == (ldb.Dn(samdb,
                                        current[0]["defaultNamingContext"][0]))):
         raise ProvisioningError(("basedn in %s (%s) and from %s (%s)"
@@ -211,8 +210,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
                                     str(current[0]["defaultNamingContext"][0]),
                                     paths.smbconf, basedn)))
 
-    names.domaindn=current[0]["defaultNamingContext"]
-    names.rootdn=current[0]["rootDomainNamingContext"]
+    names.domaindn=current[0]["defaultNamingContext"][0]
+    names.rootdn=current[0]["rootDomainNamingContext"][0]
     names.ncs=current[0]["namingContexts"]
     names.dnsforestdn = None
     names.dnsdomaindn = None
@@ -232,7 +231,7 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
 
     # default site name
     res3 = samdb.search(expression="(objectClass=site)",
-        base="CN=Sites," + configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
+        base="CN=Sites," + names.configdn, scope=ldb.SCOPE_ONELEVEL, attrs=["cn"])
     names.sitename = str(res3[0]["cn"])
 
     # dns hostname and server dn
@@ -242,8 +241,8 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf,
     names.hostname = str(res4[0]["dNSHostName"]).replace("." + names.dnsdomain, "")
 
     server_res = samdb.search(expression="serverReference=%s" % res4[0].dn,
-                                attrs=[], base=configdn)
-    names.serverdn = server_res[0].dn
+                                attrs=[], base=names.configdn)
+    names.serverdn = str(server_res[0].dn)
 
     # invocation id/objectguid
     res5 = samdb.search(expression="(objectClass=*)",
