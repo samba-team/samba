@@ -528,13 +528,13 @@ def get_diff_sds(refsd, cursd, domainsid, checkSacl = True):
 
     if not hash_cur.has_key("owner"):
         txt = "\tNo owner in current SD"
-    elif hash_cur["owner"] != hash_ref["owner"]:
+    elif hash_ref.has_key("owner") and hash_cur["owner"] != hash_ref["owner"]:
         txt = "\tOwner mismatch: %s (in ref) %s" \
               "(in current)\n" % (hash_ref["owner"], hash_cur["owner"])
 
     if not hash_cur.has_key("group"):
         txt = "%s\tNo group in current SD" % txt
-    elif hash_cur["group"] != hash_ref["group"]:
+    elif hash_ref.has_key("group") and hash_cur["group"] != hash_ref["group"]:
         txt = "%s\tGroup mismatch: %s (in ref) %s" \
               "(in current)\n" % (txt, hash_ref["group"], hash_cur["group"])
 
