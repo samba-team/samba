@@ -68,6 +68,11 @@ dbcheck_full_clean() {
        $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
 }
 
+# This checks that after the upgrade, the well known ACLs are correct, so this reset should not want to do anything
+dbcheck_full_clean_well_known_acls() {
+       $BINDIR/samba-tool dbcheck --reset-well-known-acls --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}_upgrade_full/private/sam.ldb $@
+}
+
 upgradeprovision() {
 	$PYTHON $BINDIR/samba_upgradeprovision -s "$PREFIX_ABS/${RELEASE}_upgrade/etc/smb.conf" --debugchange
 }
@@ -124,6 +129,7 @@ if [ -d $release_dir ]; then
     testit_expect_failure "dbcheck_full" dbcheck_full
     testit "dbcheck_clean" dbcheck_clean
     testit "dbcheck_full_clean" dbcheck_full_clean
+    testit "dbcheck_full_clean_well_known_acls" dbcheck_full_clean_well_known_acls
     testit "referenceprovision" referenceprovision
     testit "samba_upgradedns" samba_upgradedns
     testit "ldapcmp" ldapcmp
@@ -169,6 +175,10 @@ EOF
     fi
     subunit_start_test "dbcheck_full_clean"
     subunit_skip_test "dbcheck_full_clean" <<EOF
+no test provision
+EOF
+    subunit_start_test "dbcheck_full_clean_well_known_acls"
+    subunit_skip_test "dbcheck_full_clean_well_known_acls" <<EOF
 no test provision
 EOF
     subunit_start_test "samba_dnsupgrade"
