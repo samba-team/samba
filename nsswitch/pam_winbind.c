@@ -2448,7 +2448,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
-	return talloc_asprintf(ctx, "%s\\%s", domain, name);
+	return talloc_asprintf(ctx, "%s%c%s", domain, sep, name);
 }
 
 static int _pam_delete_cred(pam_handle_t *pamh, int flags,
