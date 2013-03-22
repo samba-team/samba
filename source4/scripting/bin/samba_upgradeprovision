@@ -46,7 +46,7 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 MessageElement, Message, Dn, LdbError)
 from samba import param, dsdb, Ldb
 from samba.common import confirm
-from samba.descriptor import get_wellknown_sds, get_empty_descriptor
+from samba.descriptor import get_wellknown_sds, get_empty_descriptor, get_diff_sds
 from samba.provision import (find_provision_key_parameters,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn, setup_path)
@@ -57,7 +57,7 @@ from samba.dcerpc.security import (
 from samba.ndr import ndr_unpack
 from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  get_ldbs, findprovisionrange,
-                                 usn_in_range, identic_rename, get_diff_sds,
+                                 usn_in_range, identic_rename,
                                  update_secrets, CHANGE, ERROR, SIMPLE,
                                  CHANGEALL, GUESS, CHANGESD, PROVISION,
                                  updateOEMInfo, getOEMInfo, update_gpo,
