@@ -19,9 +19,9 @@
 
 import os
 from samba.upgradehelpers import (usn_in_range, dn_sort,
-                                  get_diff_sds, update_secrets,
+                                  update_secrets,
                                   construct_existor_expr)
-
+from samba.descriptor import get_diff_sds
 from samba.tests.provision import create_dummy_secretsdb
 from samba.tests import TestCaseInTempDir
 from samba import Ldb
