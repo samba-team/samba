@@ -678,7 +678,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Create mem_ctx */
 
-	if (!(mem_ctx = talloc_init("do_cmd"))) {
+	if (!(mem_ctx = talloc_stackframe())) {
 		DEBUG(0, ("talloc_init() failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -745,12 +745,14 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 				  "auth type %u\n",
 				  cmd_entry->table->name,
 				  pipe_default_auth_type ));
+			talloc_free(mem_ctx);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			DEBUG(0, ("Could not initialise %s. Error was %s\n",
 				  cmd_entry->table->name,
 				  nt_errstr(ntresult) ));
+			talloc_free(mem_ctx);
 			return ntresult;
 		}
 
@@ -765,6 +767,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					       trust_password, &machine_account,
 					       &sec_channel_type))
 			{
+				talloc_free(mem_ctx);
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 			}
 
@@ -780,6 +783,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
 					  cmd_entry->table->name));
+				talloc_free(mem_ctx);
 				return ntresult;
 			}
 		}
@@ -803,7 +807,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	/* Cleanup */
 
-	talloc_destroy(mem_ctx);
+	talloc_free(mem_ctx);
 
 	return ntresult;
 }
