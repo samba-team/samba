@@ -59,7 +59,7 @@ def SAMBA_PIDL(bld, pname, source,
     # the cd .. is needed because pidl currently is sensitive to the directory it is run in
     cpp = ""
     cc = ""
-    if bld.CONFIG_SET("CPP"):
+    if bld.CONFIG_SET("CPP") and bld.CONFIG_GET("CPP") != "":
         if isinstance(bld.CONFIG_GET("CPP"), list):
             cpp = 'CPP="%s"' % " ".join(bld.CONFIG_GET("CPP"))
         else:
