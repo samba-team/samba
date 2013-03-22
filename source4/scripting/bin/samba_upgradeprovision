@@ -1211,7 +1211,7 @@ def fix_wellknown_sd(samdb, names):
 
     list_wellknown_dns = []
 
-    subcontainers = get_wellknown_sds(names, samdb)
+    subcontainers = get_wellknown_sds(samdb)
 
     for [dn, descriptor_fn] in subcontainers:
         list_wellknown_dns.append(dn)
