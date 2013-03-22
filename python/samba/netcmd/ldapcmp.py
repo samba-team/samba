@@ -80,7 +80,6 @@ class LDAPBase(object):
         self.server_names = self.find_servers()
         self.domain_name = re.sub("[Dd][Cc]=", "", self.base_dn).replace(",", ".")
         self.domain_sid = self.find_domain_sid()
-        self.get_guid_map()
         self.get_sid_map()
         #
         # Log some domain controller specific place-holers that are being used
@@ -250,20 +249,6 @@ class LDAPBase(object):
         assert index == len(blob)
         return res.strip().replace(" ", "-")
 
-    def get_guid_map(self):
-        """ Build dictionary that maps GUID to 'name' attribute found in Schema or Extended-Rights.
-        """
-        self.guid_map = {}
-        res = self.ldb.search(base=self.schema_dn,
-                              expression="(schemaIdGuid=*)", scope=SCOPE_SUBTREE, attrs=["schemaIdGuid", "name"])
-        for item in res:
-            self.guid_map[self.guid_as_string(item["schemaIdGuid"]).lower()] = item["name"][0]
-        #
-        res = self.ldb.search(base="cn=extended-rights,%s" % self.config_dn,
-                              expression="(rightsGuid=*)", scope=SCOPE_SUBTREE, attrs=["rightsGuid", "name"])
-        for item in res:
-            self.guid_map[str(item["rightsGuid"]).lower()] = item["name"][0]
-
     def get_sid_map(self):
         """ Build dictionary that maps GUID to 'name' attribute found in Schema or Extended-Rights.
         """
@@ -299,22 +284,6 @@ class Descriptor(object):
             return []
         return re.findall("(\(.*?\))", res)
 
-    def fix_guid(self, ace):
-        res = "%s" % ace
-        guids = re.findall("[a-z0-9]+?-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+", res)
-        # If there are not GUIDs to replace return the same ACE
-        if len(guids) == 0:
-            return res
-        for guid in guids:
-            try:
-                name = self.con.guid_map[guid.lower()]
-                res = res.replace(guid, name)
-            except KeyError:
-                # Do not bother if the GUID is not found in
-                # cn=Schema or cn=Extended-Rights
-                pass
-        return res
-
     def fix_sid(self, ace):
         res = "%s" % ace
         sids = re.findall("S-[-0-9]+", res)
@@ -328,14 +297,6 @@ class Descriptor(object):
             except KeyError:
                 # Do not bother if the SID is not found in baseDN
                 pass
-        return res
-
-    def fixit(self, ace):
-        """ Combine all replacement methods in one
-        """
-        res = "%s" % ace
-        res = self.fix_guid(res)
-        res = self.fix_sid(res)
         return res
 
     def diff_1(self, other):
@@ -361,8 +322,8 @@ class Descriptor(object):
                 other_ace = ""
             if len(self_ace) + len(other_ace) == 0:
                 break
-            self_ace_fixed = "%s" % self.fixit(self_ace)
-            other_ace_fixed = "%s" % other.fixit(other_ace)
+            self_ace_fixed = "%s" % self.fix_sid(self_ace)
+            other_ace_fixed = "%s" % other.fix_sid(other_ace)
             if self_ace_fixed != other_ace_fixed:
                 res += "%60s * %s\n" % ( self_ace_fixed, other_ace_fixed )
                 flag = False
@@ -383,8 +344,8 @@ class Descriptor(object):
         other_aces = []
         self_dacl_list_fixed = []
         other_dacl_list_fixed = []
-        [self_dacl_list_fixed.append( self.fixit(ace) ) for ace in self.dacl_list]
-        [other_dacl_list_fixed.append( other.fixit(ace) ) for ace in other.dacl_list]
+        [self_dacl_list_fixed.append( self.fix_sid(ace) ) for ace in self.dacl_list]
+        [other_dacl_list_fixed.append( other.fix_sid(ace) ) for ace in other.dacl_list]
         for ace in self_dacl_list_fixed:
             try:
                 other_dacl_list_fixed.index(ace)
