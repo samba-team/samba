@@ -42,6 +42,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
     opt.SAMBA3_ADD_OPTION('dmapi', default=False, help="build with DMAPI support")
+    opt.SAMBA3_ADD_OPTION('fam', default=None) # None means autodetection
     opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
 
     opt.SAMBA3_ADD_OPTION('cluster-support', default=None)
@@ -162,6 +163,32 @@ main() {
         exit(flock(open("/dev/null", O_RDWR), LOCK_MAND|LOCK_READ) != 0);
 }''', 'HAVE_KERNEL_SHARE_MODES', addmain=False, execute=True,
         msg="Checking for kernel share modes")
+
+    # check for fam libs
+    samba_fam_libs=None
+    check_for_fam=False
+    if Options.options.with_fam is None:
+        check_for_fam=True
+    elif Options.options.with_fam == True:
+        check_for_fam=True
+
+    if check_for_fam and conf.CHECK_HEADERS('fam.h'):
+        if conf.CHECK_FUNCS_IN('FAMOpen2', 'fam'):
+            samba_fam_libs='fam'
+        elif conf.CHECK_FUNCS_IN('FAMOpen2', 'fam C'):
+            samba_fam_libs='fam C'
+        conf.CHECK_TYPE('enum FAMCodes', headers='fam.h',
+            define='HAVE_FAM_H_FAMCODES_TYPEDEF',
+            msg='Checking whether enum FAMCodes is available')
+        conf.CHECK_FUNCS_IN('FAMNoExists', 'fam')
+
+    if samba_fam_libs is not None:
+        conf.DEFINE('SAMBA_FAM_LIBS', samba_fam_libs)
+    else:
+        if Options.options.with_fam == True:
+            conf.fatal('FAM support requested, but no suitable FAM library found')
+        elif check_for_fam:
+            Logs.warn('no suitable FAM library found')
 
     # check for DMAPI libs
     Logs.info("Checking for DMAPI library existence")
@@ -1735,6 +1762,9 @@ main() {
 
     if conf.CONFIG_SET('HAVE_LINUX_IOCTL'):
 	default_shared_modules.extend(TO_LIST('vfs_btrfs'))
+
+    if conf.CONFIG_SET('SAMBA_FAM_LIBS'):
+        default_shared_modules.extend(TO_LIST('vfs_notify_fam'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')

@@ -316,9 +316,13 @@ bld.SAMBA3_MODULE('vfs_gpfs',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_gpfs'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'))
 
+vfs_notify_fam_deps='samba-util '
+if bld.CONFIG_SET('SAMBA_FAM_LIBS'):
+   vfs_notify_fam_deps += bld.CONFIG_GET('SAMBA_FAM_LIBS')
 bld.SAMBA3_MODULE('vfs_notify_fam',
                  subsystem='vfs',
                  source=VFS_NOTIFY_FAM_SRC,
+                 deps=vfs_notify_fam_deps,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_notify_fam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_notify_fam'))
