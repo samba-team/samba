@@ -44,7 +44,7 @@ static enum NTDB_ERROR clear_if_first(int fd, void *arg)
 int main(int argc, char *argv[])
 {
 	unsigned int i;
-	struct ntdb_context *ntdb;
+	struct ntdb_context *ntdb, *ntdb2;
 	struct agent *agent;
 	union ntdb_attribute cif;
 	NTDB_DATA key = ntdb_mkdata(KEY_STR, strlen(KEY_STR));
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 	cif.openhook.data = clear_if_first;
 
 	agent = prepare_external_agent();
-	plan_tests(sizeof(flags) / sizeof(flags[0]) * 13);
+	plan_tests(sizeof(flags) / sizeof(flags[0]) * 16);
 	for (i = 0; i < sizeof(flags) / sizeof(flags[0]); i++) {
 		/* Create it */
 		ntdb = ntdb_open("run-83-openhook.ntdb", flags[i]|MAYBE_NOSYNC,
@@ -81,6 +81,15 @@ int main(int argc, char *argv[])
 		ok1(external_agent_operation(agent, CLOSE, "") == SUCCESS);
 
 		/* Still exists for us too. */
+		ok1(ntdb_exists(ntdb, key));
+
+		/* Nested open should not erase db. */
+		ntdb2 = ntdb_open("run-83-openhook.ntdb", flags[i]|MAYBE_NOSYNC,
+				  O_RDWR, 0, &cif);
+		ok1(ntdb_exists(ntdb2, key));
+		ok1(ntdb_exists(ntdb, key));
+		ntdb_close(ntdb2);
+
 		ok1(ntdb_exists(ntdb, key));
 
 		/* Close it, now agent should clear it. */

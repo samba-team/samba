@@ -679,6 +679,17 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 
 		ntdb->file->device = st.st_dev;
 		ntdb->file->inode = st.st_ino;
+
+		/* call their open hook if they gave us one. */
+		if (ntdb->openhook) {
+			ecode = ntdb->openhook(ntdb->file->fd, ntdb->openhook_data);
+			if (ecode != NTDB_SUCCESS) {
+				ntdb_logerr(ntdb, ecode, NTDB_LOG_ERROR,
+					    "ntdb_open: open hook failed");
+				goto fail;
+			}
+			open_flags |= O_CREAT;
+		}
 	} else {
 		/* ensure there is only one process initialising at once */
 		ecode = ntdb_lock_open(ntdb, openlock,
@@ -687,17 +698,6 @@ _PUBLIC_ struct ntdb_context *ntdb_open(const char *name, int ntdb_flags,
 			saved_errno = errno;
 			goto fail_errno;
 		}
-	}
-
-	/* call their open hook if they gave us one. */
-	if (ntdb->openhook) {
-		ecode = ntdb->openhook(ntdb->file->fd, ntdb->openhook_data);
-		if (ecode != NTDB_SUCCESS) {
-			ntdb_logerr(ntdb, ecode, NTDB_LOG_ERROR,
-				   "ntdb_open: open hook failed");
-			goto fail;
-		}
-		open_flags |= O_CREAT;
 	}
 
 	/* If they used O_TRUNC, read will return 0. */
