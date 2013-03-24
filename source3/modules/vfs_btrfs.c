@@ -117,9 +117,9 @@ static struct tevent_req *btrfs_copy_chunk_send(struct vfs_handle_struct *handle
 		 */
 		DEBUG(5, ("BTRFS_IOC_CLONE_RANGE failed: %s, length %lu, "
 			  "src fd: %ld off: %lu, dest fd: %d off: %lu\n",
-			  strerror(errno), (long)cr_args.src_length,
-			  (long)cr_args.src_fd, (long)cr_args.src_offset,
-			  dest_fsp->fh->fd, (long)cr_args.dest_offset));
+			  strerror(errno), cr_args.src_length,
+			  cr_args.src_fd, cr_args.src_offset,
+			  dest_fsp->fh->fd, cr_args.dest_offset));
 		cc_state->subreq = SMB_VFS_NEXT_COPY_CHUNK_SEND(handle,
 								cc_state, ev,
 								src_fsp,
@@ -177,8 +177,7 @@ static NTSTATUS btrfs_copy_chunk_recv(struct vfs_handle_struct *handle,
 		return status;
 	}
 
-	DEBUG(10, ("server side copy chunk copied %lu\n",
-		   (long)cc_state->copied));
+	DEBUG(10, ("server side copy chunk copied %lu\n", cc_state->copied));
 	*copied = cc_state->copied;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
