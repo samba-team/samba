@@ -3529,11 +3529,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	struct lock_struct lock;
 	int saved_errno = 0;
 
-	if(fsp_stat(fsp) == -1) {
-		reply_nterror(req, map_nt_error_from_unix(errno));
-		return;
-	}
-
 	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 	    (uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
 	    &lock);
@@ -3541,16 +3536,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
 		reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return;
-	}
-
-	if (!S_ISREG(fsp->fsp_name->st.st_ex_mode) ||
-			(startpos > fsp->fsp_name->st.st_ex_size)
-			|| (smb_maxcnt > (fsp->fsp_name->st.st_ex_size - startpos))) {
-		/*
-		 * We already know that we would do a short read, so don't
-		 * try the sendfile() path.
-		 */
-		goto nosendfile_read;
 	}
 
 	/*
@@ -3565,6 +3550,21 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	    lp_use_sendfile(SNUM(conn), req->sconn->smb1.signing_state) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
+
+		if(fsp_stat(fsp) == -1) {
+			reply_nterror(req, map_nt_error_from_unix(errno));
+			goto strict_unlock;
+		}
+
+		if (!S_ISREG(fsp->fsp_name->st.st_ex_mode) ||
+		    (startpos > fsp->fsp_name->st.st_ex_size) ||
+		    (smb_maxcnt > (fsp->fsp_name->st.st_ex_size - startpos))) {
+			/*
+			 * We already know that we would do a short read, so don't
+			 * try the sendfile() path.
+			 */
+			goto nosendfile_read;
+		}
 
 		/*
 		 * Set up the packet header before send. We
