@@ -608,11 +608,18 @@ void notify_trigger(struct notify_context *notify,
 		return;
 	}
 
+	if (path[0] != '/') {
+		/*
+		 * The rest of this routine assumes an absolute path.
+		 */
+		return;
+	}
+
 	idx_state.mem_ctx = talloc_tos();
 	idx_state.vnns = NULL;
 	idx_state.my_vnn = get_my_vnn();
 
-	for (p = path; p != NULL; p = next_p) {
+	for (p = strchr(path+1, '/'); p != NULL; p = next_p) {
 		ptrdiff_t path_len = p - path;
 		bool recursive;
 
