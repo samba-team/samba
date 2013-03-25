@@ -11,7 +11,7 @@ AC_SUBST(TEVENT_CFLAGS)
 if test x"$INCLUDED_TEVENT" != x"yes" ; then
     AC_CHECK_HEADERS(tevent.h)
     AC_CHECK_LIB(tevent, tevent_context_init, [ TEVENT_LIBS="-ltevent" ])
-    AC_CHECK_DECLS([TEVENT_TRACE_BEFORE_WAIT], [[#include <tevent.h>]])
+    AC_CHECK_DECLS([TEVENT_TRACE_BEFORE_WAIT],,, [[#include <tevent.h>]])
     if test x"$ac_cv_header_tevent_h" = x"no" -o \
 	x"$ac_cv_lib_tevent_tevent_context_init" = x"no" -o \
 	x"$ac_cv_have_decl_TEVENT_TRACE_BEFORE_WAIT" = x"no" ; then
