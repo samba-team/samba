@@ -458,6 +458,7 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 {
 	uint8_t *p = (uint8_t *)pdata;
 	uint8_t *last_start = NULL;
+	bool do_store_data = (pdata != NULL);
 
 	*ret_data_size = 0;
 
@@ -470,7 +471,7 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 		fstring dos_ea_name;
 		size_t this_size;
 
-		if (last_start) {
+		if (last_start != NULL && do_store_data) {
 			SIVAL(last_start, 0, PTR_DIFF(p, last_start));
 		}
 		last_start = p;
@@ -491,19 +492,21 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 			this_size += pad;
 		}
 
-		if (this_size > total_data_size) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
+		if (do_store_data) {
+			if (this_size > total_data_size) {
+				return NT_STATUS_INFO_LENGTH_MISMATCH;
+			}
+
+			/* We know we have room. */
+			SIVAL(p, 0x00, 0); /* next offset */
+			SCVAL(p, 0x04, ea_list->ea.flags);
+			SCVAL(p, 0x05, dos_namelen);
+			SSVAL(p, 0x06, ea_list->ea.value.length);
+			strlcpy((char *)(p+0x08), dos_ea_name, dos_namelen+1);
+			memcpy(p + 0x08 + dos_namelen + 1, ea_list->ea.value.data, ea_list->ea.value.length);
+			total_data_size -= this_size;
 		}
 
-		/* We know we have room. */
-		SIVAL(p, 0x00, 0); /* next offset */
-		SCVAL(p, 0x04, ea_list->ea.flags);
-		SCVAL(p, 0x05, dos_namelen);
-		SSVAL(p, 0x06, ea_list->ea.value.length);
-		strlcpy((char *)(p+0x08), dos_ea_name, dos_namelen+1);
-		memcpy(p + 0x08 + dos_namelen + 1, ea_list->ea.value.data, ea_list->ea.value.length);
-
-		total_data_size -= this_size;
 		p += this_size;
 	}
 
