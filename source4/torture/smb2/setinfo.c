@@ -30,6 +30,36 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 
+static bool find_returned_ea(union smb_fileinfo *finfo2,
+				const char *eaname,
+				const char *eavalue)
+{
+	unsigned int i;
+	unsigned int num_eas = finfo2->all_eas.out.num_eas;
+	struct ea_struct *eas = finfo2->all_eas.out.eas;
+
+	for (i = 0; i < num_eas; i++) {
+		if (eas[i].name.s == NULL) {
+			continue;
+		}
+		/* Windows capitalizes returned EA names. */
+		if (strcasecmp_m(eas[i].name.s, eaname)) {
+			continue;
+		}
+		if (eavalue == NULL && eas[i].value.length == 0) {
+			/* Null value, found it ! */
+			return true;
+		}
+		if (eas[i].value.length == strlen(eavalue) &&
+				memcmp(eas[i].value.data,
+					eavalue,
+					strlen(eavalue)) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 #define BASEDIR ""
 
 #define FAIL_UNLESS(__cond)					\
@@ -60,6 +90,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	const char *call_name;
 	time_t basetime = (time(NULL) - 86400) & ~1;
 	int n = time(NULL) % 100;
+	struct ea_struct ea;
 	
 	ZERO_STRUCT(handle);
 	
@@ -275,6 +306,96 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 	sfinfo.set_secdesc.in.sd = sd;
 	CHECK_CALL(SEC_DESC, NT_STATUS_OK);
 	FAIL_UNLESS(smb2_util_verify_sd(tctx, tree, handle, sd));
+
+	torture_comment(tctx, "Check zero length EA's behavior\n");
+
+	/* Set a new EA. */
+	sfinfo.full_ea_information.in.eas.num_eas = 1;
+	ea.flags = 0;
+	ea.name.private_length = 6;
+	ea.name.s = "NewEA";
+	ea.value = data_blob_string_const("testme");
+	sfinfo.full_ea_information.in.eas.eas = &ea;
+	CHECK_CALL(FULL_EA_INFORMATION, NT_STATUS_OK);
+
+	/* Does it still exist ? */
+	finfo2.generic.level = RAW_FILEINFO_SMB2_ALL_EAS;
+	finfo2.generic.in.file.handle = handle;
+	finfo2.all_eas.in.continue_flags = 1;
+	status2 = smb2_getinfo_file(tree, tctx, &finfo2);
+	if (!NT_STATUS_IS_OK(status2)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) %s - %s\n", __location__,
+			"SMB2_ALL_EAS", nt_errstr(status2));
+		ret = false;
+		goto done;
+	}
+
+	/* Note on Windows EA name is returned capitalized. */
+	if (!find_returned_ea(&finfo2, "NewEA", "testme")) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) Missing EA 'NewEA'\n", __location__);
+		ret = false;
+	}
+
+	/* Now zero it out (should delete it) */
+	sfinfo.full_ea_information.in.eas.num_eas = 1;
+	ea.flags = 0;
+	ea.name.private_length = 6;
+	ea.name.s = "NewEA";
+	ea.value = data_blob_null;
+	sfinfo.full_ea_information.in.eas.eas = &ea;
+	CHECK_CALL(FULL_EA_INFORMATION, NT_STATUS_OK);
+
+	/* Does it still exist ? */
+	finfo2.generic.level = RAW_FILEINFO_SMB2_ALL_EAS;
+	finfo2.generic.in.file.handle = handle;
+	finfo2.all_eas.in.continue_flags = 1;
+	status2 = smb2_getinfo_file(tree, tctx, &finfo2);
+	if (!NT_STATUS_IS_OK(status2)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) %s - %s\n", __location__,
+			"SMB2_ALL_EAS", nt_errstr(status2));
+		ret = false;
+		goto done;
+	}
+
+	if (find_returned_ea(&finfo2, "NewEA", NULL)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) EA 'NewEA' should be deleted\n", __location__);
+		ret = false;
+	}
+
+	/* Set a zero length EA. */
+	sfinfo.full_ea_information.in.eas.num_eas = 1;
+	ea.flags = 0;
+	ea.name.private_length = 6;
+	ea.name.s = "ZeroEA";
+	ea.value = data_blob_null;
+	sfinfo.full_ea_information.in.eas.eas = &ea;
+	CHECK_CALL(FULL_EA_INFORMATION, NT_STATUS_OK);
+
+	/* Does it still exist ? */
+	finfo2.generic.level = RAW_FILEINFO_SMB2_ALL_EAS;
+	finfo2.generic.in.file.handle = handle;
+	finfo2.all_eas.in.continue_flags = 1;
+	status2 = smb2_getinfo_file(tree, tctx, &finfo2);
+	if (!NT_STATUS_IS_OK(status2)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) %s - %s\n", __location__,
+			"SMB2_ALL_EAS", nt_errstr(status2));
+		ret = false;
+		goto done;
+	}
+
+	/* Over SMB2 ZeroEA should not exist. */
+	if (!find_returned_ea(&finfo2, "EAONE", "VALUE1")) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) Missing EA 'EAONE'\n", __location__);
+		ret = false;
+	}
+	if (!find_returned_ea(&finfo2, "SECONDEA", "ValueTwo")) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) Missing EA 'SECONDEA'\n", __location__);
+		ret = false;
+	}
+	if (find_returned_ea(&finfo2, "ZeroEA", NULL)) {
+		torture_result(tctx, TORTURE_FAIL, "(%s) Found null EA 'ZeroEA'\n", __location__);
+		ret = false;
+	}
 
 done:
 	status = smb2_util_close(tree, handle);
