@@ -534,6 +534,26 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 		fsp = NULL;
 	}
 	(void)get_ea_list_from_file_path(mem_ctx, conn, fsp, smb_fname->base_name, &total_ea_len, &ea_list);
+	if(conn->sconn->using_smb2) {
+		NTSTATUS status;
+		unsigned int ret_data_size;
+		/*
+		 * We're going to be using fill_ea_chained_buffer() to
+		 * marshall EA's - this size is significantly larger
+		 * than the SMB1 buffer. Re-calculate the size without
+		 * marshalling.
+		 */
+		status = fill_ea_chained_buffer(mem_ctx,
+						NULL,
+						0,
+						&ret_data_size,
+						conn,
+						ea_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret_data_size = 0;
+		}
+		total_ea_len = ret_data_size;
+	}
 	TALLOC_FREE(mem_ctx);
 	return total_ea_len;
 }
