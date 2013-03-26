@@ -328,6 +328,15 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 			return NULL;
 		}
 
+		if (listp->ea.value.length == 0) {
+			/*
+			 * We can never return a zero length EA.
+			 * Windows reports the EA's as corrupted.
+			 */
+			TALLOC_FREE(listp);
+			continue;
+		}
+
 		push_ascii_fstring(dos_ea_name, listp->ea.name);
 
 		*pea_total_len +=
