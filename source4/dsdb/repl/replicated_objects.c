@@ -209,10 +209,6 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	NTTIME whenChanged = 0;
 	time_t whenChanged_t;
 	const char *whenChanged_s;
-	const char *rdn_name = NULL;
-	const struct ldb_val *rdn_value = NULL;
-	const struct dsdb_attribute *rdn_attr = NULL;
-	uint32_t rdn_attid;
 	struct drsuapi_DsReplicaAttribute *name_a = NULL;
 	struct drsuapi_DsReplicaMetaData *name_d = NULL;
 	struct replPropertyMetaData1 *rdn_m = NULL;
@@ -247,14 +243,6 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	msg->dn			= ldb_dn_new(msg, ldb, in->object.identifier->dn);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
-
-	rdn_name	= ldb_dn_get_rdn_name(msg->dn);
-	rdn_attr	= dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
-	if (!rdn_attr) {
-		return WERR_FOOBAR;
-	}
-	rdn_attid	= rdn_attr->attributeID_id;
-	rdn_value	= ldb_dn_get_rdn_val(msg->dn);
 
 	msg->num_elements	= in->object.attribute_ctr.num_attributes;
 	msg->elements		= talloc_array(msg, struct ldb_message_element,
@@ -331,6 +319,25 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	if (rdn_m) {
 		struct ldb_message_element *el;
+		const char *rdn_name = NULL;
+		const struct ldb_val *rdn_value = NULL;
+		const struct dsdb_attribute *rdn_attr = NULL;
+		uint32_t rdn_attid;
+
+		/*
+		 * We only need the schema calls for the RDN in this
+		 * codepath, and by doing this we avoid needing to
+		 * have the dsdb_attribute_by_lDAPDisplayName accessor
+		 * working during the schema load.
+		 */
+		rdn_name	= ldb_dn_get_rdn_name(msg->dn);
+		rdn_attr	= dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
+		if (!rdn_attr) {
+			return WERR_FOOBAR;
+		}
+		rdn_attid	= rdn_attr->attributeID_id;
+		rdn_value	= ldb_dn_get_rdn_val(msg->dn);
+
 		el = ldb_msg_find_element(msg, rdn_attr->lDAPDisplayName);
 		if (!el) {
 			ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
