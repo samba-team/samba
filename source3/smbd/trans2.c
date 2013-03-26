@@ -471,13 +471,38 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp, const char *fname)
 {
 	size_t total_ea_len = 0;
+	struct ea_list *ea_list = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return 0;
 	}
 	mem_ctx = talloc_tos();
-	(void)get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+	ea_list = get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
+	if (ea_list == NULL) {
+		return 0;
+	}
+	if(conn->sconn->using_smb2) {
+		NTSTATUS status;
+		unsigned int ret_data_size;
+		/*
+		 * We're going to be using fill_ea_chained_buffer() to
+		 * marshall EA's - this size is significantly larger
+		 * than the SMB1 buffer. Re-calculate the size without
+		 * marshalling.
+		 */
+		status = fill_ea_chained_buffer(mem_ctx,
+						NULL,
+						65535,
+						&ret_data_size,
+						conn,
+						ea_list);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret_data_size = 0;
+		}
+		total_ea_len = ret_data_size;
+	}
+
 	return total_ea_len;
 }
 
