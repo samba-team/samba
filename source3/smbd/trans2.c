@@ -357,6 +357,15 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 			return status;
 		}
 
+		if (listp->ea.value.length == 0) {
+			/*
+			 * We can never return a zero length EA.
+			 * Windows reports the EA's as corrupted.
+			 */
+			TALLOC_FREE(listp);
+			continue;
+		}
+
 		push_ascii_fstring(dos_ea_name, listp->ea.name);
 
 		*pea_total_len +=
