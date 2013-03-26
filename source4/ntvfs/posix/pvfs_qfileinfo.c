@@ -102,6 +102,9 @@ NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 		for (j=0;j<ealist->num_eas;j++) {
 			if (strcasecmp_m(eas->eas[i].name.s, 
 				       ealist->eas[j].name) == 0) {
+				if (ealist->eas[j].value.length == 0) {
+					continue;
+				}
 				eas->eas[i].value = ealist->eas[j].value;
 				break;
 			}
@@ -134,6 +137,9 @@ static NTSTATUS pvfs_query_all_eas(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 	for (i=0;i<ealist->num_eas;i++) {
 		eas->eas[eas->num_eas].flags = 0;
 		eas->eas[eas->num_eas].name.s = ealist->eas[i].name;
+		if (ealist->eas[i].value.length == 0) {
+			continue;
+		}
 		eas->eas[eas->num_eas].value = ealist->eas[i].value;
 		eas->num_eas++;
 	}
