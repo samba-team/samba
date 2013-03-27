@@ -499,7 +499,7 @@ static NTSTATUS fill_ea_chained_buffer(TALLOC_CTX *mem_ctx,
 		this_size = 0x08 + dos_namelen + 1 + ea_list->ea.value.length;
 
 		if (ea_list->next) {
-			pad = 4 - (this_size % 4);
+			pad = (4 - (this_size % 4)) % 4;
 			this_size += pad;
 		}
 
