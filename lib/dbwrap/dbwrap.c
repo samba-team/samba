@@ -453,6 +453,17 @@ int dbwrap_get_seqnum(struct db_context *db)
 int dbwrap_transaction_start(struct db_context *db)
 {
 	if (!db->persistent) {
+		/*
+		 * dbwrap_ctdb has two different data models for persistent
+		 * and non-persistent databases. Transactions are supported
+		 * only for the persistent databases. This check is here to
+		 * prevent breakages of the cluster case, autobuild at this
+		 * point only tests non-clustered Samba. Before removing this
+		 * check, please make sure that this facility has also been
+		 * added to dbwrap_ctdb.
+		 *
+		 * Thanks, vl
+		 */
 		DEBUG(1, ("transactions not supported on non-persistent "
 			  "database %s\n", db->name));
 		return -1;
