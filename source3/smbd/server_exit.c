@@ -202,14 +202,8 @@ static void exit_server_common(enum server_exit_reason how,
 	printing_end();
 
 	if (how != SERVER_EXIT_NORMAL) {
-		DEBUGSEP(0);
-		DEBUG(0,("Abnormal server exit: %s\n",
-			reason ? reason : "no explanation provided"));
-		DEBUGSEP(0);
 
-		log_stack_trace();
-
-		dump_core();
+		smb_panic(reason);
 
 		/* Notreached. */
 		exit(1);
