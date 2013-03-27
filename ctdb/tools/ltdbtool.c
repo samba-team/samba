@@ -77,7 +77,9 @@ static int help(const char* cmd)
 "   -O <num>        the number of bytes to interpret as ctdb record header\n"
 "                   for the output database (beware!)\n"
 "\n"
-"   -p              print header (for the dump command), defaults ot off\n"
+"   -e              Include empty records, defaults to off\n"
+"\n"
+"   -p              print header (for the dump command), defaults to off\n"
 "\n"
 "   -h              print this help\n"
 "\n"
@@ -91,8 +93,8 @@ static int help(const char* cmd)
 static int usage(const char* cmd)
 {
 	fprintf(stderr,
-		"Usage: %s dump [-p] [-s{0|32|64}] <idb>\n"
-		"       %s convert [-s{0|32|64}] [-o{0|32|64}] <idb> <odb>\n"
+		"Usage: %s dump [-e] [-p] [-s{0|32|64}] <idb>\n"
+		"       %s convert [-e] [-s{0|32|64}] [-o{0|32|64}] <idb> <odb>\n"
 		"       %s {help|-h}\n"
 		, cmd, cmd, cmd);
 	return -1;
@@ -229,6 +231,7 @@ int main(int argc, char* argv[])
 			break;
 		case 'e':
 			keep_empty = true;
+			break;
 		case 'h':
 			return help(argv[0]);
 		default:
