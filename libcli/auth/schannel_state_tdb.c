@@ -285,11 +285,33 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
 	int ret;
+	char *name_upper = NULL;
+	char *keystr = NULL;
+	TDB_DATA key;
+
+	if (creds_out != NULL) {
+		*creds_out = NULL;
+	}
 
 	tmpctx = talloc_named(mem_ctx, 0, "schannel_check_creds_state");
 	if (!tmpctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	name_upper = strupper_talloc(tmpctx, computer_name);
+	if (!name_upper) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	keystr = talloc_asprintf(tmpctx, "%s/%s",
+				 SECRETS_SCHANNEL_STATE, name_upper);
+	if (!keystr) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	key = string_term_tdb_data(keystr);
 
 	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
 	if (!tdb_sc) {
@@ -297,7 +319,7 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ret = tdb_transaction_start(tdb_sc->tdb);
+	ret = tdb_chainlock(tdb_sc->tdb, key);
 	if (ret != 0) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
@@ -310,7 +332,7 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, 
 						computer_name, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		tdb_transaction_cancel(tdb_sc->tdb);
+		tdb_chainunlock(tdb_sc->tdb, key);
 		goto done;
 	}
 
@@ -318,19 +340,13 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 						  received_authenticator,
 						  return_authenticator);
 	if (!NT_STATUS_IS_OK(status)) {
-		tdb_transaction_cancel(tdb_sc->tdb);
+		tdb_chainunlock(tdb_sc->tdb, key);
 		goto done;
 	}
 
 	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, creds);
+	tdb_chainunlock(tdb_sc->tdb, key);
 	if (!NT_STATUS_IS_OK(status)) {
-		tdb_transaction_cancel(tdb_sc->tdb);
-		goto done;
-	}
-
-	ret = tdb_transaction_commit(tdb_sc->tdb);
-	if (ret != 0) {
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
 
