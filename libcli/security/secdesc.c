@@ -614,7 +614,8 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		if (!container) {
 			new_flags = 0;
 		} else {
-			new_flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
+			new_flags &= ~(SEC_ACE_FLAG_INHERIT_ONLY 
+					| SEC_ACE_FLAG_INHERITED_ACE);
 
 			if (!(new_flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 				new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
