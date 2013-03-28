@@ -350,11 +350,12 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = get_ea_value(mem_ctx, conn, fsp,
+		status = get_ea_value(listp, conn, fsp,
 				      fname, names[i],
 				      &listp->ea);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(listp);
 			return status;
 		}
 
