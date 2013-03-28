@@ -214,23 +214,6 @@ static bool tdb_data_is_cstr(TDB_DATA d) {
 	return strlen((char *)d.dptr) == d.dsize-1;
 }
 
-static char* tdb_data_print(TALLOC_CTX *mem_ctx, TDB_DATA d)
-{
-	if (!tdb_data_is_empty(d)) {
-		char *ret = NULL;
-		cbuf *ost = cbuf_new(mem_ctx);
-		int len = cbuf_print_quoted(ost, (const char*)d.dptr, d.dsize);
-		if (len != -1) {
-			cbuf_swapptr(ost, &ret, 0);
-			talloc_steal(mem_ctx, ret);
-		}
-		talloc_free(ost);
-		return ret;
-	}
-	return talloc_strdup(mem_ctx, "<NULL>");
-}
-
-
 static TDB_DATA cbuf_make_tdb_data(cbuf *b)
 {
 	return make_tdb_data((void*)cbuf_gets(b, 0), cbuf_getpos(b));
@@ -902,12 +885,12 @@ dbwrap_store_verbose(struct db_context *db, const char *key, TDB_DATA nval)
 			goto done;
 		}
 		printf("store %s:\n  overwrite: %s\n  with:      %s\n", key,
-		       tdb_data_print(mem_ctx, oval),
-		       tdb_data_print(mem_ctx, nval));
+		       tdb_data_string(mem_ctx, oval),
+		       tdb_data_string(mem_ctx, nval));
 
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		printf("store %s:\n  write: %s\n", key,
-		       tdb_data_print(mem_ctx, nval));
+		       tdb_data_string(mem_ctx, nval));
 	} else {
 		printf ("store %s:\n  failed to fetch old value: %s\n", key,
 			nt_errstr(status));
