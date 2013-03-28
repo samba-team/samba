@@ -69,7 +69,10 @@ struct named_mutex *grab_named_mutex(TALLOC_CTX *mem_ctx, const char *name,
 	}
 
 	result->tdb = tdb_wrap_open(result, lock_path("mutex.tdb"), 0,
-				    TDB_DEFAULT, O_RDWR|O_CREAT, 0600, lp_ctx);
+				    TDB_DEFAULT |
+				    TDB_CLEAR_IF_FIRST |
+				    TDB_INCOMPATIBLE_HASH,
+				    O_RDWR|O_CREAT, 0600, lp_ctx);
 	talloc_unlink(result, lp_ctx);
 	if (result->tdb == NULL) {
 		DEBUG(1, ("Could not open mutex.tdb: %s\n",
