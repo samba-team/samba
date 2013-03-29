@@ -322,6 +322,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 	NTSTATUS status;
 
 	*pea_total_len = 0;
+	*ea_list = NULL;
 
 	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
 					&names, &num_names);
@@ -515,7 +516,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 {
 	size_t total_ea_len = 0;
 	TALLOC_CTX *mem_ctx;
-	struct ea_list *ea_list;
+	struct ea_list *ea_list = NULL;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return 0;
