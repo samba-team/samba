@@ -2894,7 +2894,43 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 
 static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
 {
-	return false;
+	uint32_t flags;
+
+	if (IVAL(state->pktbuf, 0) == SMB2_TF_MAGIC) {
+		/* Transform header. Cannot recvfile. */
+		return false;
+	}
+	if (IVAL(state->pktbuf, 0) != SMB2_MAGIC) {
+		/* Not SMB2. Normal error path will cope. */
+		return false;
+	}
+	if (SVAL(state->pktbuf, 4) != SMB2_HDR_BODY) {
+		/* Not SMB2. Normal error path will cope. */
+		return false;
+	}
+	if (SVAL(state->pktbuf, SMB2_HDR_OPCODE) != SMB2_OP_WRITE) {
+		/* Needs to be a WRITE. */
+		return false;
+	}
+	if (IVAL(state->pktbuf, SMB2_HDR_NEXT_COMMAND) != 0) {
+		/* Chained. Cannot recvfile. */
+		return false;
+	}
+	flags = IVAL(state->pktbuf, SMB2_HDR_FLAGS);
+	if (flags & SMB2_HDR_FLAG_CHAINED) {
+		/* Chained. Cannot recvfile. */
+		return false;
+	}
+	if (flags & SMB2_HDR_FLAG_SIGNED) {
+		/* Signed. Cannot recvfile. */
+		return false;
+	}
+
+	DEBUG(10,("Doing recvfile write len = %u\n",
+		(unsigned int)(state->pktlen -
+		SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN)));
+
+	return true;
 }
 
 static int smbd_smb2_request_next_vector(struct tstream_context *stream,
