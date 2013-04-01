@@ -2906,12 +2906,38 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 	struct smbd_smb2_request_read_state *state =
 		talloc_get_type_abort(private_data,
 		struct smbd_smb2_request_read_state);
-	struct iovec *vector;
+	struct iovec *vector = NULL;
+	size_t min_recvfile_size = UINT32_MAX;
 
 	if (state->pktlen > 0) {
-		/* if there're no remaining bytes, we're done */
-		*_vector = NULL;
-		*_count = 0;
+		if (state->doing_receivefile && !is_smb2_recvfile_write(state)) {
+			/*
+			 * Not a possible receivefile write.
+			 * Read the rest of the data.
+			 */
+			state->doing_receivefile = false;
+			vector = talloc_array(mem_ctx, struct iovec, 1);
+			if (vector == NULL) {
+				return -1;
+			}
+			vector[0].iov_base = (void *)(state->pktbuf +
+				SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN);
+			vector[0].iov_len = (state->pktlen -
+				SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN);
+			*_vector = vector;
+			*_count = 1;
+		} else {
+			/*
+			 * Either this is a receivefile write so we've
+			 * done a short read, or if not we have all the data.
+			 * Either way, we're done and
+			 * smbd_smb2_request_read_done() will handle
+			 * and short read case by looking at the
+			 * state->doing_receivefile value.
+			 */
+			*_vector = NULL;
+			*_count = 0;
+		}
 		return 0;
 	}
 
@@ -2957,7 +2983,26 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 	}
 
 	vector[0].iov_base = (void *)state->pktbuf;
-	vector[0].iov_len = state->pktlen;
+
+	if (state->min_recv_size != 0) {
+		min_recvfile_size = SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
+		min_recvfile_size += state->min_recv_size;
+	}
+
+	if (state->pktlen > min_recvfile_size) {
+		/*
+		 * Might be a receivefile write. Read the SMB2 HEADER +
+		 * SMB2_WRITE header first. Set 'doing_receivefile'
+		 * as we're *attempting* receivefile write. If this
+		 * turns out not to be a SMB2_WRITE request or otherwise
+		 * not suitable then we'll just read the rest of the data
+		 * the next time this function is called.
+		 */
+		vector[0].iov_len = SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
+		state->doing_receivefile = true;
+	} else {
+		vector[0].iov_len = state->pktlen;
+	}
 
 	*_vector = vector;
 	*_count = 1;
@@ -3018,6 +3063,16 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 						&state->smb2_req->in.vector_count);
 	if (tevent_req_nterror(req, status)) {
 		return;
+	}
+
+	if (state->doing_receivefile) {
+		state->smb2_req->smb1req = talloc_zero(state->smb2_req,
+						struct smb_request);
+		if (tevent_req_nomem(state->smb2_req->smb1req, req)) {
+			return;
+		}
+		state->smb2_req->smb1req->unread_bytes =
+			state->pktlen - SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN;
 	}
 
 	state->smb2_req->current_idx = 1;
