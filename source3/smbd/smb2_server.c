@@ -2842,6 +2842,17 @@ static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 					 size_t *_count);
 static void smbd_smb2_request_read_done(struct tevent_req *subreq);
 
+static size_t get_min_receive_file_size(struct smbd_smb2_request *smb2_req)
+{
+	if (smb2_req->do_signing) {
+		return 0;
+	}
+	if (smb2_req->do_encryption) {
+		return 0;
+	}
+	return (size_t)lp_min_receive_file_size();
+}
+
 static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct smbd_server_connection *sconn)
