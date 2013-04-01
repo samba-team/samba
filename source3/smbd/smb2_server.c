@@ -2831,6 +2831,8 @@ struct smbd_smb2_request_read_state {
 		uint8_t nbt[NBT_HDR_SIZE];
 		bool done;
 	} hdr;
+	bool doing_receivefile;
+	size_t min_recv_size;
 	size_t pktlen;
 	uint8_t *pktbuf;
 };
@@ -2874,6 +2876,7 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	state->smb2_req->sconn = sconn;
+	state->min_recv_size = get_min_receive_file_size(state->smb2_req);
 
 	subreq = tstream_readv_pdu_queue_send(state->smb2_req,
 					state->ev,
