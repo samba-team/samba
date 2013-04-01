@@ -2892,6 +2892,11 @@ static struct tevent_req *smbd_smb2_request_read_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static bool is_smb2_recvfile_write(struct smbd_smb2_request_read_state *state)
+{
+	return false;
+}
+
 static int smbd_smb2_request_next_vector(struct tstream_context *stream,
 					 void *private_data,
 					 TALLOC_CTX *mem_ctx,
