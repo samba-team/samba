@@ -549,6 +549,8 @@ struct smbd_smb2_request {
 #define SMBD_SMB2_OUT_DYN_PTR(req)   (uint8_t *)(SMBD_SMB2_OUT_DYN_IOV(req)->iov_base)
 #define SMBD_SMB2_OUT_DYN_LEN(req)   (SMBD_SMB2_OUT_DYN_IOV(req)->iov_len)
 
+#define SMBD_SMB2_SHORT_RECEIVEFILE_WRITE_LEN (SMB2_HDR_BODY + 0x30)
+
 	struct {
 		/*
 		 * vector[0] TRANSPORT HEADER (empty)
