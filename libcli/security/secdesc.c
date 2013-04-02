@@ -614,6 +614,15 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		if (!container) {
 			new_flags = 0;
 		} else {
+			/*
+			 * We need to remove SEC_ACE_FLAG_INHERITED_ACE here
+			 * if present because it should only be set if the
+			 * parent has the AUTO_INHERITED bit set in the
+			 * type/control field. If we don't it will slip through
+			 * and create DACLs with incorrectly ordered ACEs
+			 * when there are CREATOR_OWNER or CREATOR_GROUP
+			 * ACEs.
+			 */
 			new_flags &= ~(SEC_ACE_FLAG_INHERIT_ONLY
 					| SEC_ACE_FLAG_INHERITED_ACE);
 
