@@ -293,40 +293,6 @@ static NTSTATUS cli_session_setup_lanman2_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli, const char *user,
-					  const char *pass, size_t passlen,
-					  const char *workgroup)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_session_setup_lanman2_send(frame, ev, cli, user, pass, passlen,
-					     workgroup);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_session_setup_lanman2_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /****************************************************************************
  Work out suitable capabilities to offer the server.
 ****************************************************************************/
@@ -536,44 +502,6 @@ NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = cli_session_setup_guest_send(frame, ev, cli);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
-		goto fail;
-	}
-
-	status = cli_session_setup_guest_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 /****************************************************************************
  Do a NT1 plaintext session setup.
 ****************************************************************************/
@@ -737,40 +665,6 @@ static void cli_session_setup_plain_done(struct tevent_req *subreq)
 static NTSTATUS cli_session_setup_plain_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
-}
-
-static NTSTATUS cli_session_setup_plain(struct cli_state *cli,
-					const char *user, const char *pass,
-					const char *workgroup)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_session_setup_plain_send(frame, ev, cli, user, pass,
-					   workgroup);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_session_setup_plain_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
 }
 
 /****************************************************************************
@@ -1098,41 +992,6 @@ static void cli_session_setup_nt1_done(struct tevent_req *subreq)
 static NTSTATUS cli_session_setup_nt1_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
-}
-
-static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
-				      const char *pass, size_t passlen,
-				      const char *ntpass, size_t ntpasslen,
-				      const char *workgroup)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_session_setup_nt1_send(frame, ev, cli, user, pass, passlen,
-					 ntpass, ntpasslen, workgroup);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_session_setup_nt1_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
 }
 
 /* The following is calculated from :
@@ -1554,33 +1413,6 @@ static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
 	return state->ads_status;
 }
 
-static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli,
-					     const char *principal)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	ADS_STATUS status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_session_setup_kerberos_send(ev, ev, cli, principal);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll(req, ev)) {
-		status = ADS_ERROR_SYSTEM(errno);
-		goto fail;
-	}
-	status = cli_session_setup_kerberos_recv(req);
-fail:
-	TALLOC_FREE(ev);
-	return status;
-}
 #endif	/* HAVE_KRB5 */
 
 /****************************************************************************
@@ -2095,39 +1927,6 @@ static ADS_STATUS cli_session_setup_spnego_recv(struct tevent_req *req)
 		req, struct cli_session_setup_spnego_state);
 
 	return state->result;
-}
-
-static ADS_STATUS cli_session_setup_spnego(struct cli_state *cli,
-			      const char *user,
-			      const char *pass,
-			      const char *user_domain,
-			      const char * dest_realm)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	ADS_STATUS result = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-	NTSTATUS status;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-	}
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_session_setup_spnego_send(ev, ev, cli, user, pass,
-					    user_domain, dest_realm);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		result = ADS_ERROR_NT(status);
-		goto fail;
-	}
-	result = cli_session_setup_spnego_recv(req);
-fail:
-	TALLOC_FREE(ev);
-	return result;
 }
 
 struct cli_session_setup_state {
