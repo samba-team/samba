@@ -1829,35 +1829,6 @@ static NTSTATUS cli_session_setup_ntlmssp_recv(struct tevent_req *req)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli,
-					  const char *user,
-					  const char *pass,
-					  const char *domain)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_session_setup_ntlmssp_send(ev, ev, cli, user, pass, domain);
-	if (req == NULL) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_session_setup_ntlmssp_recv(req);
-fail:
-	TALLOC_FREE(ev);
-	return status;
-}
-
 #ifdef HAVE_KRB5
 
 static char *cli_session_setup_get_principal(
