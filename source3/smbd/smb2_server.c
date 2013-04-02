@@ -632,7 +632,7 @@ static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
 				const uint8_t *inhdr)
 {
 	uint64_t message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
-	uint16_t opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
+	uint16_t opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 	uint16_t credit_charge = 1;
 	uint64_t i;
 
@@ -1416,7 +1416,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	DEBUG(10,("smbd_smb2_request_pending_queue: opcode[%s] mid %llu "
 		"going async\n",
-		smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
+		smb2_opcode_name(SVAL(inhdr, SMB2_HDR_OPCODE)),
 		(unsigned long long)async_id ));
 
 	/*
@@ -1621,7 +1621,7 @@ static NTSTATUS smbd_smb2_request_process_cancel(struct smbd_smb2_request *req)
 		inhdr = SMBD_SMB2_IN_HDR_PTR(cur);
 		DEBUG(10,("smbd_smb2_request_process_cancel: attempting to "
 			"cancel opcode[%s] mid %llu\n",
-			smb2_opcode_name((uint16_t)IVAL(inhdr, SMB2_HDR_OPCODE)),
+			smb2_opcode_name(SVAL(inhdr, SMB2_HDR_OPCODE)),
                         (unsigned long long)found_id ));
 		tevent_req_cancel(cur->subreq);
 	}
@@ -1699,7 +1699,7 @@ static NTSTATUS smbd_smb2_request_check_session(struct smbd_smb2_request *req)
 	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
 
 	in_flags = IVAL(inhdr, SMB2_HDR_FLAGS);
-	in_opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
+	in_opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 	in_session_id = BVAL(inhdr, SMB2_HDR_SESSION_ID);
 
 	if (in_flags & SMB2_HDR_FLAG_CHAINED) {
@@ -1870,7 +1870,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	/* TODO: verify more things */
 
 	flags = IVAL(inhdr, SMB2_HDR_FLAGS);
-	opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
+	opcode = SVAL(inhdr, SMB2_HDR_OPCODE);
 	mid = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
 	DEBUG(10,("smbd_smb2_request_dispatch: opcode[%s] mid = %llu\n",
 		smb2_opcode_name(opcode),
