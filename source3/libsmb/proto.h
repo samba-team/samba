@@ -33,6 +33,14 @@ struct smb_trans_enc_state;
 
 /* The following definitions come from libsmb/cliconnect.c  */
 
+struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct cli_state *cli,
+					  const char *user,
+					  const char *pass, int passlen,
+					  const char *ntpass, int ntpasslen,
+					  const char *workgroup);
+NTSTATUS cli_session_setup_recv(struct tevent_req *req);
 NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *user,
 			   const char *pass, int passlen,

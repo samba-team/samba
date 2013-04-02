@@ -2130,29 +2130,50 @@ fail:
 	return result;
 }
 
+struct cli_session_setup_state {
+	uint8_t dummy;
+};
+
+static void cli_session_setup_done_lanman2(struct tevent_req *subreq);
+static void cli_session_setup_done_spnego(struct tevent_req *subreq);
+static void cli_session_setup_done_guest(struct tevent_req *subreq);
+static void cli_session_setup_done_plain(struct tevent_req *subreq);
+static void cli_session_setup_done_nt1(struct tevent_req *subreq);
+
 /****************************************************************************
  Send a session setup. The username and workgroup is in UNIX character
  format and must be converted to DOS codepage format before sending. If the
  password is in plaintext, the same should be done.
 ****************************************************************************/
 
-NTSTATUS cli_session_setup(struct cli_state *cli,
-			   const char *user,
-			   const char *pass, int passlen,
-			   const char *ntpass, int ntpasslen,
-			   const char *workgroup)
+struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct cli_state *cli,
+					  const char *user,
+					  const char *pass, int passlen,
+					  const char *ntpass, int ntpasslen,
+					  const char *workgroup)
 {
+	struct tevent_req *req, *subreq;
+	struct cli_session_setup_state *state;
 	char *p;
 	char *user2;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_session_setup_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
 	if (user) {
-		user2 = talloc_strdup(talloc_tos(), user);
+		user2 = talloc_strdup(state, user);
 	} else {
-		user2 = talloc_strdup(talloc_tos(), "");
+		user2 = talloc_strdup(state, "");
 	}
 	if (user2 == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
 	}
 
 	if (!workgroup) {
@@ -2165,13 +2186,15 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 		*p = 0;
 		user = p+1;
 		if (!strupper_m(user2)) {
-			return NT_STATUS_INVALID_PARAMETER;
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
 		}
 		workgroup = user2;
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_LANMAN1) {
-		return NT_STATUS_OK;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	/* now work out what sort of session setup we are going to
@@ -2184,44 +2207,68 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
 			DEBUG(1, ("Server requested LM password but 'client lanman auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
-			return NT_STATUS_ACCESS_DENIED;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
 		}
 
 		if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
-			return NT_STATUS_ACCESS_DENIED;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
 		}
 
-		return cli_session_setup_lanman2(cli, user, pass, passlen,
-						 workgroup);
+		subreq = cli_session_setup_lanman2_send(
+			state, ev, cli, user, pass, passlen, workgroup);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_lanman2,
+					req);
+		return req;
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		const char *remote_realm = cli_state_remote_realm(cli);
-		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
-							     workgroup,
-							     remote_realm);
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(3, ("SMB2-SPNEGO login failed: %s\n", ads_errstr(status)));
-			return ads_ntstatus(status);
+
+		subreq = cli_session_setup_spnego_send(
+			state, ev, cli, user, pass, workgroup, remote_realm);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
-		return NT_STATUS_OK;
+		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
+					req);
+		return req;
 	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
 	   passwords are ignored */
 
-	if (!user || !*user)
-		return cli_session_setup_guest(cli);
+	if (!user || !*user) {
+		subreq = cli_session_setup_guest_send(state, ev, cli);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_guest,
+					req);
+		return req;
+	}
 
 	/* if the server is share level then send a plaintext null
            password at this point. The password is sent in the tree
            connect */
 
-	if ((sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0)
-		return cli_session_setup_plain(cli, user, "", workgroup);
+	if ((sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) {
+		subreq = cli_session_setup_plain_send(
+			state, ev, cli, user, "", workgroup);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_plain,
+					req);
+		return req;
+	}
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */
@@ -2230,36 +2277,162 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 		if (!lp_client_plaintext_auth() && (*pass)) {
 			DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
 				  " or 'client ntlmv2 auth = yes'\n"));
-			return NT_STATUS_ACCESS_DENIED;
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
 		}
-		return cli_session_setup_plain(cli, user, pass, workgroup);
+		subreq = cli_session_setup_plain_send(
+			state, ev, cli, user, pass, workgroup);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_plain,
+					req);
+		return req;
 	}
 
 	/* if the server supports extended security then use SPNEGO */
 
 	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
 		const char *remote_realm = cli_state_remote_realm(cli);
-		ADS_STATUS status = cli_session_setup_spnego(cli, user, pass,
-							     workgroup,
-							     remote_realm);
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
-			return ads_ntstatus(status);
-		}
-	} else {
-		NTSTATUS status;
 
-		/* otherwise do a NT1 style session setup */
-		status = cli_session_setup_nt1(cli, user, pass, passlen,
-					       ntpass, ntpasslen, workgroup);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("cli_session_setup: NT1 session setup "
-				 "failed: %s\n", nt_errstr(status)));
-			return status;
+		subreq = cli_session_setup_spnego_send(
+			state, ev, cli, user, pass, workgroup, remote_realm);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
+					req);
+		return req;
+	} else {
+		/* otherwise do a NT1 style session setup */
+
+		subreq = cli_session_setup_nt1_send(
+			state, ev, cli, user, pass, passlen, ntpass, ntpasslen,
+			workgroup);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_nt1,
+					req);
+		return req;
 	}
 
-	return NT_STATUS_OK;
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static void cli_session_setup_done_lanman2(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_session_setup_lanman2_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_session_setup_done_spnego(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	ADS_STATUS status;
+
+	status = cli_session_setup_spnego_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(3, ("SPNEGO login failed: %s\n", ads_errstr(status)));
+		tevent_req_nterror(req, ads_ntstatus(status));
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_session_setup_done_guest(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_session_setup_guest_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_session_setup_done_plain(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_session_setup_plain_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_session_setup_done_nt1(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_session_setup_nt1_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("cli_session_setup: NT1 session setup "
+			  "failed: %s\n", nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_session_setup_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_session_setup(struct cli_state *cli,
+			   const char *user,
+			   const char *pass, int passlen,
+			   const char *ntpass, int ntpasslen,
+			   const char *workgroup)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_session_setup_send(ev, ev, cli, user, pass, passlen,
+				     ntpass, ntpasslen, workgroup);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_session_setup_recv(req);
+ fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 /****************************************************************************
