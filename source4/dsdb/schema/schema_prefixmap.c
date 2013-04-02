@@ -311,6 +311,7 @@ static WERROR dsdb_schema_pfm_make_attid_impl(struct dsdb_schema_prefixmap *pfm,
 	} else {
 		/* return error in read-only mode */
 		if (!can_change_pfm) {
+			DEBUG(0, ("Unable to convert %s to an attid, and can_change_pfm=false!\n", oid));
 			return werr;
 		}
 
