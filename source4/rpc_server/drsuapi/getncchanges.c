@@ -353,8 +353,9 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			werr = sa->syntax->ldb_to_drsuapi(&syntax_ctx, sa, el, obj,
 			                                  &obj->object.attribute_ctr.attributes[i]);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,("Unable to convert %s to DRS object - %s\n", 
-					 sa->lDAPDisplayName, win_errstr(werr)));
+				DEBUG(0,("Unable to convert %s on %s to DRS object - %s\n",
+					 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn),
+					 win_errstr(werr)));
 				return werr;
 			}
 			/* if DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING is set
@@ -369,8 +370,9 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			werr = drsuapi_encrypt_attribute(obj, session_key, rid, 
 							 &obj->object.attribute_ctr.attributes[i]);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,("Unable to encrypt %s in DRS object - %s\n", 
-					 sa->lDAPDisplayName, win_errstr(werr)));
+				DEBUG(0,("Unable to encrypt %s on %s in DRS object - %s\n",
+					 sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn),
+					 win_errstr(werr)));
 				return werr;
 			}
 		}
