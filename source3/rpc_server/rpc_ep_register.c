@@ -249,6 +249,10 @@ static void rpc_ep_monitor_loop(struct tevent_req *subreq)
 		ok = false;
 	}
 
+	dcerpc_epm_LookupHandleFree(state->h,
+				    tmp_ctx,
+				    &entry_handle,
+				    &result);
 	talloc_free(tmp_ctx);
 
 	subreq = tevent_wakeup_send(state->mem_ctx,
