@@ -176,6 +176,9 @@ static int message_handler_destructor(struct ctdb_message_list *m)
 	struct ctdb_message_list_header *h = m->h;
 
 	DLIST_REMOVE(h->m, m);
+	if (h->m == NULL) {
+		talloc_free(h);
+	}
 	return 0;
 }
 
@@ -255,9 +258,6 @@ int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, v
 	for (m=h->m; m; m=m->next) {
 		if (m->message_private == private_data) {
 			talloc_free(m);
-			if (h->m == NULL) {
-				talloc_free(h);
-			}
 			return 0;
 		}
 	}
