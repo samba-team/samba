@@ -373,7 +373,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 		 * endpoint.
 		 */
 		if (find_interface(ep, iface) != NULL) {
-			DEBUG(0, ("dcesrv_interface_register: interface '%s' "
+			DEBUG(8, ("dcesrv_interface_register: interface '%s' "
 				  "already registered on endpoint\n",
 				  iface->name));
 			/* FIXME wrong error code? */
