@@ -346,4 +346,18 @@ if test x"$samba_cv_warn_unused_result" = xyes ; then
    AC_DEFINE(HAVE_WARN_UNUSED_RESULT, 1,
 	     [whether we have __attribute__((warn_unused_result))])
 fi
-AC_HAVE_DECL(bswap_64, [#include <byteswap.h>])
+
+AC_CACHE_CHECK([whether we have bswap_64],
+	       samba_cv_have_bswap_64,
+	       [
+	         AC_LINK_IFELSE([AC_LANG_SOURCE(
+			[#include <byteswap.h>
+			 int main(void) { return bswap_64(1) ? 0 : 1; }
+			])],
+			samba_cv_have_bswap_64=yes)
+		])
+
+if test x"$samba_cv_have_bswap_64" = xyes ; then
+   AC_DEFINE(HAVE_BSWAP_64, 1,
+	     [whether we have bswap_64])
+fi
