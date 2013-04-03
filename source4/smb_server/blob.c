@@ -625,6 +625,12 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 
 		return NT_STATUS_OK;
 
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		return ea_pull_list_chained(blob,
+					    mem_ctx,
+					&st->full_ea_information.in.eas.num_eas,
+					&st->full_ea_information.in.eas.eas);
+
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		BLOB_CHECK_MIN_SIZE(blob, 4);
 

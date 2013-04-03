@@ -367,7 +367,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
   		break;
 
 	case RAW_SFILEINFO_EA_SET:
-		return pvfs_setfileinfo_ea_set(pvfs, h->name, h->fd, 
+		return pvfs_setfileinfo_ea_set(pvfs, h->name, h->fd,
 					       info->ea_set.in.num_eas,
 					       info->ea_set.in.eas);
 
@@ -419,6 +419,11 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_POSITION_INFORMATION:
 		h->position = info->position_information.in.position;
 		break;
+
+	case RAW_SFILEINFO_FULL_EA_INFORMATION:
+		return pvfs_setfileinfo_ea_set(pvfs, h->name, h->fd,
+				info->full_ea_information.in.eas.num_eas,
+				info->full_ea_information.in.eas.eas);
 
 	case RAW_SFILEINFO_MODE_INFORMATION:
 		/* this one is a puzzle */
