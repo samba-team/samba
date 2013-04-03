@@ -149,6 +149,7 @@ NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
 			     struct passwd *pwd);
 NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 				       const char *username,
+				       bool use_guest_token,
 				       bool is_guest,
 				       struct auth_serversupplied_info **presult);
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
