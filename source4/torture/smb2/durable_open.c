@@ -1813,7 +1813,7 @@ static bool test_durable_open_oplock_disconnect(struct torture_context *tctx,
 	bool ret = true;
 
 	snprintf(fname, 256, "durable_open_oplock_disconnect_%s.dat",
-		 generate_random_str(tctx, 8));
+		 generate_random_str(mem_ctx, 8));
 
 	smb2_util_unlink(tree, fname);
 
@@ -1841,7 +1841,7 @@ done:
 		}
 		smb2_util_unlink(tree, fname);
 	}
-
+	talloc_free(mem_ctx);
 	return ret;
 }
 
