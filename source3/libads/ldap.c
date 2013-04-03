@@ -1949,12 +1949,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-	if (!strupper_m(psp1)) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto out;
-	}
-
-	if (!strlower_m(&psp1[strlen(spn)])) {
+	if (!strlower_m(&psp1[strlen(spn) + 1])) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
@@ -1970,12 +1965,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
-	if (!strupper_m(psp2)) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto out;
-	}
-
-	if (!strlower_m(&psp2[strlen(spn)])) {
+	if (!strlower_m(&psp2[strlen(spn) + 1])) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
