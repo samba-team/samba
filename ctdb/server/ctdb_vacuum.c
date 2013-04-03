@@ -478,13 +478,19 @@ static int delete_record_traverse(void *param, void *data)
 
 	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
 	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		/* Does not exist or not a ctdb record. Skip. */
+		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
+				   "on database db[%s] does not exist or is not"
+				   " a ctdb-record.  skipping.\n",
+				   hash, ctdb_db->db_name));
 		vdata->delete_skipped++;
 		goto done;
 	}
 
 	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
-		/* The record has been recycled (filled with data). Skip. */
+		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
+				   "on database db[%s] has been recycled. "
+				   "skipping.\n",
+				   hash, ctdb_db->db_name));
 		vdata->delete_skipped++;
 		goto done;
 	}
@@ -496,13 +502,19 @@ static int delete_record_traverse(void *param, void *data)
 			     CTDB_REC_RO_REVOKING_READONLY|
 			     CTDB_REC_RO_REVOKE_COMPLETE))
 	{
-	  /* The record has readonly flags set. skip deleting */
+		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
+				   "on database db[%s] has read-only flags. "
+				   "skipping.\n",
+				   hash, ctdb_db->db_name));
 		vdata->delete_skipped++;
 		goto done;
 	}
 
 	if (header->dmaster != ctdb->pnn) {
-		/* The record has been migrated off the node. Skip. */
+		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
+				   "on database db[%s] has been migrated away. "
+				   "skipping.\n",
+				   hash, ctdb_db->db_name));
 		vdata->delete_skipped++;
 		goto done;
 	}
@@ -513,6 +525,11 @@ static int delete_record_traverse(void *param, void *data)
 		 * The record has been migrated off the node and back again.
 		 * But not requeued for deletion. Skip it.
 		 */
+		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
+				   "on database db[%s] seems to have been "
+				   "migrated away and back again (with empty "
+				   "data). skipping.\n",
+				   hash, ctdb_db->db_name));
 		vdata->delete_skipped++;
 		goto done;
 	}
@@ -520,7 +537,10 @@ static int delete_record_traverse(void *param, void *data)
 	lmaster = ctdb_lmaster(ctdb_db->ctdb, &dd->key);
 
 	if (lmaster != ctdb->pnn) {
-		/* we are not lmaster - strange */
+		DEBUG(DEBUG_INFO, (__location__ ": not lmaster for record in "
+				   "delete list (key hash [0x%08x], db[%s]). "
+				   "Strange! skipping.\n",
+				   hash, ctdb_db->db_name));
 		vdata->delete_skipped++;
 		goto done;
 	}
