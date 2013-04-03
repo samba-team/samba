@@ -50,13 +50,15 @@ def parse_sigs(sigs, abi_match):
         sa = s.split(':')
         if abi_match:
             matched = False
+            negative = False
             for p in abi_match:
                 if p[0] == '!' and fnmatch.fnmatch(sa[0], p[1:]):
+                    negative = True
                     break
                 elif fnmatch.fnmatch(sa[0], p):
                     matched = True
                     break
-            if not matched:
+            if (not matched) and negative:
                 continue
         Logs.debug("%s -> %s" % (sa[1], normalise_signature(sa[1])))
         ret[sa[0]] = normalise_signature(sa[1])
