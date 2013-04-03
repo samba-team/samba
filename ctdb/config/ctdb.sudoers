@@ -1,0 +1,3 @@
+Defaults!/etc/ctdb/statd-callout	!requiretty
+
+rpcuser		ALL=(ALL) 	NOPASSWD: /etc/ctdb/statd-callout

@@ -13,7 +13,7 @@ URL: http://ctdb.samba.org/
 Source: ctdb-%{version}.tar.gz
 
 # Packages
-Requires: coreutils, sed, gawk, iptables, iproute, procps, ethtool
+Requires: coreutils, sed, gawk, iptables, iproute, procps, ethtool, sudo
 # Commands - package name might vary
 Requires: /usr/bin/killall, /bin/kill, /bin/netstat
 # Directories
@@ -96,6 +96,7 @@ rm -rf $RPM_BUILD_ROOT
 # Create the target build directory hierarchy
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/init.d
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d
 
 make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install install_tests
 
@@ -136,6 +137,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_docdir}/ctdb/onnode.1.html
 %{_docdir}/ctdb/ltdbtool.1.html
 %{_docdir}/ctdb/ping_pong.1.html
+%{_sysconfdir}/sudoers.d/ctdb
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/01.reclock
 %{_sysconfdir}/ctdb/events.d/10.interface

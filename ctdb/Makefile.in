@@ -330,6 +330,7 @@ install: all manpages $(PMDA_INSTALL)
 	${INSTALLCMD} -m 644 include/ctdb_protocol.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 644 include/ctdb_typesafe_cb.h $(DESTDIR)$(includedir)
+	${INSTALLCMD} -m 440 config/ctdb.sudoers $(DESTDIR)$(etcdir)/sudoers.d/ctdb
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 644 README $(DESTDIR)$(docdir)/ctdb/README

@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# This must run as root as CTDB tool commands need to access CTDB socket
+[ $(id -u) -eq 0 ] || exec sudo "$0" "$@"
+
 # this script needs to be installed so that statd points to it with the -H 
 # command line argument. The easiest way to do that is to put something like this in 
 # /etc/sysconfig/nfs:
