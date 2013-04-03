@@ -902,6 +902,7 @@ static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
 
 NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 				       const char *username,
+				       bool use_guest_token,
 				       bool is_guest,
 				       struct auth_serversupplied_info **presult)
 {
@@ -925,7 +926,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 	result->nss_token = true;
 	result->guest = is_guest;
 
-	if (is_guest) {
+	if (use_guest_token) {
 		status = make_server_info_guest(mem_ctx, &result);
 	} else {
 		status = create_local_token(result);
