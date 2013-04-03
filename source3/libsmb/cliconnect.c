@@ -446,7 +446,7 @@ struct tevent_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 	}
 
 	status = smb1cli_req_chain_submit(&subreq, 1);
-	if (NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
