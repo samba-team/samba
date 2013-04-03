@@ -1920,8 +1920,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		ads_msgfree(ads, res);
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
-	strupper_m(psp1);
-	strlower_m(&psp1[strlen(spn)]);
+	strlower_m(&psp1[strlen(spn) + 1]);
 	servicePrincipalName[0] = psp1;
 
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
@@ -1934,8 +1933,7 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto out;
 	}
-	strupper_m(psp2);
-	strlower_m(&psp2[strlen(spn)]);
+	strlower_m(&psp2[strlen(spn) + 1]);
 	servicePrincipalName[1] = psp2;
 
 	DEBUG(5,("ads_add_service_principal_name: INFO: Adding %s to host %s\n", 
