@@ -41,9 +41,11 @@ static int message_list_db_init(struct ctdb_context *ctdb)
 	return 0;
 }
 
-static int message_list_db_add(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA data)
+static int message_list_db_add(struct ctdb_context *ctdb, uint64_t srvid,
+			       struct ctdb_message_list_header *h)
 {
 	int ret;
+	TDB_DATA key, data;
 
 	if (ctdb->message_list_indexdb == NULL) {
 		ret = message_list_db_init(ctdb);
@@ -51,6 +53,12 @@ static int message_list_db_add(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA
 			return -1;
 		}
 	}
+
+	key.dptr = (uint8_t *)&srvid;
+	key.dsize = sizeof(uint64_t);
+
+	data.dptr = (uint8_t *)&h;
+	data.dsize = sizeof(struct ctdb_message_list_header *);
 
 	ret = tdb_store(ctdb->message_list_indexdb, key, data, TDB_INSERT);
 	if (ret < 0) {
@@ -62,13 +70,17 @@ static int message_list_db_add(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA
 	return 0;
 }
 
-static int message_list_db_delete(struct ctdb_context *ctdb, TDB_DATA key)
+static int message_list_db_delete(struct ctdb_context *ctdb, uint64_t srvid)
 {
 	int ret;
+	TDB_DATA key;
 
 	if (ctdb->message_list_indexdb == NULL) {
 		return -1;
 	}
+
+	key.dptr = (uint8_t *)&srvid;
+	key.dsize = sizeof(uint64_t);
 
 	ret = tdb_delete(ctdb->message_list_indexdb, key);
 	if (ret < 0) {
@@ -80,16 +92,27 @@ static int message_list_db_delete(struct ctdb_context *ctdb, TDB_DATA key)
 	return 0;
 }
 
-static int message_list_db_fetch(struct ctdb_context *ctdb, TDB_DATA key, TDB_DATA *data)
+static int message_list_db_fetch(struct ctdb_context *ctdb, uint64_t srvid,
+				 struct ctdb_message_list_header **h)
 {
+	TDB_DATA key, data;
+
 	if (ctdb->message_list_indexdb == NULL) {
 		return -1;
 	}
 
-	*data = tdb_fetch(ctdb->message_list_indexdb, key);
-	if (data->dsize == 0) {
+	key.dptr = (uint8_t *)&srvid;
+	key.dsize = sizeof(uint64_t);
+
+	data = tdb_fetch(ctdb->message_list_indexdb, key);
+	if (data.dsize != sizeof(struct ctdb_message_list_header *)) {
+		talloc_free(data.dptr);
 		return -1;
 	}
+
+	*h = *(struct ctdb_message_list_header **)data.dptr;
+	talloc_free(data.dptr);
+
 	return 0;
 }
 
@@ -100,31 +123,18 @@ int ctdb_dispatch_message(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA da
 {
 	struct ctdb_message_list_header *h;
 	struct ctdb_message_list *m;
-	TDB_DATA key, hdata;
 	uint64_t srvid_all = CTDB_SRVID_ALL;
 	int ret;
 
-	key.dptr = (uint8_t *)&srvid;
-	key.dsize = sizeof(uint64_t);
-
-	ret = message_list_db_fetch(ctdb, key, &hdata);
+	ret = message_list_db_fetch(ctdb, srvid, &h);
 	if (ret == 0) {
-		h = *(struct ctdb_message_list_header **)hdata.dptr;
-		free(hdata.dptr);
-
 		for (m=h->m; m; m=m->next) {
 			m->message_handler(ctdb, srvid, data, m->message_private);
 		}
 	}
 
-	key.dptr = (uint8_t *)&srvid_all;
-	key.dsize = sizeof(uint64_t);
-
-	ret = message_list_db_fetch(ctdb, key, &hdata);
+	ret = message_list_db_fetch(ctdb, srvid_all, &h);
 	if (ret == 0) {
-		h = *(struct ctdb_message_list_header **)hdata.dptr;
-		free(hdata.dptr);
-
 		for(m=h->m; m; m=m->next) {
 			m->message_handler(ctdb, srvid, data, m->message_private);
 		}
@@ -153,7 +163,6 @@ void ctdb_request_message(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 static int message_header_destructor(struct ctdb_message_list_header *h)
 {
 	struct ctdb_message_list *m;
-	TDB_DATA key;
 
 	while (h->m != NULL) {
 		m = h->m;
@@ -161,10 +170,7 @@ static int message_header_destructor(struct ctdb_message_list_header *h)
 		TALLOC_FREE(m);
 	}
 
-	key.dptr = (uint8_t *)&h->srvid;
-	key.dsize = sizeof(uint64_t);
-
-	message_list_db_delete(h->ctdb, key);
+	message_list_db_delete(h->ctdb, h->srvid);
 	DLIST_REMOVE(h->ctdb->message_list_header, h);
 
 	return 0;
@@ -195,7 +201,6 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 {
 	struct ctdb_message_list_header *h;
 	struct ctdb_message_list *m;
-	TDB_DATA key, data;
 	int ret;
 
 	m = talloc_zero(mem_ctx, struct ctdb_message_list);
@@ -204,11 +209,8 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 	m->message_handler = handler;
 	m->message_private = private_data;
 
-	key.dptr = (uint8_t *)&srvid;
-	key.dsize = sizeof(uint64_t);
-
-	ret = message_list_db_fetch(ctdb, key, &data);
-	if (ret < 0) {
+	ret = message_list_db_fetch(ctdb, srvid, &h);
+	if (ret != 0) {
 		/* srvid not registered yet */
 		h = talloc_zero(ctdb, struct ctdb_message_list_header);
 		CTDB_NO_MEMORY(ctdb, h);
@@ -216,9 +218,7 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 		h->ctdb = ctdb;
 		h->srvid = srvid;
 
-		data.dptr = (uint8_t *)&h;
-		data.dsize = sizeof(struct ctdb_message_list_header *);
-		ret = message_list_db_add(ctdb, key, data);
+		ret = message_list_db_add(ctdb, srvid, h);
 		if (ret < 0) {
 			talloc_free(m);
 			talloc_free(h);
@@ -227,9 +227,6 @@ int ctdb_register_message_handler(struct ctdb_context *ctdb,
 
 		DLIST_ADD(ctdb->message_list_header, h);
 		talloc_set_destructor(h, message_header_destructor);
-	} else {
-		h = *(struct ctdb_message_list_header **)data.dptr;
-		free(data.dptr);
 	}
 
 	m->h = h;
@@ -246,19 +243,12 @@ int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, v
 {
 	struct ctdb_message_list_header *h;
 	struct ctdb_message_list *m;
-	TDB_DATA key, data;
 	int ret;
 
-	key.dptr = (uint8_t *)&srvid;
-	key.dsize = sizeof(uint64_t);
-
-	ret = message_list_db_fetch(ctdb, key, &data);
-	if (ret < 0) {
+	ret = message_list_db_fetch(ctdb, srvid, &h);
+	if (ret != 0) {
 		return -1;
 	}
-
-	h = *(struct ctdb_message_list_header **)data.dptr;
-	free(data.dptr);
 
 	for (m=h->m; m; m=m->next) {
 		if (m->message_private == private_data) {
@@ -277,18 +267,10 @@ int ctdb_deregister_message_handler(struct ctdb_context *ctdb, uint64_t srvid, v
 bool ctdb_check_message_handler(struct ctdb_context *ctdb, uint64_t srvid)
 {
 	struct ctdb_message_list_header *h;
-	TDB_DATA key, data;
+	int ret;
 
-	key.dptr = (uint8_t *)&srvid;
-	key.dsize = sizeof(uint64_t);
-
-	if (message_list_db_fetch(ctdb, key, &data) < 0) {
-		return false;
-	}
-
-	h = *(struct ctdb_message_list_header **)data.dptr;
-	free(data.dptr);
-	if (h->m == NULL) {
+	ret = message_list_db_fetch(ctdb, srvid, &h);
+	if (ret != 0 || h->m == NULL) {
 		return false;
 	}
 
