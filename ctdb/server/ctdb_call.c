@@ -343,7 +343,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	DEBUG(DEBUG_DEBUG,("pnn %u dmaster response %08x\n", ctdb->pnn, ctdb_hash(&key)));
 
 	ZERO_STRUCT(header);
-	header.rsn = rsn + 1;
+	header.rsn = rsn;
 	header.dmaster = ctdb->pnn;
 	header.flags = record_flags;
 
