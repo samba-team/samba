@@ -169,7 +169,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SET_DMASTER: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_dmaster));
-		return ctdb_control_set_dmaster(ctdb, indata);
+		DEBUG(DEBUG_ERR, ("The SET_DMASTER control is not implemented "
+				  "any more.\n"));
+		return  -1;
 
 	case CTDB_CONTROL_PUSH_DB:
 		return ctdb_control_push_db(ctdb, indata);

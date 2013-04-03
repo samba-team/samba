@@ -458,59 +458,6 @@ failed:
 	return -1;
 }
 
-
-static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
-{
-	uint32_t *dmaster = (uint32_t *)p;
-	struct ctdb_ltdb_header *header = (struct ctdb_ltdb_header *)data.dptr;
-	int ret;
-
-	/* skip if already correct */
-	if (header->dmaster == *dmaster) {
-		return 0;
-	}
-
-	header->dmaster = *dmaster;
-
-	ret = tdb_store(tdb, key, data, TDB_REPLACE);
-	if (ret) {
-		DEBUG(DEBUG_CRIT,(__location__ " failed to write tdb data back  ret:%d\n",ret));
-		return ret;
-	}
-
-	/* TODO: add error checking here */
-
-	return 0;
-}
-
-int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
-{
-	struct ctdb_control_set_dmaster *p = (struct ctdb_control_set_dmaster *)indata.dptr;
-	struct ctdb_db_context *ctdb_db;
-
-	ctdb_db = find_ctdb_db(ctdb, p->db_id);
-	if (!ctdb_db) {
-		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", p->db_id));
-		return -1;
-	}
-
-	if (ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_set_dmaster when not frozen\n"));
-		return -1;
-	}
-
-	if (ctdb_lockall_mark_prio(ctdb, ctdb_db->priority) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
-		return -1;
-	}
-
-	tdb_traverse(ctdb_db->ltdb->tdb, traverse_setdmaster, &p->dmaster);
-
-	ctdb_lockall_unmark_prio(ctdb, ctdb_db->priority);
-	
-	return 0;
-}
-
 struct ctdb_set_recmode_state {
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control *c;

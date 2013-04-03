@@ -1042,7 +1042,6 @@ struct ctdb_rec_data *ctdb_marshall_loop_next(struct ctdb_marshall_buffer *m, st
 
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata);
 
 int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
