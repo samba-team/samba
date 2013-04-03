@@ -412,9 +412,10 @@ enum pdb_policy_type {
  * Changed to 18, pdb_rid_algorithm -> pdb_capabilities
  * Changed to 19, removed uid_to_rid
  * Changed to 20, pdb_secret calls
+ * Changed to 21, set/enum_upn_suffixes. AB.
  */
 
-#define PASSDB_INTERFACE_VERSION 20
+#define PASSDB_INTERFACE_VERSION 21
 
 struct pdb_methods 
 {
@@ -613,6 +614,15 @@ struct pdb_methods
 			       struct security_descriptor *sd);
 	NTSTATUS (*delete_secret)(struct pdb_methods *methods,
 				  const char *secret_name);
+
+	NTSTATUS (*enum_upn_suffixes)(struct pdb_methods *methods,
+				      TALLOC_CTX *mem_ctx,
+				      uint32_t *num_suffixes,
+				      char ***suffixes);
+
+	NTSTATUS (*set_upn_suffixes)(struct pdb_methods *methods,
+				     uint32_t num_suffixes,
+				     const char **suffixes);
 
 	void *private_data;  /* Private data of some kind */
 
@@ -911,6 +921,12 @@ NTSTATUS pdb_delete_secret(const char *secret_name);
 bool pdb_sid_to_id_unix_users_and_groups(const struct dom_sid *sid,
 					 struct unixid *id);
 
+NTSTATUS pdb_enum_upn_suffixes(TALLOC_CTX *mem_ctx,
+			       uint32_t *num_suffixes,
+			       char ***suffixes);
+
+NTSTATUS pdb_set_upn_suffixes(uint32_t num_suffixes,
+			      const char **suffixes);
 
 /* The following definitions come from passdb/pdb_util.c  */
 

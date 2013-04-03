@@ -2340,6 +2340,39 @@ static struct pdb_domain_info *pdb_default_get_domain_info(
 	return NULL;
 }
 
+/*****************************************************************
+ UPN suffixes
+ *****************************************************************/
+static NTSTATUS pdb_default_enum_upn_suffixes(struct pdb_methods *pdb,
+					      TALLOC_CTX *mem_ctx,
+					      uint32_t *num_suffixes,
+					      char ***suffixes)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS pdb_default_set_upn_suffixes(struct pdb_methods *pdb,
+					     uint32_t num_suffixes,
+					     const char **suffixes)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS pdb_enum_upn_suffixes(TALLOC_CTX *mem_ctx,
+			       uint32_t *num_suffixes,
+			       char ***suffixes)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->enum_upn_suffixes(pdb, mem_ctx, num_suffixes, suffixes);
+}
+
+NTSTATUS pdb_set_upn_suffixes(uint32_t num_suffixes,
+			      const char **suffixes)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->set_upn_suffixes(pdb, num_suffixes, suffixes);
+}
+
 /*******************************************************************
  secret methods
  *******************************************************************/
@@ -2486,6 +2519,9 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->get_secret = pdb_default_get_secret;
 	(*methods)->set_secret = pdb_default_set_secret;
 	(*methods)->delete_secret = pdb_default_delete_secret;
+
+	(*methods)->enum_upn_suffixes = pdb_default_enum_upn_suffixes;
+	(*methods)->set_upn_suffixes  = pdb_default_set_upn_suffixes;
 
 	return NT_STATUS_OK;
 }
