@@ -31,7 +31,9 @@
 static int message_list_db_init(struct ctdb_context *ctdb)
 {
 	ctdb->message_list_indexdb = tdb_open("messagedb", 8192,
-					      TDB_INTERNAL|TDB_DISALLOW_NESTING,
+					      TDB_INTERNAL|
+					      TDB_INCOMPATIBLE_HASH|
+					      TDB_DISALLOW_NESTING,
 					      O_RDWR|O_CREAT, 0);
 	if (ctdb->message_list_indexdb == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to create message list indexdb\n"));
