@@ -721,6 +721,7 @@ ldapsam_pdb_match = ['!priv2ld', '!smbldap_search_domain_info',
                      '!get_attr_list']
 private_pdb_match.append('!pdb_nds_*')
 private_pdb_match.append('!pdb_init_ldapsam')
+private_pdb_match.append('!pdb_ldapsam_init*')
 private_pdb_match = private_pdb_match + ldapsam_pdb_match
 
 private_pdb_match = private_pdb_match + map(lambda x: '!pdb_%s_init' % x, static_pdb_match)
