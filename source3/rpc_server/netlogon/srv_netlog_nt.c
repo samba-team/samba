@@ -2292,22 +2292,16 @@ NTSTATUS _netr_ServerTrustPasswordsGet(struct pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
-					  struct netr_DsRGetForestTrustInformation *r)
-{
-	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
 static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 					struct lsa_ForestTrustInformation *info)
 {
 	struct lsa_ForestTrustRecord *e;
 	struct pdb_domain_info *dom_info;
 	struct lsa_ForestTrustDomainInfo *domain_info;
+	char **upn_suffixes = NULL;
+	uint32_t num_suffixes = 0;
+	uint32_t i = 0;
+	NTSTATUS status;
 
 	dom_info = pdb_get_domain_info(mem_ctx);
 	if (dom_info == NULL) {
@@ -2315,7 +2309,15 @@ static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 	}
 
 	info->count = 2;
-	info->entries = talloc_array(info, struct lsa_ForestTrustRecord *, 2);
+
+	become_root();
+	status = pdb_enum_upn_suffixes(info, &num_suffixes, &upn_suffixes);
+	unbecome_root();
+	if (NT_STATUS_IS_OK(status) && (num_suffixes > 0)) {
+		info->count += num_suffixes;
+	}
+
+	info->entries = talloc_array(info, struct lsa_ForestTrustRecord *, info->count);
 	if (info->entries == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2332,6 +2334,21 @@ static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 								  dom_info->dns_forest);
 
 	info->entries[0] = e;
+
+	if (num_suffixes > 0) {
+		for (i = 0; i < num_suffixes ; i++) {
+			e = talloc(info, struct lsa_ForestTrustRecord);
+			if (e == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			e->flags = 0;
+			e->type = LSA_FOREST_TRUST_TOP_LEVEL_NAME;
+			e->time = 0; /* so far always 0 in traces. */
+			e->forest_trust_data.top_level_name.string = upn_suffixes[i];
+			info->entries[1 + i] = e;
+		}
+	}
 
 	e = talloc(info, struct lsa_ForestTrustRecord);
 	if (e == NULL) {
@@ -2351,9 +2368,73 @@ static NTSTATUS fill_forest_trust_array(TALLOC_CTX *mem_ctx,
 	domain_info->netbios_domain_name.string = talloc_steal(info,
 							       dom_info->name);
 
-	info->entries[1] = e;
+	info->entries[info->count - 1] = e;
 
 	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
+					  struct netr_DsRGetForestTrustInformation *r)
+{
+	NTSTATUS status;
+	struct lsa_ForestTrustInformation *info, **info_ptr;
+
+	if (!(p->pipe_bound && (p->auth.auth_type != DCERPC_AUTH_TYPE_NONE)
+		       && (p->auth.auth_level != DCERPC_AUTH_LEVEL_NONE))) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return WERR_ACCESS_DENIED;
+	}
+
+	if (r->in.flags & (~DS_GFTI_UPDATE_TDO)) {
+		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+		return WERR_INVALID_FLAGS;
+	}
+
+	if ((r->in.flags & DS_GFTI_UPDATE_TDO) && (lp_server_role() != ROLE_DOMAIN_PDC)) {
+		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+		return WERR_NERR_NOTPRIMARY;
+	}
+
+	if ((r->in.trusted_domain_name == NULL) && (r->in.flags & DS_GFTI_UPDATE_TDO)) {
+		p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+		return WERR_INVALID_PARAMETER;
+	}
+
+	/* retrieve forest trust information and stop further processing */
+	if (r->in.trusted_domain_name == NULL) {
+		info_ptr = talloc(p->mem_ctx, struct lsa_ForestTrustInformation *);
+		if (info_ptr == NULL) {
+			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+			return WERR_NOMEM;
+		}
+		info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
+		if (info == NULL) {
+			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+			return WERR_NOMEM;
+		}
+
+		/* Fill forest trust information and expand UPN suffixes list */
+		status = fill_forest_trust_array(p->mem_ctx, info);
+		if (!NT_STATUS_IS_OK(status)) {
+			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+			return WERR_NOMEM;
+		}
+
+		*info_ptr = info;
+		r->out.forest_trust_info = info_ptr;
+
+		return WERR_OK;
+
+	}
+
+	/* TODO: implement remaining parts of DsrGetForestTrustInformation (opnum 43)
+	 *       when trusted_domain_name is not NULL */
+
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
@@ -2400,6 +2481,7 @@ NTSTATUS _netr_GetForestTrustInformation(struct pipes_struct *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* Fill forest trust information, do expand UPN suffixes list */
 	status = fill_forest_trust_array(p->mem_ctx, info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
