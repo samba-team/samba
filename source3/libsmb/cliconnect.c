@@ -2893,46 +2893,116 @@ fail:
 	return status;
 }
 
-NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
-			uint16_t port, int name_type, const char *myname,
-			int signing_state, int flags, struct cli_state **pcli)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
+struct cli_connect_nb_state {
+	const char *desthost;
+	int signing_state;
+	int flags;
 	struct cli_state *cli;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	int fd = -1;
-	char *desthost;
+};
+
+static void cli_connect_nb_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_connect_nb_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const char *host, const struct sockaddr_storage *dest_ss,
+	uint16_t port, int name_type, const char *myname,
+	int signing_state, int flags)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_connect_nb_state *state;
 	char *p;
 
-	/* Save the original host definition for cli_state_create */
-	desthost = host;
+	req = tevent_req_create(mem_ctx, &state, struct cli_connect_nb_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->desthost = host;
+	state->signing_state = signing_state;
+	state->flags = flags;
 
 	p = strchr(host, '#');
 	if (p != NULL) {
 		name_type = strtol(p+1, NULL, 16);
-		host = talloc_strndup(talloc_tos(), host, p - host);
-		if (host == NULL) {
-			goto fail;
+		host = talloc_strndup(state, host, p - host);
+		if (tevent_req_nomem(host, req)) {
+			return tevent_req_post(req, ev);
 		}
 	}
 
-	status = cli_connect_sock(host, name_type, dest_ss, myname, port,
-				  20, &fd, &port);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	subreq = cli_connect_sock_send(state, ev, host, name_type, dest_ss,
+				       myname, port);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_connect_nb_done, req);
+	return req;
+}
+
+static void cli_connect_nb_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_connect_nb_state *state = tevent_req_data(
+		req, struct cli_connect_nb_state);
+	NTSTATUS status;
+	int fd;
+	uint16_t port;
+
+	status = cli_connect_sock_recv(subreq, &fd, &port);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
 
-	cli = cli_state_create(NULL, fd, desthost, NULL, signing_state, flags);
-	if (cli == NULL) {
+	state->cli = cli_state_create(state, fd, state->desthost, NULL,
+				      state->signing_state, state->flags);
+	if (tevent_req_nomem(state->cli, req)) {
 		close(fd);
-		fd = -1;
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_connect_nb_recv(struct tevent_req *req,
+				    struct cli_state **pcli)
+{
+	struct cli_connect_nb_state *state = tevent_req_data(
+		req, struct cli_connect_nb_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pcli = talloc_move(NULL, &state->cli);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
+			uint16_t port, int name_type, const char *myname,
+			int signing_state, int flags, struct cli_state **pcli)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
 		goto fail;
 	}
-
-	*pcli = cli;
-	status = NT_STATUS_OK;
+	req = cli_connect_nb_send(ev, ev, host, dest_ss, port, name_type,
+				  myname, signing_state, flags);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_set_endtime(req, ev, timeval_current_ofs(20, 0))) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_connect_nb_recv(req, pcli);
 fail:
-	TALLOC_FREE(frame);
+	TALLOC_FREE(ev);
 	return status;
 }
 
