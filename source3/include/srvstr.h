@@ -19,12 +19,3 @@
 
 #define srvstr_pull_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags) \
     pull_string_talloc(ctx, base_ptr, smb_flags2, dest, src, src_len, flags)
-
-/* pull a string from the smb_buf part of a packet. In this case the
-   string can either be null terminated or it can be terminated by the
-   end of the smbbuf area 
-*/
-
-#define srvstr_pull_req_talloc(ctx, req_, dest, src, flags) \
-    pull_string_talloc(ctx, req_->inbuf, req_->flags2, dest, src, \
-		       smbreq_bufrem(req_, src), flags)
