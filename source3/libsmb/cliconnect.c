@@ -2904,10 +2904,8 @@ NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss
 	char *desthost;
 	char *p;
 
-	desthost = talloc_strdup(talloc_tos(), host);
-	if (desthost == NULL) {
-		goto fail;
-	}
+	/* Save the original host definition for cli_state_create */
+	desthost = host;
 
 	p = strchr(host, '#');
 	if (p != NULL) {
