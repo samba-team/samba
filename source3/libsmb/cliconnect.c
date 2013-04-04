@@ -2861,38 +2861,6 @@ static NTSTATUS cli_connect_sock_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cli_connect_sock(const char *host, int name_type,
-				 const struct sockaddr_storage *pss,
-				 const char *myname, uint16_t port,
-				 int sec_timeout, int *pfd, uint16_t *pport)
-{
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
-	}
-	req = cli_connect_sock_send(ev, ev, host, name_type, pss, myname,
-				    port);
-	if (req == NULL) {
-		goto fail;
-	}
-	if ((sec_timeout != 0) &&
-	    !tevent_req_set_endtime(
-		    req, ev, timeval_current_ofs(sec_timeout, 0))) {
-		goto fail;
-	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-	status = cli_connect_sock_recv(req, pfd, pport);
-fail:
-	TALLOC_FREE(ev);
-	return status;
-}
-
 struct cli_connect_nb_state {
 	const char *desthost;
 	int signing_state;
