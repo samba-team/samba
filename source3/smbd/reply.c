@@ -318,9 +318,16 @@ size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
 				 NTSTATUS *err, bool *contains_wcard)
 {
-	return srvstr_get_path_wcard(mem_ctx, (const char *)req->inbuf, req->flags2,
-				     pp_dest, src, smbreq_bufrem(req, src),
-				     flags, err, contains_wcard);
+	ssize_t bufrem = smbreq_bufrem(req, src);
+
+	if (bufrem < 0) {
+		*err = NT_STATUS_INVALID_PARAMETER;
+		return 0;
+	}
+
+	return srvstr_get_path_wcard(mem_ctx, (const char *)req->inbuf,
+				     req->flags2, pp_dest, src, bufrem, flags,
+				     err, contains_wcard);
 }
 
 size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
