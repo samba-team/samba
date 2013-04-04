@@ -419,8 +419,8 @@ static bool poll_event_setup_fresh(struct tevent_context *ev,
 				poll_ev->fdes[i]->additional_flags = i;
 			}
 		}
+		poll_ev->deleted = false;
 	}
-	poll_ev->deleted = false;
 
 	if (poll_ev->fresh == NULL) {
 		return true;
