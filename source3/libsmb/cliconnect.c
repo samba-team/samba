@@ -2735,75 +2735,161 @@ fail:
 	return status;
 }
 
-static NTSTATUS cli_connect_sock(const char *host, int name_type,
-				 const struct sockaddr_storage *pss,
-				 const char *myname, uint16_t port,
-				 int sec_timeout, int *pfd, uint16_t *pport)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	const char *prog;
-	unsigned int i, num_addrs;
+struct cli_connect_sock_state {
 	const char **called_names;
 	const char **calling_names;
 	int *called_types;
-	NTSTATUS status;
 	int fd;
+	uint16_t port;
+};
+
+static void cli_connect_sock_done(struct tevent_req *subreq);
+
+/*
+ * Async only if we don't have to look up the name, i.e. "pss" is set with a
+ * nonzero address.
+ */
+
+static struct tevent_req *cli_connect_sock_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const char *host, int name_type, const struct sockaddr_storage *pss,
+	const char *myname, uint16_t port)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_connect_sock_state *state;
+	const char *prog;
+	unsigned i, num_addrs;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_connect_sock_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	prog = getenv("LIBSMB_PROG");
 	if (prog != NULL) {
-		fd = sock_exec(prog);
-		if (fd == -1) {
-			return map_nt_error_from_unix(errno);
+		state->fd = sock_exec(prog);
+		if (state->fd == -1) {
+			status = map_nt_error_from_unix(errno);
+			tevent_req_nterror(req, status);
+		} else {
+			state->port = 0;
+			tevent_req_done(req);
 		}
-		port = 0;
-		goto done;
+		return tevent_req_post(req, ev);
 	}
 
 	if ((pss == NULL) || is_zero_addr(pss)) {
 		struct sockaddr_storage *addrs;
-		status = resolve_name_list(talloc_tos(), host, name_type,
+
+		/*
+		 * Here we cheat. resolve_name_list is not async at all. So
+		 * this call will only be really async if the name lookup has
+		 * been done externally.
+		 */
+
+		status = resolve_name_list(state, host, name_type,
 					   &addrs, &num_addrs);
 		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
 		}
 		pss = addrs;
 	} else {
 		num_addrs = 1;
 	}
 
-	called_names = talloc_array(talloc_tos(), const char *, num_addrs);
-	if (called_names == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	state->called_names = talloc_array(state, const char *, num_addrs);
+	if (tevent_req_nomem(state->called_names, req)) {
+		return tevent_req_post(req, ev);
 	}
-	called_types = talloc_array(talloc_tos(), int, num_addrs);
-	if (called_types == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	state->called_types = talloc_array(state, int, num_addrs);
+	if (tevent_req_nomem(state->called_types, req)) {
+		return tevent_req_post(req, ev);
 	}
-	calling_names = talloc_array(talloc_tos(), const char *, num_addrs);
-	if (calling_names == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
+	state->calling_names = talloc_array(state, const char *, num_addrs);
+	if (tevent_req_nomem(state->calling_names, req)) {
+		return tevent_req_post(req, ev);
 	}
 	for (i=0; i<num_addrs; i++) {
-		called_names[i] = host;
-		called_types[i] = name_type;
-		calling_names[i] = myname;
+		state->called_names[i] = host;
+		state->called_types[i] = name_type;
+		state->calling_names[i] = myname;
 	}
-	status = smbsock_any_connect(pss, called_names, called_types,
-				     calling_names, NULL, num_addrs, port,
-				     sec_timeout, &fd, NULL, &port);
-	if (!NT_STATUS_IS_OK(status)) {
+
+	subreq = smbsock_any_connect_send(
+		state, ev, pss, state->called_names, state->called_types,
+		state->calling_names, NULL, num_addrs, port);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_connect_sock_done, req);
+	return req;
+}
+
+static void cli_connect_sock_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_connect_sock_state *state = tevent_req_data(
+		req, struct cli_connect_sock_state);
+	NTSTATUS status;
+
+	status = smbsock_any_connect_recv(subreq, &state->fd, NULL,
+					  &state->port);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	set_socket_options(state->fd, lp_socket_options());
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_connect_sock_recv(struct tevent_req *req,
+				      int *pfd, uint16_t *pport)
+{
+	struct cli_connect_sock_state *state = tevent_req_data(
+		req, struct cli_connect_sock_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfd = state->fd;
+	*pport = state->port;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cli_connect_sock(const char *host, int name_type,
+				 const struct sockaddr_storage *pss,
+				 const char *myname, uint16_t port,
+				 int sec_timeout, int *pfd, uint16_t *pport)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
 		goto fail;
 	}
-	set_socket_options(fd, lp_socket_options());
-done:
-	*pfd = fd;
-	*pport = port;
-	status = NT_STATUS_OK;
+	req = cli_connect_sock_send(ev, ev, host, name_type, pss, myname,
+				    port);
+	if (req == NULL) {
+		goto fail;
+	}
+	if ((sec_timeout != 0) &&
+	    !tevent_req_set_endtime(
+		    req, ev, timeval_current_ofs(sec_timeout, 0))) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_connect_sock_recv(req, pfd, pport);
 fail:
-	TALLOC_FREE(frame);
+	TALLOC_FREE(ev);
 	return status;
 }
 
