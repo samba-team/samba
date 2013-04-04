@@ -945,6 +945,15 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
+
+	if (domain_name[0] == '\0') {
+		struct winbindd_domain *mydomain =
+			find_domain_from_sid_noinit(sid);
+		if (mydomain != NULL) {
+			domain_name = mydomain->name;
+		}
+	}
+
 	centry_put_uint32(centry, type);
 	centry_put_sid(centry, sid);
 	fstrcpy(uname, name);
@@ -964,6 +973,14 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
+
+	if (domain_name[0] == '\0') {
+		struct winbindd_domain *mydomain =
+			find_domain_from_sid_noinit(sid);
+		if (mydomain != NULL) {
+			domain_name = mydomain->name;
+		}
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
 		centry_put_uint32(centry, type);
@@ -1779,6 +1796,10 @@ NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
 	uname = talloc_strdup_upper(talloc_tos(), name);
 	if (uname == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (domain_name[0] == '\0') {
+		domain_name = domain->name;
 	}
 
 	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain_name, uname);
