@@ -339,6 +339,17 @@ size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
 					 flags, err, &ignore);
 }
 
+/* pull a string from the smb_buf part of a packet. In this case the
+   string can either be null terminated or it can be terminated by the
+   end of the smbbuf area
+*/
+size_t srvstr_pull_req_talloc(TALLOC_CTX *ctx, struct smb_request *req,
+			      char **dest, const char *src, int flags)
+{
+	return pull_string_talloc(ctx, req->inbuf, req->flags2, dest, src,
+				  smbreq_bufrem(req, src), flags);
+}
+
 /****************************************************************************
  Check if we have a correct fsp pointing to a file. Basic check for open fsp.
 ****************************************************************************/
