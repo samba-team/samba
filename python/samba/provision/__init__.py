@@ -561,7 +561,8 @@ def determine_netbios_name(hostname):
 
 def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
                 serverrole=None, rootdn=None, domaindn=None, configdn=None,
-                schemadn=None, serverdn=None, sitename=None):
+                schemadn=None, serverdn=None, sitename=None,
+                domain_names_forced=False):
     """Guess configuration settings to use."""
 
     if hostname is None:
@@ -624,8 +625,8 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if hostname.upper() == realm:
         raise ProvisioningError("guess_names: Realm '%s' must not be equal to hostname '%s'!" % (realm, hostname))
     if netbiosname.upper() == realm:
-        raise ProvisioningError("guess_names: Realm '%s' must not be equal to netbios hostname '%s'!" % (realm, netbiosname))
-    if domain == realm:
+        raise ProvisioningError("guess_names: Realm '%s' must not be equal to NetBIOS hostname '%s'!" % (realm, netbiosname))
+    if domain == realm and not domain_names_forced:
         raise ProvisioningError("guess_names: Realm '%s' must not be equal to short domain name '%s'!" % (realm, domain))
 
     if rootdn is None:
@@ -1984,7 +1985,7 @@ def provision(logger, session_info, credentials, smbconf=None,
     names = guess_names(lp=lp, hostname=hostname, domain=domain,
         dnsdomain=realm, serverrole=serverrole, domaindn=domaindn,
         configdn=configdn, schemadn=schemadn, serverdn=serverdn,
-        sitename=sitename, rootdn=rootdn)
+        sitename=sitename, rootdn=rootdn, domain_names_forced=(samdb_fill == FILL_DRS))
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     paths.bind_gid = bind_gid
