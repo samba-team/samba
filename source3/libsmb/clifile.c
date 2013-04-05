@@ -2271,7 +2271,7 @@ NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -2283,13 +2283,11 @@ NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
 	req = cli_openx_send(frame, ev, cli, fname, flags, share_mode);
 	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
