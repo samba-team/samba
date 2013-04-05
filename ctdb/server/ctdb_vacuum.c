@@ -491,7 +491,11 @@ static int delete_record_traverse(void *param, void *data)
 
 	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
 
-	if (header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE)) {
+	if (header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|
+			     CTDB_REC_RO_HAVE_READONLY|
+			     CTDB_REC_RO_REVOKING_READONLY|
+			     CTDB_REC_RO_REVOKE_COMPLETE))
+	{
 	  /* The record has readonly flags set. skip deleting */
 		vdata->delete_skipped++;
 		goto done;
