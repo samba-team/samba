@@ -2293,8 +2293,7 @@ NTSTATUS cli_openx(struct cli_state *cli, const char *fname, int flags,
 		goto fail;
 	}
 
-	if (!tevent_req_poll(req, ev)) {
-		status = map_nt_error_from_unix(errno);
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
 
