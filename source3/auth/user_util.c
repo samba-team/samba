@@ -427,12 +427,16 @@ bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 	x_fclose(f);
 
 	/*
-	 * Setup the last_from and last_to as an optimization so
+	 * If we didn't successfully map a user in the loop above,
+	 * setup the last_from and last_to as an optimization so
 	 * that we don't scan the file again for the same user.
 	 */
-
-	set_last_from_to(user_in, user_in);
-	store_map_in_gencache(ctx, user_in, user_in);
+	if (!mapped_user) {
+		DEBUG(8, ("The user '%s' has no mapping. "
+			  "Skip it next time.\n", user_in));
+		set_last_from_to(user_in, user_in);
+		store_map_in_gencache(ctx, user_in, user_in);
+	}
 
 	return mapped_user;
 }
