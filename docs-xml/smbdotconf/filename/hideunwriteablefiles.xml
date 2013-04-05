@@ -7,6 +7,9 @@
     This parameter prevents clients from seeing the existance of files that cannot be written to. 
     Defaults to off. Note that unwriteable directories are shown as usual.
     </para>
+    <para>Please note that enabling this can slow down listing large
+    directories significantly. Samba has to evaluate the ACLs of all directory
+    members, which can be a lot of effort.</para>
 </description>
 <value type="default">no</value>
 </samba:parameter>
