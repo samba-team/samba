@@ -3178,22 +3178,33 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 /****************************************************************************
  Send an old style tcon.
 ****************************************************************************/
-NTSTATUS cli_raw_tcon(struct cli_state *cli, 
-		      const char *service, const char *pass, const char *dev,
-		      uint16 *max_xmit, uint16 *tid)
-{
-	struct tevent_req *req;
+struct cli_raw_tcon_state {
 	uint16_t *ret_vwv;
+};
+
+static void cli_raw_tcon_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_raw_tcon_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	const char *service, const char *pass, const char *dev)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_raw_tcon_state *state;
 	uint8_t *bytes;
-	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_raw_tcon_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	if (!lp_client_plaintext_auth() && (*pass)) {
 		DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
 			  " or 'client ntlmv2 auth = yes'\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return tevent_req_post(req, ev);
 	}
 
-	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = talloc_array(state, uint8_t, 0);
 	bytes = smb_bytes_push_bytes(bytes, 4, NULL, 0);
 	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   service, strlen(service)+1, NULL);
@@ -3204,17 +3215,74 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn),
 				   dev, strlen(dev)+1, NULL);
 
-	status = cli_smb(talloc_tos(), cli, SMBtcon, 0, 0, NULL,
-			 talloc_get_size(bytes), bytes, &req,
-			 2, NULL, &ret_vwv, NULL, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (tevent_req_nomem(bytes, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	*max_xmit = SVAL(ret_vwv + 0, 0);
-	*tid = SVAL(ret_vwv + 1, 0);
+	subreq = cli_smb_send(state, ev, cli, SMBtcon, 0, 0, NULL,
+			      talloc_get_size(bytes), bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_raw_tcon_done, req);
+	return req;
+}
 
+static void cli_raw_tcon_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_raw_tcon_state *state = tevent_req_data(
+		req, struct cli_raw_tcon_state);
+	NTSTATUS status;
+
+	status = cli_smb_recv(subreq, state, NULL, 2, NULL, &state->ret_vwv,
+			      NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_raw_tcon_recv(struct tevent_req *req,
+				  uint16 *max_xmit, uint16 *tid)
+{
+	struct cli_raw_tcon_state *state = tevent_req_data(
+		req, struct cli_raw_tcon_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*max_xmit = SVAL(state->ret_vwv + 0, 0);
+	*tid = SVAL(state->ret_vwv + 1, 0);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_raw_tcon(struct cli_state *cli,
+		      const char *service, const char *pass, const char *dev,
+		      uint16 *max_xmit, uint16 *tid)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_raw_tcon_send(ev, ev, cli, service, pass, dev);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_raw_tcon_recv(req, max_xmit, tid);
+fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 /* Return a cli_state pointing at the IPC$ share for the given server */
