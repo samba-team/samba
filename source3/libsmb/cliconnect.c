@@ -2592,7 +2592,7 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -2604,13 +2604,11 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
 	req = cli_tcon_andx_send(frame, ev, cli, share, dev, pass, passlen);
 	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
 
