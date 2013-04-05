@@ -3186,7 +3186,6 @@ fail:
 	return status;
 }
 
-
 /**
    establishes a connection right up to doing tconX, password specified.
    @param output_cli A fully initialised cli structure, non-null only on success
@@ -3200,74 +3199,215 @@ fail:
    @param password User's password, unencrypted unix string.
 */
 
-NTSTATUS cli_full_connection(struct cli_state **output_cli, 
-			     const char *my_name, 
-			     const char *dest_host, 
+struct cli_full_connection_state {
+	struct tevent_context *ev;
+	const char *service;
+	const char *service_type;
+	const char *user;
+	const char *domain;
+	const char *password;
+	int pw_len;
+	int flags;
+	struct cli_state *cli;
+};
+
+static int cli_full_connection_state_destructor(
+	struct cli_full_connection_state *s);
+static void cli_full_connection_started(struct tevent_req *subreq);
+static void cli_full_connection_sess_set_up(struct tevent_req *subreq);
+static void cli_full_connection_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_full_connection_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const char *my_name, const char *dest_host,
+	const struct sockaddr_storage *dest_ss, int port,
+	const char *service, const char *service_type,
+	const char *user, const char *domain,
+	const char *password, int flags, int signing_state)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_full_connection_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_full_connection_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(state, cli_full_connection_state_destructor);
+
+	state->ev = ev;
+	state->service = service;
+	state->service_type = service_type;
+	state->user = user;
+	state->domain = domain;
+	state->password = password;
+	state->flags = flags;
+
+	state->pw_len = state->password ? strlen(state->password)+1 : 0;
+	if (state->password == NULL) {
+		state->password = "";
+	}
+
+	subreq = cli_start_connection_send(
+		state, ev, my_name, dest_host, dest_ss, port,
+		signing_state, flags);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_full_connection_started, req);
+	return req;
+}
+
+static int cli_full_connection_state_destructor(
+	struct cli_full_connection_state *s)
+{
+	if (s->cli != NULL) {
+		cli_shutdown(s->cli);
+		s->cli = NULL;
+	}
+	return 0;
+}
+
+static void cli_full_connection_started(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_full_connection_state *state = tevent_req_data(
+		req, struct cli_full_connection_state);
+	NTSTATUS status;
+
+	status = cli_start_connection_recv(subreq, &state->cli);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	subreq = cli_session_setup_send(
+		state, state->ev, state->cli, state->user,
+		state->password, state->pw_len, state->password, state->pw_len,
+		state->domain);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_full_connection_sess_set_up, req);
+}
+
+static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_full_connection_state *state = tevent_req_data(
+		req, struct cli_full_connection_state);
+	NTSTATUS status;
+
+	status = cli_session_setup_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(status) &&
+	    (state->flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)) {
+
+		state->flags &= ~CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
+
+		subreq = cli_session_setup_send(
+			state, state->ev, state->cli, "", "", 0, "", 0,
+			state->domain);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(
+			subreq, cli_full_connection_sess_set_up, req);
+		return;
+	}
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->service != NULL) {
+		subreq = cli_tree_connect_send(
+			state, state->ev, state->cli,
+			state->service, state->service_type,
+			state->password, state->pw_len);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, cli_full_connection_done, req);
+		return;
+	}
+
+	status = cli_init_creds(state->cli, state->user, state->domain,
+				state->password);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_full_connection_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_full_connection_state *state = tevent_req_data(
+		req, struct cli_full_connection_state);
+	NTSTATUS status;
+
+	status = cli_tree_connect_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	status = cli_init_creds(state->cli, state->user, state->domain,
+				state->password);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_full_connection_recv(struct tevent_req *req,
+				  struct cli_state **output_cli)
+{
+	struct cli_full_connection_state *state = tevent_req_data(
+		req, struct cli_full_connection_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*output_cli = state->cli;
+	talloc_set_destructor(state, NULL);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_full_connection(struct cli_state **output_cli,
+			     const char *my_name,
+			     const char *dest_host,
 			     const struct sockaddr_storage *dest_ss, int port,
 			     const char *service, const char *service_type,
-			     const char *user, const char *domain, 
+			     const char *user, const char *domain,
 			     const char *password, int flags,
 			     int signing_state)
 {
-	NTSTATUS nt_status;
-	struct cli_state *cli = NULL;
-	int pw_len = password ? strlen(password)+1 : 0;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	*output_cli = NULL;
-
-	if (password == NULL) {
-		password = "";
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	nt_status = cli_start_connection(&cli, my_name, dest_host,
-					 dest_ss, port, signing_state,
-					 flags);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	req = cli_full_connection_send(
+		ev, ev, my_name, dest_host, dest_ss, port, service,
+		service_type, user, domain, password, flags, signing_state);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	nt_status = cli_session_setup(cli, user, password, pw_len, password,
-				      pw_len, domain);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-
-		if (!(flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)) {
-			DEBUG(1,("failed session setup with %s\n",
-				 nt_errstr(nt_status)));
-			cli_shutdown(cli);
-			return nt_status;
-		}
-
-		nt_status = cli_session_setup(cli, "", "", 0, "", 0, domain);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(1,("anonymous failed session setup with %s\n",
-				 nt_errstr(nt_status)));
-			cli_shutdown(cli);
-			return nt_status;
-		}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
 	}
-
-	if (service) {
-		nt_status = cli_tree_connect(cli, service, service_type,
-					     password, pw_len);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
-			cli_shutdown(cli);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				nt_status = NT_STATUS_UNSUCCESSFUL;
-			}
-			return nt_status;
-		}
-	}
-
-	nt_status = cli_init_creds(cli, user, domain, password);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		cli_shutdown(cli);
-		return nt_status;
-	}
-
-	*output_cli = cli;
-	return NT_STATUS_OK;
+	status = cli_full_connection_recv(req, output_cli);
+ fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 /****************************************************************************

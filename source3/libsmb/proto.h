@@ -88,6 +88,15 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *dest_host,
 			      const struct sockaddr_storage *dest_ss, int port,
 			      int signing_state, int flags);
+struct tevent_req *cli_full_connection_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const char *my_name, const char *dest_host,
+	const struct sockaddr_storage *dest_ss, int port,
+	const char *service, const char *service_type,
+	const char *user, const char *domain,
+	const char *password, int flags, int signing_state);
+NTSTATUS cli_full_connection_recv(struct tevent_req *req,
+				  struct cli_state **output_cli);
 NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *my_name,
 			     const char *dest_host,
