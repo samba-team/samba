@@ -1463,7 +1463,13 @@ create_merged_ip_list(struct ctdb_context *ctdb)
 
 			tmp_ip = talloc_zero(ctdb->ip_tree, struct ctdb_public_ip_list);
 			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
-			tmp_ip->pnn  = public_ips->ips[j].pnn;
+			/* Do not use information about IP addresses hosted
+			 * on other nodes, it may not be accurate */
+			if (public_ips->ips[j].pnn == ctdb->nodes[i]->pnn) {
+				tmp_ip->pnn = public_ips->ips[j].pnn;
+			} else {
+				tmp_ip->pnn = -1;
+			}
 			tmp_ip->addr = public_ips->ips[j].addr;
 			tmp_ip->next = NULL;
 
