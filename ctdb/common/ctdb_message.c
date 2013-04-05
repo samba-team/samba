@@ -92,10 +92,24 @@ static int message_list_db_delete(struct ctdb_context *ctdb, uint64_t srvid)
 	return 0;
 }
 
+static int message_list_db_fetch_parser(TDB_DATA key, TDB_DATA data,
+					void *private_data)
+{
+	struct ctdb_message_list_header **h =
+		(struct ctdb_message_list_header **)private_data;
+
+	if (data.dsize != sizeof(struct ctdb_message_list_header *)) {
+		return -1;
+	}
+
+	*h = *(struct ctdb_message_list_header **)data.dptr;
+	return 0;
+}
+
 static int message_list_db_fetch(struct ctdb_context *ctdb, uint64_t srvid,
 				 struct ctdb_message_list_header **h)
 {
-	TDB_DATA key, data;
+	TDB_DATA key;
 
 	if (ctdb->message_list_indexdb == NULL) {
 		return -1;
@@ -104,16 +118,8 @@ static int message_list_db_fetch(struct ctdb_context *ctdb, uint64_t srvid,
 	key.dptr = (uint8_t *)&srvid;
 	key.dsize = sizeof(uint64_t);
 
-	data = tdb_fetch(ctdb->message_list_indexdb, key);
-	if (data.dsize != sizeof(struct ctdb_message_list_header *)) {
-		talloc_free(data.dptr);
-		return -1;
-	}
-
-	*h = *(struct ctdb_message_list_header **)data.dptr;
-	talloc_free(data.dptr);
-
-	return 0;
+	return tdb_parse_record(ctdb->message_list_indexdb, key,
+				message_list_db_fetch_parser, h);
 }
 
 /*
