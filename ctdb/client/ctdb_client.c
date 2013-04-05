@@ -253,41 +253,16 @@ done:
 }
 
 /*
-  connect with exponential backoff, thanks Stevens
+  connect to a unix domain socket
 */
-#define CONNECT_MAXSLEEP 64
-static int ctdb_connect_retry(struct ctdb_context *ctdb)
+int ctdb_socket_connect(struct ctdb_context *ctdb)
 {
 	struct sockaddr_un addr;
-	int secs;
-	int ret = 0;
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
 
-	for (secs = 1; secs <= CONNECT_MAXSLEEP; secs *= 2) {
-		ret = connect(ctdb->daemon.sd, (struct sockaddr *)&addr,
-			      sizeof(addr));
-		if ((ret == 0) || (errno != EAGAIN)) {
-			break;
-		}
-
-		if (secs <= (CONNECT_MAXSLEEP / 2)) {
-			DEBUG(DEBUG_ERR,("connect failed: %s, retry in %d second(s)\n",
-					 strerror(errno), secs));
-			sleep(secs);
-		}
-	}
-
-	return ret;
-}
-
-/*
-  connect to a unix domain socket
-*/
-int ctdb_socket_connect(struct ctdb_context *ctdb)
-{
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->daemon.sd == -1) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to open client socket. Errno:%s(%d)\n", strerror(errno), errno));
@@ -296,11 +271,11 @@ int ctdb_socket_connect(struct ctdb_context *ctdb)
 
 	set_nonblocking(ctdb->daemon.sd);
 	set_close_on_exec(ctdb->daemon.sd);
-
-	if (ctdb_connect_retry(ctdb) == -1) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to connect client socket to daemon. Errno:%s(%d)\n", strerror(errno), errno));
+	
+	if (connect(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		close(ctdb->daemon.sd);
 		ctdb->daemon.sd = -1;
+		DEBUG(DEBUG_ERR,(__location__ " Failed to connect client socket to daemon. Errno:%s(%d)\n", strerror(errno), errno));
 		return -1;
 	}
 
