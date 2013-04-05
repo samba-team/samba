@@ -21,7 +21,7 @@
 
 /* This is lazy... but it is test code! */
 #define CTDB_TEST_MAX_NODES 256
-#define CTDB_TEST_MAX_IPS 256
+#define CTDB_TEST_MAX_IPS 1024
 
 /* Format of each line is "IP pnn" - the separator has to be at least
  * 1 space (not a tab or whatever - a space!).
@@ -145,6 +145,10 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 		}
 
 		numips++;
+		if (numips > CTDB_TEST_MAX_IPS) {
+			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_IPS: %d\n", CTDB_TEST_MAX_IPS));
+			exit(1);
+		}
 
 		/* Get the PNN */
 		pnn = -1;
@@ -241,6 +245,10 @@ void ctdb_test_read_ctdb_public_ip_info(const char nodestates[])
 	tok = strtok(ns, ",");
 	while (tok != NULL) {
 		numnodes++;
+		if (numnodes > CTDB_TEST_MAX_NODES) {
+			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_NODES: %d\n", CTDB_TEST_MAX_NODES));
+			exit(1);
+		}
 		tok = strtok(NULL, ",");
 	}
 	
@@ -422,6 +430,10 @@ void ctdb_test_init(const char nodestates[],
 	while (tok != NULL) {
 		nodeflags[numnodes] = (uint32_t) strtol(tok, NULL, 0);
 		numnodes++;
+		if (numnodes > CTDB_TEST_MAX_NODES) {
+			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_NODES: %d\n", CTDB_TEST_MAX_NODES));
+			exit(1);
+		}
 		tok = strtok(NULL, ",");
 	}
 	
