@@ -169,6 +169,8 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_1smb2_test(suite, "hold-oplock", test_smb2_hold_oplock);
 	torture_suite_add_suite(suite, torture_smb2_session_init());
 
+	torture_suite_add_suite(suite, torture_smb2_doc_init());
+
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 
 	torture_register_suite(suite);

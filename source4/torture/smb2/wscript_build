@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
 	source='''connect.c scan.c util.c getinfo.c setinfo.c lock.c notify.c
 	smb2.c durable_open.c durable_v2_open.c oplock.c dir.c lease.c create.c
 	acls.c read.c compound.c streams.c ioctl.c rename.c
-	session.c ''',
+	session.c delete-on-close.c''',
 	subsystem='smbtorture',
 	deps='LIBCLI_SMB2 POPT_CREDENTIALS torture NDR_IOCTL',
 	internal_module=True,
