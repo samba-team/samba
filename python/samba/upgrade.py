@@ -791,7 +791,7 @@ Please fix this account before attempting to upgrade again
             try:
                 ldb_object = Ldb(url, credentials=creds)
             except ldb.LdbError, e:
-                logger.warning("Could not open ldb connection to %s, the error message is: %s", url, e)
+                raise ProvisiongError("Could not open ldb connection to %s, the error message is: %s" % (url, e))
             else:
                 break
     logger.info("Exporting posix attributes")
