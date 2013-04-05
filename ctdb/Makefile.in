@@ -260,7 +260,7 @@ tests/bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_persistent.o
 
 tests/bin/ctdb_porting_tests: $(CTDB_CLIENT_OBJ) tests/src/ctdb_porting_tests.o
 	@echo Linking $@
-	$(CC) $(CFLAGS) -o $@ tests/src/ctdb_porting_tests.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_porting_tests.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o 
 	@echo Linking $@
