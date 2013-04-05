@@ -2974,6 +2974,14 @@ fail:
 	return status;
 }
 
+struct cli_start_connection_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+};
+
+static void cli_start_connection_connected(struct tevent_req *subreq);
+static void cli_start_connection_done(struct tevent_req *subreq);
+
 /**
    establishes a connection to after the negprot. 
    @param output_cli A fully initialised cli structure, non-null only on success
@@ -2981,33 +2989,109 @@ fail:
    @param dest_ss (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
 */
+
+static struct tevent_req *cli_start_connection_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const char *my_name, const char *dest_host,
+	const struct sockaddr_storage *dest_ss, int port,
+	int signing_state, int flags)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_start_connection_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_start_connection_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+
+	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss, port,
+				     0x20, my_name, signing_state, flags);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_start_connection_connected, req);
+	return req;
+}
+
+static void cli_start_connection_connected(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_start_connection_state *state = tevent_req_data(
+		req, struct cli_start_connection_state);
+	NTSTATUS status;
+
+	status = cli_connect_nb_recv(subreq, &state->cli);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = smbXcli_negprot_send(state, state->ev, state->cli->conn,
+				      state->cli->timeout,
+				      PROTOCOL_CORE, PROTOCOL_NT1);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_start_connection_done, req);
+}
+
+static void cli_start_connection_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = smbXcli_negprot_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_start_connection_recv(struct tevent_req *req,
+					  struct cli_state **output_cli)
+{
+	struct cli_start_connection_state *state = tevent_req_data(
+		req, struct cli_start_connection_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*output_cli = state->cli;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cli_start_connection(struct cli_state **output_cli, 
 			      const char *my_name, 
 			      const char *dest_host, 
 			      const struct sockaddr_storage *dest_ss, int port,
 			      int signing_state, int flags)
 {
-	NTSTATUS nt_status;
-	struct cli_state *cli;
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
-	nt_status = cli_connect_nb(dest_host, dest_ss, port, 0x20, my_name,
-				   signing_state, flags, &cli);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("cli_connect_nb failed: %s\n",
-			   nt_errstr(nt_status)));
-		return nt_status;
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	nt_status = smbXcli_negprot(cli->conn, cli->timeout, PROTOCOL_CORE,
-				    PROTOCOL_NT1);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(1, ("failed negprot: %s\n", nt_errstr(nt_status)));
-		cli_shutdown(cli);
-		return nt_status;
+	req = cli_start_connection_send(ev, ev, my_name, dest_host, dest_ss,
+					port, signing_state, flags);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	*output_cli = cli;
-	return NT_STATUS_OK;
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_start_connection_recv(req, output_cli);
+fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 
