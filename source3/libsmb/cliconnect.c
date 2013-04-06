@@ -2622,34 +2622,129 @@ NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
 	return status;
 }
 
-NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
-			  const char *dev, const char *pass, int passlen)
+struct cli_tree_connect_state {
+	struct cli_state *cli;
+};
+
+static struct tevent_req *cli_raw_tcon_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	const char *service, const char *pass, const char *dev);
+static NTSTATUS cli_raw_tcon_recv(struct tevent_req *req,
+				  uint16 *max_xmit, uint16 *tid);
+
+static void cli_tree_connect_smb2_done(struct tevent_req *subreq);
+static void cli_tree_connect_andx_done(struct tevent_req *subreq);
+static void cli_tree_connect_raw_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_tree_connect_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
+	const char *share, const char *dev, const char *pass, int passlen)
 {
+	struct tevent_req *req, *subreq;
+	struct cli_tree_connect_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_tree_connect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->cli = cli;
+
+	cli->share = talloc_strdup(cli, share);
+	if (tevent_req_nomem(cli->share, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = smb2cli_tcon_send(state, ev, cli, share);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_tree_connect_smb2_done,
+					req);
+		return req;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_LANMAN1) {
+		subreq = cli_tcon_andx_send(state, ev, cli, share, dev,
+					    pass, passlen);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_tree_connect_andx_done,
+					req);
+		return req;
+	}
+
+	subreq = cli_raw_tcon_send(state, ev, cli, share, pass, dev);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_tree_connect_raw_done, req);
+
+	return req;
+}
+
+static void cli_tree_connect_smb2_done(struct tevent_req *subreq)
+{
+	return tevent_req_simple_finish_ntstatus(
+		subreq, smb2cli_tcon_recv(subreq));
+}
+
+static void cli_tree_connect_andx_done(struct tevent_req *subreq)
+{
+	return tevent_req_simple_finish_ntstatus(
+		subreq, cli_tcon_andx_recv(subreq));
+}
+
+static void cli_tree_connect_raw_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_tree_connect_state *state = tevent_req_data(
+		req, struct cli_tree_connect_state);
 	NTSTATUS status;
 	uint16_t max_xmit = 0;
 	uint16_t tid = 0;
 
-	cli->share = talloc_strdup(cli, share);
-	if (!cli->share) {
-		return NT_STATUS_NO_MEMORY;
+	status = cli_raw_tcon_recv(subreq, &max_xmit, &tid);
+	if (tevent_req_nterror(req, status)) {
+		return;
 	}
+	cli_state_set_tid(state->cli, tid);
+	tevent_req_done(req);
+}
 
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return smb2cli_tcon(cli, share);
+static NTSTATUS cli_tree_connect_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
+			  const char *dev, const char *pass, int passlen)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_LANMAN1) {
-		return cli_tcon_andx(cli, share, dev, pass, passlen);
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	status = cli_raw_tcon(cli, share, pass, dev, &max_xmit, &tid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	req = cli_tree_connect_send(ev, ev, cli, share, dev, pass, passlen);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	cli_state_set_tid(cli, tid);
-
-	return NT_STATUS_OK;
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_tree_connect_recv(req);
+fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 /****************************************************************************
