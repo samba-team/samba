@@ -127,6 +127,11 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 			*t = '\0';
 		}
 
+		/* Exit on an empty line */
+		if (line[0] == '\0') {
+			break;
+		}
+
 		/* Get the IP address */
 		tok = strtok(line, " \t");
 		if (tok == NULL) {
@@ -377,10 +382,26 @@ static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
 	return runstate;
 }
 
+/* Fake up enough CTDB state to be able to run the IP allocation
+ * algorithm.  Usually this sets up some standard state, sets the node
+ * states from the command-line and reads the current IP layout from
+ * stdin.
+ *
+ * However, if read_ips_for_multiple_nodes is true then each node's
+ * idea of the IP layout is read separately from stdin.  In this mode
+ * is doesn't make much sense to use read_ctdb_public_ip_info's
+ * optional ALLOWED_PNN,... list in the input, since each node is
+ * being handled separately anyway.  IPs for each node are separated
+ * by a blank line.  This mode is for testing weird behaviours where
+ * the IP layouts differs across nodes and we want to improve
+ * create_merged_ip_list(), so should only be used in tests of
+ * ctdb_takeover_run_core().  Yes, it is a hack...  :-)
+ */
 void ctdb_test_init(const char nodestates[],
 		    struct ctdb_context **ctdb,
 		    struct ctdb_public_ip_list **all_ips,
-		    struct ctdb_ipflags **ipflags)
+		    struct ctdb_ipflags **ipflags,
+		    bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_all_public_ips **avail;
 	int i, numnodes;
@@ -438,7 +459,9 @@ void ctdb_test_init(const char nodestates[],
 	nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	nodemap->num = numnodes;
 
-	read_ctdb_public_ip_info(*ctdb, numnodes, all_ips, &avail);
+	if (!read_ips_for_multiple_nodes) {
+		read_ctdb_public_ip_info(*ctdb, numnodes, all_ips, &avail);
+	}
 
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
 
@@ -446,6 +469,11 @@ void ctdb_test_init(const char nodestates[],
 		nodemap->nodes[i].pnn = i;
 		nodemap->nodes[i].flags = nodeflags[i];
 		/* nodemap->nodes[i].sockaddr is uninitialised */
+
+		if (read_ips_for_multiple_nodes) {
+			read_ctdb_public_ip_info(*ctdb, numnodes,
+						 all_ips, &avail);
+		}
 
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
@@ -470,7 +498,7 @@ void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 	uint32_t *lcp2_imbalances;
 	bool *newly_healthy;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags, false);
 
 	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
 
@@ -492,7 +520,7 @@ void ctdb_test_lcp2_failback(const char nodestates[])
 	uint32_t *lcp2_imbalances;
 	bool *newly_healthy;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags, false);
 
 	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
 
@@ -514,7 +542,7 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 	uint32_t *lcp2_imbalances;
 	bool *newly_healthy;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags, false);
 
 	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
 
@@ -526,14 +554,18 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 	talloc_free(ctdb);
 }
 
-/* IP layout is read from stdin. */
-void ctdb_test_ctdb_takeover_run_core(const char nodestates[])
+/* IP layout is read from stdin.  See comment for ctdb_test_init() for
+ * explanation of read_ips_for_multiple_nodes.
+ */
+void ctdb_test_ctdb_takeover_run_core(const char nodestates[],
+				      bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
 	struct ctdb_ipflags *ipflags;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags,
+		       read_ips_for_multiple_nodes);
 
 	ctdb_takeover_run_core(ctdb, ipflags, &all_ips);
 
@@ -575,8 +607,13 @@ int main(int argc, const char *argv[])
 		ctdb_test_lcp2_failback(argv[2]);
 	} else if (argc == 3 && strcmp(argv[1], "lcp2_failback_loop") == 0) {
 		ctdb_test_lcp2_failback_loop(argv[2]);
-	} else if (argc == 3 && strcmp(argv[1], "ctdb_takeover_run_core") == 0) {
-		ctdb_test_ctdb_takeover_run_core(argv[2]);
+	} else if (argc == 3 &&
+		   strcmp(argv[1], "ctdb_takeover_run_core") == 0) {
+		ctdb_test_ctdb_takeover_run_core(argv[2], false);
+	} else if (argc == 4 &&
+		   strcmp(argv[1], "ctdb_takeover_run_core") == 0 &&
+		   strcmp(argv[3], "multi") == 0) {
+		ctdb_test_ctdb_takeover_run_core(argv[2], true);
 	} else {
 		usage();
 	}

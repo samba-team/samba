@@ -20,8 +20,7 @@ simple_test ()
     # Do some filtering of the output to replace date/time.
     OUT_FILTER='s@^[^\]]*\]:@DATE\ TIME\ \[PID\]:@'
 
-    _states="$1"
-    _out=$($VALGRIND $test_prog $_states 2>&1)
+    _out=$($VALGRIND $test_prog "$@" 2>&1)
 
     result_check "Algorithm: $CTDB_IP_ALGORITHM"
 }
