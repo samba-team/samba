@@ -5,6 +5,16 @@ from samba_utils import *
 from samba_autoconf import *
 
 from Configure import conf
+
+@conf
+def SAMBA_CHECK_PYTHON(conf, mandatory=True):
+    # enable tool to build python extensions
+    conf.find_program('python', var='PYTHON', mandatory=mandatory)
+    conf.check_tool('python')
+    path_python = conf.find_program('python')
+    conf.env.PYTHON_SPECIFIED = (conf.env.PYTHON != path_python)
+    conf.check_python_version((2,4,2))
+
 @conf
 def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
     if conf.env["python_headers_checked"] == []:

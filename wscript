@@ -82,13 +82,10 @@ def configure(conf):
 
     conf.RECURSE('lib/replace')
 
-    conf.find_program('python', var='PYTHON', mandatory=True)
     conf.find_program('perl', var='PERL', mandatory=True)
     conf.find_program('xsltproc', var='XSLTPROC')
 
-    # enable tool to build python extensions
-    conf.check_tool('python')
-    conf.check_python_version((2,4,2))
+    conf.SAMBA_CHECK_PYTHON(mandatory=True)
     conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
 
     if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
