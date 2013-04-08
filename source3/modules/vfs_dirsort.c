@@ -44,7 +44,7 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 {
 	struct dirent *dp;
 	struct stat dir_stat;
-	long current_pos;
+	unsigned int i;
 	struct dirsort_privates *data = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
@@ -77,15 +77,13 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 	if (!data->directory_list) {
 		return false;
 	}
-	current_pos = data->pos;
-	data->pos = 0;
+	i = 0;
 	while ((dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory,
 					  NULL)) != NULL) {
-		data->directory_list[data->pos++] = *dp;
+		data->directory_list[i++] = *dp;
 	}
 
 	/* Sort the directory entries by name */
-	data->pos = current_pos;
 	TYPESAFE_QSORT(data->directory_list, data->number_of_entries, compare_dirent);
 	return true;
 }
