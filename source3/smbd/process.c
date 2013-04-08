@@ -3577,11 +3577,11 @@ void smbd_process(struct tevent_context *ev_ctx,
 				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
 					  nt_errstr(status)));
 			}
-		} else
-		{
-			DEBUG(0,("Unable to get tcp info for "
-				 "CTDB_CONTROL_TCP_CLIENT: %s\n",
-				 strerror(errno)));
+		} else {
+			int level = (errno == ENOTCONN)?2:0;
+			DEBUG(level,("Unable to get tcp info for "
+				     "smbd_register_ips: %s\n",
+				     strerror(errno)));
 		}
 	}
 
