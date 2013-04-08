@@ -85,7 +85,7 @@ def configure(conf):
     conf.find_program('perl', var='PERL', mandatory=True)
     conf.find_program('xsltproc', var='XSLTPROC')
 
-    conf.SAMBA_CHECK_PYTHON(mandatory=True)
+    conf.SAMBA_CHECK_PYTHON(mandatory=True, version=(2,5,0))
     conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
 
     if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:

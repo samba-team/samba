@@ -43,7 +43,7 @@ dnl $PYTHON_LDFLAGS
 AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 [
 	if test -z "$PYTHON_VER"; then
-		AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])
+		AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python])
 	else
 		AC_PATH_PROG([PYTHON],[python[$PYTHON_VER]])
 	fi
@@ -91,9 +91,9 @@ AC_DEFUN([AC_SAMBA_PYTHON_DEVEL],
 							sysconfig.get_config_var('LIBPL'))"`
 		TRY_LINK_PYTHON($DISTUTILS_LDFLAGS, $DISTUTILS_CFLAGS)
 
-		if `$PYTHON -c "import sys; sys.exit(sys.version_info.__getslice__(0, 2) >= (2, 4))"`
+		if `$PYTHON -c "import sys; sys.exit(sys.version_info.__getslice__(0, 2) >= (2, 5))"`
 		then
-			AC_MSG_WARN([Python ($PYTHON) is too old. At least version 2.4 is required])
+			AC_MSG_WARN([Python ($PYTHON) is too old. At least version 2.5 is required])
 			working_python=no
 		fi
 	fi
