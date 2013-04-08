@@ -1,4 +1,192 @@
                    =============================
+                   Release Notes for Samba 4.0.5
+                           April 9, 2013
+                   =============================
+
+
+This is is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.5 include:
+
+o  
+
+
+Changes since 4.0.4:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9617: libnss-winbindd does not provide pass struct for groups mapped
+      with ID_TYPE_BOTH and vice versa.
+    * BUG 9653: idmap_autorid: Fix freeing of non-talloced memory.
+    * BUG 9711: s4:winbindd: Do not drop the workgroup name in the getgrnam, getgrent
+      and getgrgid calls.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9130: Certain xattrs cause Windows error 0x800700FF.
+    * BUG 9519: Samba returns unexpected error on SMB posix open.
+    * BUG 9642: Fix the build of vfs_afsacl.
+    * BUG 9695: Backport tevent changes to bring library to version 0.9.18.
+    * BUG 9706: Parameter is incorrect on Android.
+    * BUG 9724: is_encrypted_packet() function incorrectly used inside server.
+    * BUG 9733: Fix 'smbcontrol close-share'.
+    * BUG 9748: Remove unneeded fstat system call from hot read path.
+    * BUG 9760: Fix incorrect parsing of SMB2 command codes.
+
+
+o   Christian Ambach <ambi@samba.org>
+    * BUG 9643: Fix the build with --fake-kaserver.
+    * BUG 9644: Fix compile of source3/lib/afs.c.
+    * BUG 9669: Fix crash in 'net rpc join' against a Samba 3.0.33 PDC.
+
+
+o   Timur Bakeyev <timur@FreeBSD.org>
+    * BUG 9666: Fix filtering of link-local addresses.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9663: 'make test' hangs.
+    * BUG 9697: DsReplicaGetInfo fails due to sendto() EMSGSIZE error
+      on UNIX domain socket.
+    * BUG 9703: Fix build on solaris8: Do not force a specific perl on
+      pod2man.
+    * BUG 9717: Set LD_LIBRARY_PATH in install_with_python.sh.
+    * BUG 9718: s4-idmap: Remove requirement that posixAccount or posixGroup be set
+      for rfc2307.
+    * BUG 9719: Allow forcing an override of an old @MODULES record.
+    * BUG 9720: Do not print the admin password during 'samba-tool
+      classicupgrade'.
+    * BUG 9721: Make samba_upgradedns more robust (do not guess addresses
+      when just changing roles).
+    * BUG 9725: upgradeprovision and 'samba-tool dbcheck' patches for 4.0.NEXT.
+    * BUG 9728: DO NOT install samba_upgradeprovision in 4.0.x.
+    * BUG 9739: PIDL: Build fixes for hosts without CPP (Solaris 11).
+    * BUG 9740: Add 'samba-tool dbcheck --reset-well-known-acls'.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 9636: PIDL: Fix parsing linemarkers in preprocessor output.
+    * BUG 9639: Rename internal subsystem pdb_ldap to pdb_ldapsam.
+
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 9646: Make SMB2_GETINFO multi-volume aware.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9633: Recursive mget should continue on EPERM.
+
+
+o   Landon Fuller <landonf@bikemonkey.org>
+    * BUG 9656: Work around FreeBSD's getaddrinfo() underscore issue.
+    * BUG 9696: Remove incomplete samba_dnsupdate IPv6 link-local address
+      check.
+    * BUG 9697: Handle EMSGSIZE on UNIX domain sockets.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7825: Fix GNU ld version detection with old gcc releases.
+
+
+o   Daniel Kobras <d.kobras@science-computing.de>
+    * BUG 9039: Never try to map global SAM name.
+
+
+o   Guenter Kukkukk <kukks@samba.org>
+    * BUG 9701: Fix vfs_catia and update documentation.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9695: Backport tevent changes to bring library to version 0.9.18.
+    * BUG 9727: Fix NULL pointer dereference.
+    * BUG 9736: Change to smbd/dir.c code gives significant performance
+      increases on large directory listings.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9557: Fix build on AIX.
+    * BUG 9625: Reauth-capable client fails to access shares on Windows member.
+    * BUG 9695: Backport tevent changes to bring library to version 0.9.18.
+    * BUG 9706: Parameter is incorrect on Android.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9664: Fix correct linking of libreplace with cmdline-credentials.
+    * BUG 9683: Fix several resource (fd) leaks.
+    * BUG 9685: Fix a memory leak in spoolss rpc server.
+    * BUG 9686: Fix a possible buffer overrun in pdb_smbpasswd.
+    * BUG 9687: Fix several possible null pointer dereferences.
+    * BUG 9723: Add a tool to migrate latin1 printing tdbs to registry.
+    * BUG 9735: Fix Winbind separator in upn to username conversion.
+    * BUG 9758: Don't leak the epm_Map policy handle.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * BUG 9674: Samba denies owner Read Control when there is a DENY entry
+      while W2K08 does not.
+    * BUG 9689: Make sure that domain joins work correctly when the DC disallows
+      NTLM auth.
+    * BUG 9704: Fix nss_winbind name on FreeBSD.
+    * BUG 9747: Make sure that we only propogate the INHERITED flag when we are
+      allowed to.
+
+
+Note about upgrading from older versions:
+-----------------------------------------
+
+It is still the case that there are printing tdbs (ntprinting.tdb, ntforms.tdb,
+ntdrivers.tdb) which are in latin1 or other encodings. When updating from
+Samba 3.5 or earlier to Samba 3.6 or 4.0 these tdbs need to be migrated to our
+new registry based printing management.  This means during the migration we
+also need to do charset conversion. This can only been done manually cause we don't
+know in which encoding the tdb is. You have to specify the correct code page
+for the conversion, see iconv -l and Wikipedia [1] for the available codepages.
+The mostly used one is Windows Latin1 which is CP1252.
+
+We've extended the 'net printing dump' and 'net printing migrate' commands to
+define the encoding of the tdb. So you can correctly view the tdb with:
+
+  net printing dump encoding=CP1252 /path/to/ntprinters.tdb
+
+or migrate it with e.g.:
+
+  net printing migrate encoding=CP1252 /path/to/ntprinters.tdb
+
+If you migrate printers we suggest you do it in the following order.
+
+ntforms.tdb
+ntdrivers.tdb
+ntprinting.tdb
+
+Don't forget to rename, move or delete these files in /var/lib/samba after the
+migration.
+
+[1] https://en.wikipedia.org/wiki/Code_page
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.4
                           March 19, 2013
                    =============================
@@ -33,7 +221,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 3.6 product in the project's Bugzilla
+be filed under the Samba 4.0 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
@@ -42,8 +230,9 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-Release notes for older releases follow:
-----------------------------------------
+
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.3
@@ -210,7 +399,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 3.6 product in the project's Bugzilla
+be filed under the Samba 4.0 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
