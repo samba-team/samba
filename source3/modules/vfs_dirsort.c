@@ -61,6 +61,10 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 		data->number_of_entries++;
 	}
 
+	if (data->number_of_entries == 0) {
+		return false;
+	}
+
 	/* Open the underlying directory and count the number of entries
 	   Skip back to the beginning as we'll read it again */
 	SMB_VFS_NEXT_REWINDDIR(handle, data->source_directory);
