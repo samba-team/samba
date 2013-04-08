@@ -240,6 +240,7 @@ ssize_t sys_recvfile(int fromfd,
 /*****************************************************************
  Throw away "count" bytes from the client socket.
  Returns count or -1 on error.
+ Must only operate on a blocking socket.
 *****************************************************************/
 
 ssize_t drain_socket(int sockfd, size_t count)
@@ -247,6 +248,7 @@ ssize_t drain_socket(int sockfd, size_t count)
 	size_t total = 0;
 	size_t bufsize = MIN(TRANSFER_BUF_SIZE,count);
 	char *buffer = NULL;
+	int old_flags = 0;
 
 	if (count == 0) {
 		return 0;
@@ -254,6 +256,12 @@ ssize_t drain_socket(int sockfd, size_t count)
 
 	buffer = SMB_MALLOC_ARRAY(char, bufsize);
 	if (buffer == NULL) {
+		return -1;
+	}
+
+	old_flags = fcntl(sockfd, F_GETFL, 0);
+	if (set_blocking(sockfd, true) == -1) {
+		free(buffer);
 		return -1;
 	}
 
@@ -265,12 +273,17 @@ ssize_t drain_socket(int sockfd, size_t count)
 		read_ret = sys_read(sockfd, buffer, toread);
 		if (read_ret <= 0) {
 			/* EOF or socket error. */
-			free(buffer);
-			return -1;
+			count = (size_t)-1;
+			goto out;
 		}
 		total += read_ret;
 	}
 
+  out:
+
 	free(buffer);
+	if (fcntl(sockfd, F_SETFL, old_flags) == -1) {
+		return -1;
+	}
 	return count;
 }
