@@ -428,14 +428,25 @@ ssize_t vfs_write_data(struct smb_request *req,
 	ssize_t ret;
 
 	if (req && req->unread_bytes) {
+		int sockfd = req->sconn->sock;
+		int old_flags;
 		SMB_ASSERT(req->unread_bytes == N);
 		/* VFS_RECVFILE must drain the socket
 		 * before returning. */
 		req->unread_bytes = 0;
-		return SMB_VFS_RECVFILE(req->sconn->sock,
+		/* Ensure the socket is blocking. */
+		old_flags = fcntl(sockfd, F_GETFL, 0);
+		if (set_blocking(sockfd, true) == -1) {
+			return (ssize_t)-1;
+		}
+		ret = SMB_VFS_RECVFILE(sockfd,
 					fsp,
 					(off_t)-1,
 					N);
+		if (fcntl(sockfd, F_SETFL, old_flags) == -1) {
+			return (ssize_t)-1;
+		}
+		return ret;
 	}
 
 	while (total < N) {
