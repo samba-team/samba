@@ -30,7 +30,7 @@ static int compare_dirent (const struct dirent *da, const struct dirent *db)
 struct dirsort_privates {
 	long pos;
 	struct dirent *directory_list;
-	long number_of_entries;
+	unsigned int number_of_entries;
 	time_t mtime;
 	DIR *source_directory;
 	int fd;
@@ -42,9 +42,9 @@ static void free_dirsort_privates(void **datap) {
 
 static bool open_and_sort_dir (vfs_handle_struct *handle)
 {
-	struct dirent *dp;
 	struct stat dir_stat;
 	unsigned int i;
+	unsigned int total_count = 0;
 	struct dirsort_privates *data = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
@@ -58,10 +58,10 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 
 	while (SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL)
 	       != NULL) {
-		data->number_of_entries++;
+		total_count++;
 	}
 
-	if (data->number_of_entries == 0) {
+	if (total_count == 0) {
 		return false;
 	}
 
@@ -73,15 +73,21 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 	TALLOC_FREE(data->directory_list); /* destroy previous cache if needed */
 	data->directory_list = talloc_zero_array(data,
 					struct dirent,
-					data->number_of_entries);
+					total_count);
 	if (!data->directory_list) {
 		return false;
 	}
-	i = 0;
-	while ((dp = SMB_VFS_NEXT_READDIR(handle, data->source_directory,
-					  NULL)) != NULL) {
-		data->directory_list[i++] = *dp;
+	for (i = 0; i < total_count; i++) {
+		struct dirent *dp = SMB_VFS_NEXT_READDIR(handle,
+						data->source_directory,
+						NULL);
+		if (dp == NULL) {
+			break;
+		}
+		data->directory_list[i] = *dp;
 	}
+
+	data->number_of_entries = i;
 
 	/* Sort the directory entries by name */
 	TYPESAFE_QSORT(data->directory_list, data->number_of_entries, compare_dirent);
