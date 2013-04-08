@@ -37,12 +37,7 @@ struct dirsort_privates {
 };
 
 static void free_dirsort_privates(void **datap) {
-	struct dirsort_privates *data = (struct dirsort_privates *) *datap;
-	SAFE_FREE(data->directory_list);
-	SAFE_FREE(data);
-	*datap = NULL;
-
-	return;
+	TALLOC_FREE(*datap);
 }
 
 static bool open_and_sort_dir (vfs_handle_struct *handle)
@@ -71,9 +66,10 @@ static bool open_and_sort_dir (vfs_handle_struct *handle)
 	SMB_VFS_NEXT_REWINDDIR(handle, data->source_directory);
 
 	/* Set up an array and read the directory entries into it */
-	SAFE_FREE(data->directory_list); /* destroy previous cache if needed */
-	data->directory_list = (SMB_STRUCT_DIRENT *)SMB_MALLOC(
-		data->number_of_entries * sizeof(SMB_STRUCT_DIRENT));
+	TALLOC_FREE(data->directory_list); /* destroy previous cache if needed */
+	data->directory_list = talloc_zero_array(data,
+						 SMB_STRUCT_DIRENT,
+						 data->number_of_entries);
 	if (!data->directory_list) {
 		return false;
 	}
@@ -97,9 +93,7 @@ static SMB_STRUCT_DIR *dirsort_opendir(vfs_handle_struct *handle,
 	struct dirsort_privates *data = NULL;
 
 	/* set up our private data about this directory */
-	data = (struct dirsort_privates *)SMB_MALLOC(
-		sizeof(struct dirsort_privates));
-
+	data = talloc_zero(handle->conn, struct dirsort_privates);
 	if (!data) {
 		return NULL;
 	}
@@ -132,9 +126,7 @@ static SMB_STRUCT_DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 	struct dirsort_privates *data = NULL;
 
 	/* set up our private data about this directory */
-	data = (struct dirsort_privates *)SMB_MALLOC(
-		sizeof(struct dirsort_privates));
-
+	data = talloc_zero(handle->conn, struct dirsort_privates);
 	if (!data) {
 		return NULL;
 	}
@@ -147,7 +139,7 @@ static SMB_STRUCT_DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 						      attr);
 
 	if (data->source_directory == NULL) {
-		SAFE_FREE(data);
+		TALLOC_FREE(data);
 		return NULL;
 	}
 
