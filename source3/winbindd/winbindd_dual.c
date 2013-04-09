@@ -1398,6 +1398,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	if (child->pid == -1) {
 		DEBUG(0, ("Could not fork: %s\n", strerror(errno)));
+		close(fdpair[0]);
+		close(fdpair[1]);
 		return False;
 	}
 
