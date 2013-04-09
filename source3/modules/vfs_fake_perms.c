@@ -35,15 +35,17 @@ static int fake_perms_stat(vfs_handle_struct *handle,
 	int ret = -1;
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	if (ret == 0) {
-		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
-			smb_fname->st.st_ex_mode = S_IFDIR | S_IRWXU;
-		} else {
-			smb_fname->st.st_ex_mode = S_IRWXU;
-		}
-		smb_fname->st.st_ex_uid = handle->conn->session_info->unix_token->uid;
-		smb_fname->st.st_ex_gid = handle->conn->session_info->unix_token->gid;
+	if (ret != 0) {
+		return ret;
 	}
+
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		smb_fname->st.st_ex_mode = S_IFDIR | S_IRWXU;
+	} else {
+		smb_fname->st.st_ex_mode = S_IRWXU;
+	}
+	smb_fname->st.st_ex_uid = handle->conn->session_info->unix_token->uid;
+	smb_fname->st.st_ex_gid = handle->conn->session_info->unix_token->gid;
 
 	return ret;
 }
@@ -53,15 +55,18 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_ST
 	int ret = -1;
 
 	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	if (ret == 0) {
-		if (S_ISDIR(sbuf->st_ex_mode)) {
-			sbuf->st_ex_mode = S_IFDIR | S_IRWXU;
-		} else {
-			sbuf->st_ex_mode = S_IRWXU;
-		}
-		sbuf->st_ex_uid = handle->conn->session_info->unix_token->uid;
-		sbuf->st_ex_gid = handle->conn->session_info->unix_token->gid;
+	if (ret != 0) {
+		return ret;
 	}
+
+	if (S_ISDIR(sbuf->st_ex_mode)) {
+		sbuf->st_ex_mode = S_IFDIR | S_IRWXU;
+	} else {
+		sbuf->st_ex_mode = S_IRWXU;
+	}
+	sbuf->st_ex_uid = handle->conn->session_info->unix_token->uid;
+	sbuf->st_ex_gid = handle->conn->session_info->unix_token->gid;
+
 	return ret;
 }
 
