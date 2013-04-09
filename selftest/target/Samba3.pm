@@ -650,6 +650,8 @@ sub provision($$$$$$)
 	print CONF "
 [tmp]
 	path = $shrdir
+	comment = smb username is [%U]
+	vfs objects = $vfs_modulesdir_abs/dirsort.so
 [tmpguest]
 	path = $shrdir
         guest ok = yes
