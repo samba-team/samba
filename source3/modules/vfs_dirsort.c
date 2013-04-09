@@ -40,7 +40,8 @@ static void free_dirsort_privates(void **datap) {
 	TALLOC_FREE(*datap);
 }
 
-static bool open_and_sort_dir (vfs_handle_struct *handle)
+static bool open_and_sort_dir(vfs_handle_struct *handle,
+				struct dirsort_privates *data)
 {
 	struct stat dir_stat;
 	unsigned int i;
@@ -115,13 +116,14 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 
 	data->fd = dirfd(data->source_directory);
 
-	SMB_VFS_HANDLE_SET_DATA(handle, data, free_dirsort_privates,
-				struct dirsort_privates, return NULL);
-
-	if (!open_and_sort_dir(handle)) {
+	if (!open_and_sort_dir(handle, data)) {
 		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
+		TALLOC_FREE(data);
 		return NULL;
 	}
+
+	SMB_VFS_HANDLE_SET_DATA(handle, data, free_dirsort_privates,
+				struct dirsort_privates, return NULL);
 
 	return data->source_directory;
 }
@@ -153,15 +155,16 @@ static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 
 	data->fd = dirfd(data->source_directory);
 
-	SMB_VFS_HANDLE_SET_DATA(handle, data, free_dirsort_privates,
-				struct dirsort_privates, return NULL);
-
-	if (!open_and_sort_dir(handle)) {
+	if (!open_and_sort_dir(handle, data)) {
 		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
+		TALLOC_FREE(data);
 		/* fd is now closed. */
 		fsp->fh->fd = -1;
 		return NULL;
 	}
+
+	SMB_VFS_HANDLE_SET_DATA(handle, data, free_dirsort_privates,
+				struct dirsort_privates, return NULL);
 
 	return data->source_directory;
 }
@@ -185,7 +188,7 @@ static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
 
 	/* throw away cache and re-read the directory if we've changed */
 	if (current_mtime > data->mtime) {
-		open_and_sort_dir(handle);
+		open_and_sort_dir(handle, data);
 	}
 
 	if (data->pos >= data->number_of_entries) {
