@@ -44,8 +44,21 @@ static int fake_perms_stat(vfs_handle_struct *handle,
 	} else {
 		smb_fname->st.st_ex_mode = S_IRWXU;
 	}
-	smb_fname->st.st_ex_uid = handle->conn->session_info->unix_token->uid;
-	smb_fname->st.st_ex_gid = handle->conn->session_info->unix_token->gid;
+
+	if (handle->conn->session_info != NULL) {
+		struct security_unix_token *utok;
+
+		utok = handle->conn->session_info->unix_token;
+		smb_fname->st.st_ex_uid = utok->uid;
+		smb_fname->st.st_ex_gid = utok->gid;
+	} else {
+		/*
+		 * We have an artificial connection for dfs for example. It
+		 * sucks, but the current uid/gid is the best we have.
+		 */
+		smb_fname->st.st_ex_uid = geteuid();
+		smb_fname->st.st_ex_gid = getegid();
+	}
 
 	return ret;
 }
@@ -64,8 +77,20 @@ static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_ST
 	} else {
 		sbuf->st_ex_mode = S_IRWXU;
 	}
-	sbuf->st_ex_uid = handle->conn->session_info->unix_token->uid;
-	sbuf->st_ex_gid = handle->conn->session_info->unix_token->gid;
+	if (handle->conn->session_info != NULL) {
+		struct security_unix_token *utok;
+
+		utok = handle->conn->session_info->unix_token;
+		sbuf->st_ex_uid = utok->uid;
+		sbuf->st_ex_gid = utok->gid;
+	} else {
+		/*
+		 * We have an artificial connection for dfs for example. It
+		 * sucks, but the current uid/gid is the best we have.
+		 */
+		sbuf->st_ex_uid = geteuid();
+		sbuf->st_ex_gid = getegid();
+	}
 
 	return ret;
 }
