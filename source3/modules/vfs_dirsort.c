@@ -33,7 +33,8 @@ struct dirsort_privates {
 	unsigned int number_of_entries;
 	struct timespec mtime;
 	DIR *source_directory;
-	int fd;
+	files_struct *fsp; /* If open via FDOPENDIR. */
+	struct smb_filename *smb_fname; /* If open via OPENDIR */
 };
 
 static void free_dirsort_privates(void **datap) {
@@ -45,16 +46,21 @@ static bool get_sorted_dir_mtime(vfs_handle_struct *handle,
 				struct timespec *ret_mtime)
 {
 	int ret;
-	struct stat dir_stat;
+	struct timespec mtime;
 
-	ret = fstat(data->fd, &dir_stat);
+	if (data->fsp) {
+		ret = fsp_stat(data->fsp);
+		mtime = data->fsp->fsp_name->st.st_ex_mtime;
+	} else {
+		ret = SMB_VFS_STAT(handle->conn, data->smb_fname);
+		mtime = data->smb_fname->st.st_ex_mtime;
+	}
 
 	if (ret == -1) {
 		return false;
 	}
 
-	ret_mtime->tv_sec = dir_stat.st_mtime;
-	ret_mtime->tv_nsec = 0;
+	*ret_mtime = mtime;
 
 	return true;
 }
@@ -113,6 +119,7 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 				       const char *fname, const char *mask,
 				       uint32 attr)
 {
+	NTSTATUS status;
 	struct dirsort_privates *data = NULL;
 
 	/* set up our private data about this directory */
@@ -124,6 +131,16 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 	data->directory_list = NULL;
 	data->pos = 0;
 
+	status = create_synthetic_smb_fname(data,
+					fname,
+					NULL,
+					NULL,
+					&data->smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(data);
+		return NULL;
+	}
+
 	/* Open the underlying directory and count the number of entries */
 	data->source_directory = SMB_VFS_NEXT_OPENDIR(handle, fname, mask,
 						      attr);
@@ -132,8 +149,6 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 		TALLOC_FREE(data);
 		return NULL;
 	}
-
-	data->fd = dirfd(data->source_directory);
 
 	if (!open_and_sort_dir(handle, data)) {
 		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
@@ -162,6 +177,7 @@ static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 
 	data->directory_list = NULL;
 	data->pos = 0;
+	data->fsp = fsp;
 
 	/* Open the underlying directory and count the number of entries */
 	data->source_directory = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask,
@@ -171,8 +187,6 @@ static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 		TALLOC_FREE(data);
 		return NULL;
 	}
-
-	data->fd = dirfd(data->source_directory);
 
 	if (!open_and_sort_dir(handle, data)) {
 		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
