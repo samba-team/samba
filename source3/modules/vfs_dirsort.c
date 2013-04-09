@@ -31,7 +31,7 @@ struct dirsort_privates {
 	long pos;
 	struct dirent *directory_list;
 	unsigned int number_of_entries;
-	time_t mtime;
+	struct timespec mtime;
 	DIR *source_directory;
 	int fd;
 };
@@ -40,21 +40,35 @@ static void free_dirsort_privates(void **datap) {
 	TALLOC_FREE(*datap);
 }
 
+static bool get_sorted_dir_mtime(vfs_handle_struct *handle,
+				struct dirsort_privates *data,
+				struct timespec *ret_mtime)
+{
+	int ret;
+	struct stat dir_stat;
+
+	ret = fstat(data->fd, &dir_stat);
+
+	if (ret == -1) {
+		return false;
+	}
+
+	ret_mtime->tv_sec = dir_stat.st_mtime;
+	ret_mtime->tv_nsec = 0;
+
+	return true;
+}
+
 static bool open_and_sort_dir(vfs_handle_struct *handle,
 				struct dirsort_privates *data)
 {
-	struct stat dir_stat;
-	unsigned int i;
+	unsigned int i = 0;
 	unsigned int total_count = 0;
-	struct dirsort_privates *data = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
-				return false);
 
 	data->number_of_entries = 0;
 
-	if (fstat(data->fd, &dir_stat) == 0) {
-		data->mtime = dir_stat.st_mtime;
+	if (get_sorted_dir_mtime(handle, data, &data->mtime) == false) {
+		return false;
 	}
 
 	while (SMB_VFS_NEXT_READDIR(handle, data->source_directory, NULL)
@@ -179,20 +193,17 @@ static struct dirent *dirsort_readdir(vfs_handle_struct *handle,
 					  SMB_STRUCT_STAT *sbuf)
 {
 	struct dirsort_privates *data = NULL;
-	time_t current_mtime;
-	struct stat dir_stat;
+	struct timespec current_mtime;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, data, struct dirsort_privates,
 				return NULL);
 
-	if (fstat(data->fd, &dir_stat) == -1) {
+	if (get_sorted_dir_mtime(handle, data, &current_mtime) == false) {
 		return NULL;
 	}
 
-	current_mtime = dir_stat.st_mtime;
-
 	/* throw away cache and re-read the directory if we've changed */
-	if (current_mtime > data->mtime) {
+	if (timespec_compare(&current_mtime, &data->mtime) > 1) {
 		open_and_sort_dir(handle, data);
 	}
 
