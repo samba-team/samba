@@ -114,6 +114,11 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 	data->source_directory = SMB_VFS_NEXT_OPENDIR(handle, fname, mask,
 						      attr);
 
+	if (data->source_directory == NULL) {
+		TALLOC_FREE(data);
+		return NULL;
+	}
+
 	data->fd = dirfd(data->source_directory);
 
 	if (!open_and_sort_dir(handle, data)) {
