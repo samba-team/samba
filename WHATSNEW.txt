@@ -8,7 +8,8 @@ This is is the latest stable release of Samba 4.0.
 
 Major enhancements in Samba 4.0.5 include:
 
-o  
+o  Fix large reads/writes from some Linux clients (bug #9706).
+o  Add 'samba-tool dbcheck --reset-well-known-acls' (bugs #9740 and #9267).
 
 
 Changes since 4.0.4:
@@ -27,7 +28,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 9519: Samba returns unexpected error on SMB posix open.
     * BUG 9642: Fix the build of vfs_afsacl.
     * BUG 9695: Backport tevent changes to bring library to version 0.9.18.
-    * BUG 9706: Parameter is incorrect on Android.
+    * BUG 9706: Fix large reads/writes from some Linux clients.
     * BUG 9724: is_encrypted_packet() function incorrectly used inside server.
     * BUG 9733: Fix 'smbcontrol close-share'.
     * BUG 9748: Remove unneeded fstat system call from hot read path.
@@ -62,6 +63,7 @@ o   Andrew Bartlett <abartlet@samba.org>
     * BUG 9728: DO NOT install samba_upgradeprovision in 4.0.x.
     * BUG 9739: PIDL: Build fixes for hosts without CPP (Solaris 11).
     * BUG 9740: Add 'samba-tool dbcheck --reset-well-known-acls'.
+    * BUG 9267: Can't delegate adding computers to domain.
 
 
 o   Alexander Bokovoy <ab@samba.org>
