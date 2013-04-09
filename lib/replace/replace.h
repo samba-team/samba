@@ -46,14 +46,14 @@
 #endif
 
 
-#ifdef HAVE_STDINT_H
+#ifdef HAVE_INTTYPES_H
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+#elif HAVE_STDINT_H
 #include <stdint.h>
 /* force off HAVE_INTTYPES_H so that roken doesn't try to include both,
    which causes a warning storm on irix */
 #undef HAVE_INTTYPES_H
-#elif HAVE_INTTYPES_H
-#define __STDC_FORMAT_MACROS
-#include <inttypes.h>
 #endif
 
 #ifdef HAVE_MALLOC_H
