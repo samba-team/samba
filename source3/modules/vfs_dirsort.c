@@ -128,9 +128,6 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	data->directory_list = NULL;
-	data->pos = 0;
-
 	status = create_synthetic_smb_fname(data,
 					fname,
 					NULL,
@@ -175,8 +172,6 @@ static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	data->directory_list = NULL;
-	data->pos = 0;
 	data->fsp = fsp;
 
 	/* Open the underlying directory and count the number of entries */
