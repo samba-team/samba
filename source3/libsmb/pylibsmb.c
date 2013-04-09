@@ -406,7 +406,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 {
 	NTSTATUS status;
 	char *host, *share;
-	PyObject *creds;
+	PyObject *creds = NULL;
 	struct cli_credentials *cli_creds;
 	bool ret;
 
@@ -434,10 +434,10 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		return -1;
 	}
 
-	cli_creds = cli_credentials_from_py_object(creds);
-	if (cli_creds == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials");
-		return -1;
+	if (creds == NULL) {
+		cli_creds = cli_credentials_init_anon(NULL);
+	} else {
+		cli_creds = PyCredentials_AsCliCredentials(creds);
 	}
 
 	status = cli_full_connection(
