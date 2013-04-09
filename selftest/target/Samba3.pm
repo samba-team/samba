@@ -1026,6 +1026,7 @@ sub provision($$$$$$)
 	path = $shrdir
 	comment = encrypt smb username is [%U]
 	smb encrypt = required
+	vfs objects = $vfs_modulesdir_abs/dirsort.so
 [tmpguest]
 	path = $shrdir
         guest ok = yes
