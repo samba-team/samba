@@ -32,7 +32,7 @@
 static int fake_perms_stat(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname)
 {
-	int ret = -1;
+	int ret;
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
 	if (ret != 0) {
@@ -52,7 +52,7 @@ static int fake_perms_stat(vfs_handle_struct *handle,
 
 static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
-	int ret = -1;
+	int ret;
 
 	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	if (ret != 0) {
