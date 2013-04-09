@@ -408,6 +408,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 	char *host, *share;
 	PyObject *creds = NULL;
 	struct cli_credentials *cli_creds;
+	struct tevent_req *req;
 	bool ret;
 
 	static const char *kwlist[] = {
@@ -440,12 +441,18 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		cli_creds = PyCredentials_AsCliCredentials(creds);
 	}
 
-	status = cli_full_connection(
-		&self->cli, "myname", host, NULL, 0, share, "?????",
+	req = cli_full_connection_send(
+		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
 		cli_credentials_get_username(cli_creds),
 		cli_credentials_get_domain(cli_creds),
 		cli_credentials_get_password(cli_creds),
 		0, 0);
+	if (!py_tevent_req_wait_exc(self->ev, req)) {
+		return NULL;
+	}
+	status = cli_full_connection_recv(req, &self->cli);
+	TALLOC_FREE(req);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		return -1;
