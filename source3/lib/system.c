@@ -634,13 +634,11 @@ void kernel_flock(int fd, uint32 share_mode, uint32 access_mask)
 
 /*******************************************************************
  An fdopendir wrapper.
- Ugly hack - we need dirfd for this to work correctly in the
- calling code.. JRA.
 ********************************************************************/
 
 DIR *sys_fdopendir(int fd)
 {
-#if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD)
+#if defined(HAVE_FDOPENDIR)
 	return fdopendir(fd);
 #else
 	errno = ENOSYS;
