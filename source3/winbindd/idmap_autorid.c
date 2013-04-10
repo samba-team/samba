@@ -51,7 +51,9 @@ struct autorid_global_config {
 
 struct autorid_domain_config {
 	fstring sid;
+	fstring keystr;
 	uint32_t domainnum;
+	uint32_t multiplier;
 	struct autorid_global_config *globalcfg;
 };
 
@@ -68,14 +70,15 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 
 	cfg = (struct autorid_domain_config *)private_data;
 
-	ret = dbwrap_fetch_uint32_bystring(db, cfg->sid, &(cfg->domainnum));
+	ret = dbwrap_fetch_uint32_bystring(db, cfg->keystr, &(cfg->domainnum));
 
 	if (NT_STATUS_IS_OK(ret)) {
 		/* entry is already present*/
 		return ret;
 	}
 
-	DEBUG(10, ("Acquiring new range for domain %s\n", cfg->sid));
+	DEBUG(10, ("Acquiring new range for domain %s (multiplier=%"PRIu32")\n",
+		   cfg->sid, cfg->multiplier));
 
 	/* fetch the current HWM */
 	ret = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
@@ -102,7 +105,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* store away the new mapping in both directions */
-	ret = dbwrap_store_uint32_bystring(db, cfg->sid, domainnum);
+	ret = dbwrap_store_uint32_bystring(db, cfg->keystr, domainnum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
 			  "domain->range assignment!\n"));
@@ -116,7 +119,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	ret = dbwrap_store_bystring(db, numstr,
-			string_term_tdb_data(cfg->sid), TDB_INSERT);
+			string_term_tdb_data(cfg->keystr), TDB_INSERT);
 
 	talloc_free(numstr);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -124,8 +127,9 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 			  "new domain->range assignment!\n"));
 		goto error;
 	}
-	DEBUG(5, ("Acquired new range #%d for domain %s\n",
-		  domainnum, cfg->sid));
+	DEBUG(5, ("Acquired new range #%d for domain %s "
+		  "(multiplier=%"PRIu32")\n", domainnum, cfg->keystr,
+		  cfg->multiplier));
 
 	cfg->domainnum = domainnum;
 
@@ -146,7 +150,14 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom,
 	 * if it is not found create a mapping in a transaction unless
 	 * read-only mode has been set
 	 */
-	ret = dbwrap_fetch_uint32_bystring(autorid_db, dom->sid,
+	if (dom->multiplier > 0) {
+		snprintf(dom->keystr, FSTRING_LEN, "%s#%"PRIu32, dom->sid,
+			dom->multiplier);
+	} else {
+		fstrcpy(dom->keystr, dom->sid);
+	}
+
+	ret = dbwrap_fetch_uint32_bystring(autorid_db, dom->keystr,
 					   &(dom->domainnum));
 
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -157,8 +168,8 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom,
 			      idmap_autorid_get_domainrange_action, dom);
 	}
 
-	DEBUG(10, ("Using range #%d for domain %s\n", dom->domainnum,
-		   dom->sid));
+	DEBUG(10, ("Using range #%d for domain %s (multiplier=%"PRIu32")\n",
+		   dom->domainnum, dom->sid, dom->multiplier));
 
 	return ret;
 }
@@ -244,11 +255,13 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 					struct id_map *map)
 {
 	uint32_t range;
+	uint32_t multiplier = 0;
 	TDB_DATA data = tdb_null;
 	char *keystr;
 	struct dom_sid sid;
 	NTSTATUS status;
 	bool ok;
+	const char *q = NULL;
 
 	/* can this be one of our ids? */
 	if (map->xid.id < cfg->minvalue) {
@@ -298,16 +311,23 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		return idmap_autorid_map_id_to_sid(dom, map);
 	}
 
-	ok = string_to_sid(&sid, (const char *)data.dptr);
+	ok = dom_sid_parse_endp((const char *)data.dptr, &sid, &q);
 	TALLOC_FREE(data.dptr);
 	if (!ok) {
 		map->status = ID_UNKNOWN;
 		return NT_STATUS_OK;
 	}
+	if (q != NULL)
+		if (sscanf(q+1, "%"SCNu32, &multiplier) != 1) {
+			DEBUG(10, ("Multiplier not found! "
+				   "ignoring mapping request\n"));
+			map->status = ID_UNKNOWN;
+			return NT_STATUS_OK;
+		}
 
 	sid_compose(map->sid, &sid,
 		    (map->xid.id - cfg->minvalue -
-		     range * cfg->rangesize));
+		     range * cfg->rangesize + (cfg->rangesize * multiplier)));
 
 	/* We **really** should have some way of validating
 	   the SID exists and is the correct type here.  But
@@ -331,15 +351,9 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 
 	sid_peek_rid(map->sid, &rid);
 
-	/* if the rid is higher than the size of the range, we cannot map it */
-	if (rid >= global->rangesize) {
-		map->status = ID_UNKNOWN;
-		DEBUG(2, ("RID %d is larger then size of range (%d), "
-			  "user cannot be mapped\n", rid, global->rangesize));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 	map->xid.id = global->minvalue +
-	    (global->rangesize * domain->domainnum)+rid;
+	    (global->rangesize * domain->domainnum) + rid -
+	    (global->rangesize * domain->multiplier);
 	map->xid.type = ID_TYPE_BOTH;
 
 	/* We **really** should have some way of validating
@@ -562,6 +576,9 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 
 		domaincfg.globalcfg = global;
 		sid_to_fstring(domaincfg.sid, &domainsid);
+
+		/* Calculate multiplier for multi-range support */
+		domaincfg.multiplier = rid / (global->rangesize);
 
 		ret = idmap_autorid_get_domainrange(&domaincfg, dom->read_only);
 
