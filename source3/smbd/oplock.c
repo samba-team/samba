@@ -988,12 +988,16 @@ bool init_oplocks(struct smbd_server_connection *sconn)
 			   process_oplock_break_message);
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_ASYNC_LEVEL2_BREAK,
 			   process_oplock_async_level2_break_message);
+#if 0
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_BREAK_RESPONSE,
 			   process_oplock_break_response);
+#endif
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_KERNEL_BREAK,
 			   process_kernel_oplock_break);
+#if 0
 	messaging_register(sconn->msg_ctx, sconn, MSG_SMB_OPEN_RETRY,
 			   process_open_retry_message);
+#endif
 
 	return true;
 }

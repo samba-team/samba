@@ -664,6 +664,7 @@ static bool push_queued_message(struct smb_request *req,
 		}
 	}
 
+#if 0
 	msg->te = tevent_add_timer(msg->sconn->ev_ctx,
 				   msg,
 				   end_time,
@@ -674,6 +675,7 @@ static bool push_queued_message(struct smb_request *req,
 		TALLOC_FREE(msg);
 		return false;
 	}
+#endif
 
 	DLIST_ADD_END(req->sconn->deferred_open_queue, msg,
 		      struct pending_message_list *);

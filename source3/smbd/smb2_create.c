@@ -1459,6 +1459,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 				true) ));
 
 	state->open_was_deferred = true;
+#if 0
 	state->te = tevent_add_timer(smb2req->sconn->ev_ctx,
 				state,
 				end_time,
@@ -1467,6 +1468,7 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
         if (!state->te) {
 		return false;
 	}
+#endif
 
 	/* allow this request to be canceled */
 	tevent_req_set_cancel_fn(req, smbd_smb2_create_cancel);
