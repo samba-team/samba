@@ -49,6 +49,8 @@ struct smb_Dir {
 	struct name_cache_entry *name_cache;
 	unsigned int name_cache_index;
 	unsigned int file_number;
+	files_struct *fsp; /* Back pointer to containing fsp, only
+			      set from OpenDir_fsp(). */
 };
 
 struct dptr_struct {
@@ -1440,7 +1442,9 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	if (fsp->is_directory && fsp->fh->fd != -1) {
 		dirp->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
-		if (dirp->dir == NULL) {
+		if (dirp->dir != NULL) {
+			dirp->fsp = fsp;
+		} else {
 			DEBUG(10,("OpenDir_fsp: SMB_VFS_FDOPENDIR on %s returned "
 				"NULL (%s)\n",
 				dirp->dir_path,
