@@ -704,6 +704,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
 
         elif acct_type == samr.ACB_DOMTRUST:
             logger.warn("  Skipping inter-domain trust from domain %s, this trust must be re-created as an AD trust" % username[:-1])
+            continue
 
         elif acct_type == (samr.ACB_WSTRUST) and username[-1] != '$':
             logger.warn("  Skipping account %s that has ACB_WSTRUST (W) set but does not end in $.  This account can not have worked, and is probably left over from a misconfiguration." % username)
