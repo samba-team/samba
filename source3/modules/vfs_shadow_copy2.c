@@ -826,7 +826,6 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 	char *stripped;
 	int ret, saved_errno;
 	struct smb_filename *conv;
-	NTSTATUS status;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
 					 smb_fname->base_name,
@@ -836,8 +835,8 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 	if (timestamp == 0) {
 		return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 	}
-	status = copy_smb_filename(talloc_tos(), smb_fname, &conv);
-	if (!NT_STATUS_IS_OK(status)) {
+	conv = cp_smb_filename(talloc_tos(), smb_fname);
+	if (conv == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
