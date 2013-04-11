@@ -206,11 +206,9 @@ char *lpcfg_private_db_path(TALLOC_CTX *mem_ctx,
 {
 	const char *extension = ".tdb";
 
-#ifndef DISABLE_NTDB
 	if (lpcfg_use_ntdb(lp_ctx)) {
 		extension = ".ntdb";
 	}
-#endif
 
 	return talloc_asprintf(mem_ctx, "%s/%s%s",
 			       lpcfg_private_dir(lp_ctx), name, extension);

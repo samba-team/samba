@@ -23,14 +23,11 @@
 #include "dbwrap/dbwrap_tdb.h"
 #include "dbwrap/dbwrap_ntdb.h"
 #include "tdb.h"
-#ifndef DISABLE_NTDB
 #include "lib/util/util_ntdb.h"
-#endif
 #include "lib/param/param.h"
 #include "system/filesys.h"
 #include "ccan/str/str.h"
 
-#ifndef DISABLE_NTDB
 struct flag_map {
 	int tdb_flag;
 	int ntdb_flag;
@@ -157,7 +154,6 @@ static bool tdb_to_ntdb(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
 		  ntdbname, tdbbase, bakbase));
 	return true;
 }
-#endif /* !DISABLE_NTDB */
 
 struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 				     struct loadparm_context *lp_ctx,
@@ -196,9 +192,6 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name == ntdbname) {
-#ifdef DISABLE_NTDB
-		DEBUG(1, ("WARNING: no ntdb support to open '%s'\n", name));
-#else
 		int ntdb_flags = tdb_flags_to_ntdb_flags(tdb_flags);
 
 		/* For non-internal databases, we upgrade on demand. */
@@ -212,7 +205,6 @@ struct db_context *dbwrap_local_open(TALLOC_CTX *mem_ctx,
 		}
 		db = db_open_ntdb(mem_ctx, lp_ctx, ntdbname, hash_size,
 				  ntdb_flags, open_flags, mode, lock_order);
-#endif
 	} else {
 		if (!streq(ntdbname, tdbname) && file_exist(ntdbname)) {
 			DEBUG(0, ("Refusing to open '%s' when '%s' exists\n",

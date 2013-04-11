@@ -58,10 +58,6 @@ def set_options(opt):
 
     gr = opt.option_group('developer options')
 
-    opt.add_option('--disable-ntdb',
-                   help=("disable ntdb"),
-                   action="store_true", dest='disable_ntdb', default=False)
-
 
     opt.tool_options('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
@@ -120,11 +116,7 @@ def configure(conf):
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
     conf.RECURSE('lib/ccan')
-    conf.env.disable_ntdb = getattr(Options.options, 'disable_ntdb', False)
-    if not Options.options.disable_ntdb:
-        conf.RECURSE('lib/ntdb')
-    else:
-        conf.DEFINE('DISABLE_NTDB', 1)
+    conf.RECURSE('lib/ntdb')
     conf.RECURSE('lib/zlib')
     conf.RECURSE('lib/util/charset')
     conf.RECURSE('source4/auth')
