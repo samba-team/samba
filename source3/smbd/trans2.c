@@ -7053,10 +7053,9 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			return status;
 		}
 
-		status = copy_smb_filename(talloc_tos(), smb_fname,
-					   &smb_fname_tmp);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+		if (smb_fname_tmp == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		if (SMB_VFS_STAT(conn, smb_fname_tmp) != 0) {
