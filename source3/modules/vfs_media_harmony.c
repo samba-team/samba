@@ -492,12 +492,11 @@ static int alloc_get_client_smb_fname(struct vfs_handle_struct *handle,
 	DEBUG(MH_INFO_DEBUG, ("Entering with smb_fname->base_name '%s'\n",
 			      smb_fname->base_name));
 
-	copystatus = copy_smb_filename(ctx, smb_fname, clientFname);
-	if (!NT_STATUS_IS_OK(copystatus))
-	{
+	clientFname = cp_smb_filename(ctx, smb_fname);
+	if (clientFname == NULL) {
 		DEBUG(MH_ERR_DEBUG, ("alloc_get_client_smb_fname "
 					"NTERR\n"));
-		errno = map_errno_from_nt_status(copystatus);
+		errno = ENOMEM;
 		status = -1;
 		goto err;
 	}
