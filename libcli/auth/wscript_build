@@ -25,7 +25,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_AUTH',
 
 bld.SAMBA_SUBSYSTEM('COMMON_SCHANNEL',
 	source='schannel_state_tdb.c schannel_sign.c',
-	deps='tdb-wrap util_tdb samba-hostconfig NDR_NETLOGON'
+	deps='dbwrap util_tdb samba-hostconfig NDR_NETLOGON'
 	)
 
 

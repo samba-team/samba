@@ -28,7 +28,7 @@
 #include "../lib/param/param.h"
 #include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/dbwrap/dbwrap.h"
 
 #define SECRETS_SCHANNEL_STATE "SECRETS/SCHANNEL"
 
@@ -37,19 +37,21 @@
  be called from parent processes to corectly handle TDB_CLEAR_IF_FIRST
 *******************************************************************************/
 
-struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
-					     struct loadparm_context *lp_ctx)
+struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
+					       struct loadparm_context *lp_ctx)
 {
-	struct tdb_wrap *tdb_sc = NULL;
+	struct db_context *db_sc = NULL;
 	char *fname = lpcfg_private_path(mem_ctx, lp_ctx, "schannel_store.tdb");
 
 	if (!fname) {
 		return NULL;
 	}
 
-	tdb_sc = tdb_wrap_open(mem_ctx, fname, 0, TDB_CLEAR_IF_FIRST|TDB_NOSYNC, O_RDWR|O_CREAT, 0600, lp_ctx);
+	db_sc = dbwrap_local_open(mem_ctx, lp_ctx, fname, 0,
+				  TDB_CLEAR_IF_FIRST|TDB_NOSYNC, O_RDWR|O_CREAT,
+				  0600, 0);
 
-	if (!tdb_sc) {
+	if (!db_sc) {
 		DEBUG(0,("open_schannel_session_store: Failed to open %s - %s\n",
 			 fname, strerror(errno)));
 		TALLOC_FREE(fname);
@@ -58,23 +60,23 @@ struct tdb_wrap *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(fname);
 
-	return tdb_sc;
+	return db_sc;
 }
 
 /********************************************************************
  ********************************************************************/
 
 static
-NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
+NTSTATUS schannel_store_session_key_tdb(struct db_context *db_sc,
 					TALLOC_CTX *mem_ctx,
 					struct netlogon_creds_CredentialState *creds)
 {
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	TDB_DATA value;
-	int ret;
 	char *keystr;
 	char *name_upper;
+	NTSTATUS status;
 
 	name_upper = strupper_talloc(mem_ctx, creds->computer_name);
 	if (!name_upper) {
@@ -98,12 +100,12 @@ NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
 	value.dptr = blob.data;
 	value.dsize = blob.length;
 
-	ret = tdb_store_bystring(tdb_sc->tdb, keystr, value, TDB_REPLACE);
-	if (ret != TDB_SUCCESS) {
+	status = dbwrap_store_bystring(db_sc, keystr, value, TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n",
-			 keystr, tdb_errorstr(tdb_sc->tdb)));
+			 keystr, nt_errstr(status)));
 		talloc_free(keystr);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return status;
 	}
 
 	DEBUG(3,("schannel_store_session_key_tdb: stored schannel info with key %s\n",
@@ -122,7 +124,7 @@ NTSTATUS schannel_store_session_key_tdb(struct tdb_wrap *tdb_sc,
  ********************************************************************/
 
 static
-NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
+NTSTATUS schannel_fetch_session_key_tdb(struct db_context *db_sc,
 					TALLOC_CTX *mem_ctx,
 					const char *computer_name,
 					struct netlogon_creds_CredentialState **pcreds)
@@ -149,11 +151,10 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	value = tdb_fetch_bystring(tdb_sc->tdb, keystr);
-	if (!value.dptr) {
+	status = dbwrap_fetch_bystring(db_sc, keystr, keystr, &value);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("schannel_fetch_session_key_tdb: Failed to find entry with key %s\n",
 			keystr ));
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto done;
 	}
 
@@ -184,7 +185,6 @@ NTSTATUS schannel_fetch_session_key_tdb(struct tdb_wrap *tdb_sc,
  done:
 
 	talloc_free(keystr);
-	SAFE_FREE(value.dptr);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(creds);
@@ -207,7 +207,7 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 				  struct netlogon_creds_CredentialState **_creds)
 {
 	TALLOC_CTX *tmpctx;
-	struct tdb_wrap *tdb_sc;
+	struct db_context *db_sc;
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
 
@@ -216,12 +216,12 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
-	if (!tdb_sc) {
+	db_sc = open_schannel_session_store(tmpctx, lp_ctx);
+	if (!db_sc) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, 
+	status = schannel_fetch_session_key_tdb(db_sc, tmpctx,
 						computer_name, &creds);
 	if (NT_STATUS_IS_OK(status)) {
 		*_creds = talloc_steal(mem_ctx, creds);
@@ -244,7 +244,7 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
 				   struct netlogon_creds_CredentialState *creds)
 {
 	TALLOC_CTX *tmpctx;
-	struct tdb_wrap *tdb_sc;
+	struct db_context *db_sc;
 	NTSTATUS status;
 
 	tmpctx = talloc_named(mem_ctx, 0, "schannel_save_creds_state");
@@ -252,12 +252,12 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
-	if (!tdb_sc) {
+	db_sc = open_schannel_session_store(tmpctx, lp_ctx);
+	if (!db_sc) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, creds);
+	status = schannel_store_session_key_tdb(db_sc, tmpctx, creds);
 
 	talloc_free(tmpctx);
 	return status;
@@ -281,12 +281,13 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 				    struct netlogon_creds_CredentialState **creds_out)
 {
 	TALLOC_CTX *tmpctx;
-	struct tdb_wrap *tdb_sc;
+	struct db_context *db_sc;
 	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS status;
 	int ret;
 	char *name_upper = NULL;
 	char *keystr = NULL;
+	struct db_record *record;
 	TDB_DATA key;
 
 	if (creds_out != NULL) {
@@ -313,14 +314,14 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 
 	key = string_term_tdb_data(keystr);
 
-	tdb_sc = open_schannel_session_store(tmpctx, lp_ctx);
-	if (!tdb_sc) {
+	db_sc = open_schannel_session_store(tmpctx, lp_ctx);
+	if (!db_sc) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
 
-	ret = tdb_chainlock(tdb_sc->tdb, key);
-	if (ret != 0) {
+	record = dbwrap_fetch_locked(db_sc, tmpctx, key);
+	if (!record) {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		goto done;
 	}
@@ -329,10 +330,9 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 	 * disconnects) we must update the database every time we
 	 * update the structure */
 
-	status = schannel_fetch_session_key_tdb(tdb_sc, tmpctx, 
+	status = schannel_fetch_session_key_tdb(db_sc, tmpctx,
 						computer_name, &creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		tdb_chainunlock(tdb_sc->tdb, key);
 		goto done;
 	}
 
@@ -340,12 +340,10 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 						  received_authenticator,
 						  return_authenticator);
 	if (!NT_STATUS_IS_OK(status)) {
-		tdb_chainunlock(tdb_sc->tdb, key);
 		goto done;
 	}
 
-	status = schannel_store_session_key_tdb(tdb_sc, tmpctx, creds);
-	tdb_chainunlock(tdb_sc->tdb, key);
+	status = schannel_store_session_key_tdb(db_sc, tmpctx, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
