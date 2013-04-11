@@ -370,7 +370,7 @@ node_has_status ()
     local pnn="$1"
     local status="$2"
 
-    local bits fpat mpat
+    local bits fpat mpat rpat
     case "$status" in
 	(unhealthy)    bits="?:?:?:1:*" ;;
 	(healthy)      bits="?:?:?:0:*" ;;
@@ -386,6 +386,7 @@ node_has_status ()
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	(monon)        mpat='^Monitoring mode:ACTIVE \(0\)$' ;;
 	(monoff)       mpat='^Monitoring mode:DISABLED \(1\)$' ;;
+	(recovered)    rpat='^Recovery mode:NORMAL \(0\)$' ;;
 	*)
 	    echo "node_has_status: unknown status \"$status\""
 	    return 1
@@ -410,6 +411,8 @@ node_has_status ()
 	$CTDB statistics -n "$pnn" | egrep -q "$fpat"
     elif [ -n "$mpat" ] ; then
 	$CTDB getmonmode -n "$pnn" | egrep -q "$mpat"
+    elif [ -n "$rpat" ] ; then
+        $CTDB status -n "$pnn" | egrep -q "$rpat"
     else
 	echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
 	return 1
