@@ -284,16 +284,15 @@ static int posix_eadb_unlink(vfs_handle_struct *handle,
 			    const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
-	NTSTATUS status;
 	int ret = -1;
 
 	struct tdb_wrap *ea_tdb;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, ea_tdb, struct tdb_wrap, return -1);
 
-	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (smb_fname_tmp == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
@@ -307,6 +306,8 @@ static int posix_eadb_unlink(vfs_handle_struct *handle,
 	}
 
 	if (smb_fname_tmp->st.st_ex_nlink == 1) {
+		NTSTATUS status;
+
 		/* Only remove record on last link to file. */
 
 		if (tdb_transaction_start(ea_tdb->tdb) != 0) {
