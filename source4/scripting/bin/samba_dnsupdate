@@ -116,7 +116,11 @@ def get_credentials(lp):
     creds.set_machine_account(lp)
     creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
     (tmp_fd, ccachename) = tempfile.mkstemp()
-    creds.get_named_ccache(lp, ccachename)
+    try:
+        creds.get_named_ccache(lp, ccachename)
+    except RuntimeError as e:
+        os.unlink(ccachename)
+        raise e
 
 
 class dnsobj(object):
