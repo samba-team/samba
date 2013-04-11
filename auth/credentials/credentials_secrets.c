@@ -245,9 +245,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	secrets_tdb = lpcfg_private_path(cred, lp_ctx,
-					 lpcfg_use_ntdb(lp_ctx) ?
-					 "secrets.ntdb" : "secrets.tdb");
+	secrets_tdb = lpcfg_private_db_path(cred, lp_ctx, "secrets");
 	if (!secrets_tdb) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
