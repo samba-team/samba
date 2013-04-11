@@ -41,7 +41,7 @@ struct db_context *open_schannel_session_store(TALLOC_CTX *mem_ctx,
 					       struct loadparm_context *lp_ctx)
 {
 	struct db_context *db_sc = NULL;
-	char *fname = lpcfg_private_path(mem_ctx, lp_ctx, "schannel_store.tdb");
+	char *fname = lpcfg_private_db_path(mem_ctx, lp_ctx, "schannel_store");
 
 	if (!fname) {
 		return NULL;
