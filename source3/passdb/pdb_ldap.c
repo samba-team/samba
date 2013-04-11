@@ -4452,11 +4452,11 @@ static bool ldapuser2displayentry(struct ldap_search_state *state,
 
 	vals = ldap_get_values(ld, entry, "sambaAcctFlags");
 	if ((vals == NULL) || (vals[0] == NULL)) {
-		DEBUG(5, ("\"sambaAcctFlags\" not found\n"));
-		return False;
+		acct_flags = ACB_NORMAL;
+	} else {
+		acct_flags = pdb_decode_acct_ctrl(vals[0]);
+		ldap_value_free(vals);
 	}
-	acct_flags = pdb_decode_acct_ctrl(vals[0]);
-	ldap_value_free(vals);
 
 	if ((state->acct_flags != 0) &&
 	    ((state->acct_flags & acct_flags) == 0))
