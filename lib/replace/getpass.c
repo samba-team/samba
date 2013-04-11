@@ -138,7 +138,7 @@ static void gotintr_sig(int signum)
 char *rep_getpass(const char *prompt)
 {
 	FILE *in, *out;
-	int echo_off;
+	int echo_off, is_a_tty;
 	static char buf[256];
 	static size_t bufsize = sizeof(buf);
 	size_t nread;
@@ -160,8 +160,9 @@ char *rep_getpass(const char *prompt)
 	setvbuf(in, NULL, _IONBF, 0);
 
 	/* Turn echoing off if it is on now.  */
+	is_a_tty = isatty(fileno(in)) > 0;
 
-	if (tcgetattr (fileno (in), &t) == 0) {
+	if (is_a_tty && (tcgetattr (fileno (in), &t) == 0)) {
 		if (ECHO_IS_ON(t)) {
 			TURN_ECHO_OFF(t);
 			echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
@@ -196,7 +197,7 @@ char *rep_getpass(const char *prompt)
 		if (gotintr && in_fd == -1) {
 			in = fopen ("/dev/tty", "w+");
 		}
-		if (in != NULL)
+		if ((in != NULL) && is_a_tty)
 			tcsetattr (fileno (in), TCSANOW, &t);
 	}
 
