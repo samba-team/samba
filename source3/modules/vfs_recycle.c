@@ -394,13 +394,12 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname_tmp = NULL;
 	struct smb_file_time ft;
-	NTSTATUS status;
 	int ret, err;
 
 	ZERO_STRUCT(ft);
 
-	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (smb_fname_tmp == NULL) {
 		return;
 	}
 
