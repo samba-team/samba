@@ -8063,10 +8063,9 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 		info_level = SVAL(params,2);
 
-		status = copy_smb_filename(talloc_tos(), fsp->fsp_name,
-					   &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
+		smb_fname = cp_smb_filename(talloc_tos(), fsp->fsp_name);
+		if (smb_fname == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 
