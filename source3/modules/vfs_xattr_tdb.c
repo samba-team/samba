@@ -347,7 +347,6 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname_tmp = NULL;
 	struct file_id id;
 	struct db_context *db;
-	NTSTATUS status;
 	int ret = -1;
 	bool remove_record = false;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -358,10 +357,10 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 					TALLOC_FREE(frame); return -1;
 				});
 
-	status = copy_smb_filename(frame, smb_fname, &smb_fname_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_tmp = cp_smb_filename(frame, smb_fname);
+	if (smb_fname_tmp == NULL) {
 		TALLOC_FREE(frame);
-		errno = map_errno_from_nt_status(status);
+		errno = ENOMEM;
 		return -1;
 	}
 
