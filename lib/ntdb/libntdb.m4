@@ -12,7 +12,7 @@ done
 if test x"$ntdbdir" = "x"; then
    AC_MSG_ERROR([cannot find ntdb source in $ntdbpaths])
 fi
-NTDB_OBJ="check.o free.o hash.o io.o lock.o ntdb.o open.o pyntdb.o summary.o transaction.o traverse.o"
+NTDB_OBJ="check.o free.o hash.o io.o lock.o ntdb.o open.o summary.o transaction.o traverse.o"
 AC_SUBST(NTDB_OBJ)
 AC_SUBST(LIBREPLACEOBJ)
 AC_SUBST(CCAN_OBJ)

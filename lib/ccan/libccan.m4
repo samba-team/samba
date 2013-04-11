@@ -15,7 +15,7 @@ CCAN_OBJ="$ccandir/hash/hash.o $ccandir/htable/htable.o $ccandir/ilog/ilog.o $cc
 AC_SUBST(CCAN_OBJ)
 
 # Preferred method for including ccan modules is #include <ccan/module/...>.
-CCAN_CFLAGS="-I$ccandir/.."
+CCAN_CFLAGS="-I$ccandir/.. -DHAVE_CCAN"
 AC_SUBST(CCAN_CFLAGS)
 
 # All the configuration checks.  Regrettably, the __attribute__ checks will
