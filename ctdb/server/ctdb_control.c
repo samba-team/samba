@@ -264,6 +264,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_TRAVERSE_ALL:
 		return ctdb_control_traverse_all(ctdb, indata, outdata);
 
+	case CTDB_CONTROL_TRAVERSE_ALL_EXT:
+		return ctdb_control_traverse_all_ext(ctdb, indata, outdata);
+
 	case CTDB_CONTROL_TRAVERSE_DATA:
 		return ctdb_control_traverse_data(ctdb, indata, outdata);
 

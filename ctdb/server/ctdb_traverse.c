@@ -232,6 +232,14 @@ struct ctdb_traverse_all {
 	uint32_t pnn;
 	uint32_t client_reqid;
 	uint64_t srvid;
+};
+
+struct ctdb_traverse_all_ext {
+	uint32_t db_id;
+	uint32_t reqid;
+	uint32_t pnn;
+	uint32_t client_reqid;
+	uint64_t srvid;
 	bool withemptyrecords;
 };
 
@@ -378,6 +386,56 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 		/* we're done */
 		talloc_free(state);
 	}
+}
+
+/*
+ * extended version to take the "withemptyrecords" parameter"
+ */
+int32_t ctdb_control_traverse_all_ext(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata)
+{
+	struct ctdb_traverse_all_ext *c = (struct ctdb_traverse_all_ext *)data.dptr;
+	struct traverse_all_state *state;
+	struct ctdb_db_context *ctdb_db;
+
+	if (data.dsize != sizeof(struct ctdb_traverse_all_ext)) {
+		DEBUG(DEBUG_ERR,(__location__ " Invalid size in ctdb_control_traverse_all_ext\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, c->db_id);
+	if (ctdb_db == NULL) {
+		return -1;
+	}
+
+	if (ctdb_db->unhealthy_reason) {
+		if (ctdb->tunable.allow_unhealthy_db_read == 0) {
+			DEBUG(DEBUG_ERR,("db(%s) unhealty in ctdb_control_traverse_all: %s\n",
+					ctdb_db->db_name, ctdb_db->unhealthy_reason));
+			return -1;
+		}
+		DEBUG(DEBUG_WARNING,("warn: db(%s) unhealty in ctdb_control_traverse_all: %s\n",
+				     ctdb_db->db_name, ctdb_db->unhealthy_reason));
+	}
+
+	state = talloc(ctdb_db, struct traverse_all_state);
+	if (state == NULL) {
+		return -1;
+	}
+
+	state->reqid = c->reqid;
+	state->srcnode = c->pnn;
+	state->ctdb = ctdb;
+	state->client_reqid = c->client_reqid;
+	state->srvid = c->srvid;
+	state->withemptyrecords = c->withemptyrecords;
+
+	state->h = ctdb_traverse_local(ctdb_db, traverse_all_callback, state);
+	if (state->h == NULL) {
+		talloc_free(state);
+		return -1;
+	}
+
+	return 0;
 }
 
 /*
