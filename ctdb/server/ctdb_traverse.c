@@ -285,6 +285,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	int ret;
 	TDB_DATA data;
 	struct ctdb_traverse_all r;
+	struct ctdb_traverse_all_ext r_ext;
 	uint32_t destination;
 
 	state = talloc(start_state, struct ctdb_traverse_all_handle);
@@ -302,15 +303,26 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	
 	talloc_set_destructor(state, ctdb_traverse_all_destructor);
 
-	r.db_id = ctdb_db->db_id;
-	r.reqid = state->reqid;
-	r.pnn   = ctdb->pnn;
-	r.client_reqid = start_state->reqid;
-	r.srvid = start_state->srvid;
-	r.withemptyrecords = start_state->withemptyrecords;
+	if (start_state->withemptyrecords) {
+		r_ext.db_id = ctdb_db->db_id;
+		r_ext.reqid = state->reqid;
+		r_ext.pnn   = ctdb->pnn;
+		r_ext.client_reqid = start_state->reqid;
+		r_ext.srvid = start_state->srvid;
+		r_ext.withemptyrecords = start_state->withemptyrecords;
 
-	data.dptr = (uint8_t *)&r;
-	data.dsize = sizeof(r);
+		data.dptr = (uint8_t *)&r_ext;
+		data.dsize = sizeof(r_ext);
+	} else {
+		r.db_id = ctdb_db->db_id;
+		r.reqid = state->reqid;
+		r.pnn   = ctdb->pnn;
+		r.client_reqid = start_state->reqid;
+		r.srvid = start_state->srvid;
+
+		data.dptr = (uint8_t *)&r;
+		data.dsize = sizeof(r);
+	}
 
 	if (ctdb_db->persistent == 0) {
 		/* normal database, traverse all nodes */	  
@@ -339,9 +351,16 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 	 * node, or if it is a persistent database, just tell the local
 	 * node
 	 */
-	ret = ctdb_daemon_send_control(ctdb, destination, 0, 
-			       CTDB_CONTROL_TRAVERSE_ALL,
-			       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+
+	if (start_state->withemptyrecords) {
+		ret = ctdb_daemon_send_control(ctdb, destination, 0,
+				       CTDB_CONTROL_TRAVERSE_ALL_EXT,
+				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+	} else {
+		ret = ctdb_daemon_send_control(ctdb, destination, 0,
+				       CTDB_CONTROL_TRAVERSE_ALL,
+				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
+	}
 
 	if (ret != 0) {
 		talloc_free(state);
@@ -479,7 +498,7 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 	state->ctdb = ctdb;
 	state->client_reqid = c->client_reqid;
 	state->srvid = c->srvid;
-	state->withemptyrecords = c->withemptyrecords;
+	state->withemptyrecords = false;
 
 	state->h = ctdb_traverse_local(ctdb_db, traverse_all_callback, state);
 	if (state->h == NULL) {
