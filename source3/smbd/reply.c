@@ -7036,9 +7036,9 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	NTSTATUS status;
 
 
-	status = copy_smb_filename(ctx, smb_fname_dst, &smb_fname_dst_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname_dst_tmp = cp_smb_filename(ctx, smb_fname_dst);
+	if (smb_fname_dst_tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
