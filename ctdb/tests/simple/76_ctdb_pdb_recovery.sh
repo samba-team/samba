@@ -86,7 +86,7 @@ wait_until_node_has_status 1 notstopped
 #
 TESTDB="persistent_test.tdb"
 
-stauts=0
+status=0
 
 # Create a temporary persistent database to test with
 echo "create persistent test database $TESTDB"
