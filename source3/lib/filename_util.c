@@ -18,6 +18,10 @@
 */
 #include "includes.h"
 
+static NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
+				  const struct smb_filename *smb_fname_in,
+				  struct smb_filename **smb_fname_out);
+
 /**
  * XXX: This is temporary and there should be no callers of this outside of
  * this file once smb_filename is plumbed through all path based operations.
@@ -200,9 +204,9 @@ fail:
 	return NULL;
 }
 
-NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
-			   const struct smb_filename *smb_fname_in,
-			   struct smb_filename **smb_fname_out)
+static NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
+				  const struct smb_filename *smb_fname_in,
+				  struct smb_filename **smb_fname_out)
 {
 	*smb_fname_out = cp_smb_filename(ctx, smb_fname_in);
 	if (*smb_fname_out == NULL) {
