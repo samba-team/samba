@@ -231,7 +231,6 @@ static int cap_unlink(vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname_tmp = NULL;
 	char *cappath = NULL;
-	NTSTATUS status;
 	int ret;
 
 	cappath = capencode(talloc_tos(), smb_fname->base_name);
@@ -241,10 +240,9 @@ static int cap_unlink(vfs_handle_struct *handle,
 	}
 
 	/* Setup temporary smb_filename structs. */
-	status = copy_smb_filename(talloc_tos(), smb_fname,
-				   &smb_fname_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (smb_fname_tmp == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
