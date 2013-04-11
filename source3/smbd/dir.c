@@ -1045,7 +1045,6 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 		struct smb_filename smb_fname;
 		uint32_t mode = 0;
 		bool ok;
-		NTSTATUS status;
 
 		cur_offset = dptr_TellDir(dirptr);
 		prev_offset = cur_offset;
@@ -1141,9 +1140,9 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 
 		TALLOC_FREE(dname);
 
-		status = copy_smb_filename(ctx, &smb_fname, _smb_fname);
+		*_smb_fname = cp_smb_filename(ctx, &smb_fname);
 		TALLOC_FREE(pathreal);
-		if (!NT_STATUS_IS_OK(status)) {
+		if (*_smb_fname == NULL) {
 			return false;
 		}
 		*_fname = fname;
