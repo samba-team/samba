@@ -1611,6 +1611,8 @@ const char *fsp_fnum_dbg(const struct files_struct *fsp);
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out);
+struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
+				     const struct smb_filename *in);
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 

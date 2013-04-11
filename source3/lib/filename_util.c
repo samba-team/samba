@@ -161,6 +161,45 @@ const char *fsp_fnum_dbg(const struct files_struct *fsp)
 	return str;
 }
 
+struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
+				     const struct smb_filename *in)
+{
+	struct smb_filename *out;
+
+	/* stream_name must always be NULL if there is no stream. */
+	if (in->stream_name) {
+		SMB_ASSERT(in->stream_name[0] != '\0');
+	}
+
+	out = talloc_zero(mem_ctx, struct smb_filename);
+	if (out == NULL) {
+		return NULL;
+	}
+	if (in->base_name != NULL) {
+		out->base_name = talloc_strdup(out, in->base_name);
+		if (out->base_name == NULL) {
+			goto fail;
+		}
+	}
+	if (in->stream_name != NULL) {
+		out->stream_name = talloc_strdup(out, in->stream_name);
+		if (out->stream_name == NULL) {
+			goto fail;
+		}
+	}
+	if (in->original_lcomp != NULL) {
+		out->original_lcomp = talloc_strdup(out, in->original_lcomp);
+		if (out->original_lcomp == NULL) {
+			goto fail;
+		}
+	}
+	out->st = in->st;
+	return out;
+fail:
+	TALLOC_FREE(out);
+	return NULL;
+}
+
 NTSTATUS copy_smb_filename(TALLOC_CTX *ctx,
 			   const struct smb_filename *smb_fname_in,
 			   struct smb_filename **smb_fname_out)
