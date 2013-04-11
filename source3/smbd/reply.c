@@ -6291,8 +6291,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	/* Make a copy of the dst smb_fname structs */
 
-	status = copy_smb_filename(ctx, smb_fname_dst_in, &smb_fname_dst);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_dst = cp_smb_filename(ctx, smb_fname_dst_in);
+	if (smb_fname_dst == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
