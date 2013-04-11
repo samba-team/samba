@@ -699,7 +699,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
         user = s3db.getsampwnam(username)
         acct_type = (user.acct_ctrl & (samr.ACB_NORMAL|samr.ACB_WSTRUST|samr.ACB_SVRTRUST|samr.ACB_DOMTRUST))
         if acct_type == samr.ACB_SVRTRUST:
-            logger.warn("  Demoting BDC account trust for %s, this DC must be elevated to an AD DC using 'samba-tool domain promote'" % username[:-1])
+            logger.warn("  Demoting BDC account trust for %s, this DC must be elevated to an AD DC using 'samba-tool domain dcpromo'" % username[:-1])
             user.acct_ctrl = (user.acct_ctrl & ~samr.ACB_SVRTRUST) | samr.ACB_WSTRUST
 
         elif acct_type == samr.ACB_DOMTRUST:
