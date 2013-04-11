@@ -228,11 +228,10 @@ static off_t recycle_get_file_size(vfs_handle_struct *handle,
 				       const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
-	NTSTATUS status;
 	off_t size;
 
-	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (smb_fname_tmp == NULL) {
 		size = (off_t)0;
 		goto out;
 	}
