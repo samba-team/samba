@@ -190,11 +190,9 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 	}
 
 	posix_open = fsp->posix_open;
-	status = copy_smb_filename(talloc_tos(),
-				fsp->fsp_name,
-				&smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname = cp_smb_filename(talloc_tos(), fsp->fsp_name);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = close_file(smbreq, fsp, NORMAL_CLOSE);
