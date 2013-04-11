@@ -25,10 +25,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "../lib/tdb_compat/tdb_compat.h"
-#include "../lib/util/util_tdb.h"
 #include "messaging/messaging.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_notify.h"
 #include "../lib/util/dlinklist.h"
@@ -37,14 +34,16 @@
 #include "cluster/cluster.h"
 #include "param/param.h"
 #include "lib/util/tsort.h"
+#include "lib/dbwrap/dbwrap.h"
+#include "../lib/util/util_tdb.h"
 
 struct notify_context {
-	struct tdb_wrap *w;
+	struct db_context *db;
 	struct server_id server;
 	struct imessaging_context *imessaging_ctx;
 	struct notify_list *list;
 	struct notify_array *array;
-	int seqnum;
+	int64_t seqnum;
 	struct sys_notify_context *sys_notify_ctx;
 };
 
@@ -102,8 +101,8 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 		return NULL;
 	}
 
-	notify->w = cluster_tdb_tmp_open(notify, lp_ctx, "notify.tdb", TDB_SEQNUM);
-	if (notify->w == NULL) {
+	notify->db = cluster_db_tmp_open(notify, lp_ctx, "notify", TDB_SEQNUM);
+	if (notify->db == NULL) {
 		talloc_free(notify);
 		return NULL;
 	}
@@ -112,7 +111,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	notify->imessaging_ctx = imessaging_ctx;
 	notify->list = NULL;
 	notify->array = NULL;
-	notify->seqnum = tdb_get_seqnum(notify->w->tdb);
+	notify->seqnum = dbwrap_get_seqnum(notify->db);
 
 	talloc_set_destructor(notify, notify_destructor);
 
@@ -130,20 +129,16 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 /*
   lock the notify db
 */
-static NTSTATUS notify_lock(struct notify_context *notify)
+static struct db_record *notify_lock(struct notify_context *notify)
 {
-	if (tdb_lock_bystring(notify->w->tdb, NOTIFY_KEY) != 0) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	return NT_STATUS_OK;
+	TDB_DATA key = string_term_tdb_data(NOTIFY_KEY);
+
+	return dbwrap_fetch_locked(notify->db, notify, key);
 }
 
-/*
-  unlock the notify db
-*/
-static void notify_unlock(struct notify_context *notify)
+static void notify_unlock(struct db_record *lock)
 {
-	tdb_unlock_bystring(notify->w->tdb, NOTIFY_KEY);
+	talloc_free(lock);
 }
 
 /*
@@ -155,8 +150,9 @@ static NTSTATUS notify_load(struct notify_context *notify)
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	int seqnum;
+	NTSTATUS status;
 
-	seqnum = tdb_get_seqnum(notify->w->tdb);
+	seqnum = dbwrap_get_seqnum(notify->db);
 
 	if (seqnum == notify->seqnum && notify->array != NULL) {
 		return NT_STATUS_OK;
@@ -168,8 +164,8 @@ static NTSTATUS notify_load(struct notify_context *notify)
 	notify->array = talloc_zero(notify, struct notify_array);
 	NT_STATUS_HAVE_NO_MEMORY(notify->array);
 
-	dbuf = tdb_fetch_bystring(notify->w->tdb, NOTIFY_KEY);
-	if (dbuf.dptr == NULL) {
+	status = dbwrap_fetch_bystring(notify->db, notify, NOTIFY_KEY, &dbuf);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
 	}
 
@@ -178,7 +174,7 @@ static NTSTATUS notify_load(struct notify_context *notify)
 
 	ndr_err = ndr_pull_struct_blob(&blob, notify->array, notify->array,
 				       (ndr_pull_flags_fn_t)ndr_pull_notify_array);
-	free(dbuf.dptr);
+	talloc_free(dbuf.dptr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
@@ -203,8 +199,8 @@ static NTSTATUS notify_save(struct notify_context *notify)
 	TDB_DATA dbuf;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
-	int ret;
 	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 
 	/* if possible, remove some depth arrays */
 	while (notify->array->num_depths > 0 &&
@@ -214,11 +210,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 
 	/* we might just be able to delete the record */
 	if (notify->array->num_depths == 0) {
-		ret = tdb_delete_bystring(notify->w->tdb, NOTIFY_KEY);
-		if (ret != 0) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
-		return NT_STATUS_OK;
+		return dbwrap_delete_bystring(notify->db, NOTIFY_KEY);
 	}
 
 	tmp_ctx = talloc_new(notify);
@@ -233,14 +225,11 @@ static NTSTATUS notify_save(struct notify_context *notify)
 
 	dbuf.dptr = blob.data;
 	dbuf.dsize = blob.length;
-		
-	ret = tdb_store_bystring(notify->w->tdb, NOTIFY_KEY, dbuf, TDB_REPLACE);
-	talloc_free(tmp_ctx);
-	if (ret != 0) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
 
-	return NT_STATUS_OK;
+	status = dbwrap_store_bystring(notify->db, NOTIFY_KEY, dbuf,
+				       TDB_REPLACE);
+	talloc_free(tmp_ctx);
+	return status;
 }
 
 
@@ -354,14 +343,17 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	struct notify_list *listel;
 	size_t len;
 	int depth;
+	struct db_record *locked;
 
 	/* see if change notify is enabled at all */
 	if (notify == NULL) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	status = notify_lock(notify);
-	NT_STATUS_NOT_OK_RETURN(status);
+	locked = notify_lock(notify);
+	if (!locked) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -415,7 +407,7 @@ NTSTATUS notify_add(struct notify_context *notify, struct notify_entry *e0,
 	}
 
 done:
-	notify_unlock(notify);
+	notify_unlock(locked);
 	talloc_free(tmp_path);
 
 	return status;
@@ -430,6 +422,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 	struct notify_list *listel;
 	int i, depth;
 	struct notify_depth *d;
+	struct db_record *locked;
 
 	/* see if change notify is enabled at all */
 	if (notify == NULL) {
@@ -450,17 +443,19 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 
 	talloc_free(listel);
 
-	status = notify_lock(notify);
-	NT_STATUS_NOT_OK_RETURN(status);
+	locked = notify_lock(notify);
+	if (!locked) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
-		notify_unlock(notify);
+		notify_unlock(locked);
 		return status;
 	}
 
 	if (depth >= notify->array->num_depths) {
-		notify_unlock(notify);
+		notify_unlock(locked);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -474,7 +469,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 		}
 	}
 	if (i == d->num_entries) {
-		notify_unlock(notify);
+		notify_unlock(locked);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -486,7 +481,7 @@ NTSTATUS notify_remove(struct notify_context *notify, void *private_data)
 
 	status = notify_save(notify);
 
-	notify_unlock(notify);
+	notify_unlock(locked);
 
 	return status;
 }
@@ -498,17 +493,20 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 {
 	NTSTATUS status;
 	int i, depth, del_count=0;
+	struct db_record *locked;
 
 	if (notify->list == NULL) {
 		return NT_STATUS_OK;
 	}
 
-	status = notify_lock(notify);
-	NT_STATUS_NOT_OK_RETURN(status);
+	locked = notify_lock(notify);
+	if (!locked) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
 
 	status = notify_load(notify);
 	if (!NT_STATUS_IS_OK(status)) {
-		notify_unlock(notify);
+		notify_unlock(locked);
 		return status;
 	}
 
@@ -533,7 +531,7 @@ static NTSTATUS notify_remove_all(struct notify_context *notify)
 		status = notify_save(notify);
 	}
 
-	notify_unlock(notify);
+	notify_unlock(locked);
 
 	return status;
 }

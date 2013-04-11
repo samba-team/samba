@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "cluster/cluster.h"
 #include "cluster/cluster_private.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
+#include "dbwrap/dbwrap.h"
 #include "system/filesys.h"
 #include "param/param.h"
 #include "librpc/gen_ndr/server_id.h"
@@ -47,17 +47,25 @@ static struct server_id local_id(struct cluster_ops *ops, uint64_t pid, uint32_t
   open a tmp tdb for the local node. By using smbd_tmp_path() we don't need
   TDB_CLEAR_IF_FIRST as the tmp path is wiped at startup
 */
-static struct tdb_wrap *local_tdb_tmp_open(struct cluster_ops *ops,
-					   TALLOC_CTX *mem_ctx, 
-					   struct loadparm_context *lp_ctx,
-					   const char *dbname, int flags)
+static struct db_context *local_db_tmp_open(struct cluster_ops *ops,
+					    TALLOC_CTX *mem_ctx,
+					    struct loadparm_context *lp_ctx,
+					    const char *dbbase, int flags)
 {
-	char *path = smbd_tmp_path(mem_ctx, lp_ctx, dbname);
-	struct tdb_wrap *w;
-	w = tdb_wrap_open(mem_ctx, path, 0, flags,
-			  O_RDWR|O_CREAT, 0600, lp_ctx);
-	talloc_free(path);
-	return w;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	char *path, *dbname;
+	struct db_context *db;
+
+	if (lpcfg_use_ntdb(lp_ctx))
+		dbname = talloc_asprintf(mem_ctx, "%s.ntdb", dbbase);
+	else
+		dbname = talloc_asprintf(mem_ctx, "%s.tdb", dbbase);
+
+	path = smbd_tmp_path(tmp_ctx, lp_ctx, dbname);
+	db = dbwrap_local_open(mem_ctx, lp_ctx, path, 0, flags, O_RDWR|O_CREAT,
+			       0600, 0);
+	talloc_free(tmp_ctx);
+	return db;
 }
 
 /*
@@ -90,7 +98,7 @@ static NTSTATUS local_message_send(struct cluster_ops *ops,
 
 static struct cluster_ops cluster_local_ops = {
 	.cluster_id           = local_id,
-	.cluster_tdb_tmp_open = local_tdb_tmp_open,
+	.cluster_db_tmp_open  = local_db_tmp_open,
 	.backend_handle       = local_backend_handle,
 	.message_init         = local_message_init,
 	.message_send         = local_message_send,

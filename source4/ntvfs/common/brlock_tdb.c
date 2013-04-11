@@ -26,15 +26,14 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include "tdb_compat.h"
 #include "messaging/messaging.h"
-#include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/libcli.h"
 #include "cluster/cluster.h"
 #include "ntvfs/common/brlock.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
+#include "dbwrap/dbwrap.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies
@@ -46,7 +45,7 @@
 
 /* this struct is typicaly attached to tcon */
 struct brl_context {
-	struct tdb_wrap *w;
+	struct db_context *db;
 	struct server_id server;
 	struct imessaging_context *imessaging_ctx;
 };
@@ -103,8 +102,8 @@ static struct brl_context *brl_tdb_init(TALLOC_CTX *mem_ctx, struct server_id se
 		return NULL;
 	}
 
-	brl->w = cluster_tdb_tmp_open(brl, lp_ctx, "brlock.tdb", TDB_DEFAULT);
-	if (brl->w == NULL) {
+	brl->db = cluster_db_tmp_open(brl, lp_ctx, "brlock", TDB_DEFAULT);
+	if (brl->db == NULL) {
 		talloc_free(brl);
 		return NULL;
 	}
@@ -302,6 +301,7 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 	int count=0, i;
 	struct lock_struct lock, *locks=NULL;
 	NTSTATUS status;
+	struct db_record *locked;
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
@@ -310,7 +310,8 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 		return NT_STATUS_INVALID_LOCK_RANGE;
 	}
 
-	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
+	locked = dbwrap_fetch_locked(brl->db, brl, kbuf);
+	if (!locked) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -328,12 +329,12 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 		brlh->last_lock = lock;
 
 		if (NT_STATUS_IS_OK(status)) {
-			tdb_chainunlock(brl->w->tdb, kbuf);
+			talloc_free(locked);
 			return NT_STATUS_OK;
 		}
 	}
 
-	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
+	dbuf = dbwrap_record_get_value(locked);
 
 	lock.context.smbpid = smbpid;
 	lock.context.server = brl->server;
@@ -358,23 +359,24 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	locks = realloc_p(locks, struct lock_struct, count+1);
+	/* FIXME: a dbwrap_record_append() would help here! */
+	locks = talloc_array(locked, struct lock_struct, count+1);
 	if (!locks) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
-	} else {
-		dbuf.dptr = (uint8_t *)locks;
 	}
+	memcpy(locks, dbuf.dptr, dbuf.dsize);
 	locks[count] = lock;
+
+	dbuf.dptr = (unsigned char *)locks;
 	dbuf.dsize += sizeof(lock);
 
-	if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+	status = dbwrap_record_store(locked, dbuf, TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	free(dbuf.dptr);
-	tdb_chainunlock(brl->w->tdb, kbuf);
+	talloc_free(locked);
 
 	/* the caller needs to know if the real lock was granted. If
 	   we have reached here then it must be a pending lock that
@@ -386,9 +388,7 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 	return NT_STATUS_OK;
 
  fail:
-
-	free(dbuf.dptr);
-	tdb_chainunlock(brl->w->tdb, kbuf);
+	talloc_free(locked);
 	return status;
 }
 
@@ -455,6 +455,7 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 	int count, i;
 	struct lock_struct *locks, *lock;
 	struct lock_context context;
+	struct db_record *locked;
 	NTSTATUS status;
 
 	kbuf.dptr = brlh->key.data;
@@ -464,15 +465,11 @@ static NTSTATUS brl_tdb_unlock(struct brl_context *brl,
 		return NT_STATUS_INVALID_LOCK_RANGE;
 	}
 
-	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
+	locked = dbwrap_fetch_locked(brl->db, brl, kbuf);
+	if (!locked) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
-	if (!dbuf.dptr) {
-		tdb_chainunlock(brl->w->tdb, kbuf);
-		return NT_STATUS_RANGE_NOT_LOCKED;
-	}
+	dbuf = dbwrap_record_get_value(locked);
 
 	context.smbpid = smbpid;
 	context.server = brl->server;
@@ -509,8 +506,8 @@ found:
 	if (i < count) {
 		/* found it - delete it */
 		if (count == 1) {
-			if (tdb_delete(brl->w->tdb, kbuf) != 0) {
-				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			status = dbwrap_record_delete(locked);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
 		} else {
@@ -525,15 +522,14 @@ found:
 			brl_tdb_notify_unlock(brl, locks, count, &removed_lock);
 			
 			dbuf.dsize = count * sizeof(*locks);
-			
-			if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-				status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+
+			status = dbwrap_record_store(locked, dbuf, TDB_REPLACE);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
 		}
-		
-		free(dbuf.dptr);
-		tdb_chainunlock(brl->w->tdb, kbuf);
+
+		talloc_free(locked);
 		return NT_STATUS_OK;
 	}
 	
@@ -541,8 +537,7 @@ found:
 	status = NT_STATUS_RANGE_NOT_LOCKED;
 
  fail:
-	free(dbuf.dptr);
-	tdb_chainunlock(brl->w->tdb, kbuf);
+	talloc_free(locked);
 	return status;
 }
 
@@ -560,17 +555,19 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 	int count, i;
 	struct lock_struct *locks;
 	NTSTATUS status;
+	struct db_record *locked;
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
 
-	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
+	locked = dbwrap_fetch_locked(brl->db, brl, kbuf);
+	if (!locked) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
+	dbuf = dbwrap_record_get_value(locked);
 	if (!dbuf.dptr) {
-		tdb_chainunlock(brl->w->tdb, kbuf);
+		talloc_free(locked);
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
@@ -586,8 +583,8 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 		    cluster_id_equal(&lock->context.server, &brl->server)) {
 			/* found it - delete it */
 			if (count == 1) {
-				if (tdb_delete(brl->w->tdb, kbuf) != 0) {
-					status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				status = dbwrap_record_delete(locked);
+				if (!NT_STATUS_IS_OK(status)) {
 					goto fail;
 				}
 			} else {
@@ -597,14 +594,14 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 				}
 				count--;
 				dbuf.dsize = count * sizeof(*locks);
-				if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-					status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+				status = dbwrap_record_store(locked, dbuf,
+							     TDB_REPLACE);
+				if (!NT_STATUS_IS_OK(status)) {
 					goto fail;
 				}
 			}
 			
-			free(dbuf.dptr);
-			tdb_chainunlock(brl->w->tdb, kbuf);
+			talloc_free(locked);
 			return NT_STATUS_OK;
 		}
 	}
@@ -613,8 +610,7 @@ static NTSTATUS brl_tdb_remove_pending(struct brl_context *brl,
 	status = NT_STATUS_RANGE_NOT_LOCKED;
 
  fail:
-	free(dbuf.dptr);
-	tdb_chainunlock(brl->w->tdb, kbuf);
+	talloc_free(locked);
 	return status;
 }
 
@@ -631,6 +627,7 @@ static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 	TDB_DATA kbuf, dbuf;
 	int count, i;
 	struct lock_struct lock, *locks;
+	NTSTATUS status;
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
@@ -639,9 +636,11 @@ static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 		return NT_STATUS_INVALID_LOCK_RANGE;
 	}
 
-	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
-	if (dbuf.dptr == NULL) {
+	status = dbwrap_fetch(brl->db, brl, kbuf, &dbuf);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return NT_STATUS_OK;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	lock.context.smbpid = smbpid;
@@ -658,12 +657,12 @@ static NTSTATUS brl_tdb_locktest(struct brl_context *brl,
 
 	for (i=0; i<count; i++) {
 		if (brl_tdb_conflict_other(&locks[i], &lock)) {
-			free(dbuf.dptr);
+			talloc_free(dbuf.dptr);
 			return NT_STATUS_FILE_LOCK_CONFLICT;
 		}
 	}
 
-	free(dbuf.dptr);
+	talloc_free(dbuf.dptr);
 	return NT_STATUS_OK;
 }
 
@@ -677,18 +676,19 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 	TDB_DATA kbuf, dbuf;
 	int count, i, dcount=0;
 	struct lock_struct *locks;
+	struct db_record *locked;
 	NTSTATUS status;
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
 
-	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
+	locked = dbwrap_fetch_locked(brl->db, brl, kbuf);
+	if (!locked) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
+	dbuf = dbwrap_record_get_value(locked);
 	if (!dbuf.dptr) {
-		tdb_chainunlock(brl->w->tdb, kbuf);
+		talloc_free(locked);
 		return NT_STATUS_OK;
 	}
 
@@ -716,9 +716,7 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 	status = NT_STATUS_OK;
 
 	if (count == 0) {
-		if (tdb_delete(brl->w->tdb, kbuf) != 0) {
-			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+		status = dbwrap_record_delete(locked);
 	} else if (dcount != 0) {
 		/* tell all pending lock holders for this file that
 		   they have a chance now. This is a bit indiscriminant,
@@ -727,13 +725,9 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 
 		dbuf.dsize = count * sizeof(*locks);
 
-		if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
-			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
-		}
+		status = dbwrap_record_store(locked, dbuf, TDB_REPLACE);
 	}
-
-	free(dbuf.dptr);
-	tdb_chainunlock(brl->w->tdb, kbuf);
+	talloc_free(locked);
 
 	return status;
 }
@@ -742,25 +736,21 @@ static NTSTATUS brl_tdb_count(struct brl_context *brl, struct brl_handle *brlh,
 			      int *count)
 {
 	TDB_DATA kbuf, dbuf;
+	NTSTATUS status;
 
 	kbuf.dptr = brlh->key.data;
 	kbuf.dsize = brlh->key.length;
 	*count = 0;
 
-	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
-	dbuf = tdb_fetch_compat(brl->w->tdb, kbuf);
-	if (!dbuf.dptr) {
-		tdb_chainunlock(brl->w->tdb, kbuf);
+	status = dbwrap_fetch(brl->db, brl, kbuf, &dbuf);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return NT_STATUS_OK;
+	} else if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
 	*count = dbuf.dsize / sizeof(struct lock_struct);
 
-	free(dbuf.dptr);
-	tdb_chainunlock(brl->w->tdb, kbuf);
+	talloc_free(dbuf.dptr);
 
 	return NT_STATUS_OK;
 }
