@@ -553,10 +553,9 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,
 	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
 		struct smb_filename *smb_fname_base = NULL;
 
-		status = copy_smb_filename(talloc_tos(), smb_fname,
-					    &smb_fname_base);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
+		smb_fname_base = cp_smb_filename(talloc_tos(), smb_fname);
+		if (smb_fname_base == NULL) {
+			errno = ENOMEM;
 			return -1;
 		}
 
