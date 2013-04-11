@@ -5812,9 +5812,9 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = copy_smb_filename(talloc_tos(), smb_fname, &smb_fname_tmp);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
+	if (smb_fname_tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	smb_fname_tmp->st = *psbuf;
