@@ -39,7 +39,7 @@ class RegistryTestCase(TestCase):
 
     def setUp(self):
         super(RegistryTestCase, self).setUp()
-        self.registry = Registry(os.path.join(DATADIR, "registry.tdb"))
+        self.registry = Registry(os.path.join(DATADIR, "registry"))
 
     def tearDown(self):
         self.registry.close()
@@ -194,7 +194,7 @@ class IdmapDbTestCase(TestCase):
     def setUp(self):
         super(IdmapDbTestCase, self).setUp()
         self.idmapdb = IdmapDatabase(os.path.join(DATADIR,
-            "winbindd_idmap.tdb"))
+            "winbindd_idmap"))
 
     def test_user_hwm(self):
         self.assertEquals(10000, self.idmapdb.get_user_hwm())
