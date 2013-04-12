@@ -800,7 +800,6 @@ static bool collect_one_stream(const char *dirname,
 		(struct streaminfo_state *)private_data;
 	struct smb_filename *smb_fname = NULL;
 	char *sname = NULL;
-	NTSTATUS status;
 	bool ret;
 
 	sname = talloc_asprintf(talloc_tos(), "%s/%s", dirname, dirent);
@@ -810,10 +809,9 @@ static bool collect_one_stream(const char *dirname,
 		goto out;
 	}
 
-	status = create_synthetic_smb_fname(talloc_tos(), sname, NULL,
-					    NULL, &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		state->status = status;
+	smb_fname = synthetic_smb_fname(talloc_tos(), sname, NULL, NULL);
+	if (smb_fname == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
 		ret = false;
 		goto out;
 	}
