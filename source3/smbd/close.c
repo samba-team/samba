@@ -241,15 +241,6 @@ static void notify_deferred_opens(struct smbd_server_connection *sconn,
  			 * zero.
  			 */
 			schedule_deferred_open_message_smb(sconn, e->op_mid);
- 		} else {
-			char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-
-			share_mode_entry_to_message(msg, e);
-
-			messaging_send_buf(sconn->msg_ctx, e->pid,
-					   MSG_SMB_OPEN_RETRY,
-					   (uint8 *)msg,
-					   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
  		}
  	}
 	TALLOC_FREE(deferred);
