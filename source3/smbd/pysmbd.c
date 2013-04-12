@@ -130,12 +130,11 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 	   so set our umask to 0 */
 	saved_umask = umask(0);
 
-	status = create_synthetic_smb_fname_split(fsp, fname, NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname = synthetic_smb_fname_split(fsp, fname, NULL);
+	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		umask(saved_umask);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	fsp->fsp_name = smb_fname;
