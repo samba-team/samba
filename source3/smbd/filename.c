@@ -1334,11 +1334,13 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		SMB_STRUCT_STAT st;
 		ZERO_STRUCT(st);
 		st.st_ex_nlink = 1;
-		status = create_synthetic_smb_fname_split(ctx,
+		*pp_smb_fname = synthetic_smb_fname_split(ctx,
 							  name_in,
-							  &st,
-							  pp_smb_fname);
-		return status;
+							  &st);
+		if (*pp_smb_fname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		return NT_STATUS_OK;
 	}
 
 	/*
