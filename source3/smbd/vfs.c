@@ -1016,10 +1016,9 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		resolved_name));
 
 	/* Now check the stat value is the same. */
-	status = create_synthetic_smb_fname(talloc_tos(), ".",
-					NULL, NULL,
-					&smb_fname_cwd);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL);
+	if (smb_fname_cwd == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
 
