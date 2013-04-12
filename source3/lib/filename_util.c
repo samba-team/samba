@@ -91,30 +91,11 @@ NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					  const SMB_STRUCT_STAT *psbuf,
 					  struct smb_filename **smb_fname_out)
 {
-	NTSTATUS status;
-	const char *stream_name = NULL;
-	char *base_name = NULL;
-
-	if (!lp_posix_pathnames()) {
-		stream_name = strchr_m(fname, ':');
-	}
-
-	/* Setup the base_name/stream_name. */
-	if (stream_name) {
-		base_name = talloc_strndup(ctx, fname,
-					   PTR_DIFF(stream_name, fname));
-	} else {
-		base_name = talloc_strdup(ctx, fname);
-	}
-
-	if (!base_name) {
+	*smb_fname_out = synthetic_smb_fname_split(ctx, fname, psbuf);
+	if (*smb_fname_out == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	status = create_synthetic_smb_fname(ctx, base_name, stream_name, psbuf,
-					    smb_fname_out);
-	TALLOC_FREE(base_name);
-	return status;
+	return NT_STATUS_OK;
 }
 
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
