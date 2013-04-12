@@ -113,7 +113,6 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 	struct smb_filename *smb_fname_cpath = NULL;
 	struct vfs_statvfs_struct statbuf;
-	NTSTATUS status;
 	int ret;
 
 	ZERO_STRUCT(statbuf);
@@ -127,12 +126,9 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 	/* Work out what timestamp resolution we can
 	 * use when setting a timestamp. */
 
-	status = create_synthetic_smb_fname(talloc_tos(),
-				conn->connectpath,
-				NULL,
-				NULL,
-				&smb_fname_cpath);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), conn->connectpath,
+					      NULL, NULL);
+	if (smb_fname_cpath == NULL) {
 		return caps;
 	}
 
