@@ -1089,13 +1089,10 @@ int partition_sequence_number_from_partitions(struct ldb_module *module,
  */
 static int partition_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
-	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
-							      struct partition_private_data);
 	struct ldb_extended *ext;
 	struct ldb_seqnum_request *seq;
 	struct ldb_seqnum_result *seqr;
 	uint64_t seq_number;
-	struct dsdb_partition *p;
 	int ret;
 
 	seq = talloc_get_type_abort(req->op.extended.data, struct ldb_seqnum_request);

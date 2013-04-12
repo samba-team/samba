@@ -214,8 +214,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *openldap_backend_modules[] = {
 		"entryuuid", "paged_searches", "simple_dn", NULL };
 
-	static const char *samba_dsdb_attrs[] = { "backendType", "serverRole", NULL };
-	const char *backendType, *serverRole;
+	static const char *samba_dsdb_attrs[] = { "backendType", NULL };
+	const char *backendType;
 
 	if (!tmp_ctx) {
 		return ldb_oom(ldb);
@@ -245,10 +245,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	                            samba_dsdb_attrs, DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		backendType = "ldb";
-		serverRole = "domain controller";
 	} else if (ret == LDB_SUCCESS) {
 		backendType = ldb_msg_find_attr_as_string(res->msgs[0], "backendType", "ldb");
-		serverRole = ldb_msg_find_attr_as_string(res->msgs[0], "serverRole", "domain controller");
 	} else {
 		talloc_free(tmp_ctx);
 		return ret;

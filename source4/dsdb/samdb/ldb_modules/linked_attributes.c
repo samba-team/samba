@@ -752,7 +752,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		/* find our DN in the values */
 		for (j=0; j<el2->num_values; j++) {
 			struct dsdb_dn *dsdb_dn2;
-			struct GUID link_guid;
+			struct GUID link_guid2;
 
 			dsdb_dn2 = dsdb_dn_parse(msg, ldb, &el2->values[j], target->syntax->ldap_oid);
 			if (dsdb_dn2 == NULL) {
@@ -760,7 +760,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				return LDB_ERR_INVALID_DN_SYNTAX;
 			}
 
-			ret = la_guid_from_dn(module, parent, dsdb_dn2->dn, &link_guid);
+			ret = la_guid_from_dn(module, parent, dsdb_dn2->dn, &link_guid2);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -776,7 +776,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			 * more costly, but still give us a GUID.
 			 * dbcheck will fix this if run.
 			 */
-			if (!GUID_equal(&self_guid, &link_guid)) {
+			if (!GUID_equal(&self_guid, &link_guid2)) {
 				continue;
 			}
 

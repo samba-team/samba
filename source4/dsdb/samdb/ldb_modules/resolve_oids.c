@@ -412,11 +412,9 @@ struct resolve_oids_context {
 
 static int resolve_oids_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct ldb_context *ldb;
 	struct resolve_oids_context *ac;
 
 	ac = talloc_get_type_abort(req->context, struct resolve_oids_context);
-	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,

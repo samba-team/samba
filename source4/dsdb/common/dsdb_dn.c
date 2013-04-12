@@ -76,7 +76,6 @@ struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 {
 	struct dsdb_dn *dsdb_dn;
 	struct ldb_dn *dn;
-	const char *data;
 	size_t len;
 	TALLOC_CTX *tmp_ctx;
 	char *p1;
@@ -127,8 +126,6 @@ struct dsdb_dn *dsdb_dn_parse(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	if (tmp_ctx == NULL) {
 		return NULL;
 	}
-		
-	data = (const char *)dn_blob->data;
 
 	len = dn_blob->length - 2;
 	p1 = talloc_strndup(tmp_ctx, (const char *)dn_blob->data + 2, len);

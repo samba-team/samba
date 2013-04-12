@@ -822,7 +822,6 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	struct ldb_context *ldb;
 	int ret;
 	struct map_private *map_private;
-	struct entryuuid_private *entryuuid_private;
 	unsigned long long seq_num = 0;
 	struct ldb_request *search_req;
 
@@ -842,8 +841,6 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	seq = talloc_get_type(req->op.extended.data, struct ldb_seqnum_request);
 
 	map_private = talloc_get_type(ldb_module_get_private(module), struct map_private);
-
-	entryuuid_private = talloc_get_type(map_private->caller_private, struct entryuuid_private);
 
 	/* All this to get the DN of the parition, so we can search the right thing */
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);

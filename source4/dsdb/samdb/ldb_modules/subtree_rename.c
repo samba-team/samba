@@ -52,10 +52,8 @@ struct subtree_rename_context {
 static struct subtree_rename_context *subren_ctx_init(struct ldb_module *module,
 						      struct ldb_request *req)
 {
-	struct ldb_context *ldb;
 	struct subtree_rename_context *ac;
 
-	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct subtree_rename_context);
 	if (ac == NULL) {
