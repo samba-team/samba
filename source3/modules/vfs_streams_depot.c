@@ -600,7 +600,6 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_base = NULL;
-	NTSTATUS status;
 	int ret = -1;
 
 	DEBUG(10, ("streams_depot_unlink called for %s\n",
@@ -610,6 +609,7 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 	if (is_ntfs_stream_smb_fname(smb_fname) &&
 	    !is_ntfs_default_stream_smb_fname(smb_fname)) {
 		struct smb_filename *smb_fname_stream = NULL;
+		NTSTATUS status;
 
 		status = stream_smb_fname(handle, smb_fname, &smb_fname_stream,
 					  false);
@@ -628,10 +628,10 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 	 * We potentially need to delete the per-inode streams directory
 	 */
 
-	status = create_synthetic_smb_fname(talloc_tos(), smb_fname->base_name,
-					    NULL, NULL, &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_base = synthetic_smb_fname(
+		talloc_tos(), smb_fname->base_name, NULL, NULL);
+	if (smb_fname_base == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
