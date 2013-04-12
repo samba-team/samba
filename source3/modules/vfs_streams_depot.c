@@ -124,7 +124,6 @@ static char *stream_dir(vfs_handle_struct *handle,
 	uint8 id_buf[16];
 	bool check_valid;
 	const char *rootdir;
-	NTSTATUS status;
 
 	check_valid = lp_parm_bool(SNUM(handle->conn),
 		      "streams_depot", "check_valid", true);
@@ -142,14 +141,12 @@ static char *stream_dir(vfs_handle_struct *handle,
 
 	/* Stat the base file if it hasn't already been done. */
 	if (base_sbuf == NULL) {
-		struct smb_filename *smb_fname_base = NULL;
+		struct smb_filename *smb_fname_base;
 
-		status = create_synthetic_smb_fname(talloc_tos(),
-						    smb_fname->base_name,
-						    NULL, NULL,
-						    &smb_fname_base);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
+		smb_fname_base = synthetic_smb_fname(
+			talloc_tos(), smb_fname->base_name, NULL, NULL);
+		if (smb_fname_base == NULL) {
+			errno = ENOMEM;
 			goto fail;
 		}
 		if (SMB_VFS_NEXT_STAT(handle, smb_fname_base) == -1) {
@@ -188,10 +185,9 @@ static char *stream_dir(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	status = create_synthetic_smb_fname(talloc_tos(), result, NULL, NULL,
-					    &smb_fname_hash);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_hash = synthetic_smb_fname(talloc_tos(), result, NULL, NULL);
+	if (smb_fname_hash == NULL) {
+		errno = ENOMEM;
 		goto fail;
 	}
 
@@ -239,13 +235,11 @@ static char *stream_dir(vfs_handle_struct *handle,
 				goto fail;
 			}
 
-			status = create_synthetic_smb_fname(talloc_tos(),
-							    newname,
-							    NULL, NULL,
-							    &smb_fname_new);
+			smb_fname_new = synthetic_smb_fname(
+				talloc_tos(), newname, NULL, NULL);
 			TALLOC_FREE(newname);
-			if (!NT_STATUS_IS_OK(status)) {
-				errno = map_errno_from_nt_status(status);
+			if (smb_fname_new == NULL) {
+				errno = ENOMEM;
 				goto fail;
 			}
 
