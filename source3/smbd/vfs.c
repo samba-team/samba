@@ -843,16 +843,14 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	struct file_id key;
 	struct smb_filename *smb_fname_dot = NULL;
 	struct smb_filename *smb_fname_full = NULL;
-	NTSTATUS status;
 
 	if (!lp_getwd_cache()) {
 		goto nocache;
 	}
 
-	status = create_synthetic_smb_fname(ctx, ".", NULL, NULL,
-					    &smb_fname_dot);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_dot = synthetic_smb_fname(ctx, ".", NULL, NULL);
+	if (smb_fname_dot == NULL) {
+		errno = ENOMEM;
 		goto out;
 	}
 
@@ -877,10 +875,10 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 	SMB_ASSERT((cache_value.length > 0)
 		   && (cache_value.data[cache_value.length-1] == '\0'));
 
-	status = create_synthetic_smb_fname(ctx, (char *)cache_value.data,
-					    NULL, NULL, &smb_fname_full);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_full = synthetic_smb_fname(ctx, (char *)cache_value.data,
+					     NULL, NULL);
+	if (smb_fname_full == NULL) {
+		errno = ENOMEM;
 		goto out;
 	}
 
