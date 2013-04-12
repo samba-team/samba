@@ -30,13 +30,12 @@ int non_posix_sys_acl_blob_get_file_helper(vfs_handle_struct *handle,
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct xattr_sys_acl_hash_wrapper acl_wrapper = {};
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status = create_synthetic_smb_fname_split(frame, path_p,
-							   NULL,
-							   &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	struct smb_filename *smb_fname;
+
+	smb_fname = synthetic_smb_fname_split(frame, path_p, NULL);
+	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
+		errno = ENOMEM;
 		return -1;
 	}
 
