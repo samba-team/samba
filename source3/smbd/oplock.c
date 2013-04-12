@@ -332,7 +332,6 @@ static void oplock_timeout_handler(struct tevent_context *ctx,
 	DEBUG(0, ("Oplock break failed for file %s -- replying anyway\n",
 		  fsp_str_dbg(fsp)));
 	remove_oplock(fsp);
-	reply_to_oplock_break_requests(fsp);
 }
 
 /*******************************************************************
@@ -635,26 +634,6 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	fsp->sent_oplock_break = BREAK_TO_NONE_SENT;
 
 	add_oplock_timeout_handler(fsp);
-}
-
-void reply_to_oplock_break_requests(files_struct *fsp)
-{
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
-
-	/*
-	 * If kernel oplocks already notifies smbds when oplocks are
-	 * broken/removed, just return.
-	 */
-	if (koplocks &&
-	    (koplocks->flags & KOPLOCKS_OPLOCK_BROKEN_NOTIFICATION)) {
-		return;
-	}
-
-	SAFE_FREE(fsp->pending_break_messages);
-	fsp->num_pending_break_messages = 0;
-	TALLOC_FREE(fsp->oplock_timeout);
-	return;
 }
 
 static void process_open_retry_message(struct messaging_context *msg_ctx,

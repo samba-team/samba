@@ -8029,8 +8029,6 @@ void reply_lockingX(struct smb_request *req)
 			smb_panic("internal tdb error");
 		}
 
-		reply_to_oplock_break_requests(fsp);
-
 		/* if this is a pure oplock break request then don't send a
 		 * reply */
 		if (num_locks == 0 && num_ulocks == 0) {

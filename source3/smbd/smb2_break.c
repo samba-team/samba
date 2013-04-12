@@ -199,8 +199,6 @@ static struct tevent_req *smbd_smb2_oplock_break_send(TALLOC_CTX *mem_ctx,
 		smb_panic("internal tdb error");
 	}
 
-	reply_to_oplock_break_requests(fsp);
-
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }

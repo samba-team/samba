@@ -442,7 +442,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	/* Notify any deferred opens waiting on this close. */
 	notify_deferred_opens(conn->sconn, lck);
-	reply_to_oplock_break_requests(fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open
