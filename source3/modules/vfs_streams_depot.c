@@ -847,15 +847,14 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 					 unsigned int *pnum_streams,
 					 struct stream_struct **pstreams)
 {
-	struct smb_filename *smb_fname_base = NULL;
+	struct smb_filename *smb_fname_base;
 	int ret;
 	NTSTATUS status;
 	struct streaminfo_state state;
 
-	status = create_synthetic_smb_fname(talloc_tos(), fname, NULL, NULL,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname_base = synthetic_smb_fname(talloc_tos(), fname, NULL, NULL);
+	if (smb_fname_base == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
