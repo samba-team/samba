@@ -173,10 +173,6 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (fsp->num_pending_break_messages > 0) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	/*
 	 * For now let it be simple and do not keep
 	 * delete on close files durable open

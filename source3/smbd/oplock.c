@@ -525,12 +525,9 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	if (fsp->sent_oplock_break != NO_BREAK_SENT) {
-		/* Remember we have to inform the requesting PID when the
-		 * client replies */
-		msg.pid = src;
-		ADD_TO_ARRAY(NULL, struct share_mode_entry, msg,
-			     &fsp->pending_break_messages,
-			     &fsp->num_pending_break_messages);
+		/*
+		 * Nothing to do anymore
+		 */
 		return;
 	}
 
@@ -566,11 +563,6 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	}
 
 	fsp->sent_oplock_break = break_to_level2 ? LEVEL_II_BREAK_SENT:BREAK_TO_NONE_SENT;
-
-	msg.pid = src;
-	ADD_TO_ARRAY(NULL, struct share_mode_entry, msg,
-		     &fsp->pending_break_messages,
-		     &fsp->num_pending_break_messages);
 
 	add_oplock_timeout_handler(fsp);
 }

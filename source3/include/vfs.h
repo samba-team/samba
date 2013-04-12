@@ -152,6 +152,8 @@
 		connection_struct a pointer. */
 /* Leave at 31 - not yet released. Add share_access to vuid_cache_entry. */
 /* Leave at 31 - not yet released. add SMB_VFS_COPY_CHUNK() */
+/* Leave at 31 - not yet released. Remove the unused
+		fsp->pending_break_messages array */
 
 #define SMB_VFS_INTERFACE_VERSION 31
 
@@ -223,9 +225,6 @@ typedef struct files_struct {
 	struct tevent_timer *oplock_timeout;
 	struct lock_struct last_lock_failure;
 	int current_lock_count; /* Count the number of outstanding locks and pending locks. */
-
-	struct share_mode_entry *pending_break_messages;
-	int num_pending_break_messages;
 
 	bool can_lock;
 	bool can_read;
