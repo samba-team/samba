@@ -346,12 +346,12 @@ static int fake_acls_sys_acl_delete_def_file(vfs_handle_struct *handle, const ch
 	int ret;
 	const char *name = FAKE_ACL_DEFAULT_XATTR;
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status = create_synthetic_smb_fname_split(frame, path, NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	struct smb_filename *smb_fname;
+
+	smb_fname = synthetic_smb_fname_split(frame, path, NULL);
+	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
+		errno = ENOMEM;
 		return -1;
 	}
 
