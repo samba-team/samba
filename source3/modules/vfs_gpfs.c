@@ -1183,10 +1183,12 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 {
 	struct smb_filename *smb_fname_cpath;
 	int rc;
-	NTSTATUS status;
 
-	status = create_synthetic_smb_fname(
-		talloc_tos(), path, NULL, NULL, &smb_fname_cpath);
+	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), path, NULL, NULL);
+	if (smb_fname_cpath == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	if (SMB_VFS_NEXT_STAT(handle, smb_fname_cpath) != 0) {
 		return -1;
