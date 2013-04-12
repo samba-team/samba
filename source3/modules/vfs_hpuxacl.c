@@ -221,9 +221,9 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	DEBUG(10, ("hpuxacl_sys_acl_set_file called for file '%s'\n",
 		   name));
 
-	status = create_synthetic_smb_fname(talloc_tos(), name, NULL, NULL,
-					    &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname = synthetic_smb_fname(talloc_tos(), name, NULL, NULL);
+	if (smb_fname == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
