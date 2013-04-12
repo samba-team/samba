@@ -1595,7 +1595,11 @@ bool brl_reconnect_disconnected(struct files_struct *fsp)
 		return false;
 	}
 
-	/* we want to validate ourself */
+	/*
+	 * When reconnecting, we do not want to validate the brlock entries
+	 * and thereby remove our own (disconnected) entries but reactivate
+	 * them instead.
+	 */
 	fsp->lockdb_clean = true;
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
