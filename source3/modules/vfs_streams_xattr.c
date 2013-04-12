@@ -788,10 +788,10 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	}
 	else {
 		struct smb_filename *smb_fname = NULL;
-		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
-						    NULL, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		smb_fname = synthetic_smb_fname(talloc_tos(), fname, NULL,
+						NULL);
+		if (smb_fname == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 		if (lp_posix_pathnames()) {
 			ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
