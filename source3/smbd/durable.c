@@ -616,12 +616,10 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	}
 
 	/* Create an smb_filename with stream_name == NULL. */
-	status = create_synthetic_smb_fname(talloc_tos(),
-					    cookie.base_name,
-					    NULL, NULL,
-					    &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname = synthetic_smb_fname(talloc_tos(), cookie.base_name,
+					NULL, NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ret = SMB_VFS_LSTAT(conn, smb_fname);
