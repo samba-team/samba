@@ -567,13 +567,11 @@ static int streams_depot_open(vfs_handle_struct *handle,
 	}
 
 	/* Ensure the base file still exists. */
-	status = create_synthetic_smb_fname(talloc_tos(),
-					    smb_fname->base_name,
-					    NULL, NULL,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_base = synthetic_smb_fname(
+		talloc_tos(), smb_fname->base_name, NULL, NULL);
+	if (smb_fname_base == NULL) {
 		ret = -1;
-		errno = map_errno_from_nt_status(status);
+		errno = ENOMEM;
 		goto done;
 	}
 
