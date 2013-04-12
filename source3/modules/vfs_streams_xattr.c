@@ -394,12 +394,10 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 	}
 
 	/* Create an smb_filename with stream_name == NULL. */
-	status = create_synthetic_smb_fname(talloc_tos(),
-					    smb_fname->base_name,
-					    NULL, NULL,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_base = synthetic_smb_fname(
+		talloc_tos(), smb_fname->base_name, NULL, NULL);
+	if (smb_fname_base == NULL) {
+		errno = ENOMEM;
 		goto fail;
 	}
 
