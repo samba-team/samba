@@ -59,20 +59,12 @@ NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
 				    const SMB_STRUCT_STAT *psbuf,
 				    struct smb_filename **smb_fname_out)
 {
-	struct smb_filename smb_fname_loc;
-
-	ZERO_STRUCT(smb_fname_loc);
-
-	/* Setup the base_name/stream_name. */
-	smb_fname_loc.base_name = discard_const_p(char, base_name);
-	smb_fname_loc.stream_name = discard_const_p(char, stream_name);
-
-	/* Copy the psbuf if one was given. */
-	if (psbuf)
-		smb_fname_loc.st = *psbuf;
-
-	/* Let copy_smb_filename() do the heavy lifting. */
-	return copy_smb_filename(ctx, &smb_fname_loc, smb_fname_out);
+	*smb_fname_out = synthetic_smb_fname(ctx, base_name, stream_name,
+					     psbuf);
+	if (*smb_fname_out == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	return NT_STATUS_OK;
 }
 
 struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
@@ -90,7 +82,7 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 	if (psbuf)
 		smb_fname_loc.st = *psbuf;
 
-	/* Let copy_smb_filename() do the heavy lifting. */
+	/* Let cp_smb_filename() do the heavy lifting. */
 	return cp_smb_filename(mem_ctx, &smb_fname_loc);
 }
 
