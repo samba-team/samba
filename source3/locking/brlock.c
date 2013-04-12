@@ -1958,9 +1958,12 @@ static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
 	if (!fsp->lockdb_clean) {
 		int orig_num_locks = br_lck->num_locks;
 
-		/* This is the first time we've accessed this. */
-		/* Go through and ensure all entries exist - remove any that don't. */
-		/* Makes the lockdb self cleaning at low cost. */
+		/*
+		 * This is the first time we access the byte range lock
+		 * record with this fsp. Go through and ensure all entries
+		 * are valid - remove any that don't.
+		 * This makes the lockdb self cleaning at low cost.
+		 */
 
 		if (!validate_lock_entries(&br_lck->num_locks,
 					   &br_lck->lock_data)) {
