@@ -442,7 +442,6 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	off_t maxsize, minsize;
 	off_t file_size; /* space_avail;	*/
 	bool exist;
-	NTSTATUS status;
 	int rc = -1;
 
 	repository = talloc_sub_advanced(NULL, lp_servicename(talloc_tos(), SNUM(conn)),
@@ -575,10 +574,9 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	}
 
 	/* Create smb_fname with final base name and orig stream name. */
-	status = create_synthetic_smb_fname(talloc_tos(), final_name,
-					    smb_fname->stream_name, NULL,
-					    &smb_fname_final);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_final = synthetic_smb_fname(talloc_tos(), final_name,
+					      smb_fname->stream_name, NULL);
+	if (smb_fname_final == NULL) {
 		rc = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 		goto done;
 	}
