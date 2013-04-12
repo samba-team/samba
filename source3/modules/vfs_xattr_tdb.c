@@ -35,12 +35,12 @@ static int xattr_tdb_get_file_id(struct vfs_handle_struct *handle,
 {
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status = create_synthetic_smb_fname_split(frame, path, NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		TALLOC_FREE(frame); 
+	struct smb_filename *smb_fname;
+
+	smb_fname = synthetic_smb_fname_split(frame, path, NULL);
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		errno = ENOMEM;
 		return -1;
 	}
 
