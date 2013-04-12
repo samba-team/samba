@@ -367,10 +367,10 @@ static NTSTATUS stream_smb_fname(vfs_handle_struct *handle,
 	DEBUG(10, ("stream filename = %s\n", stream_fname));
 
 	/* Create an smb_filename with stream_name == NULL. */
-	status = create_synthetic_smb_fname(talloc_tos(), stream_fname, NULL,
-					    NULL, smb_fname_out);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	*smb_fname_out = synthetic_smb_fname(
+		talloc_tos(), stream_fname, NULL, NULL);
+	if (*smb_fname_out == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	return NT_STATUS_OK;
