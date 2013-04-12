@@ -1254,14 +1254,12 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
 		       SMB_STRUCT_STAT *psbuf)
 {
-	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
+	struct smb_filename *smb_fname;
 	int ret;
 
-	status = create_synthetic_smb_fname_split(talloc_tos(), fname, NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname = synthetic_smb_fname_split(talloc_tos(), fname, NULL);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
