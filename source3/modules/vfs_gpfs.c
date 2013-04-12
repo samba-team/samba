@@ -1163,10 +1163,10 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 
 	/* don't add complementary DENY ACEs here */
 	ZERO_STRUCT(fake_fsp);
-	status = create_synthetic_smb_fname(talloc_tos(), path, NULL, NULL,
-					    &fake_fsp.fsp_name);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	fake_fsp.fsp_name = synthetic_smb_fname(
+		talloc_tos(), path, NULL, NULL);
+	if (fake_fsp.fsp_name == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 	/* put the acl */
