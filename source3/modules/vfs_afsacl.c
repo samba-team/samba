@@ -1050,11 +1050,10 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = create_synthetic_smb_fname(talloc_tos(), name, NULL, NULL,
-					    &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname = synthetic_smb_fname(talloc_tos(), name, NULL, NULL);
+	if (smb_fname == NULL) {
 		free_afs_acl(&acl);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	sd_size = afs_to_nt_acl(&acl, handle->conn, smb_fname, security_info,
