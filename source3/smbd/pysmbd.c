@@ -424,11 +424,10 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	status = create_synthetic_smb_fname_split(frame, fname, NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname = synthetic_smb_fname_split(frame, fname, NULL);
+	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
-		PyErr_NTSTATUS_IS_ERR_RAISE(status);
+		PyErr_NTSTATUS_IS_ERR_RAISE(NT_STATUS_NO_MEMORY);
 	}
 
 	ret = SMB_VFS_UNLINK(conn, smb_fname);
