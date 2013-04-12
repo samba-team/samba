@@ -194,7 +194,6 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			       SMB_STRUCT_STAT *sbuf)
 {
 	struct smb_filename *smb_fname_base = NULL;
-	NTSTATUS status;
 	int ret = -1;
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
@@ -210,12 +209,10 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Create an smb_filename with stream_name == NULL. */
-	status = create_synthetic_smb_fname(talloc_tos(),
-					    io->base,
-					    NULL, NULL,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
+	smb_fname_base = synthetic_smb_fname(talloc_tos(), io->base,
+					     NULL, NULL);
+	if (smb_fname_base == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
