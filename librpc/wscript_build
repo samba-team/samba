@@ -217,6 +217,11 @@ bld.SAMBA_SUBSYSTEM('NDR_DNSP',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_NFS4ACL',
+    source='gen_ndr/ndr_nfs4acl.c',
+    public_deps='ndr NDR_SECURITY'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_NTPRINTING',
     source='gen_ndr/ndr_ntprinting.c ndr/ndr_ntprinting.c',
     public_deps='ndr'

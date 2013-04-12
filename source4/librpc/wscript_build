@@ -24,13 +24,6 @@ bld.SAMBA_SUBSYSTEM('NDR_SASL_HELPERS',
 
 
 
-bld.SAMBA_SUBSYSTEM('NDR_NFS4ACL',
-	source='gen_ndr/ndr_nfs4acl.c',
-	public_deps='ndr NDR_SECURITY'
-	)
-
-
-
 bld.SAMBA_SUBSYSTEM('NDR_WINSIF',
 	source='gen_ndr/ndr_winsif.c',
 	public_deps='ndr'
