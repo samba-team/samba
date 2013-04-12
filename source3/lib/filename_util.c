@@ -117,6 +117,35 @@ NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
 	return status;
 }
 
+struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
+					       const char *fname,
+					       const SMB_STRUCT_STAT *psbuf)
+{
+	const char *stream_name = NULL;
+	char *base_name = NULL;
+	struct smb_filename *ret;
+
+	if (!lp_posix_pathnames()) {
+		stream_name = strchr_m(fname, ':');
+	}
+
+	/* Setup the base_name/stream_name. */
+	if (stream_name) {
+		base_name = talloc_strndup(ctx, fname,
+					   PTR_DIFF(stream_name, fname));
+	} else {
+		base_name = talloc_strdup(ctx, fname);
+	}
+
+	if (!base_name) {
+		return NULL;
+	}
+
+	ret = synthetic_smb_fname(ctx, base_name, stream_name, psbuf);
+	TALLOC_FREE(base_name);
+	return ret;
+}
+
 /**
  * Return a string using the talloc_tos()
  */

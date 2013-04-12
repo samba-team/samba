@@ -1609,6 +1609,9 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const char *base_name,
 					 const char *stream_name,
 					 const SMB_STRUCT_STAT *psbuf);
+struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
+					       const char *fname,
+					       const SMB_STRUCT_STAT *psbuf);
 const char *smb_fname_str_dbg(const struct smb_filename *smb_fname);
 const char *fsp_str_dbg(const struct files_struct *fsp);
 const char *fsp_fnum_dbg(const struct files_struct *fsp);
