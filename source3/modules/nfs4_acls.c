@@ -734,7 +734,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 	return theacl;
 }
 
-NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
+NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info_sent,
 	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native)
@@ -819,7 +819,7 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	if (set_acl_as_root) {
 		become_root();
 	}
-	result = set_nfs4_native(fsp, theacl);
+	result = set_nfs4_native(handle, fsp, theacl);
 	saved_errno = errno;
 	if (set_acl_as_root) {
 		unbecome_root();

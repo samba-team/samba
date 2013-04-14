@@ -106,7 +106,7 @@ static NTSTATUS zfs_get_nt_acl_common(const char *name,
 }
 
 /* call-back function processing the NT acl -> ZFS acl using NFSv4 conv. */
-static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
+static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
 {
 	int naces = smb_get_naces(smbacl), i;
 	ace_t *acebuf;
@@ -187,8 +187,8 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent,
 			   const struct security_descriptor *psd)
 {
-	return smb_set_nt_acl_nfs4(fsp, security_info_sent, psd,
-			zfs_process_smbacl);
+        return smb_set_nt_acl_nfs4(handle, fsp, security_info_sent, psd,
+				   zfs_process_smbacl);
 }
 
 static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,

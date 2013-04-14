@@ -338,7 +338,7 @@ static int aixjfs2_query_acl_support(
 	return 1; /* haven't found that ACL type. */
 }
 
-static bool aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
+static bool aixjfs2_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
 {
 	SMB4ACE_T	*smbace;
 	TALLOC_CTX	*mem_ctx;
@@ -413,20 +413,21 @@ static bool aixjfs2_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	return True;
 }
 
-static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	acl_type_t	acl_type_info;
 	NTSTATUS	result = NT_STATUS_ACCESS_DENIED;
 	int	rc;
 
 	rc = aixjfs2_query_acl_support(
+		handle,
 		fsp->fsp_name,
 		ACL_NFS4,
 		&acl_type_info);
 
 	if (rc==0)
 	{
-		result = smb_set_nt_acl_nfs4(
+		result = smb_set_nt_acl_nfs4(handle,
 			fsp, security_info_sent, psd,
 			aixjfs2_process_smbacl);
 	} else if (rc==1) { /* assume POSIX ACL - by default... */
@@ -439,7 +440,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_inf
 
 NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
 {
-	return aixjfs2_set_nt_acl_common(fsp, security_info_sent, psd);
+	return aixjfs2_set_nt_acl_common(handle, fsp, security_info_sent, psd);
 }
 
 int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,

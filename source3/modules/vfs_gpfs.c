@@ -453,7 +453,7 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	return map_nt_error_from_unix(errno);
 }
 
-static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
+static bool gpfsacl_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB4ACL_T *smbacl)
 {
 	int ret;
 	gpfs_aclLen_t gacl_len;
@@ -549,7 +549,7 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 	return True;
 }
 
-static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
+static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	struct gpfs_acl *acl;
 	NTSTATUS result = NT_STATUS_ACCESS_DENIED;
@@ -570,7 +570,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 			return NT_STATUS_NOT_SUPPORTED;
 		}
 
-		result = smb_set_nt_acl_nfs4(
+		result = smb_set_nt_acl_nfs4(handle,
 			fsp, security_info_sent, psd,
 			gpfsacl_process_smbacl);
 	} else { /* assume POSIX ACL - by default... */
@@ -593,7 +593,7 @@ static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp
 		return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	}
 
-	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
+	return gpfsacl_set_nt_acl_internal(handle, fsp, security_info_sent, psd);
 }
 
 static SMB_ACL_T gpfs2smb_acl(const struct gpfs_acl *pacl, TALLOC_CTX *mem_ctx)

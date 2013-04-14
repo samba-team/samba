@@ -143,9 +143,9 @@ NTSTATUS smb_get_nt_acl_nfs4(connection_struct *conn,
 
 /* Callback function needed to set the native acl
  * when applicable */
-typedef bool (*set_nfs4acl_native_fn_t)(files_struct *, SMB4ACL_T *);
+typedef bool (*set_nfs4acl_native_fn_t)(vfs_handle_struct *handle, files_struct *, SMB4ACL_T *);
 
-NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
+NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info_sent,
 	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native);
