@@ -971,7 +971,7 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRe
 
 	case DNS_TYPE_MX:
 		return rec1->data.mx.wPriority == rec2->data.srv.wPriority &&
-			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.srv.nameTarget);
+			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget);
 
 	case DNS_TYPE_TXT:
 		if (rec1->data.txt.count != rec2->data.txt.count) {
