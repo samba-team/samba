@@ -142,9 +142,8 @@ static SMB_ACE4_INT_T *get_validated_aceint(SMB4ACE_T *ace)
 	return aceint;
 }
 
-SMB4ACL_T *smb_create_smb4acl(void)
+SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx)
 {
-	TALLOC_CTX *mem_ctx = talloc_tos();
 	SMB_ACL4_INT_T	*theacl = (SMB_ACL4_INT_T *)TALLOC_ZERO_SIZE(
 		mem_ctx, sizeof(SMB_ACL4_INT_T));
 	if (theacl==NULL)
@@ -379,10 +378,12 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	struct security_acl *psa = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (theacl==NULL || smb_get_naces(theacl)==0)
+	if (theacl==NULL || smb_get_naces(theacl)==0) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED; /* special because we
 						 * shouldn't alloc 0 for
 						 * win */
+	}
 
 	uid_to_sid(&sid_owner, sbuf->st_ex_uid);
 	gid_to_sid(&sid_group, sbuf->st_ex_gid);
@@ -691,6 +692,7 @@ static int smbacl4_MergeIgnoreReject(
 }
 
 static SMB4ACL_T *smbacl4_win2nfs4(
+	TALLOC_CTX *mem_ctx,
 	const files_struct *fsp,
 	const struct security_acl *dacl,
 	smbacl4_vfs_params *pparams,
@@ -704,7 +706,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 
 	DEBUG(10, ("smbacl4_win2nfs4 invoked\n"));
 
-	theacl = smb_create_smb4acl();
+	theacl = smb_create_smb4acl(mem_ctx);
 	if (theacl==NULL)
 		return NULL;
 
@@ -748,6 +750,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	uid_t newUID = (uid_t)-1;
 	gid_t newGID = (gid_t)-1;
 	int saved_errno;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	DEBUG(10, ("smb_set_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
@@ -756,16 +759,21 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	{
 		DEBUG(9, ("security_info_sent (0x%x) ignored\n",
 			security_info_sent));
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK; /* won't show error - later to be
 				      * refined... */
 	}
 
 	/* Special behaviours */
-	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp, &params))
+	if (smbacl4_get_vfs_params(SMBACL4_PARAM_TYPE_NAME, fsp, &params)) {
+		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (smbacl4_fGetFileOwner(fsp, &sbuf))
+	if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
+	}
 
 	if (params.do_chown) {
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
@@ -773,6 +781,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 						   security_info_sent, psd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(8, ("unpack_nt_owners failed"));
+			TALLOC_FREE(frame);
 			return status;
 		}
 		if (((newUID != (uid_t)-1) && (sbuf.st_ex_uid != newUID)) ||
@@ -785,6 +794,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 					 (unsigned int)newUID,
 					 (unsigned int)newGID,
 					 nt_errstr(status)));
+				TALLOC_FREE(frame);
 				return status;
 			}
 
@@ -794,6 +804,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 			if (smbacl4_GetFileOwner(fsp->conn,
 						 fsp->fsp_name->base_name,
 						 &sbuf))
+				TALLOC_FREE(frame);
 				return map_nt_error_from_unix(errno);
 
 			/* If we successfully chowned, we know we must
@@ -806,13 +817,16 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	if (!(security_info_sent & SECINFO_DACL) || psd->dacl ==NULL) {
 		DEBUG(10, ("no dacl found; security_info_sent = 0x%x\n",
 			   security_info_sent));
+		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
 
-	theacl = smbacl4_win2nfs4(fsp, psd->dacl, &params,
+	theacl = smbacl4_win2nfs4(frame, fsp, psd->dacl, &params,
 				  sbuf.st_ex_uid, sbuf.st_ex_gid);
-	if (!theacl)
+	if (!theacl) {
+		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
+	}
 
 	smbacl4_dump_nfs4acl(10, theacl);
 
@@ -824,6 +838,9 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	if (set_acl_as_root) {
 		unbecome_root();
 	}
+
+	TALLOC_FREE(frame);
+
 	if (result!=True) {
 		errno = saved_errno;
 		DEBUG(10, ("set_nfs4_native failed with %s\n",

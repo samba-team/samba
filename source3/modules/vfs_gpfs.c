@@ -299,7 +299,7 @@ again:
  * On failure returns -1 if there is system (GPFS) error, check errno.
  * Returns 0 on success
  */
-static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
+static int gpfs_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *fname, SMB4ACL_T **ppacl)
 {
 	gpfs_aclCount_t i;
 	struct gpfs_acl *gacl = NULL;
@@ -321,7 +321,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 		return 1;
 	}
 
-	*ppacl = smb_create_smb4acl();
+	*ppacl = smb_create_smb4acl(mem_ctx);
 
 	DEBUG(10, ("len: %d, level: %d, version: %d, nace: %d\n",
 		   gacl->acl_len, gacl->acl_level, gacl->acl_version,
@@ -399,19 +399,29 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
-						mem_ctx, ppdesc);
+		status = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info,
+						  mem_ctx, ppdesc);
+		TALLOC_FREE(frame);
+		return status;
 	}
 
-	result = gpfs_get_nfs4_acl(fsp->fsp_name->base_name, &pacl);
+	result = gpfs_get_nfs4_acl(frame, fsp->fsp_name->base_name, &pacl);
 
-	if (result == 0)
-		return smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx, ppdesc, pacl);
+	if (result == 0) {
+		statys = smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx, ppdesc, pacl);
+		TALLOC_FREE(frame);
+		return status;
+	}
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_fget_nt_acl(fsp, security_info, mem_ctx, ppdesc);
+		status = posix_fget_nt_acl(fsp, security_info, mem_ctx, ppdesc);
+		TALLOC_FREE(frame);
+		return status;
+
 	}
+
+	TALLOC_FREE(frame);
 
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
 	return map_nt_error_from_unix(errno);
@@ -425,6 +435,8 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	SMB4ACL_T *pacl = NULL;
 	int	result;
 	struct gpfs_config_data *config;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	*ppdesc = NULL;
 

@@ -114,7 +114,7 @@ typedef struct _SMB_ACE4PROP_T {
 typedef struct _SMB4ACL_T {char dontuse;} SMB4ACL_T;
 typedef struct _SMB4ACE_T {char dontuse;} SMB4ACE_T;
 
-SMB4ACL_T *smb_create_smb4acl(void);
+SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
 /* prop's contents are copied */
 /* it doesn't change the order, appends */
