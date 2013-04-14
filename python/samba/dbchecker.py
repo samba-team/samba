@@ -251,7 +251,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
     def is_deleted_objects_dn(self, dsdb_dn):
         '''see if a dsdb_Dn is the special Deleted Objects DN'''
-        return dsdb_dn.prefix == "B:32:18E2EA80684F11D2B9AA00C04F79F805:"
+        return dsdb_dn.prefix == "B:32:%s:" % dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER
 
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
         """handle a DN pointing to a deleted object"""
