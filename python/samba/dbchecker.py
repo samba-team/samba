@@ -271,7 +271,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         """handle a missing target DN (both GUID and DN string form are missing)"""
         # check if its a backlink
         linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
-        if (linkID & 1 == 0) and str(dsdb_dn).find('DEL\\0A') == -1:
+        if (linkID & 1 == 0) and str(dsdb_dn).find('\\0ADEL') == -1:
             self.report("Not removing dangling forward link")
             return
         self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn)
