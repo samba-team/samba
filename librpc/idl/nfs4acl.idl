@@ -15,6 +15,10 @@ interface nfs4acl
 {
 	const char *NFS4ACL_XATTR_NAME = "system.nfs4acl";
 
+	const char *NFS4ACL_XATTR_OWNER_WHO	 = "OWNER@";
+	const char *NFS4ACL_XATTR_GROUP_WHO	 = "GROUP@";
+	const char *NFS4ACL_XATTR_EVERYONE_WHO   = "EVERYONE@";
+
 	/* these structures use the same bit values and other constants as
 	   in security.idl */
 	typedef [flag(NDR_BIG_ENDIAN)] struct {
