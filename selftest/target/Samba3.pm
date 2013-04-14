@@ -1081,6 +1081,12 @@ sub provision($$$$$$)
 	default devmode = no
 [lp]
 	copy = print1
+
+[nfs4acl_share]
+	path = $shrdir
+	comment = smb username is [%U]
+	vfs objects = $vfs_modulesdir_abs/nfs4acl_xattr.so $vfs_modulesdir_abs/xattr_tdb.so
+
 [xcopy_share]
 	path = $shrdir
 	comment = smb username is [%U]
