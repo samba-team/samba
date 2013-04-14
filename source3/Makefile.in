@@ -883,6 +883,7 @@ VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o $(NFS4ACL_OBJ)
 VFS_SOLARISACL_OBJ = modules/vfs_solarisacl.o
 VFS_ZFSACL_OBJ = modules/vfs_zfsacl.o $(NFS4ACL_OBJ)
+VFS_NFS4ACL_XATTR_OBJ = modules/vfs_nfs4acl_xattr.o
 VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
@@ -2837,6 +2838,10 @@ bin/solarisacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SOLARISACL_OBJ)
 bin/zfsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ZFSACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_ZFSACL_OBJ) @ZFSACL_LIBS@
+
+bin/nfs4acl_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NFS4ACL_XATTR_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_NFS4ACL_XATTR_OBJ)
 
 bin/hpuxacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_HPUXACL_OBJ)
 	@echo "Building plugin $@"

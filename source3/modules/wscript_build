@@ -21,6 +21,7 @@ VFS_AIXACL_SRC = '''vfs_aixacl.c'''
 VFS_AIXACL2_SRC = '''vfs_aixacl2.c'''
 VFS_SOLARISACL_SRC = '''vfs_solarisacl.c'''
 VFS_ZFSACL_SRC = '''vfs_zfsacl.c'''
+VFS_NFS4ACL_XATTR_SRC = 'vfs_nfs4acl_xattr.c'
 VFS_HPUXACL_SRC = '''vfs_hpuxacl.c'''
 VFS_TRU64ACL_SRC = '''vfs_tru64acl.c'''
 VFS_CATIA_SRC = 'vfs_catia.c'
@@ -246,6 +247,14 @@ bld.SAMBA3_MODULE('vfs_zfsacl',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_zfsacl'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_zfsacl'))
+
+bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
+		 subsystem='vfs',
+		 source=VFS_NFS4ACL_XATTR_SRC,
+		 deps='NFS4_ACLS sunacl',
+		 init_function='',
+		 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_nfs4acl_xattr'),
+		 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_nfs4acl_xattr'))
 
 bld.SAMBA3_MODULE('vfs_hpuxacl',
                  subsystem='vfs',

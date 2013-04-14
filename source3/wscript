@@ -1756,7 +1756,7 @@ main() {
         default_shared_modules.extend(TO_LIST('auth_skel pdb_test'))
 
     if Options.options.enable_selftest or Options.options.developer:
-        default_shared_modules.extend(TO_LIST('vfs_fake_acls'))
+	default_shared_modules.extend(TO_LIST('vfs_fake_acls vfs_nfs4acl_xattr'))
         
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):

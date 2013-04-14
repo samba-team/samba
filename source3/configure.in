@@ -474,7 +474,7 @@ if test "x$developer" = xyes; then
 fi
 
 if test x"$selftest" = x"yes" -o "x$developer" = xyes; then
-   default_shared_modules="$default_shared_modules vfs_fake_acls"
+   default_shared_modules="$default_shared_modules vfs_fake_acls vfs_nfs4acl_xattr"
 fi
 
 #
