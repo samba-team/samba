@@ -42,7 +42,6 @@
  */
 static NTSTATUS zfs_get_nt_acl_common(TALLOC_CTX *mem_ctx,
 				      const char *name,
-				      uint32 security_info,
 				      SMB4ACL_T **ppacl)
 {
 	int naces, i;
@@ -203,7 +202,6 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 
 	status = zfs_get_nt_acl_common(frame,
 				       fsp->fsp_name->base_name,
-				       security_info,
 				       &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
@@ -224,7 +222,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(frame, name, security_info, &pacl);
+	status = zfs_get_nt_acl_common(frame, name, &pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
