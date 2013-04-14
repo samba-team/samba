@@ -891,40 +891,78 @@ Please fix this account before attempting to upgrade again
     # Connect to samba4 backend
     s4_passdb = passdb.PDB(new_lp_ctx.get("passdb backend"))
 
-    # Export groups to samba4 backend
-    logger.info("Importing groups")
-    for g in grouplist:
-        # Ignore uninitialized groups (gid = -1)
-        if g.gid != -1:
-            add_group_from_mapping_entry(result.samdb, g, logger)
-            add_ad_posix_idmap_entry(result.samdb, g.sid, g.gid, "ID_TYPE_GID", logger)
-            add_posix_attrs(samdb=result.samdb, sid=g.sid, name=g.nt_name, nisdomain=domainname.lower(), xid_type="ID_TYPE_GID", logger=logger)
+    # Start a new transaction (should speed this up a little, due to index churn)
+    result.samdb.transaction_start()
 
-    # Export users to samba4 backend
-    logger.info("Importing users")
-    for username in userdata:
-        if username.lower() == 'administrator':
-            if userdata[username].user_sid != dom_sid(str(domainsid) + "-500"):
-                logger.error("User 'Administrator' in your existing directory has SID %s, expected it to be %s" % (userdata[username].user_sid, dom_sid(str(domainsid) + "-500")))
-                raise ProvisioningError("User 'Administrator' in your existing directory does not have SID ending in -500")
-        if username.lower() == 'root':
-            if userdata[username].user_sid == dom_sid(str(domainsid) + "-500"):
-                logger.warn('User root has been replaced by Administrator')
-            else:
-                logger.warn('User root has been kept in the directory, it should be removed in favour of the Administrator user')
+    logger.info("Adding groups")
+    try:
+        # Export groups to samba4 backend
+        logger.info("Importing groups")
+        for g in grouplist:
+            # Ignore uninitialized groups (gid = -1)
+            if g.gid != -1:
+                add_group_from_mapping_entry(result.samdb, g, logger)
+                add_ad_posix_idmap_entry(result.samdb, g.sid, g.gid, "ID_TYPE_GID", logger)
+                add_posix_attrs(samdb=result.samdb, sid=g.sid, name=g.nt_name, nisdomain=domainname.lower(), xid_type="ID_TYPE_GID", logger=logger)
 
-        s4_passdb.add_sam_account(userdata[username])
-        if username in uids:
-            add_ad_posix_idmap_entry(result.samdb, userdata[username].user_sid, uids[username], "ID_TYPE_UID", logger)
-            if (username in homes) and (homes[username] is not None) and \
-               (username in shells) and (shells[username] is not None) and \
-               (username in pgids) and (pgids[username] is not None):
-                add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, name=username, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
+    except:
+        # We need this, so that we do not give even more errors due to not cancelling the transaction
+        result.samdb.transaction_cancel()
+        raise
+
+    logger.info("Commiting 'add groups' transaction to disk")
+    result.samdb.transaction_commit()
+
+    logger.info("Adding users")
+    # Start a new transaction (should speed this up a little, due to index churn)
+    result.samdb.transaction_start()
+
+    try:
+        # Export users to samba4 backend
+        logger.info("Importing users")
+        for username in userdata:
+            if username.lower() == 'administrator':
+                if userdata[username].user_sid != dom_sid(str(domainsid) + "-500"):
+                    logger.error("User 'Administrator' in your existing directory has SID %s, expected it to be %s" % (userdata[username].user_sid, dom_sid(str(domainsid) + "-500")))
+                    raise ProvisioningError("User 'Administrator' in your existing directory does not have SID ending in -500")
+            if username.lower() == 'root':
+                if userdata[username].user_sid == dom_sid(str(domainsid) + "-500"):
+                    logger.warn('User root has been replaced by Administrator')
+                else:
+                    logger.warn('User root has been kept in the directory, it should be removed in favour of the Administrator user')
+
+            s4_passdb.add_sam_account(userdata[username])
+            if username in uids:
+                add_ad_posix_idmap_entry(result.samdb, userdata[username].user_sid, uids[username], "ID_TYPE_UID", logger)
+                if (username in homes) and (homes[username] is not None) and \
+                   (username in shells) and (shells[username] is not None) and \
+                   (username in pgids) and (pgids[username] is not None):
+                    add_posix_attrs(samdb=result.samdb, sid=userdata[username].user_sid, name=username, nisdomain=domainname.lower(), xid_type="ID_TYPE_UID", home=homes[username], shell=shells[username], pgid=pgids[username], logger=logger)
+
+    except:
+        # We need this, so that we do not give even more errors due to not cancelling the transaction
+        result.samdb.transaction_cancel()
+        raise
+
+    logger.info("Commiting 'add users' transaction to disk")
+    result.samdb.transaction_commit()
 
     logger.info("Adding users to groups")
-    for g in grouplist:
-        if str(g.sid) in groupmembers:
-            add_users_to_group(result.samdb, g, groupmembers[str(g.sid)], logger)
+    # Start a new transaction (should speed this up a little, due to index churn)
+    result.samdb.transaction_start()
+
+    try:
+        for g in grouplist:
+            if str(g.sid) in groupmembers:
+                add_users_to_group(result.samdb, g, groupmembers[str(g.sid)], logger)
+
+    except:
+        # We need this, so that we do not give even more errors due to not cancelling the transaction
+        result.samdb.transaction_cancel()
+        raise
+
+    logger.info("Commiting 'add users to groups' transaction to disk")
+    result.samdb.transaction_commit()
 
     # Set password for administrator
     if admin_user:
