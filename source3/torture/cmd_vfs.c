@@ -331,11 +331,10 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	fsp->conn = vfs->conn;
 
-	status = create_synthetic_smb_fname_split(NULL, argv[1], NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname = synthetic_smb_fname_split(NULL, argv[1], NULL);
+	if (smb_fname == NULL) {
 		TALLOC_FREE(fsp);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	fsp->fsp_name = smb_fname;
