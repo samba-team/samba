@@ -84,20 +84,18 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 	}
 
 	if ((inherit_from_dir != NULL) && lp_inherit_perms(SNUM(conn))) {
-		struct smb_filename *smb_fname_parent = NULL;
-		NTSTATUS status;
+		struct smb_filename *smb_fname_parent;
 
 		DEBUG(2, ("unix_mode(%s) inheriting from %s\n",
 			  smb_fname_str_dbg(smb_fname),
 			  inherit_from_dir));
 
-		status = create_synthetic_smb_fname(talloc_tos(),
-						    inherit_from_dir, NULL,
-						    NULL, &smb_fname_parent);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1,("unix_mode(%s) failed, [dir %s]: %s\n",
+		smb_fname_parent = synthetic_smb_fname(
+			talloc_tos(), inherit_from_dir, NULL, NULL);
+		if (smb_fname_parent == NULL) {
+			DEBUG(1,("unix_mode(%s) failed, [dir %s]: No memory\n",
 				 smb_fname_str_dbg(smb_fname),
-				 inherit_from_dir, nt_errstr(status)));
+				 inherit_from_dir));
 			return(0);
 		}
 
