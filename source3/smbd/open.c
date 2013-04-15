@@ -489,9 +489,9 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		goto chdir;
 	}
 
-	status = create_synthetic_smb_fname(ctx, ".", NULL, NULL,
-					    &smb_fname_cwd);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_cwd = synthetic_smb_fname(ctx, ".", NULL, NULL);
+	if (smb_fname_cwd == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto chdir;
 	}
 
