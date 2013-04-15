@@ -441,17 +441,17 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 				       const char *fname,
 				       SMB_STRUCT_STAT *psbuf)
 {
-	struct smb_filename *smb_fname_parent = NULL;
+	struct smb_filename *smb_fname_parent;
 	struct smb_filename *smb_fname_cwd = NULL;
 	char *saved_dir = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
-	status = create_synthetic_smb_fname(ctx, inherit_from_dir, NULL, NULL,
-					    &smb_fname_parent);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname_parent = synthetic_smb_fname(ctx, inherit_from_dir,
+					       NULL, NULL);
+	if (smb_fname_parent == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ret = SMB_VFS_STAT(conn, smb_fname_parent);
