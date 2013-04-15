@@ -493,7 +493,7 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	status = create_synthetic_smb_fname(ctx, ".", NULL, NULL,
 					    &smb_fname_cwd);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto chdir;
 	}
 
 	ret = SMB_VFS_STAT(conn, smb_fname_cwd);
