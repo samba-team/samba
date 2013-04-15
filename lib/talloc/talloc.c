@@ -931,10 +931,13 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 		}
 
 		pool->hdr.object_count--;
-		if (unlikely(pool->hdr.object_count == 0)) {
-			TC_INVALIDATE_FULL_CHUNK(tc);
-			free(tc);
+
+		if (likely(pool->hdr.object_count != 0)) {
+			return 0;
 		}
+
+		TC_INVALIDATE_FULL_CHUNK(tc);
+		free(tc);
 		return 0;
 	}
 
