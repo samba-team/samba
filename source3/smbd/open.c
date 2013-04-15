@@ -387,13 +387,12 @@ void change_file_owner_to_parent(connection_struct *conn,
 					const char *inherit_from_dir,
 					files_struct *fsp)
 {
-	struct smb_filename *smb_fname_parent = NULL;
-	NTSTATUS status;
+	struct smb_filename *smb_fname_parent;
 	int ret;
 
-	status = create_synthetic_smb_fname(talloc_tos(), inherit_from_dir,
-					    NULL, NULL, &smb_fname_parent);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_parent = synthetic_smb_fname(talloc_tos(), inherit_from_dir,
+					       NULL, NULL);
+	if (smb_fname_parent == NULL) {
 		return;
 	}
 
