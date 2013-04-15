@@ -391,6 +391,8 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	SMB4ACL_T *pacl = NULL;
 	int	result;
 	struct gpfs_config_data *config;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
 
 	*ppdesc = NULL;
 
@@ -408,17 +410,18 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	result = gpfs_get_nfs4_acl(frame, fsp->fsp_name->base_name, &pacl);
 
 	if (result == 0) {
-		statys = smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx, ppdesc, pacl);
+		status = smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx,
+					      ppdesc, pacl);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		status = posix_fget_nt_acl(fsp, security_info, mem_ctx, ppdesc);
+		status = posix_fget_nt_acl(fsp, security_info,
+					   mem_ctx, ppdesc);
 		TALLOC_FREE(frame);
 		return status;
-
 	}
 
 	TALLOC_FREE(frame);
@@ -445,20 +448,27 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
-					       mem_ctx, ppdesc);
+		status = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+						 mem_ctx, ppdesc);
+		TALLOC_FREE(frame);
+		return status;
 	}
 
-	result = gpfs_get_nfs4_acl(name, &pacl);
+	result = gpfs_get_nfs4_acl(frame, name, &pacl);
 
-	if (result == 0)
-		return smb_get_nt_acl_nfs4(handle->conn, name, security_info,
+	if (result == 0) {
+		status = smb_get_nt_acl_nfs4(handle->conn, name, security_info,
 					   mem_ctx, ppdesc, pacl);
+		TALLOC_FREE(frame);
+		return status;
+	}
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_get_nt_acl(handle->conn, name, security_info,
-					mem_ctx, ppdesc);
+		status =  posix_get_nt_acl(handle->conn, name, security_info,
+					   mem_ctx, ppdesc);
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
@@ -1097,7 +1107,8 @@ static uint32 gpfsacl_mask_filter(uint32 aceType, uint32 aceMask, uint32 rwx)
 	return aceMask;
 }
 
-static int gpfsacl_emu_chmod(const char *path, mode_t mode)
+static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
+			     const char *path, mode_t mode)
 {
 	SMB4ACL_T *pacl = NULL;
 	int     result;
@@ -1105,12 +1116,14 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	int     i;
 	files_struct    fake_fsp; /* TODO: rationalize parametrization */
 	SMB4ACE_T       *smbace;
+	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
 
-	result = gpfs_get_nfs4_acl(path, &pacl);
+	result = gpfs_get_nfs4_acl(frame, path, &pacl);
 	if (result)
+		TALLOC_FREE(frame);
 		return result;
 
 	if (mode & ~(S_IRWXU | S_IRWXG | S_IRWXO)) {
@@ -1176,18 +1189,19 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	/* don't add complementary DENY ACEs here */
 	ZERO_STRUCT(fake_fsp);
 	fake_fsp.fsp_name = synthetic_smb_fname(
-		talloc_tos(), path, NULL, NULL);
+		frame, path, NULL, NULL);
 	if (fake_fsp.fsp_name == NULL) {
 		errno = ENOMEM;
+		TALLOC_FREE(frame);
 		return -1;
 	}
 	/* put the acl */
-	if (gpfsacl_process_smbacl(&fake_fsp, pacl) == False) {
-		TALLOC_FREE(fake_fsp.fsp_name);
+	if (gpfsacl_process_smbacl(handle, &fake_fsp, pacl) == False) {
+		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	TALLOC_FREE(fake_fsp.fsp_name);
+	TALLOC_FREE(frame);
 	return 0; /* ok for [f]chmod */
 }
 
@@ -1211,7 +1225,7 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 		return 0;
 	}
 
-	rc = gpfsacl_emu_chmod(path, mode);
+	rc = gpfsacl_emu_chmod(handle, path, mode);
 	if (rc == 1)
 		return SMB_VFS_NEXT_CHMOD(handle, path, mode);
 	return rc;
@@ -1231,7 +1245,8 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 			 return 0;
 		 }
 
-		 rc = gpfsacl_emu_chmod(fsp->fsp_name->base_name, mode);
+		 rc = gpfsacl_emu_chmod(handle, fsp->fsp_name->base_name,
+					mode);
 		 if (rc == 1)
 			 return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 		 return rc;
