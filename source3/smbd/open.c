@@ -3741,11 +3741,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 
 		/* Create an smb_filename with stream_name == NULL. */
-		status = create_synthetic_smb_fname(talloc_tos(),
-						    smb_fname->base_name,
-						    NULL, NULL,
-						    &smb_fname_base);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_fname_base = synthetic_smb_fname(talloc_tos(),
+						     smb_fname->base_name,
+						     NULL, NULL);
+		if (smb_fname_base == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
