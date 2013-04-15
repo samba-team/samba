@@ -65,7 +65,7 @@ static void ctdb_syslog_handler(struct event_context *ev, struct fd_event *fde,
 }
 
 
-/* called when the pipd from the main daemon has closed
+/* called when the pipe from the main daemon has closed
  * this is for the syslog daemon, we can not use DEBUG here
  */
 static void ctdb_syslog_terminate_handler(struct event_context *ev, struct fd_event *fde, 
