@@ -1354,7 +1354,6 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	bool hide_special = lp_hide_special_files(SNUM(conn));
 	char *entry = NULL;
 	struct smb_filename *smb_fname_base = NULL;
-	NTSTATUS status;
 	bool ret = false;
 
 	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
@@ -1375,9 +1374,9 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 		}
 
 		/* Create an smb_filename with stream_name == NULL. */
-		status = create_synthetic_smb_fname(talloc_tos(), entry, NULL,
-						    pst, &smb_fname_base);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_fname_base = synthetic_smb_fname(talloc_tos(), entry, NULL,
+						     pst);
+		if (smb_fname_base == NULL) {
 			ret = false;
 			goto out;
 		}
