@@ -5331,16 +5331,14 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		/* If this is a stream, check if there is a delete_pending. */
 		if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 		    && is_ntfs_stream_smb_fname(smb_fname)) {
-			struct smb_filename *smb_fname_base = NULL;
+			struct smb_filename *smb_fname_base;
 
 			/* Create an smb_filename with stream_name == NULL. */
-			status =
-			    create_synthetic_smb_fname(talloc_tos(),
-						       smb_fname->base_name,
-						       NULL, NULL,
-						       &smb_fname_base);
-			if (!NT_STATUS_IS_OK(status)) {
-				reply_nterror(req, status);
+			smb_fname_base = synthetic_smb_fname(
+				talloc_tos(), smb_fname->base_name,
+				NULL, NULL);
+			if (smb_fname_base == NULL) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
 			}
 
