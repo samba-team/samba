@@ -514,14 +514,13 @@ NTSTATUS dptr_create(connection_struct *conn,
 	} else {
 		int ret;
 		bool backup_intent = (req && req->priv_paths);
-		struct smb_filename *smb_dname = NULL;
-		NTSTATUS status = create_synthetic_smb_fname(talloc_tos(),
-						path,
-						NULL,
-						NULL,
-						&smb_dname);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+		struct smb_filename *smb_dname;
+		NTSTATUS status;
+
+		smb_dname = synthetic_smb_fname(talloc_tos(), path,
+						NULL, NULL);
+		if (smb_dname == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 		if (lp_posix_pathnames()) {
 			ret = SMB_VFS_LSTAT(conn, smb_dname);
