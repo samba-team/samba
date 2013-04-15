@@ -3371,17 +3371,17 @@ NTSTATUS open_streams_for_delete(connection_struct *conn,
 	}
 
 	for (i=0; i<num_streams; i++) {
-		struct smb_filename *smb_fname = NULL;
+		struct smb_filename *smb_fname;
 
 		if (strequal(stream_info[i].name, "::$DATA")) {
 			streams[i] = NULL;
 			continue;
 		}
 
-		status = create_synthetic_smb_fname(talloc_tos(), fname,
-						    stream_info[i].name,
-						    NULL, &smb_fname);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_fname = synthetic_smb_fname(
+			talloc_tos(), fname, stream_info[i].name, NULL);
+		if (smb_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
