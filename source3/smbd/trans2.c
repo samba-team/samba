@@ -6364,10 +6364,11 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		/* Create an smb_fname to call rename_internals_fsp() with. */
-		status = create_synthetic_smb_fname(talloc_tos(),
-		    fsp->base_fsp->fsp_name->base_name, newname, NULL,
-		    &smb_fname_dst);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_fname_dst = synthetic_smb_fname(
+			talloc_tos(), fsp->base_fsp->fsp_name->base_name,
+			newname, NULL);
+		if (smb_fname_dst == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
