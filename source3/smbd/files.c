@@ -115,11 +115,10 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	 * few NULL checks, so make sure it's initialized with something. to
 	 * be safe until an audit can be done.
 	 */
-	status = create_synthetic_smb_fname(fsp, "", NULL, NULL,
-					    &fsp->fsp_name);
-	if (!NT_STATUS_IS_OK(status)) {
+	fsp->fsp_name = synthetic_smb_fname(fsp, "", NULL, NULL);
+	if (fsp->fsp_name == NULL) {
 		file_free(NULL, fsp);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	DEBUG(5,("allocated file structure %s (%u used)\n",
