@@ -6,7 +6,7 @@
 # chkconfig:           - 90 01
 #
 # description:                 Starts and stops the clustered tdb daemon
-# pidfile:             /var/run/ctdbd/ctdbd.pid
+# pidfile:             /var/run/ctdb/ctdbd.pid
 #
 
 ### BEGIN INIT INFO
@@ -32,6 +32,10 @@ fi
     LC_ALL=en_US.UTF-8
 }
 
+if [ -f /lib/lsb/init-functions ] ; then
+    . /lib/lsb/init-functions
+fi
+
 # Avoid using root's TMPDIR
 unset TMPDIR
 
@@ -50,6 +54,7 @@ detect_init_style
 export CTDB_INIT_STYLE
 
 ctdbd=${CTDBD:-/usr/sbin/ctdbd}
+pidfile="/var/run/ctdb/ctdbd.pid"
 
 if [ "$CTDB_VALGRIND" = "yes" ]; then
     init_style="valgrind"
@@ -83,6 +88,9 @@ build_ctdb_options () {
         echo "No recovery lock specified. Starting CTDB without split brain prevention"
     }
     maybe_set "--reclock"                "$CTDB_RECOVERY_LOCK"
+
+    mkdir -p $(dirname "$pidfile")
+    maybe_set "--pidfile"                "$pidfile"
 
     # build up CTDB_OPTIONS variable from optional parameters
     maybe_set "--logfile"                "$CTDB_LOGFILE"
@@ -329,6 +337,8 @@ stop() {
     # make sure all ips are dropped, pfkill -9 might leave them hanging around
     drop_all_public_ips
 
+    rm -f "$pidfile"
+
     case $init_style in
 	suse)
 	    # re-set the return code to the recorded RETVAL in order
@@ -351,33 +361,47 @@ restart() {
     start
 }
 
-status() {
-    echo -n $"Checking for ctdbd service: "
-    _out=$(ctdb ping 2>&1) || {
-	RETVAL=$?
-	echo -n "  ctdbd not running. "
-	case $init_style in
-	    suse)
-		set_retval $RETVAL
-		rc_status -v
-		;;
-	    redhat)
-		if [ -f /var/lock/subsys/ctdb ]; then
-			echo $"ctdb dead but subsys locked"
-			RETVAL=2
-		else
-			echo $"ctdb is stopped"
-			RETVAL=3
-		fi
-		;;
-	esac
-        echo 'Output from "ctdb ping":'
-        echo "$_out"
+# Given that CTDB_VALGRIND is a debug option we don't support the pid
+# file.  We just do a quick and dirty hack instead.  Otherwise we just
+# end up re-implementing each distro's pidfile support...
+check_status_valgrind ()
+{
+    if pkill -0 -f "valgrind.*${ctdbd}" ; then
+	echo "ctdbd is running under valgrind..."
+	return 0
+    else
+	echo "ctdbd is not running"
+	return 1
+    fi
+}
 
-	return $RETVAL
-    }
-    echo ""
-    ctdb status
+check_status ()
+{
+    # Backward compatibility.  When we arrange to pass --pidfile to
+    # ctdbd we also create the directory that will contain it.  If
+    # that directory is missing then we don't use the pidfile to check
+    # status.
+    if [ -d $(dirname "$pidfile") ] ; then
+	_pf_opt="-p $pidfile"
+    else
+	_pf_opt=""
+    fi
+
+    case "$init_style" in
+	valgrind)
+	    check_status_valgrind
+	    ;;
+	suse)
+	    checkproc $_pf_opt "$ctdbd"
+	    rc_status -v
+	    ;;
+	redhat)
+	    status $_pf_opt -l "ctdb" "$ctdbd"
+	    ;;
+	debian)
+	    status_of_proc $_pf_opt "$ctdbd" "ctdb"
+	    ;;
+    esac
 }
 
 
@@ -394,14 +418,16 @@ case "$1" in
   	restart
 	;;
     status)
-  	status
+  	check_status
 	;;
     condrestart|try-restart)
-  	ctdb status > /dev/null && restart || :
+  	if check_status >/dev/null ; then
+	    restart
+	fi
 	;;
     cron)
 	# used from cron to auto-restart ctdb
-  	ctdb status > /dev/null || restart
+  	check_status >/dev/null || restart
 	;;
     *)
 	echo $"Usage: $0 {start|stop|restart|reload|force-reload|status|cron|condrestart|try-restart}"
