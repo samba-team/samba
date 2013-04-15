@@ -50,19 +50,6 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx,
  * enumerate streams using the vfs_streaminfo interface and then want to
  * operate on each stream.
  */
-NTSTATUS create_synthetic_smb_fname(TALLOC_CTX *ctx, const char *base_name,
-				    const char *stream_name,
-				    const SMB_STRUCT_STAT *psbuf,
-				    struct smb_filename **smb_fname_out)
-{
-	*smb_fname_out = synthetic_smb_fname(ctx, base_name, stream_name,
-					     psbuf);
-	if (*smb_fname_out == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const char *base_name,
 					 const char *stream_name,
@@ -86,18 +73,6 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
  * XXX: This is temporary and there should be no callers of this once
  * smb_filename is plumbed through all path based operations.
  */
-NTSTATUS create_synthetic_smb_fname_split(TALLOC_CTX *ctx,
-					  const char *fname,
-					  const SMB_STRUCT_STAT *psbuf,
-					  struct smb_filename **smb_fname_out)
-{
-	*smb_fname_out = synthetic_smb_fname_split(ctx, fname, psbuf);
-	if (*smb_fname_out == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	return NT_STATUS_OK;
-}
-
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					       const char *fname,
 					       const SMB_STRUCT_STAT *psbuf)
