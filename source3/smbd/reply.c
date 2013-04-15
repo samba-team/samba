@@ -6329,10 +6329,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 * Create an smb_filename struct using the original last
 		 * component of the destination.
 		 */
-		status = create_synthetic_smb_fname_split(ctx,
-		    smb_fname_dst->original_lcomp, NULL,
-		    &smb_fname_orig_lcomp);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_fname_orig_lcomp = synthetic_smb_fname_split(
+			ctx, smb_fname_dst->original_lcomp, NULL);
+		if (smb_fname_orig_lcomp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			TALLOC_FREE(fname_dst_lcomp_base_mod);
 			goto out;
 		}
