@@ -6436,11 +6436,10 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				goto out;
 			}
 			/* Create an smb_fname to call rename_internals_fsp() */
-			status = create_synthetic_smb_fname(ctx,
-							    base_name, NULL,
-							    NULL,
-							    &smb_fname_dst);
-			if (!NT_STATUS_IS_OK(status)) {
+			smb_fname_dst = synthetic_smb_fname(
+				ctx, base_name, NULL, NULL);
+			if (smb_fname_dst == NULL) {
+				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
 		}
