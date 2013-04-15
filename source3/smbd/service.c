@@ -798,9 +798,10 @@ static NTSTATUS make_connection_snum(struct smbd_server_connection *sconn,
 		set_namearray( &conn->aio_write_behind_list,
 				lp_aio_write_behind(talloc_tos(), snum));
 	}
-	status = create_synthetic_smb_fname(talloc_tos(), conn->connectpath,
-					    NULL, NULL, &smb_fname_cpath);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), conn->connectpath,
+					      NULL, NULL);
+	if (smb_fname_cpath == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto err_root_exit;
 	}
 
