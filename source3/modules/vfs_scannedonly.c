@@ -425,7 +425,7 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 				   shortname,
 				   base_name,
 				   STRUCTSCANO(handle->data)->p_scanned);
-	create_synthetic_smb_fname(ctx, cachefile,NULL,NULL,&cache_smb_fname);
+	cache_smb_fname = synthetic_smb_fname(ctx, cachefile,NULL,NULL);
 	if (!VALID_STAT(cache_smb_fname->st)) {
 		retval = SMB_VFS_NEXT_STAT(handle, cache_smb_fname);
 	}
@@ -457,8 +457,8 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 			DEBUG(SCANNEDONLY_DEBUG,
 			      ("scannedonly_allow_access in loop, "
 			       "found %s\n", fpath2));
-			create_synthetic_smb_fname(ctx, fpath2,NULL,NULL,
-						   &smb_fname2);
+			smb_fname2 = synthetic_smb_fname(
+				ctx, fpath2,NULL,NULL);
 			scannedonly_allow_access(handle, NULL,
 						 smb_fname2,
 						 dire->d_name,
@@ -597,9 +597,8 @@ static struct dirent *scannedonly_readdir(vfs_handle_struct *handle,
 	/* even if we don't hide nonscanned files or we allow non scanned
 	   files we call allow_access because it will notify the daemon to
 	   scan these files */
-	create_synthetic_smb_fname(ctx, tmp,NULL,
-				   sbuf?VALID_STAT(*sbuf)?sbuf:NULL:NULL,
-				   &smb_fname);
+	smb_fname = synthetic_smb_fname(ctx, tmp,NULL,
+					sbuf?VALID_STAT(*sbuf)?sbuf:NULL:NULL);
 	allowed = scannedonly_allow_access(
 		handle, sDIR, smb_fname,
 		result->d_name,
@@ -812,10 +811,8 @@ static int scannedonly_rename(vfs_handle_struct * handle,
 		ctx,
 		smb_fname_dst->base_name,
 		STRUCTSCANO(handle->data)->p_scanned);
-	create_synthetic_smb_fname(ctx, cachefile_src,NULL,NULL,
-				   &smb_fname_src_tmp);
-	create_synthetic_smb_fname(ctx, cachefile_dst,NULL,NULL,
-				   &smb_fname_dst_tmp);
+	smb_fname_src_tmp = synthetic_smb_fname(ctx, cachefile_src,NULL,NULL);
+	smb_fname_dst_tmp = synthetic_smb_fname(ctx, cachefile_dst,NULL,NULL);
 
 	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp, smb_fname_dst_tmp);
 	if (ret == ENOENT) {
@@ -846,8 +843,7 @@ static int scannedonly_unlink(vfs_handle_struct * handle,
 		ctx,
 		smb_fname->base_name,
 		STRUCTSCANO(handle->data)->p_scanned);
-	create_synthetic_smb_fname(ctx, cachefile,NULL,NULL,
-				   &smb_fname_cache);
+	smb_fname_cache = synthetic_smb_fname(ctx, cachefile,NULL,NULL);
 	if (SMB_VFS_NEXT_UNLINK(handle, smb_fname_cache) != 0) {
 		DEBUG(SCANNEDONLY_DEBUG, ("_unlink: failed to unlink %s\n",
 					  smb_fname_cache->base_name));
@@ -892,8 +888,8 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 			   special file */
 			fullpath = talloc_asprintf(ctx, "%s%s", path_w_slash,
 						  dire->d_name);
-			create_synthetic_smb_fname(ctx, fullpath,NULL,NULL,
-						   &smb_fname);
+			smb_fname = synthetic_smb_fname(ctx, fullpath,
+							NULL,NULL);
 			retval = SMB_VFS_NEXT_STAT(handle, smb_fname);
 			if (retval == 0
 			    && S_ISREG(smb_fname->st.st_ex_mode)) {
@@ -921,8 +917,8 @@ static int scannedonly_rmdir(vfs_handle_struct * handle, const char *path)
 			}
 			fullpath = talloc_asprintf(ctx, "%s%s", path_w_slash,
 						  dire->d_name);
-			create_synthetic_smb_fname(ctx, fullpath,NULL,NULL,
-						   &smb_fname);
+			smb_fname = synthetic_smb_fname(ctx, fullpath,
+							NULL,NULL);
 			DEBUG(SCANNEDONLY_DEBUG, ("unlink %s\n", fullpath));
 			SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 			TALLOC_FREE(fullpath);
