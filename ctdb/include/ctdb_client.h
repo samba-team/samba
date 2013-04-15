@@ -100,7 +100,6 @@ int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const char *nodeip);
   start the ctdb protocol
 */
 int ctdb_start(struct ctdb_context *ctdb);
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, const char *public_address_list);
 
 /*
   attach to a ctdb database
