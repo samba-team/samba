@@ -550,24 +550,21 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	int ret;
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	NTSTATUS status;
 
 	if (argc != 3) {
 		printf("Usage: rename <old> <new>\n");
 		return NT_STATUS_OK;
 	}
 
-	status = create_synthetic_smb_fname_split(mem_ctx, argv[1], NULL,
-						  &smb_fname_src);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname_src = synthetic_smb_fname_split(mem_ctx, argv[1], NULL);
+	if (smb_fname_src == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = create_synthetic_smb_fname_split(mem_ctx, argv[2], NULL,
-						  &smb_fname_dst);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_dst = synthetic_smb_fname_split(mem_ctx, argv[2], NULL);
+	if (smb_fname_dst == NULL) {
 		TALLOC_FREE(smb_fname_src);
-		return status;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ret = SMB_VFS_RENAME(vfs->conn, smb_fname_src, smb_fname_dst);
