@@ -974,7 +974,6 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 {
 	struct smb_file_time ft;
 	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
 
 	if (argc != 4) {
 		printf("Usage: utime <path> <access> <modify>\n");
@@ -986,10 +985,9 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	ft.atime = convert_time_t_to_timespec(atoi(argv[2]));
 	ft.mtime = convert_time_t_to_timespec(atoi(argv[3]));
 
-	status = create_synthetic_smb_fname_split(mem_ctx, argv[1],
-						  NULL, &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (SMB_VFS_NTIMES(vfs->conn, smb_fname, &ft) != 0) {
