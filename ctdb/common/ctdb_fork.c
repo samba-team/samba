@@ -59,6 +59,8 @@ pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb)
 		return -1;
 	}
 	if (pid == 0) {
+		ctdb_set_child_info(ctdb, NULL);
+
 		/* Close the Unix Domain socket and the TCP socket.
 		 * This ensures that none of the child processes will
 		 * look like the main daemon when it is not running.
