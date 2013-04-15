@@ -749,17 +749,15 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	struct smb_filename *smb_fname = NULL;
 	SMB_STRUCT_STAT st;
 	time_t tmp_time;
-	NTSTATUS status;
 
 	if (argc != 2) {
 		printf("Usage: lstat <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	status = create_synthetic_smb_fname_split(mem_ctx, argv[1], NULL,
-						  &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (SMB_VFS_LSTAT(vfs->conn, smb_fname) == -1) {
