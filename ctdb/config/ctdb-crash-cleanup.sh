@@ -5,7 +5,7 @@
 #
 
 # If ctdb is running, just exit
-if ctdb ping >/dev/null 2>&1 ; then
+if service ctdb status >/dev/null 2>&1 ; then
     exit 0
 fi
 
