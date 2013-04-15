@@ -37,8 +37,7 @@ bool can_delete_file_in_directory(connection_struct *conn,
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dname = NULL;
-	struct smb_filename *smb_fname_parent = NULL;
-	NTSTATUS status;
+	struct smb_filename *smb_fname_parent;
 	bool ret;
 
 	if (!CAN_WRITE(conn)) {
@@ -55,9 +54,8 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		return False;
 	}
 
-	status = create_synthetic_smb_fname(ctx, dname, NULL, NULL,
-					    &smb_fname_parent);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname_parent = synthetic_smb_fname(ctx, dname, NULL, NULL);
+	if (smb_fname_parent == NULL) {
 		ret = false;
 		goto out;
 	}
