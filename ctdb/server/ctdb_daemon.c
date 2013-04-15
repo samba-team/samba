@@ -36,6 +36,8 @@ struct ctdb_client_pid_list {
 	struct ctdb_client *client;
 };
 
+const char *ctdbd_pidfile = NULL;
+
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
 static void print_exit_message(void)
@@ -1103,6 +1105,38 @@ static void ctdb_tevent_trace(enum tevent_trace_point tp,
 	}
 }
 
+static void ctdb_remove_pidfile(void)
+{
+	if (ctdbd_pidfile != NULL && !ctdb_is_child_process()) {
+		if (unlink(ctdbd_pidfile) == 0) {
+			DEBUG(DEBUG_INFO, ("Removed PID file %s\n",
+					   ctdbd_pidfile));
+		} else {
+			DEBUG(DEBUG_WARNING, ("Failed to Remove PID file %s\n",
+					      ctdbd_pidfile));
+		}
+	}
+}
+
+static void ctdb_create_pidfile(pid_t pid)
+{
+	if (ctdbd_pidfile != NULL) {
+		FILE *fp;
+
+		fp = fopen(ctdbd_pidfile, "w");
+		if (fp == NULL) {
+			DEBUG(DEBUG_ALERT,
+			      ("Failed to open PID file %s\n", ctdbd_pidfile));
+			exit(11);
+		}
+
+		fprintf(fp, "%d\n", pid);
+		fclose(fp);
+		DEBUG(DEBUG_INFO, ("Created PID file %s\n", ctdbd_pidfile));
+		atexit(ctdb_remove_pidfile);
+	}
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -1140,7 +1174,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	ctdbd_pid = getpid();
 	ctdb->ctdbd_pid = ctdbd_pid;
-
+	ctdb_create_pidfile(ctdb->ctdbd_pid);
 	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
 	if (ctdb->do_setsched) {

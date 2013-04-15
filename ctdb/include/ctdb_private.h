@@ -1400,6 +1400,7 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 
 extern int script_log_level;
 extern bool fast_start;
+extern const char *ctdbd_pidfile;
 
 int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
 					     uint32_t call_type,
