@@ -5721,7 +5721,7 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 				     const struct smb_filename *smb_fname,
 				     uint32 dosmode)
 {
-	struct smb_filename *smb_fname_base = NULL;
+	struct smb_filename *smb_fname_base;
 	NTSTATUS status;
 
 	if (!VALID_STAT(smb_fname->st)) {
@@ -5729,11 +5729,10 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 	}
 
 	/* Always operate on the base_name, even if a stream was passed in. */
-	status = create_synthetic_smb_fname(talloc_tos(), smb_fname->base_name,
-					    NULL, &smb_fname->st,
-					    &smb_fname_base);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	smb_fname_base = synthetic_smb_fname(
+		talloc_tos(), smb_fname->base_name, NULL, &smb_fname->st);
+	if (smb_fname_base == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (dosmode) {
