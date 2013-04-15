@@ -1050,8 +1050,7 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 				const struct smb_filename *psmb_fname,
 				struct timespec create_time)
 {
-	NTSTATUS status;
-	struct smb_filename *smb_fname = NULL;
+	struct smb_filename *smb_fname;
 	uint32_t dosmode;
 	int ret;
 
@@ -1059,13 +1058,11 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = create_synthetic_smb_fname(talloc_tos(),
-				psmb_fname->base_name,
-				NULL, &psmb_fname->st,
-				&smb_fname);
+	smb_fname = synthetic_smb_fname(talloc_tos(), psmb_fname->base_name,
+					NULL, &psmb_fname->st);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	dosmode = dos_mode(conn, smb_fname);
