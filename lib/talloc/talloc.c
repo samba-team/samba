@@ -935,12 +935,16 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 			TC_INVALIDATE_FULL_CHUNK(tc);
 			free(tc);
 		}
-	} else if (tc->flags & TALLOC_FLAG_POOLMEM) {
-		_talloc_free_poolmem(tc, location);
-	} else {
-		TC_INVALIDATE_FULL_CHUNK(tc);
-		free(tc);
+		return 0;
 	}
+
+	if (tc->flags & TALLOC_FLAG_POOLMEM) {
+		_talloc_free_poolmem(tc, location);
+		return 0;
+	}
+
+	TC_INVALIDATE_FULL_CHUNK(tc);
+	free(tc);
 	return 0;
 }
 
