@@ -74,6 +74,8 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32 attr);
 
+static void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
+
 #define INVALID_DPTR_KEY (-3)
 
 /****************************************************************************
@@ -888,15 +890,6 @@ bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, S
 }
 
 /****************************************************************************
- Add the name we're returning into the underlying cache.
-****************************************************************************/
-
-void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset)
-{
-	DirCacheAdd(dptr->dir_hnd, name, offset);
-}
-
-/****************************************************************************
  Initialize variables & state data at the beginning of all search SMB requests.
 ****************************************************************************/
 void dptr_init_search_op(struct dptr_struct *dptr)
@@ -1680,7 +1673,7 @@ long TellDir(struct smb_Dir *dirp)
  Add an entry into the dcache.
 ********************************************************************/
 
-void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
+static void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 {
 	struct name_cache_entry *e;
 

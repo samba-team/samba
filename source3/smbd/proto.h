@@ -211,7 +211,6 @@ char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			long *poffset,
 			SMB_STRUCT_STAT *pst);
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
-void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset);
 void dptr_init_search_op(struct dptr_struct *dptr);
 bool dptr_fill(struct smbd_server_connection *sconn,
 	       char *buf1,unsigned int key);
@@ -238,7 +237,6 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 void RewindDir(struct smb_Dir *dirp, long *poffset);
 void SeekDir(struct smb_Dir *dirp, long offset);
 long TellDir(struct smb_Dir *dirp);
-void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
