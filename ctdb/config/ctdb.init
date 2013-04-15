@@ -229,8 +229,6 @@ wait_until_ready () {
     done
 }
 
-ctdbd=${CTDBD:-/usr/sbin/ctdbd}
-
 start() {
     echo -n $"Starting ctdbd service: "
 
