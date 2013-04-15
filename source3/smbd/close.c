@@ -291,18 +291,18 @@ NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
 
 	for (i=0; i<num_streams; i++) {
 		int res;
-		struct smb_filename *smb_fname_stream = NULL;
+		struct smb_filename *smb_fname_stream;
 
 		if (strequal(stream_info[i].name, "::$DATA")) {
 			continue;
 		}
 
-		status = create_synthetic_smb_fname(talloc_tos(), fname,
-						    stream_info[i].name, NULL,
-						    &smb_fname_stream);
+		smb_fname_stream = synthetic_smb_fname(
+			talloc_tos(), fname, stream_info[i].name, NULL);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (smb_fname_stream == NULL) {
 			DEBUG(0, ("talloc_aprintf failed\n"));
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
