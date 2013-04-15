@@ -212,7 +212,9 @@ static void terminate(bool is_parent)
 #endif
 
 	if (is_parent) {
-		serverid_deregister(procid_self());
+		struct messaging_context *msg = winbind_messaging_context();
+		struct server_id self = messaging_server_id(msg);
+		serverid_deregister(self);
 		pidfile_unlink(lp_piddir(), "winbindd");
 	}
 
