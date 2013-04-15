@@ -54,6 +54,55 @@ typedef struct _SMB_ACL4_INT_T
 	SMB_ACE4_INT_T	*last;
 } SMB_ACL4_INT_T;
 
+enum smbacl4_mode_enum {e_simple=0, e_special=1};
+enum smbacl4_acedup_enum {e_dontcare=0, e_reject=1, e_ignore=2, e_merge=3};
+
+typedef struct _smbacl4_vfs_params {
+	enum smbacl4_mode_enum mode;
+	bool do_chown;
+	enum smbacl4_acedup_enum acedup;
+} smbacl4_vfs_params;
+
+/*
+ * Gather special parameters for NFS4 ACL handling
+ */
+static int smbacl4_get_vfs_params(
+	const char *type_name,
+	files_struct *fsp,
+	smbacl4_vfs_params *params
+)
+{
+	static const struct enum_list enum_smbacl4_modes[] = {
+		{ e_simple, "simple" },
+		{ e_special, "special" },
+		{ -1 , NULL }
+	};
+	static const struct enum_list enum_smbacl4_acedups[] = {
+		{ e_dontcare, "dontcare" },
+		{ e_reject, "reject" },
+		{ e_ignore, "ignore" },
+		{ e_merge, "merge" },
+		{ -1 , NULL }
+	};
+
+	memset(params, 0, sizeof(smbacl4_vfs_params));
+	params->mode = (enum smbacl4_mode_enum)lp_parm_enum(
+		SNUM(fsp->conn), type_name,
+		"mode", enum_smbacl4_modes, e_simple);
+	params->do_chown = lp_parm_bool(SNUM(fsp->conn), type_name,
+		"chown", true);
+	params->acedup = (enum smbacl4_acedup_enum)lp_parm_enum(
+		SNUM(fsp->conn), type_name,
+		"acedup", enum_smbacl4_acedups, e_dontcare);
+
+	DEBUG(10, ("mode:%s, do_chown:%s, acedup: %s\n",
+		enum_smbacl4_modes[params->mode].name,
+		params->do_chown ? "true" : "false",
+		enum_smbacl4_acedups[params->acedup].name));
+
+	return 0;
+}
+
 /************************************************
  Split the ACE flag mapping between nfs4 and Windows
  into two separate functions rather than trying to do
@@ -460,55 +509,6 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 	return smb_get_nt_acl_nfs4_common(&sbuf, security_info,
 					  mem_ctx, ppdesc,
 					  theacl);
-}
-
-enum smbacl4_mode_enum {e_simple=0, e_special=1};
-enum smbacl4_acedup_enum {e_dontcare=0, e_reject=1, e_ignore=2, e_merge=3};
-
-typedef struct _smbacl4_vfs_params {
-	enum smbacl4_mode_enum mode;
-	bool do_chown;
-	enum smbacl4_acedup_enum acedup;
-} smbacl4_vfs_params;
-
-/*
- * Gather special parameters for NFS4 ACL handling
- */
-static int smbacl4_get_vfs_params(
-	const char *type_name,
-	files_struct *fsp,
-	smbacl4_vfs_params *params
-)
-{
-	static const struct enum_list enum_smbacl4_modes[] = {
-		{ e_simple, "simple" },
-		{ e_special, "special" },
-		{ -1 , NULL }
-	};
-	static const struct enum_list enum_smbacl4_acedups[] = {
-		{ e_dontcare, "dontcare" },
-		{ e_reject, "reject" },
-		{ e_ignore, "ignore" },
-		{ e_merge, "merge" },
-		{ -1 , NULL }
-	};
-
-	memset(params, 0, sizeof(smbacl4_vfs_params));
-	params->mode = (enum smbacl4_mode_enum)lp_parm_enum(
-		SNUM(fsp->conn), type_name,
-		"mode", enum_smbacl4_modes, e_simple);
-	params->do_chown = lp_parm_bool(SNUM(fsp->conn), type_name,
-		"chown", True);
-	params->acedup = (enum smbacl4_acedup_enum)lp_parm_enum(
-		SNUM(fsp->conn), type_name,
-		"acedup", enum_smbacl4_acedups, e_dontcare);
-
-	DEBUG(10, ("mode:%s, do_chown:%s, acedup: %s\n",
-		enum_smbacl4_modes[params->mode].name,
-		params->do_chown ? "true" : "false",
-		enum_smbacl4_acedups[params->acedup].name));
-
-	return 0;
 }
 
 static void smbacl4_dump_nfs4acl(int level, SMB4ACL_T *theacl)
