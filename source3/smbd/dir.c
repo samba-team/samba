@@ -428,7 +428,7 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 {
 	NTSTATUS status;
 	struct smb_Dir *dir_hnd = NULL;
-	struct smb_filename *smb_fname_cwd = NULL;
+	struct smb_filename *smb_fname_cwd;
 	char *saved_dir = vfs_GetWd(talloc_tos(), conn);
 	struct privilege_paths *priv_paths = req->priv_paths;
 	int ret;
@@ -442,11 +442,10 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 	}
 
 	/* Now check the stat value is the same. */
-	status = create_synthetic_smb_fname(talloc_tos(), ".",
-					NULL, NULL,
-					&smb_fname_cwd);
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (smb_fname_cwd == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 	ret = SMB_VFS_STAT(conn, smb_fname_cwd);
