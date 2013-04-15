@@ -212,9 +212,9 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	}
 
 	/* setup a full fsp */
-	status = create_synthetic_smb_fname(fsp, pf->filename, NULL,
-					    NULL, &fsp->fsp_name);
-	if (!NT_STATUS_IS_OK(status)) {
+	fsp->fsp_name = synthetic_smb_fname(fsp, pf->filename, NULL, NULL);
+	if (fsp->fsp_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
