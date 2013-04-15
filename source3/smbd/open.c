@@ -3282,9 +3282,9 @@ void msg_file_was_renamed(struct messaging_context *msg,
 		stream_name = NULL;
 	}
 
-	status = create_synthetic_smb_fname(talloc_tos(), base_name,
-					    stream_name, NULL, &smb_fname);
-	if (!NT_STATUS_IS_OK(status)) {
+	smb_fname = synthetic_smb_fname(talloc_tos(), base_name,
+					stream_name, NULL);
+	if (smb_fname == NULL) {
 		return;
 	}
 
