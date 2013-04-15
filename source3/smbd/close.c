@@ -903,7 +903,6 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 		struct smb_filename *smb_dname_full = NULL;
 		char *fullname = NULL;
 		bool do_break = true;
-		NTSTATUS status;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
@@ -926,10 +925,10 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			goto err_break;
 		}
 
-		status = create_synthetic_smb_fname(talloc_tos(), fullname,
-						    NULL, NULL,
-						    &smb_dname_full);
-		if (!NT_STATUS_IS_OK(status)) {
+		smb_dname_full = synthetic_smb_fname(talloc_tos(), fullname,
+						     NULL, NULL);
+		if (smb_dname_full == NULL) {
+			errno = ENOMEM;
 			goto err_break;
 		}
 
