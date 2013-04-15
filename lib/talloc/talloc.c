@@ -794,7 +794,10 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 		 */
 		pool->hdr.c.pool = tc_pool_first_chunk(pool);
 		tc_invalidate_pool(pool);
-	} else if (unlikely(pool->hdr.object_count == 0)) {
+		return;
+	}
+
+	if (unlikely(pool->hdr.object_count == 0)) {
 		/*
 		 * we mark the freed memory with where we called the free
 		 * from. This means on a double free error we can report where
@@ -804,14 +807,23 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 
 		TC_INVALIDATE_FULL_CHUNK(&pool->hdr.c);
 		free(pool);
-	} else if (pool->hdr.c.pool == next_tc) {
+		return;
+	}
+
+	if (pool->hdr.c.pool == next_tc) {
 		/*
 		 * if pool->pool still points to end of
 		 * 'tc' (which is stored in the 'next_tc' variable),
 		 * we can reclaim the memory of 'tc'.
 		 */
 		pool->hdr.c.pool = tc;
+		return;
 	}
+
+	/*
+	 * Do nothing. The memory is just "wasted", waiting for the pool
+	 * itself to be freed.
+	 */
 }
 
 static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
