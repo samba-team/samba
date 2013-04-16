@@ -235,7 +235,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
 	}
 
         srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
         if (!srv) {
 		TALLOC_FREE(frame);
@@ -313,7 +313,7 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
 	}
 
         srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
         if (!srv) {
 		TALLOC_FREE(frame);

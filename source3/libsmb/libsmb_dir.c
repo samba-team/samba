@@ -581,7 +581,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                          * workgroups/domains that it knows about.
                          */
 
-                        srv = SMBC_server(frame, context, True, server, "IPC$",
+                        srv = SMBC_server(frame, context, True, server, port, "IPC$",
                                           &workgroup, &user, &password);
                         if (!srv) {
                                 continue;
@@ -636,7 +636,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                          * exist.
                          */
                         srv = SMBC_server(frame, context, False,
-                                          server, "IPC$",
+                                          server, port, "IPC$",
                                           &workgroup, &user, &password);
 
                         /*
@@ -685,7 +685,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                  * we do not already have one
                                  */
 				srv = SMBC_server(frame, context, True,
-                                                  buserver, "IPC$",
+                                                  buserver, port, "IPC$",
                                                   &workgroup,
                                                   &user, &password);
 				if (!srv) {
@@ -721,7 +721,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                  */
                                 if (!srv) {
                                         srv = SMBC_server(frame, context, True,
-                                                          server, "IPC$",
+                                                          server, port, "IPC$",
                                                           &workgroup,
                                                           &user, &password);
                                 }
@@ -783,7 +783,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 			/* We connect to the server and list the directory */
 			dir->dir_type = SMBC_FILE_SHARE;
 
-			srv = SMBC_server(frame, context, True, server, share,
+			srv = SMBC_server(frame, context, True, server, port, share,
                                           &workgroup, &user, &password);
 
 			if (!srv) {
@@ -1208,7 +1208,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
 	if (!srv) {
 
@@ -1319,7 +1319,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
 	if (!srv) {
 
@@ -1608,7 +1608,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -1726,7 +1726,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -1805,7 +1805,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -1979,7 +1979,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
 
 	srv = SMBC_server(frame, ocontext, True,
-                          server1, share1, &workgroup, &user1, &password1);
+                          server1, port1, share1, &workgroup, &user1, &password1);
 	if (!srv) {
 		TALLOC_FREE(frame);
 		return -1;

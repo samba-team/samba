@@ -629,6 +629,7 @@ SMBC_server(TALLOC_CTX *ctx,
 		SMBCCTX *context,
 		bool connect_if_not_found,
 		const char *server,
+		uint16_t port,
 		const char *share,
 		char **pp_workgroup,
 		char **pp_username,
@@ -699,7 +700,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 	 * i.e., a normal share or a referred share from
 	 * 'msdfs proxy' share.
 	 */
-	srv = SMBC_server(ctx, context, true, server, share,
+	srv = SMBC_server(ctx, context, true, server, port, share,
 			pp_workgroup, pp_username, pp_password);
 	if (!srv) {
 		return NULL;

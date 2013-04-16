@@ -164,7 +164,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 	if (!srv) {
 		TALLOC_FREE(frame);
 		return -1;  /* errno set by SMBC_server */

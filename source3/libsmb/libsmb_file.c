@@ -91,7 +91,7 @@ SMBC_open_ctx(SMBCCTX *context,
 	}
 
 	srv = SMBC_server(frame, context, True,
-                          server, share, &workgroup, &user, &password);
+                          server, port, share, &workgroup, &user, &password);
 	if (!srv) {
 		if (errno == EPERM) errno = EACCES;
 		TALLOC_FREE(frame);
