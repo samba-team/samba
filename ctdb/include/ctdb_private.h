@@ -760,7 +760,6 @@ struct ctdb_call_state *ctdb_call_local_send(struct ctdb_db_context *ctdb_db,
 					     TDB_DATA *data);
 
 
-int ctdbd_start(struct ctdb_context *ctdb);
 int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork,
 		      bool use_syslog,
 		      const char *public_address_list);
