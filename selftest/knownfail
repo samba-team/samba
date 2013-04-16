@@ -46,7 +46,6 @@
 ^samba3.raw.samba3hide.samba3hide\((s3dc|plugin_s4_dc)\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.samba3closeerr.samba3closeerr\(s3dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls nfs4acl_xattr.INHERITFLAGS\(s3dc\) # This (and the follow nfs4acl_xattr tests fail because our NFSv4 backend isn't a complete mapping yet.
-^samba3.raw.acls nfs4acl_xattr.dynamic\(s3dc\)
 ^samba3.raw.acls nfs4acl_xattr.sd\(s3dc\)
 ^samba3.raw.acls nfs4acl_xattr.create_file\(s3dc\)
 ^samba3.raw.acls nfs4acl_xattr.create_dir\(s3dc\)
