@@ -40,17 +40,21 @@
 		<varlistentry>
 		<term>rangesize = numberofidsperdomain</term>
 		<listitem><para>
-			Defines the available number of uids/gids per domain. The
-			minimum needed value is 2000. SIDs with RIDs larger than this
-			value cannot be mapped, are ignored and the corresponding map
-			is discarded. Choose this value carefully, as this should
-			not be changed after the first ranges for domains have been
-			defined, otherwise mappings between domains will get intermixed
-			leading to unpredictable results. Please note that RIDs in Windows
-			Domains usually start with 500 for builtin users and 1000
-			for regular users. As the parameter cannot be changed later, please
-			plan accordingly for your expected number of users in a domain
-			with safety margins.
+			Defines the number of uids/gids available per
+			domain range. The minimum needed value is 2000.
+			SIDs with RIDs larger than this value will be mapped
+			into extension ranges depending upon number of available
+			ranges. If the autorid backend runs out of available
+			ranges, mapping requests for new domains (or new
+			extension ranges for domains already known) are ignored
+			and the corresponding map is discarded.
+			</para>
+			<para>
+			Example: with rangesize set to 10000, users/groups with
+			a RID up to 10000 will be put into the first range for the
+			domain. When attempting to map the an object with a RID
+			of 25000, an extension range will be allocated that
+			will then be used to map all RIDs from 20000-29999.
 			</para>
 			<para>One range will be used for local users and groups and for
 			non-domain well-known SIDs like Everyone (S-1-1-0) or Creator Owner (S-1-3-0).
@@ -85,6 +89,7 @@
 		The Unix ID for a RID is calculated this way:
 		<programlisting>
 			ID = IDMAP UID LOW VALUE + DOMAINRANGENUMBER * RANGESIZE + RID
+			- (MULTIPLIER * RANGESIZE)
 		</programlisting>
 	</para>
 	<para>
@@ -92,7 +97,11 @@
 		given Unix ID is this:
 		<programlisting>
 			RID = ID - IDMAP UID LOW VALUE - DOMAINRANGENUMBER * RANGESIZE
+			+ (MULTIPLIER * RANGESIZE)
 		</programlisting>
+	</para>
+	<para>
+		MULTIPLIER is calculated as FLOOR(RID / RANGESIZE).
 	</para>
 </refsect1>
 
@@ -100,7 +109,8 @@
 	<title>EXAMPLES</title>
 	<para>
 		This example shows you the minimal configuration that will
-		work for the principial domain and 19 trusted domains.
+		work for the principial domain and 19 trusted domains / range
+		extensions.
 	</para>
 
 	<programlisting>
