@@ -116,6 +116,25 @@ smbc_setTimeout(SMBCCTX *c, int timeout)
         c->timeout = timeout;
 }
 
+/**
+ * Get the TCP port used to connect.
+ */
+uint16_t
+smbc_getPort(SMBCCTX *c)
+{
+        return c->internal->port;
+}
+
+/**
+ * Set the TCP port used to connect.
+ */
+void
+smbc_setPort(SMBCCTX *c, uint16_t port)
+{
+        c->internal->port = port;
+}
+
+
 /** Get whether to log to standard error instead of standard output */
 smbc_bool
 smbc_getOptionDebugToStderr(SMBCCTX *c)

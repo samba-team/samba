@@ -169,6 +169,7 @@ smbc_new_context(void)
 
         smbc_setDebug(context, 0);
         smbc_setTimeout(context, 20000);
+        smbc_setPort(context, 0);
 
         smbc_setOptionFullTimeNames(context, False);
         smbc_setOptionOpenShareMode(context, SMBC_SHAREMODE_DENY_NONE);

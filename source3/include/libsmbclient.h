@@ -76,6 +76,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <utime.h>
 
@@ -505,6 +506,19 @@ smbc_getTimeout(SMBCCTX *c);
  */
 void
 smbc_setTimeout(SMBCCTX *c, int timeout);
+
+
+/**
+ * Get the TCP port used to connect (0 means default).
+ */
+uint16_t
+smbc_getPort(SMBCCTX *c);
+
+/**
+ * Set the TCP port used to connect (0 means default).
+ */
+void
+smbc_setPort(SMBCCTX *c, uint16_t port);
 
 
 

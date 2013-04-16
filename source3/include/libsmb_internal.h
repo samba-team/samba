@@ -244,6 +244,7 @@ struct SMBC_internal_data {
         }               smb;
 
 #endif
+	uint16_t	port;
 };	
 
 /* Functions in libsmb_cache.c */

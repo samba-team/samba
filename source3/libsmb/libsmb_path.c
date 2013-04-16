@@ -239,7 +239,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 
 	/* Ensure these returns are at least valid pointers. */
 	*pp_server = talloc_strdup(ctx, "");
-	*p_port = 0;
+	*p_port = smbc_getPort(context);
 	*pp_share = talloc_strdup(ctx, "");
 	*pp_path = talloc_strdup(ctx, "");
 	*pp_user = talloc_strdup(ctx, "");
