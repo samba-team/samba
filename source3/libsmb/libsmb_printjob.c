@@ -41,6 +41,7 @@ SMBC_open_print_job_ctx(SMBCCTX *context,
 	char *user = NULL;
 	char *password = NULL;
 	char *path = NULL;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -62,6 +63,7 @@ SMBC_open_print_job_ctx(SMBCCTX *context,
                             fname,
                             NULL,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -190,6 +192,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -211,6 +214,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -266,6 +270,7 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
 	char *workgroup = NULL;
 	char *path = NULL;
         int err;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -287,6 +292,7 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,

@@ -120,6 +120,7 @@ SMBC_stat_ctx(SMBCCTX *context,
         struct timespec change_time_ts;
 	off_t size = 0;
 	uint16 mode = 0;
+	uint16_t port = 0;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -142,6 +143,7 @@ SMBC_stat_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -214,6 +216,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
         char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
 	SMB_INO_T ino = 0;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -240,6 +243,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
                             file->fname,
                             NULL,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,

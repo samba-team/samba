@@ -378,6 +378,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 	char *workgroup = NULL;
 	char *path = NULL;
         uint16 mode;
+	uint16_t port = 0;
         char *p = NULL;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
@@ -404,6 +405,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -1161,6 +1163,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
         char *workgroup = NULL;
 	char *path = NULL;
 	char *targetpath = NULL;
+	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1184,6 +1187,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -1270,6 +1274,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
         char *workgroup = NULL;
 	char *path = NULL;
         char *targetpath = NULL;
+	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1293,6 +1298,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -1557,6 +1563,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	char *path = NULL;
 	uint16 mode;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
 
@@ -1580,6 +1587,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -1648,6 +1656,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
 	char *path = NULL;
         time_t access_time;
         time_t write_time;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -1696,6 +1705,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -1748,6 +1758,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
         char *workgroup = NULL;
 	char *path = NULL;
 	char *targetpath = NULL;
+	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
 	SMBCSRV *srv = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1773,6 +1784,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -1886,6 +1898,8 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	struct cli_state *targetcli1 = NULL;
         struct cli_state *targetcli2 = NULL;
 	SMBCSRV *srv = NULL;
+	uint16_t port1 = 0;
+	uint16_t port2 = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
         NTSTATUS status;
 
@@ -1911,6 +1925,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
                             oname,
                             &workgroup,
                             &server1,
+                            &port1,
                             &share1,
                             &path1,
                             &user1,
@@ -1935,6 +1950,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
                             nname,
                             NULL,
                             &server2,
+                            &port2,
                             &share2,
                             &path2,
                             &user2,

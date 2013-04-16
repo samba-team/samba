@@ -224,6 +224,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
                 const char *fname,
                 char **pp_workgroup,
                 char **pp_server,
+                uint16_t *p_port,
                 char **pp_share,
                 char **pp_path,
 		char **pp_user,
@@ -238,6 +239,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 
 	/* Ensure these returns are at least valid pointers. */
 	*pp_server = talloc_strdup(ctx, "");
+	*p_port = 0;
 	*pp_share = talloc_strdup(ctx, "");
 	*pp_path = talloc_strdup(ctx, "");
 	*pp_user = talloc_strdup(ctx, "");
@@ -361,6 +363,28 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 
 	if (!next_token_talloc(ctx, &p, pp_server, "/")) {
 		return -1;
+	}
+
+	/*
+	 * Does *pp_server contain a ':' ? If so
+	 * this denotes the port.
+	 */
+	q = strchr_m(*pp_server, ':');
+	if (q != NULL) {
+		long int port;
+		char *endptr = NULL;
+		*q = '\0';
+		q++;
+		if (*q == '\0') {
+			/* Bad port. */
+			return -1;
+		}
+		port = strtol(q, &endptr, 10);
+		if (*endptr != '\0') {
+			/* Bad port. */
+			return -1;
+		}
+		*p_port = (uint16_t)port;
 	}
 
 	if (*p == (char)0) {

@@ -49,6 +49,7 @@ SMBC_open_ctx(SMBCCTX *context,
 	SMBCSRV *srv   = NULL;
 	SMBCFILE *file = NULL;
 	uint16_t fd;
+	uint16_t port = 0;
 	NTSTATUS status = NT_STATUS_OBJECT_PATH_INVALID;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -69,6 +70,7 @@ SMBC_open_ctx(SMBCCTX *context,
                             fname,
                             &workgroup,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -230,6 +232,7 @@ SMBC_read_ctx(SMBCCTX *context,
 	char *path = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -274,6 +277,7 @@ SMBC_read_ctx(SMBCCTX *context,
                             file->fname,
                             NULL,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -327,6 +331,7 @@ SMBC_write_ctx(SMBCCTX *context,
 	char *path = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -360,6 +365,7 @@ SMBC_write_ctx(SMBCCTX *context,
                             file->fname,
                             NULL,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -408,6 +414,7 @@ SMBC_close_ctx(SMBCCTX *context,
 	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
 	char *path = NULL;
 	char *targetpath = NULL;
+	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -436,6 +443,7 @@ SMBC_close_ctx(SMBCCTX *context,
                             file->fname,
                             NULL,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
@@ -684,6 +692,7 @@ SMBC_lseek_ctx(SMBCCTX *context,
 	char *path = NULL;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
+	uint16_t port = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -719,6 +728,7 @@ SMBC_lseek_ctx(SMBCCTX *context,
                                     file->fname,
                                     NULL,
                                     &server,
+                                    &port,
                                     &share,
                                     &path,
                                     &user,
@@ -782,6 +792,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *path = NULL;
         char *targetpath = NULL;
+	uint16_t port = 0;
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -810,6 +821,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
                             file->fname,
                             NULL,
                             &server,
+                            &port,
                             &share,
                             &path,
                             &user,
