@@ -852,7 +852,7 @@ uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 	while (*p && isspace(*p))
 		p++;
 
-	sscanf(p,"%"PRIu64,&val);
+	sscanf(p,"%"SCNu64,&val);
 	if (entptr) {
 		while (*p && isdigit(*p))
 			p++;
