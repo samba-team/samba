@@ -239,6 +239,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
             SMBCCTX *context,
             bool connect_if_not_found,
             const char *server,
+            uint16_t port,
             const char *share,
             char **pp_workgroup,
             char **pp_username,
@@ -421,20 +422,22 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
 	}
 
-        if (share == NULL || *share == '\0' || is_ipc) {
-		/*
-		 * Try 139 first for IPC$
-		 */
-		status = cli_connect_nb(server_n, NULL, NBT_SMB_PORT, 0x20,
+	if (port == 0) {
+	        if (share == NULL || *share == '\0' || is_ipc) {
+			/*
+			 * Try 139 first for IPC$
+			 */
+			status = cli_connect_nb(server_n, NULL, NBT_SMB_PORT, 0x20,
 					smbc_getNetbiosName(context),
 					SMB_SIGNING_DEFAULT, flags, &c);
+		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * No IPC$ or 139 did not work
 		 */
-		status = cli_connect_nb(server_n, NULL, 0, 0x20,
+		status = cli_connect_nb(server_n, NULL, port, 0x20,
 					smbc_getNetbiosName(context),
 					SMB_SIGNING_DEFAULT, flags, &c);
 	}
@@ -506,7 +509,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 				*pp_workgroup)) {
 		cli_shutdown(c);
 		srv = SMBC_server_internal(ctx, context, connect_if_not_found,
-				newserver, newshare, pp_workgroup,
+				newserver, port, newshare, pp_workgroup,
 				pp_username, pp_password, in_cache);
 		TALLOC_FREE(newserver);
 		TALLOC_FREE(newshare);
@@ -639,7 +642,7 @@ SMBC_server(TALLOC_CTX *ctx,
 	bool in_cache = false;
 
 	srv = SMBC_server_internal(ctx, context, connect_if_not_found,
-			server, share, pp_workgroup,
+			server, port, share, pp_workgroup,
 			pp_username, pp_password, &in_cache);
 
 	if (!srv) {
