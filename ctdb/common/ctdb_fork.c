@@ -23,6 +23,28 @@
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
 
+static bool is_child = false;
+
+void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...)
+{
+	is_child = true;
+	if (child_name_fmt != NULL) {
+		va_list ap;
+		char *t;
+
+		va_start(ap, child_name_fmt);
+		t = talloc_vasprintf(mem_ctx, child_name_fmt, ap);
+		debug_extra = talloc_asprintf(mem_ctx, "%s:", t);
+		talloc_free(t);
+		va_end(ap);
+	}
+}
+
+bool ctdb_is_child_process(void)
+{
+	return is_child;
+}
+
 /*
  * This function forks a child process and drops the realtime 
  * scheduler for the child process.

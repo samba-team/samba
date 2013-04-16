@@ -1080,6 +1080,8 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb);
 struct tevent_signal *ctdb_init_sigchld(struct ctdb_context *ctdb);
 pid_t ctdb_fork(struct ctdb_context *ctdb);
 pid_t ctdb_fork_no_free_ringbuffer(struct ctdb_context *ctdb);
+void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...);
+bool ctdb_is_child_process(void);
 int ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum);
 
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
