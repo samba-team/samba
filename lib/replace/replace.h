@@ -108,6 +108,45 @@
 # define PRIu64		__PRI64_PREFIX "u"
 #endif
 
+#ifndef SCNd8
+# define SCNd8		"hhd"
+#endif
+#ifndef SCNd16
+# define SCNd16		"hd"
+#endif
+#ifndef SCNd32
+# define SCNd32		"d"
+#endif
+#ifndef SCNd64
+# define SCNd64		__PRI64_PREFIX "d"
+#endif
+
+#ifndef SCNi8
+# define SCNi8		"hhi"
+#endif
+#ifndef SCNi16
+# define SCNi16		"hi"
+#endif
+#ifndef SCNi32
+# define SCNi32		"i"
+#endif
+#ifndef SCNi64
+# define SCNi64		__PRI64_PREFIX "i"
+#endif
+
+#ifndef SCNu8
+# define SCNu8		"hhu"
+#endif
+#ifndef SCNu16
+# define SCNu16		"hu"
+#endif
+#ifndef SCNu32
+# define SCNu32		"u"
+#endif
+#ifndef SCNu64
+# define SCNu64		__PRI64_PREFIX "u"
+#endif
+
 #ifdef HAVE_BSD_STRING_H
 #include <bsd/string.h>
 #endif
