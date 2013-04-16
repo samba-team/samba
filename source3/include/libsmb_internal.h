@@ -483,6 +483,7 @@ SMBCSRV *
 SMBC_attr_server(TALLOC_CTX *ctx,
                  SMBCCTX *context,
                  const char *server,
+                 uint16_t port,
                  const char *share,
                  char **pp_workgroup,
                  char **pp_username,
