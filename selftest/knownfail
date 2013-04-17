@@ -184,6 +184,7 @@
 ^samba3.smb2.lease.break
 ^samba3.smb2.lease.oplock
 ^samba3.smb2.lease.multibreak
+^samba3.smb2.lease.v2_request
 ^samba3.smb2.oplock.batch12
 ^samba3.smb2.oplock.batch20
 ^samba3.smb2.oplock.stream1
