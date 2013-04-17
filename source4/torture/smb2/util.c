@@ -692,7 +692,7 @@ void smb2_generic_create_share(struct smb2_create *io, struct smb2_lease *ls,
 	}
 
 	if (ls) {
-		ZERO_STRUCT(*ls);
+		ZERO_STRUCTPN(ls);
 		ls->lease_key.data[0] = leasekey;
 		ls->lease_key.data[1] = ~leasekey;
 		ls->lease_state = leasestate;
