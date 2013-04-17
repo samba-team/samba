@@ -1417,15 +1417,12 @@ iptables()
 # tickle handling
 ########################################################
 
-# Temporary directory for tickles.
-tickledir="$CTDB_VARDIR/state/tickles"
-mkdir -p "$tickledir"
-
 update_tickles ()
 {
 	_port="$1"
 
-	mkdir -p "$tickledir" # Just in case
+	tickledir="$CTDB_VARDIR/state/tickles"
+	mkdir -p "$tickledir"
 
 	# Who am I?
 	_pnn=$(ctdb pnn) ; _pnn=${_pnn#PNN:}
