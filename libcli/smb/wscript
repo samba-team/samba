@@ -18,6 +18,7 @@ def build(bld):
 	source='''
 		smb_signing.c smb_seal.c
 		smb2_create_blob.c smb2_signing.c
+                smb2_lease.c
 		util.c
 		smbXcli_base.c
 		smb1cli_trans.c
