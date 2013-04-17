@@ -1,9 +1,10 @@
 /*
    Unix SMB/CIFS implementation.
 
-   SMB and SMB2 common header
+   SMB2 Lease context handling
 
-   Copyright (C) Stefan Metzmacher 2009
+   Copyright (C) Stefan Metzmacher 2012
+   Copyright (C) Volker Lendecke 2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,15 +20,24 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __LIBCLI_SMB_SMB_COMMON_H__
-#define __LIBCLI_SMB_SMB_COMMON_H__
+#ifndef _LIBCLI_SMB_SMB2_LEASE_H_
+#define _LIBCLI_SMB_SMB2_LEASE_H_
 
-#include "libcli/smb/smb_constants.h"
-#include "libcli/smb/smb2_constants.h"
-#include "libcli/smb/smb2_create_blob.h"
-#include "libcli/smb/smb2_lease.h"
-#include "libcli/smb/smb2_signing.h"
-#include "libcli/smb/smb_util.h"
-#include "libcli/smb/smb_unix_ext.h"
+/*
+  SMB2 lease structure (per MS-SMB2 2.2.13)
+*/
+struct smb2_lease_key {
+	uint64_t data[2];
+};
 
-#endif
+struct smb2_lease {
+	struct smb2_lease_key lease_key;
+	uint32_t lease_state;
+	uint32_t lease_flags;
+	uint64_t lease_duration; /* should be 0 */
+	/* only for v2 */
+	struct smb2_lease_key parent_lease_key;
+	uint16_t lease_epoch;
+};
+
+#endif /* _LIBCLI_SMB_SMB2_LEASE_H_ */

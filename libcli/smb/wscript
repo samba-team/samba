@@ -41,6 +41,7 @@ def build(bld):
 		smb_common.h smb2_constants.h smb_constants.h
 		smb_signing.h smb_seal.h
 		smb2_create_blob.h smb2_signing.h
+		smb2_lease.h
 		smb_util.h
 		smb_unix_ext.h
 	''',

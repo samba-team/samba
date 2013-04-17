@@ -54,23 +54,6 @@ struct smb2_handle {
 	uint64_t data[2];
 };
 
-/*
-  SMB2 lease structure (per MS-SMB2 2.2.13)
-*/
-struct smb2_lease_key {
-	uint64_t data[2];
-};
-
-struct smb2_lease {
-	struct smb2_lease_key lease_key;
-	uint32_t lease_state;
-	uint32_t lease_flags;
-	uint64_t lease_duration; /* should be 0 */
-	/* only for v2 */
-	struct smb2_lease_key parent_lease_key;
-	uint16_t lease_epoch;
-};
-
 struct smb2_lease_break {
 	struct smb2_lease current_lease;
 	uint32_t break_flags;
