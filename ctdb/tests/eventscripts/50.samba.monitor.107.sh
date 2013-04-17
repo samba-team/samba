@@ -4,8 +4,7 @@
 
 define_test "port 139 down, default tcp checker, debug"
 
-# This has to go before the setup, otherwise it will write a dud file.
-export CTDB_DEBUGLEVEL=4
+export CTDB_SCRIPT_DEBUGLEVEL=4
 
 setup_samba
 tcp_port_down 139

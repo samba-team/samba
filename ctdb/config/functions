@@ -42,39 +42,12 @@ loadconfig () {
 }
 
 ##############################################################
-# make sure CTDB_CURRENT_DEBUGLEVEL is set to the desired debug level
-# (integer)
-#
-# If it is already set then do nothing, since it might have been set
-# via a file in rc.local.d/.  If it is not set then set it by sourcing
-# /var/ctdb/eventscript_debuglevel. If this file does not exist then
-# create it using output from "ctdb getdebug".  If the option 1st arg
-# is "create" then don't source an existing file but create a new one
-# instead - this is useful for creating the file just once in each
-# event run in 00.ctdb.  If there's a problem getting the debug level
-# from ctdb then it is silently set to 0 - no use spamming logs if our
-# debug code is broken...
-ctdb_set_current_debuglevel ()
-{
-    [ -z "$CTDB_CURRENT_DEBUGLEVEL" ] || return 0
 
-    _f="$CTDB_VARDIR/eventscript_debuglevel"
-
-    if [ "$1" = "create" -o ! -r "$_f" ] ; then
-	_t=$(ctdb getdebug -Y 2>/dev/null)
-	# get last field of output
-	_t="${_t%:}"
-	_t="${_t##*:}"
-	# Defaults to 0
-	echo "export CTDB_CURRENT_DEBUGLEVEL=\"${_t:-0}\"" >"$_f"
-    fi
-
-    . "$_f"
-}
-
+# CTDB_SCRIPT_DEBUGLEVEL can be overwritten by setting it in a
+# configuration file.
 debug ()
 {
-    if [ $CTDB_CURRENT_DEBUGLEVEL -ge 4 ] ; then
+    if [ ${CTDB_SCRIPT_DEBUGLEVEL:-2} -ge 4 ] ; then
 	# If there are arguments then echo them.  Otherwise expect to
 	# use stdin, which allows us to pass lots of debug using a
 	# here document.
@@ -1512,11 +1485,6 @@ update_tickles ()
 		[ -x "$i" ] && . "$i"
 	done
 }
-
-# We'll call this here to ensure $CTDB_CURRENT_DEBUGLEVEL is set.
-# This gives us a chance to override the debug level using a file in
-# $CTDB_BASE/rc.local.d/.
-ctdb_set_current_debuglevel
 
 script_name="${0##*/}"       # basename
 service_name="$script_name"  # default is just the script name

@@ -6,8 +6,7 @@ define_test "port 139 down, ctdb checktcpport not implemented, debug"
 
 ctdb_not_implemented "checktcpport"
 
-# This has to go before the setup, otherwise it will write a dud file.
-export CTDB_DEBUGLEVEL=4
+export CTDB_SCRIPT_DEBUGLEVEL=4
 
 setup_nmap_output_filter
 

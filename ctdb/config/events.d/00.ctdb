@@ -88,11 +88,6 @@ case "$1" in
 	update_config_from_tdb &
 	;;
     monitor)
-	# Inherit the debug level from ctdbd on each monitor run.  If
-	# there's a more urgent need then override CTDB_CURRENT_DEBUGLEVEL
-	# using a file in $CTDB_BASE/rc.local.d/.
-        ctdb_set_current_debuglevel create
-
 	# We should never enter swap, so SwapTotal == SwapFree.
 	[ "$CTDB_CHECK_SWAP_IS_NOT_USED" = "yes" ] && {
 	    if [ -n "`grep '^Swap\(Total\|Free\)' /proc/meminfo | uniq -s 10 -u`" ]; then
