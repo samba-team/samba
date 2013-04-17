@@ -25,6 +25,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
+#include "libcli/smb/smbXcli_base.h"
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
@@ -117,6 +118,12 @@ static bool test_lease_request(struct torture_context *tctx,
 	const char *dname = "lease.dir";
 	bool ret = true;
 	int i;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	smb2_util_unlink(tree, fname);
 	smb2_util_unlink(tree, fname2);
@@ -193,6 +200,12 @@ static bool test_lease_upgrade(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *fname = "lease.dat";
 	bool ret = true;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	smb2_util_unlink(tree, fname);
 
@@ -301,6 +314,12 @@ static bool test_lease_upgrade2(struct torture_context *tctx,
 	const char *fname = "lease.dat";
 	bool ret = true;
 	int i;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	for (i = 0; i < NUM_UPGRADE_TESTS; i++) {
 		struct lease_upgrade2_test t = lease_upgrade2_tests[i];
@@ -515,6 +534,12 @@ static bool test_lease_break(struct torture_context *tctx,
 	const char *fname = "lease.dat";
 	bool ret = true;
 	int i;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -677,6 +702,12 @@ static bool test_lease_oplock(struct torture_context *tctx,
 	const char *fname = "lease.dat";
 	bool ret = true;
 	int i;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
@@ -796,6 +827,12 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	NTSTATUS status;
 	const char *fname = "lease.dat";
 	bool ret = true;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
 
 	tree->session->transport->lease.handler	= torture_lease_handler;
 	tree->session->transport->lease.private_data = tree;
