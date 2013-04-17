@@ -1749,7 +1749,7 @@ static bool wbinfo_pam_logon(char *username)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcLogonUserParams params;
-	struct wbcAuthErrorInfo *error;
+	struct wbcAuthErrorInfo *error = NULL;
 	char *s = NULL;
 	char *p = NULL;
 	TALLOC_CTX *frame = talloc_tos();
@@ -1800,16 +1800,15 @@ static bool wbinfo_pam_logon(char *username)
 	d_printf("plaintext password authentication %s\n",
 		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
+	if (!WBC_ERROR_IS_OK(wbc_status) && (error != NULL)) {
 		d_fprintf(stderr,
 			  "error code was %s (0x%x)\nerror message was: %s\n",
 			  error->nt_string,
 			  (int)error->nt_status,
 			  error->display_string);
 		wbcFreeMemory(error);
-		return false;
 	}
-	return true;
+	return WBC_ERROR_IS_OK(wbc_status);
 }
 
 /* Save creds with winbind */
