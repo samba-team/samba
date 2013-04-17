@@ -57,6 +57,13 @@ try_command_on_node -q any $CTDB_TEST_WRAPPER ctdb recmaster
 recmaster="$out"
 if [ "$recmaster" = "0" ]; then
     echo "node 0 is recmaster, disable recmasterrole on node 0"
+    #
+    # Note:
+    # It should be sufficient to run "ctdb setrecmasterrole off"
+    # on node 0 and wait for election and recovery to finish.
+    # But there were problems related to this in this automatic
+    # test, so for now use "ctdb stop" and "ctdb continue".
+    #
     echo "stop node 0"
     try_command_on_node -q 0 $CTDB_TEST_WRAPPER ctdb stop
     wait_until_node_has_status 0 stopped
