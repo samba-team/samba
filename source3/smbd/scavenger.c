@@ -480,16 +480,17 @@ static void scavenger_timer(struct tevent_context *ev,
 					     ctx->msg.open_persistent_id);
 	if (!ok) {
 		DEBUG(2, ("Failed to cleanup share modes and byte range locks "
-			  "for file %s open %lu\n",
+			  "for file %s open %llu\n",
 			  file_id_string_tos(&ctx->msg.file_id),
-			  ctx->msg.open_persistent_id));
+			  (unsigned long long)ctx->msg.open_persistent_id));
 	}
 
 	status = smbXsrv_open_cleanup(ctx->msg.open_persistent_id);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("Failed to cleanup open global for file %s open %lu:"
+		DEBUG(2, ("Failed to cleanup open global for file %s open %llu:"
 			  " %s\n", file_id_string_tos(&ctx->msg.file_id),
-			  ctx->msg.open_persistent_id, nt_errstr(status)));
+			  (unsigned long long)ctx->msg.open_persistent_id,
+			  nt_errstr(status)));
 	}
 }
 
