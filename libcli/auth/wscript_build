@@ -28,6 +28,10 @@ bld.SAMBA_SUBSYSTEM('COMMON_SCHANNEL',
 	deps='dbwrap util_tdb samba-hostconfig NDR_NETLOGON'
 	)
 
+bld.SAMBA_SUBSYSTEM('NETLOGON_CREDS_CLI',
+        source='netlogon_creds_cli.c',
+        deps='dbwrap util_tdb tevent-util samba-hostconfig RPC_NDR_NETLOGON NDR_NETLOGON'
+        )
 
 bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 	source='pam_errors.c',
