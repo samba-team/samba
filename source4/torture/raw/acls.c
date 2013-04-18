@@ -1843,6 +1843,13 @@ done:
 	smbcli_rmdir(cli->tree, dname);
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
+
+	if (!ret) {
+		torture_result(tctx,
+			TORTURE_FAIL, "(%s) test_inheritance\n",
+			__location__);
+	}
+
 	return ret;
 }
 
