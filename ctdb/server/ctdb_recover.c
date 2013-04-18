@@ -911,6 +911,10 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 	talloc_free(state);
 
 	gettimeofday(&ctdb->last_recovery_finished, NULL);
+
+	if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
+		ctdb_set_runstate(ctdb, CTDB_RUNSTATE_STARTUP);
+	}
 }
 
 /*

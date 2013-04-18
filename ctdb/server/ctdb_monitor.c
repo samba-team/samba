@@ -307,7 +307,6 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	}
 	ctdb->db_persistent_check_errors = 0;
 
-	DEBUG(DEBUG_NOTICE,(__location__ " Recoveries finished. Running the \"startup\" event.\n"));
 	event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
 			     timeval_current(),
 			     ctdb_check_health, ctdb);
@@ -323,6 +322,14 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
 	int ret = 0;
 
+	if (ctdb->runstate < CTDB_RUNSTATE_STARTUP) {
+		DEBUG(DEBUG_NOTICE,("Not yet in startup runstate. Wait one more second\n"));
+		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
+				timeval_current_ofs(1, 0), 
+				ctdb_check_health, ctdb);
+		return;
+	}
+	
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL ||
 	    (ctdb->monitor->monitoring_mode == CTDB_MONITORING_DISABLED &&
 	     ctdb->runstate == CTDB_RUNSTATE_RUNNING)) {
@@ -333,6 +340,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	}
 	
 	if (ctdb->runstate == CTDB_RUNSTATE_STARTUP) {
+		DEBUG(DEBUG_NOTICE,("Recoveries finished. Running the \"startup\" event.\n"));
 		ret = ctdb_event_script_callback(ctdb, 
 						 ctdb->monitor->monitor_context, ctdb_startup_callback, 
 						 ctdb, false,

@@ -382,7 +382,7 @@ response from 3 time=0.000114 sec  (2 clients)
       </screen>
     </refsect2>
 
-    <refsect2><title>runstate [setup|startup|running]</title>
+    <refsect2><title>runstate [setup|first_recovery|startup|running]</title>
       <para>
         Print the runstate of the specified node.  Runstates are used
         to serialise important state transitions in CTDB, particularly

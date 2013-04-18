@@ -5847,7 +5847,7 @@ static const struct {
 	{ "status",          control_status,            true,	false,  "show node status" },
 	{ "uptime",          control_uptime,            true,	false,  "show node uptime" },
 	{ "ping",            control_ping,              true,	false,  "ping all nodes" },
-	{ "runstate",        control_runstate,          true,	false,  "get/check runstate of a node", "[setup|startup|running]" },
+	{ "runstate",        control_runstate,          true,	false,  "get/check runstate of a node", "[setup|first_recovery|startup|running]" },
 	{ "getvar",          control_getvar,            true,	false,  "get a tunable variable",               "<name>"},
 	{ "setvar",          control_setvar,            true,	false,  "set a tunable variable",               "<name> <value>"},
 	{ "listvars",        control_listvars,          true,	false,  "list tunable variables"},

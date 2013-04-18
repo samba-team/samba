@@ -1037,7 +1037,7 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 	}
 	ctdb_run_notification_script(ctdb, "setup");
 
-	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_STARTUP);
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_FIRST_RECOVERY);
 
 	/* tell all other nodes we've just started up */
 	ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL,
