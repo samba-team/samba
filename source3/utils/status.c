@@ -43,6 +43,7 @@
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/notify.h"
 #include "lib/conn_tdb.h"
+#include "serverid.h"
 
 #define SMB_MAXPIDS		2048
 static uid_t 		Ucrit_uid = 0;               /* added by OH */
@@ -131,6 +132,11 @@ static void print_share_mode(const struct share_mode_entry *e,
 		d_printf("--------------------------------------------------------------------------------------------------\n");
 	}
 	count++;
+
+	if (do_checks && !serverid_exists(&e->pid)) {
+		/* the process for this entry does not exist any more */
+		return;
+	}
 
 	if (Ucrit_checkPid(e->pid)) {
 		d_printf("%-11s  ",procid_str_static(&e->pid));
