@@ -839,11 +839,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			op->status = NT_STATUS_OK;
 			op->global->disconnect_time = 0;
 
-			status = smbXsrv_open_update(op);
-			if (!NT_STATUS_IS_OK(status)) {
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
-			}
+			/* save the timout for later update */
+			durable_timeout_msec = op->global->durable_timeout_msec;
+
+			update_open = true;
 
 			info = FILE_WAS_OPENED;
 		} else {
