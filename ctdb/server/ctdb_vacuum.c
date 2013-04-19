@@ -360,11 +360,7 @@ static int delete_marshall_traverse_first(void *param, void *data)
 
 	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
 
-	if (header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|
-			     CTDB_REC_RO_HAVE_READONLY|
-			     CTDB_REC_RO_REVOKING_READONLY|
-			     CTDB_REC_RO_REVOKE_COMPLETE))
-	{
+	if (header->flags & CTDB_REC_RO_FLAGS) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] has read-only flags. "
 				   "skipping.\n",
@@ -637,11 +633,7 @@ static int delete_record_traverse(void *param, void *data)
 
 	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
 
-	if (header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|
-			     CTDB_REC_RO_HAVE_READONLY|
-			     CTDB_REC_RO_REVOKING_READONLY|
-			     CTDB_REC_RO_REVOKE_COMPLETE))
-	{
+	if (header->flags & CTDB_REC_RO_FLAGS) {
 		DEBUG(DEBUG_INFO, (__location__ ": record with hash [0x%08x] "
 				   "on database db[%s] has read-only flags. "
 				   "skipping.\n",
