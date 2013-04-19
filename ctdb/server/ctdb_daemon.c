@@ -688,7 +688,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	}
 
 	if (header.flags & CTDB_REC_RO_REVOKE_COMPLETE) {
-		header.flags &= ~(CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE);
+		header.flags &= ~CTDB_REC_RO_FLAGS;
 		CTDB_INCREMENT_STAT(ctdb, total_ro_revokes);
 		CTDB_INCREMENT_DB_STAT(ctdb_db, db_ro_revokes);
 		if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
