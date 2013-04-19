@@ -82,7 +82,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	 */
 	if (data.dsize != 0) {
 		keep = true;
-	} else if (header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE)) {
+	} else if (header->flags & CTDB_REC_RO_FLAGS) {
 		keep = true;
 	} else if (ctdb_db->persistent) {
 		keep = true;
@@ -127,7 +127,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	if (keep) {
 		if (!ctdb_db->persistent &&
 		    (ctdb_db->ctdb->pnn == header->dmaster) &&
-		    !(header->flags & (CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE)))
+		    !(header->flags & CTDB_REC_RO_FLAGS))
 		{
 			header->rsn++;
 
