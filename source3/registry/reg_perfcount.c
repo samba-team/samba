@@ -77,7 +77,7 @@ uint32 reg_perfcount_get_base_index(void)
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if ( !names ) {
-		DEBUG(1, ("reg_perfcount_get_base_index: unable to open [%s].\n", fname));
+		DEBUG(2, ("reg_perfcount_get_base_index: unable to open [%s].\n", fname));
 		return 0;
 	}    
 	/* needs to read the value of key "1" from the counter_names.tdb file, as that is
