@@ -968,7 +968,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
 
 	if (pkt->auth_length == 0) {
-		DEBUG(0, ("No auth field sent for bind request!\n"));
+		DEBUG(1, ("No auth field sent for bind request!\n"));
 		goto err;
 	}
 
@@ -976,7 +976,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	if (pkt->frag_length < RPC_HEADER_LEN
 				+ DCERPC_AUTH_TRAILER_LENGTH
 				+ pkt->auth_length) {
-			DEBUG(0,("api_pipe_ntlmssp_auth_process: auth_len "
+			DEBUG(1,("api_pipe_ntlmssp_auth_process: auth_len "
 				"%u is too large.\n",
                         (unsigned int)pkt->auth_length));
 		goto err;
@@ -990,7 +990,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 					 &pkt->u.auth3.auth_info,
 					 &auth_info, p->endian);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to unmarshall dcerpc_auth.\n"));
+		DEBUG(1, ("Failed to unmarshall dcerpc_auth.\n"));
 		goto err;
 	}
 
@@ -1000,7 +1000,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	 */
 
 	if (auth_info.auth_type != p->auth.auth_type) {
-		DEBUG(0, ("Auth type mismatch! Client sent %d, "
+		DEBUG(1, ("Auth type mismatch! Client sent %d, "
 			  "but auth was started as type %d!\n",
 			  auth_info.auth_type, p->auth.auth_type));
 		goto err;
@@ -1017,7 +1017,7 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 					     &response);
 		break;
 	default:
-		DEBUG(0, (__location__ ": incorrect auth type (%u).\n",
+		DEBUG(1, (__location__ ": incorrect auth type (%u).\n",
 			  (unsigned int)auth_info.auth_type));
 		return false;
 	}
@@ -1025,21 +1025,21 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	if (NT_STATUS_EQUAL(status,
 			    NT_STATUS_MORE_PROCESSING_REQUIRED) ||
 	    response.length) {
-		DEBUG(0, (__location__ ": This was supposed to be the final "
+		DEBUG(1, (__location__ ": This was supposed to be the final "
 			  "leg, but crypto machinery claims a response is "
 			  "needed, aborting auth!\n"));
 		data_blob_free(&response);
 		goto err;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Auth failed (%s)\n", nt_errstr(status)));
+		DEBUG(2, ("Auth failed (%s)\n", nt_errstr(status)));
 		goto err;
 	}
 
 	/* Now verify auth was indeed successful and extract server info */
 	status = pipe_auth_verify_final(p);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Auth Verify failed (%s)\n", nt_errstr(status)));
+		DEBUG(2, ("Auth Verify failed (%s)\n", nt_errstr(status)));
 		goto err;
 	}
 
