@@ -100,6 +100,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		int i;
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb->statistics.memory_used = talloc_total_size(NULL);
+		ctdb->statistics.num_clients = ctdb->num_clients;
 		ctdb->statistics.frozen = 0;
 		for (i=1; i<= NUM_DB_PRIORITIES; i++) {
 			if (ctdb->freeze_mode[i] == CTDB_FREEZE_FROZEN) {
@@ -204,7 +205,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_PING:
 		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb->statistics.num_clients;
+		return ctdb->num_clients;
 
 	case CTDB_CONTROL_SET_DB_READONLY: {
 		uint32_t db_id;

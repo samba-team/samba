@@ -245,7 +245,7 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 
 	ctdb_takeover_client_destructor_hook(client);
 	ctdb_reqid_remove(client->ctdb, client->client_id);
-	CTDB_DECREMENT_STAT(client->ctdb, num_clients);
+	client->ctdb->num_clients--;
 
 	if (client->num_persistent_updates != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Client disconnecting with %u persistent updates in flight. Starting recovery\n", client->num_persistent_updates));
@@ -974,7 +974,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 
 	talloc_set_destructor(client, ctdb_client_destructor);
 	talloc_set_destructor(client_pid, ctdb_clientpid_destructor);
-	CTDB_INCREMENT_STAT(ctdb, num_clients);
+	ctdb->num_clients++;
 }
 
 
