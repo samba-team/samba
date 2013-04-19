@@ -787,7 +787,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	}
 
 	if (header.flags & CTDB_REC_RO_REVOKE_COMPLETE) {
-		header.flags &= ~(CTDB_REC_RO_HAVE_DELEGATIONS|CTDB_REC_RO_HAVE_READONLY|CTDB_REC_RO_REVOKING_READONLY|CTDB_REC_RO_REVOKE_COMPLETE);
+		header.flags &= ~CTDB_REC_RO_FLAGS;
 		CTDB_INCREMENT_STAT(ctdb, total_ro_revokes);
 		CTDB_INCREMENT_DB_STAT(ctdb_db, db_ro_revokes);
 		if (ctdb_ltdb_store(ctdb_db, call->key, &header, data) != 0) {
