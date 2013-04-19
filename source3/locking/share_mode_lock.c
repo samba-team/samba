@@ -463,6 +463,10 @@ static int traverse_fn(struct db_record *rec, void *_state)
 		DEBUG(1, ("ndr_pull_share_mode_lock failed\n"));
 		return 0;
 	}
+	if (DEBUGLEVEL > 10) {
+		DEBUG(11, ("parse_share_modes:\n"));
+		NDR_PRINT_DEBUG(share_mode_data, d);
+	}
 	for (i=0; i<d->num_share_modes; i++) {
 		state->fn(&d->share_modes[i],
 			  d->servicepath, d->base_name,
