@@ -2412,7 +2412,7 @@ static void smbd_server_connection_read_handler(
 				    &unread_bytes,
 				    &encrypted,
 				    &inbuf_len, &seqnum,
-				    false /* trusted channel */);
+				    !from_client /* trusted channel */);
 
 	if (from_client) {
 		smbd_unlock_socket(sconn);
