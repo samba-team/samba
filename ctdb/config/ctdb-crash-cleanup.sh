@@ -4,15 +4,15 @@
 # all public ip addresses if CTDBD has crashed or stopped running.
 #
 
-# If ctdb is running, just exit
-if service ctdb status >/dev/null 2>&1 ; then
-    exit 0
-fi
-
 [ -n "$CTDB_BASE" ] || \
     export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
 
 . "$CTDB_BASE/functions"
+
+# If ctdb is running, just exit
+if service ctdb status >/dev/null 2>&1 ; then
+    exit 0
+fi
 
 loadconfig ctdb
 
