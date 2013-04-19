@@ -3582,6 +3582,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 			DEBUG(level,("Unable to get tcp info for "
 				     "smbd_register_ips: %s\n",
 				     strerror(errno)));
+			exit_server_cleanly("client_get_tcp_info() failed.\n");
 		}
 	}
 
