@@ -351,6 +351,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_release_ip(ctdb, c, indata, async_reply);
 
+	case CTDB_CONTROL_IPREALLOCATED:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_ipreallocated(ctdb, c, async_reply);
+
 	case CTDB_CONTROL_GET_PUBLIC_IPSv4:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_public_ipsv4(ctdb, c, outdata);

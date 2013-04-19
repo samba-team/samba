@@ -716,6 +716,7 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 			CTDB_EVENT_START_RECOVERY,
 			CTDB_EVENT_SHUTDOWN,
 			CTDB_EVENT_RELEASE_IP,
+			CTDB_EVENT_IPREALLOCATED,
 			CTDB_EVENT_STOPPED
 		};
 		int i;

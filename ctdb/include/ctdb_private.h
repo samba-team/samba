@@ -1102,6 +1102,9 @@ int32_t ctdb_control_release_ipv4(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
 				 bool *async_reply);
+int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 bool *async_reply);
 int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 bool *async_reply);

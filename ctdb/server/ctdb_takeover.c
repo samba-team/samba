@@ -3810,6 +3810,62 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 	return -1;
 }
 
+
+struct ipreallocated_callback_state {
+	struct ctdb_req_control *c;
+};
+
+static void ctdb_ipreallocated_callback(struct ctdb_context *ctdb,
+					int status, void *p)
+{
+	struct ipreallocated_callback_state *state =
+		talloc_get_type(p, struct ipreallocated_callback_state);
+
+	if (status != 0) {
+		DEBUG(DEBUG_ERR,
+		      (" \"ipreallocated\" event script failed (status %d)\n",
+		       status));
+		if (status == -ETIME) {
+			ctdb_ban_self(ctdb);
+		}
+	}
+
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	talloc_free(state);
+}
+
+/* A control to run the ipreallocated event */
+int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
+				   struct ctdb_req_control *c,
+				   bool *async_reply)
+{
+	int ret;
+	struct ipreallocated_callback_state *state;
+
+	state = talloc(ctdb, struct ipreallocated_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	DEBUG(DEBUG_INFO,(__location__ " Running \"ipreallocated\" event\n"));
+
+	ret = ctdb_event_script_callback(ctdb, state,
+					 ctdb_ipreallocated_callback, state,
+					 false, CTDB_EVENT_IPREALLOCATED,
+					 "%s", "");
+
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to run \"ipreallocated\" event \n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	/* tell the control that we will be reply asynchronously */
+	state->c    = talloc_steal(state, c);
+	*async_reply = true;
+
+	return 0;
+}
+
+
 /* This function is called from the recovery daemon to verify that a remote
    node has the expected ip allocation.
    This is verified against ctdb->ip_tree
