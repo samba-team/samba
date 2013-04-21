@@ -582,6 +582,7 @@ kill_tcp_connections() {
 
     _killcount=0
     connfile="$CTDB_VARDIR/state/connections.$_IP"
+    mkdir -p "${connfile%/*}" # dirname
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
@@ -632,6 +633,7 @@ kill_tcp_connections_local_only() {
 
     _killcount=0
     connfile="$CTDB_VARDIR/state/connections.$_IP"
+    mkdir -p "${connfile%/*}" # dirname
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
@@ -674,6 +676,7 @@ tickle_tcp_connections() {
 
     _killcount=0
     connfile="$CTDB_VARDIR/state/connections.$_IP"
+    mkdir -p "${connfile%/*}" # dirname
     netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
@@ -827,6 +830,7 @@ add_ip_to_iface()
     _maskbits=$3
 
     _lockfile="${CTDB_VARDIR}/state/interface_modify_${_iface}.flock"
+    mkdir -p "${_lockfile%/*}" # dirname
     [ -f "$_lockfile" ] || touch "$_lockfile"
 
     (
@@ -856,6 +860,7 @@ delete_ip_from_iface()
     _maskbits=$3
 
     _lockfile="${CTDB_VARDIR}/state/interface_modify_${_iface}.flock"
+    mkdir -p "${_lockfile%/*}" # dirname
     [ -f "$_lockfile" ] || touch "$_lockfile"
 
     (
@@ -1138,6 +1143,7 @@ ctdb_reconfigure_try_lock ()
     
     _ctdb_service_reconfigure_common "$@"
     _lock="${_d}/reconfigure_lock"
+    mkdir -p "${_lock%/*}" # dirname
     touch "$_lock"
 
     (
