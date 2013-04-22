@@ -223,6 +223,22 @@ nfs_check_rpc_service ()
 {
     _prog_name="$1" ; shift
 
+    if _nfs_check_rpc_common "$_prog_name" ; then
+	return
+    fi
+
+    while [ -n "$3" ] ; do
+	if nfs_check_rpc_action "$1" "$2" "$3" ; then
+	    break
+	fi
+	shift 3
+    done
+}
+
+_nfs_check_rpc_common ()
+{
+    _prog_name="$1"
+
     # Some platforms don't have separate programs for all services.
     case "$_prog_name" in
 	statd)
@@ -272,12 +288,7 @@ nfs_check_rpc_service ()
 
     ctdb_counter_incr "$_service_name"
 
-    while [ -n "$3" ] ; do
-	if nfs_check_rpc_action "$1" "$2" "$3" ; then
-	    break
-	fi
-	shift 3
-    done
+    return 1
 }
 
 nfs_check_rpc_action ()
