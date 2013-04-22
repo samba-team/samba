@@ -166,6 +166,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/notify.d/README
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
+%{_bindir}/ctdb_lock_helper
 %{_bindir}/smnotify
 %{_bindir}/ping_pong
 %{_bindir}/ltdbtool

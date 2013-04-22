@@ -107,7 +107,8 @@ TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_fetch_one \
 	tests/bin/ctdb_porting_tests \
 	@INFINIBAND_BINS@
 
-BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool @CTDB_PMDA@
+BINS = bin/ctdb @CTDB_SCSI_IO@ bin/smnotify bin/ping_pong bin/ltdbtool \
+       bin/ctdb_lock_helper @CTDB_PMDA@
 
 SBINS = bin/ctdbd
 
@@ -173,6 +174,10 @@ bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o tools/ctdb_vacuum.o libctdb/libctdb.a
 	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o tools/ctdb_vacuum.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) libctdb/libctdb.a
 
 bin/ltdbtool: tools/ltdbtool.o $(TDB_OBJ)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
+
+bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(TALLOC_OBJ) $(TDB_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
 
@@ -327,6 +332,7 @@ install: all manpages $(PMDA_INSTALL)
 	${INSTALLCMD} -m 755 bin/smnotify $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ping_pong $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 bin/ltdbtool $(DESTDIR)$(bindir)
+	$(INSTALLCMD) -m 755 bin/ctdb_lock_helper $(DESTDIR)$(bindir)
 	$(INSTALLCMD) -m 755 libctdb/libctdb.a $(DESTDIR)$(libdir)
 	${INSTALLCMD} -m 644 include/ctdb.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 include/ctdb_client.h $(DESTDIR)$(includedir)
