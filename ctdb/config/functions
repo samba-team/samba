@@ -229,26 +229,20 @@ nfs_check_rpc_service ()
 	    which "rpc.${_prog_name}" >/dev/null 2>&1 || return 0
     esac
 
-    _v=""
-    case "$1" in
-	-*) : ;;
-	*) _v="$1" ; shift ;;
-    esac
-
-    _version=${_v:-1}
+    _version=1
     _rpc_prog="$_prog_name"
     _restart=""
     _opts=""
     case "$_prog_name" in
 	knfsd)
 	    _rpc_prog=nfs
-	    _version=${_v:-3}
+	    _version=3
 	    _restart="echo 'Trying to restart NFS service'"
 	    _restart="${_restart}; startstop_nfs restart"
 	    ;;
 	ganesha)
 	    _rpc_prog=nfs
-	    _version=${_v:-3}
+	    _version=3
 	    _restart="echo 'Trying to restart Ganesha NFS service'"
 	    _restart="${_restart}; startstop_ganesha restart"
 	    ;;
@@ -260,7 +254,7 @@ nfs_check_rpc_service ()
 	    ;;
 	lockd)
 	    _rpc_prog=nlockmgr
-	    _version=${_v:-4}
+	    _version=4
 	    _restart="echo 'Trying to restart lock manager service'"
 	    _restart="${_restart}; startstop_nfslock restart"
 	    ;;
