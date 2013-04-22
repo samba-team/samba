@@ -235,6 +235,35 @@ nfs_check_rpc_service ()
     done
 }
 
+# The new way of doing things...
+nfs_check_rpc_services ()
+{
+    # Files must end with .check - avoids editor backups, RPM fu, ...
+    for _f in "${CTDB_BASE}/nfs-rpc-checks.d/"[0-9][0-9].*.check ; do
+	_t="${_f%.check}"
+	_prog_name="${_t##*/[0-9][0-9].}"
+
+	if _nfs_check_rpc_common "$_prog_name" ; then
+	    # This RPC service is up, check next service...
+	    continue
+	fi
+
+	# Check each line in the file in turn until one of the limit
+	# checks is hit...
+	while read _cmp _lim _rest ; do
+	    # Skip comments
+	    case "$_cmp" in
+		\#*) continue ;;
+	    esac
+
+	    if _nfs_check_rpc_action "$_cmp" "$_lim" "$_rest" ; then
+		# Limit was hit on this line, no further checking...
+		break
+	    fi
+	done <"$_f"
+    done
+}
+
 _nfs_check_rpc_common ()
 {
     _prog_name="$1"
