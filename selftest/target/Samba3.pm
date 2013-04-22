@@ -672,7 +672,8 @@ sub check_or_start($$$$$) {
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, Samba::bindir_path($self, "nmbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE},
+		     "-l", $env_vars->{LOGDIR}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	$env_vars->{NMBD_TL_PID} = $pid;
 	write_pid($env_vars, "nmbd", $pid);
@@ -726,7 +727,8 @@ sub check_or_start($$$$$) {
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+		exec(@preargs, Samba::bindir_path($self, "winbindd"), "-F", "--no-process-group", "--stdout", "-s", $env_vars->{SERVERCONFFILE},
+		     "-l", $env_vars->{LOGDIR}, @optargs) or die("Unable to start winbindd: $!");
 	}
 	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
@@ -776,7 +778,8 @@ sub check_or_start($$$$$) {
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start smbd: $!");
+		exec(@preargs, Samba::bindir_path($self, "smbd"), "-F", "--no-process-group", "--log-stdout", "-s", $env_vars->{SERVERCONFFILE},
+		     "-l", $env_vars->{LOGDIR},  @optargs) or die("Unable to start smbd: $!");
 	}
 	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);
@@ -1237,6 +1240,7 @@ domadmins:X:$gid_domadmins:
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 	$ret{NSS_WRAPPER_WINBIND_SO_PATH} = Samba::nss_wrapper_winbind_so_path($self);
 	$ret{LOCAL_PATH} = "$shrdir";
+        $ret{LOGDIR} = $logdir;
 
 	return \%ret;
 }
