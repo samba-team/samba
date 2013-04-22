@@ -43,34 +43,35 @@ static char *corepath;
  */
 static char *get_default_corepath(const char *logbase, const char *progname)
 {
+	const mode_t mode = 0700;
+	const uid_t uid = getuid();
 	char *tmp_corepath;
 
 	/* Setup core dir in logbase. */
 	tmp_corepath = talloc_asprintf(NULL, "%s/cores", logbase);
-	if (!tmp_corepath)
+	if (!tmp_corepath) {
+		DEBUG(0, ("Out of memory\n"));
 		return NULL;
+	}
 
-	if ((mkdir(tmp_corepath, 0700) == -1) && errno != EEXIST)
+	if (!directory_create_or_exist_strict(tmp_corepath, uid, mode)) {
+		DEBUG(0, ("Failed to create %s for user %d with mode 0%o\n",
+			  tmp_corepath, (int)uid, (int)mode));
 		goto err_out;
-
-	if (chmod(tmp_corepath, 0700) == -1)
-		goto err_out;
-
-	talloc_free(tmp_corepath);
+	}
 
 	/* Setup progname-specific core subdir */
-	tmp_corepath = talloc_asprintf(NULL, "%s/cores/%s", logbase, progname);
-	if (!tmp_corepath)
-		return NULL;
-
-	if (mkdir(tmp_corepath, 0700) == -1 && errno != EEXIST)
+	tmp_corepath = talloc_asprintf_append(tmp_corepath, "/%s", progname);
+	if (!tmp_corepath) {
+		DEBUG(0, ("Out of memory\n"));
 		goto err_out;
+	}
 
-	if (chown(tmp_corepath, getuid(), getgid()) == -1)
+	if (!directory_create_or_exist(tmp_corepath, uid, mode)) {
+		DEBUG(0, ("Failed to create %s for user %d with mode 0%o\n",
+			  tmp_corepath, (int)uid, (int)mode));
 		goto err_out;
-
-	if (chmod(tmp_corepath, 0700) == -1)
-		goto err_out;
+	}
 
 	return tmp_corepath;
 
