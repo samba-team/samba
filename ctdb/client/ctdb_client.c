@@ -1140,6 +1140,17 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	state = ctdb_control_send(ctdb, destnode, srvid, opcode, 
 			flags, data, mem_ctx,
 			timeout, errormsg);
+
+	/* FIXME: Error conditions in ctdb_control_send return NULL without
+	 * setting errormsg.  So, there is no way to distinguish between sucess
+	 * and failure when CTDB_CTRL_FLAG_NOREPLY is set */
+	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
+		if (status != NULL) {
+			*status = 0;
+		}
+		return 0;
+	}
+
 	return ctdb_control_recv(ctdb, state, mem_ctx, outdata, status, 
 			errormsg);
 }
