@@ -279,55 +279,67 @@ nfs_check_rpc_service ()
     ctdb_counter_incr "$_service_name"
 
     while [ -n "$3" ] ; do
-	ctdb_check_counter "quiet" "$1" "$2" "$_service_name" || {
-	    for _action in $3 ; do
-		case "$_action" in
-		    verbose)
-			echo "$ctdb_check_rpc_out"
-			;;
-		    restart|restart:*)
-			# No explicit command specified, construct rpc command.
-			if [ -z "$_restart" ] ; then
-			    _p="rpc.${_prog_name}"
-			    _restart="echo 'Trying to restart $_prog_name [${_p}${_opts}]'"
-			    _restart="${_restart}; killall -q -9 $_p"
-			    _restart="${_restart}; $_p $_opts"
-			fi
-
-			# Process restart flags...
-			_flags="${_action#restart:}"
-			# There may not have been a colon...
-			[ "$_flags" != "$_action" ] || _flags=""
-			# q=quiet - everything to /dev/null
-			if [ "${_flags#*q}" != "$_flags" ] ; then
-			    _restart="{ ${_restart} ; } >/dev/null 2>&1"
-			fi
-			# s=stealthy - last command to /dev/null
-			if [ "${_flags#*s}" != "$_flags" ] ; then
-			    _restart="${_restart} >/dev/null 2>&1"
-			fi
-			# b=background - the whole thing, easy and reliable
-			if [ "${_flags#*b}" != "$_flags" ] ; then
-			    _restart="{ ${_restart} ; } &"
-			fi
-
-			# Do it!
-			eval "${_restart}"
-			;;
-		    unhealthy)
-			exit 1
-			;;
-		    *)
-			echo "Internal error: unknown action \"$_action\"."
-			exit 1
-		esac
-	    done
-
-	    # Only process the first action group.
+	if nfs_check_rpc_action "$1" "$2" "$3" ; then
 	    break
-	}
+	fi
 	shift 3
     done
+}
+
+nfs_check_rpc_action ()
+{
+    _cmp="$1"
+    _limit="$2"
+    _actions="$3"
+
+    if ctdb_check_counter "quiet" "$_cmp" "$_limit" "$_service_name" ; then
+	return 1
+    fi
+
+    for _action in $_actions ; do
+	case "$_action" in
+	    verbose)
+		echo "$ctdb_check_rpc_out"
+		;;
+	    restart|restart:*)
+		# No explicit command specified, construct rpc command.
+		if [ -z "$_restart" ] ; then
+		    _p="rpc.${_prog_name}"
+		    _restart="echo 'Trying to restart $_prog_name [${_p}${_opts}]'"
+		    _restart="${_restart}; killall -q -9 $_p"
+		    _restart="${_restart}; $_p $_opts"
+		fi
+
+		# Process restart flags...
+		_flags="${_action#restart:}"
+		# There may not have been a colon...
+		[ "$_flags" != "$_action" ] || _flags=""
+		# q=quiet - everything to /dev/null
+		if [ "${_flags#*q}" != "$_flags" ] ; then
+		    _restart="{ ${_restart} ; } >/dev/null 2>&1"
+		fi
+		# s=stealthy - last command to /dev/null
+		if [ "${_flags#*s}" != "$_flags" ] ; then
+		    _restart="${_restart} >/dev/null 2>&1"
+		fi
+		# b=background - the whole thing, easy and reliable
+		if [ "${_flags#*b}" != "$_flags" ] ; then
+		    _restart="{ ${_restart} ; } &"
+		fi
+
+		# Do it!
+		eval "${_restart}"
+		;;
+	    unhealthy)
+		exit 1
+		;;
+	    *)
+		echo "Internal error: unknown action \"$_action\"."
+		exit 1
+	esac
+    done
+
+    return 0
 }
 
 ######################################################
