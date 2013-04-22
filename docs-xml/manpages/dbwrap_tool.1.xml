@@ -49,6 +49,7 @@
 		<listitem><para>fetch: fetch a record</para></listitem>
 		<listitem><para>store: create or modify a record</para></listitem>
 		<listitem><para>delete: remove a record</para></listitem>
+		<listitem><para>exists: test for existance of a record</para></listitem>
 		<listitem><para>erase: remove all records</para></listitem>
 		<listitem><para>listkeys: list all available records</para></listitem>
 		<listitem><para>listwatchers: list processes, which are waiting for changes in a record</para></listitem>
@@ -98,6 +99,12 @@
 		<title>delete</title>
 		<cmdsynopsis>
 			<command>dbwrap_tool</command> &lt;database&gt; delete &lt;key&gt;
+		</cmdsynopsis>
+	</refsect2>
+	<refsect2>
+		<title>exists</title>
+		<cmdsynopsis>
+			<command>dbwrap_tool</command> &lt;database&gt; exists &lt;key&gt;
 		</cmdsynopsis>
 	</refsect2>
 	<refsect2>
