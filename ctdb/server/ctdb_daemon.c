@@ -1174,8 +1174,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	ctdbd_pid = getpid();
 	ctdb->ctdbd_pid = ctdbd_pid;
+	DEBUG(DEBUG_ERR, ("Starting CTDBD as PID: %u\n", ctdbd_pid));
 	ctdb_create_pidfile(ctdb->ctdbd_pid);
-	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
 
 	if (ctdb->do_setsched) {
 		/* try to set us up as realtime */
