@@ -653,9 +653,10 @@ int smbcli_ctemp(struct smbcli_tree *tree, const char *path, char **tmp_path)
 	union smb_open open_parms;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
+	int ret = -1;
 
 	mem_ctx = talloc_init("raw_open");
-	if (!mem_ctx) return -1;
+	if (!mem_ctx) return ret;
 
 	open_parms.openx.level = RAW_OPEN_CTEMP;
 	open_parms.ctemp.in.attrib = 0;
@@ -663,12 +664,12 @@ int smbcli_ctemp(struct smbcli_tree *tree, const char *path, char **tmp_path)
 	open_parms.ctemp.in.write_time = 0;
 
 	status = smb_raw_open(tree, mem_ctx, &open_parms);
-	if (tmp_path) {
-		*tmp_path = strdup(open_parms.ctemp.out.name);
+	if (NT_STATUS_IS_OK(status)) {
+		if (tmp_path) {
+			*tmp_path = strdup(open_parms.ctemp.out.name);
+		}
+		ret = open_parms.ctemp.out.file.fnum;
 	}
 	talloc_free(mem_ctx);
-	if (NT_STATUS_IS_OK(status)) {
-		return open_parms.ctemp.out.file.fnum;
-	}
-	return -1;
+	return ret;
 }
