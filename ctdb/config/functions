@@ -228,7 +228,7 @@ nfs_check_rpc_service ()
     fi
 
     while [ -n "$3" ] ; do
-	if nfs_check_rpc_action "$1" "$2" "$3" ; then
+	if _nfs_check_rpc_action "$1" "$2" "$3" ; then
 	    break
 	fi
 	shift 3
@@ -291,7 +291,7 @@ _nfs_check_rpc_common ()
     return 1
 }
 
-nfs_check_rpc_action ()
+_nfs_check_rpc_action ()
 {
     _cmp="$1"
     _limit="$2"
