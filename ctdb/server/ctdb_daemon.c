@@ -1109,8 +1109,8 @@ static void ctdb_remove_pidfile(void)
 {
 	if (ctdbd_pidfile != NULL && !ctdb_is_child_process()) {
 		if (unlink(ctdbd_pidfile) == 0) {
-			DEBUG(DEBUG_INFO, ("Removed PID file %s\n",
-					   ctdbd_pidfile));
+			DEBUG(DEBUG_NOTICE, ("Removed PID file %s\n",
+					     ctdbd_pidfile));
 		} else {
 			DEBUG(DEBUG_WARNING, ("Failed to Remove PID file %s\n",
 					      ctdbd_pidfile));
@@ -1132,7 +1132,7 @@ static void ctdb_create_pidfile(pid_t pid)
 
 		fprintf(fp, "%d\n", pid);
 		fclose(fp);
-		DEBUG(DEBUG_INFO, ("Created PID file %s\n", ctdbd_pidfile));
+		DEBUG(DEBUG_NOTICE, ("Created PID file %s\n", ctdbd_pidfile));
 		atexit(ctdb_remove_pidfile);
 	}
 }
