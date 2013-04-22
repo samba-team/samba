@@ -30,7 +30,7 @@
 #include "util_tdb.h"
 
 enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS,
-		 OP_LISTWATCHERS };
+		 OP_LISTWATCHERS, OP_EXISTS };
 
 enum dbwrap_type { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX, TYPE_NONE };
 
@@ -263,6 +263,24 @@ static int dbwrap_tool_delete(struct db_context *db,
 	return 0;
 }
 
+static int dbwrap_tool_exists(struct db_context *db,
+			      const char *keyname,
+			      const char *data)
+{
+	bool result;
+
+	result = dbwrap_exists(db, string_term_tdb_data(keyname));
+
+	if (result) {
+		d_fprintf(stdout, "Key %s exists\n", keyname);
+	} else {
+		d_fprintf(stdout, "Key %s does not exist\n", keyname);
+	}
+
+	return (result)?0:1;
+}
+
+
 static int delete_fn(struct db_record *rec, void *priv)
 {
 	dbwrap_record_delete(rec);
@@ -373,6 +391,7 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
 	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
 	{ OP_LISTWATCHERS, TYPE_NONE, dbwrap_tool_listwatchers },
+	{ OP_EXISTS, TYPE_STRING, dbwrap_tool_exists },
 	{ 0, 0, NULL },
 };
 
@@ -437,8 +456,8 @@ int main(int argc, const char **argv)
 		d_fprintf(stderr,
 			  "USAGE: %s [options] <database> <op> [<key> [<type> "
 			  "[<value>]]]\n"
-			  "       ops: fetch, store, delete, erase, listkeys, "
-			  "listwatchers\n"
+			  "       ops: fetch, store, delete, exists, "
+			  "erase, listkeys, listwatchers\n"
 			  "       types: int32, uint32, string, hex\n",
 			 argv[0]);
 		goto done;
@@ -496,10 +515,20 @@ int main(int argc, const char **argv)
 		}
 		op = OP_LISTWATCHERS;
 		keytype = "none";
+	} else if (strcmp(opname, "exists") == 0) {
+		if (extra_argc != 3) {
+			d_fprintf(stderr, "ERROR: operation 'exists' does "
+				  "not allow type nor value argument\n");
+			goto done;
+		}
+		keyname = extra_argv[2];
+		op = OP_EXISTS;
+		keytype = "string";
 	} else {
 		d_fprintf(stderr,
 			  "ERROR: invalid op '%s' specified\n"
-			  "       supported ops: fetch, store, delete\n",
+			  "       supported ops: fetch, store, delete, exists, "
+			  "erase, listkeys, listwatchers\n",
 			  opname);
 		goto done;
 	}
@@ -544,6 +573,7 @@ int main(int argc, const char **argv)
 	case OP_DELETE:
 	case OP_ERASE:
 	case OP_LISTKEYS:
+	case OP_EXISTS:
 		db = db_open(mem_ctx, dbname, 0, tdb_flags, O_RDWR | O_CREAT,
 			     0644, DBWRAP_LOCK_ORDER_1);
 		if (db == NULL) {
