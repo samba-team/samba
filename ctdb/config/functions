@@ -279,7 +279,7 @@ _nfs_check_rpc_common ()
     _restart=""
     _opts=""
     case "$_prog_name" in
-	knfsd)
+	nfsd|knfsd)
 	    _rpc_prog=nfs
 	    _version=3
 	    _restart="echo 'Trying to restart NFS service'"
