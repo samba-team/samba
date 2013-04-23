@@ -130,17 +130,17 @@ select_tdb_checker ()
 {
     # Find the best TDB consistency check available.
     use_tdb_tool_check=false
-    if [ -x /usr/bin/tdbtool ] && \
-	echo "help" | /usr/bin/tdbtool | grep -q check ; then
+    if which tdbtool >/dev/null 2>&1 && \
+	echo "help" | tdbtool | grep -q check ; then
 
 	use_tdb_tool_check=true
-    elif [ -x /usr/bin/tdbtool -a -x /usr/bin/tdbdump ] ; then
+    elif which tdbtool >/dev/null 2>&1 && which tdbdump >/dev/null 2>&1 ; then
 	    do_log <<EOF
 WARNING: The installed 'tdbtool' does not offer the 'check' subcommand.
  Using 'tdbdump' for database checks.
  Consider updating 'tdbtool' for better checks!
 EOF
-    elif [ -x /usr/bin/tdbdump ] ; then
+    elif which tdbdump >/dev/null 2>&1 ; then
 	do_log <<EOF
 WARNING: 'tdbtool' is not available.
  Using 'tdbdump' to check the databases.
