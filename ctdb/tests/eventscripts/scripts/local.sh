@@ -554,23 +554,10 @@ setup_nfs ()
     export FAKE_RPCINFO_SERVICES=""
 
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
-    export CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK="no"
 
     # Reset the failcounts for nfs services.
     eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
 
-    rpc_fail_limits_file="${EVENTSCRIPTS_TESTS_VAR_DIR}/rpc_fail_limits"
-
-    # Force this file to exist so tests can be individually run.
-    if [ ! -f "$rpc_fail_limits_file" ] ; then
-	# This is gross... but is needed to fake through the nfs monitor event.
-	eventscript_call ctdb_service_managed
-	service "nfs" force-started  # might not be enough
-	CTDB_RC_LOCAL="$CTDB_BASE/rc.local.nfs.monitor.get-limits" \
-	    CTDB_MANAGES_NFS="yes" \
-	    "${CTDB_BASE}/events.d/60.nfs" "monitor" >"$rpc_fail_limits_file"
-    fi
-    
     if [ "$1" != "down" ] ; then
 	debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
 
@@ -648,31 +635,14 @@ rpc_set_service_failure_response ()
     # Default
     ok_null
 
-    _ts=$(sed -n -e "s@^${_progname} @@p" "$rpc_fail_limits_file")
+    _file=$(ls "${CTDB_BASE}/nfs-rpc-checks.d/"[0-9][0-9]."${_progname}.check")
+    [ -r "$_file" ] || die "RPC check file \"$_file\" does not exist or is not unique"
 
-    while [ -n "$_ts" ] ; do
-	# Get the triple: operator, fail limit and actions.
-	_op="${_ts%% *}" ; _ts="${_ts#* }"
-	_li="${_ts%% *}" ; _ts="${_ts#* }"
-	# We've lost some of the quoting but we can simulate
-	# because we know an operator is always the first in a
-	# triple.
-  	_actions=""
-	while [ -n "$_ts" ] ; do
-	    # If this is an operator then we've got all of the
-	    # actions.
-	    case "$_ts" in
-		-*) break ;;
-	    esac
-
-	    _actions="${_actions}${_actions:+ }${_ts%% *}"
-	    # Special case for end of list.
-	    if [ "$_ts" != "${_ts#* }" ] ; then
-		_ts="${_ts#* }"
-	    else
-		_ts=""
-	    fi
-	done
+    while read _op _li _actions ; do
+	# Skip comments
+	case "$_op" in
+	    \#*) continue ;;
+	esac
 
 	if [ "$_numfails" "$_op" "$_li" ] ; then
 	    _out=""
@@ -683,7 +653,7 @@ rpc_set_service_failure_response ()
 			_ver=1
 			_pn="$_progname"
 			case "$_progname" in
-			    knfsd) _ver=3 ; _pn="nfs" ;;
+			    nfsd) _ver=3 ; _pn="nfs" ;;
 			    lockd) _ver=4 ; _pn="nlockmgr" ;;
 			    statd) _pn="status" ;;
 			esac
@@ -701,13 +671,13 @@ program $_pn version $_ver is not available"
 				;;
 			esac
 			case "${_progname}${_action#restart}" in
-			    knfsd)
+			    nfsd)
 				_t="\
 Trying to restart NFS service
 Starting nfslock: OK
 Starting nfs: OK"
 				;;
-			    knfsd:bs)
+			    nfsd:bs)
 				_t="Trying to restart NFS service"
 				;;
 			    lockd|lockd:b)
@@ -731,7 +701,7 @@ Starting nfslock: OK"
 	    required_result $_rc "$_out"
 	    return
 	fi
-    done
+    done <"$_file"
 }
 
 ######################################################################

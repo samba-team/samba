@@ -71,7 +71,7 @@ for d in $data_subdirs ; do
 done
 # Some of the unit tests have relative symlinks back to in-tree bits
 # and pieces.  These links will be broken!
-for i in "events.d" "functions" ; do
+for i in "events.d" "functions" "nfs-rpc-checks.d" ; do
     ln -sf "${etcdir}/ctdb/${i}" "${ctdb_datadir}/eventscripts/etc-ctdb/${i}"
 done
 # test_wrap needs to set TEST_BIN_DIR

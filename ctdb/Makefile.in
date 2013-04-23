@@ -317,6 +317,7 @@ install: all manpages $(PMDA_INSTALL)
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
+	mkdir -p $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d
 	mkdir -p $(DESTDIR)$(docdir)/ctdb
 	${INSTALLCMD} -m 644 ctdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
@@ -355,6 +356,11 @@ install: all manpages $(PMDA_INSTALL)
 	${INSTALLCMD} -m 755 config/events.d/62.cnfs $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/70.iscsi $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/91.lvs $(DESTDIR)$(etcdir)/ctdb/events.d
+	${INSTALLCMD} -m 644 config/nfs-rpc-checks.d/10.statd.check $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d/
+	${INSTALLCMD} -m 644 config/nfs-rpc-checks.d/20.nfsd.check $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d/
+	${INSTALLCMD} -m 644 config/nfs-rpc-checks.d/30.lockd.check $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d/
+	${INSTALLCMD} -m 644 config/nfs-rpc-checks.d/40.mountd.check $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d/
+	${INSTALLCMD} -m 644 config/nfs-rpc-checks.d/50.rquotad.check $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d/
 	${INSTALLCMD} -m 755 tools/ctdb_diagnostics $(DESTDIR)$(bindir)
 	${INSTALLCMD} -m 755 tools/onnode $(DESTDIR)$(bindir)
 	if [ -f doc/ctdb.1 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man1; fi

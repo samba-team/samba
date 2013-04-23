@@ -77,34 +77,7 @@ case "$1" in
 
 	update_tickles 2049
 
-	# check that statd responds to rpc requests
-	nfs_check_rpc_service "statd" \
-	    -ge 6 "verbose unhealthy" \
-	    -eq 4 "verbose restart" \
-	    -eq 2 "restart:bs"
-
-	# check that NFS responds to rpc requests
-	if [ "$CTDB_NFS_SKIP_KNFSD_ALIVE_CHECK" != "yes" ] ; then
-	    nfs_check_rpc_service "knfsd" \
-		-ge 6 "verbose unhealthy" \
-		-eq 4 "verbose restart" \
-		-eq 2 "restart:bs"
-	fi
-
-	# check that lockd responds to rpc requests
-	nfs_check_rpc_service "lockd" \
-	    -ge 15 "verbose restart:b unhealthy" \
-	    -eq 10 "restart:bs"
-
-	# mountd is sometimes not started correctly on RHEL5
-	nfs_check_rpc_service "mountd" \
-	    -ge 10 "verbose restart:b unhealthy" \
-	    -eq 5 "restart:b"
-
-	# rquotad is sometimes not started correctly on RHEL5
-	# not a critical service so we dont flag the node as unhealthy
-	nfs_check_rpc_service "rquotad" \
-	    -gt 0 "verbose restart:b"
+	nfs_check_rpc_services
 
 	# once every 600 seconds, update the statd state database for which
 	# clients need notifications

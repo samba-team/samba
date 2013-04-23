@@ -156,6 +156,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/62.cnfs
 %{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/91.lvs
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/10.statd.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/20.nfsd.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/30.lockd.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/40.mountd.check
+%config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/50.rquotad.check
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
