@@ -83,7 +83,7 @@ script_log ()
     esac
 
     if $_using_syslog ; then
-	logger -t "ctdbd" "${_tag}: $*"
+	logger -t "ctdbd: ${_tag}" $*
     else
 	{
 	    if [ -n "$*" ] ; then
