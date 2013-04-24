@@ -984,18 +984,6 @@ ctdb_check_counter_limit () {
 	echo "WARNING: less than $_limit consecutive failures ($_size) for $service_name, not unhealthy yet"
     fi
 }
-ctdb_check_counter_equal () {
-    _ctdb_counter_common
-
-    _limit=$1
-
-    # unary counting!
-    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
-    if [ $_size -eq $_limit ] ; then
-	return 1
-    fi
-    return 0
-}
 ctdb_check_counter () {
     _msg="${1:-error}"  # "error"  - anything else is silent on fail
     _op="${2:--ge}"  # an integer operator supported by test
