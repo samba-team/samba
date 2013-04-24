@@ -54,6 +54,10 @@ def set_options(opt):
                   help=("enable building against (too) old version of ctdb (default=false)"),
                   action="store_true", dest='enable_old_ctdb', default=False)
 
+    opt.add_option('--with-libcephfs',
+                   help=("Directory under which libcephfs is installed"),
+                   action="store", dest='libcephfs_dir', default=None)
+
 
 
 def configure(conf):
@@ -1699,6 +1703,14 @@ main() {
     if conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h'):
 	    conf.DEFINE('HAVE_LINUX_IOCTL', '1')
 
+    conf.env['CCFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
+    if Options.options.libcephfs_dir:
+        conf.env['CPPPATH_CEPHFS'] = Options.options.libcephfs_dir + '/include'
+        conf.env['LIBPATH_CEPHFS'] = Options.options.libcephfs_dir + '/lib'
+
+    if conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and conf.CHECK_LIB('cephfs'):
+        conf.DEFINE('HAVE_CEPH', '1')
+
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc
                                       auth_domain auth_builtin vfs_default
@@ -1765,6 +1777,9 @@ main() {
 
     if conf.CONFIG_SET('SAMBA_FAM_LIBS'):
         default_shared_modules.extend(TO_LIST('vfs_notify_fam'))
+
+    if conf.CONFIG_SET("HAVE_CEPH"):
+        default_shared_modules.extend(TO_LIST('vfs_ceph'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')

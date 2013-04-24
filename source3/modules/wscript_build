@@ -50,6 +50,7 @@ VFS_LINUX_XFS_SGID_SRC = 'vfs_linux_xfs_sgid.c'
 VFS_TIME_AUDIT_SRC = 'vfs_time_audit.c'
 VFS_MEDIA_HARMONY_SRC = 'vfs_media_harmony.c'
 VFS_BTRFS_SRC = 'vfs_btrfs.c'
+VFS_CEPH_SRC = 'vfs_ceph.c'
 
 
 bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
@@ -503,3 +504,12 @@ bld.SAMBA3_MODULE('perfcount_test',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('perfcount_test'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('perfcount_test'))
+
+bld.SAMBA3_MODULE('vfs_ceph',
+                 subsystem='vfs',
+                 source=VFS_CEPH_SRC,
+                 deps='samba-util cephfs',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_ceph'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph'),
+                 cflags=bld.CONFIG_GET('CCFLAGS_CEPHFS'))

@@ -1023,6 +1023,36 @@ if test x"$ac_cv_header_gpfs_gpl_h" = x"yes"; then
     default_shared_modules="$default_shared_modules vfs_gpfs"
 fi
 
+#############################
+# check if building with libcephfs
+# fail if --with-libcephfs specified but no headers found
+printf "%s" "checking for CephFS... "
+AC_CHECK_HEADERS(cephfs/libcephfs.h)
+
+save_LIBS="$LIBS"
+LIBS="$LIBS -lcephfs"
+AC_TRY_LINK([#include <cephfs/libcephfs.h>],
+	  [ceph_version(0, 0, 0)],
+	  samba_cv_HAVE_CEPHFS=yes,
+	  samba_cv_HAVE_CEPHFS=no
+	  )
+
+if test x"$ac_cv_header_cephfs_libcephfs_h" = x"yes" && test x"$samba_cv_HAVE_CEPHFS" = x"yes"; then
+    AC_DEFINE(HAVE_CEPH, 1, [Whether CEPH headers are available])
+    default_shared_modules="$default_shared_modules vfs_ceph"
+    save_CFLAGS="$CFLAGS"
+    save_LDFLAGS="$LDFLAGS"
+    save_LIBS="$save_LIBS -lcephfs"
+else
+    if test x"$CEPHFS_PATH_SPEC" = x"yes"; then
+        AC_MSG_ERROR([No valid libcephfs found in ${CEPHFS_PATH}])
+    fi
+fi
+
+CFLAGS="$save_CFLAGS"
+LDFLAGS="$save_LDFLAGS"
+LIBS="$save_LIBS"
+
 # Note that all the libunwind symbols in the API are defined to internal
 # platform-specific version, so we must include libunwind.h before checking
 # any of them.
@@ -6455,6 +6485,7 @@ SMB_MODULE(vfs_linux_xfs_sgid, \$(VFS_LINUX_XFS_SGID_OBJ), "bin/linux_xfs_sgid.$
 SMB_MODULE(vfs_time_audit, \$(VFS_TIME_AUDIT_OBJ), "bin/time_audit.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_media_harmony, \$(VFS_MEDIA_HARMONY_OBJ), "bin/media_harmony.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_btrfs, \$(VFS_BTRFS_OBJ), "bin/btrfs.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_ceph, \$(VFS_CEPH_OBJ), "bin/ceph.$SHLIBEXT", VFS)
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
