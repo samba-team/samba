@@ -479,7 +479,8 @@ done:
 bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
-			  const char *servername, char *printer, struct GUID *guid,
+			  const char *servername, const char *printer,
+			  struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
 {
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
@@ -574,7 +575,8 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
-			  const char *servername, char *printer, struct GUID *guid,
+			  const char *servername, const char *printer,
+			  struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
 {
 	return False;
