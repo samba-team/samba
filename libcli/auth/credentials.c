@@ -719,6 +719,79 @@ void netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialState
 	netlogon_creds_crypt_samlogon_logon(creds, level, logon, true);
 }
 
+union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
+					enum netr_LogonInfoClass level,
+					const union netr_LogonLevel *in)
+{
+	union netr_LogonLevel *out;
+
+	if (in == NULL) {
+		return NULL;
+	}
+
+	out = talloc(mem_ctx, union netr_LogonLevel);
+	if (out == NULL) {
+		return NULL;
+	}
+
+	*out = *in;
+
+	switch (level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (in->password == NULL) {
+			return out;
+		}
+
+		out->password = talloc(out, struct netr_PasswordInfo);
+		if (out->password == NULL) {
+			talloc_free(out);
+			return NULL;
+		}
+		*out->password = *in->password;
+
+		return out;
+
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		break;
+
+	case NetlogonGenericInformation:
+		if (in->generic == NULL) {
+			return out;
+		}
+
+		out->generic = talloc(out, struct netr_GenericInfo);
+		if (out->generic == NULL) {
+			talloc_free(out);
+			return NULL;
+		}
+		*out->generic = *in->generic;
+
+		if (in->generic->data == NULL) {
+			return out;
+		}
+
+		if (in->generic->length == 0) {
+			return out;
+		}
+
+		out->generic->data = talloc_memdup(out->generic,
+						   in->generic->data,
+						   in->generic->length);
+		if (out->generic->data == NULL) {
+			talloc_free(out);
+			return NULL;
+		}
+
+		return out;
+	}
+
+	return out;
+}
+
 /*
   copy a netlogon_creds_CredentialState struct
 */
