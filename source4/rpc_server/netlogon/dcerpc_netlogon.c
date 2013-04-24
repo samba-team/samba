@@ -629,29 +629,15 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	user_info = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
+	netlogon_creds_decrypt_samlogon_logon(creds,
+					      r->in.logon_level,
+					      r->in.logon);
+
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:
 	case NetlogonServiceInformation:
 	case NetlogonInteractiveTransitiveInformation:
 	case NetlogonServiceTransitiveInformation:
-		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_decrypt(creds,
-						   r->in.logon->password->lmpassword.hash,
-						   sizeof(r->in.logon->password->lmpassword.hash));
-			netlogon_creds_aes_decrypt(creds,
-						   r->in.logon->password->ntpassword.hash,
-						   sizeof(r->in.logon->password->ntpassword.hash));
-		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds,
-					    r->in.logon->password->lmpassword.hash,
-					    sizeof(r->in.logon->password->lmpassword.hash));
-			netlogon_creds_arcfour_crypt(creds,
-					    r->in.logon->password->ntpassword.hash,
-					    sizeof(r->in.logon->password->ntpassword.hash));
-		} else {
-			netlogon_creds_des_decrypt(creds, &r->in.logon->password->lmpassword);
-			netlogon_creds_des_decrypt(creds, &r->in.logon->password->ntpassword);
-		}
 
 		/* TODO: we need to deny anonymous access here */
 		nt_status = auth_context_create(mem_ctx,
@@ -705,11 +691,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	case NetlogonGenericInformation:
 	{
 		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_decrypt(creds,
-					    r->in.logon->generic->data, r->in.logon->generic->length);
+			/* OK */
 		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds,
-					    r->in.logon->generic->data, r->in.logon->generic->length);
+			/* OK */
 		} else {
 			/* Using DES to verify kerberos tickets makes no sense */
 			return NT_STATUS_INVALID_PARAMETER;
