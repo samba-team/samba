@@ -493,8 +493,12 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 						     bool encrypt)
 {
 	static const char zeros[16];
-
 	struct netr_SamBaseInfo *base = NULL;
+
+	if (validation == NULL) {
+		return;
+	}
+
 	switch (validation_level) {
 	case 2:
 		if (validation->sam2) {
