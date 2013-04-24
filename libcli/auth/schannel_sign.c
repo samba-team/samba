@@ -24,6 +24,17 @@
 #include "../libcli/auth/schannel.h"
 #include "../lib/crypto/crypto.h"
 
+#define SETUP_SEQNUM(state, buf, initiator) do { \
+	uint8_t *_buf = buf; \
+	uint32_t _seq_num_low = (state)->seq_num & UINT32_MAX; \
+	uint32_t _seq_num_high = (state)->seq_num >> 32; \
+	if (initiator) { \
+		_seq_num_high |= 0x80000000; \
+	} \
+	RSIVAL(_buf, 0, _seq_num_low); \
+	RSIVAL(_buf, 4, _seq_num_high); \
+} while(0)
+
 static void netsec_offset_and_sizes(struct schannel_state *state,
 				    bool do_seal,
 				    uint32_t *_min_sig_size,
@@ -255,8 +266,7 @@ NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 		confounder = NULL;
 	}
 
-	RSIVAL(seq_num, 0, state->seq_num);
-	SIVAL(seq_num, 4, state->initiator?0:0x80);
+	SETUP_SEQNUM(state, seq_num, !state->initiator);
 
 	if (do_unseal) {
 		netsec_do_seal(state, seq_num,
@@ -325,8 +335,7 @@ NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 				&checksum_length,
 				&confounder_ofs);
 
-	RSIVAL(seq_num, 0, state->seq_num);
-	SIVAL(seq_num, 4, state->initiator?0x80:0);
+	SETUP_SEQNUM(state, seq_num, state->initiator);
 
 	if (do_seal) {
 		confounder = _confounder;

@@ -30,7 +30,7 @@ enum schannel_position {
 
 struct schannel_state {
 	enum schannel_position state;
-	uint32_t seq_num;
+	uint64_t seq_num;
 	bool initiator;
 	struct netlogon_creds_CredentialState *creds;
 };
