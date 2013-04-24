@@ -453,7 +453,10 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		goto failed;
 	} else if (ret == LDB_SUCCESS) {
 		uint32_t account_type = ldb_msg_find_attr_as_uint(sam_msg, "sAMaccountType", 0);
-		if ((account_type == ATYPE_ACCOUNT) || (account_type == ATYPE_WORKSTATION_TRUST ) || (account_type == ATYPE_INTERDOMAIN_TRUST )) {
+		if ((account_type == ATYPE_ACCOUNT) ||
+		    (account_type == ATYPE_WORKSTATION_TRUST ) ||
+		    (account_type == ATYPE_INTERDOMAIN_TRUST ))
+		{
 			const struct ldb_val *v = ldb_msg_find_ldb_val(sam_msg, "uidNumber");
 			if (v) {
 				unixid->type = ID_TYPE_UID;
@@ -462,7 +465,9 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 				return NT_STATUS_OK;
 			}
 
-		} else if ((account_type == ATYPE_SECURITY_GLOBAL_GROUP) || (account_type == ATYPE_SECURITY_LOCAL_GROUP)) {
+		} else if ((account_type == ATYPE_SECURITY_GLOBAL_GROUP) ||
+			   (account_type == ATYPE_SECURITY_LOCAL_GROUP))
+		{
 			const struct ldb_val *v = ldb_msg_find_ldb_val(sam_msg, "gidNumber");
 			if (v) {
 				unixid->type = ID_TYPE_GID;
