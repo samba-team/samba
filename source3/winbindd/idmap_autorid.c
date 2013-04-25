@@ -351,12 +351,15 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 					struct id_map *map)
 {
 	uint32_t rid;
+	uint32_t reduced_rid;
+	uint32_t range_start;
 
 	sid_peek_rid(map->sid, &rid);
 
-	map->xid.id = global->minvalue +
-	    (global->rangesize * range->rangenum) + rid -
-	    (global->rangesize * range->domain_range_index);
+	reduced_rid = rid % global->rangesize;
+	range_start = global->minvalue + range->rangenum * global->rangesize;
+
+	map->xid.id = reduced_rid + range_start;
 	map->xid.type = ID_TYPE_BOTH;
 
 	/* We **really** should have some way of validating
