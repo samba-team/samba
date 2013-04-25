@@ -54,6 +54,7 @@ struct autorid_range_config {
 	fstring keystr;
 	uint32_t rangenum;
 	uint32_t domain_range_index;
+	uint32_t low_id;
 	struct autorid_global_config *globalcfg;
 };
 
@@ -170,9 +171,13 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range
 			      idmap_autorid_get_domainrange_action, range);
 	}
 
+	range->low_id = range->globalcfg->minvalue
+		      + range->rangenum * range->globalcfg->rangesize;
+
 	DEBUG(10, ("Using range #%d for domain %s "
-		   "(domain_range_index=%"PRIu32")\n",
-		   range->rangenum, range->domsid, range->domain_range_index));
+		   "(domain_range_index=%"PRIu32", low_id=%"PRIu32")\n",
+		   range->rangenum, range->domsid, range->domain_range_index,
+		   range->low_id));
 
 	return ret;
 }
@@ -220,9 +225,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 		return ret;
 	}
 
-	xid->id = globalcfg->minvalue +
-		  globalcfg->rangesize * range.rangenum +
-		  xid->id;
+	xid->id = xid->id + range.low_id;
 
 	DEBUG(10, ("Returned new %s %d from allocation range\n",
 		   (xid->type==ID_TYPE_UID)?"uid":"gid", xid->id));
@@ -352,14 +355,12 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 {
 	uint32_t rid;
 	uint32_t reduced_rid;
-	uint32_t range_start;
 
 	sid_peek_rid(map->sid, &rid);
 
 	reduced_rid = rid % global->rangesize;
-	range_start = global->minvalue + range->rangenum * global->rangesize;
 
-	map->xid.id = reduced_rid + range_start;
+	map->xid.id = reduced_rid + range->low_id;
 	map->xid.type = ID_TYPE_BOTH;
 
 	/* We **really** should have some way of validating
