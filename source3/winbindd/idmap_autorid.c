@@ -22,6 +22,57 @@
  *
  */
 
+/*
+ * This module allocates ranges for domains to be used in a
+ * algorithmic mode like idmap_rid. Multiple ranges are supported
+ * for a single domain: If a rid exceeds the range size, a matching
+ * range is allocated to hold the rid's id.
+ *
+ * Here are the formulas applied:
+ *
+ *
+ * For a sid of the form domain_sid-rid, we have
+ *
+ *   rid = reduced_rid + domain_range_index * range_size
+ *
+ * with
+ *   reduced_rid := rid % range_size
+ *   domain_range_index := rid / range_size
+ *
+ * And reduced_rid fits into a range.
+ *
+ * In the database, we associate a range_number to
+ * the pair domain_sid,domain_range_index.
+ *
+ * Now the unix id for the given sid calculates as:
+ *
+ *   id = reduced_rid + range_low_id
+ *
+ * with
+ *
+ *   range_low_id = low_id + range_number * range_size
+ *
+ *
+ * The inverse calculation goes like this:
+ *
+ * Given a unix id, let
+ *
+ *   normalized_id := id - low_id
+ *   reduced_rid := normalized_id % range_size
+ *   range_number = normalized_id / range_size
+ *
+ * Then we have
+ *
+ *   id = reduced_rid + low_id + range_number * range_size
+ *
+ * From the database, get the domain_sid,domain_range_index pair
+ * belonging to the range_number (if there is already one).
+ *
+ * Then the rid for the unix id calculates as:
+ *
+ *   rid = reduced_rid + domain_range_index * range_size
+ */
+
 #include "includes.h"
 #include "system/filesys.h"
 #include "winbindd.h"
