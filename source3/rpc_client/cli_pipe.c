@@ -3004,32 +3004,32 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     enum dcerpc_AuthLevel auth_level,
 					     const char *domain,
 					     struct netlogon_creds_CredentialState **pdc,
-					     struct rpc_pipe_client **presult)
+					     struct rpc_pipe_client **_rpccli)
 {
-	struct rpc_pipe_client *result;
-	struct pipe_auth_data *auth;
+	struct rpc_pipe_client *rpccli;
+	struct pipe_auth_data *rpcauth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, table, &result);
+	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = rpccli_schannel_bind_data(result, domain, auth_level,
-					   *pdc, &auth);
+	status = rpccli_schannel_bind_data(rpccli, domain, auth_level,
+					   *pdc, &rpcauth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("rpccli_schannel_bind_data returned %s\n",
 			  nt_errstr(status)));
-		TALLOC_FREE(result);
+		TALLOC_FREE(rpccli);
 		return status;
 	}
 
-	status = rpc_pipe_bind(result, auth);
+	status = rpc_pipe_bind(rpccli, rpcauth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: "
 			  "cli_rpc_pipe_bind failed with error %s\n",
 			  nt_errstr(status) ));
-		TALLOC_FREE(result);
+		TALLOC_FREE(rpccli);
 		return status;
 	}
 
@@ -3037,10 +3037,10 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	 * The credentials on a new netlogon pipe are the ones we are passed
 	 * in - copy them over
 	 */
-	if (result->dc == NULL) {
-		result->dc = netlogon_creds_copy(result, *pdc);
-		if (result->dc == NULL) {
-			TALLOC_FREE(result);
+	if (rpccli->dc == NULL) {
+		rpccli->dc = netlogon_creds_copy(rpccli, *pdc);
+		if (rpccli->dc == NULL) {
+			TALLOC_FREE(rpccli);
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -3048,9 +3048,9 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
-		  result->desthost, domain));
+		  rpccli->desthost, domain));
 
-	*presult = result;
+	*_rpccli = rpccli;
 	return NT_STATUS_OK;
 }
 
