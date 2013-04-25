@@ -417,6 +417,10 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 		if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
 			return false;
 
+		if (!can_write_to_file(conn, smb_fname)) {
+			return false;
+		}
+
 		/*
 		 * We need to open the file with write access whilst
 		 * still in our current user context. This ensures we
