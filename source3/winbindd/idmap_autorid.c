@@ -52,7 +52,7 @@ struct autorid_global_config {
 struct autorid_domain_config {
 	fstring sid;
 	fstring keystr;
-	uint32_t domainnum;
+	uint32_t rangenum;
 	uint32_t multiplier;
 	struct autorid_global_config *globalcfg;
 };
@@ -64,13 +64,14 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 					      void *private_data)
 {
 	NTSTATUS ret;
-	uint32_t domainnum, hwm;
+	uint32_t rangenum, hwm;
 	char *numstr;
 	struct autorid_domain_config *cfg;
 
 	cfg = (struct autorid_domain_config *)private_data;
 
-	ret = dbwrap_fetch_uint32_bystring(db, cfg->keystr, &(cfg->domainnum));
+	ret = dbwrap_fetch_uint32_bystring(db, cfg->keystr,
+					   &(cfg->rangenum));
 
 	if (NT_STATUS_IS_OK(ret)) {
 		/* entry is already present*/
@@ -97,7 +98,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* increase the HWM */
-	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &domainnum, 1);
+	ret = dbwrap_change_uint32_atomic_bystring(db, HWM, &rangenum, 1);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching a new "
 			  "domain range value!\n"));
@@ -105,14 +106,14 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	/* store away the new mapping in both directions */
-	ret = dbwrap_store_uint32_bystring(db, cfg->keystr, domainnum);
+	ret = dbwrap_store_uint32_bystring(db, cfg->keystr, rangenum);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while storing new "
 			  "domain->range assignment!\n"));
 		goto error;
 	}
 
-	numstr = talloc_asprintf(db, "%u", domainnum);
+	numstr = talloc_asprintf(db, "%u", rangenum);
 	if (!numstr) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
@@ -128,10 +129,10 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 		goto error;
 	}
 	DEBUG(5, ("Acquired new range #%d for domain %s "
-		  "(multiplier=%"PRIu32")\n", domainnum, cfg->keystr,
+		  "(multiplier=%"PRIu32")\n", rangenum, cfg->keystr,
 		  cfg->multiplier));
 
-	cfg->domainnum = domainnum;
+	cfg->rangenum = rangenum;
 
 	return NT_STATUS_OK;
 
@@ -158,7 +159,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom,
 	}
 
 	ret = dbwrap_fetch_uint32_bystring(autorid_db, dom->keystr,
-					   &(dom->domainnum));
+					   &(dom->rangenum));
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		if (read_only) {
@@ -169,7 +170,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_domain_config *dom,
 	}
 
 	DEBUG(10, ("Using range #%d for domain %s (multiplier=%"PRIu32")\n",
-		   dom->domainnum, dom->sid, dom->multiplier));
+		   dom->rangenum, dom->sid, dom->multiplier));
 
 	return ret;
 }
@@ -218,7 +219,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 	}
 
 	xid->id = globalcfg->minvalue +
-		  globalcfg->rangesize * domaincfg.domainnum +
+		  globalcfg->rangesize * domaincfg.rangenum +
 		  xid->id;
 
 	DEBUG(10, ("Returned new %s %d from allocation range\n",
@@ -352,7 +353,7 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 	sid_peek_rid(map->sid, &rid);
 
 	map->xid.id = global->minvalue +
-	    (global->rangesize * domain->domainnum) + rid -
+	    (global->rangesize * domain->rangenum) + rid -
 	    (global->rangesize * domain->multiplier);
 	map->xid.type = ID_TYPE_BOTH;
 
