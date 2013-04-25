@@ -856,6 +856,11 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		bits on a file. Just like file_ntimes below.
 	*/
 
+	if (!can_write_to_file(conn, smb_fname)) {
+		errno = EACCES;
+		return -1;
+	}
+
 	/*
 	 * We need to open the file with write access whilst
 	 * still in our current user context. This ensures we
