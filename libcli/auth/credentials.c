@@ -601,6 +601,124 @@ void netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_Credential
 							validation, true);
 }
 
+static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
+						enum netr_LogonInfoClass level,
+						union netr_LogonLevel *logon,
+						bool encrypt)
+{
+	static const char zeros[16];
+
+	if (logon == NULL) {
+		return;
+	}
+
+	switch (level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (logon->password == NULL) {
+			return;
+		}
+
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			uint8_t *h;
+
+			h = logon->password->lmpassword.hash;
+			if (memcmp(h, zeros, 16) != 0) {
+				if (encrypt) {
+					netlogon_creds_aes_encrypt(creds, h, 16);
+				} else {
+					netlogon_creds_aes_decrypt(creds, h, 16);
+				}
+			}
+
+			h = logon->password->ntpassword.hash;
+			if (memcmp(h, zeros, 16) != 0) {
+				if (encrypt) {
+					netlogon_creds_aes_encrypt(creds, h, 16);
+				} else {
+					netlogon_creds_aes_decrypt(creds, h, 16);
+				}
+			}
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			uint8_t *h;
+
+			h = logon->password->lmpassword.hash;
+			if (memcmp(h, zeros, 16) != 0) {
+				netlogon_creds_arcfour_crypt(creds, h, 16);
+			}
+
+			h = logon->password->ntpassword.hash;
+			if (memcmp(h, zeros, 16) != 0) {
+				netlogon_creds_arcfour_crypt(creds, h, 16);
+			}
+		} else {
+			struct samr_Password *p;
+
+			p = &logon->password->lmpassword;
+			if (memcmp(p->hash, zeros, 16) != 0) {
+				if (encrypt) {
+					netlogon_creds_des_encrypt(creds, p);
+				} else {
+					netlogon_creds_des_decrypt(creds, p);
+				}
+			}
+			p = &logon->password->ntpassword;
+			if (memcmp(p->hash, zeros, 16) != 0) {
+				if (encrypt) {
+					netlogon_creds_des_encrypt(creds, p);
+				} else {
+					netlogon_creds_des_decrypt(creds, p);
+				}
+			}
+		}
+		break;
+
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		break;
+
+	case NetlogonGenericInformation:
+		if (logon->generic == NULL) {
+			return;
+		}
+
+		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			if (encrypt) {
+				netlogon_creds_aes_encrypt(creds,
+						logon->generic->data,
+						logon->generic->length);
+			} else {
+				netlogon_creds_aes_decrypt(creds,
+						logon->generic->data,
+						logon->generic->length);
+			}
+		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
+			netlogon_creds_arcfour_crypt(creds,
+						     logon->generic->data,
+						     logon->generic->length);
+		} else {
+			/* Using DES to verify kerberos tickets makes no sense */
+		}
+		break;
+	}
+}
+
+void netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
+					   enum netr_LogonInfoClass level,
+					   union netr_LogonLevel *logon)
+{
+	netlogon_creds_crypt_samlogon_logon(creds, level, logon, false);
+}
+
+void netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
+					   enum netr_LogonInfoClass level,
+					   union netr_LogonLevel *logon)
+{
+	netlogon_creds_crypt_samlogon_logon(creds, level, logon, true);
+}
+
 /*
   copy a netlogon_creds_CredentialState struct
 */
