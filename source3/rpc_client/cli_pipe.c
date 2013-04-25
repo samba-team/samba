@@ -2403,7 +2403,10 @@ static NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
 
 	schannel_auth->state = SCHANNEL_STATE_START;
 	schannel_auth->initiator = true;
-	schannel_auth->creds = netlogon_creds_copy(result, creds);
+	schannel_auth->creds = netlogon_creds_copy(schannel_auth, creds);
+	if (schannel_auth->creds == NULL) {
+		goto fail;
+	}
 
 	result->auth_ctx = schannel_auth;
 	*presult = result;
