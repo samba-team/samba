@@ -3004,6 +3004,11 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct rpc_pipe_client *rpccli;
 	struct pipe_auth_data *rpcauth;
 	NTSTATUS status;
+	NTSTATUS result;
+	struct netlogon_creds_CredentialState save_creds;
+	struct netr_Authenticator auth;
+	struct netr_Authenticator return_auth;
+	union netr_Capabilities capabilities;
 
 	status = cli_rpc_pipe_open(cli, transport, table, &rpccli);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3040,6 +3045,102 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 		return status;
 	}
 
+	if (!ndr_syntax_id_equal(&table->syntax_id, &ndr_table_netlogon.syntax_id)) {
+		goto done;
+	}
+
+	save_creds = *rpccli->dc;
+	ZERO_STRUCT(return_auth);
+	ZERO_STRUCT(capabilities);
+
+	netlogon_creds_client_authenticator(&save_creds, &auth);
+
+	status = dcerpc_netr_LogonGetCapabilities(rpccli->binding_handle,
+						  talloc_tos(),
+						  rpccli->srv_name_slash,
+						  save_creds.computer_name,
+						  &auth, &return_auth,
+						  1, &capabilities,
+						  &result);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
+		if (save_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			DEBUG(5, ("AES was negotiated and the error was %s - "
+				  "downgrade detected\n",
+				  nt_errstr(status)));
+			TALLOC_FREE(rpccli);
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
+		/* This is probably an old Samba Version */
+		DEBUG(5, ("We are checking against an NT or old Samba - %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_netr_LogonGetCapabilities failed with %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(rpccli);
+		return status;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+		if (save_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+			/* This means AES isn't supported. */
+			DEBUG(5, ("AES was negotiated and the result was %s - "
+				  "downgrade detected\n",
+				  nt_errstr(result)));
+			TALLOC_FREE(rpccli);
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
+		/* This is probably an old Windows version */
+		DEBUG(5, ("We are checking against an win2k3 or Samba - %s\n",
+			  nt_errstr(result)));
+		goto done;
+	}
+
+	/*
+	 * We need to check the credential state here, cause win2k3 and earlier
+	 * returns NT_STATUS_NOT_IMPLEMENTED
+	 */
+	if (!netlogon_creds_client_check(&save_creds, &return_auth.cred)) {
+		/*
+		 * Server replied with bad credential. Fail.
+		 */
+		DEBUG(0,("cli_rpc_pipe_open_schannel_with_key: server %s "
+			 "replied with bad credential\n",
+			 rpccli->desthost));
+		TALLOC_FREE(rpccli);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	*rpccli->dc = save_creds;
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("dcerpc_netr_LogonGetCapabilities failed with %s\n",
+			  nt_errstr(result)));
+		TALLOC_FREE(rpccli);
+		return result;
+	}
+
+	if (!(save_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
+		/* This means AES isn't supported. */
+		DEBUG(5, ("AES is not negotiated, but netr_LogonGetCapabilities "
+			  "was OK - downgrade detected\n"));
+		TALLOC_FREE(rpccli);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (save_creds.negotiate_flags != capabilities.server_capabilities) {
+		DEBUG(0, ("The client capabilities don't match the server "
+			  "capabilities: local[0x%08X] remote[0x%08X]\n",
+			  save_creds.negotiate_flags,
+			  capabilities.server_capabilities));
+		TALLOC_FREE(rpccli);
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+done:
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
 		  get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
