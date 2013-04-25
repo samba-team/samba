@@ -218,9 +218,9 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 			return NULL;
 		}
 
-		status = smb2_create_blob_add(req, &blobs,
-					      SMB2_CREATE_TAG_RQLS,
-					      data_blob_const(data, 32));
+		status = smb2_create_blob_add(
+			req, &blobs, SMB2_CREATE_TAG_RQLS,
+			data_blob_const(data, sizeof(data)));
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
 			return NULL;
@@ -236,9 +236,9 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 			return NULL;
 		}
 
-		status = smb2_create_blob_add(req, &blobs,
-					      SMB2_CREATE_TAG_RQLS,
-					      data_blob_const(data, 52));
+		status = smb2_create_blob_add(
+			req, &blobs, SMB2_CREATE_TAG_RQLS,
+			data_blob_const(data, sizeof(data)));
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
 			return NULL;
