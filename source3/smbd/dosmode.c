@@ -706,6 +706,11 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	uint32_t old_mode;
 	struct timespec new_create_timespec;
 
+	if (!CAN_WRITE(conn)) {
+		errno = EROFS;
+		return -1;
+	}
+
 	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
 	dosmode &= (SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE);
 
