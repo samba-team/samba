@@ -192,17 +192,23 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	DEBUG(5, ("publishing printer %s\n", printer));
 
 	/* figure out where to publish */
-	ads_find_machine_acct(ads, &res, lp_netbios_name());
+	ads_rc = ads_find_machine_acct(ads, &res, lp_netbios_name());
+	if (!ADS_ERR_OK(ads_rc)) {
+		DEBUG(0, ("failed to find machine account for %s\n",
+			  lp_netbios_name()));
+		TALLOC_FREE(ctx);
+		return WERR_NOT_FOUND;
+	}
 
 	/* We use ldap_get_dn here as we need the answer
 	 * in utf8 to call ldap_explode_dn(). JRA. */
 
 	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
+	ads_msgfree(ads, res);
 	if (!srv_dn_utf8) {
 		TALLOC_FREE(ctx);
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	ads_msgfree(ads, res);
 	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
 	if (!srv_cn_utf8) {
 		TALLOC_FREE(ctx);
