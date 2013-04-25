@@ -88,20 +88,20 @@
 	<para>
 		The Unix ID for a RID is calculated this way:
 		<programlisting>
-			ID = IDMAP UID LOW VALUE + DOMAINRANGENUMBER * RANGESIZE + RID
-			- (MULTIPLIER * RANGESIZE)
+			ID =  REDUCED RID + IDMAP RANGE LOW VALUE + RANGE NUMBER * RANGE SIZE
 		</programlisting>
+		where REDUCED RID = RID % RANGE_SIZE
+		and a DOMAIN RANGE INDEX = RID / RANGE_SIZE is used together with the
+		domain sid to determine the RANGE NUMBER (stored in the database).
 	</para>
 	<para>
 		Correspondingly, the formula for calculating the RID for a
 		given Unix ID is this:
 		<programlisting>
-			RID = ID - IDMAP UID LOW VALUE - DOMAINRANGENUMBER * RANGESIZE
-			+ (MULTIPLIER * RANGESIZE)
+			RID = (ID - LOW ID) % RANGE SIZE + DOMAIN RANGE INDEX * RANGE SIZE
 		</programlisting>
-	</para>
-	<para>
-		MULTIPLIER is calculated as FLOOR(RID / RANGESIZE).
+		Where the DOMAIN RANGE INDEX is retrieved from the database along with the
+		domain sid by the RANGE NUMBER = (ID - LOW ID) / RANGE SIZE .
 	</para>
 </refsect1>
 
