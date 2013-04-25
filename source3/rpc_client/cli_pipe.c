@@ -1802,8 +1802,7 @@ static void rpc_pipe_bind_step_two_done(struct tevent_req *subreq)
 	status = dcerpc_netr_LogonGetCapabilities_r_recv(subreq, talloc_tos());
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE)) {
-		if (state->cli->dc && state->cli->dc->negotiate_flags &
-		    NETLOGON_NEG_SUPPORTS_AES) {
+		if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 			DEBUG(5, ("AES is not supported and the error was %s\n",
 				  nt_errstr(status)));
 			tevent_req_nterror(req,
@@ -1854,9 +1853,6 @@ static void rpc_pipe_bind_step_two_done(struct tevent_req *subreq)
 		return;
 	}
 
-	TALLOC_FREE(state->cli->dc);
-	state->cli->dc = talloc_steal(state->cli, state->creds);
-
 	if (!NT_STATUS_IS_OK(state->r.out.result)) {
 		DEBUG(0, ("dcerpc_netr_LogonGetCapabilities_r_recv failed with %s\n",
 			  nt_errstr(state->r.out.result)));
@@ -1864,18 +1860,17 @@ static void rpc_pipe_bind_step_two_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->creds->negotiate_flags !=
-	    state->r.out.capabilities->server_capabilities) {
-		DEBUG(0, ("The client capabilities don't match the server "
-			  "capabilities: local[0x%08X] remote[0x%08X]\n",
-			  state->creds->negotiate_flags,
-			  state->capabilities.server_capabilities));
+	if (!(state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES)) {
+		DEBUG(0, ("netr_LogonGetCapabilities is supported by %s, "
+			  "but AES was not negotiated - downgrade detected",
+			 state->cli->desthost));
 		tevent_req_nterror(req,
 				   NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
-	/* TODO: Add downgrade dectection. */
+	TALLOC_FREE(state->cli->dc);
+	state->cli->dc = talloc_move(state->cli, &state->creds);
 
 	tevent_req_done(req);
 	return;
