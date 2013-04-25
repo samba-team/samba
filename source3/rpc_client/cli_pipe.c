@@ -3019,6 +3019,18 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 		return status;
 	}
 
+	/*
+	 * The credentials on a new netlogon pipe are the ones we are passed
+	 * in - copy them over
+	 *
+	 * This may get overwritten... in rpc_pipe_bind()...
+	 */
+	rpccli->dc = netlogon_creds_copy(rpccli, *pdc);
+	if (rpccli->dc == NULL) {
+		TALLOC_FREE(rpccli);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	status = rpc_pipe_bind(rpccli, rpcauth);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("cli_rpc_pipe_open_schannel_with_key: "
@@ -3026,18 +3038,6 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 			  nt_errstr(status) ));
 		TALLOC_FREE(rpccli);
 		return status;
-	}
-
-	/*
-	 * The credentials on a new netlogon pipe are the ones we are passed
-	 * in - copy them over
-	 */
-	if (rpccli->dc == NULL) {
-		rpccli->dc = netlogon_creds_copy(rpccli, *pdc);
-		if (rpccli->dc == NULL) {
-			TALLOC_FREE(rpccli);
-			return NT_STATUS_NO_MEMORY;
-		}
 	}
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
