@@ -53,7 +53,7 @@ struct autorid_range_config {
 	fstring domsid;
 	fstring keystr;
 	uint32_t rangenum;
-	uint32_t multiplier;
+	uint32_t domain_range_index;
 	struct autorid_global_config *globalcfg;
 };
 
@@ -78,8 +78,9 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 		return ret;
 	}
 
-	DEBUG(10, ("Acquiring new range for domain %s (multiplier=%"PRIu32")\n",
-		   range->domsid, range->multiplier));
+	DEBUG(10, ("Acquiring new range for domain %s "
+		   "(domain_range_index=%"PRIu32")\n",
+		   range->domsid, range->domain_range_index));
 
 	/* fetch the current HWM */
 	ret = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
@@ -129,8 +130,8 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 		goto error;
 	}
 	DEBUG(5, ("Acquired new range #%d for domain %s "
-		  "(multiplier=%"PRIu32")\n", rangenum, range->keystr,
-		  range->multiplier));
+		  "(domain_range_index=%"PRIu32")\n", rangenum, range->keystr,
+		  range->domain_range_index));
 
 	range->rangenum = rangenum;
 
@@ -153,7 +154,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range
 	 */
 	if (range->domain_range_index > 0) {
 		snprintf(range->keystr, FSTRING_LEN, "%s#%"PRIu32,
-			 range->domsid, range->multiplier);
+			 range->domsid, range->domain_range_index);
 	} else {
 		fstrcpy(range->keystr, range->domsid);
 	}
@@ -169,8 +170,9 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range
 			      idmap_autorid_get_domainrange_action, range);
 	}
 
-	DEBUG(10, ("Using range #%d for domain %s (multiplier=%"PRIu32")\n",
-		   range->rangenum, range->domsid, range->multiplier));
+	DEBUG(10, ("Using range #%d for domain %s "
+		   "(domain_range_index=%"PRIu32")\n",
+		   range->rangenum, range->domsid, range->domain_range_index));
 
 	return ret;
 }
@@ -256,7 +258,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 					struct id_map *map)
 {
 	uint32_t range;
-	uint32_t multiplier = 0;
+	uint32_t domain_range_index = 0;
 	TDB_DATA data = tdb_null;
 	char *keystr;
 	struct dom_sid domsid;
@@ -319,8 +321,8 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		return NT_STATUS_OK;
 	}
 	if (q != NULL)
-		if (sscanf(q+1, "%"SCNu32, &multiplier) != 1) {
-			DEBUG(10, ("Multiplier not found! "
+		if (sscanf(q+1, "%"SCNu32, &domain_range_index) != 1) {
+			DEBUG(10, ("Domain range index not found, "
 				   "ignoring mapping request\n"));
 			map->status = ID_UNKNOWN;
 			return NT_STATUS_OK;
@@ -328,7 +330,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 
 	sid_compose(map->sid, &domsid,
 		    (map->xid.id - cfg->minvalue -
-		     range * cfg->rangesize + (cfg->rangesize * multiplier)));
+		     range * cfg->rangesize + (cfg->rangesize * domain_range_index)));
 
 	/* We **really** should have some way of validating
 	   the SID exists and is the correct type here.  But
@@ -354,7 +356,7 @@ static NTSTATUS idmap_autorid_sid_to_id(struct autorid_global_config *global,
 
 	map->xid.id = global->minvalue +
 	    (global->rangesize * range->rangenum) + rid -
-	    (global->rangesize * range->multiplier);
+	    (global->rangesize * range->domain_range_index);
 	map->xid.type = ID_TYPE_BOTH;
 
 	/* We **really** should have some way of validating
@@ -578,8 +580,8 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		range.globalcfg = global;
 		sid_to_fstring(range.domsid, &domainsid);
 
-		/* Calculate multiplier for multi-range support */
-		range.multiplier = rid / (global->rangesize);
+		/* Calculate domain_range_index for multi-range support */
+		range.domain_range_index = rid / (global->rangesize);
 
 		ret = idmap_autorid_get_domainrange(&range, dom->read_only);
 
