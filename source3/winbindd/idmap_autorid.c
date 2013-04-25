@@ -260,8 +260,11 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 					struct idmap_domain *dom,
 					struct id_map *map)
 {
-	uint32_t range;
+	uint32_t range_number;
 	uint32_t domain_range_index = 0;
+	uint32_t normalized_id;
+	uint32_t reduced_rid;
+	uint32_t rid;
 	TDB_DATA data = tdb_null;
 	char *keystr;
 	struct dom_sid domsid;
@@ -285,9 +288,11 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	}
 
 	/* determine the range of this uid */
-	range = ((map->xid.id - cfg->minvalue) / cfg->rangesize);
 
-	keystr = talloc_asprintf(talloc_tos(), "%u", range);
+	normalized_id = map->xid.id - cfg->minvalue;
+	range_number = normalized_id / cfg->rangesize;
+
+	keystr = talloc_asprintf(talloc_tos(), "%u", range_number);
 	if (!keystr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -298,7 +303,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(4, ("id %d belongs to range %d which does not have "
 			  "domain mapping, ignoring mapping request\n",
-			  map->xid.id, range));
+			  map->xid.id, range_number));
 		TALLOC_FREE(data.dptr);
 		map->status = ID_UNKNOWN;
 		return NT_STATUS_OK;
@@ -331,9 +336,10 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 			return NT_STATUS_OK;
 		}
 
-	sid_compose(map->sid, &domsid,
-		    (map->xid.id - cfg->minvalue -
-		     range * cfg->rangesize + (cfg->rangesize * domain_range_index)));
+	reduced_rid = normalized_id % cfg->rangesize;
+	rid = reduced_rid + domain_range_index * cfg->rangesize;
+
+	sid_compose(map->sid, &domsid, rid);
 
 	/* We **really** should have some way of validating
 	   the SID exists and is the correct type here.  But
