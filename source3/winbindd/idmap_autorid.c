@@ -50,7 +50,7 @@ struct autorid_global_config {
 };
 
 struct autorid_range_config {
-	fstring sid;
+	fstring domsid;
 	fstring keystr;
 	uint32_t rangenum;
 	uint32_t multiplier;
@@ -79,7 +79,7 @@ static NTSTATUS idmap_autorid_get_domainrange_action(struct db_context *db,
 	}
 
 	DEBUG(10, ("Acquiring new range for domain %s (multiplier=%"PRIu32")\n",
-		   range->sid, range->multiplier));
+		   range->domsid, range->multiplier));
 
 	/* fetch the current HWM */
 	ret = dbwrap_fetch_uint32_bystring(db, HWM, &hwm);
@@ -151,11 +151,11 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range
 	 * if it is not found create a mapping in a transaction unless
 	 * read-only mode has been set
 	 */
-	if (range->multiplier > 0) {
-		snprintf(range->keystr, FSTRING_LEN, "%s#%"PRIu32, range->sid,
-			range->multiplier);
+	if (range->domain_range_index > 0) {
+		snprintf(range->keystr, FSTRING_LEN, "%s#%"PRIu32,
+			 range->domsid, range->multiplier);
 	} else {
-		fstrcpy(range->keystr, range->sid);
+		fstrcpy(range->keystr, range->domsid);
 	}
 
 	ret = dbwrap_fetch_uint32_bystring(autorid_db, range->keystr,
@@ -170,7 +170,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct autorid_range_config *range
 	}
 
 	DEBUG(10, ("Using range #%d for domain %s (multiplier=%"PRIu32")\n",
-		   range->rangenum, range->sid, range->multiplier));
+		   range->rangenum, range->domsid, range->multiplier));
 
 	return ret;
 }
@@ -201,7 +201,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 	ZERO_STRUCT(range);
 
 	range.globalcfg = globalcfg;
-	fstrcpy(range.sid, ALLOC_RANGE);
+	fstrcpy(range.domsid, ALLOC_RANGE);
 
 	ret = idmap_autorid_get_domainrange(&range, dom->read_only);
 
@@ -259,7 +259,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 	uint32_t multiplier = 0;
 	TDB_DATA data = tdb_null;
 	char *keystr;
-	struct dom_sid sid;
+	struct dom_sid domsid;
 	NTSTATUS status;
 	bool ok;
 	const char *q = NULL;
@@ -312,7 +312,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		return idmap_autorid_map_id_to_sid(dom, map);
 	}
 
-	ok = dom_sid_parse_endp((const char *)data.dptr, &sid, &q);
+	ok = dom_sid_parse_endp((const char *)data.dptr, &domsid, &q);
 	TALLOC_FREE(data.dptr);
 	if (!ok) {
 		map->status = ID_UNKNOWN;
@@ -326,7 +326,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 			return NT_STATUS_OK;
 		}
 
-	sid_compose(map->sid, &sid,
+	sid_compose(map->sid, &domsid,
 		    (map->xid.id - cfg->minvalue -
 		     range * cfg->rangesize + (cfg->rangesize * multiplier)));
 
@@ -576,7 +576,7 @@ static NTSTATUS idmap_autorid_sids_to_unixids(struct idmap_domain *dom,
 		TALLOC_FREE(domain);
 
 		range.globalcfg = global;
-		sid_to_fstring(range.sid, &domainsid);
+		sid_to_fstring(range.domsid, &domainsid);
 
 		/* Calculate multiplier for multi-range support */
 		range.multiplier = rid / (global->rangesize);
