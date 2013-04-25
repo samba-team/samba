@@ -2373,10 +2373,11 @@ static NTSTATUS rpccli_generic_bind_data(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
-				   enum dcerpc_AuthLevel auth_level,
-				   struct netlogon_creds_CredentialState *creds,
-				   struct pipe_auth_data **presult)
+static NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
+				const char *domain,
+				enum dcerpc_AuthLevel auth_level,
+				struct netlogon_creds_CredentialState *creds,
+				struct pipe_auth_data **presult)
 {
 	struct schannel_state *schannel_auth;
 	struct pipe_auth_data *result;

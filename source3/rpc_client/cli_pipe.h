@@ -58,12 +58,6 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct pipe_auth_data **presult);
 
-NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx,
-				   const char *domain,
-				   enum dcerpc_AuthLevel auth_level,
-				   struct netlogon_creds_CredentialState *creds,
-				   struct pipe_auth_data **presult);
-
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx,
 			   const char *host,
 			   const struct sockaddr_storage *ss_addr,
