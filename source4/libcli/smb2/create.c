@@ -212,10 +212,11 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	if (io->in.lease_request) {
 		uint8_t data[32];
 
-		memcpy(&data[0], &io->in.lease_request->lease_key, 16);
-		SIVAL(data, 16, io->in.lease_request->lease_state);
-		SIVAL(data, 20, io->in.lease_request->lease_flags);
-		SBVAL(data, 24, io->in.lease_request->lease_duration);
+		if (!smb2_lease_push(io->in.lease_request, data,
+				     sizeof(data))) {
+			TALLOC_FREE(req);
+			return NULL;
+		}
 
 		status = smb2_create_blob_add(req, &blobs,
 					      SMB2_CREATE_TAG_RQLS,
@@ -227,16 +228,13 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	}
 
 	if (io->in.lease_request_v2) {
-		struct smb2_lease *ls = io->in.lease_request_v2;
 		uint8_t data[52];
 
-		memcpy(&data[0], &ls->lease_key, 16);
-		SIVAL(data, 16, ls->lease_state);
-		SIVAL(data, 20, ls->lease_flags);
-		SBVAL(data, 24, ls->lease_duration);
-		memcpy(&data[32], &ls->parent_lease_key, 16);
-		SSVAL(data, 48, ls->lease_epoch);
-		SSVAL(data, 50, 0); /* reserved */
+		if (!smb2_lease_push(io->in.lease_request_v2, data,
+				     sizeof(data))) {
+			TALLOC_FREE(req);
+			return NULL;
+		}
 
 		status = smb2_create_blob_add(req, &blobs,
 					      SMB2_CREATE_TAG_RQLS,
