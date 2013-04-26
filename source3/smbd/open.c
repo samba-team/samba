@@ -1507,11 +1507,10 @@ static void defer_open_done(struct tevent_req *req)
 {
 	struct defer_open_state *state = tevent_req_callback_data(
 		req, struct defer_open_state);
-	struct db_record *rec = NULL;
 	NTSTATUS status;
 	bool ret;
 
-	status = dbwrap_record_watch_recv(req, talloc_tos(), &rec);
+	status = dbwrap_record_watch_recv(req, talloc_tos(), NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",
@@ -1521,12 +1520,6 @@ static void defer_open_done(struct tevent_req *req)
 		 * tell a re-scheduled open about that error.
 		 */
 	}
-
-	/*
-	 * TODO: We need a version of dbwrap_record_watch_recv that does not
-	 * fetch_lock the record.
-	 */
-	TALLOC_FREE(rec);
 
 	DEBUG(10, ("scheduling mid %llu\n", (unsigned long long)state->mid));
 
