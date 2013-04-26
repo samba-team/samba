@@ -598,6 +598,7 @@ void dptr_CloseDir(files_struct *fsp)
 		 * all resource deallocation.
 		 */
 		dptr_close_internal(fsp->dptr);
+		fsp->dptr = NULL;
 	}
 }
 
