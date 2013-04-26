@@ -8,12 +8,39 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.14 include:
 
-o 
+o  Certain xattrs cause Windows error 0x800700FF (bug #9130).
 
 Changes since 3.6.13:
 ---------------------
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 9130: Certain xattrs cause Windows error 0x800700FF.
+    * BUG 9724: Use is_encrypted_packet() function correctly inside server.
+    * BUG 9733: Fix 'smbcontrol close-share' is not working.
+    * BUG 9747: Make sure that we only propogate the INHERITED flag when we are
+      allowed to.
+    * BUG 9748: Remove unneeded fstat system call from hot read path.
+    * BUG 9811: Fix bug in old create temp SMB request. Only use VFS functions.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9650: New or deleted CUPS printerqueues are not recognized by Samba.
+    * BUG 9807: wbinfo: Fix segfault in wbinfo_pam_logon.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9727: wkssvc: Fix NULL pointer dereference.
+    * BUG 9736: smbd: Tune "dir" a bit.
+    * BUG 9775: Fix segfault for "artificial" conn_structs.
+    * BUG 9809: RHEL SPEC: Package dbwrap_tool man page.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9139: Fix the username map optimization.
+    * BUG 9699: Fix adding case sensitive spn.
+    * BUG 9723: Add a tool to migrate latin1 printing tdbs to registry.
+    * BUG 9735: Fix Winbind separator in upn to username conversion.
+    * BUG 9766: Cache name_to_sid/sid_to_name correctly.
 
 
 ######################################################################
