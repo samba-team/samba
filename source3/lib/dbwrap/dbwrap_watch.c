@@ -401,6 +401,9 @@ NTSTATUS dbwrap_record_watch_recv(struct tevent_req *req,
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+	if (prec == NULL) {
+		return NT_STATUS_OK;
+	}
 	rec = dbwrap_fetch_locked(state->db, mem_ctx, state->key);
 	if (rec == NULL) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
