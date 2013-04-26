@@ -1025,16 +1025,6 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	if (is_deferred_open_entry(share_entry) &&
-	    !open_was_deferred(sconn, share_entry->op_mid))
-	{
-		char *str = talloc_asprintf(talloc_tos(),
-			"Got a deferred entry without a request: "
-			"PANIC: %s\n",
-			share_mode_str(talloc_tos(), num, share_entry));
-		smb_panic(str);
-	}
-
 	if (!is_valid_share_mode_entry(share_entry)) {
 		return;
 	}
@@ -1046,10 +1036,6 @@ static void validate_my_share_entries(struct smbd_server_connection *sconn,
 			 share_mode_str(talloc_tos(), num, share_entry) ));
 		smb_panic("validate_my_share_entries: Cannot match a "
 			  "share entry with an open file\n");
-	}
-
-	if (is_deferred_open_entry(share_entry)) {
-		goto panic;
 	}
 
 	if ((share_entry->op_type == NO_OPLOCK) &&
@@ -1475,30 +1461,6 @@ static void defer_open(struct share_mode_lock *lck,
 		       struct smb_request *req,
 		       struct deferred_open_record *state)
 {
-	struct server_id self = messaging_server_id(req->sconn->msg_ctx);
-
-	/* Paranoia check */
-
-	if (lck) {
-		int i;
-
-		for (i=0; i<lck->data->num_share_modes; i++) {
-			struct share_mode_entry *e = &lck->data->share_modes[i];
-
-			if (is_deferred_open_entry(e) &&
-			    serverid_equal(&self, &e->pid) &&
-			    (e->op_mid == req->mid)) {
-				DEBUG(0, ("Trying to defer an already deferred "
-					"request: mid=%llu, exiting\n",
-					(unsigned long long)req->mid));
-				TALLOC_FREE(lck);
-				exit_server("attempt to defer a deferred request");
-			}
-		}
-	}
-
-	/* End paranoia check */
-
 	DEBUG(10,("defer_open_sharing_error: time [%u.%06u] adding deferred "
 		  "open entry for mid %llu\n",
 		  (unsigned int)request_time.tv_sec,
@@ -1867,19 +1829,6 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
  Remove the deferred open entry under lock.
 ****************************************************************************/
 
-void remove_deferred_open_entry(struct file_id id, uint64_t mid,
-				struct server_id pid)
-{
-	struct share_mode_lock *lck = get_existing_share_mode_lock(
-		talloc_tos(), id);
-	if (lck == NULL) {
-		DEBUG(0, ("could not get share mode lock\n"));
-		return;
-	}
-	del_deferred_open_entry(lck, mid, pid);
-	TALLOC_FREE(lck);
-}
-
 /****************************************************************************
  Return true if this is a state pointer to an asynchronous create.
 ****************************************************************************/
@@ -2115,12 +2064,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if (is_deferred_open_async(ptr)) {
 				SET_STAT_INVALID(smb_fname->st);
 				file_existed = false;
-			} else {
-				struct deferred_open_record *state = (struct deferred_open_record *)ptr;
-				/* Remove the deferred open entry under lock. */
-				remove_deferred_open_entry(
-					state->id, req->mid,
-					messaging_server_id(req->sconn->msg_ctx));
 			}
 
 			/* Ensure we don't reprocess this message. */
@@ -2833,12 +2776,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				  (unsigned int)new_unx_mode));
 	}
 
-	/* If this is a successful open, we must remove any deferred open
-	 * records. */
-	if (req != NULL) {
-		del_deferred_open_entry(lck, req->mid,
-					messaging_server_id(req->sconn->msg_ctx));
-	}
 	TALLOC_FREE(lck);
 
 	return NT_STATUS_OK;

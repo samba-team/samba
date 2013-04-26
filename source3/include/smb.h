@@ -673,12 +673,12 @@ enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT,
 #define FAKE_LEVEL_II_OPLOCK 		0x10	/* Client requested no_oplock, but we have to
 				 * inform potential level2 holders on
 				 * write. */
-#define DEFERRED_OPEN_ENTRY 		0x20
+/* #define DEFERRED_OPEN_ENTRY 		0x20 */   /* Not used anymore */
 /* #define UNUSED_SHARE_MODE_ENTRY 	0x40 */   /* Not used anymore */
 #define FORCE_OPLOCK_BREAK_TO_NONE 	0x80
 
 /* None of the following should ever appear in fsp->oplock_request. */
-#define SAMBA_PRIVATE_OPLOCK_MASK (INTERNAL_OPEN_ONLY|DEFERRED_OPEN_ENTRY|FORCE_OPLOCK_BREAK_TO_NONE)
+#define SAMBA_PRIVATE_OPLOCK_MASK (INTERNAL_OPEN_ONLY|FORCE_OPLOCK_BREAK_TO_NONE)
 
 #define EXCLUSIVE_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)EXCLUSIVE_OPLOCK|(unsigned int)BATCH_OPLOCK))
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)

@@ -270,11 +270,6 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 			continue; /* No longer exists. */
 		}
 
-		/* Ignore deferred open entries. */
-		if (share->op_type == DEFERRED_OPEN_ENTRY) {
-			continue;
-		}
-
 		/* Copy into the external list. */
 		sme->dev = share->id.devid;
 		sme->ino = share->id.inode;

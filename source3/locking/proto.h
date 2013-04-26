@@ -170,18 +170,12 @@ void get_file_infos(struct file_id id,
 		    bool *delete_on_close,
 		    struct timespec *write_time);
 bool is_valid_share_mode_entry(const struct share_mode_entry *e);
-bool is_deferred_open_entry(const struct share_mode_entry *e);
 bool share_mode_stale_pid(struct share_mode_data *d, unsigned i);
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 		    uid_t uid, uint64_t mid, uint16 op_type);
-void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
-		       struct timeval request_time,
-		       struct server_id pid, struct file_id id);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
 bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 				  struct files_struct *fsp);
-void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
-			     struct server_id pid);
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool get_delete_on_close_token(struct share_mode_lock *lck,

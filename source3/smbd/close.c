@@ -165,88 +165,6 @@ static int compare_share_mode_times(const void *p1, const void *p2)
 }
 
 /****************************************************************************
- If any deferred opens are waiting on this close, notify them.
-****************************************************************************/
-
-static void notify_deferred_opens(struct smbd_server_connection *sconn,
-				  struct share_mode_lock *lck)
-{
-	struct server_id self = messaging_server_id(sconn->msg_ctx);
-	uint32_t i, num_deferred;
-	struct share_mode_entry *deferred;
-
-	if (!should_notify_deferred_opens(sconn)) {
-		return;
-	}
-
-	num_deferred = 0;
-	for (i=0; i<lck->data->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->data->share_modes[i];
-
-		if (!is_deferred_open_entry(e)) {
-			continue;
-		}
-		if (share_mode_stale_pid(lck->data, i)) {
-			continue;
-		}
-		num_deferred += 1;
-	}
-	if (num_deferred == 0) {
-		return;
-	}
-
-	deferred = talloc_array(talloc_tos(), struct share_mode_entry,
-				num_deferred);
-	if (deferred == NULL) {
-		return;
-	}
-
-	num_deferred = 0;
-	for (i=0; i<lck->data->num_share_modes; i++) {
-		struct share_mode_entry *e = &lck->data->share_modes[i];
-		if (is_deferred_open_entry(e)) {
-			deferred[num_deferred] = *e;
-			num_deferred += 1;
-		}
-	}
-
-	/*
-	 * We need to sort the notifications by initial request time. Imagine
-	 * two opens come in asyncronously, both conflicting with the open we
-	 * just close here. If we don't sort the notifications, the one that
-	 * came in last might get the response before the one that came in
-	 * first. This is demonstrated with the smbtorture4 raw.mux test.
-	 *
-	 * As long as we had the UNUSED_SHARE_MODE_ENTRY, we happened to
-	 * survive this particular test. Without UNUSED_SHARE_MODE_ENTRY, we
-	 * shuffle the share mode entries around a bit, so that we do not
-	 * survive raw.mux anymore.
-	 *
-	 * We could have kept the ordering in del_share_mode, but as the
-	 * ordering was never formalized I think it is better to do it here
-	 * where it is necessary.
-	 */
-
-	qsort(deferred, num_deferred, sizeof(struct share_mode_entry),
-	      compare_share_mode_times);
-
-	for (i=0; i<num_deferred; i++) {
-		struct share_mode_entry *e = &deferred[i];
-
-		if (serverid_equal(&self, &e->pid)) {
- 			/*
- 			 * We need to notify ourself to retry the open.  Do
- 			 * this by finding the queued SMB record, moving it to
- 			 * the head of the queue and changing the wait time to
- 			 * zero.
- 			 */
-			schedule_deferred_open_message_smb(sconn, e->op_mid);
- 		}
- 	}
-	TALLOC_FREE(deferred);
-}
-
-/****************************************************************************
  Delete all streams
 ****************************************************************************/
 
@@ -430,9 +348,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			break;
 		}
 	}
-
-	/* Notify any deferred opens waiting on this close. */
-	notify_deferred_opens(conn->sconn, lck);
 
 	/*
 	 * NT can set delete_on_close of the last open

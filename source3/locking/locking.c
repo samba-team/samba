@@ -627,11 +627,6 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	return (num_props != 0);
 }
 
-bool is_deferred_open_entry(const struct share_mode_entry *e)
-{
-	return (e->op_type == DEFERRED_OPEN_ENTRY);
-}
-
 /*
  * In case d->share_modes[i] conflicts with something or otherwise is
  * being used, we need to make sure the corresponding process still
@@ -699,23 +694,6 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->name_hash = fsp->name_hash;
 }
 
-static void fill_deferred_open_entry(struct share_mode_entry *e,
-				     const struct timeval request_time,
-				     struct file_id id,
-				     struct server_id pid,
-				     uint64_t mid)
-{
-	ZERO_STRUCTP(e);
-	e->pid = pid;
-	e->op_mid = mid;
-	e->op_type = DEFERRED_OPEN_ENTRY;
-	e->time.tv_sec = request_time.tv_sec;
-	e->time.tv_usec = request_time.tv_usec;
-	e->id = id;
-	e->uid = (uint32)-1;
-	e->flags = 0;
-}
-
 static void add_share_mode_entry(struct share_mode_data *d,
 				 const struct share_mode_entry *entry)
 {
@@ -729,15 +707,6 @@ void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
 {
 	struct share_mode_entry entry;
 	fill_share_mode_entry(&entry, fsp, uid, mid, op_type);
-	add_share_mode_entry(lck->data, &entry);
-}
-
-void add_deferred_open(struct share_mode_lock *lck, uint64_t mid,
-		       struct timeval request_time,
-		       struct server_id pid, struct file_id id)
-{
-	struct share_mode_entry entry;
-	fill_deferred_open_entry(&entry, request_time, id, pid, mid);
 	add_share_mode_entry(lck->data, &entry);
 }
 
@@ -760,14 +729,6 @@ static bool share_modes_identical(struct share_mode_entry *e1,
 		e1->share_file_id == e2->share_file_id );
 }
 
-static bool deferred_open_identical(struct share_mode_entry *e1,
-				    struct share_mode_entry *e2)
-{
-	return (serverid_equal(&e1->pid, &e2->pid) &&
-		(e1->op_mid == e2->op_mid) &&
-		file_id_equal(&e1->id, &e2->id));
-}
-
 static struct share_mode_entry *find_share_mode_entry(struct share_mode_data *d,
 						      struct share_mode_entry *entry)
 {
@@ -778,11 +739,6 @@ static struct share_mode_entry *find_share_mode_entry(struct share_mode_data *d,
 		if (is_valid_share_mode_entry(entry) &&
 		    is_valid_share_mode_entry(e) &&
 		    share_modes_identical(e, entry)) {
-			return e;
-		}
-		if (is_deferred_open_entry(entry) &&
-		    is_deferred_open_entry(e) &&
-		    deferred_open_identical(e, entry)) {
 			return e;
 		}
 	}
@@ -847,23 +803,6 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 
 	lck->data->modified = true;
 	return true;
-}
-
-void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
-			     struct server_id pid)
-{
-	struct share_mode_entry entry, *e;
-
-	fill_deferred_open_entry(&entry, timeval_zero(),
-				 lck->data->id, pid, mid);
-
-	e = find_share_mode_entry(lck->data, &entry);
-	if (e == NULL) {
-		return;
-	}
-	*e = lck->data->share_modes[lck->data->num_share_modes-1];
-	lck->data->num_share_modes -= 1;
-	lck->data->modified = True;
 }
 
 /*******************************************************************
