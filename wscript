@@ -12,7 +12,7 @@ import wafsamba, Options, samba_dist, Scripting, Utils, samba_version
 
 
 samba_dist.DIST_DIRS('.')
-samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions/alpha13')
+samba_dist.DIST_BLACKLIST('.gitignore .bzrignore source4/selftest/provisions/alpha13 source4/selftest/provisions/release-4-0-0/')
 
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
