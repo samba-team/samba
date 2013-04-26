@@ -1338,55 +1338,6 @@ bool schedule_deferred_open_message_smb2(
 	return true;
 }
 
-/*********************************************************
- Re-process this call.
-*********************************************************/
-
-static void smb2_deferred_open_timer(struct tevent_context *ev,
-					struct tevent_timer *te,
-					struct timeval _tval,
-					void *private_data)
-{
-	NTSTATUS status;
-	struct smbd_smb2_create_state *state = NULL;
-	struct smbd_smb2_request *smb2req = talloc_get_type(private_data,
-						struct smbd_smb2_request);
-
-	DEBUG(10,("smb2_deferred_open_timer: [idx=%d], %s\n",
-		smb2req->current_idx,
-		tevent_req_default_print(smb2req->subreq, talloc_tos()) ));
-
-	state = tevent_req_data(smb2req->subreq,
-			struct smbd_smb2_create_state);
-	if (!state) {
-		return;
-	}
-	/*
-	 * Null this out, don't talloc_free. It will
-	 * be talloc_free'd by the tevent library when
-	 * this returns.
-	 */
-	state->te = NULL;
-	/* Ensure we don't have any outstanding immediate event. */
-	TALLOC_FREE(state->im);
-
-	/*
-	 * This is subtle. We must null out the callback
-	 * before rescheduling, else the first call to
-	 * tevent_req_nterror() causes the _receive()
-	 * function to be called, this causing tevent_req_post()
-	 * to crash.
-	 */
-	tevent_req_set_callback(smb2req->subreq, NULL, NULL);
-
-	status = smbd_smb2_request_dispatch(smb2req);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		smbd_server_connection_terminate(smb2req->sconn,
-				nt_errstr(status));
-	}
-}
-
 static bool smbd_smb2_create_cancel(struct tevent_req *req)
 {
 	struct smbd_smb2_request *smb2req = NULL;
@@ -1459,16 +1410,6 @@ bool push_deferred_open_message_smb2(struct smbd_smb2_request *smb2req,
 				true) ));
 
 	state->open_was_deferred = true;
-#if 0
-	state->te = tevent_add_timer(smb2req->sconn->ev_ctx,
-				state,
-				end_time,
-				smb2_deferred_open_timer,
-				smb2req);
-        if (!state->te) {
-		return false;
-	}
-#endif
 
 	/* allow this request to be canceled */
 	tevent_req_set_cancel_fn(req, smbd_smb2_create_cancel);
