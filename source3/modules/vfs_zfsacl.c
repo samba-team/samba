@@ -142,7 +142,7 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp, SMB
 				acebuf[i].a_flags |= ACE_OWNER;
 				break;
 			case SMB_ACE4_WHO_GROUP:
-				acebuf[i].a_flags |= ACE_GROUP;
+				acebuf[i].a_flags |= ACE_GROUP|ACE_IDENTIFIER_GROUP;
 				break;
 			default:
 				DEBUG(8, ("unsupported special_id %d\n", \
