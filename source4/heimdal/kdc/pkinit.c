@@ -361,7 +361,7 @@ get_dh_param(krb5_context context,
     }
 
     ret = _krb5_dh_group_ok(context, config->pkinit_dh_min_bits,
-			    &dhparam.p, &dhparam.g, &dhparam.q, moduli,
+			    &dhparam.p, &dhparam.g, dhparam.q, moduli,
 			    &client_params->dh_group_name);
     if (ret) {
 	/* XXX send back proposal of better group */
