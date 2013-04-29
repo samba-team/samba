@@ -358,9 +358,10 @@ assert_service_name ()
 ######################################################
 # check a set of directories is available
 # return 1 on a missing directory
-# usage: ctdb_check_directories_probe SERVICE_NAME <directories...>
+# directories are read from stdin
 ######################################################
-ctdb_check_directories_probe() {
+ctdb_check_directories_probe()
+{
     while IFS="" read d ; do
 	case "$d" in
 	    *%*)
@@ -374,12 +375,12 @@ ctdb_check_directories_probe() {
 
 ######################################################
 # check a set of directories is available
-# usage: ctdb_check_directories SERVICE_NAME <directories...>
+# directories are read from stdin
 ######################################################
-ctdb_check_directories() {
-    n="${1:-${service_name}}"
+ctdb_check_directories()
+{
     ctdb_check_directories_probe || {
-	echo "ERROR: $n directory \"$d\" not available"
+	echo "ERROR: $service_name directory \"$d\" not available"
 	exit 1
     }
 }
