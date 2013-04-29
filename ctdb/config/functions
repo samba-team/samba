@@ -349,6 +349,13 @@ $ctdb_check_rpc_out"
 }
 
 ######################################################
+# Ensure $service_name is set
+assert_service_name ()
+{
+    [ -n "$service_name" ] || die "INTERNAL ERROR: \$service_name not set"
+}
+
+######################################################
 # check a set of directories is available
 # return 1 on a missing directory
 # usage: ctdb_check_directories_probe SERVICE_NAME <directories...>
@@ -388,6 +395,7 @@ ctdb_check_directories() {
 # message if a port check fails.
 _ctdb_check_tcp_common ()
 {
+    assert_service_name
     _ctdb_service_started_file="$ctdb_fail_dir/$service_name.started"
 }
 
@@ -1190,6 +1198,8 @@ ctdb_replay_monitor_status ()
 
 ctdb_service_check_reconfigure ()
 {
+    assert_service_name
+
     # We only care about some events in this function.  For others we
     # return now.
     case "$event_name" in
@@ -1261,6 +1271,8 @@ ctdb_compat_managed_service ()
 
 is_ctdb_managed_service ()
 {
+    assert_service_name
+
     # $t is used just for readability and to allow better accurate
     # matching via leading/trailing spaces
     t=" $CTDB_MANAGED_SERVICES "
@@ -1291,6 +1303,8 @@ is_ctdb_managed_service ()
 
 ctdb_start_stop_service ()
 {
+    assert_service_name
+
     # Allow service-start/service-stop pseudo-events to start/stop
     # services when we're not auto-starting/stopping and we're not
     # monitoring.
