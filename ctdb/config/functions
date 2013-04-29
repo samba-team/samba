@@ -1024,26 +1024,25 @@ ctdb_managed_dir="$CTDB_VARDIR/managed_history"
 
 _ctdb_managed_common ()
 {
-    _service_name="${1:-${service_name}}"
-    _ctdb_managed_file="$ctdb_managed_dir/$_service_name"
+    _ctdb_managed_file="$ctdb_managed_dir/$service_name"
 }
 
 ctdb_service_managed ()
 {
-    _ctdb_managed_common "$@"
+    _ctdb_managed_common
     mkdir -p "$ctdb_managed_dir"
     touch "$_ctdb_managed_file"
 }
 
 ctdb_service_unmanaged ()
 {
-    _ctdb_managed_common "$@"
+    _ctdb_managed_common
     rm -f "$_ctdb_managed_file"
 }
 
 is_ctdb_previously_managed_service ()
 {
-    _ctdb_managed_common "$@"
+    _ctdb_managed_common
     [ -f "$_ctdb_managed_file" ]
 }
 
@@ -1469,6 +1468,5 @@ update_tickles ()
 }
 
 script_name="${0##*/}"       # basename
-service_name="$script_name"  # default is just the script name
 service_fail_limit=1
 event_name="$1"

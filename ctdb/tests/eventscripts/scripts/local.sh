@@ -368,6 +368,8 @@ ctdb_fake_scriptstatus ()
 
 setup_ctdb_policy_routing ()
 {
+    service_name="per_ip_routing"
+
     export CTDB_PER_IP_ROUTING_CONF="$CTDB_BASE/policy_routing"
     export CTDB_PER_IP_ROUTING_RULE_PREF=100
     export CTDB_PER_IP_ROUTING_TABLE_ID_LOW=1000
@@ -455,11 +457,13 @@ setup_samba ()
 {
     setup_ctdb
 
+    service_name="samba"
+
     if [ "$1" != "down" ] ; then
 
 	debug "Marking Samba services as up, listening and managed by CTDB"
         # Get into known state.
-	eventscript_call ctdb_service_managed "samba"
+	eventscript_call ctdb_service_managed
 
         # All possible service names for all known distros.
 	for i in "smb" "nmb" "samba" ; do
@@ -479,7 +483,7 @@ setup_samba ()
     else
 	debug "Marking Samba services as down, not listening and not managed by CTDB"
         # Get into known state.
-	eventscript_call ctdb_service_unmanaged "samba"
+	eventscript_call ctdb_service_unmanaged
 
         # All possible service names for all known distros.
 	for i in "smb" "nmb" "samba" ; do
@@ -503,11 +507,13 @@ setup_winbind ()
 {
     setup_ctdb
 
+    service_name="winbind"
+
     if [ "$1" != "down" ] ; then
 
 	debug "Marking Winbind service as up and managed by CTDB"
         # Get into known state.
-	eventscript_call ctdb_service_managed "winbind"
+	eventscript_call ctdb_service_managed
 
 	service "winbind" force-started
 
@@ -518,7 +524,7 @@ setup_winbind ()
     else
 	debug "Marking Winbind service as down and not managed by CTDB"
         # Get into known state.
-	eventscript_call ctdb_service_unmanaged "winbind"
+	eventscript_call ctdb_service_unmanaged
 
 	service "winbind" force-stopped
 
@@ -543,6 +549,8 @@ setup_nfs ()
 {
     setup_ctdb
 
+    service_name="nfs"
+
     export FAKE_RPCINFO_SERVICES=""
 
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
@@ -556,7 +564,7 @@ setup_nfs ()
     # Force this file to exist so tests can be individually run.
     if [ ! -f "$rpc_fail_limits_file" ] ; then
 	# This is gross... but is needed to fake through the nfs monitor event.
-	eventscript_call ctdb_service_managed "nfs"
+	eventscript_call ctdb_service_managed
 	service "nfs" force-started  # might not be enough
 	CTDB_RC_LOCAL="$CTDB_BASE/rc.local.nfs.monitor.get-limits" \
 	    CTDB_MANAGES_NFS="yes" \
@@ -566,7 +574,7 @@ setup_nfs ()
     if [ "$1" != "down" ] ; then
 	debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
 
-	eventscript_call ctdb_service_managed "nfs"
+	eventscript_call ctdb_service_managed
 	service "nfs" force-started  # might not be enough
 
 	export CTDB_MANAGED_SERVICES="foo nfs bar"
@@ -575,7 +583,7 @@ setup_nfs ()
     else
 	debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
 
-	eventscript_call ctdb_service_unmanaged "nfs"
+	eventscript_call ctdb_service_unmanaged
 	service "nfs" force-stopped  # might not be enough
 	eventscript_call startstop_nfs stop
 
@@ -732,12 +740,14 @@ Starting nfslock: OK"
 
 setup_vsftpd ()
 {
+    service_name="vsftpd"
+
     if [ "$1" != "down" ] ; then
 	die "setup_vsftpd up not implemented!!!"
     else
 	debug "Setting up VSFTPD environment: service down, not managed by CTDB"
 
-	eventscript_call ctdb_service_unmanaged vsftpd
+	eventscript_call ctdb_service_unmanaged
 	service vsftpd force-stopped
 
 	export CTDB_MANAGED_SERVICES="foo"
@@ -756,9 +766,9 @@ setup_httpd ()
     else
 	debug "Setting up HTTPD environment: service down, not managed by CTDB"
 
-	for i in "apache2" "httpd" ; do
-	    eventscript_call ctdb_service_unmanaged "$i"
-	    service "$i" force-stopped
+	for service_name in "apache2" "httpd" ; do
+	    eventscript_call ctdb_service_unmanaged
+	    service "$service_name" force-stopped
 	done
 
 	export CTDB_MANAGED_SERVICES="foo"

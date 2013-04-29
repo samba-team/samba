@@ -10,7 +10,7 @@ setup_ctdb_policy_routing
 create_policy_routing_config 1 default
 
 # no takeip, but reconfigure should add any missing routes
-ok 'Reconfiguring service "13.per_ip_routing"...'
+ok "Reconfiguring service \"${service_name}\"..."
 simple_test_event "reconfigure"
 
 check_routes 1 default

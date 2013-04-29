@@ -6,6 +6,8 @@
 . $CTDB_BASE/functions
 loadconfig
 
+service_name=per_ip_routing
+
 # Do nothing if unconfigured 
 [ -n "$CTDB_PER_IP_ROUTING_CONF" ] || exit 0
 
