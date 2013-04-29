@@ -570,16 +570,15 @@ ctdb_check_unix_socket() {
 
 ######################################################
 # check a command returns zero status
-# usage: ctdb_check_command SERVICE_NAME <command>
+# usage: ctdb_check_command <command>
 ######################################################
-ctdb_check_command() {
-  service_name="$1"
-  wait_cmd="$2"
-  [ -z "$wait_cmd" ] && return;
-  $wait_cmd > /dev/null 2>&1 || {
-      echo "ERROR: $service_name - $wait_cmd returned error"
-      exit 1
-  }
+ctdb_check_command ()
+{
+    _out=$("$@" 2>&1) || {
+	echo "ERROR: $* returned error"
+	echo "$_out" | debug
+	exit 1
+    }
 }
 
 ################################################

@@ -54,7 +54,7 @@ case "$1" in
 	;;
 
      monitor)
-	ctdb_check_command "winbind" "wbinfo -p"
+	ctdb_check_command wbinfo -p
 	;;
 
      takeip|releaseip)
