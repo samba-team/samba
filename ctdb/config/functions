@@ -1089,35 +1089,35 @@ ctdb_setstatus ()
 
 _ctdb_service_reconfigure_common ()
 {
-    _d="$ctdb_status_dir/${1:-${service_name}}"
+    _d="$ctdb_status_dir/${service_name}"
     mkdir -p "$_d"
     _ctdb_service_reconfigure_flag="$_d/reconfigure"
 }
 
 ctdb_service_needs_reconfigure ()
 {
-    _ctdb_service_reconfigure_common "$@"
+    _ctdb_service_reconfigure_common
     [ -e "$_ctdb_service_reconfigure_flag" ]
 }
 
 ctdb_service_set_reconfigure ()
 {
-    _ctdb_service_reconfigure_common "$@"
+    _ctdb_service_reconfigure_common
     >"$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_unset_reconfigure ()
 {
-    _ctdb_service_reconfigure_common "$@"
+    _ctdb_service_reconfigure_common
     rm -f "$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_reconfigure ()
 {
-    echo "Reconfiguring service \"$@\"..."
-    ctdb_service_unset_reconfigure "$@"
-    service_reconfigure "$@" || return $?
-    ctdb_counter_init "$@"
+    echo "Reconfiguring service \"${service_name}\"..."
+    ctdb_service_unset_reconfigure
+    service_reconfigure || return $?
+    ctdb_counter_init
 }
 
 # Default service_reconfigure() function does nothing.
@@ -1128,8 +1128,7 @@ service_reconfigure ()
 
 ctdb_reconfigure_try_lock ()
 {
-    
-    _ctdb_service_reconfigure_common "$@"
+    _ctdb_service_reconfigure_common
     _lock="${_d}/reconfigure_lock"
     mkdir -p "${_lock%/*}" # dirname
     touch "$_lock"
@@ -1192,8 +1191,6 @@ ctdb_replay_monitor_status ()
 
 ctdb_service_check_reconfigure ()
 {
-    [ -n "$1" ] || set -- "$service_name"
-
     # We only care about some events in this function.  For others we
     # return now.
     case "$event_name" in
@@ -1201,22 +1198,22 @@ ctdb_service_check_reconfigure ()
 	*) return 0 ;;
     esac
 
-    if ctdb_reconfigure_try_lock "$@" ; then
+    if ctdb_reconfigure_try_lock ; then
 	# No events covered by this function are running, so proceed
 	# with gay abandon.
 	case "$event_name" in
 	    reconfigure)
-		(ctdb_service_reconfigure "$@")
+		(ctdb_service_reconfigure)
 		exit $?
 		;;
 	    ipreallocated)
-		if ctdb_service_needs_reconfigure "$@" ; then
-		    ctdb_service_reconfigure "$@"
+		if ctdb_service_needs_reconfigure ; then
+		    ctdb_service_reconfigure
 		fi
 		;;
 	    monitor)
-		if ctdb_service_needs_reconfigure "$@" ; then
-		    ctdb_service_reconfigure "$@"
+		if ctdb_service_needs_reconfigure ; then
+		    ctdb_service_reconfigure
 		    # Given that the reconfigure might not have
 		    # resulted in the service being stable yet, we
 		    # replay the previous status since that's the best
