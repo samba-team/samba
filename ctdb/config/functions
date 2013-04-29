@@ -1341,20 +1341,18 @@ ctdb_start_stop_service ()
 ctdb_service_start ()
 {
     # The service is marked managed if we've ever tried to start it.
-    ctdb_service_managed "$@"
+    ctdb_service_managed
 
-    # Here we only want $1.  If no argument is passed then
-    # service_start needs to know.
-    service_start "$@" || return $?
+    service_start || return $?
 
-    ctdb_counter_init "$@"
+    ctdb_counter_init
     ctdb_check_tcp_init
 }
 
 ctdb_service_stop ()
 {
-    ctdb_service_unmanaged "$@"
-    service_stop "$@"
+    ctdb_service_unmanaged
+    service_stop
 }
 
 # Default service_start() and service_stop() functions.
@@ -1369,12 +1367,12 @@ ctdb_service_stop ()
 # them with the service name as an argument.
 service_start ()
 {
-    service "${1:-${service_name}}" start
+    service "$service_name" start
 }
 
 service_stop ()
 {
-    service "${1:-${service_name}}" stop
+    service "$service_name" stop
 }
 
 ##################################################################
