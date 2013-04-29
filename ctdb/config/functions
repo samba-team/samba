@@ -595,45 +595,43 @@ kill_tcp_connections() {
     _failed=0
 
     _killcount=0
-    connfile="$CTDB_VARDIR/state/connections.$_IP"
-    mkdir -p "${connfile%/*}" # dirname
-    netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
-    netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
-    while read dest src; do
-	echo "Killing TCP connection $src $dest"
-	ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
-	_destport="${dest##*:}"
-	__oneway=$_oneway
-	case $_destport in
-	  # we only do one-way killtcp for CIFS
-	  139|445) __oneway=true ;;
-	esac
-	if ! $__oneway ; then
-	    ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=1
-	fi
+    get_tcp_connections_for_ip "$_IP" | {
 
-	_killcount=`expr $_killcount + 1`
-     done < $connfile
-    rm -f $connfile
+	while read dest src; do
+	    echo "Killing TCP connection $src $dest"
+	    ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
+	    _destport="${dest##*:}"
+	    __oneway=$_oneway
+	    case $_destport in
+		# we only do one-way killtcp for CIFS
+		139|445) __oneway=true ;;
+	    esac
+	    if ! $__oneway ; then
+		ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=1
+	    fi
 
-    [ $_failed = 0 ] || {
-	echo "Failed to send killtcp control"
-	return;
-    }
-    [ $_killcount -gt 0 ] || {
-	return;
-    }
-    _count=0
-    while netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" > /dev/null; do
-	sleep 1
-	_count=`expr $_count + 1`
-	[ $_count -gt 3 ] && {
-	    echo "Timed out killing tcp connections for IP $_IP"
+	    _killcount=`expr $_killcount + 1`
+	done
+
+	[ $_failed = 0 ] || {
+	    echo "Failed to send killtcp control"
 	    return;
 	}
-    done
-    echo "killed $_killcount TCP connections to released IP $_IP"
+	[ $_killcount -gt 0 ] || {
+	    return;
+	}
+	_count=0
+	while netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" > /dev/null; do
+	    sleep 1
+	    _count=`expr $_count + 1`
+	    [ $_count -gt 3 ] && {
+		echo "Timed out killing tcp connections for IP $_IP"
+		return;
+	    }
+	done
+	echo "killed $_killcount TCP connections to released IP $_IP"
+    }
 }
 
 ##################################################################
@@ -652,23 +650,32 @@ tickle_tcp_connections() {
     _failed=0
 
     _killcount=0
-    connfile="$CTDB_VARDIR/state/connections.$_IP"
-    mkdir -p "${connfile%/*}" # dirname
-    netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
-    netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
-    while read dest src; do
-	echo "Tickle TCP connection $src $dest"
-	ctdb tickle $src $dest >/dev/null 2>&1 || _failed=1
-	echo "Tickle TCP connection $dest $src"
-	ctdb tickle $dest $src >/dev/null 2>&1 || _failed=1
-     done < $connfile
-    rm -f $connfile
+    get_tcp_connections_for_ip "$_IP" |
+    {
+	while read dest src; do
+	    echo "Tickle TCP connection $src $dest"
+	    ctdb tickle $src $dest >/dev/null 2>&1 || _failed=1
+	    echo "Tickle TCP connection $dest $src"
+	    ctdb tickle $dest $src >/dev/null 2>&1 || _failed=1
+	done
 
-    [ $_failed = 0 ] || {
-	echo "Failed to send tickle control"
-	return;
+	[ $_failed = 0 ] || {
+	    echo "Failed to send tickle control"
+	    return;
+	}
     }
+}
+
+get_tcp_connections_for_ip ()
+{
+    _ip="$1"
+
+    netstat -tn | awk -v ip=$_ip \
+	'index($1, "tcp") == 1 && \
+	 (index($4, ip ":") == 1 || index($4, "::ffff:" ip ":") == 1) \
+	 && $6 == "ESTABLISHED" \
+	 {print $4" "$5}'
 }
 
 ########################################################
