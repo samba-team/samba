@@ -240,7 +240,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	NTSTATUS nt_status;
 	hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
-		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
+		DEBUG(3, ("No hostname for target computer passed in, cannot use kerberos for this connection\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (is_ipaddress(hostname)) {
