@@ -598,14 +598,15 @@ kill_tcp_connections() {
 	echo "Killing TCP connection $src $dest"
 	ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
 	_destport="${dest##*:}"
+	__oneway=false
 	case $_destport in
 	  # we only do one-way killtcp for CIFS
-	  139|445) : ;;
-	  # for all others we do 2-way
-	  *) 
-	  	ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=1
-		;;
+	  139|445) __oneway=true ;;
 	esac
+	if ! $__oneway ; then
+	    ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=1
+	fi
+
 	_killcount=`expr $_killcount + 1`
      done < $connfile
     rm -f $connfile
