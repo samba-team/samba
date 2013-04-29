@@ -595,18 +595,15 @@ kill_tcp_connections() {
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
     while read dest src; do
-	srcip=`echo $src | sed -e "s/:[^:]*$//"`
-	srcport=`echo $src | sed -e "s/^.*://"`
-	destip=`echo $dest | sed -e "s/:[^:]*$//"`
-	destport=`echo $dest | sed -e "s/^.*://"`
-	echo "Killing TCP connection $srcip:$srcport $destip:$destport"
-	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
-	case $destport in
+	echo "Killing TCP connection $src $dest"
+	ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
+	_destport="${dest##*:}"
+	case $_destport in
 	  # we only do one-way killtcp for CIFS
 	  139|445) : ;;
 	  # for all others we do 2-way
 	  *) 
-	  	ctdb killtcp $destip:$destport $srcip:$srcport >/dev/null 2>&1 || _failed=1
+	  	ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=1
 		;;
 	esac
 	_killcount=`expr $_killcount + 1`
@@ -646,12 +643,8 @@ kill_tcp_connections_local_only() {
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
     while read dest src; do
-	srcip=`echo $src | sed -e "s/:[^:]*$//"`
-	srcport=`echo $src | sed -e "s/^.*://"`
-	destip=`echo $dest | sed -e "s/:[^:]*$//"`
-	destport=`echo $dest | sed -e "s/^.*://"`
-	echo "Killing TCP connection $srcip:$srcport $destip:$destport"
-	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
+	echo "Killing TCP connection $src $dest"
+	ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
 	_killcount=`expr $_killcount + 1`
      done < $connfile
     rm -f $connfile
@@ -689,14 +682,10 @@ tickle_tcp_connections() {
     netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
 
     while read dest src; do
-	srcip=`echo $src | sed -e "s/:[^:]*$//"`
-	srcport=`echo $src | sed -e "s/^.*://"`
-	destip=`echo $dest | sed -e "s/:[^:]*$//"`
-	destport=`echo $dest | sed -e "s/^.*://"`
-	echo "Tickle TCP connection $srcip:$srcport $destip:$destport"
-	ctdb tickle $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
-	echo "Tickle TCP connection $destip:$destport $srcip:$srcport"
-	ctdb tickle $destip:$destport $srcip:$srcport >/dev/null 2>&1 || _failed=1
+	echo "Tickle TCP connection $src $dest"
+	ctdb tickle $src $dest >/dev/null 2>&1 || _failed=1
+	echo "Tickle TCP connection $dest $src"
+	ctdb tickle $dest $src >/dev/null 2>&1 || _failed=1
      done < $connfile
     rm -f $connfile
 
