@@ -445,13 +445,17 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 		if (errno == ENOENT) {
 			/* Optimization when creating a new file - only
-			   the last component doesn't exist. */
+			   the last component doesn't exist.
+			   NOTE : check_parent_exists() doesn't preserve errno.
+			*/
+			int saved_errno = errno;
 			status = check_parent_exists(ctx,
 						conn,
 						posix_pathnames,
 						smb_fname,
 						&dirpath,
 						&start);
+			errno = saved_errno;
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
@@ -524,13 +528,16 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 * Optimization for common case where the wildcard
 		 * is in the last component and the client already
 		 * sent the correct case.
+		 * NOTE : check_parent_exists() doesn't preserve errno.
 		 */
+		int saved_errno = errno;
 		status = check_parent_exists(ctx,
 					conn,
 					posix_pathnames,
 					smb_fname,
 					&dirpath,
 					&start);
+		errno = saved_errno;
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
