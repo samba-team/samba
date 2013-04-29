@@ -1255,21 +1255,19 @@ ctdb_service_check_reconfigure ()
 
 ctdb_compat_managed_service ()
 {
-    if [ "$1" = "yes" -a "$2" = "$_service_name" ] ; then
+    if [ "$1" = "yes" -a "$2" = "$service_name" ] ; then
 	CTDB_MANAGED_SERVICES="$CTDB_MANAGED_SERVICES $2"
     fi
 }
 
 is_ctdb_managed_service ()
 {
-    _service_name="${1:-${service_name}}"
-
     # $t is used just for readability and to allow better accurate
     # matching via leading/trailing spaces
     t=" $CTDB_MANAGED_SERVICES "
 
-    # Return 0 if "<space>$_service_name<space>" appears in $t
-    if [ "${t#* ${_service_name} }" != "${t}" ] ; then
+    # Return 0 if "<space>$service_name<space>" appears in $t
+    if [ "${t#* ${service_name} }" != "${t}" ] ; then
 	return 0
     fi
 
@@ -1288,36 +1286,34 @@ is_ctdb_managed_service ()
 
     t=" $CTDB_MANAGED_SERVICES "
 
-    # Return 0 if "<space>$_service_name<space>" appears in $t
-    [ "${t#* ${_service_name} }" != "${t}" ]
+    # Return 0 if "<space>$service_name<space>" appears in $t
+    [ "${t#* ${service_name} }" != "${t}" ]
 }
 
 ctdb_start_stop_service ()
 {
-    _service_name="${1:-${service_name}}"
-
     # Allow service-start/service-stop pseudo-events to start/stop
     # services when we're not auto-starting/stopping and we're not
     # monitoring.
     case "$event_name" in
 	service-start)
-	    if is_ctdb_managed_service "$_service_name" ; then
+	    if is_ctdb_managed_service ; then
 		die 'service-start event not permitted when service is managed'
 	    fi
 	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
 		die 'service-start event not permitted with $CTDB_SERVICE_AUTOSTARTSTOP = yes'
 	    fi
-	    ctdb_service_start "$_service_name"
+	    ctdb_service_start
 	    exit $?
 	    ;;
 	service-stop)
-	    if is_ctdb_managed_service "$_service_name" ; then
+	    if is_ctdb_managed_service ; then
 		die 'service-stop event not permitted when service is managed'
 	    fi
 	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
 		die 'service-stop event not permitted with $CTDB_SERVICE_AUTOSTARTSTOP = yes'
 	    fi
-	    ctdb_service_stop "$_service_name"
+	    ctdb_service_stop
 	    exit $?
 	    ;;
     esac
@@ -1327,16 +1323,16 @@ ctdb_start_stop_service ()
 
     [ "$event_name" = "monitor" ] || return 0
 
-    if is_ctdb_managed_service "$_service_name" ; then
-	if ! is_ctdb_previously_managed_service "$_service_name" ; then
-	    echo "Starting service \"$_service_name\" - now managed"
-	    background_with_logging ctdb_service_start "$_service_name"
+    if is_ctdb_managed_service ; then
+	if ! is_ctdb_previously_managed_service ; then
+	    echo "Starting service \"$service_name\" - now managed"
+	    background_with_logging ctdb_service_start
 	    exit $?
 	fi
     else
-	if is_ctdb_previously_managed_service "$_service_name" ; then
-	    echo "Stopping service \"$_service_name\" - no longer managed"
-	    background_with_logging ctdb_service_stop "$_service_name"
+	if is_ctdb_previously_managed_service ; then
+	    echo "Stopping service \"$service_name\" - no longer managed"
+	    background_with_logging ctdb_service_stop
 	    exit $?
 	fi
     fi
