@@ -649,8 +649,6 @@ tickle_tcp_connections() {
     _IP="$1"
     _failed=0
 
-    _killcount=0
-
     get_tcp_connections_for_ip "$_IP" |
     {
 	while read dest src; do
