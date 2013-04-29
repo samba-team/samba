@@ -381,9 +381,12 @@ get_dh_param(krb5_context context,
     dh->g = integer_to_BN(context, "DH base", &dhparam.g);
     if (dh->g == NULL)
 	goto out;
-    dh->q = integer_to_BN(context, "DH p-1 factor", &dhparam.q);
-    if (dh->g == NULL)
-	goto out;
+
+    if (dhparam.q) {
+	dh->q = integer_to_BN(context, "DH p-1 factor", dhparam.q);
+	if (dh->g == NULL)
+	    goto out;
+    }
 
     {
 	heim_integer glue;
