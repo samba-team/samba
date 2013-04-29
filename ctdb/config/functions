@@ -592,15 +592,14 @@ kill_tcp_connections() {
 	_oneway=true
     fi
 
-    _failed=0
-
     _killcount=0
 
     get_tcp_connections_for_ip "$_IP" | {
+	_failed=false
 
 	while read dest src; do
 	    echo "Killing TCP connection $src $dest"
-	    ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
+	    ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=true
 	    _destport="${dest##*:}"
 	    __oneway=$_oneway
 	    case $_destport in
@@ -608,16 +607,16 @@ kill_tcp_connections() {
 		139|445) __oneway=true ;;
 	    esac
 	    if ! $__oneway ; then
-		ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=1
+		ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=true
 	    fi
 
 	    _killcount=`expr $_killcount + 1`
 	done
 
-	[ $_failed = 0 ] || {
+	if $_failed ; then
 	    echo "Failed to send killtcp control"
-	    return;
-	}
+	    return
+	fi
 	[ $_killcount -gt 0 ] || {
 	    return;
 	}
@@ -647,21 +646,21 @@ kill_tcp_connections_local_only()
 ##################################################################
 tickle_tcp_connections() {
     _IP="$1"
-    _failed=0
 
     get_tcp_connections_for_ip "$_IP" |
     {
+	_failed=false
+
 	while read dest src; do
 	    echo "Tickle TCP connection $src $dest"
-	    ctdb tickle $src $dest >/dev/null 2>&1 || _failed=1
+	    ctdb tickle $src $dest >/dev/null 2>&1 || _failed=true
 	    echo "Tickle TCP connection $dest $src"
-	    ctdb tickle $dest $src >/dev/null 2>&1 || _failed=1
+	    ctdb tickle $dest $src >/dev/null 2>&1 || _failed=true
 	done
 
-	[ $_failed = 0 ] || {
+	if $_failed ; then
 	    echo "Failed to send tickle control"
-	    return;
-	}
+	fi
     }
 }
 
