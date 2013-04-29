@@ -586,6 +586,12 @@ ctdb_check_command ()
 ################################################
 kill_tcp_connections() {
     _IP="$1"    
+
+    _oneway=false
+    if [ "$2" = "oneway" ] ; then
+	_oneway=true
+    fi
+
     _failed=0
 
     _killcount=0
@@ -598,7 +604,7 @@ kill_tcp_connections() {
 	echo "Killing TCP connection $src $dest"
 	ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
 	_destport="${dest##*:}"
-	__oneway=false
+	__oneway=$_oneway
 	case $_destport in
 	  # we only do one-way killtcp for CIFS
 	  139|445) __oneway=true ;;
@@ -633,40 +639,9 @@ kill_tcp_connections() {
 ##################################################################
 # kill off the local end for any TCP connections with the given IP
 ##################################################################
-kill_tcp_connections_local_only() {
-    _IP="$1"    
-    _failed=0
-
-    _killcount=0
-    connfile="$CTDB_VARDIR/state/connections.$_IP"
-    mkdir -p "${connfile%/*}" # dirname
-    netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' > $connfile
-    netstat -tn |egrep "^tcp.*[[:space:]]+::ffff:$_IP:.*ESTABLISHED" | awk '{print $4" "$5}' >> $connfile
-
-    while read dest src; do
-	echo "Killing TCP connection $src $dest"
-	ctdb killtcp $src $dest >/dev/null 2>&1 || _failed=1
-	_killcount=`expr $_killcount + 1`
-     done < $connfile
-    rm -f $connfile
-
-    [ $_failed = 0 ] || {
-	echo "Failed to send killtcp control"
-	return;
-    }
-    [ $_killcount -gt 0 ] || {
-	return;
-    }
-    _count=0
-    while netstat -tn |egrep "^tcp.*[[:space:]]+$_IP:.*ESTABLISHED" > /dev/null; do
-	sleep 1
-	_count=`expr $_count + 1`
-	[ $_count -gt 3 ] && {
-	    echo "Timed out killing tcp connections for IP $_IP"
-	    return;
-	}
-    done
-    echo "killed $_killcount TCP connections to released IP $_IP"
+kill_tcp_connections_local_only()
+{
+    kill_tcp_connections "$1" "oneway"
 }
 
 ##################################################################
