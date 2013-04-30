@@ -18,6 +18,15 @@ case "$1" in
 	# Early exit if not using a reclock file
 	[ -n "$RECLOCKFILE" ] || exit 0
 
+	# Try to stat the reclock file as a background process so that
+	# we don't block in case the cluster filesystem is unavailable
+	(
+	    if stat $RECLOCKFILE ; then
+		# We could stat the file, reset the counter
+		ctdb_counter_init
+	    fi
+	) >/dev/null 2>&1 &
+
 	ctdb_counter_incr
 	(ctdb_check_counter_limit 200 >/dev/null 2>&1) || {
 	    echo "Reclock file $RECLOCKFILE\" can not be accessed. Shutting down."
@@ -25,15 +34,6 @@ case "$1" in
 	    sleep 1
 	    ctdb shutdown
 	}
-
-	# try stat the reclock file as a background process
-	# so that we dont block in case the cluster filesystem is unavailable
-	(
-	    stat $RECLOCKFILE && {
-		# we could stat the file, reset the counter
-		ctdb_counter_init
-	    }
-	) >/dev/null 2>/dev/null &
 
 	ctdb_check_counter_limit 3 quiet
 	;;
