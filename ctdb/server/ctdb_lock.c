@@ -200,6 +200,26 @@ static int ctdb_lockall(struct ctdb_context *ctdb)
 /*
  * unlock all databases
  */
+static int db_unlock_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+			     void *private_data)
+{
+	if (priority == 0) {
+		DEBUG(DEBUG_INFO, ("unlocking database %s\n",
+				   ctdb_db->db_name));
+	} else {
+		DEBUG(DEBUG_INFO, ("unlocking database %s, priority:%u\n",
+				   ctdb_db->db_name, priority));
+	}
+
+	if (tdb_unlockall(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to unlock database %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	return 0;
+}
+
 int ctdb_unlockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
