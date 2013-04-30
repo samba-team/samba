@@ -10,16 +10,6 @@
     <para>Possible values are :</para>
     <itemizedlist>
 	<listitem>
-	    <para><constant>CORE</constant>: Earliest version. No 
-	    concept of user names.</para>
-	</listitem>
-			
-	<listitem>
-	    <para><constant>COREPLUS</constant>: Slight improvements on 
-	    CORE for efficiency.</para>
-	</listitem>
-
-	<listitem>
 	    <para><constant>LANMAN1</constant>: First <emphasis>modern</emphasis>
 	    version of the protocol. Long filename support.</para>
 	</listitem>
