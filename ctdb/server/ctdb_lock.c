@@ -222,22 +222,7 @@ static int db_unlock_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
 
 int ctdb_unlockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
-	struct ctdb_db_context *ctdb_db;
-
-	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		DEBUG(DEBUG_INFO, ("unlocking database %s, priority:%u\n",
-				   ctdb_db->db_name, priority));
-		if (tdb_unlockall(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR, ("Failed to unlock database %s\n",
-					  ctdb_db->db_name));
-			return -1;
-		}
-	}
-
-	return 0;
+	return ctdb_db_iterator(ctdb, priority, db_unlock_handler, NULL);
 }
 
 static int ctdb_unlockall(struct ctdb_context *ctdb)
@@ -245,7 +230,7 @@ static int ctdb_unlockall(struct ctdb_context *ctdb)
 	uint32_t priority;
 
 	for (priority=NUM_DB_PRIORITIES; priority>=0; priority--) {
-		if (ctdb_unlockall_prio(ctdb, priority) != 0) {
+		if (ctdb_db_iterator(ctdb, priority, db_unlock_handler, NULL) != 0) {
 			return -1;
 		}
 	}
