@@ -353,68 +353,6 @@ static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
 }
 
 
-/*
- * Lock record / db depending on lock_ctx->type
- * Called from child context.
- */
-static bool ctdb_lock_item(struct lock_context *lock_ctx)
-{
-	bool status = false;
-
-	switch (lock_ctx->type) {
-	case LOCK_RECORD:
-		if (tdb_chainlock(lock_ctx->ctdb_db->ltdb->tdb, lock_ctx->key) == 0) {
-			status = true;
-		}
-		break;
-
-	case LOCK_DB:
-		if (tdb_lockall(lock_ctx->ctdb_db->ltdb->tdb) == 0) {
-			status = true;
-		}
-		break;
-
-	case LOCK_ALLDB_PRIO:
-		if (ctdb_lockall_prio(lock_ctx->ctdb, lock_ctx->priority) == 0) {
-			status = true;
-		}
-		break;
-
-	case LOCK_ALLDB:
-		if (ctdb_lockall(lock_ctx->ctdb) == 0) {
-			status = true;
-		}
-		break;
-	}
-
-	return status;
-}
-
-
-/*
- * Unlock record / db depending on lock_ctx->type
- */
-void ctdb_unlock_item(struct lock_context *lock_ctx)
-{
-	switch (lock_ctx->type) {
-	case LOCK_RECORD:
-		tdb_chainunlock(lock_ctx->ctdb_db->ltdb->tdb, lock_ctx->key);
-		break;
-
-	case LOCK_DB:
-		tdb_unlockall(lock_ctx->ctdb_db->ltdb->tdb);
-		break;
-
-	case LOCK_ALLDB_PRIO:
-		ctdb_unlockall_prio(lock_ctx->ctdb, lock_ctx->priority);
-		break;
-
-	case LOCK_ALLDB:
-		ctdb_unlockall(lock_ctx->ctdb);
-		break;
-	}
-}
-
 static void ctdb_lock_schedule(struct ctdb_context *ctdb);
 
 /*
@@ -653,35 +591,6 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 					    timeval_current_ofs(10, 0),
 					    ctdb_lock_timeout_handler,
 					    (void *)lock_ctx);
-}
-
-
-static char *lock_child_log_prefix(struct lock_context *lock_ctx)
-{
-	char *prefix;
-	pid_t pid;
-
-	pid = getpid();
-
-	switch (lock_ctx->type) {
-	case LOCK_RECORD:
-		prefix = talloc_asprintf(NULL, "lockR(%d): ", pid);
-		break;
-
-	case LOCK_DB:
-		prefix = talloc_asprintf(NULL, "lockD(%d): ", pid);
-		break;
-
-	case LOCK_ALLDB_PRIO:
-		prefix = talloc_asprintf(NULL, "lockP(%d): ", pid);
-		break;
-
-	case LOCK_ALLDB:
-		prefix = talloc_asprintf(NULL, "lockA(%d): ", pid);
-		break;
-	}
-
-	return prefix;
 }
 
 
