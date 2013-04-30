@@ -242,6 +242,29 @@ static int ctdb_unlockall(struct ctdb_context *ctdb)
 /*
  * lock all databases - mark only
  */
+static int db_lock_mark_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+				void *private_data)
+{
+	int tdb_transaction_write_lock_mark(struct tdb_context *);
+
+	DEBUG(DEBUG_INFO, ("marking locked database %s, priority:%u\n",
+			   ctdb_db->db_name, priority));
+
+	if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to mark (transaction lock) database %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to mark (all lock) database %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	return 0;
+}
+
 int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
