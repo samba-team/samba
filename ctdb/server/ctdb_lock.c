@@ -158,6 +158,26 @@ static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
 /*
  * lock all databases
  */
+static int db_lock_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+			   void *private_data)
+{
+	if (priority == 0) {
+		DEBUG(DEBUG_INFO, ("locking database %s\n",
+				   ctdb_db->db_name));
+	} else {
+		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
+				   ctdb_db->db_name, priority));
+	}
+
+	if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to lock database %s\n",
+				  ctdb_db->db_name));
+		return -1;
+	}
+
+	return 0;
+}
+
 int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
 	struct ctdb_db_context *ctdb_db;
