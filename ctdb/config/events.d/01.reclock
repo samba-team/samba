@@ -15,18 +15,15 @@ case "$1" in
     monitor)
 	RECLOCKFILE=$(ctdb -Y getreclock)
 
+	# Early exit if not using a reclock file
+	[ -n "$RECLOCKFILE" ] || exit 0
+
 	ctdb_counter_incr
 	(ctdb_check_counter_limit 200 >/dev/null 2>&1) || {
 	    echo "Reclock file $RECLOCKFILE\" can not be accessed. Shutting down."
 	    df
 	    sleep 1
 	    ctdb shutdown
-	}
-
-	[ -z "$RECLOCKFILE" ] && {
-	    # we are not using a reclock file
-	    ctdb_counter_init
-	    exit 0
 	}
 
 	# try stat the reclock file as a background process
