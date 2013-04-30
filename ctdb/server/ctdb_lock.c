@@ -808,7 +808,10 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 {
 	struct lock_context *lock_ctx, *next_ctx;
 	int ret;
-	pid_t parent;
+	TALLOC_CTX *tmp_ctx;
+	const char *helper = BINDIR "/ctdb_lock_helper";
+	const char *prog;
+	char **args;
 
 	if (ctdb->lock_num_current >= MAX_LOCK_PROCESSES_PER_DB) {
 		return;
@@ -850,40 +853,59 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
-	parent = getpid();
+	set_close_on_exec(lock_ctx->fd[0]);
+
+	/* Create data for child process */
+	tmp_ctx = talloc_new(lock_ctx);
+	if (tmp_ctx == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to allocate memory for helper args\n"));
+		close(lock_ctx->fd[0]);
+		close(lock_ctx->fd[1]);
+		return;
+	}
+
+	/* Create arguments for lock helper */
+	args = lock_helper_args(tmp_ctx, lock_ctx, lock_ctx->fd[1]);
+	if (args == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to create lock helper args\n"));
+		close(lock_ctx->fd[0]);
+		close(lock_ctx->fd[1]);
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	prog = getenv("CTDB_LOCK_HELPER");
+	if (prog == NULL) {
+		prog = helper;
+	}
+
 	lock_ctx->child = ctdb_fork(ctdb);
 
 	if (lock_ctx->child == (pid_t)-1) {
 		DEBUG(DEBUG_ERR, ("Failed to create a child in ctdb_lock_schedule\n"));
 		close(lock_ctx->fd[0]);
 		close(lock_ctx->fd[1]);
+		talloc_free(tmp_ctx);
 		return;
 	}
 
+
 	/* Child process */
 	if (lock_ctx->child == 0) {
-		char c;
-		close(lock_ctx->fd[0]);
-		debug_extra = lock_child_log_prefix(lock_ctx);
-		if (ctdb_lock_item(lock_ctx)) {
-			c = 0;
-		} else {
-			c = 1;
+		ret = execv(prog, args);
+		if (ret < 0) {
+			DEBUG(DEBUG_ERR, ("Failed to execute helper %s (%d, %s)\n",
+					  prog, errno, strerror(errno)));
 		}
-		write(lock_ctx->fd[1], &c, 1);
-
-		/* Hang around, but if parent dies, terminate */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
-			sleep(5);
-		}
-		_exit(0);
+		_exit(1);
 	}
 
 	/* Parent process */
 	close(lock_ctx->fd[1]);
-	set_close_on_exec(lock_ctx->fd[0]);
 
 	talloc_set_destructor(lock_ctx, ctdb_lock_context_destructor);
+
+	talloc_free(tmp_ctx);
 
 	/* Set up timeout handler */
 	lock_ctx->ttimer = tevent_add_timer(ctdb->ev,
