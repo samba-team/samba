@@ -324,9 +324,6 @@ static int db_lock_unmark_handler(struct ctdb_db_context *ctdb_db, uint32_t prio
 
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
-	struct ctdb_db_context *ctdb_db;
-	int tdb_transaction_write_lock_unmark(struct tdb_context *);
-
 	/*
 	 * This function is only used by the main dameon during recovery.
 	 * At this stage, the databases have already been locked, by a
@@ -339,19 +336,7 @@ int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
 		return -1;
 	}
 
-	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		if (tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-		if (tdb_lockall_unmark(ctdb_db->ltdb->tdb) != 0) {
-			return -1;
-		}
-	}
-
-	return 0;
+	return ctdb_db_iterator(ctdb, priority, db_lock_unmark_handler, NULL);
 }
 
 static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
@@ -359,7 +344,7 @@ static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
 	uint32_t priority;
 
 	for (priority=NUM_DB_PRIORITIES; priority>=0; priority--) {
-		if (ctdb_lockall_unmark_prio(ctdb, priority) != 0) {
+		if (ctdb_db_iterator(ctdb, priority, db_lock_unmark_handler, NULL) != 0) {
 			return -1;
 		}
 	}
