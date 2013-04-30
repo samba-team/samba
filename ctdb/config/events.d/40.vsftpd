@@ -53,8 +53,9 @@ case "$1" in
 		ctdb_counter_init
 	    else
 		ctdb_counter_incr
-		ctdb_check_counter_limit
-		exit 0 # only count 1 failure per monitor event
+		ctdb_check_counter
+		ctdb_check_counter "quiet" -ge 1 || \
+		    echo "WARNING: vsftpd not listening but less than $service_fail_limit consecutive failures, not unhealthy yet" 
 	    fi
 	fi	
 	;;

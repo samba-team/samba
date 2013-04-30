@@ -28,14 +28,14 @@ case "$1" in
 	) >/dev/null 2>&1 &
 
 	ctdb_counter_incr
-	(ctdb_check_counter_limit 200 >/dev/null 2>&1) || {
-	    echo "Reclock file $RECLOCKFILE\" can not be accessed. Shutting down."
+	if ! ctdb_check_counter "quiet" -ge 200 ; then
+	    echo "Reclock file \"$RECLOCKFILE\" can not be accessed. Shutting down."
 	    df
 	    sleep 1
 	    ctdb shutdown
-	}
+	fi
 
-	ctdb_check_counter_limit 3 quiet
+	ctdb_check_counter "error" -gt 3
 	;;
 
     *)
