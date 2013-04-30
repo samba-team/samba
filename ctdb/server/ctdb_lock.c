@@ -685,6 +685,121 @@ static char *lock_child_log_prefix(struct lock_context *lock_ctx)
 }
 
 
+static int db_count_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+			    void *private_data)
+{
+	int *count = (int *)private_data;
+
+	(*count)++;
+
+	return 0;
+}
+
+struct db_namelist {
+	char **names;
+	int n;
+};
+
+static int db_name_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
+			   void *private_data)
+{
+	struct db_namelist *list = (struct db_namelist *)private_data;
+
+	list->names[list->n] = talloc_strdup(list->names, ctdb_db->db_path);
+	list->n++;
+
+	return 0;
+}
+
+static char **lock_helper_args(TALLOC_CTX *mem_ctx, struct lock_context *lock_ctx, int fd)
+{
+	struct ctdb_context *ctdb = lock_ctx->ctdb;
+	char **args = NULL;
+	int nargs, i;
+	int priority;
+	struct db_namelist list;
+
+	switch (lock_ctx->type) {
+	case LOCK_RECORD:
+		nargs = 6;
+		break;
+
+	case LOCK_DB:
+		nargs = 5;
+		break;
+
+	case LOCK_ALLDB_PRIO:
+		nargs = 4;
+		ctdb_db_iterator(ctdb, lock_ctx->priority, db_count_handler, &nargs);
+		break;
+
+	case LOCK_ALLDB:
+		nargs = 4;
+		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
+			ctdb_db_iterator(ctdb, priority, db_count_handler, &nargs);
+		}
+		break;
+	}
+
+	/* Add extra argument for null termination */
+	nargs++;
+
+	args = talloc_array(mem_ctx, char *, nargs);
+	if (args == NULL) {
+		return NULL;
+	}
+
+	args[0] = talloc_strdup(args, "ctdb_lock_helper");
+	args[1] = talloc_asprintf(args, "%d", getpid());
+	args[2] = talloc_asprintf(args, "%d", fd);
+
+	switch (lock_ctx->type) {
+	case LOCK_RECORD:
+		args[3] = talloc_strdup(args, "RECORD");
+		args[4] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
+		if (lock_ctx->key.dsize == 0) {
+			args[5] = talloc_strdup(args, "NULL");
+		} else {
+			args[5] = hex_encode_talloc(args, lock_ctx->key.dptr, lock_ctx->key.dsize);
+		}
+		break;
+
+	case LOCK_DB:
+		args[3] = talloc_strdup(args, "DB");
+		args[4] = talloc_strdup(args, lock_ctx->ctdb_db->db_path);
+		break;
+
+	case LOCK_ALLDB_PRIO:
+		args[3] = talloc_strdup(args, "DB");
+		list.names = args;
+		list.n = 4;
+		ctdb_db_iterator(ctdb, lock_ctx->priority, db_name_handler, &list);
+		break;
+
+	case LOCK_ALLDB:
+		args[3] = talloc_strdup(args, "DB");
+		list.names = args;
+		list.n = 4;
+		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
+			ctdb_db_iterator(ctdb, priority, db_name_handler, &list);
+		}
+		break;
+	}
+
+	/* Make sure last argument is NULL */
+	args[nargs-1] = NULL;
+
+	for (i=0; i<nargs-1; i++) {
+		if (args[i] == NULL) {
+			talloc_free(args);
+			return NULL;
+		}
+	}
+
+	return args;
+}
+
+
 /*
  * Schedule a new lock child process
  * Set up callback handler and timeout handler
