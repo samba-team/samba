@@ -18,6 +18,6 @@
 
 <related>server max protocol</related>
 
-<value type="default">CORE</value>
+<value type="default">LANMAN1</value>
 <value type="example">NT1</value>
 </samba:parameter>
