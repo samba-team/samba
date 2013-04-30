@@ -953,21 +953,6 @@ ctdb_counter_incr () {
     # unary counting!
     echo -n 1 >> "$_counter_file"
 }
-ctdb_check_counter_limit () {
-    _ctdb_counter_common
-
-    _limit="${1:-${service_fail_limit}}"
-    _quiet="$2"
-
-    # unary counting!
-    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
-    if [ $_size -ge $_limit ] ; then
-	echo "ERROR: more than $_limit consecutive failures for $service_name, marking cluster unhealthy"
-	exit 1
-    elif [ $_size -gt 0 -a -z "$_quiet" ] ; then
-	echo "WARNING: less than $_limit consecutive failures ($_size) for $service_name, not unhealthy yet"
-    fi
-}
 ctdb_check_counter () {
     _msg="${1:-error}"  # "error"  - anything else is silent on fail
     _op="${2:--ge}"  # an integer operator supported by test
