@@ -113,6 +113,48 @@ static bool later_db(struct ctdb_context *ctdb, const char *name)
 	return false;
 }
 
+typedef int (*db_handler_t)(struct ctdb_db_context *ctdb_db,
+			    uint32_t priority,
+			    void *private_data);
+
+static int ctdb_db_iterator(struct ctdb_context *ctdb, uint32_t priority,
+			    db_handler_t handler, void *private_data)
+{
+	struct ctdb_db_context *ctdb_db;
+	int ret;
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		if (ctdb_db->priority != priority) {
+			continue;
+		}
+		if (later_db(ctdb, ctdb_db->db_name)) {
+			continue;
+		}
+		ret = handler(ctdb_db, priority, private_data);
+		if (ret != 0) {
+			return -1;
+		}
+	}
+
+	/* If priority != 1, later_db check is not required and can return */
+	if (priority != 1) {
+		return 0;
+	}
+
+	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
+		if (!later_db(ctdb, ctdb_db->db_name)) {
+			continue;
+		}
+		ret = handler(ctdb_db, priority, private_data);
+		if (ret != 0) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
 /*
  * lock all databases
  */
