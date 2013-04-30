@@ -180,43 +180,7 @@ static int db_lock_handler(struct ctdb_db_context *ctdb_db, uint32_t priority,
 
 int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority)
 {
-	struct ctdb_db_context *ctdb_db;
-
-	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		if (later_db(ctdb, ctdb_db->db_name)) {
-			continue;
-		}
-		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
-				   ctdb_db->db_name, priority));
-		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR, ("Failed to lock database %s\n",
-					  ctdb_db->db_name));
-			return -1;
-		}
-	}
-
-	/* If priority != 1, later_db check is not required and can return */
-	if (priority != 1) {
-		return 0;
-	}
-
-	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (!later_db(ctdb, ctdb_db->db_name)) {
-			continue;
-		}
-		DEBUG(DEBUG_INFO, ("locking database %s, priority:%u\n",
-				   ctdb_db->db_name, priority));
-		if (tdb_lockall(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(DEBUG_ERR, ("Failed to lock database %s\n",
-					  ctdb_db->db_name));
-			return -1;
-		}
-	}
-
-	return 0;
+	return ctdb_db_iterator(ctdb, priority, db_lock_handler, NULL);
 }
 
 static int ctdb_lockall(struct ctdb_context *ctdb)
@@ -224,7 +188,7 @@ static int ctdb_lockall(struct ctdb_context *ctdb)
 	uint32_t priority;
 
 	for (priority=1; priority<=NUM_DB_PRIORITIES; priority++) {
-		if (ctdb_lockall_prio(ctdb, priority) != 0) {
+		if (ctdb_db_iterator(ctdb, priority, db_lock_handler, NULL) != 0) {
 			return -1;
 		}
 	}
