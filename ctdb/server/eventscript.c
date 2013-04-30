@@ -707,6 +707,46 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 {
 	struct ctdb_event_script_state *state;
 
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		/* we guarantee that only some specifically allowed event scripts are run
+		   while in recovery */
+		const enum ctdb_eventscript_call allowed_calls[] = {
+			CTDB_EVENT_INIT,
+			CTDB_EVENT_SETUP,
+			CTDB_EVENT_START_RECOVERY,
+			CTDB_EVENT_SHUTDOWN,
+			CTDB_EVENT_RELEASE_IP,
+			CTDB_EVENT_STOPPED
+		};
+		int i;
+		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
+			if (call == allowed_calls[i]) break;
+		}
+		if (i == ARRAY_SIZE(allowed_calls)) {
+			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
+				 ctdb_eventscript_call_names[call]));
+			return -1;
+		}
+	}
+
+	/* Kill off any running monitor events to run this event. */
+	if (ctdb->current_monitor) {
+		struct ctdb_event_script_state *ms = talloc_get_type(ctdb->current_monitor, struct ctdb_event_script_state);
+
+		/* Cancel current monitor callback state only if monitoring
+		 * context ctdb->monitor->monitor_context has not been freed */
+		if (ms->callback != NULL && !ctdb_stopped_monitoring(ctdb)) {
+			ms->callback->fn(ctdb, -ECANCELED, ms->callback->private_data);
+			talloc_free(ms->callback);
+		}
+
+		/* Discard script status so we don't save to last_status */
+		talloc_free(ctdb->current_monitor->scripts);
+		ctdb->current_monitor->scripts = NULL;
+		talloc_free(ctdb->current_monitor);
+		ctdb->current_monitor = NULL;
+	}
+
 	state = talloc(ctdb->event_script_ctx, struct ctdb_event_script_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
@@ -735,47 +775,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 				  ctdb_eventscript_call_names[state->call], state->options));
 		talloc_free(state);
 		return -1;
-	}
-
-	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		/* we guarantee that only some specifically allowed event scripts are run
-		   while in recovery */
-		const enum ctdb_eventscript_call allowed_calls[] = {
-			CTDB_EVENT_INIT,
-			CTDB_EVENT_SETUP,
-			CTDB_EVENT_START_RECOVERY,
-			CTDB_EVENT_SHUTDOWN,
-			CTDB_EVENT_RELEASE_IP,
-			CTDB_EVENT_STOPPED
-		};
-		int i;
-		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
-			if (call == allowed_calls[i]) break;
-		}
-		if (i == ARRAY_SIZE(allowed_calls)) {
-			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
-				 ctdb_eventscript_call_names[call]));
-			talloc_free(state);
-			return -1;
-		}
-	}
-
-	/* Kill off any running monitor events to run this event. */
-	if (ctdb->current_monitor) {
-		struct ctdb_event_script_state *ms = talloc_get_type(ctdb->current_monitor, struct ctdb_event_script_state);
-
-		/* Cancel current monitor callback state only if monitoring
-		 * context ctdb->monitor->monitor_context has not been freed */
-		if (ms->callback != NULL && !ctdb_stopped_monitoring(ctdb)) {
-			ms->callback->fn(ctdb, -ECANCELED, ms->callback->private_data);
-			talloc_free(ms->callback);
-		}
-
-		/* Discard script status so we don't save to last_status */
-		talloc_free(ctdb->current_monitor->scripts);
-		ctdb->current_monitor->scripts = NULL;
-		talloc_free(ctdb->current_monitor);
-		ctdb->current_monitor = NULL;
 	}
 
 	DEBUG(DEBUG_INFO,(__location__ " Starting eventscript %s %s\n",
