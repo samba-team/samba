@@ -853,7 +853,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	struct lock_request *request;
 
 	if (callback == NULL) {
-		DEBUG(DEBUG_WARNING, ("No callback function specified, not locking"));
+		DEBUG(DEBUG_WARNING, ("No callback function specified, not locking\n"));
 		return NULL;
 	}
 
@@ -865,7 +865,7 @@ static struct lock_request *ctdb_lock_internal(struct ctdb_context *ctdb,
 	if (lock_ctx == NULL) {
 		lock_ctx = talloc_zero(ctdb, struct lock_context);
 		if (lock_ctx == NULL) {
-			DEBUG(DEBUG_ERR, ("Failed to create a new lock context"));
+			DEBUG(DEBUG_ERR, ("Failed to create a new lock context\n"));
 			return NULL;
 		}
 
