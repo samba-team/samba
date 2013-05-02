@@ -24,12 +24,12 @@
 #include "auth.h"
 #include "auth/gensec/gensec.h"
 
-NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
-					    uint8_t auth_type, uint8_t auth_level,
-					    DATA_BLOB *token_in,
-					    DATA_BLOB *token_out,
-					    const struct tsocket_address *remote_address,
-					    struct gensec_security **ctx)
+static NTSTATUS auth_generic_server_authtype_start_as_root(TALLOC_CTX *mem_ctx,
+							   uint8_t auth_type, uint8_t auth_level,
+							   DATA_BLOB *token_in,
+							   DATA_BLOB *token_out,
+							   const struct tsocket_address *remote_address,
+							   struct gensec_security **ctx)
 {
 	struct gensec_security *gensec_security = NULL;
 	NTSTATUS status;
@@ -60,6 +60,27 @@ NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
 	/* steal gensec context to the caller */
 	*ctx = talloc_move(mem_ctx, &gensec_security);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_generic_server_authtype_start(TALLOC_CTX *mem_ctx,
+					    uint8_t auth_type, uint8_t auth_level,
+					    DATA_BLOB *token_in,
+					    DATA_BLOB *token_out,
+					    const struct tsocket_address *remote_address,
+					    struct gensec_security **ctx)
+{
+	NTSTATUS status;
+	become_root();
+
+	/* this has to be done as root in order to create the messaging socket */
+	status = auth_generic_server_authtype_start_as_root(mem_ctx,
+							    auth_type, auth_level,
+							    token_in,
+							    token_out,
+							    remote_address,
+							    ctx);
+	unbecome_root();
+	return status;
 }
 
 NTSTATUS auth_generic_server_step(struct gensec_security *gensec_security,
@@ -101,7 +122,12 @@ NTSTATUS auth_generic_server_get_user_info(struct gensec_security *gensec_securi
 {
 	NTSTATUS status;
 
+	/* this has to be done as root in order to get to the
+	 * messaging sockets for IDMAP and privilege.ldb in the AD
+	 * DC */
+	become_root();
 	status = gensec_session_info(gensec_security, mem_ctx, session_info);
+	unbecome_root();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, (__location__ ": Failed to get authenticated user "
 			  "info: %s\n", nt_errstr(status)));
