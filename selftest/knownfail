@@ -107,6 +107,7 @@
 ^samba4.smb2.rename.no_share_delete_no_delete_access\(.*\)$
 ^samba4.smb2.rename.msword
 ^samba4.smb2.compound.related3
+^samba4.smb2.compound.compound-break
 ^samba4.winbind.struct.*.show_sequence     # Not yet working in winbind
 ^samba4.*base.delaywrite.*update of write time and SMBwrite truncate\(.*\)$
 ^samba4.*base.delaywrite.*update of write time and SMBwrite truncate expand\(.*\)$

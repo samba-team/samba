@@ -34,6 +34,168 @@
 		goto done; \
 	}} while (0)
 
+static struct {
+	struct smb2_handle handle;
+	uint8_t level;
+	struct smb2_break br;
+	int count;
+	int failures;
+	NTSTATUS failure_status;
+} break_info;
+
+static void torture_oplock_break_callback(struct smb2_request *req)
+{
+	NTSTATUS status;
+	struct smb2_break br;
+
+	ZERO_STRUCT(br);
+	status = smb2_break_recv(req, &break_info.br);
+	if (!NT_STATUS_IS_OK(status)) {
+		break_info.failures++;
+		break_info.failure_status = status;
+	}
+
+	return;
+}
+
+/* A general oplock break notification handler.  This should be used when a
+ * test expects to break from batch or exclusive to a lower level. */
+static bool torture_oplock_handler(struct smb2_transport *transport,
+				   const struct smb2_handle *handle,
+				   uint8_t level,
+				   void *private_data)
+{
+	struct smb2_tree *tree = private_data;
+	const char *name;
+	struct smb2_request *req;
+	ZERO_STRUCT(break_info.br);
+
+	break_info.handle	= *handle;
+	break_info.level	= level;
+	break_info.count++;
+
+	switch (level) {
+	case SMB2_OPLOCK_LEVEL_II:
+		name = "level II";
+		break;
+	case SMB2_OPLOCK_LEVEL_NONE:
+		name = "none";
+		break;
+	default:
+		name = "unknown";
+		break_info.failures++;
+	}
+	printf("Acking to %s [0x%02X] in oplock handler\n", name, level);
+
+	break_info.br.in.file.handle	= *handle;
+	break_info.br.in.oplock_level	= level;
+	break_info.br.in.reserved	= 0;
+	break_info.br.in.reserved2	= 0;
+
+	req = smb2_break_send(tree, &break_info.br);
+	req->async.fn = torture_oplock_break_callback;
+	req->async.private_data = NULL;
+	return true;
+}
+
+static bool test_compound_break(struct torture_context *tctx,
+			         struct smb2_tree *tree)
+{
+	const char *fname1 = "some-file.pptx";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io1;
+	struct smb2_create io2;
+	struct smb2_getinfo gf;
+	struct smb2_request *req[2];
+	struct smb2_handle h1;
+	struct smb2_handle h;
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	ZERO_STRUCT(break_info);
+
+	/*
+	  base ntcreatex parms
+	*/
+	ZERO_STRUCT(io1.smb2);
+	io1.generic.level = RAW_OPEN_SMB2;
+	io1.smb2.in.desired_access = (SEC_STD_SYNCHRONIZE|
+					SEC_STD_READ_CONTROL|
+					SEC_FILE_READ_ATTRIBUTE|
+					SEC_FILE_READ_EA|
+					SEC_FILE_READ_DATA);
+	io1.smb2.in.alloc_size = 0;
+	io1.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io1.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+			NTCREATEX_SHARE_ACCESS_WRITE|
+			NTCREATEX_SHARE_ACCESS_DELETE;
+	io1.smb2.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io1.smb2.in.create_options = 0;
+	io1.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io1.smb2.in.security_flags = 0;
+	io1.smb2.in.fname = fname1;
+
+	torture_comment(tctx, "TEST2: open a file with an batch "
+			"oplock (share mode: all)\n");
+	io1.smb2.in.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
+
+	status = smb2_create(tree, tctx, &(io1.smb2));
+	torture_assert_ntstatus_ok(tctx, status, "Error opening the file");
+
+	h1 = io1.smb2.out.file.handle;
+
+	torture_comment(tctx, "TEST2: Opening second time with compound\n");
+
+	ZERO_STRUCT(io2);
+
+	io2.in.desired_access = (SEC_STD_SYNCHRONIZE|
+				SEC_FILE_READ_ATTRIBUTE|
+				SEC_FILE_READ_EA);
+	io2.in.alloc_size = 0;
+	io2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io2.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+			NTCREATEX_SHARE_ACCESS_WRITE|
+			NTCREATEX_SHARE_ACCESS_DELETE;
+	io2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io2.in.create_options = 0;
+	io2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io2.in.security_flags = 0;
+	io2.in.fname = fname1;
+	io2.in.oplock_level = 0;
+
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	req[0] = smb2_create_send(tree, &io2);
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	h.data[0] = UINT64_MAX;
+	h.data[1] = UINT64_MAX;
+
+	ZERO_STRUCT(gf);
+	gf.in.file.handle = h;
+	gf.in.info_type = SMB2_GETINFO_FILE;
+	gf.in.info_class = 0x16;
+	gf.in.output_buffer_length = 0x1000;
+	gf.in.input_buffer_length = 0;
+
+	req[1] = smb2_getinfo_send(tree, &gf);
+
+	status = smb2_create_recv(req[0], tree, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	status = smb2_getinfo_recv(req[1], tree, &gf);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+
+	smb2_util_close(tree, h1);
+	smb2_util_unlink(tree, fname1);
+	return ret;
+}
+
 static bool test_compound_related1(struct torture_context *tctx,
 				   struct smb2_tree *tree)
 {
@@ -717,6 +879,7 @@ struct torture_suite *torture_smb2_compound_init(void)
 	torture_suite_add_1smb2_test(suite, "invalid3", test_compound_invalid3);
 	torture_suite_add_1smb2_test(suite, "interim1",  test_compound_interim1);
 	torture_suite_add_1smb2_test(suite, "interim2",  test_compound_interim2);
+	torture_suite_add_1smb2_test(suite, "compound-break", test_compound_break);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND tests");
 
