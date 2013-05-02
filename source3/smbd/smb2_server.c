@@ -1272,7 +1272,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 					 uint32_t defer_time)
 {
 	NTSTATUS status;
-	int idx = req->current_idx;
 	struct timeval defer_endtime;
 	uint8_t *outhdr = NULL;
 	uint32_t flags;
@@ -1296,7 +1295,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
-	if (req->in.vector_count > idx + SMBD_SMB2_NUM_IOV_PER_REQ) {
+	if (req->in.vector_count > req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/*
 		 * We're trying to go async in a compound
 		 * request chain. This is not allowed.
@@ -1318,6 +1317,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	}
 
 	if (req->out.vector_count >= (2*SMBD_SMB2_NUM_IOV_PER_REQ)) {
+		int idx = req->current_idx;
 		/*
 		 * This is a compound reply. We
 		 * must do an interim response
