@@ -1298,16 +1298,26 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	if (req->in.vector_count > req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/*
 		 * We're trying to go async in a compound
-		 * request chain. This is not allowed.
-		 * Cancel the outstanding request.
+		 * request chain.
+		 * This is only allowed for opens that
+		 * cause an oplock break, otherwise it
+		 * is not allowed. See [MS-SMB2].pdf
+		 * note <194> on Section 3.3.5.2.7.
 		 */
-		bool ok = tevent_req_cancel(req->subreq);
-		if (ok) {
-			return NT_STATUS_OK;
+		const uint8_t *inhdr = SMBD_SMB2_IN_HDR_PTR(req);
+
+		if (SVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_CREATE) {
+			/*
+			 * Cancel the outstanding request.
+			 */
+			bool ok = tevent_req_cancel(req->subreq);
+			if (ok) {
+				return NT_STATUS_OK;
+			}
+			TALLOC_FREE(req->subreq);
+			return smbd_smb2_request_error(req,
+				NT_STATUS_INTERNAL_ERROR);
 		}
-		TALLOC_FREE(req->subreq);
-		return smbd_smb2_request_error(req,
-			NT_STATUS_INTERNAL_ERROR);
 	}
 
 	if (DEBUGLEVEL >= 10) {
@@ -1316,51 +1326,51 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		print_req_vectors(req);
 	}
 
-	if (req->out.vector_count >= (2*SMBD_SMB2_NUM_IOV_PER_REQ)) {
-		int idx = req->current_idx;
+	if (req->current_idx > 1) {
 		/*
-		 * This is a compound reply. We
-		 * must do an interim response
-		 * followed by the async response
-		 * to match W2K8R2.
+		 * We're going async in a compound
+		 * chain after the first request has
+		 * already been processed. Send an
+		 * interim response containing the
+		 * set of replies already generated.
 		 */
+		int idx = req->current_idx;
+
 		status = smb2_send_async_interim_response(req);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 		data_blob_clear_free(&req->first_key);
 
-		/*
-		 * We're splitting off the last SMB2
-		 * request in a compound set, and the
-		 * smb2_send_async_interim_response()
-		 * call above just sent all the replies
-		 * for the previous SMB2 requests in
-		 * this compound set. So we're no longer
-		 * in the "compound_related_in_progress"
-		 * state, and this is no longer a compound
-		 * request.
-		 */
-		req->compound_related = false;
-		req->sconn->smb2.compound_related_in_progress = false;
-
 		req->current_idx = 1;
 
-		/* Re-arrange the in.vectors. */
-		memmove(&req->in.vector[req->current_idx],
-		        &req->in.vector[idx],
-			sizeof(req->in.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
-		req->in.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
+		/*
+		 * Re-arrange the in.vectors to remove what
+		 * we just sent.
+		 */
+		memmove(&req->in.vector[1],
+			&req->in.vector[idx],
+			sizeof(req->in.vector[0])*(req->in.vector_count - idx));
+		req->in.vector_count = 1 + (req->in.vector_count - idx);
 
-		/* Re-arrange the out.vectors. */
-		memmove(&req->out.vector[req->current_idx],
-		        &req->out.vector[idx],
-			sizeof(req->out.vector[0])*SMBD_SMB2_NUM_IOV_PER_REQ);
-		req->out.vector_count = req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ;
+		/* Re-arrange the out.vectors to match. */
+		memmove(&req->out.vector[1],
+			&req->out.vector[idx],
+			sizeof(req->out.vector[0])*(req->out.vector_count - idx));
+		req->out.vector_count = 1 + (req->out.vector_count - idx);
 
-		outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
-		flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
-		SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
+		if (req->in.vector_count == 1 + SMBD_SMB2_NUM_IOV_PER_REQ) {
+			/*
+			 * We only have one remaining request as
+			 * we've processed everything else.
+			 * This is no longer a compound request.
+			 */
+			req->compound_related = false;
+			req->sconn->smb2.compound_related_in_progress = false;
+			outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
+			flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
+			SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
+		}
 	}
 	data_blob_clear_free(&req->last_key);
 
