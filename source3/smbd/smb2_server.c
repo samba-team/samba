@@ -1366,7 +1366,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 			 * This is no longer a compound request.
 			 */
 			req->compound_related = false;
-			req->sconn->smb2.compound_related_in_progress = false;
 			outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 			flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
 			SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
@@ -2042,7 +2041,6 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 
 	if (flags & SMB2_HDR_FLAG_CHAINED) {
 		req->compound_related = true;
-		req->sconn->smb2.compound_related_in_progress = true;
 	}
 
 	if (call->need_session) {
@@ -2406,7 +2404,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	if (req->compound_related) {
 		req->compound_related = false;
-		req->sconn->smb2.compound_related_in_progress = false;
 	}
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
@@ -3160,14 +3157,6 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbd_server_connection *s
 	size_t max_send_queue_len;
 	size_t cur_send_queue_len;
 	struct tevent_req *subreq;
-
-	if (sconn->smb2.compound_related_in_progress) {
-		/*
-		 * Can't read another until the related
-		 * compound is done.
-		 */
-		return NT_STATUS_OK;
-	}
 
 	if (tevent_queue_length(sconn->smb2.recv_queue) > 0) {
 		/*
