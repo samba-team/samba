@@ -1,7 +1,7 @@
 Configuring NFS4 ACLs in Samba3
 ===============================
 Created: Peter Somogyi, 2006-JUN-06
-Last modified: Peter Somogyi, 2006-JUL-20
+Last modified: Alexander Werth, 2013-MAY-02
 Revision no.: 4 
 -------------------------------
 
@@ -13,13 +13,20 @@ Each parameter must have a prefix "nfs4:".
 Each one affects the behaviour only when _setting_ an acl on a file/dir:
 
 mode = [simple|special]
-- simple: don't use OWNER@ and GROUP@ special IDs in ACEs. - default
-- special: use OWNER@ and GROUP@ special IDs in ACEs instead of simple user&group ids.
-Note: EVERYONE@ is always processed (if found such an ACE).
-Note2: special mode will have side effect when _only_ chown is performed. Later this may be worked out.
+- simple: Use OWNER@ and GROUP@ special IDs for non inheriting ACEs only.
+  This mode is the default.
+- special: use OWNER@ and GROUP@ special IDs in ACEs instead of simple
+  user&group ids. This mode is deprecated.
 
-Use "simple" mode when the share is used mainly by windows users and unix side is not significant. You will loose unix bits in this case.
-It's strongly advised setting "store dos attributes = yes" in smb.conf.
+Note1: EVERYONE@ is always processed (if found such an ACE).
+Note2: There is a side effect when _only_ chown is performed.
+       Later this may be worked out.
+Note3: Mode special inherits incorrect ACL entries when the user creating
+       a file is different from the owner of the caurrent folder.
+Note4: Mode simple uses inheriting OWNER@ and GROUP@ special IDs to
+       support Creator Owner and Creator Group.
+
+It's strongly advised to set "store dos attributes = yes" in smb.conf.
 
 chown = [true|false]
 - true => enable changing owner and group - default.
