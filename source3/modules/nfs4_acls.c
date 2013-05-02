@@ -820,6 +820,48 @@ static int smbacl4_substitute_special(
 	return True; /* OK */
 }
 
+static int smbacl4_substitute_simple(
+	SMB4ACL_T *theacl,
+	uid_t ownerUID,
+	gid_t ownerGID
+)
+{
+	SMB_ACL4_INT_T *aclint = get_validated_aclint(theacl);
+	SMB_ACE4_INT_T *aceint;
+
+	for(aceint = aclint->first; aceint!=NULL; aceint=(SMB_ACE4_INT_T *)aceint->next) {
+		SMB_ACE4PROP_T *ace = &aceint->prop;
+
+		DEBUG(10,("ace type: %d, iflags: %x, flags: %x, "
+			  "mask: %x, who: %d\n",
+			  ace->aceType, ace->flags, ace->aceFlags,
+			  ace->aceMask, ace->who.id));
+
+		if (!(ace->flags & SMB_ACE4_ID_SPECIAL) &&
+		    !(ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP) &&
+		    ace->who.uid == ownerUID &&
+		    !(ace->aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) &&
+		    !(ace->aceFlags & SMB_ACE4_FILE_INHERIT_ACE) &&
+		    !(ace->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) {
+			ace->flags |= SMB_ACE4_ID_SPECIAL;
+			ace->who.special_id = SMB_ACE4_WHO_OWNER;
+			DEBUG(10,("replaced with special owner ace\n"));
+		}
+
+		if (!(ace->flags & SMB_ACE4_ID_SPECIAL) &&
+		    ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP &&
+		    ace->who.uid == ownerGID &&
+		    !(ace->aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) &&
+		    !(ace->aceFlags & SMB_ACE4_FILE_INHERIT_ACE) &&
+		    !(ace->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) {
+			ace->flags |= SMB_ACE4_ID_SPECIAL;
+			ace->who.special_id = SMB_ACE4_WHO_GROUP;
+			DEBUG(10,("replaced with special group ace\n"));
+		}
+	}
+	return True; /* OK */
+}
+
 static SMB4ACL_T *smbacl4_win2nfs4(
 	TALLOC_CTX *mem_ctx,
 	const files_struct *fsp,
@@ -860,6 +902,10 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 
 		if (addNewACE)
 			smb_add_ace4(theacl, &ace_v4);
+	}
+
+	if (pparams->mode==e_simple) {
+		smbacl4_substitute_simple(theacl, ownerUID, ownerGID);
 	}
 
 	if (pparams->mode==e_special) {
