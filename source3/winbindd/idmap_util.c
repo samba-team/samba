@@ -70,7 +70,7 @@ backend:
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping uid [%lu]: %s\n", (unsigned long)uid,
 			   nt_errstr(ret)));
-		return ret;
+		map.status = ID_UNMAPPED;
 	}
 
 	if (map.status != ID_MAPPED) {
@@ -134,7 +134,7 @@ backend:
 	if ( ! NT_STATUS_IS_OK(ret)) {
 		DEBUG(10, ("error mapping gid [%lu]: %s\n", (unsigned long)gid,
 			   nt_errstr(ret)));
-		return ret;
+		map.status = ID_UNMAPPED;
 	}
 
 	if (map.status != ID_MAPPED) {
