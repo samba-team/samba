@@ -2250,28 +2250,118 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 	return;
 }
 
-static void noiptakeover_cb(struct ctdb_context *ctdb, uint32_t pnn, int32_t res, TDB_DATA outdata, void *callback)
+struct get_tunable_callback_data {
+	const char *tunable;
+	uint32_t *out;
+};
+
+static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
+				 int32_t res, TDB_DATA outdata,
+				 void *callback)
 {
-	struct ctdb_node_map *nodemap = (struct ctdb_node_map *)callback;
+	struct get_tunable_callback_data *cd =
+		(struct get_tunable_callback_data *)callback;
+	int size;
 
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,("Failure to read NoIPTakeover tunable from remote node %d\n", pnn));
+		DEBUG(DEBUG_ERR,
+		      ("Failure to read \"%s\" tunable from remote node %d\n",
+		       cd->tunable, pnn));
 		return;
 	}
 
 	if (outdata.dsize != sizeof(uint32_t)) {
-		DEBUG(DEBUG_ERR,("Wrong size of returned data when reading NoIPTakeover tunable from node %d. Expected %d bytes but received %d bytes\n", pnn, (int)sizeof(uint32_t), (int)outdata.dsize));
+		DEBUG(DEBUG_ERR,("Wrong size of returned data when reading \"%s\" tunable from node %d. Expected %d bytes but received %d bytes\n",
+				 cd->tunable, pnn, (int)sizeof(uint32_t),
+				 (int)outdata.dsize));
 		return;
 	}
 
-	if (pnn >= nodemap->num) {
-		DEBUG(DEBUG_ERR,("Got NoIPTakeover reply from node %d but nodemap only has %d entries\n", pnn, nodemap->num));
+	size = talloc_get_size(cd->out) / sizeof(uint32_t);
+	if (pnn >= size) {
+		DEBUG(DEBUG_ERR,("Got %s reply from node %d but nodemap only has %d entries\n",
+				 cd->tunable, pnn, size));
 		return;
 	}
 
-	if (*(uint32_t *)outdata.dptr != 0) {
-		nodemap->nodes[pnn].flags |= NODE_FLAGS_NOIPTAKEOVER;
+		
+	cd->out[pnn] = *(uint32_t *)outdata.dptr;
+}
+
+static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
+					TALLOC_CTX *tmp_ctx,
+					struct ctdb_node_map *nodemap,
+					const char *tunable)
+{
+	TDB_DATA data;
+	struct ctdb_control_get_tunable *t;
+	uint32_t *nodes;
+	uint32_t *tvals;
+	struct get_tunable_callback_data callback_data;
+
+	tvals = talloc_zero_array(tmp_ctx, uint32_t, nodemap->num);
+	CTDB_NO_MEMORY_NULL(ctdb, tvals);
+	callback_data.out = tvals;
+	callback_data.tunable = tunable;
+
+	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen(tunable) + 1;
+	data.dptr  = talloc_size(tmp_ctx, data.dsize);
+	t = (struct ctdb_control_get_tunable *)data.dptr;
+	t->length = strlen(tunable)+1;
+	memcpy(t->name, tunable, t->length);
+	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_TUNABLE,
+				      nodes, 0, TAKEOVER_TIMEOUT(),
+				      false, data,
+				      get_tunable_callback, NULL,
+				      &callback_data) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to get %s tunable failed\n", tunable));
 	}
+	talloc_free(nodes);
+	talloc_free(data.dptr);
+
+	return tvals;
+}
+
+/* Set internal flags for IP allocation:
+ *   Clear ip flags
+ *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
+ */
+static void set_ipflags_internal(struct ctdb_node_map *nodemap,
+				 uint32_t *tval_noiptakeover)
+{
+	int i;
+
+	/* Clear IP flags */
+	for (i=0;i<nodemap->num;i++) {
+		nodemap->nodes[i].flags &= ~NODE_FLAGS_NOIPTAKEOVER;
+	}
+
+	/* Can not take IPs on node with NoIPTakeover set */
+	for (i=0;i<nodemap->num;i++) {
+		if (tval_noiptakeover[i] != 0) {
+			nodemap->nodes[i].flags |= NODE_FLAGS_NOIPTAKEOVER;
+		}
+	}
+}
+
+static bool set_ipflags(struct ctdb_context *ctdb,
+			TALLOC_CTX *tmp_ctx,
+			struct ctdb_node_map *nodemap)
+{
+	uint32_t *tval_noiptakeover;
+
+	tval_noiptakeover = get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
+						   "NoIPTakeover");
+	if (tval_noiptakeover == NULL) {
+		return false;
+	}
+
+	set_ipflags_internal(nodemap, tval_noiptakeover);
+
+	talloc_free(tval_noiptakeover);
+
+	return true;
 }
 
 /*
@@ -2283,7 +2373,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	int i;
 	struct ctdb_public_ip ip;
 	struct ctdb_public_ipv4 ipv4;
-	struct ctdb_control_get_tunable *t;
 	uint32_t *nodes;
 	struct ctdb_public_ip_list *all_ips, *tmp_ip;
 	TDB_DATA data;
@@ -2302,26 +2391,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	}
 
 
-	/* assume all nodes do support failback */
-	for (i=0;i<nodemap->num;i++) {
-		nodemap->nodes[i].flags &= ~NODE_FLAGS_NOIPTAKEOVER;
+	if (!set_ipflags(ctdb, tmp_ctx, nodemap)) {
+		DEBUG(DEBUG_ERR,("Failed to set IP flags from tunables\n"));
+		return -1;
 	}
-	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen("NoIPTakeover") + 1;
-	data.dptr  = talloc_size(tmp_ctx, data.dsize);
-	t = (struct ctdb_control_get_tunable *)data.dptr;
-	t->length = strlen("NoIPTakeover")+1;
-	memcpy(t->name, "NoIPTakeover", t->length);
-	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_TUNABLE,
-				      nodes, 0, TAKEOVER_TIMEOUT(),
-				      false, data,
-				      noiptakeover_cb, NULL,
-				      nodemap) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to get noiptakeover tunable failed\n"));
-	}
-	talloc_free(nodes);
-	talloc_free(data.dptr);
-
 
 	ZERO_STRUCT(ip);
 
