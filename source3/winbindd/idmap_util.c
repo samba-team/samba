@@ -68,7 +68,8 @@ backend:
 
 	ret = idmap_backends_unixid_to_sid(domname, &map);
 	if ( ! NT_STATUS_IS_OK(ret)) {
-		DEBUG(10, ("error mapping uid [%lu]\n", (unsigned long)uid));
+		DEBUG(10, ("error mapping uid [%lu]: %s\n", (unsigned long)uid,
+			   nt_errstr(ret)));
 		return ret;
 	}
 
@@ -131,7 +132,8 @@ backend:
 
 	ret = idmap_backends_unixid_to_sid(domname, &map);
 	if ( ! NT_STATUS_IS_OK(ret)) {
-		DEBUG(10, ("error mapping gid [%lu]\n", (unsigned long)gid));
+		DEBUG(10, ("error mapping gid [%lu]: %s\n", (unsigned long)gid,
+			   nt_errstr(ret)));
 		return ret;
 	}
 
