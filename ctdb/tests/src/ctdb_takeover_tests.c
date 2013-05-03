@@ -441,9 +441,7 @@ void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
 
-	lcp2_init(ctdb, nodemap,
-		  NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
-		  all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, nodemap, all_ips, &lcp2_imbalances, &newly_healthy);
 
 	lcp2_allocate_unassigned(ctdb, nodemap,
 				 all_ips, lcp2_imbalances);
@@ -465,9 +463,7 @@ void ctdb_test_lcp2_failback(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
 
-	lcp2_init(ctdb, nodemap,
-		  NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
-		  all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, nodemap, all_ips, &lcp2_imbalances, &newly_healthy);
 
 	lcp2_failback(ctdb, nodemap,
 		      all_ips, lcp2_imbalances, newly_healthy);
@@ -489,9 +485,7 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 
 	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
 
-	lcp2_init(ctdb, nodemap,
-		  NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
-		  all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, nodemap, all_ips, &lcp2_imbalances, &newly_healthy);
 
 	lcp2_failback(ctdb, nodemap,
 		      all_ips, lcp2_imbalances, newly_healthy);

@@ -1728,7 +1728,6 @@ void lcp2_forcerebalance(struct ctdb_context *ctdb, uint32_t pnn)
  */
 static void lcp2_init(struct ctdb_context * tmp_ctx,
 	       struct ctdb_node_map * nodemap,
-	       uint32_t mask,
 	       struct ctdb_public_ip_list *all_ips,
 	       uint32_t **lcp2_imbalances,
 	       bool **rebalance_candidates)
@@ -2135,8 +2134,7 @@ static void ip_alloc_nondeterministic_ips(struct ctdb_context *ctdb,
 
 static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 			  struct ctdb_node_map *nodemap,
-			  struct ctdb_public_ip_list *all_ips,
-			  uint32_t mask)
+			  struct ctdb_public_ip_list *all_ips)
 {
 	uint32_t *lcp2_imbalances;
 	bool *rebalance_candidates;
@@ -2145,7 +2143,7 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 
 	unassign_unsuitable_ips(ctdb, nodemap, all_ips);
 
-	lcp2_init(tmp_ctx, nodemap, mask, all_ips,
+	lcp2_init(tmp_ctx, nodemap, all_ips,
 		  &lcp2_imbalances, &rebalance_candidates);
 
 	lcp2_allocate_unassigned(ctdb, nodemap, all_ips, lcp2_imbalances);
@@ -2185,20 +2183,6 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 				   struct ctdb_node_map *nodemap,
 				   struct ctdb_public_ip_list **all_ips_p)
 {
-	uint32_t mask;
-
-	/* If we have healthy nodes then we will only consider them
-	   for serving public addresses
-	*/
-	mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
-	if (all_nodes_are_disabled(nodemap) &&
-	    (ctdb->tunable.no_ip_host_on_all_disabled == 0)) {
-		/* We didnt have any completely healthy nodes so
-		   use "disabled" nodes as a fallback
-		*/
-		mask = NODE_FLAGS_INACTIVE;
-	}
-
 	/* since nodes only know about those public addresses that
 	   can be served by that particular node, no single node has
 	   a full list of all public addresses that exist in the cluster.
@@ -2210,7 +2194,7 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 	*all_ips_p = create_merged_ip_list(ctdb);
 
         if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		ip_alloc_lcp2(ctdb, nodemap, *all_ips_p, mask);
+		ip_alloc_lcp2(ctdb, nodemap, *all_ips_p);
 	} else if (1 == ctdb->tunable.deterministic_public_ips) {
 		ip_alloc_deterministic_ips(ctdb, nodemap, *all_ips_p);
 	} else {
