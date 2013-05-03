@@ -363,6 +363,7 @@ void ctdb_test_init(const char nodestates[],
 	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
 	char *tok, *ns, *t;
 	uint32_t *tval_noiptakeover;
+	uint32_t *tval_noiptakeoverondisabled;
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
 
@@ -400,13 +401,11 @@ void ctdb_test_init(const char nodestates[],
 		}
 	}
 
-	(*ctdb)->tunable.no_ip_takeover_on_disabled = 0;
-	if (getenv("CTDB_SET_NoIPTakeoverOnDisabled")) {
-		(*ctdb)->tunable.no_ip_takeover_on_disabled = (uint32_t) strtoul(getenv("CTDB_SET_NoIPTakeoverOnDisabled"), NULL, 0);
-	}
-              
 	tval_noiptakeover = get_tunable_values(*ctdb, numnodes,
 					       "CTDB_SET_NoIPTakeover");
+	tval_noiptakeoverondisabled =
+		get_tunable_values(*ctdb, numnodes,
+				   "CTDB_SET_NoIPHostOnAllDisabled");
 
 	*nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	(*nodemap)->num = numnodes;
@@ -427,7 +426,7 @@ void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i]->known_public_ips = avail[i];
 	}
 
-	set_ipflags_internal(*nodemap, tval_noiptakeover);
+	set_ipflags_internal(*nodemap, tval_noiptakeover, tval_noiptakeoverondisabled);
 }
 
 /* IP layout is read from stdin. */

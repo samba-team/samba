@@ -1299,31 +1299,46 @@ static int node_ip_coverage(struct ctdb_context *ctdb,
 }
 
 
-/* Check if this is a public ip known to the node, i.e. can that
-   node takeover this ip ?
+/* Can the given node host the given IP: is the public IP known to the
+ * node and is NOIPHOST unset?
 */
-static int can_node_serve_ip(struct ctdb_context *ctdb, int32_t pnn, 
-		struct ctdb_public_ip_list *ip)
+static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn, 
+			     struct ctdb_node_map *nodemap,
+			     struct ctdb_public_ip_list *ip)
 {
 	struct ctdb_all_public_ips *public_ips;
 	int i;
 
+	if (nodemap->nodes[pnn].flags & NODE_FLAGS_NOIPHOST) {
+		return false;
+	}
+
 	public_ips = ctdb->nodes[pnn]->available_public_ips;
 
 	if (public_ips == NULL) {
-		return -1;
+		return false;
 	}
 
 	for (i=0;i<public_ips->num;i++) {
 		if (ctdb_same_ip(&ip->addr, &public_ips->ips[i].addr)) {
 			/* yes, this node can serve this public ip */
-			return 0;
+			return true;
 		}
 	}
 
-	return -1;
+	return false;
 }
 
+static bool can_node_takeover_ip(struct ctdb_context *ctdb, int32_t pnn, 
+				 struct ctdb_node_map *nodemap,
+				 struct ctdb_public_ip_list *ip)
+{
+	if (nodemap->nodes[pnn].flags & NODE_FLAGS_NOIPTAKEOVER) {
+		return false;
+	}
+
+	return can_node_host_ip(ctdb, pnn, nodemap, ip);
+}
 
 /* search the node lists list for a node to takeover this ip.
    pick the node that currently are serving the least number of ips
@@ -1339,21 +1354,8 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 
 	pnn    = -1;
 	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPTAKEOVER) {
-			/* This node is not allowed to takeover any addresses
-			*/
-			continue;
-		}
-
-		if (nodemap->nodes[i].flags & mask) {
-			/* This node is not healty and can not be used to serve
-			   a public address 
-			*/
-			continue;
-		}
-
 		/* verify that this node can serve this ip */
-		if (can_node_serve_ip(ctdb, i, ip)) {
+		if (!can_node_takeover_ip(ctdb, i, nodemap, ip)) {
 			/* no it couldnt   so skip to the next node */
 			continue;
 		}
@@ -1642,17 +1644,8 @@ try_again:
 		maxnode = -1;
 		minnode = -1;
 		for (i=0;i<nodemap->num;i++) {
-			if (nodemap->nodes[i].flags & mask) {
-				continue;
-			}
-
-			/* Only check nodes that are allowed to takeover an ip */
-			if (nodemap->nodes[i].flags & NODE_FLAGS_NOIPTAKEOVER) {
-				continue;
-			}
-
 			/* only check nodes that can actually serve this ip */
-			if (can_node_serve_ip(ctdb, i, tmp_ip)) {
+			if (!can_node_takeover_ip(ctdb, i, nodemap, tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
 				continue;
 			}
@@ -1815,17 +1808,10 @@ static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 			}
 
 			for (dstnode=0; dstnode < nodemap->num; dstnode++) {
-				/* Only check nodes that are allowed to takeover an ip */
-				if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPTAKEOVER) {
-					continue;
-				}
-
-				/* only check nodes that can actually serve this ip */
-				if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
+				/* only check nodes that can actually takeover this ip */
+				if (!can_node_takeover_ip(ctdb, dstnode,
+							  nodemap, tmp_ip)) {
 					/* no it couldnt   so skip to the next node */
-					continue;
-				}
-				if (nodemap->nodes[dstnode].flags & mask) {
 					continue;
 				}
 
@@ -1929,13 +1915,9 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 				continue;
 			}
 
-			/* Only check nodes that are allowed to takeover an ip */
-			if (nodemap->nodes[dstnode].flags & NODE_FLAGS_NOIPTAKEOVER) {
-				continue;
-			}
-
-			/* only check nodes that can actually serve this ip */
-			if (can_node_serve_ip(ctdb, dstnode, tmp_ip)) {
+			/* only check nodes that can actually takeover this ip */
+			if (!can_node_takeover_ip(ctdb, dstnode,
+						  nodemap, tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
 				continue;
 			}
@@ -2075,21 +2057,6 @@ static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 {
 	struct ctdb_public_ip_list *tmp_ip;
 
-	/* mark all public addresses with a masked node as being served by
-	   node -1
-	*/
-	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
-		if (tmp_ip->pnn == -1) {
-			continue;
-		}
-		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
-			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
-					   ctdb_addr_to_str(&(tmp_ip->addr)),
-					   tmp_ip->pnn));
-			tmp_ip->pnn = -1;
-		}
-	}
-
 	/* verify that the assigned nodes can serve that public ip
 	   and set it to -1 if not
 	*/
@@ -2097,7 +2064,8 @@ static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 		if (tmp_ip->pnn == -1) {
 			continue;
 		}
-		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
+		if (!can_node_host_ip(ctdb, tmp_ip->pnn,
+				      nodemap, tmp_ip) != 0) {
 			/* this node can not serve this ip. */
 			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
 					   ctdb_addr_to_str(&(tmp_ip->addr)),
@@ -2224,7 +2192,7 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 	*/
 	mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
 	if (all_nodes_are_disabled(nodemap) &&
-	    (ctdb->tunable.no_ip_takeover_on_disabled == 0)) {
+	    (ctdb->tunable.no_ip_host_on_all_disabled == 0)) {
 		/* We didnt have any completely healthy nodes so
 		   use "disabled" nodes as a fallback
 		*/
@@ -2332,21 +2300,53 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 /* Set internal flags for IP allocation:
  *   Clear ip flags
  *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
+ *   Set NOIPHOST ip flag for each INACTIVE node
+ *   if all nodes are disabled:
+ *     Set NOIPHOST ip flags from per-node NoIPHostOnAllDisabled tunable
+ *   else
+ *     Set NOIPHOST ip flags for disabled nodes
  */
 static void set_ipflags_internal(struct ctdb_node_map *nodemap,
-				 uint32_t *tval_noiptakeover)
+				 uint32_t *tval_noiptakeover,
+				 uint32_t *tval_noiphostonalldisabled)
 {
 	int i;
 
 	/* Clear IP flags */
 	for (i=0;i<nodemap->num;i++) {
-		nodemap->nodes[i].flags &= ~NODE_FLAGS_NOIPTAKEOVER;
+		nodemap->nodes[i].flags &=
+			~(NODE_FLAGS_NOIPTAKEOVER|NODE_FLAGS_NOIPHOST);
 	}
 
-	/* Can not take IPs on node with NoIPTakeover set */
 	for (i=0;i<nodemap->num;i++) {
+		/* Can not take IPs on node with NoIPTakeover set */
 		if (tval_noiptakeover[i] != 0) {
 			nodemap->nodes[i].flags |= NODE_FLAGS_NOIPTAKEOVER;
+		}
+
+		/* Can not host IPs on INACTIVE node */
+		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			nodemap->nodes[i].flags |= NODE_FLAGS_NOIPHOST;
+		}
+	}
+
+	if (all_nodes_are_disabled(nodemap)) {
+		/* If all nodes are disabled, can not host IPs on node
+		 * with NoIPHostOnAllDisabled set
+		 */
+		for (i=0;i<nodemap->num;i++) {
+			if (tval_noiphostonalldisabled[i] != 0) {
+				nodemap->nodes[i].flags |= NODE_FLAGS_NOIPHOST;
+			}
+		}
+	} else {
+		/* If some nodes are not disabled, then can not host
+		 * IPs on DISABLED node
+		 */
+		for (i=0;i<nodemap->num;i++) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_DISABLED) {
+				nodemap->nodes[i].flags |= NODE_FLAGS_NOIPHOST;
+			}
 		}
 	}
 }
@@ -2356,6 +2356,7 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 			struct ctdb_node_map *nodemap)
 {
 	uint32_t *tval_noiptakeover;
+	uint32_t *tval_noiphostonalldisabled;
 
 	tval_noiptakeover = get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
 						   "NoIPTakeover");
@@ -2363,9 +2364,18 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 		return false;
 	}
 
-	set_ipflags_internal(nodemap, tval_noiptakeover);
+	tval_noiphostonalldisabled =
+		get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
+				       "NoIPHostOnAllDisabled");
+	if (tval_noiphostonalldisabled == NULL) {
+		return false;
+	}
+
+	set_ipflags_internal(nodemap,
+			     tval_noiptakeover, tval_noiphostonalldisabled);
 
 	talloc_free(tval_noiptakeover);
+	talloc_free(tval_noiphostonalldisabled);
 
 	return true;
 }
@@ -2395,7 +2405,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 	if (ctdb->tunable.disable_ip_failover != 0) {
 		goto ipreallocated;
 	}
-
 
 	if (!set_ipflags(ctdb, tmp_ctx, nodemap)) {
 		DEBUG(DEBUG_ERR,("Failed to set IP flags from tunables\n"));

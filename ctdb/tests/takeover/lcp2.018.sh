@@ -2,10 +2,10 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, all IPs assigned, all unhealthy, NoIPTakeoverOnDisabled"
+define_test "3 nodes, all IPs assigned, all unhealthy, NoIPHostOnAllDisabled"
 
 export CTDB_TEST_LOGLEVEL=0
-export CTDB_SET_NoIPTakeoverOnDisabled=1
+export CTDB_SET_NoIPHostOnAllDisabled=1
 
 required_result <<EOF
 192.168.21.254 -1
