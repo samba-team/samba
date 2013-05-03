@@ -6,6 +6,9 @@ define_test "3 nodes, 2 healthy"
 
 required_result <<EOF
 DATE TIME [PID]: Deterministic IPs enabled. Resetting all ip allocations
+DATE TIME [PID]: Unassign IP: 192.168.21.253 from 1
+DATE TIME [PID]: Unassign IP: 192.168.20.253 from 1
+DATE TIME [PID]: Unassign IP: 192.168.20.250 from 1
 192.168.21.254 0
 192.168.21.253 0
 192.168.21.252 2

@@ -2083,6 +2083,9 @@ static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 			continue;
 		}
 		if (nodemap->nodes[tmp_ip->pnn].flags & mask) {
+			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
+					   ctdb_addr_to_str(&(tmp_ip->addr)),
+					   tmp_ip->pnn));
 			tmp_ip->pnn = -1;
 		}
 	}
@@ -2096,6 +2099,9 @@ static void unassign_unsuitable_ips(struct ctdb_context *ctdb,
 		}
 		if (can_node_serve_ip(ctdb, tmp_ip->pnn, tmp_ip) != 0) {
 			/* this node can not serve this ip. */
+			DEBUG(DEBUG_DEBUG,("Unassign IP: %s from %d\n",
+					   ctdb_addr_to_str(&(tmp_ip->addr)),
+					   tmp_ip->pnn));
 			tmp_ip->pnn = -1;
 		}
 	}

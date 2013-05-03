@@ -5,6 +5,12 @@
 define_test "3 nodes, 1 healthy"
 
 required_result <<EOF
+DATE TIME [PID]: Unassign IP: 192.168.21.253 from 1
+DATE TIME [PID]: Unassign IP: 192.168.21.252 from 0
+DATE TIME [PID]: Unassign IP: 192.168.20.253 from 1
+DATE TIME [PID]: Unassign IP: 192.168.20.252 from 0
+DATE TIME [PID]: Unassign IP: 192.168.20.250 from 1
+DATE TIME [PID]: Unassign IP: 192.168.20.249 from 0
 192.168.21.254 2
 192.168.21.253 2
 192.168.21.252 2
