@@ -236,8 +236,8 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,  const char *path,
 		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
 		statbuf->FsIdentifier = statvfs_buf.f_fsid;
 		DEBUG(10, ("[CEPH] f_bsize: %ld, f_blocks: %ld, f_bfree: %ld, f_bavail: %ld\n",
-			statvfs_buf.f_bsize, statvfs_buf.f_blocks,
-			statvfs_buf.f_bfree, statvfs_buf.f_bavail));
+			(long int)statvfs_buf.f_bsize, (long int)statvfs_buf.f_blocks,
+			(long int)statvfs_buf.f_bfree, (long int)statvfs_buf.f_bavail));
 	}
 	return ret;
 }
@@ -1091,6 +1091,7 @@ static ssize_t cephwrap_listxattr(struct vfs_handle_struct *handle, const char *
 	}
 }
 
+#if 0
 static ssize_t cephwrap_llistxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)
 {
 	DEBUG(10, ("[CEPH] llistxattr(%p, %s, %p, %llu)\n", handle, path, list, llu(size)));
@@ -1102,12 +1103,13 @@ static ssize_t cephwrap_llistxattr(struct vfs_handle_struct *handle, const char 
 		return (ssize_t)ret;
 	}
 }
+#endif
 
 static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
 	DEBUG(10, ("[CEPH] flistxattr(%p, %p, %s, %llu)\n", handle, fsp, list, llu(size)));
 	int ret = ceph_listxattr(handle->data, fsp->fsp_name->base_name, list, size);
-	DEBUG(10, ("[CEPH] flistxattr(...)\n", ret));
+	DEBUG(10, ("[CEPH] flistxattr(...) = %d\n", ret));
 	if (ret < 0) {
 		WRAP_RETURN(ret);
 	} else {
