@@ -311,16 +311,16 @@
 		<term>nfs4:mode = [ simple | special ]</term>
 		<listitem>
 		<para>
-		Enable/Disable substitution of special IDs on GPFS. This parameter
-		should not affect the windows users in anyway. It only ensures that Samba
-		sets the special IDs - OWNER@ and GROUP@ ( mappings to simple uids )
-		that are relevant to GPFS.
+		Controls substitution of special IDs (OWNER@ and GROUP@) on GPFS.
+                The use of mode simple is recommended.
+                In this mode only non inheriting ACL entries for the file owner
+                and group are mapped to special IDs.
 		</para>
 
 		<para>The following MODEs are understood by the module:</para>
 		<itemizedlist>
-		<listitem><para><command>simple(default)</command> - do not use special IDs in GPFS ACEs</para></listitem>
-		<listitem><para><command>special</command> - use special IDs in GPFS ACEs. </para> </listitem>
+		<listitem><para><command>simple(default)</command> - use OWNER@ and GROUP@ special IDs for non inheriting ACEs only.</para></listitem>
+		<listitem><para><command>special(deprecated)</command> - use OWNER@ and GROUP@ special IDs in ACEs for all file owner and group ACEs.</para></listitem>
 		</itemizedlist>
 		</listitem>
 
