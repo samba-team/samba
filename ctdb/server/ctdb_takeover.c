@@ -2197,13 +2197,9 @@ finished:
 	talloc_free(tmp_ctx);
 }
 
-/* The calculation part of the IP allocation algorithm. */
-static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
-				   struct ctdb_node_map *nodemap,
-				   struct ctdb_public_ip_list **all_ips_p)
+static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
 {
 	int i, num_healthy;
-	uint32_t mask;
 
 	/* Count how many completely healthy nodes we have */
 	num_healthy = 0;
@@ -2213,11 +2209,21 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 		}
 	}
 
+	return num_healthy == 0;
+}
+
+/* The calculation part of the IP allocation algorithm. */
+static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
+				   struct ctdb_node_map *nodemap,
+				   struct ctdb_public_ip_list **all_ips_p)
+{
+	uint32_t mask;
+
 	/* If we have healthy nodes then we will only consider them
 	   for serving public addresses
 	*/
 	mask = NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED;
-	if ((num_healthy == 0) &&
+	if (all_nodes_are_disabled(nodemap) &&
 	    (ctdb->tunable.no_ip_takeover_on_disabled == 0)) {
 		/* We didnt have any completely healthy nodes so
 		   use "disabled" nodes as a fallback
