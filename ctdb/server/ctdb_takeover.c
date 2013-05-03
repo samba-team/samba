@@ -1731,27 +1731,32 @@ static void lcp2_init(struct ctdb_context * tmp_ctx,
 	       uint32_t mask,
 	       struct ctdb_public_ip_list *all_ips,
 	       uint32_t **lcp2_imbalances,
-	       bool **newly_healthy)
+	       bool **rebalance_candidates)
 {
 	int i;
 	struct ctdb_public_ip_list *tmp_ip;
 
-	*newly_healthy = talloc_array(tmp_ctx, bool, nodemap->num);
-	CTDB_NO_MEMORY_FATAL(tmp_ctx, *newly_healthy);
+	*rebalance_candidates = talloc_array(tmp_ctx, bool, nodemap->num);
+	CTDB_NO_MEMORY_FATAL(tmp_ctx, *rebalance_candidates);
 	*lcp2_imbalances = talloc_array(tmp_ctx, uint32_t, nodemap->num);
 	CTDB_NO_MEMORY_FATAL(tmp_ctx, *lcp2_imbalances);
 
 	for (i=0;i<nodemap->num;i++) {
 		(*lcp2_imbalances)[i] = lcp2_imbalance(all_ips, i);
-		/* First step: is the node "healthy"? */
-		(*newly_healthy)[i] = ! (bool)(nodemap->nodes[i].flags & mask);
+		/* First step: assume all nodes are candidates */
+		(*rebalance_candidates)[i] = true;
 	}
 
-	/* 2nd step: if a ndoe has IPs assigned then it must have been
-	 * healthy before, so we remove it from consideration... */
+	/* 2nd step: if a node has IPs assigned then it must have been
+	 * healthy before, so we remove it from consideration.  This
+	 * is overkill but is all we have because we don't maintain
+	 * state between takeover runs.  An alternative would be to
+	 * keep state and invalidate it every time the recovery master
+	 * changes.
+	 */
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn != -1) {
-			(*newly_healthy)[tmp_ip->pnn] = false;
+			(*rebalance_candidates)[tmp_ip->pnn] = false;
 		}
 	}
 
@@ -1761,7 +1766,7 @@ static void lcp2_init(struct ctdb_context * tmp_ctx,
 		struct ctdb_rebalancenodes *next = force_rebalance_list->next;
 
 		if (force_rebalance_list->pnn <= nodemap->num) {
-			(*newly_healthy)[force_rebalance_list->pnn] = true;
+			(*rebalance_candidates)[force_rebalance_list->pnn] = true;
 		}
 
 		DEBUG(DEBUG_ERR,("During ipreallocation, forced rebalance of node %d\n", force_rebalance_list->pnn));
@@ -1874,7 +1879,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 				    int srcnode,
 				    uint32_t candimbl,
 				    uint32_t *lcp2_imbalances,
-				    bool *newly_healthy)
+				    bool *rebalance_candidates)
 {
 	int dstnode, mindstnode;
 	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
@@ -1908,7 +1913,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 		 * balance improvements.
 		 */
 		for (dstnode=0; dstnode < nodemap->num; dstnode++) {
-			if (! newly_healthy[dstnode]) {
+			if (!rebalance_candidates[dstnode]) {
 				continue;
 			}
 
@@ -1985,9 +1990,9 @@ static void lcp2_failback(struct ctdb_context *ctdb,
 			  struct ctdb_node_map *nodemap,
 			  struct ctdb_public_ip_list *all_ips,
 			  uint32_t *lcp2_imbalances,
-			  bool *newly_healthy)
+			  bool *rebalance_candidates)
 {
-	int i, num_newly_healthy;
+	int i, num_rebalance_candidates;
 	struct lcp2_imbalance_pnn * lips;
 	bool again;
 
@@ -1997,13 +2002,13 @@ try_again:
 	 * nodes to transfer IPs to.  This check is much cheaper than
 	 * continuing on...
 	 */
-	num_newly_healthy = 0;
+	num_rebalance_candidates = 0;
 	for (i = 0; i < nodemap->num; i++) {
-		if (newly_healthy[i]) {
-			num_newly_healthy++;
+		if (rebalance_candidates[i]) {
+			num_rebalance_candidates++;
 		}
 	}
-	if (num_newly_healthy == 0) {
+	if (num_rebalance_candidates == 0) {
 		return;
 	}
 
@@ -2034,7 +2039,7 @@ try_again:
 					    lips[i].pnn,
 					    lips[i].imbalance,
 					    lcp2_imbalances,
-					    newly_healthy)) {
+					    rebalance_candidates)) {
 			again = true;
 			break;
 		}
@@ -2134,13 +2139,14 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 			  uint32_t mask)
 {
 	uint32_t *lcp2_imbalances;
-	bool *newly_healthy;
+	bool *rebalance_candidates;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 	unassign_unsuitable_ips(ctdb, nodemap, all_ips);
 
-	lcp2_init(tmp_ctx, nodemap, mask, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(tmp_ctx, nodemap, mask, all_ips,
+		  &lcp2_imbalances, &rebalance_candidates);
 
 	lcp2_allocate_unassigned(ctdb, nodemap, all_ips, lcp2_imbalances);
 
@@ -2152,7 +2158,8 @@ static void ip_alloc_lcp2(struct ctdb_context *ctdb,
 	/* Now, try to make sure the ip adresses are evenly distributed
 	   across the nodes.
 	*/
-	lcp2_failback(ctdb, nodemap, all_ips, lcp2_imbalances, newly_healthy);
+	lcp2_failback(ctdb, nodemap, all_ips,
+		      lcp2_imbalances, rebalance_candidates);
 
 finished:
 	talloc_free(tmp_ctx);
