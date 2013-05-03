@@ -18,7 +18,9 @@ required_result <<EOF
 192.168.20.249 1
 EOF
 
-simple_test 0x01000000,0,0 <<EOF
+export CTDB_SET_NoIPTakeover="1,0,0"
+
+simple_test 0,0,0 <<EOF
 192.168.20.249 1
 192.168.20.250 1
 192.168.20.251 1

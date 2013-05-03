@@ -320,6 +320,39 @@ void ctdb_test_lcp2_imbalance(int pnn)
 	talloc_free(tmp_ctx);
 }
 
+static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
+				    int numnodes,
+				    const char *tunable)
+{
+	int i;
+	char *tok;
+	uint32_t *tvals = talloc_zero_array(tmp_ctx, uint32_t, numnodes);
+	char *t = getenv(tunable);
+
+	if (t) {
+		if (strcmp(t, "1") == 0) {
+			for (i=0; i<numnodes; i++) {
+				tvals[i] = 1;
+			}
+		} else {
+			tok = strtok(t, ",");
+			i = 0;
+			while (tok != NULL) {
+				tvals[i] =
+					(uint32_t) strtol(tok, NULL, 0);
+				i++;
+				tok = strtok(NULL, ",");
+			}
+			if (i != numnodes) {
+				fprintf(stderr, "ERROR: Wrong number of values in %s\n", tunable);
+				exit(1);
+			}
+		}
+	}
+
+	return tvals;
+}
+
 void ctdb_test_init(const char nodestates[],
 		    struct ctdb_context **ctdb,
 		    struct ctdb_public_ip_list **all_ips,
@@ -328,7 +361,8 @@ void ctdb_test_init(const char nodestates[],
 	struct ctdb_all_public_ips **avail;
 	int i, numnodes;
 	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
-	char *tok, *ns;
+	char *tok, *ns, *t;
+	uint32_t *tval_noiptakeover;
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
 
@@ -338,7 +372,7 @@ void ctdb_test_init(const char nodestates[],
 	numnodes = 0;
 	tok = strtok(ns, ",");
 	while (tok != NULL) {
-		nodeflags[numnodes] = (uint32_t) strtol(tok, NULL, 16);
+		nodeflags[numnodes] = (uint32_t) strtol(tok, NULL, 0);
 		numnodes++;
 		tok = strtok(NULL, ",");
 	}
@@ -352,17 +386,16 @@ void ctdb_test_init(const char nodestates[],
 	(*ctdb)->tunable.disable_ip_failover = 0;
 	(*ctdb)->tunable.no_ip_failback = 0;
 
-	if (getenv("CTDB_IP_ALGORITHM")) {
-		if (strcmp(getenv("CTDB_IP_ALGORITHM"), "lcp2") == 0) {
+	if ((t = getenv("CTDB_IP_ALGORITHM"))) {
+		if (strcmp(t, "lcp2") == 0) {
 			(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
-		} else if (strcmp(getenv("CTDB_IP_ALGORITHM"), "nondet") == 0) {
+		} else if (strcmp(t, "nondet") == 0) {
 			(*ctdb)->tunable.lcp2_public_ip_assignment = 0;
-		} else if (strcmp(getenv("CTDB_IP_ALGORITHM"), "det") == 0) {
+		} else if (strcmp(t, "det") == 0) {
 			(*ctdb)->tunable.lcp2_public_ip_assignment = 0;
 			(*ctdb)->tunable.deterministic_public_ips = 1;
 		} else {
-			fprintf(stderr, "ERROR: unknown IP algorithm %s\n",
-				getenv("CTDB_IP_ALGORITHM"));
+			fprintf(stderr, "ERROR: unknown IP algorithm %s\n", t);
 			exit(1);
 		}
 	}
@@ -371,7 +404,10 @@ void ctdb_test_init(const char nodestates[],
 	if (getenv("CTDB_SET_NoIPTakeoverOnDisabled")) {
 		(*ctdb)->tunable.no_ip_takeover_on_disabled = (uint32_t) strtoul(getenv("CTDB_SET_NoIPTakeoverOnDisabled"), NULL, 0);
 	}
-		
+              
+	tval_noiptakeover = get_tunable_values(*ctdb, numnodes,
+					       "CTDB_SET_NoIPTakeover");
+
 	*nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	(*nodemap)->num = numnodes;
 
@@ -390,6 +426,8 @@ void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i]->available_public_ips = avail[i];
 		(*ctdb)->nodes[i]->known_public_ips = avail[i];
 	}
+
+	set_ipflags_internal(*nodemap, tval_noiptakeover);
 }
 
 /* IP layout is read from stdin. */
