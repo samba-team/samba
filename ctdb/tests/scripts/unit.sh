@@ -75,7 +75,7 @@ EOF
 	    echo "$required_output" >"$_outr"
 
 	    _outf=$(mktemp)
-	    echo "$_out" >"$_outf"
+	    echo "$_fout" >"$_outf"
 
 	    cat <<EOF
 --------------------------------------------------
