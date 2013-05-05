@@ -232,7 +232,8 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
-        self.assertCmdSuccess(result)
+        msg = "command should return %s" % err
+        self.assertCmdSuccess(result, msg)
         self.assertEquals(err,"","Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
@@ -261,7 +262,8 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
-        self.assertCmdSuccess(result)
+        msg = "command should return %s" % err
+        self.assertCmdSuccess(result, msg)
         self.assertEquals(err,"","Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
