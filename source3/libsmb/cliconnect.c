@@ -2687,13 +2687,13 @@ static struct tevent_req *cli_tree_connect_send(
 
 static void cli_tree_connect_smb2_done(struct tevent_req *subreq)
 {
-	return tevent_req_simple_finish_ntstatus(
+	tevent_req_simple_finish_ntstatus(
 		subreq, smb2cli_tcon_recv(subreq));
 }
 
 static void cli_tree_connect_andx_done(struct tevent_req *subreq)
 {
-	return tevent_req_simple_finish_ntstatus(
+	tevent_req_simple_finish_ntstatus(
 		subreq, cli_tcon_andx_recv(subreq));
 }
 
