@@ -503,3 +503,6 @@ def CHECK_XSLTPROC_MANPAGES(conf):
                              msg='Checking for stylesheet %s' % s,
                              define='XSLTPROC_MANPAGES', on_target=False,
                              boolean=True)
+    if not conf.CONFIG_SET('XSLTPROC_MANPAGES'):
+        print "A local copy of the docbook.xsl wasn't found on your system" \
+              " consider installing package like docbook-xsl"
