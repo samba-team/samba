@@ -47,7 +47,7 @@ def set_options(opt):
 
     opt.SAMBA3_ADD_OPTION('cluster-support', default=None)
 
-    opt.SAMBA3_ADD_OPTION('regedit', default=True)
+    opt.SAMBA3_ADD_OPTION('regedit', default=None)
 
     opt.add_option('--with-ctdb-dir',
                    help=("Directory under which ctdb is installed"),
