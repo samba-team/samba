@@ -584,17 +584,17 @@ ctdb_check_command ()
 ################################################
 # kill off any TCP connections with the given IP
 ################################################
-kill_tcp_connections() {
-    _IP="$1"    
+kill_tcp_connections ()
+{
+    _ip="$1"
 
     _oneway=false
     if [ "$2" = "oneway" ] ; then
 	_oneway=true
     fi
 
-    _killcount=0
-
-    get_tcp_connections_for_ip "$_IP" | {
+    get_tcp_connections_for_ip "$_ip" | {
+	_killcount=0
 	_failed=false
 
 	while read dest src; do
@@ -610,27 +610,27 @@ kill_tcp_connections() {
 		ctdb killtcp $dest $src >/dev/null 2>&1 || _failed=true
 	    fi
 
-	    _killcount=`expr $_killcount + 1`
+	    _killcount=$(($_killcount + 1))
 	done
 
 	if $_failed ; then
 	    echo "Failed to send killtcp control"
 	    return
 	fi
-	[ $_killcount -gt 0 ] || {
-	    return;
-	}
+	if [ $_killcount -eq 0 ] ; then
+	    return
+	fi
 
 	_count=0
 	while : ; do
-	    if [ -z "$(get_tcp_connections_for_ip $_IP)" ] ; then
-		echo "killed $_killcount TCP connections to released IP $_IP"
+	    if [ -z "$(get_tcp_connections_for_ip $_ip)" ] ; then
+		echo "Killed $_killcount TCP connections to released IP $_ip"
 		return
 	    fi
 
 	    _count=$(($_count + 1))
 	    if [ $_count -gt 3 ] ; then
-		echo "Timed out killing tcp connections for IP $_IP"
+		echo "Timed out killing tcp connections for IP $_ip"
 		return
 	    fi
 
@@ -642,7 +642,7 @@ kill_tcp_connections() {
 ##################################################################
 # kill off the local end for any TCP connections with the given IP
 ##################################################################
-kill_tcp_connections_local_only()
+kill_tcp_connections_local_only ()
 {
     kill_tcp_connections "$1" "oneway"
 }
@@ -650,10 +650,11 @@ kill_tcp_connections_local_only()
 ##################################################################
 # tickle any TCP connections with the given IP
 ##################################################################
-tickle_tcp_connections() {
-    _IP="$1"
+tickle_tcp_connections ()
+{
+    _ip="$1"
 
-    get_tcp_connections_for_ip "$_IP" |
+    get_tcp_connections_for_ip "$_ip" |
     {
 	_failed=false
 
