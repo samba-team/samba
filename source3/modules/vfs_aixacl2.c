@@ -93,7 +93,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 	return acl;
 }
 
-static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name
+static bool aixjfs2_get_nfs4_acl(TALLOC_CTX *mem_ctx, const char *name,
 	SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
@@ -196,7 +196,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	bool	retryPosix = False;
 
 	*ppdesc = NULL;
-	result = aixjfs2_get_nfs4_acl(name, &pacl, &retryPosix);
+	result = aixjfs2_get_nfs4_acl(mem_ctx, name, &pacl, &retryPosix);
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
@@ -217,8 +217,7 @@ static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *
 	bool	result;
 	bool	retryPosix = False;
 
-	*ppdesc = NULL;
-	result = aixjfs2_get_nfs4_acl(path_p, &pacl, &retryPosix);
+	result = aixjfs2_get_nfs4_acl(mem_ctx, path_p, &pacl, &retryPosix);
 	if (retryPosix)
 	{
 		return posix_sys_acl_blob_get_file(handle, path_p, mem_ctx,
@@ -235,7 +234,7 @@ static int aixjfs2_sys_acl_blob_get_fd(vfs_handle_struct *handle, files_struct *
 	bool	result;
 	bool	retryPosix = False;
 
-	result = aixjfs2_get_nfs4_acl(fsp->fsp_name->base_name, &pacl,
+	result = aixjfs2_get_nfs4_acl(mem_ctx, fsp->fsp_name->base_name, &pacl,
 				      &retryPosix);
 	if (retryPosix)
 	{
@@ -304,12 +303,13 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
-                                  files_struct *fsp)
+				 files_struct *fsp, TALLOC_CTX *mem_ctx)
 {
         acl_type_t aixjfs2_type;
         aixjfs2_type.u64 = ACL_AIXC;
 
-	return aixjfs2_get_posix_acl(fsp->fsp_name->base_name, aixjfs2_type);
+	return aixjfs2_get_posix_acl(fsp->fsp_name->base_name,
+				     aixjfs2_type, mem_ctx);
 }
 
 /*
@@ -427,8 +427,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struc
 	int	rc;
 
 	rc = aixjfs2_query_acl_support(
-		handle,
-		fsp->fsp_name,
+		fsp->fsp_name->base_name,
 		ACL_NFS4,
 		&acl_type_info);
 
