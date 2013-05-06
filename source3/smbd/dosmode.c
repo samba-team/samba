@@ -354,10 +354,6 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 
-	if (!lp_store_dos_attributes(SNUM(conn))) {
-		return False;
-	}
-
 	ZERO_STRUCT(dosattrib);
 	ZERO_STRUCT(blob);
 
@@ -773,7 +769,14 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	}
 #endif
 	/* Store the DOS attributes in an EA by preference. */
-	if (set_ea_dos_attribute(conn, smb_fname, dosmode)) {
+	if (lp_store_dos_attributes(SNUM(conn))) {
+		/*
+		 * Don't fall back to using UNIX modes. Finally
+		 * follow the smb.conf manpage.
+		 */
+		if (!set_ea_dos_attribute(conn, smb_fname, dosmode)) {
+			return -1;
+		}
 		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				     FILE_NOTIFY_CHANGE_ATTRIBUTES,
