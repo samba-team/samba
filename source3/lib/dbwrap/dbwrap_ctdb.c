@@ -944,6 +944,9 @@ static int db_ctdb_record_destr(struct db_record* data)
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		data->private_data, struct db_ctdb_rec);
 	int threshold;
+	int ret;
+	struct timeval before;
+	double timediff;
 
 	DEBUG(10, (DEBUGLEVEL > 10
 		   ? "Unlocking db %u key %s\n"
@@ -952,11 +955,32 @@ static int db_ctdb_record_destr(struct db_record* data)
 		   hex_encode_talloc(data, (unsigned char *)data->key.dptr,
 			      data->key.dsize)));
 
-	tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key);
+	before = timeval_current();
+
+	ret = tdb_chainunlock(crec->ctdb_ctx->wtdb->tdb, data->key);
+
+	timediff = timeval_elapsed(&before);
+	timediff *= 1000;	/* get us milliseconds */
+
+	if (timediff > lp_parm_int(-1, "ctdb", "unlock_warn_threshold", 5)) {
+		char *key;
+		key = hex_encode_talloc(talloc_tos(),
+					(unsigned char *)data->key.dptr,
+					data->key.dsize);
+		DEBUG(0, ("tdb_chainunlock on db %s, key %s took %f milliseconds\n",
+			  tdb_name(crec->ctdb_ctx->wtdb->tdb), key,
+			  timediff));
+		TALLOC_FREE(key);
+	}
+
+	if (ret != 0) {
+		DEBUG(0, ("tdb_chainunlock failed\n"));
+		return -1;
+	}
 
 	threshold = lp_ctdb_locktime_warn_threshold();
 	if (threshold != 0) {
-		double timediff = timeval_elapsed(&crec->lock_time);
+		timediff = timeval_elapsed(&crec->lock_time);
 		if ((timediff * 1000) > threshold) {
 			const char *key;
 
