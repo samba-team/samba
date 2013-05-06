@@ -396,6 +396,20 @@ static void add_child_pid(struct smbd_parent_context *parent,
 	parent->num_children += 1;
 }
 
+static void smb_tell_num_children(struct messaging_context *ctx, void *data,
+				  uint32_t msg_type, struct server_id srv_id,
+				  DATA_BLOB *msg_data)
+{
+	uint8_t buf[sizeof(uint32_t)];
+
+	if (am_parent) {
+		SIVAL(buf, 0, am_parent->num_children);
+		messaging_send_buf(ctx, srv_id, MSG_SMB_NUM_CHILDREN,
+				   buf, sizeof(buf));
+	}
+}
+
+
 /*
   at most every smbd:cleanuptime seconds (default 20), we scan the BRL
   and locking database for entries to cleanup. As a side effect this
@@ -890,6 +904,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			   smb_parent_force_tdis);
 	messaging_register(msg_ctx, NULL, MSG_SMB_KILL_CLIENT_IP,
 			   smb_parent_kill_client_by_ip);
+	messaging_register(msg_ctx, NULL, MSG_SMB_TELL_NUM_CHILDREN,
+			   smb_tell_num_children);
 
 	messaging_register(msg_ctx, NULL,
 			   ID_CACHE_DELETE, smbd_parent_id_cache_delete);

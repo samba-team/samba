@@ -3562,6 +3562,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 			   MSG_SMB_KILL_CLIENT_IP,
 			   msg_kill_client_ip);
 
+	messaging_deregister(sconn->msg_ctx, MSG_SMB_TELL_NUM_CHILDREN, NULL);
+
 	/*
 	 * Use the default MSG_DEBUG handler to avoid rebroadcasting
 	 * MSGs to all child processes
