@@ -127,8 +127,9 @@ static int check_unrelated_objectclasses(struct ldb_module *module,
 		}
 
 		ldb_asprintf_errstring(ldb,
-				       "objectclass: the objectclass '%s' seems to be unrelated to the entry!",
-				       tmp_class->lDAPDisplayName);
+				       "objectclass: the objectclass '%s' seems to be unrelated to %s!",
+				       tmp_class->lDAPDisplayName,
+				       struct_objectclass->lDAPDisplayName);
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
