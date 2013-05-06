@@ -1713,8 +1713,23 @@ main() {
     if conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and conf.CHECK_LIB('cephfs'):
         conf.DEFINE('HAVE_CEPH', '1')
 
-    if Options.options.with_regedit:
+    conf.env.build_regedit = False
+    if not Options.options.with_regedit == False:
         conf.PROCESS_SEPARATE_RULE('system_ncurses')
+        if conf.CONFIG_SET('HAVE_NCURSES'):
+            conf.env.build_regedit = True
+
+    if conf.env.build_regedit:
+        Logs.info("building regedit")
+    else:
+        if Options.options.with_regedit == False:
+            Logs.info("not building regedit (--without-regedit)")
+        elif Options.options.with_regedit == True:
+            Logs.error("ncurses not available, cannot build regedit")
+            conf.fatal("ncurses not available, but --with-regedit was specified")
+        else:
+            Logs.info("ncurses not available, not building regedit")
+
 
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc

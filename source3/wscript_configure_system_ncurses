@@ -9,7 +9,6 @@ if not conf.env.NCURSES_CONFIG:
 if conf.env.NCURSES_CONFIG:
     conf.check_cfg(path=conf.env.NCURSES_CONFIG, args="--cflags --libs",
                package="", uselib_store="NCURSES")
-    conf.env.build_regedit = True
 
 conf.CHECK_HEADERS('ncurses.h menu.h panel.h form.h', lib='ncurses')
 
@@ -17,3 +16,11 @@ conf.CHECK_FUNCS_IN('initscr', 'ncurses')
 conf.CHECK_FUNCS_IN('set_menu_items item_count', 'menu')
 conf.CHECK_FUNCS_IN('new_panel show_panel', 'panel')
 conf.CHECK_FUNCS_IN('new_field new_form', 'form')
+
+if conf.CONFIG_SET('HAVE_NCURSES_H') and \
+   conf.CONFIG_SET('HAVE_MENU_H') and \
+   conf.CONFIG_SET('HAVE_PANEL_H') and \
+   conf.CONFIG_SET('HAVE_FORM_H'):
+    conf.DEFINE('HAVE_NCURSES', '1')
+else:
+    conf.undefine('HAVE_NCURSES')
