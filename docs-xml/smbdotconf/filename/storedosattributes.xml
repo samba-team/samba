@@ -8,9 +8,9 @@
 	READ-ONLY) from a filesystem extended attribute, before mapping DOS attributes to UNIX permission bits (such
 	as occurs with <smbconfoption name="map hidden"/> and <smbconfoption name="map readonly"/>).  When set, DOS
 	attributes will be stored onto an extended attribute in the UNIX filesystem, associated with the file or
-	directory.  For no other mapping to occur as a fall-back, the parameters <smbconfoption name="map hidden"/>,
+	directory.  When this parameter is set it will override the parameters <smbconfoption name="map hidden"/>,
 	<smbconfoption name="map system"/>, <smbconfoption name="map archive"/> and <smbconfoption name="map
-	readonly"/> must be set to off.  This parameter writes the DOS attributes as a string into the extended
+	readonly"/> and they will behave as if they were set to off. This parameter writes the DOS attributes as a string into the extended
 	attribute named "user.DOSATTRIB". This extended attribute is explicitly hidden from smbd clients requesting an
 	EA list. On Linux the filesystem must have been mounted with the mount option user_xattr in order for
 	extended attributes to work, also extended attributes must be compiled into the Linux kernel.

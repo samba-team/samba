@@ -13,6 +13,12 @@
 	</para>
 
 	<para>
+	Note that this parameter will be ignored if the <smbconfoption name="store dos attributes"/>
+	parameter is set, as the DOS archive attribute will then be stored inside a UNIX extended
+	attribute.
+	</para>
+
+	<para>
 	Note that this requires the <smbconfoption name="create mask"/>	parameter to be set such that owner 
 	execute bit is not masked out (i.e. it must include 100). See the parameter 
 	<smbconfoption name="create mask"/> for details.

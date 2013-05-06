@@ -42,6 +42,12 @@
 		</para></listitem>
     </itemizedlist>
 
+        <para>
+        Note that this parameter will be ignored if the <smbconfoption name="store dos attributes"/>
+        parameter is set, as the DOS 'read-only' attribute will then be stored inside a UNIX extended
+        attribute.
+        </para>
+
 </description>
 <value type="default">yes</value>
 </samba:parameter>

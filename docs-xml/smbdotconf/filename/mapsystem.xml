@@ -7,6 +7,12 @@
 	This controls whether DOS style system files should be mapped to the UNIX group execute bit.
 	</para>
 
+        <para>
+        Note that this parameter will be ignored if the <smbconfoption name="store dos attributes"/>
+        parameter is set, as the DOS system attribute will then be stored inside a UNIX extended
+        attribute.
+        </para>
+
 	<para>
 	Note that this requires the <smbconfoption name="create mask"/>	to be set such that the group 
 	execute bit is not masked out (i.e. it must include 010). See the parameter 
