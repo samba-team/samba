@@ -2,14 +2,9 @@ import Logs, Options, sys
 
 Logs.info("Looking for ncurses features")
 
-if isinstance(Options.options.with_regedit, list):
-    path_ncurses_config = [x+'/bin' for x in Options.options.with_regedit]
-else:
-    path_ncurses_config = None
-
-conf.find_program('ncurses5-config', path_list=path_ncurses_config, var='NCURSES_CONFIG')
+conf.find_program('ncurses5-config', var='NCURSES_CONFIG')
 if not conf.env.NCURSES_CONFIG:
-    conf.find_program('ncurses6-config', path_list=path_ncurses_config, var='NCURSES_CONFIG')
+    conf.find_program('ncurses6-config', var='NCURSES_CONFIG')
 
 if conf.env.NCURSES_CONFIG:
     conf.check_cfg(path=conf.env.NCURSES_CONFIG, args="--cflags --libs",
