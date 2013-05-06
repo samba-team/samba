@@ -2338,6 +2338,98 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 	return tvals;
 }
 
+struct get_runstate_callback_data {
+	enum ctdb_runstate *out;
+	bool fatal;
+};
+
+static void get_runstate_callback(struct ctdb_context *ctdb, uint32_t pnn,
+				  int32_t res, TDB_DATA outdata,
+				  void *callback_data)
+{
+	struct get_runstate_callback_data *cd =
+		(struct get_runstate_callback_data *)callback_data;
+	int size;
+
+	if (res != 0) {
+		/* Already handled in fail callback */
+		return;
+	}
+
+	if (outdata.dsize != sizeof(uint32_t)) {
+		DEBUG(DEBUG_ERR,("Wrong size of returned data when getting runstate from node %d. Expected %d bytes but received %d bytes\n",
+				 pnn, (int)sizeof(uint32_t),
+				 (int)outdata.dsize));
+		cd->fatal = true;
+		return;
+	}
+
+	size = talloc_array_length(cd->out);
+	if (pnn >= size) {
+		DEBUG(DEBUG_ERR,("Got reply from node %d but nodemap only has %d entries\n",
+				 pnn, size));
+		return;
+	}
+
+	cd->out[pnn] = (enum ctdb_runstate)*(uint32_t *)outdata.dptr;
+}
+
+static void get_runstate_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
+				       int32_t res, TDB_DATA outdata,
+				       void *callback)
+{
+	struct get_runstate_callback_data *cd =
+		(struct get_runstate_callback_data *)callback;
+
+	switch (res) {
+	case -ETIME:
+		DEBUG(DEBUG_ERR,
+		      ("Timed out getting runstate from node %d\n", pnn));
+		cd->fatal = true;
+		break;
+	default:
+		DEBUG(DEBUG_WARNING,
+		      ("Error getting runstate from node %d - assuming runstates not supported\n",
+		       pnn));
+	}
+}
+
+static enum ctdb_runstate * get_runstate_from_nodes(struct ctdb_context *ctdb,
+						    TALLOC_CTX *tmp_ctx,
+						    struct ctdb_node_map *nodemap,
+						    enum ctdb_runstate default_value)
+{
+	uint32_t *nodes;
+	enum ctdb_runstate *rs;
+	struct get_runstate_callback_data callback_data;
+	int i;
+
+	rs = talloc_array(tmp_ctx, enum ctdb_runstate, nodemap->num);
+	CTDB_NO_MEMORY_NULL(ctdb, rs);
+	for (i=0; i<nodemap->num; i++) {
+		rs[i] = default_value;
+	}
+
+	callback_data.out = rs;
+	callback_data.fatal = false;
+
+	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_RUNSTATE,
+				      nodes, 0, TAKEOVER_TIMEOUT(),
+				      true, tdb_null,
+				      get_runstate_callback,
+				      get_runstate_fail_callback,
+				      &callback_data) != 0) {
+		if (callback_data.fatal) {
+			free(rs);
+			rs = NULL;
+		}
+	}
+	talloc_free(nodes);
+
+	return rs;
+}
+
 /* Set internal flags for IP allocation:
  *   Clear ip flags
  *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
@@ -2352,7 +2444,8 @@ set_ipflags_internal(struct ctdb_context *ctdb,
 		     TALLOC_CTX *tmp_ctx,
 		     struct ctdb_node_map *nodemap,
 		     uint32_t *tval_noiptakeover,
-		     uint32_t *tval_noiphostonalldisabled)
+		     uint32_t *tval_noiphostonalldisabled,
+		     enum ctdb_runstate *runstate)
 {
 	int i;
 	struct ctdb_ipflags *ipflags;
@@ -2367,6 +2460,11 @@ set_ipflags_internal(struct ctdb_context *ctdb,
 			ipflags[i].noiptakeover = true;
 		}
 
+		/* Can not host IPs on node not in RUNNING state */
+		if (runstate[i] != CTDB_RUNSTATE_RUNNING) {
+			ipflags[i].noiphost = true;
+			continue;
+		}
 		/* Can not host IPs on INACTIVE node */
 		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
 			ipflags[i].noiphost = true;
@@ -2403,6 +2501,8 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiphostonalldisabled;
 	struct ctdb_ipflags *ipflags;
+	enum ctdb_runstate *runstate;
+
 
 	tval_noiptakeover = get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
 						   "NoIPTakeover", 0);
@@ -2418,12 +2518,25 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
+	/* Any nodes where CTDB_CONTROL_GET_RUNSTATE is not supported
+	 * will default to CTDB_RUNSTATE_RUNNING.  This ensures
+	 * reasonable behaviour on a mixed cluster during upgrade.
+	 */
+	runstate = get_runstate_from_nodes(ctdb, tmp_ctx, nodemap,
+					   CTDB_RUNSTATE_RUNNING);
+	if (runstate == NULL) {
+		/* Caller frees tmp_ctx */
+		return NULL;
+	}
+
 	ipflags = set_ipflags_internal(ctdb, tmp_ctx, nodemap,
 				       tval_noiptakeover,
-				       tval_noiphostonalldisabled);
+				       tval_noiphostonalldisabled,
+				       runstate);
 
 	talloc_free(tval_noiptakeover);
 	talloc_free(tval_noiphostonalldisabled);
+	talloc_free(runstate);
 
 	return ipflags;
 }

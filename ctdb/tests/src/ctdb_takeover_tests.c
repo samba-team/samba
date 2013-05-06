@@ -353,6 +353,30 @@ static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
 	return tvals;
 }
 
+static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
+					int numnodes)
+{
+	int i;
+	uint32_t *tvals;
+	enum ctdb_runstate *runstate =
+		talloc_zero_array(tmp_ctx, enum ctdb_runstate, numnodes);
+	char *t = getenv("CTDB_TEST_RUNSTATE");
+
+	if (t == NULL) {
+		for (i=0; i<numnodes; i++) {
+			runstate[i] = CTDB_RUNSTATE_RUNNING;
+		}
+	} else {
+		tvals = get_tunable_values(tmp_ctx, numnodes, "CTDB_TEST_RUNSTATE");
+		for (i=0; i<numnodes; i++) {
+			runstate[i] = (enum ctdb_runstate) tvals[i];
+		}
+		talloc_free(tvals);
+	}
+
+	return runstate;
+}
+
 void ctdb_test_init(const char nodestates[],
 		    struct ctdb_context **ctdb,
 		    struct ctdb_public_ip_list **all_ips,
@@ -365,6 +389,7 @@ void ctdb_test_init(const char nodestates[],
 	struct ctdb_node_map *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
+	enum ctdb_runstate *runstate;
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
 
@@ -408,6 +433,8 @@ void ctdb_test_init(const char nodestates[],
 		get_tunable_values(*ctdb, numnodes,
 				   "CTDB_SET_NoIPHostOnAllDisabled");
 
+	runstate = get_runstate(*ctdb, numnodes);
+
 	nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
 	nodemap->num = numnodes;
 
@@ -429,7 +456,8 @@ void ctdb_test_init(const char nodestates[],
 
 	*ipflags = set_ipflags_internal(*ctdb, *ctdb, nodemap,
 					tval_noiptakeover,
-					tval_noiptakeoverondisabled);
+					tval_noiptakeoverondisabled,
+					runstate);
 }
 
 /* IP layout is read from stdin. */
