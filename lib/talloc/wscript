@@ -27,10 +27,10 @@ def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
     opt.PRIVATE_EXTENSION_DEFAULT('talloc', noextension='talloc')
     opt.RECURSE('lib/replace')
-    opt.add_option('--enable-talloc-compat1',
-                   help=("Build talloc 1.x.x compat library [False]"),
-                   action="store_true", dest='TALLOC_COMPAT1', default=False)
     if opt.IN_LAUNCH_DIR():
+        opt.add_option('--enable-talloc-compat1',
+                       help=("Build talloc 1.x.x compat library [False]"),
+                       action="store_true", dest='TALLOC_COMPAT1', default=False)
         opt.add_option('--disable-python',
                        help=("disable the pytalloc module"),
                        action="store_true", dest='disable_python', default=False)
@@ -51,7 +51,9 @@ def configure(conf):
                                      implied_deps='talloc replace'):
             conf.define('USING_SYSTEM_PYTALLOC_UTIL', 1)
 
-    conf.env.TALLOC_COMPAT1 = Options.options.TALLOC_COMPAT1
+    conf.env.TALLOC_COMPAT1 = False
+    if conf.env.standalone_talloc:
+        conf.env.TALLOC_COMPAT1 = Options.options.TALLOC_COMPAT1
 
     conf.CHECK_XSLTPROC_MANPAGES()
 
