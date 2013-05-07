@@ -944,7 +944,7 @@ static void wcache_save_name_to_sid(struct winbindd_domain *domain,
 	if (!centry)
 		return;
 
-	if (domain_name[0] == '\0') {
+	if ((domain_name == NULL) || (domain_name[0] == '\0')) {
 		struct winbindd_domain *mydomain =
 			find_domain_from_sid_noinit(sid);
 		if (mydomain != NULL) {
@@ -972,7 +972,7 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	if (!centry)
 		return;
 
-	if (domain_name[0] == '\0') {
+	if ((domain_name == NULL) || (domain_name[0] == '\0')) {
 		struct winbindd_domain *mydomain =
 			find_domain_from_sid_noinit(sid);
 		if (mydomain != NULL) {
@@ -1806,7 +1806,7 @@ NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (domain_name[0] == '\0') {
+	if ((domain_name == NULL) || (domain_name[0] == '\0')) {
 		domain_name = domain->name;
 	}
 
