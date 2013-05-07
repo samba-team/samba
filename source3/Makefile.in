@@ -333,7 +333,7 @@ LIBNDR_SPOOLSS_OBJ = autoconf/librpc/gen_ndr/ndr_spoolss.o \
 		  ../librpc/ndr/ndr_spoolss_buf.o
 
 LIBNDR_NTPRINTING_OBJ = autoconf/librpc/gen_ndr/ndr_ntprinting.o \
-			../librpc/ndr/ndr_ntprinting.o \
+			../librpc/ndr/ndr_ntprinting.o
 
 LIBNDR_PREG_OBJ = autoconf/librpc/gen_ndr/ndr_preg.o \
 		  ../librpc/ndr/ndr_preg.o
