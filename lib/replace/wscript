@@ -53,7 +53,7 @@ struct foo bar = { .y = 'X', .x = 1 };
                 conf.ADD_CFLAGS(f)
             break
 
-    if conf.CHECK_CFLAGS(['-fstack-protector']):
+    if conf.CHECK_CFLAGS(['-fstack-protector']) and conf.CHECK_LDFLAGS(['-fstack-protector']):
         conf.ADD_CFLAGS('-fstack-protector')
         conf.ADD_LDFLAGS('-fstack-protector')
 
