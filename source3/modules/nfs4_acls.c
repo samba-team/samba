@@ -335,7 +335,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	{
 		DEBUG(10, ("talloc error"));
 		errno = ENOMEM;
-		return False;
+		return false;
 	}
 
 	for (aceint=aclint->first;
@@ -469,7 +469,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	*ppnt_ace_list = nt_ace_list;
 	*pgood_aces = good_aces;
 
-	return True;
+	return true;
 }
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
@@ -498,7 +498,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 
 	if (smbacl4_nfs42win(mem_ctx, params, theacl, &sid_owner, &sid_group,
 			     S_ISDIR(sbuf->st_ex_mode),
-				&nt_ace_list, &good_aces)==False) {
+				&nt_ace_list, &good_aces)==false) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
@@ -704,7 +704,7 @@ static bool smbacl4_fill_ace4(
 		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
 		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
 		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
-			return False;
+			return false;
 		}
 	} else if (params->mode!=e_special &&
 		   dom_sid_equal(&ace_nt->trustee,
@@ -716,7 +716,7 @@ static bool smbacl4_fill_ace4(
 		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
 		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
 		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
-			return False;
+			return false;
 		}
 	} else {
 		uid_t uid;
@@ -743,11 +743,11 @@ static bool smbacl4_fill_ace4(
 				  "convert %s to uid or gid\n",
 				  filename->base_name,
 				  sid_string_dbg(&ace_nt->trustee)));
-			return False;
+			return false;
 		}
 	}
 
-	return True; /* OK */
+	return true; /* OK */
 }
 
 static int smbacl4_MergeIgnoreReject(
@@ -765,12 +765,12 @@ static int smbacl4_MergeIgnoreReject(
 		switch(acedup)
 		{
 		case e_merge: /* "merge" flags */
-			*paddNewACE = False;
+			*paddNewACE = false;
 			ace4found->aceFlags |= ace->aceFlags;
 			ace4found->aceMask |= ace->aceMask;
 			break;
 		case e_ignore: /* leave out this record */
-			*paddNewACE = False;
+			*paddNewACE = false;
 			break;
 		case e_reject: /* do an error */
 			DEBUG(8, ("ACL rejected by duplicate nt ace#%d\n", i));
@@ -817,7 +817,7 @@ static int smbacl4_substitute_special(
 			DEBUG(10,("replaced with special group ace\n"));
 		}
 	}
-	return True; /* OK */
+	return true; /* OK */
 }
 
 static int smbacl4_substitute_simple(
@@ -859,7 +859,7 @@ static int smbacl4_substitute_simple(
 			DEBUG(10,("replaced with special group ace\n"));
 		}
 	}
-	return True; /* OK */
+	return true; /* OK */
 }
 
 static SMB4ACL_T *smbacl4_win2nfs4(
@@ -883,7 +883,7 @@ static SMB4ACL_T *smbacl4_win2nfs4(
 
 	for(i=0; i<dacl->num_aces; i++) {
 		SMB_ACE4PROP_T	ace_v4;
-		bool	addNewACE = True;
+		bool	addNewACE = true;
 
 		if (!smbacl4_fill_ace4(fsp->fsp_name, pparams,
 				       ownerUID, ownerGID,
@@ -1021,7 +1021,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 
 	TALLOC_FREE(frame);
 
-	if (result!=True) {
+	if (result!=true) {
 		errno = saved_errno;
 		DEBUG(10, ("set_nfs4_native failed with %s\n",
 			   strerror(errno)));
