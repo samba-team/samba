@@ -1226,16 +1226,6 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 	bool not_root = False;
 	WERROR werr;
 
-	username = r->in.user;
-	machine = r->in.client;
-
-	/* strip leading backslashes if any */
-	if (machine && machine[0] == '\\' && machine[1] == '\\') {
-		machine += 2;
-	}
-
-	num_sessions = list_sessions(p->mem_ctx, &session_list);
-
 	DEBUG(5,("_srvsvc_NetSessDel: %d\n", __LINE__));
 
 	werr = WERR_ACCESS_DENIED;
@@ -1248,6 +1238,16 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 		goto done;
 	}
+
+	username = r->in.user;
+	machine = r->in.client;
+
+	/* strip leading backslashes if any */
+	if (machine && machine[0] == '\\' && machine[1] == '\\') {
+		machine += 2;
+	}
+
+	num_sessions = list_sessions(p->mem_ctx, &session_list);
 
 	for (snum = 0; snum < num_sessions; snum++) {
 
