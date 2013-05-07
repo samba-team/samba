@@ -472,6 +472,7 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	}
 
 	/* GPFS ACL was not read, something wrong happened, error code is set in errno */
+	TALLOC_FREE(frame);
 	return map_nt_error_from_unix(errno);
 }
 
@@ -1122,9 +1123,10 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
 
 	result = gpfs_get_nfs4_acl(frame, path, &pacl);
-	if (result)
+	if (result) {
 		TALLOC_FREE(frame);
 		return result;
+	}
 
 	if (mode & ~(S_IRWXU | S_IRWXG | S_IRWXO)) {
 		DEBUG(2, ("WARNING: cutting extra mode bits %o on %s\n", mode, path));
