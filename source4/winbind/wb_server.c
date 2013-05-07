@@ -56,7 +56,7 @@ static void wbsrv_call_loop(struct tevent_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *reason;
 
-		reason = talloc_asprintf(call, "wbsrv_call_loop: "
+		reason = talloc_asprintf(wbsrv_conn, "wbsrv_call_loop: "
 					 "tstream_read_pdu_blob_recv() - %s",
 					 nt_errstr(status));
 		if (!reason) {
