@@ -425,7 +425,7 @@ utimensat vsyslog _write __write __xstat
 	elif (host_os.rfind('aix') > -1):
 		Logs.info('Using AIX ACLs')
                 conf.DEFINE('HAVE_AIX_ACLS',1)
-                default_static_modules.extend(TO_LIST('vfs_aixacl'))
+                default_static_modules.extend(TO_LIST('vfs_aixacl vfs_aixacl2'))
 	elif (host_os.rfind('osf') > -1) and conf.CHECK_FUNCS_IN('pacl', 'acl_get_fd'):
 		Logs.info('Using Tru64 ACLs')
                 conf.DEFINE('HAVE_TRU64_ACLS',1)
