@@ -67,6 +67,12 @@ static void log_ringbuffer_v(const char *format, va_list ap)
 	if (ret == -1) {
 		return;
 	}
+	/* Log messages longer than MAX_LOG_SIZE are truncated to MAX_LOG_SIZE-1
+	 * bytes.  In that case, add a newline.
+	 */
+	if (ret >= MAX_LOG_SIZE) {
+		log_entries[next_entry].message[MAX_LOG_SIZE-2] = '\n';
+	}
 
 	log_entries[next_entry].level = this_log_level;
 	log_entries[next_entry].t = timeval_current();
