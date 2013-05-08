@@ -927,7 +927,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	uint32_t flags = 0;
 	uint64_t message_id = 0;
 	uint64_t async_id = 0;
-	struct iovec *outvec = NULL;
 
 	if (!tevent_req_is_in_progress(subreq)) {
 		return NT_STATUS_OK;
@@ -944,16 +943,27 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	if (req->in.vector_count > i + 3) {
 		/*
 		 * We're trying to go async in a compound
-		 * request chain. This is not allowed.
-		 * Cancel the outstanding request.
+		 * request chain.
+		 * This is only allowed for opens that
+		 * cause an oplock break, otherwise it
+		 * is not allowed. See [MS-SMB2].pdf
+		 * note <194> on Section 3.3.5.2.7.
 		 */
-		bool ok = tevent_req_cancel(req->subreq);
-		if (ok) {
-			return NT_STATUS_OK;
-		}
-		TALLOC_FREE(req->subreq);
-		return smbd_smb2_request_error(req,
-			NT_STATUS_INTERNAL_ERROR);
+		const uint8_t *inhdr =
+			(const uint8_t *)req->in.vector[i].iov_base;
+
+		if (SVAL(inhdr, SMB2_HDR_OPCODE) != SMB2_OP_CREATE) {
+			/*
+			 * Cancel the outstanding request.
+			 */
+			bool ok = tevent_req_cancel(req->subreq);
+			if (ok) {
+				return NT_STATUS_OK;
+			}
+			TALLOC_FREE(req->subreq);
+			return smbd_smb2_request_error(req,
+				NT_STATUS_INTERNAL_ERROR);
+                }
 	}
 
 	if (DEBUGLEVEL >= 10) {
@@ -962,35 +972,55 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		print_req_vectors(req);
 	}
 
-	if (req->out.vector_count > 4) {
-		/* This is a compound reply. We
-		 * must do an interim response
-		 * followed by the async response
-		 * to match W2K8R2.
+	if (i > 1) {
+		/*
+		 * We're going async in a compound
+		 * chain after the first request has
+		 * already been processed. Send an
+		 * interim response containing the
+		 * set of replies already generated.
 		 */
 		status = smb2_send_async_interim_response(req);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
+		req->current_idx = 1;
+
 		/*
-		 * We're splitting off the last SMB2
-		 * request in a compound set, and the
-		 * smb2_send_async_interim_response()
-		 * call above just sent all the replies
-		 * for the previous SMB2 requests in
-		 * this compound set. So we're no longer
-		 * in the "compound_related_in_progress"
-		 * state, and this is no longer a compound
-		 * request.
+		 * Re-arrange the in.vectors to remove what
+		 * we just sent.
 		 */
-		req->compound_related = false;
-		req->sconn->smb2.compound_related_in_progress = false;
+		memmove(&req->in.vector[1],
+			&req->in.vector[i],
+			sizeof(req->in.vector[0])*(req->in.vector_count - i));
+		req->in.vector_count = 1 + (req->in.vector_count - i);
+
+		smb2_setup_nbt_length(req->in.vector, req->in.vector_count);
+
+		/* Re-arrange the out.vectors to match. */
+		memmove(&req->out.vector[1],
+			&req->out.vector[i],
+			sizeof(req->out.vector[0])*(req->out.vector_count - i));
+		req->out.vector_count = 1 + (req->out.vector_count - i);
+
+		if (req->in.vector_count == 4) {
+			uint8_t *outhdr = (uint8_t *)req->out.vector[i].iov_base;
+			/*
+			 * We only have one remaining request as
+			 * we've processed everything else.
+			 * This is no longer a compound request.
+			 */
+			req->compound_related = false;
+			req->sconn->smb2.compound_related_in_progress = false;
+			flags = (IVAL(outhdr, SMB2_HDR_FLAGS) & ~SMB2_HDR_FLAG_CHAINED);
+			SIVAL(outhdr, SMB2_HDR_FLAGS, flags);
+		}
 	}
 
 	/* Don't return an intermediate packet on a pipe read/write. */
 	if (req->tcon && req->tcon->compat_conn && IS_IPC(req->tcon->compat_conn)) {
-		goto ipc_out;
+		goto out;
 	}
 
 	reqhdr = (uint8_t *)req->out.vector[i].iov_base;
@@ -1080,50 +1110,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 
 	/* Note we're going async with this request. */
 	req->async = true;
-
-  ipc_out:
-
-	/*
-	 * Now manipulate req so that the outstanding async request
-	 * is the only one left in the struct smbd_smb2_request.
-	 */
-
-	if (req->current_idx == 1) {
-		/* There was only one. */
-		goto out;
-	}
-
-	/* Re-arrange the in.vectors. */
-	req->in.vector[1] = req->in.vector[i];
-	req->in.vector[2] = req->in.vector[i+1];
-	req->in.vector[3] = req->in.vector[i+2];
-	req->in.vector_count = 4;
-	/* Reset the new in size. */
-	smb2_setup_nbt_length(req->in.vector, 4);
-
-	/* Now recreate the out.vectors. */
-	outvec = talloc_zero_array(req, struct iovec, 4);
-	if (!outvec) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* 0 is always boilerplate and must
-	 * be of size 4 for the length field. */
-
-	outvec[0].iov_base = req->out.nbt_hdr;
-	outvec[0].iov_len = 4;
-	SIVAL(req->out.nbt_hdr, 0, 0);
-
-	if (!dup_smb2_vec3(outvec, &outvec[1], &req->out.vector[i])) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	TALLOC_FREE(req->out.vector);
-
-	req->out.vector = outvec;
-
-	req->current_idx = 1;
-	req->out.vector_count = 4;
 
   out:
 
