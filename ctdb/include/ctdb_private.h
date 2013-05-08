@@ -1564,8 +1564,6 @@ int ctdb_start_monitoring_interfaces(struct ctdb_context *ctdb);
 /* from server/ctdb_lock.c */
 struct lock_request;
 
-int ctdb_lockall_prio(struct ctdb_context *ctdb, uint32_t priority);
-int ctdb_unlockall_prio(struct ctdb_context *ctdb, uint32_t priority);
 int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority);
 int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority);
 
