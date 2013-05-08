@@ -6451,6 +6451,7 @@ SMB_MODULE(vfs_shadow_copy, \$(VFS_SHADOW_COPY_OBJ), "bin/shadow_copy.$SHLIBEXT"
 SMB_MODULE(vfs_shadow_copy2, \$(VFS_SHADOW_COPY2_OBJ), "bin/shadow_copy2.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_afsacl, \$(VFS_AFSACL_OBJ), "bin/afsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_xattr_tdb, \$(VFS_XATTR_TDB_OBJ), "bin/xattr_tdb.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_nfs4acl_xattr, \$(VFS_XATTR_TDB_OBJ), "bin/nfs4acl_xattr.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_posixacl, \$(VFS_POSIXACL_OBJ), "bin/posixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aixacl, \$(VFS_AIXACL_OBJ), "bin/aixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_aixacl2, \$(VFS_AIXACL2_OBJ), "bin/aixacl2.$SHLIBEXT", VFS)

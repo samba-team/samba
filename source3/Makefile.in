@@ -348,6 +348,8 @@ LIBNDR_PREG_OBJ = autoconf/librpc/gen_ndr/ndr_preg.o \
 LIBNDR_XATTR_OBJ = autoconf/librpc/gen_ndr/ndr_xattr.o \
 		   ../librpc/ndr/ndr_xattr.o
 
+LIBNDR_NFS4ACL_OBJ = autoconf/librpc/gen_ndr/ndr_nfs4acl.o
+
 LIBCLI_SPOOLSS_OBJ = autoconf/librpc/gen_ndr/ndr_spoolss_c.o \
 		     rpc_client/cli_spoolss.o \
 		     rpc_client/init_spoolss.o \
@@ -883,7 +885,7 @@ VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o $(NFS4ACL_OBJ)
 VFS_SOLARISACL_OBJ = modules/vfs_solarisacl.o
 VFS_ZFSACL_OBJ = modules/vfs_zfsacl.o $(NFS4ACL_OBJ)
-VFS_NFS4ACL_XATTR_OBJ = modules/vfs_nfs4acl_xattr.o
+VFS_NFS4ACL_XATTR_OBJ = modules/vfs_nfs4acl_xattr.o $(LIBNDR_NFS4ACL_OBJ) $(NFS4ACL_OBJ)
 VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
