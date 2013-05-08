@@ -8,8 +8,8 @@ Options:
   -s		Print a summary of tests results after running all tests
   -l		Use local daemons for integration tests
   -e		Exit on the first test failure
-  -V <dir>	Use <dir> as $TEST_VAR_DIR
-  -C		Clean up - kill daemons and remove $TEST_VAR_DIR when done
+  -V <dir>	Use <dir> as TEST_VAR_DIR
+  -C		Clean up - kill daemons and remove TEST_VAR_DIR when done
   -v		Verbose - print test output for non-failures (only some tests)
   -A		Use "cat -A" to print test output (only some tests)
   -D		Show diff between failed/expected test output (some tests only)
