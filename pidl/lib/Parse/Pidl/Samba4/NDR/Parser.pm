@@ -1157,10 +1157,8 @@ sub ParseElementPullLevel
 			$self->indent;
 
 			if ($l->{POINTER_TYPE} eq "relative" or $l->{POINTER_TYPE} eq "relative_short") {
-				if ($l->{POINTER_TYPE} eq "relative") {
-					$self->pidl("uint32_t _relative_save_offset;");
-					$self->pidl("_relative_save_offset = $ndr->offset;");
-				}
+				$self->pidl("uint32_t _relative_save_offset;");
+				$self->pidl("_relative_save_offset = $ndr->offset;");
 				$self->pidl("NDR_CHECK(ndr_pull_relative_ptr2($ndr, $var_name));");
 			}
 		}
