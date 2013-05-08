@@ -2002,10 +2002,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			/*
 			 * If we're returning a share violation, ensure we
-			 * cope with the braindead 1 second delay.
+			 * cope with the braindead 1 second delay (SMB1 only).
 			 */
 
 			if (!(oplock_request & INTERNAL_OPEN_ONLY) &&
+			    !conn->sconn->using_smb2 &&
 			    lp_defer_sharing_violations()) {
 				struct timeval timeout;
 				struct deferred_open_record state;
