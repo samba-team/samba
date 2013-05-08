@@ -1,6 +1,6 @@
                    ==============================
                    Release Notes for Samba 3.6.15
-                           June 10, 2013
+                            May 08, 2013
                    ==============================
 
 
@@ -8,12 +8,26 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.15 include:
 
-o  
+o  Fix crash bug in Winbind (bug #9854).
+
 
 Changes since 3.6.14:
 ---------------------
 
-o   Jeremy Allison <jra@samba.org>
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9746: Fix "guest ok", "force user" and "force group" for guest users.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9830: Fix panic in nt_printer_publish_ads.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9854: Fix crash bug in Winbind.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9817: Fix 'map untrusted to domain' with NTLMv2.
 
 
 ######################################################################
