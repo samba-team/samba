@@ -635,8 +635,20 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	int ret;
 	TALLOC_CTX *tmp_ctx;
 	const char *helper = BINDIR "/ctdb_lock_helper";
-	const char *prog;
+	static const char *prog = NULL;
 	char **args;
+
+	if (prog == NULL) {
+		const char *t;
+
+		t = getenv("CTDB_LOCK_HELPER");
+		if (t != NULL) {
+			prog = talloc_strdup(ctdb, t);
+		} else {
+			prog = talloc_strdup(ctdb, helper);
+		}
+		CTDB_NO_MEMORY_VOID(ctdb, prog);
+	}
 
 	if (ctdb->lock_num_current >= MAX_LOCK_PROCESSES_PER_DB) {
 		return;
@@ -697,11 +709,6 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		close(lock_ctx->fd[1]);
 		talloc_free(tmp_ctx);
 		return;
-	}
-
-	prog = getenv("CTDB_LOCK_HELPER");
-	if (prog == NULL) {
-		prog = helper;
 	}
 
 	lock_ctx->child = ctdb_fork(ctdb);
