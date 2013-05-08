@@ -8,10 +8,13 @@
 <manvolnum>8</manvolnum></citerefentry> will return to a client, informing the client of the largest
 size that may be returned by a single SMB2 read call.
 </para>
-<para>The maximum is 65536 bytes (64KB), which is the same as a Windows Vista SMB2 server.</para>
+<para>The maximum is 1048576 bytes (1MiB), which is the same as a Windows Server 2008 r2.</para>
+<para>Please note that the default is 1MiB, but it's limit is based on the
+smb2 dialect (64KiB for SMB2.0, 1MiB for SMB2.1 with LargeMTU).
+Large MTU is not supported over NBT (tcp port 139).</para>
 </description>
 
 <related>smb2 max write</related>
 <related>smb2 max trans</related>
-<value type="default">65536</value>
+<value type="default">1048576</value>
 </samba:parameter>
