@@ -584,11 +584,6 @@ struct ctdb_node_map {
 #define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
 #define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)
 
-/* These flags are ONLY valid within the recovery daemon */
-#define NODE_FLAGS_NOIPTAKEOVER		0x01000000 /* can not takeover additional IPs */
-#define NODE_FLAGS_NOIPHOST		0x02000000 /* can not host IPs */
-
-
 /*
  * Node capabilities
  */

@@ -33,6 +33,12 @@
 #define CTDB_ARP_INTERVAL 1
 #define CTDB_ARP_REPEAT   3
 
+/* These flags are ONLY valid within IP allocation code and must be
+ * cleared to avoid confusing other recovery daemon functions
+ */
+#define NODE_FLAGS_NOIPTAKEOVER		0x01000000 /* can not takeover additional IPs */
+#define NODE_FLAGS_NOIPHOST		0x02000000 /* can not host IPs */
+
 struct ctdb_iface {
 	struct ctdb_iface *prev, *next;
 	const char *name;
