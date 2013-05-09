@@ -27,8 +27,8 @@ int log_ringbuf_size;
 
 #define MAX_LOG_SIZE 128
 
-static int first_entry;
-static int last_entry;
+static int first_entry = 0;
+static int ringbuf_count = 0;
 
 struct ctdb_log_entry {
 	int32_t level;
@@ -45,6 +45,7 @@ static struct ctdb_log_entry *log_entries;
 static void log_ringbuffer_v(const char *format, va_list ap)
 {
 	int ret;
+	int next_entry;
 
 	if (log_entries == NULL && log_ringbuf_size != 0) {
 		/* Hope this works. We cant log anything if it doesnt anyway */
@@ -54,25 +55,24 @@ static void log_ringbuffer_v(const char *format, va_list ap)
 		return;
 	}
 
-	log_entries[last_entry].message[0] = '\0';
+	next_entry = (first_entry + ringbuf_count) % log_ringbuf_size;
 
-	ret = vsnprintf(&log_entries[last_entry].message[0], MAX_LOG_SIZE, format, ap);
+	if (ringbuf_count > 0 && first_entry == next_entry) {
+		first_entry = (first_entry + 1) % log_ringbuf_size;
+	}
+
+	log_entries[next_entry].message[0] = '\0';
+
+	ret = vsnprintf(&log_entries[next_entry].message[0], MAX_LOG_SIZE, format, ap);
 	if (ret == -1) {
 		return;
 	}
 
-	log_entries[last_entry].level = this_log_level;
-	log_entries[last_entry].t = timeval_current();
+	log_entries[next_entry].level = this_log_level;
+	log_entries[next_entry].t = timeval_current();
 
-	last_entry++;
-	if (last_entry >= log_ringbuf_size) {
-		last_entry = 0;
-	}
-	if (first_entry == last_entry) {
-		first_entry++;
-	}
-	if (first_entry >= log_ringbuf_size) {
-		first_entry = 0;
+	if (ringbuf_count < log_ringbuf_size) {
+		ringbuf_count++;
 	}
 }
 
@@ -100,8 +100,11 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 	FILE *f;
 	long fsize;
 	int tmp_entry;
-	int count = 0;
-	DEBUG(DEBUG_ERR,("Marshalling log entries  first:%d last:%d\n", first_entry, last_entry));
+	struct tm *tm;
+	char tbuf[100];
+	int i;
+
+	DEBUG(DEBUG_ERR,("Marshalling %d log entries\n", ringbuf_count));
 
 	/* dump to a file, then send the file as a blob */
 	f = tmpfile();
@@ -110,20 +113,10 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 		return;
 	}
 
-	tmp_entry = first_entry;
-	while (tmp_entry != last_entry) {
-		struct tm *tm;
-		char tbuf[100];
-
-		if (log_entries == NULL) {
-			break;
-		}
+	for (i=0; i<ringbuf_count; i++) {
+		tmp_entry = (first_entry + i) % log_ringbuf_size;
 
 		if (log_entries[tmp_entry].level > log_addr->level) {
-			tmp_entry++;
-			if (tmp_entry >= log_ringbuf_size) {
-				tmp_entry = 0;
-			}
 		 	continue;
 		}
 
@@ -131,12 +124,9 @@ void ctdb_collect_log(struct ctdb_context *ctdb, struct ctdb_get_log_addr *log_a
 		strftime(tbuf, sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
 		if (log_entries[tmp_entry].message) {
-			count += fprintf(f, "%s:%s %s", tbuf, get_debug_by_level(log_entries[tmp_entry].level), log_entries[tmp_entry].message);
-		}
-
-		tmp_entry++;
-		if (tmp_entry >= log_ringbuf_size) {
-			tmp_entry = 0;
+			fprintf(f, "%s:%s %s", tbuf,
+				get_debug_by_level(log_entries[tmp_entry].level),
+				log_entries[tmp_entry].message);
 		}
 	}
 
@@ -184,7 +174,7 @@ int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr)
 void ctdb_clear_log(struct ctdb_context *ctdb)
 {
 	first_entry = 0;
-	last_entry  = 0;
+	ringbuf_count  = 0;
 }
 
 int32_t ctdb_control_clear_log(struct ctdb_context *ctdb)
