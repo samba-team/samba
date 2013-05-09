@@ -2281,6 +2281,17 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 	return tvals;
 }
 
+static void clear_ipflags(struct ctdb_node_map *nodemap)
+{
+	int i;
+
+	for (i=0;i<nodemap->num;i++) {
+		nodemap->nodes[i].flags &=
+			~(NODE_FLAGS_NOIPTAKEOVER|NODE_FLAGS_NOIPHOST);
+	}
+}
+
+
 /* Set internal flags for IP allocation:
  *   Clear ip flags
  *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
@@ -2296,11 +2307,7 @@ static void set_ipflags_internal(struct ctdb_node_map *nodemap,
 {
 	int i;
 
-	/* Clear IP flags */
-	for (i=0;i<nodemap->num;i++) {
-		nodemap->nodes[i].flags &=
-			~(NODE_FLAGS_NOIPTAKEOVER|NODE_FLAGS_NOIPHOST);
-	}
+	clear_ipflags(nodemap);
 
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not take IPs on node with NoIPTakeover set */
@@ -2399,6 +2406,11 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap,
 
 	/* Do the IP reassignment calculations */
 	ctdb_takeover_run_core(ctdb, nodemap, &all_ips);
+
+	/* The IP flags need to be cleared because they should never
+	 * be seen outside the IP allocation code.
+	 */
+	clear_ipflags(nodemap);
 
 	/* The recovery daemon does regular sanity checks of the IPs.
 	 * However, sometimes it is overzealous and thinks changes are
