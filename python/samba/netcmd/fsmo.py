@@ -124,22 +124,22 @@ all=all of the above"""),
             self.message("Attempting transfer...")
             try:
                 transfer_role(self.outf, role, samdb)
+                self.outf.write("FSMO seize was not required, as transfer of '%s' role was successful\n" % role)
+                return
             except CommandError:
             #transfer failed, use the big axe...
                 self.message("Transfer unsuccessful, seizing...")
-                m["fSMORoleOwner"]= ldb.MessageElement(
-                    serviceName, ldb.FLAG_MOD_REPLACE,
-                    "fSMORoleOwner")
         else:
             self.message("Will not attempt transfer, seizing...")
-            m["fSMORoleOwner"]= ldb.MessageElement(
-                serviceName, ldb.FLAG_MOD_REPLACE,
-                "fSMORoleOwner")
+
+        m["fSMORoleOwner"]= ldb.MessageElement(
+            serviceName, ldb.FLAG_MOD_REPLACE,
+            "fSMORoleOwner")
         try:
             samdb.modify(m)
         except LdbError, (num, msg):
             raise CommandError("Failed to initiate role seize of '%s' role: %s" % (role, msg))
-        self.outf.write("FSMO transfer of '%s' role successful\n" % role)
+        self.outf.write("FSMO seize of '%s' role successful\n" % role)
 
     def run(self, force=None, H=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
