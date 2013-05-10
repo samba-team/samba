@@ -20,6 +20,7 @@
 #define SUMMARY_FORMAT \
 	"Size of file/data: %u/%zu\n" \
 	"Number of records: %zu\n" \
+	"Incompatible hash: %s\n" \
 	"Smallest/average/largest keys: %zu/%zu/%zu\n" \
 	"Smallest/average/largest data: %zu/%zu/%zu\n" \
 	"Smallest/average/largest padding: %zu/%zu/%zu\n" \
@@ -171,6 +172,7 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 	snprintf(ret, len, SUMMARY_FORMAT,
 		 tdb->map_size, keys.total+data.total,
 		 keys.num,
+		 (tdb->hash_fn == tdb_jenkins_hash)?"yes":"no",
 		 keys.min, tally_mean(&keys), keys.max,
 		 data.min, tally_mean(&data), data.max,
 		 extra.min, tally_mean(&extra), extra.max,
