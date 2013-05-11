@@ -280,9 +280,10 @@ static const struct gensec_security_ops *gensec_security_by_name(struct gensec_s
  * attached to the gensec_security, and return in our preferred order.
  */
 
-const struct gensec_security_ops **gensec_security_by_sasl_list(struct gensec_security *gensec_security,
-								TALLOC_CTX *mem_ctx,
-								const char **sasl_names)
+static const struct gensec_security_ops **gensec_security_by_sasl_list(
+	struct gensec_security *gensec_security,
+	TALLOC_CTX *mem_ctx,
+	const char **sasl_names)
 {
 	const struct gensec_security_ops **backends_out;
 	struct gensec_security_ops **backends;
