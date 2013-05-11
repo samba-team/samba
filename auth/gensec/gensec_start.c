@@ -428,10 +428,11 @@ _PUBLIC_ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(
  * Return OIDS from the security subsystems listed
  */
 
-const char **gensec_security_oids_from_ops(struct gensec_security *gensec_security,
-										   TALLOC_CTX *mem_ctx,
-					   struct gensec_security_ops **ops,
-					   const char *skip)
+static const char **gensec_security_oids_from_ops(
+	struct gensec_security *gensec_security,
+	TALLOC_CTX *mem_ctx,
+	struct gensec_security_ops **ops,
+	const char *skip)
 {
 	int i;
 	int j = 0;
