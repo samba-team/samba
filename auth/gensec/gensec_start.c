@@ -875,7 +875,7 @@ _PUBLIC_ NTSTATUS gensec_register(const struct gensec_security_ops *ops)
   This can be used by backends to either detect compilation errors, or provide
   multiple implementations for different smbd compilation options in one module
 */
-const struct gensec_critical_sizes *gensec_interface_version(void)
+_PUBLIC_ const struct gensec_critical_sizes *gensec_interface_version(void)
 {
 	static const struct gensec_critical_sizes critical_sizes = {
 		GENSEC_INTERFACE_VERSION,

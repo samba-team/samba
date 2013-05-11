@@ -193,6 +193,7 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security_ops;
 	int sizeof_gensec_security;
 };
+const struct gensec_critical_sizes *gensec_interface_version(void);
 
 /* Socket wrapper */
 
