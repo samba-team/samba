@@ -997,7 +997,7 @@ void smbd_server_connection_terminate_ex(struct smbd_server_connection *sconn,
 					 const char *reason,
 					 const char *location)
 {
-	DEBUG(10,("smbd_server_connection_terminate_ex: reason[%s] at %s\n",
+	DEBUG(0,("smbd_server_connection_terminate_ex: reason[%s] at %s\n",
 		  reason, location));
 	exit_server_cleanly(reason);
 }
