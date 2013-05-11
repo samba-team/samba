@@ -62,11 +62,6 @@ bool idmap_is_online(void)
 	return true;
 }
 
-NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
-{
-	return NT_STATUS_OK;
-}
-
 NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 {
 	return NT_STATUS_OK;
