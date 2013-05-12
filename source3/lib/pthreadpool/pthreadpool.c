@@ -407,7 +407,7 @@ static void pthreadpool_server_exit(struct pthreadpool *pool)
 	pool->num_threads -= 1;
 
 	exited = (pthread_t *)realloc(
-		pool->exited, sizeof(pthread_t *) * (pool->num_exited + 1));
+		pool->exited, sizeof(pthread_t) * (pool->num_exited + 1));
 
 	if (exited == NULL) {
 		/* lost a thread status */
