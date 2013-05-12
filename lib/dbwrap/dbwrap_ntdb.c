@@ -326,7 +326,9 @@ static int timeout_lock(int fd, int rw, off_t off, off_t len, bool waitflag,
 	}
 
 	alarm(0);
-	errno = saved_errno;
+	if (ret != 0) {
+		errno = saved_errno;
+	}
 	return ret;
 }
 
