@@ -1282,7 +1282,7 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 			list = tmp;
 
 			memset (&list[num], 0,
-				((sizeof(char**)) * (S_LIST_ABS +1)));
+				((sizeof(char*)) * (S_LIST_ABS +1)));
 		}
 
 		list[num] = tok;
