@@ -388,6 +388,12 @@ exported_envvars = [
     "VAMPIRE_DC_NETBIOSNAME",
     "VAMPIRE_DC_NETBIOSALIAS",
 
+    # domain controller stuff for Vampired DC
+    "PROMOTED_DC_SERVER",
+    "PROMOTED_DC_SERVER_IP",
+    "PROMOTED_DC_NETBIOSNAME",
+    "PROMOTED_DC_NETBIOSALIAS",
+
     # server stuff
     "SERVER",
     "SERVER_IP",
