@@ -251,7 +251,7 @@ bld.SAMBA3_MODULE('vfs_zfsacl',
 bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
 		 subsystem='vfs',
 		 source=VFS_NFS4ACL_XATTR_SRC,
-		 deps='NFS4_ACLS sunacl',
+		 deps='NFS4_ACLS sunacl NDR_NFS4ACL',
 		 init_function='',
 		 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_nfs4acl_xattr'),
 		 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_nfs4acl_xattr'))
