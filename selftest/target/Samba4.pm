@@ -1446,6 +1446,8 @@ sub provision_plugin_s4_dc($$)
         server services = -smb +s3fs
         xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
 
+	dbwrap_tdb_mutexes:* = yes
+
 	kernel oplocks = no
 	kernel change notify = no
 

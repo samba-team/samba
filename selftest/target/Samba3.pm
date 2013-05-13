@@ -247,6 +247,7 @@ sub setup_member($$$)
 	my $member_options = "
 	security = domain
 	server signing = on
+	dbwrap_tdb_mutexes:* = yes
 ";
 	my $ret = $self->provision($prefix,
 				   "LOCALMEMBER3",
