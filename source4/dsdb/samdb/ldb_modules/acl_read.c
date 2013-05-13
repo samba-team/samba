@@ -92,9 +92,15 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	case LDB_REPLY_ENTRY:
 		msg = ares->message;
 		ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, msg, &sd);
-		if (ret != LDB_SUCCESS || sd == NULL ) {
+		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-				      "acl_read: cannot get descriptor of %s\n",
+				      "acl_read: cannot get descriptor of %s: %s\n",
+				      ldb_dn_get_linearized(msg->dn), ldb_strerror(ret));
+			ret = LDB_ERR_OPERATIONS_ERROR;
+			goto fail;
+		} else if (sd == NULL) {
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+				      "acl_read: cannot get descriptor of %s (attribute not found)\n",
 				      ldb_dn_get_linearized(msg->dn));
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			goto fail;
