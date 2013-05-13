@@ -356,12 +356,13 @@ static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
 void ctdb_test_init(const char nodestates[],
 		    struct ctdb_context **ctdb,
 		    struct ctdb_public_ip_list **all_ips,
-		    struct ctdb_node_map **nodemap)
+		    struct ctdb_ipflags **ipflags)
 {
 	struct ctdb_all_public_ips **avail;
 	int i, numnodes;
 	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
 	char *tok, *ns, *t;
+	struct ctdb_node_map *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
 
@@ -407,16 +408,16 @@ void ctdb_test_init(const char nodestates[],
 		get_tunable_values(*ctdb, numnodes,
 				   "CTDB_SET_NoIPHostOnAllDisabled");
 
-	*nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
-	(*nodemap)->num = numnodes;
+	nodemap =  talloc_array(*ctdb, struct ctdb_node_map, numnodes);
+	nodemap->num = numnodes;
 
 	read_ctdb_public_ip_info(*ctdb, numnodes, all_ips, &avail);
 
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
 
 	for (i=0; i < numnodes; i++) {
-		(*nodemap)->nodes[i].pnn = i;
-		(*nodemap)->nodes[i].flags = nodeflags[i];
+		nodemap->nodes[i].pnn = i;
+		nodemap->nodes[i].flags = nodeflags[i];
 		/* nodemap->nodes[i].sockaddr is uninitialised */
 
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
@@ -426,7 +427,9 @@ void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i]->known_public_ips = avail[i];
 	}
 
-	set_ipflags_internal(*nodemap, tval_noiptakeover, tval_noiptakeoverondisabled);
+	*ipflags = set_ipflags_internal(*ctdb, *ctdb, nodemap,
+					tval_noiptakeover,
+					tval_noiptakeoverondisabled);
 }
 
 /* IP layout is read from stdin. */
@@ -434,16 +437,16 @@ void ctdb_test_lcp2_allocate_unassigned(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_ipflags *ipflags;
 
 	uint32_t *lcp2_imbalances;
 	bool *newly_healthy;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
 
-	lcp2_init(ctdb, nodemap, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
 
-	lcp2_allocate_unassigned(ctdb, nodemap,
+	lcp2_allocate_unassigned(ctdb, ipflags,
 				 all_ips, lcp2_imbalances);
 
 	print_ctdb_public_ip_list(all_ips);
@@ -456,16 +459,16 @@ void ctdb_test_lcp2_failback(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_ipflags *ipflags;
 
 	uint32_t *lcp2_imbalances;
 	bool *newly_healthy;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
 
-	lcp2_init(ctdb, nodemap, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
 
-	lcp2_failback(ctdb, nodemap,
+	lcp2_failback(ctdb, ipflags,
 		      all_ips, lcp2_imbalances, newly_healthy);
 
 	print_ctdb_public_ip_list(all_ips);
@@ -478,16 +481,16 @@ void ctdb_test_lcp2_failback_loop(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_ipflags *ipflags;
 
 	uint32_t *lcp2_imbalances;
 	bool *newly_healthy;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
 
-	lcp2_init(ctdb, nodemap, all_ips, &lcp2_imbalances, &newly_healthy);
+	lcp2_init(ctdb, ipflags, all_ips, &lcp2_imbalances, &newly_healthy);
 
-	lcp2_failback(ctdb, nodemap,
+	lcp2_failback(ctdb, ipflags,
 		      all_ips, lcp2_imbalances, newly_healthy);
 
 	print_ctdb_public_ip_list(all_ips);
@@ -500,11 +503,11 @@ void ctdb_test_ctdb_takeover_run_core(const char nodestates[])
 {
 	struct ctdb_context *ctdb;
 	struct ctdb_public_ip_list *all_ips;
-	struct ctdb_node_map *nodemap;
+	struct ctdb_ipflags *ipflags;
 
-	ctdb_test_init(nodestates, &ctdb, &all_ips, &nodemap);
+	ctdb_test_init(nodestates, &ctdb, &all_ips, &ipflags);
 
-	ctdb_takeover_run_core(ctdb, nodemap, &all_ips);
+	ctdb_takeover_run_core(ctdb, ipflags, &all_ips);
 
 	print_ctdb_public_ip_list(all_ips);
 
