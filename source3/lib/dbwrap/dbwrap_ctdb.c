@@ -1043,6 +1043,10 @@ static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
 	TDB_DATA ctdb_data;
 	int migrate_attempts;
 	struct timeval migrate_start;
+	struct timeval chainlock_start;
+	struct timeval ctdb_start_time;
+	double chainlock_time = 0;
+	double ctdb_time = 0;
 	int duration_msecs;
 	int lockret;
 
@@ -1087,9 +1091,12 @@ again:
 		TALLOC_FREE(keystr);
 	}
 
+	GetTimeOfDay(&chainlock_start);
 	lockret = tryonly
 		? tdb_chainlock_nonblock(ctx->wtdb->tdb, key)
 		: tdb_chainlock(ctx->wtdb->tdb, key);
+	chainlock_time += timeval_elapsed(&chainlock_start);
+
 	if (lockret != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
 		TALLOC_FREE(result);
@@ -1127,8 +1134,11 @@ again:
 			   ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
+		GetTimeOfDay(&ctdb_start_time);
 		status = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
 				       key);
+		ctdb_time += timeval_elapsed(&ctdb_start_time);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("ctdb_migrate failed: %s\n",
 				  nt_errstr(status)));
@@ -1154,11 +1164,14 @@ again:
 	if ((migrate_attempts > lp_parm_int(-1, "ctdb", "migrate_attempts", 10)) ||
 	    (duration_msecs > lp_parm_int(-1, "ctdb", "migrate_duration", 5000))) {
 		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s needed %d "
-			  "attempts, %d milliseconds\n", tdb_name(ctx->wtdb->tdb),
+			  "attempts, %d milliseconds, chainlock: %d ms, "
+			  "CTDB %d ms\n", tdb_name(ctx->wtdb->tdb),
 			  hex_encode_talloc(talloc_tos(),
 					    (unsigned char *)key.dptr,
 					    key.dsize),
-			  migrate_attempts, duration_msecs));
+			  migrate_attempts, duration_msecs,
+			  (int) chainlock_time * 1000,
+			  (int) ctdb_time * 1000));
 	}
 
 	GetTimeOfDay(&crec->lock_time);
