@@ -1163,12 +1163,21 @@ again:
 
 	if ((migrate_attempts > lp_parm_int(-1, "ctdb", "migrate_attempts", 10)) ||
 	    (duration_msecs > lp_parm_int(-1, "ctdb", "migrate_duration", 5000))) {
-		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s needed %d "
-			  "attempts, %d milliseconds, chainlock: %d ms, "
-			  "CTDB %d ms\n", tdb_name(ctx->wtdb->tdb),
+		int chain = 0;
+
+		if (tdb_get_flags(ctx->wtdb->tdb) & TDB_INCOMPATIBLE_HASH) {
+			chain = tdb_jenkins_hash(&key) %
+				tdb_hash_size(ctx->wtdb->tdb);
+		}
+
+		DEBUG(0, ("db_ctdb_fetch_locked for %s key %s, chain %d "
+			  "needed %d attempts, %d milliseconds, "
+			  "chainlock: %d ms, CTDB %d ms\n",
+			  tdb_name(ctx->wtdb->tdb),
 			  hex_encode_talloc(talloc_tos(),
 					    (unsigned char *)key.dptr,
 					    key.dsize),
+			  chain,
 			  migrate_attempts, duration_msecs,
 			  (int) chainlock_time * 1000,
 			  (int) ctdb_time * 1000));
