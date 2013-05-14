@@ -212,12 +212,20 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.skipTest("Skipping getpwent test, current EUID not found in NSS")
             return
 
+
+# samba-tool user add command didn't support users with empty gecos if none is
+# specified on the command line and the user hasn't one in the passwd file it
+# will fail, so let's add some contents
+
+        gecos = u[4]
+        if (gecos is None or len(gecos) == 0):
+            gecos = "Foo GECOS"
         user = self._randomPosixUser({
                         "name": u[0],
                         "uid": u[0],
                         "uidNumber": u[2],
                         "gidNumber": u[3],
-                        "gecos": u[4],
+                        "gecos": gecos,
                         "loginShell": u[6],
                         })
         # check if --rfc2307-from-nss sets the same values as we got from pwd.getpwuid()
@@ -228,6 +236,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--department=%s" % user["department"],
                                                 "--description=%s" % user["description"],
                                                 "--company=%s" % user["company"],
+                                                "--gecos=%s" % user["gecos"],
                                                 "--rfc2307-from-nss",
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
