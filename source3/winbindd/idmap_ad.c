@@ -323,7 +323,7 @@ again:
 				                 ctx->ad_schema->posix_gidnumber_attr,
 				     &id)) 
 		{
-			DEBUG(1, ("Could not get unix ID\n"));
+			DEBUG(1, ("Could not get SID for unix ID %u\n", (unsigned) id));
 			continue;
 		}
 
@@ -520,7 +520,8 @@ again:
 				                 ctx->ad_schema->posix_gidnumber_attr,
 				     &id)) 
 		{
-			DEBUG(1, ("Could not get unix ID\n"));
+			DEBUG(1, ("Could not get unix ID for SID %s\n",
+				sid_string_dbg(map->sid)));
 			continue;
 		}
 		if (!idmap_unix_id_is_in_range(id, dom)) {
