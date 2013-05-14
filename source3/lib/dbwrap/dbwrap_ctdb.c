@@ -986,11 +986,13 @@ static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 
 static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
 {
-	if (ctdb_data.dptr == NULL)
+	if (ctdb_data.dptr == NULL) {
 		return false;
+	}
 
-	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header))
+	if (ctdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		return false;
+	}
 
 	return db_ctdb_can_use_local_hdr(
 		(struct ctdb_ltdb_header *)ctdb_data.dptr, read_only);
