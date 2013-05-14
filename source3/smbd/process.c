@@ -149,7 +149,6 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		  struct smb_perfcount_data *pcd)
 {
 	size_t len = 0;
-	size_t nwritten=0;
 	ssize_t ret;
 	char *buf_out = buffer;
 
@@ -172,7 +171,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 
 	len = smb_len_large(buf_out) + 4;
 
-	ret = write_data(sconn->sock, buf_out+nwritten, len - nwritten);
+	ret = write_data(sconn->sock, buf_out, len);
 	if (ret <= 0) {
 
 		char addr[INET6_ADDRSTRLEN];
