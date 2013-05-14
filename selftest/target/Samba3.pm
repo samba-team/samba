@@ -212,10 +212,13 @@ sub setup_nt4_dc($$)
 	rpc_server:samr = external
 	rpc_server:netlogon = external
 	rpc_server:register_embedded_np = yes
+	rpc_server:FssagentRpc = external
 
 	rpc_daemon:epmd = fork
 	rpc_daemon:spoolssd = fork
 	rpc_daemon:lsasd = fork
+	rpc_daemon:fssd = fork
+	fss: sequence timeout = 1
 ";
 
 	my $vars = $self->provision($path,
@@ -1071,6 +1074,8 @@ sub provision($$$$$$$$)
 
 	my $mod_printer_pl = "$ENV{PERL} $self->{srcdir}/source3/script/tests/printing/modprinter.pl";
 
+	my $fake_snap_pl = "$ENV{PERL} $self->{srcdir}/source3/script/tests/fake_snap.pl";
+
 	my @eventlog_list = ("dns server", "application");
 
 	##
@@ -1197,6 +1202,9 @@ sub provision($$$$$$$$)
         # The samba3.blackbox.smbclient_s3 test uses this to test that
         # sending messages works, and that the %m sub works.
         message command = mv %s $shrdir/message.%m
+
+	# fsrvp server requires registry shares
+	registry shares = yes
 
 	# Begin extra options
 	$extra_options
@@ -1333,6 +1341,16 @@ sub provision($$$$$$$$)
 [dynamic_share]
 	path = $shrdir/%R
 	guest ok = yes
+
+[fsrvp_share]
+	path = $shrdir
+	comment = fake shapshots using rsync
+	vfs objects = shell_snap shadow_copy2
+	shell_snap:check path command = $fake_snap_pl --check
+	shell_snap:create command = $fake_snap_pl --create
+	shell_snap:delete command = $fake_snap_pl --delete
+	# a relative path here fails, the snapshot dir is no longer found
+	shadow:snapdir = $shrdir/.snapshots
 	";
 	close(CONF);
 

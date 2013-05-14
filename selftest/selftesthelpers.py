@@ -166,6 +166,7 @@ smbtorture4_testsuite_list = subprocess.Popen([smbtorture4, "--list-suites"], st
 
 smbtorture4_options = [
     configuration,
+    "--option=\'fss:sequence timeout=1\'",
     "--maximum-runtime=$SELFTEST_MAXTIME",
     "--basedir=$SELFTEST_TMPDIR",
     "--format=subunit"
