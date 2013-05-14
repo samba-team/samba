@@ -40,7 +40,7 @@ loadconfig "nfs"
 
 service_name="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"
 
-[ "$NFS_SERVER_MODE" == "ganesha" ] || exit 0
+[ "$NFS_SERVER_MODE" = "ganesha" ] || exit 0
 
 ctdb_setup_service_state_dir
 
