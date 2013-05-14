@@ -164,7 +164,6 @@ static struct ctdb_iface *ctdb_find_iface(struct ctdb_context *ctdb,
 {
 	struct ctdb_iface *i;
 
-	/* Verify that we dont have an entry for this ip yet */
 	for (i=ctdb->ifaces;i;i=i->next) {
 		if (strcmp(i->name, iface) == 0) {
 			return i;
