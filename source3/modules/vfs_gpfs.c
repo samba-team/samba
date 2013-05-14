@@ -1691,17 +1691,17 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 
 	smbd_gpfs_lib_init();
 
-	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
-
-	if (ret < 0) {
-		return ret;
-	}
-
 	config = talloc_zero(handle->conn, struct gpfs_config_data);
 	if (!config) {
-		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0, ("talloc_zero() failed\n"));
+		errno = ENOMEM;
 		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		TALLOC_FREE(config);
+		return ret;
 	}
 
 	config->sharemodes = lp_parm_bool(SNUM(handle->conn), "gpfs",
