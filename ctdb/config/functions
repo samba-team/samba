@@ -23,9 +23,16 @@ _loadconfig() {
 	foo="${service_config:-${service_name}}"
 	if [ -n "$foo" ] ; then
 	    loadconfig "$foo"
+	    return
 	fi
-    elif [ "$1" != "ctdb" ] ; then
+    fi
+
+    if [ "$1" != "ctdb" ] ; then
 	loadconfig "ctdb"
+    fi
+
+    if [ -z "$1" ] ; then
+	return
     fi
 
     if [ -f $CTDB_ETCDIR/sysconfig/$1 ]; then
