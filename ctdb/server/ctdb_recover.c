@@ -1350,9 +1350,22 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata)
 {
-	CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+	uint32_t new_recmaster;
 
-	ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
+	CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+	new_recmaster = ((uint32_t *)(&indata.dptr[0]))[0];
+
+	if (ctdb->pnn != new_recmaster && ctdb->recovery_master == ctdb->pnn) {
+		DEBUG(DEBUG_NOTICE,
+		      ("This node (%u) is no longer the recovery master\n", ctdb->pnn));
+	}
+
+	if (ctdb->pnn == new_recmaster && ctdb->recovery_master != new_recmaster) {
+		DEBUG(DEBUG_NOTICE,
+		      ("This node (%u) is now the recovery master\n", ctdb->pnn));
+	}
+
+	ctdb->recovery_master = new_recmaster;
 	return 0;
 }
 
