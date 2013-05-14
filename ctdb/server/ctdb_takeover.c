@@ -3824,6 +3824,8 @@ int32_t ctdb_control_add_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 		return -1;
 	}
 
+	DEBUG(DEBUG_NOTICE,("Add IP %s\n", ctdb_addr_to_str(&pub->addr)));
+
 	ret = ctdb_add_public_address(ctdb, &pub->addr, pub->mask, &pub->iface[0], true);
 
 	if (ret != 0) {
@@ -3864,6 +3866,8 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb, TDB_DATA inda
 			 (unsigned)(offsetof(struct ctdb_control_ip_iface, iface)+pub->len)));
 		return -1;
 	}
+
+	DEBUG(DEBUG_NOTICE,("Delete IP %s\n", ctdb_addr_to_str(&pub->addr)));
 
 	/* walk over all public addresses until we find a match */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
