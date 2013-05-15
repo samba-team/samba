@@ -72,7 +72,7 @@ class SambaToolCmdTest(samba.tests.TestCaseInTempDir):
 
     def runsubcmd(self, name, sub, *args):
         """run a command with sub commands"""
-        # The reason we need this function seperate from runcmd is
+        # The reason we need this function separate from runcmd is
         # that the .outf StringIO assignment is overriden if we use
         # runcmd, so we can't capture stdout and stderr
         cmd = cmd_sambatool.subcommands[name].subcommands[sub]
