@@ -209,7 +209,7 @@ char *dsdb_convert_schema_to_openldap(struct ldb_context *ldb, char *target_str,
 		return NULL;
 	}
 
-	/* The mappings are line-seperated, and specify details such as OIDs to skip etc */
+	/* The mappings are line-separated, and specify details such as OIDs to skip etc */
 	while (1) {
 		line = next_line;
 		next_line = strchr(line, '\n');
