@@ -2,7 +2,7 @@ lib/registry/TODO
 ../lib/tdr/TODO
 ../pidl/TODO
 
-- seperate adminlog mechanism (as opposed to the current DEBUG log,
+- separate adminlog mechanism (as opposed to the current DEBUG log,
   which is not really aimed at administrators but more at developers)
   Perhaps similar to eventlog so we can also use eventlog to retrieve the data?
 
