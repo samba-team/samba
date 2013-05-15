@@ -625,7 +625,7 @@ NTSTATUS wbsrv_samba3_pam_logoff(struct wbsrv_samba3_call *s3call)
 
   The return value (in the async reply) may include the 'info3'
   (effectivly most things you would want to know about the user), or
-  the NT and LM session keys seperated.
+  the NT and LM session keys separated.
 */
 
 static void pam_auth_crap_recv(struct composite_context *ctx);
