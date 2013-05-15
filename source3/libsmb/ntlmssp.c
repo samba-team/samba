@@ -146,7 +146,7 @@ NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *dom
  * Request features for the NTLMSSP negotiation
  *
  * @param ntlmssp_state NTLMSSP state
- * @param feature_list List of space seperated features requested from NTLMSSP.
+ * @param feature_list List of space separated features requested from NTLMSSP.
  */
 void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list)
 {
