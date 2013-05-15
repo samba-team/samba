@@ -338,7 +338,7 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 	 * schedule replication event to force
 	 * replication as soon as possible
 	 */
-	dreplsrv_periodic_schedule(service, 0);
+	dreplsrv_pendingops_schedule(service, 0);
 
 done:
 	return NT_STATUS_OK;

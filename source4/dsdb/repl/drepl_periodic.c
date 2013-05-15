@@ -133,3 +133,64 @@ void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
 		dreplsrv_notify_run_ops(s);
 	}
 }
+
+static void dreplsrv_pending_run(struct dreplsrv_service *service);
+
+static void dreplsrv_pending_handler_te(struct tevent_context *ev, struct tevent_timer *te,
+					struct timeval t, void *ptr)
+{
+	struct dreplsrv_service *service = talloc_get_type(ptr, struct dreplsrv_service);
+
+	service->pending.te = NULL;
+
+	dreplsrv_pending_run(service);
+}
+
+WERROR dreplsrv_pendingops_schedule(struct dreplsrv_service *service, uint32_t next_interval)
+{
+	TALLOC_CTX *tmp_mem;
+	struct tevent_timer *new_te;
+	struct timeval next_time;
+
+	/* prevent looping */
+	if (next_interval == 0) {
+		next_interval = 1;
+	}
+
+	next_time = timeval_current_ofs(next_interval, 50);
+
+	if (service->pending.te) {
+		/*
+		 * if the timestamp of the new event is higher,
+		 * as current next we don't need to reschedule
+		 */
+		if (timeval_compare(&next_time, &service->pending.next_event) > 0) {
+			return WERR_OK;
+		}
+	}
+
+	/* reset the next scheduled timestamp */
+	service->pending.next_event = next_time;
+
+	new_te = tevent_add_timer(service->task->event_ctx, service,
+				  service->pending.next_event,
+			         dreplsrv_pending_handler_te, service);
+	W_ERROR_HAVE_NO_MEMORY(new_te);
+
+	tmp_mem = talloc_new(service);
+	DEBUG(4,("dreplsrv_pending_schedule(%u) %sscheduled for: %s\n",
+		next_interval,
+		(service->pending.te?"re":""),
+		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));
+	talloc_free(tmp_mem);
+
+	talloc_free(service->pending.te);
+	service->pending.te = new_te;
+
+	return WERR_OK;
+}
+
+static void dreplsrv_pending_run(struct dreplsrv_service *service)
+{
+	dreplsrv_run_pending_ops(service);
+}
