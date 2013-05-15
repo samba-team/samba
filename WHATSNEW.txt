@@ -1,4 +1,105 @@
                    =============================
+                   Release Notes for Samba 4.0.6
+                           May 21, 2013
+                   =============================
+
+
+This is is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.6 include:
+
+o  Fix crash during Win8 sync (bug #9822).
+o  Fix segfault when loging in with wrong password from w2k8r2 (bug #9834).
+
+
+Changes since 4.0.5:
+--------------------
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9412: SMB2 server doesn't support recvfile.
+    * BUG 9722: Properly handle oplock breaks in compound requests.
+    * BUG 9777: vfs_dirsort uses non-stackable calls, dirfd(), malloc instead
+      of talloc and doesn't cope with directories being modified whilst reading.
+    * BUG 9811: Old DOS SMB CTEMP request uses a non-VFS function to access the
+      filesystem.
+    * BUG 9822: Fix crash during Win8 sync.
+
+
+o   Anand Avati <avati@redhat.com>
+    * BUG 9833: Function called in unix_convert() path can overwrite errno.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9785: Use specified python for runtime installation of Samba.
+    * BUG 9834: Fix segfault when loging in with wrong password from w2k8r2.
+
+
+o   Alexander Bokovoy <ab@samba.org>
+    * BUG 9767: Fix 'net ads join' when called via stdin.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 9807: wbinfo: Fix segfault in wbinfo_pam_logon.
+    * BUG 9830: Fix panic in nt_printer_publish_ads.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9775: Fix segfault for "artificial" conn_structs in vfs_fake_perms.
+    * BUG 9809: Package new dbwrap_tool man page.
+    * BUG 9824: SMB signing and the async echo responder don't work together.
+    * BUG 9832: talloc use after free in winbind4.
+    * BUG 9854: Fix NULL pointer dereference in Winbind.
+    * BUG 9868: Fix making LIBNDR_PREG_OBJ.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9545: Fix the build of vfs_notify_fam.
+    * BUG 9803: Change '--with-dmapi' to 'default=auto' to match the autoconf
+      build.
+    * BUG 9804: wafsamba: Display the default value in help for
+      SAMBA3_ADD_OPTION.
+    * BUG 9382: Add support for PFC_FLAG_OBJECT_UUID when parsing packets.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9139: Fix the username map optimization.
+    * BUG 9699: Fix adding case sensitive spn.
+    * BUG 9766: Cache name_to_sid/sid_to_name correctly.
+    * BUG 9817: Fix 'map untrusted to domain' with NTLMv2.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * BUG 9722:  Properly handle oplock breaks in compound requests.
+
+
+o   Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+    * BUG 9782: Fix panic when running 'smbtorture smb.base'.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.5
                            April 9, 2013
                    =============================
@@ -185,8 +286,9 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-Release notes for older releases follow:
-----------------------------------------
+
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.4
