@@ -35,7 +35,7 @@ A number of useful things can be done easily with subunit:
    can be shown as a seamless whole.
  * Test archiving: A test run may be recorded and replayed later.
  * Test isolation: Tests that may crash or otherwise interact badly with each
-   other can be run seperately and then aggregated, rather than interfering
+   other can be run separately and then aggregated, rather than interfering
    with each other.
  * Grid testing: subunit can act as the necessary serialisation and
    deserialiation to get test runs on distributed machines to be reported in
