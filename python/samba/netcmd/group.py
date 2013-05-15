@@ -173,7 +173,7 @@ Example2 deletes group Group2 from the local server.  The command is run under r
 class cmd_group_add_members(Command):
     """Add members to an AD group.
 
-This command adds one or more members to an existing Active Directory group.  The command accepts one or more group member names seperated by commas.  A group member may be a user or computer account or another Active Directory group.
+This command adds one or more members to an existing Active Directory group. The command accepts one or more group member names separated by commas.  A group member may be a user or computer account or another Active Directory group.
 
 When a member is added to a group the member may inherit permissions and rights from the group.  Likewise, when permission or rights of a group are changed, the changes may reflect in the members through inheritance.
 
@@ -225,7 +225,7 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
 class cmd_group_remove_members(Command):
     """Remove members from an AD group.
 
-This command removes one or more members from an existing Active Directory group.  The command accepts one or more group member names seperated by commas.  A group member may be a user or computer account or another Active Directory group that is a member of the group specified on the command.
+This command removes one or more members from an existing Active Directory group.  The command accepts one or more group member names separated by commas.  A group member may be a user or computer account or another Active Directory group that is a member of the group specified on the command.
 
 When a member is removed from a group, inherited permissions and rights will no longer apply to the member.
 
