@@ -388,7 +388,7 @@ static bool get_require_membership_sid(void) {
 	if (!parse_ntlm_auth_domain_user(require_membership_of, 
 					 request.data.name.dom_name, 
 					 request.data.name.name)) {
-		DEBUG(0, ("Could not parse %s into seperate domain/name parts!\n", 
+		DEBUG(0, ("Could not parse %s into separate domain/name parts!\n",
 			  require_membership_of));
 		return False;
 	}
