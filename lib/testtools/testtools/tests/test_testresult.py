@@ -1558,13 +1558,13 @@ class TestNonAsciiResults(TestCase):
 
     def _test_external_case(self, testline, coding="ascii", modulelevel="",
             suffix=""):
-        """Create and run a test case in a seperate module"""
+        """Create and run a test case in a separate module"""
         self._setup_external_case(testline, coding, modulelevel, suffix)
         return self._run_external_case()
 
     def _setup_external_case(self, testline, coding="ascii", modulelevel="",
             suffix=""):
-        """Create a test case in a seperate module"""
+        """Create a test case in a separate module"""
         _, prefix, self.modname = self.id().rsplit(".", 2)
         self.dir = tempfile.mkdtemp(prefix=prefix, suffix=suffix)
         self.addCleanup(shutil.rmtree, self.dir)
@@ -1580,7 +1580,7 @@ class TestNonAsciiResults(TestCase):
             "        %s\n" % (coding, modulelevel, testline))
 
     def _run_external_case(self):
-        """Run the prepared test case in a seperate module"""
+        """Run the prepared test case in a separate module"""
         sys.path.insert(0, self.dir)
         self.addCleanup(sys.path.remove, self.dir)
         module = __import__(self.modname)
