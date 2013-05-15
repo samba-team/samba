@@ -155,7 +155,7 @@ static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 	 * catia mappings are of the form :
 	 * UNIX char (in 0xnn hex) : WINDOWS char (in 0xnn hex)
 	 *
-	 * multiple mappings are comma seperated in smb.conf
+	 * multiple mappings are comma separated in smb.conf
 	 */
 	for (i=0;mappings[i];i++) {
 		fstrcpy(mapping, mappings[i]);
