@@ -95,7 +95,7 @@
 	<listitem>
 		<para>
 			<command>Problematic parsing - </command>
-			Protocol version 1 uses hyphen and comma to seperate blocks of data. Once there is a
+			Protocol version 1 uses hyphen and comma to separate blocks of data. Once there is a
 			filename with a hyphen, you will run into problems because the receiver decodes the
 			data in a wrong way.
 		</para>
