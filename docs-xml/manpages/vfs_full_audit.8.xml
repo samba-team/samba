@@ -154,24 +154,24 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>vfs_full_audit:success = LIST</term>
+		<term>full_audit:success = LIST</term>
 		<listitem>
 		<para>LIST is a list of VFS operations that should be
 		recorded if they succeed. Operations are specified using
 		the names listed above. Operations can be unset by prefixing
-		the names with "!".
+		the names with "!". The default is all operations.
 		</para>
 
 		</listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>vfs_full_audit:failure = LIST</term>
+		<term>full_audit:failure = LIST</term>
 		<listitem>
 		<para>LIST is a list of VFS operations that should be
 		recorded if they failed. Operations are specified using
 		the names listed above. Operations can be unset by prefixing
-		the names with "!".
+		the names with "!". The default is all operations.
 		</para>
 
 		</listitem>
