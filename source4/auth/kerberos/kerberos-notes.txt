@@ -159,7 +159,7 @@ some GSSAPI tokens' checksums.  During initial work to implement an AD client,
 it was easier to make an acceptable solution (to Windows servers) than to 
 correctly implement the GSSAPI specification, particularly on top of the 
 (inflexible) MIT Kerberos API.  It did not seem possible to write a correct, 
-seperate GSSAPI implementation on top of MIT Kerberos's public krb5lib API, 
+separate GSSAPI implementation on top of MIT Kerberos's public krb5lib API,
 and at the time, the effort did not need to extend beyond what Windows would 
 require.  
 
