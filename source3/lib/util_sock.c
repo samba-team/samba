@@ -586,7 +586,7 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 
 	subreq = async_connect_send(state, state->ev, state->fd,
 				    (struct sockaddr *)&state->ss,
-				    state->salen);
+				    state->salen, NULL, NULL, NULL);
 	if ((subreq == NULL)
 	    || !tevent_req_set_endtime(
 		    subreq, state->ev,
@@ -638,7 +638,7 @@ static void open_socket_out_connected(struct tevent_req *subreq)
 
 		subreq = async_connect_send(state, state->ev, state->fd,
 					    (struct sockaddr *)&state->ss,
-					    state->salen);
+					    state->salen, NULL, NULL, NULL);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}

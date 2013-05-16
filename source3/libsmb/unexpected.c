@@ -514,7 +514,7 @@ struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
 
 	subreq = async_connect_send(state, ev, state->reader->sock,
 				    (struct sockaddr *)(void *)&state->addr,
-				    sizeof(state->addr));
+				    sizeof(state->addr), NULL, NULL, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

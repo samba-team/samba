@@ -83,7 +83,7 @@ struct tevent_req *ctdb_conn_init_send(TALLOC_CTX *mem_ctx,
 
 	subreq = async_connect_send(state, ev, state->conn->fd,
 				    (struct sockaddr *)&state->addr,
-				    sizeof(state->addr));
+				    sizeof(state->addr), NULL, NULL, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

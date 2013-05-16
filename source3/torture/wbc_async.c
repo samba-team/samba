@@ -288,7 +288,7 @@ static struct tevent_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 
 	subreq = async_connect_send(mem_ctx, ev, wb_ctx->fd,
 				    (struct sockaddr *)(void *)&sunaddr,
-				    sizeof(sunaddr));
+				    sizeof(sunaddr), NULL, NULL, NULL);
 	if (subreq == NULL) {
 		goto nomem;
 	}

@@ -217,6 +217,10 @@ struct async_connect_state {
 	long old_sockflags;
 	socklen_t address_len;
 	struct sockaddr_storage address;
+
+	void (*before_connect)(void *private_data);
+	void (*after_connect)(void *private_data);
+	void *private_data;
 };
 
 static void async_connect_connected(struct tevent_context *ev,
@@ -236,10 +240,12 @@ static void async_connect_connected(struct tevent_context *ev,
  * connect in an async state. This will be reset when the request is finished.
  */
 
-struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      int fd, const struct sockaddr *address,
-				      socklen_t address_len)
+struct tevent_req *async_connect_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev, int fd,
+	const struct sockaddr *address, socklen_t address_len,
+	void (*before_connect)(void *private_data),
+	void (*after_connect)(void *private_data),
+	void *private_data)
 {
 	struct tevent_req *result;
 	struct async_connect_state *state;
@@ -258,6 +264,9 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->fd = fd;
 	state->sys_errno = 0;
+	state->before_connect = before_connect;
+	state->after_connect = after_connect;
+	state->private_data = private_data;
 
 	state->old_sockflags = fcntl(fd, F_GETFL, 0);
 	if (state->old_sockflags == -1) {
@@ -273,7 +282,16 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 
 	set_blocking(fd, false);
 
+	if (state->before_connect != NULL) {
+		state->before_connect(state->private_data);
+	}
+
 	state->result = connect(fd, address, address_len);
+
+	if (state->after_connect != NULL) {
+		state->after_connect(state->private_data);
+	}
+
 	if (state->result == 0) {
 		tevent_req_done(result);
 		goto done;
@@ -328,8 +346,17 @@ static void async_connect_connected(struct tevent_context *ev,
 		tevent_req_data(req, struct async_connect_state);
 	int ret;
 
+	if (state->before_connect != NULL) {
+		state->before_connect(state->private_data);
+	}
+
 	ret = connect(state->fd, (struct sockaddr *)(void *)&state->address,
 		      state->address_len);
+
+	if (state->after_connect != NULL) {
+		state->after_connect(state->private_data);
+	}
+
 	if (ret == 0) {
 		state->sys_errno = 0;
 		TALLOC_FREE(fde);
