@@ -35,6 +35,18 @@ struct ctdb_conn_init_state {
 	struct ctdb_conn *conn;
 };
 
+/*
+ * use the callbacks of async_connect_send to make sure
+ * we are connecting to CTDB as root
+ */
+static void before_connect_cb(void *private_data) {
+	become_root();
+}
+
+static void after_connect_cb(void *private_data) {
+	unbecome_root();
+}
+
 static void ctdb_conn_init_done(struct tevent_req *subreq);
 static int ctdb_conn_destructor(struct ctdb_conn *conn);
 
@@ -83,7 +95,8 @@ struct tevent_req *ctdb_conn_init_send(TALLOC_CTX *mem_ctx,
 
 	subreq = async_connect_send(state, ev, state->conn->fd,
 				    (struct sockaddr *)&state->addr,
-				    sizeof(state->addr), NULL, NULL, NULL);
+				    sizeof(state->addr), before_connect_cb,
+				    after_connect_cb, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
