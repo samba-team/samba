@@ -276,9 +276,9 @@ typedef struct _SMBCCTX SMBCCTX;
 
 /**@ingroup callback
  * Authentication callback function type (traditional method)
- * 
+ *
  * Type for the the authentication function called by the library to
- * obtain authentication credentals
+ * obtain authentication credentials
  *
  * For kerberos support the function should just be called without
  * prompting the user for credentials. Which means a simple 'return'
@@ -315,9 +315,9 @@ typedef void (*smbc_get_auth_data_fn)(const char *srv,
                                       char *pw, int pwlen);
 /**@ingroup callback
  * Authentication callback function type (method that includes context)
- * 
+ *
  * Type for the the authentication function called by the library to
- * obtain authentication credentals
+ * obtain authentication credentials
  *
  * For kerberos support the function should just be called without
  * prompting the user for credentials. Which means a simple 'return'
