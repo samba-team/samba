@@ -449,8 +449,9 @@ removeea setea
             PTHREAD_LDFLAGS='-lpthread'
 
     if PTHREAD_CFLAGS != 'error' and PTHREAD_LDFLAGS != 'error':
-        conf.ADD_CFLAGS(PTHREAD_CFLAGS)
-        conf.ADD_LDFLAGS(PTHREAD_LDFLAGS)
+        if conf.CONFIG_SET('replace_add_global_pthread'):
+            conf.ADD_CFLAGS(PTHREAD_CFLAGS)
+            conf.ADD_LDFLAGS(PTHREAD_LDFLAGS)
         conf.CHECK_HEADERS('pthread.h')
         conf.DEFINE('HAVE_PTHREAD', '1')
 
