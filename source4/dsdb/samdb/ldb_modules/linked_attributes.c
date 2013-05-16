@@ -4,6 +4,7 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2007
    Copyright (C) Simo Sorce <idra@samba.org> 2008
    Copyright (C) Matthieu Patou <mat@matws.net> 2011
+   Copyright (C) Andrew Tridgell 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -729,6 +730,20 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			talloc_free(tmp_ctx);
 			return ret;
 		}
+		if (res->count == 0) {
+			/* Forward link without backlink object remaining - nothing to do here */
+			continue;
+		}
+		if (res->count != 1) {
+			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - target GUID %s found more than once!",
+					       el->name, target->lDAPDisplayName,
+					       ldb_dn_get_linearized(old_dn),
+					       ldb_dn_get_linearized(dsdb_dn->dn),
+					       GUID_string(tmp_ctx, &link_guid));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		msg = res->msgs[0];
 
 		if (msg->num_elements == 0) {
