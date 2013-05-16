@@ -3658,15 +3658,6 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	int ret;
 	bool remote_isDeleted = false;
 
-	/*
-	 * TODO: check if the parent object exist
-	 */
-
-	/*
-	 * TODO: handle the conflict case where an object with the
-	 *       same name exist
-	 */
-
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
 	md = ar->objs->objects[ar->index_current].meta_data;
@@ -3789,6 +3780,10 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 	}
 	if (ares->error != LDB_SUCCESS &&
 	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
+		/*
+		 * TODO: deal with the above error that the parent object doesn't exist
+		 */
+
 		return ldb_module_done(ar->req, ares->controls,
 					ares->response, ares->error);
 	}
