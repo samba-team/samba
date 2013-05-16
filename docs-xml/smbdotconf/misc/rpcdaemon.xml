@@ -12,8 +12,10 @@
 
 	<para>
 	Two possible values are currently supported:
-		<command moreinfo="none">disabled</command>
-		<command moreinfo="none">fork</command>
+	<programlisting>
+		disabled
+		fork
+	</programlisting>
 	</para>
 
 	<para>
@@ -39,11 +41,13 @@
 	allowed to handle concurrently is defined by parametrical options named
 	after the daemon.
 	Five options are currently supported:
-		<command moreinfo="none">prefork_min_children</command>
-		<command moreinfo="none">prefork_max_children</command>
-		<command moreinfo="none">prefork_spawn_rate</command>
-		<command moreinfo="none">prefork_max_allowed_clients</command>
-		<command moreinfo="none">prefork_child_min_life</command>
+	<programlisting>
+		prefork_min_children
+		prefork_max_children
+		prefork_spawn_rate
+		prefork_max_allowed_clients
+		prefork_child_min_life
+	</programlisting>
 
 	To set one of these options use the follwing syntax:
 	<programlisting>
@@ -55,9 +59,11 @@
 	Samba includes separate daemons for spoolss and the lsarpc/lsass,
 	netlogon and samr pipes. Currently three daemons are available and they
 	are called:
-		<command moreinfo="none">epmd</command>
-		<command moreinfo="none">lsasd</command>
-		<command moreinfo="none">spoolssd</command>
+	<programlisting>
+		epmd
+		lsasd
+		spoolssd
+	</programlisting>
 	Example:
 	<programlisting>
 	rpc_daemon:spoolssd = fork
