@@ -304,6 +304,115 @@ static bool test_AsyncOpenPrinter(struct torture_context *tctx,
 	return true;
 }
 
+static struct spoolss_NotifyOption *setup_printserver_NotifyOption(struct torture_context *tctx)
+{
+	struct spoolss_NotifyOption *o;
+
+	o = talloc_zero(tctx, struct spoolss_NotifyOption);
+	if (o == NULL) {
+		return NULL;
+	}
+
+	o->version = 2;
+	o->flags = PRINTER_NOTIFY_OPTIONS_REFRESH;
+
+	o->count = 2;
+	o->types = talloc_zero_array(o, struct spoolss_NotifyOptionType, o->count);
+	if (o->types == NULL) {
+		talloc_free(o);
+		return NULL;
+	}
+
+	o->types[0].type = PRINTER_NOTIFY_TYPE;
+	o->types[0].count = 1;
+	o->types[0].fields = talloc_array(o->types, union spoolss_Field, o->types[0].count);
+	if (o->types[0].fields == NULL) {
+		talloc_free(o);
+		return NULL;
+	}
+	o->types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
+
+	o->types[1].type = JOB_NOTIFY_TYPE;
+	o->types[1].count = 1;
+	o->types[1].fields = talloc_array(o->types, union spoolss_Field, o->types[1].count);
+	if (o->types[1].fields == NULL) {
+		talloc_free(o);
+		return NULL;
+	}
+	o->types[1].fields[0].field = JOB_NOTIFY_FIELD_MACHINE_NAME;
+
+	return o;
+}
+
+static bool test_SyncRegisterForRemoteNotifications_args(struct torture_context *tctx,
+							 struct dcerpc_pipe *p,
+							 struct policy_handle *server_handle,
+							 struct policy_handle *notify_handle)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	struct winspool_SyncRegisterForRemoteNotifications r;
+	struct winspool_PrintPropertiesCollection NotifyFilter;
+	struct winspool_PrintNamedProperty *c;
+	struct spoolss_NotifyOption *options;
+
+	ZERO_STRUCT(NotifyFilter);
+
+	options = setup_printserver_NotifyOption(tctx);
+	torture_assert(tctx, options, "out of memory");
+
+	c = talloc_zero_array(tctx, struct winspool_PrintNamedProperty, 4);
+	torture_assert(tctx, c, "out of memory");
+
+	c[0].propertyName = "RemoteNotifyFilter Flags";
+	c[0].propertyValue.PropertyType = winspool_PropertyTypeInt32;
+	c[0].propertyValue.value.propertyInt32 = 0xff;
+
+	c[1].propertyName = "RemoteNotifyFilter Options";
+	c[1].propertyValue.PropertyType = winspool_PropertyTypeInt32;
+	c[1].propertyValue.value.propertyInt32 = 0;
+
+	c[2].propertyName = "RemoteNotifyFilter Color";
+	c[2].propertyValue.PropertyType = winspool_PropertyTypeInt32;
+	c[2].propertyValue.value.propertyInt32 = 0;
+
+	c[3].propertyName = "RemoteNotifyFilter NotifyOptions";
+	c[3].propertyValue.PropertyType = winspool_PropertyTypeNotificationOptions;
+	c[3].propertyValue.value.propertyOptionsContainer.pOptions = options;
+
+	NotifyFilter.numberOfProperties = 4;
+	NotifyFilter.propertiesCollection = c;
+
+	r.in.hPrinter = *server_handle;
+	r.in.pNotifyFilter = &NotifyFilter;
+	r.out.phRpcHandle = notify_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_SyncRegisterForRemoteNotifications_r(b, tctx, &r),
+		"SyncRegisterForRemoteNotifications failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"SyncRegisterForRemoteNotifications failed");
+
+	return true;
+}
+
+static bool test_SyncRegisterForRemoteNotifications(struct torture_context *tctx,
+						    void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+	struct policy_handle notify_handle;
+
+	torture_assert(tctx,
+		test_SyncRegisterForRemoteNotifications_args(tctx,
+							     ctx->iremotewinspool_pipe,
+							     &ctx->server_handle,
+							     &notify_handle),
+		"failed to test SyncRegisterForRemoteNotifications");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool");
@@ -314,6 +423,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 				  torture_rpc_iremotewinspool_teardown);
 
 	torture_tcase_add_simple_test(tcase, "AsyncOpenPrinter", test_AsyncOpenPrinter);
+	torture_tcase_add_simple_test(tcase, "SyncRegisterForRemoteNotifications", test_SyncRegisterForRemoteNotifications);
 	torture_tcase_add_simple_test(tcase, "AsyncClosePrinter", test_AsyncClosePrinter);
 
 	return suite;
