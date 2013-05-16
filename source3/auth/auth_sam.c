@@ -108,6 +108,13 @@ static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *par
 {
 	struct auth_methods *result;
 
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
+	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {
+		DEBUG(0, ("server role = 'active directory domain controller' not compatible with running the auth_sam module. \n"));
+		DEBUGADD(0, ("You should not set 'auth methods' when running the AD DC.\n"));
+		exit(1);
+	}
+
 	result = talloc_zero(auth_context, struct auth_methods);
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
