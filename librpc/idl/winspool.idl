@@ -701,7 +701,7 @@ import "misc.idl", "security.idl", "winreg.idl", "spoolss.idl";
 		[size_is(numberOfProperties), unique] winspool_PrintNamedProperty *propertiesCollection;
 	} winspool_PrintPropertiesCollection;
 
-	HRESULT winspool_SyncRegisterForRemoteNotifications(
+	[public] HRESULT winspool_SyncRegisterForRemoteNotifications(
 		[in]    PRINTER_HANDLE                  hPrinter,
 		[in]    winspool_PrintPropertiesCollection *pNotifyFilter,
 		[out]   RMTNTFY_HANDLE                 *phwinspool_Handle
