@@ -205,6 +205,19 @@ bool smbconf_share_exists(struct smbconf_ctx *ctx, const char *servicename);
 sbcErr smbconf_create_share(struct smbconf_ctx *ctx, const char *servicename);
 
 /**
+ * @brief create and set the definition for a new service.
+ *
+ * @param[in] ctx       The smbconf context to use.
+ *
+ * @param[in] service   The definition for the added service.
+ *
+ * @return              SBC_ERR_OK on success, a corresponding sbcErr if an
+ *                      error occured.
+ */
+sbcErr smbconf_create_set_share(struct smbconf_ctx *ctx,
+				struct smbconf_service *service);
+
+/**
  * @brief Get a definition of a share (service) from configuration.
  *
  * @param[in] ctx       The smbconf context to use.

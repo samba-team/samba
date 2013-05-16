@@ -231,6 +231,83 @@ sbcErr smbconf_create_share(struct smbconf_ctx *ctx,
 }
 
 /**
+ * create and set the definition for a new share (service).
+ */
+sbcErr smbconf_create_set_share(struct smbconf_ctx *ctx,
+				struct smbconf_service *service)
+{
+	sbcErr err, err2;
+	int i;
+	uint32_t num_includes = 0;
+	char **includes = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+
+	if ((service->name != NULL) && smbconf_share_exists(ctx, service->name))
+	{
+		return SBC_ERR_FILE_EXISTS;
+	}
+
+	err = smbconf_transaction_start(ctx);
+	if (!SBC_ERROR_IS_OK(err)) {
+		return err;
+	}
+
+	tmp_ctx = talloc_stackframe();
+
+	err = smbconf_create_share(ctx, service->name);
+	if (!SBC_ERROR_IS_OK(err)) {
+		goto cancel;
+	}
+
+	for (i = 0; i < service->num_params; i++) {
+		if (strequal(service->param_names[i], "include")) {
+			includes = talloc_realloc(tmp_ctx, includes, char *,
+						  num_includes+1);
+			if (includes == NULL) {
+				err = SBC_ERR_NOMEM;
+				goto cancel;
+			}
+			includes[num_includes] = talloc_strdup(includes,
+						service->param_values[i]);
+			if (includes[num_includes] == NULL) {
+				err = SBC_ERR_NOMEM;
+				goto cancel;
+			}
+			num_includes++;
+		} else {
+			err = smbconf_set_parameter(ctx,
+						    service->name,
+						    service->param_names[i],
+						    service->param_values[i]);
+			if (!SBC_ERROR_IS_OK(err)) {
+				goto cancel;
+			}
+		}
+	}
+
+	err = smbconf_set_includes(ctx, service->name, num_includes,
+				   (const char **)includes);
+	if (!SBC_ERROR_IS_OK(err)) {
+		goto cancel;
+	}
+
+	err = smbconf_transaction_commit(ctx);
+
+	goto done;
+
+cancel:
+	err2 = smbconf_transaction_cancel(ctx);
+	if (!SBC_ERROR_IS_OK(err2)) {
+		DEBUG(5, (__location__ ": Error cancelling transaction: %s\n",
+			  sbcErrorString(err2)));
+	}
+
+done:
+	talloc_free(tmp_ctx);
+	return err;
+}
+
+/**
  * get a definition of a share (service) from configuration.
  */
 sbcErr smbconf_get_share(struct smbconf_ctx *ctx,
