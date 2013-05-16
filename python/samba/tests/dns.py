@@ -390,8 +390,9 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        r.rdata = dns.txt_record()
-        r.rdata.txt = '"This is a test"'
+        rdata = dns.txt_record()
+        rdata.txt = '"This is a test"'
+        r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -430,8 +431,9 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        r.rdata = dns.txt_record()
-        r.rdata.txt = '"This is a test" "and this is a test, too"'
+        rdata = dns.txt_record()
+        rdata.txt = '"This is a test" "and this is a test, too"'
+        r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -474,8 +476,9 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        r.rdata = dns.txt_record()
-        r.rdata.txt = '"This is a test"'
+        rdata = dns.txt_record()
+        rdata.txt = '"This is a test"'
+        r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -510,8 +513,9 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        r.rdata = dns.txt_record()
-        r.rdata.txt = '"This is a test"'
+        rdata = dns.txt_record()
+        rdata.txt = '"This is a test"'
+        r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
