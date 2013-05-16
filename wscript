@@ -96,6 +96,7 @@ def configure(conf):
 
     conf.ADD_EXTRA_INCLUDES('#include/public #source4 #lib #source4/lib #source4/include #include #lib/replace')
 
+    conf.env.replace_add_global_pthread = True
     conf.RECURSE('lib/replace')
 
     conf.find_program('perl', var='PERL', mandatory=True)
