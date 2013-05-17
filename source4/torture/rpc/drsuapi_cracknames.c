@@ -1033,12 +1033,11 @@ void torture_rpc_drsuapi_cracknames_tcase(struct torture_suite *suite)
 {
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
 
-	struct torture_test *test;
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "cracknames");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_drsuapi_cracknames_setup,
 				  torture_drsuapi_cracknames_teardown);
 
-	test = torture_tcase_add_simple_test(tcase, "cracknames-test", (run_func)test_DsCrackNames);
+	torture_tcase_add_simple_test(tcase, "cracknames-test", (run_func)test_DsCrackNames);
 }
