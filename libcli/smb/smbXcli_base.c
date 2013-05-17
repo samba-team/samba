@@ -2461,6 +2461,15 @@ bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn)
 		|| (talloc_array_length(conn->pending) != 0));
 }
 
+bool smbXcli_conn_dfs_supported(struct smbXcli_conn *conn)
+{
+	if (conn->protocol >= PROTOCOL_SMB2_02) {
+		return (smb2cli_conn_server_capabilities(conn) & SMB2_CAP_DFS);
+	}
+
+	return (smb1cli_conn_capabilities(conn) & CAP_DFS);
+}
+
 bool smb2cli_conn_req_possible(struct smbXcli_conn *conn, uint32_t *max_dyn_len)
 {
 	uint16_t credits = 1;
