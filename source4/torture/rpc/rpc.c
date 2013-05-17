@@ -480,8 +480,8 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_spoolss(suite));
 #ifdef AD_DC_BUILD_IS_ENABLED
 	torture_suite_add_suite(suite, torture_rpc_spoolss_notify(suite));
-	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));
 #endif
+	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_driver(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_access(suite));
 	torture_suite_add_simple_test(suite, "samr", torture_rpc_samr);

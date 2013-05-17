@@ -37,7 +37,7 @@ heimdal_specific['ndr'] = ('','')
 heimdal_specific['rpc'] = ('','')
 if bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
 	heimdal_specific['ndr'] = (' ndr/backupkey.c','')
-	heimdal_specific['rpc'] = (' rpc/backupkey.c rpc/spoolss_notify.c rpc/spoolss_win.c',
+	heimdal_specific['rpc'] = (' rpc/backupkey.c rpc/spoolss_notify.c',
 				    ' RPC_NDR_BACKUPKEY SMB_SERVER dcerpc_server ntvfs')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
@@ -48,7 +48,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 
 
 bld.SAMBA_MODULE('torture_rpc',
-	source='rpc/join.c rpc/lsa.c rpc/forest_trust.c rpc/lsa_lookup.c rpc/session_key.c rpc/echo.c rpc/dfs.c rpc/drsuapi.c rpc/drsuapi_cracknames.c rpc/dsgetinfo.c rpc/spoolss.c rpc/spoolss_access.c rpc/unixinfo.c rpc/samr.c rpc/samr_accessmask.c rpc/samr_priv.c rpc/wkssvc.c rpc/srvsvc.c rpc/svcctl.c rpc/atsvc.c rpc/eventlog.c rpc/epmapper.c rpc/winreg.c rpc/initshutdown.c rpc/oxidresolve.c rpc/remact.c rpc/mgmt.c rpc/scanner.c rpc/autoidl.c rpc/countcalls.c rpc/testjoin.c rpc/schannel.c rpc/netlogon.c rpc/remote_pac.c rpc/samlogon.c rpc/samsync.c rpc/multi_bind.c rpc/dssetup.c rpc/alter_context.c rpc/bench.c rpc/samba3rpc.c rpc/rpc.c rpc/async_bind.c rpc/handles.c rpc/frsapi.c rpc/object_uuid.c rpc/ntsvcs.c rpc/browser.c rpc/bind.c rpc/fsrvp.c '+heimdal_specific['rpc'][0],
+	source='rpc/join.c rpc/lsa.c rpc/forest_trust.c rpc/lsa_lookup.c rpc/session_key.c rpc/echo.c rpc/dfs.c rpc/drsuapi.c rpc/drsuapi_cracknames.c rpc/dsgetinfo.c rpc/spoolss.c rpc/spoolss_win.c rpc/spoolss_access.c rpc/unixinfo.c rpc/samr.c rpc/samr_accessmask.c rpc/samr_priv.c rpc/wkssvc.c rpc/srvsvc.c rpc/svcctl.c rpc/atsvc.c rpc/eventlog.c rpc/epmapper.c rpc/winreg.c rpc/initshutdown.c rpc/oxidresolve.c rpc/remact.c rpc/mgmt.c rpc/scanner.c rpc/autoidl.c rpc/countcalls.c rpc/testjoin.c rpc/schannel.c rpc/netlogon.c rpc/remote_pac.c rpc/samlogon.c rpc/samsync.c rpc/multi_bind.c rpc/dssetup.c rpc/alter_context.c rpc/bench.c rpc/samba3rpc.c rpc/rpc.c rpc/async_bind.c rpc/handles.c rpc/frsapi.c rpc/object_uuid.c rpc/ntsvcs.c rpc/browser.c rpc/bind.c rpc/fsrvp.c '+heimdal_specific['rpc'][0],
 	autoproto='rpc/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_rpc_init',

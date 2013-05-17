@@ -22,7 +22,6 @@
 #include "torture/rpc/torture_rpc.h"
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
 struct test_spoolss_win_context {
@@ -461,8 +460,6 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	char *server_name;
 	uint32_t i;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-
-	ntvfs_init(tctx->lp_ctx);
 
 	ctx = talloc_zero(tctx, struct test_spoolss_win_context);
 	tmp_ctx = talloc_zero(tctx, struct test_spoolss_win_context);
