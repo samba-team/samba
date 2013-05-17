@@ -113,20 +113,9 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
  * to its local ctdb (ctdb_request_call). If the node is not itself
  * the record's DMASTER, it first redirects the packet to  the
  * record's LMASTER. The LMASTER then redirects the call packet to
- * the current DMASTER. But there is a race: The record may have
- * been migrated off the DMASTER while the redirected packet is
- * on the wire (or in the local queue). So in case the record has
- * migrated off the new destinaton of the call packet, instead of
- * going back to the LMASTER to get the new DMASTER, we try to
- * reduce round-trips by first chasing the record a couple of times
- * before giving up the direct chase and finally going back to the
- * LMASTER (again). Note that this works because of this: When
+ * the current DMASTER. Note that this works because of this: When
  * a record is migrated off a node, then the new DMASTER is stored
  * in the record's copy on the former DMASTER.
- *
- * The maximum number of attempts for direct chase to make before
- * going back to the LMASTER is configurable by the tunable
- * "MaxRedirectCount".
  */
 static void ctdb_call_send_redirect(struct ctdb_context *ctdb,
 				    struct ctdb_db_context *ctdb_db,
