@@ -64,7 +64,7 @@ def configure(conf):
 
         # we don't want any libraries or modules to rely on runtime
         # resolution of symbols
-        if sys.platform != "openbsd4" and sys.platform != "openbsd5":
+        if not sys.platform.startswith("openbsd"):
             conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
