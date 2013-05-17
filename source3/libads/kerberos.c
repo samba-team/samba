@@ -856,6 +856,10 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		return false;
 	}
 
+	if (!realm || !domain || !pss || !kdc_name) {
+		return false;
+	}
+
 	dname = lock_path("smb_krb5");
 	if (!dname) {
 		return false;
