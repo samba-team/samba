@@ -43,6 +43,8 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status);
 
 bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn);
 
+bool smbXcli_conn_dfs_supported(struct smbXcli_conn *conn);
+
 enum protocol_types smbXcli_conn_protocol(struct smbXcli_conn *conn);
 bool smbXcli_conn_use_unicode(struct smbXcli_conn *conn);
 
