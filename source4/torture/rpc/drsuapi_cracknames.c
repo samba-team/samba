@@ -912,6 +912,9 @@ bool test_DsCrackNames(struct torture_context *tctx,
 		int i;
 		
 		for (i=0; i < ARRAY_SIZE(crack); i++) {
+		        torture_comment(tctx, "Testing DsCrackNames with name '%s' desired format:%d\n",
+					crack[i].str, crack[i].format_desired);
+
 			const char *comment;
 			r.in.req->req1.format_flags   = crack[i].flags;
 			r.in.req->req1.format_offered = crack[i].format_offered;
@@ -997,6 +1000,8 @@ bool test_DsCrackNames(struct torture_context *tctx,
 						crack[i].expected_str, comment);
 				torture_fail(tctx, err_msg);
 			}
+
+		        torture_comment(tctx, "Testing DsCrackNames got %s\n", r.out.ctr->ctr1->array[0].result_name);
 		}
 	}
 
