@@ -154,7 +154,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 	 * a job id */
 
 	status = rpc_pipe_open_interface(fsp->conn,
-					 &ndr_table_spoolss.syntax_id,
+					 &ndr_table_spoolss,
 					 fsp->conn->session_info,
 					 fsp->conn->sconn->remote_address,
 					 fsp->conn->sconn->msg_ctx,
@@ -343,7 +343,7 @@ void print_spool_terminate(struct connection_struct *conn,
 	rap_jobid_delete(print_file->svcname, print_file->jobid);
 
 	status = rpc_pipe_open_interface(conn,
-					 &ndr_table_spoolss.syntax_id,
+					 &ndr_table_spoolss,
 					 conn->session_info,
 					 conn->sconn->remote_address,
 					 conn->sconn->msg_ctx,

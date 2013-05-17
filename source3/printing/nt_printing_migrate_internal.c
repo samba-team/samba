@@ -211,7 +211,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	}
 
 	status = rpc_pipe_open_interface(tmp_ctx,
-					&ndr_table_winreg.syntax_id,
+					&ndr_table_winreg,
 					session_info,
 					NULL,
 					msg_ctx,

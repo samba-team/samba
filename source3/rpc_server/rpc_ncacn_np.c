@@ -758,7 +758,7 @@ done:
  */
 
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
-				 const struct ndr_syntax_id *syntax,
+				 const struct ndr_interface_table *table,
 				 const struct auth_session_info *session_info,
 				 const struct tsocket_address *remote_address,
 				 struct messaging_context *msg_ctx,
@@ -783,7 +783,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pipe_name = get_pipe_name_from_syntax(tmp_ctx, syntax);
+	pipe_name = get_pipe_name_from_syntax(tmp_ctx, &table->syntax_id);
 	if (pipe_name == NULL) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
@@ -800,7 +800,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 	switch (pipe_mode) {
 	case RPC_SERVICE_MODE_EMBEDDED:
 		status = rpc_pipe_open_internal(tmp_ctx,
-						syntax, session_info,
+						&table->syntax_id, session_info,
 						remote_address, msg_ctx,
 						&cli);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -813,7 +813,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		 * to spoolssd. */
 
 		status = rpc_pipe_open_external(tmp_ctx,
-						pipe_name, syntax,
+						pipe_name, &table->syntax_id,
 						session_info,
 						&cli);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -50,7 +50,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle);
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
-				 const struct ndr_syntax_id *syntax,
+				 const struct ndr_interface_table *table,
 				 const struct auth_session_info *session_info,
 				 const struct tsocket_address *remote_address,
 				 struct messaging_context *msg_ctx,
