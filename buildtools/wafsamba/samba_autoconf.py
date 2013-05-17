@@ -776,9 +776,9 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
 def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
     # we don't want any libraries or modules to rely on runtime
     # resolution of symbols
-    if sys.platform != "openbsd4" and sys.platform != "openbsd5":
+    if not sys.platform.startswith("openbsd"):
         conf.env.undefined_ldflags = conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
-    if sys.platform != "openbsd4" and sys.platform != "openbsd5" and conf.env.undefined_ignore_ldflags == []:
+    if not sys.platform.startswith("openbsd") and conf.env.undefined_ignore_ldflags == []:
         if conf.CHECK_LDFLAGS(['-undefined', 'dynamic_lookup']):
             conf.env.undefined_ignore_ldflags = ['-undefined', 'dynamic_lookup']
