@@ -31,9 +31,81 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
+static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
+					     struct dsdb_schema *dest_schema,
+					     const struct dsdb_schema *ref_schema)
+{
+	const struct dsdb_class *cur_class = NULL;
+	const struct dsdb_attribute *cur_attr = NULL;
+	int ret;
+
+	for (cur_class = ref_schema->classes;
+	     cur_class;
+	     cur_class = cur_class->next)
+	{
+		const struct dsdb_class *tmp1;
+		struct dsdb_class *tmp2;
+
+		tmp1 = dsdb_class_by_governsID_id(dest_schema,
+						  cur_class->governsID_id);
+		if (tmp1 != NULL) {
+			continue;
+		}
+
+		/*
+		 * Do a shallow copy so that original next and prev are
+		 * not modified, we don't need to do a deep copy
+		 * as the rest won't be modified and this is for
+		 * a short lived object.
+		 */
+		tmp2 = talloc(dest_schema->classes, struct dsdb_class);
+		if (tmp2 == NULL) {
+			return WERR_NOMEM;
+		}
+		*tmp2 = *cur_class;
+		DLIST_ADD(dest_schema->classes, tmp2);
+	}
+
+	for (cur_attr = ref_schema->attributes;
+	     cur_attr;
+	     cur_attr = cur_attr->next)
+	{
+		const struct dsdb_attribute *tmp1;
+		struct dsdb_attribute *tmp2;
+
+		tmp1 = dsdb_attribute_by_attributeID_id(dest_schema,
+						cur_attr->attributeID_id);
+		if (tmp1 != NULL) {
+			continue;
+		}
+
+		/*
+		 * Do a shallow copy so that original next and prev are
+		 * not modified, we don't need to do a deep copy
+		 * as the rest won't be modified and this is for
+		 * a short lived object.
+		 */
+		tmp2 = talloc(dest_schema->attributes, struct dsdb_attribute);
+		if (tmp2 == NULL) {
+			return WERR_NOMEM;
+		}
+		*tmp2 = *cur_attr;
+		DLIST_ADD(dest_schema->attributes, tmp2);
+	}
+
+	ret = dsdb_setup_sorted_accessors(ldb, dest_schema);
+	if (LDB_SUCCESS != ret) {
+		DEBUG(0,("Failed to add new attribute to reference schema!\n"));
+		return WERR_INTERNAL_ERROR;
+	}
+
+	return WERR_OK;
+}
+
 WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 					TALLOC_CTX *mem_ctx,
 					struct dsdb_schema_prefixmap *pfm_remote,
+					uint32_t cycle_before_switching,
 					struct dsdb_schema *initial_schema,
 					struct dsdb_schema *resulting_schema,
 					uint32_t object_count,
@@ -77,6 +149,25 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 		uint32_t converted_obj_count = 0;
 		uint32_t failed_obj_count = 0;
 
+		if (resulting_schema != working_schema) {
+			/*
+			 * If the selfmade schema is not the schema used to
+			 * translate and validate replicated object,
+			 * Which means that we are using the bootstrap schema
+			 * Then we add attributes and classes that were already
+			 * translated to the working schema, the idea is that
+			 * we might need to add new attributes and classes
+			 * to be able to translate critical replicated objects
+			 * and without that we wouldn't be able to translate them
+			 */
+			werr = dsdb_repl_merge_working_schema(ldb,
+							working_schema,
+							resulting_schema);
+			if (!W_ERROR_IS_OK(werr)) {
+				return werr;
+			}
+		}
+
 		for (schema_list_item = schema_list;
 		     schema_list_item;
 		     schema_list_item=schema_list_next_item) {
@@ -114,6 +205,10 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 				 * Convert the schema from ldb_message format
 				 * (OIDs as OID strings) into schema, using
 				 * the remote prefixMap
+				 *
+				 * It's not likely, but possible to get the
+				 * same object twice and we should keep
+				 * the last instance.
 				 */
 				werr = dsdb_schema_set_el_from_ldb_msg_dups(ldb,
 								resulting_schema,
@@ -127,6 +222,8 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 						 win_errstr(werr)));
 					failed_obj_count++;
 				} else {
+					DEBUG(8,("Converted object %s into a schema element\n",
+						 ldb_dn_get_linearized(object.msg->dn)));
 					DLIST_REMOVE(schema_list, schema_list_item);
 					TALLOC_FREE(schema_list_item);
 					converted_obj_count++;
@@ -136,7 +233,6 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 
 		DEBUG(4,("Schema load pass %d: converted %d, %d of %d objects left to be converted.\n",
 			 pass_no, converted_obj_count, failed_obj_count, object_count));
-		pass_no++;
 
 		/* check if we converted any objects in this pass */
 		if (converted_obj_count == 0) {
@@ -148,12 +244,22 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 			return WERR_INTERNAL_ERROR;
 		}
 
-		/* rebuild indexes */
-		ret = dsdb_setup_sorted_accessors(ldb, working_schema);
-		if (LDB_SUCCESS != ret) {
-			DEBUG(0,("Failed to create schema-cache indexes!\n"));
-			return WERR_INTERNAL_ERROR;
+		/*
+		 * Don't try to load the schema if there is missing object
+		 * _and_ we are on the first pass as some critical objects
+		 * might be missing.
+		 */
+		if (failed_obj_count == 0 || pass_no > cycle_before_switching) {
+			/* prepare for another cycle */
+			working_schema = resulting_schema;
+
+			ret = dsdb_setup_sorted_accessors(ldb, working_schema);
+			if (LDB_SUCCESS != ret) {
+				DEBUG(0,("Failed to create schema-cache indexes!\n"));
+				return WERR_INTERNAL_ERROR;
+			}
 		}
+		pass_no++;
 	}
 
 	return WERR_OK;
@@ -200,6 +306,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 
 	werr = dsdb_repl_resolve_working_schema(ldb, mem_ctx,
 						pfm_remote,
+						0, /* cycle_before_switching */
 						working_schema,
 						working_schema,
 						object_count,
