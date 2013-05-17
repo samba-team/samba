@@ -417,8 +417,8 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 		     ace->who.special_id == SMB_ACE4_WHO_GROUP)) {
 			DEBUG(10, ("Map special entry\n"));
 			if (!(win_ace_flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-				DEBUG(10, ("Map current sid\n"));
 				uint32_t win_ace_flags_current;
+				DEBUG(10, ("Map current sid\n"));
 				win_ace_flags_current = win_ace_flags &
 					~(SEC_ACE_FLAG_OBJECT_INHERIT |
 					  SEC_ACE_FLAG_CONTAINER_INHERIT);
