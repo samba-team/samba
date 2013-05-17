@@ -234,7 +234,7 @@ static NTSTATUS pipe_cm_open(TALLOC_CTX *ctx,
 
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   const char *server_name,
-			   const struct ndr_syntax_id *interface,
+			   const struct ndr_interface_table *table,
 			   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result = NULL;
@@ -251,10 +251,10 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 		return werr;
 	}
 
-	status = pipe_cm_open(ctx, ipc, interface, &result);
+	status = pipe_cm_open(ctx, ipc, &table->syntax_id, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "failed to open PIPE %s: %s",
-			get_pipe_name_from_syntax(talloc_tos(), interface),
+			get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
 			get_friendly_nt_error_msg(status));
 		return WERR_DEST_NOT_FOUND;
 	}
@@ -277,7 +277,7 @@ WERROR libnetapi_get_binding_handle(struct libnetapi_ctx *ctx,
 
 	*binding_handle = NULL;
 
-	result = libnetapi_open_pipe(ctx, server_name, &table->syntax_id, &pipe_cli);
+	result = libnetapi_open_pipe(ctx, server_name, table, &pipe_cli);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}

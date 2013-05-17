@@ -116,7 +116,7 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server,
-				   &ndr_table_wkssvc.syntax_id,
+				   &ndr_table_wkssvc,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -257,7 +257,7 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   &ndr_table_wkssvc,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -313,7 +313,7 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   &ndr_table_wkssvc,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -455,7 +455,7 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   &ndr_table_wkssvc,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -508,7 +508,7 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 	DATA_BLOB session_key;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_wkssvc.syntax_id,
+				   &ndr_table_wkssvc,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

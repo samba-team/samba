@@ -400,7 +400,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -552,7 +552,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(user_handle);
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 
 	if (!W_ERROR_IS_OK(werr)) {
@@ -1314,7 +1314,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1622,7 +1622,7 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1756,7 +1756,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1920,7 +1920,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -2371,7 +2371,7 @@ WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -2856,7 +2856,7 @@ WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -2991,7 +2991,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -3166,7 +3166,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -3491,7 +3491,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
-				   &ndr_table_samr.syntax_id,
+				   &ndr_table_samr,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
