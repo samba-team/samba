@@ -622,7 +622,7 @@ static bool cli_dfs_check_error(struct cli_state *cli, NTSTATUS expected,
 {
 	/* only deal with DS when we negotiated NT_STATUS codes and UNICODE */
 
-	if (!(smb1cli_conn_capabilities(cli->conn) & CAP_UNICODE)) {
+	if (!(smbXcli_conn_use_unicode(cli->conn))) {
 		return false;
 	}
 	if (!(smb1cli_conn_capabilities(cli->conn) & CAP_STATUS32)) {
