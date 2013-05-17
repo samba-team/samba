@@ -801,8 +801,11 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	/* if we are not the dmaster and are not hosting any delegations,
-	   then send a redirect to the requesting node */
+	/*
+	 * If we are not the dmaster and are not hosting any delegations,
+	 * then we redirect the request to the node than can answer it
+	 * (the lmaster or the dmaster).
+	 */
 	if ((header.dmaster != ctdb->pnn) 
 	    && (!(header.flags & CTDB_REC_RO_HAVE_DELEGATIONS)) ) {
 		talloc_free(data.dptr);
