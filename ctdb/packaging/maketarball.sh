@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # maketarball.sh - create a tarball from the git branch HEAD
 #
