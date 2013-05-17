@@ -234,7 +234,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	   here before trying to connect to the original share.
 	   cli_check_msdfs_proxy() will fail if it is a normal share. */
 
-	if ((smb1cli_conn_capabilities(c->conn) & CAP_DFS) &&
+	if (smbXcli_conn_dfs_supported(c->conn) &&
 			cli_check_msdfs_proxy(ctx, c, sharename,
 				&newserver, &newshare,
 				force_encrypt,
