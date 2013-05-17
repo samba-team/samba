@@ -395,17 +395,14 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 	int ret;
 	unsigned int i;
 	char *nc_str;
-	int is_level_post_2003;
 
 	/* In W2003 and greater, msDS-hasMasterNCs attribute lists the writable NC replicas */
-	is_level_post_2003 = 1;
 	ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
 			LDB_SCOPE_DEFAULT, post_2003_attrs, "(objectguid=%s)", ntds_guid_str);
 
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed objectguid search - %s\n", ldb_errstring(samdb)));
 
-		is_level_post_2003 = 0;
 		attrs = post_2003_attrs;
 		ret = ldb_search(samdb, mem_ctx, &res, ldb_get_config_basedn(samdb),
 			LDB_SCOPE_DEFAULT, pre_2003_attrs, "(objectguid=%s)", ntds_guid_str);
@@ -787,8 +784,6 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	struct ldb_context *samdb;
 	TALLOC_CTX *mem_ctx;
 	enum drsuapi_DsReplicaInfoType info_type;
-	uint32_t flags;
-	const char *attribute_name, *value_dn;
 
 	service = talloc_get_type(msg->private_data, struct kccsrv_service);
 	samdb = service->samdb;
@@ -827,9 +822,6 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		info_type = req2->info_type;
 		object_dn_str = req2->object_dn;
 		req_src_dsa_guid = req2->source_dsa_guid;
-		flags = req2->flags;
-		attribute_name = req2->attribute_name;
-		value_dn = req2->value_dn_str;
 	}
 
 	reply = req->out.info;

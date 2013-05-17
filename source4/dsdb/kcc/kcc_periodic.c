@@ -163,9 +163,8 @@ static void kccsrv_notify_drepl_server_done(struct tevent_req *subreq)
 	struct kccsrv_notify_drepl_server_state *state =
 		tevent_req_callback_data(subreq,
 		struct kccsrv_notify_drepl_server_state);
-	NTSTATUS status;
 
-	status = dcerpc_dreplsrv_refresh_r_recv(subreq, state);
+	dcerpc_dreplsrv_refresh_r_recv(subreq, state);
 	TALLOC_FREE(subreq);
 
 	/* we don't care about errors */

@@ -150,7 +150,6 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 	int rtn;
 
 	const char *server_dn_str;
-	const char *config_dn_str;
 	struct nbt_name name;
 	const char *dest_addr = NULL;
 
@@ -191,7 +190,6 @@ NTSTATUS libnet_JoinSite(struct libnet_context *ctx,
 		return status;
 	}
 
-	config_dn_str = r->out.config_dn_str;
 	server_dn_str = r->out.server_dn_str;
 
 	/*
