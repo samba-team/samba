@@ -31,7 +31,6 @@ MODULESDIR=@MODULESDIR@
 INCLUDEDIR=@INCLUDEDIR@
 SETUPDIR=@SETUPDIR@
 #PKGCONFIGDIR=@PKGCONFIGDIR@
-SWATDIR=@SWATDIR@
 CODEPAGEDIR=@CODEPAGEDIR@
 PAMMODULESDIR=@PAMMODULESDIR@
 CONFIGDIR=@CONFIGDIR@
@@ -187,7 +186,6 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DSBINDIR=\"$(SBINDIR)\" \
 	-DBINDIR=\"$(BINDIR)\" \
 	-DLMHOSTSFILE=\"$(LMHOSTSFILE)\" \
-	-DSWATDIR=\"$(SWATDIR)\" \
 	-DLOCKDIR=\"$(LOCKDIR)\" \
 	-DPIDDIR=\"$(PIDDIR)\" \
 	-DLIBDIR=\"$(LIBDIR)\" \
@@ -213,7 +211,7 @@ TDBS_DEPS=$(TDB_DEPS) $(NTDB_DEPS)
 
 # Note that all executable programs now provide for an optional executable suffix.
 
-SBIN_PROGS = bin/smbd bin/nmbd @SWAT_SBIN_TARGETS@ @EXTRA_SBIN_PROGS@
+SBIN_PROGS = bin/smbd bin/nmbd @EXTRA_SBIN_PROGS@
 
 BIN_PROGS1 = bin/smbclient bin/net bin/smbspool \
 	bin/testparm bin/smbstatus bin/smbget \
@@ -1061,10 +1059,6 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
            $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
 	   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ)
 
-SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
-           web/swat.o web/neg_lang.o
-
-SWAT_OBJ = $(SWAT_OBJ1) $(SMBD_OBJ_BASE) $(PASSCHANGE_OBJ)
 
 STATUS_OBJ = utils/status.o utils/status_profile.o $(SMBD_OBJ_BASE)
 
@@ -1880,14 +1874,6 @@ bin/nmbd: $(BINARY_PREREQS) $(NMBD_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDBS) $(L
 		@LIBWBCLIENT_STATIC@ $(LIBWBCLIENT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDBS_LIBS) $(POPT_LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(ZLIB_LIBS)
-
-bin/swat: $(BINARY_PREREQS) $(SWAT_OBJ) $(LIBTALLOC) $(LIBTDBS) $(LIBWBCLIENT) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LDAP_LIBS) @SMBD_FAM_LIBS@ \
-		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
-		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) $(DNSSD_LIBS) $(AVAHI_LIBS) \
-		$(POPT_LIBS) @SMBD_LIBS@ $(LIBTALLOC_LIBS) $(LIBTDBS_LIBS) \
-		$(LIBWBCLIENT_LIBS) $(ZLIB_LIBS)
 
 bin/rpcclient: $(BINARY_PREREQS) $(RPCCLIENT_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDBS) $(LIBWBCLIENT)
 	@echo Linking $@
@@ -3074,7 +3060,7 @@ bin/split_tokens: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC
 		$(LIBTALLOC_LIBS) $(LIBTDBS_LIBS)
 
 install:: installservers installbin installman \
-		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
+		installscripts installdat installmodules \
 		@INSTALL_PAM_MODULES@ installlibs installmo
 
 install-everything:: install installmodules
@@ -3124,12 +3110,6 @@ installscripts:: installdirs
 installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR) $(CODEPAGEDIR) $(srcdir)
 
-installmsg:: installdirs
-	@$(SHELL) $(srcdir)/script/installmsg.sh $(DESTDIR) $(CODEPAGEDIR) $(srcdir)
-
-installswat:: installdirs installmsg
-	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
-
 installpammodules:: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
@@ -3172,7 +3152,6 @@ showlayout::
 	@echo " INCLUDEDIR:            $(INCLUDEDIR)"
 	@echo " SETUPDIR:              $(SETUPDIR)"
 #	@echo " PKGCONFIGDIR:          $(PKGCONFIGDIR)"
-	@echo " SWATDIR:               $(SWATDIR)"
 	@echo " CODEPAGEDIR:           $(CODEPAGEDIR)"
 	@echo " PAMMODULESDIR:         $(PAMMODULESDIR)"
 	@echo " CONFIGDIR:             $(CONFIGDIR)"
@@ -3194,7 +3173,7 @@ showlayout::
 	@echo " SMB_PASSWD_FILE:       $(SMB_PASSWD_FILE)"
 
 
-uninstall:: uninstallmo uninstallman uninstallservers uninstallbin uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
+uninstall:: uninstallmo uninstallman uninstallservers uninstallbin uninstallscripts uninstalldat uninstallmodules uninstalllibs @UNINSTALL_PAM_MODULES@
 
 uninstallmo::
 	@$(SHELL) $(srcdir)/script/uninstallmo.sh $(DESTDIR) $(LOCALEDIR) $(srcdir)
@@ -3221,12 +3200,6 @@ uninstallscripts::
 
 uninstalldat::
 	@$(SHELL) $(srcdir)/script/uninstalldat.sh $(DESTDIR) $(LIBDIR) $(srcdir)
-
-uninstallmsg::
-	@$(SHELL) $(srcdir)/script/uninstallmsg.sh $(DESTDIR) $(LIBDIR) $(srcdir)
-
-uninstallswat:: uninstallmsg
-	@$(SHELL) $(srcdir)/script/uninstallswat.sh $(DESTDIR) $(SWATDIR) $(srcdir)
 
 uninstallpammodules::
 	@for module in $(PAM_MODULES); do \

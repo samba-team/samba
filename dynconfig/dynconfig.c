@@ -86,7 +86,6 @@ const char *set_dyn_##name(const char *newpath) \
 /* these are in common with s3 */
 DEFINE_DYN_CONFIG_PARAM(SBINDIR)
 DEFINE_DYN_CONFIG_PARAM(BINDIR)
-DEFINE_DYN_CONFIG_PARAM(SWATDIR)
 DEFINE_DYN_CONFIG_PARAM(CONFIGFILE) /**< Location of smb.conf file. **/
 DEFINE_DYN_CONFIG_PARAM(LOGFILEBASE) /** Log file directory. **/
 DEFINE_DYN_CONFIG_PARAM(LMHOSTSFILE) /** Statically configured LanMan hosts. **/

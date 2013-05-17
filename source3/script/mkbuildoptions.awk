@@ -79,7 +79,6 @@ BEGIN {
 
 	print "       output(screen,\"   SBINDIR: %s\\n\", get_dyn_SBINDIR());";
 	print "       output(screen,\"   BINDIR: %s\\n\", get_dyn_BINDIR());";
-	print "       output(screen,\"   SWATDIR: %s\\n\", get_dyn_SWATDIR());";
 
 	print "       output(screen,\"   CONFIGFILE: %s\\n\", get_dyn_CONFIGFILE());";
 	print "       output(screen,\"   LOGFILEBASE: %s\\n\", get_dyn_LOGFILEBASE());";

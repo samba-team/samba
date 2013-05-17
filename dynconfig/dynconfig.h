@@ -33,7 +33,6 @@ bool is_default_dyn_##name(void);
 /* these are in common with s3 */
 DEFINE_DYN_CONFIG_PROTO(SBINDIR)
 DEFINE_DYN_CONFIG_PROTO(BINDIR)
-DEFINE_DYN_CONFIG_PROTO(SWATDIR)
 DEFINE_DYN_CONFIG_PROTO(CONFIGFILE) /**< Location of smb.conf file. **/
 DEFINE_DYN_CONFIG_PROTO(LOGFILEBASE) /** Log file directory. **/
 DEFINE_DYN_CONFIG_PROTO(LMHOSTSFILE) /** Statically configured LanMan hosts. **/

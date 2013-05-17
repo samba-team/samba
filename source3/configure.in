@@ -128,8 +128,6 @@ m4_include(../lib/socket_wrapper/config.m4)
 m4_include(../lib/nss_wrapper/config.m4)
 m4_include(../lib/uid_wrapper/config.m4)
 
-m4_include(m4/swat.m4)
-
 DEVELOPER_CFLAGS="-DDEBUG_PASSWORD -DDEVELOPER"
 
 # Probe the gcc version for extra CFLAGS. We always stash these in

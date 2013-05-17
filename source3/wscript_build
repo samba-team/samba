@@ -421,11 +421,6 @@ NMBD_SRC1 = '''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
 
 NMBD_SRC = '${NMBD_SRC1}'
 
-SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
-               web/swat.c web/neg_lang.c'''
-
-SWAT_SRC = '''${SWAT_SRC1}'''
-
 STATUS_SRC = '''utils/status.c utils/status_profile.c smbd/notify_internal.c'''
 
 SMBCONTROL_SRC = '''utils/smbcontrol.c'''
@@ -1221,27 +1216,6 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  install_path='${SBINDIR}',
                  vars=locals())
 
-bld.SAMBA3_BINARY('web/swat',
-                 source=SWAT_SRC,
-                 deps='''
-                 talloc
-                 tevent
-                 samba3core
-                 libsmb
-                 param
-                 pdb
-                 popt_samba3
-                 smbd_base
-                 LOCKING
-                 PLAINTEXT_AUTH
-                 PASSCHANGE
-                 PRINTBASE
-                 PRINTING
-                 ''',
-                 enabled=bld.env.build_swat,
-                 install_path='${SBINDIR}',
-                 vars=locals())
-
 bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''
@@ -1649,13 +1623,6 @@ bld.SAMBA3_BINARY('regedit',
                   deps='ncurses menu panel form registry param popt_samba3 smbregistry',
                   enabled=bld.env.build_regedit,
                   vars=locals())
-
-swat_dir = os.path.join(bld.curdir, '../swat')
-swat_files = recursive_dirlist(swat_dir, swat_dir, '*')
-swat_msg_dir = os.path.join(bld.curdir, 'po')
-swat_msg_files = recursive_dirlist(swat_msg_dir, swat_msg_dir, '*.msg')
-bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
-bld.INSTALL_FILES('${CODEPAGEDIR}', swat_msg_files, base_name='po')
 
 ########################## INCLUDES #################################
 

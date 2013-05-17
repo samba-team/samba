@@ -4006,7 +4006,7 @@ void lp_killservice(int iServiceIn)
 
 /***************************************************************************
  Save the curent values of all global and sDefault parameters into the 
- defaults union. This allows swat and testparm to show only the
+ defaults union. This allows testparm to show only the
  changed (ie. non-default) parameters.
 ***************************************************************************/
 

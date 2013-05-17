@@ -203,7 +203,6 @@ struct poptOption popt_common_option[] = {
 /* Handle command line options:
  *		--sbindir
  *		--bindir
- *		--swatdir
  *		--lmhostsfile
  *		--libdir
  *		--modulesdir
@@ -219,7 +218,6 @@ struct poptOption popt_common_option[] = {
 enum dyn_item{
 	DYN_SBINDIR = 1,
 	DYN_BINDIR,
-	DYN_SWATDIR,
 	DYN_LMHOSTSFILE,
 	DYN_LIBDIR,
 	DYN_MODULESDIR,
@@ -249,12 +247,6 @@ static void popt_dynconfig_callback(poptContext con,
 	case DYN_BINDIR:
 		if (arg) {
 			set_dyn_BINDIR(arg);
-		}
-		break;
-
-	case DYN_SWATDIR:
-		if (arg) {
-			set_dyn_SWATDIR(arg);
 		}
 		break;
 
@@ -329,8 +321,6 @@ const struct poptOption popt_common_dynconfig[] = {
 	    "Path to sbin directory", "SBINDIR" },
 	{ "bindir", '\0' , POPT_ARG_STRING, NULL, DYN_BINDIR,
 	    "Path to bin directory", "BINDIR" },
-	{ "swatdir", '\0' , POPT_ARG_STRING, NULL, DYN_SWATDIR,
-	    "Path to SWAT installation directory", "SWATDIR" },
 	{ "lmhostsfile", '\0' , POPT_ARG_STRING, NULL, DYN_LMHOSTSFILE,
 	    "Path to lmhosts file", "LMHOSTSFILE" },
 	{ "libdir", '\0' , POPT_ARG_STRING, NULL, DYN_LIBDIR,

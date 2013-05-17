@@ -110,7 +110,6 @@ def write_build_options_header(fp):
     fp.write("       output(screen,\"\\nPaths:\\n\");\n")
     fp.write("       output(screen,\"   SBINDIR: %s\\n\", get_dyn_SBINDIR());\n")
     fp.write("       output(screen,\"   BINDIR: %s\\n\", get_dyn_BINDIR());\n")
-    fp.write("       output(screen,\"   SWATDIR: %s\\n\", get_dyn_SWATDIR());\n")
     fp.write("       output(screen,\"   CONFIGFILE: %s\\n\", get_dyn_CONFIGFILE());\n")
     fp.write("       output(screen,\"   LOGFILEBASE: %s\\n\", get_dyn_LOGFILEBASE());\n")
     fp.write("       output(screen,\"   LMHOSTSFILE: %s\\n\",get_dyn_LMHOSTSFILE());\n")

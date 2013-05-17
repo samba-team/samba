@@ -128,10 +128,6 @@ dynconfig = {
          'STD-PATH':  '${LIBDIR}/pkgconfig',
          'FHS-PATH':  '${LIBDIR}/pkgconfig',
     },
-    'SWATDIR' : {
-         'STD-PATH':  '${DATADIR}/swat',
-         'FHS-PATH':  '${DATADIR}/samba/swat',
-    },
     'CODEPAGEDIR' : {
          'STD-PATH':  '${DATADIR}/codepages',
          'FHS-PATH':  '${DATADIR}/samba/codepages',
