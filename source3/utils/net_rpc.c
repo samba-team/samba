@@ -3619,7 +3619,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
 
 	/* connect destination PI_SRVSVC */
         nt_status = connect_dst_pipe(c, &cli_dst, &srvsvc_pipe,
-				     &ndr_table_srvsvc.syntax_id);
+				     &ndr_table_srvsvc);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
@@ -4105,7 +4105,7 @@ static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
 
 	/* connect destination PI_SRVSVC */
         nt_status = connect_dst_pipe(c, &cli_dst, &srvsvc_pipe,
-				     &ndr_table_srvsvc.syntax_id);
+				     &ndr_table_srvsvc);
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 

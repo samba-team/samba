@@ -231,7 +231,7 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
  **/
 NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 			  struct rpc_pipe_client **pp_pipe_hnd,
-			  const struct ndr_syntax_id *interface)
+			  const struct ndr_interface_table *table)
 {
 	NTSTATUS nt_status;
 	char *server_name = SMB_STRDUP("127.0.0.1");
@@ -256,7 +256,7 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 		return nt_status;
 	}
 
-	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, interface,
+	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, &table->syntax_id,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));

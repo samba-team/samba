@@ -1577,7 +1577,7 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 
 	/* connect destination PI_SPOOLSS */
 	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst,
-				     &ndr_table_spoolss.syntax_id);
+				     &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -1729,7 +1729,7 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 
 	/* connect destination PI_SPOOLSS */
 	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst,
-				     &ndr_table_spoolss.syntax_id);
+				     &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -1906,7 +1906,7 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	DEBUG(3,("copying printer-drivers\n"));
 
 	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst,
-				     &ndr_table_spoolss.syntax_id);
+				     &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -2125,7 +2125,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 
 	/* connect destination PI_SPOOLSS */
 	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst,
-				     &ndr_table_spoolss.syntax_id);
+				     &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -2300,7 +2300,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 	/* connect destination PI_SPOOLSS */
 	nt_status = connect_dst_pipe(c, &cli_dst, &pipe_hnd_dst,
-				     &ndr_table_spoolss.syntax_id);
+				     &ndr_table_spoolss);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

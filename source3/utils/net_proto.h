@@ -416,7 +416,7 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 				const char *server_name);
 NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 			  struct rpc_pipe_client **pp_pipe_hnd,
-			  const struct ndr_syntax_id *interface);
+			  const struct ndr_interface_table *table);
 int net_use_krb_machine_account(struct net_context *c);
 int net_use_machine_account(struct net_context *c);
 bool net_find_server(struct net_context *c,
