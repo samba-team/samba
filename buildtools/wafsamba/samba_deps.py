@@ -224,7 +224,7 @@ def add_init_functions(self):
         sname = sname.replace('/','_')
         cflags.append('-DSTATIC_%s_MODULES=%s' % (sname, sentinel))
         if sentinel == 'NULL':
-            cflags.append('-DSTATIC_%s_MODULES_PROTO' % sname)
+            cflags.append('-DSTATIC_%s_MODULES_PROTO=' % sname)
         self.ccflags = cflags
         return
 
