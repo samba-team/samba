@@ -956,9 +956,25 @@ bool test_DsCrackNames(struct torture_context *tctx,
 							comment);
 					torture_fail(tctx, err_msg);
 				}
+			} else if (crack[i].expected_str &&
+				   (!r.out.ctr->ctr1->count ||
+				    !r.out.ctr->ctr1->array[0].result_name))
+			{
+				if (!r.out.ctr->ctr1->count) {
+					err_msg = talloc_asprintf(mem_ctx,
+								  "DsCrackNames failed - got 0 entries, expected %s on %s",
+								  crack[i].expected_str, comment);
+					torture_fail(tctx, err_msg);
+				} else {
+					err_msg = talloc_asprintf(mem_ctx,
+								  "DsCrackNames failed - got NULL pointer, expected %s on %s",
+								  crack[i].expected_str, comment);
+					torture_fail(tctx, err_msg);
+				}
 			} else if (crack[i].expected_str
 				   && (strcmp(r.out.ctr->ctr1->array[0].result_name,
-					      crack[i].expected_str) != 0)) {
+					      crack[i].expected_str) != 0))
+			{
 				if (strcasecmp(r.out.ctr->ctr1->array[0].result_name,
 					       crack[i].expected_str) != 0) {
 					err_msg = talloc_asprintf(mem_ctx,
