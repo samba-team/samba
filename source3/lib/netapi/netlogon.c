@@ -133,7 +133,7 @@ WERROR I_NetLogonControl_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_netlogon.syntax_id,
+					    &ndr_table_netlogon,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -190,7 +190,7 @@ WERROR I_NetLogonControl2_r(struct libnetapi_ctx *ctx,
 	}
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_netlogon.syntax_id,
+					    &ndr_table_netlogon,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

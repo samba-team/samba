@@ -38,7 +38,7 @@ WERROR NetShutdownInit_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_initshutdown.syntax_id,
+					    &ndr_table_initshutdown,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -82,7 +82,7 @@ WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_initshutdown.syntax_id,
+					    &ndr_table_initshutdown,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

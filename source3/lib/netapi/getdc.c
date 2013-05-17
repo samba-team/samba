@@ -47,7 +47,7 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 	void *buffer;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_netlogon.syntax_id,
+					    &ndr_table_netlogon,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -101,7 +101,7 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 	void *buffer;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_netlogon.syntax_id,
+					    &ndr_table_netlogon,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -173,7 +173,7 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
-					    &ndr_table_netlogon.syntax_id,
+					    &ndr_table_netlogon,
 					    &b);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
