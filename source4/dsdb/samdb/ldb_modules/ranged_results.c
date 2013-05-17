@@ -95,7 +95,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 	for (i = 0; ac->req->op.search.attrs[i]; i++) {
 		char *p, *new_attr;
 		const char *end_str;
-		unsigned int start, end, orig_num_values;
+		unsigned int start, end;
 		struct ldb_message_element *el;
 		struct ldb_val *orig_values;
 
@@ -146,7 +146,6 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			el->values = NULL;
 		} else {
 			orig_values = el->values;
-			orig_num_values = el->num_values;
 			
 			if ((start + end < start) || (start + end < end)) {
 				ldb_asprintf_errstring(ldb,
