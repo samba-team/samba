@@ -2654,7 +2654,7 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
  Create a rpc pipe client struct, connecting to a unix domain socket
  ********************************************************************/
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
-			       const struct ndr_syntax_id *abstract_syntax,
+			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
@@ -2668,7 +2668,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->abstract_syntax = *abstract_syntax;
+	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = get_myname(result);

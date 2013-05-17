@@ -71,7 +71,7 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx,
 			   struct rpc_pipe_client **presult);
 
 NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
-			       const struct ndr_syntax_id *abstract_syntax,
+			       const struct ndr_interface_table *table,
 			       struct rpc_pipe_client **presult);
 
 struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c);

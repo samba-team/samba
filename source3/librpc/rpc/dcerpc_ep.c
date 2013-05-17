@@ -365,7 +365,7 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 
 		status = rpc_pipe_open_ncalrpc(tmp_ctx,
 					       ncalrpc_sock,
-					       &ndr_table_epmapper.syntax_id,
+					       &ndr_table_epmapper,
 					       &cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
