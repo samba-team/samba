@@ -665,7 +665,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 						char **error_string) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
-	struct netr_DELTA_GROUP_MEMBER *group_member = delta->delta_union.group_member;
+	struct netr_DELTA_GROUP_MEMBER *delta_group_member = delta->delta_union.group_member;
 	struct ldb_message *msg;
 	struct ldb_message **msgs;
 	int ret;
@@ -701,11 +701,11 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 	
 	talloc_free(msgs);
 
-	for (i=0; i<group_member->num_rids; i++) {
+	for (i=0; i<delta_group_member->num_rids; i++) {
 		/* search for the group, by rid */
 		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[database], &msgs, attrs,
 				   "(&(objectClass=user)(objectSid=%s))", 
-				   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], group_member->rids[i]))); 
+				   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid_add_rid(mem_ctx, state->dom_sid[database], delta_group_member->rids[i])));
 		
 		if (ret == -1) {
 			*error_string = talloc_asprintf(mem_ctx, "gendb_search failed: %s", ldb_errstring(state->sam_ldb));
