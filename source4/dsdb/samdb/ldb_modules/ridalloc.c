@@ -388,7 +388,8 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	struct ldb_dn *rid_manager_dn, *fsmo_role_dn;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	struct GUID fsmo_role_guid, *our_ntds_guid;
+	struct GUID fsmo_role_guid;
+	const struct GUID *our_ntds_guid;
 	NTSTATUS status;
 
 	/* work out who is the RID Manager */
