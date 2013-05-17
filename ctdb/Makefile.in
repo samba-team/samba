@@ -319,6 +319,7 @@ install: all manpages $(PMDA_INSTALL)
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/events.d
 	mkdir -p $(DESTDIR)$(etcdir)/ctdb/nfs-rpc-checks.d
 	mkdir -p $(DESTDIR)$(etcdir)/sudoers.d/
+	mkdir -p $(DESTDIR)$(etcdir)/ctdb/notify.d
 	mkdir -p $(DESTDIR)$(docdir)/ctdb
 	${INSTALLCMD} -m 644 ctdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 bin/ctdb $(DESTDIR)$(bindir)
@@ -376,6 +377,7 @@ install: all manpages $(PMDA_INSTALL)
 	if [ -f doc/ltdbtool.1.html ];then ${INSTALLCMD} -m 644 doc/ltdbtool.1.html $(DESTDIR)$(docdir)/ctdb; fi
 	if [ -f doc/ping_pong.1.html ];then ${INSTALLCMD} -m 644 doc/ping_pong.1.html $(DESTDIR)$(docdir)/ctdb; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.sh ];then ${INSTALLCMD} -m 755 config/notify.sh $(DESTDIR)$(etcdir)/ctdb; fi
+	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/notify.d/README ];then ${INSTALLCMD} -m 755 config/notify.d.README $(DESTDIR)$(etcdir)/ctdb/notify.d/README ; fi
 	${INSTALLCMD} -m 755 config/debug-hung-script.sh $(DESTDIR)$(etcdir)/ctdb
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/ctdb-crash-cleanup.sh ];then ${INSTALLCMD} -m 755 config/ctdb-crash-cleanup.sh $(DESTDIR)$(etcdir)/ctdb; fi
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/gcore_trace.sh ];then ${INSTALLCMD} -m 755 config/gcore_trace.sh $(DESTDIR)$(etcdir)/ctdb; fi

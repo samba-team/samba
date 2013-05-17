@@ -127,6 +127,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/gcore_trace.sh
 %config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
+%attr(755,root,root) %{_sysconfdir}/ctdb/notify.d
 
 %{_docdir}/ctdb/README
 %{_docdir}/ctdb/COPYING
@@ -162,6 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/40.mountd.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/50.rquotad.check
 %{_sysconfdir}/ctdb/statd-callout
+%{_sysconfdir}/ctdb/notify.d/README
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
 %{_bindir}/smnotify
