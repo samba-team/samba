@@ -31,6 +31,134 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
+WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
+					TALLOC_CTX *mem_ctx,
+					struct dsdb_schema_prefixmap *pfm_remote,
+					struct dsdb_schema *initial_schema,
+					struct dsdb_schema *resulting_schema,
+					uint32_t object_count,
+					const struct drsuapi_DsReplicaObjectListItemEx *first_object)
+{
+	struct schema_list {
+		struct schema_list *next, *prev;
+		const struct drsuapi_DsReplicaObjectListItemEx *obj;
+	};
+	struct schema_list *schema_list = NULL, *schema_list_item, *schema_list_next_item;
+	WERROR werr;
+	struct dsdb_schema *working_schema;
+	const struct drsuapi_DsReplicaObjectListItemEx *cur;
+	DATA_BLOB empty_key = data_blob_null;
+	int ret, pass_no;
+	uint32_t ignore_attids[] = {
+			DRSUAPI_ATTID_auxiliaryClass,
+			DRSUAPI_ATTID_mayContain,
+			DRSUAPI_ATTID_mustContain,
+			DRSUAPI_ATTID_possSuperiors,
+			DRSUAPI_ATTID_systemPossSuperiors,
+			DRSUAPI_ATTID_INVALID
+	};
+
+	/* create a list of objects yet to be converted */
+	for (cur = first_object; cur; cur = cur->next_object) {
+		schema_list_item = talloc(mem_ctx, struct schema_list);
+		if (schema_list_item == NULL) {
+			return WERR_NOMEM;
+		}
+
+		schema_list_item->obj = cur;
+		DLIST_ADD_END(schema_list, schema_list_item, struct schema_list);
+	}
+
+	/* resolve objects until all are resolved and in local schema */
+	pass_no = 1;
+	working_schema = initial_schema;
+
+	while (schema_list) {
+		uint32_t converted_obj_count = 0;
+		uint32_t failed_obj_count = 0;
+
+		for (schema_list_item = schema_list;
+		     schema_list_item;
+		     schema_list_item=schema_list_next_item) {
+			struct dsdb_extended_replicated_object object;
+
+			cur = schema_list_item->obj;
+
+			/*
+			 * Save the next item, now we have saved out
+			 * the current one, so we can DLIST_REMOVE it
+			 * safely
+			 */
+			schema_list_next_item = schema_list_item->next;
+
+			/*
+			 * Convert the objects into LDB messages using the
+			 * schema we have so far. It's ok if we fail to convert
+			 * an object. We should convert more objects on next pass.
+			 */
+			werr = dsdb_convert_object_ex(ldb, working_schema,
+						      pfm_remote,
+						      cur, &empty_key,
+						      ignore_attids,
+						      0,
+						      schema_list_item, &object);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(4,("debug: Failed to convert schema "
+					 "object %s into ldb msg, "
+					 "will try during next loop\n",
+					 cur->object.identifier->dn));
+
+				failed_obj_count++;
+			} else {
+				/*
+				 * Convert the schema from ldb_message format
+				 * (OIDs as OID strings) into schema, using
+				 * the remote prefixMap
+				 */
+				werr = dsdb_schema_set_el_from_ldb_msg_dups(ldb,
+								resulting_schema,
+								object.msg,
+								true);
+				if (!W_ERROR_IS_OK(werr)) {
+					DEBUG(4,("debug: failed to convert "
+						 "object %s into a schema element, "
+						 "will try during next loop: %s\n",
+						 ldb_dn_get_linearized(object.msg->dn),
+						 win_errstr(werr)));
+					failed_obj_count++;
+				} else {
+					DLIST_REMOVE(schema_list, schema_list_item);
+					TALLOC_FREE(schema_list_item);
+					converted_obj_count++;
+				}
+			}
+		}
+
+		DEBUG(4,("Schema load pass %d: converted %d, %d of %d objects left to be converted.\n",
+			 pass_no, converted_obj_count, failed_obj_count, object_count));
+		pass_no++;
+
+		/* check if we converted any objects in this pass */
+		if (converted_obj_count == 0) {
+			DEBUG(0,("Can't continue Schema load: "
+				 "didn't manage to convert any objects: "
+				 "all %d remaining of %d objects "
+				 "failed to convert\n",
+				 failed_obj_count, object_count));
+			return WERR_INTERNAL_ERROR;
+		}
+
+		/* rebuild indexes */
+		ret = dsdb_setup_sorted_accessors(ldb, working_schema);
+		if (LDB_SUCCESS != ret) {
+			DEBUG(0,("Failed to create schema-cache indexes!\n"));
+			return WERR_INTERNAL_ERROR;
+		}
+	}
+
+	return WERR_OK;
+}
+
 /**
  * Multi-pass working schema creation
  * Function will:
@@ -50,25 +178,9 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 				     TALLOC_CTX *mem_ctx,
 				     struct dsdb_schema **_schema_out)
 {
-	struct schema_list {
-		struct schema_list *next, *prev;
-		const struct drsuapi_DsReplicaObjectListItemEx *obj;
-	};
-
 	WERROR werr;
 	struct dsdb_schema_prefixmap *pfm_remote;
-	struct schema_list *schema_list = NULL, *schema_list_item, *schema_list_next_item;
 	struct dsdb_schema *working_schema;
-	const struct drsuapi_DsReplicaObjectListItemEx *cur;
-	int ret, pass_no;
-	uint32_t ignore_attids[] = {
-			DRSUAPI_ATTID_auxiliaryClass,
-			DRSUAPI_ATTID_mayContain,
-			DRSUAPI_ATTID_mustContain,
-			DRSUAPI_ATTID_possSuperiors,
-			DRSUAPI_ATTID_systemPossSuperiors,
-			DRSUAPI_ATTID_INVALID
-	};
 
 	/* make a copy of the iniatial_scheam so we don't mess with it */
 	working_schema = dsdb_schema_copy_shallow(mem_ctx, ldb, initial_schema);
@@ -86,88 +198,17 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 		return werr;
 	}
 
-	/* create a list of objects yet to be converted */
-	for (cur = first_object; cur; cur = cur->next_object) {
-		schema_list_item = talloc(mem_ctx, struct schema_list);
-		schema_list_item->obj = cur;
-		DLIST_ADD_END(schema_list, schema_list_item, struct schema_list);
+	werr = dsdb_repl_resolve_working_schema(ldb, mem_ctx,
+						pfm_remote,
+						working_schema,
+						working_schema,
+						object_count,
+						first_object);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s",
+			  __location__, win_errstr(werr)));
+		return werr;
 	}
-
-	/* resolve objects until all are resolved and in local schema */
-	pass_no = 1;
-
-	while (schema_list) {
-		uint32_t converted_obj_count = 0;
-		uint32_t failed_obj_count = 0;
-		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
-
-		for (schema_list_item = schema_list; schema_list_item; schema_list_item=schema_list_next_item) {
-			struct dsdb_extended_replicated_object object;
-
-			cur = schema_list_item->obj;
-
-			/* Save the next item, now we have saved out
-			 * the current one, so we can DLIST_REMOVE it
-			 * safely */
-			schema_list_next_item = schema_list_item->next;
-
-			/*
-			 * Convert the objects into LDB messages using the
-			 * schema we have so far. It's ok if we fail to convert
-			 * an object. We should convert more objects on next pass.
-			 */
-			werr = dsdb_convert_object_ex(ldb, working_schema, pfm_remote,
-						      cur, gensec_skey,
-						      ignore_attids,
-						      0,
-						      tmp_ctx, &object);
-			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(4,("debug: Failed to convert schema object %s into ldb msg, will try during next loop\n",
-					  cur->object.identifier->dn));
-
-				failed_obj_count++;
-			} else {
-				/*
-				 * Convert the schema from ldb_message format
-				 * (OIDs as OID strings) into schema, using
-				 * the remote prefixMap
-				 */
-				werr = dsdb_schema_set_el_from_ldb_msg_dups(ldb,
-								working_schema,
-								object.msg,
-								true);
-				if (!W_ERROR_IS_OK(werr)) {
-					DEBUG(4,("debug: failed to convert object %s into a schema element, will try during next loop: %s\n",
-						 ldb_dn_get_linearized(object.msg->dn),
-						 win_errstr(werr)));
-					failed_obj_count++;
-				} else {
-					DLIST_REMOVE(schema_list, schema_list_item);
-					talloc_free(schema_list_item);
-					converted_obj_count++;
-				}
-			}
-		}
-		talloc_free(tmp_ctx);
-
-		DEBUG(4,("Schema load pass %d: converted %d, %d of %d objects left to be converted.\n",
-			 pass_no, converted_obj_count, failed_obj_count, object_count));
-		pass_no++;
-
-		/* check if we converted any objects in this pass */
-		if (converted_obj_count == 0) {
-			DEBUG(0,("Can't continue Schema load: didn't manage to convert any objects: all %d remaining of %d objects failed to convert\n", failed_obj_count, object_count));
-			return WERR_INTERNAL_ERROR;
-		}
-
-		/* rebuild indexes */
-		ret = dsdb_setup_sorted_accessors(ldb, working_schema);
-		if (LDB_SUCCESS != ret) {
-			DEBUG(0,("Failed to create schema-cache indexes!\n"));
-			return WERR_INTERNAL_ERROR;
-		}
-	};
 
 	*_schema_out = working_schema;
 
