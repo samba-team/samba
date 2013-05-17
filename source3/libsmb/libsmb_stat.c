@@ -469,7 +469,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         }
 
         /* See if DFS is supported */
-	if ((smb1cli_conn_capabilities(cli->conn) & CAP_DFS) &&  cli->dfsroot) {
+	if (smbXcli_conn_dfs_supported(cli->conn) &&  cli->dfsroot) {
                 flags |= SMBC_VFS_FEATURE_DFS;
         }
 
