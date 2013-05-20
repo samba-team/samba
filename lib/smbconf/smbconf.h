@@ -447,7 +447,8 @@ sbcErr smbconf_delete_global_includes(struct smbconf_ctx *ctx);
 /**
  * @brief Start a transaction on the configuration backend.
  *
- * This is to speed up writes to the registry based backend.
+ * Transactions are exposed in order to make it possible
+ * to create atomic compound writing commands.
  *
  * @param[in] ctx       The smbconf context to start the transaction.
  *
@@ -459,7 +460,8 @@ sbcErr smbconf_transaction_start(struct smbconf_ctx *ctx);
 /**
  * @brief Commit a transaction on the configuration backend.
  *
- * This is to speed up writes to the registry based backend.
+ * Transactions are exposed in order to make it possible
+ * to create atomic compound writing commands.
  *
  * @param[in] ctx       The smbconf context to commit the transaction.
  *
@@ -472,6 +474,9 @@ sbcErr smbconf_transaction_commit(struct smbconf_ctx *ctx);
 
 /**
  * @brief Cancel a transaction on the configuration backend.
+ *
+ * Transactions are exposed in order to make it possible
+ * to create atomic compound writing commands.
  *
  * @param[in] ctx       The smbconf context to cancel the transaction.
  *
