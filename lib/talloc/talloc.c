@@ -255,7 +255,7 @@ struct talloc_chunk {
 	 * if 'limit' is set it means all *new* children of the context will
 	 * be limited to a total aggregate size ox max_size for memory
 	 * allocations.
-	 * cur_size is used to kep track of the current use
+	 * cur_size is used to keep track of the current use
 	 */
 	struct talloc_memlimit *limit;
 
