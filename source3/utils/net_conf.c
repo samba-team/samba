@@ -179,13 +179,10 @@ static sbcErr import_process_service(struct net_context *c,
 				     struct smbconf_ctx *conf_ctx,
 				     struct smbconf_service *service)
 {
-	uint32_t idx;
 	sbcErr err = SBC_ERR_OK;
-	uint32_t num_includes = 0;
-	char **includes = NULL;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (c->opt_testmode) {
+		uint32_t idx;
 		const char *indent = "";
 		if (service->name != NULL) {
 			d_printf("[%s]\n", service->name);
@@ -206,52 +203,10 @@ static sbcErr import_process_service(struct net_context *c,
 			goto done;
 		}
 	}
-	err = smbconf_create_share(conf_ctx, service->name);
-	if (!SBC_ERROR_IS_OK(err)) {
-		goto done;
-	}
 
-	for (idx = 0; idx < service->num_params; idx ++) {
-		if (strequal(service->param_names[idx], "include")) {
-			includes = talloc_realloc(mem_ctx,
-							includes,
-							char *,
-							num_includes+1);
-			if (includes == NULL) {
-				err = SBC_ERR_NOMEM;
-				goto done;
-			}
-			includes[num_includes] = talloc_strdup(includes,
-						service->param_values[idx]);
-			if (includes[num_includes] == NULL) {
-				err = SBC_ERR_NOMEM;
-				goto done;
-			}
-			num_includes++;
-		} else {
-			err = smbconf_set_parameter(conf_ctx,
-						     service->name,
-						     service->param_names[idx],
-						     service->param_values[idx]);
-			if (!SBC_ERROR_IS_OK(err)) {
-				d_fprintf(stderr,
-					  _("Error in section [%s], parameter \"%s\": %s\n"),
-					  service->name, service->param_names[idx],
-					  sbcErrorString(err));
-				goto done;
-			}
-		}
-	}
+	err = smbconf_create_set_share(conf_ctx, service);
 
-	err = smbconf_set_includes(conf_ctx, service->name, num_includes,
-				   (const char **)includes);
-	if (!SBC_ERROR_IS_OK(err)) {
-		goto done;
-	}
-
-	err = SBC_ERR_OK;
 done:
-	TALLOC_FREE(mem_ctx);
 	return err;
 }
 
