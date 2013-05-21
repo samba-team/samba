@@ -1654,6 +1654,36 @@ int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode)
 	return res;
 }
 
+int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb, 
+			   struct timeval timeout, 
+			   uint32_t destnode,
+			   uint32_t *runstate)
+{
+	TDB_DATA outdata;
+	int32_t res;
+	int ret;
+
+	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_RUNSTATE, 0,
+			   tdb_null, ctdb, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,("ctdb_control for get_runstate failed\n"));
+		return ret != 0 ? ret : res;
+	}
+
+	if (outdata.dsize != sizeof(uint32_t)) {
+		DEBUG(DEBUG_ERR,("Invalid return data in get_runstate\n"));
+		talloc_free(outdata.dptr);
+		return -1;
+	}
+
+	if (runstate != NULL) {
+		*runstate = *(uint32_t *)outdata.dptr;
+	}
+	talloc_free(outdata.dptr);
+
+	return 0;
+}
+
 /*
   find the real path to a ltdb 
  */

@@ -295,6 +295,11 @@ int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t
 
 int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode);
 
+int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb, 
+			   struct timeval timeout, 
+			   uint32_t destnode,
+			   uint32_t *runstate);
+
 int ctdb_ctrl_get_config(struct ctdb_context *ctdb);
 
 int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t *level);

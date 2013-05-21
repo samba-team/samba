@@ -207,6 +207,13 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb->num_clients;
 
+	case CTDB_CONTROL_GET_RUNSTATE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		outdata->dptr = (uint8_t *)&ctdb->runstate;
+		outdata->dsize = sizeof(uint32_t);
+		return 0;
+
+
 	case CTDB_CONTROL_SET_DB_READONLY: {
 		uint32_t db_id;
 		struct ctdb_db_context *ctdb_db;
