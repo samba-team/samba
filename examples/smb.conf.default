@@ -28,10 +28,16 @@
 # server string is the equivalent of the NT Description field
    server string = Samba Server
 
-# Security mode. Defines in which mode Samba will operate. Possible 
-# values are user, domain and ads. Most people will want
-# user level security. See the Samba-HOWTO-Collection for details.
-   security = user
+# Server role. Defines in which mode Samba will operate. Possible
+# values are "standalone server", "member server", "classic primary
+# domain controller", "classic backup domain controller", "active
+# directory domain controller".
+#
+# Most people will want "standalone sever" or "member server".
+# Running as "active directory domain controller" will require first
+# running "samba-tool domain provision" to wipe databases and create a
+# new domain.
+   server role = standalone server
 
 # This option is important for security. It allows you to restrict
 # connections to machines which are on your local network. The
