@@ -4430,7 +4430,7 @@ static int control_getvar(struct ctdb_context *ctdb, int argc, const char **argv
 
 	name = argv[0];
 	ret = ctdb_ctrl_get_tunable(ctdb, TIMELIMIT(), options.pnn, name, &value);
-	if (ret == -1) {
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get tunable variable '%s'\n", name));
 		return -1;
 	}

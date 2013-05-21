@@ -128,7 +128,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 	talloc_free(name);
 	
 	if (i == ARRAY_SIZE(tunable_map)) {
-		return -1;
+		return -EINVAL;
 	}
 
 	val = *(uint32_t *)(tunable_map[i].offset + (uint8_t*)&ctdb->tunable);

@@ -2502,7 +2502,7 @@ int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb,
 	talloc_free(data.dptr);
 	if (ret != 0 || res != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get_tunable failed\n"));
-		return -1;
+		return ret != 0 ? ret : res;
 	}
 
 	if (outdata.dsize != sizeof(uint32_t)) {
