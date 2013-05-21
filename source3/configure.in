@@ -620,11 +620,11 @@ if test x"$samba_cv_md5lib" = x"none" ; then
 fi
 
 if test x"$samba_cv_md5lib" != x"none" ; then
-	AC_CHECK_HEADERS(md5.h)
+	AC_CHECK_HEADERS(sys/md5.h)
 fi
 
 CRYPTO_MD5_OBJ="../lib/crypto/md5.o"
-if test x"$ac_cv_header_md5_h" = x"yes" -a \
+if test x"$ac_cv_header_sys_md5_h" = x"yes" -a \
         x"$samba_cv_md5lib" != x"none" ; then
 	if test x"$samba_cv_md5lib" != x ; then
 		LIBS="${LIBS} -l${samba_cv_md5lib}"

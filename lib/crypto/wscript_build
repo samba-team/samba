@@ -4,6 +4,10 @@ extra_source = ''
 extra_deps = ''
 if bld.CONFIG_SET('HAVE_BSD_MD5_H'):
 	extra_deps += ' bsd'
+elif bld.CONFIG_SET('HAVE_SYS_MD5_H') and bld.CONFIG_SET('HAVE_LIBMD5'):
+	extra_deps += ' md5'
+elif bld.CONFIG_SET('HAVE_SYS_MD5_H') and bld.CONFIG_SET('HAVE_LIBMD'):
+	extra_deps += ' md'
 elif not bld.CONFIG_SET('HAVE_COMMONCRYPTO_COMMONDIGEST_H'):
 	extra_source += ' md5.c'
 
