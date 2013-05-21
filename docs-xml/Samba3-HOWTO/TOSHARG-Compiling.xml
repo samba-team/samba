@@ -119,7 +119,7 @@ gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
 	<para>
 	<indexterm><primary>configure</primary></indexterm>
 	To build the binaries, run the program <userinput>./configure
-	</userinput> in the top level director of the source tree. This should automatically 
+	</userinput> in the top level directory of the source tree. This should automatically
 	configure Samba for your operating system. If you have unusual 
 	needs, then you may wish to first run:
 <screen>
@@ -177,7 +177,7 @@ gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
 
 	<para>
 	After you run configure, make sure that the 
-	<filename>bin/include/config.h</filename> it generates contain lines like this:
+	<filename>bin/default/include/config.h</filename> it generates contain lines like this:
 <programlisting>
 #define HAVE_KRB5 1
 #define HAVE_LDAP 1
@@ -186,7 +186,7 @@ gpg: BAD signature from <quote>Samba Distribution Verification Key</quote>
 
 	<para>
 	If it does not, configure did not find your KRB5 libraries or
-	your LDAP libraries. Look in <filename>config.log</filename> to figure
+	your LDAP libraries. Look in <filename>bin/config.log</filename> to figure
 	out why and fix it.
 	</para>
 
