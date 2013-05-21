@@ -77,35 +77,6 @@
 # here. See the man page for details.
 ;   interfaces = 192.168.12.2/24 192.168.13.2/24 
 
-# Browser Control Options:
-# set local master to no if you don't want Samba to become a master
-# browser on your network. Otherwise the normal election rules apply
-;   local master = no
-
-# OS Level determines the precedence of this server in master browser
-# elections. The default value should be reasonable
-;   os level = 33
-
-# Domain Master specifies Samba to be the Domain Master Browser. This
-# allows Samba to collate browse lists between subnets. Don't use this
-# if you already have a Windows NT domain controller doing this job
-;   domain master = yes 
-
-# Preferred Master causes Samba to force a local browser election on startup
-# and gives it a slightly higher chance of winning the election
-;   preferred master = yes
-
-# Enable this if you want Samba to be a domain logon server for 
-# Windows95 workstations. 
-;   domain logons = yes
-
-# if you enable domain logons then you may want a per-machine or
-# per user logon script
-# run a specific logon batch file per workstation (machine)
-;   logon script = %m.bat
-# run a specific logon batch file per username
-;   logon script = %U.bat
-
 # Where to store roving profiles (only for Win95 and WinNT)
 #        %L substitutes for this servers netbios name, %U is username
 #        You must uncomment the [Profiles] share below
