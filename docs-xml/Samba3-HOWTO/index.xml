@@ -161,8 +161,6 @@ The chapters in this part each cover specific Samba features.
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-Backup.xml"/>
 	<?latex \cleardoublepage ?>
-	<xi:include href="TOSHARG-HighAvailability.xml"/>
-	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-LargeFile.xml"/>
 	<?latex \cleardoublepage ?>
 	<xi:include href="TOSHARG-ConfigSmarts.xml"/>
