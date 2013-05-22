@@ -179,7 +179,6 @@ def cmd_testonly(opt):
         os.environ['LDB_MODULES_PATH'] = 'bin/modules/ldb'
 
     # tell build system where to find config.h
-    os.environ['VFSLIBDIR'] = os.path.abspath('bin/modules/vfs')
     os.environ['CONFIG_H'] = 'bin/default/include/config.h'
 
     st_done = os.path.join(env.SELFTEST_PREFIX, 'st_done')

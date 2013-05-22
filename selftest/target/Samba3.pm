@@ -413,7 +413,6 @@ sub setup_admember_rfc2307($$$$)
 sub setup_simpleserver($$)
 {
 	my ($self, $path) = @_;
-	my $vfs_modulesdir_abs = $ENV{VFSLIBDIR};
 
 	print "PROVISIONING server with security=share...";
 
@@ -421,11 +420,11 @@ sub setup_simpleserver($$)
 
 	my $simpleserver_options = "
 	lanman auth = yes
-	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
+	vfs objects = xattr_tdb streams_depot
 
 [vfs_aio_fork]
 	path = $prefix_abs/share
-        vfs objects = $vfs_modulesdir_abs/aio_fork.so
+        vfs objects = aio_fork
         read only = no
         vfs_aio_fork:erratic_testing_mode=yes
 ";
@@ -781,7 +780,6 @@ sub provision($$$$$$)
 
 	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
-	my $vfs_modulesdir_abs = ($ENV{VFSLIBDIR} or $bindir_abs);
 
 	my $dns_host_file = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
@@ -988,7 +986,7 @@ sub provision($$$$$$)
 	store dos attributes = yes
 	create mask = 755
 	dos filemode = yes
-	vfs objects = $vfs_modulesdir_abs/acl_xattr.so $vfs_modulesdir_abs/fake_acls.so $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
+	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot
 
 	printing = vlp
 	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
@@ -1026,7 +1024,7 @@ sub provision($$$$$$)
 	path = $shrdir
 	comment = encrypt smb username is [%U]
 	smb encrypt = required
-	vfs objects = $vfs_modulesdir_abs/dirsort.so
+	vfs objects = dirsort
 [tmpguest]
 	path = $shrdir
         guest ok = yes
@@ -1086,13 +1084,13 @@ sub provision($$$$$$)
 	path = $shrdir
 	comment = smb username is [%U]
 	nfs4:mode = simple
-	vfs objects = $vfs_modulesdir_abs/nfs4acl_xattr.so $vfs_modulesdir_abs/xattr_tdb.so
+	vfs objects = nfs4acl_xattr xattr_tdb
 
 [nfs4acl_special]
 	path = $shrdir
 	comment = smb username is [%U]
 	nfs4:mode = special
-	vfs objects = $vfs_modulesdir_abs/nfs4acl_xattr.so $vfs_modulesdir_abs/xattr_tdb.so
+	vfs objects = nfs4acl_xattr xattr_tdb
 
 [xcopy_share]
 	path = $shrdir
@@ -1106,7 +1104,7 @@ sub provision($$$$$$)
 	force create mode = 0
 	directory mask = 0777
 	force directory mode = 0
-	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so
+	vfs objects = xattr_tdb
 
 [print\$]
 	copy = tmp
