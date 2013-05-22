@@ -228,6 +228,19 @@ struct foo bar = { .y = 'X', .x = 1 };
     # these may be builtins, so we need the link=False strategy
     conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
 
+    # See https://bugzilla.samba.org/show_bug.cgi?id=1097
+    #
+    # Ported in from autoconf where it was added with this commit:
+    # commit 804cfb20a067b4b687089dc72a8271b3abf20f31
+    # Author: Simo Sorce <idra@samba.org>
+    # Date:   Wed Aug 25 14:24:16 2004 +0000
+    #     r2070: Let's try to overload srnlen and strndup for AIX where they are natly broken.
+
+    host_os = sys.platform
+    if host_os.rfind('aix') > -1:
+        conf.DEFINE('BROKEN_STRNLEN', 1)
+        conf.DEFINE('BROKEN_STRNDUP', 1)
+
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
     conf.CHECK_FUNCS('lstat getpgrp utime utimes setuid seteuid setreuid setresuid setgid setegid')
