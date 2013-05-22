@@ -106,7 +106,7 @@ void delete_and_reload_printers(struct tevent_context *ev,
 						 NULL,
 						 lp_servicename(session_info,
 								snum),
-						 NULL, &pinfo2)) {
+						 &pinfo2)) {
 				nt_printer_publish(session_info,
 						   session_info,
 						   msg_ctx,

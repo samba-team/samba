@@ -132,6 +132,11 @@ bool print_access_check(const struct auth_session_info *server_info,
 			struct messaging_context *msg_ctx, int snum,
 			int access_type);
 
+WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
+			   const struct auth_session_info *session_info,
+			   struct messaging_context *msg_ctx,
+			   const char *printer, struct GUID *guid);
+
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 			  const struct auth_session_info *server_info,
 			  struct messaging_context *msg_ctx,
@@ -143,7 +148,6 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  struct messaging_context *msg_ctx,
 			  const char *servername,
 			  const char *printer,
-			  struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2);
 
 WERROR check_published_printers(struct messaging_context *msg_ctx);
