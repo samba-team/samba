@@ -21,11 +21,15 @@ def write_version_header(task):
 
 def SAMBA_MKVERSION(bld, target):
     '''generate the version.h header for Samba'''
+
+    # We only force waf to re-generate this file if we are installing,
+    # because only then is information not included in the deps (the
+    # git revision) included in the version.
     t = bld.SAMBA_GENERATOR('VERSION',
                             rule=write_version_header,
                             source= 'VERSION',
                             target=target,
-                            always=True)
+                            always=bld.is_install)
     t.env.is_install = bld.is_install
 Build.BuildContext.SAMBA_MKVERSION = SAMBA_MKVERSION
 
