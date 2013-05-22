@@ -696,20 +696,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	}
 
 	/*
-	 * TODO:
-	 * add scavenger timer functionality
-	 *
-	 * For now we always allow the reconnect
-	 */
-#if 0
-	expire_time = op->global->disconnect_time;
-	expire_time += NTTIME_MAGIC(op->global->durable_timeout_msec);
-	if (expire < now) {
-		//TODO reopen and close before telling the client...
-	}
-#endif
-
-	/*
 	 * 2. proceed with opening file
 	 */
 
