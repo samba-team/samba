@@ -936,7 +936,7 @@ static bool do_drvupgrade(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	return send_message(msg_ctx, pid, MSG_DEBUG, argv[1],
+	return send_message(msg_ctx, pid, MSG_PRINTER_DRVUPGRADE, argv[1],
 			    strlen(argv[1]) + 1);
 }
 
