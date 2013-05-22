@@ -1181,7 +1181,7 @@ int main (int argc, char **argv)
 	}
 
 	if (reset_account_policies) {
-		if (!reinit_account_policies()) {
+		if (reinit_account_policies()) {
 			exit(1);
 		}
 
