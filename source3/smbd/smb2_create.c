@@ -552,6 +552,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		uint32_t durable_timeout_msec = 0;
 		bool do_durable_reconnect = false;
 		struct smb2_create_blob *dh2q = NULL;
+		uint64_t persistent_id = 0;
 
 		exta = smb2_create_blob_find(&in_context_blobs,
 					     SMB2_CREATE_TAG_EXTA);
@@ -683,41 +684,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (dhnc) {
-			NTTIME now = timeval_to_nttime(&smb2req->request_time);
-			uint64_t persistent_id;
-
 			persistent_id = BVAL(dhnc->data.data, 0);
-
-			status = smb2srv_open_recreate(smb2req->sconn->conn,
-						smb1req->conn->session_info,
-						persistent_id, create_guid,
-						now, &op);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(3, ("smbd_smb2_create_send: "
-					  "smb2srv_open_recreate v1 failed: %s\n",
-					  nt_errstr(status)));
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
-			}
-
-			DEBUG(10, ("smb2_create_send: DHNC: %s recreate the "
-				   "smb2srv_open struct for a durable handle.\n",
-				   op->global->durable ? "did" : "could not"));
-
-			if (!op->global->durable) {
-				talloc_free(op);
-				tevent_req_nterror(req,
-					NT_STATUS_OBJECT_NAME_NOT_FOUND);
-				return tevent_req_post(req, ev);
-			}
 
 			do_durable_reconnect = true;
 		}
 
 		if (dh2c) {
 			const uint8_t *p = dh2c->data.data;
-			NTTIME now = timeval_to_nttime(&smb2req->request_time);
-			uint64_t persistent_id;
 			DATA_BLOB create_guid_blob;
 
 			persistent_id = BVAL(p, 0);
@@ -726,29 +699,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			status = GUID_from_ndr_blob(&create_guid_blob,
 						    &create_guid);
 			if (tevent_req_nterror(req, status)) {
-				return tevent_req_post(req, ev);
-			}
-
-			status = smb2srv_open_recreate(smb2req->sconn->conn,
-						       smb1req->conn->session_info,
-						       persistent_id, create_guid,
-						       now, &op);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(3, ("smbd_smb2_create_send: "
-					  "smb2srv_open_recreate v2 failed: %s\n",
-					  nt_errstr(status)));
-				tevent_req_nterror(req, status);
-				return tevent_req_post(req, ev);
-			}
-
-			DEBUG(10, ("smb2_create_send: DH2C: %s recreate the "
-				   "smb2srv_open struct for a durable handle.\n",
-				   op->global->durable ? "did" : "could not"));
-
-			if (!op->global->durable) {
-				talloc_free(op);
-				tevent_req_nterror(req,
-					NT_STATUS_OBJECT_NAME_NOT_FOUND);
 				return tevent_req_post(req, ev);
 			}
 
@@ -813,6 +763,30 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 */
 		if (do_durable_reconnect) {
 			DATA_BLOB new_cookie = data_blob_null;
+			NTTIME now = timeval_to_nttime(&smb2req->request_time);
+
+			status = smb2srv_open_recreate(smb2req->sconn->conn,
+						smb1req->conn->session_info,
+						persistent_id, create_guid,
+						now, &op);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(3, ("smbd_smb2_create_send: "
+					  "smb2srv_open_recreate failed: %s\n",
+					  nt_errstr(status)));
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
+
+			DEBUG(10, ("smb2_create_send: %s to recreate the "
+				   "smb2srv_open struct for a durable handle.\n",
+				   op->global->durable ? "succeded" : "failed"));
+
+			if (!op->global->durable) {
+				talloc_free(op);
+				tevent_req_nterror(req,
+					NT_STATUS_OBJECT_NAME_NOT_FOUND);
+				return tevent_req_post(req, ev);
+			}
 
 			status = SMB_VFS_DURABLE_RECONNECT(smb1req->conn,
 						smb1req,
