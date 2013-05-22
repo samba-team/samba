@@ -4176,29 +4176,52 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 				      int snum)
 {
 	struct auth_serversupplied_info *session_info;
-	struct GUID guid;
+	char *printer;
 	NTSTATUS status;
-
-	status = make_session_info_system(mem_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("construct_printer_info7: "
-			  "Could not create system session_info\n"));
+	WERROR werr;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
 		return WERR_NOMEM;
 	}
 
-	if (is_printer_published(mem_ctx, session_info, msg_ctx,
-				 servername,
-				 lp_servicename(snum), &guid, NULL)) {
+	status = make_session_info_system(tmp_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("construct_printer_info7: "
+			  "Could not create system session_info\n"));
+		werr = WERR_NOMEM;
+		goto out_tmp_free;
+	}
+
+	printer = lp_servicename(snum);
+	if (printer == NULL) {
+		DEBUG(0, ("invalid printer snum %d\n", snum));
+		werr = WERR_INVALID_PARAM;
+		goto out_tmp_free;
+	}
+
+	if (is_printer_published(tmp_ctx, session_info, msg_ctx,
+				 servername, printer, NULL)) {
+		struct GUID guid;
+		werr = nt_printer_guid_get(tmp_ctx, session_info, msg_ctx,
+					   printer, &guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto out_tmp_free;
+		}
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
 		r->action = DSPRINT_PUBLISH;
 	} else {
 		r->guid = talloc_strdup(mem_ctx, "");
 		r->action = DSPRINT_UNPUBLISH;
 	}
-	W_ERROR_HAVE_NO_MEMORY(r->guid);
+	if (r->guid == NULL) {
+		werr = WERR_NOMEM;
+		goto out_tmp_free;
+	}
 
-	TALLOC_FREE(session_info);
-	return WERR_OK;
+	werr = WERR_OK;
+out_tmp_free:
+	talloc_free(tmp_ctx);
+	return werr;
 }
 
 /********************************************************************
