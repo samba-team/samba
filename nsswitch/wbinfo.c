@@ -26,11 +26,7 @@
 #include "libwbclient/wbclient.h"
 #include "lib/popt/popt.h"
 #include "../libcli/auth/libcli_auth.h"
-#if (_SAMBA_BUILD_) >= 4
 #include "lib/cmdline/popt_common.h"
-#else
-#include "popt_common.h"
-#endif
 
 #ifdef DBGC_CLASS
 #undef DBGC_CLASS
