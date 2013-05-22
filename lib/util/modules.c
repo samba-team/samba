@@ -34,18 +34,10 @@ init_module_fn load_module(const char *path, bool is_probe, void **handle_out)
 	void *init_fn;
 	char *error;
 
-#if _SAMBA_BUILD_ == 3
-	/* Always try to use LAZY symbol resolving; if the plugin has
-	 * backwards compatibility, there might be symbols in the
-	 * plugin referencing to old (removed) functions
-	 */
-	handle = dlopen(path, RTLD_LAZY);
-#else
 	/* This should be a WAF build, where modules should be built
 	 * with no undefined symbols and are already linked against
 	 * the libraries that they are loaded by */
 	handle = dlopen(path, RTLD_NOW);
-#endif
 
 	/* This call should reset any possible non-fatal errors that
 	   occured since last call to dl* functions */
