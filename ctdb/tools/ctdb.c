@@ -25,7 +25,7 @@
 #include "system/locale.h"
 #include "popt.h"
 #include "cmdline.h"
-#include "../include/version.h"
+#include "../include/ctdb_version.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"

@@ -52,7 +52,7 @@ mkdir -p `rpm --eval %_rpmdir`/noarch
 mkdir -p `rpm --eval %_rpmdir`/i386
 mkdir -p `rpm --eval %_rpmdir`/x86_64
 
-VERSION=$(${TOPDIR}/packaging/mkversion.sh ${TOPDIR}/include/version.h)
+VERSION=$(${TOPDIR}/packaging/mkversion.sh ${TOPDIR}/include/ctdb_version.h)
 if [ -z "$VERSION" ]; then
     exit 1
 fi

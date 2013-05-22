@@ -35,7 +35,7 @@ fi
 TAR_PREFIX_TMP="ctdb-tmp"
 SPECFILE=/tmp/${TAR_PREFIX_TMP}/packaging/RPM/ctdb.spec
 SPECFILE_IN=${SPECFILE}.in
-VERSION_H=/tmp/${TAR_PREFIX_TMP}/include/version.h
+VERSION_H=/tmp/${TAR_PREFIX_TMP}/include/ctdb_version.h
 
 if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
 	GZIP="gzip -9 --rsyncable"

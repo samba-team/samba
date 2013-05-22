@@ -25,7 +25,7 @@
 OUTPUT=$1
 
 if [ -z "$OUTPUT" ]; then
-    OUTPUT="include/version.h"
+    OUTPUT="include/ctdb_version.h"
 fi
 
 # We use tags and determine the version, as follows:
