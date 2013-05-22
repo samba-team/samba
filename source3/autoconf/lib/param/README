@@ -1,3 +1,0 @@
-This file denoates the output location of perl-generated files that we need for loadparm.
-
-To ensure no conflict between waf and autoconf, we generate the files here.

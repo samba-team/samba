@@ -1,7 +1,0 @@
-This is the output directory for PIDL generated files in the autoconf
-build.  This is a directory that WAF does not know about, and so will
-not cause problems when we make a release that must also have
-source3/autogen.sh pre-run.
-
-(Waf doesn't like files it expects to generate to already be in the
-build tree).
