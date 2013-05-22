@@ -1648,4 +1648,3 @@ bld.RECURSE('lib/netapi/examples')
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
 
-bld.SYMBOL_CHECK()
