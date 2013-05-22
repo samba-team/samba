@@ -1,5 +1,4 @@
 BUILDING SAMBA 4.0
-(which build system to use and why)
 ===================================
 
 The waf build
@@ -59,27 +58,15 @@ our users, for whatever purpose you want to put Samba to.
 The autoconf build
 ------------------
 
-For a small number of users, the requirement to have access to Python
-2.4 and perl will be unacceptable, and for these users we continue to
-provide the 'autoconf' build system used in Samba 3.x under the
-source3/.  This will build fewer parts of Samba, but should not be seen
-as 'the file server build' (typical file server deployments should use
-the top level build), but as a measure provided with limited features
-for systems and organisations unable to meet the requirements for the
-new build system.
-
-If you do need to use the autoconf build system, please let us know:
-both why you cannot use the 'waf' build in the top level, and what
-features of the source3 build that you require.  We need this
-information to assess the continuing demand for this parallel
-infrastructure, and to determine which features need to remain available
-in both build systems.
+The autoconf build was removed in Samba 4.1.  If you have tried and
+failed to use our waf build system, you may wish to use the latest
+supported 4.0 release instead, while we address your use case.
 
 Optional Libraries
 ------------------
 
 To assist users and distributors to build Samba with the full feature
-set, by the first release candidate the build system will abort if our
+set, we hope to in the future the build system will abort if our
 dependent libraries and their header files are not found on the target
 system.  This will mean for example, that xattr, acl and ldap headers
 must be installed for the default build to complete.  The configure
@@ -93,4 +80,6 @@ indicate:
 
 This will assist users and in particular distributors in building fully
 functional packages, while allowing those on systems truly without these
-facilities to continue to build Samba after careful consideration. 
+facilities to continue to build Samba after careful consideration.
+
+Sadly this feature is still pending implementation.
