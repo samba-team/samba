@@ -122,8 +122,9 @@ void reload_printers_full(struct tevent_context *ev,
 			struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 			if (is_printer_published(session_info, session_info,
 						 msg_ctx,
-						 NULL, lp_servicename(snum),
-						 NULL, &pinfo2)) {
+						 NULL,
+						 lp_servicename(snum),
+						 &pinfo2)) {
 				nt_printer_publish(session_info,
 						   session_info,
 						   msg_ctx,
