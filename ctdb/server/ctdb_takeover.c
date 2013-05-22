@@ -1324,7 +1324,7 @@ static bool can_node_host_ip(struct ctdb_context *ctdb, int32_t pnn,
 		return false;
 	}
 
-	for (i=0;i<public_ips->num;i++) {
+	for (i=0; i<public_ips->num; i++) {
 		if (ctdb_same_ip(&ip->addr, &public_ips->ips[i].addr)) {
 			/* yes, this node can serve this public ip */
 			return true;
@@ -1359,7 +1359,7 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 
 	numnodes = talloc_array_length(ipflags);
 	pnn    = -1;
-	for (i=0;i<numnodes;i++) {
+	for (i=0; i<numnodes; i++) {
 		/* verify that this node can serve this ip */
 		if (!can_node_takeover_ip(ctdb, i, ipflags[i], ip)) {
 			/* no it couldnt   so skip to the next node */
@@ -1648,7 +1648,7 @@ try_again:
 		*/
 		maxnode = -1;
 		minnode = -1;
-		for (i=0;i<numnodes;i++) {
+		for (i=0; i<numnodes; i++) {
 			/* only check nodes that can actually serve this ip */
 			if (!can_node_takeover_ip(ctdb, i, ipflags[i], tmp_ip)) {
 				/* no it couldnt   so skip to the next node */
@@ -1749,7 +1749,7 @@ static void lcp2_init(struct ctdb_context *tmp_ctx,
 	*lcp2_imbalances = talloc_array(tmp_ctx, uint32_t, numnodes);
 	CTDB_NO_MEMORY_FATAL(tmp_ctx, *lcp2_imbalances);
 
-	for (i=0;i<numnodes;i++) {
+	for (i=0; i<numnodes; i++) {
 		(*lcp2_imbalances)[i] = lcp2_imbalance(all_ips, i);
 		/* First step: assume all nodes are candidates */
 		(*rebalance_candidates)[i] = true;
@@ -1819,7 +1819,7 @@ static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 				continue;
 			}
 
-			for (dstnode=0; dstnode < numnodes; dstnode++) {
+			for (dstnode=0; dstnode<numnodes; dstnode++) {
 				/* only check nodes that can actually takeover this ip */
 				if (!can_node_takeover_ip(ctdb, dstnode,
 							  ipflags[dstnode],
@@ -1925,7 +1925,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 		 * to do gratuitous failover of IPs just to make minor
 		 * balance improvements.
 		 */
-		for (dstnode=0; dstnode < numnodes; dstnode++) {
+		for (dstnode=0; dstnode<numnodes; dstnode++) {
 			if (!rebalance_candidates[dstnode]) {
 				continue;
 			}
@@ -2018,7 +2018,7 @@ try_again:
 	 * continuing on...
 	 */
 	num_rebalance_candidates = 0;
-	for (i = 0; i < numnodes; i++) {
+	for (i=0; i<numnodes; i++) {
 		if (rebalance_candidates[i]) {
 			num_rebalance_candidates++;
 		}
@@ -2032,7 +2032,7 @@ try_again:
 	 * used, so this doesn't cost much...
 	 */
 	lips = talloc_array(ctdb, struct lcp2_imbalance_pnn, numnodes);
-	for (i = 0; i < numnodes; i++) {
+	for (i=0; i<numnodes; i++) {
 		lips[i].imbalance = lcp2_imbalances[i];
 		lips[i].pnn = i;
 	}
@@ -2040,7 +2040,7 @@ try_again:
 	      lcp2_cmp_imbalance_pnn);
 
 	again = false;
-	for (i = 0; i < numnodes; i++) {
+	for (i=0; i<numnodes; i++) {
 		/* This means that all nodes had 0 or 1 addresses, so
 		 * can't be imbalanced.
 		 */
@@ -2106,7 +2106,7 @@ static void ip_alloc_deterministic_ips(struct ctdb_context *ctdb,
 	*/
 
 	for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
-		tmp_ip->pnn = i%numnodes;
+		tmp_ip->pnn = i % numnodes;
 	}
 
 	/* IP failback doesn't make sense with deterministic
