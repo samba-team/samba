@@ -790,9 +790,10 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			status = SMB_VFS_DURABLE_RECONNECT(smb1req->conn,
 						smb1req,
-						op,
+						op, /* smbXsrv_open input */
 						op->global->backend_cookie,
-						op, &result, &new_cookie);
+						op, /* TALLOC_CTX */
+						&result, &new_cookie);
 			if (!NT_STATUS_IS_OK(status)) {
 				NTSTATUS return_status;
 
