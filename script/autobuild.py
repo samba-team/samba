@@ -33,31 +33,9 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "samba3", "samba3-ctdb", "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "samba", "samba-ctdb", "samba-libs", "ldb", "tdb", "ntdb", "talloc", "replace", "tevent", "pidl" ]
 
 tasks = {
-    "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
-                 ("configure", "./configure.developer ${PREFIX}", "text/plain"),
-                 ("make basics", "make basics", "text/plain"),
-                 # we split 'make -j 4', 'make bin/smbtorture' and 'make -j 4 everything'
-                 # because it makes it much easier to find errors.
-                 ("make", "make -j 4", "text/plain"), # don't use too many processes
-                 ("make bin/smbtorture", "make bin/smbtorture", "text/plain"),
-                 ("make everything", "make -j 4 everything", "text/plain"),
-                 ("install", "make install", "text/plain"),
-                 ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
-                 ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-                 ("clean", "make clean", "text/plain") ],
-
-    "samba3-ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
-                      ("autogen", "./autogen.sh", "text/plain"),
-                      ("configure", "./configure.developer ${PREFIX} --with-cluster-support --with-ctdb=../ctdb", "text/plain"),
-                      ("make basics", "make basics", "text/plain"),
-                      ("make", "make all", "text/plain"), # don't use too many processes
-                      ("check", "LD_LIBRARY_PATH=./bin ./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
-                      ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-                      ("clean", "make clean", "text/plain") ],
-
     # We have 'test' before 'install' because, 'test' should work without 'install'
     "samba" : [ ("configure", "./configure.developer ${PREFIX} --with-selftest-prefix=./bin/ab", "text/plain"),
                 ("make", "make -j", "text/plain"),
