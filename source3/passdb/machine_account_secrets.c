@@ -90,12 +90,9 @@ bool secrets_clear_domain_protection(const char *domain)
 
 bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 {
-#if _SAMBA_BUILD_ == 4
 	char *protect_ids;
-#endif
 	bool ret;
 
-#if _SAMBA_BUILD_ == 4
 	protect_ids = secrets_fetch(protect_ids_keystr(domain), NULL);
 	if (protect_ids) {
 		if (strncmp(protect_ids, "TRUE", 4)) {
@@ -106,7 +103,6 @@ bool secrets_store_domain_sid(const char *domain, const struct dom_sid  *sid)
 		}
 	}
 	SAFE_FREE(protect_ids);
-#endif
 
 	ret = secrets_store(domain_sid_keystr(domain), sid, sizeof(struct dom_sid ));
 
@@ -138,12 +134,9 @@ bool secrets_fetch_domain_sid(const char *domain, struct dom_sid  *sid)
 
 bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 {
-#if _SAMBA_BUILD_ == 4
 	char *protect_ids;
-#endif
 	fstring key;
 
-#if _SAMBA_BUILD_ == 4
 	protect_ids = secrets_fetch(protect_ids_keystr(domain), NULL);
 	if (protect_ids) {
 		if (strncmp(protect_ids, "TRUE", 4)) {
@@ -154,7 +147,6 @@ bool secrets_store_domain_guid(const char *domain, struct GUID *guid)
 		}
 	}
 	SAFE_FREE(protect_ids);
-#endif
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_GUID, domain);
 	if (!strupper_m(key)) {
