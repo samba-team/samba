@@ -24,6 +24,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "../include/ctdb_version.h"
 #include "../include/ctdb_client.h"
 #include "../include/ctdb_private.h"
 #include "../common/rb_tree.h"
@@ -1174,7 +1175,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 
 	ctdbd_pid = getpid();
 	ctdb->ctdbd_pid = ctdbd_pid;
-	DEBUG(DEBUG_ERR, ("Starting CTDBD as PID: %u\n", ctdbd_pid));
+	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
+			  CTDB_VERSION_STRING, ctdbd_pid));
 	ctdb_create_pidfile(ctdb->ctdbd_pid);
 
 	if (ctdb->do_setsched) {
