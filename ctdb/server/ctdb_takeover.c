@@ -1357,7 +1357,7 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 	int pnn, min=0, num;
 	int i, numnodes;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 	pnn    = -1;
 	for (i=0;i<numnodes;i++) {
 		/* verify that this node can serve this ip */
@@ -1626,7 +1626,7 @@ static void basic_failback(struct ctdb_context *ctdb,
 	int maxnode, maxnum, minnode, minnum, num, retries;
 	struct ctdb_public_ip_list *tmp_ip;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 	retries = 0;
 
 try_again:
@@ -1742,7 +1742,7 @@ static void lcp2_init(struct ctdb_context *tmp_ctx,
 	int i, numnodes;
 	struct ctdb_public_ip_list *tmp_ip;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 
 	*rebalance_candidates = talloc_array(tmp_ctx, bool, numnodes);
 	CTDB_NO_MEMORY_FATAL(tmp_ctx, *rebalance_candidates);
@@ -1801,7 +1801,7 @@ static void lcp2_allocate_unassigned(struct ctdb_context *ctdb,
 	bool should_loop = true;
 	bool have_unassigned = true;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 
 	while (have_unassigned && should_loop) {
 		should_loop = false;
@@ -1904,7 +1904,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 	mindstnode = -1;
 	mindstimbl = 0;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 
 	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
 	DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES FROM %d [%d]\n", srcnode, candimbl));
@@ -2009,7 +2009,7 @@ static void lcp2_failback(struct ctdb_context *ctdb,
 	struct lcp2_imbalance_pnn * lips;
 	bool again;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 
 try_again:
 
@@ -2097,7 +2097,7 @@ static void ip_alloc_deterministic_ips(struct ctdb_context *ctdb,
 	struct ctdb_public_ip_list *tmp_ip;
 	int i, numnodes;
 
-	numnodes = talloc_get_size(ipflags) / sizeof(struct ctdb_ipflags);
+	numnodes = talloc_array_length(ipflags);
 
 	DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
        /* Allocate IPs to nodes in a modulo fashion so that IPs will
@@ -2253,7 +2253,7 @@ static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
 		return;
 	}
 
-	size = talloc_get_size(cd->out) / sizeof(uint32_t);
+	size = talloc_array_length(cd->out);
 	if (pnn >= size) {
 		DEBUG(DEBUG_ERR,("Got %s reply from node %d but nodemap only has %d entries\n",
 				 cd->tunable, pnn, size));
