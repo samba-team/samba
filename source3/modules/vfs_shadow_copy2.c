@@ -490,6 +490,51 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return NULL);
 
+	DEBUG(10, ("converting '%s'\n", name));
+
+	if (!config->snapdirseverywhere) {
+		int ret;
+		char *snapshot_path;
+
+		snapshot_path = shadow_copy2_snapshot_path(talloc_tos(),
+							   handle,
+							   timestamp);
+		if (snapshot_path == NULL) {
+			goto fail;
+		}
+
+		if (config->rel_connectpath == NULL) {
+			converted = talloc_asprintf(mem_ctx, "%s/%s",
+						    snapshot_path, name);
+		} else {
+			converted = talloc_asprintf(mem_ctx, "%s/%s/%s",
+						    snapshot_path,
+						    config->rel_connectpath,
+						    name);
+		}
+		if (converted == NULL) {
+			goto fail;
+		}
+
+		ZERO_STRUCT(converted_fname);
+		converted_fname.base_name = converted;
+
+		ret = SMB_VFS_NEXT_LSTAT(handle, &converted_fname);
+		DEBUG(10, ("Trying[not snapdirseverywhere] %s: %d (%s)\n",
+			   converted,
+			   ret, ret == 0 ? "ok" : strerror(errno)));
+		if (ret == 0) {
+			DEBUG(10, ("Found %s\n", converted));
+			result = converted;
+			converted = NULL;
+			goto fail;
+		} else {
+			errno = ENOENT;
+			goto fail;
+		}
+		/* never reached ... */
+	}
+
 	path = talloc_asprintf(mem_ctx, "%s/%s", handle->conn->connectpath,
 			       name);
 	if (path == NULL) {
@@ -497,8 +542,6 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	pathlen = talloc_get_size(path)-1;
-
-	DEBUG(10, ("converting %s\n", path));
 
 	if (!shadow_copy2_find_slashes(talloc_tos(), path,
 				       &slashes, &num_slashes)) {
