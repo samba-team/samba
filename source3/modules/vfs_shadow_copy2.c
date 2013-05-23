@@ -1049,6 +1049,13 @@ static char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return NULL);
 
+	/*
+	 * If the non-snapdisrseverywhere mode, we should not search!
+	 */
+	if (!config->snapdirseverywhere) {
+		return config->snapshot_basepath;
+	}
+
 	path = talloc_asprintf(mem_ctx, "%s/%s",
 			       handle->conn->connectpath,
 			       smb_fname->base_name);
