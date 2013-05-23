@@ -201,8 +201,8 @@ static void schema_fill_possible_inferiors(const struct dsdb_schema *schema,
 					   struct dsdb_class *schema_class)
 {
 	struct dsdb_class *c2;
-	const char** poss_inf = schema_class->possibleInferiors;
-	const char** sys_poss_inf = schema_class->systemPossibleInferiors;
+	const char **poss_inf = NULL;
+	const char **sys_poss_inf = NULL;
 
 	for (c2 = schema->classes; c2; c2 = c2->next) {
 		const char **superiors = schema_posssuperiors(schema, c2);
