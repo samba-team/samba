@@ -107,6 +107,18 @@
 #include <ccan/hash/hash.h>
 #include "util_tdb.h"
 
+struct shadow_copy2_config {
+	char *gmt_format;
+	bool use_sscanf;
+	bool use_localtime;
+	char *snapdir;
+	bool snapdirseverywhere;
+	bool crossmountpoints;
+	bool fixinodes;
+	char *sort_order;
+	bool snapdir_absolute;
+};
+
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 				      size_t **poffsets,
 				      unsigned *pnum_offsets)
@@ -150,23 +162,25 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					time_t snapshot)
 {
-	const char *fmt;
 	struct tm snap_tm;
 	fstring snaptime_string;
 	size_t snaptime_len;
+	struct shadow_copy2_config *config;
 
-	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
-				   "format", GMT_FORMAT);
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return NULL);
 
-	if (lp_parm_bool(SNUM(handle->conn), "shadow", "sscanf", false)) {
-		snaptime_len = snprintf(snaptime_string, sizeof(snaptime_string), fmt,
-				   (unsigned long)snapshot);
+	if (config->use_sscanf) {
+		snaptime_len = snprintf(snaptime_string,
+					sizeof(snaptime_string),
+					config->gmt_format,
+					(unsigned long)snapshot);
 		if (snaptime_len <= 0) {
 			DEBUG(10, ("snprintf failed\n"));
 			return NULL;
 		}
 	} else {
-		if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime", false)) {
+		if (config->use_localtime) {
 			if (localtime_r(&snapshot, &snap_tm) == 0) {
 				DEBUG(10, ("gmtime_r failed\n"));
 				return NULL;
@@ -177,18 +191,17 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 				return NULL;
 			}
 		}
-		snaptime_len = strftime(snaptime_string, sizeof(snaptime_string), fmt,
-				   &snap_tm);
+		snaptime_len = strftime(snaptime_string,
+					sizeof(snaptime_string),
+					config->gmt_format,
+					&snap_tm);
 		if (snaptime_len == 0) {
 			DEBUG(10, ("strftime failed\n"));
 			return NULL;
 		}
 	}
 	return talloc_asprintf(mem_ctx, "/%s/%s",
-			       lp_parm_const_string(
-				       SNUM(handle->conn), "shadow", "snapdir",
-				       ".snapshots"),
-			       snaptime_string);
+			       config->snapdir, snaptime_string);
 }
 
 /**
@@ -208,6 +221,10 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	char *q;
 	char *stripped;
 	size_t rest_len, dst_len;
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return false);
 
 	p = strstr_m(name, "@GMT-");
 	if (p == NULL) {
@@ -244,8 +261,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	rest_len = strlen(q);
 	dst_len = (p-name) + rest_len;
 
-	if (lp_parm_bool(SNUM(handle->conn), "shadow", "snapdirseverywhere",
-			 false)) {
+	if (config->snapdirseverywhere) {
 		char *insert;
 		bool have_insert;
 		insert = shadow_copy2_insert_string(talloc_tos(), handle,
@@ -334,6 +350,10 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 	size_t insertlen;
 	int i, saved_errno;
 	size_t min_offset;
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return NULL);
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", handle->conn->connectpath,
 			       name);
@@ -376,8 +396,7 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 
 	min_offset = 0;
 
-	if (!lp_parm_bool(SNUM(handle->conn), "shadow", "crossmountpoints",
-			  false)) {
+	if (!config->crossmountpoints) {
 		char *mount_point;
 
 		mount_point = shadow_copy2_find_mount_point(talloc_tos(),
@@ -461,7 +480,12 @@ fail:
 static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 			 SMB_STRUCT_STAT *sbuf)
 {
-	if (lp_parm_bool(SNUM(handle->conn), "shadow", "fixinodes", False)) {
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return);
+
+	if (config->fixinodes) {
 		/* some snapshot systems, like GPFS, return the name
 		   device:inode for the snapshot files as the current
 		   files. That breaks the 'restore' button in the shadow copy
@@ -984,12 +1008,14 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 {
 	struct smb_filename smb_fname;
 	int ret;
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return NULL);
 
 	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = talloc_asprintf(
-		talloc_tos(), "%s/%s", path,
-		lp_parm_const_string(SNUM(handle->conn), "shadow", "snapdir",
-				     ".snapshots"));
+	smb_fname.base_name = talloc_asprintf(talloc_tos(), "%s/%s",
+					      path, config->snapdir);
 	if (smb_fname.base_name == NULL) {
 		return NULL;
 	}
@@ -1012,6 +1038,10 @@ static char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 {
 	char *path, *p;
 	char *snapdir;
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return NULL);
 
 	path = talloc_asprintf(mem_ctx, "%s/%s",
 			       handle->conn->connectpath,
@@ -1048,12 +1078,15 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 	time_t timestamp_t;
 	unsigned long int timestamp_long;
 	const char *fmt;
+	struct shadow_copy2_config *config;
 
-	fmt = lp_parm_const_string(SNUM(handle->conn), "shadow",
-				   "format", GMT_FORMAT);
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return NULL);
+
+	fmt = config->gmt_format;
 
 	ZERO_STRUCT(timestamp);
-	if (lp_parm_bool(SNUM(handle->conn), "shadow", "sscanf", false)) {
+	if (config->use_sscanf) {
 		if (sscanf(name, fmt, &timestamp_long) != 1) {
 			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: "
 				   "no sscanf match %s: %s\n",
@@ -1072,7 +1105,7 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n",
 			   fmt, name));
 		
-		if (lp_parm_bool(SNUM(handle->conn), "shadow", "localtime", false)) {
+		if (config->use_localtime) {
 			timestamp.tm_isdst = -1;
 			timestamp_t = mktime(&timestamp);
 			gmtime_r(&timestamp_t, &timestamp);
@@ -1101,9 +1134,12 @@ static void shadow_copy2_sort_data(vfs_handle_struct *handle,
 {
 	int (*cmpfunc)(const void *, const void *);
 	const char *sort;
+	struct shadow_copy2_config *config;
 
-	sort = lp_parm_const_string(SNUM(handle->conn), "shadow",
-				    "sort", "desc");
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return);
+
+	sort = config->sort_order;
 	if (sort == NULL) {
 		return;
 	}
@@ -1536,8 +1572,89 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int shadow_copy2_connect(struct vfs_handle_struct *handle,
+				const char *service, const char *user)
+{
+	struct shadow_copy2_config *config;
+	int ret;
+	const char *snapdir;
+	const char *gmt_format;
+	const char *sort_order;
+
+	DEBUG(10, (__location__ ": cnum[%u], connectpath[%s]\n",
+		   (unsigned)handle->conn->cnum,
+		   handle->conn->connectpath));
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		return ret;
+	}
+
+	config = talloc_zero(handle->conn, struct shadow_copy2_config);
+	if (config == NULL) {
+		DEBUG(0, ("talloc_zero() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	gmt_format = lp_parm_const_string(SNUM(handle->conn),
+					  "shadow", "format",
+					  GMT_FORMAT);
+	config->gmt_format = talloc_strdup(config, gmt_format);
+	if (config->gmt_format == NULL) {
+		DEBUG(0, ("talloc_strdup() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	config->use_sscanf = lp_parm_bool(SNUM(handle->conn),
+					  "shadow", "sscanf", false);
+
+	config->use_localtime = lp_parm_bool(SNUM(handle->conn),
+					     "shadow", "localtime",
+					     false);
+
+	snapdir = lp_parm_const_string(SNUM(handle->conn),
+				       "shadow", "snapdir",
+				       ".snapshots");
+	config->snapdir = talloc_strdup(config, snapdir);
+	if (config->snapdir == NULL) {
+		DEBUG(0, ("talloc_strdup() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	config->snapdirseverywhere = lp_parm_bool(SNUM(handle->conn),
+						  "shadow",
+						  "snapdirseverywhere",
+						  false);
+
+	config->crossmountpoints = lp_parm_bool(SNUM(handle->conn),
+						"shadow", "crossmountpoints",
+						false);
+
+	config->fixinodes = lp_parm_bool(SNUM(handle->conn),
+					 "shadow", "fixinodes",
+					 false);
+
+	sort_order = lp_parm_const_string(SNUM(handle->conn),
+					  "shadow", "sort", "desc");
+	config->sort_order = talloc_strdup(config, sort_order);
+	if (config->sort_order == NULL) {
+		DEBUG(0, ("talloc_strdup() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	SMB_VFS_HANDLE_SET_DATA(handle, config,
+				NULL, struct shadow_copy2_config,
+				return -1);
+
+	return 0;
+}
 
 static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
+	.connect_fn = shadow_copy2_connect,
 	.opendir_fn = shadow_copy2_opendir,
 	.rename_fn = shadow_copy2_rename,
 	.link_fn = shadow_copy2_link,
