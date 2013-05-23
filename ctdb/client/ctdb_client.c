@@ -3329,6 +3329,11 @@ static void async_callback(struct ctdb_client_control_state *state)
 			DEBUG(DEBUG_ERR,("Async operation failed with state %d, opcode:%u\n", state->state, data->opcode));
 		}
 		data->fail_count++;
+		if (state->state == CTDB_CONTROL_TIMEOUT) {
+			res = -ETIME;
+		} else {
+			res = -1;
+		}
 		if (data->fail_callback) {
 			data->fail_callback(ctdb, destnode, res, outdata,
 					data->callback_data);
