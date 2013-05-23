@@ -963,6 +963,12 @@ done:
 	return result;
 }
 
+/**
+ * Check whether a given directory contains a
+ * snapshot directory as direct subdirectory.
+ * If yes, return the path of the snapshot-subdir,
+ * otherwise return NULL.
+ */
 static char *have_snapdir(struct vfs_handle_struct *handle,
 			  const char *path)
 {
