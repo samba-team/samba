@@ -2267,16 +2267,22 @@ static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
 static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 					TALLOC_CTX *tmp_ctx,
 					struct ctdb_node_map *nodemap,
-					const char *tunable)
+					const char *tunable,
+					uint32_t default_value)
 {
 	TDB_DATA data;
 	struct ctdb_control_get_tunable *t;
 	uint32_t *nodes;
 	uint32_t *tvals;
 	struct get_tunable_callback_data callback_data;
+	int i;
 
-	tvals = talloc_zero_array(tmp_ctx, uint32_t, nodemap->num);
+	tvals = talloc_array(tmp_ctx, uint32_t, nodemap->num);
 	CTDB_NO_MEMORY_NULL(ctdb, tvals);
+	for (i=0; i<nodemap->num; i++) {
+		tvals[i] = default_value;
+	}
+		
 	callback_data.out = tvals;
 	callback_data.tunable = tunable;
 
@@ -2366,15 +2372,16 @@ static struct ctdb_ipflags *set_ipflags(struct ctdb_context *ctdb,
 	struct ctdb_ipflags *ipflags;
 
 	tval_noiptakeover = get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
-						   "NoIPTakeover");
+						   "NoIPTakeover", 0);
 	if (tval_noiptakeover == NULL) {
 		return NULL;
 	}
 
 	tval_noiphostonalldisabled =
 		get_tunable_from_nodes(ctdb, tmp_ctx, nodemap,
-				       "NoIPHostOnAllDisabled");
+				       "NoIPHostOnAllDisabled", 0);
 	if (tval_noiphostonalldisabled == NULL) {
+		/* Caller frees tmp_ctx */
 		return NULL;
 	}
 
