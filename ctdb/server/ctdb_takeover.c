@@ -2229,6 +2229,7 @@ static void ctdb_takeover_run_core(struct ctdb_context *ctdb,
 struct get_tunable_callback_data {
 	const char *tunable;
 	uint32_t *out;
+	bool fatal;
 };
 
 static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
@@ -2240,9 +2241,7 @@ static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
 	int size;
 
 	if (res != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Failure to read \"%s\" tunable from remote node %d\n",
-		       cd->tunable, pnn));
+		/* Already handled in fail callback */
 		return;
 	}
 
@@ -2250,6 +2249,7 @@ static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
 		DEBUG(DEBUG_ERR,("Wrong size of returned data when reading \"%s\" tunable from node %d. Expected %d bytes but received %d bytes\n",
 				 cd->tunable, pnn, (int)sizeof(uint32_t),
 				 (int)outdata.dsize));
+		cd->fatal = true;
 		return;
 	}
 
@@ -2262,6 +2262,34 @@ static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
 
 		
 	cd->out[pnn] = *(uint32_t *)outdata.dptr;
+}
+
+static void get_tunable_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
+				       int32_t res, TDB_DATA outdata,
+				       void *callback)
+{
+	struct get_tunable_callback_data *cd =
+		(struct get_tunable_callback_data *)callback;
+
+	switch (res) {
+	case -ETIME:
+		DEBUG(DEBUG_ERR,
+		      ("Timed out getting tunable \"%s\" from node %d\n",
+		       cd->tunable, pnn));
+		cd->fatal = true;
+		break;
+	case -EINVAL:
+	case -1:
+		DEBUG(DEBUG_WARNING,
+		      ("Tunable \"%s\" not implemented on node %d\n",
+		       cd->tunable, pnn));
+		break;
+	default:
+		DEBUG(DEBUG_ERR,
+		      ("Unexpected error getting tunable \"%s\" from node %d\n",
+		       cd->tunable, pnn));
+		cd->fatal = true;
+	}
 }
 
 static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
@@ -2285,6 +2313,7 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 		
 	callback_data.out = tvals;
 	callback_data.tunable = tunable;
+	callback_data.fatal = false;
 
 	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen(tunable) + 1;
 	data.dptr  = talloc_size(tmp_ctx, data.dsize);
@@ -2295,9 +2324,13 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_TUNABLE,
 				      nodes, 0, TAKEOVER_TIMEOUT(),
 				      false, data,
-				      get_tunable_callback, NULL,
+				      get_tunable_callback,
+				      get_tunable_fail_callback,
 				      &callback_data) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to get %s tunable failed\n", tunable));
+		if (callback_data.fatal) {
+			talloc_free(tvals);
+			tvals = NULL;
+		}
 	}
 	talloc_free(nodes);
 	talloc_free(data.dptr);
