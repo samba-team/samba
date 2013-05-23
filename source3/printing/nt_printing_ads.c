@@ -355,7 +355,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 		pinfo2->attributes |= PRINTER_ATTRIBUTE_PUBLISHED;
 		break;
 	case DSPRINT_UNPUBLISH:
-		pinfo2->attributes ^= PRINTER_ATTRIBUTE_PUBLISHED;
+		pinfo2->attributes &= (~PRINTER_ATTRIBUTE_PUBLISHED);
 		break;
 	default:
 		win_rc = WERR_NOT_SUPPORTED;
