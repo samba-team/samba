@@ -992,6 +992,10 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 	return NULL;
 }
 
+/**
+ * Find the snapshot directory (if any) for the given
+ * filename (which is relative to the share).
+ */
 static char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 				       struct vfs_handle_struct *handle,
 				       struct smb_filename *smb_fname)
