@@ -186,6 +186,11 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 			       snaptime_string);
 }
 
+/**
+ * Strip a snapshot component from an filename as
+ * handed in via the smb layer.
+ * Returns the parsed timestamp and the stripped filename.
+ */
 static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					const char *name,
