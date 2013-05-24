@@ -121,10 +121,10 @@ static pmdaMetric metrictab[] = {
 	/* pending_calls */
 	{ NULL, { PMDA_PMID(14,25), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
-	/* lockwait_calls */
+	/* locks.num_calls */
 	{ NULL, { PMDA_PMID(15,27), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_COUNTER,
 		PMDA_PMUNITS(0,0,1,0,0,PM_COUNT_ONE) }, },
-	/* pending_lockwait_calls */
+	/* locks.pending_calls */
 	{ NULL, { PMDA_PMID(16,27), PM_TYPE_U32, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,0,0,0,0,0) }, },
 	/* childwrite_calls */
@@ -148,10 +148,10 @@ static pmdaMetric metrictab[] = {
 	/* max_call_latency */
 	{ NULL, { PMDA_PMID(23,34), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
-	/* max_lockwait_latency */
+	/* locks.latency.max */
 	{ NULL, { PMDA_PMID(24,35), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
-	/* max_childwrite_latency */
+	/* childwrite_latency.max */
 	{ NULL, { PMDA_PMID(25,36), PM_TYPE_DOUBLE, PM_INDOM_NULL, PM_SEM_INSTANT,
 		PMDA_PMUNITS(0,1,0,0,PM_TIME_SEC,0) }, },
 	/* num_recoveries */
@@ -423,10 +423,10 @@ pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 		atom->ul = stats->pending_calls;
 		break;
 	case 15:
-		atom->ul = stats->lockwait_calls;
+		atom->ul = stats->locks.num_calls;
 		break;
 	case 16:
-		atom->ul = stats->pending_lockwait_calls;
+		atom->ul = stats->locks.num_pending;
 		break;
 	case 17:
 		atom->ul = stats->childwrite_calls;
@@ -450,7 +450,7 @@ pmda_ctdb_fetch_cb(pmdaMetric *mdesc, unsigned int inst, pmAtomValue *atom)
 		atom->d = stats->call_latency.max;
 		break;
 	case 24:
-		atom->d = stats->lockwait_latency.max;
+		atom->d = stats->locks.latency.max;
 		break;
 	case 25:
 		atom->d = stats->childwrite_latency.max;
