@@ -734,7 +734,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			break;
 		case DCERPC_AUTH_TYPE_SCHANNEL:
 			ntresult = cli_rpc_pipe_open_schannel(
-				cli, &cmd_entry->table->syntax_id,
+				cli, cmd_entry->table,
 				default_transport,
 				pipe_default_auth_level,
 				get_cmdline_auth_info_domain(auth_info),

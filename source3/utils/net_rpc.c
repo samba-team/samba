@@ -191,7 +191,7 @@ int run_rpc_command(struct net_context *c,
 					    &ndr_table_netlogon.syntax_id))) {
 			/* Always try and create an schannel netlogon pipe. */
 			nt_status = cli_rpc_pipe_open_schannel(
-				cli, &table->syntax_id, NCACN_NP,
+				cli, table, NCACN_NP,
 				DCERPC_AUTH_LEVEL_PRIVACY, domain_name,
 				&pipe_hnd);
 			if (!NT_STATUS_IS_OK(nt_status)) {

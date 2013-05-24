@@ -169,7 +169,7 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
  ****************************************************************************/
 
 NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
-				    const struct ndr_syntax_id *interface,
+				    const struct ndr_interface_table *table,
 				    enum dcerpc_transport_t transport,
 				    enum dcerpc_AuthLevel auth_level,
 				    const char *domain,
@@ -190,7 +190,7 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 	}
 
 	status = cli_rpc_pipe_open_schannel_with_key(
-		cli, interface, transport, auth_level, domain, &netlogon_pipe->dc,
+		cli, &table->syntax_id, transport, auth_level, domain, &netlogon_pipe->dc,
 		&result);
 
 	/* Now we've bound using the session key we can close the netlog pipe. */
