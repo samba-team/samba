@@ -82,7 +82,7 @@ bool run_async_echo(int dummy)
 		printf("torture_open_connection failed\n");
 		goto fail;
 	}
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_rpcecho.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_rpcecho,
 					  &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Could not open echo pipe: %s\n", nt_errstr(status));

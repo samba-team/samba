@@ -792,7 +792,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 ipc_srv->cli = ipc_cli;
 
                 nt_status = cli_rpc_pipe_open_noauth(
-			ipc_srv->cli, &ndr_table_lsarpc.syntax_id, &pipe_hnd);
+			ipc_srv->cli, &ndr_table_lsarpc, &pipe_hnd);
                 if (!NT_STATUS_IS_OK(nt_status)) {
                         DEBUG(1, ("cli_nt_session_open fail!\n"));
                         errno = ENOTSUP;

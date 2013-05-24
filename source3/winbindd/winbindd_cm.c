@@ -2006,7 +2006,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
 	status = cli_rpc_pipe_open_noauth(domain->conn.cli,
-					  &ndr_table_dssetup.syntax_id,
+					  &ndr_table_dssetup,
 					  &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2057,7 +2057,7 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 
 no_dssetup:
 	status = cli_rpc_pipe_open_noauth(domain->conn.cli,
-					  &ndr_table_lsarpc.syntax_id, &cli);
+					  &ndr_table_lsarpc, &cli);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
@@ -2375,7 +2375,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  anonymous:
 
 	/* Finally fall back to anonymous. */
-	status = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr.syntax_id,
+	status = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr,
 					  &conn->samr_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2602,7 +2602,7 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
  anonymous:
 
 	result = cli_rpc_pipe_open_noauth(conn->cli,
-					  &ndr_table_lsarpc.syntax_id,
+					  &ndr_table_lsarpc,
 					  &conn->lsa_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
@@ -2688,7 +2688,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	TALLOC_FREE(conn->netlogon_pipe);
 
 	result = cli_rpc_pipe_open_noauth(conn->cli,
-					  &ndr_table_netlogon.syntax_id,
+					  &ndr_table_netlogon,
 					  &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;

@@ -119,7 +119,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 			DCERPC_AUTH_LEVEL_PRIVACY, domain, &netlogon_pipe);
 	} else {
 		result = cli_rpc_pipe_open_noauth(
-			*cli, &ndr_table_netlogon.syntax_id, &netlogon_pipe);
+			*cli, &ndr_table_netlogon, &netlogon_pipe);
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {

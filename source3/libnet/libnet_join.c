@@ -734,7 +734,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = cli_rpc_pipe_open_noauth(*cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(*cli, &ndr_table_lsarpc,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error connecting to LSA pipe. Error was %s\n",
@@ -804,7 +804,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	fstring trust_passwd;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -893,7 +893,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	/* Open the domain */
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error connecting to SAM pipe. Error was %s\n",
@@ -1354,7 +1354,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	/* Open the domain */
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error connecting to SAM pipe. Error was %s\n",

@@ -217,7 +217,7 @@ NTSTATUS get_schannel_session_key(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
 					  &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

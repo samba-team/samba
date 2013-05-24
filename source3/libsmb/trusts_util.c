@@ -182,7 +182,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 	/* Shouldn't we open this with schannel ? JRA. */
 
 	nt_status = cli_rpc_pipe_open_noauth(
-		cli, &ndr_table_netlogon.syntax_id, &netlogon_pipe);
+		cli, &ndr_table_netlogon, &netlogon_pipe);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("modify_trust_password: unable to open the domain client session to machine %s. Error was : %s.\n",
 			dc_name, nt_errstr(nt_status)));

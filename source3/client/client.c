@@ -4218,7 +4218,7 @@ static bool browse_host_rpc(bool sort)
 	int i;
 	struct dcerpc_binding_handle *b;
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc,
 					  &pipe_hnd);
 
 	if (!NT_STATUS_IS_OK(status)) {

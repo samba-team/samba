@@ -45,7 +45,7 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 
 	ZERO_STRUCT(pol);
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &lsa_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not initialise lsa pipe\n"));
@@ -256,7 +256,7 @@ NTSTATUS connect_dst_pipe(struct net_context *c, struct cli_state **cli_dst,
 		return nt_status;
 	}
 
-	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, &table->syntax_id,
+	nt_status = cli_rpc_pipe_open_noauth(cli_tmp, table,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("couldn't not initialize pipe\n"));
@@ -571,7 +571,7 @@ static NTSTATUS net_scan_dc_noad(struct net_context *c,
 	ZERO_STRUCTP(dc_info);
 	ZERO_STRUCT(pol);
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -634,7 +634,7 @@ NTSTATUS net_scan_dc(struct net_context *c,
 
 	ZERO_STRUCTP(dc_info);
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_dssetup.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_dssetup,
 					  &dssetup_pipe);
         if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("net_scan_dc: failed to open dssetup pipe with %s, "

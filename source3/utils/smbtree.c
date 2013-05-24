@@ -177,7 +177,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 		return False;
 	}
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc,
 					  &pipe_hnd);
 
 	if (!NT_STATUS_IS_OK(status)) {

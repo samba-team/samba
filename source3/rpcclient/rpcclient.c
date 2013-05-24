@@ -167,7 +167,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &lsapipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		fprintf(stderr, "could not initialise lsa pipe. Error was %s\n", nt_errstr(result) );

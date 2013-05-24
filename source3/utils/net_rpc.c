@@ -82,7 +82,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	union lsa_PolicyInformation *info = NULL;
 	struct dcerpc_binding_handle *b;
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &lsa_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not initialise lsa pipe\n"));
@@ -212,7 +212,7 @@ int run_rpc_command(struct net_context *c,
 					c->opt_password, &pipe_hnd);
 			} else {
 				nt_status = cli_rpc_pipe_open_noauth(
-					cli, &table->syntax_id,
+					cli, table,
 					&pipe_hnd);
 			}
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -348,7 +348,7 @@ static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
 	NTSTATUS result;
 	enum netr_SchannelType sec_channel_type;
 
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("rpc_oldjoin_internals: netlogon pipe open to machine %s failed. "
@@ -1958,7 +1958,7 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b;
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -2951,7 +2951,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 	}
 
 	result = cli_rpc_pipe_open_noauth(rpc_pipe_np_smb_conn(pipe_hnd),
-					  &ndr_table_lsarpc.syntax_id,
+					  &ndr_table_lsarpc,
 					  &lsa_pipe);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, _("Couldn't open LSA pipe. Error was %s\n"),
@@ -6188,7 +6188,7 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 
 	/* Try netr_GetDcName */
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
 					  &netr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6335,7 +6335,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 * Call LsaOpenPolicy and LsaQueryInfo
 	 */
 
-	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n", nt_errstr(nt_status) ));
@@ -6612,7 +6612,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		return -1;
 	};
 
-	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
@@ -6790,7 +6790,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		return -1;
 	};
 
-	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise lsa pipe. Error was %s\n",
@@ -6906,7 +6906,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	/*
 	 * Open \PIPE\samr and get needed policy handles
 	 */
-	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+	nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr,
 					     &pipe_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Could not initialise samr pipe. Error was %s\n", nt_errstr(nt_status)));

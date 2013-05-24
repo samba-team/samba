@@ -169,7 +169,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * way.
 		 */
 		result = cli_rpc_pipe_open_noauth(
-			cli, &ndr_table_samr.syntax_id, &pipe_hnd);
+			cli, &ndr_table_samr, &pipe_hnd);
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -230,7 +230,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	result = NT_STATUS_UNSUCCESSFUL;
 
 	/* OK, this is ugly, but... try an anonymous pipe. */
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr,
 					  &pipe_hnd);
 
 	if ( NT_STATUS_IS_OK(result) &&

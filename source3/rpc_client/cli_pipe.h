@@ -77,7 +77,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c);
 
 NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
-				  const struct ndr_syntax_id *interface,
+				  const struct ndr_interface_table *table,
 				  struct rpc_pipe_client **presult);
 
 NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,

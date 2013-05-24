@@ -210,7 +210,7 @@ static NTSTATUS connect_and_get_info(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = cli_rpc_pipe_open_noauth(*cli, &ndr_table_lsarpc.syntax_id, pipe_hnd);
+	status = cli_rpc_pipe_open_noauth(*cli, &ndr_table_lsarpc, pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to initialise lsa pipe with error [%s]\n",
 			  nt_errstr(status)));

@@ -202,7 +202,7 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = cli_rpc_pipe_open_noauth(ipc->cli, &table->syntax_id, &p->pipe);
+	status = cli_rpc_pipe_open_noauth(ipc->cli, table, &p->pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(p);
 		return status;

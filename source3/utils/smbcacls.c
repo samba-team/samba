@@ -96,7 +96,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 		goto tcon_fail;
 	}
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -146,7 +146,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 		goto tcon_fail;
 	}
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -187,14 +187,13 @@ static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 	struct policy_handle handle;
 	NTSTATUS status, result;
 	TALLOC_CTX *frame = talloc_stackframe();
-	const struct ndr_syntax_id *lsarpc_syntax = &ndr_table_lsarpc.syntax_id;
 
 	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = cli_rpc_pipe_open_noauth(cli, lsarpc_syntax, &rpc_pipe);
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc, &rpc_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto tdis;
 	}

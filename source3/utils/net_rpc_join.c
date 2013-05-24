@@ -245,7 +245,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Fetch domain sid */
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Error connecting to LSA pipe. Error was %s\n",
@@ -280,7 +280,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Create domain user */
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_samr,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Error connecting to SAM pipe. Error was %s\n",
@@ -447,7 +447,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Now check the whole process from top-to-bottom */
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
 					  &pipe_hnd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe. Error was %s\n",

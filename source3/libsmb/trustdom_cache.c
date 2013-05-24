@@ -289,7 +289,7 @@ static bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* open the LSARPC_PIPE	*/
 
-	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
 					  &lsa_pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;

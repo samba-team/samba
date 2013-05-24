@@ -2920,11 +2920,11 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
  ****************************************************************************/
 
 NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
-				  const struct ndr_syntax_id *interface,
+				  const struct ndr_interface_table *table,
 				  struct rpc_pipe_client **presult)
 {
 	return cli_rpc_pipe_open_noauth_transport(cli, NCACN_NP,
-						  interface, presult);
+						  &table->syntax_id, presult);
 }
 
 /****************************************************************************

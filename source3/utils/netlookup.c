@@ -122,7 +122,7 @@ static struct con_struct *create_cs(struct net_context *c,
 	}
 
 	nt_status = cli_rpc_pipe_open_noauth(cs->cli,
-					&ndr_table_lsarpc.syntax_id,
+					&ndr_table_lsarpc,
 					&cs->lsapipe);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {

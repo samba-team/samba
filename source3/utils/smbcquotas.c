@@ -58,7 +58,7 @@ static bool cli_open_policy_hnd(void)
 		NTSTATUS ret;
 		cli_ipc = connect_one("IPC$");
 		ret = cli_rpc_pipe_open_noauth(cli_ipc,
-					       &ndr_table_lsarpc.syntax_id,
+					       &ndr_table_lsarpc,
 					       &global_pipe_hnd);
 		if (!NT_STATUS_IS_OK(ret)) {
 				return False;
