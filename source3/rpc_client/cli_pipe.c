@@ -2490,7 +2490,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
  */
 static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 				      const struct sockaddr_storage *addr,
-				      const struct ndr_syntax_id *abstract_syntax,
+				      const struct ndr_interface_table *table,
 				      uint16_t *pport)
 {
 	NTSTATUS status;
@@ -2513,7 +2513,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 		goto done;
 	}
 
-	if (ndr_syntax_id_equal(abstract_syntax,
+	if (ndr_syntax_id_equal(&table->syntax_id,
 				&ndr_table_epmapper.syntax_id)) {
 		*pport = 135;
 		return NT_STATUS_OK;
@@ -2548,7 +2548,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	}
 
 	map_binding->transport = NCACN_IP_TCP;
-	map_binding->object = *abstract_syntax;
+	map_binding->object = table->syntax_id;
 	map_binding->host = host; /* needed? */
 	map_binding->endpoint = "0"; /* correct? needed? */
 
@@ -2584,7 +2584,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	status = dcerpc_epm_Map(epm_handle,
 				tmp_ctx,
 				discard_const_p(struct GUID,
-					      &(abstract_syntax->uuid)),
+					      &(table->syntax_id.uuid)),
 				map_tower,
 				entry_handle,
 				max_towers,
@@ -2641,7 +2641,7 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 	NTSTATUS status;
 	uint16_t port = 0;
 
-	status = rpc_pipe_get_tcp_port(host, addr, &table->syntax_id, &port);
+	status = rpc_pipe_get_tcp_port(host, addr, table, &port);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
