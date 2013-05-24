@@ -17,6 +17,7 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
+#include <sys/time.h>
 #include <sys/socket.h>
 #include <string.h>
 #include <ctdb.h>
@@ -28,6 +29,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/ioctl.h>
+#include <time.h>
 #include "libctdb_private.h"
 #include "io_elem.h"
 #include "local_tdb.h"
