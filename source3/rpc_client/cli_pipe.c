@@ -2779,7 +2779,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rpc_transport_np_init(result, cli, &table->syntax_id,
+	status = rpc_transport_np_init(result, cli, table,
 				       &result->transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);

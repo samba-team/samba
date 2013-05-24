@@ -109,7 +109,7 @@ NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 }
 
 NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
-			       const struct ndr_syntax_id *abstract_syntax,
+			       const struct ndr_interface_table *table,
 			       struct rpc_cli_transport **presult)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -123,7 +123,7 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		goto fail;
 	}
 
-	req = rpc_transport_np_init_send(frame, ev, cli, abstract_syntax);
+	req = rpc_transport_np_init_send(frame, ev, cli, &table->syntax_id);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
