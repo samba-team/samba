@@ -2635,19 +2635,19 @@ done:
  */
 NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 			   const struct sockaddr_storage *addr,
-			   const struct ndr_syntax_id *abstract_syntax,
+			   const struct ndr_interface_table *table,
 			   struct rpc_pipe_client **presult)
 {
 	NTSTATUS status;
 	uint16_t port = 0;
 
-	status = rpc_pipe_get_tcp_port(host, addr, abstract_syntax, &port);
+	status = rpc_pipe_get_tcp_port(host, addr, &table->syntax_id, &port);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	return rpc_pipe_open_tcp_port(mem_ctx, host, addr, port,
-					abstract_syntax, presult);
+				      &table->syntax_id, presult);
 }
 
 /********************************************************************
@@ -2823,7 +2823,7 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 		return rpc_pipe_open_tcp(NULL,
 					 smbXcli_conn_remote_name(cli->conn),
 					 smbXcli_conn_remote_sockaddr(cli->conn),
-					 &table->syntax_id, presult);
+					 table, presult);
 	case NCACN_NP:
 		return rpc_pipe_open_np(cli, table, presult);
 	default:
