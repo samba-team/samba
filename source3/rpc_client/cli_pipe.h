@@ -116,7 +116,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 					     struct rpc_pipe_client **presult);
 
 NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
-						 const struct ndr_syntax_id *interface,
+						 const struct ndr_interface_table *table,
 						 enum dcerpc_transport_t transport,
 						 enum dcerpc_AuthLevel auth_level,
 						 const char *domain,
