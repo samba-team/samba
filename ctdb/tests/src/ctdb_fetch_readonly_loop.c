@@ -18,9 +18,9 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <time.h>
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/time.h"
 #include "popt.h"
 #include "cmdline.h"
 #include "ctdb_private.h"

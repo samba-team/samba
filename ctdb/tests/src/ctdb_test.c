@@ -23,10 +23,6 @@
 #ifdef CTDB_TEST_USE_MAIN
 
 /* Use main, stubify some stuff */
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <sys/socket.h>
-
 #define ctdb_cmdline_client(x, y) ctdb_cmdline_client_foobar(x, y)
 #define ctdb_get_socketname(x) ctdb_get_socketname_foobar(x)
 
