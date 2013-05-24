@@ -2747,7 +2747,7 @@ static int rpc_pipe_client_np_ref_destructor(struct rpc_pipe_client_np_ref *np_r
  ****************************************************************************/
 
 static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
-				 const struct ndr_syntax_id *abstract_syntax,
+				 const struct ndr_interface_table *table,
 				 struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
@@ -2765,7 +2765,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->abstract_syntax = *abstract_syntax;
+	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 	result->desthost = talloc_strdup(result, smbXcli_conn_remote_name(cli->conn));
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -2779,7 +2779,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = rpc_transport_np_init(result, cli, abstract_syntax,
+	status = rpc_transport_np_init(result, cli, &table->syntax_id,
 				       &result->transport);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
@@ -2825,7 +2825,7 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 					 smbXcli_conn_remote_sockaddr(cli->conn),
 					 &table->syntax_id, presult);
 	case NCACN_NP:
-		return rpc_pipe_open_np(cli, &table->syntax_id, presult);
+		return rpc_pipe_open_np(cli, table, presult);
 	default:
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
