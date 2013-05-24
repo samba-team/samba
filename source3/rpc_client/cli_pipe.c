@@ -2815,7 +2815,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 
 static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 				  enum dcerpc_transport_t transport,
-				  const struct ndr_syntax_id *interface,
+				  const struct ndr_interface_table *table,
 				  struct rpc_pipe_client **presult)
 {
 	switch (transport) {
@@ -2823,9 +2823,9 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 		return rpc_pipe_open_tcp(NULL,
 					 smbXcli_conn_remote_name(cli->conn),
 					 smbXcli_conn_remote_sockaddr(cli->conn),
-					 interface, presult);
+					 &table->syntax_id, presult);
 	case NCACN_NP:
-		return rpc_pipe_open_np(cli, interface, presult);
+		return rpc_pipe_open_np(cli, &table->syntax_id, presult);
 	default:
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
@@ -2844,7 +2844,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
+	status = cli_rpc_pipe_open(cli, transport, table, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2949,7 +2949,7 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
 	
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
+	status = cli_rpc_pipe_open(cli, transport, table, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3006,7 +3006,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
+	status = cli_rpc_pipe_open(cli, transport, table, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3076,7 +3076,7 @@ NTSTATUS cli_rpc_pipe_open_spnego(struct cli_state *cli,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
+	status = cli_rpc_pipe_open(cli, transport, table, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
