@@ -42,6 +42,8 @@ TDB_LIBS = @TDB_LIBS@
 TDB_CFLAGS = @TDB_CFLAGS@
 TDB_OBJ = @TDB_OBJ@
 
+REPLACE_OBJ = @LIBREPLACEOBJ@
+
 SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 PMDA_LIBS = -lpcp -lpcp_pmda
@@ -84,9 +86,11 @@ CTDB_LIB_OBJ = libctdb/ctdb.o libctdb/io_elem.o libctdb/local_tdb.o \
 
 CTDB_TCP_OBJ = tcp/tcp_connect.o tcp/tcp_io.o tcp/tcp_init.o
 
+CTDB_EXTERNAL_OBJ = $(POPT_OBJ) $(TALLOC_OBJ) $(TDB_OBJ) \
+	$(REPLACE_OBJ) $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
+
 CTDB_CLIENT_OBJ = client/ctdb_client.o \
-	$(CTDB_COMMON_OBJ) $(POPT_OBJ) $(UTIL_OBJ) $(TALLOC_OBJ) $(TDB_OBJ) \
-	@LIBREPLACEOBJ@ $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
+	$(CTDB_COMMON_OBJ) $(UTIL_OBJ) $(CTDB_EXTERNAL_OBJ)
 
 CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o \
 	server/ctdb_recoverd.o server/ctdb_recover.o server/ctdb_freeze.o \
@@ -181,9 +185,9 @@ bin/ltdbtool: tools/ltdbtool.o $(TDB_OBJ)
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
 
-bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(TALLOC_OBJ) $(TDB_OBJ)
+bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ) $(TDB_LIBS) $(LIB_FLAGS)
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
@@ -227,13 +231,13 @@ tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o 
+tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(TDB_OBJ) $(POPT_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
 
-tests/bin/ctdb_fetch_readonly_once: libctdb/libctdb.a tests/src/ctdb_fetch_readonly_once.o
+tests/bin/ctdb_fetch_readonly_once: libctdb/libctdb.a tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(TDB_OBJ) $(POPT_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_loop: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_readonly_loop.o
 	@echo Linking $@
@@ -281,7 +285,7 @@ CTDBD_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
 CTDB_TEST_C = $(CTDB_CLIENT_OBJ:.o=.c) tools/ctdb.c tools/ctdb_vacuum.c  tests/src/ctdb_test.c
 
 CTDB_TEST_OBJ =  $(TALLOC_OBJ) $(TDB_OBJ) \
-	@CTDB_SYSTEM_OBJ@ @LIBREPLACEOBJ@ $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
+	@CTDB_SYSTEM_OBJ@ $(REPLACE_OBJ) $(EXTRA_OBJ) $(TEVENT_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDBD_TEST_C)
 
