@@ -2419,7 +2419,7 @@ NTSTATUS rpccli_schannel_bind_data(TALLOC_CTX *mem_ctx, const char *domain,
 static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 				       const struct sockaddr_storage *ss_addr,
 				       uint16_t port,
-				       const struct ndr_syntax_id *abstract_syntax,
+				       const struct ndr_interface_table *table,
 				       struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
@@ -2432,7 +2432,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	result->abstract_syntax = *abstract_syntax;
+	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = talloc_strdup(result, host);
@@ -2521,7 +2521,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* open the connection to the endpoint mapper */
 	status = rpc_pipe_open_tcp_port(tmp_ctx, host, addr, 135,
-					&ndr_table_epmapper.syntax_id,
+					&ndr_table_epmapper,
 					&epm_pipe);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2647,7 +2647,7 @@ NTSTATUS rpc_pipe_open_tcp(TALLOC_CTX *mem_ctx, const char *host,
 	}
 
 	return rpc_pipe_open_tcp_port(mem_ctx, host, addr, port,
-				      &table->syntax_id, presult);
+				      table, presult);
 }
 
 /********************************************************************
