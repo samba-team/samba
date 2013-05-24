@@ -82,7 +82,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 					    enum dcerpc_transport_t transport,
-					    const struct ndr_syntax_id *interface,
+					    const struct ndr_interface_table *table,
 					    struct rpc_pipe_client **presult);
 
 NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,

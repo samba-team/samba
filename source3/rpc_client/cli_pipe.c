@@ -2837,14 +2837,14 @@ static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
 
 NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 					    enum dcerpc_transport_t transport,
-					    const struct ndr_syntax_id *interface,
+					    const struct ndr_interface_table *table,
 					    struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2893,7 +2893,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 	status = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		int lvl = 0;
-		if (ndr_syntax_id_equal(interface,
+		if (ndr_syntax_id_equal(&table->syntax_id,
 					&ndr_table_dssetup.syntax_id)) {
 			/* non AD domains just don't have this pipe, avoid
 			 * level 0 statement in that case - gd */
@@ -2901,7 +2901,8 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
 			    "%s failed with error %s\n",
-			    get_pipe_name_from_syntax(talloc_tos(), interface),
+			    get_pipe_name_from_syntax(talloc_tos(),
+						      &table->syntax_id),
 			    nt_errstr(status) ));
 		TALLOC_FREE(result);
 		return status;
@@ -2909,7 +2910,7 @@ NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), interface),
+		  get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
 		  result->desthost));
 
 	*presult = result;
@@ -2924,7 +2925,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 				  struct rpc_pipe_client **presult)
 {
 	return cli_rpc_pipe_open_noauth_transport(cli, NCACN_NP,
-						  &table->syntax_id, presult);
+						  table, presult);
 }
 
 /****************************************************************************
