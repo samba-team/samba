@@ -141,6 +141,11 @@ static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 	return true;
 }
 
+/**
+ * Given a timstamp, build the string to insert into a path
+ * as a path component for creating the local path to the
+ * snapshot at the given timestamp of the input path.
+ */
 static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					time_t snapshot)
