@@ -2,7 +2,7 @@
 %define auth %(test -f /etc/pam.d/system-auth && echo /etc/pam.d/system-auth || echo)
 %define this_is_redhat  %(test -e /etc/redhat-release && echo 1 || echo 0)
 %if %{this_is_redhat} > 0
-%define rhel_ver %(grep "release" /etc/redhat-release | sed %"s/^[^0-9]*\\([0-9]*\\).*/\\1/g")
+%define rhel_ver %(grep "release" /etc/redhat-release | sed "s/^[^0-9]*\\([0-9]*\\).*/\\1/g")
 %else
 %define rhel_ver 0
 %endif
