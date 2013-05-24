@@ -1,0 +1,65 @@
+Changes in CTDB 2.2
+===================
+
+User-visible changes
+--------------------
+
+* The "stopped" event has been removed.
+
+  The "ipreallocated" event is now run when a node is stopped.  Use
+  this instead of "stopped".
+
+* New --pidfile option for ctdbd, used by initscript
+
+* The 60.nfs eventscript now uses configuration files in
+  /etc/ctdb/nfs-rpc-checks.d/ for timeouts and actions instead of
+  hardcoding them into the script.
+
+* Notification handler scripts can now be dropped into /etc/ctdb/notify.d/.
+
+* The NoIPTakeoverOnDisabled tunable has been renamed to
+  NoIPHostOnAllDisabled and now works properly when set on individual
+  nodes.
+
+* New ctdb subcommand "runstate" prints the current internal runstate.
+  Runstates are used for serialising startup.
+
+Important bug fixes
+-------------------
+
+* The Unix domain socket is now set to non-blocking after the
+  connection succeeds.  This avoids connections failing with EAGAIN
+  and not being retried.
+
+* Fetching from the log ringbuffer now succeeds if the buffer is full.
+
+* Fix a severe recovery bug that can lead to data corruption for SMB clients.
+
+* The statd-callout script now runs as root via sudo.
+
+* "ctdb delip" no longer fails if it is unable to move the IP.
+
+* A race in the ctdb tool's ipreallocate code was fixed.  This fixes
+  potential bugs in the "disable", "enable", "stop", "continue",
+  "ban", "unban", "ipreallocate" and "sync" commands.
+
+* The monitor cancellation code could sometimes hang indefinitely.
+  This could cause "ctdb stop" and "ctdb shutdown" to fail.
+
+Important internal changes
+--------------------------
+
+* The socket I/O handling has been optimised to improve performance.
+
+* IPs will not be assigned to nodes during CTDB initialisation.  They
+  will only be assigned to nodes that are in the "running" runstate.
+
+* Improved database locking code.  One improvement is to use a
+  standalone locking helper executable - the avoids creating many
+  forked copies of ctdbd and potentially running a node out of memory.
+
+* New control CTDB_CONTROL_IPREALLOCATED is now used to generate
+  "ipreallocated" events.
+
+* Message handlers are now indexed, providing a significant
+  performance improvement.
