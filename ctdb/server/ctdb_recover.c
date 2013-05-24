@@ -1138,7 +1138,7 @@ static int store_tdb_record(struct ctdb_context *ctdb,
 
 	/* use a non-blocking lock */
 	if (tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, key) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to lock chain\n"));
+		DEBUG(DEBUG_INFO, (__location__ " Failed to lock chain in non-blocking mode\n"));
 		return -1;
 	}
 
