@@ -2994,7 +2994,7 @@ NTSTATUS cli_rpc_pipe_open_generic_auth(struct cli_state *cli,
  ****************************************************************************/
 
 NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
-					     const struct ndr_syntax_id *interface,
+					     const struct ndr_interface_table *table,
 					     enum dcerpc_transport_t transport,
 					     enum dcerpc_AuthLevel auth_level,
 					     const char *domain,
@@ -3005,7 +3005,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, transport, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, &table->syntax_id, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3042,7 +3042,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
-		  get_pipe_name_from_syntax(talloc_tos(), interface),
+		  get_pipe_name_from_syntax(talloc_tos(), &table->syntax_id),
 		  result->desthost, domain));
 
 	*presult = result;
