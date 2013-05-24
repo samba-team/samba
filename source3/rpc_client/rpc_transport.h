@@ -84,7 +84,7 @@ struct cli_state;
 struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct cli_state *cli,
-					      const struct ndr_syntax_id *abstract_syntax);
+					      const struct ndr_interface_table *table);
 NTSTATUS rpc_transport_np_init_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    struct rpc_cli_transport **presult);

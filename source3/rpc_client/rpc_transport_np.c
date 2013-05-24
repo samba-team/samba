@@ -34,7 +34,7 @@ static void rpc_transport_np_init_pipe_open(struct tevent_req *subreq);
 struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct cli_state *cli,
-					      const struct ndr_syntax_id *abstract_syntax)
+					      const struct ndr_interface_table *table)
 {
 	struct tevent_req *req;
 	struct rpc_transport_np_init_state *state;
@@ -47,7 +47,7 @@ struct tevent_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	pipe_name = get_pipe_name_from_syntax(state, abstract_syntax);
+	pipe_name = get_pipe_name_from_syntax(state, &table->syntax_id);
 	if (tevent_req_nomem(pipe_name, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -123,7 +123,7 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		goto fail;
 	}
 
-	req = rpc_transport_np_init_send(frame, ev, cli, &table->syntax_id);
+	req = rpc_transport_np_init_send(frame, ev, cli, table);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
