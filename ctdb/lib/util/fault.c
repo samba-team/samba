@@ -109,8 +109,7 @@ _PUBLIC_ void call_backtrace(void)
      }
 #undef NAMESIZE
 #else
-	DEBUG(0, ("call_backstrace: not implemented\n"));
-#error bla
+	DEBUG(0, ("call_backtrace: not implemented\n"));
 #endif
 }
 
