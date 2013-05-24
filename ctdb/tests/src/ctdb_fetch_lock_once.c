@@ -22,7 +22,6 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include <poll.h>
-#include <err.h>
 #include "ctdb.h"
 
 #define TESTKEY "testkey"
@@ -78,7 +77,8 @@ static void fetch_lock_once(struct ctdb_connection *ctdb, struct ctdb_db *ctdb_d
 			exit(10);
 		}
 		if (ctdb_service(ctdb, pfd.revents) < 0) {
-			err(1, "Failed to service");
+			printf("Failed to service\n");
+			exit(10);
 		}
 	}
 }
@@ -120,8 +120,10 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_connect("/tmp/ctdb.socket",
 				       ctdb_log_file, stderr);
-	if (!ctdb)
-		err(1, "Connecting to /tmp/ctdb.socket");
+	if (!ctdb) {
+		printf("Connecting to /tmp/ctdb.socket\n");
+		exit(1);
+	}
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attachdb(ctdb, "test.tdb", false, 0);
