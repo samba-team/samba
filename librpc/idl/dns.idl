@@ -162,6 +162,12 @@ interface dns
 	} dns_txt_record;
 
 	typedef [public] struct {
+		dns_string mbox;
+		dns_string txt;
+
+	} dns_rp_record;
+
+	typedef [public] struct {
 		uint16     priority;
 		uint16     weight;
 		uint16     port;
@@ -221,6 +227,7 @@ interface dns
 		[case(DNS_QTYPE_PTR)]   dns_string       ptr_record;
 		[case(DNS_QTYPE_MX)]    dns_mx_record    mx_record;
 		[case(DNS_QTYPE_TXT)]	dns_txt_record   txt_record;
+		[case(DNS_QTYPE_RP)]	dns_rp_record    rp_record;
 		[case(DNS_QTYPE_AAAA)]	ipv6address	 ipv6_record;
 		[case(DNS_QTYPE_SRV)]	dns_srv_record	 srv_record;
 		[case(DNS_QTYPE_OPT)]	dns_opt_record	 opt_record;
