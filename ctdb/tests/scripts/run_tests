@@ -143,6 +143,27 @@ summary=""
 rows=$(if tty -s ; then stty size ; else echo x 80 ; fi | sed -e 's@.* @@' -e 's@^0$@80@')
 ww=$((rows - 7))
 
+if ! which mktemp >/dev/null 2>&1 ; then
+    # Not perfect, but it will do...
+    mktemp ()
+    {
+	_dir=false
+	if [ "$1" = "-d" ] ; then
+	    _dir=true
+	fi
+	_t="${TMPDIR:-/tmp}/tmp.$$.$RANDOM"
+	(
+	    umask 077
+	    if $_dir ; then
+		mkdir "$_t"
+	    else
+		>"$_t"
+	    fi
+	)
+	echo "$_t"
+    }
+fi
+
 tf=$(mktemp)
 sf=$(mktemp)
 

@@ -1425,6 +1425,32 @@ iptables()
 	flock -w 30 $CTDB_VARDIR/iptables-ctdb.flock /sbin/iptables "$@"
 }
 
+# AIX (and perhaps others?) doesn't have mktemp
+if ! which mktemp >/dev/null 2>&1 ; then
+    mktemp ()
+    {
+	_dir=false
+	if [ "$1" = "-d" ] ; then
+	    _dir=true
+	    shift
+	fi
+	_d="${TMPDIR:-/tmp}"
+	_hex10=$(dd if=/dev/urandom count=20 2>/dev/null | \
+	    md5sum | \
+	    sed -e 's@\(..........\).*@\1@')
+	_t="${_d}/tmp.${_hex10}"
+	(
+	    umask 077
+	    if $_dir ; then
+		mkdir "$_t"
+	    else
+		>"$_t"
+	    fi
+	)
+	echo "$_t"
+    }
+fi
+
 ########################################################
 # tickle handling
 ########################################################
