@@ -791,6 +791,8 @@ static void dns_task_init(struct task_server *task)
 	}
 
 	dns->task = task;
+	/*FIXME: Make this a configurable option */
+	dns->max_payload = 4096;
 
 	dns->server_credentials = cli_credentials_init(dns);
 	if (!dns->server_credentials) {
