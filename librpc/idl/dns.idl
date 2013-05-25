@@ -152,6 +152,13 @@ interface dns
 	} dns_soa_record;
 
 	typedef [public] struct {
+		[value(strlen(cpu))] uint8 cpu_length;
+		[charset(DOS)] uint8 cpu[cpu_length];
+		[value(strlen(os))] uint8 os_length;
+		[charset(DOS)] uint8 os[os_length];
+	} dns_hinfo_record;
+
+	typedef [public] struct {
 		uint16     preference;
 		dns_string exchange;
 	} dns_mx_record;
@@ -225,6 +232,7 @@ interface dns
 		[case(DNS_QTYPE_CNAME)] dns_string       cname_record;
 		[case(DNS_QTYPE_SOA)]   dns_soa_record   soa_record;
 		[case(DNS_QTYPE_PTR)]   dns_string       ptr_record;
+		[case(DNS_QTYPE_HINFO)] dns_hinfo_record  hinfo_record;
 		[case(DNS_QTYPE_MX)]    dns_mx_record    mx_record;
 		[case(DNS_QTYPE_TXT)]	dns_txt_record   txt_record;
 		[case(DNS_QTYPE_RP)]	dns_rp_record    rp_record;
