@@ -574,8 +574,8 @@ daemons_setup ()
 	    echo 127.0.0.$i >>"$CTDB_NODES"
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
-		echo "192.0.2.$i/24 lo" >>"$public_addresses_all"
-		echo "192.0.2.$(($i + $TEST_LOCAL_DAEMONS))/24 lo" >>"$public_addresses_all"
+		echo "192.168.234.$i/24 lo" >>"$public_addresses_all"
+		echo "192.168.234.$(($i + $TEST_LOCAL_DAEMONS))/24 lo" >>"$public_addresses_all"
 	    fi
 	fi
     done
