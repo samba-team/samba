@@ -11,7 +11,7 @@ samba4-configure:
 .PHONY: samba4-configure
 
 bin/smbtorture: $(BINARY_PREREQS) samba4-configure samba4-config-compare
-	cd .. && $(WAF_BUILD) --targets=smbtorture
+	cd .. && $(WAF_BUILD)
 	cp ../bin/smbtorture bin/smbtorture
 
 .PHONY: bin/smbtorture
