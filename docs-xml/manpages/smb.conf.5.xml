@@ -809,7 +809,6 @@ chmod 1770 /usr/local/samba/lib/usershares
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>nmblookup</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testparm</refentrytitle>
-	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testprns</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>.</para>
 </refsect1>
 
