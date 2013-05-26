@@ -306,14 +306,6 @@ lppause command:
 	public: true</programlisting>
 
 
-<para>Second, try the command <literal>testprns</literal> <replaceable>printername</replaceable>. This is a simple program that verifies that the specified printer is available in your <emphasis>printcap</emphasis> file. If your <emphasis>printcap</emphasis> file is not in the usual place, you can specify its full pathname as the second argument to the <emphasis>testprns</emphasis> command:</para>
-
-
-<programlisting># testprns lp /etc/printcap
-Looking for printer lp in printcap file /etc/printcap
-Printer name lp is valid.</programlisting>
-
-
 <para>Next, log on as the guest user, go to the spooling directory, and ensure that you can print using the same command that <emphasis>testparm</emphasis> says Samba will use. As mentioned before, this will tell you if you need to change the guest account, as the default account may not be allowed to print.</para>
 
 

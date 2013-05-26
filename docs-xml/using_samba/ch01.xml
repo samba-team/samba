@@ -1375,12 +1375,6 @@ SIMPLE           &lt;1E&gt;  GROUP       Registered
 </varlistentry>
 
 
-<varlistentry><term>testprns</term>
-<listitem><para>A program that tests whether various printers are recognized by the <filename>smbd</filename> daemon</para></listitem>
-</varlistentry>
-</variablelist>
-
-
 <para>Each significant release of Samba goes through a significant exposure test before it's announced. In addition, it is quickly updated afterward if problems or unwanted side-effects are found. The latest stable distribution as of this writing is Samba 2.0.5, the long-awaited production version of Samba 2.0. This book focuses on the functionality supported in Samba 2.0, as opposed to the older 1.9.<emphasis>x</emphasis> versions of Samba, which are now obsolete.</para>
 </sect1>
 

@@ -1315,24 +1315,6 @@ received 6 names
 
 
 
-<sect2 role="" label="D.1.11" id="appd-SECT-1.11">
-<title>testprns</title>
-
-
-<para>The<indexterm id="appd-idx-993761-0"><primary>testprns program</primary></indexterm>
-<indexterm id="appd-idx-993761-1"><primary>printers</primary><secondary>names</secondary><tertiary>checking</tertiary></indexterm> <emphasis>testprns</emphasis> program checks a specified printer name against the system printer capabilities (<filename>printcap</filename>) file. Its command line is:</para>
-
-
-<programlisting>testprns <replaceable>printername</replaceable> [<replaceable>printcapname</replaceable>]</programlisting>
-
-
-<para>If the <literal>printcapname</literal> isn't specified, Samba attempts to use one located in the <filename>smb.conf</filename> file. If one isn't specified there, Samba will try <filename>/etc/printcap</filename>. If that fails, the program will generate an error.</para>
-</sect2>
-
-
-
-
-
 <sect2 role="" label="D.1.12" id="appd-SECT-1.12">
 <title>rpcclient</title>
 

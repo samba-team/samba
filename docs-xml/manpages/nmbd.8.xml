@@ -266,7 +266,6 @@
 	<manvolnum>8</manvolnum></citerefentry>, <citerefentry><refentrytitle>smb.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry>, <citerefentry><refentrytitle>smbclient</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testparm</refentrytitle>
-	<manvolnum>1</manvolnum></citerefentry>, <citerefentry><refentrytitle>testprns</refentrytitle>
 	<manvolnum>1</manvolnum></citerefentry>, and the Internet 
 	RFC's <filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
 	In addition the CIFS (formerly SMB) specification is available 
