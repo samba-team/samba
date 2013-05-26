@@ -243,7 +243,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes=''):
 
     features = 'cc cshlib symlink_lib install_lib'
 
-    bld.set_group('libraries')
+    bld.set_group('main')
     t = bld(
         features        = features,
         source          = [],
@@ -298,7 +298,7 @@ def HEIMDAL_BINARY(binname, source,
                  use_hostcc=False,
                  use_global_deps=True,
                  compiler=None,
-                 group='binaries',
+                 group='main',
                  install=True,
                  install_path=None):
     '''define a Samba binary'''
