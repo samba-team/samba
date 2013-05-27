@@ -77,6 +77,7 @@ static void smbsrv_task_init(struct task_server *task)
 		talloc_free(wcard);
 	}
 
+	irpc_add_name(task->msg_ctx, "smb_server");
 	return;
 failed:
 	task_server_terminate(task, "Failed to startup smb server task", true);	
