@@ -56,6 +56,13 @@ def set_options(opt):
                    help='disable AD DC functionality (enables Samba 4 client and Samba 3 code base).',
                    action='store_true', dest='without_ad_dc', default=False)
 
+    opt.add_option('--with-pie',
+                  help=("Build Position Independent Executables (default)"),
+                  action="store_true", dest='enable_pie', default=True)
+    opt.add_option('--without-pie',
+                  help=("Disable Position Independent Executable builds"),
+                  action="store_false", dest='enable_pie')
+
     gr = opt.option_group('developer options')
 
 
@@ -160,6 +167,10 @@ def configure(conf):
     
     conf.SAMBA_CONFIG_H('include/config.h')
 
+    if Options.options.enable_pie == True:
+        conf.check_cc(cflags='-fPIE', ldflags='-pie', mandatory=True,
+                      msg="Checking compiler for PIE support")
+        conf.env['ENABLE_PIE'] = True
 
 def etags(ctx):
     '''build TAGS file using etags'''
