@@ -76,6 +76,7 @@ static void dcesrv_task_init(struct task_server *task)
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 
+	irpc_add_name(task->msg_ctx, "rpc_server");
 	return;
 failed:
 	task_server_terminate(task, "Failed to startup dcerpc server task", true);	
