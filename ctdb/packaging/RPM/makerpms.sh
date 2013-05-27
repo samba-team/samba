@@ -32,7 +32,7 @@
 #   /usr/src/redhat directory
 #
 
-EXTRA_OPTIONS="$1"
+EXTRA_OPTIONS="$*"
 
 DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/../..
