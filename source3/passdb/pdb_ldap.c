@@ -4916,10 +4916,6 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 
 	TALLOC_CTX *mem_ctx;
 
-	if (!sid_check_object_is_for_passdb(sid)) {
-		return false;
-	}
-
 	ret = pdb_sid_to_id_unix_users_and_groups(sid, id);
 	if (ret == true) {
 		return true;
