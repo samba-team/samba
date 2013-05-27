@@ -59,6 +59,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 static struct db_context *db_sam;
 static char *tdbsam_filename;
+static bool map_builtin;
 
 struct tdbsam_convert_state {
 	int32_t from;
@@ -1276,6 +1277,11 @@ static bool tdbsam_search_users(struct pdb_methods *methods,
 	return true;
 }
 
+static bool tdbsam_is_responsible_for_builtin(struct pdb_methods *m)
+{
+	return map_builtin;
+}
+
 /*********************************************************************
  Initialize the tdb sam backend.  Setup the dispath table of methods,
  open the tdb, etc...
@@ -1303,6 +1309,10 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 
 	(*pdb_method)->capabilities = tdbsam_capabilities;
 	(*pdb_method)->new_rid = tdbsam_new_rid;
+
+	(*pdb_method)->is_responsible_for_builtin =
+					tdbsam_is_responsible_for_builtin;
+	map_builtin = lp_parm_bool(-1, "tdbsam", "map builtin", true);
 
 	/* save the path for later */
 
