@@ -852,14 +852,12 @@ class cmd_zonecreate(Command):
             zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_W2K()
             zone_create_info.pszZoneName = zone
             zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
-            zone_create_info.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
             zone_create_info.fAging = 0
         elif client_version == dnsserver.DNS_CLIENT_VERSION_DOTNET:
             typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE_DOTNET
             zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_DOTNET()
             zone_create_info.pszZoneName = zone
             zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
-            zone_create_info.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
             zone_create_info.fAging = 0
             zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
         else:
@@ -867,13 +865,21 @@ class cmd_zonecreate(Command):
             zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
             zone_create_info.pszZoneName = zone
             zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
-            zone_create_info.fAllowUpdate = dnsp.DNS_ZONE_UPDATE_SECURE
             zone_create_info.fAging = 0
             zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
 
         res = dns_conn.DnssrvOperation2(client_version, 0, server, None,
                                         0, 'ZoneCreate', typeid,
                                         zone_create_info)
+
+        typeid = dnsserver.DNSSRV_TYPEID_NAME_AND_PARAM
+        name_and_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
+        name_and_param.pszNodeName = 'AllowUpdate'
+        name_and_param.dwParam = dnsp.DNS_ZONE_UPDATE_SECURE
+
+        res = dns_conn.DnssrvOperation2(client_version, 0, server, zone,
+                                        0, 'ResetDwordProperty', typeid,
+                                        name_and_param)
         self.outf.write('Zone %s created successfully\n' % zone)
 
 
