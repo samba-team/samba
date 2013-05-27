@@ -28,7 +28,7 @@ delete_all() {
 	_maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
 
 	[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] || {
-	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits 2>/dev/null
+	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
 	}
 	ip route del 0.0.0.0/0 metric 10 >/dev/null 2>/dev/null
 
