@@ -934,6 +934,11 @@ NTSTATUS pdb_enum_upn_suffixes(TALLOC_CTX *mem_ctx,
 
 NTSTATUS pdb_set_upn_suffixes(uint32_t num_suffixes,
 			      const char **suffixes);
+bool pdb_is_responsible_for_our_sam(void);
+bool pdb_is_responsible_for_builtin(void);
+bool pdb_is_responsible_for_wellknown(void);
+bool pdb_is_responsible_for_unix_users(void);
+bool pdb_is_responsible_for_unix_groups(void);
 
 /* The following definitions come from passdb/pdb_util.c  */
 

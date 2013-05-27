@@ -2374,6 +2374,69 @@ NTSTATUS pdb_set_upn_suffixes(uint32_t num_suffixes,
 }
 
 /*******************************************************************
+ idmap control methods
+ *******************************************************************/
+static bool pdb_default_is_responsible_for_our_sam(
+					struct pdb_methods *methods)
+{
+	return true;
+}
+
+static bool pdb_default_is_responsible_for_builtin(
+					struct pdb_methods *methods)
+{
+	return true;
+}
+
+static bool pdb_default_is_responsible_for_wellknown(
+					struct pdb_methods *methods)
+{
+	return false;
+}
+
+static bool pdb_default_is_responsible_for_unix_users(
+					struct pdb_methods *methods)
+{
+	return true;
+}
+
+static bool pdb_default_is_responsible_for_unix_groups(
+					struct pdb_methods *methods)
+{
+	return true;
+}
+
+bool pdb_is_responsible_for_our_sam(void)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->is_responsible_for_our_sam(pdb);
+}
+
+bool pdb_is_responsible_for_builtin(void)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->is_responsible_for_builtin(pdb);
+}
+
+bool pdb_is_responsible_for_wellknown(void)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->is_responsible_for_wellknown(pdb);
+}
+
+bool pdb_is_responsible_for_unix_users(void)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->is_responsible_for_unix_users(pdb);
+}
+
+bool pdb_is_responsible_for_unix_groups(void)
+{
+	struct pdb_methods *pdb = pdb_get_methods();
+	return pdb->is_responsible_for_unix_groups(pdb);
+}
+
+/*******************************************************************
  secret methods
  *******************************************************************/
 
@@ -2522,6 +2585,17 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 
 	(*methods)->enum_upn_suffixes = pdb_default_enum_upn_suffixes;
 	(*methods)->set_upn_suffixes  = pdb_default_set_upn_suffixes;
+
+	(*methods)->is_responsible_for_our_sam =
+				pdb_default_is_responsible_for_our_sam;
+	(*methods)->is_responsible_for_builtin =
+				pdb_default_is_responsible_for_builtin;
+	(*methods)->is_responsible_for_wellknown =
+				pdb_default_is_responsible_for_wellknown;
+	(*methods)->is_responsible_for_unix_users =
+				pdb_default_is_responsible_for_unix_users;
+	(*methods)->is_responsible_for_unix_groups =
+				pdb_default_is_responsible_for_unix_groups;
 
 	return NT_STATUS_OK;
 }
