@@ -853,12 +853,16 @@ class cmd_zonecreate(Command):
             zone_create_info.pszZoneName = zone
             zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
             zone_create_info.fAging = 0
+            zone_create_info.fDsIntegrated = 1
+            zone_create_info.fLoadExisting = 1
         elif client_version == dnsserver.DNS_CLIENT_VERSION_DOTNET:
             typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE_DOTNET
             zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_DOTNET()
             zone_create_info.pszZoneName = zone
             zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
             zone_create_info.fAging = 0
+            zone_create_info.fDsIntegrated = 1
+            zone_create_info.fLoadExisting = 1
             zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
         else:
             typeid = dnsserver.DNSSRV_TYPEID_ZONE_CREATE
@@ -866,6 +870,8 @@ class cmd_zonecreate(Command):
             zone_create_info.pszZoneName = zone
             zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
             zone_create_info.fAging = 0
+            zone_create_info.fDsIntegrated = 1
+            zone_create_info.fLoadExisting = 1
             zone_create_info.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
 
         res = dns_conn.DnssrvOperation2(client_version, 0, server, None,
