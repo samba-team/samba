@@ -1201,8 +1201,8 @@ static NTSTATUS fake_enum_group_memberships(struct pdb_samba_dsdb_state *state,
 {
 	NTSTATUS status;
 	size_t num_groups = 0;
-	struct dom_sid *group_sids;
-	gid_t *gids;
+	struct dom_sid *group_sids = NULL;
+	gid_t *gids = NULL;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_new(mem_ctx);
