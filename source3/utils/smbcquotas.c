@@ -582,7 +582,7 @@ FSQLIM:<softlimit>/<hardlimit> for filesystem defaults\n\
 FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 		{ "numeric", 'n', POPT_ARG_NONE, NULL, 'n', "Don't resolve sids or limits to names" },
 		{ "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "be verbose" },
-		{ "test-args", 't', POPT_ARG_NONE, NULL, 'r', "Test arguments"},
+		{ "test-args", 't', POPT_ARG_NONE, NULL, 't', "Test arguments"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		{ NULL }
