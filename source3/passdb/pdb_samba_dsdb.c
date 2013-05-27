@@ -2065,7 +2065,7 @@ static bool pdb_samba_dsdb_sid_to_id(struct pdb_methods *m, const struct dom_sid
 	}
 
 	ZERO_STRUCT(id_map);
-	id_map.sid = sid;
+	id_map.sid = discard_const_p(struct dom_sid, sid);
 	id_maps[0] = &id_map;
 	id_maps[1] = NULL;
 
