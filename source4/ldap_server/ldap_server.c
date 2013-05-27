@@ -1024,6 +1024,9 @@ static void ldapsrv_task_init(struct task_server *task)
 	}
 
 #endif
+
+	/* register the server */
+	irpc_add_name(task->msg_ctx, "ldap_server");
 	return;
 
 failed:
