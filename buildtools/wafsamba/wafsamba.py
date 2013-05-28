@@ -699,9 +699,9 @@ sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
     shebang = None
 
     if task.env["PYTHON"][0] == "/":
-        replacement_shebang = "#!%s" % task.env["PYTHON"]
+        replacement_shebang = "#!%s\n" % task.env["PYTHON"]
     else:
-        replacement_shebang = "#!/usr/bin/env %s" % task.env["PYTHON"]
+        replacement_shebang = "#!/usr/bin/env %s\n" % task.env["PYTHON"]
 
     installed_location=task.outputs[0].bldpath(task.env)
     source_file = open(task.inputs[0].srcpath(task.env))
