@@ -363,14 +363,32 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 /* You need 'size', this tells you how much you should expand by. */
 tdb_off_t tdb_expand_adjust(tdb_off_t map_size, tdb_off_t size, int page_size)
 {
-	tdb_off_t new_size, top_size;
+	tdb_off_t new_size, top_size, increment;
+	tdb_off_t max_size = UINT32_MAX - map_size;
+
+	if (size > max_size) {
+		/*
+		 * We can't round up anymore, just give back
+		 * what we're asked for.
+		 *
+		 * The caller has to take care of the ENOSPC handling.
+		 */
+		return size;
+	}
 
 	/* limit size in order to avoid using up huge amounts of memory for
 	 * in memory tdbs if an oddball huge record creeps in */
 	if (size > 100 * 1024) {
-		top_size = map_size + size * 2;
+		increment = size * 2;
 	} else {
-		top_size = map_size + size * 100;
+		increment = size * 100;
+	}
+	if (increment < size) {
+		goto overflow;
+	}
+
+	if (!tdb_add_off_t(map_size, increment, &top_size)) {
+		goto overflow;
 	}
 
 	/* always make room for at least top_size more records, and at
@@ -381,10 +399,20 @@ tdb_off_t tdb_expand_adjust(tdb_off_t map_size, tdb_off_t size, int page_size)
 	} else {
 		new_size = map_size * 1.25;
 	}
+	if (new_size < map_size) {
+		goto overflow;
+	}
 
 	/* Round the database up to a multiple of the page size */
 	new_size = MAX(top_size, new_size);
 	return TDB_ALIGN(new_size, page_size) - map_size;
+
+overflow:
+	/*
+	 * Somewhere in between we went over 4GB. Make one big jump to
+	 * exactly 4GB database size.
+	 */
+	return max_size;
 }
 
 /* expand the database at least size bytes by expanding the underlying
