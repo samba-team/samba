@@ -294,7 +294,14 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		return -1;
 	}
 
-	new_size = size + addition;
+	if (!tdb_add_off_t(size, addition, &new_size)) {
+		tdb->ecode = TDB_ERR_OOM;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write "
+			"overflow detected current size[%u] addition[%u]!\n",
+			(unsigned)size, (unsigned)addition));
+		errno = ENOSPC;
+		return -1;
+	}
 
 	if (ftruncate(tdb->fd, new_size) == -1) {
 		char b = 0;
@@ -308,6 +315,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 			errno = ENOSPC;
 		}
 		if (written != 1) {
+			tdb->ecode = TDB_ERR_OOM;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %u failed (%s)\n",
 				 (unsigned)new_size, strerror(errno)));
 			return -1;
@@ -327,12 +335,14 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		}
 		if (written == 0) {
 			/* give up, trying to provide a useful errno */
+			tdb->ecode = TDB_ERR_OOM;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write "
 				"returned 0 twice: giving up!\n"));
 			errno = ENOSPC;
 			return -1;
 		}
 		if (written == -1) {
+			tdb->ecode = TDB_ERR_OOM;
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of "
 				 "%u bytes failed (%s)\n", (int)n,
 				 strerror(errno)));
