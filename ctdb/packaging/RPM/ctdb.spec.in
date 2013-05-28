@@ -45,6 +45,12 @@ BuildRequires: libtdb-devel >= %{libtdb_version}
 BuildRequires: libtevent-devel >= %{libtevent_version}
 %endif
 
+# To build the ctdb-pcp-pmda package, run rpmbuild with "--with pmda"
+%define with_pcp_pmda  %{?_with_pmda: 1} %{?!_with_pmda: 0}
+%if %with_pcp_pmda
+BuildRequires: pcp-libs-devel
+%endif
+
 %description
 ctdb is the clustered database used by samba
 
@@ -80,6 +86,9 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -O0 -D_GNU_SOURCE" ./configure \
 %endif
 %if %with_included_tevent
 	--with-included-tevent \
+%endif
+%if %with_pcp_pmda
+	--enable-pmda \
 %endif
 	--prefix=%{_prefix} \
 	--sysconfdir=%{_sysconfdir} \
@@ -215,6 +224,24 @@ test suite for ctdb
 %{_bindir}/ctdb_run_tests
 %{_bindir}/ctdb_run_cluster_tests
 %doc tests/README
+
+%if %with_pcp_pmda
+
+%package pcp-pmda
+Summary: CTDB PCP pmda support
+Group: Development/Tools
+Requires: ctdb = %{version}
+Requires: pcp-libs
+
+%description pcp-pmda
+Performance Co-Pilot (PCP) support for CTDB
+
+%files pcp-pmda
+%dir /var/lib/pcp/pmdas/ctdb
+/var/lib/pcp/pmdas/ctdb/*
+
+%endif
+
 
 
 %changelog
