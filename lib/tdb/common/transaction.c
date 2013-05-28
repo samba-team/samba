@@ -195,7 +195,7 @@ static int transaction_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 	return 0;
 
 fail:
-	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_read: failed at off=%d len=%d\n", off, len));
+	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_read: failed at off=%u len=%u\n", off, len));
 	tdb->ecode = TDB_ERR_IO;
 	tdb->transaction->transaction_error = 1;
 	return -1;
@@ -303,7 +303,7 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 	return 0;
 
 fail:
-	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_write: failed at off=%d len=%d\n",
+	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_write: failed at off=%u len=%u\n",
 		 (blk*tdb->transaction->block_size) + off, len));
 	tdb->transaction->transaction_error = 1;
 	return -1;
@@ -1217,7 +1217,7 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 
 		if (tdb->methods->tdb_write(tdb, ofs, p+8, len) == -1) {
 			free(data);
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_recover: failed to recover %d bytes at offset %d\n", len, ofs));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_recover: failed to recover %u bytes at offset %u\n", len, ofs));
 			tdb->ecode = TDB_ERR_IO;
 			return -1;
 		}
@@ -1255,7 +1255,7 @@ int tdb_transaction_recover(struct tdb_context *tdb)
 		return -1;
 	}
 
-	TDB_LOG((tdb, TDB_DEBUG_TRACE, "tdb_transaction_recover: recovered %d byte database\n",
+	TDB_LOG((tdb, TDB_DEBUG_TRACE, "tdb_transaction_recover: recovered %u byte database\n",
 		 recovery_eof));
 
 	/* all done */

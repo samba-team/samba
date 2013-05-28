@@ -76,19 +76,19 @@ static bool tdb_check_record(struct tdb_context *tdb,
 	/* Check rec->next: 0 or points to record offset, aligned. */
 	if (rec->next > 0 && rec->next < TDB_DATA_START(tdb->hash_size)){
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d too small next %d\n",
+			 "Record offset %u too small next %u\n",
 			 off, rec->next));
 		goto corrupt;
 	}
 	if (rec->next + sizeof(*rec) < rec->next) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d too large next %d\n",
+			 "Record offset %u too large next %u\n",
 			 off, rec->next));
 		goto corrupt;
 	}
 	if ((rec->next % TDB_ALIGNMENT) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d misaligned next %d\n",
+			 "Record offset %u misaligned next %u\n",
 			 off, rec->next));
 		goto corrupt;
 	}
@@ -98,14 +98,14 @@ static bool tdb_check_record(struct tdb_context *tdb,
 	/* Check rec_len: similar to rec->next, implies next record. */
 	if ((rec->rec_len % TDB_ALIGNMENT) != 0) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d misaligned length %d\n",
+			 "Record offset %u misaligned length %u\n",
 			 off, rec->rec_len));
 		goto corrupt;
 	}
 	/* Must fit tailer. */
 	if (rec->rec_len < sizeof(tailer)) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d too short length %d\n",
+			 "Record offset %u too short length %u\n",
 			 off, rec->rec_len));
 		goto corrupt;
 	}
@@ -119,7 +119,7 @@ static bool tdb_check_record(struct tdb_context *tdb,
 		goto corrupt;
 	if (tailer != sizeof(*rec) + rec->rec_len) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d invalid tailer\n", off));
+			 "Record offset %u invalid tailer\n", off));
 		goto corrupt;
 	}
 
@@ -247,7 +247,7 @@ static bool tdb_check_used_record(struct tdb_context *tdb,
 	/* key + data + tailer must fit in record */
 	if (rec->key_len + rec->data_len + sizeof(tdb_off_t) > rec->rec_len) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d too short for contents\n", off));
+			 "Record offset %u too short for contents\n", off));
 		return false;
 	}
 
@@ -257,7 +257,7 @@ static bool tdb_check_used_record(struct tdb_context *tdb,
 
 	if (tdb->hash_fn(&key) != rec->full_hash) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR,
-			 "Record offset %d has incorrect hash\n", off));
+			 "Record offset %u has incorrect hash\n", off));
 		goto fail_put_key;
 	}
 
@@ -411,14 +411,14 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 				goto corrupt;
 
 			TDB_LOG((tdb, TDB_DEBUG_ERROR,
-				 "Dead space at %d-%d (of %u)\n",
+				 "Dead space at %u-%u (of %u)\n",
 				 off, off + dead, tdb->map_size));
 			rec.rec_len = dead - sizeof(rec);
 			break;
 		case TDB_RECOVERY_MAGIC:
 			if (recovery_start != off) {
 				TDB_LOG((tdb, TDB_DEBUG_ERROR,
-					 "Unexpected recovery record at offset %d\n",
+					 "Unexpected recovery record at offset %u\n",
 					 off));
 				goto free;
 			}
@@ -428,7 +428,7 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 		corrupt:
 			tdb->ecode = TDB_ERR_CORRUPT;
 			TDB_LOG((tdb, TDB_DEBUG_ERROR,
-				 "Bad magic 0x%x at offset %d\n",
+				 "Bad magic 0x%x at offset %u\n",
 				 rec.magic, off));
 			goto free;
 		}

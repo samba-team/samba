@@ -42,7 +42,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 	if (rec->magic == TDB_MAGIC) {
 		/* this happens when a app is showdown while deleting a record - we should
 		   not completely fail when this happens */
-		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%d - fixing\n",
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read non-free magic 0x%x at offset=%u - fixing\n",
 			 rec->magic, off));
 		rec->magic = TDB_FREE_MAGIC;
 		if (tdb_rec_write(tdb, off, rec) == -1)
@@ -52,7 +52,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 	if (rec->magic != TDB_FREE_MAGIC) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_CORRUPT;
-		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read bad magic 0x%x at offset=%d\n",
+		TDB_LOG((tdb, TDB_DEBUG_WARNING, "tdb_rec_free_read bad magic 0x%x at offset=%u\n",
 			   rec->magic, off));
 		return -1;
 	}
@@ -79,7 +79,7 @@ static int remove_from_freelist(struct tdb_context *tdb, tdb_off_t off, tdb_off_
 		last_ptr = i;
 	}
 	tdb->ecode = TDB_ERR_CORRUPT;
-	TDB_LOG((tdb, TDB_DEBUG_FATAL,"remove_from_freelist: not on list at off=%d\n", off));
+	TDB_LOG((tdb, TDB_DEBUG_FATAL,"remove_from_freelist: not on list at off=%u\n", off));
 	return -1;
 }
 #endif
@@ -195,7 +195,7 @@ update:
 	if (tdb_ofs_read(tdb, FREELIST_TOP, &rec->next) == -1 ||
 	    tdb_rec_write(tdb, offset, rec) == -1 ||
 	    tdb_ofs_write(tdb, FREELIST_TOP, &offset) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free record write failed at offset=%d\n", offset));
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free record write failed at offset=%u\n", offset));
 		goto fail;
 	}
 

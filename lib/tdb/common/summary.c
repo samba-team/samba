@@ -152,7 +152,7 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 			break;
 		default:
 			TDB_LOG((tdb, TDB_DEBUG_ERROR,
-				 "Unexpected record magic 0x%x at offset %d\n",
+				 "Unexpected record magic 0x%x at offset %u\n",
 				 rec.magic, off));
 			goto unlock;
 		}
