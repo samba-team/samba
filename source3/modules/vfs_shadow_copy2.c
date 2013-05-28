@@ -314,6 +314,11 @@ static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
 	return path;
 }
 
+/**
+ * Convert from a name as handed in via the SMB layer
+ * and a timestamp into the local path of the snapshot
+ * of the provided file at the provided time.
+ */
 static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 				  struct vfs_handle_struct *handle,
 				  const char *name, time_t timestamp)
