@@ -46,7 +46,7 @@ SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 
 PMDA_LIBS = -lpcp -lpcp_pmda
 PMDA_INSTALL = @CTDB_PMDA_INSTALL@
-PMDA_DEST_DIR = /var/lib/pcp/pmdas
+PMDA_DEST_DIR = /var/lib/pcp/pmdas/ctdb
 
 CFLAGS=@CPPFLAGS@ -g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        $(TALLOC_CFLAGS) $(TEVENT_CFLAGS) $(TDB_CFLAGS) -I@libreplacedir@ \
@@ -389,10 +389,10 @@ install: all manpages $(PMDA_INSTALL)
 	if [ ! -f $(DESTDIR)$(etcdir)/ctdb/gcore_trace.sh ];then ${INSTALLCMD} -m 755 config/gcore_trace.sh $(DESTDIR)$(etcdir)/ctdb; fi
 
 install_pmda:
-	$(INSTALLCMD) -m 755 -d $(PMDA_DEST_DIR)
-	$(INSTALLCMD) -m 755 pmda/Install pmda/Remove $(PMDA_DEST_DIR)
-	$(INSTALLCMD) -m 644 pmda/pmns pmda/domain.h pmda/help pmda/README $(PMDA_DEST_DIR)
-	$(INSTALLCMD) -m 755 bin/pmdactdb $(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 755 -d $(DESTDIR)$(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 755 utils/pmda/Install utils/pmda/Remove $(DESTDIR)$(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 644 utils/pmda/pmns utils/pmda/domain.h utils/pmda/help utils/pmda/README $(DESTDIR)$(PMDA_DEST_DIR)
+	$(INSTALLCMD) -m 755 bin/pmdactdb $(DESTDIR)$(PMDA_DEST_DIR)
 
 # Should use $(datarootdir) but older autoconfs don't do this.  :-(
 install_tests: all
