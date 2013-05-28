@@ -860,6 +860,23 @@ startstop_nfslock() {
 	esac
 }
 
+# Periodically update the statd database
+nfs_statd_update ()
+{
+    _update_period="$1"
+
+    _statd_update_trigger="$service_state_dir/update-trigger"
+    [ -f "$_statd_update_trigger" ] || touch "$_statd_update_trigger"
+
+    _last_update=$(stat --printf="%Y" "$_statd_update_trigger")
+    _current_time=$(date +"%s")
+    if [ $(( $_current_time - $_last_update)) -ge $_update_period ] ; then
+	touch "$_statd_update_trigger"
+	$CTDB_BASE/statd-callout updatelocal &
+	$CTDB_BASE/statd-callout updateremote &
+    fi
+}
+
 add_ip_to_iface()
 {
     _iface=$1

@@ -32,14 +32,6 @@ loadconfig
 
 ctdb_setup_service_state_dir
 
-statd_update_trigger="$service_state_dir/update-trigger"
-# We want this file to always exist.  The corner case is when
-# auto-start/stop is switched off, NFS is added as a managed service
-# some time after ctdbd is started and someone else starts the NFS
-# service for us.  In this case this file might not otherwise exist
-# when we get to a monitor event.
-touch "$statd_update_trigger"
-
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
@@ -79,15 +71,9 @@ case "$1" in
 
 	nfs_check_rpc_services
 
-	# once every 600 seconds, update the statd state database for which
+	# Every 10 minutes, update the statd state database for which
 	# clients need notifications
-	LAST_UPDATE=`stat --printf="%Y" "$statd_update_trigger"`
-	CURRENT_TIME=`date +"%s"`
-	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 600)) ] && {
-	    touch "$statd_update_trigger"
-	    $CTDB_BASE/statd-callout updatelocal &
-	    $CTDB_BASE/statd-callout updateremote &
-	}
+	nfs_statd_update 600
        	;;
 
     *)
