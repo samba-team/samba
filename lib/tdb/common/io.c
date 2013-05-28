@@ -421,6 +421,7 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 {
 	struct tdb_record rec;
 	tdb_off_t offset;
+	tdb_off_t new_size;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "lock failed in tdb_expand\n"));
@@ -432,10 +433,12 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 
 	size = tdb_expand_adjust(tdb->map_size, size, tdb->page_size);
 
-	/* expand the file itself */
-	if (!(tdb->flags & TDB_INTERNAL)) {
-		if (tdb->methods->tdb_expand_file(tdb, tdb->map_size, size) != 0)
-			goto fail;
+	if (!tdb_add_off_t(tdb->map_size, size, &new_size)) {
+		tdb->ecode = TDB_ERR_OOM;
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_expand "
+			"overflow detected current map_size[%u] size[%u]!\n",
+			(unsigned)tdb->map_size, (unsigned)size));
+		goto fail;
 	}
 
 	/* form a new freelist record */
@@ -444,18 +447,30 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	rec.rec_len = size - sizeof(rec);
 
 	if (tdb->flags & TDB_INTERNAL) {
-		char *new_map_ptr = (char *)realloc(tdb->map_ptr,
-						    tdb->map_size + size);
+		char *new_map_ptr;
+
+		new_map_ptr = (char *)realloc(tdb->map_ptr, new_size);
 		if (!new_map_ptr) {
+			tdb->ecode = TDB_ERR_OOM;
 			goto fail;
 		}
 		tdb->map_ptr = new_map_ptr;
-		tdb->map_size += size;
+		tdb->map_size = new_size;
 	} else {
+		int ret;
+
+		/*
+		 * expand the file itself
+		 */
+		ret = tdb->methods->tdb_expand_file(tdb, tdb->map_size, size);
+		if (ret != 0) {
+			goto fail;
+		}
+
 		/* Explicitly remap: if we're in a transaction, this won't
 		 * happen automatically! */
 		tdb_munmap(tdb);
-		tdb->map_size += size;
+		tdb->map_size = new_size;
 		if (tdb_mmap(tdb) != 0) {
 			goto fail;
 		}
