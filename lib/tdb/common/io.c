@@ -287,18 +287,21 @@ int tdb_mmap(struct tdb_context *tdb)
 static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t addition)
 {
 	char buf[8192];
+	tdb_off_t new_size;
 
 	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
 		return -1;
 	}
 
-	if (ftruncate(tdb->fd, size+addition) == -1) {
+	new_size = size + addition;
+
+	if (ftruncate(tdb->fd, new_size) == -1) {
 		char b = 0;
-		ssize_t written = pwrite(tdb->fd,  &b, 1, (size+addition) - 1);
+		ssize_t written = pwrite(tdb->fd,  &b, 1, new_size - 1);
 		if (written == 0) {
 			/* try once more, potentially revealing errno */
-			written = pwrite(tdb->fd,  &b, 1, (size+addition) - 1);
+			written = pwrite(tdb->fd,  &b, 1, new_size - 1);
 		}
 		if (written == 0) {
 			/* again - give up, guessing errno */
@@ -306,7 +309,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 		}
 		if (written != 1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %u failed (%s)\n",
-				 size+addition, strerror(errno)));
+				 (unsigned)new_size, strerror(errno)));
 			return -1;
 		}
 	}
