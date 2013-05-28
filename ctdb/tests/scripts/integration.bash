@@ -740,8 +740,6 @@ restart_ctdb ()
 	    continue
 	}
 
-	local debug_out=$(onnode -p all ctdb status -Y 2>&1; onnode -p all ctdb scriptstatus 2>&1)
-
 	echo "Setting RerecoveryTimeout to 1"
 	onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
 
@@ -756,7 +754,10 @@ restart_ctdb ()
 
 	# Cluster is still healthy.  Good, we're done!
 	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
-	    echo "Cluster become UNHEALTHY again.  Restarting..."
+	    echo "Cluster became UNHEALTHY again [$(date)]"
+	    onnode -p all ctdb status -Y 2>&1
+	    onnode -p all ctdb scriptstatus 2>&1
+	    echo "Restarting..."
 	    continue
 	fi
 
@@ -768,7 +769,9 @@ restart_ctdb ()
     done
 
     echo "Cluster UNHEALTHY...  too many attempts..."
-    echo "$debug_out"
+    onnode -p all ctdb status -Y 2>&1
+    onnode -p all ctdb scriptstatus 2>&1
+
     # Try to make the calling test fail
     status=1
     return 1
