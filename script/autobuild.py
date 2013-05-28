@@ -16,8 +16,6 @@ os.environ['TDB_NO_FSYNC'] = '1'
 cleanup_list = []
 
 builddirs = {
-    "samba3"  : "source3",
-    "samba3-ctdb" : "source3",
     "samba"  : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
