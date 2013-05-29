@@ -1648,6 +1648,16 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	if (config->snapdir[0] == '/') {
+		config->snapdir_absolute = true;
+		if (config->snapdirseverywhere == true) {
+			DEBUG(1, (__location__ " Warning: An absolute snapdir "
+				  "is incompatible with 'snapdirseverywhere', "
+				  "setting 'snapdirseverywhere' to false.\n"));
+			config->snapdirseverywhere = false;
+		}
+	}
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct shadow_copy2_config,
 				return -1);
