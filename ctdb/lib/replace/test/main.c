@@ -24,9 +24,7 @@
 */
 
 #include "replace.h"
-
-struct torture_context;
-bool torture_local_replace(struct torture_context *ctx);
+#include "replace-testsuite.h"
 
 int main(void)
 {

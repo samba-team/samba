@@ -24,6 +24,8 @@
 */
 
 #include "replace.h"
+#include "replace-test.h"
+#include "replace-testsuite.h"
 
 /*
   we include all the system/ include files here so that libreplace tests
@@ -48,8 +50,6 @@
 
 #define TESTFILE "testfile.dat"
 
-struct torture_context;
-bool torture_local_replace(struct torture_context *ctx);
 
 /*
   test ftruncate() function
@@ -379,8 +379,6 @@ static int test_opendir(void)
 	return true;
 }
 
-extern int test_readdir_os2_delete(void);
-
 static int test_readdir(void)
 {
 	printf("test: readdir\n");
@@ -460,12 +458,6 @@ static int test_pread(void)
 }
 
 static int test_pwrite(void)
-{
-	/* FIXME */
-	return true;
-}
-
-static int test_getpass(void)
 {
 	/* FIXME */
 	return true;
@@ -1091,7 +1083,6 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_mkstemp();
 	ret &= test_pread();
 	ret &= test_pwrite();
-	ret &= test_getpass();
 	ret &= test_inet_ntoa();
 	ret &= test_strtoll();
 	ret &= test_strtoull();

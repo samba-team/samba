@@ -38,17 +38,49 @@ def configure(conf):
         conf.DEFINE('_OSF_SOURCE', 1, add_to_cflags=True)
         conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
 
+    # SCM_RIGHTS is only avail if _XOPEN_SOURCE iѕ defined on IRIX
+    if conf.env['SYSTEM_UNAME_SYSNAME'] == 'IRIX':
+        conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
+        conf.DEFINE('_BSD_TYPES', 1, add_to_cflags=True)
+
+    # Try to find the right extra flags for C99 initialisers
+    for f in ["", "-AC99", "-qlanglvl=extc99", "-qlanglvl=stdc99", "-c99"]:
+        if conf.CHECK_CFLAGS([f], '''
+struct foo {int x;char y;};
+struct foo bar = { .y = 'X', .x = 1 };
+'''):
+            if f != "":
+                conf.ADD_CFLAGS(f)
+            break
+
+    if conf.CHECK_CFLAGS(['-fstack-protector']) and conf.CHECK_LDFLAGS(['-fstack-protector']):
+        conf.ADD_CFLAGS('-fstack-protector')
+        conf.ADD_LDFLAGS('-fstack-protector')
+
+    # Try to find the right extra flags for -Werror behaviour
+    for f in ["-Werror",       # GCC
+	      "-errwarn=%all", # Sun Studio
+	      "-qhalt=w",     # IBM xlc
+	      "-w2",           # Tru64
+	      ]:
+        if conf.CHECK_CFLAGS([f], '''
+'''):
+            if not 'WERROR_CFLAGS' in conf.env:
+                conf.env['WERROR_CFLAGS'] = []
+            conf.env['WERROR_CFLAGS'].extend([f])
+            break
+
     conf.CHECK_HEADERS('linux/types.h crypt.h locale.h acl/libacl.h compat.h')
     conf.CHECK_HEADERS('acl/libacl.h attr/xattr.h compat.h ctype.h dustat.h')
     conf.CHECK_HEADERS('fcntl.h fnmatch.h glob.h history.h krb5.h langinfo.h')
     conf.CHECK_HEADERS('libaio.h locale.h ndir.h pwd.h')
     conf.CHECK_HEADERS('shadow.h sys/acl.h')
-    conf.CHECK_HEADERS('sys/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
+    conf.CHECK_HEADERS('sys/attributes.h attr/attributes.h sys/capability.h sys/dir.h sys/epoll.h')
     conf.CHECK_HEADERS('sys/fcntl.h sys/filio.h sys/filsys.h sys/fs/s5param.h sys/fs/vx/quota.h')
     conf.CHECK_HEADERS('sys/id.h sys/ioctl.h sys/ipc.h sys/mman.h sys/mode.h sys/ndir.h sys/priv.h')
     conf.CHECK_HEADERS('sys/resource.h sys/security.h sys/shm.h sys/statfs.h sys/statvfs.h sys/termio.h')
     conf.CHECK_HEADERS('sys/vfs.h sys/xattr.h termio.h termios.h sys/file.h')
-    conf.CHECK_HEADERS('sys/wait.h sys/stat.h malloc.h grp.h')
+    conf.CHECK_HEADERS('sys/ucontext.h sys/wait.h sys/stat.h malloc.h grp.h')
     conf.CHECK_HEADERS('sys/select.h setjmp.h utime.h sys/syslog.h syslog.h')
     conf.CHECK_HEADERS('stdarg.h vararg.h sys/mount.h mntent.h')
     conf.CHECK_HEADERS('stropts.h unix.h string.h strings.h sys/param.h limits.h')
@@ -60,17 +92,43 @@ def configure(conf):
     conf.CHECK_HEADERS('libintl.h errno.h')
     conf.CHECK_HEADERS('gcrypt.h getopt.h iconv.h')
     conf.CHECK_HEADERS('sys/inotify.h memory.h nss.h sasl/sasl.h')
-    conf.CHECK_HEADERS('security/pam_appl.h sys/inotify.h zlib.h asm/unistd.h')
+    conf.CHECK_HEADERS('security/pam_appl.h zlib.h asm/unistd.h')
     conf.CHECK_HEADERS('aio.h sys/unistd.h rpc/rpc.h rpc/nettype.h alloca.h float.h')
 
-    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/prctl.h sys/sysctl.h')
+    conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h sys/sysctl.h')
     conf.CHECK_HEADERS('sys/fileio.h sys/filesys.h sys/dustat.h sys/sysmacros.h')
-    conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h rpcsvc/yp_prot.h')
+    conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h')
+
+    conf.CHECK_CODE('', headers='rpc/rpc.h rpcsvc/yp_prot.h', define='HAVE_RPCSVC_YP_PROT_H')
+
     conf.CHECK_HEADERS('valgrind.h valgrind/valgrind.h valgrind/memcheck.h')
     conf.CHECK_HEADERS('nss_common.h nsswitch.h ns_api.h')
     conf.CHECK_HEADERS('sys/extattr.h sys/ea.h sys/proplist.h sys/cdefs.h')
-    conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h')
+    conf.CHECK_HEADERS('utmp.h utmpx.h lastlog.h malloc.h')
     conf.CHECK_HEADERS('syscall.h sys/syscall.h inttypes.h')
+
+    # Check for process set name support
+    conf.CHECK_CODE('''
+                    #include <sys/prctl.h>
+                    int main(void) {
+                        prctl(0);
+                        return 0;
+                    }
+                    ''',
+                    'HAVE_PRCTL',
+                    headers='sys/prctl.h',
+                    msg='Checking for prctl syscall')
+
+    conf.CHECK_CODE('''
+                    #include <unistd.h>
+                    #ifdef HAVE_FCNTL_H
+                    #include <fcntl.h>
+                    #endif
+                    int main(void) { int fd = open("/dev/null", O_DIRECT); }
+                    ''',
+                    define='HAVE_OPEN_O_DIRECT',
+                    addmain=False,
+                    msg='Checking for O_DIRECT flag to open(2)')
 
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t comparison_fn_t')
     conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
@@ -91,6 +149,8 @@ def configure(conf):
     conf.CHECK_TYPE('offset_t', 'loff_t')
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
     conf.CHECK_TYPE('uint_t', 'unsigned int')
+    conf.CHECK_TYPE('blksize_t', 'long', headers='sys/types.h sys/stat.h unistd.h')
+    conf.CHECK_TYPE('blkcnt_t', 'long', headers='sys/types.h sys/stat.h unistd.h')
 
     conf.CHECK_SIZEOF('bool char int "long long" long short size_t ssize_t')
     conf.CHECK_SIZEOF('int8_t uint8_t int16_t uint16_t int32_t uint32_t int64_t uint64_t')
@@ -156,19 +216,60 @@ def configure(conf):
                     lib='nsl socket',
                     headers='sys/socket.h netdb.h netinet/in.h')
 
+    if conf.CONFIG_SET('HAVE_SYS_UCONTEXT_H') and conf.CONFIG_SET('HAVE_SIGNAL_H'):
+        conf.CHECK_CODE('''
+                       ucontext_t uc;
+                       sigaddset(&uc.uc_sigmask, SIGUSR1);
+                       ''',
+                       'HAVE_UCONTEXT_T',
+                       msg="Checking whether we have ucontext_t",
+                       headers='signal.h sys/ucontext.h')
+
     # these may be builtins, so we need the link=False strategy
     conf.CHECK_FUNCS('strdup memmem printf memset memcpy memmove strcpy strncpy bzero', link=False)
 
+    # See https://bugzilla.samba.org/show_bug.cgi?id=1097
+    #
+    # Ported in from autoconf where it was added with this commit:
+    # commit 804cfb20a067b4b687089dc72a8271b3abf20f31
+    # Author: Simo Sorce <idra@samba.org>
+    # Date:   Wed Aug 25 14:24:16 2004 +0000
+    #     r2070: Let's try to overload srnlen and strndup for AIX where they are natly broken.
+
+    host_os = sys.platform
+    if host_os.rfind('aix') > -1:
+        conf.DEFINE('BROKEN_STRNLEN', 1)
+        conf.DEFINE('BROKEN_STRNDUP', 1)
+
     conf.CHECK_FUNCS('shl_load shl_unload shl_findsym')
     conf.CHECK_FUNCS('pipe strftime srandom random srand rand usleep setbuffer')
-    conf.CHECK_FUNCS('lstat getpgrp utime utimes seteuid setreuid setresuid setegid')
+    conf.CHECK_FUNCS('lstat getpgrp utime utimes setuid seteuid setreuid setresuid setgid setegid')
     conf.CHECK_FUNCS('setregid setresgid chroot strerror vsyslog setlinebuf mktime')
-    conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4 strlcpy strlcat')
+    conf.CHECK_FUNCS('ftruncate chsize rename waitpid wait4')
     conf.CHECK_FUNCS('initgroups pread pwrite strndup strcasestr')
     conf.CHECK_FUNCS('strtok_r mkdtemp dup2 dprintf vdprintf isatty chown lchown')
     conf.CHECK_FUNCS('link readlink symlink realpath snprintf vsnprintf')
     conf.CHECK_FUNCS('asprintf vasprintf setenv unsetenv strnlen strtoull __strtoull')
-    conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq')
+    conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memalign posix_memalign')
+    conf.CHECK_FUNCS('prctl')
+
+    # libbsd on some platforms provides strlcpy and strlcat
+    if not conf.CHECK_FUNCS('strlcpy strlcat'):
+        conf.CHECK_FUNCS_IN('strlcpy strlcat', 'bsd', headers='bsd/string.h',
+                checklibc=True)
+    if not conf.CHECK_FUNCS('getpeereid'):
+        conf.CHECK_FUNCS_IN('getpeereid', 'bsd', headers='sys/types.h bsd/unistd.h')
+    if not conf.CHECK_FUNCS_IN('setproctitle', 'bsd', headers='sys/types.h bsd/unistd.h'):
+        conf.CHECK_FUNCS_IN('setproctitle', 'setproctitle', headers='setproctitle.h')
+
+    conf.CHECK_CODE('''
+                struct ucred cred;
+                socklen_t cred_len;
+                int ret = getsockopt(0, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len);''',
+                'HAVE_PEERCRED',
+                msg="Checking whether we can use SO_PEERCRED to get socket credentials",
+                headers='sys/types.h sys/socket.h')
+
     #Some OS (ie. freebsd) return EINVAL if the convertion could not be done, it's not what we expect
     #Let's detect those cases
     if conf.CONFIG_SET('HAVE_STRTOLL'):
@@ -183,15 +284,48 @@ def configure(conf):
                         msg="Checking correct behavior of strtoll",
                         headers = 'errno.h',
                         execute = True,
-                        define_ret = True,
                         define = 'HAVE_BSD_STRTOLL',
                         )
     conf.CHECK_FUNCS('if_nametoindex strerror_r')
     conf.CHECK_FUNCS('getdirentries getdents syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
-    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups setsid')
+    conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups syscall setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')
     conf.CHECK_FUNCS('getpwent_r getpwnam_r getpwuid_r epoll_create')
+
+    conf.SET_TARGET_TYPE('attr', 'EMPTY')
+
+    xattr_headers='sys/attributes.h attr/xattr.h sys/xattr.h'
+
+    conf.CHECK_FUNCS_IN('''
+fgetxattr flistea flistxattr
+fremovexattr fsetxattr getxattr
+listxattr removexattr setxattr
+''', 'attr', checklibc=True, headers=xattr_headers)
+
+    # We need to check for linux xattrs first, as we do not wish to link to -lattr
+    # (the XFS compat API) on Linux systems with the native xattr API
+    if not conf.CONFIG_SET('HAVE_GETXATTR'):
+        conf.CHECK_FUNCS_IN('''
+attr_get attr_getf attr_list attr_listf attropen attr_remove
+attr_removef attr_set attr_setf extattr_delete_fd extattr_delete_file
+extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file
+extattr_set_fd extattr_set_file fgetea
+fremoveea fsetea getea listea
+removeea setea
+''', 'attr', checklibc=True, headers=xattr_headers)
+
+    if (conf.CONFIG_SET('HAVE_ATTR_LISTF') or
+        conf.CONFIG_SET('HAVE_EXTATTR_LIST_FD') or
+        conf.CONFIG_SET('HAVE_FLISTEA') or
+        conf.CONFIG_SET('HAVE_FLISTXATTR')):
+            conf.DEFINE('HAVE_XATTR_SUPPORT', 1)
+
+    # Darwin has extra options to xattr-family functions
+    conf.CHECK_CODE('getxattr(NULL, NULL, NULL, 0, 0, 0)',
+                    headers=xattr_headers, local_include=False,
+                    define='XATTR_ADDITIONAL_OPTIONS',
+                    msg="Checking whether xattr interface takes additional options")
 
     conf.CHECK_FUNCS_IN('dlopen dlsym dlerror dlclose', 'dl',
                         checklibc=True, headers='dlfcn.h dl.h')
@@ -206,19 +340,19 @@ def configure(conf):
     if conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True):
         for c in ['CLOCK_MONOTONIC', 'CLOCK_PROCESS_CPUTIME_ID', 'CLOCK_REALTIME']:
             conf.CHECK_CODE('''
-			    #if TIME_WITH_SYS_TIME
-			    # include <sys/time.h>
-			    # include <time.h>
-			    #else
-			    # if HAVE_SYS_TIME_H
-			    #  include <sys/time.h>
-			    # else
-			    #  include <time.h>
-			    # endif
-			    #endif
-			    clockid_t clk = %s''' % c,
-			    'HAVE_%s' % c,
-			    msg='Checking whether the clock_gettime clock ID %s is available' % c)
+                #if TIME_WITH_SYS_TIME
+                # include <sys/time.h>
+                # include <time.h>
+                #else
+                # if HAVE_SYS_TIME_H
+                #  include <sys/time.h>
+                # else
+                #  include <time.h>
+                # endif
+                #endif
+                clockid_t clk = %s''' % c,
+                'HAVE_%s' % c,
+                msg='Checking whether the clock_gettime clock ID %s is available' % c)
 
     conf.CHECK_TYPE('struct timespec', headers='sys/time.h time.h')
 
@@ -259,39 +393,39 @@ def configure(conf):
     conf.CHECK_HEADERS('poll.h')
     conf.CHECK_FUNCS('poll')
 
-    if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
-                           #include "test/strptime.c"''',
-                           define='HAVE_STRPTIME',
-                           addmain=False,
-                           msg='Checking for working strptime'):
-        conf.DEFINE('REPLACE_STRPTIME', 1)
-    else:
-       conf.CHECK_CODE('''
-                        const char *s = "20070414101546Z";
-                        char *ret;
-                        struct tm t;
-                        memset(&t, 0, sizeof(t));
-                        ret = strptime(s, "%Y%m%d%H%M%S", &t);
-                        if (ret == NULL || t.tm_wday != 6) {
-                            return 0;
-                        } else {
-                            return 1;
-                        }
-                        ''',
-                        msg="Checking correct behavior of strptime",
-                        headers = 'time.h',
-                        execute = True,
-                        define_ret = True,
-                        define = 'REPLACE_STRPTIME',
-                        )
+    conf.CHECK_FUNCS('strptime')
+    conf.CHECK_DECLS('strptime', headers='time.h')
+    conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
+                       #include "test/strptime.c"''',
+                       define='HAVE_WORKING_STRPTIME',
+                       execute=True,
+                       addmain=False,
+                       msg='Checking for working strptime')
 
     conf.CHECK_CODE('gettimeofday(NULL, NULL)', 'HAVE_GETTIMEOFDAY_TZ', execute=False)
 
     conf.CHECK_CODE('#include "test/snprintf.c"',
                     define="HAVE_C99_VSNPRINTF",
-                    execute=1,
+                    execute=True,
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
+
+    conf.CHECK_CODE('#include "test/shared_mmap.c"',
+                    addmain=False, add_headers=False, execute=True,
+                    define='HAVE_SHARED_MMAP',
+                    msg="Checking for HAVE_SHARED_MMAP")
+
+    conf.CHECK_CODE('#include "test/shared_mremap.c"',
+                    addmain=False, add_headers=False, execute=True,
+                    define='HAVE_MREMAP',
+                    msg="Checking for HAVE_MREMAP")
+
+    # OpenBSD (and I've heard HPUX) doesn't sync between mmap and write.
+    # FIXME: Anything other than a 0 or 1 exit code should abort configure!
+    conf.CHECK_CODE('#include "test/incoherent_mmap.c"',
+                    addmain=False, add_headers=False, execute=True,
+                    define='HAVE_INCOHERENT_MMAP',
+                    msg="Checking for HAVE_INCOHERENT_MMAP")
 
     conf.SAMBA_BUILD_ENV()
 
@@ -342,11 +476,26 @@ def configure(conf):
     conf.CHECK_CODE('''
                     struct stat st;
                     char tpl[20]="/tmp/test.XXXXXX";
+                    char tpl2[20]="/tmp/test.XXXXXX";
                     int fd = mkstemp(tpl);
-                    if (fd == -1) exit(1);
+                    int fd2 = mkstemp(tpl2);
+                    if (fd == -1) {
+                          if (fd2 != -1) {
+                                  unlink(tpl2);
+                          }
+                          exit(1);
+                    }
+                    if (fd2 == -1) exit(1);
                     unlink(tpl);
+                    unlink(tpl2);
                     if (fstat(fd, &st) != 0) exit(1);
                     if ((st.st_mode & 0777) != 0600) exit(1);
+                    if (strcmp(tpl, "/tmp/test.XXXXXX") == 0) {
+                          exit(1);
+                    }
+                    if (strcmp(tpl, tpl2) == 0) {
+                          exit(1);
+                    }
                     exit(0);
                     ''',
                     define='HAVE_SECURE_MKSTEMP',
@@ -380,40 +529,55 @@ def configure(conf):
                            execute=True):
             break
 
-    if conf.CHECK_FUNCS('getpass getpassphrase'):
-        # if we have both, then we prefer getpassphrase
-        conf.DEFINE('REPLACE_GETPASS_BY_GETPASSPHRASE', 1)
-        conf.DEFINE('REPLACE_GETPASS', 1)
-    else:
-        conf.CHECK_CODE('''#include "getpass.c"
-                       int main(void) { return 0; }''',
-                    addmain=False,
-                    define='REPLACE_GETPASS',
-                    cflags='-DNO_CONFIG_H')
-
     conf.RECURSE('system')
     conf.SAMBA_CONFIG_H()
+
+
+REPLACEMENT_FUNCTIONS = {
+    'replace.c': ['ftruncate', 'strlcpy', 'strlcat', 'mktime', 'initgroups',
+                  'memmove', 'strdup', 'setlinebuf', 'vsyslog', 'strnlen',
+                  'strndup', 'waitpid', 'seteuid', 'setegid', 'chroot',
+                  'mkstemp', 'mkdtemp', 'pread', 'pwrite', 'strcasestr',
+                  'strtok_r', 'strtoll', 'strtoull', 'setenv', 'unsetenv',
+                  'utime', 'utimes', 'dup2', 'chown', 'link', 'readlink',
+                  'symlink', 'lchown', 'realpath', 'memmem', 'vdprintf',
+                  'dprintf', 'get_current_dir_name',
+                  'strerror_r', 'clock_gettime'],
+    'timegm.c': ['timegm'],
+    # Note: C99_VSNPRINTF is not a function, but a special condition
+    # for replacement
+    'snprintf.c': ['C99_VSNPRINTF', 'snprintf', 'vsnprintf', 'asprintf', 'vasprintf'],
+    # Note: WORKING_STRPTIME is not a function, but a special condition
+    # for replacement
+    'strptime.c': ['WORKING_STRPTIME', 'strptime'],
+    }
 
 
 def build(bld):
     bld.RECURSE('buildtools/wafsamba')
 
-    REPLACE_HOSTCC_SOURCE = 'replace.c snprintf.c'
+    REPLACE_HOSTCC_SOURCE = ''
 
-    if bld.CONFIG_SET('REPLACE_STRPTIME'):       REPLACE_HOSTCC_SOURCE += ' strptime.c'
-    if not bld.CONFIG_SET('HAVE_TIMEGM'):        REPLACE_HOSTCC_SOURCE += ' timegm.c'
+    for filename, functions in REPLACEMENT_FUNCTIONS.iteritems():
+        for function in functions:
+            if not bld.CONFIG_SET('HAVE_%s' % function.upper()):
+                REPLACE_HOSTCC_SOURCE += ' %s' % filename
+                break
+
+    extra_libs = ''
+    if bld.CONFIG_SET('HAVE_LIBBSD'): extra_libs += ' bsd'
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_HOSTCC',
         REPLACE_HOSTCC_SOURCE,
         use_hostcc=True,
         use_global_deps=False,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -DUID_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-        group='compiler_libraries'
+        group='compiler_libraries',
+        deps = extra_libs
     )
 
     REPLACE_SOURCE = REPLACE_HOSTCC_SOURCE
 
-    if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
     if not bld.CONFIG_SET('HAVE_CRYPT'):         REPLACE_SOURCE += ' crypt.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
     if not bld.CONFIG_SET('HAVE_POLL'):          REPLACE_SOURCE += ' poll.c'
@@ -426,6 +590,8 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_INET_ATON'):     REPLACE_SOURCE += ' inet_aton.c'
     if not bld.CONFIG_SET('HAVE_INET_NTOP'):     REPLACE_SOURCE += ' inet_ntop.c'
     if not bld.CONFIG_SET('HAVE_INET_PTON'):     REPLACE_SOURCE += ' inet_pton.c'
+    if not bld.CONFIG_SET('HAVE_GETXATTR') or bld.CONFIG_SET('XATTR_ADDITIONAL_OPTIONS'):
+                                                 REPLACE_SOURCE += ' xattr.c'
 
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
@@ -436,7 +602,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl nsl socket rt')
+                      deps='crypt dl nsl socket rt attr' + extra_libs)
 
     bld.SAMBA_SUBSYSTEM('replace-test',
                       source='''test/testsuite.c test/strptime.c

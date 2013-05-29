@@ -49,7 +49,6 @@ pread
 pwrite
 chown
 lchown
-getpass
 readline (the library)
 inet_ntoa
 inet_ntop
@@ -72,6 +71,8 @@ link
 readlink
 symlink
 realpath
+poll
+setproctitle
 
 Types:
 bool
@@ -80,6 +81,8 @@ uint{8,16,32,64}_t
 int{8,16,32,64}_t
 intptr_t
 sig_atomic_t
+blksize_t
+blkcnt_t
 
 Constants:
 PATH_NAME_MAX

@@ -114,6 +114,8 @@
 
 #if HAVE_SYS_ATTRIBUTES_H
 #include <sys/attributes.h>
+#elif HAVE_ATTR_ATTRIBUTES_H
+#include <attr/attributes.h>
 #endif
 
 /* mutually exclusive (SuSE 8.2) */
@@ -123,9 +125,24 @@
 #include <sys/xattr.h>
 #endif
 
+#ifdef HAVE_SYS_EA_H
+#include <sys/ea.h>
+#endif
+
+#ifdef HAVE_SYS_EXTATTR_H
+#include <sys/extattr.h>
+#endif
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
+#endif
+
+#ifndef XATTR_CREATE
+#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
+#endif
+
+#ifndef XATTR_REPLACE
+#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
 /* Some POSIX definitions for those without */
@@ -199,5 +216,62 @@
 #else /* UID_WRAPPER */
 # define uwrap_enabled() 0
 #endif /* UID_WRAPPER */
+
+/*
+   this allows us to use a uniform error handling for our xattr
+   wrappers
+*/
+#ifndef ENOATTR
+#define ENOATTR ENODATA
+#endif
+
+
+#if !defined(HAVE_GETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+ssize_t rep_getxattr (const char *path, const char *name, void *value, size_t size);
+#define getxattr(path, name, value, size) rep_getxattr(path, name, value, size)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_FGETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+ssize_t rep_fgetxattr (int filedes, const char *name, void *value, size_t size);
+#define fgetxattr(filedes, name, value, size) rep_fgetxattr(filedes, name, value, size)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_LISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+ssize_t rep_listxattr (const char *path, char *list, size_t size);
+#define listxattr(path, list, size) rep_listxattr(path, list, size)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_FLISTXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+ssize_t rep_flistxattr (int filedes, char *list, size_t size);
+#define flistxattr(filedes, value, size) rep_flistxattr(filedes, value, size)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_REMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+int rep_removexattr (const char *path, const char *name);
+#define removexattr(path, name) rep_removexattr(path, name)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_FREMOVEXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+int rep_fremovexattr (int filedes, const char *name);
+#define fremovexattr(filedes, name) rep_fremovexattr(filedes, name)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_SETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+int rep_setxattr (const char *path, const char *name, const void *value, size_t size, int flags);
+#define setxattr(path, name, value, size, flags) rep_setxattr(path, name, value, size, flags)
+/* define is in "replace.h" */
+#endif
+
+#if !defined(HAVE_FSETXATTR) || defined(XATTR_ADDITIONAL_OPTIONS)
+int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);
+#define fsetxattr(filedes, name, value, size, flags) rep_fsetxattr(filedes, name, value, size, flags)
+/* define is in "replace.h" */
+#endif
 
 #endif

@@ -1,17 +1,17 @@
-#ifndef _system_printing_h
-#define _system_printing_h
+#ifndef _system_gssapi_h
+#define _system_gssapi_h
 
-/* 
+/*
    Unix SMB/CIFS implementation.
 
-   printing system include wrappers
+   GSSAPI system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
-   
+
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -27,24 +27,27 @@
 
 */
 
-#ifdef AIX
-#define DEFAULT_PRINTING PRINT_AIX
-#define PRINTCAP_NAME "/etc/qconfig"
+#ifdef HAVE_GSSAPI
+
+#ifdef HAVE_GSSAPI_GSSAPI_EXT_H
+#include <gssapi/gssapi_ext.h>
+#elif HAVE_GSSAPI_GSSAPI_H
+#include <gssapi/gssapi.h>
+#elif HAVE_GSSAPI_GSSAPI_GENERIC_H
+#include <gssapi/gssapi_generic.h>
+#elif HAVE_GSSAPI_H
+#include <gssapi.h>
 #endif
 
-#ifdef HPUX
-#define DEFAULT_PRINTING PRINT_HPUX
+#if HAVE_GSSAPI_GSSAPI_KRB5_H
+#include <gssapi/gssapi_krb5.h>
 #endif
 
-#ifdef QNX
-#define DEFAULT_PRINTING PRINT_QNX
+#if HAVE_GSSAPI_GSSAPI_SPNEGO_H
+#include <gssapi/gssapi_spnego.h>
+#elif HAVE_GSSAPI_SPNEGO_H
+#include <gssapi_spnego.h>
 #endif
 
-#ifndef DEFAULT_PRINTING
-#define DEFAULT_PRINTING PRINT_BSD
 #endif
-#ifndef PRINTCAP_NAME
-#define PRINTCAP_NAME "/etc/printcap"
-#endif
-
 #endif

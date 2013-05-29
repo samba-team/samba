@@ -27,6 +27,7 @@
 
 #include "system/filesys.h"
 #include "system/time.h"
+#include "system/network.h"
 #include "system/passwd.h"
 #include "system/syslog.h"
 #include "system/locale.h"
@@ -211,16 +212,6 @@ int rep_initgroups(char *name, gid_t id)
 #endif /* HAVE_SETGROUPS */
 }
 #endif /* HAVE_INITGROUPS */
-
-
-#if (defined(SecureWare) && defined(SCO))
-/* This is needed due to needing the nap() function but we don't want
-   to include the Xenix libraries since that will break other things...
-   BTW: system call # 0x0c28 is the same as calling nap() */
-long nap(long milliseconds) {
-	 return syscall(0x0c28, milliseconds);
- }
-#endif
 
 
 #ifndef HAVE_MEMMOVE
@@ -411,10 +402,10 @@ int rep_mkstemp(char *template)
 {
 	/* have a reasonable go at emulating it. Hope that
 	   the system mktemp() isn't completely hopeless */
-	char *p = mktemp(template);
-	if (!p)
+	mktemp(template);
+	if (template[0] == 0)
 		return -1;
-	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
+	return open(template, O_CREAT|O_EXCL|O_RDWR, 0600);
 }
 #endif
 
@@ -750,7 +741,7 @@ void *rep_memmem(const void *haystack, size_t haystacklen,
 }
 #endif
 
-#ifndef HAVE_VDPRINTF
+#if !defined(HAVE_VDPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 int rep_vdprintf(int fd, const char *format, va_list ap)
 {
 	char *s = NULL;
@@ -767,7 +758,7 @@ int rep_vdprintf(int fd, const char *format, va_list ap)
 }
 #endif
 
-#ifndef HAVE_DPRINTF
+#if !defined(HAVE_DPRINTF) || !defined(HAVE_C99_VSNPRINTF)
 int rep_dprintf(int fd, const char *format, ...)
 {
 	int ret;
@@ -794,7 +785,7 @@ char *rep_get_current_dir_name(void)
 }
 #endif
 
-#if !defined(HAVE_STRERROR_R) || !defined(STRERROR_R_PROTO_COMPATIBLE)
+#ifndef HAVE_STRERROR_R
 int rep_strerror_r(int errnum, char *buf, size_t buflen)
 {
 	char *s = strerror(errnum);
@@ -826,5 +817,86 @@ int rep_clock_gettime(clockid_t clk_id, struct timespec *tp)
 			return -1;
 	}
 	return 0;
+}
+#endif
+
+#ifndef HAVE_MEMALIGN
+void *rep_memalign( size_t align, size_t size )
+{
+#if defined(HAVE_POSIX_MEMALIGN)
+	void *p = NULL;
+	int ret = posix_memalign( &p, align, size );
+	if ( ret == 0 )
+		return p;
+
+	return NULL;
+#else
+	/* On *BSD systems memaligns doesn't exist, but memory will
+	 * be aligned on allocations of > pagesize. */
+#if defined(SYSCONF_SC_PAGESIZE)
+	size_t pagesize = (size_t)sysconf(_SC_PAGESIZE);
+#elif defined(HAVE_GETPAGESIZE)
+	size_t pagesize = (size_t)getpagesize();
+#else
+	size_t pagesize = (size_t)-1;
+#endif
+	if (pagesize == (size_t)-1) {
+		errno = ENOSYS;
+		return NULL;
+	}
+	if (size < pagesize) {
+		size = pagesize;
+	}
+	return malloc(size);
+#endif
+}
+#endif
+
+#ifndef HAVE_GETPEEREID
+int rep_getpeereid(int s, uid_t *uid, gid_t *gid)
+{
+#if defined(HAVE_PEERCRED)
+	struct ucred cred;
+	socklen_t cred_len = sizeof(struct ucred);
+	int ret;
+
+#undef getsockopt
+	ret = getsockopt(s, SOL_SOCKET, SO_PEERCRED, (void *)&cred, &cred_len);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (cred_len != sizeof(struct ucred)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*uid = cred.uid;
+	*gid = cred.gid;
+	return 0;
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+#endif
+
+#ifndef HAVE_USLEEP
+int rep_usleep(useconds_t sec)
+{
+	struct timeval tval;
+	/*
+	 * Fake it with select...
+	 */
+	tval.tv_sec = 0;
+	tval.tv_usec = usecs/1000;
+	select(0,NULL,NULL,NULL,&tval);
+	return 0;
+}
+#endif /* HAVE_USLEEP */
+
+#ifndef HAVE_SETPROCTITLE
+void rep_setproctitle(const char *fmt, ...)
+{
 }
 #endif

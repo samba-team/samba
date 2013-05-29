@@ -49,7 +49,7 @@ fi
 LIBREPLACEOBJ="$libreplacedir/replace.o"
 AC_SUBST(LIBREPLACEOBJ)
 
-LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/snprintf.o"
+LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/snprintf.o  $libreplacedir/xattr.o"
 
 AC_TYPE_UID_T
 AC_TYPE_MODE_T
@@ -60,13 +60,15 @@ AC_STRUCT_ST_RDEV
 AC_CHECK_TYPE(ino_t,unsigned)
 AC_CHECK_TYPE(loff_t,off_t)
 AC_CHECK_TYPE(offset_t,loff_t)
+AC_CHECK_TYPE(blksize_t,long)
+AC_CHECK_TYPE(blkcnt_t,long)
 
 AC_FUNC_MEMCMP
 
 AC_CHECK_FUNCS([pipe strftime srandom random srand rand usleep setbuffer lstat getpgrp utime utimes])
 
 AC_CHECK_HEADERS(stdbool.h stdint.h sys/select.h)
-AC_CHECK_HEADERS(setjmp.h utime.h)
+AC_CHECK_HEADERS(setjmp.h utime.h sys/wait.h)
 
 LIBREPLACE_PROVIDE_HEADER([stdint.h])
 LIBREPLACE_PROVIDE_HEADER([stdbool.h])
@@ -107,6 +109,13 @@ if test x"$libreplace_cv_HAVE_MREMAP" = x"yes"; then
     AC_DEFINE(HAVE_MREMAP,1,[Whether mremap works])
 fi
 
+AC_CACHE_CHECK([for incoherent mmap],libreplace_cv_HAVE_INCOHERENT_MMAP,[
+AC_TRY_RUN([#include "$libreplacedir/test/incoherent_mmap.c"],
+           libreplace_cv_HAVE_INCOHERENT_MMAP=yes,libreplace_cv_HAVE_INCOHERENT_MMAP=no,libreplace_cv_HAVE_INCOHERENT_MMAP=cross)])
+if test x"$libreplace_cv_HAVE_INCOHERENT_MMAP" = x"yes"; then
+    AC_DEFINE(HAVE_INCOHERENT_MMAP,1,[Whether mmap is incoherent against write])
+fi
+
 
 AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(sys/time.h time.h)
@@ -114,9 +123,13 @@ AC_CHECK_HEADERS(stdarg.h vararg.h)
 AC_CHECK_HEADERS(sys/mount.h mntent.h)
 AC_CHECK_HEADERS(stropts.h)
 AC_CHECK_HEADERS(unix.h)
+AC_CHECK_HEADERS(malloc.h)
+AC_CHECK_HEADERS(syscall.h)
+AC_CHECK_HEADERS(sys/syscall.h)
+AC_CHECK_HEADERS(sys/ucontext.h)
 
-AC_CHECK_FUNCS(seteuid setreuid setresuid setegid setregid setresgid)
-AC_CHECK_FUNCS(chroot bzero strerror strerror_r)
+AC_CHECK_FUNCS(syscall setuid seteuid setreuid setresuid setgid setegid setregid setresgid setgroups)
+AC_CHECK_FUNCS(chroot bzero strerror strerror_r memalign posix_memalign getpagesize)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid wait4 strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp dup2 dprintf vdprintf)
@@ -134,6 +147,60 @@ AC_CHECK_FUNCS(clock_gettime,libreplace_cv_have_clock_gettime=yes,[
 		libreplace_cv_have_clock_gettime=yes
 		AC_DEFINE(HAVE_CLOCK_GETTIME, 1, Define to 1 if there is support for clock_gettime)])
 ])
+
+AC_CHECK_HEADERS(sys/attributes.h attr/xattr.h sys/xattr.h sys/extattr.h sys/uio.h)
+AC_CHECK_HEADERS(sys/ea.h sys/proplist.h)
+
+LIBREPLACE_FILESYS_LIBS=""
+
+############################################
+# Check for EA implementations
+case "$host_os" in
+  *freebsd4* | *dragonfly* )
+	AC_DEFINE(BROKEN_EXTATTR, 1, [Does extattr API work])
+  ;;
+  *)
+	AC_SEARCH_LIBS(getxattr, [attr])
+	AC_CHECK_FUNCS(attr_get attr_getf attr_list attr_listf attropen attr_remove)
+	AC_CHECK_FUNCS(attr_removef attr_set attr_setf extattr_delete_fd extattr_delete_file)
+	AC_CHECK_FUNCS(extattr_get_fd extattr_get_file extattr_list_fd extattr_list_file)
+	AC_CHECK_FUNCS(extattr_set_fd extattr_set_file fgetea fgetxattr flistea flistxattr)
+	AC_CHECK_FUNCS(fremoveea fremovexattr fsetea fsetxattr getea getxattr listea)
+	AC_CHECK_FUNCS(listxattr removeea removexattr setea setxattr)
+
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, flistea)
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, flistxattr)
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, attr_listf)
+	AC_CHECK_LIB_EXT(attr, LIBREPLACE_FILESYS_LIBS, extattr_list_fd)
+
+  ;;
+esac
+
+
+########################################################
+# Do xattr functions take additional options like on Darwin?
+if test x"$ac_cv_func_getxattr" = x"yes" ; then
+	AC_CACHE_CHECK([whether xattr interface takes additional options], smb_attr_cv_xattr_add_opt, [
+		old_LIBS=$LIBS
+		LIBS="$LIBS $LIBREPLACE_FILESYS_LIBS"
+		AC_TRY_COMPILE([
+			#include <sys/types.h>
+			#if HAVE_ATTR_XATTR_H
+			#include <attr/xattr.h>
+			#elif HAVE_SYS_XATTR_H
+			#include <sys/xattr.h>
+			#endif
+		],[
+			getxattr(0, 0, 0, 0, 0, 0);
+		],
+	        [smb_attr_cv_xattr_add_opt=yes],
+		[smb_attr_cv_xattr_add_opt=no;LIBS=$old_LIBS])
+	])
+	if test x"$smb_attr_cv_xattr_add_opt" = x"yes"; then
+		AC_DEFINE(XATTR_ADDITIONAL_OPTIONS, 1, [xattr functions have additional options])
+	fi
+fi
+
 AC_CHECK_FUNCS(get_current_dir_name)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
@@ -146,12 +213,27 @@ AC_TRY_RUN([#include <stdlib.h>
 #include <unistd.h>
 main() { 
   struct stat st;
-  char tpl[20]="/tmp/test.XXXXXX"; 
-  int fd = mkstemp(tpl); 
-  if (fd == -1) exit(1);
+  char tpl[20]="/tmp/test.XXXXXX";
+  char tpl2[20]="/tmp/test.XXXXXX";
+  int fd = mkstemp(tpl);
+  int fd2 = mkstemp(tpl2);
+  if (fd == -1) {
+        if (fd2 != -1) {
+                unlink(tpl2);
+        }
+        exit(1);
+  }
+  if (fd2 == -1) exit(1);
   unlink(tpl);
+  unlink(tpl2);
   if (fstat(fd, &st) != 0) exit(1);
   if ((st.st_mode & 0777) != 0600) exit(1);
+  if (strcmp(tpl, "/tmp/test.XXXXXX") == 0) {
+        exit(1);
+  }
+  if (strcmp(tpl, tpl2) == 0) {
+        exit(1);
+  }
   exit(0);
 }],
 libreplace_cv_HAVE_SECURE_MKSTEMP=yes,
@@ -276,6 +358,16 @@ if test x"$libreplace_cv_sig_atomic_t" = x"yes"; then
 fi
 
 
+dnl Check if the C compiler understands volatile (it should, being ANSI).
+AC_CACHE_CHECK([that the C compiler understands volatile],libreplace_cv_volatile, [
+	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
+		libreplace_cv_volatile=yes,libreplace_cv_volatile=no)])
+if test x"$libreplace_cv_volatile" = x"yes"; then
+	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
+fi
+
+m4_include(system/config.m4)
+
 AC_CACHE_CHECK([for O_DIRECT flag to open(2)],libreplace_cv_HAVE_OPEN_O_DIRECT,[
 AC_TRY_COMPILE([
 #include <unistd.h>
@@ -288,19 +380,7 @@ if test x"$libreplace_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
     AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
 fi
 
-
-dnl Check if the C compiler understands volatile (it should, being ANSI).
-AC_CACHE_CHECK([that the C compiler understands volatile],libreplace_cv_volatile, [
-	AC_TRY_COMPILE([#include <sys/types.h>],[volatile int i = 0],
-		libreplace_cv_volatile=yes,libreplace_cv_volatile=no)])
-if test x"$libreplace_cv_volatile" = x"yes"; then
-	AC_DEFINE(HAVE_VOLATILE, 1, [Whether the C compiler understands volatile])
-fi
-
-m4_include(system/config.m4)
-
 m4_include(dlfcn.m4)
-m4_include(getpass.m4)
 m4_include(strptime.m4)
 m4_include(win32.m4)
 m4_include(timegm.m4)
@@ -334,6 +414,18 @@ AC_CACHE_CHECK([for struct timespec type],libreplace_cv_struct_timespec, [
 	libreplace_cv_struct_timespec=yes,libreplace_cv_struct_timespec=no)])
 if test x"$libreplace_cv_struct_timespec" = x"yes"; then
    AC_DEFINE(HAVE_STRUCT_TIMESPEC,1,[Whether we have struct timespec])
+fi
+
+AC_CACHE_CHECK([for ucontext_t type],libreplace_cv_ucontext_t, [
+    AC_TRY_COMPILE([
+#include <signal.h>
+#if HAVE_SYS_UCONTEXT_H
+#include <sys/ucontext.h>
+# endif
+],[ucontext_t uc; sigaddset(&uc.uc_sigmask, SIGUSR1);],
+	libreplace_cv_ucontext_t=yes,libreplace_cv_ucontext_t=no)])
+if test x"$libreplace_cv_ucontext_t" = x"yes"; then
+   AC_DEFINE(HAVE_UCONTEXT_T,1,[Whether we have ucontext_t])
 fi
 
 AC_CHECK_FUNCS([printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
