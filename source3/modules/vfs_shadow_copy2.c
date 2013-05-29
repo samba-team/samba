@@ -161,6 +161,12 @@ static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
  * Given a timstamp, build the string to insert into a path
  * as a path component for creating the local path to the
  * snapshot at the given timestamp of the input path.
+ *
+ * In the case of a parallel snapdir (specified with an
+ * absolute path), this is the inital portion of the
+ * local path of any snapshot file. The complete path is
+ * obtained by appending the portion of the file's path
+ * below the share root's mountpoint.
  */
 static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
@@ -170,6 +176,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 	fstring snaptime_string;
 	size_t snaptime_len;
 	struct shadow_copy2_config *config;
+	char *result = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return NULL);
@@ -204,8 +211,19 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
-	return talloc_asprintf(mem_ctx, "/%s/%s",
-			       config->snapdir, snaptime_string);
+
+	if (config->snapdir_absolute) {
+		result = talloc_asprintf(mem_ctx, "%s/%s",
+					 config->snapdir, snaptime_string);
+	} else {
+		result = talloc_asprintf(mem_ctx, "/%s/%s",
+					 config->snapdir, snaptime_string);
+	}
+	if (result == NULL) {
+		DEBUG(1, (__location__ " talloc_asprintf failed\n"));
+	}
+
+	return result;
 }
 
 /**
