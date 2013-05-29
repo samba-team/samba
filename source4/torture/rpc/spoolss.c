@@ -8525,6 +8525,125 @@ static bool test_printer_bidi(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printer_set_publish(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
+				       struct policy_handle *handle)
+{
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfo7 info7;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct GUID guid;
+
+	info7.guid = "";
+	info7.action = DSPRINT_PUBLISH;
+
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	info_ctr.level = 7;
+	info_ctr.info.info7 = &info7;
+
+	torture_assert(tctx,
+		       test_SetPrinter(tctx, b, handle, &info_ctr,
+				       &devmode_ctr, &secdesc_ctr, 0), "");
+
+	torture_assert(tctx,
+		       test_GetPrinter_level(tctx, b, handle, 2, &info),
+		       "");
+	torture_assert(tctx,
+		       (info.info2.attributes & PRINTER_ATTRIBUTE_PUBLISHED),
+		       "info2 publish flag not set");
+	torture_assert(tctx,
+		       test_GetPrinter_level(tctx, b, handle, 7, &info),
+		       "");
+	torture_assert_int_equal(tctx,
+				 info.info7.action, DSPRINT_PUBLISH,
+				 "info7 publish flag not set");
+	torture_assert_ntstatus_ok(tctx, GUID_from_string(info.info7.guid, &guid),
+				   "invalid guid for published printer");
+
+	return true;
+}
+
+static bool test_printer_set_unpublish(struct torture_context *tctx,
+				       struct dcerpc_binding_handle *b,
+				       struct policy_handle *handle)
+{
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfo7 info7;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	info7.action = DSPRINT_UNPUBLISH;
+	info7.guid = "";
+
+	ZERO_STRUCT(info_ctr);
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
+	info_ctr.level = 7;
+	info_ctr.info.info7 = &info7;
+
+	torture_assert(tctx,
+		       test_SetPrinter(tctx, b, handle, &info_ctr,
+				       &devmode_ctr, &secdesc_ctr, 0), "");
+
+	torture_assert(tctx,
+		       test_GetPrinter_level(tctx, b, handle, 2, &info),
+		       "");
+	torture_assert(tctx,
+		       !(info.info2.attributes & PRINTER_ATTRIBUTE_PUBLISHED),
+		       "info2 publish flag still set");
+	torture_assert(tctx,
+		       test_GetPrinter_level(tctx, b, handle, 7, &info),
+		       "");
+	torture_assert_int_equal(tctx,
+				 info.info7.action, DSPRINT_UNPUBLISH,
+				 "info7 unpublish flag not set");
+	torture_assert_str_equal(tctx,
+				 info.info7.guid, "",
+				 "guid not empty after unpublish");
+
+	return true;
+}
+
+static bool test_printer_publish_toggle(struct torture_context *tctx,
+					   void *private_data)
+{
+	struct torture_printer_context *t =
+		talloc_get_type_abort(private_data,
+				      struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct policy_handle *handle = &t->handle;
+	union spoolss_PrinterInfo info7;
+	union spoolss_PrinterInfo info2;
+
+	/* check publish status via level 7 and level 2 */
+	torture_assert(tctx, test_GetPrinter_level(tctx, b, handle, 7, &info7),
+		       "");
+	torture_assert(tctx, test_GetPrinter_level(tctx, b, handle, 2, &info2),
+		       "");
+
+	if (info2.info2.attributes & PRINTER_ATTRIBUTE_PUBLISHED) {
+		torture_assert_int_equal(tctx,
+					 info7.info7.action, DSPRINT_PUBLISH,
+					 "info7 publish flag not set");
+		torture_assert(tctx, test_printer_set_unpublish(tctx, b, handle), "");
+		torture_assert(tctx, test_printer_set_publish(tctx, b, handle), "");
+	} else {
+		torture_assert_int_equal(tctx,
+					 info7.info7.action, DSPRINT_UNPUBLISH,
+					 "info7 unpublish flag not set");
+		torture_assert(tctx, test_printer_set_publish(tctx, b, handle), "");
+		torture_assert(tctx, test_printer_set_unpublish(tctx, b, handle), "");
+	}
+
+	return true;
+}
+
 static bool test_driver_info_winreg(struct torture_context *tctx,
 				    void *private_data)
 {
@@ -8568,6 +8687,8 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "printer_rename", test_printer_rename);
 	torture_tcase_add_simple_test(tcase, "printer_ic", test_printer_ic);
 	torture_tcase_add_simple_test(tcase, "bidi", test_printer_bidi);
+	torture_tcase_add_simple_test(tcase, "publish_toggle",
+				      test_printer_publish_toggle);
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
