@@ -4177,21 +4177,47 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo7 *r,
 				      int snum)
 {
-	const struct auth_session_info *session_info = get_session_info_system();
-	struct GUID guid;
+	const struct auth_session_info *session_info;
+	char *printer;
+	WERROR werr;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOMEM;
+	}
 
-	if (is_printer_published(mem_ctx, session_info, msg_ctx,
-				 servername,
-				 lp_servicename(talloc_tos(), snum), &guid, NULL)) {
+	session_info = get_session_info_system();
+	SMB_ASSERT(session_info != NULL);
+
+	printer = lp_servicename(tmp_ctx, snum);
+	if (printer == NULL) {
+		DEBUG(0, ("invalid printer snum %d\n", snum));
+		werr = WERR_INVALID_PARAM;
+		goto out_tmp_free;
+	}
+
+	if (is_printer_published(tmp_ctx, session_info, msg_ctx,
+				 servername, printer, NULL)) {
+		struct GUID guid;
+		werr = nt_printer_guid_get(tmp_ctx, session_info, msg_ctx,
+					   printer, &guid);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto out_tmp_free;
+		}
 		r->guid = talloc_strdup_upper(mem_ctx, GUID_string2(mem_ctx, &guid));
 		r->action = DSPRINT_PUBLISH;
 	} else {
 		r->guid = talloc_strdup(mem_ctx, "");
 		r->action = DSPRINT_UNPUBLISH;
 	}
-	W_ERROR_HAVE_NO_MEMORY(r->guid);
+	if (r->guid == NULL) {
+		werr = WERR_NOMEM;
+		goto out_tmp_free;
+	}
 
-	return WERR_OK;
+	werr = WERR_OK;
+out_tmp_free:
+	talloc_free(tmp_ctx);
+	return werr;
 }
 
 /********************************************************************
