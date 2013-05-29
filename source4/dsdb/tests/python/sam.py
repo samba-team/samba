@@ -1571,6 +1571,22 @@ class SamTests(samba.tests.TestCase):
           ATYPE_NORMAL_ACCOUNT)
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
 
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_ACCOUNTDISABLE),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_NORMAL_ACCOUNT != 0)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE != 0)
+
         try:
             m = Message()
             m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -1790,6 +1806,22 @@ class SamTests(samba.tests.TestCase):
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
         self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_ACCOUNTDISABLE),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_NORMAL_ACCOUNT != 0)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE != 0)
 
         try:
             m = Message()

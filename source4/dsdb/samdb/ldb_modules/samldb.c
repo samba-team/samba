@@ -1517,8 +1517,32 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 
 	account_type = ds_uf2atype(user_account_control);
 	if (account_type == 0) {
-		ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+		char *tempstr;
+
+		/*
+		 * When there is no account type embedded in "userAccountControl"
+		 * fall back to default "UF_NORMAL_ACCOUNT".
+		 */
+		if (user_account_control == 0) {
+			ldb_set_errstring(ldb,
+					  "samldb: Invalid user account control value!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		user_account_control |= UF_NORMAL_ACCOUNT;
+
+		tempstr = talloc_asprintf(ac->msg, "%d", user_account_control);
+		if (tempstr == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+
+		/* Overwrite "userAccountControl" with "UF_NORMAL_ACCOUNT" added */
+		el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
+						 ac->req->operation);
+		el->values[0].data = (uint8_t *) tempstr;
+		el->values[0].length = strlen(tempstr);
+
+		account_type = ATYPE_NORMAL_ACCOUNT;
 	}
 	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "sAMAccountType",
 				 account_type);
