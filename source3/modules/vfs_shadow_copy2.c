@@ -381,6 +381,36 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 			goto no_snapshot;
 		}
 		TALLOC_FREE(insert);
+	} else {
+		char *snapshot_path;
+		char *s;
+
+		snapshot_path = shadow_copy2_snapshot_path(talloc_tos(),
+							   handle,
+							   timestamp);
+		if (snapshot_path == NULL) {
+			errno = ENOMEM;
+			return false;
+		}
+
+		DEBUG(10, (__location__ " path: '%s'.\n"
+			   "snapshot path: '%s'\n", name, snapshot_path));
+
+		s = strstr(name, snapshot_path);
+		if (s == name) {
+			/*
+			 * this starts with "snapshot_basepath/GMT-Token"
+			 * so it is already a converted absolute
+			 * path. Don't process further.
+			 */
+			DEBUG(10, (__location__ ": path '%s' starts with "
+				   "snapshot path '%s' (not in "
+				   "snapdirseverywhere mode) ==> "
+				   "already converted\n", name, snapshot_path));
+			talloc_free(snapshot_path);
+			goto no_snapshot;
+		}
+		talloc_free(snapshot_path);
 	}
 
 	if (pstripped != NULL) {
