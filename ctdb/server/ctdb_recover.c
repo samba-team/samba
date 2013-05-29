@@ -1376,7 +1376,7 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 
 int32_t ctdb_control_stop_node(struct ctdb_context *ctdb)
 {
-	DEBUG(DEBUG_INFO,(__location__ " Stopping node\n"));
+	DEBUG(DEBUG_NOTICE, ("Stopping node\n"));
 	ctdb_disable_monitoring(ctdb);
 	ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
 
@@ -1385,7 +1385,7 @@ int32_t ctdb_control_stop_node(struct ctdb_context *ctdb)
 
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb)
 {
-	DEBUG(DEBUG_INFO,(__location__ " Continue node\n"));
+	DEBUG(DEBUG_NOTICE, ("Continue node\n"));
 	ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_STOPPED;
 
 	return 0;
