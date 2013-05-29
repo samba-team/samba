@@ -316,6 +316,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		goto no_snapshot;
 	}
 	if ((p > name) && (p[-1] != '/')) {
+		/* the GMT-token does not start a path-component */
 		goto no_snapshot;
 	}
 	q = strptime(p, GMT_FORMAT, &tm);
@@ -328,6 +329,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		goto no_snapshot;
 	}
 	if ((p == name) && (q[0] == '\0')) {
+		/* the name consists of only the GMT token */
 		if (pstripped != NULL) {
 			stripped = talloc_strdup(mem_ctx, "");
 			if (stripped == NULL) {
@@ -339,6 +341,14 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		return true;
 	}
 	if (q[0] != '/') {
+		/*
+		 * The GMT token is either at the end of the path
+		 * or it is not a complete path component, i.e. the
+		 * path component continues after the gmt-token.
+		 *
+		 * TODO: Is this correct? Or would the GMT tag as the
+		 * last component be a valid input?
+		 */
 		goto no_snapshot;
 	}
 	q += 1;
