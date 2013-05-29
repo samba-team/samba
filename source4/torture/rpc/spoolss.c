@@ -1247,8 +1247,9 @@ static bool test_SetPrinter(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter_r(b, tctx, &r),
 		"failed to call SetPrinter");
-	torture_assert_werr_ok(tctx, r.out.result,
-		"failed to call SetPrinter");
+	torture_assert(tctx, (W_ERROR_EQUAL(r.out.result, WERR_OK)
+			   || W_ERROR_EQUAL(r.out.result, WERR_IO_PENDING)),
+		       "SetPrinter failed");
 
 	return true;
 }
@@ -8534,7 +8535,6 @@ static bool test_printer_set_publish(struct torture_context *tctx,
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct sec_desc_buf secdesc_ctr;
-	struct GUID guid;
 
 	info7.guid = "";
 	info7.action = DSPRINT_PUBLISH;
@@ -8558,11 +8558,23 @@ static bool test_printer_set_publish(struct torture_context *tctx,
 	torture_assert(tctx,
 		       test_GetPrinter_level(tctx, b, handle, 7, &info),
 		       "");
-	torture_assert_int_equal(tctx,
-				 info.info7.action, DSPRINT_PUBLISH,
-				 "info7 publish flag not set");
-	torture_assert_ntstatus_ok(tctx, GUID_from_string(info.info7.guid, &guid),
-				   "invalid guid for published printer");
+	if (info.info7.action & DSPRINT_PENDING) {
+		torture_comment(tctx, "publish is pending\n");
+		torture_assert_int_equal(tctx,
+					 info.info7.action,
+					 (DSPRINT_PENDING | DSPRINT_PUBLISH),
+					 "info7 publish flag not set");
+	} else {
+		struct GUID guid;
+		torture_assert_int_equal(tctx,
+					 info.info7.action,
+					 DSPRINT_PUBLISH,
+					 "info7 publish flag not set");
+		torture_assert_ntstatus_ok(tctx,
+					   GUID_from_string(info.info7.guid,
+					   &guid),
+					   "invalid published printer GUID");
+	}
 
 	return true;
 }
@@ -8599,12 +8611,23 @@ static bool test_printer_set_unpublish(struct torture_context *tctx,
 	torture_assert(tctx,
 		       test_GetPrinter_level(tctx, b, handle, 7, &info),
 		       "");
-	torture_assert_int_equal(tctx,
-				 info.info7.action, DSPRINT_UNPUBLISH,
-				 "info7 unpublish flag not set");
-	torture_assert_str_equal(tctx,
-				 info.info7.guid, "",
-				 "guid not empty after unpublish");
+
+	if (info.info7.action & DSPRINT_PENDING) {
+		struct GUID guid;
+		torture_comment(tctx, "unpublish is pending\n");
+		torture_assert_int_equal(tctx,
+					 info.info7.action,
+					 (DSPRINT_PENDING | DSPRINT_UNPUBLISH),
+					 "info7 unpublish flag not set");
+		torture_assert_ntstatus_ok(tctx,
+					   GUID_from_string(info.info7.guid,
+					   &guid),
+					   "invalid printer GUID");
+	} else {
+		torture_assert_int_equal(tctx,
+					 info.info7.action, DSPRINT_UNPUBLISH,
+					 "info7 unpublish flag not set");
+	}
 
 	return true;
 }
