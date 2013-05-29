@@ -1,4 +1,4 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
    main select loop and event handling
    Copyright (C) Andrew Tridgell	2003-2005
@@ -46,6 +46,12 @@ struct select_event_context {
 static int select_event_context_init(struct tevent_context *ev)
 {
 	struct select_event_context *select_ev;
+
+	/*
+	 * We might be called during tevent_re_initialise()
+	 * which means we need to free our old additional_data.
+	 */
+	TALLOC_FREE(ev->additional_data);
 
 	select_ev = talloc_zero(ev, struct select_event_context);
 	if (!select_ev) return -1;
@@ -138,6 +144,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	fd_set r_fds, w_fds;
 	struct tevent_fd *fde;
 	int selrtn;
+	int select_errno;
 
 	/* we maybe need to recalculate the maxfd */
 	if (select_ev->maxfd == EVENT_INVALID_MAXFD) {
@@ -150,6 +157,10 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	/* setup any fd events */
 	for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 		if (fde->fd < 0 || fde->fd >= FD_SETSIZE) {
+			tevent_debug(select_ev->ev, TEVENT_DEBUG_FATAL,
+				     "ERROR: EBADF fd[%d] >= %d "
+				     "select_event_loop_once\n",
+				     fde->fd, FD_SETSIZE);
 			errno = EBADF;
 			return -1;
 		}
@@ -169,15 +180,16 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	tevent_trace_point_callback(select_ev->ev, TEVENT_TRACE_BEFORE_WAIT);
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+	select_errno = errno;
 	tevent_trace_point_callback(select_ev->ev, TEVENT_TRACE_AFTER_WAIT);
 
-	if (selrtn == -1 && errno == EINTR &&
+	if (selrtn == -1 && select_errno == EINTR &&
 	    select_ev->ev->signal_events) {
 		tevent_common_check_signal(select_ev->ev);
 		return 0;
 	}
 
-	if (selrtn == -1 && errno == EBADF) {
+	if (selrtn == -1 && select_errno == EBADF) {
 		/* the socket is dead! this should never
 		   happen as the socket should have first been
 		   made readable and that should have removed
@@ -202,9 +214,14 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
-			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
-			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
+			if (FD_ISSET(fde->fd, &r_fds) && (fde->flags & TEVENT_FD_READ)) {
+				flags |= TEVENT_FD_READ;
+			}
+			if (FD_ISSET(fde->fd, &w_fds) && (fde->flags & TEVENT_FD_WRITE)) {
+				flags |= TEVENT_FD_WRITE;
+			}
 			if (flags) {
+				DLIST_DEMOTE(select_ev->ev->fd_events, fde, struct tevent_fd);
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
 				break;
 			}
@@ -215,12 +232,12 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 }
 
 /*
-  do a single event loop using the events defined in ev
+  do a single event loop using the events defined in ev 
 */
 static int select_event_loop_once(struct tevent_context *ev, const char *location)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
-							   struct select_event_context);
+		 					   struct select_event_context);
 	struct timeval tval;
 
 	if (ev->signal_events &&
@@ -247,7 +264,7 @@ static const struct tevent_ops select_event_ops = {
 	.set_fd_close_fn	= tevent_common_fd_set_close_fn,
 	.get_fd_flags		= tevent_common_fd_get_flags,
 	.set_fd_flags		= tevent_common_fd_set_flags,
-	.add_timer		= tevent_common_add_timer,
+	.add_timer		= tevent_common_add_timer_v2,
 	.schedule_immediate	= tevent_common_schedule_immediate,
 	.add_signal		= tevent_common_add_signal,
 	.loop_once		= select_event_loop_once,

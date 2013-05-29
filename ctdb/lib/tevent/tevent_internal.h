@@ -1,10 +1,10 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
 
    generalised event loop handling
 
    INTERNAL STRUCTS. THERE ARE NO API GUARANTEES.
-   External users should only ever have to include this header when
+   External users should only ever have to include this header when 
    implementing new tevent backends.
 
    Copyright (C) Stefan Metzmacher 2005-2009
@@ -263,8 +263,16 @@ struct tevent_context {
 		tevent_trace_callback_t callback;
 		void *private_data;
 	} tracing;
+
+	/*
+	 * an optimization pointer into timer_events
+	 * used by used by common code via
+	 * tevent_common_add_timer_v2()
+	 */
+	struct tevent_timer *last_zero_timer;
 };
 
+const struct tevent_ops *tevent_find_ops_byname(const char *name);
 
 int tevent_common_context_destructor(struct tevent_context *ev);
 int tevent_common_loop_wait(struct tevent_context *ev,
@@ -291,6 +299,13 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
 					     void *private_data,
 					     const char *handler_name,
 					     const char *location);
+struct tevent_timer *tevent_common_add_timer_v2(struct tevent_context *ev,
+						TALLOC_CTX *mem_ctx,
+					        struct timeval next_event,
+					        tevent_timer_handler_t handler,
+					        void *private_data,
+					        const char *handler_name,
+					        const char *location);
 struct timeval tevent_common_loop_timer_delay(struct tevent_context *);
 
 void tevent_common_schedule_immediate(struct tevent_immediate *im,
@@ -315,9 +330,16 @@ void tevent_cleanup_pending_signal_handlers(struct tevent_signal *se);
 bool tevent_standard_init(void);
 bool tevent_select_init(void);
 bool tevent_poll_init(void);
+void tevent_poll_event_add_fd_internal(struct tevent_context *ev,
+				       struct tevent_fd *fde);
+bool tevent_poll_mt_init(void);
 #ifdef HAVE_EPOLL
 bool tevent_epoll_init(void);
+bool tevent_epoll_set_panic_fallback(struct tevent_context *ev,
+			bool (*panic_fallback)(struct tevent_context *ev,
+					       bool replay));
 #endif
+
 
 void tevent_trace_point_callback(struct tevent_context *ev,
 				 enum tevent_trace_point);

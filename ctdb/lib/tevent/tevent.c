@@ -1,4 +1,4 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
    main select loop and event handling
    Copyright (C) Andrew Tridgell 2003
@@ -112,12 +112,43 @@ void tevent_set_default_backend(const char *backend)
 */
 static void tevent_backend_init(void)
 {
+	static bool done;
+
+	if (done) {
+		return;
+	}
+
+	done = true;
+
 	tevent_select_init();
 	tevent_poll_init();
-	tevent_standard_init();
+	tevent_poll_mt_init();
 #ifdef HAVE_EPOLL
 	tevent_epoll_init();
 #endif
+	tevent_standard_init();
+}
+
+_PRIVATE_ const struct tevent_ops *tevent_find_ops_byname(const char *name)
+{
+	struct tevent_ops_list *e;
+
+	tevent_backend_init();
+
+	if (name == NULL) {
+		name = tevent_default_backend;
+	}
+	if (name == NULL) {
+		name = "standard";
+	}
+
+	for (e = tevent_backends; e != NULL; e = e->next) {
+		if (0 == strcmp(e->name, name)) {
+			return e->ops;
+		}
+	}
+
+	return NULL;
 }
 
 /*
@@ -159,6 +190,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		DLIST_REMOVE(ev->fd_events, fd);
 	}
 
+	ev->last_zero_timer = NULL;
 	for (te = ev->timer_events; te; te = tn) {
 		tn = te->next;
 		te->event_ctx = NULL;
@@ -242,23 +274,14 @@ struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx,
 						  const char *name)
 {
-	struct tevent_ops_list *e;
+	const struct tevent_ops *ops;
 
-	tevent_backend_init();
-
-	if (name == NULL) {
-		name = tevent_default_backend;
-	}
-	if (name == NULL) {
-		name = "standard";
+	ops = tevent_find_ops_byname(name);
+	if (ops == NULL) {
+		return NULL;
 	}
 
-	for (e=tevent_backends;e;e=e->next) {
-		if (strcmp(name, e->name) == 0) {
-			return tevent_context_init_ops(mem_ctx, e->ops, NULL);
-		}
-	}
-	return NULL;
+	return tevent_context_init_ops(mem_ctx, ops, NULL);
 }
 
 
@@ -445,7 +468,7 @@ void tevent_loop_set_nesting_hook(struct tevent_context *ev,
 				  tevent_nesting_hook hook,
 				  void *private_data)
 {
-	if (ev->nesting.hook_fn &&
+	if (ev->nesting.hook_fn && 
 	    (ev->nesting.hook_fn != hook ||
 	     ev->nesting.hook_private != private_data)) {
 		/* the way the nesting hook code is currently written
@@ -471,7 +494,7 @@ static void tevent_abort_nesting(struct tevent_context *ev, const char *location
 }
 
 /*
-  do a single event loop using the events defined in ev
+  do a single event loop using the events defined in ev 
 */
 int _tevent_loop_once(struct tevent_context *ev, const char *location)
 {
@@ -503,7 +526,9 @@ int _tevent_loop_once(struct tevent_context *ev, const char *location)
 		}
 	}
 
+	tevent_trace_point_callback(ev, TEVENT_TRACE_BEFORE_LOOP_ONCE);
 	ret = ev->ops->loop_once(ev, location);
+	tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_LOOP_ONCE);
 
 	if (ev->nesting.level > 0) {
 		if (ev->nesting.hook_fn) {
@@ -563,7 +588,9 @@ int _tevent_loop_until(struct tevent_context *ev,
 	}
 
 	while (!finished(private_data)) {
+		tevent_trace_point_callback(ev, TEVENT_TRACE_BEFORE_LOOP_ONCE);
 		ret = ev->ops->loop_once(ev, location);
+		tevent_trace_point_callback(ev, TEVENT_TRACE_AFTER_LOOP_ONCE);
 		if (ret != 0) {
 			break;
 		}
@@ -630,7 +657,7 @@ int _tevent_loop_wait(struct tevent_context *ev, const char *location)
 /*
   re-initialise a tevent context. This leaves you with the same
   event context, but all events are wiped and the structure is
-  re-initialised. This is most useful after a fork()
+  re-initialised. This is most useful after a fork()  
 
   zero is returned on success, non-zero on failure
 */

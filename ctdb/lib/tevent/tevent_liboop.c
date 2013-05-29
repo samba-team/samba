@@ -1,7 +1,7 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
    main select loop and event handling
-   wrapper for http://liboop.org/
+   wrapper for http://git.lysator.liu.se/liboop/
 
    Copyright (C) Stefan Metzmacher 2005
 
@@ -29,12 +29,12 @@
 #include <oop.h>
 
 /*
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
  NOTE: this code compiles fine, but is completely *UNTESTED*
        and is only committed as an example
 
- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	 
 */
 
 static int oop_event_context_destructor(struct tevent_context *ev)
@@ -79,7 +79,7 @@ static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, v
 			return OOP_CONTINUE;
 		case OOP_WRITE:
 			fde->handler(fde->event_ctx, fde, EVENT_FD_WRITE, fde->private_data);
-			return OOP_CONTINUE;
+			return OOP_CONTINUE;			
 		case OOP_EXCEPTION:
 			return OOP_ERROR;
 		case OOP_NUM_EVENTS:
@@ -123,7 +123,7 @@ static struct tevent_fd *oop_event_add_fd(struct tevent_context *ev, TALLOC_CTX 
 	struct tevent_fd *fde;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
-
+	
 	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
@@ -219,9 +219,9 @@ static int oop_event_timed_destructor(struct tevent_timer *te)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_timer *oop_event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					       struct timeval next_event,
-					       event_timed_handler_t handler,
-					       void *private_data)
+					       struct timeval next_event, 
+					       event_timed_handler_t handler, 
+					       void *private_data) 
 {
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
@@ -244,7 +244,7 @@ static struct tevent_timer *oop_event_add_timed(struct tevent_context *ev, TALLO
 }
 
 /*
-  do a single event loop using the events defined in ev
+  do a single event loop using the events defined in ev 
 */
 static int oop_event_loop_once(struct tevent_context *ev)
 {

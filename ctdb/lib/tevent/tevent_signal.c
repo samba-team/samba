@@ -1,4 +1,4 @@
-/*
+/* 
    Unix SMB/CIFS implementation.
 
    common events code for signal events
@@ -29,8 +29,6 @@
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
-
-#define TEVENT_NUM_SIGNALS 64
 
 /* maximum number of SA_SIGINFO signals to hold in the queue.
   NB. This *MUST* be a power of 2, in order for the ring buffer
@@ -121,10 +119,39 @@ static void tevent_common_signal_handler_info(int signum, siginfo_t *info,
 	if (count+1 == TEVENT_SA_INFO_QUEUE_COUNT) {
 		/* we've filled the info array - block this signal until
 		   these ones are delivered */
+#ifdef HAVE_UCONTEXT_T
+		/*
+		 * This is the only way for this to work.
+		 * By default signum is blocked inside this
+		 * signal handler using a temporary mask,
+		 * but what we really need to do now is
+		 * block it in the callers mask, so it
+		 * stays blocked when the temporary signal
+		 * handler mask is replaced when we return
+		 * from here. The callers mask can be found
+		 * in the ucontext_t passed in as the
+		 * void *uctx argument.
+		 */
+		ucontext_t *ucp = (ucontext_t *)uctx;
+		sigaddset(&ucp->uc_sigmask, signum);
+#else
+		/*
+		 * WARNING !!! WARNING !!!!
+		 *
+		 * This code doesn't work.
+		 * By default signum is blocked inside this
+		 * signal handler, but calling sigprocmask
+		 * modifies the temporary signal mask being
+		 * used *inside* this handler, which will be
+		 * replaced by the callers signal mask once
+		 * we return from here. See Samba
+		 * bug #9550 for details.
+		 */
 		sigset_t set;
 		sigemptyset(&set);
 		sigaddset(&set, signum);
 		sigprocmask(SIG_BLOCK, &set, NULL);
+#endif
 		TEVENT_SIG_INCREMENT(sig_state->sig_blocked[signum]);
 	}
 }
@@ -175,7 +202,7 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 /*
   this is part of the pipe hack needed to avoid the signal race condition
 */
-static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
+static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 				uint16_t flags, void *_private)
 {
 	char c[16];
@@ -284,7 +311,7 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 		sig_state->oldact[signum] = talloc(sig_state, struct sigaction);
 		if (sig_state->oldact[signum] == NULL) {
 			talloc_free(se);
-			return NULL;
+			return NULL;			
 		}
 		if (sigaction(signum, &act, sig_state->oldact[signum]) == -1) {
 			talloc_free(se);
@@ -328,7 +355,7 @@ int tevent_common_check_signal(struct tevent_context *ev)
 	if (!sig_state || !TEVENT_SIG_PENDING(sig_state->got_signal)) {
 		return 0;
 	}
-
+	
 	for (i=0;i<TEVENT_NUM_SIGNALS+1;i++) {
 		struct tevent_common_signal_list *sl, *next;
 		struct tevent_sigcounter counter = sig_state->signal_count[i];
@@ -377,7 +404,7 @@ int tevent_common_check_signal(struct tevent_context *ev)
 					uint32_t ofs = (counter.seen + j)
 						% TEVENT_SA_INFO_QUEUE_COUNT;
 					se->handler(ev, se, i, 1,
-						    (void*)&sig_state->sig_info[i][ofs],
+						    (void*)&sig_state->sig_info[i][ofs], 
 						    se->private_data);
 					if (!exists) {
 						break;
