@@ -311,6 +311,8 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return false);
 
+	DEBUG(10, (__location__ ": enter path '%s'\n", name));
+
 	p = strstr_m(name, "@GMT-");
 	if (p == NULL) {
 		goto no_snapshot;
@@ -366,11 +368,19 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 			return false;
 		}
 
+		DEBUG(10, (__location__ ": snapdirseverywhere mode.\n"
+			   "path '%s'.\n"
+			   "insert string '%s'\n", name, insert));
+
 		have_insert = (strstr(name, insert+1) != NULL);
-		TALLOC_FREE(insert);
 		if (have_insert) {
+			DEBUG(10, (__location__ ": insert string '%s' found in "
+				   "path '%s' found in snapdirseverywhere mode "
+				   "==> already converted\n", insert, name));
+			TALLOC_FREE(insert);
 			goto no_snapshot;
 		}
+		TALLOC_FREE(insert);
 	}
 
 	if (pstripped != NULL) {
