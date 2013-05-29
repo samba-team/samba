@@ -44,7 +44,7 @@ test -e ${DOCS_DIR}/htmldocs/manpages && rm -rf ${DOCS_DIR}/htmldocs/manpages
 mkdir -p ${DOCS_DIR}/htmldocs/manpages
 
 rsync -Ca ${DOCS_XML_DIR}/output/htmldocs/samba.css ${DOCS_DIR}/htmldocs/
-rsync -Ca ${DOCS_XML_DIR}/output/htmldocs/manpages-3/ ${DOCS_DIR}/htmldocs/manpages
+rsync -Ca ${DOCS_XML_DIR}/output/htmldocs/manpages/ ${DOCS_DIR}/htmldocs/manpages
 
 echo "Success"
 exit
