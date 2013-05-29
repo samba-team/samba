@@ -14,7 +14,7 @@ smbdotconf/parameters.all.xml
 smbdotconf/parameters.global.xml
 smbdotconf/parameters.service.xml
 *.d
-output/manpages-3
+output/manpages
 Samba3-ByExample.tex
 Samba3-Developers-Guide.tex
 xslt/figures/*.pdf
