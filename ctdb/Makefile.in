@@ -247,27 +247,27 @@ tests/bin/ctdb_trackingdb_test: $(CTDB_CLIENT_OBJ) tests/src/ctdb_trackingdb_tes
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_trackingdb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_update_record: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record.o 
+tests/bin/ctdb_update_record: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_update_record_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record_persistent.o 
+tests/bin/ctdb_update_record_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record_persistent.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o 
+tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_traverse: $(CTDB_CLIENT_OBJ) tests/src/ctdb_traverse.o 
+tests/bin/ctdb_traverse: $(CTDB_CLIENT_OBJ) tests/src/ctdb_traverse.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_traverse.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_randrec: $(CTDB_CLIENT_OBJ) tests/src/ctdb_randrec.o 
+tests/bin/ctdb_randrec: $(CTDB_CLIENT_OBJ) tests/src/ctdb_randrec.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_randrec.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_persistent.o 
+tests/bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_persistent.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
@@ -275,7 +275,7 @@ tests/bin/ctdb_porting_tests: $(CTDB_CLIENT_OBJ) tests/src/ctdb_porting_tests.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_porting_tests.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o 
+tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
