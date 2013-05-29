@@ -504,11 +504,13 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 				       &slashes, &num_slashes)) {
 		goto fail;
 	}
+
 	insert = shadow_copy2_insert_string(talloc_tos(), handle, timestamp);
 	if (insert == NULL) {
 		goto fail;
 	}
 	insertlen = talloc_get_size(insert)-1;
+
 	converted = talloc_zero_array(mem_ctx, char, pathlen + insertlen + 1);
 	if (converted == NULL) {
 		goto fail;
