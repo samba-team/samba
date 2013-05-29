@@ -63,16 +63,6 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 		return -1;
 	}
 
-	if (st.st_size < (size_t)off + len) {
-		if (!probe) {
-			/* Ensure ecode is set for log fn. */
-			tdb->ecode = TDB_ERR_IO;
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %u beyond eof at %u\n",
-				 (int)(off + len), (int)st.st_size));
-		}
-		return -1;
-	}
-
 	/* Beware >4G files! */
 	if ((tdb_off_t)st.st_size != st.st_size) {
 		/* Ensure ecode is set for log fn. */
@@ -82,13 +72,31 @@ static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
 		return -1;
 	}
 
-	/* Unmap, update size, remap */
+	/* Unmap, update size, remap.  We do this unconditionally, to handle
+	 * the unusual case where the db is truncated.
+	 *
+	 * This can happen to a child using tdb_reopen_all(true) on a
+	 * TDB_CLEAR_IF_FIRST tdb whose parent crashes: the next
+	 * opener will truncate the database. */
 	if (tdb_munmap(tdb) == -1) {
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
 	tdb->map_size = st.st_size;
-	return tdb_mmap(tdb);
+	if (tdb_mmap(tdb) != 0) {
+		return - 1;
+	}
+
+	if (st.st_size < (size_t)off + len) {
+		if (!probe) {
+			/* Ensure ecode is set for log fn. */
+			tdb->ecode = TDB_ERR_IO;
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_oob len %u beyond eof at %u\n",
+				 (int)(off + len), (int)st.st_size));
+		}
+		return -1;
+	}
+	return 0;
 }
 
 /* write a lump of data at a specified offset */

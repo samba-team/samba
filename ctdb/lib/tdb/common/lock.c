@@ -562,7 +562,7 @@ int tdb_allrecord_lock(struct tdb_context *tdb, int ltype,
 
 	/* We cover two kinds of locks:
 	 * 1) Normal chain locks.  Taken for almost all operations.
-	 * 3) Individual records locks.  Taken after normal or free
+	 * 2) Individual records locks.  Taken after normal or free
 	 *    chain locks.
 	 *
 	 * It is (1) which cause the starvation problem, so we're only

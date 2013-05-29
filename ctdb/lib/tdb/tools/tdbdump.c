@@ -51,19 +51,69 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *stat
 	return 0;
 }
 
-static int dump_tdb(const char *fname, const char *keyname)
+static void log_stderr(struct tdb_context *tdb, enum tdb_debug_level level,
+		       const char *fmt, ...)
+{
+	va_list ap;
+	char *ptr = NULL;
+	int debuglevel = 0;
+	int ret;
+	const char *name = tdb_name(tdb);
+	const char *prefix = "";
+
+	if (!name)
+		name = "unnamed";
+
+	switch (level) {
+	case TDB_DEBUG_ERROR:
+		prefix = "ERROR: ";
+		break;
+	case TDB_DEBUG_WARNING:
+		prefix = "WARNING: ";
+		break;
+	case TDB_DEBUG_TRACE:
+		return;
+
+	default:
+	case TDB_DEBUG_FATAL:
+		prefix = "FATAL: ";
+		break;
+	}
+
+	va_start(ap, fmt);
+	fprintf(stderr, "tdb(%s): %s", name, prefix);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+
+static void emergency_walk(TDB_DATA key, TDB_DATA dbuf, void *keyname)
+{
+	if (keyname) {
+		if (key.dsize != strlen(keyname))
+			return;
+		if (memcmp(key.dptr, keyname, key.dsize) != 0)
+			return;
+	}
+	traverse_fn(NULL, key, dbuf, NULL);
+}
+
+static int dump_tdb(const char *fname, const char *keyname, bool emergency)
 {
 	TDB_CONTEXT *tdb;
 	TDB_DATA key, value;
+	struct tdb_logging_context logfn = { log_stderr };
 	
-	tdb = tdb_open(fname, 0, 0, O_RDONLY, 0);
+	tdb = tdb_open_ex(fname, 0, 0, O_RDONLY, 0, &logfn, NULL);
 	if (!tdb) {
 		printf("Failed to open %s\n", fname);
 		return 1;
 	}
 
+	if (emergency) {
+		return tdb_rescue(tdb, emergency_walk, keyname) == 0;
+	}
 	if (!keyname) {
-		tdb_traverse(tdb, traverse_fn, NULL);
+		return tdb_traverse(tdb, traverse_fn, NULL) == -1 ? 1 : 0;
 	} else {
 		key.dptr = discard_const_p(uint8_t, keyname);
 		key.dsize = strlen(keyname);
@@ -84,11 +134,13 @@ static void usage( void)
 	printf( "Usage: tdbdump [options] <filename>\n\n");
 	printf( "   -h          this help message\n");
 	printf( "   -k keyname  dumps value of keyname\n");
+	printf( "   -e          emergency dump, for corrupt databases\n");
 }
 
  int main(int argc, char *argv[])
 {
 	char *fname, *keyname=NULL;
+	bool emergency = false;
 	int c;
 
 	if (argc < 2) {
@@ -96,13 +148,16 @@ static void usage( void)
 		exit(1);
 	}
 
-	while ((c = getopt( argc, argv, "hk:")) != -1) {
+	while ((c = getopt( argc, argv, "hk:e")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
 			exit( 0);
 		case 'k':
 			keyname = optarg;
+			break;
+		case 'e':
+			emergency = true;
 			break;
 		default:
 			usage();
@@ -112,5 +167,5 @@ static void usage( void)
 
 	fname = argv[optind];
 
-	return dump_tdb(fname, keyname);
+	return dump_tdb(fname, keyname, emergency);
 }

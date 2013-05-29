@@ -13,8 +13,8 @@ import os, tempfile
 
 class OpenTdbTests(TestCase):
 
-    def test_nonexistant_read(self):
-        self.assertRaises(IOError, tdb.Tdb, "/some/nonexistant/file", 0,
+    def test_nonexistent_read(self):
+        self.assertRaises(IOError, tdb.Tdb, "/some/nonexistent/file", 0,
                 tdb.DEFAULT, os.O_RDWR)
 
 class CloseTdbTests(TestCase):
@@ -32,6 +32,11 @@ class CloseTdbTests(TestCase):
         # ensure that double close does not crash python
         self.tdb.close()
         self.tdb.close()
+
+        # Check that further operations do not crash python
+        self.assertRaises(RuntimeError, lambda: self.tdb.transaction_start())
+
+        self.assertRaises(RuntimeError, lambda: self.tdb["bar"])
 
 
 class InternalTdbTests(TestCase):

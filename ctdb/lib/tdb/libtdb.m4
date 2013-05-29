@@ -37,7 +37,7 @@ if test x"$INCLUDED_TDB" != x"no" ; then
        AC_MSG_ERROR([cannot find tdb source in $tdbpaths])
     fi
     TDB_OBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
-    TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o common/check.o common/hash.o"
+    TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o common/check.o common/hash.o common/summary.o common/rescue.o"
     AC_SUBST(TDB_OBJ)
 
     TDB_LIBS=""

@@ -25,8 +25,6 @@
 #include "system/wait.h"
 #include "tdb.h"
 
-#define debug_fprintf(file, fmt, ...) do {/*nothing*/} while (0)
-
 static int read_linehead(FILE *f)
 {
 	int i, c;
