@@ -52,6 +52,7 @@ VFS_TIME_AUDIT_SRC = 'vfs_time_audit.c'
 VFS_MEDIA_HARMONY_SRC = 'vfs_media_harmony.c'
 VFS_BTRFS_SRC = 'vfs_btrfs.c'
 VFS_CEPH_SRC = 'vfs_ceph.c'
+VFS_GLUSTERFS_SRC = 'vfs_glusterfs.c'
 
 
 bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
@@ -522,3 +523,12 @@ bld.SAMBA3_MODULE('vfs_ceph',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_ceph'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph'),
                  cflags=bld.CONFIG_GET('CCFLAGS_CEPHFS'))
+
+bld.SAMBA3_MODULE('vfs_glusterfs',
+                  subsystem='vfs',
+                  source=VFS_GLUSTERFS_SRC,
+                  deps='samba-util gfapi',
+                  init_function='',
+                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_glusterfs'),
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_glusterfs'),
+                  allow_undefined_symbols=False)

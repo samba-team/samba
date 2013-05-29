@@ -59,6 +59,7 @@ def set_options(opt):
                    help=("Directory under which libcephfs is installed"),
                    action="store", dest='libcephfs_dir', default=None)
 
+    opt.SAMBA3_ADD_OPTION('glusterfs', with_name="enable", without_name="disable", default=True)
 
 
 def configure(conf):
@@ -1709,6 +1710,21 @@ main() {
     if conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and conf.CHECK_LIB('cephfs'):
         conf.DEFINE('HAVE_CEPH', '1')
 
+    if Options.options.with_glusterfs:
+        conf.check_cfg(package='glusterfs-api', args='"glusterfs-api >= 4" --cflags --libs',
+                       msg='Checking for glusterfs-api >= 4', uselib_store="GFAPI")
+        conf.CHECK_HEADERS('api/glfs.h', lib='gfapi')
+        conf.CHECK_LIB('gfapi', shlib=True)
+
+        if conf.CONFIG_SET('HAVE_API_GLFS_H'):
+            conf.DEFINE('HAVE_GLUSTERFS', '1')
+        else:
+            conf.SET_TARGET_TYPE('gfapi', 'EMPTY')
+            conf.undefine('HAVE_GLUSTERFS')
+    else:
+        conf.SET_TARGET_TYPE('gfapi', 'EMPTY')
+        conf.undefine('HAVE_GLUSTERFS')
+
     conf.env.build_regedit = False
     if not Options.options.with_regedit == False:
         conf.PROCESS_SEPARATE_RULE('system_ncurses')
@@ -1796,6 +1812,9 @@ main() {
 
     if conf.CONFIG_SET("HAVE_CEPH"):
         default_shared_modules.extend(TO_LIST('vfs_ceph'))
+
+    if conf.CONFIG_SET('HAVE_GLUSTERFS'):
+        default_shared_modules.extend(TO_LIST('vfs_glusterfs'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
