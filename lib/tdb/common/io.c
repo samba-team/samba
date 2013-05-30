@@ -405,6 +405,12 @@ tdb_off_t tdb_expand_adjust(tdb_off_t map_size, tdb_off_t size, int page_size)
 
 	/* Round the database up to a multiple of the page size */
 	new_size = MAX(top_size, new_size);
+
+	if (new_size + page_size < new_size) {
+		/* There's a "+" in TDB_ALIGN that might overflow... */
+		goto overflow;
+	}
+
 	return TDB_ALIGN(new_size, page_size) - map_size;
 
 overflow:
