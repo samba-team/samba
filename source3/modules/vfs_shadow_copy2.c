@@ -158,6 +158,56 @@ static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 }
 
 /**
+ * Given a timstamp, build the posix level GTM-tag string
+ * based on the configurable format.
+ */
+static size_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
+					    time_t snapshot,
+					    char *snaptime_string,
+					    size_t len)
+{
+	struct tm snap_tm;
+	size_t snaptime_len;
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return 0);
+
+	if (config->use_sscanf) {
+		snaptime_len = snprintf(snaptime_string,
+					len,
+					config->gmt_format,
+					(unsigned long)snapshot);
+		if (snaptime_len <= 0) {
+			DEBUG(10, ("snprintf failed\n"));
+			return snaptime_len;
+		}
+	} else {
+		if (config->use_localtime) {
+			if (localtime_r(&snapshot, &snap_tm) == 0) {
+				DEBUG(10, ("gmtime_r failed\n"));
+				return -1;
+			}
+		} else {
+			if (gmtime_r(&snapshot, &snap_tm) == 0) {
+				DEBUG(10, ("gmtime_r failed\n"));
+				return -1;
+			}
+		}
+		snaptime_len = strftime(snaptime_string,
+					len,
+					config->gmt_format,
+					&snap_tm);
+		if (snaptime_len == 0) {
+			DEBUG(10, ("strftime failed\n"));
+			return 0;
+		}
+	}
+
+	return snaptime_len;
+}
+
+/**
  * Given a timstamp, build the string to insert into a path
  * as a path component for creating the local path to the
  * snapshot at the given timestamp of the input path.
@@ -172,44 +222,20 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					time_t snapshot)
 {
-	struct tm snap_tm;
 	fstring snaptime_string;
-	size_t snaptime_len;
-	struct shadow_copy2_config *config;
+	size_t snaptime_len = 0;
 	char *result = NULL;
+	struct shadow_copy2_config *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
 				return NULL);
 
-	if (config->use_sscanf) {
-		snaptime_len = snprintf(snaptime_string,
-					sizeof(snaptime_string),
-					config->gmt_format,
-					(unsigned long)snapshot);
-		if (snaptime_len <= 0) {
-			DEBUG(10, ("snprintf failed\n"));
-			return NULL;
-		}
-	} else {
-		if (config->use_localtime) {
-			if (localtime_r(&snapshot, &snap_tm) == 0) {
-				DEBUG(10, ("gmtime_r failed\n"));
-				return NULL;
-			}
-		} else {
-			if (gmtime_r(&snapshot, &snap_tm) == 0) {
-				DEBUG(10, ("gmtime_r failed\n"));
-				return NULL;
-			}
-		}
-		snaptime_len = strftime(snaptime_string,
-					sizeof(snaptime_string),
-					config->gmt_format,
-					&snap_tm);
-		if (snaptime_len == 0) {
-			DEBUG(10, ("strftime failed\n"));
-			return NULL;
-		}
+	snaptime_len = shadow_copy2_posix_gmt_string(handle,
+						     snapshot,
+						     snaptime_string,
+						     sizeof(snaptime_string));
+	if (snaptime_len <= 0) {
+		return NULL;
 	}
 
 	if (config->snapdir_absolute) {
