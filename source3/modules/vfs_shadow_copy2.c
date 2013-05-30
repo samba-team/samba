@@ -577,15 +577,7 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 	min_offset = 0;
 
 	if (!config->crossmountpoints) {
-		char *mount_point;
-
-		mount_point = shadow_copy2_find_mount_point(talloc_tos(),
-							    handle);
-		if (mount_point == NULL) {
-			goto fail;
-		}
-		min_offset = strlen(mount_point);
-		TALLOC_FREE(mount_point);
+		min_offset = strlen(config->mount_point);
 	}
 
 	memcpy(converted, path, pathlen+1);
