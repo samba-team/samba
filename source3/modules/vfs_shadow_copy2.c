@@ -117,6 +117,8 @@ struct shadow_copy2_config {
 	bool fixinodes;
 	char *sort_order;
 	bool snapdir_absolute;
+	char *basedir;
+	char *mount_point;
 };
 
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
@@ -1580,6 +1582,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	const char *snapdir;
 	const char *gmt_format;
 	const char *sort_order;
+	const char *basedir;
 
 	DEBUG(10, (__location__ ": cnum[%u], connectpath[%s]\n",
 		   (unsigned)handle->conn->cnum,
@@ -1644,6 +1647,59 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		DEBUG(0, ("talloc_strdup() failed\n"));
 		errno = ENOMEM;
 		return -1;
+	}
+
+	config->mount_point = shadow_copy2_find_mount_point(config, handle);
+	if (config->mount_point == NULL) {
+		DEBUG(0, (__location__ ": shadow_copy2_find_mount_point "
+			  "failed: %s\n", strerror(errno)));
+		return -1;
+	}
+
+	basedir = lp_parm_const_string(SNUM(handle->conn),
+				       "shadow", "basedir", NULL);
+
+	if (basedir != NULL) {
+		if (basedir[0] != '/') {
+			DEBUG(1, (__location__ " Warning: 'basedir' is "
+				  "relative ('%s'), but it has to be an "
+				  "absolute path. Disabling basedir.\n",
+				  basedir));
+		} else {
+			char *p;
+			p = strstr(basedir, config->mount_point);
+			if (p != basedir) {
+				DEBUG(1, ("Warning: basedir (%s) is not a "
+					  "subdirectory of the share root's "
+					  "mount point (%s). "
+					  "Disabling basedir\n",
+					  basedir, config->mount_point));
+			} else {
+				config->basedir = talloc_strdup(config,
+								basedir);
+				if (config->basedir == NULL) {
+					DEBUG(0, ("talloc_strdup() failed\n"));
+					errno = ENOMEM;
+					return -1;
+				}
+			}
+		}
+	}
+
+	if (config->snapdirseverywhere && config->basedir != NULL) {
+		DEBUG(1, (__location__ " Warning: 'basedir' is incompatible "
+			  "with 'snapdirseverywhere'. Disabling basedir.\n"));
+		TALLOC_FREE(config->basedir);
+	}
+
+	if (config->crossmountpoints && config->basedir != NULL) {
+		DEBUG(1, (__location__ " Warning: 'basedir' is incompatible "
+			  "with 'crossmountpoints'. Disabling basedir.\n"));
+		TALLOC_FREE(config->basedir);
+	}
+
+	if (config->basedir == NULL) {
+		config->basedir = config->mount_point;
 	}
 
 	if (config->snapdir[0] == '/') {
