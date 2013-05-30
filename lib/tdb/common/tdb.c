@@ -1000,6 +1000,17 @@ bool tdb_write_all(int fd, const void *buf, size_t count)
 	return true;
 }
 
+bool tdb_add_off_t(tdb_off_t a, tdb_off_t b, tdb_off_t *pret)
+{
+	tdb_off_t ret = a + b;
+
+	if ((ret < a) || (ret < b)) {
+		return false;
+	}
+	*pret = ret;
+	return true;
+}
+
 #ifdef TDB_TRACE
 static void tdb_trace_write(struct tdb_context *tdb, const char *str)
 {
