@@ -762,7 +762,12 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 					       tdb->page_size)
 		- sizeof(rec);
 
-	new_end = recovery_head + sizeof(rec) + *recovery_max_size;
+	if (!tdb_add_off_t(recovery_head, sizeof(rec), &new_end) ||
+	    !tdb_add_off_t(new_end, *recovery_max_size, &new_end)) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: "
+			 "overflow recovery area\n"));
+		return -1;
+	}
 
 	if (methods->tdb_expand_file(tdb, tdb->transaction->old_map_size,
 				     new_end - tdb->transaction->old_map_size)
