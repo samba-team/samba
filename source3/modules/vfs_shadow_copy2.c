@@ -253,6 +253,43 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * Build the posix snapshot path for the connection
+ * at the given timestamp, i.e. the absolute posix path
+ * that contains the snapshot for this file system.
+ *
+ * This only applies to classical case, i.e. not
+ * to the "snapdirseverywhere" mode.
+ */
+static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
+					struct vfs_handle_struct *handle,
+					time_t snapshot)
+{
+	fstring snaptime_string;
+	size_t snaptime_len = 0;
+	char *result = NULL;
+	struct shadow_copy2_config *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+				return NULL);
+
+	snaptime_len = shadow_copy2_posix_gmt_string(handle,
+						     snapshot,
+						     snaptime_string,
+						     sizeof(snaptime_string));
+	if (snaptime_len <= 0) {
+		return NULL;
+	}
+
+	result = talloc_asprintf(mem_ctx, "%s/%s",
+				 config->snapshot_basepath, snaptime_string);
+	if (result == NULL) {
+		DEBUG(1, (__location__ " talloc_asprintf failed\n"));
+	}
+
+	return result;
+}
+
+/**
  * Strip a snapshot component from an filename as
  * handed in via the smb layer.
  * Returns the parsed timestamp and the stripped filename.
