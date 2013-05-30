@@ -1654,6 +1654,13 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				  "setting 'snapdirseverywhere' to false.\n"));
 			config->snapdirseverywhere = false;
 		}
+
+		if (config->crossmountpoints == true) {
+			DEBUG(1, (__location__ " Warning: 'crossmountpoints' "
+				  "is not supported with an absolute snapdir. "
+				  "Disabling it.\n"));
+			config->crossmountpoints = false;
+		}
 	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
