@@ -613,7 +613,8 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 
 		ret = SMB_VFS_NEXT_LSTAT(handle, &converted_fname);
 
-		DEBUG(10, ("Trying %s: %d (%s)\n", converted,
+		DEBUG(10, ("Trying[snapdirseverywhere] %s: %d (%s)\n",
+			   converted,
 			   ret, ret == 0 ? "ok" : strerror(errno)));
 		if (ret == 0) {
 			/* success */
