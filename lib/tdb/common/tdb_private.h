@@ -283,4 +283,7 @@ void tdb_header_hash(struct tdb_context *tdb,
 unsigned int tdb_old_hash(TDB_DATA *key);
 size_t tdb_dead_space(struct tdb_context *tdb, tdb_off_t off);
 bool tdb_add_off_t(tdb_off_t a, tdb_off_t b, tdb_off_t *pret);
+
+/* tdb_off_t and tdb_len_t right now are both uint32_t */
+#define tdb_add_len_t tdb_add_off_t
 #endif /* TDB_PRIVATE_H */

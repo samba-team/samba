@@ -630,28 +630,37 @@ _PUBLIC_ int tdb_transaction_cancel(struct tdb_context *tdb)
 /*
   work out how much space the linearised recovery data will consume
 */
-static tdb_len_t tdb_recovery_size(struct tdb_context *tdb)
+static bool tdb_recovery_size(struct tdb_context *tdb, tdb_len_t *result)
 {
 	tdb_len_t recovery_size = 0;
 	int i;
 
 	recovery_size = sizeof(uint32_t);
 	for (i=0;i<tdb->transaction->num_blocks;i++) {
+		tdb_len_t block_size;
 		if (i * tdb->transaction->block_size >= tdb->transaction->old_map_size) {
 			break;
 		}
 		if (tdb->transaction->blocks[i] == NULL) {
 			continue;
 		}
-		recovery_size += 2*sizeof(tdb_off_t);
+		if (!tdb_add_len_t(recovery_size, 2*sizeof(tdb_off_t),
+				   &recovery_size)) {
+			return false;
+		}
 		if (i == tdb->transaction->num_blocks-1) {
-			recovery_size += tdb->transaction->last_block_size;
+			block_size = tdb->transaction->last_block_size;
 		} else {
-			recovery_size += tdb->transaction->block_size;
+			block_size =  tdb->transaction->block_size;
+		}
+		if (!tdb_add_len_t(recovery_size, block_size,
+				   &recovery_size)) {
+			return false;
 		}
 	}
 
-	return recovery_size;
+	*result = recovery_size;
+	return true;
 }
 
 int tdb_recovery_area(struct tdb_context *tdb,
@@ -700,7 +709,11 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 		return -1;
 	}
 
-	*recovery_size = tdb_recovery_size(tdb);
+	if (!tdb_recovery_size(tdb, recovery_size)) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: "
+			 "overflow recovery size\n"));
+		return -1;
+	}
 
 	/* Existing recovery area? */
 	if (recovery_head != 0 && *recovery_size <= rec.rec_len) {
@@ -728,7 +741,12 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 
 			/* the tdb_free() call might have increased
 			 * the recovery size */
-			*recovery_size = tdb_recovery_size(tdb);
+			if (!tdb_recovery_size(tdb, recovery_size)) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL,
+					 "tdb_recovery_allocate: "
+					 "overflow recovery size\n"));
+				return -1;
+			}
 		}
 
 		/* New head will be at end of file. */
