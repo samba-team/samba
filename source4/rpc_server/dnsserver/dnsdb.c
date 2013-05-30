@@ -934,6 +934,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 	dns_rec[1].wType = DNS_TYPE_NS;
 	dns_rec[1].rank = DNS_RANK_ZONE;
 	dns_rec[1].dwSerial = soa.serial;
+	dns_rec[1].dwTtlSeconds = 3600;
 	dns_rec[1].dwTimeStamp = (uint32_t)t;
 	dns_rec[1].data.ns = server_fqdn;
 
