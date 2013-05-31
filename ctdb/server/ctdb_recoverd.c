@@ -1527,12 +1527,16 @@ static int sync_recovery_lock_file_across_cluster(struct ctdb_recoverd *rec)
  */
 static void takeover_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
 {
-	struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
+	DEBUG(DEBUG_ERR, ("Node %u failed the takeover run\n", node_pnn));
 
-	DEBUG(DEBUG_ERR, (__location__ " Node %u failed the takeover run. Setting it as recovery fail culprit\n", node_pnn));
+	if (callback_data != NULL) {
+		struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
 
-	ctdb_set_culprit(rec, node_pnn);
-	rec->need_takeover_run = true;
+		DEBUG(DEBUG_ERR, ("Setting node %u as recovery fail culprit\n", node_pnn));
+
+		ctdb_set_culprit(rec, node_pnn);
+		rec->need_takeover_run = true;
+	}
 }
 
 
@@ -1825,7 +1829,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 	rec->need_takeover_run = false;
-	ret = ctdb_takeover_run(ctdb, nodemap, NULL, NULL);
+	ret = ctdb_takeover_run(ctdb, nodemap, takeover_fail_callback, NULL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
 		rec->need_takeover_run = true;
@@ -2184,7 +2188,7 @@ static void ctdb_rebalance_timeout(struct event_context *ev, struct timed_event 
 
 	DEBUG(DEBUG_NOTICE,("Rebalance all nodes that have had ip assignment changes.\n"));
 
-	ret = ctdb_takeover_run(ctdb, rec->nodemap, NULL, NULL);
+	ret = ctdb_takeover_run(ctdb, rec->nodemap, takeover_fail_callback, NULL);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
 		rec->need_takeover_run = true;
@@ -2410,7 +2414,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 		rec->need_takeover_run = true;
 	}
 	if (ret == 0) {
-		ret = ctdb_takeover_run(ctdb, rec->nodemap, NULL, NULL);
+		ret = ctdb_takeover_run(ctdb, rec->nodemap, takeover_fail_callback, NULL);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to reallocate addresses: ctdb_takeover_run() failed.\n"));
 			rec->need_takeover_run = true;
