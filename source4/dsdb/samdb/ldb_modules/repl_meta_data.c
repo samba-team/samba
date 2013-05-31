@@ -1086,6 +1086,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	uint32_t i;
 	const struct dsdb_attribute *a;
 	struct replPropertyMetaData1 *md1;
+	bool may_skip = false;
 
 	a = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 	if (a == NULL) {
@@ -1104,13 +1105,34 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	/* if the attribute's value haven't changed then return LDB_SUCCESS
-	 * Unless we have the provision control or if the attribute is
-	 * interSiteTopologyGenerator as this page explain: http://support.microsoft.com/kb/224815
-	 * this attribute is periodicaly written by the DC responsible for the intersite generation
-	 * in a given site
+	/*
+	 * if the attribute's value haven't changed, and this isn't
+	 * just a delete of everything then return LDB_SUCCESS Unless
+	 * we have the provision control or if the attribute is
+	 * interSiteTopologyGenerator as this page explain:
+	 * http://support.microsoft.com/kb/224815 this attribute is
+	 * periodicaly written by the DC responsible for the intersite
+	 * generation in a given site
+	 *
+	 * Unchanged could be deleting or replacing an already-gone
+	 * thing with an unconstrained delete/empty replace or a
+	 * replace with the same value, but not an add with the same
+	 * value because that could be about adding a duplicate (which
+	 * is for someone else to error out on).
 	 */
-	if (old_el != NULL && ldb_msg_element_compare(el, old_el) == 0) {
+	if (old_el != NULL && ldb_msg_element_equal_ordered(el, old_el)) {
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) {
+			may_skip = true;
+		}
+	} else if (old_el == NULL && el->num_values == 0) {
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) {
+			may_skip = true;
+		} else if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
+			may_skip = true;
+		}
+	}
+
+	if (may_skip) {
 		if (strcmp(el->name, "interSiteTopologyGenerator") != 0 &&
 		    !ldb_request_get_control(req, LDB_CONTROL_PROVISION_OID)) {
 			/*
