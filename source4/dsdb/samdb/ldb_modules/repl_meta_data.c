@@ -4462,7 +4462,6 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	char *tmp_str;
 	char *filter;
 	struct ldb_request *search_req;
-	struct ldb_search_options_control *options;
 
 	if (ar->index_current >= ar->objs->num_objects) {
 		/* done with it, go to next stage */
@@ -4492,24 +4491,8 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   ar->req);
 	LDB_REQ_SET_LOCATION(search_req);
 
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
-				      true, NULL);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	ret = dsdb_request_add_controls(search_req, DSDB_SEARCH_SEARCH_ALL_PARTITIONS|DSDB_SEARCH_SHOW_RECYCLED);
 
-	/* we need to cope with cross-partition links, so search for
-	   the GUID over all partitions */
-	options = talloc(search_req, struct ldb_search_options_control);
-	if (options == NULL) {
-		DEBUG(0, (__location__ ": out of memory\n"));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	options->search_options = LDB_SEARCH_OPTION_PHANTOM_ROOT;
-
-	ret = ldb_request_add_control(search_req,
-				      LDB_CONTROL_SEARCH_OPTIONS_OID,
-				      true, options);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
