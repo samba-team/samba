@@ -1585,6 +1585,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	const char *gmt_format;
 	const char *sort_order;
 	const char *basedir;
+	const char *mount_point;
 
 	DEBUG(10, (__location__ ": cnum[%u], connectpath[%s]\n",
 		   (unsigned)handle->conn->cnum,
@@ -1651,11 +1652,43 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	config->mount_point = shadow_copy2_find_mount_point(config, handle);
-	if (config->mount_point == NULL) {
-		DEBUG(0, (__location__ ": shadow_copy2_find_mount_point "
-			  "failed: %s\n", strerror(errno)));
-		return -1;
+	mount_point = lp_parm_const_string(SNUM(handle->conn),
+					   "shadow", "mountpoint", NULL);
+	if (mount_point != NULL) {
+		if (mount_point[0] != '/') {
+			DEBUG(1, (__location__ " Warning: 'mountpoint' is "
+				  "relative ('%s'), but it has to be an "
+				  "absolute path. Ignoring provided value.\n",
+				  mount_point));
+			mount_point = NULL;
+		} else {
+			char *p;
+			p = strstr(handle->conn->connectpath, mount_point);
+			if (p != handle->conn->connectpath) {
+				DEBUG(1, ("Warning: mount_point (%s) is not a "
+					  "subdirectory of the share root "
+					  "(%s). Ignoring provided value.\n",
+					  mount_point,
+					  handle->conn->connectpath));
+				mount_point = NULL;
+			}
+		}
+	}
+
+	if (mount_point != NULL) {
+		config->mount_point = talloc_strdup(config, mount_point);
+		if (config->mount_point == NULL) {
+			DEBUG(0, (__location__ " talloc_strdup() failed\n"));
+			return -1;
+		}
+	} else {
+		config->mount_point = shadow_copy2_find_mount_point(config,
+								    handle);
+		if (config->mount_point == NULL) {
+			DEBUG(0, (__location__ ": shadow_copy2_find_mount_point"
+				  " failed: %s\n", strerror(errno)));
+			return -1;
+		}
 	}
 
 	basedir = lp_parm_const_string(SNUM(handle->conn),
