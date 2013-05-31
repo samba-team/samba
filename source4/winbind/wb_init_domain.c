@@ -144,6 +144,8 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 
 	state->domain->libnet_ctx = libnet_context_init(service->task->event_ctx, 
 							service->task->lp_ctx);
+	if (state->domain->libnet_ctx == NULL) goto failed;
+	talloc_steal(state->domain, state->domain->libnet_ctx);
 
 	/* Create a credentials structure */
 	state->domain->libnet_ctx->cred = cli_credentials_init(state->domain);
