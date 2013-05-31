@@ -1777,6 +1777,35 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
+	DEBUG(10, ("shadow_copy2_connect: configuration:\n"
+		   "  share root: '%s'\n"
+		   "  basedir: '%s'\n"
+		   "  mountpoint: '%s'\n"
+		   "  rel share root: '%s'\n"
+		   "  snapdir: '%s'\n"
+		   "  snapshot base path: '%s'\n"
+		   "  format: '%s'\n"
+		   "  use sscanf: %s\n"
+		   "  snapdirs everywhere: %s\n"
+		   "  cross mountpoints: %s\n"
+		   "  fix inodes: %s\n"
+		   "  sort order: %s\n"
+		   "",
+		   handle->conn->connectpath,
+		   config->basedir,
+		   config->mount_point,
+		   config->rel_connectpath,
+		   config->snapdir,
+		   config->snapshot_basepath,
+		   config->gmt_format,
+		   config->use_sscanf ? "yes" : "no",
+		   config->snapdirseverywhere ? "yes" : "no",
+		   config->crossmountpoints ? "yes" : "no",
+		   config->fixinodes ? "yes" : "no",
+		   config->sort_order
+		   ));
+
+
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct shadow_copy2_config,
 				return -1);
