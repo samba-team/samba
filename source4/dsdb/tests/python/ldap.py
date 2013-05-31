@@ -712,7 +712,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_attribute_ranges(self):
         """Test attribute ranges"""
-        print "Test attribute ranges"""
+        print "Test attribute ranges"
 
         # Too short (min. 1)
         try:
@@ -833,7 +833,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_instanceType(self):
         """Tests the 'instanceType' attribute"""
-        print "Tests the 'instanceType' attribute"""
+        print "Tests the 'instanceType' attribute"
 
         # The instance type is single-valued
         try:
@@ -902,7 +902,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
-        print "Tests the 'distinguishedName' attribute"""
+        print "Tests the 'distinguishedName' attribute"
 
         # The "dn" shortcut isn't supported
         m = Message()
@@ -982,7 +982,7 @@ class BasicTests(samba.tests.TestCase):
 
     def test_rdn_name(self):
         """Tests the RDN"""
-        print "Tests the RDN"""
+        print "Tests the RDN"
 
         # Search
 
@@ -1177,7 +1177,7 @@ objectClass: container
 
     def test_rename(self):
         """Tests the rename operation"""
-        print "Tests the rename operations"""
+        print "Tests the rename operations"
 
         try:
             # cannot rename to be a child of itself
@@ -1288,7 +1288,7 @@ objectClass: container
 
     def test_rename_twice(self):
         """Tests the rename operation twice - this corresponds to a past bug"""
-        print "Tests the rename twice operation"""
+        print "Tests the rename twice operation"
 
         self.ldb.add({
              "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
@@ -1576,7 +1576,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
 
     def test_wkguid(self):
         """Test Well known GUID behaviours (including DN+Binary)"""
-        print "Test Well known GUID behaviours (including DN+Binary)"""
+        print "Test Well known GUID behaviours (including DN+Binary)"
 
         res = self.ldb.search(base=("<WKGUID=ab1d30f3768811d1aded00c04fd8d5cd,%s>" % self.base_dn), scope=SCOPE_BASE, attrs=[])
         self.assertEquals(len(res), 1)
@@ -1593,7 +1593,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
 
     def test_subschemasubentry(self):
         """Test subSchemaSubEntry appears when requested, but not when not requested"""
-        print "Test subSchemaSubEntry"""
+        print "Test subSchemaSubEntry"
 
         res = self.ldb.search(base=self.base_dn, scope=SCOPE_BASE, attrs=["subSchemaSubEntry"])
         self.assertEquals(len(res), 1)
@@ -2720,7 +2720,7 @@ nTSecurityDescriptor:: """ + desc_base64
 
     def test_dsheuristics(self):
         """Tests the 'dSHeuristics' attribute"""
-        print "Tests the 'dSHeuristics' attribute"""
+        print "Tests the 'dSHeuristics' attribute"
 
         # Get the current value to restore it later
         dsheuristics = self.ldb.get_dsheuristics()
@@ -2763,7 +2763,7 @@ nTSecurityDescriptor:: """ + desc_base64
 
     def test_operational(self):
         """Tests operational attributes"""
-        print "Tests operational attributes"""
+        print "Tests operational attributes"
 
         res = self.ldb.search(self.base_dn, scope=SCOPE_BASE,
                               attrs=["createTimeStamp", "modifyTimeStamp",
