@@ -942,6 +942,7 @@ bool pdb_is_responsible_for_unix_groups(void);
 
 /* The following definitions come from passdb/pdb_util.c  */
 
+NTSTATUS pdb_create_builtin(uint32_t rid);
 NTSTATUS create_builtin_users(const struct dom_sid *sid);
 NTSTATUS create_builtin_administrators(const struct dom_sid *sid);
 

@@ -67,7 +67,7 @@ static NTSTATUS add_sid_to_builtin(const struct dom_sid *builtin_sid,
  * @param[in] rid BUILTIN rid to create
  * @return Normal NTSTATUS return.
  */
-static NTSTATUS create_builtin(uint32 rid)
+NTSTATUS pdb_create_builtin(uint32_t rid)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	struct dom_sid sid;
@@ -94,7 +94,7 @@ NTSTATUS create_builtin_users(const struct dom_sid *dom_sid)
 	NTSTATUS status;
 	struct dom_sid dom_users;
 
-	status = create_builtin(BUILTIN_RID_USERS);
+	status = pdb_create_builtin(BUILTIN_RID_USERS);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("create_builtin_users: Failed to create Users\n"));
 		return status;
@@ -123,7 +123,7 @@ NTSTATUS create_builtin_administrators(const struct dom_sid *dom_sid)
 	TALLOC_CTX *ctx;
 	bool ret;
 
-	status = create_builtin(BUILTIN_RID_ADMINISTRATORS);
+	status = pdb_create_builtin(BUILTIN_RID_ADMINISTRATORS);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		DEBUG(5,("create_builtin_administrators: Failed to create Administrators\n"));
 		return status;
