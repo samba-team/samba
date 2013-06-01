@@ -526,7 +526,6 @@ _PUBLIC_ void dump_data_dbgc(int dbgc_class, int level, const uint8_t *buf, int 
 	struct debug_channel_level dcl = { dbgc_class, level };
 
 	if (!DEBUGLVLC(dbgc_class, level)) {
-		DEBUG(0, ("dbgc_class is %d\n", dbgc_class));
 		return;
 	}
 	dump_data_cb(buf, len, false, debugadd_channel_cb, &dcl);
