@@ -105,7 +105,7 @@ smb.conf changes
    Parameter Name			Description	Default
    --------------			-----------	-------
 
-   allow dns updates			New		disabled
+   allow dns updates			New		secure only
    announce as				Removed
    announce version			Removed
    cldap port				New		0
