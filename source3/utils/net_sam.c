@@ -1155,7 +1155,7 @@ static int net_sam_createbuiltingroup(struct net_context *c, int argc, const cha
 		return -1;
 	}
 
-	status = pdb_create_builtin_alias( rid );
+	status = pdb_create_builtin(rid);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Creating %s failed with %s\n"),
