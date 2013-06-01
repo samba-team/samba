@@ -8,8 +8,8 @@
 
 	<para>DNS updates can either be disallowed completely by setting it to
 		<constant>disabled</constant>, enabled over secure connections only by
-		setting it to <constant>secure</constant> or allowed in all cases
-		by setting it to <constant>enabled</constant> or <constant>nonsecure</constant>.
+		setting it to <constant>secure only</constant> or allowed in all cases
+		by setting it to <constant>nonsecure</constant>.
 	</para>
 </description>
 
