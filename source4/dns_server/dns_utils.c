@@ -276,7 +276,13 @@ WERROR dns_replace_records(struct dns_server *dns,
 		if (needs_add) {
 			return WERR_OK;
 		}
-		/* TODO: Delete object? */
+		/* No entries left, delete the dnsNode object */
+		ret = ldb_delete(dns->samdb, msg->dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Deleting record failed; %d\n", ret));
+			return DNS_ERR(SERVER_FAILURE);
+		}
+		return WERR_OK;
 	}
 
 	if (needs_add) {
