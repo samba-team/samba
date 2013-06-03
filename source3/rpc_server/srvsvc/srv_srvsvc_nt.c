@@ -1296,30 +1296,27 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 		machine += 2;
 	}
 
-	num_sessions = list_sessions(p->mem_ctx, &session_list);
+	num_sessions = find_sessions(p->mem_ctx, username, machine,
+				     &session_list);
 
 	for (snum = 0; snum < num_sessions; snum++) {
 
-		if ((strequal(session_list[snum].username, username) || username[0] == '\0' ) &&
-		    strequal(session_list[snum].remote_machine, machine)) {
+		NTSTATUS ntstat;
 
-			NTSTATUS ntstat;
-
-			if (p->session_info->unix_token->uid != sec_initial_uid()) {
-				not_root = True;
-				become_root();
-			}
-
-			ntstat = messaging_send(p->msg_ctx,
-						session_list[snum].pid,
-						MSG_SHUTDOWN, &data_blob_null);
-
-			if (NT_STATUS_IS_OK(ntstat))
-				werr = WERR_OK;
-
-			if (not_root)
-				unbecome_root();
+		if (p->session_info->unix_token->uid != sec_initial_uid()) {
+			not_root = True;
+			become_root();
 		}
+
+		ntstat = messaging_send(p->msg_ctx,
+					session_list[snum].pid,
+					MSG_SHUTDOWN, &data_blob_null);
+
+		if (NT_STATUS_IS_OK(ntstat))
+			werr = WERR_OK;
+
+		if (not_root)
+			unbecome_root();
 	}
 
 	DEBUG(5,("_srvsvc_NetSessDel: %d\n", __LINE__));
