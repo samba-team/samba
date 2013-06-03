@@ -661,15 +661,6 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
-		.label		= "password level",
-		.type		= P_INTEGER,
-		.p_class	= P_GLOBAL,
-		.offset		= GLOBAL_VAR(pwordlevel),
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_DEPRECATED,
-	},
-	{
 		.label		= "username level",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,

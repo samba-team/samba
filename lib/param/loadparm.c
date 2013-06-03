@@ -2144,7 +2144,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "max xmit", "12288");
 	lpcfg_do_global_parameter(lp_ctx, "host msdfs", "true");
 
-	lpcfg_do_global_parameter(lp_ctx, "password level", "0");
 	lpcfg_do_global_parameter(lp_ctx, "LargeReadwrite", "True");
 	lpcfg_do_global_parameter(lp_ctx, "server min protocol", "CORE");
 	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "NT1");

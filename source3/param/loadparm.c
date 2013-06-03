@@ -819,7 +819,6 @@ static void init_globals(bool reinit_globals)
 	Globals.lpqcachetime = 30;	/* changed to handle large print servers better -- jerry */
 	Globals.bDisableSpoolss = false;
 	Globals.iMaxSmbdProcesses = 0;/* no limit specified */
-	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
 	Globals.getwd_cache = true;
