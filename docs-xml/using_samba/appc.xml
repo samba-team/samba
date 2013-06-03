@@ -1858,20 +1858,6 @@ options.</para>
 </refsynopsisdiv>
 </refentry>
 
-<refentry id="appc-refentry-134">
-<refmeta>
-<refmiscinfo class="allowable values">number</refmiscinfo>
-<refmiscinfo class="default">0</refmiscinfo>
-</refmeta>
-<refnamediv>
-<refname>[global] password level = number</refname>
-</refnamediv>
-<refsynopsisdiv>
-<para>Specifies the number of uppercase letter permutations used to match passwords. Workaround for clients that change passwords to a single case before sending them to the Samba server. Causes repeated login attempts with passwords in different cases, which can trigger account lockouts.</para>
-
-</refsynopsisdiv>
-</refentry>
-
 <refentry id="appc-refentry-135">
 <refmeta>
 <refmiscinfo class="allowable values">list of NetBIOS names</refmiscinfo>

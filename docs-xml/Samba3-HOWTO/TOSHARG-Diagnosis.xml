@@ -446,7 +446,7 @@ If it says <quote><errorname>bad password,</errorname></quote> then the likely c
 <listitem>
 	<para>
 	You have explicitly disabled encrypted passwords with
-	<smbconfoption name="encrypt passwords">no</smbconfoption> have a mixed-case password and you haven't enabled the <smbconfoption name="password level"/> option at a high enough level.
+	<smbconfoption name="encrypt passwords">no</smbconfoption> have a mixed-case password.
 	</para>
 </listitem>
 

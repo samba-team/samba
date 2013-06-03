@@ -1578,20 +1578,6 @@ Password changed for user dave</programlisting>
 
 <row>
 
-<entry colname="col1"><para><literal>password level</literal></para></entry>
-
-<entry colname="col2"><para>numeric</para></entry>
-
-<entry colname="col3"><para>Sets the number of capital letter permutations to attempt when matching a client's password.</para></entry>
-
-<entry colname="col4"><para>None</para></entry>
-
-<entry colname="col5"><para>Global</para></entry>
-
-</row>
-
-<row>
-
 <entry colname="col1"><para><literal>null passwords</literal></para></entry>
 
 <entry colname="col2"><para>boolean</para></entry>

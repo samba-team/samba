@@ -197,7 +197,6 @@ parm_table = {
 	"WINBINDUID"             : ("idmap uid", SambaParmString, P_GLOBAL, ""),
 	"READRAW"                : ("read raw", SambaParmBool, P_GLOBAL, "Yes"),
 	"WINBINDENUMGROUPS"      : ("winbind enum groups", SambaParmBool, P_GLOBAL, "Yes"),
-	"PASSWORDLEVEL"          : ("password level", SambaParmString, P_GLOBAL, "0"),
 	"MAXPRINTJOBS"           : ("max print jobs", SambaParmString, P_LOCAL, "1000"),
 	"PRINTCAP"               : ("printcap name", SambaParmString, P_GLOBAL, ""),
 	"LOADPRINTERS"           : ("load printers", SambaParmBool, P_GLOBAL, "Yes"),

@@ -410,7 +410,6 @@ smbconf_keep = [
     "smb passwd file",
     "private dir",
     "passwd chat",
-    "password level",
     "lanman auth",
     "ntlm auth",
     "client NTLMv2 auth",

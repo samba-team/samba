@@ -494,7 +494,6 @@ when using clear-text authentication:
 
 <?latex \newpage ?>
 <smbconfblock>
-<smbconfoption name="password level"><replaceable>integer</replaceable></smbconfoption>
 <smbconfoption name="username level"><replaceable>integer</replaceable></smbconfoption>
 </smbconfblock>
 
@@ -509,11 +508,7 @@ is rarely needed.
 <indexterm><primary>clear-text</primary></indexterm>
 However, passwords on UNIX systems often make use of mixed-case characters.  This means that in order for a
 user on a Windows 9x/Me client to connect to a Samba server using clear-text authentication, the
-<smbconfoption name="password level"/> must be set to the maximum number of uppercase letters that
-<emphasis>could</emphasis> appear in a password. Note that if the Server OS uses the traditional DES version
-of crypt(), a <smbconfoption name="password level"/> of 8 will result in case-insensitive passwords as seen
-from Windows users. This will also result in longer login times because Samba has to compute the permutations
-of the password string and try them one by one until a match is located (or all combinations fail).
+password must be in lower case.
 </para>
 
 <para>
