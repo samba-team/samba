@@ -182,7 +182,7 @@ NTSTATUS ctdb_packet_fd_write(struct ctdb_packet_context *ctx)
 {
 	ssize_t sent;
 
-	sent = send(ctx->fd, ctx->out.data, ctx->out.length, 0);
+	sent = sys_send(ctx->fd, ctx->out.data, ctx->out.length, 0);
 
 	if (sent == -1) {
 		DEBUG(0, ("send failed: %s\n", strerror(errno)));
