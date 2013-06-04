@@ -1881,7 +1881,7 @@ string.</member>
 </member>
 <member>net registry convert     - Convert a registration entries (.reg) file.
 </member>
-<member>net registry check       - Check and reapair a registry database.
+<member>net registry check       - Check and repair a registry database.
 </member>
 </simplelist>
 </para>
