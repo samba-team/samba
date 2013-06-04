@@ -175,7 +175,6 @@
 ^samba4.ntvfs.cifs.krb5.base.createx_access.createx_access\(.*\)$
 ^samba4.rpc.lsa.forest.trust #Not fully provided by Samba4
 ^samba4.blackbox.kinit\(.*\).kinit with user password for expired password\(.*\) # We need to work out why this fails only during the pw change
-^samba4.blackbox.dbcheck\(vampire_dc\).dbcheck\(vampire_dc:local\) # Due to replicating with --domain-critical-only we fail dbcheck on this database
 ^samba4.blackbox.upgradeprovision.alpha13.ldapcmp_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
 ^samba4.blackbox.upgradeprovision.alpha13.ldapcmp_full_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
 ^samba4.blackbox.upgradeprovision.release-4-0-0.ldapcmp_sd\(none\) # Due to something rewriting the NT ACL on DNS objects
