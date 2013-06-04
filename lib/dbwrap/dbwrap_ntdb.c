@@ -269,113 +269,6 @@ static struct db_record *db_ntdb_try_fetch_locked(
 	return db_ntdb_fetch_locked_internal(db, mem_ctx, key);
 }
 
-static struct flock flock_struct;
-
-/* Return a value which is none of v1, v2 or v3. */
-static inline short int invalid_value(short int v1, short int v2, short int v3)
-{
-	short int try = (v1+v2+v3)^((v1+v2+v3) << 16);
-	while (try == v1 || try == v2 || try == v3)
-		try++;
-	return try;
-}
-
-/* We invalidate in as many ways as we can, so the OS rejects it */
-static void invalidate_flock_struct(int signum)
-{
-	flock_struct.l_type = invalid_value(F_RDLCK, F_WRLCK, F_UNLCK);
-	flock_struct.l_whence = invalid_value(SEEK_SET, SEEK_CUR, SEEK_END);
-	flock_struct.l_start = -1;
-	/* A large negative. */
-	flock_struct.l_len = (((off_t)1 << (sizeof(off_t)*CHAR_BIT - 1)) + 1);
-}
-
-static int timeout_lock(int fd, int rw, off_t off, off_t len, bool waitflag,
-			void *_timeout)
-{
-	int ret, saved_errno;
-	unsigned int timeout = *(unsigned int *)_timeout;
-
-	flock_struct.l_type = rw;
-	flock_struct.l_whence = SEEK_SET;
-	flock_struct.l_start = off;
-	flock_struct.l_len = len;
-
-	CatchSignal(SIGALRM, invalidate_flock_struct);
-	alarm(timeout);
-
-	for (;;) {
-		if (waitflag)
-			ret = fcntl(fd, F_SETLKW, &flock_struct);
-		else
-			ret = fcntl(fd, F_SETLK, &flock_struct);
-
-		if (ret == 0)
-			break;
-
-		/* Not signalled?  Something else went wrong. */
-		if (flock_struct.l_len == len) {
-			if (errno == EAGAIN || errno == EINTR)
-				continue;
-			saved_errno = errno;
-			break;
-		} else {
-			saved_errno = EINTR;
-			break;
-		}
-	}
-
-	alarm(0);
-	if (ret != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
-static int ntdb_chainlock_timeout(struct ntdb_context *ntdb,
-				  NTDB_DATA key,
-				  unsigned int timeout)
-{
-	union ntdb_attribute locking;
-	enum NTDB_ERROR ecode;
-
-	locking.base.attr = NTDB_ATTRIBUTE_FLOCK;
-	ecode = ntdb_get_attribute(ntdb, &locking);
-	if (ecode != NTDB_SUCCESS) {
-		return -1;
-	}
-
-	/* Replace locking function with our own. */
-	locking.flock.data = &timeout;
-	locking.flock.lock = timeout_lock;
-
-	ecode = ntdb_set_attribute(ntdb, &locking);
-	if (ecode != NTDB_SUCCESS) {
-		return -1;
-	}
-
-	ecode = ntdb_chainlock(ntdb, key);
-
-	ntdb_unset_attribute(ntdb, NTDB_ATTRIBUTE_FLOCK);
-	return ecode == NTDB_SUCCESS ? 0 : -1;
-}
-
-static struct db_record *db_ntdb_fetch_locked_timeout(
-	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key,
-	unsigned int timeout)
-{
-	struct db_ntdb_ctx *ctx = talloc_get_type_abort(db->private_data,
-						       struct db_ntdb_ctx);
-
-	db_ntdb_log_key("Trying to lock", key);
-	if (ntdb_chainlock_timeout(ctx->ntdb, key, timeout) != 0) {
-		DEBUG(3, ("ntdb_chainlock_timeout failed\n"));
-		return NULL;
-	}
-	return db_ntdb_fetch_locked_internal(db, mem_ctx, key);
-}
-
-
 static int db_ntdb_exists(struct db_context *db, TDB_DATA key)
 {
 	struct db_ntdb_ctx *ctx = talloc_get_type_abort(
@@ -663,7 +556,6 @@ struct db_context *db_open_ntdb(TALLOC_CTX *mem_ctx,
 	db_ntdb->id.ino = st.st_ino;
 
 	result->fetch_locked = db_ntdb_fetch_locked;
-	result->fetch_locked_timeout = db_ntdb_fetch_locked_timeout;
 	result->try_fetch_locked = db_ntdb_try_fetch_locked;
 	result->traverse = db_ntdb_traverse;
 	result->traverse_read = db_ntdb_traverse_read;

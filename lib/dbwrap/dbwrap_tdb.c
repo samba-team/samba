@@ -159,21 +159,6 @@ static struct db_record *db_tdb_fetch_locked(
 	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
 }
 
-static struct db_record *db_tdb_fetch_locked_timeout(
-	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key,
-	unsigned int timeout)
-{
-	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
-						       struct db_tdb_ctx);
-
-	db_tdb_log_key("Locking with timeout ", key);
-	if (tdb_chainlock_with_timeout(ctx->wtdb->tdb, key, timeout) != 0) {
-		DEBUG(3, ("tdb_chainlock_with_timeout failed\n"));
-		return NULL;
-	}
-	return db_tdb_fetch_locked_internal(db, mem_ctx, key);
-}
-
 static struct db_record *db_tdb_try_fetch_locked(
 	struct db_context *db, TALLOC_CTX *mem_ctx, TDB_DATA key)
 {
@@ -458,7 +443,6 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	db_tdb->id.ino = st.st_ino;
 
 	result->fetch_locked = db_tdb_fetch_locked;
-	result->fetch_locked_timeout = db_tdb_fetch_locked_timeout;
 	result->try_fetch_locked = db_tdb_try_fetch_locked;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
