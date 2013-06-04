@@ -3147,6 +3147,17 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	case OBJECT_TOMBSTONE:
 
 		/*
+		 * MS-ADTS 3.1.1.5.5.1.1 Tombstone Requirements
+		 * describes what must be removed from a tombstone
+		 * object
+		 *
+		 * MS-ADTS 3.1.1.5.5.1.3 Recycled-Object Requirements
+		 * describes what must be removed from a recycled
+		 * object
+		 *
+		 */
+
+		/*
 		 * we also mark it as recycled, meaning this object can't be
 		 * recovered (we are stripping its attributes).
 		 * This is done only if we have this schema object of course ...
@@ -3223,6 +3234,11 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		break;
 
 	case OBJECT_DELETED:
+		/*
+		 * MS-ADTS 3.1.1.5.5.1.2 Deleted-Object Requirements
+		 * describes what must be removed from a deleted
+		 * object
+		 */
 
 		ret = ldb_msg_add_empty(msg, "objectCategory", LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
