@@ -105,6 +105,70 @@ enum urgent_situation {
 	REPL_URGENT_ON_DELETE = 4
 };
 
+enum deletion_state {
+	OBJECT_NOT_DELETED=1,
+	OBJECT_DELETED=2,
+	OBJECT_RECYCLED=3,
+	OBJECT_TOMBSTONE=4,
+	OBJECT_REMOVED=5
+};
+
+static void replmd_deletion_state(struct ldb_module *module,
+				  const struct ldb_message *msg,
+				  enum deletion_state *current_state,
+				  enum deletion_state *next_state)
+{
+	int ret;
+	bool enabled = false;
+
+	if (msg == NULL) {
+		*current_state = OBJECT_REMOVED;
+		if (next_state != NULL) {
+			*next_state = OBJECT_REMOVED;
+		}
+		return;
+	}
+
+	ret = dsdb_recyclebin_enabled(module, &enabled);
+	if (ret != LDB_SUCCESS) {
+		enabled = false;
+	}
+
+	if (ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE")) {
+		if (!enabled) {
+			*current_state = OBJECT_TOMBSTONE;
+			if (next_state != NULL) {
+				*next_state = OBJECT_REMOVED;
+			}
+			return;
+		}
+
+		if (ldb_msg_check_string_attribute(msg, "isRecycled", "TRUE")) {
+			*current_state = OBJECT_RECYCLED;
+			if (next_state != NULL) {
+				*next_state = OBJECT_REMOVED;
+			}
+			return;
+		}
+
+		*current_state = OBJECT_DELETED;
+		if (next_state != NULL) {
+			*next_state = OBJECT_RECYCLED;
+		}
+		return;
+	}
+
+	*current_state = OBJECT_NOT_DELETED;
+	if (next_state == NULL) {
+		return;
+	}
+
+	if (enabled) {
+		*next_state = OBJECT_DELETED;
+	} else {
+		*next_state = OBJECT_TOMBSTONE;
+	}
+}
 
 static const struct {
 	const char *update_name;
@@ -2852,8 +2916,6 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated",
 		"whenChanged", NULL};
 	unsigned int i, el_count = 0;
-	enum deletion_state { OBJECT_NOT_DELETED=1, OBJECT_DELETED=2, OBJECT_RECYCLED=3,
-						OBJECT_TOMBSTONE=4, OBJECT_REMOVED=5 };
 	enum deletion_state deletion_state, next_deletion_state;
 	bool enabled;
 
@@ -2893,36 +2955,14 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	}
 	old_msg = res->msgs[0];
 
+	replmd_deletion_state(module, old_msg,
+			      &deletion_state,
+			      &next_deletion_state);
 
-	ret = dsdb_recyclebin_enabled(module, &enabled);
-	if (ret != LDB_SUCCESS) {
-		enabled = false;
-	}
-
-	if (ldb_msg_check_string_attribute(old_msg, "isDeleted", "TRUE")) {
-		if (!enabled) {
-			deletion_state = OBJECT_TOMBSTONE;
-			next_deletion_state = OBJECT_REMOVED;
-		} else if (ldb_msg_check_string_attribute(old_msg, "isRecycled", "TRUE")) {
-			deletion_state = OBJECT_RECYCLED;
-			next_deletion_state = OBJECT_REMOVED;
-		} else {
-			deletion_state = OBJECT_DELETED;
-			next_deletion_state = OBJECT_RECYCLED;
-		}
-
-		/* This supports us noticing an incoming isDeleted and acting on it */
-		if (re_delete) {
-			next_deletion_state = deletion_state;
-		}
-	} else {
-		SMB_ASSERT(!re_delete);
-		deletion_state = OBJECT_NOT_DELETED;
-		if (enabled) {
-			next_deletion_state = OBJECT_DELETED;
-		} else {
-			next_deletion_state = OBJECT_TOMBSTONE;
-		}
+	/* This supports us noticing an incoming isDeleted and acting on it */
+	if (re_delete) {
+		SMB_ASSERT(deletion_state > OBJECT_NOT_DELETED);
+		next_deletion_state = deletion_state;
 	}
 
 	if (next_deletion_state == OBJECT_REMOVED) {
