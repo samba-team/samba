@@ -751,6 +751,7 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 	const char *dns_domain;
 	const char *netbios_name;
 	const char *dns_name;
+	const char **netbios_aliases;
 
 	if (!lpcfg_host_msdfs(lp_ctx)) {
 		return NT_STATUS_FS_DRIVER_REQUIRED;
@@ -825,6 +826,40 @@ NTSTATUS dfs_server_ad_get_referrals(struct loadparm_context *lp_ctx,
 		 * handle it here.
 		 */
 		return NT_STATUS_NOT_FOUND;
+	}
+
+	netbios_aliases = lpcfg_netbios_aliases(lp_ctx);
+	while (netbios_aliases && *netbios_aliases) {
+		const char *netbios_alias = *netbios_aliases;
+		char *dns_alias;
+		int cmp;
+
+		cmp = strcasecmp_m(server_name, netbios_alias);
+		if (cmp == 0) {
+			/*
+			 * If it is not domain related do not
+			 * handle it here.
+			 */
+			return NT_STATUS_NOT_FOUND;
+		}
+
+		dns_alias = talloc_asprintf(r, "%s.%s",
+					    netbios_alias,
+					    dns_domain);
+		if (dns_alias == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		cmp = strcasecmp_m(server_name, dns_alias);
+		talloc_free(dns_alias);
+		if (cmp == 0) {
+			/*
+			 * If it is not domain related do not
+			 * handle it here.
+			 */
+			return NT_STATUS_NOT_FOUND;
+		}
+		netbios_aliases++;
 	}
 
 	if ((strcasecmp_m(server_name, netbios_domain) != 0) &&
