@@ -663,6 +663,13 @@ static int replmd_ldb_message_element_attid_sort(const struct ldb_message_elemen
 	a1 = dsdb_attribute_by_lDAPDisplayName(schema, e1->name);
 	a2 = dsdb_attribute_by_lDAPDisplayName(schema, e2->name);
 
+	/*
+	 * TODO: remove this check, we should rely on e1 and e2 having valid attribute names
+	 *       in the schema
+	 */
+	if (!a1 || !a2) {
+		return strcasecmp(e1->name, e2->name);
+	}
 	if (a1->attributeID_id == a2->attributeID_id) {
 		return 0;
 	}
