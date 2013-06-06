@@ -494,15 +494,7 @@ static void dcerpc_binding_handle_call_done(struct tevent_req *subreq)
 
 NTSTATUS dcerpc_binding_handle_call_recv(struct tevent_req *req)
 {
-	NTSTATUS error;
-
-	if (tevent_req_is_nterror(req, &error)) {
-		tevent_req_received(req);
-		return error;
-	}
-
-	tevent_req_received(req);
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS dcerpc_binding_handle_call(struct dcerpc_binding_handle *h,
