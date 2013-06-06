@@ -38,6 +38,8 @@ struct ctdb_traverse_local_handle {
 	pid_t child;
 	uint64_t srvid;
 	uint32_t client_reqid;
+	uint32_t reqid;
+	int srcnode;
 	void *private_data;
 	ctdb_traverse_fn_t callback;
 	struct timeval start_time;
@@ -169,7 +171,9 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 	h->private_data = all_state;
 	h->ctdb_db = ctdb_db;
 	h->client_reqid = all_state->client_reqid;
+	h->reqid = all_state->reqid;
 	h->srvid = all_state->srvid;
+	h->srcnode = all_state->srcnode;
 	h->withemptyrecords = all_state->withemptyrecords;
 
 	if (h->child == 0) {
