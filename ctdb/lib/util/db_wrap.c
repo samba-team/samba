@@ -28,7 +28,7 @@
 
 #include "includes.h"
 #include "lib/util/dlinklist.h"
-#include "lib/tdb/include/tdb.h"
+#include "tdb.h"
 #include "db_wrap.h"
 
 static struct tdb_wrap *tdb_list;

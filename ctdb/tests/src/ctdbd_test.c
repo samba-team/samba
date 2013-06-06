@@ -21,7 +21,7 @@
 #define _CTDBD_TEST_C
 
 #include "includes.h"
-#include "lib/tdb/include/tdb.h"
+#include "tdb.h"
 #include "ctdb_private.h"
 
 /*

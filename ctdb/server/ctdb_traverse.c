@@ -21,7 +21,7 @@
 #include "system/filesys.h"
 #include "system/wait.h"
 #include "db_wrap.h"
-#include "lib/tdb/include/tdb.h"
+#include "tdb.h"
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 

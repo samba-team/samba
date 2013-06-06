@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "db_wrap.h"
-#include "lib/tdb/include/tdb.h"
+#include "tdb.h"
 #include "ctdb_private.h"
 
 struct ctdb_persistent_write_state {
