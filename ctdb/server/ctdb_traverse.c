@@ -43,35 +43,27 @@ struct ctdb_traverse_local_handle {
 	void *private_data;
 	ctdb_traverse_fn_t callback;
 	struct timeval start_time;
-	struct ctdb_queue *queue;
 	bool withemptyrecords;
+	struct tevent_fd *fde;
 };
 
 /*
-  called when data is available from the child
+ * called when traverse is completed by child or on error
  */
-static void ctdb_traverse_local_handler(uint8_t *rawdata, size_t length, void *private_data)
+static void ctdb_traverse_child_handler(struct tevent_context *ev, struct tevent_fd *fde,
+					uint16_t flags, void *private_data)
 {
-	struct ctdb_traverse_local_handle *h = talloc_get_type(private_data, 
-							       struct ctdb_traverse_local_handle);
-	TDB_DATA key, data;
+	struct ctdb_traverse_local_handle *h = talloc_get_type(private_data,
+							struct ctdb_traverse_local_handle);
 	ctdb_traverse_fn_t callback = h->callback;
 	void *p = h->private_data;
-	struct ctdb_rec_data *tdata = (struct ctdb_rec_data *)rawdata;
+	char res;
 
-	if (rawdata == NULL || length < 4 || length != tdata->length) {
-		/* end of traverse */
-		talloc_free(h);
-		callback(p, tdb_null, tdb_null);
-		return;
-	}
-
-	key.dsize = tdata->keylen;
-	key.dptr  = &tdata->data[0];
-	data.dsize = tdata->datalen;
-	data.dptr = &tdata->data[tdata->keylen];
-
-	callback(p, key, data);	
+	/* FIXME: There is no way to distinguish between failed traverse and
+	 * successful traverse.  The only way to signal the end is by sending
+	 * tdb_null for key and data. */
+	read(h->fd[0], &res, 1);
+	callback(p, tdb_null, tdb_null);
 }
 
 /*
@@ -89,10 +81,12 @@ static int traverse_local_destructor(struct ctdb_traverse_local_handle *h)
  */
 static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
 {
-	struct ctdb_traverse_local_handle *h = talloc_get_type(p, 
+	struct ctdb_traverse_local_handle *h = talloc_get_type(p,
 							       struct ctdb_traverse_local_handle);
 	struct ctdb_rec_data *d;
 	struct ctdb_ltdb_header *hdr;
+	int res, status;
+	TDB_DATA outdata;
 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 
@@ -110,15 +104,21 @@ static int ctdb_traverse_local_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DAT
 		}
 	}
 
-	d = ctdb_marshall_record(h, 0, key, NULL, data);
+	d = ctdb_marshall_record(h, h->reqid, key, NULL, data);
 	if (d == NULL) {
 		/* error handling is tricky in this child code .... */
 		return -1;
 	}
 
-	if (write(h->fd[1], (uint8_t *)d, d->length) != d->length) {
+	outdata.dptr = (uint8_t *)d;
+	outdata.dsize = d->length;
+
+	res = ctdb_control(h->ctdb_db->ctdb, h->srcnode, 0, CTDB_CONTROL_TRAVERSE_DATA,
+			   CTDB_CTRL_FLAG_NOREPLY, outdata, NULL, NULL, &status, NULL, NULL);
+	if (res != 0 || status != 0) {
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -178,10 +178,26 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 	if (h->child == 0) {
 		/* start the traverse in the child */
+		char res = 0;
+		pid_t parent = getpid();
+
 		close(h->fd[0]);
-		debug_extra = talloc_asprintf(NULL, "traverse_local-%s:",
-					      ctdb_db->db_name);
-		tdb_traverse_read(ctdb_db->ltdb->tdb, ctdb_traverse_local_fn, h);
+
+		if (switch_from_server_to_client(ctdb_db->ctdb,
+						 "traverse_local-%s:",
+						 ctdb_db->db_name) != 0) {
+			DEBUG(DEBUG_CRIT, ("Failed to switch traverse child into client mode\n"));
+			res = -1;
+		}
+
+		if (tdb_traverse_read(ctdb_db->ltdb->tdb, ctdb_traverse_local_fn, h) != 0) {
+			res = -1;
+		}
+		write(h->fd[1], &res, 1);
+
+		while (ctdb_kill(ctdb_db->ctdb, parent, 0) == 0 || errno != ESRCH) {
+			sleep(5);
+		}
 		_exit(0);
 	}
 
@@ -192,18 +208,14 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 	DLIST_ADD(ctdb_db->traverse, h);
 
-	/*
-	  setup a packet queue between the child and the parent. This
-	  copes with all the async and packet boundary issues
-	 */
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child traverse\n", h->fd[0]));
-
-	h->queue = ctdb_queue_setup(ctdb_db->ctdb, h, h->fd[0], 0, ctdb_traverse_local_handler, h,
-				    "to-ctdbd");
-	if (h->queue == NULL) {
+	h->fde = tevent_add_fd(ctdb_db->ctdb->ev, h, h->fd[0], EVENT_FD_READ,
+			       ctdb_traverse_child_handler, h);
+	if (h->fde == NULL) {
+		close(h->fd[0]);
 		talloc_free(h);
 		return NULL;
 	}
+	tevent_fd_set_auto_close(h->fde);
 
 	h->start_time = timeval_current();
 
