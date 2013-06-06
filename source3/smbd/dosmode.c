@@ -732,16 +732,21 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 
 	old_mode = dos_mode(conn, smb_fname);
 
-	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
-		if (!(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
-			lret = SMB_VFS_SET_OFFLINE(conn, smb_fname);
-			if (lret == -1) {
-				DEBUG(0, ("set_dos_mode: client has asked to "
-					  "set FILE_ATTRIBUTE_OFFLINE to "
-					  "%s/%s but there was an error while "
-					  "setting it or it is not "
-					  "supported.\n", parent_dir,
-					  smb_fname_str_dbg(smb_fname)));
+	if ((dosmode & FILE_ATTRIBUTE_OFFLINE) &&
+	    !(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
+		lret = SMB_VFS_SET_OFFLINE(conn, smb_fname);
+		if (lret == -1) {
+			if (errno == ENOTSUP) {
+				DEBUG(10, ("Setting FILE_ATTRIBUTE_OFFLINE for "
+					   "%s/%s is not supported.\n",
+					   parent_dir,
+					   smb_fname_str_dbg(smb_fname)));
+			} else {
+				DEBUG(0, ("An error occurred while setting "
+					  "FILE_ATTRIBUTE_OFFLINE for "
+					  "%s/%s: %s", parent_dir,
+					  smb_fname_str_dbg(smb_fname),
+					  strerror(errno)));
 			}
 		}
 	}
