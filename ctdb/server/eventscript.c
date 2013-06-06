@@ -34,8 +34,15 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static void sigterm(int sig)
 {
+	pid_t pid;
+
 	/* all the child processes will be running in the same process group */
-	kill(-getpgrp(), SIGKILL);
+	pid = getpgrp();
+	if (pid == -1) {
+		kill(-getpid(), SIGKILL);
+	} else {
+		kill(-pid, SIGKILL);
+	}
 	_exit(1);
 }
 
