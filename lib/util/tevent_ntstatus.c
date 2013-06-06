@@ -76,12 +76,15 @@ bool tevent_req_is_nterror(struct tevent_req *req, NTSTATUS *status)
 
 NTSTATUS tevent_req_simple_recv_ntstatus(struct tevent_req *req)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	/*
+	 * Ignore result of tevent_req_is_nterror, we're only interested in
+	 * the status
+	 */
+	tevent_req_is_nterror(req, &status);
+	tevent_req_received(req);
+	return status;
 }
 
 void tevent_req_simple_finish_ntstatus(struct tevent_req *subreq,
