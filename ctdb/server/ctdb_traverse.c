@@ -42,7 +42,6 @@ struct ctdb_traverse_local_handle {
 	int srcnode;
 	void *private_data;
 	ctdb_traverse_fn_t callback;
-	struct timeval start_time;
 	bool withemptyrecords;
 	struct tevent_fd *fde;
 };
@@ -216,8 +215,6 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		return NULL;
 	}
 	tevent_fd_set_auto_close(h->fde);
-
-	h->start_time = timeval_current();
 
 	return h;
 }
