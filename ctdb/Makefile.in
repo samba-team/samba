@@ -50,6 +50,14 @@ PMDA_LIBS = -lpcp -lpcp_pmda
 PMDA_INSTALL = @CTDB_PMDA_INSTALL@
 PMDA_DEST_DIR = /var/lib/pcp/pmdas/ctdb
 
+WRAPPER=@
+ifeq ($(V),1)
+WRAPPER=
+endif
+ifeq ($(VERBOSE),1)
+WRAPPER=
+endif
+
 ifeq ($(CC),gcc)
 EXTRA_CFLAGS=-Wno-format-zero-length -fPIC
 endif
@@ -145,139 +153,139 @@ showlayout::
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(WRAPPER) $(CC) $(CFLAGS) -c $< -o $@
 
 dirs:
-	@mkdir -p $(DIRS)
+	$(WRAPPER) mkdir -p $(DIRS)
 
 $(CTDB_VERSION_H):
 	@echo Generating $@
-	@./packaging/mkversion.sh
+	$(WRAPPER) ./packaging/mkversion.sh
 
 bin/ctdbd: $(CTDB_SERVER_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $(CTDB_SERVER_OBJ) $(LIB_FLAGS)
 
 libctdb/libctdb.a: $(CTDB_LIB_OBJ)
 	@echo Linking $@
 	-rm -f libctdb.a
-	@$(AR) $(ARFLAGS) libctdb/libctdb.a $(CTDB_LIB_OBJ)
-	@$(RANLIB) libctdb/libctdb.a
+	$(WRAPPER) $(AR) $(ARFLAGS) libctdb/libctdb.a $(CTDB_LIB_OBJ)
+	$(WRAPPER) $(RANLIB) libctdb/libctdb.a
 
 libctdb/libctdb.so.0: $(CTDB_LIB_OBJ)
 	@echo Linking $@
-	@$(SHLD) -Wl,-soname=libctdb.so.0 $(CTDB_LIB_OBJ)
+	$(WRAPPER) $(SHLD) -Wl,-soname=libctdb.so.0 $(CTDB_LIB_OBJ)
 
 libctdb/libctdb.so: libctdb/libctdb.so.0
 	@echo Creating $@
-	-@rm -f libctdb/libctdb.so
-	@ln -s libctdb.so.0 libctdb/libctdb.so
+	$(WRAPPER) rm -f libctdb/libctdb.so
+	$(WRAPPER) ln -s libctdb.so.0 libctdb/libctdb.so
 
 bin/scsi_io: $(CTDB_CLIENT_OBJ) utils/scsi_io/scsi_io.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ utils/scsi_io/scsi_io.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 bin/ctdb: $(CTDB_CLIENT_OBJ) tools/ctdb.o tools/ctdb_vacuum.o libctdb/libctdb.a
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tools/ctdb.o tools/ctdb_vacuum.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) libctdb/libctdb.a
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tools/ctdb.o tools/ctdb_vacuum.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) libctdb/libctdb.a
 
 bin/ltdbtool: tools/ltdbtool.o $(TDB_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ $+ $(TDB_LIBS) $(LIB_FLAGS)
 
 bin/ctdb_lock_helper: server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ) $(TDB_LIBS) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ server/ctdb_lock_helper.o lib/util/util_file.o $(CTDB_EXTERNAL_OBJ) $(TDB_LIBS) $(LIB_FLAGS)
 
 bin/smnotify: utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o utils/smnotify/smnotify.o $(POPT_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(POPT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ utils/smnotify/smnotify.o utils/smnotify/gen_xdr.o utils/smnotify/gen_smnotify.o $(POPT_OBJ) $(LIB_FLAGS)
 
 utils/smnotify/smnotify.o: utils/smnotify/smnotify.c utils/smnotify/smnotify.h
 
 utils/smnotify/smnotify.h:  utils/smnotify/smnotify.x
 	@echo Generating $@
-	rpcgen -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
+	$(WRAPPER) rpcgen -h utils/smnotify/smnotify.x > utils/smnotify/smnotify.h
 
 utils/smnotify/gen_xdr.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -c utils/smnotify/smnotify.x | grep -Ev '^[[:space:]]+register int32_t \*buf;' > utils/smnotify/gen_xdr.c 
+	$(WRAPPER) rpcgen -c utils/smnotify/smnotify.x | grep -Ev '^[[:space:]]+register int32_t \*buf;' > utils/smnotify/gen_xdr.c 
 
 utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify.h
 	@echo Generating $@
-	rpcgen -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
+	$(WRAPPER) rpcgen -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
 
 bin/ping_pong: utils/ping_pong/ping_pong.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/ping_pong/ping_pong.o $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ utils/ping_pong/ping_pong.o $(LIB_FLAGS)
 
 bin/pmdactdb: $(CTDB_CLIENT_OBJ) utils/pmda/pmda_ctdb.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ utils/pmda/pmda_ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) $(PMDA_LIBS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ utils/pmda/pmda_ctdb.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS) $(PMDA_LIBS)
 
 tests/bin/rb_test: $(CTDB_CLIENT_OBJ) tests/src/rb_test.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/rb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/rb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/src/ctdb_bench.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_bench.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_bench.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_one: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_one.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_one.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_lock_once: libctdb/libctdb.a tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_lock_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_once: libctdb/libctdb.a tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_once.o $(CTDB_EXTERNAL_OBJ) libctdb/libctdb.a $(LIB_FLAGS)
 
 tests/bin/ctdb_fetch_readonly_loop: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch_readonly_loop.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_loop.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch_readonly_loop.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_trackingdb_test: $(CTDB_CLIENT_OBJ) tests/src/ctdb_trackingdb_test.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_trackingdb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_trackingdb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_update_record: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_update_record_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_update_record_persistent.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_update_record_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_traverse: $(CTDB_CLIENT_OBJ) tests/src/ctdb_traverse.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_traverse.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_traverse.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_randrec: $(CTDB_CLIENT_OBJ) tests/src/ctdb_randrec.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_randrec.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_randrec.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_persistent.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_porting_tests: $(CTDB_CLIENT_OBJ) tests/src/ctdb_porting_tests.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_porting_tests.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_porting_tests.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 CTDB_SERVER_MOST_OBJ = $(CTDB_SERVER_OBJ:server/ctdbd.o=)
 CTDBD_TEST_C = $(CTDB_SERVER_MOST_OBJ:.o=.c) tests/src/ctdbd_test.c
@@ -291,23 +299,23 @@ tests/src/ctdb_takeover_tests.o: tests/src/ctdb_takeover_tests.c $(CTDBD_TEST_C)
 
 tests/bin/ctdb_takeover_tests: $(CTDB_TEST_OBJ) tests/src/ctdb_takeover_tests.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TEST_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_takeover_tests.o $(CTDB_TEST_OBJ) $(LIB_FLAGS)
 
 tests/src/ctdb_tool_libctdb.o: tests/src/ctdb_tool_libctdb.c tests/src/libctdb_test.c $(CTDB_TEST_C)
 
 tests/bin/ctdb_tool_libctdb: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_libctdb.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_libctdb.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_libctdb.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
 
 tests/src/ctdb_tool_stubby.o: tests/src/ctdb_tool_stubby.c tests/src/libctdb_test.c $(CTDB_TEST_C)
 
 tests/bin/ctdb_tool_stubby: $(CTDB_TEST_OBJ) tests/src/ctdb_tool_stubby.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ tests/src/ctdb_tool_stubby.o $(CTDB_TEST_OBJ) $(POPT_OBJ) $(LIB_FLAGS)
 
 tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	$(WRAPPER) $(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
 manpages:
 	$(MAKE) -C doc
