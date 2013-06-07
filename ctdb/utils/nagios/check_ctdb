@@ -178,7 +178,11 @@ if ($info eq "scriptstatus") {
             next if $. == 1; # Header
             $script_count++;
             chop;
-            my ($type, $name, $code, $status, $start, $end, @error) = split(":");
+            my ($col0, $type, $name, $code, $status, $start, $end, @error) = split(":");
+            if ($col0 ne '') {
+              # Old version, before 30 Aug 2011 and commit a779d83a6213
+              ($type, $name, $code, $status, $start, $end, @error) = ($col0, $type, $name, $code, $status, $start, $end, @error);
+            }
             my $error = join(':', @error);
             if ($error ne "") {
                 $output = "$output ;; " if $output;
