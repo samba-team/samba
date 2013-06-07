@@ -536,7 +536,7 @@ interface security
 	typedef [public,gensize,nosize] struct {
 		security_acl_revision revision;
 		[value(ndr_size_security_acl(r,ndr->flags))] uint16 size;
-		[range(0,1000)] uint32 num_aces;
+		[range(0,2000)] uint32 num_aces;
 		security_ace aces[num_aces];
 	} security_acl;
 
