@@ -274,7 +274,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8_t confounder[16];	
-	struct MD5Context md5;
+	MD5_CTX md5;
 
 	if (r->samr_handle.in.info21) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -330,7 +330,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	DATA_BLOB session_key;
 	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 	uint8_t confounder[16];	
-	struct MD5Context md5;
+	MD5_CTX md5;
 
 	if (!r->samr_handle.in.info21) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;

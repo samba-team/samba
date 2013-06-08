@@ -39,7 +39,7 @@ struct stream_io {
 
 static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 {
-	struct MD5Context ctx;
+	MD5_CTX ctx;
         unsigned char hash[16];
 	SMB_INO_T result;
 	char *upper_sname;

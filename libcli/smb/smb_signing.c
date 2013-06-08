@@ -146,7 +146,7 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 {
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
 	uint8_t sequence_buf[8];
-	struct MD5Context md5_ctx;
+	MD5_CTX md5_ctx;
 
 	/*
 	 * Firstly put the sequence number into the first 4 bytes.
