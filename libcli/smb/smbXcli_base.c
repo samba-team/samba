@@ -1587,7 +1587,9 @@ static void smbXcli_conn_received(struct tevent_req *subreq)
 		 * tevent_req_done().
 		 */
 		return;
-	} else if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
 		/*
 		 * We got an error, so notify all pending requests
 		 */
