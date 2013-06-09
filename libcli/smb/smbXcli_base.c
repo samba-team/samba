@@ -1562,8 +1562,7 @@ static void smbXcli_conn_received(struct tevent_req *subreq)
 	if (subreq != conn->read_smb_req) {
 		DEBUG(1, ("Internal error: cli_smb_received called with "
 			  "unexpected subreq\n"));
-		status = NT_STATUS_INTERNAL_ERROR;
-		smbXcli_conn_disconnect(conn, status);
+		smbXcli_conn_disconnect(conn, NT_STATUS_INTERNAL_ERROR);
 		TALLOC_FREE(frame);
 		return;
 	}
