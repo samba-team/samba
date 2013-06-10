@@ -130,8 +130,20 @@ static bool nmbd_setup_stdin_handler(struct messaging_context *msg, bool foregro
 		/* if we are running in the foreground then look for
 		   EOF on stdin, and exit if it happens. This allows
 		   us to die if the parent process dies
+		   Only do this on a pipe or socket, no other device.
 		*/
-		tevent_add_fd(nmbd_event_context(), nmbd_event_context(), 0, TEVENT_FD_READ, nmbd_stdin_handler, msg);
+		struct stat st;
+		if (fstat(0, &st) != 0) {
+			return false;
+		}
+		if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
+			tevent_add_fd(nmbd_event_context(),
+				nmbd_event_context(),
+				0,
+				TEVENT_FD_READ,
+				nmbd_stdin_handler,
+				msg);
+		}
 	}
 
 	return true;
