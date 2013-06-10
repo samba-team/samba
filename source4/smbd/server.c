@@ -301,6 +301,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	NTSTATUS status;
 	const char *model = "standard";
 	int max_runtime = 0;
+	struct stat st;
 	enum {
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
@@ -439,9 +440,19 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 #ifdef SIGTTIN
 	signal(SIGTTIN, SIG_IGN);
 #endif
-	tevent_add_fd(event_ctx, event_ctx, 0, stdin_event_flags,
-		      server_stdin_handler,
-		      discard_const(binary_name));
+
+	if (fstat(0, &st) != 0) {
+		exit(1);
+	}
+
+	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
+		tevent_add_fd(event_ctx,
+				event_ctx,
+				0,
+				stdin_event_flags,
+				server_stdin_handler,
+				discard_const(binary_name));
+	}
 
 	if (max_runtime) {
 		DEBUG(0,("Called with maxruntime %d - current ts %llu\n",

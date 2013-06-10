@@ -1558,8 +1558,20 @@ extern void build_options(bool screen);
 		/* if we are running in the foreground then look for
 		   EOF on stdin, and exit if it happens. This allows
 		   us to die if the parent process dies
+		   Only do this on a pipe or socket, no other device.
 		*/
-		tevent_add_fd(ev_ctx, parent, 0, TEVENT_FD_READ, smbd_stdin_handler, NULL);
+		struct stat st;
+		if (fstat(0, &st) != 0) {
+			return false;
+		}
+		if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode)) {
+			tevent_add_fd(ev_ctx,
+					parent,
+					0,
+					TEVENT_FD_READ,
+					smbd_stdin_handler,
+					NULL);
+		}
 	}
 
 	smbd_parent_loop(ev_ctx, parent);
