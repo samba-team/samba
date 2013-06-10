@@ -945,7 +945,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			real_search_dn = NULL;
 		}
 		if (format_desired == DRSUAPI_DS_NAME_FORMAT_GUID){
-			 dsdb_flags = dsdb_flags| DSDB_SEARCH_SHOW_DELETED;
+			 dsdb_flags |= DSDB_SEARCH_SHOW_RECYCLED;
 		}
 
 		/* search with the 'phantom root' flag */

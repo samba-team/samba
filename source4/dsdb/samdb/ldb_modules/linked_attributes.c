@@ -642,7 +642,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		/* We need to figure out our own extended DN, to fill in as the backlink target */
 		if (ret == LDB_SUCCESS) {
 			ret = dsdb_request_add_controls(search_req,
-							DSDB_SEARCH_SHOW_DELETED |
+							DSDB_SEARCH_SHOW_RECYCLED |
 							DSDB_SEARCH_SHOW_EXTENDED_DN);
 		}
 		if (ret == LDB_SUCCESS) {
@@ -1000,7 +1000,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 		if (ret == LDB_SUCCESS) {
 			ret = dsdb_request_add_controls(search_req,
-							DSDB_SEARCH_SHOW_DELETED |
+							DSDB_SEARCH_SHOW_RECYCLED |
 							DSDB_SEARCH_SHOW_EXTENDED_DN);
 		}
 		if (ret != LDB_SUCCESS) {
