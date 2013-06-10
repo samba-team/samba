@@ -170,10 +170,19 @@ class cmd_drs_showrepl(Command):
 
         self.message("==== KCC CONNECTION OBJECTS ====\n")
         for c in conn:
-            c_rdn, sep, c_server_dn = c['fromServer'][0].partition(',')
-            c_server_res = self.samdb.search(base=c_server_dn, scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
-            c_server_dns = c_server_res[0]["dnsHostName"][0]
             self.message("Connection --")
+
+            c_rdn, sep, c_server_dn = c['fromServer'][0].partition(',')
+            try:
+                c_server_res = self.samdb.search(base=c_server_dn, scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
+                c_server_dns = c_server_res[0]["dnsHostName"][0]
+            except ldb.LdbError, (errno, _):
+                if errno == ldb.ERR_NO_SUCH_OBJECT:
+                    self.message("\tWARNING: Connection to DELETED server!")
+                c_server_dns = ""
+            except KeyError:
+                c_server_dns = ""
+
             self.message("\tConnection name: %s" % c['name'][0])
             self.message("\tEnabled        : %s" % attr_default(c, 'enabledConnection', 'TRUE'))
             self.message("\tServer DNS name : %s" % c_server_dns)
