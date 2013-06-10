@@ -58,7 +58,7 @@ static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
 		 * as the rest won't be modified and this is for
 		 * a short lived object.
 		 */
-		tmp2 = talloc(dest_schema->classes, struct dsdb_class);
+		tmp2 = talloc(dest_schema, struct dsdb_class);
 		if (tmp2 == NULL) {
 			return WERR_NOMEM;
 		}
@@ -85,7 +85,7 @@ static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
 		 * as the rest won't be modified and this is for
 		 * a short lived object.
 		 */
-		tmp2 = talloc(dest_schema->attributes, struct dsdb_attribute);
+		tmp2 = talloc(dest_schema, struct dsdb_attribute);
 		if (tmp2 == NULL) {
 			return WERR_NOMEM;
 		}
