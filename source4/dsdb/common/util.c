@@ -2458,7 +2458,9 @@ struct ldb_dn *samdb_domain_to_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  */
 int dsdb_find_dn_by_guid(struct ldb_context *ldb, 
 			 TALLOC_CTX *mem_ctx,
-			 const struct GUID *guid, struct ldb_dn **dn)
+			 const struct GUID *guid,
+			 uint32_t dsdb_flags,
+			 struct ldb_dn **dn)
 {
 	int ret;
 	struct ldb_result *res;
@@ -2472,7 +2474,7 @@ int dsdb_find_dn_by_guid(struct ldb_context *ldb,
 	ret = dsdb_search(ldb, mem_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 			  DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 			  DSDB_SEARCH_SHOW_EXTENDED_DN |
-			  DSDB_SEARCH_ONE_ONLY,
+			  DSDB_SEARCH_ONE_ONLY | dsdb_flags,
 			  "objectGUID=%s", guid_str);
 	talloc_free(guid_str);
 	if (ret != LDB_SUCCESS) {

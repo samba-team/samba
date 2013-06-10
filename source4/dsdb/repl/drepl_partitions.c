@@ -172,7 +172,7 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 	tmp_ctx = talloc_new(mem_ctx);
 
 	/* we need to find their hostname */
-	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &rft->source_dsa_obj_guid, &ntds_dn);
+	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &rft->source_dsa_obj_guid, 0, &ntds_dn);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		/* its OK for their NTDSDSA DN not to be in our database */

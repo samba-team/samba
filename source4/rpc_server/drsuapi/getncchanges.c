@@ -452,7 +452,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 				sa->lDAPDisplayName, ldb_dn_get_linearized(msg->dn)));
 			return ntstatus_to_werror(status);
 		}
-		ret = dsdb_find_dn_by_guid(sam_ctx, mem_ctx, &guid, &tdn);
+		ret = dsdb_find_dn_by_guid(sam_ctx, mem_ctx, &guid, 0, &tdn);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			DEBUG(2, (" Search of guid %s returned 0 objects, skipping it !\n",
 						GUID_string(mem_ctx, &guid)));
@@ -1151,7 +1151,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
 	/* TODO: make sure ntds_dn is a valid nTDSDSA object */
-	ret = dsdb_find_dn_by_guid(ldb, msg, &req10->destination_dsa_guid, &ntds_dn);
+	ret = dsdb_find_dn_by_guid(ldb, msg, &req10->destination_dsa_guid, 0, &ntds_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, (__location__ ": Unable to find NTDS object for guid %s - %s\n",
 			  GUID_string(mem_ctx, &req10->destination_dsa_guid), ldb_errstring(ldb)));

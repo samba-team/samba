@@ -533,6 +533,7 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 	neigh->source_dsa_obj_guid = reps_from->source_dsa_obj_guid;
 
 	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->source_dsa_obj_guid,
+				   DSDB_SEARCH_SHOW_RECYCLED,
 				   &source_dsa_dn);
 
 	if (ret != LDB_SUCCESS) {
@@ -544,13 +545,15 @@ static WERROR fill_neighbor_from_repsFrom(TALLOC_CTX *mem_ctx,
 	neigh->source_dsa_obj_dn = ldb_dn_get_linearized(source_dsa_dn);
 	neigh->naming_context_dn = ldb_dn_get_linearized(nc_dn);
 
-	if (dsdb_find_guid_by_dn(samdb, nc_dn, &neigh->naming_context_obj_guid)
+	if (dsdb_find_guid_by_dn(samdb, nc_dn,
+				 &neigh->naming_context_obj_guid)
 			!= LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	if (!GUID_all_zero(&reps_from->transport_guid)) {
 		ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_from->transport_guid,
+					   DSDB_SEARCH_SHOW_RECYCLED,
 					   &transport_obj_dn);
 		if (ret != LDB_SUCCESS) {
 			return WERR_DS_DRA_INTERNAL_ERROR;
@@ -668,7 +671,10 @@ static WERROR fill_neighbor_from_repsTo(TALLOC_CTX *mem_ctx,
 	neigh->last_attempt = reps_to->last_attempt;
 	neigh->source_dsa_obj_guid = reps_to->source_dsa_obj_guid;
 
-	ret = dsdb_find_dn_by_guid(samdb, mem_ctx, &reps_to->source_dsa_obj_guid, &source_dsa_dn);
+	ret = dsdb_find_dn_by_guid(samdb, mem_ctx,
+				   &reps_to->source_dsa_obj_guid,
+				   DSDB_SEARCH_SHOW_RECYCLED,
+				   &source_dsa_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find DN for neighbor GUID %s\n",
 			 GUID_string(mem_ctx, &reps_to->source_dsa_obj_guid)));
