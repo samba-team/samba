@@ -338,8 +338,10 @@ int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
 		TALLOC_FREE(schema->attributes_to_remove[i]);
 	}
 
-	TALLOC_FREE(schema->attributes_to_remove);
 	TALLOC_FREE(schema->classes_to_remove);
+	schema->classes_to_remove_size = 0;
+	TALLOC_FREE(schema->attributes_to_remove);
+	schema->attributes_to_remove_size = 0;
 
 	/* free all caches */
 	dsdb_sorted_accessors_free(schema);
