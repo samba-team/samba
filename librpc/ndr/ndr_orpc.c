@@ -93,23 +93,17 @@ void ndr_print_DUALSTRINGARRAY(struct ndr_print *ndr, const char *name, const st
 	ndr->print(ndr, "STRING BINDINGS");
 	ndr->depth++;
 	for (i=0;ar->stringbindings[i];i++)	{
-		char *idx = NULL;
-		asprintf(&idx, "[%d]", i);
-		if (idx) {
-			ndr_print_STRINGBINDING(ndr, idx, ar->stringbindings[i]);
-			free(idx);
-		}
+		char idx[13];	/* 2^32 has 10 digits */
+		snprintf(idx, sizeof(idx), "[%d]", i);
+		ndr_print_STRINGBINDING(ndr, idx, ar->stringbindings[i]);
 	}
 	ndr->depth--;
 	ndr->print(ndr, "SECURITY BINDINGS");
 	ndr->depth++;
 	for (i=0;ar->securitybindings[i];i++)	{
-		char *idx = NULL;
-		asprintf(&idx, "[%d]", i);
-		if (idx) {
-			ndr_print_SECURITYBINDING(ndr, idx, ar->securitybindings[i]);
-			free(idx);
-		}
+		char idx[13];	/* 2^32 has 10 digits */
+		snprintf(idx, sizeof(idx), "[%d]", i);
+		ndr_print_SECURITYBINDING(ndr, idx, ar->securitybindings[i]);
 	}
 	ndr->depth--;
 }
@@ -162,12 +156,9 @@ void ndr_print_STRINGARRAY(struct ndr_print *ndr, const char *name, const struct
 	ndr->print(ndr, "%-25s: STRINGARRAY", name);
 	ndr->depth++;
 	for (i=0;ar->stringbindings[i];i++)	{
-		char *idx = NULL;
-		asprintf(&idx, "[%d]", i);
-		if (idx) {
-			ndr_print_STRINGBINDING(ndr, idx, ar->stringbindings[i]);
-			free(idx);
-		}
+		char idx[13];	/* 2^32 has 10 digits */
+		snprintf(idx, sizeof(idx), "[%d]", i);
+		ndr_print_STRINGBINDING(ndr, idx, ar->stringbindings[i]);
 	}
 	ndr->depth--;
 }
