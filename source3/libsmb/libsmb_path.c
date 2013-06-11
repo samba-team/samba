@@ -188,7 +188,8 @@ smbc_urlencode(char *dest,
  *
  *
  * We accept:
- *  smb://[[[domain;]user[:password]@]server[/share[/path[/file]]]][?options]
+ *  smb://[[[domain;]user[:password]@]server[:port][/share[/path[/file]]]]
+ *								[?options]
  *
  * Meaning of URLs:
  *
