@@ -2133,7 +2133,7 @@ bool smb1_walk_chain(const uint8_t *buf,
 	wct = CVAL(buf, smb_wct);
 	vwv = (const uint16_t *)(buf + smb_vwv);
 	num_bytes = smb_buflen(buf);
-	bytes = (uint8_t *)smb_buf_const(buf);
+	bytes = (const uint8_t *)smb_buf_const(buf);
 
 	if (!fn(cmd, wct, vwv, num_bytes, bytes, private_data)) {
 		return false;
