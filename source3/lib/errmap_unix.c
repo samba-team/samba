@@ -111,6 +111,9 @@ static const struct {
 #ifdef ENOTSUP
         { ENOTSUP,      NT_STATUS_NOT_SUPPORTED},
 #endif
+#ifdef ETXTBSY
+	{ ETXTBSY,      NT_STATUS_SHARING_VIOLATION },
+#endif
 };
 
 /*********************************************************************
