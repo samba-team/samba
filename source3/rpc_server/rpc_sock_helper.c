@@ -73,7 +73,7 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 
 			if (bvec != NULL) {
 				rc = tsocket_address_bsd_from_sockaddr(tmp_ctx,
-								       (struct sockaddr *)ifss,
+								       (const struct sockaddr *)ifss,
 								       sizeof(struct sockaddr_storage),
 								       &bind_addr);
 				if (rc < 0) {
@@ -197,7 +197,7 @@ NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
 
 			if (bvec != NULL) {
 				rc = tsocket_address_bsd_from_sockaddr(tmp_ctx,
-								       (struct sockaddr*)ifss,
+								       (const struct sockaddr*)ifss,
 								       sizeof(struct sockaddr_storage),
 								       &bind_addr);
 				if (rc < 0) {
