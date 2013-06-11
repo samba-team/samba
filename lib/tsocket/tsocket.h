@@ -897,12 +897,12 @@ struct sockaddr;
  * @return              0 on success, -1 on error with errno set.
  */
 int tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
-				      struct sockaddr *sa,
+				      const struct sockaddr *sa,
 				      size_t sa_socklen,
 				      struct tsocket_address **addr);
 #else
 int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
-				       struct sockaddr *sa,
+				       const struct sockaddr *sa,
 				       size_t sa_socklen,
 				       struct tsocket_address **_addr,
 				       const char *location);

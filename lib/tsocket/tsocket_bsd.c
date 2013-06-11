@@ -209,7 +209,7 @@ struct tsocket_address_bsd {
 };
 
 int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
-				       struct sockaddr *sa,
+				       const struct sockaddr *sa,
 				       size_t sa_socklen,
 				       struct tsocket_address **_addr,
 				       const char *location)
