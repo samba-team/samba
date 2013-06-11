@@ -157,13 +157,6 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 	return status;
 }
 
-static int compare_share_mode_times(const void *p1, const void *p2)
-{
-	const struct share_mode_entry *s1 = (const struct share_mode_entry *)p1;
-	const struct share_mode_entry *s2 = (const struct share_mode_entry *)p2;
-	return timeval_compare(&s1->time, &s2->time);
-}
-
 /****************************************************************************
  Delete all streams
 ****************************************************************************/
