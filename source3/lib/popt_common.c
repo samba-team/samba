@@ -489,7 +489,6 @@ static void popt_common_credentials_callback(poptContext con,
 {
 	struct user_auth_info *auth_info = talloc_get_type_abort(
 		*((const char **)data), struct user_auth_info);
-	char *p;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		set_cmdline_auth_info_username(auth_info, "GUEST");
