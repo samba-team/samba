@@ -58,7 +58,6 @@ static bool gencache_init(void)
 {
 	char* cache_fname = NULL;
 	int open_flags = O_RDWR|O_CREAT;
-	bool first_try = true;
 
 	/* skip file open if it's already opened */
 	if (cache) return True;
@@ -67,24 +66,28 @@ static bool gencache_init(void)
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-again:
 	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT|TDB_INCOMPATIBLE_HASH, open_flags, 0644);
 	if (cache) {
 		int ret;
 		ret = tdb_check(cache, NULL, NULL);
 		if (ret != 0) {
 			tdb_close(cache);
-			cache = NULL;
-			if (!first_try) {
-				DEBUG(0, ("gencache_init: tdb_check(%s) failed\n",
-					  cache_fname));
-				return false;
-			}
-			first_try = false;
-			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after truncate\n",
-				  cache_fname));
-			truncate(cache_fname, 0);
-			goto again;
+
+			/*
+			 * Retry with CLEAR_IF_FIRST.
+			 *
+			 * Warning: Converting this to dbwrap won't work
+			 * directly. gencache.c does transactions on this tdb,
+			 * and dbwrap forbids this for CLEAR_IF_FIRST
+			 * databases. tdb does allow transactions on
+			 * CLEAR_IF_FIRST databases, so lets use it here to
+			 * clean up a broken database.
+			 */
+			cache = tdb_open_log(cache_fname, 0,
+					     TDB_DEFAULT|
+					     TDB_INCOMPATIBLE_HASH|
+					     TDB_CLEAR_IF_FIRST,
+					     open_flags, 0644);
 		}
 	}
 
