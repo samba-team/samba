@@ -1701,7 +1701,7 @@ void smb_request_done(struct smb_request *req)
 			req->conn = NULL;
 		}
 		next->chain_fsp = req->chain_fsp;
-		next->inbuf = (uint8_t *)req->inbuf;
+		next->inbuf = req->inbuf;
 
 		req = next;
 		req->conn = switch_message(req->cmd, req);
