@@ -411,6 +411,7 @@ WERROR _winreg_EnumKey(struct pipes_struct *p,
 {
 	WERROR err = WERR_OK;
 	struct registry_key *key = find_regkey_by_hnd( p, r->in.handle );
+	char *name;
 
 	if ( !key )
 		return WERR_BADFID;
@@ -420,11 +421,12 @@ WERROR _winreg_EnumKey(struct pipes_struct *p,
 
 	DEBUG(8,("_winreg_EnumKey: enumerating key [%s]\n", key->key->name));
 
-	err = reg_enumkey(p->mem_ctx, key, r->in.enum_index, (char **)&r->out.name->name,
+	err = reg_enumkey(p->mem_ctx, key, r->in.enum_index, &name,
 			  r->out.last_changed_time);
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
+	r->out.name->name = name;
 	r->out.keyclass->name = "";
 	return WERR_OK;
 }
