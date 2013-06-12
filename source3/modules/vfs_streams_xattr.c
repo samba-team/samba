@@ -367,8 +367,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 	int baseflags;
 	int hostfd = -1;
 
-	DEBUG(10, ("streams_xattr_open called for %s\n",
-		   smb_fname_str_dbg(smb_fname)));
+	DEBUG(10, ("streams_xattr_open called for %s with flags 0x%x\n",
+		   smb_fname_str_dbg(smb_fname), flags));
 
 	if (!is_ntfs_stream_smb_fname(smb_fname)) {
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
@@ -452,40 +452,20 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if ((!NT_STATUS_IS_OK(status) && (flags & O_CREAT)) ||
+	    (flags & O_TRUNC)) {
 		/*
-		 * The attribute does not exist
+		 * The attribute does not exist or needs to be truncated
 		 */
 
-                if (flags & O_CREAT) {
-			/*
-			 * Darn, xattrs need at least 1 byte
-			 */
-                        char null = '\0';
-
-			DEBUG(10, ("creating attribute %s on file %s\n",
-				   xattr_name, smb_fname->base_name));
-
-			if (fsp->base_fsp->fh->fd != -1) {
-                        	if (SMB_VFS_FSETXATTR(
-					fsp->base_fsp, xattr_name,
-					&null, sizeof(null),
-					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
-					goto fail;
-				}
-			} else {
-	                        if (SMB_VFS_SETXATTR(
-					handle->conn, smb_fname->base_name,
-					xattr_name, &null, sizeof(null),
-					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
-					goto fail;
-				}
-			}
-		}
-	}
-
-	if (flags & O_TRUNC) {
+		/*
+		 * Darn, xattrs need at least 1 byte
+		 */
 		char null = '\0';
+
+		DEBUG(10, ("creating or truncating attribute %s on file %s\n",
+			   xattr_name, smb_fname->base_name));
+
 		if (fsp->base_fsp->fh->fd != -1) {
 			if (SMB_VFS_FSETXATTR(
 					fsp->base_fsp, xattr_name,
