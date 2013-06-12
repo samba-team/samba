@@ -527,6 +527,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 		 * BUGBUGBUG -- we would need to call fd_close_posix here, but
 		 * we don't have a full fsp yet
 		 */
+		fsp->fh->fd = hostfd;
 		SMB_VFS_CLOSE(fsp);
 	}
 
