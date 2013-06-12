@@ -1041,6 +1041,24 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	if (rc) {
 		DEBUG(3,("ads_do_paged_search_args: ldap_search_with_timeout(%s) -> %s\n", expr,
 			 ldap_err2string(rc)));
+		if (rc == LDAP_OTHER) {
+			char *ldap_errmsg;
+			int ret;
+
+			ret = ldap_parse_result(ads->ldap.ld,
+						*res,
+						NULL,
+						NULL,
+						&ldap_errmsg,
+						NULL,
+						NULL,
+						0);
+			if (ret == LDAP_SUCCESS) {
+				DEBUG(3, ("ldap_search_with_timeout(%s) "
+					  "error: %s\n", expr, ldap_errmsg));
+				ldap_memfree(ldap_errmsg);
+			}
+		}
 		goto done;
 	}
 
