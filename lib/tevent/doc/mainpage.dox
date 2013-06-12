@@ -10,13 +10,18 @@
  * Tevent also provide helpers to deal with asynchronous code providing the
  * tevent_req (tevent request) functions.
  *
- * @section tevent_download Download
+ * @section main_tevent_tutorial Tutorial
+ *
+ * You should start by reading @subpage tevent_tutorial, then reading the
+ * documentation of the interesting functions as you go.
+ *
+ * @section main_tevent_download Download
  *
  * You can download the latest releases of tevent from the
  * <a href="http://samba.org/ftp/tevent" target="_blank">tevent directory</a>
  * on the samba public source archive.
  *
- * @section tevent_bugs Discussion and bug reports
+ * @section main_tevent_bugs Discussion and bug reports
  *
  * tevent does not currently have its own mailing list or bug tracking system.
  * For now, please use the
@@ -25,7 +30,7 @@
  * <a href="http://bugzilla.samba.org/" target="_blank">Samba bugzilla</a>
  * bug tracking system.
  *
- * @section tevent_devel Development
+ * @section main_tevent_devel Development
  * You can download the latest code either via git or rsync.
  *
  * To fetch via git see the following guide:
