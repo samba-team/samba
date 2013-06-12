@@ -1484,7 +1484,6 @@ krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
-	mode_t mask;
 
 #if defined(HAVE_KRB5_GET_INIT_CREDS_KEYBLOCK)
 	code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal,
@@ -1496,6 +1495,7 @@ krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
 	char tmp_name[sizeof(SMB_CREDS_KEYTAB)];
 	krb5_keytab_entry entry;
 	krb5_keytab keytab;
+	mode_t mask;
 
 	memset(&entry, 0, sizeof(entry));
 	entry.principal = principal;
