@@ -1,0 +1,191 @@
+/**
+@page tevent_request Chapter 4: Tevent request
+@section request Tevent requst
+
+A specific feature of the library is the tevent request API that provides for
+asynchronous computation and allows much more interconnected working and
+cooperation among func- tions and events. When working with tevent request it
+is possible to nest one event under another and handle them bit by bit. This
+enables the creation of sequences of steps, and provides an opportunity to
+prepare for all problems which may unexpectedly happen within the different
+phases. One way or another, subrequests split bigger tasks into smaller ones
+which allow a clearer view of each task as a whole.
+
+@subsection name Naming conventions
+
+There is a naming convention which is not obligatory but it is followed in this
+tutorial:
+
+- Functions triggered before the event happens. These establish a request.
+- \b foo_send(...) - this function is called first and it includes the
+  creation of tevent request - tevent req structure. It does not block
+  anything, it simply creates a request, sets a callback (foo done) and lets
+  the program continue
+- Functions as a result of event.
+- \b foo_done(...) - this function contains code providing for handling itself
+  and based upon its results, the request is set either as a done or, if an
+  error occurs, the request is set as a failure.
+- \b foo_recv(...) - this function contains code which should, if demanded,
+  access the result data and make them further visible. The foo state should
+  be deallocated from memory when the request’s processing is over and
+  therefore all computed data up to this point would be lost.
+
+As was already mentioned, specific naming subsumes not only functions but also
+the data themselves:
+
+- \b foo_state - this is a structure. It contains all the data necessary for
+  the asynchronous task.
+
+@subsection cr_req Creating a New Asynchronous Request
+
+The first step for working asynchronously is the allocation of memory
+requirements. As in previous cases, the talloc context is required, upon which
+the asynchronous request will be tied. The next step is the creation of the
+request itself.
+
+@code
+struct tevent_req* tevent_req_create (TALLOC_CTX *mem_ctx, void **pstate, #type)
+@endcode
+
+The pstate is the pointer to the private data. The necessary amount of memory
+(based on data type) is allocated during this call. Within this same memory
+area all the data from the asynchronous request that need to be preserved for
+some time should be kept.
+
+<b>Dealing with a lack of memory</b>
+
+The verification of the returned pointer against NULL is necessary in order to
+identify a potential lack of memory. There is a special function which helps
+with this check tevent_req_nomem().
+
+It handles verification both of the talloc memory allocation and of the
+associated tevent request, and is therefore a very useful function for avoiding
+unexpected situations. It can easily be used when checking the availability of
+further memory resources that are required for a tevent request. Imagine an
+example where additional memory needs arise although no memory resources are
+currently available.
+
+@code
+bar = talloc(mem_ctx, struct foo);
+if(tevent_req_nomem (bar, req)) {
+  // handling a problem
+}
+@endcode
+
+This code ensures that the variable bar, which contains NULL as a result of the
+unsuccessful satisfaction of its memory requirements, is noticed, and also that
+the tevent request req declares it exceeds memory capacity, which implies the
+impossibility of finishing the request as originally programmed.
+
+
+@subsection fini_req Finishing a Request
+
+Marking each request as finished is an essential principle of the tevent
+library. Without marking the request as completed - either successfully or with
+an error - the tevent loop could not let the appropriate callback be triggered.
+It is important to understand that this would be a significant threat, because
+it is not usually a question of one single function which prints some text on a
+screen, but rather the request is itself probably just a link in a series of
+other requests. Stopping one request would stop the others, memory resources
+would not be freed, file descriptors might remain open, communication via
+socket could be interrupted, and so on. Therefore it is important to think
+about finishing requests, either successfully or not, and also to prepare
+functions for all possible scenarios, so that the the callbacks do not process
+data that are actually invalid or, even worse, in fact non-existent meaning
+that a segmentation fault may arise.
+
+<ul>
+<li>\b Manually - This is the most common type of finishing request. Calling
+this function sets the request as a TEVENT_REQ_DONE. This is the only purpose
+of this function and it should be used when everything went well. Typically it
+is used within the done functions.
+
+@code
+void tevent_req_done (struct tevent_req *req)
+@endcode
+Alternatively, the request can end up being unsuccessful.
+@code
+bool tevent_req_error (struct tevent_req *req, uint64_t error)
+@endcode
+
+The second argument takes the number of an error (declared by the programmer,
+for example in an enumerated variable). The function tevent_req_error() sets
+the status of the request as a TEVENT_REQ_USER_ERROR and also stores the code
+of error within the structure so it can be used, for example for debugging. The
+function returns true, if marking the request as an error was processed with no
+problem - value error passed to this function is not equal to 1.</li>
+
+<li>
+<b>Setting up a timeout for request</b> - A request can be finished virtually,
+or if the process takes too much time, it can be timed out. This is considered
+as an error of the request and it leads to calling callback.  In the
+background, this timeout is set through a time event (described in
+@subpage tevent_events ) which eventually triggers an operation marking the
+request as a TEVENT_REQ_TIMED_OUT (can not be considered as successfully
+finished). In case a time out was already set, this operation will overwrite it
+with a new time value (so the timeout may be lengthened) and if everything is
+set properly, it returns true.
+
+@code
+bool tevent_req_set_endtime(struct tevent_req *req,
+                            struct tevent_context *ev,
+                            struct timeval endtime);
+@endcode
+</li>
+
+
+<li><b>Premature Triggering</b> - Imagine a situation in which some part of a
+nested subrequest ended up with a failure and it is still required to trigger a
+callback. Such as example might result from lack of memory leading to the
+impossibility of allocating enough memory requirements for the event to start
+processing another subrequest, or from a clear intention to skip other
+procedures and trigger the callback regardless of other progress. In these
+cases, the function tevent_req_post() is very handy and offers this option.
+
+@code
+struct tevent_req* tevent_req_post (struct tevent_req *req,
+                                    struct tevent_context *ev);
+@endcode
+
+A request finished in this way does not behave as a time event nor as a file
+descriptor event but as a immediately scheduled event, and therefore it will be
+treated according the description laid down in @subpage tevent_events .
+</li>
+</ul>
+
+
+@section nested Subrequests - Nested Requests
+
+To create more complex and interconnected asynchronous operations, it is
+possible to submerge a request into another and thus create a so-called
+subrequest. Subrequests are not represented by any other special structure but
+they are created from tevent_req_create(). This diagram shows the nesting and
+life time of each request. The table below describes the same in words, and
+shows the triggering of functions during the application run.
+
+<i>Wrapper</i> represents the trigger of the whole cascade of (sub)requests. It
+may be e.g. a time or file descriptor event, or another request that was
+created at a specific time by the function tevent_wakeup_send() which is a
+slightly exceptional method of creating
+
+@code
+struct tevent_req *tevent_wakeup_send(TALLOC_CTX *mem_ctx,
+                                      struct tevent_context *ev,
+                                      struct timeval wakeup_time);
+@endcode
+
+By calling this function, it is possible to create a tevent request which is
+actually the return value of this function. In summary, it sets the time value
+of the tevent request’s creation.  While using this function it is necessary to
+use another function in the subrequest’s callback to check for any problems
+tevent_wakeup_recv() )
+
+@image html tevent_subrequest.png
+
+Comprehensive example containing features from this chapter is especially by
+reason of nested subrequests very long and therefore it is located as an
+example on the attached CD. Description and explanation is placed within the
+source code itself (subrequest.c) and enclosed file README. The example is
+available <a href="subrequest_example.zip">here</a>.
+
+*/

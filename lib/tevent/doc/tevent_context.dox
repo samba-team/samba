@@ -1,0 +1,75 @@
+/**
+@page tevent_context Chapter 1: Tevent context
+
+@section context Tevent context
+
+Tevent context is an essential logical unit of tevent library. For working with
+events at least one such context has to be created - allocated, initialized.
+Then, events which are meant to be caught and handled have to be registered
+within this specific context. Reason for subordinating events to a tevent
+context structure rises from the fact that several context can be created and
+each of them is processed at different time. So, there can be 1 context
+containing just file descriptor events, another one taking care of signal and
+time events and the third one which keeps information about the rest.
+
+Tevent loops are the part of the library which represents the mechanism where
+noticing events and triggering handlers actually happens. They accept just one
+argument - tevent context structure. Therefore if theoretically an infinity
+loop (tevent_loop_wait) was called, only those arguments which belong to the
+passed tevent context structure can be caught and invoked within this call.
+Although some more signal events were registered (but within some other
+context) they will not be noticed.
+
+@subsection Example
+
+First lines which handle <code>mem_ctx</code> belong to talloc library
+knowledge but because of the fact that tevent uses the talloc library for its
+mechanisms it is necessary to understand a bit talloc as well. For more
+information about working with talloc, please visit <a
+href="http://talloc.samba.org/">talloc website</a> where tutorial and
+documentation are located.
+
+Tevent context structure <code>*event_ctx</code> represents the unit which will
+further contain information about registered events. It is created via calling
+tevent_context_init().
+
+@code
+TALLOC_CTX *mem_ctx = talloc_new(NULL);
+if (mem_ctx == NULL) {
+    // error handling
+}
+
+struct tevent_context *ev_ctx = tevent_context_init(mem_ctx);
+if(ev_ctx == NULL) {
+    // error handling
+}
+@endcode
+
+Tevent context has a structure containing lots of information. It include lists
+of all events which are divided according their type and are in order showing
+the sequence as they came.
+
+@image html tevent_context_stucture.png
+
+In addition to the lists shown in the diagram, the tevent context also contains
+many other data (e.g. information about the available system mechanism for
+triggering callbacks).
+
+@section tevent_loops Tevent loops
+
+Tevent loops are the dispatcher for events. They catch them and trigger the
+handlers. In the case of longer processes, the program spends most of its time
+at this point waiting for events, invoking handlers and waiting for another
+event again. There are 2 types of loop available for use in tevent library:
+
+<ul>
+<li>int tevent_loop_wait()</li>
+<li>int tevent_loop_once()</li>
+</ul>
+
+Both of functions accept just one parametr (tevent context) and the only
+difference lies in the fact that the first loop can theoretically last for ever
+but the second one will wait just for a single one event to catch and then the
+loop breaks and the program continue.
+
+*/
