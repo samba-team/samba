@@ -33,6 +33,9 @@ get_proc ()
 	sys/net/ipv4/conf/all/arp_filter)
 	    echo 1
 	    ;;
+	fs/nfsd/threads)
+	    echo "$FAKE_NFSD_THREAD_PIDS" | wc -w
+	    ;;
 	*)
 	    echo "get_proc: \"$1\" not implemented"
 	    exit 1
