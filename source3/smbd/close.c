@@ -246,6 +246,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	const struct security_token *del_nt_token = NULL;
 	bool got_tokens = false;
 	bool normal_close;
+	int ret_flock;
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
@@ -467,6 +468,14 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	if (changed_user) {
 		/* unbecome user. */
 		pop_sec_ctx();
+	}
+
+	/* remove filesystem sharemodes */
+	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, 0, 0);
+	if (ret_flock == -1) {
+		DEBUG(2, ("close_remove_share_mode: removing kernel flock for "
+					"%s failed: %s\n", fsp_str_dbg(fsp),
+					strerror(errno)));
 	}
 
 	if (!del_share_mode(lck, fsp)) {
