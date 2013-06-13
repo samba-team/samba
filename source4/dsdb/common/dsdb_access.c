@@ -64,9 +64,9 @@ int dsdb_get_sd_from_ldb_message(struct ldb_context *ldb,
 	enum ndr_err_code ndr_err;
 
 	sd_element = ldb_msg_find_element(acl_res, "nTSecurityDescriptor");
-	if (!sd_element) {
-		*sd = NULL;
-		return LDB_SUCCESS;
+	if (sd_element == NULL) {
+		return ldb_error(ldb, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS,
+				 "nTSecurityDescriptor is missing");
 	}
 	*sd = talloc(mem_ctx, struct security_descriptor);
 	if(!*sd) {
