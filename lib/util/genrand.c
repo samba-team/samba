@@ -163,24 +163,22 @@ static void do_filehash(const char *fname, unsigned char *the_hash)
  above...
 **************************************************************/
 
-static int do_reseed(bool use_fd, int fd)
+static int do_reseed(int fd)
 {
 	unsigned char seed_inbuf[40];
 	uint32_t v1, v2; struct timeval tval; pid_t mypid;
 	int reseed_data = 0;
 
-	if (use_fd) {
-		if (fd == -1) {
-			fd = open( "/dev/urandom", O_RDONLY,0);
-			if (fd != -1) {
-				smb_set_close_on_exec(fd);
-			}
+	if (fd == -1) {
+		fd = open( "/dev/urandom", O_RDONLY,0);
+		if (fd != -1) {
+			smb_set_close_on_exec(fd);
 		}
-		if (fd != -1
-		    && (read(fd, seed_inbuf, sizeof(seed_inbuf)) == sizeof(seed_inbuf))) {
-			seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
-			return fd;
-		}
+	}
+	if (fd != -1
+	    && (read(fd, seed_inbuf, sizeof(seed_inbuf)) == sizeof(seed_inbuf))) {
+		seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
+		return fd;
 	}
 
 	/* Add in some secret file contents */
@@ -244,7 +242,7 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 			}
 		}
 
-		urand_fd = do_reseed(true, urand_fd);
+		urand_fd = do_reseed(urand_fd);
 		done_reseed = true;
 	}
 
