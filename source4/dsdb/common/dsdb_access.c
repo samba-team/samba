@@ -101,10 +101,7 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
-	/* Theoretically we pass the check if the object has no sd */
-	if (!sd) {
-		return LDB_SUCCESS;
-	}
+
 	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
 	if (guid) {
 		if (!insert_in_object_tree(mem_ctx, guid, access_mask, NULL,
