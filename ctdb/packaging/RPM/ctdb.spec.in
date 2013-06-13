@@ -31,9 +31,9 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 # If the above options are changed then mandate minimum system
 # versions.
-%define libtalloc_version 2.0.6
-%define libtdb_version 1.2.9
-%define libtevent_version 0.9.13
+%define libtalloc_version 2.0.8
+%define libtdb_version 1.2.11
+%define libtevent_version 0.9.18
 
 %if ! %with_included_talloc
 BuildRequires: libtalloc-devel >= %{libtalloc_version}
