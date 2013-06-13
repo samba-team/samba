@@ -129,6 +129,19 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # CTDB_MONITOR_FREE_MEMORY_WARN=100
 # CTDB_MONITOR_FREE_MEMORY=10
 
+# Should the 60.nfs monitor event try to correct the number of nfsd
+# threads?  This works around a limitation in some NFS initscripts
+# where some threads can be stuck in host filesystem calls (perhaps
+# due to slow storage), a restart occurs, some threads don't exit, the
+# start only adds the missing number of threads, the stuck threads
+# exit, and the result is a lower than expected thread count.  Note
+# that if you must also set $RPCNFSDCOUNT (RedHat/Debian) or
+# $USE_KERNEL_NFSD_NUMBER (SUSE) in your NFS configuration so the
+# monitoring code knows how many threads there should be - if neither
+# of these are set then this option will be ignored.  The default is
+# to not do this check.
+# CTDB_MONITOR_NFS_THREAD_COUNT="yes"
+
 # When set to yes, the CTDB node will start in DISABLED mode and not host
 # any public ip addresses. The administrator needs to explicitely enable
 # the node with "ctdb enable"

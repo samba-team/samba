@@ -26,6 +26,29 @@ service_reconfigure ()
     } >/dev/null 2>&1
 }
 
+nfs_check_thread_count ()
+{
+    [ "$CTDB_MONITOR_NFS_THREAD_COUNT" = "yes" ] || return 0
+
+    # If $RPCNFSDCOUNT/$USE_KERNEL_NFSD_NUMBER isn't set then we could
+    # guess the default from the initscript.  However, let's just
+    # assume that those using the default don't care about the number
+    # of threads and that they have switched on this feature in error.
+    _configured_threads="${RPCNFSDCOUNT:-${USE_KERNEL_NFSD_NUMBER}}"
+    [ -n "$_configured_threads" ] || return 0
+
+    # nfsd should be running the configured number of threads.  If
+    # there are a different number of threads then tell nfsd the
+    # correct number.  
+    _running_threads=$(get_proc "fs/nfsd/threads")
+    # Intentionally not arithmetic comparison - avoids extra errors
+    # when get_proc() fails...
+    if [ "$_running_threads" != "$_configured_threads" ] ; then
+	echo "Attempting to correct number of nfsd threads from ${_running_threads} to ${_configured_threads}"
+	set_proc "fs/nfsd/threads" "$_configured_threads"
+    fi
+}
+
 loadconfig
 
 [ "$NFS_SERVER_MODE" != "ganesha" ] || exit 0
@@ -70,6 +93,8 @@ case "$1" in
 	update_tickles 2049
 
 	nfs_check_rpc_services
+
+	nfs_check_thread_count
 
 	# Every 10 minutes, update the statd state database for which
 	# clients need notifications
