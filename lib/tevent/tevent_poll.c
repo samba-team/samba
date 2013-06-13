@@ -546,7 +546,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	   the handler to remove itself when called */
 
 	for (fde = ev->fd_events; fde; fde = fde->next) {
-		unsigned idx = fde->additional_flags;
+		uint64_t idx = fde->additional_flags;
 		struct pollfd *pfd;
 		uint16_t flags = 0;
 
