@@ -803,7 +803,6 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	unsigned char orig_trust_passwd_hash[16];
 	unsigned char new_trust_passwd_hash[16];
-	fstring trust_passwd;
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
@@ -822,19 +821,7 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	E_md4hash(r->in.machine_password, new_trust_passwd_hash);
 
 	/* according to WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED */
-	fstrcpy(trust_passwd, r->in.admin_password);
-	if (!strlower_m(trust_passwd)) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/*
-	 * Machine names can be 15 characters, but the max length on
-	 * a password is 14.  --jerry
-	 */
-
-	trust_passwd[14] = '\0';
-
-	E_md4hash(trust_passwd, orig_trust_passwd_hash);
+	E_md4hash(r->in.admin_password, orig_trust_passwd_hash);
 
 	status = rpccli_netlogon_set_trust_password(pipe_hnd, mem_ctx,
 						    r->in.machine_name,
