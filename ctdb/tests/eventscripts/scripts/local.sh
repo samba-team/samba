@@ -556,6 +556,7 @@ setup_nfs ()
     export CTDB_NFS_SKIP_SHARE_CHECK="no"
 
     export CTDB_MONITOR_NFS_THREAD_COUNT RPCNFSDCOUNT FAKE_NFSD_THREAD_PIDS
+    export CTDB_NFS_DUMP_STUCK_THREADS
 
     # Reset the failcounts for nfs services.
     eventscript_call eval rm -f '$ctdb_fail_dir/nfs_*'
@@ -675,7 +676,19 @@ program $_pn version $_ver is not available"
 			case "${_progname}${_action#restart}" in
 			    nfsd)
 				_t="\
-Trying to restart NFS service
+Trying to restart NFS service"
+
+				if [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] ; then
+				    for _pid in $FAKE_NFSD_THREAD_PIDS ; do
+					_t="\
+$_t
+Stack trace for stuck nfsd thread [${_pid}]:
+[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff"
+				    done
+				fi
+
+				_t="\
+${_t}
 Starting nfslock: OK
 Starting nfs: OK"
 				;;

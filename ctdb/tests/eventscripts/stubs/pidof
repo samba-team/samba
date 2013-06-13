@@ -1,0 +1,10 @@
+#!/bin/sh
+
+case "$1" in
+    nfsd)
+	echo "$FAKE_NFSD_THREAD_PIDS"
+	;;
+    *)
+	echo "pidof: \"$1\" not implemented"
+	exit 1
+esac

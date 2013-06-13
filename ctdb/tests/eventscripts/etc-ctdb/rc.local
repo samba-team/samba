@@ -36,6 +36,9 @@ get_proc ()
 	fs/nfsd/threads)
 	    echo "$FAKE_NFSD_THREAD_PIDS" | wc -w
 	    ;;
+	*/stack)
+	    echo "[<ffffffff87654321>] fake_stack_trace_for_pid_${1}+0x0/0xff"
+	    ;;
 	*)
 	    echo "get_proc: \"$1\" not implemented"
 	    exit 1
