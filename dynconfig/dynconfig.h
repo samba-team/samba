@@ -30,7 +30,6 @@ const char *get_dyn_##name(void);			\
 const char *set_dyn_##name(const char *newpath);	\
 bool is_default_dyn_##name(void);
 
-/* these are in common with s3 */
 DEFINE_DYN_CONFIG_PROTO(SBINDIR)
 DEFINE_DYN_CONFIG_PROTO(BINDIR)
 DEFINE_DYN_CONFIG_PROTO(CONFIGFILE) /**< Location of smb.conf file. **/
@@ -49,8 +48,6 @@ DEFINE_DYN_CONFIG_PROTO(SMB_PASSWD_FILE)
 DEFINE_DYN_CONFIG_PROTO(PRIVATE_DIR)
 DEFINE_DYN_CONFIG_PROTO(LOCALEDIR)
 DEFINE_DYN_CONFIG_PROTO(NMBDSOCKETDIR)
-
-/* these are not in s3 */
 DEFINE_DYN_CONFIG_PROTO(DATADIR)
 DEFINE_DYN_CONFIG_PROTO(SETUPDIR)
 DEFINE_DYN_CONFIG_PROTO(WINBINDD_SOCKET_DIR)
