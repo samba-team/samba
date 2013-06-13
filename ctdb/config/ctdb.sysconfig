@@ -142,6 +142,12 @@ CTDB_RECOVERY_LOCK="/some/place/on/shared/storage"
 # to not do this check.
 # CTDB_MONITOR_NFS_THREAD_COUNT="yes"
 
+
+# The number of nfsd threads to dump stack traces for if some are
+# still alive after stopping NFS during a restart.  The default is to
+# dump no stack traces.
+# CTDB_NFS_DUMP_STUCK_THREADS=5
+
 # When set to yes, the CTDB node will start in DISABLED mode and not host
 # any public ip addresses. The administrator needs to explicitely enable
 # the node with "ctdb enable"

@@ -779,6 +779,7 @@ startstop_nfs() {
 			set_proc "fs/nfsd/threads" 0
 			service nfsserver stop > /dev/null 2>&1
 			pkill -9 nfsd
+			nfs_dump_some_threads
 			service nfsserver start
 			;;
 		esac
@@ -798,6 +799,7 @@ startstop_nfs() {
 			service nfs stop > /dev/null 2>&1
 			service nfslock stop > /dev/null 2>&1
 			pkill -9 nfsd
+			nfs_dump_some_threads
 			service nfslock start
 			service nfs start
 			;;
@@ -808,6 +810,28 @@ startstop_nfs() {
 		exit 1
 		;;
 	esac
+}
+
+# Dump up to the configured number of nfsd thread backtraces.
+nfs_dump_some_threads ()
+{
+    [ -n "$CTDB_NFS_DUMP_STUCK_THREADS" ] || return 0
+
+    # Optimisation to avoid running an unnecessary pidof
+    [ $CTDB_NFS_DUMP_STUCK_THREADS -gt 0 ] || return 0
+
+    _count=0
+    for _pid in $(pidof nfsd) ; do
+	[ $_count -le $CTDB_NFS_DUMP_STUCK_THREADS ] || break
+
+	# Do this first to avoid racing with thread exit
+	_stack=$(get_proc "${_pid}/stack" 2>/dev/null)
+	if [ -n "$_stack" ] ; then
+	    echo "Stack trace for stuck nfsd thread [${_pid}]:"
+	    echo "$_stack"
+	    _count=$(($_count + 1))
+	fi
+    done
 }
 
 ########################################################
