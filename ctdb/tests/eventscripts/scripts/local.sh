@@ -792,11 +792,6 @@ EOF
 
 # Any args are passed to the eventscript.
 
-# Eventscript tracing can be done by setting:
-#   EVENTSCRIPTS_TESTS_TRACE="sh -x"
-
-# or similar.  This will almost certainly make a test fail but is
-# useful for debugging.
 simple_test ()
 {
     [ -n "$event" ] || die 'simple_test: $event not set'
@@ -901,7 +896,11 @@ iterate_test ()
 	    shift 2
 	fi
 
-	_out=$($EVENTSCRIPTS_TESTS_TRACE "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
+	_trace=""
+	if $TEST_COMMAND_TRACE ; then
+	    _trace="sh -x"
+	fi
+	_out=$($_trace "${CTDB_BASE}/events.d/$script" "$event" $args 2>&1)
 	_rc=$?
 
     if [ -n "$OUT_FILTER" ] ; then
