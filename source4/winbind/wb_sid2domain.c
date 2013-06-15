@@ -98,6 +98,20 @@ static struct tevent_req *_wb_sid2domain_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
+	if (dom_sid_equal(&global_sid_Builtin, sid) ||
+	    dom_sid_in_domain(&global_sid_Builtin, sid)) {
+		ctx = wb_get_dom_info_send(state, service,
+					   "BUILTIN", NULL,
+					   &global_sid_Builtin);
+		if (tevent_req_nomem(ctx, req)) {
+			return tevent_req_post(req, ev);
+		}
+		ctx->async.fn = wb_sid2domain_recv_dom_info;
+		ctx->async.private_data = req;
+
+		return req;
+	}
+
 	ctx = wb_cmd_lookupsid_send(state, service, &state->sid);
 	if (tevent_req_nomem(ctx, req)) {
 		return tevent_req_post(req, ev);

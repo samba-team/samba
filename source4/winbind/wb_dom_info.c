@@ -67,9 +67,10 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	state->info->sid = dom_sid_dup(state->info, sid);
 	if (state->info->sid == NULL) goto failed;
 
-	if ((lpcfg_server_role(service->task->lp_ctx) != ROLE_DOMAIN_MEMBER) &&
+	if (dom_sid_equal(sid, &global_sid_Builtin) || 
+	    ((lpcfg_server_role(service->task->lp_ctx) != ROLE_DOMAIN_MEMBER) &&
 	    dom_sid_equal(sid, service->primary_sid) &&
-	    service->sec_channel_type != SEC_CHAN_RODC) {
+	     service->sec_channel_type != SEC_CHAN_RODC)) {
 		struct interface *ifaces = NULL;
 
 		load_interface_list(state, service->task->lp_ctx, &ifaces);
