@@ -610,7 +610,8 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (!cli->dc) {
-		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+		uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
+					NETLOGON_NEG_SUPPORTS_AES;
 		result = rpccli_netlogon_setup_creds(cli,
 						     cli->desthost, /* server name */
 						     lp_workgroup(), /* domain */

@@ -136,7 +136,8 @@ NTSTATUS cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state *cli,
 						 const char *password,
 						 struct rpc_pipe_client **presult)
 {
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
+				NETLOGON_NEG_SUPPORTS_AES;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
@@ -175,7 +176,8 @@ NTSTATUS cli_rpc_pipe_open_schannel(struct cli_state *cli,
 				    const char *domain,
 				    struct rpc_pipe_client **presult)
 {
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
+				NETLOGON_NEG_SUPPORTS_AES;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
