@@ -249,6 +249,11 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
+	if (tree->u.substring.chunks == NULL) {
+		*matched = false;
+		return LDB_SUCCESS;
+	}
+
 	if (a->syntax->canonicalise_fn(ldb, ldb, &value, &val) != 0) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
