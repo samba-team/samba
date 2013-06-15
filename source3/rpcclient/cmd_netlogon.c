@@ -1120,7 +1120,8 @@ static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	NTSTATUS result;
 	const char *server_name = cli->desthost;
-	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
+				NETLOGON_NEG_SUPPORTS_AES;
 	struct netr_Authenticator clnt_creds, srv_cred;
 	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 	unsigned char trust_passwd_hash[16];

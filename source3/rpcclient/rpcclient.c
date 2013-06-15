@@ -758,7 +758,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 		if (ndr_syntax_id_equal(&cmd_entry->table->syntax_id,
 					&ndr_table_netlogon.syntax_id)) {
-			uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+			uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS |
+						NETLOGON_NEG_SUPPORTS_AES;
 			enum netr_SchannelType sec_channel_type;
 			uchar trust_password[16];
 			const char *machine_account;
