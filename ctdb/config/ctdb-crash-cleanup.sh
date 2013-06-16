@@ -22,7 +22,7 @@ loadconfig ctdb
 [ -f "$CTDB_PUBLIC_ADDRESSES" ] || \
     die "No public addresses file found. Can't clean up."
 
-drop_all_public_ips "ctdb-crash-cleanup.sh"
+drop_all_public_ips 2>&1 | script_log "ctdb-crash-cleanup.sh"
 
 if [ -n "$CTDB_NATGW_PUBLIC_IP" ] ; then
     drop_ip "$CTDB_NATGW_PUBLIC_IP" "ctdb-crash-cleanup.sh"
