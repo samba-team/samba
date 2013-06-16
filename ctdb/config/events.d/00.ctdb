@@ -75,6 +75,10 @@ case "$1" in
 	    echo "mkdir -p $CTDB_VARDIR/state - failed - $ret"
 	    exit $ret
 	}
+
+	# make sure we drop any ips that might still be held if
+	# previous instance of ctdb got killed with -9 or similar
+	drop_all_public_ips
 	;;
 
      setup)

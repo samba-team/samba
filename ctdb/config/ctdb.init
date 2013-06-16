@@ -247,10 +247,6 @@ start() {
 
     export_debug_variables
 
-    # make sure we drop any ips that might still be held if previous
-    # instance of ctdb got killed with -9 or similar
-    drop_all_public_ips 2>&1 | script_log "ctdb.init"
-
     if select_tdb_checker ; then
 	check_persistent_databases || return $?
 	check_non_persistent_databases
