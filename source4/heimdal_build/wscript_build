@@ -948,7 +948,7 @@ HEIMDAL_BINARY('samba4kinit',
 
 HEIMDAL_BINARY('samba4kgetcred',
     'kuser/kgetcred.c',
-    deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto',
+    deps='krb5 heimntlm roken HEIMDAL_VERS hcrypto asn1',
     install=False
     )
 
