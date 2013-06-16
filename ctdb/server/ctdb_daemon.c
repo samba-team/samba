@@ -1213,6 +1213,13 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	/* force initial recovery for election */
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_INIT);
+	ret = ctdb_event_script(ctdb, CTDB_EVENT_INIT);
+	if (ret != 0) {
+		ctdb_fatal(ctdb, "Failed to run init event\n");
+	}
+	ctdb_run_notification_script(ctdb, "init");
+
 	if (strcmp(ctdb->transport, "tcp") == 0) {
 		int ctdb_tcp_init(struct ctdb_context *);
 		ret = ctdb_tcp_init(ctdb);
@@ -1257,13 +1264,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	if (ctdb_attach_databases(ctdb) != 0) {
 		ctdb_fatal(ctdb, "Failed to attach to databases\n");
 	}
-
-	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_INIT);
-	ret = ctdb_event_script(ctdb, CTDB_EVENT_INIT);
-	if (ret != 0) {
-		ctdb_fatal(ctdb, "Failed to run init event\n");
-	}
-	ctdb_run_notification_script(ctdb, "init");
 
 	/* start frozen, then let the first election sort things out */
 	if (!ctdb_blocking_freeze(ctdb)) {
