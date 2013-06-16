@@ -136,19 +136,6 @@ set_ctdb_variables () {
     done
 }
 
-wait_until_ready () {
-    _timeout="${1:-10}" # default is 10 seconds
-
-    _count=0
-    while ! ctdb runstate setup >/dev/null 2>&1 ; do
-	if [ $_count -ge $_timeout ] ; then
-	    return 1
-	fi
-	sleep 1
-	_count=$(($_count + 1))
-    done
-}
-
 ############################################################
 
 ctdb_check_args "$@"
@@ -176,8 +163,6 @@ case "$1" in
 	;;
 
      setup)
-        # Make sure CTDB daemon is ready to process requests
-	wait_until_ready || die "CTDB did not become ready for setup"
 	# Set any tunables from the config file
 	set_ctdb_variables || die "Failed to set CTDB tunables"
 	;;
