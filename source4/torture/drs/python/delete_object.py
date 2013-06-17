@@ -74,7 +74,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
             self.assertTrue(not("objectCategory" in user_cur))
             self.assertTrue(not("sAMAccountType" in user_cur))
             self.assertTrue(dodn in str(user_cur["dn"]),
-                            "User %s is deleted but it is not located under %s!" % (name_orig, dodn))
+                            "User %s is deleted but it is not located under %s (found at %s)!" % (name_orig, dodn, user_cur["dn"]))
             self.assertEquals(name_cur, name_orig + "\nDEL:" + guid_str)
         else:
             self.assertTrue(not("isDeleted" in user_cur))
