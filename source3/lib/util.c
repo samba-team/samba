@@ -1517,9 +1517,14 @@ static char *xx_path(const char *name, const char *rootpath)
 	trim_string(fname,"","/");
 
 	if (!directory_exist(fname)) {
-		if (!mkdir(fname,0755))
-			DEBUG(1, ("Unable to create directory %s for file %s. "
-			      "Error was %s\n", fname, name, strerror(errno)));
+		if (mkdir(fname,0755) == -1) {
+			/* Did someone else win the race ? */
+			if (errno != EEXIST) {
+				DEBUG(1, ("Unable to create directory %s for file %s. "
+					"Error was %s\n", fname, name, strerror(errno)));
+				return NULL;
+			}
+		}
 	}
 
 	return talloc_asprintf_append(fname, "/%s", name);
