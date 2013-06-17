@@ -8,13 +8,41 @@ This is is the latest stable release of Samba 3.6.
 
 Major enhancements in Samba 3.6.16 include:
 
-o  
+o  Fix crash bug during Win8 sync (bug #9822).
+o  Properly handle Oplock breaks in compound requests (bug #9722).
 
 
 Changes since 3.6.15:
 ---------------------
 
-o   Andrew Bartlett <abartlet@samba.org>
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9722: Properly handle Oplock breaks in compound requests.
+    * BUG 9822: Fix crash bug during Win8 sync.
+
+
+o   Anand Avati <avati@redhat.com>
+    * BUG 9927: errno gets overwritten in call to check_parent_exists().
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 8997: Change libreplace GPL source to LGPL.
+    * BUG 9900: is_printer_published GUID retrieval.
+
+
+o   Peng Haitao <penght@cn.fujitsu.com>
+    * BUG 9941: Fix a bug of drvupgrade of smbcontrol.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9868: Don't know how to make LIBNDR_PREG_OBJ.
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * BUG 9688: Remove "experimental" label on "max protocol=SMB2" parameter.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9881: Check for system libtevent.
 
 
 ######################################################################
