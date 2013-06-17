@@ -85,6 +85,8 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	struct sockaddr_in syslog_sin;
 	struct ctdb_syslog_state *state;
 	struct tevent_fd *fde;
+	int startup_fd[2];
+	int ret = -1;
 
 	state = talloc(ctdb, struct ctdb_syslog_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -95,23 +97,42 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		return -1;
 	}
 	
-	ctdb->syslogd_pid = ctdb_fork(ctdb);
-	if (ctdb->syslogd_pid == (pid_t)-1) {
-		printf("Failed to create syslog child process\n");
+	if (pipe(startup_fd) != 0) {
+		printf("Failed to create syslog startup pipe\n");
 		close(state->fd[0]);
 		close(state->fd[1]);
 		talloc_free(state);
 		return -1;
 	}
-
-	syslogd_is_started = 1;
+	
+	ctdb->syslogd_pid = ctdb_fork(ctdb);
+	if (ctdb->syslogd_pid == (pid_t)-1) {
+		printf("Failed to create syslog child process\n");
+		close(state->fd[0]);
+		close(state->fd[1]);
+		close(startup_fd[0]);
+		close(startup_fd[1]);
+		talloc_free(state);
+		return -1;
+	}
 
 	if (ctdb->syslogd_pid != 0) {
+		ssize_t n;
+		int dummy;
+
 		DEBUG(DEBUG_ERR,("Starting SYSLOG child process with pid:%d\n", (int)ctdb->syslogd_pid));
 
 		close(state->fd[1]);
 		set_close_on_exec(state->fd[0]);
 
+		close(startup_fd[1]);
+		n = read(startup_fd[0], &dummy, sizeof(dummy));
+		close(startup_fd[0]);
+		if (n < sizeof(dummy)) {
+			return -1;
+		}
+
+		syslogd_is_started = 1;
 		return 0;
 	}
 
@@ -122,7 +143,9 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	syslog(LOG_ERR, "Starting SYSLOG daemon with pid:%d", (int)getpid());
 
 	close(state->fd[0]);
+	close(startup_fd[0]);
 	set_close_on_exec(state->fd[1]);
+	set_close_on_exec(startup_fd[1]);
 	fde = event_add_fd(ctdb->ev, state, state->fd[1], EVENT_FD_READ,
 		     ctdb_syslog_terminate_handler, state);
 	tevent_fd_set_auto_close(fde);
@@ -130,7 +153,8 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	state->syslog_fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (state->syslog_fd == -1) {
 		printf("Failed to create syslog socket\n");
-		return -1;
+		close(startup_fd[1]);
+		return ret;
 	}
 
 	set_close_on_exec(state->syslog_fd);
@@ -142,11 +166,8 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	if (bind(state->syslog_fd, (struct sockaddr *)&syslog_sin,
 		 sizeof(syslog_sin)) == -1)
 	{
-		if (errno == EADDRINUSE) {
-			/* this is ok, we already have a syslog daemon */
-			_exit(0);
-		}
 		printf("syslog daemon failed to bind to socket. errno:%d(%s)\n", errno, strerror(errno));
+		close(startup_fd[1]);
 		_exit(10);
 	}
 
@@ -154,6 +175,11 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 	fde = event_add_fd(ctdb->ev, state, state->syslog_fd, EVENT_FD_READ,
 		     ctdb_syslog_handler, state);
 	tevent_fd_set_auto_close(fde);
+
+	/* Tell parent that we're up */
+	ret = 0;
+	write(startup_fd[1], &ret, sizeof(ret));
+	close(startup_fd[1]);
 
 	event_loop_wait(ctdb->ev);
 
