@@ -120,98 +120,6 @@ export_debug_variables ()
     export CTDB_DEBUG_HUNG_SCRIPT CTDB_EXTERNAL_TRACE
 }
 
-# Log given message or stdin to either syslog or a CTDB log file
-do_log ()
-{
-    script_log "ctdb.init" "$@"
-}
-
-select_tdb_checker ()
-{
-    # Find the best TDB consistency check available.
-    use_tdb_tool_check=false
-    if which tdbtool >/dev/null 2>&1 && \
-	echo "help" | tdbtool | grep -q check ; then
-
-	use_tdb_tool_check=true
-    elif which tdbtool >/dev/null 2>&1 && which tdbdump >/dev/null 2>&1 ; then
-	    do_log <<EOF
-WARNING: The installed 'tdbtool' does not offer the 'check' subcommand.
- Using 'tdbdump' for database checks.
- Consider updating 'tdbtool' for better checks!
-EOF
-    elif which tdbdump >/dev/null 2>&1 ; then
-	do_log <<EOF
-WARNING: 'tdbtool' is not available.
- Using 'tdbdump' to check the databases.
- Consider installing a recent 'tdbtool' for better checks!
-EOF
-    else
-	do_log <<EOF
-WARNING: Cannot check databases since neither
- 'tdbdump' nor 'tdbtool check' is available.
- Consider installing tdbtool or at least tdbdump!
-EOF
-        return 1
-    fi
-}
-
-check_tdb ()
-{
-    _db="$1"
-
-    if $use_tdb_tool_check ; then
-	# tdbtool always exits with 0  :-(
-	if tdbtool "$_db" check 2>/dev/null |
-	    grep -q "Database integrity is OK" ; then
-	    return 0
-	else
-	    return 1
-	fi
-    else
-	tdbdump "$_db" >/dev/null 2>/dev/null
-	return $?
-    fi
-}
-
-check_persistent_databases ()
-{
-    _dir="${CTDB_DBDIR_PERSISTENT:-${CTDB_DBDIR:-/var/ctdb}/persistent}"
-    mkdir -p "$_dir" 2>/dev/null
-
-    [ "${CTDB_MAX_PERSISTENT_CHECK_ERRORS:-0}" = "0" ] || return 0
-
-    for _db in $(ls "$_dir/"*.tdb.*[0-9] 2>/dev/null) ; do
-	check_tdb $_db || {
-	    do_log "Persistent database $_db is corrupted! CTDB will not start."
-	    return 1
-	}
-    done
-}
-
-check_non_persistent_databases ()
-{
-    _dir="${CTDB_DBDIR:-/var/ctdb}"
-    mkdir -p "$_dir" 2>/dev/null
-
-    for _db in $(ls "${_dir}/"*.tdb.*[0-9] 2>/dev/null) ; do
-	check_tdb $_db || {
-	    _backup="${_db}.$(date +'%Y%m%d.%H%M%S.%N').corrupt"
-	    do_log <<EOF
-WARNING: database ${_db} is corrupted.
- Moving to backup ${_backup} for later analysis.
-EOF
-	    mv "$_db" "$_backup"
-
-	    # Now remove excess backups
-	    ls -td "${_db}."*".corrupt" |
-	    tail -n +$((${CTDB_MAX_CORRUPT_DB_BACKUPS:-10} + 1)) |
-	    xargs rm -f
-	    
-	}
-    done
-}
-
 set_retval() {
     return $1
 }
@@ -246,11 +154,6 @@ start() {
     build_ctdb_options
 
     export_debug_variables
-
-    if select_tdb_checker ; then
-	check_persistent_databases || return $?
-	check_non_persistent_databases
-    fi
 
     if [ "$CTDB_SUPPRESS_COREFILE" = "yes" ]; then
 	ulimit -c 0
