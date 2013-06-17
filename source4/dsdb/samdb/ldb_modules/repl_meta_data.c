@@ -2917,7 +2917,6 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		"whenChanged", NULL};
 	unsigned int i, el_count = 0;
 	enum deletion_state deletion_state, next_deletion_state;
-	bool enabled;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
@@ -2995,45 +2994,57 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 
 	msg->dn = old_dn;
 
-	if (deletion_state == OBJECT_NOT_DELETED){
-		/* consider the SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE flag */
-		disallow_move_on_delete =
-			(ldb_msg_find_attr_as_int(old_msg, "systemFlags", 0)
-				& SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+	/* consider the SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE flag */
+	disallow_move_on_delete =
+		(ldb_msg_find_attr_as_int(old_msg, "systemFlags", 0)
+		 & SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
 
-		/* work out where we will be renaming this object to */
-		if (!disallow_move_on_delete) {
-			ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn,
-							  &new_dn);
-			if (ret != LDB_SUCCESS) {
-				/* this is probably an attempted delete on a partition
-				 * that doesn't allow delete operations, such as the
-				 * schema partition */
-				ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
-							   ldb_dn_get_linearized(old_dn));
-				talloc_free(tmp_ctx);
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-		} else {
+	/* work out where we will be renaming this object to */
+	if (!disallow_move_on_delete) {
+		ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn,
+						  &new_dn);
+		/*
+		 * Deleted Objects itself appears to be deleted, but
+		 * should also not be moved, and we should not move
+		 * objects if we can't find the deleted objects DN
+		 */
+		if (re_delete && (ret != LDB_SUCCESS || ldb_dn_compare(old_dn, new_dn) == 0)) {
 			new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
 			if (new_dn == NULL) {
 				ldb_module_oom(module);
 				talloc_free(tmp_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
+		} else if (ret != LDB_SUCCESS) {
+			/* this is probably an attempted delete on a partition
+			 * that doesn't allow delete operations, such as the
+			 * schema partition */
+			ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
+					       ldb_dn_get_linearized(old_dn));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
+	} else {
+		new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
+		if (new_dn == NULL) {
+			ldb_module_oom(module);
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
 
+	if (deletion_state == OBJECT_NOT_DELETED) {
 		/* get the objects GUID from the search we just did */
 		guid = samdb_result_guid(old_msg, "objectGUID");
 
 		/* Add a formatted child */
 		retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
-						rdn_name,
-						ldb_dn_escape_value(tmp_ctx, *rdn_value),
-						GUID_string(tmp_ctx, &guid));
+					    rdn_name,
+					    ldb_dn_escape_value(tmp_ctx, *rdn_value),
+					    GUID_string(tmp_ctx, &guid));
 		if (!retb) {
 			DEBUG(0,(__location__ ": Unable to add a formatted child to dn: %s",
-					ldb_dn_get_linearized(new_dn)));
+				 ldb_dn_get_linearized(new_dn)));
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -3046,6 +3057,30 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 			return ret;
 		}
 		msg->elements[el_count++].flags = LDB_FLAG_MOD_REPLACE;
+	} else {
+		/*
+		 * No matter what has happened with other renames etc, try again to
+		 * get this to be under the deleted DN. See MS-DRSR 5.160 RemoveObj
+		 */
+
+		struct ldb_dn *rdn = ldb_dn_copy(tmp_ctx, old_dn);
+		retb = ldb_dn_remove_base_components(rdn, ldb_dn_get_comp_num(rdn) - 1);
+		if (!retb) {
+			DEBUG(0,(__location__ ": Unable to add a prepare rdn of %s",
+				 ldb_dn_get_linearized(rdn)));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		SMB_ASSERT(ldb_dn_get_comp_num(rdn) == 1);
+
+		retb = ldb_dn_add_child(new_dn, rdn);
+		if (!retb) {
+			DEBUG(0,(__location__ ": Unable to add rdn %s to base dn: %s",
+				 ldb_dn_get_linearized(rdn),
+				 ldb_dn_get_linearized(new_dn)));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	/*
@@ -3258,7 +3293,11 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		return ret;
 	}
 
-	if (deletion_state == OBJECT_NOT_DELETED) {
+	/*
+	 * No matter what has happned with other renames, try again to
+	 * get this to be under the deleted DN.
+	 */
+	if (strcmp(ldb_dn_get_linearized(old_dn), ldb_dn_get_linearized(new_dn)) != 0) {
 		/* now rename onto the new DN */
 		ret = dsdb_module_rename(module, old_dn, new_dn, DSDB_FLAG_NEXT_MODULE, req);
 		if (ret != LDB_SUCCESS){
@@ -4647,7 +4686,7 @@ static int replmd_replicated_apply_isDeleted(struct replmd_replicated_request *a
 		}
 
 		/*
-		 * This is the guts of the call, call bark
+		 * This is the guts of the call, call back
 		 * into our delete code, but setting the
 		 * re_delete flag so we delete anything that
 		 * shouldn't be there on a deleted or recycled
