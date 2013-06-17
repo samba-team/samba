@@ -1555,6 +1555,34 @@ main() {
 
         if have_cluster_support:
             conf.CHECK_CODE('''
+               #define NO_CONFIG_H
+               #include "replace.h"
+               #include "system/wait.h"
+               #include "system/network.h"
+               #include <talloc.h>
+               #include <tdb.h>
+               #include <ctdb.h>
+
+               int main(void)
+               {
+                   int i = (int)CTDB_WANT_READONLY;
+                   return 0;
+               }
+               ''',
+               'HAVE_CTDB_WANT_READONLY_DECL',
+               addmain=False,
+               includes=includes,
+               msg='Checking for CTDB readonly records support')
+
+            if not conf.CONFIG_SET('HAVE_CTDB_WANT_READONLY_DECL'):
+                if not Options.options.enable_old_ctdb:
+                    have_cluster_support = False
+                    ctdb_broken = "support for CTDB readonly records missing"
+                else:
+                    Logs.warn("ignoring missing READONLY support (--enable-old-ctdb)")
+
+        if have_cluster_support:
+            conf.CHECK_CODE('''
                 #define NO_CONFIG_H
                 #include "replace.h"
                 #include "system/wait.h"
