@@ -37,35 +37,38 @@
 
 	<para>This module is stackable.</para>
 
-	<para>Up to samba version 3.4.x a fixed character mapping was used.
-	The invalid windows characters  \ / : * ? " &lt; &gt; | and the blank
-	character were mapped in a hardcoded way.
+	<para>The parameter "catia:mappings" specifies the mapping on a
+	per-character basis, see below.
 	</para>
-
-	<para>Starting with samba-3.5.0 a more flexible mapping was introduced.
-	The new parameter "catia:mappings" now specifies the mapping on a char by char
-	basis using the notation: unix hex char 0x.. : windows hex char 0x..
-	Multiple character mappings are separated by a comma.
-	</para>
-
-
 </refsect1>
+
+
+
+<refsect1>
+        <title>OPTIONS</title>
+        <variablelist>
+		<varlistentry>
+		<term>catia:mappings = SERVER_HEX_CHAR:CLIENT_HEX_CHAR
+		</term>
+		<listitem>
+		<para>SERVER_HEX_CHAR specifies a 0x prefixed hexedecimal
+		character code that, when included in a Samba server-side
+		filename, will be mapped to CLIENT_HEX_CHAR for the CIFS
+		client.</para>
+		<para>The same mapping occurs in the opposite direction.
+		Multiple character mappings are separated by a comma.</para>
+		</listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
 
 
 <refsect1>
 	<title>EXAMPLES</title>
 
-	<para>Samba versions up to 3.4.x:</para>
-	<para>Map Catia filenames on the [CAD] share:</para>
-
-<programlisting>
-        <smbconfsection name="[CAD]"/>
-	<smbconfoption name="path">/data/cad</smbconfoption>
-	<smbconfoption name="vfs objects">catia</smbconfoption>
-</programlisting>
-
-	<para>Samba versions 3.5.0 and later:</para>
-	<para>Map Catia filenames on the [CAD] share:</para>
+	<para>Map server-side quotation-marks (") to client-side diaeresis
+	(&#x00a8;) on filenames in the [CAD] share:</para>
 
 <programlisting>
         <smbconfsection name="[CAD]"/>
@@ -74,7 +77,7 @@
 	<smbconfoption name="catia:mappings">0x22:0xa8</smbconfoption>
 </programlisting>
 
-        <para>To get the full formerly fixed mappings:</para>
+        <para>Perform comprehensive mapping of common Catia filename characters:</para>
 <programlisting>
         <smbconfsection name="[CAD]"/>
 	<smbconfoption name="path">/data/cad</smbconfoption>
@@ -82,17 +85,21 @@
 	<smbconfoption name="catia:mappings">0x22:0xa8,0x2a:0xa4,0x2f:0xf8,0x3a:0xf7,0x3c:0xab,0x3e:0xbb,0x3f:0xbf,0x5c:0xff,0x7c:0xa6</smbconfoption>
 </programlisting>
 
-        <para>Unix filename to be translated (Note that the path delimiter "/" is not used here):
+        <para>Server-side filename to be translated (Note that the path delimiter "/" is not used here):
 	</para>
 	<para>a\a:a*a?a"a&lt;a&gt;a|a</para>
 
-	<para>Resulting windows filename:</para>
+	<para>Resulting filename, as seen by the client:</para>
 
 	<para>a&#x00ff;a&#x00f7;a&#x00a4;a&#x00bf;a&#x00a8;a&#x00ab;a&#x00bb;a&#x00a6;a
 	</para>
+</refsect1>
 
-        <para>Note that the character mapping must work in BOTH directions
-	(unix -&gt; windows and windows -&gt; unix) to get unique and existing file names!
+<refsect1>
+	<title>CAVEATS</title>
+
+	<para>Character mapping must work in BOTH directions (server -&gt;
+	client and client -&gt; server) to get unique and existing file names!
 	</para>
 
 	<para>A NOT working example:</para>
@@ -104,20 +111,20 @@
 	<smbconfoption name="catia:mappings">0x3a:0x5f</smbconfoption>
 </programlisting>
 
-         <para>Here the colon ":" is mapped to the underscore "_".</para>
-	 <para>Assuming a unix filename "a:should_work", which is well translated
-	 to windows as "a_should_work".</para>
-	 <para>BUT the reverse mapping from windows "a_should_work" to unix
-	 will result in "a:should:work" - something like "file not found"
-	 will be returned.
-	 </para>
+	<para>Here the colon ":" is mapped to the underscore "_".</para>
+	<para>Assuming a server-side filename "a:should_work", which is
+	translated to "a_should_work" for the client.</para>
+	<para>BUT the reverse mapping from client "a_should_work" to server
+	will result in "a:should:work" - something like "file not found"
+	will be returned.
+	</para>
 
 </refsect1>
 
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for all versions up to 4.0.3 of the Samba suite.
+	<para>This man page is correct for Samba versions from 3.5.0 to 4.0.6.
 	</para>
 </refsect1>
 
