@@ -79,16 +79,16 @@
         <smbconfsection name="[CAD]"/>
 	<smbconfoption name="path">/data/cad</smbconfoption>
 	<smbconfoption name="vfs objects">catia</smbconfoption>
-	<smbconfoption name="catia:mappings">0x22:0xa8,0x2a:0xa4,0x2f:0xf8,0x3a:0xf7,0x3c:0xab,0x3e:0xbb,0x3f:0xbf,0x5c:0xff,0x7c:0xa6,0x20:0xb1</smbconfoption>
+	<smbconfoption name="catia:mappings">0x22:0xa8,0x2a:0xa4,0x2f:0xf8,0x3a:0xf7,0x3c:0xab,0x3e:0xbb,0x3f:0xbf,0x5c:0xff,0x7c:0xa6</smbconfoption>
 </programlisting>
 
         <para>Unix filename to be translated (Note that the path delimiter "/" is not used here):
 	</para>
-	<para>a\a:a*a?a"a&lt;a&gt;a|a a</para>
+	<para>a\a:a*a?a"a&lt;a&gt;a|a</para>
 
 	<para>Resulting windows filename:</para>
 
-	<para>a&#x00ff;a&#x00f7;a&#x00a4;a&#x00bf;a&#x00a8;a&#x00ab;a&#x00bb;a&#x00a6;a&#x00b1;a
+	<para>a&#x00ff;a&#x00f7;a&#x00a4;a&#x00bf;a&#x00a8;a&#x00ab;a&#x00bb;a&#x00a6;a
 	</para>
 
         <para>Note that the character mapping must work in BOTH directions
