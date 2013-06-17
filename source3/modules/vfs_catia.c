@@ -222,7 +222,7 @@ static bool init_mappings(connection_struct *conn,
 static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 					      const char *name_in,
 					      char **mapped_name,
-					      int direction)
+					enum vfs_translate_direction direction)
 {
 	static smb_ucs2_t *tmpbuf = NULL;
 	smb_ucs2_t *ptr;
