@@ -3273,12 +3273,12 @@ bin/test_lp_load@EXEEXT@: $(BINARY_PREREQS) $(TEST_LP_LOAD_OBJ) @BUILD_POPT@ $(L
 		$(LDAP_LIBS) $(LIBWBCLIENT_LIBS) \
 		$(POPT_LIBS) $(LIBTALLOC_LIBS) $(LIBTEVENT_LIBS) $(LIBTDB_LIBS)
 
-bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
+bin/dbwrap_tool@EXEEXT@: $(DBWRAP_TOOL_OBJ) $(LIBTALLOC) $(LIBTDB) $(LIBTEVENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DBWRAP_TOOL_OBJ)\
 		$(LDFLAGS) $(DYNEXP) $(LIBS) \
 		$(LDAP_LIBS) \
-		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
+		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBTEVENT_LIBS)
 
 install-dbwrap_tool:: bin/dbwrap_tool@EXEEXT@
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
