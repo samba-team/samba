@@ -115,6 +115,14 @@ setup_generic ()
     rm -f "$FAKE_IP_STATE"/*/*
     rm -f "$FAKE_IP_STATE"/* 2>/dev/null || true
     rmdir "$FAKE_IP_STATE"/* 2>/dev/null || true
+
+
+    export CTDB_DBDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
+    mkdir -p "${CTDB_DBDIR}/persistent"
+
+    export FAKE_TDBTOOL_SUPPORTS_CHECK="yes"
+    export FAKE_TDB_IS_OK
+    export FAKE_DATE_OUTPUT
 }
 
 tcp_port_down ()

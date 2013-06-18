@@ -87,6 +87,7 @@ ip_addr_show ()
     dev=""
     primary=true
     secondary=true
+    _to=""
     while [ -n "$1" ] ; do
 	case "$1" in
 	    dev)
@@ -98,6 +99,9 @@ ip_addr_show ()
 		;;
 	    secondary)
 		secondary=true ; primary=false ; shift
+		;;
+	    to)
+		_to="$2" ; shift 2
 		;;
 	    *)
 	        # Assume an interface name
@@ -131,26 +135,35 @@ ${n}: ${dev}: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state 
 EOF
 	if $primary && [ -r "$pf" ] ; then
 	    read local <"$pf"
-	    calc_brd
-	    cat <<EOF
+	    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
+		calc_brd
+		cat <<EOF
     inet ${local} brd ${brd} scope global ${dev}
 EOF
+	    fi
 	fi
 	if $secondary && [ -r "$sf" ] ; then
 	    while read local ; do
-		calc_brd
-		cat <<EOF
+		if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
+		    calc_brd
+		    cat <<EOF
     inet ${local} brd ${brd} scope global secondary ${dev}
 EOF
+		fi
 	    done <"$sf"
 	fi
-	cat <<EOF
+	if [ -z "$_to" ] ; then
+	    cat <<EOF
        valid_lft forever preferred_lft forever
 EOF
+	fi
     }
     n=1
     for dev in $devices ; do
-	show_iface
+	if [ -z "$_to" ] || \
+	    grep -F "${_to%/*}/" "${FAKE_IP_STATE}/addresses/${dev}-"* >/dev/null ; then
+	    show_iface
+	fi
 	n=$(($n + 1))
     done
 }
