@@ -1336,6 +1336,12 @@ int main(int argc, char **argv, char **envp)
 	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
 
+	/*
+	 * We want total control over the permissions on created files,
+	 * so set our umask to 0.
+	 */
+	umask(0);
+
 	setup_logging("winbindd", DEBUG_DEFAULT_STDOUT);
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
