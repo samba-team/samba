@@ -790,15 +790,19 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
-/********************************************************************
- Really just intended to be called by smbd
-********************************************************************/
-
-NTSTATUS pdb_create_builtin_alias(uint32 rid)
+/**
+* @brief Add a new group mapping
+*
+* @param[in] gid gid to use to store the mapping. If gid is 0,
+*                new gid will be allocated from winbind
+*
+* @return Normal NTSTATUS return
+*/
+NTSTATUS pdb_create_builtin_alias(uint32 rid, gid_t gid)
 {
 	struct dom_sid sid;
 	enum lsa_SidType type;
-	gid_t gid;
+	gid_t gidformap;
 	GROUP_MAP *map;
 	NTSTATUS status;
 	const char *name = NULL;
@@ -820,15 +824,21 @@ NTSTATUS pdb_create_builtin_alias(uint32 rid)
 		goto done;
 	}
 
-	if (!winbind_allocate_gid(&gid)) {
-		DEBUG(3, ("pdb_create_builtin_alias: Could not get a gid out of winbind\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
+	if (gid == 0) {
+		if (!winbind_allocate_gid(&gidformap)) {
+			DEBUG(3, ("pdb_create_builtin_alias: Could not get a "
+				  "gid out of winbind\n"));
+			status = NT_STATUS_ACCESS_DENIED;
+			goto done;
+		}
+	} else {
+		gidformap = gid;
 	}
 
-	DEBUG(10, ("Creating alias %s with gid %u\n", name, (unsigned)gid));
+	DEBUG(10, ("Creating alias %s with gid %u\n", name,
+		   (unsigned) gidformap));
 
-	map->gid = gid;
+	map->gid = gidformap;
 	sid_copy(&map->sid, &sid);
 	map->sid_name_use = SID_NAME_ALIAS;
 	map->nt_name = talloc_strdup(map, name);

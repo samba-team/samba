@@ -123,7 +123,7 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 					   enum lsa_SidType sid_name_use,
 					   GROUP_MAP **rmap, size_t *num_entries,
 					   bool unix_only);
-NTSTATUS pdb_create_builtin_alias(uint32_t rid);
+NTSTATUS pdb_create_builtin_alias(uint32_t rid, gid_t gid);
 
 
 /* passdb headers */

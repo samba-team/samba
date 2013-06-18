@@ -81,7 +81,7 @@ NTSTATUS pdb_create_builtin(uint32_t rid)
 		if (!lp_winbind_nested_groups() || !winbind_ping()) {
 			return NT_STATUS_PROTOCOL_UNREACHABLE;
 		}
-		status = pdb_create_builtin_alias(rid);
+		status = pdb_create_builtin_alias(rid, 0);
 	}
 	return status;
 }
