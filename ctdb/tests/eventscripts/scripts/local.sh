@@ -275,9 +275,10 @@ setup_ctdb ()
     export FAKE_CTDB_PNN="${2:-0}"
     echo "Setting up CTDB with PNN ${FAKE_CTDB_PNN}"
 
+    export CTDB_PUBLIC_ADDRESSES="${CTDB_BASE}/public_addresses"
     if [ -n "$3" ] ; then
 	echo "Setting up CTDB_PUBLIC_ADDRESSES: $3"
-	export CTDB_PUBLIC_ADDRESSES=$(mktemp)
+	CTDB_PUBLIC_ADDRESSES=$(mktemp)
 	for _i in $3 ; do
 	    _ip="${_i%@*}"
 	    _ifaces="${_i#*@}"
