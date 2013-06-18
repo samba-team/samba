@@ -6435,6 +6435,11 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 	return NT_STATUS_OK;
 }
 
+static bool ldapsam_is_responsible_for_wellknown(struct pdb_methods *m)
+{
+	return true;
+}
+
 /**********************************************************************
  Initialise the normal mode for pdb_ldap
  *********************************************************************/
@@ -6472,6 +6477,8 @@ NTSTATUS pdb_ldapsam_init_common(struct pdb_methods **pdb_method,
 	(*pdb_method)->search_users = ldapsam_search_users;
 	(*pdb_method)->search_groups = ldapsam_search_groups;
 	(*pdb_method)->search_aliases = ldapsam_search_aliases;
+	(*pdb_method)->is_responsible_for_wellknown =
+					ldapsam_is_responsible_for_wellknown;
 
 	if (lp_parm_bool(-1, "ldapsam", "trusted", False)) {
 		(*pdb_method)->enum_group_members = ldapsam_enum_group_members;
