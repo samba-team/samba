@@ -34,6 +34,7 @@
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
 #include "passdb/pdb_secrets.h"
+#include "lib/util_sid_passdb.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
@@ -1217,6 +1218,12 @@ bool pdb_gid_to_sid(gid_t gid, struct dom_sid *sid)
 bool pdb_sid_to_id(const struct dom_sid *sid, struct unixid *id)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+
+	/* only ask the backend if it is responsible */
+	if (!sid_check_object_is_for_passdb(sid)) {
+		return false;
+	}
+
 	return pdb->sid_to_id(pdb, sid, id);
 }
 
