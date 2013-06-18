@@ -2122,6 +2122,11 @@ static NTSTATUS pdb_samba_dsdb_enum_trusteddoms(struct pdb_methods *m,
 	return NT_STATUS_OK;
 }
 
+static bool pdb_samba_dsdb_is_responsible_for_wellknown(struct pdb_methods *m)
+{
+	return true;
+}
+
 static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 {
 	m->name = "samba_dsdb";
@@ -2173,6 +2178,8 @@ static void pdb_samba_dsdb_init_methods(struct pdb_methods *m)
 	m->set_trusteddom_pw = pdb_samba_dsdb_set_trusteddom_pw;
 	m->del_trusteddom_pw = pdb_samba_dsdb_del_trusteddom_pw;
 	m->enum_trusteddoms = pdb_samba_dsdb_enum_trusteddoms;
+	m->is_responsible_for_wellknown =
+				pdb_samba_dsdb_is_responsible_for_wellknown;
 }
 
 static void free_private_data(void **vp)
