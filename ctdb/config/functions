@@ -1007,7 +1007,7 @@ drop_ip ()
 	_maskbits="$1"
 	_iface="$2"
 	echo "Removing public address $_addr/$_maskbits from device $_iface"
-	ip addr del $_addr/$_maskbits dev $_iface >/dev/null 2>&1
+	delete_ip_from_iface $_iface $_addr $_maskbits >/dev/null 2>&1
     fi
 }
 
