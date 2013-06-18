@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "lib/util_sid_passdb.h"
 #include "passdb/machine_sid.h"
+#include "passdb.h"
 
 /**
  * check whether this is an object-sid that should
@@ -28,23 +29,29 @@
  */
 bool sid_check_object_is_for_passdb(const struct dom_sid *sid)
 {
-	if (sid_check_is_in_our_sam(sid)) {
+	if (sid_check_is_in_our_sam(sid) && pdb_is_responsible_for_our_sam()) {
 		return true;
 	}
 
-	if (sid_check_is_in_builtin(sid)) {
+	if (sid_check_is_in_builtin(sid) && pdb_is_responsible_for_builtin()) {
 		return true;
 	}
 
-	if (sid_check_is_in_wellknown_domain(sid)) {
+	if (sid_check_is_in_wellknown_domain(sid) &&
+	    pdb_is_responsible_for_wellknown())
+	{
 		return true;
 	}
 
-	if (sid_check_is_in_unix_users(sid)) {
+	if (sid_check_is_in_unix_users(sid) &&
+	    pdb_is_responsible_for_unix_users())
+	{
 		return true;
 	}
 
-	if (sid_check_is_in_unix_groups(sid)) {
+	if (sid_check_is_in_unix_groups(sid) &&
+	    pdb_is_responsible_for_unix_groups())
+	{
 		return true;
 	}
 
@@ -56,43 +63,55 @@ bool sid_check_object_is_for_passdb(const struct dom_sid *sid)
  */
 bool sid_check_is_for_passdb(const struct dom_sid *sid)
 {
-	if (sid_check_is_our_sam(sid)) {
+	if (sid_check_is_our_sam(sid) && pdb_is_responsible_for_our_sam()) {
 		return true;
 	}
 
-	if (sid_check_is_in_our_sam(sid)) {
+	if (sid_check_is_in_our_sam(sid) && pdb_is_responsible_for_our_sam()) {
 		return true;
 	}
 
-	if (sid_check_is_builtin(sid)) {
+	if (sid_check_is_builtin(sid) && pdb_is_responsible_for_builtin()) {
 		return true;
 	}
 
-	if (sid_check_is_in_builtin(sid)) {
+	if (sid_check_is_in_builtin(sid) && pdb_is_responsible_for_builtin()) {
 		return true;
 	}
 
-	if (sid_check_is_wellknown_domain(sid, NULL)) {
+	if (sid_check_is_wellknown_domain(sid, NULL) &&
+	    pdb_is_responsible_for_wellknown())
+	{
 		return true;
 	}
 
-	if (sid_check_is_in_wellknown_domain(sid)) {
+	if (sid_check_is_in_wellknown_domain(sid) &&
+	    pdb_is_responsible_for_wellknown())
+	{
 		return true;
 	}
 
-	if (sid_check_is_unix_users(sid)) {
+	if (sid_check_is_unix_users(sid) &&
+	    pdb_is_responsible_for_unix_users())
+	{
 		return true;
 	}
 
-	if (sid_check_is_in_unix_users(sid)) {
+	if (sid_check_is_in_unix_users(sid) &&
+	    pdb_is_responsible_for_unix_users())
+	{
 		return true;
 	}
 
-	if (sid_check_is_unix_groups(sid)) {
+	if (sid_check_is_unix_groups(sid) &&
+	    pdb_is_responsible_for_unix_groups())
+	{
 		return true;
 	}
 
-	if (sid_check_is_in_unix_groups(sid)) {
+	if (sid_check_is_in_unix_groups(sid) &&
+	    pdb_is_responsible_for_unix_groups())
+	{
 		return true;
 	}
 
