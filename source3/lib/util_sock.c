@@ -1237,14 +1237,17 @@ int create_pipe_sock(const char *socket_dir,
 #ifdef HAVE_UNIXSOCKET
 	struct sockaddr_un sunaddr;
 	bool ok;
-	int sock;
+	int sock = -1;
+	mode_t old_umask;
 	char *path = NULL;
+
+	old_umask = umask(0);
 
 	ok = directory_create_or_exist_strict(socket_dir,
 					      sec_initial_uid(),
 					      dir_perms);
 	if (!ok) {
-		return -1;
+		goto out_close;
 	}
 
 	/* Create the socket file */
@@ -1273,6 +1276,7 @@ int create_pipe_sock(const char *socket_dir,
 
 	SAFE_FREE(path);
 
+	umask(old_umask);
 	return sock;
 
 out_close:
@@ -1280,6 +1284,7 @@ out_close:
 	if (sock != -1)
 		close(sock);
 
+	umask(old_umask);
 	return -1;
 
 #else
