@@ -15,6 +15,10 @@ o  Properly handle Oplock breaks in compound requests (bug #9722).
 Changes since 3.6.15:
 ---------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 9881: Link dbwrap_tool and dbwrap_torture against libtevent.
+
+
 o   Jeremy Allison <jra@samba.org>
     * BUG 9722: Properly handle Oplock breaks in compound requests.
     * BUG 9822: Fix crash bug during Win8 sync.
