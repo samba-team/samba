@@ -1725,3 +1725,20 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 
 	return kill(pid, 0);
 }
+
+void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
+{
+	DEBUG(DEBUG_NOTICE,("Shutdown sequence commencing.\n"));
+	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
+	ctdb_stop_recoverd(ctdb);
+	ctdb_stop_keepalive(ctdb);
+	ctdb_stop_monitoring(ctdb);
+	ctdb_release_all_ips(ctdb);
+	ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
+	if (ctdb->methods != NULL) {
+		ctdb->methods->shutdown(ctdb);
+	}
+
+	DEBUG(DEBUG_NOTICE,("Shutdown sequence complete, exiting.\n"));
+	exit(exit_code);
+}

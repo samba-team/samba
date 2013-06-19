@@ -331,17 +331,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 
 	case CTDB_CONTROL_SHUTDOWN:
-		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
-		ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
-		ctdb_stop_recoverd(ctdb);
-		ctdb_stop_keepalive(ctdb);
-		ctdb_stop_monitoring(ctdb);
-		ctdb_release_all_ips(ctdb);
-		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
-		if (ctdb->methods != NULL) {
-			ctdb->methods->shutdown(ctdb);
-		}
-		exit(0);
+		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command.\n"));
+		ctdb_shutdown_sequence(ctdb, 0);
 
 	case CTDB_CONTROL_TAKEOVER_IPv4:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));

@@ -450,6 +450,8 @@ const char *runstate_to_string(enum ctdb_runstate runstate);
 enum ctdb_runstate runstate_from_string(const char *label);
 void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate);
 
+void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
+
 #define CTDB_MONITORING_ACTIVE		0
 #define CTDB_MONITORING_DISABLED	1
 

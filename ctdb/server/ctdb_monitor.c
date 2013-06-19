@@ -294,16 +294,7 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 		DEBUG(DEBUG_ALERT,(__location__
 				  "ctdb_recheck_persistent_health() failed (%llu times) - prepare shutdown\n",
 				  (unsigned long long)ctdb->db_persistent_check_errors));
-		ctdb_stop_recoverd(ctdb);
-		ctdb_stop_keepalive(ctdb);
-		ctdb_stop_monitoring(ctdb);
-		ctdb_release_all_ips(ctdb);
-		if (ctdb->methods != NULL) {
-			ctdb->methods->shutdown(ctdb);
-		}
-		ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
-		DEBUG(DEBUG_ALERT,("ctdb_recheck_persistent_health() failed - Stopping CTDB daemon\n"));
-		exit(11);
+		ctdb_shutdown_sequence(ctdb, 11);
 	}
 	ctdb->db_persistent_check_errors = 0;
 
