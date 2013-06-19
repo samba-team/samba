@@ -141,6 +141,7 @@ sub check_or_start($$$)
 sub wait_for_start($$)
 {
 	my ($self, $testenv_vars) = @_;
+	my $ret;
 	# give time for nbt server to register its names
 	print "delaying for nbt name registration\n";
 	sleep 2;
@@ -161,7 +162,25 @@ sub wait_for_start($$)
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
 
+	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
+	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOS_NAME} eq "rodc")) {
+	    print "waiting for working LDAP and a RID Set to be allocated\n";
+	    my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
+	    my $count = 0;
+	    my $base_dn = "DC=".join(",DC=", split(/\./, $testenv_vars->{REALM}));
+	    my $rid_set_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
+	    while (system("$ldbsearch -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$rid_set_dn\" rIDAllocationPool > /dev/null") != 0) {
+		$count++;
+		if ($count > 40) {
+		    $ret = 1;
+		    last;
+		}
+		sleep(1);
+	    }
+	}
 	print $self->getlog_env($testenv_vars);
+
+	return $ret
 }
 
 sub write_ldb_file($$$)
@@ -692,7 +711,8 @@ nogroup:x:65534:nobody
 	        NSS_WRAPPER_WINBIND_SO_PATH => Samba::nss_wrapper_winbind_so_path($self),
                 LOCAL_PATH => $ctx->{share},
                 UID_RFC2307TEST => $uid_rfc2307test,
-                GID_RFC2307TEST => $gid_rfc2307test
+                GID_RFC2307TEST => $gid_rfc2307test,
+                SERVER_ROLE => $ctx->{server_role}
 	};
 
 	return $ret;
