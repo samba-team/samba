@@ -64,7 +64,7 @@
   returns immediately. It should be called well before we
   completely run out of RIDs
  */
-static void ridalloc_poke_rid_manager(struct ldb_module *module)
+static int ridalloc_poke_rid_manager(struct ldb_module *module)
 {
 	struct imessaging_context *msg;
 	struct server_id *server;
@@ -72,26 +72,42 @@ static void ridalloc_poke_rid_manager(struct ldb_module *module)
 	struct loadparm_context *lp_ctx =
 		(struct loadparm_context *)ldb_get_opaque(ldb, "loadparm");
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	NTSTATUS status;
 
 	msg = imessaging_client_init(tmp_ctx, lp_ctx,
 				    ldb_get_event_context(ldb));
 	if (!msg) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				"Failed to send MSG_DREPL_ALLOCATE_RID, "
+				"unable init client messaging context");
 		DEBUG(3,(__location__ ": Failed to create messaging context\n"));
 		talloc_free(tmp_ctx);
-		return;
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	server = irpc_servers_byname(msg, msg, "dreplsrv");
 	if (!server) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				"Failed to send MSG_DREPL_ALLOCATE_RID, "
+				"unable to locate dreplsrv");
 		/* this means the drepl service is not running */
 		talloc_free(tmp_ctx);
-		return;
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	imessaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
+	status = imessaging_send(msg, server[0], MSG_DREPL_ALLOCATE_RID, NULL);
 
-	/* we don't care if the message got through */
+	/* Only error out if an error happened, not on STATUS_MORE_ENTRIES, ie a delayed message */
+	if (NT_STATUS_IS_ERR(status)) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				"Failed to send MSG_DREPL_ALLOCATE_RID to dreplsrv at %s: %s",
+				server_id_str(tmp_ctx, server), nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
 }
 
 
@@ -423,8 +439,16 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	}
 
 	if (!GUID_equal(&fsmo_role_guid, our_ntds_guid)) {
-		ridalloc_poke_rid_manager(module);
-		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
+		ret = ridalloc_poke_rid_manager(module);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb,
+					"Request for remote creation of "
+					"RID Set for this DC failed: %s",
+					ldb_errstring(ldb));
+		} else {
+			ldb_asprintf_errstring(ldb,
+					"Remote RID Set creation needed");
+		}
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -473,8 +497,13 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool, 
 	}
 	
 	if (!is_us) {
-		ridalloc_poke_rid_manager(module);
-		ldb_asprintf_errstring(ldb, "Remote RID Set allocation needs refresh");
+		ret = ridalloc_poke_rid_manager(module);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "Request for remote refresh of RID Set allocation failed: %s",
+					       ldb_errstring(ldb));
+		} else {
+			ldb_asprintf_errstring(ldb, "Remote RID Set refresh needed");
+		}
 		talloc_free(tmp_ctx);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -568,12 +597,9 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 			 * ask async for a new pool.
 			 */
 			ret = ridalloc_new_own_pool(module, &nridset.alloc_pool, parent);
-			if (ret == LDB_ERR_UNWILLING_TO_PERFORM) {
-				ridalloc_poke_rid_manager(module);
-				talloc_free(tmp_ctx);
-				return ret;
-			}
 			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb, "NO RID values available: %s",
+						       ldb_errstring(ldb));
 				talloc_free(tmp_ctx);
 				return ret;
 			}
@@ -616,7 +642,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 		 */
 		ret = ridalloc_new_own_pool(module, &nridset.alloc_pool, parent);
 		if (ret == LDB_ERR_UNWILLING_TO_PERFORM) {
-			ridalloc_poke_rid_manager(module);
+			ldb_reset_err_string(ldb);
 			ret = LDB_SUCCESS;
 		}
 		if (ret != LDB_SUCCESS) {
