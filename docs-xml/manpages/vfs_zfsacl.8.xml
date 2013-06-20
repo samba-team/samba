@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_zfsacl.8">
+
+<refmeta>
+	<refentrytitle>vfs_zfsacl</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.0</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_zfsacl</refname>
+	<refpurpose>ZFS ACL samba module</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = zfsacl</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The <command>zfsacl</command> VFS module is the home
+	for all ACL extensions that Samba requires for proper integration
+	with ZFS.
+	</para>
+
+	<para>Currently the zfsacl vfs module provides extensions in following areas :
+	<itemizedlist>
+	<listitem><para>NFSv4 ACL Interfaces with configurable options for ZFS</para></listitem>
+	</itemizedlist>
+	</para>
+
+	<para><command>NOTE:</command>This module follows the posix-acl behaviour
+	and hence allows permission stealing via chown. Samba might allow at a later
+	point in time, to restrict the chown via this module as such restrictions
+	are the responsibility of the underlying filesystem than of Samba.
+	</para>
+
+	<para>This module makes use of the smb.conf parameter
+	<smbconfoption name="acl map full control">acl map full control</smbconfoption>
+	When set to yes (the default), this parameter will add in the FILE_DELETE_CHILD
+	bit on a returned ACE entry for a file (not a directory) that already
+	contains all file permissions except for FILE_DELETE and FILE_DELETE_CHILD.
+	This can prevent Windows applications that request GENERIC_ALL access
+	from getting ACCESS_DENIED errors when running against a filesystem
+	with NFSv4 compatible ACLs.
+	</para>
+
+	<para>This module is stackable.</para>
+
+	<para>Since Samba 4.0 all options are per share options.</para>
+
+</refsect1>
+
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+
+		<term>nfs4:mode = [ simple | special ]</term>
+		<listitem>
+		<para>
+		Controls substitution of special IDs (OWNER@ and GROUP@) on ZFS.
+                The use of mode simple is recommended.
+                In this mode only non inheriting ACL entries for the file owner
+                and group are mapped to special IDs.
+		</para>
+
+		<para>The following MODEs are understood by the module:</para>
+		<itemizedlist>
+		<listitem><para><command>simple(default)</command> - use OWNER@ and GROUP@ special IDs for non inheriting ACEs only.</para></listitem>
+		<listitem><para><command>special(deprecated)</command> - use OWNER@ and GROUP@ special IDs in ACEs for all file owner and group ACEs.</para></listitem>
+		</itemizedlist>
+		</listitem>
+
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>nfs4:acedup = [dontcare|reject|ignore|merge]</term>
+		<listitem>
+		<para>
+		This parameter configures how Samba handles duplicate ACEs encountered in ZFS ACLs.
+		ZFS allows/creates duplicate ACE for different bits for same ID.
+		</para>
+
+		<para>Following is the behaviour of Samba for different values :</para>
+		<itemizedlist>
+		<listitem><para><command>dontcare (default)</command> - copy the ACEs as they come</para></listitem>
+		<listitem><para><command>reject</command> - stop operation and exit with error on ACL set op</para></listitem>
+		<listitem><para><command>ignore</command> - don't include the second matching ACE</para></listitem>
+		<listitem><para><command>merge</command> - bitwise OR the 2 ace.flag fields and 2 ace.mask fields of the 2 duplicate ACEs into 1 ACE</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>nfs4:chown = [yes|no]</term>
+		<listitem>
+		<para>This parameter allows enabling or disabling the chown supported
+		by the underlying filesystem. This parameter should be enabled with
+		care as it might leave your system insecure.</para>
+		<para>Some filesystems allow chown as a) giving b) stealing. It is the latter
+		that is considered a risk.</para>
+
+		<para>Following is the behaviour of Samba for different values : </para>
+		<itemizedlist>
+		<listitem><para><command>yes</command> - Enable chown if as supported by the under filesystem</para></listitem>
+		<listitem><para><command>no (default)</command> - Disable chown</para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>A ZFS mount can be exported via Samba as follows :</para>
+
+<programlisting>
+        <smbconfsection name="[samba_zfs_share]"/>
+	<smbconfoption name="vfs objects">zfsacl</smbconfoption>
+	<smbconfoption name="path">/test/zfs_mount</smbconfoption>
+	<smbconfoption name="nfs4: mode">special</smbconfoption>
+	<smbconfoption name="nfs4: acedup">merge</smbconfoption>
+</programlisting>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+	<para>This man page is correct for version 4.0.x of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+</refsect1>
+
+</refentry>
