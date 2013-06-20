@@ -29,11 +29,6 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/tsocket/tsocket.h"
 
-const char *client_name(int fd)
-{
-	return get_peer_name(fd,false);
-}
-
 const char *client_addr(int fd, char *addr, size_t addrlen)
 {
 	return get_peer_addr(fd,addr,addrlen);
