@@ -320,21 +320,8 @@ sleep_for ()
 
 _cluster_is_healthy ()
 {
-    local out x count line
-
-    out=$($CTDB -Y status 2>/dev/null) || return 1
-
-    {
-        read x
-	count=0
-        while read line ; do
-	    # We need to see valid lines if we're going to be healthy.
-	    [ "${line#:[0-9]}" != "$line" ] && count=$(($count + 1))
-	    # A line indicating a node is unhealthy causes failure.
-	    [ "${line##:*:*:*1:}" != "$line" ] && return 1
-        done
-	[ $count -gt 0 ] && return $?
-    } <<<"$out" # Yay bash!
+    $CTDB nodestatus all >/dev/null && \
+	node_has_status 0 recovered
 }
 
 cluster_is_healthy ()
