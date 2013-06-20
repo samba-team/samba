@@ -61,6 +61,7 @@ typedef struct _smbacl4_vfs_params {
 	enum smbacl4_mode_enum mode;
 	bool do_chown;
 	enum smbacl4_acedup_enum acedup;
+	bool map_full_control;
 } smbacl4_vfs_params;
 
 /*
@@ -94,11 +95,13 @@ static int smbacl4_get_vfs_params(
 	params->acedup = (enum smbacl4_acedup_enum)lp_parm_enum(
 		SNUM(conn), type_name,
 		"acedup", enum_smbacl4_acedups, e_dontcare);
+	params->map_full_control = lp_acl_map_full_control(SNUM(conn));
 
-	DEBUG(10, ("mode:%s, do_chown:%s, acedup: %s\n",
+	DEBUG(10, ("mode:%s, do_chown:%s, acedup: %s map full control:%s\n",
 		enum_smbacl4_modes[params->mode].name,
 		params->do_chown ? "true" : "false",
-		enum_smbacl4_acedups[params->acedup].name));
+		enum_smbacl4_acedups[params->acedup].name,
+		params->map_full_control ? "true" : "false"));
 
 	return 0;
 }
@@ -381,6 +384,18 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 
 		if (is_directory && (ace->aceMask & SMB_ACE4_ADD_FILE)) {
 			ace->aceMask |= SMB_ACE4_DELETE_CHILD;
+		}
+
+		if (!is_directory && params->map_full_control) {
+			/*
+			 * Do we have all access except DELETE_CHILD
+			 * (not caring about the delete bit).
+			 */
+			uint32_t test_mask = ((ace->aceMask|SMB_ACE4_DELETE|SMB_ACE4_DELETE_CHILD) &
+						SMB_ACE4_ALL_MASKS);
+			if (test_mask == SMB_ACE4_ALL_MASKS) {
+				ace->aceMask |= SMB_ACE4_DELETE_CHILD;
+			}
 		}
 
 		win_ace_flags = map_nfs4_ace_flags_to_windows_ace_flags(
