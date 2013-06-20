@@ -688,8 +688,6 @@ _ctdb_start_post ()
     echo "Forcing a recovery..."
     onnode -q 0 $CTDB recover
     sleep_for 1
-    echo "Forcing a recovery..."
-    onnode -q 0 $CTDB recover
 
     echo "ctdb is ready"
 }
@@ -749,8 +747,6 @@ restart_ctdb ()
 	echo "Forcing a recovery..."
 	onnode -q 0 $CTDB recover
 	sleep_for 1
-	echo "Forcing a recovery..."
-	onnode -q 0 $CTDB recover
 
 	# Cluster is still healthy.  Good, we're done!
 	if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
