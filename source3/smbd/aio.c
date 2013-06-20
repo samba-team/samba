@@ -959,6 +959,8 @@ static void aio_pwrite_smb2_done(struct tevent_req *req)
 	/* Unlock now we're done. */
 	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &aio_ex->lock);
 
+	mark_file_modified(fsp);
+
         status = smb2_write_complete_nosync(subreq, nwritten, err);
 
 	DEBUG(10, ("smb2: scheduled aio_write completed "
