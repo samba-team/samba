@@ -431,10 +431,11 @@ Duration of last recovery/failover: 2.248552 seconds
 
     <refsect2><title>ping</title>
       <para>
-        This command will "ping" all CTDB daemons in the cluster to verify that they are processing commands correctly.
+        This command will "ping" specified CTDB node in the cluster to
+        verify that they are running.
       </para>
       <para>
-	Example: ctdb ping
+	Example: ctdb ping -n all
       </para>
       <para>
 	Example output:
