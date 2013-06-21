@@ -296,14 +296,11 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
 			      struct lsa_EnumPrivs *r)
 {
 	struct dcesrv_handle *h;
-	struct lsa_policy_state *state;
 	uint32_t i;
 	enum sec_privilege priv;
 	const char *privname;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
 
 	i = *r->in.resume_handle;
 
