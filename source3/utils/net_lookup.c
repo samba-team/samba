@@ -321,7 +321,7 @@ static int net_lookup_kdc(struct net_context *c, int argc, const char **argv)
 
 		print_sockaddr(addr, sizeof(addr), &kdcs[i].ss);
 
-		d_printf("%s:%hd\n", addr, kdcs[i].port);
+		d_printf("%s:%u\n", addr, kdcs[i].port);
 	}
 
 	return 0;
