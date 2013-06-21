@@ -856,9 +856,10 @@
     <refsect2><title>NoIPTakeover</title>
     <para>Default: 0</para>
     <para>
-    When set to 1, ctdb will allow ip addresses to be failed over onto this
-    node. Any ip addresses that the node currently hosts will remain on the
-    node but no new ip addresses can be failed over onto the node.
+    When set to 1, ctdb will not allow IP addresses to be failed over
+    onto this node. Any IP addresses that the node currently hosts
+    will remain on the node but no new IP addresses can be failed over
+    to the node.
     </para>
     </refsect2>
 
