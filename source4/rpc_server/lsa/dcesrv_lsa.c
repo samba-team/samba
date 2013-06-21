@@ -3422,12 +3422,9 @@ static NTSTATUS dcesrv_lsa_LookupPrivValue(struct dcesrv_call_state *dce_call,
 				    struct lsa_LookupPrivValue *r)
 {
 	struct dcesrv_handle *h;
-	struct lsa_policy_state *state;
 	int id;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
 
 	id = sec_privilege_id(r->in.name->string);
 	if (id == SEC_PRIV_INVALID) {
