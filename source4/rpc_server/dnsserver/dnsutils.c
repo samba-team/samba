@@ -281,7 +281,7 @@ struct ldb_dn *dnsserver_name_to_dn(TALLOC_CTX *mem_ctx, struct dnsserver_zone *
 
 uint32_t dnsserver_zone_to_request_filter(const char *zone_name)
 {
-	uint32_t request_filter;
+	uint32_t request_filter = 0;
 
 	if (strcmp(zone_name, "..AllZones") == 0) {
 		request_filter = DNS_ZONE_REQUEST_PRIMARY
