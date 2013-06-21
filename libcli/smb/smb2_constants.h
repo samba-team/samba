@@ -157,6 +157,7 @@
 #define SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY	0x10 /* in dialect >= 0x222 */
 #define SMB2_SHARE_CAP_SCALEOUT			0x20 /* in dialect >= 0x222 */
 #define SMB2_SHARE_CAP_CLUSTER			0x40 /* in dialect >= 0x222 */
+#define SMB2_SHARE_CAP_ASYMMETRIC		0x80 /* in dialect >= 0x302 */
 
 /* SMB2 create security flags */
 #define SMB2_SECURITY_DYNAMIC_TRACKING                   0x01
