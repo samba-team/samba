@@ -3493,9 +3493,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/*
-	 * if the current recmaster do not have CTDB_CAP_RECMASTER,
-	 * but we have force an election and try to become the new
-	 * recmaster
+	 * If the current recmaster does not have CTDB_CAP_RECMASTER,
+	 * but we have, then force an election and try to become the new
+	 * recmaster.
 	 */
 	if ((rec->ctdb->nodes[rec->recmaster]->capabilities & CTDB_CAP_RECMASTER) == 0 &&
 	    (rec->ctdb->capabilities & CTDB_CAP_RECMASTER) &&
