@@ -1696,7 +1696,12 @@ CTDB_CAPABILITY_RECMASTER=no
 	sysconfig file, or by adding --notification-script=&lt;your script&gt;.
     </para>
     <para>
-      See /etc/ctdb/notify.sh for an example script.
+      See /etc/ctdb/notify.sh for an example script.  This script
+      executes files in <filename>/etc/ctdb/notify.d/</filename>, so
+      it is recommended that you handle notifications using the
+      example script and by place executable scripts in
+      <filename>/etc/ctdb/notify.d/</filename> to handle the desired
+      notifications.
     </para>
     <para>
       CTDB currently generates notifications on these state changes:
