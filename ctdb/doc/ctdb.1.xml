@@ -324,6 +324,71 @@ Recovery master:0
       </screen>
     </refsect2>
 
+    <refsect2><title>nodestatus [&lt;nodespec&gt;]</title>
+      <para>
+        This command is similar to the <command>status</command>
+        command.  It displays the "node status" subset of output.  The
+        main differences are:
+      </para>
+
+      <itemizedlist>
+	<listitem>
+	  <para>
+	    The exit code is the bitwise-OR of the flags for each
+	    specified node, while <command>ctdb status</command> exits
+	    with 0 if it was able to retrieve status for all nodes.
+	  </para>
+	</listitem>
+
+	<listitem>
+	  <para>
+	    <command>ctdb status</command> provides status information
+	    for all nodes.  <command>ctdb nodestatus</command>
+	    defaults to providing status for only the current node.
+	    If &lt;nodespec&gt; is provided then status is given for
+	    the indicated node(s).
+	  </para>
+
+	  <para>
+	    By default, <command>ctdb nodestatus</command> gathers
+	    status from the local node.  However, if invoked with "-n
+	    all" (or similar) then status is gathered from the given
+	    node(s).  In particular <command>ctdb nodestatus
+	    all</command> and <command>ctdb nodestatus -n
+	    all</command> will produce different output.  It is
+	    possible to provide 2 different nodespecs (with and
+	    without "-n") but the output is usually confusing!
+	  </para>
+	</listitem>
+      </itemizedlist>
+
+      <para>
+	A common invocation in scripts is <command>ctdb nodestatus
+	all</command> to check whether all nodes in a cluster are
+	healthy.
+      </para>
+
+      <para>
+	Example: ctdb nodestatus
+      </para>
+      <para>Example output:</para>
+      <screen format="linespecific">
+# ctdb nodestatus
+pnn:0 10.0.0.30        OK (THIS NODE)
+      </screen>
+
+      <para>
+	Example: ctdb nodestatus all
+      </para>
+      <para>Example output:</para>
+      <screen format="linespecific">
+# ctdb nodestatus all
+Number of nodes:2
+pnn:0 10.0.0.30        OK (THIS NODE)
+pnn:1 10.0.0.31        OK
+      </screen>
+    </refsect2>
+
     <refsect2><title>recmaster</title>
       <para>
         This command shows the pnn of the node which is currently the recmaster.
