@@ -3446,13 +3446,10 @@ static NTSTATUS dcesrv_lsa_LookupPrivName(struct dcesrv_call_state *dce_call,
 				   struct lsa_LookupPrivName *r)
 {
 	struct dcesrv_handle *h;
-	struct lsa_policy_state *state;
 	struct lsa_StringLarge *name;
 	const char *privname;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
-
-	state = h->data;
 
 	if (r->in.luid->high != 0) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
