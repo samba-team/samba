@@ -1,10 +1,10 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB client library implementation (server cache)
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000
    Copyright (C) John Terpstra 2000
-   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Tom Jansen (Ninja ISD) 2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@
 #include "libsmb_internal.h"
 
 /*
- * Structure we use if internal caching mechanism is used 
+ * Structure we use if internal caching mechanism is used
  * nothing fancy here.
  */
 struct smbc_server_cache {
@@ -43,13 +43,13 @@ struct smbc_server_cache {
 
 /*
  * Add a new connection to the server cache.
- * This function is only used if the external cache is not enabled 
+ * This function is only used if the external cache is not enabled
  */
 int
 SMBC_add_cached_server(SMBCCTX * context,
                        SMBCSRV * newsrv,
                        const char * server,
-                       const char * share, 
+                       const char * share,
                        const char * workgroup,
                        const char * username)
 {
@@ -105,13 +105,13 @@ failed:
 
 
 /*
- * Search the server cache for a server 
+ * Search the server cache for a server
  * returns server handle on success, NULL on error (not found)
- * This function is only used if the external cache is not enabled 
+ * This function is only used if the external cache is not enabled
  */
 SMBCSRV *
 SMBC_get_cached_server(SMBCCTX * context,
-                       const char * server, 
+                       const char * server,
                        const char * share,
                        const char * workgroup,
                        const char * user)
@@ -191,10 +191,10 @@ SMBC_get_cached_server(SMBCCTX * context,
 }
 
 
-/* 
+/*
  * Search the server cache for a server and remove it
  * returns 0 on success
- * This function is only used if the external cache is not enabled 
+ * This function is only used if the external cache is not enabled
  */
 int
 SMBC_remove_cached_server(SMBCCTX * context,
@@ -203,7 +203,7 @@ SMBC_remove_cached_server(SMBCCTX * context,
 	struct smbc_server_cache * srv = NULL;
 
 	for (srv = context->internal->server_cache; srv; srv = srv->next) {
-		if (server == srv->server) { 
+		if (server == srv->server) {
 
 			/* remove this sucker */
 			DLIST_REMOVE(context->internal->server_cache, srv);

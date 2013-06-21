@@ -1,10 +1,10 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB client library implementation (Old interface compatibility)
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000
    Copyright (C) John Terpstra 2000
-   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003, 2008
 
    This program is free software; you can redistribute it and/or modify
@@ -43,7 +43,7 @@ find_fd(int fd)
 {
 	struct smbc_compat_fdlist * f = smbc_compat_fd_in_use;
 	while (f) {
-		if (f->fd == fd) 
+		if (f->fd == fd)
 			return f->file;
 		f = f->next;
 	}
@@ -96,7 +96,7 @@ del_fd(int fd)
 	struct smbc_compat_fdlist * f = smbc_compat_fd_in_use;
 
 	while (f) {
-		if (f->fd == fd) 
+		if (f->fd == fd)
 			break;
 		f = f->next;
 	}
@@ -119,7 +119,7 @@ smbc_init(smbc_get_auth_data_fn fn,
 {
 	if (!smbc_compat_initialized) {
 		statcont = smbc_new_context();
-		if (!statcont) 
+		if (!statcont)
 			return -1;
 
                 smbc_setDebug(statcont, debug);
@@ -168,7 +168,7 @@ smbc_open(const char *furl,
 		return -1;
 
 	fd = add_fd(file);
-	if (fd == -1) 
+	if (fd == -1)
                 smbc_getFunctionClose(statcont)(statcont, file);
 	return fd;
 }
@@ -255,14 +255,14 @@ smbc_opendir(const char *durl)
 		return -1;
 
 	fd = add_fd(file);
-	if (fd == -1) 
+	if (fd == -1)
                 smbc_getFunctionClosedir(statcont)(statcont, file);
 
 	return fd;
 }
 
 int
-smbc_closedir(int dh) 
+smbc_closedir(int dh)
 {
 	SMBCFILE * file = find_fd(dh);
 	del_fd(dh);

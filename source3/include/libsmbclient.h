@@ -4,20 +4,20 @@
   Copyright (C) Andrew Tridgell 1998
   Copyright (C) Richard Sharpe 2000
   Copyright (C) John Terpsra 2000
-  Copyright (C) Tom Jansen (Ninja ISD) 2002 
+  Copyright (C) Tom Jansen (Ninja ISD) 2002
   Copyright (C) Derrell Lipman 2003-2008
 
-   
+
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation; either version 3 of the License, or
   (at your option) any later version.
-   
+
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-   
+
   You should have received a copy of the GNU General Public License
   along with this program; if not, see <http://www.gnu.org/licenses/>.
   =====================================================================*/
@@ -37,7 +37,7 @@ extern "C" {
 #endif
 
 /*-------------------------------------------------------------------*/
-/* The following are special comments to instruct DOXYGEN (automated 
+/* The following are special comments to instruct DOXYGEN (automated
  * documentation tool:
 */
 /** \defgroup libsmbclient
@@ -70,7 +70,7 @@ extern "C" {
 *   \ingroup libsmbclient
 *   Functions that don't fit in to other categories
 */
-/*-------------------------------------------------------------------*/   
+/*-------------------------------------------------------------------*/
 
 /* Make sure we have the following includes for now ... */
 #include <sys/types.h>
@@ -96,19 +96,19 @@ extern "C" {
  * Structure that represents a directory entry.
  *
  */
-struct smbc_dirent 
+struct smbc_dirent
 {
 	/** Type of entity.
 	    SMBC_WORKGROUP=1,
-	    SMBC_SERVER=2, 
+	    SMBC_SERVER=2,
 	    SMBC_FILE_SHARE=3,
 	    SMBC_PRINTER_SHARE=4,
 	    SMBC_COMMS_SHARE=5,
 	    SMBC_IPC_SHARE=6,
 	    SMBC_DIR=7,
 	    SMBC_FILE=8,
-	    SMBC_LINK=9,*/ 
-	unsigned int smbc_type; 
+	    SMBC_LINK=9,*/
+	unsigned int smbc_type;
 
 	/** Length of this smbc_dirent in bytes
 	 */
@@ -117,14 +117,14 @@ struct smbc_dirent
 	 *  null terminator)
 	 */
 	unsigned int commentlen;
-	/** Points to the null terminated comment string 
+	/** Points to the null terminated comment string
 	 */
 	char *comment;
 	/** The length of the name string in bytes (does not include
 	 *  null terminator)
 	 */
 	unsigned int namelen;
-	/** Points to the null terminated name string 
+	/** Points to the null terminated name string
 	 */
 	char name[1];
 };
@@ -207,24 +207,24 @@ typedef int smbc_bool;
  *
  */
 #ifndef _CLIENT_H
-struct print_job_info 
+struct print_job_info
 {
 	/** numeric ID of the print job
 	 */
 	unsigned short id;
-    
+
 	/** represents print job priority (lower numbers mean higher priority)
 	 */
 	unsigned short priority;
-    
+
 	/** Size of the print job
 	 */
 	size_t size;
-    
+
 	/** Name of the user that owns the print job
 	 */
 	char user[128];
-  
+
 	/** Name of the print job. This will have no name if an anonymous print
 	 *  file was opened. Ie smb://server/printer
 	 */
@@ -238,17 +238,17 @@ struct print_job_info
 
 
 /**@ingroup structure
- * Server handle 
+ * Server handle
  */
 typedef struct _SMBCSRV  SMBCSRV;
 
 /**@ingroup structure
- * File or directory handle 
+ * File or directory handle
  */
 typedef struct _SMBCFILE SMBCFILE;
 
 /**@ingroup structure
- * File or directory handle 
+ * File or directory handle
  */
 typedef struct _SMBCCTX SMBCCTX;
 
@@ -292,25 +292,25 @@ typedef struct _SMBCCTX SMBCCTX;
  * @param wg        Pointer to buffer containing a "hint" for the
  *                  workgroup to be authenticated.  Should be filled in
  *                  with the correct workgroup if the hint is wrong.
- * 
+ *
  * @param wglen     The size of the workgroup buffer in bytes
  *
  * @param un        Pointer to buffer containing a "hint" for the
  *                  user name to be use for authentication. Should be
  *                  filled in with the correct workgroup if the hint is
  *                  wrong.
- * 
+ *
  * @param unlen     The size of the username buffer in bytes
  *
- * @param pw        Pointer to buffer containing to which password 
+ * @param pw        Pointer to buffer containing to which password
  *                  copied
- * 
+ *
  * @param pwlen     The size of the password buffer in bytes
- *           
+ *
  */
-typedef void (*smbc_get_auth_data_fn)(const char *srv, 
+typedef void (*smbc_get_auth_data_fn)(const char *srv,
                                       const char *shr,
-                                      char *wg, int wglen, 
+                                      char *wg, int wglen,
                                       char *un, int unlen,
                                       char *pw, int pwlen);
 /**@ingroup callback
@@ -333,26 +333,26 @@ typedef void (*smbc_get_auth_data_fn)(const char *srv,
  * @param wg        Pointer to buffer containing a "hint" for the
  *                  workgroup to be authenticated.  Should be filled in
  *                  with the correct workgroup if the hint is wrong.
- * 
+ *
  * @param wglen     The size of the workgroup buffer in bytes
  *
  * @param un        Pointer to buffer containing a "hint" for the
  *                  user name to be use for authentication. Should be
  *                  filled in with the correct workgroup if the hint is
  *                  wrong.
- * 
+ *
  * @param unlen     The size of the username buffer in bytes
  *
- * @param pw        Pointer to buffer containing to which password 
+ * @param pw        Pointer to buffer containing to which password
  *                  copied
- * 
+ *
  * @param pwlen     The size of the password buffer in bytes
- *           
+ *
  */
 typedef void (*smbc_get_auth_data_with_context_fn)(SMBCCTX *c,
-                                                   const char *srv, 
+                                                   const char *srv,
                                                    const char *shr,
-                                                   char *wg, int wglen, 
+                                                   char *wg, int wglen,
                                                    char *un, int unlen,
                                                    char *pw, int pwlen);
 
@@ -362,9 +362,9 @@ typedef void (*smbc_get_auth_data_with_context_fn)(SMBCCTX *c,
  *
  * @param i         pointer to print job information structure
  *
- */ 
+ */
 typedef void (*smbc_list_print_job_fn)(struct print_job_info *i);
-		
+
 
 /**@ingroup callback
  * Check if a server is still good
@@ -375,7 +375,7 @@ typedef void (*smbc_list_print_job_fn)(struct print_job_info *i);
  *
  * @return          0 when connection is good. 1 on error.
  *
- */ 
+ */
 typedef int (*smbc_check_server_fn)(SMBCCTX * c, SMBCSRV *srv);
 
 /**@ingroup callback
@@ -387,7 +387,7 @@ typedef int (*smbc_check_server_fn)(SMBCCTX * c, SMBCSRV *srv);
  *
  * @return          0 on success. 1 on failure.
  *
- */ 
+ */
 typedef int (*smbc_remove_unused_server_fn)(SMBCCTX * c, SMBCSRV *srv);
 
 
@@ -398,7 +398,7 @@ typedef int (*smbc_remove_unused_server_fn)(SMBCCTX * c, SMBCSRV *srv);
  *
  * @param srv       pointer to server to add
  *
- * @param server    server name 
+ * @param server    server name
  *
  * @param share     share name
  *
@@ -408,8 +408,8 @@ typedef int (*smbc_remove_unused_server_fn)(SMBCCTX * c, SMBCSRV *srv);
  *
  * @return          0 on success. 1 on failure.
  *
- */ 
-typedef int (*smbc_add_cached_srv_fn)   (SMBCCTX * c, SMBCSRV *srv, 
+ */
+typedef int (*smbc_add_cached_srv_fn)   (SMBCCTX * c, SMBCSRV *srv,
 				    const char * server, const char * share,
 				    const char * workgroup, const char * username);
 
@@ -428,7 +428,7 @@ typedef int (*smbc_add_cached_srv_fn)   (SMBCCTX * c, SMBCSRV *srv,
  *
  * @return          pointer to SMBCSRV on success. NULL on failure.
  *
- */ 
+ */
 typedef SMBCSRV * (*smbc_get_cached_srv_fn)   (SMBCCTX * c, const char * server,
 					       const char * share, const char * workgroup,
                                                const char * username);
@@ -442,7 +442,7 @@ typedef SMBCSRV * (*smbc_get_cached_srv_fn)   (SMBCCTX * c, const char * server,
  *
  * @return          0 when found and removed. 1 on failure.
  *
- */ 
+ */
 typedef int (*smbc_remove_cached_srv_fn)(SMBCCTX * c, SMBCSRV *srv);
 
 
@@ -453,7 +453,7 @@ typedef int (*smbc_remove_cached_srv_fn)(SMBCCTX * c, SMBCSRV *srv);
  *
  * @return          0 when found and removed. 1 on failure.
  *
- */ 
+ */
 typedef int (*smbc_purge_cached_fn)     (SMBCCTX * c);
 
 
@@ -1095,7 +1095,7 @@ SMBCCTX * smbc_new_context(void);
  *
  *
  * @return          Returns 0 on succes. Returns 1 on failure with errno set:
- *                  - EBUSY Server connections are still used, Files are open or cache 
+ *                  - EBUSY Server connections are still used, Files are open or cache
  *                          could not be purged
  *                  - EBADF context == NULL
  *
@@ -1143,7 +1143,7 @@ smbc_option_get(SMBCCTX *context,
  *                  is perfectly safe, but it might leak memory on
  *                  smbc_context_init() failure. Avoid this.
  *                  You'll have to call smbc_free_context() yourself
- *                  on failure.  
+ *                  on failure.
  */
 
 SMBCCTX * smbc_init_context(SMBCCTX * context);
@@ -1152,14 +1152,14 @@ SMBCCTX * smbc_init_context(SMBCCTX * context);
  * Initialize the samba client library.
  *
  * Must be called before using any of the smbclient API function
- *  
- * @param fn        The function that will be called to obtaion 
+ *
+ * @param fn        The function that will be called to obtaion
  *                  authentication credentials.
  *
  * @param debug     Allows caller to set the debug level. Can be
  *                  changed in smb.conf file. Allows caller to set
  *                  debugging if no smb.conf.
- *   
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - ENOMEM Out of memory
  *                  - ENOENT The smb.conf file would not load
@@ -1195,25 +1195,25 @@ SMBCCTX * smbc_set_context(SMBCCTX * new_context);
 /**@ingroup file
  * Open a file on an SMB server.
  *
- * @param furl      The smb url of the file to be opened. 
+ * @param furl      The smb url of the file to be opened.
  *
- * @param flags     Is one of O_RDONLY, O_WRONLY or O_RDWR which 
+ * @param flags     Is one of O_RDONLY, O_WRONLY or O_RDWR which
  *                  request opening  the  file  read-only,write-only
  *                  or read/write. flags may also be bitwise-or'd with
- *                  one or  more of  the following: 
- *                  O_CREAT - If the file does not exist it will be 
+ *                  one or  more of  the following:
+ *                  O_CREAT - If the file does not exist it will be
  *                  created.
- *                  O_EXCL - When  used with O_CREAT, if the file 
- *                  already exists it is an error and the open will 
- *                  fail. 
+ *                  O_EXCL - When  used with O_CREAT, if the file
+ *                  already exists it is an error and the open will
+ *                  fail.
  *                  O_TRUNC - If the file already exists it will be
  *                  truncated.
- *                  O_APPEND The  file  is  opened  in  append mode 
+ *                  O_APPEND The  file  is  opened  in  append mode
  *
- * @param mode      mode specifies the permissions to use if a new 
- *                  file is created.  It  is  modified  by  the 
+ * @param mode      mode specifies the permissions to use if a new
+ *                  file is created.  It  is  modified  by  the
  *                  process's umask in the usual way: the permissions
- *                  of the created file are (mode & ~umask) 
+ *                  of the created file are (mode & ~umask)
  *
  *                  Not currently use, but there for future use.
  *                  We will map this to SYSTEM, HIDDEN, etc bits
@@ -1221,17 +1221,17 @@ SMBCCTX * smbc_set_context(SMBCCTX * new_context);
  *
  * @return          Valid file handle, < 0 on error with errno set:
  *                  - ENOMEM  Out of memory
- *                  - EINVAL if an invalid parameter passed, like no 
+ *                  - EINVAL if an invalid parameter passed, like no
  *                  file, or smbc_init not called.
- *                  - EEXIST  pathname already exists and O_CREAT and 
+ *                  - EEXIST  pathname already exists and O_CREAT and
  *                  O_EXCL were used.
- *                  - EISDIR  pathname  refers  to  a  directory  and  
+ *                  - EISDIR  pathname  refers  to  a  directory  and
  *                  the access requested involved writing.
- *                  - EACCES  The requested access to the file is not 
- *                  allowed 
+ *                  - EACCES  The requested access to the file is not
+ *                  allowed
  *                  - ENODEV The requested share does not exist
  *                  - ENOTDIR A file on the path is not a directory
- *                  - ENOENT  A directory component in pathname does 
+ *                  - ENOENT  A directory component in pathname does
  *                  not exist.
  *
  * @see             smbc_creat()
@@ -1240,7 +1240,7 @@ SMBCCTX * smbc_set_context(SMBCCTX * new_context);
  *                  a new connection to the server specified in the URL.
  *                  If the credentials supplied in the URL, or via the
  *                  auth_fn in the smbc_init call, fail, this call will
- *                  try again with an empty username and password. This 
+ *                  try again with an empty username and password. This
  *                  often gets mapped to the guest account on some machines.
  */
 
@@ -1249,29 +1249,29 @@ int smbc_open(const char *furl, int flags, mode_t mode);
 /**@ingroup file
  * Create a file on an SMB server.
  *
- * Same as calling smbc_open() with flags = O_CREAT|O_WRONLY|O_TRUNC 
- *   
+ * Same as calling smbc_open() with flags = O_CREAT|O_WRONLY|O_TRUNC
+ *
  * @param furl      The smb url of the file to be created
- *  
- * @param mode      mode specifies the permissions to use if  a  new  
- *                  file is created.  It  is  modified  by  the 
+ *
+ * @param mode      mode specifies the permissions to use if  a  new
+ *                  file is created.  It  is  modified  by  the
  *                  process's umask in the usual way: the permissions
  *                  of the created file are (mode & ~umask)
  *
- *                  NOTE, the above is not true. We are dealing with 
+ *                  NOTE, the above is not true. We are dealing with
  *                  an SMB server, which has no concept of a umask!
- *      
+ *
  * @return          Valid file handle, < 0 on error with errno set:
  *                  - ENOMEM  Out of memory
- *                  - EINVAL if an invalid parameter passed, like no 
+ *                  - EINVAL if an invalid parameter passed, like no
  *                  file, or smbc_init not called.
  *                  - EEXIST  pathname already exists and O_CREAT and
  *                  O_EXCL were used.
  *                  - EISDIR  pathname  refers  to  a  directory  and
  *                  the access requested involved writing.
  *                  - EACCES  The requested access to the file is not
- *                  allowed 
- *                  - ENOENT  A directory component in pathname does 
+ *                  allowed
+ *                  - ENOENT  A directory component in pathname does
  *                  not exist.
  *                  - ENODEV The requested share does not exist.
  * @see             smbc_open()
@@ -1293,9 +1293,9 @@ int smbc_creat(const char *furl, mode_t mode);
  *                  0 upon EOF;
  *                  < 0 on error, with errno set:
  *                  - EISDIR fd refers to a directory
- *                  - EBADF  fd  is  not  a valid file descriptor or 
+ *                  - EBADF  fd  is  not  a valid file descriptor or
  *                    is not open for reading.
- *                  - EINVAL fd is attached to an object which is 
+ *                  - EINVAL fd is attached to an object which is
  *                    unsuitable for reading, or no buffer passed or
  *		      smbc_init not called.
  *
@@ -1316,9 +1316,9 @@ ssize_t smbc_read(int fd, void *buf, size_t bufsize);
  *
  * @return          Number of bytes written, < 0 on error with errno set:
  *                  - EISDIR fd refers to a directory.
- *                  - EBADF  fd  is  not  a valid file descriptor or 
+ *                  - EBADF  fd  is  not  a valid file descriptor or
  *                  is not open for reading.
- *                  - EINVAL fd is attached to an object which is 
+ *                  - EINVAL fd is attached to an object which is
  *                  unsuitable for reading, or no buffer passed or
  *		    smbc_init not called.
  *
@@ -1332,28 +1332,28 @@ ssize_t smbc_write(int fd, const void *buf, size_t bufsize);
  * Seek to a specific location in a file.
  *
  * @param fd        Open file handle from smbc_open() or smbc_creat()
- * 
+ *
  * @param offset    Offset in bytes from whence
- * 
+ *
  * @param whence    A location in the file:
  *                  - SEEK_SET The offset is set to offset bytes from
  *                  the beginning of the file
- *                  - SEEK_CUR The offset is set to current location 
+ *                  - SEEK_CUR The offset is set to current location
  *                  plus offset bytes.
- *                  - SEEK_END The offset is set to the size of the 
+ *                  - SEEK_END The offset is set to the size of the
  *                  file plus offset bytes.
  *
- * @return          Upon successful completion, lseek returns the 
- *                  resulting offset location as measured in bytes 
+ * @return          Upon successful completion, lseek returns the
+ *                  resulting offset location as measured in bytes
  *                  from the beginning  of the file. Otherwise, a value
- *                  of (off_t)-1 is returned and errno is set to 
+ *                  of (off_t)-1 is returned and errno is set to
  *                  indicate the error:
  *                  - EBADF  Fildes is not an open file descriptor.
  *                  - EINVAL Whence is not a proper value or smbc_init
  *		      not called.
  *
  * @todo Are all the whence values really supported?
- * 
+ *
  * @todo Are errno values complete and correct?
  */
 off_t smbc_lseek(int fd, off_t offset, int whence);
@@ -1379,8 +1379,8 @@ int smbc_close(int fd);
  * @param furl      The smb url of the file to delete
  *
  * @return          0 on success, < 0 on error with errno set:
- *                  - EACCES or EPERM Write  access  to the directory 
- *                  containing pathname is not allowed or one  
+ *                  - EACCES or EPERM Write  access  to the directory
+ *                  containing pathname is not allowed or one
  *                  of  the  directories in pathname did not allow
  *                  search (execute) permission
  *                  - ENOENT A directory component in pathname does
@@ -1399,10 +1399,10 @@ int smbc_unlink(const char *furl);
 
 /**@ingroup directory
  * Rename or move a file or directory.
- * 
- * @param ourl      The original smb url (source url) of file or 
+ *
+ * @param ourl      The original smb url (source url) of file or
  *                  directory to be moved
- * 
+ *
  * @param nurl      The new smb url (destination url) of the file
  *                  or directory after the move.  Currently nurl must
  *                  be on the same share as ourl.
@@ -1410,23 +1410,23 @@ int smbc_unlink(const char *furl);
  * @return          0 on success, < 0 on error with errno set:
  *                  - EISDIR nurl is an existing directory, but ourl is
  *                  not a directory.
- *                  - EEXIST nurl is  a  non-empty directory, 
+ *                  - EEXIST nurl is  a  non-empty directory,
  *                  i.e., contains entries other than "." and ".."
- *                  - EINVAL The  new  url  contained  a path prefix 
+ *                  - EINVAL The  new  url  contained  a path prefix
  *                  of the old, or, more generally, an  attempt was
  *                  made  to make a directory a subdirectory of itself
  *		    or smbc_init not called.
- *                  - ENOTDIR A component used as a directory in ourl 
- *                  or nurl path is not, in fact, a directory.  Or, 
+ *                  - ENOTDIR A component used as a directory in ourl
+ *                  or nurl path is not, in fact, a directory.  Or,
  *                  ourl  is a directory, and newpath exists but is not
  *                  a directory.
- *                  - EACCES or EPERM Write access to the directory 
- *                  containing ourl or nurl is not allowed for the 
- *                  process's effective uid,  or  one of the 
+ *                  - EACCES or EPERM Write access to the directory
+ *                  containing ourl or nurl is not allowed for the
+ *                  process's effective uid,  or  one of the
  *                  directories in ourl or nurl did not allow search
  *                  (execute) permission,  or ourl  was  a  directory
  *                  and did not allow write permission.
- *                  - ENOENT A  directory component in ourl or nurl 
+ *                  - ENOENT A  directory component in ourl or nurl
  *                  does not exist.
  *                  - EXDEV Rename across shares not supported.
  *                  - ENOMEM Insufficient kernel memory was available.
@@ -1450,9 +1450,9 @@ int smbc_rename(const char *ourl, const char *nurl);
  *                  - EINVAL A NULL file/URL was passed, or the URL would
  *                  not parse, or was of incorrect form or smbc_init not
  *                  called.
- *                  - ENOENT durl does not exist, or name is an 
- *                  - ENOMEM Insufficient memory to complete the 
- *                  operation.                              
+ *                  - ENOENT durl does not exist, or name is an
+ *                  - ENOMEM Insufficient memory to complete the
+ *                  operation.
  *                  - ENOTDIR name is not a directory.
  *                  - EPERM the workgroup could not be found.
  *                  - ENODEV the workgroup or server could not be found.
@@ -1479,14 +1479,14 @@ int smbc_closedir(int dh);
 /**@ingroup directory
  * Get multiple directory entries.
  *
- * smbc_getdents() reads as many dirent structures from the an open 
+ * smbc_getdents() reads as many dirent structures from the an open
  * directory handle into a specified memory area as will fit.
  *
  * @param dh        Valid directory as returned by smbc_opendir()
  *
  * @param dirp      pointer to buffer that will receive the directory
  *                  entries.
- * 
+ *
  * @param count     The size of the dirp buffer in bytes
  *
  * @returns         If any dirents returned, return will indicate the
@@ -1530,7 +1530,7 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
  *
  * @return          The current location in the directory stream or -1
  *                  if an error occur.  The current location is not
- *                  an offset. Becuase of the implementation, it is a 
+ *                  an offset. Becuase of the implementation, it is a
  *                  handle that allows the library to find the entry
  *                  later.
  *                  - EBADF dh is not a valid directory handle
@@ -1550,7 +1550,7 @@ off_t smbc_telldir(int dh);
  * smbc_telldir(). (rewind by smbc_lseekdir(fd, NULL))
  *
  * @param fd        Valid directory as returned by smbc_opendir()
- * 
+ *
  * @param offset    The offset (as returned by smbc_telldir). Can be
  *                  NULL, in which case we will rewind
  *
@@ -1573,9 +1573,9 @@ int smbc_lseekdir(int fd, off_t offset);
  * @param durl      The url of the directory to create
  *
  * @param mode      Specifies  the  permissions to use. It is modified
- *                  by the process's umask in the usual way: the 
+ *                  by the process's umask in the usual way: the
  *                  permissions of the created file are (mode & ~umask).
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EEXIST directory url already exists
  *                  - EACCES The parent directory does not allow write
@@ -1593,7 +1593,7 @@ int smbc_mkdir(const char *durl, mode_t mode);
 
 /**@ingroup directory
  * Remove a directory.
- * 
+ *
  * @param durl      The smb url of the directory to remove
  *
  * @return          0 on success, < 0 on error with errno set:
@@ -1605,7 +1605,7 @@ int smbc_mkdir(const char *durl, mode_t mode);
  *                  - ENOTEMPTY directory contains entries.
  *                  - ENOMEM Insufficient kernel memory was available.
  *
- * @see             smbc_mkdir(), smbc_unlink() 
+ * @see             smbc_mkdir(), smbc_unlink()
  *
  * @todo Are errno values complete and correct?
  */
@@ -1617,7 +1617,7 @@ int smbc_rmdir(const char *durl);
  *
  * @param url       The smb url to get information for
  *
- * @param st        pointer to a buffer that will be filled with 
+ * @param st        pointer to a buffer that will be filled with
  *                  standard Unix struct stat information.
  *
  * @return          0 on success, < 0 on error with errno set:
@@ -1636,12 +1636,12 @@ int smbc_stat(const char *url, struct stat *st);
 
 /**@ingroup attribute
  * Get file information via an file descriptor.
- * 
+ *
  * @param fd        Open file handle from smbc_open() or smbc_creat()
  *
- * @param st        pointer to a buffer that will be filled with 
+ * @param st        pointer to a buffer that will be filled with
  *                  standard Unix struct stat information.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
@@ -1658,12 +1658,12 @@ int smbc_fstat(int fd, struct stat *st);
 
 /**@ingroup attribute
  * Get file system information for a specified path.
- * 
+ *
  * @param url       The smb url to get information for
  *
- * @param st        pointer to a buffer that will be filled with 
+ * @param st        pointer to a buffer that will be filled with
  *                  standard Unix struct statvfs information.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
@@ -1681,13 +1681,13 @@ smbc_statvfs(char *url,
 
 /**@ingroup attribute
  * Get file system information via an file descriptor.
- * 
+ *
  * @param fd        Open file handle from smbc_open(), smbc_creat(),
  *                  or smbc_opendir()
  *
- * @param st        pointer to a buffer that will be filled with 
+ * @param st        pointer to a buffer that will be filled with
  *                  standard Unix struct statvfs information.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
@@ -1706,11 +1706,11 @@ smbc_fstatvfs(int fd,
 
 /**@ingroup attribute
  * Truncate a file given a file descriptor
- * 
+ *
  * @param fd        Open file handle from smbc_open() or smbc_creat()
  *
  * @param size      size to truncate the file to
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EBADF  filedes is bad.
  *                  - EACCES Permission denied.
@@ -1730,7 +1730,7 @@ int smbc_ftruncate(int fd, off_t size);
  *
  * @param url       The smb url of the file or directory to change
  *                  permissions of
- * 
+ *
  * @param mode      The permissions to set:
  *                  - Put good explaination of permissions here!
  *
@@ -1792,7 +1792,7 @@ int smbc_utime(const char *fname, struct utimbuf *utbuf);
  *
  * @param url       The smb url of the file or directory to set extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be changed.  Names are of
  *                  one of the following forms:
  *
@@ -1902,7 +1902,7 @@ int smbc_setxattr(const char *url,
  *
  * @param url       The smb url of the file or directory to set extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be changed.  Names are of
  *                  one of the following forms:
  *
@@ -2009,7 +2009,7 @@ int smbc_lsetxattr(const char *url,
  * @param fd        A file descriptor associated with an open file (as
  *                  previously returned by smbc_open(), to get extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be changed.  Names are of
  *                  one of the following forms:
  *
@@ -2114,7 +2114,7 @@ int smbc_fsetxattr(int fd,
  *
  * @param url       The smb url of the file or directory to get extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be retrieved.  Names are of
  *                  one of the following forms:
  *
@@ -2150,7 +2150,7 @@ int smbc_fsetxattr(int fd,
  *                  may also be zero, in which case the size of the buffer
  *                  required to hold the attribute value will be returned,
  *                  but nothing will be placed into the value buffer.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL  The client library is not properly initialized
  *                            or one of the parameters is not of a correct
@@ -2179,7 +2179,7 @@ int smbc_getxattr(const char *url,
  *
  * @param url       The smb url of the file or directory to get extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be retrieved.  Names are of
  *                  one of the following forms:
  *
@@ -2215,7 +2215,7 @@ int smbc_getxattr(const char *url,
  *                  may also be zero, in which case the size of the buffer
  *                  required to hold the attribute value will be returned,
  *                  but nothing will be placed into the value buffer.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL  The client library is not properly initialized
  *                            or one of the parameters is not of a correct
@@ -2242,7 +2242,7 @@ int smbc_lgetxattr(const char *url,
  * @param fd        A file descriptor associated with an open file (as
  *                  previously returned by smbc_open(), to get extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be retrieved.  Names are of
  *                  one of the following forms:
  *
@@ -2278,7 +2278,7 @@ int smbc_lgetxattr(const char *url,
  *                  may also be zero, in which case the size of the buffer
  *                  required to hold the attribute value will be returned,
  *                  but nothing will be placed into the value buffer.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL  The client library is not properly initialized
  *                            or one of the parameters is not of a correct
@@ -2305,7 +2305,7 @@ int smbc_fgetxattr(int fd,
  *
  * @param url       The smb url of the file or directory to remove the extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be removed.  Names are of
  *                  one of the following forms:
  *
@@ -2355,7 +2355,7 @@ int smbc_removexattr(const char *url,
  *
  * @param url       The smb url of the file or directory to remove the extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be removed.  Names are of
  *                  one of the following forms:
  *
@@ -2403,7 +2403,7 @@ int smbc_lremovexattr(const char *url,
  * @param fd        A file descriptor associated with an open file (as
  *                  previously returned by smbc_open(), to get extended
  *                  attributes for.
- * 
+ *
  * @param name      The name of an attribute to be removed.  Names are of
  *                  one of the following forms:
  *
@@ -2458,7 +2458,7 @@ int smbc_fremovexattr(int fd,
  *                  may also be zero, in which case the size of the buffer
  *                  required to hold all of the attribute names will be
  *                  returned, but nothing will be placed into the list buffer.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL The client library is not properly initialized
  *                  - ENOMEM No memory was available for internal needs
@@ -2496,7 +2496,7 @@ int smbc_listxattr(const char *url,
  *                  may also be zero, in which case the size of the buffer
  *                  required to hold all of the attribute names will be
  *                  returned, but nothing will be placed into the list buffer.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL The client library is not properly initialized
  *                  - ENOMEM No memory was available for internal needs
@@ -2522,7 +2522,7 @@ int smbc_llistxattr(const char *url,
  * @param fd        A file descriptor associated with an open file (as
  *                  previously returned by smbc_open(), to get extended
  *                  attributes for.
- * 
+ *
  * @param list      A pointer to a buffer in which the list of attributes for
  *                  the specified file or directory will be placed (unless
  *                  size is zero).
@@ -2531,7 +2531,7 @@ int smbc_llistxattr(const char *url,
  *                  may also be zero, in which case the size of the buffer
  *                  required to hold all of the attribute names will be
  *                  returned, but nothing will be placed into the list buffer.
- * 
+ *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL The client library is not properly initialized
  *                  - ENOMEM No memory was available for internal needs
@@ -2553,19 +2553,19 @@ int smbc_flistxattr(int fd,
 
 /**@ingroup print
  * Print a file given the name in fname. It would be a URL ...
- * 
+ *
  * @param fname     The URL of a file on a remote SMB server that the
  *                  caller wants printed
  *
  * @param printq    The URL of the print share to print the file to.
  *
- * @return          0 on success, < 0 on error with errno set:         
+ * @return          0 on success, < 0 on error with errno set:
  *
  *                  - EINVAL fname or printq was NULL or smbc_init not
  * 		      not called.
  *                  and errors returned by smbc_open
  *
- */                                     
+ */
 int smbc_print_file(const char *fname, const char *printq);
 
 /**@ingroup print
@@ -2584,26 +2584,26 @@ int smbc_print_file(const char *fname, const char *printq);
 int smbc_open_print_job(const char *fname);
 
 /**@ingroup print
- * List the print jobs on a print share, for the moment, pass a callback 
+ * List the print jobs on a print share, for the moment, pass a callback
  *
  * @param purl      The url of the print share to list the jobs of
- * 
+ *
  * @param fn        Callback function the receives printjob info
- * 
- * @return          0 on success, < 0 on error with errno set: 
+ *
+ * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL fname was NULL or smbc_init not called
  *                  - EACCES ???
  */
 int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn);
 
 /**@ingroup print
- * Delete a print job 
+ * Delete a print job
  *
  * @param purl      Url of the print share
  *
  * @param id        The id of the job to delete
  *
- * @return          0 on success, < 0 on error with errno set: 
+ * @return          0 on success, < 0 on error with errno set:
  *                  - EINVAL fname was NULL or smbc_init not called
  *
  * @todo    what errno values are possible here?
@@ -2632,7 +2632,7 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
  * @param dest      A pointer to a buffer in which the resulting decoded
  *                  string should be placed.  This may be a pointer to the
  *                  same buffer as src_segment.
- * 
+ *
  * @param src       A pointer to the buffer containing the URL to be decoded.
  *                  Any %xx sequences herein are converted to their single
  *                  character equivalent.  Each 'x' must be a valid hexadecimal
@@ -2640,7 +2640,7 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv);
  *
  * @param max_dest_len
  *                  The size of the buffer pointed to by dest_segment.
- * 
+ *
  * @return          The number of % sequences which could not be converted
  *                  due to lack of two following hexadecimal digits.
  */
@@ -2661,14 +2661,14 @@ smbc_urldecode(char *dest, char * src, size_t max_dest_len);
  * @param dest      A pointer to a buffer in which the resulting encoded
  *                  string should be placed.  Unlike smbc_urldecode(), this
  *                  must be a buffer unique from src.
- * 
+ *
  * @param src       A pointer to the buffer containing the string to be encoded.
  *                  Any character not specifically allowed in a URL is converted
  *                  into its hexadecimal value and encoded as %xx.
  *
  * @param max_dest_len
  *                  The size of the buffer pointed to by dest_segment.
- * 
+ *
  * @returns         The remaining buffer length.
  */
 #ifdef __cplusplus
@@ -2725,7 +2725,7 @@ smbc_set_credentials(const char *workgroup,
 /*
  * Wrapper around smbc_set_credentials.
  * Used to set correct credentials that will
- * be used to connect to DFS target share 
+ * be used to connect to DFS target share
  * in libsmbclient
  */
 
@@ -2828,7 +2828,7 @@ smbc_thread_impl(
         int (*lock_mutex)(void *plock,
                           int lock_type,
                           const char *location),
-    
+
         /* Thread local storage. */
         int (*create_tls)(const char *keyname,
                           void **ppkey,
@@ -2846,7 +2846,7 @@ smbc_thread_impl(
 
 /**
  * @ingroup structure
- * Structure that contains a client context information 
+ * Structure that contains a client context information
  * This structure is known as SMBCCTX
  *
  * DO NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE!  The data in the context
@@ -2868,7 +2868,7 @@ struct _SMBCCTX
          * Use smbc_getDebug() and smbc_setDebug()
          */
         int     debug DEPRECATED_SMBC_INTERFACE;
-	
+
         /**
          * netbios name used for making connections
          *
@@ -2910,7 +2910,7 @@ struct _SMBCCTX
          *
          * Use smbc_getFunction*() and smbc_setFunction*(), e.g.
          * smbc_getFunctionOpen(), smbc_setFunctionUnlink(), etc.
-	 */ 
+	 */
         smbc_open_fn                    open DEPRECATED_SMBC_INTERFACE;
         smbc_creat_fn                   creat DEPRECATED_SMBC_INTERFACE;
         smbc_read_fn                    read DEPRECATED_SMBC_INTERFACE;
@@ -2963,7 +2963,7 @@ struct _SMBCCTX
                  * Use smbc_getFunctionAuthData(), smbc_setFunctionAuthData()
 		 */
                 smbc_get_auth_data_fn auth_fn DEPRECATED_SMBC_INTERFACE;
-		
+
 		/**
                  * check if a server is still good
                  *
@@ -2991,7 +2991,7 @@ struct _SMBCCTX
 		 */
 
 		/**
-                 * server cache addition 
+                 * server cache addition
                  *
                  * DEPRECATED:
                  * Use smbc_getFunctionAddCachedServer(),
@@ -3000,7 +3000,7 @@ struct _SMBCCTX
 		smbc_add_cached_srv_fn add_cached_srv_fn DEPRECATED_SMBC_INTERFACE;
 
 		/**
-                 * server cache lookup 
+                 * server cache lookup
                  *
                  * DEPRECATED:
                  * Use smbc_getFunctionGetCachedServer(),
@@ -3016,7 +3016,7 @@ struct _SMBCCTX
                  * smbc_setFunctionRemoveCachedServer()
 		 */
 		smbc_remove_cached_srv_fn remove_cached_srv_fn DEPRECATED_SMBC_INTERFACE;
-		
+
 		/**
                  * server cache purging, try to remove all cached servers
                  * (disconnect)
@@ -3038,7 +3038,7 @@ struct _SMBCCTX
 
         /*
          * Very old configuration options.
-         * 
+         *
          * DEPRECATED:
          * Use one of the following functions instead:
          *   smbc_setOptionUseKerberos()
@@ -3049,7 +3049,7 @@ struct _SMBCCTX
          *   smbc_getOptionNoAutoAnonymousLogin()
          */
         int flags DEPRECATED_SMBC_INTERFACE;
-	
+
         /**
          * user options selections that apply to this session
          *
@@ -3064,7 +3064,7 @@ struct _SMBCCTX
                 int urlencode_readdir_entries DEPRECATED_SMBC_INTERFACE;
                 int one_share_per_server DEPRECATED_SMBC_INTERFACE;
         } options DEPRECATED_SMBC_INTERFACE;
-	
+
 	/** INTERNAL DATA
 	 * do _NOT_ touch this from your program !
 	 */

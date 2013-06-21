@@ -1,10 +1,10 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    SMB client library implementation
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000, 2002
    Copyright (C) John Terpstra 2000
-   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
 
@@ -200,7 +200,7 @@ SMBC_open_ctx(SMBCCTX *context,
 }
 
 /*
- * Routine to create a file 
+ * Routine to create a file
  */
 
 SMBCFILE *
@@ -467,9 +467,9 @@ SMBC_close_ctx(SMBCCTX *context,
 	/*d_printf(">>>close: resolved path as %s\n", targetpath);*/
 
 	if (!NT_STATUS_IS_OK(cli_close(targetcli, file->cli_fd))) {
-		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
+		DEBUG(3, ("cli_close failed on %s. purging server.\n",
 			  file->fname));
-		/* Deallocate slot and remove the server 
+		/* Deallocate slot and remove the server
 		 * from the server cache if unused */
 		errno = SMBC_errno(context, targetcli);
 		srv = file->srv;
@@ -602,7 +602,7 @@ SMBC_getatr(SMBCCTX * context,
  * "mode" (attributes) parameter may be set to -1 if it is not to be set.
  */
 bool
-SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
+SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             time_t create_time,
             time_t access_time,
             time_t write_time,
@@ -628,7 +628,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 						   mode))) {
 
                 /*
-                 * setpathinfo is not supported; go to plan B. 
+                 * setpathinfo is not supported; go to plan B.
                  *
                  * cli_setatr() does not work on win98, and it also doesn't
                  * support setting the access time (only the modification

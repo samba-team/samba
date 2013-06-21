@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    common events code for signal events
@@ -311,7 +311,7 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 		sig_state->oldact[signum] = talloc(sig_state, struct sigaction);
 		if (sig_state->oldact[signum] == NULL) {
 			talloc_free(se);
-			return NULL;			
+			return NULL;
 		}
 		if (sigaction(signum, &act, sig_state->oldact[signum]) == -1) {
 			talloc_free(se);
@@ -355,7 +355,7 @@ int tevent_common_check_signal(struct tevent_context *ev)
 	if (!sig_state || !TEVENT_SIG_PENDING(sig_state->got_signal)) {
 		return 0;
 	}
-	
+
 	for (i=0;i<TEVENT_NUM_SIGNALS+1;i++) {
 		struct tevent_common_signal_list *sl, *next;
 		struct tevent_sigcounter counter = sig_state->signal_count[i];
@@ -404,7 +404,7 @@ int tevent_common_check_signal(struct tevent_context *ev)
 					uint32_t ofs = (counter.seen + j)
 						% TEVENT_SA_INFO_QUEUE_COUNT;
 					se->handler(ev, se, i, 1,
-						    (void*)&sig_state->sig_info[i][ofs], 
+						    (void*)&sig_state->sig_info[i][ofs],
 						    se->private_data);
 					if (!exists) {
 						break;

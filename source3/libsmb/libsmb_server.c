@@ -1,10 +1,10 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    SMB client library implementation
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000, 2002
    Copyright (C) John Terpstra 2000
-   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
    Copyright (C) SATOH Fumiyasu <fumiyas@osstech.co.jp> 2009.
@@ -34,16 +34,16 @@
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-/* 
+/*
  * Check a server for being alive and well.
- * returns 0 if the server is in shape. Returns 1 on error 
- * 
+ * returns 0 if the server is in shape. Returns 1 on error
+ *
  * Also useable outside libsmbclient to enable external cache
  * to do some checks too.
  */
 int
 SMBC_check_server(SMBCCTX * context,
-                  SMBCSRV * server) 
+                  SMBCSRV * server)
 {
 	if (!cli_state_is_connected(server->cli)) {
 		return 1;
@@ -52,10 +52,10 @@ SMBC_check_server(SMBCCTX * context,
 	return 0;
 }
 
-/* 
+/*
  * Remove a server from the cached server list it's unused.
  * On success, 0 is returned. 1 is returned if the server could not be removed.
- * 
+ *
  * Also useable outside libsmbclient
  */
 int
@@ -199,7 +199,7 @@ check_server_cache:
                          * servers in the cache
                          */
 			if (smbc_getFunctionRemoveUnusedServer(context)(context,
-                                                                        srv)) { 
+                                                                        srv)) {
                                 /*
                                  * We could not remove the server completely,
                                  * remove it from the cache so we will not get

@@ -1,23 +1,23 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    SMB client library implementation
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000, 2002
    Copyright (C) John Terpstra 2000
-   Copyright (C) Tom Jansen (Ninja ISD) 2002 
+   Copyright (C) Tom Jansen (Ninja ISD) 2002
    Copyright (C) Derrell Lipman 2003-2008
    Copyright (C) Jeremy Allison 2007, 2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -82,11 +82,10 @@ struct _SMBCSRV {
         struct policy_handle pol;
 
 	SMBCSRV *next, *prev;
-	
 };
 
-/* 
- * Keep directory entries in a list 
+/*
+ * Keep directory entries in a list
  */
 struct smbc_dir_list {
 	struct smbc_dir_list *next;
@@ -96,9 +95,9 @@ struct smbc_dir_list {
 
 /*
  * Structure for open file management
- */ 
+ */
 struct _SMBCFILE {
-	int cli_fd; 
+	int cli_fd;
 	char *fname;
 	off_t offset;
 	struct _SMBCSRV *srv;
@@ -136,7 +135,7 @@ struct SMBC_internal_data {
          * server connection list
 	 */
 	SMBCSRV *                               servers;
-	
+
 	/*
          * open file/dir list
 	 */
@@ -170,7 +169,7 @@ struct SMBC_internal_data {
         void *                                  user_data;
 
         /*
-         * Should we attempt UNIX smb encryption ? 
+         * Should we attempt UNIX smb encryption ?
          * Set to 0 if we should never attempt, set to 1 if
          * encryption requested, set to 2 if encryption required.
          */
@@ -252,13 +251,13 @@ int
 SMBC_add_cached_server(SMBCCTX * context,
                        SMBCSRV * newsrv,
                        const char * server,
-                       const char * share, 
+                       const char * share,
                        const char * workgroup,
                        const char * username);
 
 SMBCSRV *
 SMBC_get_cached_server(SMBCCTX * context,
-                       const char * server, 
+                       const char * server,
                        const char * share,
                        const char * workgroup,
                        const char * user);
@@ -335,7 +334,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 
 int
 SMBC_rename_ctx(SMBCCTX *ocontext,
-                const char *oname, 
+                const char *oname,
                 SMBCCTX *ncontext,
                 const char *nname);
 
@@ -381,7 +380,7 @@ SMBC_getatr(SMBCCTX * context,
             SMB_INO_T *ino);
 
 bool
-SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
+SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
             time_t create_time,
             time_t access_time,
             time_t write_time,
