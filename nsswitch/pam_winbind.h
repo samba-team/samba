@@ -93,7 +93,7 @@
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
 #endif
 
-#endif /* defined(SUNOS5) || defined(SUNOS4) || defined(HPUX) || defined(FREEBSD) || defined(AIX) */
+#endif /* (!)LINUX */
 
 #if defined(HAVE_SECURITY_PAM_MODULES_H)
 #include <security/pam_modules.h>
