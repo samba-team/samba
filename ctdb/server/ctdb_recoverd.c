@@ -1977,12 +1977,12 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 	/* we cant win if we are banned */
 	if (rec->node_flags & NODE_FLAGS_BANNED) {
 		return false;
-	}	
+	}
 
 	/* we cant win if we are stopped */
 	if (rec->node_flags & NODE_FLAGS_STOPPED) {
 		return false;
-	}	
+	}
 
 	/* we will automatically win if the other node is banned */
 	if (em->node_flags & NODE_FLAGS_BANNED) {
