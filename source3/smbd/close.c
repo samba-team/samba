@@ -350,15 +350,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	normal_close = (close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE);
 
 	if (!normal_close || !delete_file) {
-
-		if (!del_share_mode(lck, fsp)) {
-			DEBUG(0, ("close_remove_share_mode: Could not delete "
-				  "share entry for file %s\n",
-				  fsp_str_dbg(fsp)));
-		}
-
-		TALLOC_FREE(lck);
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto done;
 	}
 
 	/*
