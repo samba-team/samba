@@ -1,3 +1,29 @@
+Changes in CTDB 2.3
+===================
+
+User-visible changes
+--------------------
+
+* 2 new configuration variables for 60.nfs eventscript:
+
+  - CTDB_MONITOR_NFS_THREAD_COUNT
+  - CTDB_NFS_DUMP_STUCK_THREADS
+
+  See ctdb.sysconfig for details.
+
+Important bug fixes
+-------------------
+
+* ctdb tool should not exit from a retry loop if a control times out
+  (e.g. under high load).  This simple fix will stop an exit from the
+  retry loop on any error.
+
+Important internal changes
+--------------------------
+
+*
+
+
 Changes in CTDB 2.2
 ===================
 
