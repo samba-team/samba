@@ -3342,7 +3342,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 		if (!r->out.old_val) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		prior_val = ldb_msg_find_ldb_val(res[0], "priorValue");
+		prior_val = ldb_msg_find_ldb_val(msg, "priorValue");
 
 		if (prior_val && prior_val->length) {
 			secret.data = prior_val->data;
@@ -3368,7 +3368,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 		if (!r->out.old_mtime) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		*r->out.old_mtime = ldb_msg_find_attr_as_uint64(res[0], "priorSetTime", 0);
+		*r->out.old_mtime = ldb_msg_find_attr_as_uint64(msg, "priorSetTime", 0);
 	}
 
 	if (r->in.new_val) {
@@ -3378,7 +3378,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		new_val = ldb_msg_find_ldb_val(res[0], "currentValue");
+		new_val = ldb_msg_find_ldb_val(msg, "currentValue");
 
 		if (new_val && new_val->length) {
 			secret.data = new_val->data;
@@ -3404,7 +3404,7 @@ static NTSTATUS dcesrv_lsa_QuerySecret(struct dcesrv_call_state *dce_call, TALLO
 		if (!r->out.new_mtime) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		*r->out.new_mtime = ldb_msg_find_attr_as_uint64(res[0], "lastSetTime", 0);
+		*r->out.new_mtime = ldb_msg_find_attr_as_uint64(msg, "lastSetTime", 0);
 	}
 
 	return NT_STATUS_OK;
