@@ -4113,7 +4113,6 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 	struct dom_sid *sid;
 	const char *tname;
 	size_t dns_len;
-	size_t nb_len;
 	size_t tlen;
 	NTSTATUS nt_status;
 	uint32_t new_fti_idx;
@@ -4150,7 +4149,6 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 			dns_name = nrec->data.info.dns_name.string;
 			dns_len = nrec->data.info.dns_name.size;
 			nb_name = nrec->data.info.netbios_name.string;
-			nb_len = nrec->data.info.netbios_name.size;
 			sid = &nrec->data.info.sid;
 			break;
 		}
