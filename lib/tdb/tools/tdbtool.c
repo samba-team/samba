@@ -222,7 +222,7 @@ static void terror(const char *why)
 
 static void create_tdb(const char *tdbname)
 {
-	struct tdb_logging_context log_ctx;
+	struct tdb_logging_context log_ctx = { NULL, NULL};
 	log_ctx.log_fn = tdb_log;
 
 	if (tdb) tdb_close(tdb);
