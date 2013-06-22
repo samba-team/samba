@@ -2715,7 +2715,7 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 	int i, resume_context, cli_buf_size;
 	uint32_t resume_handle;
 
-	struct rpc_pipe_client *samr_pipe;
+	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle samr_handle, domain_handle;
 	NTSTATUS status, result;
 
