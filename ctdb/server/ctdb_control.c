@@ -333,6 +333,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_SHUTDOWN:
 		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command.\n"));
 		ctdb_shutdown_sequence(ctdb, 0);
+		/* In case above returns due to duplicate shutdown */
+		return 0;
 
 	case CTDB_CONTROL_TAKEOVER_IPv4:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ipv4));

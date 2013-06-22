@@ -295,6 +295,8 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 				  "ctdb_recheck_persistent_health() failed (%llu times) - prepare shutdown\n",
 				  (unsigned long long)ctdb->db_persistent_check_errors));
 		ctdb_shutdown_sequence(ctdb, 11);
+		/* In case above returns due to duplicate shutdown */
+		return;
 	}
 	ctdb->db_persistent_check_errors = 0;
 

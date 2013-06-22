@@ -1728,6 +1728,11 @@ int32_t ctdb_control_process_exists(struct ctdb_context *ctdb, pid_t pid)
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 {
+	if (ctdb->runstate == CTDB_RUNSTATE_SHUTDOWN) {
+		DEBUG(DEBUG_NOTICE,("Already shutting down so will not proceed.\n"));
+		return;
+	}
+
 	DEBUG(DEBUG_NOTICE,("Shutdown sequence commencing.\n"));
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_SHUTDOWN);
 	ctdb_stop_recoverd(ctdb);
