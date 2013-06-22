@@ -35,11 +35,13 @@ struct tevent_req *smb2_ioctl_named_pipe(uint32_t ctl_code,
 					 struct tevent_req *req,
 					 struct smbd_smb2_ioctl_state *state)
 {
-	struct tevent_req *subreq;
+	NTSTATUS status;
+	uint8_t *out_data = NULL;
+	uint32_t out_data_len = 0;
 
-	switch (ctl_code) {
-	case FSCTL_PIPE_TRANSCEIVE:
-	{
+	if (ctl_code == FSCTL_PIPE_TRANSCEIVE) {
+		struct tevent_req *subreq;
+
 		if (!IS_IPC(state->smbreq->conn)) {
 			tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 			return tevent_req_post(req, ev);
@@ -69,47 +71,36 @@ struct tevent_req *smb2_ioctl_named_pipe(uint32_t ctl_code,
 					smbd_smb2_ioctl_pipe_write_done,
 					req);
 		return req;
-		break;
 	}
-	default: {
-		NTSTATUS status;
-		uint8_t *out_data = NULL;
-		uint32_t out_data_len = 0;
 
-		if (state->fsp == NULL) {
-			status = NT_STATUS_NOT_SUPPORTED;
+	if (state->fsp == NULL) {
+		status = NT_STATUS_NOT_SUPPORTED;
+	} else {
+		status = SMB_VFS_FSCTL(state->fsp,
+				       state,
+				       ctl_code,
+				       state->smbreq->flags2,
+				       state->in_input.data,
+				       state->in_input.length,
+				       &out_data,
+				       state->in_max_output,
+				       &out_data_len);
+		state->out_output = data_blob_const(out_data, out_data_len);
+		if (NT_STATUS_IS_OK(status)) {
+			tevent_req_done(req);
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+		if (IS_IPC(state->smbreq->conn)) {
+			status = NT_STATUS_FS_DRIVER_REQUIRED;
 		} else {
-			status = SMB_VFS_FSCTL(state->fsp,
-					       state,
-					       ctl_code,
-					       state->smbreq->flags2,
-					       state->in_input.data,
-					       state->in_input.length,
-					       &out_data,
-					       state->in_max_output,
-					       &out_data_len);
-			state->out_output = data_blob_const(out_data, out_data_len);
-			if (NT_STATUS_IS_OK(status)) {
-				tevent_req_done(req);
-				return tevent_req_post(req, ev);
-			}
+			status = NT_STATUS_INVALID_DEVICE_REQUEST;
 		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-			if (IS_IPC(state->smbreq->conn)) {
-				status = NT_STATUS_FS_DRIVER_REQUIRED;
-			} else {
-				status = NT_STATUS_INVALID_DEVICE_REQUEST;
-			}
-		}
-
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-		break;
-	}
 	}
 
-	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+	tevent_req_nterror(req, status);
 	return tevent_req_post(req, ev);
 }
 
