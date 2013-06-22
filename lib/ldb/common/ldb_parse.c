@@ -748,7 +748,7 @@ char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, const struct ldb_parse_tree *tre
 		ret = talloc_asprintf(mem_ctx, "(%s=%s", tree->u.substring.attr,
 				      tree->u.substring.start_with_wildcard?"*":"");
 		if (ret == NULL) return NULL;
-		for (i = 0; tree->u.substring.chunks[i]; i++) {
+		for (i = 0; tree->u.substring.chunks && tree->u.substring.chunks[i]; i++) {
 			s2 = ldb_binary_encode(mem_ctx, *(tree->u.substring.chunks[i]));
 			if (s2 == NULL) {
 				talloc_free(ret);
