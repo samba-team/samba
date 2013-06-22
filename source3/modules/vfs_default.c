@@ -1033,10 +1033,10 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		}
 
 		status = file_set_sparse(handle->conn, fsp, set_sparse);
-		
+
 		DEBUG(NT_STATUS_IS_OK(status) ? 10 : 9,
 		      ("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",
-		       smb_fname_str_dbg(fsp->fsp_name), set_sparse, 
+		       smb_fname_str_dbg(fsp->fsp_name), set_sparse,
 		       nt_errstr(status)));
 
 		return status;
@@ -1125,17 +1125,17 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		if (SMB_VFS_GET_SHADOW_COPY_DATA(fsp, shadow_data, labels)!=0) {
 			TALLOC_FREE(shadow_data);
 			if (errno == ENOSYS) {
-				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n", 
+				DEBUG(5,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, not supported.\n",
 					fsp->conn->connectpath));
 				return NT_STATUS_NOT_SUPPORTED;
 			} else {
-				DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, failed.\n", 
+				DEBUG(0,("FSCTL_GET_SHADOW_COPY_DATA: connectpath %s, failed.\n",
 					fsp->conn->connectpath));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 		}
 
-		labels_data_count = (shadow_data->num_volumes * 2 * 
+		labels_data_count = (shadow_data->num_volumes * 2 *
 					sizeof(SHADOW_COPY_LABEL)) + 2;
 
 		if (!labels) {
@@ -1325,7 +1325,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	}
 
 	default:
-		/* 
+		/*
 		 * Only print once ... unfortunately there could be lots of
 		 * different FSCTLs that are called.
 		 */
