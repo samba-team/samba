@@ -2341,7 +2341,7 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 
 	uint32_t num_groups;
 	uint32_t resume_handle;
-	struct rpc_pipe_client *samr_pipe;
+	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle samr_handle, domain_handle;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b;
