@@ -156,6 +156,108 @@ static bool test_search_rootDSE(struct ldap_connection *conn, const char **based
 	return ret;
 }
 
+static bool test_search_rootDSE_empty_substring(struct ldap_connection *conn)
+{
+	bool ret = true;
+	struct ldap_message *msg, *result;
+	struct ldap_request *req;
+	NTSTATUS status;
+
+	printf("Testing RootDSE Search with objectclass= substring filter\n");
+
+	msg = new_ldap_message(conn);
+	if (!msg) {
+		return false;
+	}
+
+	msg->type = LDAP_TAG_SearchRequest;
+	msg->r.SearchRequest.basedn = "";
+	msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_BASE;
+	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	msg->r.SearchRequest.timelimit = 0;
+	msg->r.SearchRequest.sizelimit = 0;
+	msg->r.SearchRequest.attributesonly = false;
+	msg->r.SearchRequest.tree = ldb_parse_tree(msg, "(objectclass=*)");
+	msg->r.SearchRequest.tree->operation = LDB_OP_SUBSTRING;
+	msg->r.SearchRequest.tree->u.substring.attr = "objectclass";
+	msg->r.SearchRequest.tree->u.substring.start_with_wildcard = 1;
+	msg->r.SearchRequest.tree->u.substring.end_with_wildcard = 1;
+	msg->r.SearchRequest.tree->u.substring.chunks = NULL;
+	msg->r.SearchRequest.num_attributes = 0;
+	msg->r.SearchRequest.attributes = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (req == NULL) {
+		printf("Could not setup ldap search\n");
+		return false;
+	}
+
+	status = ldap_result_one(req, &result, LDAP_TAG_SearchResultEntry);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("looking for search result reply failed - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	printf("received %d replies\n", req->num_replies);
+
+	return ret;
+}
+
+static bool test_search_auth_empty_substring(struct ldap_connection *conn, const char *basedn)
+{
+	bool ret = true;
+	struct ldap_message *msg, *result;
+	struct ldap_request *req;
+	NTSTATUS status;
+	struct ldap_Result *r;
+
+	printf("Testing authenticated base Search with objectclass= substring filter\n");
+
+	msg = new_ldap_message(conn);
+	if (!msg) {
+		return false;
+	}
+
+	msg->type = LDAP_TAG_SearchRequest;
+	msg->r.SearchRequest.basedn = basedn;
+	msg->r.SearchRequest.scope = LDAP_SEARCH_SCOPE_BASE;
+	msg->r.SearchRequest.deref = LDAP_DEREFERENCE_NEVER;
+	msg->r.SearchRequest.timelimit = 0;
+	msg->r.SearchRequest.sizelimit = 0;
+	msg->r.SearchRequest.attributesonly = false;
+	msg->r.SearchRequest.tree = ldb_parse_tree(msg, "(objectclass=*)");
+	msg->r.SearchRequest.tree->operation = LDB_OP_SUBSTRING;
+	msg->r.SearchRequest.tree->u.substring.attr = "objectclass";
+	msg->r.SearchRequest.tree->u.substring.start_with_wildcard = 1;
+	msg->r.SearchRequest.tree->u.substring.end_with_wildcard = 1;
+	msg->r.SearchRequest.tree->u.substring.chunks = NULL;
+	msg->r.SearchRequest.num_attributes = 0;
+	msg->r.SearchRequest.attributes = NULL;
+
+	req = ldap_request_send(conn, msg);
+	if (req == NULL) {
+		printf("Could not setup ldap search\n");
+		return false;
+	}
+
+	status = ldap_result_one(req, &result, LDAP_TAG_SearchResultDone);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("looking for search result done failed - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	printf("received %d replies\n", req->num_replies);
+
+	r = &result->r.SearchResultDone;
+
+	if (r->resultcode != LDAP_SUCCESS) {
+		printf("search result done gave error - %s\n", ldb_strerror(r->resultcode));
+		return false;
+	}
+
+	return ret;
+}
+
 static bool test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 {
 	struct ldap_message *msg, *rep;
@@ -856,6 +958,10 @@ bool torture_ldap_basic(struct torture_context *torture)
 		ret = false;
 	}
 
+	if (!test_search_rootDSE_empty_substring(conn)) {
+		ret = false;
+	}
+
 	/* other bind tests here */
 
 	if (!test_multibind(conn, userdn, secret)) {
@@ -863,6 +969,10 @@ bool torture_ldap_basic(struct torture_context *torture)
 	}
 
 	if (!test_bind_sasl(torture, conn, cmdline_credentials)) {
+		ret = false;
+	}
+
+	if (!test_search_auth_empty_substring(conn, basedn)) {
 		ret = false;
 	}
 
