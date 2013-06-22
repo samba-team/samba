@@ -2525,7 +2525,7 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 	uint32_t i;
 	char *endp = NULL;
 
-	struct rpc_pipe_client *samr_pipe;
+	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle samr_handle, domain_handle, user_handle;
 	struct lsa_String name;
 	struct lsa_Strings names;
