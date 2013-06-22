@@ -605,7 +605,8 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_r
 	/*
 	 * if we are half-exhausted then try to get a new pool.
 	 */
-	if (nridset.next_rid > (prev_pool_hi + prev_pool_lo)/2) {
+	if (nridset.next_rid > (prev_pool_hi + prev_pool_lo)/2 &&
+	    nridset.alloc_pool == nridset.prev_pool) {
 		/*
 		 * if we are the RID Manager,
 		 * we can get a new pool localy.
