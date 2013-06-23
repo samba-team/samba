@@ -1186,7 +1186,38 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 	const char * const no_attrs[] = { "@__NONE__", NULL };
 	struct descriptor_changes *c;
 	struct descriptor_changes *stopped_stack = NULL;
+	enum ldb_scope scope;
 	int ret;
+
+	/*
+	 * First confirm this object has children, or exists (depending on change->force_self)
+	 * 
+	 * LDB_SCOPE_SUBTREE searches are expensive.
+	 *
+	 * Note: that we do not search for deleted/recycled objects
+	 */
+	ret = dsdb_module_search(module,
+				 change,
+				 &res,
+				 change->dn,
+				 LDB_SCOPE_ONELEVEL,
+				 no_attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM,
+				 NULL, /* parent_req */
+				 "(objectClass=*)");
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (res->count == 0 && !change->force_self) {
+		TALLOC_FREE(res);
+		return LDB_SUCCESS;
+	} else if (res->count == 0 && change->force_self) {
+		scope = LDB_SCOPE_BASE;
+	} else {
+		scope = LDB_SCOPE_SUBTREE;
+	}
 
 	/*
 	 * Note: that we do not search for deleted/recycled objects
@@ -1195,7 +1226,7 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 				 change,
 				 &res,
 				 change->dn,
-				 LDB_SCOPE_SUBTREE,
+				 scope,
 				 no_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_FLAG_AS_SYSTEM,
