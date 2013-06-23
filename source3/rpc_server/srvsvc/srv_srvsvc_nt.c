@@ -250,7 +250,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 	r->comment		= remark ? remark : "";
 	r->permissions		= 0;
 	r->max_users		= max_uses;
-	r->current_users	= count_current_connections(net_name, false);
+	r->current_users	= 0; /* computed later */
 	r->path			= path ? path : "";
 	r->password		= "";
 }
@@ -464,6 +464,49 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
 			      FILE_READ_DATA, NULL);
 }
 
+/****************************************************************************
+ Count an entry against the respective service.
+****************************************************************************/
+
+static int count_for_all_fn(struct smbXsrv_tcon_global0 *tcon, void *udp)
+{
+	union srvsvc_NetShareCtr *ctr = NULL;
+	struct srvsvc_NetShareInfo2 *info2 = NULL;
+	int share_entries = 0;
+	int i = 0;
+
+	ctr = (union srvsvc_NetShareCtr *) udp;
+
+	/* for level 2 */
+	share_entries  = ctr->ctr2->count;
+	info2 = &ctr->ctr2->array[0];
+
+	for (i = 0; i < share_entries; i++, info2++) {
+		if (strequal(tcon->share_name, info2->name)) {
+			info2->current_users++;
+			break;
+		}
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+ Count the entries belonging to all services in the connection db.
+****************************************************************************/
+
+static void count_connections_for_all_shares(union srvsvc_NetShareCtr *ctr)
+{
+	NTSTATUS status;
+	status = smbXsrv_tcon_global_traverse(count_for_all_fn, ctr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("count_connections_for_all_shares: traverse of "
+			"smbXsrv_tcon_global.tdb failed - %s\n",
+			nt_errstr(status)));
+	}
+}
+
 /*******************************************************************
  Fill in a share info structure.
  ********************************************************************/
@@ -568,6 +611,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 			}
 		}
 
+		count_connections_for_all_shares(&ctr);
 		break;
 
 	case 501:
@@ -1382,6 +1426,8 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 			info->info2 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo2);
 			W_ERROR_HAVE_NO_MEMORY(info->info2);
 			init_srv_share_info_2(p, info->info2, snum);
+			info->info2->current_users =
+			  count_current_connections(info->info2->name, false);
 			break;
 		case 501:
 			info->info501 = talloc(p->mem_ctx, struct srvsvc_NetShareInfo501);
