@@ -235,7 +235,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	init_function='ldb_subtree_rename_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc samba-util ldb samdb-common'
+	deps='talloc samba-util ldb samdb-common DSDB_MODULE_HELPERS'
 	)
 
 
