@@ -4114,7 +4114,7 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 	const char *tname;
 	size_t dns_len;
 	size_t tlen;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_OK;
 	uint32_t new_fti_idx;
 	uint32_t i;
 	/* use always TDO type, until we understand when Xref can be used */
@@ -4219,22 +4219,32 @@ static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,
 						  collision_type,
 						  LSA_TLN_DISABLED_CONFLICT,
 						  tdo_name);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				goto done;
+			}
 		}
 		if (sid_conflict) {
 			nt_status = add_collision(c_info, new_fti_idx,
 						  collision_type,
 						  LSA_SID_DISABLED_CONFLICT,
 						  tdo_name);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				goto done;
+			}
 		}
 		if (nb_conflict) {
 			nt_status = add_collision(c_info, new_fti_idx,
 						  collision_type,
 						  LSA_NB_DISABLED_CONFLICT,
 						  tdo_name);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				goto done;
+			}
 		}
 	}
 
-	return NT_STATUS_OK;
+done:
+	return nt_status;
 }
 
 static NTSTATUS add_collision(struct lsa_ForestTrustCollisionInfo *c_info,
