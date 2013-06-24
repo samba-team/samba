@@ -881,6 +881,14 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 		ctdb_ban_self(ctdb);
 	}
 
+	if (ctdb->do_checkpublicip && ctdb_sys_have_ip(state->addr)) {
+		DEBUG(DEBUG_ERR, ("IP %s still hosted during release IP callback, failing\n",
+				  ctdb_addr_to_str(state->addr)));
+		ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
+		talloc_free(state);
+		return;
+	}
+
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
 	   release any sockets on this IP */
