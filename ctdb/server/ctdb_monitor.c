@@ -480,7 +480,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", c->pnn, node->flags));
 
-	if (node->flags == 0 && ctdb->runstate == CTDB_RUNSTATE_STARTUP) {
+	if (node->flags == 0 && ctdb->runstate <= CTDB_RUNSTATE_STARTUP) {
 		DEBUG(DEBUG_ERR, (__location__ " Node %u became healthy - force recovery for startup\n",
 				  c->pnn));
 		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
