@@ -1241,7 +1241,9 @@ ctdb_replay_monitor_status ()
 	    ;;
 	*) : ;;  # Must be ERROR, do nothing special.
     esac
-    echo "$_err_out"
+    if [ -n "$_err_out" ] ; then
+	echo "$_err_out"
+    fi
     exit $_code
 }
 
