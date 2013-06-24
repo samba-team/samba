@@ -76,12 +76,16 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 			return -1;
 		}
 		if (bantime->time == 0) {
-			DEBUG(DEBUG_INFO,("unbanning node %d\n", bantime->pnn));
+			DEBUG(DEBUG_NOTICE,("unbanning node %d\n", bantime->pnn));
 			ctdb->nodes[bantime->pnn]->flags &= ~NODE_FLAGS_BANNED;
 		} else {
-			DEBUG(DEBUG_INFO,("banning node %d\n", bantime->pnn));
+			DEBUG(DEBUG_NOTICE,("banning node %d\n", bantime->pnn));
 			if (ctdb->tunable.enable_bans == 0) {
-				DEBUG(DEBUG_INFO,("Bans are disabled - ignoring ban of node %u\n", bantime->pnn));
+				/* FIXME: This is bogus. We really should be
+				 * taking decision based on the tunables on
+				 * the banned node and not local node.
+				 */
+				DEBUG(DEBUG_WARNING,("Bans are disabled - ignoring ban of node %u\n", bantime->pnn));
 				return 0;
 			}
 
