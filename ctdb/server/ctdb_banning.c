@@ -120,10 +120,8 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 	ctdb->nodes[bantime->pnn]->flags |= NODE_FLAGS_BANNED;
 
 	event_add_timed(ctdb->ev, ctdb->banning_ctx, timeval_current_ofs(bantime->time,0), ctdb_ban_node_event, ctdb);
-	if (bantime->pnn == ctdb->pnn) {
-		ctdb_local_node_got_banned(ctdb);
-	}
 
+	ctdb_local_node_got_banned(ctdb);
 	return 0;
 }
 
