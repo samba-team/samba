@@ -207,8 +207,8 @@ void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	talloc_steal(tmp_ctx, hdr);
 
 	if (cnt == 0) {
-		DEBUG(DEBUG_INFO,("Daemon has exited - shutting down client\n"));
-		exit(0);
+		DEBUG(DEBUG_CRIT,("Daemon has exited - shutting down client\n"));
+		exit(1);
 	}
 
 	if (cnt < sizeof(*hdr)) {
