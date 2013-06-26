@@ -3553,6 +3553,12 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	if ((recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) &&
 	    (rec->node_flags & NODE_FLAGS_INACTIVE) == 0) {
 		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
+		/*
+		 * update our nodemap to carry the recmaster's notion of
+		 * its own flags, so that we don't keep freezing the
+		 * inactive recmaster node...
+		 */
+		nodemap->nodes[j].flags = recmaster_nodemap->nodes[j].flags;
 		force_election(rec, pnn, nodemap);
 		return;
 	}
