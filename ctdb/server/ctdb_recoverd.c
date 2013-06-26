@@ -1108,7 +1108,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 			   Since we are the recovery master we can just as
 			   well update the flags on all nodes.
 			*/
-			ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, nodemap->nodes[j].flags, ~nodemap->nodes[j].flags);
+			ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags, ~remote_nodemap->nodes[j].flags);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
 				return -1;
