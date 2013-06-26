@@ -36,7 +36,8 @@ enum acl_mode { SMB_ACL_DELETE,
 		SMB_SD_DELETE,
 		SMB_SD_SETSDDL,
 		SMB_SD_VIEWSDDL,
-	        SMB_ACL_VIEW };
+	        SMB_ACL_VIEW,
+		SMB_ACL_VIEW_ALL };
 
 struct perm_value {
 	const char *perm;
@@ -432,6 +433,9 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	}
 
 	switch (mode) {
+	case SMB_ACL_VIEW_ALL:
+		/* should not happen */
+		return 0;
 	case SMB_ACL_VIEW:
 		sec_desc_print( stdout, old);
 		return 0;
@@ -565,6 +569,10 @@ static int view_sharesec_sddl(const char *sharename)
   main program
 ********************************************************************/
 
+enum {
+	OPT_VIEW_ALL = 1000,
+};
+
 int main(int argc, const char *argv[])
 {
 	int opt;
@@ -588,6 +596,8 @@ int main(int argc, const char *argv[])
 		{ "viewsddl", 'V', POPT_ARG_NONE, the_acl, 'V',
 		  "View the SD in sddl format" },
 		{ "view", 'v', POPT_ARG_NONE, NULL, 'v', "View current share permissions" },
+		{ "view-all", 0, POPT_ARG_NONE, NULL, OPT_VIEW_ALL,
+		  "View all current share permissions" },
 		{ "machine-sid", 'M', POPT_ARG_NONE, NULL, 'M', "Initialize the machine SID" },
 		{ "force", 'F', POPT_ARG_NONE, NULL, 'F', "Force storing the ACL", "ACLS" },
 		POPT_COMMON_SAMBA
@@ -656,6 +666,9 @@ int main(int argc, const char *argv[])
 		case 'M':
 			initialize_sid = True;
 			break;
+		case OPT_VIEW_ALL:
+			mode = SMB_ACL_VIEW_ALL;
+			break;
 		}
 	}
 
@@ -681,6 +694,25 @@ int main(int argc, const char *argv[])
 	if ( mode == SMB_ACL_VIEW && force_acl ) {
 		fprintf( stderr, "Invalid combination of -F and -v\n");
 		return -1;
+	}
+
+	if (mode == SMB_ACL_VIEW_ALL) {
+		int i;
+
+		for (i=0; i<lp_numservices(); i++) {
+			TALLOC_CTX *frame = talloc_stackframe();
+			const char *service = lp_servicename(frame, i);
+
+			if (service == NULL) {
+				continue;
+			}
+
+			printf("[%s]\n", service);
+			change_share_sec(frame, service, NULL, SMB_ACL_VIEW);
+			printf("\n");
+			TALLOC_FREE(frame);
+		}
+		goto done;
 	}
 
 	/* get the sharename */
@@ -711,6 +743,7 @@ int main(int argc, const char *argv[])
 		break;
 	}
 
+done:
 	talloc_destroy(ctx);
 
 	return retval;
