@@ -3429,7 +3429,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	/* if the local daemon is STOPPED or BANNED, we verify that the databases are
-	   also frozen and thet the recmode is set to active.
+	   also frozen and that the recmode is set to active.
 	*/
 	if (rec->node_flags & (NODE_FLAGS_STOPPED | NODE_FLAGS_BANNED)) {
 		ret = ctdb_ctrl_getrecmode(ctdb, mem_ctx, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->recovery_mode);
