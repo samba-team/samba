@@ -26,6 +26,7 @@
 		<arg choice="opt">-R, --replace=ACLs</arg>
 		<arg choice="opt">-D, --delete</arg>
 		<arg choice="opt">-v, --view</arg>
+		<arg choice="opt">--view-all</arg>
 		<arg choice="opt">-M, --machine-sid</arg>
 		<arg choice="opt">-F, --force</arg>
 		<arg choice="opt">-d, --debuglevel=DEBUGLEVEL</arg>
@@ -102,6 +103,13 @@
 		<term>-v|--view</term>
 		<listitem><para>
 		List a share acl
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--view-all</term>
+		<listitem><para>
+		List all share acls
 		</para></listitem>
 		</varlistentry>
 
