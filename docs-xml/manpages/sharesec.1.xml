@@ -98,6 +98,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>-v|--view</term>
+		<listitem><para>
+		List a share acl
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.help;
 		&stdarg.server.debug;
 		&popt.common.samba;
