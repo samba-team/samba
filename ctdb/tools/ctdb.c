@@ -3104,14 +3104,21 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 {
 	int ret;
 	uint32_t generation, next_generation;
+	bool force;
+
+	/* "force" option ignores freeze failure and forces recovery */
+	force = (argc == 1) && (strcasecmp(argv[0], "force") == 0);
 
 	/* record the current generation number */
 	generation = get_generation(ctdb);
 
 	ret = ctdb_ctrl_freeze_priority(ctdb, TIMELIMIT(), options.pnn, 1);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to freeze node\n"));
-		return ret;
+		if (!force) {
+			DEBUG(DEBUG_ERR, ("Unable to freeze node\n"));
+			return ret;
+		}
+		DEBUG(DEBUG_WARNING, ("Unable to freeze node but proceeding because \"force\" option given\n"));
 	}
 
 	ret = ctdb_ctrl_setrecmode(ctdb, TIMELIMIT(), options.pnn, CTDB_RECOVERY_ACTIVE);
