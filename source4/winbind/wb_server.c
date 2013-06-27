@@ -28,18 +28,65 @@
 #include "libcli/util/tstream.h"
 #include "param/param.h"
 #include "param/secrets.h"
+#include "lib/util/dlinklist.h"
 
 void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *reason)
 {
-	stream_terminate_connection(wbconn->conn, reason);
+	struct wbsrv_service *service = wbconn->listen_socket->service;
+
+	if (wbconn->pending_calls == 0) {
+		char *full_reason = talloc_asprintf(wbconn, "wbsrv: %s", reason);
+
+		DLIST_REMOVE(service->broken_connections, wbconn);
+		stream_terminate_connection(wbconn->conn, full_reason ? full_reason : reason);
+		return;
+	}
+
+	if (wbconn->terminate != NULL) {
+		return;
+	}
+
+	DEBUG(3,("wbsrv: terminating connection due to '%s' defered due to %d pending calls\n",
+		 reason, wbconn->pending_calls));
+	wbconn->terminate = talloc_strdup(wbconn, reason);
+	if (wbconn->terminate == NULL) {
+		wbconn->terminate = "wbsrv: defered terminating connection - no memory";
+	}
+	DLIST_ADD_END(service->broken_connections, wbconn, NULL);
+}
+
+static void wbsrv_cleanup_broken_connections(struct wbsrv_service *s)
+{
+	struct wbsrv_connection *cur, *next;
+
+	next = s->broken_connections;
+	while (next != NULL) {
+		cur = next;
+		next = cur->next;
+
+		wbsrv_terminate_connection(cur, cur->terminate);
+	}
 }
 
 static void wbsrv_call_loop(struct tevent_req *subreq)
 {
 	struct wbsrv_connection *wbsrv_conn = tevent_req_callback_data(subreq,
 				      struct wbsrv_connection);
+	struct wbsrv_service *service = wbsrv_conn->listen_socket->service;
 	struct wbsrv_samba3_call *call;
 	NTSTATUS status;
+
+	if (wbsrv_conn->terminate) {
+		/*
+		 * if the current connection is broken
+		 * we need to clean it up before any other connection
+		 */
+		wbsrv_terminate_connection(wbsrv_conn, wbsrv_conn->terminate);
+		wbsrv_cleanup_broken_connections(service);
+		return;
+	}
+
+	wbsrv_cleanup_broken_connections(service);
 
 	call = talloc_zero(wbsrv_conn, struct wbsrv_samba3_call);
 	if (call == NULL) {
@@ -111,6 +158,8 @@ static void wbsrv_accept(struct stream_connection *conn)
 	struct wbsrv_connection *wbsrv_conn;
 	struct tevent_req *subreq;
 	int rc;
+
+	wbsrv_cleanup_broken_connections(wbsrv_socket->service);
 
 	wbsrv_conn = talloc_zero(conn, struct wbsrv_connection);
 	if (wbsrv_conn == NULL) {
