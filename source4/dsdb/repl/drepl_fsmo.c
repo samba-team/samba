@@ -91,11 +91,10 @@ NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 		extended_op = DRSUAPI_EXOP_FSMO_REQ_PDC;
 		break;
 	default:
-		DEBUG(2,("Unknown role %u in role transfer\n",
+		DEBUG(0,("Unknown role %u in role transfer\n",
 			 (unsigned)role));
-		r->out.result = WERR_DS_DRA_INTERNAL_ERROR;
-		talloc_free(tmp_ctx);
-		return NT_STATUS_OK;
+		/* IRPC messages are trusted, so this really should not happen */
+		smb_panic("Unknown role despite dsdb_get_fsmo_role_info success");
 	}
 
 	ret = samdb_dn_is_our_ntdsa(service->samdb, role_owner_dn, &is_us);
