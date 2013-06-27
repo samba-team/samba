@@ -1128,8 +1128,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 		return WERR_OK;
 	}
 
-	/* retrieve the current role owner */
-	/* find the DN of the RID Manager */
+	/* find the DN of the current role owner */
 	ret = samdb_reference_dn_is_our_ntdsa(ldb, req_dn, "fSMORoleOwner", &is_us);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to find fSMORoleOwner in RID Manager object\n"));
@@ -1138,8 +1137,8 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	}
 
 	if (!is_us) {
-		/* we're not the RID Manager - go away */
-		DEBUG(0,(__location__ ": RID Alloc request when not RID Manager\n"));
+		/* we're not the RID Manager or role owner - go away */
+		DEBUG(0,(__location__ ": FSMO role or RID manager transfer owner request when not role owner\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
 		return WERR_OK;
 	}
