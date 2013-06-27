@@ -108,12 +108,46 @@ run_test(
     [\&test_creation_normal],
     [\&test_creation_incremental, '-g'],
     [\&test_creation_incremental, 'tarmode inc'],
+    [\&test_creation_reset,       '-a'],
+    [\&test_creation_reset,       'tarmode reset'],
 );
 
 #####
 
 # TEST DEFINITIONS
 # each test must return the number of error
+
+sub test_creation_reset {
+    my ($mode) = @_;
+
+    say "TEST: creation -- reset archived files w/ $mode";
+
+    my %files;
+    my $n = 3;
+    for(1..$n) {
+        my $f = "file-$_";
+        my $md5 = create_file(localpath($f));
+        $files{"./$DIR/$f"} = $md5;
+        set_attr(remotepath($f), 'a');
+    }
+
+    if($mode =~ /reset/) {
+        smb_tar('tarmode full reset', '-Tc', $TAR, $DIR);
+    } else {
+        smb_tar('', '-Tca', $TAR, $DIR);
+    }
+    my $err = check_tar($TAR, \%files);
+    return $err if($err > 0);
+
+    for my $f (smb_ls($DIR)) {
+        if($f->{attr}{A}) {
+            my $attr = join('', map {$_ if $f->{attr}{$_}} qw/R H S A N D/);
+            printf " ! %s %s\n", $attr, $f->{path}.'/'.$f->{fn};
+            $err++;
+        }
+    }
+    return $err;
+}
 
 sub test_creation_normal {
 
@@ -174,6 +208,7 @@ sub run_test {
         print_res($err);
         print "\n";
     }
+    reset_env();
 }
 
 sub print_res {
@@ -326,12 +361,14 @@ sub smb_ls {
             'size' => int($size),
             'date' => $date,
             'attr' => {
-                'A' => ($attr =~ /A/),
-                'H' => ($attr =~ /H/),
-                'S' => ($attr =~ /S/),
-                'R' => ($attr =~ /R/),
-                'D' => ($attr =~ /D/),
-                'N' => ($attr =~ /N/),
+                # list context returns somehting different than the
+                # boolean matching result => force scalar context
+                'A' => scalar ($attr =~ /A/),
+                'H' => scalar ($attr =~ /H/),
+                'S' => scalar ($attr =~ /S/),
+                'R' => scalar ($attr =~ /R/),
+                'D' => scalar ($attr =~ /D/),
+                'N' => scalar ($attr =~ /N/),
             },
         };
     }
@@ -405,6 +442,15 @@ sub set_attr {
     if(@flags && $flags[0] !~ /n/i) {
         smb_client('-D', $dir, '-c', qq{setmode "$file" +}.join('', @flags));
     }
+}
+
+sub get_file {
+    my ($fullpath, @flags) = @_;
+    my ($file, $dir) = fileparse($fullpath);
+
+    my @files = smb_ls($dir);
+    my @res = grep {$_->{fn} eq $file} @files;
+    return @res ? $res[0] : undef;
 }
 
 sub random {
