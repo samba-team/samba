@@ -3425,13 +3425,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
-	/* update the capabilities for all nodes */
-	ret = update_capabilities(ctdb, nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
-		return;
-	}
-
 	/* check which node is the recovery master */
 	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
 	if (ret != 0) {
@@ -3482,6 +3475,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 * master, so don't do anything. This prevents stopped or banned
 		 * node from starting election and sending unnecessary controls.
 		 */
+		return;
+	}
+
+	/* update the capabilities for all nodes */
+	ret = update_capabilities(ctdb, nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update node capabilities.\n"));
 		return;
 	}
 
