@@ -112,8 +112,8 @@ These tests are performed on all nodes in the cluster which is why it is optimiz
 as few network calls to other nodes as possible.
 Each node only performs 1 call to the recovery master in each loop and to no other nodes.
 
-NORMAL NODE CLUSTER MONITORING
-------------------------------
+RECOVERY MASTER CLUSTER MONITORING
+-----------------------------------
 The recovery master performs a much more extensive test. In addition to tests 1-9 above
 the recovery master also performs the following tests:
 
