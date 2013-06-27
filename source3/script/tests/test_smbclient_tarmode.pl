@@ -139,7 +139,7 @@ sub test_creation_incremental {
     say "TEST: creation -- incremental w/ $mode (backup only archived files)";
 
     my %files;
-    my $n = 5;
+    my $n = 10;
     for(1..$n) {
         my $f = "file-$_";
         my $md5 = create_file(localpath($f));
@@ -148,6 +148,9 @@ sub test_creation_incremental {
         if($_ < $n/2) {
             $files{"./$DIR/$f"} = $md5;
             set_attr(remotepath($f), 'a');
+        }
+        else {
+            set_attr(remotepath($f), ((qw/n r s h/)[$_ % 4]))
         }
     }
 
@@ -399,7 +402,7 @@ sub set_attr {
     my ($file, $dir) = fileparse($fullpath);
 
     smb_client('-D', $dir, '-c', qq{setmode "$file" -rsha});
-    if(@flags) {
+    if(@flags && $flags[0] !~ /n/i) {
         smb_client('-D', $dir, '-c', qq{setmode "$file" +}.join('', @flags));
     }
 }
