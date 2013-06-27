@@ -866,6 +866,7 @@ sub teardown_env($)
 
 # This 'global' file needs to be empty when we start
 unlink("$prefix_abs/dns_host_file");
+unlink("$prefix_abs/hosts");
 
 if ($opt_random_order) {
 	require List::Util;

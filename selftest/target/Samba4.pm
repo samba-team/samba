@@ -122,6 +122,7 @@ sub check_or_start($$$)
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
+		$ENV{NSS_WRAPPER_HOSTS} = $env_vars->{NSS_WRAPPER_HOSTS};
 		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
 		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
 
@@ -176,6 +177,9 @@ sub wait_for_start($$)
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
 	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOS_NAME} eq "rodc")) {
+	    # Add hosts file for name lookups
+	    $ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
+
 	    print "waiting for working LDAP and a RID Set to be allocated\n";
 	    my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
 	    my $count = 0;
@@ -525,6 +529,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{ntp_signd_socket_dir} = "$prefix_abs/ntp_signd_socket";
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
+	$ctx->{nsswrap_hosts} = "$ENV{SELFTEST_PREFIX}/hosts";
 
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
@@ -544,6 +549,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	my @provision_options = ();
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
+	push (@provision_options, "NSS_WRAPPER_HOSTS=\"$ctx->{nsswrap_hosts}\"");
 	if (defined($ENV{GDB_PROVISION})) {
 		push (@provision_options, "gdb --args");
 		if (!defined($ENV{PYTHON})) {
@@ -686,6 +692,12 @@ nogroup:x:65534:nobody
 	close(GRP);
         my $gid_rfc2307test = 65532;
 
+	my $hostname = lc($ctx->{hostname});
+	open(HOSTS, ">>$ctx->{nsswrap_hosts}");
+	print HOSTS "$ctx->{ipv4} ${hostname}.samba.example.com ${hostname}
+";
+	close(HOSTS);
+
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
 #Ensure the config file is valid before we start
@@ -723,6 +735,7 @@ nogroup:x:65534:nobody
 		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},
 		NSS_WRAPPER_PASSWD => $ctx->{nsswrap_passwd},
 		NSS_WRAPPER_GROUP => $ctx->{nsswrap_group},
+		NSS_WRAPPER_HOSTS => $ctx->{nsswrap_hosts},
 		SAMBA_TEST_FIFO => "$ctx->{prefix}/samba_test.fifo",
 		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
