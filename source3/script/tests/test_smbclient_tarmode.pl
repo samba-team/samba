@@ -110,12 +110,50 @@ run_test(
     [\&test_creation_incremental, 'tarmode inc'],
     [\&test_creation_reset,       '-a'],
     [\&test_creation_reset,       'tarmode reset'],
+    [\&test_creation_newer],
 );
 
 #####
 
 # TEST DEFINITIONS
 # each test must return the number of error
+
+sub test_creation_newer {
+
+    say "TEST: creation -- backup files newer than a file";
+
+    my %files;
+    my $dt = 3000;
+
+    # create oldest file at - DT
+    my $oldest_file = "oldest";
+    my $oldest_md5 = create_file(localpath($oldest_file));
+    set_attr(remotepath($oldest_file));
+    set_time(localpath($oldest_file), time - $dt);
+
+    # create limit file
+    my $limit_file = "$TMP/limit";
+    create_file($limit_file);
+
+    # create newA file at + DT
+    my $newA_file = "newA";
+    my $newA_md5 = create_file(localpath($newA_file));
+    set_attr(remotepath($newA_file));
+    set_time(localpath($newA_file), time + $dt);
+
+    # create newB file at + DT
+    my $newB_file = "newB";
+    my $newB_md5 = create_file(localpath($newB_file));
+    set_attr(remotepath($newB_file));
+    set_time(localpath($newB_file), time + $dt);
+
+    # get files newer than limit_file
+    $files{"./$DIR/$newA_file"} = $newA_md5;
+    $files{"./$DIR/$newB_file"} = $newB_md5;
+
+    smb_tar('', '-TcN', $limit_file, $TAR, $DIR);
+    return check_tar($TAR, \%files);
+}
 
 sub test_creation_reset {
     my ($mode) = @_;
@@ -322,6 +360,7 @@ sub smb_client {
     if($DEBUG) {
         $cmd =~ s{\\([/+-])}{$1}g;
         say $cmd;
+        say $out;
     }
 
     if($err) {
@@ -456,5 +495,10 @@ sub get_file {
 sub random {
     my ($min, $max) = @_;
     ($min, $max) = ($max, $min) if($min > $max);
-     $min + int(rand($max - $min));
+    $min + int(rand($max - $min));
+}
+
+sub set_time {
+    my ($fn, $t) = @_;
+    utime $t, $t, $fn;
 }
