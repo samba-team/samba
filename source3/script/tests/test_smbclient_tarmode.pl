@@ -1,29 +1,10 @@
 #!/usr/bin/perl
-#
-# The plan is to make a script which will test the behaviour of
-# smbclient tar creation/restoration including its handling of:
-# - the include/exclude list (resp. I and X)
-# - the file list (F)
-# - the regex switch (r) which change the behaviour of F, I and X
-# - "newer than" (N)
-# - tar modes (full, incremental, nosystem, nohidden)
-# - archive bit removal (a)
 
-# The script will work with samba itself since there's already code
-# doing that (the "selftest" suite) but it could also work on an
-# actual windows box if there's a way or some kind of framework to do
-# some things remotely on it.
+=head1 NAME
 
-# For each creation (c) test:
-# - setup the environnement (files and their attributes on the server)
-# - fetch according to the test parameters
-# - compare what the tarball contains vs. what's expected
+test_smbclient_tarmode.pl - Test for smbclient tar backup feature
 
-# For each restoration (x) test:
-# - setup empty environement
-# - restore
-
-# -aaptel
+=cut
 
 use v5.16;
 use strict;
@@ -34,35 +15,90 @@ use Data::Dumper;
 use Digest::MD5 qw/md5_hex/;
 use File::Basename;
 use File::Path qw/make_path remove_tree/;
-use Getopt::Std;
+use Getopt::Long;
+use Pod::Usage;
 use Term::ANSIColor;
 
 sub d {print Dumper @_;}
 
-my $SERVER    = $ARGV[0]; # XXX: ignored
-my $IP        = $ARGV[1]; # XXX: ignored
-my $USER      = $ARGV[2]; # XXX: ignored
-my $PW        = $ARGV[3]; # XXX: ignored
-my $LOCALPATH = $ARGV[4];
-my $TMP       = $ARGV[5];
-my $BIN       = $ARGV[6]; # XXX: valgrind?
+# DEFAULTS
+my $USER      = '';
+my $PW        = '';
+my $HOST      = 'localhost';
+my $IP        = '';
+my $SHARE     = 'public';
+my $DIR       = 'tarmode';
+my $LOCALPATH = '/media/data/smb-test';
+my $TMP       = '/tmp/smb-tmp';
+my $BIN       = 'smbclient';
 
-# machine + share to test
-my $SHARE = '//localhost/public';
+my @SMBARGS   = ();
 
-# where the share is locally stored
-$LOCALPATH //= '/media/data/smb-test';
+my $DEBUG = 0;
+my $MAN   = 0;
+my $HELP  = 0;
 
-# flags to pass to every smbclient calls
-my @FLAGS = qw/-N/;
+=head1 SYNOPSIS
 
-# smbclient binary to use (also look in PATH)
-$BIN //= 'smbclient';
+test_smbclient_tarmode.pl [options] -- [smbclient options]
 
-# temp dir to extract tar files
-$TMP //= '/tmp/smb-tmp';
+ Options:
+    -h, --help    brief help message
+    --man         full documentation
+
+    -u, --user      USER
+    -p, --password  PW
+    -h, --host      HOST
+    -i, --ip        IP
+    -s, --share     SHARE
+    -d, --dir       PATH
+        sub-path to use on the share
+
+    -l, --local-path  PATH
+        path to the root of the samba share on the machine.
+
+    -t, --tmp  PATH
+        temporary dir to use
+
+    -b, --bin  BIN
+        path to the smbclient binary to use
+
+=cut
+
+GetOptions('u|user=s'       => \$USER,
+           'p|password=s'   => \$PW,
+           'h|host=s'       => \$HOST,
+           'i|ip=s'         => \$IP,
+           's|share=s'      => \$SHARE,
+           'd|dir=s'        => \$DIR,
+           'l|local-path=s' => \$LOCALPATH,
+           't|tmp=s'        => \$TMP,
+           'b|bin=s'        => \$BIN,
+
+           'debug'          => \$DEBUG,
+           'h|help'         => \$HELP,
+           'man'            => \$MAN) or pod2usage(2);
+
+pod2usage(0) if $HELP;
+pod2usage(-exitval => 0, -verbose => 2) if $MAN;
+
+if($USER xor $PW) {
+    die "Need both user and password when one is provided\n";
+} elsif($USER and $PW) {
+    push @SMBARGS, '-U'.$USER.'%'.$PW;
+} else {
+    push @SMBARGS, '-N';
+}
+
+if($IP) {
+    push @SMBARGS, '-I', $IP;
+}
+
+# remaining arguments are passed to smbclient
+push @SMBARGS, @ARGV;
+
+# path to store the downloaded tarball
 my $TAR = "$TMP/tarmode.tar";
-my $DIR = 'tarmode';
 
 #####
 
@@ -224,10 +260,13 @@ sub remotepath {
 
 # call smbclient and return output
 sub smb_client {
+    my (@args) = @_;
+
+    my $fullpath = "//$HOST/$SHARE";
     my $cmd = sprintf("%s %s %s",
                       quotemeta($BIN),
-                      quotemeta($SHARE),
-                      join(' ', map {quotemeta} (@FLAGS, @_)));
+                      quotemeta($fullpath),
+                      join(' ', map {quotemeta} (@SMBARGS, @args)));
 
     my $out = `$cmd 2>&1`;
     my $err = $?;
@@ -242,11 +281,16 @@ sub smb_client {
         printf STDERR "child exited with value %d (%s)\n", ($err >> 8), $cmd;
     }
 
+    if($DEBUG) {
+        $cmd =~ s{\\([/+-])}{$1}g;
+        say $cmd;
+    }
+
     if($err) {
-        d($out);
+        say "ERROR";
+        say $out;
         exit 1;
     }
-    #say $cmd;
     return $out;
 }
 
