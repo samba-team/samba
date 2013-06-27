@@ -60,7 +60,11 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 
 	if (!reason) reason = "unknown reason";
 
-	DEBUG(3,("Terminating connection - '%s'\n", reason));
+	if (srv_conn->processing) {
+		DEBUG(3,("Terminating connection deferred - '%s'\n", reason));
+	} else {
+		DEBUG(3,("Terminating connection - '%s'\n", reason));
+	}
 
 	srv_conn->terminate = reason;
 
