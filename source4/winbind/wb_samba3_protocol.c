@@ -297,6 +297,8 @@ NTSTATUS wbsrv_samba3_send_reply(struct wbsrv_samba3_call *call)
 	struct tevent_req *subreq;
 	NTSTATUS status;
 
+	call->wbconn->pending_calls--;
+
 	status = wbsrv_samba3_push_reply(call);
 	NT_STATUS_NOT_OK_RETURN(status);
 
@@ -355,9 +357,12 @@ NTSTATUS wbsrv_samba3_process(struct wbsrv_samba3_call *call)
 		return status;
 	}
 
+	call->wbconn->pending_calls++;
+
 	status = wbsrv_samba3_handle_call(call);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		call->wbconn->pending_calls--;
 		talloc_free(call);
 		return status;
 	}
