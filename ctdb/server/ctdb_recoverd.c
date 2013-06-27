@@ -3350,28 +3350,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 	LogLevel = debug_level;
 
-
-	/* We must check if we need to ban a node here but we want to do this
-	   as early as possible so we dont wait until we have pulled the node
-	   map from the local node. thats why we have the hardcoded value 20
-	*/
-	for (i=0; i<ctdb->num_nodes; i++) {
-		struct ctdb_banning_state *ban_state;
-
-		if (ctdb->nodes[i]->ban_state == NULL) {
-			continue;
-		}
-		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
-		if (ban_state->count < 20) {
-			continue;
-		}
-		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries recently - banning it for %u seconds\n",
-			ctdb->nodes[i]->pnn, ban_state->count,
-			ctdb->tunable.recovery_ban_period));
-		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
-		ban_state->count = 0;
-	}
-
 	/* get relevant tunables */
 	ret = ctdb_ctrl_get_all_tunables(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, &ctdb->tunable);
 	if (ret != 0) {
@@ -3424,6 +3402,27 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
+
+	/* We must check if we need to ban a node here but we want to do this
+	   as early as possible so we dont wait until we have pulled the node
+	   map from the local node. thats why we have the hardcoded value 20
+	*/
+	for (i=0; i<ctdb->num_nodes; i++) {
+		struct ctdb_banning_state *ban_state;
+
+		if (ctdb->nodes[i]->ban_state == NULL) {
+			continue;
+		}
+		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
+		if (ban_state->count < 20) {
+			continue;
+		}
+		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries recently - banning it for %u seconds\n",
+			ctdb->nodes[i]->pnn, ban_state->count,
+			ctdb->tunable.recovery_ban_period));
+		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
+		ban_state->count = 0;
+	}
 
 	/* if the local daemon is STOPPED or BANNED, we verify that the databases are
 	   also frozen and thet the recmode is set to active.
