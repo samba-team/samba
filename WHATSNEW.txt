@@ -1,4 +1,112 @@
                    =============================
+                   Release Notes for Samba 4.0.7
+                           July 2, 2013
+                   =============================
+
+
+This is is the latest stable release of Samba 4.0.
+
+Major enhancements in Samba 4.0.7 include:
+
+o  Fix a core dump with invalid lock order while opening/editing
+   or copying MS files (bug #9794).
+o  Fix crash bug from search of mail= (bug #9967).
+o  winbind4: talloc use after free (bug #9832).
+
+
+Changes since 4.0.6:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 9909: build: Add missing new line to replaced python shebang line.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 9794: Fix a core dump with invalid lock order while opening/editing
+      or copying MS files.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 9465: s3-rpc_server: Ensure we are root when starting and using
+      gensec.
+    * BUG 9906: Doc fixes for 4.0.
+    * BUG 9907: Build fixes for 4.0 found during autoconf or debian packaging
+      work.
+    * BUG 9967: Fix crash bug from search of mail=.
+    * BUG 9968: Fix build with system Heimdal of samba4kgetcred.
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 9947: Check for netbios aliases in ad_get_referrals.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 9485: Add support for MX queries.
+    * BUG 9559: dns: Delete dnsNode objects when they are empty.
+    * BUG 9632: dns: Support larger queries when asking forwarder.
+
+
+o   David Disseldorp <ddiss@samba.org>
+    * BUG 8997: Change libreplace GPL source to LGPL.
+    * BUG 9900: is_printer_published GUID retrieval.
+    * BUG 9910: PIE builds not supported.
+
+
+o   Peng Haitao <penght@cn.fujitsu.com>
+    * BUG 9941: Fix a bug of drvupgrade of smbcontrol.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 9880: Use of wrong RFC2307 primary group field.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 9832: winbind4: talloc use after free.
+    * BUG 9953: Fix tevent_poll on 32-bit machines (Coverity ID 989236).
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 9805: s3:lib/server_mutex: Open mutex.tdb with CLEAR_IF_FIRST.
+    * BUG 9929: s4:winbind: Don't leak libnet_context into the main event
+      context.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 9881: Check for system libtevent.
+
+
+o   Michael Wood <esiotrot@gmail.com>
+    * BUG 9964: docs: Avoid mentioning a possibly misleading option.
+
+
+o   Vadim Zhukov <persgray@gmail.com>
+    * BUG 9888: More generic check for OpenBSD platform.
+
+
+######################################################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.0 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.0.6
                            May 21, 2013
                    =============================
@@ -96,8 +204,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.0.5
