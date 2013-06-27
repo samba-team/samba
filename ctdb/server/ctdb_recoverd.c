@@ -3425,28 +3425,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
-	/* check which node is the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
-		return;
-	}
-
-	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
-	if (rec->recmaster != pnn) {
-		if (rec->ip_reallocate_ctx != NULL) {
-			talloc_free(rec->ip_reallocate_ctx);
-			rec->ip_reallocate_ctx = NULL;
-			rec->reallocate_callers = NULL;
-		}
-	}
-
-	if (rec->recmaster == (uint32_t)-1) {
-		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
-		force_election(rec, pnn, nodemap);
-		return;
-	}
-
 	/* if the local daemon is STOPPED or BANNED, we verify that the databases are
 	   also frozen and thet the recmode is set to active.
 	*/
@@ -3475,6 +3453,32 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 * master, so don't do anything. This prevents stopped or banned
 		 * node from starting election and sending unnecessary controls.
 		 */
+		return;
+	}
+
+	/* check which node is the recovery master */
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &rec->recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from node %u\n", pnn));
+		return;
+	}
+
+	/* if we are not the recmaster we can safely ignore any ip reallocate requests */
+	if (rec->recmaster != pnn) {
+		if (rec->ip_reallocate_ctx != NULL) {
+			talloc_free(rec->ip_reallocate_ctx);
+			rec->ip_reallocate_ctx = NULL;
+			rec->reallocate_callers = NULL;
+		}
+	}
+
+	/* This is a special case.  When recovery daemon is started, recmaster
+	 * is set to -1.  If a node is not started in stopped state, then
+	 * start election to decide recovery master
+	 */
+	if (rec->recmaster == (uint32_t)-1) {
+		DEBUG(DEBUG_NOTICE,(__location__ " Initial recovery master set - forcing election\n"));
+		force_election(rec, pnn, nodemap);
 		return;
 	}
 
