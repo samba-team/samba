@@ -34,6 +34,8 @@ struct wbsrv_service {
 	struct idmap_context *idmap_ctx;
 	const char *priv_pipe_dir;
 	const char *pipe_dir;
+
+	struct wbsrv_connection *broken_connections;
 };
 
 struct wbsrv_samconn {
@@ -85,6 +87,9 @@ struct wbsrv_listen_socket {
   state of an open winbind connection
 */
 struct wbsrv_connection {
+	/* for the broken_connections DLIST */
+	struct wbsrv_connection *prev, *next;
+
 	/* stream connection we belong to */
 	struct stream_connection *conn;
 
@@ -94,8 +99,11 @@ struct wbsrv_connection {
 	/* storage for protocol specific data */
 	void *protocol_private_data;
 
-	/* how many calls are pending */
+	/* how many calls are pending (do not terminate the connection with calls pending a reply) */
 	uint32_t pending_calls;
+
+	/* is this connection pending termination?  If so, why? */
+	const char *terminate;
 
 	struct tstream_context *tstream;
 
