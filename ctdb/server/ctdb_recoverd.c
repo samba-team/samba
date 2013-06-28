@@ -1546,6 +1546,30 @@ static void takeover_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn,
 }
 
 
+static void ban_misbehaving_nodes(struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	int i;
+	struct ctdb_banning_state *ban_state;
+
+	for (i=0; i<ctdb->num_nodes; i++) {
+		if (ctdb->nodes[i]->ban_state == NULL) {
+			continue;
+		}
+		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
+		if (ban_state->count < 2*ctdb->num_nodes) {
+			continue;
+		}
+
+		DEBUG(DEBUG_NOTICE,("Node %u reached %u banning credits - banning it for %u seconds\n",
+			ctdb->nodes[i]->pnn, ban_state->count,
+			ctdb->tunable.recovery_ban_period));
+		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
+		ban_state->count = 0;
+	}
+}
+
+
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
@@ -1567,23 +1591,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
-	for (i=0; i<ctdb->num_nodes; i++) {
-		struct ctdb_banning_state *ban_state;
-
-		if (ctdb->nodes[i]->ban_state == NULL) {
-			continue;
-		}
-		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
-		if (ban_state->count < 2*ctdb->num_nodes) {
-			continue;
-		}
-		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries recently - banning it for %u seconds\n",
-			ctdb->nodes[i]->pnn, ban_state->count,
-			ctdb->tunable.recovery_ban_period));
-		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
-		ban_state->count = 0;
-	}
-
+	ban_misbehaving_nodes(rec);
 
         if (ctdb->tunable.verify_recovery_lock != 0) {
 		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
@@ -3403,26 +3411,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
-	/* We must check if we need to ban a node here but we want to do this
-	   as early as possible so we dont wait until we have pulled the node
-	   map from the local node. thats why we have the hardcoded value 20
-	*/
-	for (i=0; i<ctdb->num_nodes; i++) {
-		struct ctdb_banning_state *ban_state;
-
-		if (ctdb->nodes[i]->ban_state == NULL) {
-			continue;
-		}
-		ban_state = (struct ctdb_banning_state *)ctdb->nodes[i]->ban_state;
-		if (ban_state->count < 20) {
-			continue;
-		}
-		DEBUG(DEBUG_NOTICE,("Node %u has caused %u recoveries recently - banning it for %u seconds\n",
-			ctdb->nodes[i]->pnn, ban_state->count,
-			ctdb->tunable.recovery_ban_period));
-		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
-		ban_state->count = 0;
-	}
+	ban_misbehaving_nodes(rec);
 
 	/* if the local daemon is STOPPED or BANNED, we verify that the databases are
 	   also frozen and thet the recmode is set to active.
