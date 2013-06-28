@@ -160,6 +160,7 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
+	/* FIXME it seems that we should check the length of the stuff too*/
 	if (req->dest_dsa_dns_name == NULL) {
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
