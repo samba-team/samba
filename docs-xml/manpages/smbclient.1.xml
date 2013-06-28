@@ -446,7 +446,7 @@
 		<para>Create the same tar file as above, but now use 
 		a DOS path name. </para>
 		
-		<para><command>smbclient //mypc/myshare "" -N -tc backup.tar 
+		<para><command>smbclient //mypc/myshare "" -N -Tc backup.tar
 		users\edocs </command></para>
 		
 		<para>Create a tar file of the files listed in the file <filename>tarlist</filename>.</para>
