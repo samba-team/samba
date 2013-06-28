@@ -6,6 +6,26 @@ test_smbclient_tarmode.pl - Test for smbclient tar backup feature
 
 =cut
 
+# flags to test
+
+# c        DONE
+# c g      DONE
+# c a      DONE
+# c N      DONE
+# c I      #
+# c I r    #
+# c X      #
+# c X r    #
+# c F      #
+# c F r    #
+# x        DONE
+# x I      #
+# x I r    #
+# x X      #
+# x X r    #
+# x F      #
+# x F r    #
+
 use v5.16;
 use strict;
 use warnings;
@@ -110,6 +130,7 @@ run_test(
     [\&test_creation_reset,       '-a'],
     [\&test_creation_reset,       'tarmode reset'],
     [\&test_creation_newer],
+    [\&test_extraction_normal],
 );
 
 #####
@@ -226,6 +247,30 @@ sub test_creation_incremental {
     return check_tar($TAR, \@files);
 }
 
+
+sub test_extraction_normal {
+
+    say "TEST: extraction -- backup and restore normal files";
+
+    my %files;
+    my $n = 5;
+    for(1..$n) {
+        my $f = File->new_remote("file-$_");
+        $f->set_attr();
+        $files{$f->remotepath} = $f;
+    }
+
+    # store
+    smb_tar('', '-Tc', $TAR, $DIR);
+    my $err = check_tar($TAR, [values %files]);
+    return $err if $err > 0;
+
+    reset_remote();
+
+    smb_tar('', '-Tx', $TAR);
+    check_remote([values %files]);
+}
+
 #####
 
 # IMPLEMENTATION
@@ -250,12 +295,74 @@ sub print_res {
     }
 }
 
-sub reset_env {
-    remove_tree($TMP);
-    make_path($TMP, {mode => 0777});
-
+sub reset_remote {
     remove_tree($LOCALPATH . '/'. $DIR);
-    make_path($LOCALPATH . '/'. $DIR, {mode => 0777});
+    make_path($LOCALPATH . '/'. $DIR);
+}
+
+sub reset_tmp {
+    remove_tree($TMP);
+    make_path($TMP);
+}
+
+sub reset_env {
+    reset_tmp();
+    reset_remote();
+}
+
+sub check_remote {
+    my ($files) = @_;
+    my (%done, %expected);
+    my (@less, @more, @diff);
+
+    for(@$files) {
+        $expected{$_->remotepath} = $_;
+        $done{$_->remotepath} = 0;
+    }
+
+    my %remote;
+    File::walk(sub { $remote{$_->remotepath} = $_ }, File::tree());
+
+    for my $rfile (keys %remote) {
+
+        # files that shouldn't be there
+        if(!exists $expected{$rfile}) {
+            say " +    $_";
+            push @more, $rfile;
+            next;
+        }
+
+        # same file multiple times
+        if($done{$rfile} > 0) {
+            $done{$rfile}++;
+            push @more, $rfile;
+            printf " +%3d %s\n", $done{$rfile}, $rfile;
+            next;
+        }
+
+        $done{$rfile}++;
+
+        # different file
+        my $rmd5 = $remote{$rfile}->md5;
+        if($expected{$rfile}->md5 ne $rmd5) {
+            say " !    $rfile ($rmd5)";
+            push @diff, $rfile;
+        }
+    }
+
+    # file that should have been in tar
+    @less = grep { $done{$_} == 0 } keys %done;
+    for(@less) {
+        say " -    $_";
+    }
+
+    # summary
+    printf("\t%d files, +%d, -%d, !%d\n",
+           scalar keys %done,
+           scalar @more,
+           scalar @less,
+           scalar @diff);
+    return (@more + @less + @diff); # nb of errors
 }
 
 sub check_tar {
@@ -294,7 +401,7 @@ sub check_tar {
 
             # different file
             my $md5 = $f->data;
-            if($md5 ne $h{$p}->{md5}) {
+            if($md5 ne $h{$p}->md5) {
                 say " !    $p ($md5)";
                 push @diff, $p;
             }
@@ -396,13 +503,19 @@ sub localpath {
 }
 
 sub remotepath {
-    my $s = shift;
+    my ($s, $subpath) = @_;
     return undef if !$s->{remote};
 
+    my $prefix = $main::DIR.'/';;
+
+    if($subpath) {
+        $prefix = '';
+    }
+
     if($s->{dir}) {
-        $main::DIR.'/'.$s->{dir}.$s->{name};
+        $prefix.$s->{dir}.'/'.$s->{name};
     } else {
-        $main::DIR.'/'.$s->{name};
+        $prefix.$s->{name};
     }
 }
 
@@ -441,14 +554,64 @@ sub attr_str {
     join('', map {$_ if $s->{attr}{$_}} qw/r h s a d n/);
 }
 
+
 sub set_time {
     my ($s, $t) = @_;
     utime $t, $t, $s->localpath;
 }
 
+sub md5 {
+    my $s = shift;
+
+    if(!$s->{md5}) {
+        open my $h, '<', $s->localpath() or die "can't read ".$s->localpath.": $!";
+        binmode $h;
+        $s->{md5} = Digest::MD5->new->addfile($h)->hexdigest;
+        close $h;
+    }
+
+    return $s->{md5};
+}
+
+sub walk {
+    my $fun = \&{shift @_};
+
+    my @res;
+
+    for (@_) {
+        if($_->{attr}{d}) {
+            push @res, walk($fun, @{$_->{content}});
+        } else {
+            push @res, $fun->($_);
+        }
+    }
+
+    return @res;
+}
+
+sub tree {
+    my ($class, $d) = @_;
+    my @files;
+
+    if(!defined $d) {
+        @files = File->list();
+    } else {
+        @files = File->list($d->remotepath(1));
+    }
+
+    for my $f (@files) {
+        if($f->{attr}{d}) {
+            $f->{content} = [tree($class, $f)];
+        }
+    }
+
+    return @files;
+}
+
 sub list {
     my ($class, $path) = @_;
     $path ||= '';
+    $path =~ s{/$}{};
     my @files;
     my $out = main::smb_client('-D', $main::DIR.'/'.$path, '-c', 'ls');
 
@@ -484,6 +647,7 @@ sub new_remote {
 
     $dir = '' if $dir eq './';
     $dir =~ s{^/}{};
+    $dir =~ s{/$}{};
 
     my $loc = $main::LOCALPATH.'/'.$main::DIR.'/'.$dir;
     make_path($loc);
@@ -503,6 +667,7 @@ sub new_local {
     my ($class, $path) = @_;
     my ($file, $dir) = fileparse($path);
 
+    $dir =~ s{/$}{};
     make_path($dir);
 
     my $self = {
