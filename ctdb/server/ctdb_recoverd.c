@@ -120,6 +120,12 @@ static void ctdb_set_culprit_count(struct ctdb_recoverd *rec, uint32_t culprit, 
 		return;
 	}
 
+	/* If we are banned or stopped, do not set other nodes as culprits */
+	if (rec->node_flags & NODE_FLAGS_INACTIVE) {
+		DEBUG(DEBUG_NOTICE, ("This node is INACTIVE, cannot set culprit node %d\n", culprit));
+		return;
+	}
+
 	if (ctdb->nodes[culprit]->ban_state == NULL) {
 		ctdb->nodes[culprit]->ban_state = talloc_zero(ctdb->nodes[culprit], struct ctdb_banning_state);
 		CTDB_NO_MEMORY_VOID(ctdb, ctdb->nodes[culprit]->ban_state);
