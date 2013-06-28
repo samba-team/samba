@@ -41,7 +41,7 @@ ctdb_ban_node_event(struct event_context *ev, struct timed_event *te,
 	}
 }
 
-int32_t ctdb_local_node_got_banned(struct ctdb_context *ctdb)
+void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 {
 	uint32_t i;
 
@@ -60,8 +60,6 @@ int32_t ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 	}
 	ctdb_release_all_ips(ctdb);
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
-
-	return 0;
 }
 
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
@@ -123,7 +121,7 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	event_add_timed(ctdb->ev, ctdb->banning_ctx, timeval_current_ofs(bantime->time,0), ctdb_ban_node_event, ctdb);
 	if (bantime->pnn == ctdb->pnn) {
-		return ctdb_local_node_got_banned(ctdb);
+		ctdb_local_node_got_banned(ctdb);
 	}
 
 	return 0;

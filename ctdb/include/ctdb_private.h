@@ -1440,7 +1440,7 @@ int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
-int32_t ctdb_local_node_got_banned(struct ctdb_context *ctdb);
+void ctdb_local_node_got_banned(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
 int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata);

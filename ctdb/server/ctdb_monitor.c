@@ -491,7 +491,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	/* if we have become banned, we should go into recovery mode */
 	if ((node->flags & NODE_FLAGS_BANNED) && !(c->old_flags & NODE_FLAGS_BANNED) && (node->pnn == ctdb->pnn)) {
-		return ctdb_local_node_got_banned(ctdb);
+		ctdb_local_node_got_banned(ctdb);
 	}
 	
 	return 0;
