@@ -103,7 +103,8 @@ my $TAR = "$TMP/tarmode.tar";
 # RUN TESTS
 
 run_test(
-    [\&test_creation_normal],
+    [\&test_creation_normal, 'normal'],
+    [\&test_creation_normal, 'nested'],
     [\&test_creation_incremental, '-g'],
     [\&test_creation_incremental, 'tarmode inc'],
     [\&test_creation_reset,       '-a'],
@@ -180,13 +181,15 @@ sub test_creation_reset {
 }
 
 sub test_creation_normal {
+    my ($mode) = @_;
 
-    say "TEST: creation -- normal files (no attributes)";
+    say "TEST: creation -- normal files $mode (no attributes)";
 
+    my $prefix = ($mode =~ /nest/) ? "/foo/bar/bar/" : '';
     my @files;
     my $n = 5;
     for(1..$n) {
-        my $f = File->new_remote("file-$_");
+        my $f = File->new_remote($prefix."file-$_");
         $f->set_attr();
         push @files, $f;
     }
@@ -194,7 +197,6 @@ sub test_creation_normal {
     smb_tar('tarmode full', '-Tc', $TAR, $DIR);
     return check_tar($TAR, \@files);
 }
-
 
 sub test_creation_incremental {
     my ($mode) = @_;
@@ -425,7 +427,7 @@ sub remotepath {
     return undef if !$s->{remote};
 
     if($s->{dir}) {
-        $main::DIR.'/'.$s->{dir}.'/'.$s->{name};
+        $main::DIR.'/'.$s->{dir}.$s->{name};
     } else {
         $main::DIR.'/'.$s->{name};
     }
@@ -508,6 +510,7 @@ sub new_remote {
     my ($file, $dir) = fileparse($path);
 
     $dir = '' if $dir eq './';
+    $dir =~ s{^/}{};
 
     my $loc = $main::LOCALPATH.'/'.$main::DIR.'/'.$dir;
     make_path($loc);
