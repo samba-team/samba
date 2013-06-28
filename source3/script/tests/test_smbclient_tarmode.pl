@@ -363,33 +363,6 @@ sub smb_tar {
     smb_client((length($cmd) ? ('-c', $cmd) : ()), @rest);
 }
 
-
-# print find(1)-like output of the share
-# ex: dump_tree(smb_tree())
-sub dump_tree {
-    my ($t, $path) = @_;
-    $path = '' if(!defined $path);
-
-    for my $f (@{$t->{dir}}) {
-        if($f->{attr}{D}) {
-            # print final slash on dir
-            print $path.'/'.$f->{fn},"/\n";
-            dump_tree($f, $path.'/'.$f->{fn});
-        } else {
-            print $path.'/'.$f->{fn},"\n";
-        }
-    }
-}
-
-sub get_file {
-    my ($fullpath, @flags) = @_;
-    my ($file, $dir) = fileparse($fullpath);
-
-    my @files = smb_ls($dir);
-    my @res = grep {$_->{fn} eq $file} @files;
-    return @res ? $res[0] : undef;
-}
-
 sub random {
     my ($min, $max) = @_;
     ($min, $max) = ($max, $min) if($min > $max);
