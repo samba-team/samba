@@ -50,6 +50,8 @@ our $LOCALPATH = '/media/data/smb-test';
 our $TMP       = '/tmp/smb-tmp';
 our $BIN       = 'smbclient';
 
+our $SINGLE_TEST = -1;
+
 our @SMBARGS   = ();
 
 our $DEBUG = 0;
@@ -64,6 +66,7 @@ test_smbclient_tarmode.pl [options] -- [smbclient options]
     -h, --help    brief help message
     --man         full documentation
 
+  Environment:
     -u, --user      USER
     -p, --password  PW
     -h, --host      HOST
@@ -81,6 +84,10 @@ test_smbclient_tarmode.pl [options] -- [smbclient options]
     -b, --bin  BIN
         path to the smbclient binary to use
 
+  Test:
+    --test N
+       only run test number N
+
 =cut
 
 GetOptions('u|user=s'       => \$USER,
@@ -92,6 +99,8 @@ GetOptions('u|user=s'       => \$USER,
            'l|local-path=s' => \$LOCALPATH,
            't|tmp=s'        => \$TMP,
            'b|bin=s'        => \$BIN,
+
+           'test=i'         => \$SINGLE_TEST,
 
            'debug'          => \$DEBUG,
            'h|help'         => \$HELP,
@@ -122,7 +131,7 @@ my $TAR = "$TMP/tarmode.tar";
 
 # RUN TESTS
 
-run_test(
+my @all_tests = (
     [\&test_creation_normal, 'normal'],
     [\&test_creation_normal, 'nested'],
     [\&test_creation_incremental, '-g'],
@@ -132,6 +141,18 @@ run_test(
     [\&test_creation_newer],
     [\&test_extraction_normal],
 );
+
+if($SINGLE_TEST == -1) {
+    run_test(@all_tests);
+}
+
+elsif(0 <= $SINGLE_TEST&&$SINGLE_TEST < @all_tests) {
+    run_test($all_tests[$SINGLE_TEST]);
+}
+
+else {
+    die "Test number is invalid\n";
+}
 
 #####
 
