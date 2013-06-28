@@ -1546,12 +1546,13 @@ static void takeover_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn,
 }
 
 
-static void ban_misbehaving_nodes(struct ctdb_recoverd *rec)
+static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	int i;
 	struct ctdb_banning_state *ban_state;
 
+	*self_ban = false;
 	for (i=0; i<ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->ban_state == NULL) {
 			continue;
@@ -1566,6 +1567,11 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec)
 			ctdb->tunable.recovery_ban_period));
 		ctdb_ban_node(rec, ctdb->nodes[i]->pnn, ctdb->tunable.recovery_ban_period);
 		ban_state->count = 0;
+
+		/* Banning ourself? */
+		if (ctdb->nodes[i]->pnn == rec->ctdb->pnn) {
+			*self_ban = true;
+		}
 	}
 }
 
@@ -1585,13 +1591,18 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	uint32_t *nodes;
 	struct timeval start_time;
 	uint32_t culprit = (uint32_t)-1;
+	bool self_ban;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
 
-	ban_misbehaving_nodes(rec);
+	ban_misbehaving_nodes(rec, &self_ban);
+	if (self_ban) {
+		DEBUG(DEBUG_NOTICE, ("This node was banned, aborting recovery\n"));
+		return -1;
+	}
 
         if (ctdb->tunable.verify_recovery_lock != 0) {
 		DEBUG(DEBUG_ERR,("Taking out recovery lock from recovery daemon\n"));
@@ -3333,7 +3344,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	int32_t debug_level;
 	int i, j, ret;
-
+	bool self_ban;
 
 
 	/* verify that the main daemon is still running */
@@ -3411,7 +3422,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
-	ban_misbehaving_nodes(rec);
+	ban_misbehaving_nodes(rec, &self_ban);
+	if (self_ban) {
+		DEBUG(DEBUG_NOTICE, ("This node was banned, restart main_loop\n"));
+		return;
+	}
 
 	/* if the local daemon is STOPPED or BANNED, we verify that the databases are
 	   also frozen and thet the recmode is set to active.
