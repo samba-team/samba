@@ -3416,6 +3416,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 	nodemap = rec->nodemap;
 
+	/* remember our own node flags */
+	rec->node_flags = nodemap->nodes[pnn].flags;
+
 	/* update the capabilities for all nodes */
 	ret = update_capabilities(ctdb, nodemap);
 	if (ret != 0) {
@@ -3493,9 +3496,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		force_election(rec, pnn, nodemap);
 		return;
 	}
-
-	/* remember our own node flags */
-	rec->node_flags = nodemap->nodes[pnn].flags;
 
 	/* count how many active nodes there are */
 	rec->num_active    = 0;
