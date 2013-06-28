@@ -12,8 +12,6 @@ use warnings;
 
 use Archive::Tar;
 use Data::Dumper;
-use Digest::MD5 qw/md5_hex/;
-use File::Basename;
 use File::Path qw/make_path remove_tree/;
 use Getopt::Long;
 use Pod::Usage;
@@ -22,21 +20,21 @@ use Term::ANSIColor;
 sub d {print Dumper @_;}
 
 # DEFAULTS
-my $USER      = '';
-my $PW        = '';
-my $HOST      = 'localhost';
-my $IP        = '';
-my $SHARE     = 'public';
-my $DIR       = 'tarmode';
-my $LOCALPATH = '/media/data/smb-test';
-my $TMP       = '/tmp/smb-tmp';
-my $BIN       = 'smbclient';
+our $USER      = '';
+our $PW        = '';
+our $HOST      = 'localhost';
+our $IP        = '';
+our $SHARE     = 'public';
+our $DIR       = 'tarmode';
+our $LOCALPATH = '/media/data/smb-test';
+our $TMP       = '/tmp/smb-tmp';
+our $BIN       = 'smbclient';
 
-my @SMBARGS   = ();
+our @SMBARGS   = ();
 
-my $DEBUG = 0;
-my $MAN   = 0;
-my $HELP  = 0;
+our $DEBUG = 0;
+our $MAN   = 0;
+our $HELP  = 0;
 
 =head1 SYNOPSIS
 
@@ -122,37 +120,32 @@ sub test_creation_newer {
 
     say "TEST: creation -- backup files newer than a file";
 
-    my %files;
+    my @files;
     my $dt = 3000;
 
     # create oldest file at - DT
-    my $oldest_file = "oldest";
-    my $oldest_md5 = create_file(localpath($oldest_file));
-    set_attr(remotepath($oldest_file));
-    set_time(localpath($oldest_file), time - $dt);
+    my $oldest = File->new_remote('oldest');
+    $oldest->set_attr();
+    $oldest->set_time(time - $dt);
 
     # create limit file
-    my $limit_file = "$TMP/limit";
-    create_file($limit_file);
+    my $limit = File->new_local("$TMP/limit");
 
     # create newA file at + DT
-    my $newA_file = "newA";
-    my $newA_md5 = create_file(localpath($newA_file));
-    set_attr(remotepath($newA_file));
-    set_time(localpath($newA_file), time + $dt);
+    my $newA = File->new_remote('newA');
+    $newA->set_attr();
+    $newA->set_time(time + $dt);
 
     # create newB file at + DT
-    my $newB_file = "newB";
-    my $newB_md5 = create_file(localpath($newB_file));
-    set_attr(remotepath($newB_file));
-    set_time(localpath($newB_file), time + $dt);
+    my $newB = File->new_remote('newB');
+    $newB->set_attr();
+    $newB->set_time(time + $dt);
 
     # get files newer than limit_file
-    $files{"./$DIR/$newA_file"} = $newA_md5;
-    $files{"./$DIR/$newB_file"} = $newB_md5;
+    push @files, $newA, $newB;
 
-    smb_tar('', '-TcN', $limit_file, $TAR, $DIR);
-    return check_tar($TAR, \%files);
+    smb_tar('', '-TcN', $limit->localpath, $TAR, $DIR);
+    return check_tar($TAR, \@files);
 }
 
 sub test_creation_reset {
@@ -160,13 +153,12 @@ sub test_creation_reset {
 
     say "TEST: creation -- reset archived files w/ $mode";
 
-    my %files;
+    my @files;
     my $n = 3;
     for(1..$n) {
-        my $f = "file-$_";
-        my $md5 = create_file(localpath($f));
-        $files{"./$DIR/$f"} = $md5;
-        set_attr(remotepath($f), 'a');
+        my $f = File->new_remote("file-$_");
+        $f->set_attr('a');
+        push @files, $f;
     }
 
     if($mode =~ /reset/) {
@@ -174,13 +166,13 @@ sub test_creation_reset {
     } else {
         smb_tar('', '-Tca', $TAR, $DIR);
     }
-    my $err = check_tar($TAR, \%files);
+
+    my $err = check_tar($TAR, \@files);
     return $err if($err > 0);
 
-    for my $f (smb_ls($DIR)) {
-        if($f->{attr}{A}) {
-            my $attr = join('', map {$_ if $f->{attr}{$_}} qw/R H S A N D/);
-            printf " ! %s %s\n", $attr, $f->{path}.'/'.$f->{fn};
+    for my $f (File->list()) {
+        if($f->{attr}{a}) {
+            printf " ! %s %s\n", $f->attr_str, $f->remotepath;
             $err++;
         }
     }
@@ -191,17 +183,16 @@ sub test_creation_normal {
 
     say "TEST: creation -- normal files (no attributes)";
 
-    my %files;
+    my @files;
     my $n = 5;
     for(1..$n) {
-        my $f = "file-$_";
-        my $md5 = create_file(localpath($f));
-        $files{"./$DIR/$f"} = $md5;
-        set_attr(remotepath($f));
+        my $f = File->new_remote("file-$_");
+        $f->set_attr();
+        push @files, $f;
     }
 
     smb_tar('tarmode full', '-Tc', $TAR, $DIR);
-    return check_tar($TAR, \%files);
+    return check_tar($TAR, \@files);
 }
 
 
@@ -210,19 +201,18 @@ sub test_creation_incremental {
 
     say "TEST: creation -- incremental w/ $mode (backup only archived files)";
 
-    my %files;
+    my @files;
     my $n = 10;
     for(1..$n) {
-        my $f = "file-$_";
-        my $md5 = create_file(localpath($f));
+        my $f = File->new_remote("file-$_");
 
         # set achive bit on ~half of them
         if($_ < $n/2) {
-            $files{"./$DIR/$f"} = $md5;
-            set_attr(remotepath($f), 'a');
+            $f->set_attr('a');
+            push @files, $f;
         }
         else {
-            set_attr(remotepath($f), ((qw/n r s h/)[$_ % 4]))
+            $f->set_attr((qw/n r s h/)[$_ % 4]);
         }
     }
 
@@ -231,7 +221,7 @@ sub test_creation_incremental {
     } else {
         smb_tar('', '-Tcg', $TAR, $DIR);
     }
-    return check_tar($TAR, \%files);
+    return check_tar($TAR, \@files);
 }
 
 #####
@@ -267,15 +257,18 @@ sub reset_env {
 }
 
 sub check_tar {
-    my ($fn, $files) = @_;
+    my ($tar, $files) = @_;
     my %done;
     my (@less, @more, @diff);
 
-    for(keys %$files) {
-        $done{$_} = 0;
+    my %h;
+
+    for(@$files) {
+        $h{$_->tarpath} = $_;
+        $done{$_->tarpath} = 0;
     }
 
-    my $i = Archive::Tar->iter($fn, 1, {md5 => 1});
+    my $i = Archive::Tar->iter($tar, 1, {md5 => 1});
     while(my $f = $i->()) {
         if($f->has_content) {
             my $p = $f->full_path;
@@ -299,7 +292,7 @@ sub check_tar {
 
             # different file
             my $md5 = $f->data;
-            if($md5 ne $$files{$p}) {
+            if($md5 ne $h{$p}->{md5}) {
                 say " !    $p ($md5)";
                 push @diff, $p;
             }
@@ -320,19 +313,6 @@ sub check_tar {
            scalar @diff);
     return (@more + @less + @diff); # nb of errors
 }
-
-sub localpath {
-    my $path = shift;
-    $path = '/'.$path if $path !~ m~^/~;
-    $LOCALPATH . '/' . $DIR . $path;
-}
-
-sub remotepath {
-    my $path = shift;
-    $path = '/'.$path if $path !~ m~^/~;
-    $DIR . $path;
-}
-
 
 # call smbclient and return output
 sub smb_client {
@@ -381,59 +361,6 @@ sub smb_tar {
     smb_client((length($cmd) ? ('-c', $cmd) : ()), @rest);
 }
 
-# return a list of hash of a path on the share
-# TODO: use recurse mode to make less smbclient calls
-sub smb_ls {
-    my $path = shift;
-    my @files;
-    my $out = defined $path && length($path)
-        ? smb_client('-D', $path, '-c', 'ls')
-        : smb_cmd('ls');
-
-    for(split /\n/, $out) {
-        next if !/^  (.+?)\s+([AHSRDN]+)\s+(\d+)\s+(.+)/o;
-        my ($fn, $attr, $size, $date) = ($1, $2, $3, $4);
-        next if $fn =~ /^\.{1,2}$/;
-        push @files, {
-            'path' => $path,
-            'fn'   => $fn,
-            'size' => int($size),
-            'date' => $date,
-            'attr' => {
-                # list context returns somehting different than the
-                # boolean matching result => force scalar context
-                'A' => scalar ($attr =~ /A/),
-                'H' => scalar ($attr =~ /H/),
-                'S' => scalar ($attr =~ /S/),
-                'R' => scalar ($attr =~ /R/),
-                'D' => scalar ($attr =~ /D/),
-                'N' => scalar ($attr =~ /N/),
-            },
-        };
-    }
-    return @files;
-}
-
-# recursively list the share and return it
-sub smb_tree {
-    my ($d, $path) = @_;
-    my @files;
-
-    if(!defined $d) {
-        $d = {'fn' => '', 'attr' => {'D',1}};
-        $path = '';
-    }
-
-    @files = smb_ls($path);
-    $d->{dir} = [@files];
-
-    for my $f (@files) {
-        if($f->{attr}{D}) {
-            smb_tree($f, $path.'/'.$f->{fn});
-        }
-    }
-    return $d;
-}
 
 # print find(1)-like output of the share
 # ex: dump_tree(smb_tree())
@@ -452,37 +379,6 @@ sub dump_tree {
     }
 }
 
-# create file with random content, return md5 sum
-# ex: create_file('/path/on/disk')
-sub create_file {
-    my $fn = shift;
-    my $buf = '';
-    unlink $fn if -e $fn;
-    my $size = random(512, 1024);
-    open my $out, '>', $fn or die "can't open $fn: $!\n";
-    binmode $out;
-    for(1..$size) {
-        $buf .= pack('C', random(0, 256));
-    }
-    print $out $buf;
-    close $out;
-    chmod 0666;
-    return md5_hex($buf);
-}
-
-# set DOS attribute of a file
-# remove all attr and add the one provided
-# ex: set_attr('/path/on/share', 'r', 's')
-sub set_attr {
-    my ($fullpath, @flags) = @_;
-    my ($file, $dir) = fileparse($fullpath);
-
-    smb_client('-D', $dir, '-c', qq{setmode "$file" -rsha});
-    if(@flags && $flags[0] !~ /n/i) {
-        smb_client('-D', $dir, '-c', qq{setmode "$file" +}.join('', @flags));
-    }
-}
-
 sub get_file {
     my ($fullpath, @flags) = @_;
     my ($file, $dir) = fileparse($fullpath);
@@ -498,7 +394,150 @@ sub random {
     $min + int(rand($max - $min));
 }
 
-sub set_time {
-    my ($fn, $t) = @_;
-    utime $t, $t, $fn;
+package File;
+use File::Basename;
+use File::Path qw/make_path remove_tree/;
+use Digest::MD5 qw/md5_hex/;
+
+sub create_file {
+    my $fn = shift;
+    my $buf = '';
+    unlink $fn if -e $fn;
+    my $size = main::random(512, 1024);
+    open my $out, '>', $fn or die "can't open $fn: $!\n";
+    binmode $out;
+    for(1..$size) {
+        $buf .= pack('C', main::random(0, 256));
+    }
+    print $out $buf;
+    close $out;
+    return md5_hex($buf);
 }
+
+sub localpath {
+    my $s = shift;
+    return $s->{dir}.'/'.$s->{name} if !$s->{remote};
+    $main::LOCALPATH.'/'.$s->remotepath;
+}
+
+sub remotepath {
+    my $s = shift;
+    return undef if !$s->{remote};
+
+    if($s->{dir}) {
+        $main::DIR.'/'.$s->{dir}.'/'.$s->{name};
+    } else {
+        $main::DIR.'/'.$s->{name};
+    }
+}
+
+sub remotedir {
+    my $s = shift;
+    return undef if !$s->{remote};
+    $main::DIR.'/'.$s->{dir};
+}
+
+sub tarpath {
+    my $s = shift;
+    return undef if !$s->{remote};
+    './'.$s->remotepath;
+}
+
+sub set_attr {
+    my ($s, @flags) = @_;
+    return undef if !$s->{remote};
+
+    $s->{attr} = {qw/r 0 s 0 h 0 a 0 d 0 n 0/};
+
+    for(@flags) {
+        $s->{attr}{lc($_)} = 1;
+    }
+
+    my $file = $s->{name};
+    main::smb_client('-D', $s->remotedir, '-c', qq{setmode "$file" -rsha});
+    if(@flags && $flags[0] !~ /n/i) {
+        main::smb_client('-D', $s->remotedir, '-c', qq{setmode "$file" +}.join('', @flags));
+    }
+}
+
+sub attr_str {
+    my $s = shift;
+    return undef if !$s->{remote};
+    join('', map {$_ if $s->{attr}{$_}} qw/r h s a d n/);
+}
+
+sub set_time {
+    my ($s, $t) = @_;
+    utime $t, $t, $s->localpath;
+}
+
+sub list {
+    my ($class, $path) = @_;
+    $path ||= '';
+    my @files;
+    my $out = main::smb_client('-D', $main::DIR.'/'.$path, '-c', 'ls');
+
+    for(split /\n/, $out) {
+        next if !/^  (.+?)\s+([AHSRDN]+)\s+(\d+)\s+(.+)/o;
+        my ($fn, $attr, $size, $date) = ($1, $2, $3, $4);
+        next if $fn =~ /^\.{1,2}$/;
+
+        push @files, bless {
+            'remote' => 1,
+            'dir'    => $path,
+            'name'   => $fn,
+            'size'   => int($size),
+            'date'   => $date,
+            'attr'   => {
+                # list context returns somehting different than the
+                # boolean matching result => force scalar context
+                'a' => scalar ($attr =~ /A/),
+                'h' => scalar ($attr =~ /H/),
+                's' => scalar ($attr =~ /S/),
+                'r' => scalar ($attr =~ /R/),
+                'd' => scalar ($attr =~ /D/),
+                'n' => scalar ($attr =~ /N/),
+            },
+        }, $class;
+    }
+    return @files;
+}
+
+sub new_remote {
+    my ($class, $path) = @_;
+    my ($file, $dir) = fileparse($path);
+
+    $dir = '' if $dir eq './';
+
+    my $loc = $main::LOCALPATH.'/'.$main::DIR.'/'.$dir;
+    make_path($loc);
+
+    my $self = {
+        'attr' => {qw/r 0 s 0 h 0 a 0 d 0 n 0/},
+        'dir'  => $dir,
+        'name' => $file,
+        'md5'  => create_file($loc.'/'.$file),
+        'remote' => 1,
+    };
+
+    bless $self, $class;
+}
+
+sub new_local {
+    my ($class, $path) = @_;
+    my ($file, $dir) = fileparse($path);
+
+    make_path($dir);
+
+    my $self = {
+        'attr' => {qw/r 0 s 0 h 0 a 0 d 0 n 0/},
+        'dir'  => $dir,
+        'name' => $file,
+        'md5'  => create_file($path),
+        'remote' => 0,
+    };
+
+    bless $self, $class;
+}
+
+1;
