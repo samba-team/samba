@@ -488,7 +488,10 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			if (!W_ERROR_IS_OK(werr)) {
 				return werr;
 			}
-			if (info1->status != DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
+			if (info1->status != DRSUAPI_DS_NAME_STATUS_NOT_FOUND &&
+			    (formats[i] != DRSUAPI_DS_NAME_FORMAT_CANONICAL ||
+			     info1->status != DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR))
+			{
 				return werr;
 			}
 		}
