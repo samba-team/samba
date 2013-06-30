@@ -934,6 +934,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		struct ldb_result *res;
 		uint32_t dsdb_flags = 0;
 		struct ldb_dn *real_search_dn;
+		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 
 		if (domain_res) {
 			if (!search_dn) {
