@@ -1216,7 +1216,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_INIT);
 	ret = ctdb_event_script(ctdb, CTDB_EVENT_INIT);
 	if (ret != 0) {
-		ctdb_fatal(ctdb, "Failed to run init event\n");
+		ctdb_die(ctdb, "Failed to run init event\n");
 	}
 	ctdb_run_notification_script(ctdb, "init");
 
