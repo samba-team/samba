@@ -1433,32 +1433,36 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 	}
 
 	for (j=0; j<nodemap->num; j++) {
+		/* For readability */
+		struct ctdb_node *node = ctdb->nodes[j];
+
 		/* release any existing data */
-		if (ctdb->nodes[j]->known_public_ips) {
-			talloc_free(ctdb->nodes[j]->known_public_ips);
-			ctdb->nodes[j]->known_public_ips = NULL;
+		if (node->known_public_ips) {
+			talloc_free(node->known_public_ips);
+			node->known_public_ips = NULL;
 		}
-		if (ctdb->nodes[j]->available_public_ips) {
-			talloc_free(ctdb->nodes[j]->available_public_ips);
-			ctdb->nodes[j]->available_public_ips = NULL;
+		if (node->available_public_ips) {
+			talloc_free(node->available_public_ips);
+			node->available_public_ips = NULL;
 		}
 
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
 
-		/* grab a new shiny list of public ips from the node */
+		/* Retrieve the list of known public IPs from the node */
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
 					CONTROL_TIMEOUT(),
-					ctdb->nodes[j]->pnn,
+					node->pnn,
 					ctdb->nodes,
 					0,
-					&ctdb->nodes[j]->known_public_ips);
+					&node->known_public_ips);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read known public ips from node : %u\n",
-				ctdb->nodes[j]->pnn));
+			DEBUG(DEBUG_ERR,
+			      ("Failed to read known public IPs from node: %u\n",
+			       node->pnn));
 			if (culprit) {
-				*culprit = ctdb->nodes[j]->pnn;
+				*culprit = node->pnn;
 			}
 			return -1;
 		}
@@ -1466,24 +1470,25 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		if (ctdb->do_checkpublicip &&
 		    (rec->ip_check_disable_ctx == NULL) &&
 		    verify_remote_ip_allocation(ctdb,
-						 ctdb->nodes[j]->known_public_ips,
-						 ctdb->nodes[j]->pnn)) {
+						 node->known_public_ips,
+						 node->pnn)) {
 			DEBUG(DEBUG_ERR,("Trigger IP reallocation\n"));
 			rec->need_takeover_run = true;
 		}
 
-		/* grab a new shiny list of public ips from the node */
+		/* Retrieve the list of available public IPs from the node */
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
 					CONTROL_TIMEOUT(),
-					ctdb->nodes[j]->pnn,
+					node->pnn,
 					ctdb->nodes,
 					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
-					&ctdb->nodes[j]->available_public_ips);
+					&node->available_public_ips);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read available public ips from node : %u\n",
-				ctdb->nodes[j]->pnn));
+			DEBUG(DEBUG_ERR,
+			      ("Failed to read available public IPs from node: %u\n",
+			       node->pnn));
 			if (culprit) {
-				*culprit = ctdb->nodes[j]->pnn;
+				*culprit = node->pnn;
 			}
 			return -1;
 		}
