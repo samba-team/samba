@@ -4257,7 +4257,9 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
    node has the expected ip allocation.
    This is verified against ctdb->ip_tree
 */
-int verify_remote_ip_allocation(struct ctdb_context *ctdb, struct ctdb_all_public_ips *ips)
+int verify_remote_ip_allocation(struct ctdb_context *ctdb,
+				struct ctdb_all_public_ips *ips,
+				uint32_t pnn)
 {
 	struct ctdb_public_ip_list *tmp_ip; 
 	int i;
@@ -4275,7 +4277,7 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb, struct ctdb_all_publi
 	for (i=0; i<ips->num; i++) {
 		tmp_ip = trbt_lookuparray32(ctdb->ip_tree, IP_KEYLEN, ip_key(&ips->ips[i].addr));
 		if (tmp_ip == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Could not find host for address %s, reassign ips\n", ctdb_addr_to_str(&ips->ips[i].addr)));
+			DEBUG(DEBUG_ERR,("Node %u has new or unknown public IP %s\n", pnn, ctdb_addr_to_str(&ips->ips[i].addr)));
 			return -1;
 		}
 
@@ -4284,7 +4286,11 @@ int verify_remote_ip_allocation(struct ctdb_context *ctdb, struct ctdb_all_publi
 		}
 
 		if (tmp_ip->pnn != ips->ips[i].pnn) {
-			DEBUG(DEBUG_ERR,("Inconsistent ip allocation. Trigger reallocation. Thinks %s is held by node %u while it is held by node %u\n", ctdb_addr_to_str(&ips->ips[i].addr), ips->ips[i].pnn, tmp_ip->pnn));
+			DEBUG(DEBUG_ERR,
+			      ("Inconsistent IP allocation - node %u thinks %s is held by node %u while it is assigned to node %u\n",
+			       pnn,
+			       ctdb_addr_to_str(&ips->ips[i].addr),
+			       ips->ips[i].pnn, tmp_ip->pnn));
 			return -1;
 		}
 	}

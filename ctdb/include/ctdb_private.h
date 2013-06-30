@@ -1494,7 +1494,8 @@ void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event);
 void ctdb_fault_setup(void);
 
 int verify_remote_ip_allocation(struct ctdb_context *ctdb, 
-				struct ctdb_all_public_ips *ips);
+				struct ctdb_all_public_ips *ips,
+				uint32_t pnn);
 int update_ip_assignment_tree(struct ctdb_context *ctdb,
 				struct ctdb_public_ip *ip);
 
