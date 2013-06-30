@@ -1843,9 +1843,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
 
-	/*
-	  tell nodes to takeover their public IPs
-	 */
+	/* Fetch known/available public IPs from each active node */
 	ret = ctdb_reload_remote_public_ips(ctdb, rec, nodemap, &culprit);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
