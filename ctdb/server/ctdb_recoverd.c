@@ -2726,7 +2726,7 @@ static void verify_recmode_normal_callback(struct ctdb_client_control_state *sta
 	   status field
 	*/
 	if (state->status != CTDB_RECOVERY_NORMAL) {
-		DEBUG(DEBUG_NOTICE, (__location__ " Node:%u was in recovery mode. Restart recovery process\n", state->c->hdr.destnode));
+		DEBUG(DEBUG_NOTICE, ("Node:%u was in recovery mode. Start recovery process\n", state->c->hdr.destnode));
 		rmdata->status = MONITOR_RECOVERY_NEEDED;
 	}
 

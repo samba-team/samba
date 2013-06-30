@@ -151,7 +151,7 @@ the recovery master also performs the following tests:
 16, Verify that all CONNECTED nodes in the cluster are in recovery mode NORMAL.
     If one of the nodes were in recovery mode ACTIVE, force a new recovery and restart
     monitoring from 1.
-    "Node:%u was in recovery mode. Restart recovery process"
+    "Node:%u was in recovery mode. Start recovery process"
 
 17, Verify that the filehandle to the recovery lock file is valid.
     If it is not, this may mean a split brain and is a critical error.
