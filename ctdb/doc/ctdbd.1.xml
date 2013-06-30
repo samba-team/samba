@@ -777,7 +777,8 @@
     <para>
     When set to 0, this disables BANNING completely in the cluster and thus
     nodes can not get banned, even it they break. Don't set to 0 unless you
-    know what you are doing.
+    know what you are doing.  You should set this to the same value on
+    all nodes to avoid unexpected behaviour.
     </para>
     </refsect2>
 
