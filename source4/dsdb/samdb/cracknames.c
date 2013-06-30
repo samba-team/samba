@@ -577,8 +577,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		}
 
 		domain_filter = talloc_asprintf(mem_ctx, 
-						"(&(objectClass=crossRef)(|(dnsRoot=%s)(netbiosName=%s))(systemFlags:%s:=%u))",
-						ldb_binary_encode_string(mem_ctx, domain),
+						"(&(objectClass=crossRef)(netbiosName=%s)(systemFlags:%s:=%u))",
 						ldb_binary_encode_string(mem_ctx, domain),
 						LDB_OID_COMPARATOR_AND,
 						SYSTEM_FLAG_CR_NTDS_DOMAIN);
