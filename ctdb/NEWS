@@ -18,10 +18,17 @@ Important bug fixes
   (e.g. under high load).  This simple fix will stop an exit from the
   retry loop on any error.
 
+* When updating flags on all nodes, use the correct updated flags.  This
+  should avoid wrong flag change messages in the logs.
+
+* The recovery daemon will not ban other nodes if the current node
+  is banned.
+
 Important internal changes
 --------------------------
 
-*
+* The recovery daemon on stopped or banned node will stop participating in any
+  cluster activity.
 
 
 Changes in CTDB 2.2
