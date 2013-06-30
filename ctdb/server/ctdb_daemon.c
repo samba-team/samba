@@ -1032,8 +1032,7 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 				      void *private_data)
 {
 	if (status != 0) {
-		DEBUG(DEBUG_ALERT,("Failed to run setup event - exiting\n"));
-		exit(1);
+		ctdb_die(ctdb, "Failed to run setup event");
 	}
 	ctdb_run_notification_script(ctdb, "setup");
 
