@@ -59,6 +59,15 @@ void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 	abort();
 }
 
+/*
+  like ctdb_fatal() but a core/backtrace would not be useful
+*/
+void ctdb_die(struct ctdb_context *ctdb, const char *msg)
+{
+	DEBUG(DEBUG_ALERT,("ctdb exiting with error: %s\n", msg));
+	exit(1);
+}
+
 /* Invoke an external program to do some sort of tracing on the CTDB
  * process.  This might block for a little while.  The external
  * program is specified by the environment variable
