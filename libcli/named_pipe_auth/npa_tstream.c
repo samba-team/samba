@@ -1321,7 +1321,7 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 						i4.client_port,
 						&state->client);
 	if (ret != 0) {
-		DEBUG(2, ("Invalid server address[%s:%u] - %s\n",
+		DEBUG(2, ("Invalid client address[%s:%u] - %s\n",
 			  i4.client_addr, i4.client_port,
 			  strerror(errno)));
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
