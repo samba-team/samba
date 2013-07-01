@@ -168,7 +168,7 @@ static bool check_client_uid(struct winbindd_cli_state *state, uid_t uid)
 		return False;
 	}
 
-	if (uid != ret_uid) {
+	if (uid != ret_uid && ret_uid != sec_initial_uid()) {
 		DEBUG(1, ("check_client_uid: Client lied about its uid: said %u, "
 			"actually was %u; denying access\n",
 			(unsigned int)uid, (unsigned int)ret_uid));
