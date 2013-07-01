@@ -145,6 +145,8 @@ int ctdb_start_freeze(struct ctdb_context *ctdb, uint32_t priority)
 		return 0;
 	}
 
+	DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
+
 	/* Stop any vacuuming going on: we don't want to wait. */
 	ctdb_stop_vacuuming(ctdb);
 
@@ -175,8 +177,6 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 
 	priority = (uint32_t)c->srvid;
 
-	DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
-
 	if (priority == 0) {
 		DEBUG(DEBUG_ERR,("Freeze priority 0 requested, remapping to priority 1\n"));
 		priority = 1;
@@ -188,6 +188,7 @@ int32_t ctdb_control_freeze(struct ctdb_context *ctdb, struct ctdb_req_control *
 	}
 
 	if (ctdb->freeze_mode[priority] == CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_ERR, ("Freeze priority %u\n", priority));
 		/* we're already frozen */
 		return 0;
 	}
