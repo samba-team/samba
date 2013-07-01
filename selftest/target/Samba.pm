@@ -150,11 +150,12 @@ sub get_interface($)
     $netbiosname = lc($netbiosname);
 
     my %interfaces = ();
-    $interfaces{"locals3dc2"} = 2;
-    $interfaces{"localmember3"} = 3;
-    $interfaces{"localshare4"} = 4;
-    $interfaces{"localktest6"} = 6;
-    $interfaces{"maptoguest"} = 7;
+    $interfaces{"locals3dc2"} = 3;
+    $interfaces{"localmember3"} = 4;
+    $interfaces{"localshare4"} = 5;
+
+    $interfaces{"localktest6"} = 7;
+    $interfaces{"maptoguest"} = 8;
 
     # 11-16 used by selftest.pl for client interfaces
 
