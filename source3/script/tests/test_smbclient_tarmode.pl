@@ -12,9 +12,9 @@ test_smbclient_tarmode.pl - Test for smbclient tar backup feature
 # c g      DONE
 # c a      DONE
 # c N      DONE
-# c I      #
+# c I      DONE
 # c I r    #
-# c X      #
+# c X      DONE
 # c X r    #
 # c F      #
 # c F r    #
@@ -139,6 +139,8 @@ my @all_tests = (
     [\&test_creation_reset,       '-a'],
     [\&test_creation_reset,       'tarmode reset'],
     [\&test_creation_newer],
+    [\&test_creation_include,],
+    [\&test_creation_exclude,],
     [\&test_extraction_normal],
 );
 
@@ -290,6 +292,36 @@ sub test_extraction_normal {
 
     smb_tar('', '-Tx', $TAR);
     check_remote([values %files]);
+}
+
+sub test_creation_include {
+    say "TEST: extraction -- explicit include";
+
+    my @files;
+
+    for(qw(file_inc inc/b inc/c inc/dir/foo dir_ex/d zob)) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @files, $f if /inc/;
+    }
+
+    smb_tar('', '-TcI', $TAR, "$DIR/file_inc", "$DIR/inc");
+    return check_tar($TAR, \@files);
+}
+
+sub test_creation_exclude {
+    say "TEST: extraction -- explicit exclude";
+
+    my @files;
+
+    for(qw(file_ex ex/b ex/c ex/dir/foo foo/bar zob)) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @files, $f if !/ex/;
+    }
+
+    smb_tar('', '-TcX', $TAR, "$DIR/file_ex", "$DIR/ex");
+    return check_tar($TAR, \@files);
 }
 
 #####
