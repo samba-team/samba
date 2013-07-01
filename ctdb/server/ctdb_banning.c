@@ -56,9 +56,7 @@ int32_t ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 	ctdb->vnn_map->generation = INVALID_GENERATION;
 
 	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb_start_freeze(ctdb, i) != 0) {
-			DEBUG(DEBUG_ERR,(__location__ " Failed to freeze db priority %u\n", i));
-		}
+		ctdb_start_freeze(ctdb, i);
 	}
 	ctdb_release_all_ips(ctdb);
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
