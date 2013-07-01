@@ -240,7 +240,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 	char fname[256];
 	union smb_fileinfo qfinfo;
 	uint16_t vuid;
-	uint16_t fnum;
+	uint16_t fnum = 0;
 	struct smb_composite_sesssetup io_sesssetup;
 	size_t i;
 
