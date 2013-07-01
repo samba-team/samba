@@ -389,7 +389,7 @@ int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	snprintf(port_str, sizeof(port_str) - 1, "%u", port);
+	snprintf(port_str, sizeof(port_str), "%u", port);
 
 	ret = getaddrinfo(addr, port_str, &hints, &result);
 	if (ret != 0) {
