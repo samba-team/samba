@@ -93,7 +93,6 @@
 ^samba4.rpc.lsalookup with seal,padcheck
 ^samba4.rpc.lsalookup with validate
 ^samba4.rpc.lsalookup with bigendian
-^samba4.rpc.cracknames
 ^samba4.rpc.netlogon.*.LogonUasLogon
 ^samba4.rpc.netlogon.*.LogonUasLogoff
 ^samba4.rpc.netlogon.*.DatabaseSync
@@ -155,7 +154,6 @@
 #^samba4.ldap.dirsync.python.dc..__main__.ExtendedDirsyncTests.*
 ^samba4.libsmbclient.opendir.opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
-^samba4.rpc.drsuapi.*.drsuapi.DsCrackNames\(.*\)$
 ^samba4.smb2.oplock.exclusive2\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.exclusive5\(.*\)$ # samba 4 oplocks are a mess
 ^samba4.smb2.oplock.exclusive6\(.*\)$ # samba 4 oplocks are a mess
