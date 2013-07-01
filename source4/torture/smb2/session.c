@@ -863,7 +863,7 @@ static bool test_session_expire1(struct torture_context *tctx)
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
 	struct cli_credentials *credentials = cmdline_credentials;
-	struct smb2_tree *tree;
+	struct smb2_tree *tree = NULL;
 	enum credentials_use_kerberos use_kerberos;
 	char fname[256];
 	struct smb2_handle _h1;
