@@ -468,7 +468,9 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	/* TODO: - fill the correct names in all cases!
 	 *       - handle format_flags
 	 */
-
+	if (format_desired == DRSUAPI_DS_NAME_FORMAT_UNKNOWN) {
+		return WERR_OK;
+	}
 	/* here we need to set the domain_filter and/or the result_filter */
 	switch (format_offered) {
 	case DRSUAPI_DS_NAME_FORMAT_UNKNOWN:
@@ -933,10 +935,25 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		int ret;
 		struct ldb_result *res;
 		uint32_t dsdb_flags = 0;
-		struct ldb_dn *real_search_dn;
+		struct ldb_dn *real_search_dn = NULL;
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 
-		if (domain_res) {
+		/*
+		 * From 4.1.4.2.11 of MS-DRSR
+		 * if DS_NAME_FLAG_GCVERIFY in flags then
+		 * rt := select all O from all
+		 * where attrValue in GetAttrVals(O, att, false)
+		 * else
+		 * rt := select all O from subtree DefaultNC()
+		 * where attrValue in GetAttrVals(O, att, false)
+		 * endif
+		 * return rt
+		 */
+		if (format_flags & DRSUAPI_DS_NAME_FLAG_GCVERIFY ||
+		    format_offered == DRSUAPI_DS_NAME_FORMAT_GUID)
+		{
+			dsdb_flags = DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
+		} else if (domain_res) {
 			if (!search_dn) {
 				struct ldb_dn *tmp_dn = samdb_result_dn(sam_ctx, mem_ctx, domain_res->msgs[0], "ncName", NULL);
 				real_search_dn = tmp_dn;
@@ -944,13 +961,11 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				real_search_dn = search_dn;
 			}
 		} else {
-			dsdb_flags = DSDB_SEARCH_SEARCH_ALL_PARTITIONS;
-			real_search_dn = NULL;
+			real_search_dn = ldb_get_default_basedn(sam_ctx);
 		}
 		if (format_desired == DRSUAPI_DS_NAME_FORMAT_GUID){
 			 dsdb_flags |= DSDB_SEARCH_SHOW_RECYCLED;
 		}
-
 		/* search with the 'phantom root' flag */
 		ret = dsdb_search(sam_ctx, mem_ctx, &res,
 				  real_search_dn,
