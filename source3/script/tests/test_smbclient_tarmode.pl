@@ -141,6 +141,7 @@ my @all_tests = (
     [\&test_creation_newer],
     [\&test_creation_include,],
     [\&test_creation_exclude,],
+    [\&test_creation_list,],
     [\&test_extraction_normal],
     [\&test_extraction_include],
     [\&test_extraction_exclude],
@@ -377,6 +378,22 @@ sub test_creation_exclude {
     return check_tar($TAR, \@files);
 }
 
+sub test_creation_list {
+    say "TEST: creation -- filelist";
+
+    my @inc_files;
+
+    for(qw(file_inc inc/b inc/c inc/dir/foo foo/bar zob)) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @inc_files, $f if /inc/;
+    }
+
+    my $flist = File->new_local("$TMP/list", file_list(@inc_files));
+    smb_tar('', '-TcF', $TAR, $flist->localpath);
+    return check_tar($TAR, \@inc_files);
+}
+
 #####
 
 # IMPLEMENTATION
@@ -414,6 +431,15 @@ sub reset_tmp {
 sub reset_env {
     reset_tmp();
     reset_remote();
+}
+
+sub file_list {
+    my @files = @_;
+    my $s = '';
+    for(@files) {
+        $s .= $_->remotepath."\n";
+    }
+    return $s;
 }
 
 sub check_remote {
@@ -770,17 +796,28 @@ sub new_remote {
 }
 
 sub new_local {
-    my ($class, $path) = @_;
+    my ($class, $path, $data) = @_;
     my ($file, $dir) = fileparse($path);
 
     $dir =~ s{/$}{};
     make_path($dir);
 
+    my $md5;
+
+    if(defined $data) {
+        open my $f, '>', $path or die "can't write in $path: $!";
+        print $f $data;
+        close $f;
+        $md5 = md5_hex($data);
+    } else {
+        $md5 = create_file($path);
+    }
+
     my $self = {
         'attr' => {qw/r 0 s 0 h 0 a 0 d 0 n 0/},
         'dir'  => $dir,
         'name' => $file,
-        'md5'  => create_file($path),
+        'md5'  => $md5,
         'remote' => 0,
     };
 
