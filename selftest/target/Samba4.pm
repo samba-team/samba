@@ -1465,7 +1465,7 @@ sub provision_plugin_s4_dc($$)
 				   "domain controller",
 				   "plugindc",
 				   "PLUGINDOMAIN",
-				   "plugin.samba.example.com",
+				   "plugindc.samba.example.com",
 				   "2008",
 				   "locDCpass1",
 				   undef, $extra_smbconf_options,
