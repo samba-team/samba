@@ -19,9 +19,9 @@ test_smbclient_tarmode.pl - Test for smbclient tar backup feature
 # c F      #
 # c F r    #
 # x        DONE
-# x I      #
+# x I      DONE
 # x I r    #
-# x X      #
+# x X      DONE
 # x X r    #
 # x F      #
 # x F r    #
@@ -142,6 +142,8 @@ my @all_tests = (
     [\&test_creation_include,],
     [\&test_creation_exclude,],
     [\&test_extraction_normal],
+    [\&test_extraction_include],
+    [\&test_extraction_exclude],
 );
 
 if($SINGLE_TEST == -1) {
@@ -275,24 +277,75 @@ sub test_extraction_normal {
 
     say "TEST: extraction -- backup and restore normal files";
 
-    my %files;
+    my @files;
     my $n = 5;
     for(1..$n) {
         my $f = File->new_remote("file-$_");
         $f->set_attr();
-        $files{$f->remotepath} = $f;
+        push @files, $f;
     }
 
     # store
     smb_tar('', '-Tc', $TAR, $DIR);
-    my $err = check_tar($TAR, [values %files]);
+    my $err = check_tar($TAR, \@files);
     return $err if $err > 0;
 
     reset_remote();
 
     smb_tar('', '-Tx', $TAR);
-    check_remote([values %files]);
+    check_remote(\@files);
 }
+
+sub test_extraction_include {
+
+    say "TEST: extraction -- backup and restore included paths";
+
+    my @all_files;
+    my @inc_files;
+
+    for(qw(file_inc inc/b inc/c inc/dir/foo dir_ex/d zob)) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @all_files, $f;
+        push @inc_files, $f if /inc/;
+    }
+
+    # store
+    smb_tar('', '-Tc', $TAR, $DIR);
+    my $err = check_tar($TAR, \@all_files);
+    return $err if $err > 0;
+
+    reset_remote();
+
+    smb_tar('', '-TxI', $TAR, "$DIR/file_inc", "$DIR/inc");
+    check_remote(\@inc_files);
+}
+
+sub test_extraction_exclude {
+
+    say "TEST: extraction -- backup and restore without excluded paths";
+
+    my @all_files;
+    my @inc_files;
+
+    for(qw(file_exc exc/b exc/c exc/dir/foo dir_ex/d zob)) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @all_files, $f;
+        push @inc_files, $f if !/exc/;
+    }
+
+    # store
+    smb_tar('', '-Tc', $TAR, $DIR);
+    my $err = check_tar($TAR, \@all_files);
+    return $err if $err > 0;
+
+    reset_remote();
+
+    smb_tar('', '-TxX', $TAR, "$DIR/file_exc", "$DIR/exc");
+    check_remote(\@inc_files);
+}
+
 
 sub test_creation_include {
     say "TEST: extraction -- explicit include";
@@ -380,7 +433,7 @@ sub check_remote {
 
         # files that shouldn't be there
         if(!exists $expected{$rfile}) {
-            say " +    $_";
+            say " +    $rfile";
             push @more, $rfile;
             next;
         }
