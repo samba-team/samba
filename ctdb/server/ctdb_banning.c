@@ -31,6 +31,21 @@ ctdb_ban_node_event(struct event_context *ev, struct timed_event *te,
 			       struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	bool freeze_failed = false;
+	int i;
+
+	/* Make sure we were able to freeze databases during banning */
+	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
+		if (ctdb->freeze_mode[i] != CTDB_FREEZE_FROZEN) {
+			freeze_failed = true;
+			break;
+		}
+	}
+	if (freeze_failed) {
+		DEBUG(DEBUG_ERR, ("Banning timedout, but still unable to freeze databases\n"));
+		ctdb_ban_self(ctdb);
+		return;
+	}
 
 	DEBUG(DEBUG_ERR,("Banning timedout\n"));
 	ctdb->nodes[ctdb->pnn]->flags &= ~NODE_FLAGS_BANNED;
