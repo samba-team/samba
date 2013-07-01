@@ -1124,7 +1124,8 @@ $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 ";
 	if ($unix_uid != 0) {
-		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false";
+		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
+";
 	}
 	close(PASSWD);
 
@@ -1139,7 +1140,8 @@ domusers:X:$gid_domusers:
 domadmins:X:$gid_domadmins:
 ";
 	if ($unix_gids[0] != 0) {
-		print GROUP "root:x:$gid_root:";
+		print GROUP "root:x:$gid_root:
+";
 	}
 
 	close(GROUP);
