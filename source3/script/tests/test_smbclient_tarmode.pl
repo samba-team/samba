@@ -16,14 +16,14 @@ test_smbclient_tarmode.pl - Test for smbclient tar backup feature
 # c I r    #
 # c X      DONE
 # c X r    #
-# c F      #
+# c F      DONE
 # c F r    #
 # x        DONE
 # x I      DONE
 # x I r    #
 # x X      DONE
 # x X r    #
-# x F      #
+# x F      DONE
 # x F r    #
 
 use v5.16;
@@ -145,6 +145,7 @@ my @all_tests = (
     [\&test_extraction_normal],
     [\&test_extraction_include],
     [\&test_extraction_exclude],
+    [\&test_extraction_list],
 );
 
 if($SINGLE_TEST == -1) {
@@ -392,6 +393,31 @@ sub test_creation_list {
     my $flist = File->new_local("$TMP/list", file_list(@inc_files));
     smb_tar('', '-TcF', $TAR, $flist->localpath);
     return check_tar($TAR, \@inc_files);
+}
+
+sub test_extraction_list {
+    say "TEST: extraction -- filelist";
+
+    my @inc_files;
+    my @all_files;
+
+    for(qw(file_inc inc/b inc/c inc/dir/foo foo/bar zob)) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @all_files, $f;
+        push @inc_files, $f if /inc/;
+    }
+
+    # store
+    smb_tar('', '-Tc', $TAR, $DIR);
+    my $err = check_tar($TAR, \@all_files);
+    return $err if $err > 0;
+
+    reset_remote();
+
+    my $flist = File->new_local("$TMP/list", file_list(@inc_files));
+    smb_tar('', '-TxF', $TAR, $flist->localpath);
+    return check_remote(\@inc_files);
 }
 
 #####
