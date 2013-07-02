@@ -893,7 +893,11 @@ int ctdb_event_script_args(struct ctdb_context *ctdb, enum ctdb_eventscript_call
 				  " Immediately banning ourself for %d seconds\n",
 				  ctdb_eventscript_call_names[call],
 				  ctdb->tunable.recovery_ban_period));
-		ctdb_ban_self(ctdb);
+
+		/* Don't ban self if CTDB is starting up or shutting down */
+		if (call != CTDB_EVENT_INIT && call != CTDB_EVENT_SHUTDOWN) {
+			ctdb_ban_self(ctdb);
+		}
 	}
 
 	return status.status;
