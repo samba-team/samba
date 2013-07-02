@@ -149,6 +149,7 @@ my @all_tests = (
     [\&test_creation_include,],
     [\&test_creation_exclude,],
     [\&test_creation_list,],
+    [\&test_creation_glob],
     [\&test_extraction_normal],
     [\&test_extraction_include],
     [\&test_extraction_exclude],
@@ -226,7 +227,7 @@ sub test_creation_reset {
     my $err = check_tar($TAR, \@files);
     return $err if($err > 0);
 
-    for my $f (File->list()) {
+    for my $f (File->list($DIR)) {
         if($f->{attr}{a}) {
             printf " ! %s %s\n", $f->attr_str, $f->remotepath;
             $err++;
@@ -248,7 +249,6 @@ sub test_creation_normal {
         $f->set_attr();
         push @files, $f;
     }
-
     smb_tar('tarmode full', '-Tc', $TAR, $DIR);
     return check_tar($TAR, \@files);
 }
@@ -302,7 +302,7 @@ sub test_extraction_normal {
     reset_remote();
 
     smb_tar('', '-Tx', $TAR);
-    check_remote(\@files);
+    check_remote($DIR, \@files);
 }
 
 sub test_extraction_include {
@@ -327,7 +327,7 @@ sub test_extraction_include {
     reset_remote();
 
     smb_tar('', '-TxI', $TAR, "$DIR/file_inc", "$DIR/inc");
-    check_remote(\@inc_files);
+    check_remote($DIR, \@inc_files);
 }
 
 sub test_extraction_exclude {
@@ -352,7 +352,7 @@ sub test_extraction_exclude {
     reset_remote();
 
     smb_tar('', '-TxX', $TAR, "$DIR/file_exc", "$DIR/exc");
-    check_remote(\@inc_files);
+    check_remote($DIR, \@inc_files);
 }
 
 
@@ -402,6 +402,63 @@ sub test_creation_list {
     return check_tar($TAR, \@inc_files);
 }
 
+sub tardump {
+    system sprintf q{tar tf %s | grep -v '/$' | sort}, $TAR;
+}
+
+sub test_creation_glob {
+    say "TEST: creation -- include/exclude with wildcards";
+
+    my @exts = qw(txt jpg exe);
+    my @dirs = ('', "$DIR/", "$DIR/dir/");
+    my @all;
+
+    for my $dir (@dirs) {
+        for(@exts) {
+            my $fn = $dir . 'file.' . $_;
+            my $f = File->new_remote($fn, 'ABSPATH');
+            $f->delete_on_destruction(1);
+            $f->set_attr();
+            push @all, $f;
+        }
+    }
+
+    my $err = 0;
+
+    for my $dir (@dirs) {
+        for my $ext (@exts) {
+            my @inc;
+
+            # include
+            @inc = grep { $_->remotepath eq $dir.'file.'.$ext } @all;
+            smb_tar('', '-Tc', $TAR, $dir.'*.'.$ext);
+            $err += check_tar($TAR, \@inc);
+
+            # include with -r
+            # if you include a pattern -> tar will be empty... bug?
+            # @inc = grep { my $n = $_->remotepath; $n =~ /$ext/ && $n !~ /dir/} @all;
+            # smb_tar('', '-Tcr', $TAR, "*.$ext");
+            # $err += check_tar($TAR, \@inc);
+
+            # exclude with -r
+            # @inc = grep { my $n = $_->remotepath; $n !~ /$ext/} @all;
+            # smb_tar('', '-TcrX', $TAR, "*.$ext");
+            # #$err += check_tar($TAR, \@inc);
+            # #tardump();
+            # $err += check_tar($TAR, \@all);
+
+            # # exclude
+            # @inc = grep { my $n = $_->remotepath; $n !~ /$ext/ && $n !~ /dir/} @all;
+            # smb_tar('', '-TcX', $TAR, "$DIR/*.$ext");
+            # #$err += check_tar($TAR, \@inc);
+            # $err += check_tar($TAR, \@all);
+
+        }
+    }
+
+    $err;
+}
+
 sub test_extraction_list {
     say "TEST: extraction -- filelist";
 
@@ -424,7 +481,7 @@ sub test_extraction_list {
 
     my $flist = File->new_local("$TMP/list", file_list(@inc_files));
     smb_tar('', '-TxF', $TAR, $flist->localpath);
-    return check_remote(\@inc_files);
+    return check_remote($DIR, \@inc_files);
 }
 
 #####
@@ -449,6 +506,19 @@ sub print_res {
     } else {
         printf " RES: %sOK%s\n", color('bold green'), color 'reset';
     }
+}
+
+# create @files and return (the ones matching $re, all)
+sub create_grep {
+    my ($re, @files) = @_;
+    my (@inc, @all);
+    for(@files) {
+        my $f = File->new_remote($_);
+        $f->set_attr();
+        push @inc, $f if /$re/;
+        push @all, $f;
+    }
+    return \@inc, \@all;
 }
 
 sub reset_remote {
@@ -476,7 +546,7 @@ sub file_list {
 }
 
 sub check_remote {
-    my ($files) = @_;
+    my ($subpath, $files) = @_;
     my (%done, %expected);
     my (@less, @more, @diff);
 
@@ -486,7 +556,7 @@ sub check_remote {
     }
 
     my %remote;
-    File::walk(sub { $remote{$_->remotepath} = $_ }, File::tree());
+    File::walk(sub { $remote{$_->remotepath} = $_ }, File::tree($subpath));
 
     for my $rfile (keys %remote) {
 
@@ -542,9 +612,11 @@ sub check_tar {
         $done{$_->tarpath} = 0;
     }
 
+    my $total = 0;
     my $i = Archive::Tar->iter($tar, 1, {md5 => 1});
     while(my $f = $i->()) {
         if($f->has_content) {
+            $total++;
             my $p = $f->full_path;
 
             # file that shouldn't be there
@@ -569,6 +641,11 @@ sub check_tar {
             if($md5 ne $h{$p}->md5) {
                 say " !    $p ($md5)";
                 push @diff, $p;
+                next;
+            }
+
+            if($DEBUG) {
+                say "      $p";
             }
         }
     }
@@ -581,7 +658,7 @@ sub check_tar {
 
     # summary
     printf("\t%d files, +%d, -%d, !%d\n",
-           scalar keys %done,
+           $total,
            scalar @more,
            scalar @less,
            scalar @diff);
@@ -598,6 +675,10 @@ sub smb_client {
                       quotemeta($fullpath),
                       join(' ', map {quotemeta} (@SMBARGS, @args)));
 
+    if($DEBUG) {
+        say $cmd =~ s{\\([/+-])}{$1}gr;
+    }
+
     my $out = `$cmd 2>&1`;
     my $err = $?;
     # handle abnormal exit
@@ -612,8 +693,6 @@ sub smb_client {
     }
 
     if($DEBUG) {
-        $cmd =~ s{\\([/+-])}{$1}g;
-        say $cmd;
         say $out;
     }
 
@@ -645,6 +724,14 @@ package File;
 use File::Basename;
 use File::Path qw/make_path remove_tree/;
 use Digest::MD5 qw/md5_hex/;
+use Scalar::Util 'blessed';
+
+sub cleanpath {
+    my $p = shift;
+    $p =~ s{/+}{/}g;
+    $p =~ s{/$}{};
+    $p;
+}
 
 sub create_file {
     my $fn = shift;
@@ -663,37 +750,35 @@ sub create_file {
 
 sub localpath {
     my $s = shift;
-    return $s->{dir}.'/'.$s->{name} if !$s->{remote};
-    $main::LOCALPATH.'/'.$s->remotepath;
+    if($s->{remote}) {
+        return cleanpath($main::LOCALPATH.'/'.$s->remotepath);
+    }
+    else {
+        return cleanpath($s->{dir}.'/'.$s->{name});
+    }
 }
 
 sub remotepath {
-    my ($s, $subpath) = @_;
+    my ($s) = @_;
     return undef if !$s->{remote};
-
-    my $prefix = $main::DIR.'/';;
-
-    if($subpath) {
-        $prefix = '';
-    }
-
-    if($s->{dir}) {
-        $prefix.$s->{dir}.'/'.$s->{name};
-    } else {
-        $prefix.$s->{name};
-    }
+    cleanpath(($s->{dir}.'/'.$s->{name}) =~ s{^/}{}r);
 }
 
 sub remotedir {
     my $s = shift;
     return undef if !$s->{remote};
-    $main::DIR.'/'.$s->{dir};
+    cleanpath($s->{dir});
 }
 
 sub tarpath {
     my $s = shift;
     return undef if !$s->{remote};
-    './'.$s->remotepath;
+    cleanpath('./'.$s->remotepath);
+}
+
+sub delete_on_destruction {
+    my ($s, $delete) = @_;
+    $s->{delete_on_destruction} = $delete;
 }
 
 sub set_attr {
@@ -707,9 +792,13 @@ sub set_attr {
     }
 
     my $file = $s->{name};
-    main::smb_client('-D', $s->remotedir, '-c', qq{setmode "$file" -rsha});
+    my @args;
+    if($s->remotedir) {
+        push @args, '-D', $s->remotedir;
+    }
+    main::smb_client(@args, '-c', qq{setmode "$file" -rsha});
     if(@flags && $flags[0] !~ /n/i) {
-        main::smb_client('-D', $s->remotedir, '-c', qq{setmode "$file" +}.join('', @flags));
+        main::smb_client(@args, '-c', qq{setmode "$file" +}.join('', @flags));
     }
 }
 
@@ -760,8 +849,10 @@ sub tree {
 
     if(!defined $d) {
         @files = File->list();
+    } elsif(blessed $d) {
+        @files = File->list($d->remotepath);
     } else {
-        @files = File->list($d->remotepath(1));
+        @files = File->list($d);
     }
 
     for my $f (@files) {
@@ -775,10 +866,9 @@ sub tree {
 
 sub list {
     my ($class, $path) = @_;
-    $path ||= '';
-    $path =~ s{/$}{};
+    $path ||= '/';
     my @files;
-    my $out = main::smb_client('-D', $main::DIR.'/'.$path, '-c', 'ls');
+    my $out = main::smb_client('-D', $path, '-c', 'ls');
 
     for(split /\n/, $out) {
         next if !/^  (.+?)\s+([AHSRDN]+)\s+(\d+)\s+(.+)/o;
@@ -787,7 +877,7 @@ sub list {
 
         push @files, bless {
             'remote' => 1,
-            'dir'    => $path,
+            'dir'    => $path =~ s{^/}{}r,
             'name'   => $fn,
             'size'   => int($size),
             'date'   => $date,
@@ -807,14 +897,19 @@ sub list {
 }
 
 sub new_remote {
-    my ($class, $path) = @_;
+    my ($class, $path, $abs) = @_;
     my ($file, $dir) = fileparse($path);
 
     $dir = '' if $dir eq './';
-    $dir =~ s{^/}{};
-    $dir =~ s{/$}{};
+    my $loc;
 
-    my $loc = $main::LOCALPATH.'/'.$main::DIR.'/'.$dir;
+    if($abs) {
+        $loc = cleanpath($main::LOCALPATH.'/'.$dir);
+    } else {
+        $dir = cleanpath($main::DIR.'/'.$dir);
+        $loc = cleanpath($main::LOCALPATH.'/'.$dir);
+    }
+
     make_path($loc);
 
     my $self = {
@@ -832,7 +927,6 @@ sub new_local {
     my ($class, $path, $data) = @_;
     my ($file, $dir) = fileparse($path);
 
-    $dir =~ s{/$}{};
     make_path($dir);
 
     my $md5;
@@ -855,6 +949,17 @@ sub new_local {
     };
 
     bless $self, $class;
+}
+
+# a gate to hard to debug bugs...
+sub DESTROY {
+    my $s = shift;
+    if($s->{delete_on_destruction} && -f $s->localpath) {
+        if($main::DEBUG) {
+            say "DESTROY ".$s->localpath;
+        }
+        unlink $s->localpath;
+    }
 }
 
 1;
