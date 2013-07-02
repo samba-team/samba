@@ -57,6 +57,7 @@ our @SMBARGS   = ();
 our $DEBUG = 0;
 our $MAN   = 0;
 our $HELP  = 0;
+our $CLEAN = 0;
 
 =head1 SYNOPSIS
 
@@ -102,6 +103,7 @@ GetOptions('u|user=s'       => \$USER,
 
            'test=i'         => \$SINGLE_TEST,
 
+           'clean'          => \$CLEAN,
            'debug'          => \$DEBUG,
            'h|help'         => \$HELP,
            'man'            => \$MAN) or pod2usage(2);
@@ -126,6 +128,11 @@ push @SMBARGS, @ARGV;
 
 # path to store the downloaded tarball
 my $TAR = "$TMP/tarmode.tar";
+
+if($CLEAN) {
+    # clean the whole root first
+    remove_tree($LOCALPATH, { keep_root => 1 });
+}
 
 #####
 
