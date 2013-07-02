@@ -70,6 +70,8 @@ static bool test_session_reauth1(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, done, "setup2");
 	torture_assert_int_equal_goto(tctx, io.out.vuid, vuid1, ok, done, "setup2");
 
+	buf[dlen] = '\0';
+
 	num = smbcli_read(cli->tree, fnum, &buf, 0, dlen);
 	torture_assert_int_equal_goto(tctx, num, dlen, ok, done, "read file");
 	torture_assert_str_equal_goto(tctx, buf, data, ok, done, "read file");
