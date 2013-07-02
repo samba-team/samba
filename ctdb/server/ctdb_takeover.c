@@ -3211,6 +3211,7 @@ void ctdb_takeover_client_destructor_hook(struct ctdb_client *client)
 void ctdb_release_all_ips(struct ctdb_context *ctdb)
 {
 	struct ctdb_vnn *vnn;
+	int count = 0;
 
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (!ctdb_sys_have_ip(&vnn->public_address)) {
@@ -3220,13 +3221,22 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 		if (!vnn->iface) {
 			continue;
 		}
+
+		DEBUG(DEBUG_INFO,("Release of IP %s/%u on interface %s node:-1\n",
+				    ctdb_addr_to_str(&vnn->public_address),
+				    vnn->public_netmask_bits,
+				    ctdb_vnn_iface_string(vnn)));
+
 		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
 				  ctdb_vnn_iface_string(vnn),
 				  ctdb_addr_to_str(&vnn->public_address),
 				  vnn->public_netmask_bits);
 		release_kill_clients(ctdb, &vnn->public_address);
 		ctdb_vnn_unassign_iface(ctdb, vnn);
+		count++;
 	}
+
+	DEBUG(DEBUG_NOTICE,(__location__ " Released %d public IPs\n", count));
 }
 
 
