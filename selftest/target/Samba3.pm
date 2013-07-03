@@ -25,6 +25,7 @@ sub have_ads($) {
 	close IN;
 
 	# If we were not built with ADS support, pretend we were never even available
+	print "smbd does not have ADS support\n" unless $found_ads;
 	return $found_ads;
 }
 

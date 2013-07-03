@@ -847,7 +847,9 @@ if ($opt_testenv) {
 
 	my $testenv_vars = setup_env($testenv_name, $prefix);
 
-	die("Unable to setup environment $testenv_name") unless ($testenv_vars);
+	if (not $testenv_vars or $testenv_vars eq "UNKNOWN") {
+		die("Unable to setup environment $testenv_name");
+	}
 
 	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
 	$ENV{ENVNAME} = $testenv_name;
