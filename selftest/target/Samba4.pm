@@ -667,6 +667,7 @@ sub provision_raw_step1($$)
 	open(PWD, ">$ctx->{nsswrap_passwd}");
 	print PWD "
 root:x:0:0:root gecos:$ctx->{prefix_abs}:/bin/false
+$ctx->{unix_name}:x:$ctx->{unix_uid}:100:$ctx->{unix_name} gecos:$ctx->{prefix_abs}:/bin/false
 nobody:x:65534:65533:nobody gecos:$ctx->{prefix_abs}:/bin/false
 pdbtest:x:65533:65533:pdbtest gecos:$ctx->{prefix_abs}:/bin/false
 ";
