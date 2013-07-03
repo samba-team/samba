@@ -52,6 +52,7 @@ my $ldap = undef;
 my $opt_resetup_env = undef;
 my $opt_binary_mapping = "";
 my $opt_load_list = undef;
+my $opt_libuid_wrapper_so_path = "";
 my @testlists = ();
 
 my $srcdir = ".";
@@ -201,6 +202,9 @@ Paths:
  --srcdir=DIR               source directory [.]
  --bindir=DIR               binaries directory [./bin]
 
+Preload cwrap:
+ --uid_wrapper_so_path=FILE the uid_wrapper library to preload
+
 Target Specific:
  --socket-wrapper-pcap      save traffic to pcap directories
  --socket-wrapper-keep-pcap keep all pcap files, not just those for tests that 
@@ -239,7 +243,8 @@ my $result = GetOptions (
 		'testlist=s' => \@testlists,
 		'random-order' => \$opt_random_order,
 		'load-list=s' => \$opt_load_list,
-		'binary-mapping=s' => \$opt_binary_mapping
+		'binary-mapping=s' => \$opt_binary_mapping,
+		'uid_wrapper_so_path=s' => \$opt_libuid_wrapper_so_path
 	    );
 
 exit(1) if (not $result);
@@ -334,6 +339,19 @@ if ($opt_socket_wrapper_pcap) {
 	# Socket wrapper pcap implies socket wrapper
 	$opt_socket_wrapper = 1;
 }
+
+my $ld_preload = $ENV{LD_PRELOAD};
+
+if ($opt_libuid_wrapper_so_path) {
+	if ($ld_preload) {
+		$ld_preload = "$ld_preload:$opt_libuid_wrapper_so_path";
+	} else {
+		$ld_preload = "$opt_libuid_wrapper_so_path";
+	}
+}
+
+$ENV{LD_PRELOAD} = $ld_preload;
+print "LD_PRELOAD=$ENV{LD_PRELOAD}\n";
 
 my $socket_wrapper_dir;
 if ($opt_socket_wrapper) {

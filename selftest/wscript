@@ -200,6 +200,8 @@ def cmd_testonly(opt):
     else:
         env.SELFTEST_TARGET="samba3"
 
+    env.OPTIONS += " --uid_wrapper_so_path=" + CONFIG_GET(opt, 'LIBUID_WRAPPER_SO_PATH')
+
     # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
     env.CORE_COMMAND = '${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/selftest/skip ${TESTLISTS} ${OPTIONS} ${TESTS}'
     if Options.options.LIST:
