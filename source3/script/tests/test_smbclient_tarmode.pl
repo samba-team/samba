@@ -13,18 +13,18 @@ test_smbclient_tarmode.pl - Test for smbclient tar backup feature
 # c a      DONE
 # c N      DONE
 # c I      DONE
-# c I r    #
+# c I r    DONE
 # c X      DONE
-# c X r    #
+# c X r    DONE
 # c F      DONE
-# c F r    #
+# c F r    DONE
 # x        DONE
 # x I      DONE
 # x I r    #
 # x X      DONE
 # x X r    #
 # x F      DONE
-# x F r    #
+# x F r    DONE
 
 use v5.16;
 use strict;
@@ -45,7 +45,7 @@ our $PW        = '';
 our $HOST      = 'localhost';
 our $IP        = '';
 our $SHARE     = 'public';
-our $DIR       = 'tarmode';
+our $DIR       = 'tar_test_dir';
 our $LOCALPATH = '/media/data/smb-test';
 our $TMP       = '/tmp/smb-tmp';
 our $BIN       = 'smbclient';
@@ -146,14 +146,16 @@ my @all_tests = (
     [\&test_creation_reset,       '-a'],
     [\&test_creation_reset,       'tarmode reset'],
     [\&test_creation_newer],
+    [\&test_creation_attr],
     [\&test_creation_include,],
     [\&test_creation_exclude,],
     [\&test_creation_list,],
-    [\&test_creation_glob],
+    [\&test_creation_wildcard],
     [\&test_extraction_normal],
     [\&test_extraction_include],
     [\&test_extraction_exclude],
     [\&test_extraction_list],
+    [\&test_extraction_wildcard],
 );
 
 if($SINGLE_TEST == -1) {
@@ -203,6 +205,50 @@ sub test_creation_newer {
 
     smb_tar('', '-TcN', $limit->localpath, $TAR, $DIR);
     return check_tar($TAR, \@files);
+}
+
+sub test_creation_attr {
+
+    say "TEST: creation -- combinations of tarmodes (nosystem, nohidden, etc)";
+
+    my @attr = qw/r h s a/;
+    my @all;
+    my @inc;
+    my $err = 0;
+
+    # one normal file
+    my $f = File->new_remote("file-n.txt");
+    $f->set_attr();
+    push @all, $f;
+
+    # combinaisions of attributes
+    for my $n (1..@attr) {
+        for(combine(\@attr, $n)) {
+            my @t = @$_;
+            my $fn = "file-" . join('+', @t) . ".txt";
+            my $f = File->new_remote($fn);
+            $f->set_attr(@t);
+            push @all, $f;
+        }
+    }
+
+    @inc = grep { !$_->{attr}{s} } @all;
+    smb_tar('tarmode nosystem', '-Tc', $TAR, $DIR);
+    $err += check_tar($TAR, \@inc);
+
+    @inc = grep { !$_->{attr}{h} } @all;
+    smb_tar('tarmode nohidden', '-Tc', $TAR, $DIR);
+    $err += check_tar($TAR, \@inc);
+
+    @inc = grep { !$_->{attr}{h} and !$_->{attr}{s} } @all;
+    smb_tar('tarmode nohidden nosystem', '-Tc', $TAR, $DIR);
+    $err += check_tar($TAR, \@inc);
+
+    @inc = grep { $_->{attr}{a} and !$_->{attr}{h} and !$_->{attr}{s} } @all;
+    smb_tar('tarmode inc nohidden nosystem', '-Tc', $TAR, $DIR);
+    $err += check_tar($TAR, \@inc);
+
+    $err;
 }
 
 sub test_creation_reset {
@@ -403,49 +449,59 @@ sub test_creation_list {
 }
 
 sub tardump {
-    system sprintf q{tar tf %s | grep -v '/$' | sort}, $TAR;
+    system sprintf q{tar tf %s 2>&1 | grep -v '/$' | sort }, $TAR;
 }
 
-sub test_creation_glob {
+sub test_creation_wildcard {
     say "TEST: creation -- include/exclude with wildcards";
 
     my @exts = qw(txt jpg exe);
     my @dirs = ('', "$DIR/", "$DIR/dir/");
     my @all;
+    my $nb;
+    my $err = 0;
 
+    $nb = 0;
     for my $dir (@dirs) {
         for(@exts) {
-            my $fn = $dir . 'file.' . $_;
+            my $fn = $dir . "file$nb." . $_;
             my $f = File->new_remote($fn, 'ABSPATH');
             $f->delete_on_destruction(1);
             $f->set_attr();
             push @all, $f;
+            $nb++;
         }
     }
 
-    my $err = 0;
-
+    $nb = 0;
     for my $dir (@dirs) {
         for my $ext (@exts) {
             my @inc;
 
+            my $fn = $dir."file$nb.".$ext;
+            my $pattern = $dir.'*.'.$ext;
+            my $flist;
+
             # include
-            @inc = grep { $_->remotepath eq $dir.'file.'.$ext } @all;
-            smb_tar('', '-Tc', $TAR, $dir.'*.'.$ext);
+
+            @inc = grep { $_->remotepath eq $fn } @all;
+            smb_tar('', '-Tc', $TAR, $pattern);
             $err += check_tar($TAR, \@inc);
 
             # include with -r
-            # if you include a pattern -> tar will be empty... bug?
-            # @inc = grep { my $n = $_->remotepath; $n =~ /$ext/ && $n !~ /dir/} @all;
-            # smb_tar('', '-Tcr', $TAR, "*.$ext");
-            # $err += check_tar($TAR, \@inc);
+
+            # supposed to be the same results but if you include a
+            # pattern not at the root -> tar will be empty... bug?
+            @inc = grep { $_->remotepath eq $fn } @all;
+            smb_tar('', '-Tcr', $TAR, $pattern);
+            $err += check_tar($TAR, \@inc);
 
             # exclude with -r
-            # @inc = grep { my $n = $_->remotepath; $n !~ /$ext/} @all;
-            # smb_tar('', '-TcrX', $TAR, "*.$ext");
-            # #$err += check_tar($TAR, \@inc);
-            # #tardump();
-            # $err += check_tar($TAR, \@all);
+
+            # supposed to work on the whole hierarchy
+            @inc = grep { my $n = $_->remotepath; $n !~ /$ext/} @all;
+            smb_tar('', '-TcrX', $TAR, "*.$ext");
+            $err += check_tar($TAR, \@inc);
 
             # # exclude
             # @inc = grep { my $n = $_->remotepath; $n !~ /$ext/ && $n !~ /dir/} @all;
@@ -453,7 +509,69 @@ sub test_creation_glob {
             # #$err += check_tar($TAR, \@inc);
             # $err += check_tar($TAR, \@all);
 
+            # with F
+
+            $flist = File->new_local("$TMP/list", "$pattern\n");
+
+            # include with F r
+
+            @inc = grep { $_->remotepath eq $fn } @all;
+            smb_tar('', '-TcFr', $TAR, $flist->localpath);
+            $err += check_tar($TAR, \@inc);
         }
+    }
+
+    $err;
+}
+
+sub test_extraction_wildcard {
+    say "TEST: extraction -- include/exclude with wildcards";
+
+    my @exts = qw(txt jpg exe);
+    my @dirs = ('', "$DIR/", "$DIR/dir/");
+    my $nb;
+    my $err = 0;
+
+    for my $dir (@dirs) {
+
+        my @all;
+
+        $nb = 0;
+        for my $dir (@dirs) {
+            for(@exts) {
+                my $fn = $dir . "file$nb." . $_;
+                my $f = File->new_remote($fn, 'ABSPATH');
+                $f->delete_on_destruction(1);
+                $f->set_attr();
+                push @all, $f;
+                $nb++;
+            }
+        }
+
+
+        my @inc;
+        my $ext = 'exe';
+        my $fn = $dir."file$nb.".$ext;
+        my $pattern = $dir.'*.'.$ext;
+        my $flist;
+
+        # with F
+
+        $flist = File->new_local("$TMP/list", "$pattern\n");
+
+        # store
+        my $re = '^'.$dir.'.*file';
+        @inc = grep { $dir eq '' or $_->remotepath =~ m{$re} } @all;
+        smb_tar('', '-Tc', $TAR, $dir);
+        $err += check_tar($TAR, \@inc);
+
+        reset_remote();
+        my $re2 = '^'.$dir.'file.+exe';
+        @inc = grep { $_->remotepath =~ /$re2/ } @all;
+        smb_tar('', '-TxrF', $TAR, $flist->localpath);
+        $err += check_remote($dir, \@inc);
+
+        reset_remote();
     }
 
     $err;
@@ -508,17 +626,22 @@ sub print_res {
     }
 }
 
-# create @files and return (the ones matching $re, all)
-sub create_grep {
-    my ($re, @files) = @_;
-    my (@inc, @all);
-    for(@files) {
-        my $f = File->new_remote($_);
-        $f->set_attr();
-        push @inc, $f if /$re/;
-        push @all, $f;
+# return list of combinations of n-uplet
+sub combine {
+    my ($list, $n) = @_;
+    die "Insufficient list members" if $n > @$list;
+
+    return map [$_], @$list if $n <= 1;
+
+    my @comb;
+
+    for (my $i = 0; $i+$n <= @$list; $i++) {
+        my $val = $list->[$i];
+        my @rest = @$list[$i+1..$#$list];
+        push @comb, [$val, @$_] for combine(\@rest, $n-1);
     }
-    return \@inc, \@all;
+
+    return @comb;
 }
 
 sub reset_remote {
@@ -582,6 +705,11 @@ sub check_remote {
         if($expected{$rfile}->md5 ne $rmd5) {
             say " !    $rfile ($rmd5)";
             push @diff, $rfile;
+            next;
+        }
+
+        if($DEBUG) {
+            say "      $rfile";
         }
     }
 
@@ -676,7 +804,7 @@ sub smb_client {
                       join(' ', map {quotemeta} (@SMBARGS, @args)));
 
     if($DEBUG) {
-        say $cmd =~ s{\\([/+-])}{$1}gr;
+        say color('bold yellow'),$cmd =~ s{\\([./+-])}{$1}gr,color('reset');
     }
 
     my $out = `$cmd 2>&1`;
