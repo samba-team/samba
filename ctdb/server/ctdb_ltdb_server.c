@@ -706,7 +706,7 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 	}
 
 	if (ctdb_db->persistent) {
-		DEBUG(DEBUG_ERR,("Trying to set persistent database with readonly property\n"));
+		DEBUG(DEBUG_ERR,("Persistent databases do not support readonly property\n"));
 		return -1;
 	}
 
@@ -728,6 +728,9 @@ int ctdb_set_db_readonly(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb
 	DEBUG(DEBUG_NOTICE,("OPENED tracking database : '%s'\n", ropath));
 
 	ctdb_db->readonly = true;
+
+	DEBUG(DEBUG_NOTICE, ("Readonly property set on DB %s\n", ctdb_db->db_name));
+
 	talloc_free(ropath);
 	return 0;
 }
