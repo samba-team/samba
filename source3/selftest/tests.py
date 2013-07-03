@@ -306,7 +306,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.netlogon.admin",
        "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.join", "rpc.bind"]
 
-local = ["local.nss-wrapper", "local.ndr"]
+local = ["local.ndr"]
 
 winbind = ["winbind.struct", "winbind.wbclient", "winbind.pac"]
 
