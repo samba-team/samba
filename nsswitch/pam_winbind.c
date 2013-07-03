@@ -10,8 +10,6 @@
    <sopwith@redhat.com> (see copyright below for full details)
 */
 
-#define UID_WRAPPER_NOT_REPLACE
-
 #include "pam_winbind.h"
 
 enum pam_winbind_request_type 

@@ -617,7 +617,7 @@ def build(bld):
         REPLACE_HOSTCC_SOURCE,
         use_hostcc=True,
         use_global_deps=False,
-        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -DUID_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         group='compiler_libraries',
         deps = extra_libs
     )

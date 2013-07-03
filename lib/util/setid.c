@@ -21,50 +21,6 @@
 #include "replace.h"
 #include "system/passwd.h"
 
-#ifdef UID_WRAPPER_REPLACE
-
-#ifdef samba_seteuid
-#undef samba_seteuid
-#endif
-
-#ifdef samba_setreuid
-#undef samba_setreuid
-#endif
-
-#ifdef samba_setresuid
-#undef samba_setresuid
-#endif
-
-#ifdef samba_setegid
-#undef samba_setegid
-#endif
-
-#ifdef samba_setregid
-#undef samba_setregid
-#endif
-
-#ifdef samba_setresgid
-#undef samba_setresgid
-#endif
-
-#ifdef samba_setgroups
-#undef samba_setgroups
-#endif
-
-/* uid_wrapper will have redefined these. */
-int samba_setresuid(uid_t ruid, uid_t euid, uid_t suid);
-int samba_setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-int samba_setreuid(uid_t ruid, uid_t euid);
-int samba_setregid(gid_t rgid, gid_t egid);
-int samba_seteuid(uid_t euid);
-int samba_setegid(gid_t egid);
-int samba_setuid(uid_t uid);
-int samba_setgid(gid_t gid);
-int samba_setuidx(int flags, uid_t uid);
-int samba_setgidx(int flags, gid_t gid);
-int samba_setgroups(size_t setlen, const gid_t *gidset);
-#endif
-
 #include "../lib/util/setid.h"
 
 #else
