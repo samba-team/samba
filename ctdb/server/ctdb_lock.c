@@ -456,9 +456,13 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 	}
 
 	if (locked) {
-		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
-		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.buckets[id]);
 		if (lock_ctx->ctdb_db) {
+			CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
+			CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.buckets[id]);
+			CTDB_UPDATE_LATENCY(lock_ctx->ctdb, lock_ctx->ctdb_db,
+					    lock_type_str[lock_ctx->type], locks.latency,
+					    lock_ctx->start_time);
+
 			CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 			CTDB_UPDATE_DB_LATENCY(lock_ctx->ctdb_db, lock_type_str[lock_ctx->type], locks.latency, t);
 			CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.buckets[id]);
