@@ -27,9 +27,6 @@
 
 */
 
-/* this needs to be included before nss_wrapper.h on some systems */
-#include <unistd.h>
-
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -87,14 +84,5 @@
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
 #endif
-
-#ifdef NSS_WRAPPER
-#ifndef NSS_WRAPPER_DISABLE
-#ifndef NSS_WRAPPER_NOT_REPLACE
-#define NSS_WRAPPER_REPLACE
-#endif /* NSS_WRAPPER_NOT_REPLACE */
-#include "../nss_wrapper/nss_wrapper.h"
-#endif /* NSS_WRAPPER_DISABLE */
-#endif /* NSS_WRAPPER */
 
 #endif

@@ -34,7 +34,6 @@
  * so we better disable both
  */
 #define SOCKET_WRAPPER_NOT_REPLACE
-#define NSS_WRAPPER_NOT_REPLACE
 
 /* Include header files from data in config.h file */
 
