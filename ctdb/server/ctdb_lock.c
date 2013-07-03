@@ -386,27 +386,31 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 
 static int lock_bucket_id(double t)
 {
-	double us = 1.e-6, ms = 1.e-3, s = 1;
+	double ms = 1.e-3, s = 1;
 	int id;
 
-	if (t < 1*us) {
+	if (t < 1*ms) {
 		id = 0;
-	} else if (t < 10*us) {
-		id = 1;
-	} else if (t < 100*us) {
-		id = 2;
-	} else if (t < 1*ms) {
-		id = 3;
 	} else if (t < 10*ms) {
-		id = 4;
+		id = 1;
 	} else if (t < 100*ms) {
-		id = 5;
+		id = 2;
 	} else if (t < 1*s) {
+		id = 3;
+	} else if (t < 2*s) {
+		id = 4;
+	} else if (t < 4*s) {
+		id = 5;
+	} else if (t < 8*s) {
 		id = 6;
-	} else if (t < 10*s) {
+	} else if (t < 16*s) {
 		id = 7;
-	} else {
+	} else if (t < 32*s) {
 		id = 8;
+	} else if (t < 64*s) {
+		id = 9;
+	} else {
+		id = 10;
 	}
 
 	return id;
