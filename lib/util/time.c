@@ -69,19 +69,12 @@ _PUBLIC_ void clock_gettime_mono(struct timespec *tp)
 
 /**
 a wrapper to preferably get the monotonic time in seconds
-as this is only second resolution we can use the cached
-(and much faster) COARSE clock variant
 **/
 _PUBLIC_ time_t time_mono(time_t *t)
 {
 	struct timespec tp;
-	int rc = -1;
-#ifdef CLOCK_MONOTONIC_COARSE
-	rc = clock_gettime(CLOCK_MONOTONIC_COARSE,&tp);
-#endif
-	if (rc != 0) {
-		clock_gettime_mono(&tp);
-	}
+
+	clock_gettime_mono(&tp);
 	if (t != NULL) {
 		*t = tp.tv_sec;
 	}
