@@ -65,6 +65,8 @@ static void gotalarm_sig(int signum)
 			      int port, unsigned int to)
 {
 	LDAP *ldp = NULL;
+	int ldap_err;
+	char *uri;
 
 	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
 		   "%u seconds\n", server, port, to));
@@ -109,13 +111,26 @@ static void gotalarm_sig(int signum)
 		/* End setup timeout. */
 	}
 
-	ldp = ldap_open(server, port);
+	uri = talloc_asprintf(talloc_tos(), "ldap://%s:%u", server, port);
+	if (uri == NULL) {
+		return NULL;
+	}
 
-	if (ldp == NULL) {
-		DEBUG(2,("Could not open connection to LDAP server %s:%d: %s\n",
-			 server, port, strerror(errno)));
+#ifdef HAVE_LDAP_INITIALIZE
+	ldap_err = ldap_initialize(&ldp, uri);
+#else
+	ldp = ldap_open(server, port);
+	if (ldp != NULL) {
+		ldap_err = LDAP_SUCCESS;
 	} else {
-		DEBUG(10, ("Connected to LDAP server '%s:%d'\n", server, port));
+		ldap_err = LDAP_OTHER;
+	}
+#endif
+	if (ldap_err != LDAP_SUCCESS) {
+		DEBUG(2,("Could not initialize connection for LDAP server '%s': %s\n",
+			 uri, ldap_err2string(ldap_err)));
+	} else {
+		DEBUG(10, ("Initialized connection for LDAP server '%s'\n", uri));
 	}
 
 	if (to) {
