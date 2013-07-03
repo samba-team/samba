@@ -62,9 +62,19 @@ a wrapper to preferably get the monotonic time
 **/
 _PUBLIC_ void clock_gettime_mono(struct timespec *tp)
 {
-	if (clock_gettime(CUSTOM_CLOCK_MONOTONIC,tp) != 0) {
-		clock_gettime(CLOCK_REALTIME,tp);
+/* prefer a suspend aware monotonic CLOCK_BOOTTIME: */
+#ifdef CLOCK_BOOTTIME
+	if (clock_gettime(CLOCK_BOOTTIME,tp) == 0) {
+		return;
 	}
+#endif
+/* then try the  monotonic clock: */
+#if CUSTOM_CLOCK_MONOTONIC != CLOCK_REALTIME
+	if (clock_gettime(CUSTOM_CLOCK_MONOTONIC,tp) == 0) {
+		return;
+	}
+#endif
+	clock_gettime(CLOCK_REALTIME,tp);
 }
 
 /**
