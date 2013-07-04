@@ -88,62 +88,10 @@ create_ganesha_recdirs ()
     mkdir -p $GANRECDIR3
 }
 
-case "$1" in
-     init)
-	# read statd from persistent database
-	;;
-     startup)
-	create_ganesha_recdirs
-	ctdb_service_start
-	;;
-
-     shutdown)
-	ctdb_service_stop
-	;;
-
-     takeip)
-	if [ -n "$2" ] ; then
-	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
-		gpfs)
-		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
-		    TDATE=`date +"%s"`
-		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
-		    touch $GANRECDIR2/$TOUCHTGT
-		    ;;
-	    esac
-	fi
-	ctdb_service_set_reconfigure
-	;;
-
-     releaseip)
-	if [ -n "$2" ] ; then
-	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
-		gpfs)
-		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
-		    TDATE=`date +"%s"`
-		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
-		    touch $GANRECDIR2/$TOUCHTGT
-		;;
-	    esac
-	fi
-	ctdb_service_set_reconfigure
-	;;
-
-     monitor)
-	update_tickles 2049
+monitor_ganesha_nfsd ()
+{
 	create_ganesha_recdirs
 	service_name=${service_name}_process
-	# check that statd responds to rpc requests
-	# if statd is not running we try to restart it
-	# we only do this IF we have a rpc.statd command.
-	# For platforms where rpc.statd does not exist, we skip
-        # the check completely
-	p="rpc.statd"
-	which $p >/dev/null 2>/dev/null && \
-	    nfs_check_rpc_service "statd" \
-		-ge 6 "verbose unhealthy" \
-		-eq 4 "verbose restart" \
-		-eq 2 "restart:bs"
 
 	PIDFILE="/var/run/ganesha.pid"
 	CUR_STATE=`get_cluster_fs_state`
@@ -193,7 +141,67 @@ case "$1" in
 		ctdb_counter_init "$service_name"
 	    fi
 	fi
+}
 
+############################################################
+
+case "$1" in
+     init)
+	# read statd from persistent database
+	;;
+     startup)
+	create_ganesha_recdirs
+	ctdb_service_start
+	;;
+
+     shutdown)
+	ctdb_service_stop
+	;;
+
+     takeip)
+	if [ -n "$2" ] ; then
+	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
+		gpfs)
+		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
+		    TDATE=`date +"%s"`
+		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
+		    touch $GANRECDIR2/$TOUCHTGT
+		    ;;
+	    esac
+	fi
+	ctdb_service_set_reconfigure
+	;;
+
+     releaseip)
+	if [ -n "$2" ] ; then
+	    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
+		gpfs)
+		    NNUM=`/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber | awk '{print $2}'`
+		    TDATE=`date +"%s"`
+		    TOUCHTGT=$1"_"$TDATE"_"$NNUM"_"$3"_"$4"_"$2
+		    touch $GANRECDIR2/$TOUCHTGT
+		;;
+	    esac
+	fi
+	ctdb_service_set_reconfigure
+	;;
+
+     monitor)
+	update_tickles 2049
+
+	# check that statd responds to rpc requests
+	# if statd is not running we try to restart it
+	# we only do this IF we have a rpc.statd command.
+	# For platforms where rpc.statd does not exist, we skip
+        # the check completely
+	p="rpc.statd"
+	which $p >/dev/null 2>/dev/null && \
+	    nfs_check_rpc_service "statd" \
+		-ge 6 "verbose unhealthy" \
+		-eq 4 "verbose restart" \
+		-eq 2 "restart:bs"
+
+	monitor_ganesha_nfsd
 
 	# rquotad is sometimes not started correctly on RHEL5
 	# not a critical service so we dont flag the node as unhealthy
