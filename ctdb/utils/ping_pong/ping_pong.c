@@ -237,6 +237,10 @@ int main(int argc, char *argv[])
 
 	fname = argv[0];
 	num_locks = atoi(argv[1]);
+	if (num_locks <= 0) {
+		printf("num_locks should be > 0\n");
+		exit(1);
+	}
 
 	fd = open(fname, O_CREAT|O_RDWR, 0600);
 	if (fd == -1) exit(1);
