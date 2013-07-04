@@ -1,6 +1,6 @@
 /**
 @page tevent_request Chapter 4: Tevent request
-@section request Tevent requst
+@section request Tevent request
 
 A specific feature of the library is the tevent request API that provides for
 asynchronous computation and allows much more interconnected working and
