@@ -134,7 +134,6 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
 %config(noreplace) %{_sysconfdir}/ctdb/gcore_trace.sh
-%config(noreplace) %{_sysconfdir}/ctdb/functions
 %attr(755,root,root) %{initdir}/ctdb
 %attr(755,root,root) %{_sysconfdir}/ctdb/notify.d
 
@@ -143,6 +142,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc doc/recovery-process.txt
 %doc doc/*.html
 %{_sysconfdir}/sudoers.d/ctdb
+%{_sysconfdir}/ctdb/functions
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/01.reclock
 %{_sysconfdir}/ctdb/events.d/10.interface
