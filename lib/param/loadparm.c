@@ -2083,6 +2083,15 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "log level", "0");
 
+	lpcfg_do_global_parameter(lp_ctx, "syslog", "1");
+	lpcfg_do_global_parameter(lp_ctx, "syslog only", "No");
+	lpcfg_do_global_parameter(lp_ctx, "debug timestamp", "Yes");
+	lpcfg_do_global_parameter(lp_ctx, "debug prefix timestamp", "No");
+	lpcfg_do_global_parameter(lp_ctx, "debug hires timestamp", "Yes");
+	lpcfg_do_global_parameter(lp_ctx, "debug pid", "No");
+	lpcfg_do_global_parameter(lp_ctx, "debug uid", "No");
+	lpcfg_do_global_parameter(lp_ctx, "debug class", "No");
+
 	lpcfg_do_global_parameter(lp_ctx, "share backend", "classic");
 
 	lpcfg_do_global_parameter(lp_ctx, "server role", "auto");
@@ -2302,7 +2311,14 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	ZERO_STRUCT(settings);
 	/* Add any more debug-related smb.conf parameters created in
 	 * future here */
-	settings.timestamp_logs = true;
+	settings.syslog = lp_ctx->globals->syslog;
+	settings.syslog_only = lp_ctx->globals->bSyslogOnly;
+	settings.timestamp_logs = lp_ctx->globals->bTimestampLogs;
+	settings.debug_prefix_timestamp = lp_ctx->globals->bDebugPrefixTimestamp;
+	settings.debug_hires_timestamp = lp_ctx->globals->bDebugHiresTimestamp;
+	settings.debug_pid = lp_ctx->globals->bDebugPid;
+	settings.debug_uid = lp_ctx->globals->bDebugUid;
+	settings.debug_class = lp_ctx->globals->bDebugClass;
 	debug_set_settings(&settings);
 
 	/* FIXME: This is a bit of a hack, but we can't use a global, since 
