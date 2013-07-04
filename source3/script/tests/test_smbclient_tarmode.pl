@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-test_smbclient_tarmode.pl - Test for smbclient tar backup feature
+C<test_smbclient_tarmode.pl> - Test for smbclient tar backup feature
 
 =cut
 
@@ -40,6 +40,7 @@ use Term::ANSIColor;
 sub d {print Dumper @_;}
 
 # DEFAULTS
+# 'our' to make them available in the File package
 our $USER      = '';
 our $PW        = '';
 our $HOST      = 'localhost';
@@ -50,18 +51,40 @@ our $LOCALPATH = '/media/data/smb-test';
 our $TMP       = '/tmp/smb-tmp';
 our $BIN       = 'smbclient';
 
-our $SINGLE_TEST = -1;
+my $SINGLE_TEST = -1;
+my $LIST_TEST = 0;
 
-our @SMBARGS   = ();
+my @SMBARGS   = ();
 
 our $DEBUG = 0;
-our $MAN   = 0;
-our $HELP  = 0;
-our $CLEAN = 0;
+my $MAN   = 0;
+my $HELP  = 0;
+my $CLEAN = 0;
+
+# all tests
+my @TESTS = (
+    ['create, normal files (no attributes)',        \&test_creation_normal,      'normal'],
+    ['create, normal nested files (no attributes)', \&test_creation_normal,      'nested'],
+    ['create, incremental with -g',                 \&test_creation_incremental, '-g'],
+    ['create, incremental with tarmode',            \&test_creation_incremental, 'tarmode inc'],
+    ['create, reset archived files with -a',        \&test_creation_reset,       '-a'],
+    ['create, reset archived files with tarmode',   \&test_creation_reset,       'tarmode reset'],
+    ['create, files newer than a file',             \&test_creation_newer],
+    ['create, combination of tarmode filter',       \&test_creation_attr],
+    ['create, explicit include',                    \&test_creation_include],
+    ['create, explicit exclude',                    \&test_creation_exclude],
+    ['create, include w/ filelist (F)',             \&test_creation_list],
+    ['create, wildcard and regex',                  \&test_creation_wildcard],
+    ['extract, normal files',                       \&test_extraction_normal],
+    ['extract, explicit include',                   \&test_extraction_include],
+    ['extract, explicit exclude',                   \&test_extraction_exclude],
+    ['extract, include w/ filelist (F)',            \&test_extraction_list],
+    ['extract, wildcard and regex',                 \&test_extraction_wildcard],
+);
 
 =head1 SYNOPSIS
 
-test_smbclient_tarmode.pl [options] -- [smbclient options]
+ test_smbclient_tarmode.pl [options] -- [smbclient options]
 
  Options:
     -h, --help    brief help message
@@ -86,6 +109,9 @@ test_smbclient_tarmode.pl [options] -- [smbclient options]
         path to the smbclient binary to use
 
   Test:
+    --list
+       list tests
+
     --test N
        only run test number N
 
@@ -102,6 +128,7 @@ GetOptions('u|user=s'       => \$USER,
            'b|bin=s'        => \$BIN,
 
            'test=i'         => \$SINGLE_TEST,
+           'list'           => \$LIST_TEST,
 
            'clean'          => \$CLEAN,
            'debug'          => \$DEBUG,
@@ -110,6 +137,7 @@ GetOptions('u|user=s'       => \$USER,
 
 pod2usage(0) if $HELP;
 pod2usage(-exitval => 0, -verbose => 2) if $MAN;
+list_test(), exit 0 if $LIST_TEST;
 
 if($USER xor $PW) {
     die "Need both user and password when one is provided\n";
@@ -138,53 +166,49 @@ if($CLEAN) {
 
 # RUN TESTS
 
-my @all_tests = (
-    [\&test_creation_normal, 'normal'],
-    [\&test_creation_normal, 'nested'],
-    [\&test_creation_incremental, '-g'],
-    [\&test_creation_incremental, 'tarmode inc'],
-    [\&test_creation_reset,       '-a'],
-    [\&test_creation_reset,       'tarmode reset'],
-    [\&test_creation_newer],
-    [\&test_creation_attr],
-    [\&test_creation_include,],
-    [\&test_creation_exclude,],
-    [\&test_creation_list,],
-    [\&test_creation_wildcard],
-    [\&test_extraction_normal],
-    [\&test_extraction_include],
-    [\&test_extraction_exclude],
-    [\&test_extraction_list],
-    [\&test_extraction_wildcard],
-);
-
 if($SINGLE_TEST == -1) {
-    run_test(@all_tests);
+    run_test(@TESTS);
 }
 
-elsif(0 <= $SINGLE_TEST&&$SINGLE_TEST < @all_tests) {
-    run_test($all_tests[$SINGLE_TEST]);
+elsif(0 <= $SINGLE_TEST && $SINGLE_TEST < @TESTS) {
+    run_test($TESTS[$SINGLE_TEST]);
 }
 
 else {
     die "Test number is invalid\n";
 }
 
-#####
+#################################
 
-# TEST DEFINITIONS
-# each test must return the number of error
+=head1 DOCUMENTATION
+
+=head2 Defining a test
+
+=over
+
+=item * Create a function C<test_yourtest>
+
+=item * Usa the File module, documented below
+
+=item * Use C<smb_tar>, C<smb_client>, C<check_tar> or C<check_remote>
+
+=item * Return number of error
+
+=item * Add function to C<@TESTS>
+
+=back
+
+The function must be placed in the C<@TESTS> list along with a short
+description and optional arguments.
+
+=cut
 
 sub test_creation_newer {
-
-    say "TEST: creation -- backup files newer than a file";
-
     my @files;
     my $dt = 3000;
 
     # create oldest file at - DT
     my $oldest = File->new_remote('oldest');
-    $oldest->set_attr();
     $oldest->set_time(time - $dt);
 
     # create limit file
@@ -192,12 +216,10 @@ sub test_creation_newer {
 
     # create newA file at + DT
     my $newA = File->new_remote('newA');
-    $newA->set_attr();
     $newA->set_time(time + $dt);
 
     # create newB file at + DT
     my $newB = File->new_remote('newB');
-    $newB->set_attr();
     $newB->set_time(time + $dt);
 
     # get files newer than limit_file
@@ -208,9 +230,6 @@ sub test_creation_newer {
 }
 
 sub test_creation_attr {
-
-    say "TEST: creation -- combinations of tarmodes (nosystem, nohidden, etc)";
-
     my @attr = qw/r h s a/;
     my @all;
     my @inc;
@@ -218,7 +237,6 @@ sub test_creation_attr {
 
     # one normal file
     my $f = File->new_remote("file-n.txt");
-    $f->set_attr();
     push @all, $f;
 
     # combinaisions of attributes
@@ -232,19 +250,19 @@ sub test_creation_attr {
         }
     }
 
-    @inc = grep { !$_->{attr}{s} } @all;
+    @inc = grep { !$_->attr('s') } @all;
     smb_tar('tarmode nosystem', '-Tc', $TAR, $DIR);
     $err += check_tar($TAR, \@inc);
 
-    @inc = grep { !$_->{attr}{h} } @all;
+    @inc = grep { !$_->attr('h') } @all;
     smb_tar('tarmode nohidden', '-Tc', $TAR, $DIR);
     $err += check_tar($TAR, \@inc);
 
-    @inc = grep { !$_->{attr}{h} and !$_->{attr}{s} } @all;
+    @inc = grep { !$_->attr_any('h', 's') } @all;
     smb_tar('tarmode nohidden nosystem', '-Tc', $TAR, $DIR);
     $err += check_tar($TAR, \@inc);
 
-    @inc = grep { $_->{attr}{a} and !$_->{attr}{h} and !$_->{attr}{s} } @all;
+    @inc = grep { $_->attr('a') && !$_->attr_any('h', 's') } @all;
     smb_tar('tarmode inc nohidden nosystem', '-Tc', $TAR, $DIR);
     $err += check_tar($TAR, \@inc);
 
@@ -253,8 +271,6 @@ sub test_creation_attr {
 
 sub test_creation_reset {
     my ($mode) = @_;
-
-    say "TEST: creation -- reset archived files w/ $mode";
 
     my @files;
     my $n = 3;
@@ -273,7 +289,7 @@ sub test_creation_reset {
     my $err = check_tar($TAR, \@files);
     return $err if($err > 0);
 
-    for my $f (File->list($DIR)) {
+    for my $f (File::list($DIR)) {
         if($f->{attr}{a}) {
             printf " ! %s %s\n", $f->attr_str, $f->remotepath;
             $err++;
@@ -285,14 +301,11 @@ sub test_creation_reset {
 sub test_creation_normal {
     my ($mode) = @_;
 
-    say "TEST: creation -- normal files $mode (no attributes)";
-
     my $prefix = ($mode =~ /nest/) ? "/foo/bar/bar/" : '';
     my @files;
     my $n = 5;
     for(1..$n) {
         my $f = File->new_remote($prefix."file-$_");
-        $f->set_attr();
         push @files, $f;
     }
     smb_tar('tarmode full', '-Tc', $TAR, $DIR);
@@ -301,8 +314,6 @@ sub test_creation_normal {
 
 sub test_creation_incremental {
     my ($mode) = @_;
-
-    say "TEST: creation -- incremental w/ $mode (backup only archived files)";
 
     my @files;
     my $n = 10;
@@ -329,14 +340,10 @@ sub test_creation_incremental {
 
 
 sub test_extraction_normal {
-
-    say "TEST: extraction -- backup and restore normal files";
-
     my @files;
     my $n = 5;
     for(1..$n) {
         my $f = File->new_remote("file-$_");
-        $f->set_attr();
         push @files, $f;
     }
 
@@ -352,15 +359,11 @@ sub test_extraction_normal {
 }
 
 sub test_extraction_include {
-
-    say "TEST: extraction -- backup and restore included paths";
-
     my @all_files;
     my @inc_files;
 
     for(qw(file_inc inc/b inc/c inc/dir/foo dir_ex/d zob)) {
         my $f = File->new_remote($_);
-        $f->set_attr();
         push @all_files, $f;
         push @inc_files, $f if /inc/;
     }
@@ -377,15 +380,11 @@ sub test_extraction_include {
 }
 
 sub test_extraction_exclude {
-
-    say "TEST: extraction -- backup and restore without excluded paths";
-
     my @all_files;
     my @inc_files;
 
     for(qw(file_exc exc/b exc/c exc/dir/foo dir_ex/d zob)) {
         my $f = File->new_remote($_);
-        $f->set_attr();
         push @all_files, $f;
         push @inc_files, $f if !/exc/;
     }
@@ -403,13 +402,10 @@ sub test_extraction_exclude {
 
 
 sub test_creation_include {
-    say "TEST: extraction -- explicit include";
-
     my @files;
 
     for(qw(file_inc inc/b inc/c inc/dir/foo dir_ex/d zob)) {
         my $f = File->new_remote($_);
-        $f->set_attr();
         push @files, $f if /inc/;
     }
 
@@ -418,13 +414,10 @@ sub test_creation_include {
 }
 
 sub test_creation_exclude {
-    say "TEST: extraction -- explicit exclude";
-
     my @files;
 
     for(qw(file_ex ex/b ex/c ex/dir/foo foo/bar zob)) {
         my $f = File->new_remote($_);
-        $f->set_attr();
         push @files, $f if !/ex/;
     }
 
@@ -433,13 +426,10 @@ sub test_creation_exclude {
 }
 
 sub test_creation_list {
-    say "TEST: creation -- filelist";
-
     my @inc_files;
 
     for(qw(file_inc inc/b inc/c inc/dir/foo foo/bar zob)) {
         my $f = File->new_remote($_);
-        $f->set_attr();
         push @inc_files, $f if /inc/;
     }
 
@@ -448,13 +438,7 @@ sub test_creation_list {
     return check_tar($TAR, \@inc_files);
 }
 
-sub tardump {
-    system sprintf q{tar tf %s 2>&1 | grep -v '/$' | sort }, $TAR;
-}
-
 sub test_creation_wildcard {
-    say "TEST: creation -- include/exclude with wildcards";
-
     my @exts = qw(txt jpg exe);
     my @dirs = ('', "$DIR/", "$DIR/dir/");
     my @all;
@@ -467,7 +451,6 @@ sub test_creation_wildcard {
             my $fn = $dir . "file$nb." . $_;
             my $f = File->new_remote($fn, 'ABSPATH');
             $f->delete_on_destruction(1);
-            $f->set_attr();
             push @all, $f;
             $nb++;
         }
@@ -525,8 +508,6 @@ sub test_creation_wildcard {
 }
 
 sub test_extraction_wildcard {
-    say "TEST: extraction -- include/exclude with wildcards";
-
     my @exts = qw(txt jpg exe);
     my @dirs = ('', "$DIR/", "$DIR/dir/");
     my $nb;
@@ -542,7 +523,6 @@ sub test_extraction_wildcard {
                 my $fn = $dir . "file$nb." . $_;
                 my $f = File->new_remote($fn, 'ABSPATH');
                 $f->delete_on_destruction(1);
-                $f->set_attr();
                 push @all, $f;
                 $nb++;
             }
@@ -578,14 +558,11 @@ sub test_extraction_wildcard {
 }
 
 sub test_extraction_list {
-    say "TEST: extraction -- filelist";
-
     my @inc_files;
     my @all_files;
 
     for(qw(file_inc inc/b inc/c inc/dir/foo foo/bar zob)) {
         my $f = File->new_remote($_);
-        $f->set_attr();
         push @all_files, $f;
         push @inc_files, $f if /inc/;
     }
@@ -602,14 +579,30 @@ sub test_extraction_list {
     return check_remote($DIR, \@inc_files);
 }
 
-#####
+#################################
 
 # IMPLEMENTATION
 
+=head2 Useful functions
+
+Here are a list of useful functions and helpers to define tests.
+
+=cut
+
+# list test number and description
+sub list_test {
+    my $i = 0;
+    for(@TESTS) {
+        my ($desc, $f, @args) = @$_;
+        printf "%2d.\t%s\n", $i++, $desc;
+    }
+}
+
 sub run_test {
     for(@_) {
-        my ($f, @args) = @$_;
+        my ($desc, $f, @args) = @$_;
         reset_env();
+        say "TEST: $desc";
         my $err = $f->(@args);
         print_res($err);
         print "\n";
@@ -626,7 +619,13 @@ sub print_res {
     }
 }
 
-# return list of combinations of n-uplet
+=head3 C<combine ( \@set, $n )>
+
+=head3 C<combine ( ['a', 'b', 'c'], 2 )>
+
+Return a list of all possible I<n>-uplet (or combinaison of C<$n> element) of C<@set>.
+
+=cut
 sub combine {
     my ($list, $n) = @_;
     die "Insufficient list members" if $n > @$list;
@@ -644,21 +643,45 @@ sub combine {
     return @comb;
 }
 
+
+=head3 C<reset_remote( )>
+
+Remove all files in the server C<$DIR> (not root)
+
+=cut
 sub reset_remote {
     remove_tree($LOCALPATH . '/'. $DIR);
     make_path($LOCALPATH . '/'. $DIR);
 }
 
+=head3 C<reset_tmp( )>
+
+Remove all files in the temp directory C<$TMP>
+
+=cut
 sub reset_tmp {
     remove_tree($TMP);
     make_path($TMP);
 }
 
+
+=head3 C<reset_env( )>
+
+Remove both temp and remote (C<$DIR>) files
+
+=cut
 sub reset_env {
     reset_tmp();
     reset_remote();
 }
 
+=head3 C<file_list ( @files )>
+
+Make a multiline string of all the files remote path, one path per line.
+
+C<@files> must be a list of C<File> instance.
+
+=cut
 sub file_list {
     my @files = @_;
     my $s = '';
@@ -668,6 +691,15 @@ sub file_list {
     return $s;
 }
 
+=head3 C<check_remote( $remotepath, \@files )>
+
+Check if C<$remotepath> has B<exactly> all the C<@files>.
+
+Print a summary on STDOUT.
+
+C<@files> must be a list of C<File> instance.
+
+=cut
 sub check_remote {
     my ($subpath, $files) = @_;
     my (%done, %expected);
@@ -728,6 +760,15 @@ sub check_remote {
     return (@more + @less + @diff); # nb of errors
 }
 
+=head3 C<check_tar( $path_to_tar, \@files )>
+
+Check if the archive C<$path_to_tar> has B<exactly> all the C<@files>.
+
+Print a summary on C<STDOUT>;
+
+C<@files> must be a list of C<File> instance.
+
+=cut
 sub check_tar {
     my ($tar, $files) = @_;
     my %done;
@@ -793,7 +834,20 @@ sub check_tar {
     return (@more + @less + @diff); # nb of errors
 }
 
-# call smbclient and return output
+=head3 C<smb_client ( @args )>
+
+Run smbclient with C<@args> passed as argument and return output.
+
+Each element of C<@args> becomes one escaped argument of smbclient.
+
+Host, share, user, password and the additionnal arguments provided on
+the command-line are already inserted.
+
+The output contains both the C<STDOUT> and C<STDERR>.
+
+Die if smbclient crashes or exits with an error code.
+
+=cut
 sub smb_client {
     my (@args) = @_;
 
@@ -836,194 +890,76 @@ sub smb_cmd {
     return smb_client('-c', join(' ', @_));
 }
 
+=head3 C<smb_tar( $cmd, @args )>
+
+=head3 C<smb_tar( 'tarmode inc', '-Tc', $TAR, $DIR )>
+
+Run C<$cmd> command and use C<@args> as argument and return output.
+
+Wrapper around C<smb_client> for tar calls.
+
+=cut
 sub smb_tar {
     my ($cmd, @rest) = @_;
     printf " CMD: %s\n ARG: %s\n", $cmd, join(' ', @rest);
     smb_client((length($cmd) ? ('-c', $cmd) : ()), @rest);
 }
 
+=head3 C<random( $min, $max )>
+
+Return integer in C<[ $min ; $max [>
+
+=cut
 sub random {
     my ($min, $max) = @_;
     ($min, $max) = ($max, $min) if($min > $max);
     $min + int(rand($max - $min));
 }
 
+#################################
+
 package File;
+
+=head2 The File module
+
+All the test should use the C<File> class. It has nice functions and
+methods to deal with paths, to create random files, to list the
+content of the server, to change attributes, etc.
+
+There are 2 kinds of C<File>: remote and local.
+
+=over
+
+=item * Remote files are accessible on the server.
+
+=item * Local files are not.
+
+=back
+
+Thus, some methods only works on remote files. If they do not make
+sense for local ones, they always return undef.
+
+=cut
 use File::Basename;
 use File::Path qw/make_path remove_tree/;
 use Digest::MD5 qw/md5_hex/;
 use Scalar::Util 'blessed';
 
-sub cleanpath {
-    my $p = shift;
-    $p =~ s{/+}{/}g;
-    $p =~ s{/$}{};
-    $p;
-}
+=head3 Constructors
 
-sub create_file {
-    my $fn = shift;
-    my $buf = '';
-    unlink $fn if -e $fn;
-    my $size = main::random(512, 1024);
-    open my $out, '>', $fn or die "can't open $fn: $!\n";
-    binmode $out;
-    for(1..$size) {
-        $buf .= pack('C', main::random(0, 256));
-    }
-    print $out $buf;
-    close $out;
-    return md5_hex($buf);
-}
+=head4 C<< File->new_remote($path [, $abs]) >>
 
-sub localpath {
-    my $s = shift;
-    if($s->{remote}) {
-        return cleanpath($main::LOCALPATH.'/'.$s->remotepath);
-    }
-    else {
-        return cleanpath($s->{dir}.'/'.$s->{name});
-    }
-}
+Creates a file accessible on the server at C<$DIR/$path> ie. not at the
+root of the share.
 
-sub remotepath {
-    my ($s) = @_;
-    return undef if !$s->{remote};
-    cleanpath(($s->{dir}.'/'.$s->{name}) =~ s{^/}{}r);
-}
+If you want to remove the automatic prefix C<$DIR>, set C<$abs> to 1.
 
-sub remotedir {
-    my $s = shift;
-    return undef if !$s->{remote};
-    cleanpath($s->{dir});
-}
+The file is created without any DOS attributes.
 
-sub tarpath {
-    my $s = shift;
-    return undef if !$s->{remote};
-    cleanpath('./'.$s->remotepath);
-}
+If C<$path> contains non-existent directories, they are automatically
+created.
 
-sub delete_on_destruction {
-    my ($s, $delete) = @_;
-    $s->{delete_on_destruction} = $delete;
-}
-
-sub set_attr {
-    my ($s, @flags) = @_;
-    return undef if !$s->{remote};
-
-    $s->{attr} = {qw/r 0 s 0 h 0 a 0 d 0 n 0/};
-
-    for(@flags) {
-        $s->{attr}{lc($_)} = 1;
-    }
-
-    my $file = $s->{name};
-    my @args;
-    if($s->remotedir) {
-        push @args, '-D', $s->remotedir;
-    }
-    main::smb_client(@args, '-c', qq{setmode "$file" -rsha});
-    if(@flags && $flags[0] !~ /n/i) {
-        main::smb_client(@args, '-c', qq{setmode "$file" +}.join('', @flags));
-    }
-}
-
-sub attr_str {
-    my $s = shift;
-    return undef if !$s->{remote};
-    join('', map {$_ if $s->{attr}{$_}} qw/r h s a d n/);
-}
-
-
-sub set_time {
-    my ($s, $t) = @_;
-    utime $t, $t, $s->localpath;
-}
-
-sub md5 {
-    my $s = shift;
-
-    if(!$s->{md5}) {
-        open my $h, '<', $s->localpath() or die "can't read ".$s->localpath.": $!";
-        binmode $h;
-        $s->{md5} = Digest::MD5->new->addfile($h)->hexdigest;
-        close $h;
-    }
-
-    return $s->{md5};
-}
-
-sub walk {
-    my $fun = \&{shift @_};
-
-    my @res;
-
-    for (@_) {
-        if($_->{attr}{d}) {
-            push @res, walk($fun, @{$_->{content}});
-        } else {
-            push @res, $fun->($_);
-        }
-    }
-
-    return @res;
-}
-
-sub tree {
-    my ($class, $d) = @_;
-    my @files;
-
-    if(!defined $d) {
-        @files = File->list();
-    } elsif(blessed $d) {
-        @files = File->list($d->remotepath);
-    } else {
-        @files = File->list($d);
-    }
-
-    for my $f (@files) {
-        if($f->{attr}{d}) {
-            $f->{content} = [tree($class, $f)];
-        }
-    }
-
-    return @files;
-}
-
-sub list {
-    my ($class, $path) = @_;
-    $path ||= '/';
-    my @files;
-    my $out = main::smb_client('-D', $path, '-c', 'ls');
-
-    for(split /\n/, $out) {
-        next if !/^  (.+?)\s+([AHSRDN]+)\s+(\d+)\s+(.+)/o;
-        my ($fn, $attr, $size, $date) = ($1, $2, $3, $4);
-        next if $fn =~ /^\.{1,2}$/;
-
-        push @files, bless {
-            'remote' => 1,
-            'dir'    => $path =~ s{^/}{}r,
-            'name'   => $fn,
-            'size'   => int($size),
-            'date'   => $date,
-            'attr'   => {
-                # list context returns somehting different than the
-                # boolean matching result => force scalar context
-                'a' => scalar ($attr =~ /A/),
-                'h' => scalar ($attr =~ /H/),
-                's' => scalar ($attr =~ /S/),
-                'r' => scalar ($attr =~ /R/),
-                'd' => scalar ($attr =~ /D/),
-                'n' => scalar ($attr =~ /N/),
-            },
-        }, $class;
-    }
-    return @files;
-}
-
+=cut
 sub new_remote {
     my ($class, $path, $abs) = @_;
     my ($file, $dir) = fileparse($path);
@@ -1040,17 +976,25 @@ sub new_remote {
 
     make_path($loc);
 
-    my $self = {
+    my $self = bless {
         'attr' => {qw/r 0 s 0 h 0 a 0 d 0 n 0/},
         'dir'  => $dir,
         'name' => $file,
         'md5'  => create_file($loc.'/'.$file),
         'remote' => 1,
-    };
+    }, $class;
 
-    bless $self, $class;
+    $self->set_attr();
+
+    $self;
 }
 
+=head4 C<< File->new_local($abs_path [, $data]) >>
+
+Creates a file at C<$abs_path> with $data in it on the system.
+If $data is not provided, fill it with random bytes.
+
+=cut
 sub new_local {
     my ($class, $path, $data) = @_;
     my ($file, $dir) = fileparse($path);
@@ -1079,7 +1023,185 @@ sub new_local {
     bless $self, $class;
 }
 
-# a gate to hard to debug bugs...
+=head3 Methods
+
+=head4 C<< $f->localpath >>
+
+Return path on the system eg. F</opt/samba/share/test_tar_mode/file>
+
+=cut
+sub localpath {
+    my $s = shift;
+    if($s->{remote}) {
+        return cleanpath($main::LOCALPATH.'/'.$s->remotepath);
+    }
+    else {
+        return cleanpath($s->{dir}.'/'.$s->{name});
+    }
+}
+
+=head4 C<< $f->remotepath >>
+
+Return path on the server share.
+
+Return C<undef> if the file is local.
+
+=cut
+sub remotepath {
+    my ($s) = @_;
+    return undef if !$s->{remote};
+    cleanpath(($s->{dir}.'/'.$s->{name}) =~ s{^/}{}r);
+}
+
+
+=head4 C<< $f->remotedir >>
+
+Return the directory path of the file on the server.
+
+Like C<< $f->remotepath >> but without the final file name.
+
+=cut
+sub remotedir {
+    my $s = shift;
+    return undef if !$s->{remote};
+    cleanpath($s->{dir});
+}
+
+=head4 C<< $f->tarpath >>
+
+Return path as it would appear in a tar archive.
+
+Like C<< $f->remotepath >> but prefixed with F<./>
+
+=cut
+sub tarpath {
+    my $s = shift;
+    return undef if !$s->{remote};
+    cleanpath('./'.$s->remotepath);
+}
+
+=head4 C<< $f->delete_on_destruction( 0 ) >>
+
+=head4 C<< $f->delete_on_destruction( 1 ) >>
+
+By default, a C<File> is not deleted on the filesystem when it is not
+referenced anymore in Perl memory.
+
+When set to 1, the destructor unlink the file if it is not already removed.
+If the C<File> created directories when constructed, it does not remove them.
+
+=cut
+sub delete_on_destruction {
+    my ($s, $delete) = @_;
+    $s->{delete_on_destruction} = $delete;
+}
+
+=head4 C<< $f->set_attr( ) >>
+
+=head4 C<< $f->set_attr( 'a' ) >>
+
+=head4 C<< $f->set_attr( 'a', 'r', 's', 'h' ) >>
+
+Remove all DOS attributes and only set the one provided.
+
+=cut
+sub set_attr {
+    my ($s, @flags) = @_;
+    return undef if !$s->{remote};
+
+    $s->{attr} = {qw/r 0 s 0 h 0 a 0 d 0 n 0/};
+
+    for(@flags) {
+        $s->{attr}{lc($_)} = 1;
+    }
+
+    my $file = $s->{name};
+    my @args;
+    if($s->remotedir) {
+        push @args, '-D', $s->remotedir;
+    }
+    main::smb_client(@args, '-c', qq{setmode "$file" -rsha});
+    if(@flags && $flags[0] !~ /n/i) {
+        main::smb_client(@args, '-c', qq{setmode "$file" +}.join('', @flags));
+    }
+}
+
+=head4 C<< $f->attr_any( 'a' ) >>
+
+=head4 C<< $f->attr_any( 'a', 's', ... ) >>
+
+Return 1 if the file has any of the DOS attributes provided.
+
+=cut
+sub attr_any {
+    my ($s, @flags) = @_;
+    for(@flags) {
+        return 1 if $s->{attr}{$_};
+    }
+    0;
+}
+
+
+=head4 C<< $f->attr( 'a' ) >>
+
+=head4 C<< $f->attr( 'a', 's', ... ) >>
+
+Return 1 if the file has all the DOS attributes provided.
+
+=cut
+sub attr {
+    my ($s, @flags) = @_;
+    for(@flags) {
+        return 0 if !$s->{attr}{$_};
+    }
+    1;
+}
+
+=head4 C<< $f->attr_str >>
+
+Return DOS attributes as a compact string.
+
+  Read-only, hiden, system, archive => "rhsa"
+
+=cut
+sub attr_str {
+    my $s = shift;
+    return undef if !$s->{remote};
+    join('', map {$_ if $s->{attr}{$_}} qw/r h s a d n/);
+}
+
+=head4 C<< $f->set_time($t) >>
+
+Set modification and access time of the file to C<$t>.
+
+C<$t> must be in Epoch time (number of seconds since 1970/1/1).
+
+=cut
+sub set_time {
+    my ($s, $t) = @_;
+    utime $t, $t, $s->localpath;
+}
+
+=head4 C<< $f->md5 >>
+
+Return md5 sum of the file.
+
+The result is cached.
+
+=cut
+sub md5 {
+    my $s = shift;
+
+    if(!$s->{md5}) {
+        open my $h, '<', $s->localpath() or die "can't read ".$s->localpath.": $!";
+        binmode $h;
+        $s->{md5} = Digest::MD5->new->addfile($h)->hexdigest;
+        close $h;
+    }
+
+    return $s->{md5};
+}
+
 sub DESTROY {
     my $s = shift;
     if($s->{delete_on_destruction} && -f $s->localpath) {
@@ -1089,5 +1211,164 @@ sub DESTROY {
         unlink $s->localpath;
     }
 }
+
+=head3 Functions
+
+=head4 C<< File::walk( \&function, @files) >>
+
+=head4 C<< File::walk( sub { ... }, @files) >>
+
+Iterate on file hierachy in C<@files> and return accumulated results.
+
+Use C<$_ in> the sub to access the current C<File>.
+
+The C<@files> must come from a call to the C<File::tree> function.
+
+=cut
+sub walk {
+    my $fun = \&{shift @_};
+
+    my @res;
+
+    for (@_) {
+        if($_->{attr}{d}) {
+            push @res, walk($fun, @{$_->{content}});
+        } else {
+            push @res, $fun->($_);
+        }
+    }
+
+    return @res;
+}
+
+=head4 C<< File::list( $remotepath ) >>
+
+Return list of file (C<File> instance) in C<$remotepath>.
+
+C<$remotepath> must be a directory.
+
+=cut
+sub list {
+    my ($path) = @_;
+    $path ||= '/';
+    my @files;
+    my $out = main::smb_client('-D', $path, '-c', 'ls');
+
+    for(split /\n/, $out) {
+        next if !/^  (.+?)\s+([AHSRDN]+)\s+(\d+)\s+(.+)/o;
+        my ($fn, $attr, $size, $date) = ($1, $2, $3, $4);
+        next if $fn =~ /^\.{1,2}$/;
+
+        push @files, bless {
+            'remote' => 1,
+            'dir'    => $path =~ s{^/}{}r,
+            'name'   => $fn,
+            'size'   => int($size),
+            'date'   => $date,
+            'attr'   => {
+                # list context returns somehting different than the
+                # boolean matching result => force scalar context
+                'a' => scalar ($attr =~ /A/),
+                'h' => scalar ($attr =~ /H/),
+                's' => scalar ($attr =~ /S/),
+                'r' => scalar ($attr =~ /R/),
+                'd' => scalar ($attr =~ /D/),
+                'n' => scalar ($attr =~ /N/),
+            },
+        }, 'File';
+    }
+    return @files;
+}
+
+=head4 C<< File::tree( $remotepath ) >>
+
+Return recursive list of file in C<$remotepath>.
+
+C<$remotepath> must be a directory.
+
+Use C<File::walk()> to iterate over all the files.
+
+=cut
+sub tree {
+    my ($d) = @_;
+    my @files;
+
+    if(!defined $d) {
+        @files = list();
+    } elsif(blessed $d) {
+        @files = list($d->remotepath);
+    } else {
+        @files = list($d);
+    }
+
+    for my $f (@files) {
+        if($f->{attr}{d}) {
+            $f->{content} = [tree($f)];
+        }
+    }
+
+    return @files;
+}
+
+# remove trailing or duplicated slash
+sub cleanpath {
+    my $p = shift;
+    $p =~ s{/+}{/}g;
+    $p =~ s{/$}{};
+    $p;
+}
+
+# create random file at path local path $fn
+sub create_file {
+    my $fn = shift;
+    my $buf = '';
+    unlink $fn if -e $fn;
+    my $size = main::random(512, 1024);
+    open my $out, '>', $fn or die "can't open $fn: $!\n";
+    binmode $out;
+    for(1..$size) {
+        $buf .= pack('C', main::random(0, 256));
+    }
+    print $out $buf;
+    close $out;
+    return md5_hex($buf);
+}
+
+
+=head3 Examples
+
+    # create remote file in $DIR/foo/bar
+        my $f = File->new_remote("foo/bar/myfile");
+        say $f->localpath;  # /opt/share/$DIR/foo/bar/myfile
+        say $f->remotepath; # $DIR/foo/bar/myfile
+        say $f->remotedir;  # $DIR/foo/bar
+
+
+    # same but in root dir
+        my $f = File->new_remote("myfile", 1);
+        say $f->localpath;  # /opt/share/myfile
+        say $f->remotepath; # myfile
+        say $f->remotedir;  #
+
+
+    # create local random temp file in $TMP
+        my $f = File->new_local("$TMP/temp");
+        say $f->remotepath; # undef because it's not on the server
+
+
+    # same but file contains "hello"
+        my $f = File->new_local("$TMP/temp", "hello");
+
+
+    # list of files in $DIR (1 level)
+        for (File::list($DIR)) {
+            say $_->remotepath;
+        }
+
+
+    # list of all files in dir and subdir of $DIR
+        File::walk(sub { say $_->remotepath }, File::tree($DIR));
+
+=cut
 
 1;
