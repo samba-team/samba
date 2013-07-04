@@ -201,7 +201,9 @@ case "$1" in
 		-eq 4 "verbose restart" \
 		-eq 2 "restart:bs"
 
-	monitor_ganesha_nfsd
+	if [ "$CTDB_SKIP_GANESHA_NFSD_CHECK" != "yes" ] ; then
+	    monitor_ganesha_nfsd
+	fi
 
 	# rquotad is sometimes not started correctly on RHEL5
 	# not a critical service so we dont flag the node as unhealthy
