@@ -113,6 +113,7 @@ install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 
 cp config/events.d/README README.eventscripts
+cp config/notify.d.README README.notify.d
 
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
@@ -138,7 +139,7 @@ rm -rf $RPM_BUILD_ROOT
 %attr(755,root,root) %{_sysconfdir}/ctdb/notify.d
 
 %doc README COPYING NEWS
-%doc README.eventscripts
+%doc README.eventscripts README.notify.d
 %doc doc/recovery-process.txt
 %doc doc/*.html
 %{_sysconfdir}/sudoers.d/ctdb
@@ -166,7 +167,6 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/40.mountd.check
 %config(noreplace) %{_sysconfdir}/ctdb/nfs-rpc-checks.d/50.rquotad.check
 %{_sysconfdir}/ctdb/statd-callout
-%{_sysconfdir}/ctdb/notify.d/README
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb
 %{_bindir}/ctdb_lock_helper
