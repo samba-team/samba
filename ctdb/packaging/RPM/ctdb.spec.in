@@ -24,13 +24,16 @@ Provides: ctdb = %{version}
 Prefix: /usr
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
-# Always use the bundled versions of these libraries.
-%define with_included_talloc 1
-%define with_included_tdb 1
-%define with_included_tevent 1
+# Allow build with system libraries
+# To enable, run rpmbuild with,
+#      "--with system_talloc"
+#      "--with system_tdb"
+#      "--with system_tevent"
+%define with_included_talloc %{?_with_system_talloc: 0} %{?!_with_system_talloc: 1}
+%define with_included_tdb %{?_with_system_tdb: 0} %{?!_with_system_tdb: 1}
+%define with_included_tevent %{?_with_system_tevent: 0} %{?!_with_system_tevent: 1}
 
-# If the above options are changed then mandate minimum system
-# versions.
+# Required minimum library versions when building with system libraries
 %define libtalloc_version 2.0.8
 %define libtdb_version 1.2.11
 %define libtevent_version 0.9.18
