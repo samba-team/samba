@@ -6,9 +6,9 @@
     <para>Beginning in Samba 4.1, a growing number of databases can
     use the NTDB format rather than TDB.
     </para>
-    <para>If you enable this option these databases will defaul to a
+    <para>If you enable this option these databases will default to a
     <filename>.ntdb</filename> extension rather than
-    <filename>.tdb</filename>: If the <filename>.tdb</filename> file
+    <filename>.tdb</filename>. If the <filename>.tdb</filename> file
     exists, it will automatically be converted to NTDB and renamed to
     <filename>.tdb.bak</filename>.
     </para>
