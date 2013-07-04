@@ -3231,7 +3231,6 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
-			write(state->fd[1], &cc, 1);
 		}
 		_exit(0);
 	}
