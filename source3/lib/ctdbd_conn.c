@@ -1166,7 +1166,6 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 	NTSTATUS status;
 	struct ctdb_vnn_list *vnns = NULL;
 	unsigned num_vnns;
-	bool result = false;
 
 	if (!ctdb_collect_vnns(talloc_tos(), pids, num_pids,
 			       &vnns, &num_vnns)) {
@@ -1303,10 +1302,11 @@ bool ctdb_serverids_exist(struct ctdbd_connection *conn,
 		num_received += 1;
 	}
 
-	result = true;
-fail:
 	TALLOC_FREE(vnns);
-	return result;
+	return true;
+fail:
+	cluster_fatal("serverids_exist failed");
+	return false;
 #endif /* HAVE_CTDB_CONTROL_CHECK_SRVIDS_DECL */
 }
 
