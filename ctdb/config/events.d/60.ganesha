@@ -140,7 +140,7 @@ case "$1" in
         # the check completely
 	p="rpc.statd"
 	which $p >/dev/null 2>/dev/null && \
-	    nfs_check_rpc_service "statd" 1 \
+	    nfs_check_rpc_service "statd" \
 		-ge 6 "verbose unhealthy" \
 		-eq 4 "verbose restart" \
 		-eq 2 "restart:bs"
@@ -197,7 +197,7 @@ case "$1" in
 
 	# rquotad is sometimes not started correctly on RHEL5
 	# not a critical service so we dont flag the node as unhealthy
-	nfs_check_rpc_service "rquotad" 1 \
+	nfs_check_rpc_service "rquotad" \
 	    -gt 0 "verbose restart:b"
 
 	# Check that directories for shares actually exist.
