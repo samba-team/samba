@@ -112,9 +112,6 @@ make DESTDIR=$RPM_BUILD_ROOT docdir=%{_docdir} install install_tests
 install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
 install -m755 config/ctdb.init $RPM_BUILD_ROOT%{initdir}/ctdb
 
-mkdir -p $RPM_BUILD_ROOT%{_docdir}/ctdb/tests/bin
-install -m755 tests/bin/ctdb_transaction $RPM_BUILD_ROOT%{_docdir}/ctdb/tests/bin
-
 # Remove "*.old" files
 find $RPM_BUILD_ROOT -name "*.old" -exec rm -f {} \;
 
@@ -188,7 +185,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/ping_pong.1.gz
 %{_libdir}/pkgconfig/ctdb.pc
 
-%{_docdir}/ctdb/tests/bin/ctdb_transaction
 
 %package devel
 Summary: CTDB development libraries
