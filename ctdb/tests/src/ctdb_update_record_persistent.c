@@ -98,6 +98,9 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_client(ev, timeval_current_ofs(5, 0));
+	if (ctdb == NULL) {
+		exit(1);
+	}
 
 	if (test_db == NULL) {
 		fprintf(stderr, "You must specify the database\n");
