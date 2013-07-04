@@ -422,7 +422,7 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 			    void *private_data)
 {
 	struct lock_context *lock_ctx;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	char c;
 	bool locked;
 	double t;

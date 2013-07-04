@@ -50,7 +50,7 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
 	int ret;
 	ctdb_sock_addr __addr = *_addr;
 	ctdb_sock_addr *addr = &__addr;
-	socklen_t addrlen;
+	socklen_t addrlen = 0;
 
 	switch (addr->sa.sa_family) {
 	case AF_INET:

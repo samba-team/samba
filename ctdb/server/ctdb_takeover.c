@@ -1899,6 +1899,7 @@ static bool lcp2_failback_candidate(struct ctdb_context *ctdb,
 	struct ctdb_public_ip_list *tmp_ip;
 
 	/* Find an IP and destination node that best reduces imbalance. */
+	srcimbl = 0;
 	minip = NULL;
 	minsrcimbl = 0;
 	mindstnode = -1;
