@@ -4386,6 +4386,8 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 	struct ctdb_vnn *vnn;
 	int i, ret;
 
+	CTDB_NO_MEMORY(ctdb, mem_ctx);
+
 	/* read the ip allocation from the local node */
 	ret = ctdb_ctrl_get_public_ips(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, mem_ctx, &ips);
 	if (ret != 0) {
@@ -4400,7 +4402,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_ERR,("Failed to re-read public addresses file\n"));
 		talloc_free(mem_ctx);
 		return -1;
-	}		
+	}
 
 
 	/* check the previous list of ips and scan for ips that have been
@@ -4424,6 +4426,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 
 			ret = ctdb_ctrl_del_public_ip(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, &pub);
 			if (ret != 0) {
+				talloc_free(mem_ctx);
 				DEBUG(DEBUG_ERR, ("RELOADIPS: Unable to del public ip:%s from local node\n", ctdb_addr_to_str(&ips->ips[i].addr)));
 				return -1;
 			}
@@ -4439,15 +4442,15 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 			}
 		}
 		if (i == ips->num) {
-			struct ctdb_control_ip_iface pub;
+			struct ctdb_control_ip_iface *pub;
 			const char *ifaces = NULL;
 			int iface = 0;
 
 			DEBUG(DEBUG_NOTICE,("RELOADIPS: New ip:%s found, adding it.\n", ctdb_addr_to_str(&vnn->public_address)));
 
-			pub.addr  = vnn->public_address;
-			pub.mask  = vnn->public_netmask_bits;
-
+			pub = talloc_zero(mem_ctx, struct ctdb_control_ip_iface);
+			pub->addr  = vnn->public_address;
+			pub->mask  = vnn->public_netmask_bits;
 
 			ifaces = vnn->ifaces[0];
 			iface = 1;
@@ -4455,17 +4458,27 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 				ifaces = talloc_asprintf(vnn, "%s,%s", ifaces, vnn->ifaces[iface]);
 				iface++;
 			}
-			pub.len   = strlen(ifaces)+1;
-			memcpy(&pub.iface[0], ifaces, strlen(ifaces)+1);
+			pub->len   = strlen(ifaces)+1;
+			pub = talloc_realloc_size(mem_ctx, pub,
+				offsetof(struct ctdb_control_ip_iface, iface) + pub->len);
+			if (pub == NULL) {
+				DEBUG(DEBUG_ERR, (__location__ " Failed to allocate memory\n"));
+				talloc_free(mem_ctx);
+				return -1;
+			}
+			memcpy(&pub->iface[0], ifaces, pub->len);
 
-			ret = ctdb_ctrl_add_public_ip(ctdb, TAKEOVER_TIMEOUT(), CTDB_CURRENT_NODE, &pub);
+			ret = ctdb_ctrl_add_public_ip(ctdb, TAKEOVER_TIMEOUT(),
+						      CTDB_CURRENT_NODE, pub);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, ("RELOADIPS: Unable to add public ip:%s to local node\n", ctdb_addr_to_str(&vnn->public_address)));
+				talloc_free(mem_ctx);
 				return -1;
 			}
 		}
 	}
 
+	talloc_free(mem_ctx);
 	return 0;
 }
 
