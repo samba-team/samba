@@ -24,14 +24,24 @@
 #include <archive.h>
 
 #define LEN(x) (sizeof(x)/sizeof((x)[0]))
-
-/* XXX: used in client.c, we have to export it for now */
+#define TAR_MAX_BLOCK_SIZE 65535
+/*
+ * XXX: used in client.c, we have to export it for now.
+ * corresponds to the transfer operation. Can be '\0', 'c' or 'x'
+ */
 char tar_type = 0;
 
-enum tar_type {
+enum tar_operation {
+    TAR_NO_OPERATION,
+    TAR_CREATE,    /* c flag */
+    TAR_EXTRACT,   /* x flag */
+};
+
+enum tar_selection {
+    TAR_NO_SELECTION,
     TAR_INCLUDE,       /* I flag, default */
-    TAR_INCLUDE_FILE,  /* F flag */
-    TAR_EXLUDE,        /* X flag */
+    TAR_INCLUDE_LIST,  /* F flag */
+    TAR_EXCLUDE,       /* X flag */
 };
 
 enum {
@@ -40,19 +50,17 @@ enum {
 };
 
 struct tar {
-    /* include, include from file, exclude */
-    enum tar_type type;
-
-    /* size in bytes of a block in the tar file */
-    int blocksize;
-
     /* flags */
-    struct {
+    struct tar_mode {
+        enum tar_operation operation; /* create, extract */
+        enum tar_selection selection; /* inc, inc from file, exclude */
+        int blocksize;    /* size in bytes of a block in the tar file */
         bool hidden;      /* backup hidden file? */
         bool system;      /* backup system file? */
         bool incremental; /* backup _only_ archived file? */
         bool reset;       /* unset archive bit? */
         bool dry;         /* don't write tar file? */
+        bool regex;       /* XXX: never actually using regex... */
         bool verbose;
     } mode;
 
@@ -67,14 +75,39 @@ struct tar {
 };
 
 static struct tar tar_ctx = {
-    .type             = TAR_INCLUDE,
-    .blocksize        = 20,
+    .mode.selection   = TAR_INCLUDE,
+    .mode.blocksize   = 20,
     .mode.hidden      = True,
     .mode.system      = True,
     .mode.incremental = False,
     .mode.dry         = False,
 };
 
+static int tar_set_blocksize(struct tar *t, int size)
+{
+    if (size <= 0 || size > TAR_MAX_BLOCK_SIZE) {
+        return 0;
+    }
+
+    t->mode.blocksize = size;
+
+    return 1;
+}
+
+static bool tar_set_newer_than(struct tar *t, char *filename)
+{
+    extern time_t newer_than;
+    SMB_STRUCT_STAT stbuf;
+
+    if (sys_stat(filename, &stbuf, false) != 0) {
+        DEBUG(0, ("Error setting newer-than time\n"));
+        return 0;
+    }
+
+    newer_than = convert_timespec_to_time_t(stbuf.st_ex_mtime);
+    DEBUG(1, ("Getting files newer than %s\n", time_to_asc(newer_than)));
+    return 1;
+}
 
 /**
  * cmd_block - interactive command to change tar blocksize
@@ -87,7 +120,6 @@ int cmd_block(void)
     /* XXX: from client.c */
     const extern char *cmd_ptr;
     char *buf;
-    int size;
     TALLOC_CTX *ctx = talloc_tos();
 
     if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
@@ -95,14 +127,11 @@ int cmd_block(void)
         return 1;
     }
 
-    size = atoi(buf);
-    if (size < 0 || size > 65535) {
-        DEBUG(0, ("blocksize out of range"));
-        return 1;
+    if(!tar_set_blocksize(&tar_ctx, atoi(buf))) {
+        DEBUG(0, ("invalid blocksize\n"));
     }
 
-    tar_ctx.blocksize = size;
-    DEBUG(2,("blocksize is now %d\n", size));
+    DEBUG(2, ("blocksize is now %d\n", tar_ctx.mode.blocksize));
 
     return 0;
 }
@@ -288,5 +317,141 @@ Parse tar arguments. Sets tar_type, tar_excl, etc.
 
 int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 {
-    return 0;
+	int newOptind = Optind;
+
+    /*
+     * Reset back some options - could be from interactive version
+	 * all other modes are left as they are
+	 */
+    tar_ctx.mode.operation = TAR_NO_OPERATION;
+    tar_ctx.mode.selection = TAR_NO_SELECTION;
+    tar_ctx.mode.dry = False;
+
+    while (*Optarg) {
+        switch(*Optarg++) {
+        /* operation */
+        case 'c':
+            if (tar_ctx.mode.operation != TAR_NO_OPERATION) {
+                printf("Tar must be followed by only one of c or x.\n");
+                return 0;
+            }
+            tar_ctx.mode.operation = TAR_CREATE;
+            break;
+        case 'x':
+            if (tar_ctx.mode.operation != TAR_NO_OPERATION) {
+                printf("Tar must be followed by only one of c or x.\n");
+                return 0;
+            }
+            tar_ctx.mode.operation = TAR_CREATE;
+            break;
+
+        /* selection  */
+        case 'I':
+            if (tar_ctx.mode.selection != TAR_NO_SELECTION) {
+                DEBUG(0,("Only one of I,X,F must be specified\n"));
+                return 0;
+            }
+            tar_ctx.mode.selection = TAR_INCLUDE;
+            break;
+        case 'X':
+            if (tar_ctx.mode.selection != TAR_NO_SELECTION) {
+                DEBUG(0,("Only one of I,X,F must be specified\n"));
+                return 0;
+            }
+            tar_ctx.mode.selection = TAR_EXCLUDE;
+            break;
+        case 'F':
+            if (tar_ctx.mode.selection != TAR_NO_SELECTION) {
+                DEBUG(0,("Only one of I,X,F must be specified\n"));
+                return 0;
+            }
+            tar_ctx.mode.selection = TAR_INCLUDE_LIST;
+            break;
+
+        /* blocksize */
+        case 'b':
+            if (Optind >= argc) {
+                DEBUG(0, ("Option b must be followed by a blocksize\n"));
+                return 0;
+            }
+
+            if (!tar_set_blocksize(&tar_ctx, atoi(argv[Optind]))) {
+                DEBUG(0, ("Option b must be followed by a valid blocksize\n"));
+                return 0;
+            }
+
+            Optind++;
+            newOptind++;
+            break;
+
+         /* incremental mode */
+        case 'g':
+            tar_ctx.mode.incremental = True;
+            break;
+
+        /* newer than */
+        case 'N':
+            if (Optind >= argc) {
+                DEBUG(0, ("Option N must be followed by valid file name\n"));
+                return 0;
+            }
+
+            if (!tar_set_newer_than(&tar_ctx, argv[Optind])) {
+                DEBUG(0,("Error setting newer-than time\n"));
+                return 0;
+            }
+
+            newOptind++;
+            Optind++;
+            break;
+
+        /* reset mode */
+        case 'a':
+            tar_ctx.mode.reset = True;
+            break;
+
+        /* verbose */
+        case 'q':
+            tar_ctx.mode.verbose = True;
+            break;
+
+        /* regex match  */
+        case 'r':
+            tar_ctx.mode.regex = True;
+            break;
+
+        /* dry run mode */
+        case 'n':
+            if (tar_ctx.mode.operation != TAR_CREATE) {
+                DEBUG(0, ("n is only meaningful when creating a tar-file\n"));
+                return 0;
+            }
+
+            tar_ctx.mode.dry = True;
+            DEBUG(0, ("dry_run set\n"));
+            break;
+
+        default:
+            DEBUG(0,("Unknown tar option\n"));
+            return 0;
+        }
+    }
+
+    /* default operation is include */
+    if (tar_ctx.mode.operation == TAR_NO_OPERATION) {
+        tar_ctx.mode.operation = TAR_INCLUDE;
+    }
+
+    if (tar_ctx.mode.selection == TAR_INCLUDE_LIST) {
+        if (argc - Optind - 1 != 1) {
+            DEBUG(0,("Option F must be followed by exactly one filename.\n"));
+            return 0;
+        }
+        newOptind++;
+        /* Optind points at the tar output file, Optind+1 at the inclusion file. */
+        printf("tar: %s list: %s\n", argv[Optind], argv[Optind+1]);
+    }
+
+    return newOptind;
+
 }
