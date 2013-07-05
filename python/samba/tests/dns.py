@@ -18,7 +18,7 @@
 import os
 import struct
 import random
-from samba import socket
+import socket
 import samba.ndr as ndr
 import samba.dcerpc.dns as dns
 from samba.tests import TestCase
