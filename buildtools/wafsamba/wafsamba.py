@@ -348,6 +348,8 @@ def SAMBA_BINARY(bld, binname, source,
     if bld.env['ENABLE_PIE'] == True:
         pie_cflags += ' -fPIE'
         pie_ldflags.extend(TO_LIST('-pie'))
+    if bld.env['ENABLE_RELRO'] == True:
+        pie_ldflags.extend(TO_LIST('-Wl,-z,relro,-z,now'))
 
     # first create a target for building the object files for this binary
     # by separating in this way, we avoid recompiling the C files

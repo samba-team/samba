@@ -64,6 +64,14 @@ def set_options(opt):
                   help=("Disable Position Independent Executable builds"),
                   action="store_false", dest='enable_pie')
 
+    opt.add_option('--with-relro',
+                  help=("Build with full RELocation Read-Only (RELRO)" +
+                        "(default if supported by compiler)"),
+                  action="store_true", dest='enable_relro')
+    opt.add_option('--without-relro',
+                  help=("Disable RELRO builds"),
+                  action="store_false", dest='enable_relro')
+
     gr = opt.option_group('developer options')
 
 
@@ -177,6 +185,16 @@ def configure(conf):
         if conf.check_cc(cflags='-fPIE', ldflags='-pie', mandatory=need_pie,
                          msg="Checking compiler for PIE support"):
 		conf.env['ENABLE_PIE'] = True
+
+    if Options.options.enable_relro != False:
+        if Options.options.enable_relro == True:
+            need_relro = True
+        else:
+            # not specified, only build RELROs if supported by compiler
+            need_relro = False
+        if conf.check_cc(cflags='', ldflags='-Wl,-z,relro,-z,now', mandatory=need_relro,
+                         msg="Checking compiler for full RELRO support"):
+            conf.env['ENABLE_RELRO'] = True
 
 def etags(ctx):
     '''build TAGS file using etags'''
