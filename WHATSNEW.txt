@@ -1,98 +1,69 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.0.  This is *not*
+This is the first release candidate of Samba 4.1.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.0 will be the next version of the Samba suite and incorporates
-all the technology found in both the Samba4 series and the
-stable 3.x series. The primary additional features over Samba 3.6 are
+Samba 4.1 will be the next version of the Samba suite and includes
+all the technology found in both the Samba4 series and the stable 3.x
+series. The primary additional features over Samba 3.6 are
 support for the Active Directory logon protocols used by Windows 2000
 and above.
 
-This release contains the best of all of Samba's
-technology parts, both a file server (that you can reasonably expect
-to upgrade existing Samba 3.x releases to) and the AD domain
-controller work previously known as 'samba4'.
-
-If you are upgrading, or looking to develop, test or deploy Samba 4.0
+If you are upgrading, or looking to develop, test or deploy Samba 4.1
 releases candidates, you should backup all configuration and data.
 
 
 UPGRADING
 =========
 
-Users upgrading from Samba 3.x domain controllers and wanting to use
-Samba 4.0 as an AD DC should use the 'samba-tool domain
-classicupgrade' command.  See the wiki for more details:
-https://wiki.samba.org/index.php/Samba4/samba3upgrade/HOWTO.
-
-Users upgrading from Samba 4.0 alpha and beta releases since alpha15
-should run 'samba-tool dbcheck --cross-ncs --fix' before re-starting
-Samba.  Users upgrading from earlier alpha releases should contact the
-team for advice.
-
-Users upgrading an AD DC from any previous release should run
-'samba-tool ntacl sysvolreset' to re-sync ACLs on the sysvol share
-with those matching the GPOs in LDAP and the defaults from an initial
-provision.  This will set an underlying POSIX ACL if required (eg not
-using the NTVFS file server).
-
-If you used the BIND9_FLATFILE or BIND9_DLZ features,
-you'll have to add '-dns' to the 'server services' option,
-as the internal dns server (SAMBA_INTERNAL) is the default now.
 
 
 NEW FEATURES
 ============
 
-Samba 4.0 supports the server-side of the Active Directory logon
-environment used by Windows 2000 and later, so we can do full domain
-join and domain logon operations with these clients.
+Directory database replication (AD DC mode)
+===========================================
 
-Our Domain Controller (DC) implementation includes our own built-in
-LDAP server and Kerberos Key Distribution Center (KDC) as well as the
-Samba3-like logon services provided over CIFS.  We correctly generate
-the infamous Kerberos PAC, and include it with the Kerberos tickets we
-issue.
+Directory replication has been reworked in order to improve the
+correctness and efficiency.
+As a net effect of it, replication with other domain controllers with
+a heavily modified schema is now possible (ie. Windows 2012 DCs or
+other Windows DC with exchange installed) and replication didn't fail
+anymore in such environments.
 
-Samba 4.0.0rc2 ships with two distinct file servers.  We now use the
-file server from the Samba 3.x series 'smbd' for all file serving by
-default.
 
-Samba 4.0 also ships with the 'NTVFS' file server.  This file server
-is what was used in all previous releases of Samba 4.0, and is
-tuned to match the requirements of an AD domain controller.  We
-continue to support this, not only to provide continuity to
-installations that have deployed it as part of an AD DC, but also as a
-running example of the NT-FSA architecture we expect to move smbd to in
-the longer term.
+Server-Side Copy Support
+========================
 
-For pure file server work, the binaries users would expect from that
-series (nmbd, winbindd, smbpasswd) continue to be available.  When
-running an AD DC, you only need to run 'samba' (not
-nmbd/smbd/winbind), as the required services are co-coordinated by this
-master binary.
+Samba 4.1.0 adds support for server-side copy operations via the SMB2
+FSCTL_SRV_COPYCHUNK request. Clients making use of server-side copy
+support, such as Windows Server 2012, should experience considerable
+performance improvements for file copy operations, as file data need not
+traverse the network.
+This feature is enabled by default on the smbd file server.
 
-As DNS is an integral part of Active Directory, we also provide two DNS
-solutions, a simple internal DNS server for 'out of the box' configurations
-and a more elaborate BIND plugin using the BIND DLZ mechanism in versions
-9.8 and 9.9. During the provision, you can select which backend to use.
-With the internal backend, your DNS server is good to go.
-If you chose the BIND_DLZ backend, a configuration file will be generated
-for bind to make it use this plugin, as well as a file explaining how to
-set up bind.
 
-To provide accurate timestamps to Windows clients, we integrate with
-the NTP project to provide secured NTP replies.  To use you need to
-start ntpd and configure it with the 'restrict ... ms-sntp' and
-ntpsigndsocket options.
+Btrfs Filesystem Integration
+============================
 
-Finally, a new scripting interface has been added to Samba 4, allowing
-Python programs to interface to Samba's internals, and many tools and
-internal workings of the DC code is now implemented in python.
+The Btrfs VFS module provided with Samba 4.1.0 further improves the
+performance of server-side copy operations on shares backed by a Btrfs
+filesystem. It does so by allowing multiple files to share the same
+on-disk extents, avoiding the unnecessary duplication of source and
+destination file data during a server-side copy operation.
+
+This feature can be explicitly enabled on smbd shares backed by a Btrfs
+filesystem with the smb.conf parameter:
+vfs objects = btrfs
+
+
+REMOVED COMPONENTS
+==================
+
+The Samba Web Administration Tool (SWAT) has been removed.
 
 
 ######################################################################
@@ -105,185 +76,22 @@ smb.conf changes
    Parameter Name			Description	Default
    --------------			-----------	-------
 
-   allow dns updates			New		secure only
-   announce as				Removed
-   announce version			Removed
-   cldap port				New		0
-   client max protocol			New
-   client min protocol			New
-   client signing			Changed default	default
-   dcerpc endpoint servers		New
-   dgram port				New		0
-   directory security mask		Removed
-   display charset			Removed
-   dns forwarder			New
-   dns update command			New
-   force security mode			Removed
-   force directory security mode	Removed
-   homedir map				Changed default	auto.home
-   kernel share modes			New		Yes
-   kpasswd port				New		0
-   krb5 port				New		0
-   max protocol				Removed
-   min protocol				Removed
-   nbt client socket address		New		0.0.0.0
-   nbt port				New		0
-   nsupdate command			New
-   ntp signd socket directory		New
-   ntvfs handler			New
-   paranoid server security		Removed
-   pid directory			New
-   printer admin			Removed
-   rndc command 			New
-   rpc big endian			New		No
-   samba kcc command			New
-   security mask			Removed
-   send spnego principal		Removed
-   server max protocol			New		SMB3
-   server min protocol			New		LANMAN1
-   server role				New		auto
-   server services			New
-   server signing			Changed default	default
-   share backend			New
-   share modes				Removed
-   smb2 max read			Changed default 1048576
-   smb2 max write			Changed default 1048576
-   smb2 max trans			Changed default 1048576
-   socket address			Removed
-   spn update command			New
-   time offset				Removed
-   tls cafile				New
-   tls certfile				New
-   tls crlfile				New
-   tls dh params file			New
-   tls enabled				New		No
-   tls keyfile				New
-   unicode				New		Yes
-   web port				New		0
-   winbindd privileged socket directory	New
-   winbind sealed pipes			New		No
-   winbindd socket directory		New
+   password level			Removed
+   set directory			Removed
+   use ntdb				New		No
 
 
-CHANGES SINCE 4.0.0rc1
-======================
+CHANGES SINCE 4.0.7
+===================
 
 o   Michael Adam <obnox@samba.org>
-    * BUG 9173: Make the SMB2 compound request create/delete_on_close/
-      close work as Windows.
-
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 9161: Re-add the vfs_Chdir() cache.
-    * BUG 9189: SMB2 Create doesn't return correct MAX ACCESS access mask in
-      blob.
-    * BUG 9213: Bad ASN.1 NegTokenInit packet can cause invalid free.
-
-
-o   Christian Ambach <ambi@samba.org>
-    * BUG 9162: Fix the build of the GPFS VFS module.
-    * BUG 9197: Only do 'printing_subsystem_update' when printing is enabled.
-
-
-o   Alexander Bokovoy <ab@samba.org>
-    * BUG 9157: Cleanup idmap_ldap build dependencies.
-
-
-o   Ira Cooper <ira@samba.org>
-    * BUG 9162: Fix build on Illumos/Solaris using '--with-acl'.
-    * BUG 9173: Compound requests should continue processing.
-
-
-o   Björn Jacke <bj@sernet.de>
-    * BUG 9162: Fix the build of the ACL VFS modules.
-    * BUG 9172: Fix reporting of gfs2 quotas.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * BUG 9217: CreateFile with FILE_DIRECTORY_FILE can create directories
-      on read-only shares.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * BUG 9173: Make the SMB2 compound request create/delete_on_close/
-      close work as Windows.
-    * BUG 9184: Fix receiving of UDP packets from 0 bytes.
-    * BUG 9191: Release the share mode lock before calling exit_server().
-    * BUG 9193: Fix usage of invalid memory in smb2_signing_check_pdu().
-    * BUG 9194: Disallow '--prefix=/usr' and '--prefix=/usr/local' without
-      '--enable-fhs'.
-    * BUG 9198: Fix RHEL-CTDB packaging.
-
-
-o   Matthieu Patou <mat@matws.net>
-    * BUG 9199: Fix usage of "panic action".
-
-
-o   Andreas Schneider <asn@samba.org>
-    * BUG 8632: Fix builtin forms order to match Windows again.
-    * BUG 9159: Fix generating idmap manpages.
-    * BUG 9218: Don't segfault if user specified ports out for range.
 
 
 KNOWN ISSUES
 ============
 
-- 'samba-tool domain classicupgrade' will fail when setting ACLs on
-  the GPO folders with NT_STATUS_INVALID_ONWER in the default
-  configuration.  This happens if, as is typical a 'domain admins'
-  group (-512) is mapped in the passdb backend being upgraded.  This
-  is because the group mapping to a GID only prevents Samba from
-  allocating a uid for that group.  The uid is needed so the 'domain
-  admins' group can own the GPO file objects.
 
-  To work around this issue, remove the 'domain admins' group before
-  upgrade, as it will be re-created automatically.  You will
-  of course need to fill in the group membership again.  A future release
-  will make this automatic, or find some other workaround.
-
-- This release makes the s3fs file server the default, as this is the
-  file server combination we will use for the Samba 4.0 release.
-
-- For similar reasons, sites with ACLs stored by the ntvfs file server
-  may wish to continue to use that file server implementation, as a
-  posix ACL will similarly not be set in this case.
-
-- Replication of DNS data from one AD server to another may not work.
-  The DNS data used by the internal DNS server and bind9_dlz is stored
-  in an application partition in our directory.  The replication of
-  this partition is not yet reliable.
-
-- Replication may fail on FreeBSD due to getaddrinfo() rejecting names
-  containing _.  A workaround will be in a future release.
-
-- samba_upgradeprovision should not be run when upgrading to this release
-  from a recent release.  No important database format changes have
-  been made since alpha16.
-
-- Installation on systems without a system iconv (and developer
-  headers at compile time) is known to cause errors when dealing with
-  non-ASCII characters.
-
-- Domain member support in the 'samba' binary is in its infancy, and
-  is not comparable to the support found in winbindd.  As such, do not
-  use the 'samba' binary (provided for the AD server) on a member
-  server.
-
-- There is no NetBIOS browsing support (network neighbourhood)
-  available for the AD domain controller.  (Support in nmbd and smbd
-  for classic domains and member/standalone servers is unchanged).
-
-- Clock Synchronisation is critical.  Many 'wrong password' errors are
-  actually due to Kerberos objecting to a clock skew between client
-  and server.  (The NTP work in the previous alphas are partly to assist
-  with this problem).
-
-- The DRS replication code may fail.  Please contact the team if you
-  experience issues with DRS replication, as we have fixed many issues
-  here in response to feedback from our production users.
-
-
-RUNNING Samba 4.0 as an AD DC
+RUNNING Samba 4.1 as an AD DC
 =============================
 
 A short guide to setting up Samba 4 as an AD DC can be found on the wiki:
@@ -300,7 +108,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 4.0 product in the project's Bugzilla
+be filed under the Samba 4.1 product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
