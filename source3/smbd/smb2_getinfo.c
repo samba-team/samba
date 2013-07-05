@@ -159,7 +159,10 @@ static void smbd_smb2_request_getinfo_done(struct tevent_req *subreq)
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(call_status)) {
+	/* some GetInfo responses set STATUS_BUFFER_OVERFLOW and return partial,
+	   but valid data */
+	if (!(NT_STATUS_IS_OK(call_status) ||
+	      NT_STATUS_EQUAL(call_status, STATUS_BUFFER_OVERFLOW))) {
 		/* Return a specific error with data. */
 		error = smbd_smb2_request_error_ex(req,
 						call_status,
@@ -194,7 +197,7 @@ static void smbd_smb2_request_getinfo_done(struct tevent_req *subreq)
 
 	outdyn = out_output_buffer;
 
-	error = smbd_smb2_request_done(req, outbody, &outdyn);
+	error = smbd_smb2_request_done_ex(req, call_status, outbody, &outdyn, __location__);
 	if (!NT_STATUS_IS_OK(error)) {
 		smbd_server_connection_terminate(req->sconn,
 						 nt_errstr(error));
@@ -416,7 +419,10 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 					 fsp->fsp_name,
 					 &data,
 					 &data_size);
-		if (!NT_STATUS_IS_OK(status)) {
+		/* some responses set STATUS_BUFFER_OVERFLOW and return
+		   partial, but valid data */
+		if (!(NT_STATUS_IS_OK(status) ||
+		      NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW))) {
 			SAFE_FREE(data);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
 				status = NT_STATUS_INVALID_INFO_CLASS;
@@ -503,6 +509,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	state->status = status;
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
 }
