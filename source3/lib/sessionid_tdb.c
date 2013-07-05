@@ -38,16 +38,21 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 		(struct sessionid_traverse_read_state *)private_data;
 	struct auth_session_info *session_info = global->auth_session_info;
 	struct sessionid session = {
-		.uid = session_info->unix_token->uid,
-		.gid = session_info->unix_token->gid,
+		.uid = -1,
+		.gid = -1,
 		.id_num = global->session_global_id,
 		.connect_start = nt_time_to_unix(global->creation_time),
 		.pid = global->channels[0].server_id,
 	};
 
-	strncpy(session.username,
-		session_info->unix_info->unix_name,
-		sizeof(fstring)-1);
+	if (session_info != NULL) {
+		session.uid = session_info->unix_token->uid;
+		session.gid = session_info->unix_token->gid;
+		strncpy(session.username,
+			session_info->unix_info->unix_name,
+			sizeof(fstring)-1);
+	}
+
 	strncpy(session.remote_machine,
 		global->channels[0].remote_name,
 		sizeof(fstring)-1);

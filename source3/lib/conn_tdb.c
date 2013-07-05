@@ -53,8 +53,13 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 	uint32_t id = global->session_global_id;
 	struct connections_forall_session sess;
 
-	sess.uid = global->auth_session_info->unix_token->uid;
-	sess.gid = global->auth_session_info->unix_token->gid;
+	if (global->auth_session_info == NULL) {
+		sess.uid = -1;
+		sess.gid = -1;
+	} else {
+		sess.uid = global->auth_session_info->unix_token->uid;
+		sess.gid = global->auth_session_info->unix_token->gid;
+	}
 	strncpy(sess.machine, global->channels[0].remote_name, sizeof(sess.machine));
 	strncpy(sess.addr, global->channels[0].remote_address, sizeof(sess.addr));
 
