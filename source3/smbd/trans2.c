@@ -3132,6 +3132,7 @@ NTSTATUS smbd_do_qfsinfo(connection_struct *conn,
 	uint32 additional_flags = 0;
 	struct smb_filename smb_fname;
 	SMB_STRUCT_STAT st;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (fname == NULL || fname->base_name == NULL) {
 		filename = ".";
@@ -3667,7 +3668,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	}
 
 	*ret_data_len = data_len;
-	return NT_STATUS_OK;
+	return status;
 }
 
 /****************************************************************************
