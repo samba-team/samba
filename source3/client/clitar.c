@@ -28,7 +28,7 @@
 /* XXX: used in client.c, we have to export it for now */
 char tar_type = 0;
 
-enum tar_type_t {
+enum tar_type {
     TAR_INCLUDE,       /* I flag, default */
     TAR_INCLUDE_FILE,  /* F flag */
     TAR_EXLUDE,        /* X flag */
@@ -41,7 +41,7 @@ enum {
 
 struct tar {
     /* include, include from file, exclude */
-    enum tar_type_t type;
+    enum tar_type type;
 
     /* size in bytes of a block in the tar file */
     int blocksize;
@@ -76,10 +76,12 @@ static struct tar tar_ctx = {
 };
 
 
-/****************************************************************************
-Blocksize command
-***************************************************************************/
-
+/**
+ * cmd_block - interactive command to change tar blocksize
+ *
+ * Read a size from the client command line and update the current
+ * blocksize.
+ */
 int cmd_block(void)
 {
     /* XXX: from client.c */
@@ -105,10 +107,12 @@ int cmd_block(void)
     return 0;
 }
 
-/****************************************************************************
-command to set incremental / reset mode
-***************************************************************************/
-
+/**
+ * cmd_tarmode - interactive command to change tar behaviour
+ *
+ * Read one or more modes from the client command line and update the
+ * current tar mode.
+ */
 int cmd_tarmode(void)
 {
     const extern char *cmd_ptr;
@@ -158,6 +162,14 @@ int cmd_tarmode(void)
     return 0;
 }
 
+/**
+ * set_remote_attr - set DOS attributes of a remote file
+ * @filename: path to the file name
+ * @new_attr: attribute bit mask to use
+ * @mode: one of ATTR_SET or ATTR_UNSET
+ *
+ * Update the file attributes with the one provided.
+ */
 static void set_remote_attr(char *filename, uint16 new_attr, int mode)
 {
     extern struct cli_state *cli;
@@ -181,11 +193,12 @@ static void set_remote_attr(char *filename, uint16 new_attr, int mode)
     }
 }
 
-
-/****************************************************************************
-Feeble attrib command
-***************************************************************************/
-
+/**
+ * cmd_setmode - interactive command to set DOS attributes
+ *
+ * Read a filename and mode from the client command line and update
+ * the file DOS attributes.
+ */
 int cmd_setmode(void)
 {
     const extern char *cmd_ptr;
