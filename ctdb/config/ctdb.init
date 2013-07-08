@@ -117,7 +117,7 @@ build_ctdb_options () {
 
 export_debug_variables ()
 {
-    export CTDB_DEBUG_HUNG_SCRIPT CTDB_EXTERNAL_TRACE
+    export CTDB_DEBUG_HUNG_SCRIPT CTDB_EXTERNAL_TRACE CTDB_DEBUG_LOCKS
 }
 
 set_retval() {
