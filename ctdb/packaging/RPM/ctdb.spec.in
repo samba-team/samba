@@ -40,12 +40,15 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
 %if ! %with_included_talloc
 BuildRequires: libtalloc-devel >= %{libtalloc_version}
+Requires: libtalloc >= %{libtalloc_version}
 %endif
 %if ! %with_included_tdb
 BuildRequires: libtdb-devel >= %{libtdb_version}
+Requires: libtdb >= %{libtdb_version}
 %endif
 %if ! %with_included_tevent
 BuildRequires: libtevent-devel >= %{libtevent_version}
+Requires: libtevent >= %{libtevent_version}
 %endif
 
 # To build the ctdb-pcp-pmda package, run rpmbuild with "--with pmda"
