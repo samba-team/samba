@@ -26,6 +26,7 @@
 #include "popt_common.h"
 #include "rpc_client/cli_pipe.h"
 #include "client/client_proto.h"
+#include "client/clitar_proto.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../lib/util/select.h"
 #include "system/readline.h"
@@ -5513,12 +5514,14 @@ static int do_message_op(struct user_auth_info *a_info)
 			 * position of the -T option in the raw argv[]. */
 			{
 				int i;
+				extern struct tar tar_ctx;
+
 				for (i = 1; i < argc; i++) {
 					if (strncmp("-T", argv[i],2)==0)
 						break;
 				}
 				i++;
-				if (!tar_parseargs(argc, argv, poptGetOptArg(pc), i)) {
+				if (!tar_parse_args(&tar_ctx, poptGetOptArg(pc), argv + i, argc - i)) {
 					poptPrintUsage(pc, stderr, 0);
 					exit(1);
 				}

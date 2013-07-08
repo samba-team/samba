@@ -1,10 +1,7 @@
 /*
  * Unix SMB/CIFS implementation.
- * collected prototypes header
- *
- * frozen from "make proto" in May 2008
- *
- * Copyright (C) Michael Adam 2008
+ * Tar backup command extension
+ * Copyright (C) Aurélien Aptel 2013
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,27 +17,16 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _CLIENT_PROTO_H_
-#define _CLIENT_PROTO_H_
+#ifndef _CLITAR_PROTO_H_
+#define _CLITAR_PROTO_H_
 
-struct cli_state;
-struct file_info;
+struct tar;
 
-/* The following definitions come from client/client.c  */
+int cmd_block(void);
+int cmd_tarmode(void);
+int cmd_setmode(void);
+int cmd_tar(void);
+int process_tar(void);
+int tar_parse_args(struct tar *tar, const char *flag, const char **val, int valsize);
 
-const char *client_get_cur_dir(void);
-const char *client_set_cur_dir(const char *newdir);
-NTSTATUS do_list(const char *mask,
-			uint16 attribute,
-			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
-				   const char *dir),
-			bool rec,
-			bool dirs);
-int cmd_iosize(void);
-
-/* The following definitions come from client/dnsbrowse.c  */
-
-int do_smb_browse(void);
-int do_smb_browse(void);
-
-#endif /*  _CLIENT_PROTO_H_  */
+#endif /* _CLITAR_PROTO_H_ */
