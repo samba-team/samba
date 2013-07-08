@@ -13,7 +13,7 @@
     <filename>.tdb.bak</filename>.
     </para>
     <para>Filenames explicitly specified in
-    <filename>smb.conf</filename> will be respected (ie. the format
+    <filename>smb.conf</filename> will be respected (i.e. the format
     will depend on the <filename>.ntdb</filename> or
     <filename>.tdb</filename> extension).
     </para>
