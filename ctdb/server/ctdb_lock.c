@@ -486,8 +486,6 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 }
 
 
-static void ctdb_lock_find_blocker(struct lock_context *lock_ctx);
-
 /*
  * Callback routine when required locks are not obtained within timeout
  * Called from parent context
@@ -497,15 +495,32 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 				    struct timeval current_time,
 				    void *private_data)
 {
+	const char *cmd = getenv("CTDB_DEBUG_LOCKS");
 	struct lock_context *lock_ctx;
 	struct ctdb_context *ctdb;
+	pid_t pid;
 
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
 
+	if (lock_ctx->type == LOCK_RECORD || lock_ctx->type == LOCK_DB) {
+		DEBUG(DEBUG_WARNING,
+		      ("Unable to get %s lock on database %s for %.0lf seconds\n",
+		       (lock_ctx->type == LOCK_RECORD ? "RECORD" : "DB"),
+		       lock_ctx->ctdb_db->db_name,
+		       timeval_elapsed(&lock_ctx->start_time)));
+	} else {
+		DEBUG(DEBUG_WARNING,
+		      ("Unable to get ALLDB locks for %.0lf seconds\n",
+		       timeval_elapsed(&lock_ctx->start_time)));
+	}
+
 	/* fire a child process to find the blocking process */
-	if (lock_ctx->block_child == -1) {
-		ctdb_lock_find_blocker(lock_ctx);
+	if (cmd != NULL) {
+		pid = fork();
+		if (pid == 0) {
+			execl(cmd, cmd, NULL);
+		}
 	}
 
 	/* reset the timeout timer */
@@ -996,151 +1011,3 @@ struct lock_request *ctdb_lock_alldb(struct ctdb_context *ctdb,
 				  auto_mark);
 }
 
-/*
- * Callback routine to read the PID of blocking process from the child and log
- *
- */
-void ctdb_lock_blocked_handler(struct tevent_context *ev,
-				struct tevent_fd *tfd,
-				uint16_t flags,
-				void *private_data)
-{
-	struct lock_context *lock_ctx;
-	pid_t blocker_pid = -1;
-	char *process_name = NULL;
-	const char *db_name = NULL;
-	ino_t inode;
-	struct ctdb_db_context *ctdb_db;
-	int fd;
-	struct stat stat_buf;
-
-	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
-
-	if (read(lock_ctx->block_fd[0], &blocker_pid, sizeof(blocker_pid)) != sizeof(blocker_pid)) {
-		DEBUG(DEBUG_ERR, ("Error reading blocker process pid from child\n"));
-		goto failed;
-	}
-	if (read(lock_ctx->block_fd[0], &inode, sizeof(inode)) != sizeof(inode)) {
-		DEBUG(DEBUG_ERR, ("Error reading blocked inode from child\n"));
-		goto failed;
-	}
-
-	if (blocker_pid < 0) {
-		goto failed;
-	}
-
-	process_name = ctdb_get_process_name(blocker_pid);
-
-	if (lock_ctx->type == LOCK_RECORD || lock_ctx->type == LOCK_DB) {
-		db_name = lock_ctx->ctdb_db->ltdb->name;
-	} else {
-		for (ctdb_db = lock_ctx->ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-			fd = tdb_fd(ctdb_db->ltdb->tdb);
-			if (fstat(fd, &stat_buf) == 0) {
-				if (stat_buf.st_ino == inode) {
-					db_name = ctdb_db->ltdb->name;
-					break;
-				}
-			}
-		}
-	}
-
-	if (db_name) {
-		DEBUG(DEBUG_WARNING,
-		      ("Process (pid=%d) blocked in locking\n", lock_ctx->child));
-		DEBUG(DEBUG_WARNING,
-		      ("Process %s (pid=%d) locked database %s (inode %lu) for %.0lf seconds\n",
-		       (process_name ? process_name : "unknown"),
-		       blocker_pid, db_name, (unsigned long)inode,
-		       timeval_elapsed(&lock_ctx->start_time)));
-	} else {
-		DEBUG(DEBUG_WARNING,
-		      ("Process %s (pid=%d) locked database (inode %lu) for %.0lf seconds\n",
-		       (process_name ? process_name : "unknown"),
-		       blocker_pid, (unsigned long)inode,
-		       timeval_elapsed(&lock_ctx->start_time)));
-	}
-
-	/*
-	 * If ctdb is blocked by smbd for deadlock_interval, detect it as a deadlock
-	 * and kill smbd process.
-	 */
-	if (lock_ctx->ctdb->tunable.deadlock_timeout > 0 &&
-	    timeval_elapsed(&lock_ctx->start_time) > lock_ctx->ctdb->tunable.deadlock_timeout &&
-	    process_name && strstr(process_name, "smbd")) {
-		DEBUG(DEBUG_WARNING,
-		      ("Deadlock detected. Killing smbd process (pid=%d)", blocker_pid));
-		kill(blocker_pid, SIGKILL);
-	}
-
-	free(process_name);
-
-failed:
-	if (lock_ctx->block_child > 0) {
-		ctdb_kill(lock_ctx->ctdb, lock_ctx->block_child, SIGKILL);
-	}
-	lock_ctx->block_child = -1;
-	talloc_free(tfd);
-}
-
-
-/*
- * Find processes that holds lock we are interested in
- */
-void ctdb_lock_find_blocker(struct lock_context *lock_ctx)
-{
-	struct tevent_fd *tfd;
-	pid_t parent;
-
-	if (pipe(lock_ctx->block_fd) < 0) {
-		return;
-	}
-
-	parent = getpid();
-
-	lock_ctx->block_child = ctdb_fork(lock_ctx->ctdb);
-	if (lock_ctx->block_child == -1) {
-		close(lock_ctx->block_fd[0]);
-		close(lock_ctx->block_fd[1]);
-		return;
-	}
-
-	/* Child process */
-	if (lock_ctx->block_child == 0) {
-		struct ctdb_lock_info reqlock;
-		pid_t blocker_pid = -1;
-		bool status;
-
-		close(lock_ctx->block_fd[0]);
-		if (ctdb_get_lock_info(lock_ctx->child, &reqlock)) {
-			status = ctdb_get_blocker_pid(&reqlock, &blocker_pid);
-			if (!status) {
-				/* Could not find blocker pid */
-				blocker_pid = -2;
-			}
-		}
-		write(lock_ctx->block_fd[1], &blocker_pid, sizeof(blocker_pid));
-		write(lock_ctx->block_fd[1], &reqlock.inode, sizeof(reqlock.inode));
-
-		/* Hang around till parent dies */
-		while (kill(parent, 0) == 0 || errno != ESRCH) {
-			sleep(5);
-		}
-		_exit(0);
-	}
-
-	/* Parent process */
-	close(lock_ctx->block_fd[1]);
-	set_close_on_exec(lock_ctx->block_fd[0]);
-
-	tfd = tevent_add_fd(lock_ctx->ctdb->ev,
-				lock_ctx,
-				lock_ctx->block_fd[0],
-				EVENT_FD_READ,
-				ctdb_lock_blocked_handler,
-				(void *)lock_ctx);
-	if (tfd == NULL) {
-		ctdb_kill(lock_ctx->ctdb, lock_ctx->block_child, SIGKILL);
-		close(lock_ctx->block_fd[0]);
-	}
-}
