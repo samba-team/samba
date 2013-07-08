@@ -725,9 +725,6 @@ static struct tevent_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 	state->expected_pkt_type = expected_pkt_type;
-	state->incoming_frag = data_blob_null;
-	state->reply_pdu = data_blob_null;
-	state->reply_pdu_offset = 0;
 	state->endianess = DCERPC_DREP_LE;
 
 	/*
