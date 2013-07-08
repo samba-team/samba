@@ -3396,11 +3396,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		}
 	}
 
-	pnn = ctdb_ctrl_getpnn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
-	if (pnn == (uint32_t)-1) {
-		DEBUG(DEBUG_ERR,("Failed to get local pnn - retrying\n"));
-		return;
-	}
+	pnn = ctdb_get_pnn(ctdb);
 
 	/* get the vnnmap */
 	ret = ctdb_ctrl_getvnnmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &vnnmap);
