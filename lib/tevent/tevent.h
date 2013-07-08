@@ -919,9 +919,9 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location);
  * req = tevent_req_create(mem_ctx, &state, struct computation_state);
  * @endcode
  *
- * Tevent_req_create() creates the state variable as a talloc child of
- * its result. The state variable should be used as the talloc parent
- * for all temporary variables that are allocated during the async
+ * Tevent_req_create() allocates and zeros the state variable as a talloc
+ * child of its result. The state variable should be used as the talloc
+ * parent for all temporary variables that are allocated during the async
  * computation. This way, when the user of the async computation frees
  * the request, the state as a talloc child will be free'd along with
  * all the temporary variables hanging off the state.
