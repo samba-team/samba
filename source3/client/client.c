@@ -76,12 +76,6 @@ static int archive_level = 0;
 static bool translation = false;
 static bool have_ip;
 
-/* clitar bits insert */
-extern int blocksize;
-extern bool tar_inc;
-extern bool tar_reset;
-/* clitar bits end */
-
 static bool prompt = true;
 
 static bool recurse = false;
