@@ -91,6 +91,19 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 
 	TDB_DATA val = tdb_null;
 
+	/*
+	 * Note: that share_name is defined as array without a pointer.
+	 * that's why it's always a valid pointer here.
+	 */
+	if (strlen(global->share_name) == 0) {
+		/*
+		 * when a smbXsrv_tcon is created it's created
+		 * with emtpy share_name first in order to allocate
+		 * an id, before filling in the details.
+		 */
+		return 0;
+	}
+
 	status = dbwrap_fetch(state->session_by_pid, state,
 			      make_tdb_data((void*)&sess_id, sizeof(sess_id)),
 			      &val);
