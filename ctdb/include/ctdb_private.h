@@ -136,7 +136,6 @@ struct ctdb_tunable {
 	uint32_t db_size_warn;
 	uint32_t pulldb_preallocation_size;
 	uint32_t no_ip_host_on_all_disabled;
-	uint32_t deadlock_timeout;
 	uint32_t samba3_hack;
 };
 

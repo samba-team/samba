@@ -85,7 +85,6 @@ static const struct {
 	{ "DBSizeWarn",        100000000,  offsetof(struct ctdb_tunable, db_size_warn), false },
 	{ "PullDBPreallocation", 10*1024*1024,  offsetof(struct ctdb_tunable, pulldb_preallocation_size), false },
 	{ "NoIPHostOnAllDisabled",    0,  offsetof(struct ctdb_tunable, no_ip_host_on_all_disabled), false },
-	{ "DeadlockTimeout",	300, offsetof(struct ctdb_tunable, deadlock_timeout), false },
 	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable, samba3_hack), false },
 };
 
