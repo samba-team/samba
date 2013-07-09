@@ -23,9 +23,22 @@
 #include "client/clitar_proto.h"
 #include "libsmb/libsmb.h"
 #include <archive.h>
+#include <archive_entry.h>
 
 #define LEN(x) (sizeof(x)/sizeof((x)[0]))
-#define TAR_MAX_BLOCK_SIZE 65535
+
+/**
+ * Maximum value for the blocksize field
+ */
+#define TAR_MAX_BLOCK_SIZE 0xffff
+
+/**
+ * A more adequate size will be used for better performance unless
+ * we're dealing with a tape device with fixed block size.
+ *
+ * The actual choice is made by libarchive.
+ */
+#define TAR_DEFAULT_BLOCK_SIZE 20
 
 enum tar_operation {
     TAR_NO_OPERATION,
@@ -46,6 +59,7 @@ enum {
 };
 
 struct tar {
+    /* in state that needs/can be processed? */
     bool to_process;
 
     /* flags */
@@ -77,7 +91,7 @@ struct tar {
 
 struct tar tar_ctx = {
     .mode.selection   = TAR_INCLUDE,
-    .mode.blocksize   = 20,
+    .mode.blocksize   = TAR_DEFAULT_BLOCK_SIZE,
     .mode.hidden      = true,
     .mode.system      = true,
     .mode.incremental = false,
@@ -415,13 +429,63 @@ int cmd_tar(void)
     return 0;
 }
 
+static int tar_extract(struct tar *t)
+{
+    int err = 0;
+    int r;
+    struct archive_entry *entry;
+
+    t->archive = archive_read_new();
+    archive_read_support_format_all(t->archive);
+    archive_read_support_filter_all(t->archive);
+
+    if (strequal(t->tar_path, "-")) {
+        r = archive_read_open_fd(t->archive, STDIN_FILENO, t->mode.blocksize);
+    } else {
+        r = archive_read_open_filename(t->archive, t->tar_path,
+                                       t->mode.blocksize);
+    }
+
+    if (r != ARCHIVE_OK) {
+        DEBUG(0, ("Can't open %s : %s\n", t->tar_path,
+                  archive_error_string(t->archive)));
+        return 1;
+    }
+
+    for (;;) {
+        r = archive_read_next_header(t->archive, &entry);
+        if (r == ARCHIVE_EOF) {
+            break;
+        }
+        if (r == ARCHIVE_WARN) {
+            DEBUG(0, ("Warning: %s", archive_error_string(t->archive)));
+        }
+        if (r == ARCHIVE_FATAL) {
+            DEBUG(0, ("Fatal: %s", archive_error_string(t->archive)));
+            err = 1;
+            goto out;
+        }
+
+        DEBUG(0, ("Processing %s...\n", archive_entry_pathname(entry)));
+    }
+
+ out:
+    r = archive_read_free(t->archive);
+    if (r != ARCHIVE_OK) {
+        DEBUG(0, ("Can't close %s : %s\n", t->tar_path,
+                  archive_error_string(t->archive)));
+        err = 1;
+    }
+    return err;
+}
+
 int tar_process(struct tar *t)
 {
     int rc = 0;
 
     switch(t->mode.operation) {
     case TAR_EXTRACT:
-        /* tar_extract(t); */
+        rc = tar_extract(t);
         break;
     case TAR_CREATE:
         /* tar_create(t); */
