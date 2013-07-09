@@ -583,6 +583,11 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 				return tevent_req_post(req, ev);
 			}
+
+			if (ea_list_has_invalid_name(ea_list)) {
+				tevent_req_nterror(req, STATUS_INVALID_EA_NAME);
+				return tevent_req_post(req, ev);
+			}
 		}
 
 		if (mxac) {
