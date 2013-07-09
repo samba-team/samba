@@ -28,6 +28,7 @@
 #include <netinet/icmp6.h>
 #include <net/if_arp.h>
 #include <netpacket/packet.h>
+#include <sys/prctl.h>
 
 #ifndef ETHERTYPE_IP6
 #define ETHERTYPE_IP6 0x86dd
@@ -596,6 +597,16 @@ char *ctdb_get_process_name(pid_t pid)
 	return strdup(ptr);
 }
 
+/*
+ * Set process name
+ */
+int ctdb_set_process_name(const char *name)
+{
+	char procname[16];
+
+	strncpy(procname, name, 15);
+	return prctl(PR_SET_NAME, (unsigned long)procname, 0, 0, 0);
+}
 
 /*
  * Parsing a line from /proc/locks,

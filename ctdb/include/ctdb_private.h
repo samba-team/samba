@@ -1222,6 +1222,7 @@ struct ctdb_lock_info {
 };
 
 char *ctdb_get_process_name(pid_t pid);
+int ctdb_set_process_name(const char *name);
 bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info);
 bool ctdb_get_blocker_pid(struct ctdb_lock_info *reqlock, pid_t *blocker_pid);
 

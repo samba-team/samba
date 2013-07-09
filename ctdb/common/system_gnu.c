@@ -369,6 +369,12 @@ char *ctdb_get_process_name(pid_t pid)
 	return NULL;
 }
 
+int ctdb_set_process_name(const char *name)
+{
+	/* FIXME GNU/Hurd: set_process_name not implemented */
+	return -ENOSYS;
+}
+
 bool ctdb_get_lock_info(pid_t req_pid, struct ctdb_lock_info *lock_info)
 {
 	/* FIXME GNU/Hurd: get_lock_info not implemented */
