@@ -87,6 +87,43 @@ struct tar tar_ctx = {
     .mode.dry         = false,
 };
 
+static char *fix_unix_path (char *path, bool removeprefix)
+{
+    char *from = path, *to = path;
+
+    if (!path || !*path)
+        return path;
+
+    /* remove prefix:
+     * ./path => path
+     *  /path => path
+     */
+    if (removeprefix) {
+        /* /path */
+        if (path[0] == '/' || path[0] == '\\') {
+            from += 1;
+        }
+
+        /* ./path */
+        if (path[1] && path[0] == '.' && (path[1] == '/' || path[1] == '\\')) {
+            from += 2;
+        }
+    }
+
+    /* replace \ with / */
+    while (*from) {
+        if (*from == '\\') {
+            *to = '/';
+        } else {
+            *to = *from;
+        }
+        from++; to++;
+    }
+    *to = 0;
+
+    return path;
+}
+
 #define XSET(v)      [v] = #v
 #define XTABLE(v, t) DEBUG(2, ("DUMP:%-20.20s = %s\n", #v, t[v]))
 #define XBOOL(v)     DEBUG(2, ("DUMP:%-20.20s = %d\n", #v, v ? 1 : 0))
@@ -173,7 +210,7 @@ static bool tar_read_inclusion_file (struct tar *t, const char* filename)
     list = str_list_make_empty(ctx);
 
     while ((line = afdgets(fd, ctx, 0))) {
-        list = str_list_add((const char **)list, line);
+        list = str_list_add((const char **)list, fix_unix_path(line, true));
     }
 
     close(fd);
@@ -568,6 +605,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
         int i;
         for (i = ival; i < valsize; i++) {
             t->path_list = str_list_add((const char**)t->path_list, val[i]);
+            fix_unix_path(t->path_list[i-ival], true);
         }
     }
 
