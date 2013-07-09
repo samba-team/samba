@@ -47,7 +47,6 @@
 extern int do_smb_browse(void); /* mDNS browsing */
 
 extern bool override_logfile;
-extern char tar_type;
 
 static int port = 0;
 static char *service;
@@ -5379,7 +5378,7 @@ static int do_message_op(struct user_auth_info *a_info)
   main program
 ****************************************************************************/
 
- int main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
 	const char **const_argv = discard_const_p(const char *, argv);
 	char *base_directory = NULL;
@@ -5392,6 +5391,8 @@ static int do_message_op(struct user_auth_info *a_info)
 	int rc = 0;
 	bool tar_opt = false;
 	bool service_opt = false;
+    extern struct tar tar_ctx;
+
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 
@@ -5508,7 +5509,6 @@ static int do_message_op(struct user_auth_info *a_info)
 			 * position of the -T option in the raw argv[]. */
 			{
 				int i;
-				extern struct tar tar_ctx;
 
 				for (i = 1; i < argc; i++) {
 					if (strncmp("-T", argv[i],2)==0)
@@ -5608,7 +5608,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	if(new_name_resolve_order)
 		lp_set_cmdline("name resolve order", new_name_resolve_order);
 
-	if (!tar_type && !query_host && !service && !message) {
+	if (!tar_to_process(&tar_ctx) && !query_host && !service && !message) {
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
@@ -5623,7 +5623,7 @@ static int do_message_op(struct user_auth_info *a_info)
 
 	max_protocol = lp_client_max_protocol();
 
-	if (tar_type) {
+	if (!tar_to_process(&tar_ctx)) {
 		if (cmdstr)
 			process_command_string(cmdstr);
 		rc = do_tar_op(base_directory);

@@ -26,11 +26,6 @@
 
 #define LEN(x) (sizeof(x)/sizeof((x)[0]))
 #define TAR_MAX_BLOCK_SIZE 65535
-/*
- * XXX: used in client.c, we have to export it for now.
- * corresponds to the transfer operation. Can be '\0', 'c' or 'x'
- */
-char tar_type = 0;
 
 enum tar_operation {
     TAR_NO_OPERATION,
@@ -51,6 +46,8 @@ enum {
 };
 
 struct tar {
+    bool to_process;
+
     /* flags */
     struct tar_mode {
         enum tar_operation operation; /* create, extract */
@@ -145,6 +142,7 @@ static void tar_dump(struct tar *t)
         XSET(TAR_EXCLUDE),
     };
 
+    XBOOL(t->to_process);
     XTABLE(t->mode.operation, op);
     XTABLE(t->mode.selection, sel);
     XINT(t->mode.blocksize);
@@ -216,6 +214,11 @@ static bool tar_read_inclusion_file (struct tar *t, const char* filename)
     close(fd);
     t->path_list = list;
     return 1;
+}
+
+bool tar_to_process (struct tar *t)
+{
+    return t->to_process;
 }
 
 /**
@@ -461,6 +464,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     t->mode.operation = TAR_NO_OPERATION;
     t->mode.selection = TAR_NO_SELECTION;
     t->mode.dry = false;
+    t->to_process = false;
 
     while (*flag) {
         switch(*flag++) {
@@ -609,6 +613,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
         }
     }
 
+    t->to_process = true;
     tar_dump(t);
     return 1;
 }

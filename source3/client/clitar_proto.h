@@ -28,5 +28,6 @@ int cmd_setmode(void);
 int cmd_tar(void);
 int process_tar(void);
 int tar_parse_args(struct tar *tar, const char *flag, const char **val, int valsize);
+bool tar_to_process(struct tar *tar);
 
 #endif /* _CLITAR_PROTO_H_ */
