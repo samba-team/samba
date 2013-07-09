@@ -42,6 +42,8 @@ static bool check_ea(struct smbcli_state *cli,
 	return NT_STATUS_IS_OK(status);
 }
 
+static char bad_ea_chars[] = "\"*+,/:;<=>?[\\]|";
+
 static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	NTSTATUS status;
@@ -49,6 +51,8 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea.txt";
 	bool ret = true;
+	char bad_ea_name[6];
+	int i;
 	int fnum = -1;
 
 	torture_comment(tctx, "TESTING SETFILEINFO EA_SET\n");
@@ -130,6 +134,59 @@ static bool test_eas(struct smbcli_state *cli, struct torture_context *tctx)
 
 	ret &= check_ea(cli, fname, "EAONE", NULL);
 	ret &= check_ea(cli, fname, "SECONDEA", NULL);
+
+	/* Check EA name containing colon. All EA's set
+	   must be ignored, not just the one with the bad
+	   name. */
+
+	torture_comment(tctx, "Adding bad EA name\n");
+	setfile.generic.level = RAW_SFILEINFO_EA_SET;
+	setfile.generic.in.file.fnum = fnum;
+	setfile.ea_set.in.num_eas = 3;
+	setfile.ea_set.in.eas = talloc_array(tctx, struct ea_struct, 3);
+	setfile.ea_set.in.eas[0].flags = 0;
+	setfile.ea_set.in.eas[0].name.s = "EAONE";
+	setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE1");
+	setfile.ea_set.in.eas[1].flags = 0;
+	setfile.ea_set.in.eas[1].name.s = "SECOND:EA";
+	setfile.ea_set.in.eas[1].value = data_blob_string_const("ValueTwo");
+	setfile.ea_set.in.eas[2].flags = 0;
+	setfile.ea_set.in.eas[2].name.s = "THIRDEA";
+	setfile.ea_set.in.eas[2].value = data_blob_string_const("ValueThree");
+
+	status = smb_raw_setfileinfo(cli->tree, &setfile);
+	CHECK_STATUS(status, STATUS_INVALID_EA_NAME);
+
+	ret &= check_ea(cli, fname, "EAONE", NULL);
+	ret &= check_ea(cli, fname, "THIRDEA", NULL);
+
+	setfile.generic.level = RAW_SFILEINFO_EA_SET;
+	setfile.generic.in.file.fnum = fnum;
+	setfile.ea_set.in.num_eas = 1;
+	setfile.ea_set.in.eas = talloc_array(tctx, struct ea_struct, 1);
+	setfile.ea_set.in.eas[0].flags = 0;
+	strlcpy(bad_ea_name, "TEST_X", sizeof(bad_ea_name));
+	setfile.ea_set.in.eas[0].name.s = bad_ea_name;
+
+	torture_comment(tctx, "Testing bad EA name range.\n");
+
+	for (i = 1; i < 256; i++) {
+		setfile.ea_set.in.eas[0].value = data_blob_string_const("VALUE1");
+		bad_ea_name[5] = (char)i;
+		torture_comment(tctx, "Testing bad EA name %d.\n", i);
+		status = smb_raw_setfileinfo(cli->tree, &setfile);
+		if (i < 32 || strchr(bad_ea_chars, i)) {
+			CHECK_STATUS(status, STATUS_INVALID_EA_NAME);
+		} else {
+			CHECK_STATUS(status, NT_STATUS_OK);
+
+			/* Now delete the EA we just set to make
+			   sure we don't run out of room. */
+			setfile.ea_set.in.eas[0].value = data_blob(NULL, 0);
+			status = smb_raw_setfileinfo(cli->tree, &setfile);
+			CHECK_STATUS(status, NT_STATUS_OK);
+		}
+	}
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -365,6 +422,7 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 	NTSTATUS status;
 	union smb_open io;
 	const char *fname = BASEDIR "\\ea2.txt";
+	const char *fname_bad = BASEDIR "\\ea2_bad.txt";
 	bool ret = true;
 	int fnum = -1;
 	struct ea_struct eas[3];
@@ -433,6 +491,62 @@ static bool test_nttrans_create(struct smbcli_state *cli, struct torture_context
 	ret &= check_ea(cli, fname, "2nd EA", "Second Value");
 	ret &= check_ea(cli, fname, "and 3rd", "final value");
 	ret &= check_ea(cli, fname, "Fourth EA", NULL);
+
+	torture_comment(tctx, "TESTING NTTRANS CREATE WITH BAD EA NAMES\n");
+
+	io.generic.level = RAW_OPEN_NTTRANS_CREATE;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname_bad;
+
+	ea_list.num_eas = 3;
+	ea_list.eas = eas;
+
+	eas[0].flags = 0;
+	eas[0].name.s = "1st EA";
+	eas[0].value = data_blob_string_const("Value One");
+
+	eas[1].flags = 0;
+	eas[1].name.s = "2nd:BAD:EA";
+	eas[1].value = data_blob_string_const("Second Value");
+
+	eas[2].flags = 0;
+	eas[2].name.s = "and 3rd";
+	eas[2].value = data_blob_string_const("final value");
+
+	io.ntcreatex.in.ea_list = &ea_list;
+	io.ntcreatex.in.sec_desc = NULL;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, STATUS_INVALID_EA_NAME);
+
+	/* File must not exist. */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid.fnum = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname_bad;
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 done:
 	smbcli_close(cli->tree, fnum);
