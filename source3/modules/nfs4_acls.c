@@ -739,20 +739,9 @@ static bool smbacl4_fill_ace4(
 
 		if (sid_to_gid(&ace_nt->trustee, &gid)) {
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
-
-			if (params->mode==e_special && gid==ownerGID) {
-				ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
-				ace_v4->who.special_id = SMB_ACE4_WHO_GROUP;
-			} else {
-				ace_v4->who.gid = gid;
-			}
+			ace_v4->who.gid = gid;
 		} else if (sid_to_uid(&ace_nt->trustee, &uid)) {
-			if (params->mode==e_special && uid==ownerUID) {
-				ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
-				ace_v4->who.special_id = SMB_ACE4_WHO_OWNER;
-			} else {
-				ace_v4->who.uid = uid;
-			}
+			ace_v4->who.uid = uid;
 		} else {
 			DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
 				  "convert %s to uid or gid\n",
