@@ -2165,6 +2165,7 @@ static void getlog_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	}
 
 	if (child == 0) {
+		ctdb_set_process_name("ctdb_rec_log_collector");
 		if (switch_from_server_to_client(ctdb, "recoverd-log-collector") != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch log collector child into client mode.\n"));
 			_exit(1);
@@ -3224,6 +3225,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 		close(state->fd[0]);
 		state->fd[0] = -1;
 
+		ctdb_set_process_name("ctdb_rec_reclock");
 		debug_extra = talloc_asprintf(NULL, "recovery-lock:");
 		if (pread(ctdb->recovery_lock_fd, &cc, 1, 0) == -1) {
 			DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
@@ -4070,6 +4072,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	/* Clear the log ringbuffer */
 	ctdb_clear_log(ctdb);
 
+	ctdb_set_process_name("ctdb_recovered");
 	if (switch_from_server_to_client(ctdb, "recoverd") != 0) {
 		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch recovery daemon into client mode. shutting down.\n"));
 		exit(1);

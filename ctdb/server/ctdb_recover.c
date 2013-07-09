@@ -669,6 +669,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		char cc = 0;
 		close(state->fd[0]);
 
+		ctdb_set_process_name("ctdb_recmode");
 		debug_extra = talloc_asprintf(NULL, "set_recmode:");
 		/* we should not be able to get the lock on the reclock file, 
 		  as it should  be held by the recovery master 

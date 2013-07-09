@@ -407,6 +407,7 @@ static int fork_child_for_script(struct ctdb_context *ctdb,
 					      ctdb_eventscript_call_names[state->call]);
 		close(state->fd[0]);
 		set_close_on_exec(state->fd[1]);
+		ctdb_set_process_name("ctdb_eventscript");
 
 		rt = child_run_script(ctdb, state->from_user, state->call, state->options, current);
 		/* We must be able to write PIPEBUF bytes at least; if this
@@ -540,6 +541,7 @@ static void ctdb_run_debug_hung_script(struct ctdb_context *ctdb, struct ctdb_ev
 	if (pid == 0) {
 		char *buf;
 
+		ctdb_set_process_name("ctdb_debug_hung_script");
 		if (getenv("CTDB_DEBUG_HUNG_SCRIPT") != NULL) {
 			debug_hung_script = getenv("CTDB_DEBUG_HUNG_SCRIPT");
 		}

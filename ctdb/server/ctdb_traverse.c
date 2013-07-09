@@ -182,6 +182,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 		close(h->fd[0]);
 
+		ctdb_set_process_name("ctdb_traverse");
 		if (switch_from_server_to_client(ctdb_db->ctdb,
 						 "traverse_local-%s:",
 						 ctdb_db->db_name) != 0) {
