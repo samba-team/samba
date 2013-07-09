@@ -224,3 +224,37 @@ bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
 
 	return strcasecmp_m(smb_fname->stream_name, "::$DATA") == 0;
 }
+
+/****************************************************************************
+ Filter out Windows invalid EA names (list probed from Windows 2012).
+****************************************************************************/
+
+static char bad_ea_name_chars[] = "\"*+,/:;<=>?[\\]|";
+
+bool is_invalid_windows_ea_name(const char *name)
+{
+	int i;
+	/* EA name is pulled as ascii so we can examine
+	   individual bytes here. */
+	for (i = 0; name[i] != 0; i++) {
+		int val = (name[i] & 0xff);
+		if (val < ' ' || strchr(bad_ea_name_chars, val)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ea_list_has_invalid_name(struct ea_list *ea_list)
+{
+	if (lp_posix_pathnames()) {
+		return false;
+	}
+
+	for (;ea_list; ea_list = ea_list->next) {
+		if (is_invalid_windows_ea_name(ea_list->ea.name)) {
+			return true;
+		}
+	}
+	return false;
+}
