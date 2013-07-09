@@ -1253,6 +1253,20 @@ static void call_trans2open(connection_struct *conn,
 			reply_nterror(req, NT_STATUS_EAS_NOT_SUPPORTED);
 			goto out;
 		}
+
+		if (ea_list_has_invalid_name(ea_list)) {
+			int param_len = 30;
+			*pparams = (char *)SMB_REALLOC(*pparams, param_len);
+			if(*pparams == NULL ) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				goto out;
+			}
+			params = *pparams;
+			memset(params, '\0', param_len);
+			send_trans2_replies(conn, req, STATUS_INVALID_EA_NAME,
+				params, param_len, NULL, 0, max_data_bytes);
+			goto out;
+		}
 	}
 
 	status = SMB_VFS_CREATE_FILE(
