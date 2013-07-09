@@ -345,6 +345,15 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 		    || samba_private_attr_name(names[i]))
 			continue;
 
+		/*
+		 * Filter out any underlying POSIX EA names
+		 * that a Windows client can't handle.
+		 */
+		if (!lp_posix_pathnames() &&
+				is_invalid_windows_ea_name(names[i])) {
+			continue;
+		}
+
 		listp = talloc(mem_ctx, struct ea_list);
 		if (listp == NULL) {
 			return NT_STATUS_NO_MEMORY;
