@@ -178,6 +178,7 @@ static const char *default_classname_table[] = {
 	"registry",          /* DBGC_REGISTRY     */
 	"scavenger",         /* DBGC_SCAVENGER    */
 	"dns",               /* DBGC_DNS          */
+	"ldb",               /* DBGC_LDB          */
 	NULL
 };
 
