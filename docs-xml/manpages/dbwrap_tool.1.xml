@@ -49,7 +49,7 @@
 		<listitem><para>fetch: fetch a record</para></listitem>
 		<listitem><para>store: create or modify a record</para></listitem>
 		<listitem><para>delete: remove a record</para></listitem>
-		<listitem><para>exists: test for existance of a record</para></listitem>
+		<listitem><para>exists: test for existence of a record</para></listitem>
 		<listitem><para>erase: remove all records</para></listitem>
 		<listitem><para>listkeys: list all available records</para></listitem>
 		<listitem><para>listwatchers: list processes, which are waiting for changes in a record</para></listitem>

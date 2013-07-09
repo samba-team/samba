@@ -91,7 +91,7 @@
 		<manvolnum>8</manvolnum></citerefentry></term>
 		<listitem><para>The <command>samba-tool</command>
 		is the main Samba Administration tool regarding
-		Acitive Directory services.</para>
+		Active Directory services.</para>
 		</listitem>
 		</varlistentry>
 

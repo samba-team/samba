@@ -592,7 +592,7 @@
 		sent to the server on directory listings and file opens. If
 		the "backup intent" flag is true, the server will try and
 		bypass some file system checks if the user has been granted
-		SE_BACKUP or SE_RESTORE privilages. This state is useful when
+		SE_BACKUP or SE_RESTORE privileges. This state is useful when
 		performing a backup or restore operation.
 		</para></listitem>
 		</varlistentry>
