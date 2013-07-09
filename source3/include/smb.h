@@ -602,10 +602,15 @@ char *strdup(char *s);
  *  Note: In the presence of NT4.X do not set above 4.9
  *        Setting this above 4.9 can have undesired side-effects.
  *        This may change again in Samba-3.0 after further testing. JHT
+ *
+ * Version 6.1 - For older smb server versions, MMC doesn't let offline
+ *               settings to be configured during share creation. Changing
+ *               it to 6.1 to mimic Win2K8R2.
+ *
  */
  
-#define SAMBA_MAJOR_NBT_ANNOUNCE_VERSION 0x04
-#define SAMBA_MINOR_NBT_ANNOUNCE_VERSION 0x09
+#define SAMBA_MAJOR_NBT_ANNOUNCE_VERSION 0x06
+#define SAMBA_MINOR_NBT_ANNOUNCE_VERSION 0x01
 
 /* Browser Election Values */
 #define BROWSER_ELECTION_VERSION	0x010f
