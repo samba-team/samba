@@ -995,6 +995,7 @@ bld.SAMBA3_BINARY('client/smbclient',
                  source='''client/client.c
                  client/clitar.c
                  client/dnsbrowse.c''',
+                 ldflags='-larchive',
                  deps='''
                  talloc
                  popt_samba3

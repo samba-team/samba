@@ -75,6 +75,10 @@ def configure(conf):
     if sys.platform != 'openbsd5':
         conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
+    # libarchive in smbclient
+    conf.CHECK_HEADERS('archive.h')
+    conf.CHECK_LIB('libarchive')
+
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h')
 
