@@ -83,11 +83,9 @@ struct tar {
     /* path to tar archive name */
     char *tar_path;
 
-    /* file descriptor of tar file */
-    int tar_fd;
-
     /* list of path to include or exclude */
     char **path_list;
+    int path_list_size;
 
     /* archive handle */
     struct archive *archive;
@@ -171,7 +169,7 @@ static void tar_dump(struct tar *t)
     XBOOL(t->mode.dry);
     XBOOL(t->mode.verbose);
     XSTR(t->tar_path);
-    XINT(t->tar_fd);
+    XINT(t->path_list_size);
 
     for(i = 0; t->path_list && t->path_list[i]; i++) {
         DEBUG(2, ("DUMP: t->path_list[%2d] = %s\n", i, t->path_list[i]));
@@ -184,6 +182,19 @@ static void tar_dump(struct tar *t)
 #undef XBOOL
 #undef XSTR
 #undef XINT
+
+static void tar_add_selection_path(struct tar *t, const char *path)
+{
+    TALLOC_CTX *ctx = talloc_tos();
+    if(!t->path_list) {
+        t->path_list = str_list_make_empty(ctx);
+        t->path_list_size = 0;
+    }
+
+    t->path_list = str_list_add((const char**)t->path_list, path);
+    t->path_list_size++;
+    fix_unix_path(t->path_list[t->path_list_size - 1], true);
+}
 
 static int tar_set_blocksize(struct tar *t, int size)
 {
@@ -214,7 +225,6 @@ static bool tar_set_newer_than(struct tar *t, const char *filename)
 static bool tar_read_inclusion_file (struct tar *t, const char* filename)
 {
     char *line;
-    char **list;
     TALLOC_CTX *ctx = talloc_tos();
     int fd = open(filename, O_RDONLY);
 
@@ -223,14 +233,11 @@ static bool tar_read_inclusion_file (struct tar *t, const char* filename)
         return 0;
     }
 
-    list = str_list_make_empty(ctx);
-
     while ((line = afdgets(fd, ctx, 0))) {
-        list = str_list_add((const char **)list, fix_unix_path(line, true));
+        tar_add_selection_path(t, line);
     }
 
     close(fd);
-    t->path_list = list;
     return 1;
 }
 
@@ -666,7 +673,6 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     ival++;
 
     /* handle PATHs... */
-    tar_ctx.path_list = str_list_make_empty(ctx);
 
     /* flag F -> read file list */
     if (t->mode.selection == TAR_INCLUDE_LIST) {
@@ -685,8 +691,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
     else {
         int i;
         for (i = ival; i < valsize; i++) {
-            t->path_list = str_list_add((const char**)t->path_list, val[i]);
-            fix_unix_path(t->path_list[i-ival], true);
+            tar_add_selection_path(t, val[i]);
         }
     }
 
