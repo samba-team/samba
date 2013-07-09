@@ -5624,7 +5624,7 @@ int main(int argc,char *argv[])
 
 	max_protocol = lp_client_max_protocol();
 
-	if (!tar_to_process(&tar_ctx)) {
+	if (tar_to_process(&tar_ctx)) {
 		if (cmdstr)
 			process_command_string(cmdstr);
 		rc = do_tar_op(base_directory);
