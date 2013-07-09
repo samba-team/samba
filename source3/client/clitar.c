@@ -81,10 +81,10 @@ struct tar {
 struct tar tar_ctx = {
     .mode.selection   = TAR_INCLUDE,
     .mode.blocksize   = 20,
-    .mode.hidden      = True,
-    .mode.system      = True,
-    .mode.incremental = False,
-    .mode.dry         = False,
+    .mode.hidden      = true,
+    .mode.system      = true,
+    .mode.incremental = false,
+    .mode.dry         = false,
 };
 
 #define XSET(v)      [v] = #v
@@ -226,18 +226,18 @@ int cmd_tarmode(void)
         bool *p;
         bool value;
     } table[] = {
-        {"full",      &tar_ctx.mode.incremental, False},
-        {"inc",       &tar_ctx.mode.incremental, True },
-        {"reset",     &tar_ctx.mode.reset,       True },
-        {"noreset",   &tar_ctx.mode.reset,       False},
-        {"system",    &tar_ctx.mode.system,      True },
-        {"nosystem",  &tar_ctx.mode.system,      False},
-        {"hidden",    &tar_ctx.mode.hidden,      True },
-        {"nohidden",  &tar_ctx.mode.hidden,      False},
-        {"verbose",   &tar_ctx.mode.verbose,     True },
-        {"noquiet",   &tar_ctx.mode.verbose,     True },
-        {"quiet",     &tar_ctx.mode.verbose,     False},
-        {"noverbose", &tar_ctx.mode.verbose,     False},
+        {"full",      &tar_ctx.mode.incremental, false},
+        {"inc",       &tar_ctx.mode.incremental, true },
+        {"reset",     &tar_ctx.mode.reset,       true },
+        {"noreset",   &tar_ctx.mode.reset,       false},
+        {"system",    &tar_ctx.mode.system,      true },
+        {"nosystem",  &tar_ctx.mode.system,      false},
+        {"hidden",    &tar_ctx.mode.hidden,      true },
+        {"nohidden",  &tar_ctx.mode.hidden,      false},
+        {"verbose",   &tar_ctx.mode.verbose,     true },
+        {"noquiet",   &tar_ctx.mode.verbose,     true },
+        {"quiet",     &tar_ctx.mode.verbose,     false},
+        {"noverbose", &tar_ctx.mode.verbose,     false},
     };
 
     while (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
@@ -423,7 +423,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
      */
     t->mode.operation = TAR_NO_OPERATION;
     t->mode.selection = TAR_NO_SELECTION;
-    t->mode.dry = False;
+    t->mode.dry = false;
 
     while (*flag) {
         switch(*flag++) {
@@ -483,7 +483,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
 
          /* incremental mode */
         case 'g':
-            t->mode.incremental = True;
+            t->mode.incremental = true;
             break;
 
         /* newer than */
@@ -503,17 +503,17 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
 
         /* reset mode */
         case 'a':
-            t->mode.reset = True;
+            t->mode.reset = true;
             break;
 
         /* verbose */
         case 'q':
-            t->mode.verbose = True;
+            t->mode.verbose = true;
             break;
 
         /* regex match  */
         case 'r':
-            t->mode.regex = True;
+            t->mode.regex = true;
             break;
 
         /* dry run mode */
@@ -523,7 +523,7 @@ int tar_parse_args(struct tar* t, const char *flag, const char **val, int valsiz
                 return 0;
             }
 
-            t->mode.dry = True;
+            t->mode.dry = true;
             DEBUG(0, ("dry_run set\n"));
             break;
 
