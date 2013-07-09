@@ -81,6 +81,7 @@
 ^samba4.raw.session.expire1
 ^samba4.raw.rename.*.osxrename
 ^samba4.raw.rename.*.directory rename
+^samba4.raw.eas
 ^samba4.rpc.winreg.*security
 ^samba4.local.registry.(dir|ldb).check hive security
 ^samba4.local.registry.local.security
