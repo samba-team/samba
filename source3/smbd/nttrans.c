@@ -1148,6 +1148,26 @@ static void call_nt_transact_create(connection_struct *conn,
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			goto out;
 		}
+
+		if (ea_list_has_invalid_name(ea_list)) {
+			/* Realloc the size of parameters and data we will return */
+			if (flags & EXTENDED_RESPONSE_REQUIRED) {
+				/* Extended response is 32 more byyes. */
+				param_len = 101;
+			} else {
+				param_len = 69;
+			}
+			params = nttrans_realloc(ppparams, param_len);
+			if(params == NULL) {
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				goto out;
+			}
+
+			memset(params, '\0', param_len);
+			send_nt_replies(conn, req, STATUS_INVALID_EA_NAME,
+				params, param_len, NULL, 0);
+			goto out;
+		}
 	}
 
 	srvstr_get_path(ctx, params, req->flags2, &fname,
