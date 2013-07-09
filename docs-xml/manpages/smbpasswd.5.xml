@@ -39,7 +39,7 @@
 	<para>The format of the smbpasswd file used by Samba 2.2 
 	is very similar to the familiar Unix <filename>passwd(5)</filename> 
 	file. It is an ASCII file containing one line for each user. Each field 
-	ithin each line is separated from the next by a colon. Any entry 
+	within each line is separated from the next by a colon. Any entry 
 	beginning with '#' is ignored. The smbpasswd file contains the 
 	following information for each user: </para>
 

@@ -1671,7 +1671,7 @@ shares created by other users.
 
 <para>Starting with version 3.2.0, a Samba server can be configured by data
 stored in registry. This configuration data can be edited with the new "net
-conf" commands. There is also the possiblity to configure a remote Samba server
+conf" commands. There is also the possibility to configure a remote Samba server
 by enabling the RPC conf mode and specifying the the address of the remote server.
 </para>
 
