@@ -357,6 +357,7 @@ install: all manpages $(PMDA_INSTALL)
 	${INSTALLCMD} -m 440 config/ctdb.sudoers $(DESTDIR)$(etcdir)/sudoers.d/ctdb
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
+	${INSTALLCMD} -m 755 config/ctdbd_wrapper $(DESTDIR)$(sbindir)
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/01.reclock $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
