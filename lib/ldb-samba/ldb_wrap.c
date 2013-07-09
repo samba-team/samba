@@ -37,6 +37,8 @@
 #include "../lib/util/dlinklist.h"
 #include <tdb.h>
 
+#define DBGC_CLASS DBGC_LDB
+
 /*
   this is used to catch debug messages from ldb
 */
