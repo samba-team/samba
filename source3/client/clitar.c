@@ -123,10 +123,10 @@ static char *fix_unix_path (char *path, bool removeprefix)
         }
     }
 
-    /* replace \ with / */
+    /* replace / with \ */
     while (*from) {
-        if (*from == '\\') {
-            *to = '/';
+        if (*from == '/') {
+            *to = '\\';
         } else {
             *to = *from;
         }
@@ -429,6 +429,7 @@ int cmd_setmode(void)
     return 0;
 }
 
+/* static int send_file(struct archive_entry *entry, */
 
 /**
  * cmd_tar - interactive command to start a tar backup/restoration
