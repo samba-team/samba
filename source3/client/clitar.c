@@ -415,13 +415,22 @@ int cmd_tar(void)
     return 0;
 }
 
-/****************************************************************************
-Command line (option) version
-***************************************************************************/
-
-int process_tar(void)
+int tar_process(struct tar *t)
 {
-    return 0;
+    int rc = 0;
+
+    switch(t->mode.operation) {
+    case TAR_EXTRACT:
+        /* tar_extract(t); */
+        break;
+    case TAR_CREATE:
+        /* tar_create(t); */
+        break;
+    default:
+        DEBUG(0, ("Invalid tar state\n"));
+        rc = 1;
+    }
+    return rc;
 }
 
 /**

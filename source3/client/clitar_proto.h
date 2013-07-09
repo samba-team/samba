@@ -26,7 +26,7 @@ int cmd_block(void);
 int cmd_tarmode(void);
 int cmd_setmode(void);
 int cmd_tar(void);
-int process_tar(void);
+int tar_process(struct tar* tar);
 int tar_parse_args(struct tar *tar, const char *flag, const char **val, int valsize);
 bool tar_to_process(struct tar *tar);
 

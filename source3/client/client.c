@@ -5318,6 +5318,7 @@ static int do_host_query(const char *query_host)
 
 static int do_tar_op(const char *base_directory)
 {
+	extern struct tar tar_ctx;
 	int ret;
 
 	/* do we already have a connection? */
@@ -5344,7 +5345,7 @@ static int do_tar_op(const char *base_directory)
 		}
 	}
 
-	ret=process_tar();
+	ret = tar_process(&tar_ctx);
 
 	cli_shutdown(cli);
 
