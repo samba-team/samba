@@ -622,6 +622,15 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/*
+	 * Filter out invalid Windows EA names - before
+	 * we set *any* of them.
+	 */
+
+	if (ea_list_has_invalid_name(ea_list)) {
+		return STATUS_INVALID_EA_NAME;
+	}
+
 	fname = smb_fname->base_name;
 
 	for (;ea_list; ea_list = ea_list->next) {
