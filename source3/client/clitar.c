@@ -33,8 +33,12 @@
 #define TAR_MAX_BLOCK_SIZE 0xffff
 
 /**
+ * Default tar block size in bytes. Hasn't changed since the first
+ * commit in 1996...
+ *
  * A more adequate size will be used for better performance unless
- * we're dealing with a tape device with fixed block size.
+ * we're dealing with a tape device with a fixed read/write block
+ * size.
  *
  * The actual choice is made by libarchive.
  */
